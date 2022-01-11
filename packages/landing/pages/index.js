@@ -21,7 +21,7 @@ export default function Home() {
         <NewShadesLogo
           style={{
             display: "block",
-            width: "0.6em",
+            width: "max(40px, 0.6em)",
             height: "auto",
             margin: "0 0 0.3em",
           }}
