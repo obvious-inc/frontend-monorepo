@@ -1,0 +1,14 @@
+{
+  "name": "newshades-desktop",
+  "version": "0.0.1",
+  "description": "NewShades desktop client",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "NewShades DAO",
+  "devDependencies": {
+    "electron": "^16.0.7"
+  }
+}
