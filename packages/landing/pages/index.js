@@ -18,12 +18,26 @@ export default function Home() {
           padding: "0.6em",
         }}
       >
-        <NewShadesLogo
+        {/* <NewShadesLogo */}
+        {/*   style={{ */}
+        {/*     display: "block", */}
+        {/*     width: "max(40px, 0.6em)", */}
+        {/*     height: "auto", */}
+        {/*     margin: "0 0 0.3em", */}
+        {/*   }} */}
+        {/* /> */}
+        <img
+          src="logo.png"
           style={{
             display: "block",
             width: "max(40px, 0.6em)",
-            height: "auto",
             margin: "0 0 0.3em",
+          }}
+          onPointerOver={(e) => {
+            e.target.src = "logo.gif";
+          }}
+          onPointerOut={(e) => {
+            e.target.src = "logo.png";
           }}
         />
         <h1>NewShades DAO</h1>
