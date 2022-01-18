@@ -1,4 +1,4 @@
-const API_SERVER = process.env.API_SERVER ?? "http://localhost:5001";
+const devServerConfig = require("./webpack.shared.dev-server.js");
 
 module.exports = {
   packagerConfig: {},
@@ -26,14 +26,7 @@ module.exports = {
     [
       "@electron-forge/plugin-webpack",
       {
-        devServer: {
-          proxy: {
-            "/api": {
-              target: API_SERVER,
-              pathRewrite: { "^/api": "" },
-            },
-          },
-        },
+        devServer: devServerConfig,
         devContentSecurityPolicy:
           "default-src 'self' 'unsafe-inline' data:; script-src 'self' 'unsafe-eval' 'unsafe-inline' data:; connect-src *",
         mainConfig: "./webpack.main.config.js",
