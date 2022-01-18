@@ -1,18 +1,6 @@
-const webpack = require("webpack");
-const rules = require("./webpack.rules");
+const webConfig = require("./webpack.shared.web.js");
+const electronRules = require("./webpack.rules.js");
 
-rules.push({
-  test: /\.css$/,
-  use: [{ loader: "style-loader" }, { loader: "css-loader" }],
-});
+webConfig.module.rules = [...electronRules, ...webConfig.module.rules];
 
-module.exports = {
-  module: {
-    rules,
-  },
-  plugins: [
-    new webpack.EnvironmentPlugin({
-      API_SERVER: process.env.NODE_ENV === "production" ? null : "/api",
-    }),
-  ],
-};
+module.exports = webConfig;

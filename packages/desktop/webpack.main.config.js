@@ -1,12 +1,4 @@
 module.exports = {
-  devServer: {
-    proxy: {
-      "/api": {
-        target: "http://localhost:5001",
-        pathRewrite: { "^/api": "" },
-      },
-    },
-  },
   /**
    * This is the main entry point for your application, it's the first file
    * that runs in the main process.
