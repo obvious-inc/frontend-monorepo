@@ -4,11 +4,11 @@
   "version": "0.0.0",
   "scripts": {
     "start-web": "webpack serve -c ./webpack.web.config.js --mode=development",
-    "build-web": "webpack -c ./webpack.web.config.js --mode=production"
+    "build-web": "webpack -c ./webpack.web.config.js --mode=production",
     "start": "electron-forge start",
     "package": "electron-forge package",
     "make": "electron-forge make",
-    "publish": "electron-forge publish",
+    "publish": "electron-forge publish"
   },
   "config": {
     "forge": "./forge.config.js"

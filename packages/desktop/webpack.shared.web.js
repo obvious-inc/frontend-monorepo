@@ -7,14 +7,6 @@ module.exports = {
         test: /\.css$/,
         use: [{ loader: "style-loader" }, { loader: "css-loader" }],
       },
-      {
-        test: /\.js$/,
-        exclude: /(node_modules)/,
-        use: {
-          // See `.swcrc` for config
-          loader: "swc-loader",
-        },
-      },
     ],
   },
   plugins: [
