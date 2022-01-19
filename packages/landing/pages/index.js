@@ -57,7 +57,10 @@ export default function Home() {
             {[
               { href: "https://airtable.com/shrgbpYYVsuyEJxmW", label: "Join" },
               { href: "https://twitter.com/newshadesDAO", label: "Twitter" },
-              { href: "http://discord.gg/gb4bbaT4", label: "Discord" },
+              {
+                href: "https://discord.com/invite/2jy5A5h63H",
+                label: "Discord",
+              },
             ].map(({ label, href }) => (
               <li key={href}>
                 <a href={href} target="_blank">
