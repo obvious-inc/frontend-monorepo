@@ -1,4 +1,4 @@
-const { app, BrowserWindow, autoUpdater } = require("electron");
+const { app, BrowserWindow } = require("electron");
 
 // Handle creating/removing shortcuts on Windows when installing/uninstalling.
 if (require("electron-squirrel-startup")) {
@@ -6,11 +6,11 @@ if (require("electron-squirrel-startup")) {
   app.quit();
 }
 
-const updateServerUrl = "https://new-shades-hazel-update-server.vercel.app";
+// const updateServerUrl = "https://new-shades-hazel-update-server.vercel.app";
 
-autoUpdater.setFeedURL({
-  url: `${updateServerUrl}/update/${process.platform}/${app.getVersion()}`,
-});
+// autoUpdater.setFeedURL({
+//   url: `${updateServerUrl}/update/${process.platform}/${app.getVersion()}`,
+// });
 
 const createWindow = () => {
   // Create the browser window.
