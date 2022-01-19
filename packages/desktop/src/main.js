@@ -1,4 +1,8 @@
-const { app, BrowserWindow } = require("electron");
+const path = require("path");
+const { app, BrowserWindow, dialog } = require("electron");
+
+const DEFAULT_DEV_SERVER_URL = "http://localhost:8080";
+const APP_URL = process.env.APP_URL ?? DEFAULT_DEV_SERVER_URL;
 
 // Handle creating/removing shortcuts on Windows when installing/uninstalling.
 if (require("electron-squirrel-startup")) {
@@ -19,10 +23,35 @@ const createWindow = () => {
     height: 600,
     titleBarStyle: "hidden",
     backgroundColor: "#000000",
+    webPreferences: {
+      preload: path.join(__dirname, "electron-main-renderer-preload.js"),
+    },
   });
 
-  // and load the index.html of the app.
-  mainWindow.loadURL(MAIN_WINDOW_WEBPACK_ENTRY);
+  const loadApp = () => {
+    mainWindow.loadURL(APP_URL).catch(() => {
+      // TODO: Fail gracefully
+
+      dialog
+        .showMessageBox(mainWindow, {
+          message:
+            "Error loading app, check your network connection and try again.",
+          cancelId: 1,
+          buttons: ["Retry", "Quit"],
+        })
+        .then(({ response }) => {
+          if (response === 1) {
+            app.quit();
+            return;
+          }
+
+          // Retry
+          loadApp();
+        });
+    });
+  };
+
+  loadApp();
 
   // Open the DevTools.
   // mainWindow.webContents.openDevTools();

@@ -1,14 +1,14 @@
 {
   "name": "newshades-desktop",
-  "main": ".webpack/main",
   "version": "0.0.0",
+  "main": "src/main.js",
+  "private": true,
   "scripts": {
-    "start-web": "webpack serve -c ./webpack.web.config.js --mode=development",
-    "build-web": "webpack -c ./webpack.web.config.js --mode=production",
-    "start": "electron-forge start",
-    "package": "electron-forge package",
-    "make": "electron-forge make",
-    "publish": "electron-forge publish"
+    "start-web": "webpack serve --mode=development",
+    "build-web": "webpack --mode=production",
+    "start-desktop": "electron-forge start",
+    "make-desktop": "electron-forge make",
+    "publish-desktop": "electron-forge publish"
   },
   "config": {
     "forge": "./forge.config.js"
@@ -16,19 +16,14 @@
   "devDependencies": {
     "@electron-forge/cli": "^6.0.0-beta.63",
     "@electron-forge/maker-zip": "^6.0.0-beta.63",
-    "@electron-forge/plugin-webpack": "6.0.0-beta.63",
     "@electron-forge/publisher-github": "^6.0.0-beta.63",
     "@swc/core": "^1.2.128",
-    "@vercel/webpack-asset-relocator-loader": "1.7.0",
-    "@webpack-cli/serve": "^1.6.0",
     "css-loader": "^6.0.0",
     "electron": "16.0.7",
     "html-webpack-plugin": "^5.5.0",
-    "node-loader": "^2.0.0",
     "style-loader": "^3.0.0",
     "swc-loader": "^0.1.15",
-    "webpack-cli": "^4.9.1",
-    "webpack-merge": "^5.8.0"
+    "webpack-cli": "^4.9.1"
   },
   "dependencies": {
     "electron-squirrel-startup": "^1.0.0",
@@ -36,5 +31,9 @@
     "ethers": "^5.5.3",
     "react": "^17.0.2",
     "react-dom": "^17.0.2"
+  },
+  "engines": {
+    "node": ">=14",
+    "npm": ">=7"
   }
 }
