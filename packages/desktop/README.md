@@ -8,7 +8,7 @@ Some desktop builds can be found on [the release page](https://github.com/NewSha
 
 *NewShades desktop* is a [`React`](https://reactjs.org/) web app, using a thin [`Electron`](https://www.electronjs.org/) wrapper to build for desktop. The details might change quickly but at the time of writing we bundle our Javascript with [`webpack`](https://webpack.js.org/), transpile with [`SWC`](https://swc.rs/); and  package, make distributals, and publish our desktop builds with [`Electron Forge`](https://www.electronforge.io/).
 
-### Development setup
+## Development setup
 
 Make sure you have [`Node.js`](https://nodejs.org/en/) and [`NPM`](https://www.npmjs.com/) installed, preferrably through a version manager, like [`nvm`](https://github.com/nvm-sh/nvm), [`fnm`](https://github.com/Schniz/fnm), or [`n`](https://github.com/tj/n).
 
@@ -24,7 +24,7 @@ Start a local dev server with:
 npm run start-web
 ```
 
-By default this expects the [NewShades API](https://github.com/NewShadesDAO/api) to be running on `localhost:5001`, but you can override this with an environment variable `API_ENDPOINT`:
+By default this expects the [NewShades API](https://github.com/NewShadesDAO/api) to be running on `localhost:5001`, but you can override that with an environment variable `API_ENDPOINT` if you like:
 
 ```sh
 API_ENDPOINT=https://api.newshades.xyz npm run start-web
@@ -33,11 +33,11 @@ API_ENDPOINT=https://api.newshades.xyz npm run start-web
 Start the desktop client with:
 
 ```sh
-# This expects the dev server to be running
+# This expects the dev server described above to be running
 npm run start-desktop
 ```
 
-### Deployment
+## Deployment
 
 `HEAD` of `main` is automatically deployed to [app.newshades.xyz](https://app.newshades.xyz) with [Vercel](https://vercel.com/).
 
