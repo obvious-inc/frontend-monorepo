@@ -1,35 +1,12 @@
 import React from "react";
-import { render } from "react-dom";
 import createProvider from "eth-provider";
 import { utils as ethersUtils } from "ethers";
-import "./index.css";
-
-const TITLE_BAR_HEIGHT = "2.8rem";
-
-const API_SERVER = process.env.API_SERVER;
+import { API_ENDPOINT } from "./constants/api";
+import { TITLE_BAR_HEIGHT } from "./constants/ui";
+import useAccessToken from "./hooks/access-token";
+import TitleBar from "./components/title-bar";
 
 const GlobalStateContext = React.createContext({});
-
-const useAccessToken = () => {
-  // TODO: Use session cookie or some secure storage
-  const CACHE_KEY = "access-token";
-
-  const [token, setToken] = React.useState(() =>
-    localStorage.getItem(CACHE_KEY)
-  );
-
-  const set = (token) => {
-    setToken(token);
-    localStorage.setItem(CACHE_KEY, token);
-  };
-
-  const clear = () => {
-    setToken(null);
-    localStorage.removeItem(CACHE_KEY);
-  };
-
-  return [token, { set, clear }];
-};
 
 const provider = createProvider("frame");
 
@@ -39,6 +16,7 @@ const App = () => {
   const [user, setUser] = React.useState(null);
 
   const isSignedIn = accessToken != null;
+  const isNative = window.Native != null;
 
   const authorizedFetch = React.useCallback(
     (url, options) => {
@@ -54,7 +32,7 @@ const App = () => {
   React.useEffect(() => {
     if (!isSignedIn) return;
 
-    authorizedFetch(`${API_SERVER}/users/me`)
+    authorizedFetch(`${API_ENDPOINT}/users/me`)
       .then((response) => {
         if (response.ok) return response.json();
 
@@ -73,10 +51,12 @@ const App = () => {
 
   return (
     <>
-      <TitleBar />
+      {isNative && <TitleBar />}
       <Container>
         {isSignedIn ? (
-          <GlobalStateContext.Provider value={{ user, authorizedFetch }}>
+          <GlobalStateContext.Provider
+            value={{ user, authorizedFetch, isNative: window.Native != null }}
+          >
             <AuthenticatedApp />
           </GlobalStateContext.Provider>
         ) : (
@@ -120,7 +100,7 @@ const LoginScreen = ({ onSignIn }) => {
 
     const [signature, message] = await signAddress(addresses[0]);
 
-    const responseBody = await fetch(`${API_SERVER}/auth/login`, {
+    const responseBody = await fetch(`${API_ENDPOINT}/auth/login`, {
       method: "POST",
       body: JSON.stringify({ message, signature }),
       headers: {
@@ -147,7 +127,7 @@ const AuthenticatedApp = () => {
   const [servers, setServers] = React.useState([]);
 
   const fetchServers = React.useCallback(
-    () => authorizedFetch(`${API_SERVER}/servers`).then((r) => r.json()),
+    () => authorizedFetch(`${API_ENDPOINT}/servers`).then((r) => r.json()),
     [authorizedFetch]
   );
 
@@ -159,10 +139,6 @@ const AuthenticatedApp = () => {
 
   return <div>Signed in! 🎉</div>;
 };
-
-const TitleBar = () => (
-  <div style={{ WebkitAppRegion: "drag", height: TITLE_BAR_HEIGHT }} />
-);
 
 const Container = ({ children }) => (
   <div
@@ -193,4 +169,4 @@ const Button = ({ style, ...props }) => (
   />
 );
 
-render(<App />, document.getElementById("app-mount"));
+export default App;
