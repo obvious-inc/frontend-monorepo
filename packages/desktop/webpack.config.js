@@ -3,7 +3,7 @@ const webpack = require("webpack");
 const HtmlWebpackPlugin = require("html-webpack-plugin");
 const CopyPlugin = require("copy-webpack-plugin");
 
-const API_SERVER = process.env.API_SERVER ?? "http://localhost:5001";
+const API_ENDPOINT = process.env.API_ENDPOINT ?? "http://localhost:5001";
 
 module.exports = (_, argv) => {
   const isProduction = argv.mode === "production";
@@ -41,7 +41,7 @@ module.exports = (_, argv) => {
     entry: "./src/web-entry.js",
     devServer: {
       proxy: {
-        "/api": { target: API_SERVER, pathRewrite: { "^/api": "" } },
+        "/api": { target: API_ENDPOINT, pathRewrite: { "^/api": "" } },
       },
     },
     module: {
