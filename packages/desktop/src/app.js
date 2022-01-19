@@ -4,7 +4,7 @@ import { utils as ethersUtils } from "ethers";
 import { API_ENDPOINT } from "./constants/api";
 import { TITLE_BAR_HEIGHT } from "./constants/ui";
 import useAccessToken from "./hooks/access-token";
-import TitleBar from "./components/TitleBar";
+import TitleBar from "./components/title-bar";
 
 const GlobalStateContext = React.createContext({});
 
@@ -16,6 +16,7 @@ const App = () => {
   const [user, setUser] = React.useState(null);
 
   const isSignedIn = accessToken != null;
+  const isNative = window.Native != null;
 
   const authorizedFetch = React.useCallback(
     (url, options) => {
@@ -50,10 +51,12 @@ const App = () => {
 
   return (
     <>
-      <TitleBar />
+      {isNative && <TitleBar />}
       <Container>
         {isSignedIn ? (
-          <GlobalStateContext.Provider value={{ user, authorizedFetch }}>
+          <GlobalStateContext.Provider
+            value={{ user, authorizedFetch, isNative: window.Native != null }}
+          >
             <AuthenticatedApp />
           </GlobalStateContext.Provider>
         ) : (
