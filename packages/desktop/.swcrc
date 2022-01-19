@@ -1,4 +1,12 @@
 {
+  "env": {
+    "targets": [
+      "electron 16",
+      "node 16",
+      "last 1 chrome version",
+      "last 1 safari version"
+    ]
+  },
   "jsc": {
     "parser": {
       "syntax": "ecmascript",
