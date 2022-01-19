@@ -4,22 +4,21 @@ module.exports = {
   packagerConfig: {},
   makers: [
     {
-      name: "@electron-forge/maker-squirrel",
-      config: {
-        name: "desktop",
-      },
-    },
-    {
       name: "@electron-forge/maker-zip",
       platforms: ["darwin"],
     },
+  ],
+  publishers: [
     {
-      name: "@electron-forge/maker-deb",
-      config: {},
-    },
-    {
-      name: "@electron-forge/maker-rpm",
-      config: {},
+      name: "@electron-forge/publisher-github",
+      platforms: ["darwin"],
+      config: {
+        repository: {
+          owner: "NewShadesDAO",
+          name: "front",
+        },
+        prerelease: true,
+      },
     },
   ],
   plugins: [
