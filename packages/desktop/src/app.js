@@ -52,21 +52,30 @@ const App = () => {
   return (
     <>
       {isNative && <TitleBar />}
-      <Container>
-        {isSignedIn ? (
+      {isSignedIn ? (
+        user == null ? (
+          "Fetching user..."
+        ) : (
           <GlobalStateContext.Provider
-            value={{ user, authorizedFetch, isNative: window.Native != null }}
+            value={{
+              user,
+              authorizedFetch,
+              accessToken,
+              isNative: window.Native != null,
+            }}
           >
             <AuthenticatedApp />
           </GlobalStateContext.Provider>
-        ) : (
+        )
+      ) : (
+        <Container>
           <LoginScreen
             onSignIn={(accessToken) => {
               setAccessToken(accessToken);
             }}
           />
-        )}
-      </Container>
+        </Container>
+      )}
     </>
   );
 };
@@ -123,21 +132,138 @@ const LoginScreen = ({ onSignIn }) => {
 };
 
 const AuthenticatedApp = () => {
-  const { authorizedFetch } = React.useContext(GlobalStateContext);
+  const { authorizedFetch, accessToken, user } =
+    React.useContext(GlobalStateContext);
   const [servers, setServers] = React.useState([]);
+  const [channels, setChannels] = React.useState([]);
+  const [selectedServerId, setSelectedServerId] = React.useState(null);
+  const [selectedChannelId, setSelectedChannelId] = React.useState(null);
 
   const fetchServers = React.useCallback(
     () => authorizedFetch(`${API_ENDPOINT}/servers`).then((r) => r.json()),
+    [authorizedFetch]
+  );
+  const fetchChannels = React.useCallback(
+    () => authorizedFetch(`${API_ENDPOINT}/channels`).then((r) => r.json()),
     [authorizedFetch]
   );
 
   React.useEffect(() => {
     fetchServers().then((servers) => {
       setServers(servers);
+      if (servers.length !== 0) setSelectedServerId(servers[0].id);
     });
   }, [fetchServers]);
 
-  return <div>Signed in! 🎉</div>;
+  React.useEffect(() => {
+    fetchChannels().then((channels) => {
+      setChannels(channels);
+      if (channels.length !== 0) setSelectedChannelId(channels[0].id);
+    });
+  }, [fetchChannels]);
+
+  React.useEffect(() => {
+    const key = "33ce82b516aa2237e34c";
+
+    Pusher.logToConsole = true;
+
+    const pusher = new Pusher(key, {
+      cluster: "eu",
+      authEndpoint: `${API_ENDPOINT}/websockets/auth`,
+      auth: {
+        params: { provider: "pusher" },
+        headers: { Authorization: `Bearer ${accessToken}` },
+      },
+    });
+
+    const channelId = `private-${user.id}`;
+
+    const channel = pusher.subscribe(channelId);
+
+    channel.bind("MESSAGE_CREATE", (data) => {
+      console.log("messsage create", data);
+    });
+  }, [selectedChannelId]);
+
+  return (
+    <div>
+      <div style={{ display: "flex" }}>
+        <div style={{ padding: "1rem" }}>
+          {servers.map((s) => (
+            <div key={s.id}>
+              <button
+                onClick={() => {
+                  setSelectedServerId(s.id);
+                }}
+              >
+                {s.name}
+              </button>
+            </div>
+          ))}
+
+          <button
+            onClick={() => {
+              authorizedFetch(`${API_ENDPOINT}/servers`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ name: "fooa" }),
+              });
+            }}
+            style={{ margin: "2rem 0 0" }}
+          >
+            Create server
+          </button>
+        </div>
+        <div style={{ padding: "1rem" }}>
+          {channels.map((c) => (
+            <div key={c.id}>
+              <button
+                onClick={() => {
+                  setSelectedChannelId(c.id);
+                }}
+              >
+                {c.name}
+              </button>
+            </div>
+          ))}
+          <button
+            onClick={() => {
+              authorizedFetch(`${API_ENDPOINT}/channels`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                  name: "bar",
+                  kind: "server",
+                  server: selectedServerId,
+                }),
+              });
+            }}
+            style={{ margin: "2rem 0 0" }}
+          >
+            Create channel
+          </button>
+        </div>
+        <div style={{ flex: 1, padding: "1rem" }}>
+          a
+          <button
+            onClick={() => {
+              authorizedFetch(`${API_ENDPOINT}/messages`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                  server: selectedServerId,
+                  channel: selectedChannelId,
+                  content: "yas",
+                }),
+              });
+            }}
+          >
+            Post message
+          </button>
+        </div>
+      </div>
+    </div>
+  );
 };
 
 const Container = ({ children }) => (
