@@ -204,7 +204,7 @@ const AuthenticatedApp = () => {
               authorizedFetch(`${API_ENDPOINT}/servers`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ name: "fooa" }),
+                body: JSON.stringify({ name: "foo" }),
               });
             }}
             style={{ margin: "2rem 0 0" }}
