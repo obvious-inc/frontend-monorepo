@@ -6,6 +6,8 @@ import { TITLE_BAR_HEIGHT } from "./constants/ui";
 import useAccessToken from "./hooks/access-token";
 import TitleBar from "./components/title-bar";
 
+const PUSHER_KEY = "a3fe68b6bc362989c446";
+
 const GlobalStateContext = React.createContext({});
 
 const provider = createProvider("frame");
@@ -163,11 +165,9 @@ const AuthenticatedApp = () => {
   }, [fetchChannels]);
 
   React.useEffect(() => {
-    const key = "33ce82b516aa2237e34c";
-
     Pusher.logToConsole = true;
 
-    const pusher = new Pusher(key, {
+    const pusher = new Pusher(PUSHER_KEY, {
       cluster: "eu",
       authEndpoint: `${API_ENDPOINT}/websockets/auth`,
       auth: {
@@ -176,12 +176,10 @@ const AuthenticatedApp = () => {
       },
     });
 
-    const channelId = `private-${user.id}`;
-
-    const channel = pusher.subscribe(channelId);
+    const channel = pusher.subscribe(`private-${user.id}`);
 
     channel.bind("MESSAGE_CREATE", (data) => {
-      console.log("messsage create", data);
+      console.log("Yays message created", data);
     });
   }, [selectedChannelId]);
 
