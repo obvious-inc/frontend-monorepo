@@ -12,6 +12,7 @@ module.exports = (_, argv) => {
     new HtmlWebpackPlugin({ template: "src/index.web.html.ejs" }),
     new webpack.EnvironmentPlugin({
       API_ENDPOINT: isProduction ? null : "/api",
+      PUSHER_KEY: null,
     }),
   ];
 
