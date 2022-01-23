@@ -1,4 +1,14 @@
 html {
+  box-sizing: border-box;
+}
+
+*,
+*:before,
+*:after {
+  box-sizing: inherit;
+}
+
+html {
   font-size: 0.625em;
 }
 body {

@@ -9,7 +9,10 @@ module.exports = (_, argv) => {
   const isProduction = argv.mode === "production";
 
   const plugins = [
-    new HtmlWebpackPlugin({ template: "src/index.web.html.ejs" }),
+    new HtmlWebpackPlugin({
+      template: "src/index.web.html.ejs",
+      title: "NewShades",
+    }),
     new webpack.EnvironmentPlugin({
       API_ENDPOINT: isProduction ? null : "/api",
       PUSHER_KEY: null,
