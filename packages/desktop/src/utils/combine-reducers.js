@@ -1,7 +1,7 @@
 export default function combineReducers(reducers) {
   const reducerKeys = Object.keys(reducers);
 
-  return function combination(state, action) {
+  return function combination(state = {}, action) {
     let hasChanged = false;
 
     const nextState = {};

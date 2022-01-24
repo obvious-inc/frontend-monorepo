@@ -20,7 +20,7 @@ const useCachedState = (key, initialState, storage = window.localStorage) => {
       setState(newState);
       storage.setItem(key, JSON.stringify(newState));
     } catch (error) {
-      console.log(error);
+      console.error(error);
     }
   };
 

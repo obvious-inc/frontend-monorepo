@@ -5,8 +5,12 @@ import createProvider from "eth-provider";
 import { utils as ethersUtils } from "ethers";
 import { API_ENDPOINT } from "./constants/api";
 import { TITLE_BAR_HEIGHT } from "./constants/ui";
-import combineReducers from "./utils/combine-reducers";
+import useGlobalState, {
+  Provider as GlobalStateProvider,
+} from "./hooks/global-state";
+import useRootReducer from "./hooks/root-reducer";
 import useAccessToken from "./hooks/access-token";
+import useServerConnection from "./hooks/server-connection";
 import TitleBar from "./components/title-bar";
 
 let prevId = 0;
@@ -16,463 +20,209 @@ const generateId = () => {
   return id;
 };
 
-const PUSHER_KEY = process.env.PUSHER_KEY;
-
 const provider = createProvider("frame");
-
-const GlobalStateContext = React.createContext({});
-
-const initialState = {
-  messages: {
-    entriesById: {},
-    entryIdsByChannelId: [],
-  },
-  servers: { entriesById: {} },
-  serverMembers: {
-    entriesById: {},
-    entryIdsByServerId: [],
-  },
-};
-
-const omitKey = (key, obj) =>
-  Object.fromEntries(Object.entries(obj).filter(([key_]) => key_ !== key));
-
-const indexBy = (computeKey, list) =>
-  list.reduce((acc, item) => {
-    acc[computeKey(item, list)] = item;
-    return acc;
-  }, {});
-
-const mapValues = (mapper, obj) =>
-  Object.fromEntries(
-    Object.entries(obj).map(([key, value]) => [key, mapper(value, key, obj)])
-  );
-
-const groupBy = (computeKey, list) =>
-  list.reduce((acc, item) => {
-    const key = computeKey(item, list);
-    const group = acc[key] ?? [];
-    acc[key] = [...group, item];
-    return acc;
-  }, {});
-
-const messages = (state, action) => {
-  switch (action.type) {
-    case "messages-fetched":
-      return {
-        ...state,
-        entriesById: indexBy((m) => m.id, action.messages),
-        entryIdsByChannelId: mapValues(
-          (ms) => ms.map((m) => m.id),
-          groupBy((m) => m.channel, action.messages)
-        ),
-      };
-
-    case "message-created": {
-      const channelId = action.message.channel;
-      const channelMessageIds = state.entryIdsByChannelId[channelId] ?? [];
-      return {
-        ...state,
-        entriesById: {
-          ...state.entriesById,
-          [action.message.id]: action.message,
-        },
-        entryIdsByChannelId: {
-          ...state.entryIdsByChannelId,
-          [channelId]: [...channelMessageIds, action.message.id],
-        },
-      };
-    }
-
-    case "message-create-request-sent": {
-      const channelId = action.message.channel;
-      const channelMessageIds = state.entryIdsByChannelId[channelId] ?? [];
-      return {
-        ...state,
-        entriesById: {
-          ...state.entriesById,
-          [action.message.id]: action.message,
-        },
-        entryIdsByChannelId: {
-          ...state.entryIdsByChannelId,
-          [channelId]: [...channelMessageIds, action.message.id],
-        },
-      };
-    }
-
-    case "message-create-request-successful": {
-      const channelId = action.message.channel;
-      const channelMessageIds = state.entryIdsByChannelId[channelId] ?? [];
-      return {
-        ...state,
-        entriesById: {
-          ...omitKey(action.dummyId, state.entriesById),
-          [action.message.id]: action.message,
-        },
-        entryIdsByChannelId: {
-          ...state.entryIdsByChannelId,
-          [channelId]: [
-            ...channelMessageIds.filter((id) => id !== action.dummyId),
-            action.message.id,
-          ],
-        },
-      };
-    }
-
-    default:
-      return state;
-  }
-};
-
-const selectChannelMessages = (state) => (channelId) =>
-  state.messages.entryIdsByChannelId[channelId]?.map(
-    (id) => state.messages.entriesById[id]
-  ) ?? [];
-
-const servers = (state, action) => {
-  switch (action.type) {
-    case "user-data":
-      return { ...state, entriesById: indexBy((s) => s.id, action.servers) };
-    default:
-      return state;
-  }
-};
-
-const serverMembers = (state, action) => {
-  switch (action.type) {
-    case "user-data":
-      const members = action.servers.flatMap((s) => s.members);
-      const membersById = indexBy((m) => m.id, members);
-      const membersByUserId = indexBy((m) => m.user, members);
-      const memberIdsByServerId = mapValues(
-        (members) => members.map((m) => m.id),
-        groupBy((m) => m.server, members)
-      );
-
-      return {
-        entries: members,
-        entriesById: membersById,
-        entriesByUserId: membersByUserId,
-        entryIdsByServerId: memberIdsByServerId,
-      };
-    default:
-      return state;
-  }
-};
-
-const applyStateToSelectors = (selectors, state) =>
-  mapValues((selector) => selector(state), selectors);
-
-const globalReducer = combineReducers({ servers, serverMembers, messages });
 
 const App = () => {
   const [accessToken, { set: setAccessToken, clear: clearAccessToken }] =
     useAccessToken();
   const [user, setUser] = React.useState(null);
 
-  const [state, dispatch] = React.useReducer(globalReducer, initialState);
-
-  const stateSelectors = applyStateToSelectors(
-    { selectChannelMessages },
-    state
-  );
+  const [selectors, dispatch] = useRootReducer();
 
   const isSignedIn = accessToken != null;
   const isNative = window.Native != null;
 
   const authorizedFetch = React.useCallback(
-    (url, options) => {
+    async (url, options) => {
       if (accessToken == null) throw new Error("Missing access token");
 
       const headers = new Headers(options?.headers);
       headers.append("Authorization", `Bearer ${accessToken}`);
-      return fetch(url, { ...options, headers });
+
+      const response = await fetch(`${API_ENDPOINT}${url}`, {
+        ...options,
+        headers,
+      });
+
+      // TODO
+      if (response.status === 401) clearAccessToken();
+
+      if (response.ok) return response.json();
+
+      return Promise.reject(new Error(response.statusText));
     },
     [accessToken]
   );
 
   const fetchMessages = React.useCallback(
     ({ channelId }) =>
-      authorizedFetch(`${API_ENDPOINT}/channels/${channelId}/messages`)
-        .then((res) => {
-          if (res.ok) return res.json();
-          // TODO
-          return Promise.reject(new Error(res.statusText));
-        })
-        .then((messages) => {
-          dispatch({ type: "messages-fetched", messages });
-        }),
+      authorizedFetch(`/channels/${channelId}/messages`).then((messages) => {
+        dispatch({ type: "messages-fetched", messages });
+      }),
     [authorizedFetch]
   );
 
   const createServer = React.useCallback(
     ({ name }) =>
-      authorizedFetch(`${API_ENDPOINT}/servers`, {
+      authorizedFetch("/servers", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ name }),
       }).then((res) => {
-        if (res.ok) return res.json();
         // TODO
-        return Promise.reject(new Error(res.statusText));
+        serverConnection.send("request-user-data");
+        return res;
       }),
     [authorizedFetch]
   );
 
   const createMessage = React.useCallback(
-    ({ server, channel, content }) =>
-      authorizedFetch(`${API_ENDPOINT}/messages`, {
+    async ({ server, channel, content }) => {
+      // TODO: Less hacky way of posting eagerly
+      const message = { server, channel, content };
+      const dummyId = generateId();
+
+      dispatch({
+        type: "message-create-request-sent",
+        message: {
+          ...message,
+          id: dummyId,
+          created_at: new Date().toISOString(),
+          author: user.id,
+        },
+      });
+
+      return authorizedFetch("/messages", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ server, channel, content }),
-      }).then((res) => {
-        if (res.ok) return res.json();
-        // TODO
-        return Promise.reject(new Error(res.statusText));
-      }),
-    [authorizedFetch]
+        body: JSON.stringify(message),
+      }).then((message) => {
+        dispatch({
+          type: "message-create-request-successful",
+          message,
+          dummyId,
+        });
+        return message;
+      });
+    },
+    [authorizedFetch, user]
   );
 
   const createChannel = React.useCallback(
     ({ name, kind, server }) =>
-      authorizedFetch(`${API_ENDPOINT}/channels`, {
+      authorizedFetch("/channels", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ name, kind, server }),
+      }).then((res) => {
+        // TODO
+        serverConnection.send("request-user-data");
+        return res;
       }),
     [authorizedFetch]
+  );
+
+  const onServerMessage = React.useCallback(
+    (name, data) => {
+      const handle = () => dispatch({ type: name, data });
+
+      switch (name) {
+        case "user-data":
+          handle();
+          break;
+        case "message-created":
+          // Ignore the signed in user’s messages, they are handled elsewhere
+          if (data.author === user.id) return;
+          handle();
+          break;
+        default: // Ignore
+      }
+    },
+    [dispatch, user]
   );
 
   React.useEffect(() => {
     if (!isSignedIn) return;
 
-    authorizedFetch(`${API_ENDPOINT}/users/me`)
-      .then((response) => {
-        if (response.ok) return response.json();
-
-        if (response.status === 401) {
-          clearAccessToken();
-          return;
-        }
-
-        // TODO
-        throw new Error(response.statusText);
-      })
-      .then((user) => {
-        setUser(user);
-      });
+    authorizedFetch("/users/me").then((user) => {
+      setUser(user);
+    });
   }, [isSignedIn]);
 
   return (
     <>
       {isNative && <TitleBar />}
+
       {isSignedIn ? (
-        user == null ? (
-          "Fetching user..."
-        ) : (
-          <GlobalStateContext.Provider
+        user == null ? null : (
+          <GlobalStateProvider
             value={{
               user,
               authorizedFetch,
               accessToken,
-              isNative: window.Native != null,
-              api: {
+              isNative,
+              actions: {
                 fetchMessages,
                 createServer,
                 createMessage,
                 createChannel,
               },
-              state,
-              stateSelectors,
+              state: selectors,
               dispatch,
+              onServerMessage,
             }}
           >
             <AuthenticatedApp />
-          </GlobalStateContext.Provider>
+          </GlobalStateProvider>
         )
       ) : (
-        <Container>
+        <GlobalStateProvider value={{ isNative }}>
           <SignInScreen
             onSignIn={(accessToken) => {
               setAccessToken(accessToken);
             }}
           />
-        </Container>
+        </GlobalStateProvider>
       )}
     </>
   );
 };
 
-const SignInScreen = ({ onSignIn }) => {
-  const [isPending, setPending] = React.useState(false);
-
-  const requestUserAccounts = async () => {
-    const userAddresses = await provider.enable();
-    // Login endpoint expects a checksum address
-    return userAddresses.map(ethersUtils.getAddress);
-  };
-
-  const signAddress = async (address) => {
-    const message = {
-      address,
-      signed_at: new Date().toISOString(),
-    };
-    const signature = await provider.request({
-      method: "eth_sign",
-      params: [address, JSON.stringify(message)],
-    });
-
-    return [signature, message];
-  };
-
-  const handleClickSignIn = async () => {
-    setPending(true);
-
-    const addresses = await requestUserAccounts();
-
-    const [signature, message] = await signAddress(addresses[0]);
-
-    const responseBody = await fetch(`${API_ENDPOINT}/auth/login`, {
-      method: "POST",
-      body: JSON.stringify({ message, signature }),
-      headers: {
-        "Content-Type": "application/json",
-      },
-    }).then((res) => res.json());
-
-    onSignIn(responseBody.access_token);
-  };
-
-  return (
-    <div>
-      {isPending ? (
-        "..."
-      ) : (
-        <Button onClick={handleClickSignIn}>Sign in with Frame wallet</Button>
-      )}
-    </div>
-  );
-};
-
-const useServerConnection = ({ debug = false } = {}) => {
-  const clientEventMap = {
-    "request-user-data": "client-connection-request",
-  };
-  const serverEventMap = {
-    CONNECTION_READY: "user-data",
-    MESSAGE_CREATE: "message-created",
-  };
-
-  const { accessToken, user } = React.useContext(GlobalStateContext);
-
-  const channelRef = React.useRef();
-  const listenersRef = React.useRef([]);
-
-  const send = React.useCallback((event, data = { no: "data" }) => {
-    const serverEvent = clientEventMap[event];
-    if (serverEvent == null) throw new Error(`Unknown event "${event}"`);
-
-    channelRef.current.trigger(serverEvent, data);
-  }, []);
-
-  const addListener = React.useCallback((fn) => {
-    listenersRef.current = [...listenersRef.current, fn];
-    return () => {
-      listenersRef.current.filter((fn_) => fn !== fn_);
-    };
-  }, []);
-
-  React.useEffect(() => {
-    Pusher.logToConsole = debug;
-
-    const pusher = new Pusher(PUSHER_KEY, {
-      cluster: "eu",
-      authEndpoint: `${API_ENDPOINT}/websockets/auth`,
-      auth: {
-        params: { provider: "pusher" },
-        headers: { Authorization: `Bearer ${accessToken}` },
-      },
-    });
-
-    const channel = pusher.subscribe(`private-${user.id}`);
-    channelRef.current = channel;
-
-    channel.bind("pusher:subscription_succeeded", () => {
-      channel.trigger("client-connection-request", { no: "data" });
-    });
-
-    const serverEvents = Object.keys(serverEventMap);
-
-    for (let event of serverEvents)
-      channel.bind(event, (data) => {
-        const clientEventName = serverEventMap[event];
-        listenersRef.current.forEach((fn) => fn(clientEventName, data));
-      });
-  }, [user.id, accessToken]);
-
-  return { send, addListener };
-};
-
 const AuthenticatedApp = () => {
-  const { user, api, dispatch, state, stateSelectors } =
-    React.useContext(GlobalStateContext);
+  const { user, actions, state, onServerMessage } = useGlobalState();
   const serverConnection = useServerConnection();
 
   const [selectedServerId, setSelectedServerId] = React.useState(null);
   const [selectedChannelId, setSelectedChannelId] = React.useState(null);
-
   const [ready, setReady] = React.useState(false);
-  const [pendingMessage, setPendingMessage] = React.useState("");
 
-  const selectedServer = state.servers.entriesById[selectedServerId];
+  const selectedServer = state.selectServer(selectedServerId);
   const serverChannels = selectedServer?.channels ?? [];
-  const serverMembersByUserId = state.serverMembers.entriesByUserId;
+  const serverMembersByUserId =
+    state.selectServerMembersByUserId(selectedServerId);
   const selectedChannel = selectedServer?.channels.find(
     (c) => c.id === selectedChannelId
   );
-  const channelMessages =
-    stateSelectors.selectChannelMessages(selectedChannelId);
+  const channelMessages = state.selectChannelMessages(selectedChannelId);
 
-  const formRef = React.useRef();
-
-  const submitMessage = () => {
-    const message = {
+  const submitMessage = (content) =>
+    actions.createMessage({
       server: selectedServerId,
       channel: selectedChannelId,
-      content: pendingMessage,
-    };
-    const dummyId = generateId();
-    dispatch({
-      type: "message-create-request-sent",
-      message: {
-        ...message,
-        id: dummyId,
-        created_at: new Date().toISOString(),
-        author: user.id,
-      },
+      content,
     });
-    const promise = api.createMessage(message).then((message) => {
-      dispatch({
-        type: "message-create-request-successful",
-        message,
-        dummyId,
-      });
-    });
-    setPendingMessage("");
-    return promise;
-  };
 
   React.useEffect(() => {
     if (selectedChannelId == null) return;
-    api.fetchMessages({ channelId: selectedChannelId });
-  }, [api.fetchMessages, selectedChannelId]);
+    actions.fetchMessages({ channelId: selectedChannelId });
+  }, [actions.fetchMessages, selectedChannelId]);
 
   React.useEffect(() => {
     const handler = (name, data) => {
+      onServerMessage(name, data);
+
       switch (name) {
         case "user-data":
-          dispatch({ ...data, type: "user-data" });
-
           // Select server and channel
           setSelectedServerId((id) => {
             const selectedServer = data.servers.find((s) => s.id === id);
@@ -508,20 +258,13 @@ const AuthenticatedApp = () => {
               "Name your server",
               `${user.display_name}’a server`
             );
-            api.createServer({ name: serverName }).then((server) => {
-              serverConnection.send("request-user-data");
+            actions.createServer({ name: serverName }).then((server) => {
               setSelectedServerId(server.id);
             });
           }
 
           break;
-        case "message-created":
-          // Ignore your own messages
-          if (data.author === user.id) return;
-          dispatch({ type: "message-created", message: data });
-          break;
-        default:
-          throw new Error(`Unexpected message "${name}"`);
+        default: // Ignore
       }
     };
 
@@ -574,16 +317,11 @@ const AuthenticatedApp = () => {
               aria-label="Create channel"
               onClick={() => {
                 const name = prompt("Create channel", "My channel");
-                api
-                  .createChannel({
-                    name,
-                    kind: "server",
-                    server: selectedServerId,
-                  })
-                  .then(() => {
-                    // TODO
-                    serverConnection.send("request-user-data");
-                  });
+                actions.createChannel({
+                  name,
+                  kind: "server",
+                  server: selectedServerId,
+                });
               }}
             >
               <Plus width="1.6rem" />
@@ -595,13 +333,11 @@ const AuthenticatedApp = () => {
                 onClick={() => {
                   setSelectedChannelId(c.id);
                 }}
-                style={{
-                  border: 0,
-                  fontSize: "1.6rem",
-                }}
                 css={css`
                   display: block;
                   width: 100%;
+                  border: 0;
+                  font-size: 1.6rem;
                   text-align: left;
                   background: transparent;
                   border-radius: 0.5rem;
@@ -626,22 +362,20 @@ const AuthenticatedApp = () => {
           ))}
         </div>
         <div
-          style={{
-            flex: 1,
-            background: "rgb(255 255 255 / 3%)",
-            display: "flex",
-            flexDirection: "column",
-            justifyContent: "flex-end",
-          }}
+          css={css`
+            flex: 1;
+            background: rgb(255 255 255 / 3%);
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-end;
+          `}
         >
           <div
-            style={{
-              overflow: "auto",
-              fontSize: "1.3rem",
-              fontWeight: "300",
-              padding: "1.6rem 0 0",
-            }}
             css={css`
+              overflow: auto;
+              font-size: 1.3rem;
+              font-weight: 300;
+              padding: 1.6rem 0 0;
               overscroll-behavior-y: contain;
               scroll-snap-type: y proximity;
             `}
@@ -651,58 +385,20 @@ const AuthenticatedApp = () => {
                 (m1, m2) => new Date(m1.created_at) - new Date(m2.created_at)
               )
               .map((m) => (
-                <div
+                <MessageItem
                   key={m.id}
-                  style={{ lineHeight: 1.6 }}
-                  css={css`
-                    padding: 0.7rem 1.6rem 0.5rem;
-                    &:hover {
-                      background: rgb(0 0 0 / 15%);
-                    }
-                  `}
-                >
-                  <div
-                    style={{
-                      display: "grid",
-                      gridTemplateColumns: "repeat(2, minmax(0,auto)",
-                      justifyContent: "flex-start",
-                      alignItems: "flex-end",
-                      gridGap: "1.2rem",
-                      margin: "0 0 0.4rem",
-                    }}
-                  >
-                    <div
-                      style={{
-                        lineHeight: 1.2,
-                        color: "#E588F8",
-                        fontWeight: "500",
-                      }}
-                    >
-                      {serverMembersByUserId[m.author].display_name}
-                    </div>
-                    <div
-                      css={css`
-                        color: rgb(255 255 255 / 20%);
-                        font-size: 1rem;
-                      `}
-                    >
-                      <FormattedDate
-                        value={new Date(m.created_at)}
-                        hour="numeric"
-                        minute="numeric"
-                        day="numeric"
-                        month="short"
-                      />
-                    </div>
-                  </div>
-                  <div
-                    css={css`
-                      white-space: pre-wrap;
-                    `}
-                  >
-                    {m.content}
-                  </div>
-                </div>
+                  content={m.content}
+                  author={serverMembersByUserId[m.author].display_name}
+                  timestamp={
+                    <FormattedDate
+                      value={new Date(m.created_at)}
+                      hour="numeric"
+                      minute="numeric"
+                      day="numeric"
+                      month="short"
+                    />
+                  }
+                />
               ))}
             <div
               css={css`
@@ -712,52 +408,14 @@ const AuthenticatedApp = () => {
             />
           </div>
           {selectedChannel != null && (
-            <form
-              ref={formRef}
-              onSubmit={(e) => {
-                e.preventDefault();
-                submitMessage();
-              }}
-              css={css`
-                padding: 0 1.6rem 1.6rem;
-              `}
-            >
-              <textarea
-                rows={1}
-                value={pendingMessage}
-                onChange={(e) => setPendingMessage(e.target.value)}
-                style={{
-                  font: "inherit",
-                  fontSize: "1.3rem",
-                  padding: "1.4rem 1.6rem",
-                  background: "rgb(255 255 255 / 4%)",
-                  color: "white",
-                  border: 0,
-                  borderRadius: "0.5rem",
-                  outline: "none",
-                  display: "block",
-                  width: "100%",
-                  resize: "none",
-                }}
-                placeholder={
-                  selectedChannel == null
-                    ? "..."
-                    : `Message #${selectedChannel.name}`
-                }
-                onKeyPress={(e) => {
-                  if (!e.shiftKey && e.key === "Enter") {
-                    e.preventDefault();
-                    if (pendingMessage.trim().length === 0) return;
-                    submitMessage();
-                  }
-                }}
-              />
-              <input
-                type="submit"
-                hidden
-                disabled={pendingMessage.trim().length === 0}
-              />
-            </form>
+            <NewMessageInput
+              submit={submitMessage}
+              placeholder={
+                selectedChannel == null
+                  ? "..."
+                  : `Message #${selectedChannel.name}`
+              }
+            />
           )}
         </div>
       </div>
@@ -765,19 +423,170 @@ const AuthenticatedApp = () => {
   );
 };
 
-const Container = ({ children }) => (
+const MessageItem = ({ author, content, timestamp }) => (
   <div
-    style={{
-      height: `calc(100vh - ${TITLE_BAR_HEIGHT})`,
-      display: "flex",
-      alignItems: "center",
-      justifyContent: "center",
-      color: "white",
-    }}
+    css={css`
+      line-height: 1.6;
+      padding: 0.7rem 1.6rem 0.5rem;
+      &:hover {
+        background: rgb(0 0 0 / 15%);
+      }
+    `}
   >
-    {children}
+    <div
+      css={css`
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, auto));
+        justify-content: flex-start;
+        align-items: flex-end;
+        grid-gap: 1.2rem;
+        margin: 0 0 0.4rem;
+      `}
+    >
+      <div
+        css={css`
+          line-height: 1.2;
+          color: #e588f8;
+          font-weight: 500;
+        `}
+      >
+        {author}
+      </div>
+      <div
+        css={css`
+          color: rgb(255 255 255 / 20%);
+          font-size: 1rem;
+        `}
+      >
+        {timestamp}
+      </div>
+    </div>
+    <div
+      css={css`
+        white-space: pre-wrap;
+      `}
+    >
+      {content}
+    </div>
   </div>
 );
+
+const NewMessageInput = ({ submit: submit_, placeholder }) => {
+  const formRef = React.useRef();
+  const [pendingMessage, setPendingMessage] = React.useState("");
+
+  const submit = async () => {
+    await submit_(pendingMessage);
+    setPendingMessage("");
+  };
+
+  return (
+    <form
+      ref={formRef}
+      onSubmit={(e) => {
+        e.preventDefault();
+        submit();
+      }}
+      css={css`
+        padding: 0 1.6rem 1.6rem;
+      `}
+    >
+      <textarea
+        rows={1}
+        value={pendingMessage}
+        onChange={(e) => setPendingMessage(e.target.value)}
+        style={{
+          font: "inherit",
+          fontSize: "1.3rem",
+          padding: "1.4rem 1.6rem",
+          background: "rgb(255 255 255 / 4%)",
+          color: "white",
+          border: 0,
+          borderRadius: "0.5rem",
+          outline: "none",
+          display: "block",
+          width: "100%",
+          resize: "none",
+        }}
+        placeholder={placeholder}
+        onKeyPress={(e) => {
+          if (!e.shiftKey && e.key === "Enter") {
+            e.preventDefault();
+            if (pendingMessage.trim().length === 0) return;
+            submit();
+          }
+        }}
+      />
+      <input
+        type="submit"
+        hidden
+        disabled={pendingMessage.trim().length === 0}
+      />
+    </form>
+  );
+};
+
+const SignInScreen = ({ onSignIn }) => {
+  const { isNative } = useGlobalState();
+  const [isPending, setPending] = React.useState(false);
+
+  const requestUserAccounts = async () => {
+    const userAddresses = await provider.enable();
+    // Login endpoint expects a checksum address
+    return userAddresses.map(ethersUtils.getAddress);
+  };
+
+  const signAddress = async (address) => {
+    const message = {
+      address,
+      signed_at: new Date().toISOString(),
+    };
+    const signature = await provider.request({
+      method: "eth_sign",
+      params: [address, JSON.stringify(message)],
+    });
+
+    return [signature, message];
+  };
+
+  const handleClickSignIn = async () => {
+    setPending(true);
+
+    const addresses = await requestUserAccounts();
+
+    const [signature, message] = await signAddress(addresses[0]);
+
+    const responseBody = await fetch(`${API_ENDPOINT}/auth/login`, {
+      method: "POST",
+      body: JSON.stringify({ message, signature }),
+      headers: {
+        "Content-Type": "application/json",
+      },
+    }).then((res) => res.json());
+
+    onSignIn(responseBody.access_token);
+  };
+
+  return (
+    <div
+      css={css`
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+      `}
+      style={{
+        height: isNative ? `calc(100vh - ${TITLE_BAR_HEIGHT})` : "100vh",
+      }}
+    >
+      {isPending ? (
+        "..."
+      ) : (
+        <Button onClick={handleClickSignIn}>Sign in with Frame wallet</Button>
+      )}
+    </div>
+  );
+};
 
 const Button = ({ css: cssProp, ...props }) => (
   <button
