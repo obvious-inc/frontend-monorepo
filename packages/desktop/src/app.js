@@ -5,19 +5,177 @@ import createProvider from "eth-provider";
 import { utils as ethersUtils } from "ethers";
 import { API_ENDPOINT } from "./constants/api";
 import { TITLE_BAR_HEIGHT } from "./constants/ui";
+import combineReducers from "./utils/combine-reducers";
 import useAccessToken from "./hooks/access-token";
 import TitleBar from "./components/title-bar";
 
+let prevId = 0;
+const generateId = () => {
+  const id = prevId++;
+  prevId = id;
+  return id;
+};
+
 const PUSHER_KEY = process.env.PUSHER_KEY;
+
+const provider = createProvider("frame");
 
 const GlobalStateContext = React.createContext({});
 
-const provider = createProvider("frame");
+const initialState = {
+  messages: {
+    entriesById: {},
+    entryIdsByChannelId: [],
+  },
+  servers: { entriesById: {} },
+  serverMembers: {
+    entriesById: {},
+    entryIdsByServerId: [],
+  },
+};
+
+const omitKey = (key, obj) =>
+  Object.fromEntries(Object.entries(obj).filter(([key_]) => key_ !== key));
+
+const indexBy = (computeKey, list) =>
+  list.reduce((acc, item) => {
+    acc[computeKey(item, list)] = item;
+    return acc;
+  }, {});
+
+const mapValues = (mapper, obj) =>
+  Object.fromEntries(
+    Object.entries(obj).map(([key, value]) => [key, mapper(value, key, obj)])
+  );
+
+const groupBy = (computeKey, list) =>
+  list.reduce((acc, item) => {
+    const key = computeKey(item, list);
+    const group = acc[key] ?? [];
+    acc[key] = [...group, item];
+    return acc;
+  }, {});
+
+const messages = (state, action) => {
+  switch (action.type) {
+    case "messages-fetched":
+      return {
+        ...state,
+        entriesById: indexBy((m) => m.id, action.messages),
+        entryIdsByChannelId: mapValues(
+          (ms) => ms.map((m) => m.id),
+          groupBy((m) => m.channel, action.messages)
+        ),
+      };
+
+    case "message-created": {
+      const channelId = action.message.channel;
+      const channelMessageIds = state.entryIdsByChannelId[channelId] ?? [];
+      return {
+        ...state,
+        entriesById: {
+          ...state.entriesById,
+          [action.message.id]: action.message,
+        },
+        entryIdsByChannelId: {
+          ...state.entryIdsByChannelId,
+          [channelId]: [...channelMessageIds, action.message.id],
+        },
+      };
+    }
+
+    case "message-create-request-sent": {
+      const channelId = action.message.channel;
+      const channelMessageIds = state.entryIdsByChannelId[channelId] ?? [];
+      return {
+        ...state,
+        entriesById: {
+          ...state.entriesById,
+          [action.message.id]: action.message,
+        },
+        entryIdsByChannelId: {
+          ...state.entryIdsByChannelId,
+          [channelId]: [...channelMessageIds, action.message.id],
+        },
+      };
+    }
+
+    case "message-create-request-successful": {
+      const channelId = action.message.channel;
+      const channelMessageIds = state.entryIdsByChannelId[channelId] ?? [];
+      return {
+        ...state,
+        entriesById: {
+          ...omitKey(action.dummyId, state.entriesById),
+          [action.message.id]: action.message,
+        },
+        entryIdsByChannelId: {
+          ...state.entryIdsByChannelId,
+          [channelId]: [
+            ...channelMessageIds.filter((id) => id !== action.dummyId),
+            action.message.id,
+          ],
+        },
+      };
+    }
+
+    default:
+      return state;
+  }
+};
+
+const selectChannelMessages = (state) => (channelId) =>
+  state.messages.entryIdsByChannelId[channelId]?.map(
+    (id) => state.messages.entriesById[id]
+  ) ?? [];
+
+const servers = (state, action) => {
+  switch (action.type) {
+    case "user-data":
+      return { ...state, entriesById: indexBy((s) => s.id, action.servers) };
+    default:
+      return state;
+  }
+};
+
+const serverMembers = (state, action) => {
+  switch (action.type) {
+    case "user-data":
+      const members = action.servers.flatMap((s) => s.members);
+      const membersById = indexBy((m) => m.id, members);
+      const membersByUserId = indexBy((m) => m.user, members);
+      const memberIdsByServerId = mapValues(
+        (members) => members.map((m) => m.id),
+        groupBy((m) => m.server, members)
+      );
+
+      return {
+        entries: members,
+        entriesById: membersById,
+        entriesByUserId: membersByUserId,
+        entryIdsByServerId: memberIdsByServerId,
+      };
+    default:
+      return state;
+  }
+};
+
+const applyStateToSelectors = (selectors, state) =>
+  mapValues((selector) => selector(state), selectors);
+
+const globalReducer = combineReducers({ servers, serverMembers, messages });
 
 const App = () => {
   const [accessToken, { set: setAccessToken, clear: clearAccessToken }] =
     useAccessToken();
   const [user, setUser] = React.useState(null);
+
+  const [state, dispatch] = React.useReducer(globalReducer, initialState);
+
+  const stateSelectors = applyStateToSelectors(
+    { selectChannelMessages },
+    state
+  );
 
   const isSignedIn = accessToken != null;
   const isNative = window.Native != null;
@@ -35,13 +193,15 @@ const App = () => {
 
   const fetchMessages = React.useCallback(
     ({ channelId }) =>
-      authorizedFetch(`${API_ENDPOINT}/channels/${channelId}/messages`).then(
-        (res) => {
+      authorizedFetch(`${API_ENDPOINT}/channels/${channelId}/messages`)
+        .then((res) => {
           if (res.ok) return res.json();
           // TODO
           return Promise.reject(new Error(res.statusText));
-        }
-      ),
+        })
+        .then((messages) => {
+          dispatch({ type: "messages-fetched", messages });
+        }),
     [authorizedFetch]
   );
 
@@ -65,6 +225,10 @@ const App = () => {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ server, channel, content }),
+      }).then((res) => {
+        if (res.ok) return res.json();
+        // TODO
+        return Promise.reject(new Error(res.statusText));
       }),
     [authorizedFetch]
   );
@@ -118,6 +282,9 @@ const App = () => {
                 createMessage,
                 createChannel,
               },
+              state,
+              stateSelectors,
+              dispatch,
             }}
           >
             <AuthenticatedApp />
@@ -239,7 +406,6 @@ const useServerConnection = ({ debug = false } = {}) => {
     for (let event of serverEvents)
       channel.bind(event, (data) => {
         const clientEventName = serverEventMap[event];
-        console.log("pusher", event, clientEventName);
         listenersRef.current.forEach((fn) => fn(clientEventName, data));
       });
   }, [user.id, accessToken]);
@@ -248,12 +414,9 @@ const useServerConnection = ({ debug = false } = {}) => {
 };
 
 const AuthenticatedApp = () => {
-  const { user, api } = React.useContext(GlobalStateContext);
-  const serverConnection = useServerConnection({ debug: true });
-
-  const [servers, setServers] = React.useState([]);
-  const [messagesByChannel, setMessagesByChannel] = React.useState({});
-  const [membersByServer, setMembersByServer] = React.useState({});
+  const { user, api, dispatch, state, stateSelectors } =
+    React.useContext(GlobalStateContext);
+  const serverConnection = useServerConnection();
 
   const [selectedServerId, setSelectedServerId] = React.useState(null);
   const [selectedChannelId, setSelectedChannelId] = React.useState(null);
@@ -261,21 +424,39 @@ const AuthenticatedApp = () => {
   const [ready, setReady] = React.useState(false);
   const [pendingMessage, setPendingMessage] = React.useState("");
 
-  const selectedServer = servers.find((s) => s.id === selectedServerId);
+  const selectedServer = state.servers.entriesById[selectedServerId];
   const serverChannels = selectedServer?.channels ?? [];
-  const serverMembersByUserId = membersByServer[selectedServerId] ?? {};
-  const selectedChannel = serverChannels.find(
+  const serverMembersByUserId = state.serverMembers.entriesByUserId;
+  const selectedChannel = selectedServer?.channels.find(
     (c) => c.id === selectedChannelId
   );
-  const channelMessages = messagesByChannel[selectedChannelId] ?? [];
+  const channelMessages =
+    stateSelectors.selectChannelMessages(selectedChannelId);
 
   const formRef = React.useRef();
 
   const submitMessage = () => {
-    const promise = api.createMessage({
+    const message = {
       server: selectedServerId,
       channel: selectedChannelId,
       content: pendingMessage,
+    };
+    const dummyId = generateId();
+    dispatch({
+      type: "message-create-request-sent",
+      message: {
+        ...message,
+        id: dummyId,
+        created_at: new Date().toISOString(),
+        author: user.id,
+      },
+    });
+    const promise = api.createMessage(message).then((message) => {
+      dispatch({
+        type: "message-create-request-successful",
+        message,
+        dummyId,
+      });
     });
     setPendingMessage("");
     return promise;
@@ -283,29 +464,14 @@ const AuthenticatedApp = () => {
 
   React.useEffect(() => {
     if (selectedChannelId == null) return;
-
-    api.fetchMessages({ channelId: selectedChannelId }).then((messages) => {
-      setMessagesByChannel((ms) => ({
-        ...ms,
-        [selectedChannelId]: messages,
-      }));
-    });
+    api.fetchMessages({ channelId: selectedChannelId });
   }, [api.fetchMessages, selectedChannelId]);
 
   React.useEffect(() => {
     const handler = (name, data) => {
       switch (name) {
         case "user-data":
-          setServers(data.servers);
-
-          // Index members
-          data.servers.forEach((s) => {
-            const membersByUserId = s.members.reduce(
-              (ms, m) => ({ ...ms, [m.user]: m }),
-              {}
-            );
-            setMembersByServer((ms) => ({ ...ms, [s.id]: membersByUserId }));
-          });
+          dispatch({ ...data, type: "user-data" });
 
           // Select server and channel
           setSelectedServerId((id) => {
@@ -350,10 +516,9 @@ const AuthenticatedApp = () => {
 
           break;
         case "message-created":
-          setMessagesByChannel((ms) => ({
-            ...ms,
-            [data.channel]: [...(ms[data.channel] ?? []), data],
-          }));
+          // Ignore your own messages
+          if (data.author === user.id) return;
+          dispatch({ type: "message-created", message: data });
           break;
         default:
           throw new Error(`Unexpected message "${name}"`);
@@ -424,7 +589,7 @@ const AuthenticatedApp = () => {
               <Plus width="1.6rem" />
             </button>
           </div>
-          {selectedServer?.channels.map((c) => (
+          {serverChannels.map((c) => (
             <div key={c.id}>
               <button
                 onClick={() => {
