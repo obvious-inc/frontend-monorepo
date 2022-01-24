@@ -33,6 +33,52 @@ const App = () => {
     [accessToken]
   );
 
+  const fetchMessages = React.useCallback(
+    ({ channelId }) =>
+      authorizedFetch(`${API_ENDPOINT}/channels/${channelId}/messages`).then(
+        (res) => {
+          if (res.ok) return res.json();
+          // TODO
+          return Promise.reject(new Error(res.statusText));
+        }
+      ),
+    [authorizedFetch]
+  );
+
+  const createServer = React.useCallback(
+    ({ name }) =>
+      authorizedFetch(`${API_ENDPOINT}/servers`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name }),
+      }).then((res) => {
+        if (res.ok) return res.json();
+        // TODO
+        return Promise.reject(new Error(res.statusText));
+      }),
+    [authorizedFetch]
+  );
+
+  const createMessage = React.useCallback(
+    ({ server, channel, content }) =>
+      authorizedFetch(`${API_ENDPOINT}/messages`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ server, channel, content }),
+      }),
+    [authorizedFetch]
+  );
+
+  const createChannel = React.useCallback(
+    ({ name, kind, server }) =>
+      authorizedFetch(`${API_ENDPOINT}/channels`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name, kind, server }),
+      }),
+    [authorizedFetch]
+  );
+
   React.useEffect(() => {
     if (!isSignedIn) return;
 
@@ -66,6 +112,12 @@ const App = () => {
               authorizedFetch,
               accessToken,
               isNative: window.Native != null,
+              api: {
+                fetchMessages,
+                createServer,
+                createMessage,
+                createChannel,
+              },
             }}
           >
             <AuthenticatedApp />
@@ -73,7 +125,7 @@ const App = () => {
         )
       ) : (
         <Container>
-          <LoginScreen
+          <SignInScreen
             onSignIn={(accessToken) => {
               setAccessToken(accessToken);
             }}
@@ -84,7 +136,7 @@ const App = () => {
   );
 };
 
-const LoginScreen = ({ onSignIn }) => {
+const SignInScreen = ({ onSignIn }) => {
   const [isPending, setPending] = React.useState(false);
 
   const requestUserAccounts = async () => {
@@ -135,14 +187,25 @@ const LoginScreen = ({ onSignIn }) => {
   );
 };
 
-const useConnection = () => {
+const useServerConnection = ({ debug = false } = {}) => {
+  const clientEventMap = {
+    "request-user-data": "client-connection-request",
+  };
+  const serverEventMap = {
+    CONNECTION_READY: "user-data",
+    MESSAGE_CREATE: "message-created",
+  };
+
   const { accessToken, user } = React.useContext(GlobalStateContext);
 
   const channelRef = React.useRef();
   const listenersRef = React.useRef([]);
 
   const send = React.useCallback((event, data = { no: "data" }) => {
-    channelRef.current.trigger(event, data);
+    const serverEvent = clientEventMap[event];
+    if (serverEvent == null) throw new Error(`Unknown event "${event}"`);
+
+    channelRef.current.trigger(serverEvent, data);
   }, []);
 
   const addListener = React.useCallback((fn) => {
@@ -153,7 +216,7 @@ const useConnection = () => {
   }, []);
 
   React.useEffect(() => {
-    // Pusher.logToConsole = true;
+    Pusher.logToConsole = debug;
 
     const pusher = new Pusher(PUSHER_KEY, {
       cluster: "eu",
@@ -165,27 +228,28 @@ const useConnection = () => {
     });
 
     const channel = pusher.subscribe(`private-${user.id}`);
+    channelRef.current = channel;
 
     channel.bind("pusher:subscription_succeeded", () => {
       channel.trigger("client-connection-request", { no: "data" });
     });
 
-    const events = ["CONNECTION_READY", "MESSAGE_CREATE"];
+    const serverEvents = Object.keys(serverEventMap);
 
-    for (let event of events)
+    for (let event of serverEvents)
       channel.bind(event, (data) => {
-        listenersRef.current.forEach((fn) => fn(event, data));
+        const clientEventName = serverEventMap[event];
+        console.log("pusher", event, clientEventName);
+        listenersRef.current.forEach((fn) => fn(clientEventName, data));
       });
-
-    channelRef.current = channel;
   }, [user.id, accessToken]);
 
   return { send, addListener };
 };
 
 const AuthenticatedApp = () => {
-  const { authorizedFetch, user } = React.useContext(GlobalStateContext);
-  const connection = useConnection();
+  const { user, api } = React.useContext(GlobalStateContext);
+  const serverConnection = useServerConnection({ debug: true });
 
   const [servers, setServers] = React.useState([]);
   const [messagesByChannel, setMessagesByChannel] = React.useState({});
@@ -198,90 +262,41 @@ const AuthenticatedApp = () => {
   const [pendingMessage, setPendingMessage] = React.useState("");
 
   const selectedServer = servers.find((s) => s.id === selectedServerId);
+  const serverChannels = selectedServer?.channels ?? [];
   const serverMembersByUserId = membersByServer[selectedServerId] ?? {};
+  const selectedChannel = serverChannels.find(
+    (c) => c.id === selectedChannelId
+  );
   const channelMessages = messagesByChannel[selectedChannelId] ?? [];
 
   const formRef = React.useRef();
 
-  const fetchMessages = React.useCallback(
-    (channelId) =>
-      authorizedFetch(`${API_ENDPOINT}/channels/${channelId}/messages`).then(
-        (res) => {
-          if (res.ok) return res.json();
-          // TODO
-          return Promise.reject(new Error(res.statusText));
-        }
-      ),
-    [authorizedFetch]
-  );
-
-  const createServer = React.useCallback(
-    (name) =>
-      authorizedFetch(`${API_ENDPOINT}/servers`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name }),
-      }).then((res) => {
-        if (res.ok) return res.json();
-        // TODO
-        return Promise.reject(new Error(res.statusText));
-      }),
-    [authorizedFetch]
-  );
+  const submitMessage = () => {
+    const promise = api.createMessage({
+      server: selectedServerId,
+      channel: selectedChannelId,
+      content: pendingMessage,
+    });
+    setPendingMessage("");
+    return promise;
+  };
 
   React.useEffect(() => {
     if (selectedChannelId == null) return;
 
-    fetchMessages(selectedChannelId).then((messages) => {
+    api.fetchMessages({ channelId: selectedChannelId }).then((messages) => {
       setMessagesByChannel((ms) => ({
         ...ms,
         [selectedChannelId]: messages,
       }));
     });
-  }, [fetchMessages, selectedChannelId]);
+  }, [api.fetchMessages, selectedChannelId]);
 
-  const handleServers = React.useCallback(
-    (servers) => {
-      setServers(servers);
-
-      const hasServers = servers.length !== 0;
-
-      if (!hasServers) {
-        const name = promt("Name your server", `${user.display_name}’a server`);
-        createServer({ name }).then((server) => {
-          setServers((servers) => [...servers, server]);
-          setSelectedServerId(server.id);
-        });
-        return;
-      }
-
-      setSelectedServerId((id) => {
-        const newId = id != null || !hasServers ? id : servers[0].id;
-
-        setSelectedChannelId((id) => {
-          const selectedServer = servers.find((s) => s.id === newId);
-          const firstChannelId = selectedServer.channels[0]?.id ?? null;
-          if (id == null) return firstChannelId;
-
-          const channelExists = selectedServer.channels.some(
-            (c) => c.id === id
-          );
-
-          return channelExists ? id : firstChannelId;
-        });
-
-        return newId;
-      });
-    },
-    [createServer]
-  );
-
-  const onMessage = React.useCallback(
-    (name, data) => {
+  React.useEffect(() => {
+    const handler = (name, data) => {
       switch (name) {
-        case "CONNECTION_READY":
-          console.log(data);
-          handleServers(data.servers);
+        case "user-data":
+          setServers(data.servers);
 
           // Index members
           data.servers.forEach((s) => {
@@ -292,9 +307,49 @@ const AuthenticatedApp = () => {
             setMembersByServer((ms) => ({ ...ms, [s.id]: membersByUserId }));
           });
 
+          // Select server and channel
+          setSelectedServerId((id) => {
+            const selectedServer = data.servers.find((s) => s.id === id);
+            const newId =
+              (selectedServer != null ? id : data.servers[0]?.id) ?? null;
+
+            setSelectedChannelId((id) => {
+              const newSelectedServer = data.servers.find(
+                (s) => s.id === newId
+              );
+
+              if (newSelectedServer == null) return null;
+
+              const selectedChannelExists = newSelectedServer.channels.some(
+                (c) => c.id === id
+              );
+
+              return (
+                (selectedChannelExists
+                  ? id
+                  : newSelectedServer.channels[0]?.id) ?? null
+              );
+            });
+
+            return newId;
+          });
+
           setReady(true);
+
+          // Temporary ofc
+          if (data.servers.length === 0) {
+            const serverName = prompt(
+              "Name your server",
+              `${user.display_name}’a server`
+            );
+            api.createServer({ name: serverName }).then((server) => {
+              serverConnection.send("request-user-data");
+              setSelectedServerId(server.id);
+            });
+          }
+
           break;
-        case "MESSAGE_CREATE":
+        case "message-created":
           setMessagesByChannel((ms) => ({
             ...ms,
             [data.channel]: [...(ms[data.channel] ?? []), data],
@@ -303,31 +358,15 @@ const AuthenticatedApp = () => {
         default:
           throw new Error(`Unexpected message "${name}"`);
       }
-    },
-    [handleServers]
-  );
+    };
 
-  React.useEffect(() => {
-    const removeListener = connection.addListener(onMessage);
+    const removeListener = serverConnection.addListener(handler);
     return () => {
       removeListener();
     };
-  }, [connection.addListener, onMessage]);
+  }, [serverConnection.addListener]);
 
-  const postMessage = () => {
-    authorizedFetch(`${API_ENDPOINT}/messages`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        server: selectedServerId,
-        channel: selectedChannelId,
-        content: pendingMessage,
-      }),
-    });
-    setPendingMessage("");
-  };
-
-  if (!ready) return null;
+  if (!ready || selectedServer == null) return null;
 
   return (
     <div style={{ background: "rgb(255 255 255 / 5%)" }}>
@@ -345,10 +384,45 @@ const AuthenticatedApp = () => {
               font-weight: 600;
               color: rgb(255 255 255 / 40%);
               padding-left: 1rem;
+              padding-right: 0.3rem;
               margin-bottom: 0.6rem;
+              display: grid;
+              align-items: center;
+              grid-template-columns: minmax(0, 1fr) auto;
+              grid-gap: 1rem;
+
+              button {
+                padding: 0.2rem;
+                background: none;
+                border: 0;
+                color: inherit;
+                cursor: pointer;
+
+                &:hover {
+                  color: white;
+                }
+              }
             `}
           >
-            Channels
+            <div>Channels</div>
+            <button
+              aria-label="Create channel"
+              onClick={() => {
+                const name = prompt("Create channel", "My channel");
+                api
+                  .createChannel({
+                    name,
+                    kind: "server",
+                    server: selectedServerId,
+                  })
+                  .then(() => {
+                    // TODO
+                    serverConnection.send("request-user-data");
+                  });
+              }}
+            >
+              <Plus width="1.6rem" />
+            </button>
           </div>
           {selectedServer?.channels.map((c) => (
             <div key={c.id}>
@@ -385,22 +459,6 @@ const AuthenticatedApp = () => {
               </button>
             </div>
           ))}
-          {/* <button */}
-          {/*   onClick={() => { */}
-          {/*     authorizedFetch(`${API_ENDPOINT}/channels`, { */}
-          {/*       method: "POST", */}
-          {/*       headers: { "Content-Type": "application/json" }, */}
-          {/*       body: JSON.stringify({ */}
-          {/*         name: "bar", */}
-          {/*         kind: "server", */}
-          {/*         server: selectedServerId, */}
-          {/*       }), */}
-          {/*     }); */}
-          {/*   }} */}
-          {/*   style={{ margin: "2rem 0 0" }} */}
-          {/* > */}
-          {/*   Create channel */}
-          {/* </button> */}
         </div>
         <div
           style={{
@@ -408,11 +466,11 @@ const AuthenticatedApp = () => {
             background: "rgb(255 255 255 / 3%)",
             display: "flex",
             flexDirection: "column",
+            justifyContent: "flex-end",
           }}
         >
           <div
             style={{
-              flex: 1,
               overflow: "auto",
               fontSize: "1.3rem",
               fontWeight: "300",
@@ -488,50 +546,54 @@ const AuthenticatedApp = () => {
               `}
             />
           </div>
-          <form
-            ref={formRef}
-            onSubmit={(e) => {
-              e.preventDefault();
-              postMessage();
-            }}
-            css={css`
-              padding: 0 1.6rem 1.6rem;
-            `}
-          >
-            <textarea
-              rows={1}
-              value={pendingMessage}
-              onChange={(e) => setPendingMessage(e.target.value)}
-              style={{
-                font: "inherit",
-                fontSize: "1.3rem",
-                padding: "1.4rem 1.6rem",
-                background: "rgb(255 255 255 / 4%)",
-                color: "white",
-                border: 0,
-                borderRadius: "0.5rem",
-                outline: "none",
-                display: "block",
-                width: "100%",
-                resize: "none",
+          {selectedChannel != null && (
+            <form
+              ref={formRef}
+              onSubmit={(e) => {
+                e.preventDefault();
+                submitMessage();
               }}
-              placeholder={`Message #${
-                selectedServer.channels.find((c) => c.id === selectedChannelId)
-                  .name
-              }`}
-              onKeyPress={(e) => {
-                if (!e.shiftKey && e.key === "Enter") {
-                  e.preventDefault();
-                  postMessage();
+              css={css`
+                padding: 0 1.6rem 1.6rem;
+              `}
+            >
+              <textarea
+                rows={1}
+                value={pendingMessage}
+                onChange={(e) => setPendingMessage(e.target.value)}
+                style={{
+                  font: "inherit",
+                  fontSize: "1.3rem",
+                  padding: "1.4rem 1.6rem",
+                  background: "rgb(255 255 255 / 4%)",
+                  color: "white",
+                  border: 0,
+                  borderRadius: "0.5rem",
+                  outline: "none",
+                  display: "block",
+                  width: "100%",
+                  resize: "none",
+                }}
+                placeholder={
+                  selectedChannel == null
+                    ? "..."
+                    : `Message #${selectedChannel.name}`
                 }
-              }}
-            />
-            <input
-              type="submit"
-              hidden
-              disabled={pendingMessage.trim().length === 0}
-            />
-          </form>
+                onKeyPress={(e) => {
+                  if (!e.shiftKey && e.key === "Enter") {
+                    e.preventDefault();
+                    if (pendingMessage.trim().length === 0) return;
+                    submitMessage();
+                  }
+                }}
+              />
+              <input
+                type="submit"
+                hidden
+                disabled={pendingMessage.trim().length === 0}
+              />
+            </form>
+          )}
         </div>
       </div>
     </div>
@@ -552,23 +614,39 @@ const Container = ({ children }) => (
   </div>
 );
 
-const Button = ({ style, ...props }) => (
+const Button = ({ css: cssProp, ...props }) => (
   <button
-    style={{
-      background: "#E588F8",
-      border: 0,
-      padding: "1.2rem 2.2rem",
-      fontSize: "1.5rem",
-      borderRadius: "0.3rem",
-      cursor: "pointer",
-      ...style,
-    }}
+    css={css`
+      background: #e588f8;
+      border: 0;
+      padding: 1.2rem 2.2rem;
+      font-size: 1.5rem;
+      border-radius: 0.3rem;
+      cursor: pointer;
+      ${cssProp}
+    `}
     {...props}
   />
 );
 
+const Plus = ({ width = "auto", height = "auto" }) => (
+  <svg
+    aria-hidden="true"
+    width="18"
+    height="18"
+    viewBox="0 0 18 18"
+    style={{ display: "block", width, height }}
+  >
+    <polygon
+      fillRule="nonzero"
+      fill="currentColor"
+      points="15 10 10 10 10 15 8 15 8 10 3 10 3 8 8 8 8 3 10 3 10 8 15 8"
+    />
+  </svg>
+);
+
 export default () => (
-  <IntlProvider>
+  <IntlProvider locale="en">
     <App />
   </IntlProvider>
 );
