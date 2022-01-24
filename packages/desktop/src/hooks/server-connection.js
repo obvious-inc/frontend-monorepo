@@ -11,12 +11,12 @@ const serverEventMap = {
 };
 
 const useServerConnection = ({
-  debug = false,
+  accessToken,
+  userId,
   Pusher = window.Pusher,
   PUSHER_KEY = process.env.PUSHER_KEY,
+  debug = false,
 } = {}) => {
-  const { accessToken, user } = useGlobalState();
-
   const channelRef = React.useRef();
   const listenersRef = React.useRef([]);
 
@@ -35,6 +35,7 @@ const useServerConnection = ({
   }, []);
 
   React.useEffect(() => {
+    if (accessToken == null || userId == null) return;
     Pusher.logToConsole = debug;
 
     const pusher = new Pusher(PUSHER_KEY, {
@@ -46,7 +47,7 @@ const useServerConnection = ({
       },
     });
 
-    const channel = pusher.subscribe(`private-${user.id}`);
+    const channel = pusher.subscribe(`private-${userId}`);
     channelRef.current = channel;
 
     channel.bind("pusher:subscription_succeeded", () => {
@@ -60,7 +61,7 @@ const useServerConnection = ({
         const clientEventName = serverEventMap[event];
         listenersRef.current.forEach((fn) => fn(clientEventName, data));
       });
-  }, [user.id, accessToken]);
+  }, [userId, accessToken]);
 
   return { send, addListener };
 };

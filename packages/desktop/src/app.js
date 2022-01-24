@@ -13,6 +13,8 @@ import useAccessToken from "./hooks/access-token";
 import useServerConnection from "./hooks/server-connection";
 import TitleBar from "./components/title-bar";
 
+const isNative = window.Native != null;
+
 let prevId = 0;
 const generateId = () => {
   const id = prevId++;
@@ -27,10 +29,13 @@ const App = () => {
     useAccessToken();
   const [user, setUser] = React.useState(null);
 
-  const [selectors, dispatch] = useRootReducer();
+  const [stateSelectors, dispatch] = useRootReducer();
+  const serverConnection = useServerConnection({
+    accessToken,
+    userId: user?.id,
+  });
 
   const isSignedIn = accessToken != null;
-  const isNative = window.Native != null;
 
   const authorizedFetch = React.useCallback(
     async (url, options) => {
@@ -122,9 +127,18 @@ const App = () => {
     [authorizedFetch]
   );
 
-  const onServerMessage = React.useCallback(
-    (name, data) => {
-      const handle = () => dispatch({ type: name, data });
+  React.useEffect(() => {
+    if (!isSignedIn) return;
+
+    authorizedFetch("/users/me").then((user) => {
+      setUser(user);
+    });
+  }, [isSignedIn]);
+
+  React.useEffect(() => {
+    const handler = (name, data) => {
+      const handle = () =>
+        dispatch({ type: ["server-event", name].join(":"), data });
 
       switch (name) {
         case "user-data":
@@ -137,17 +151,13 @@ const App = () => {
           break;
         default: // Ignore
       }
-    },
-    [dispatch, user]
-  );
+    };
 
-  React.useEffect(() => {
-    if (!isSignedIn) return;
-
-    authorizedFetch("/users/me").then((user) => {
-      setUser(user);
-    });
-  }, [isSignedIn]);
+    const removeListener = serverConnection.addListener(handler);
+    return () => {
+      removeListener();
+    };
+  }, [serverConnection.addListener]);
 
   return (
     <>
@@ -158,60 +168,46 @@ const App = () => {
           <GlobalStateProvider
             value={{
               user,
-              authorizedFetch,
-              accessToken,
-              isNative,
+              state: stateSelectors,
               actions: {
                 fetchMessages,
                 createServer,
-                createMessage,
                 createChannel,
+                createMessage,
               },
-              state: selectors,
-              dispatch,
-              onServerMessage,
+              serverConnection,
             }}
           >
-            <AuthenticatedApp />
+            <MainScreen />
           </GlobalStateProvider>
         )
       ) : (
-        <GlobalStateProvider value={{ isNative }}>
-          <SignInScreen
-            onSignIn={(accessToken) => {
-              setAccessToken(accessToken);
-            }}
-          />
-        </GlobalStateProvider>
+        <SignInScreen
+          onSignIn={(accessToken) => {
+            setAccessToken(accessToken);
+          }}
+        />
       )}
     </>
   );
 };
 
-const AuthenticatedApp = () => {
-  const { user, actions, state, onServerMessage } = useGlobalState();
-  const serverConnection = useServerConnection();
+const MainScreen = () => {
+  const { user, actions, state, serverConnection } = useGlobalState();
 
   const [selectedServerId, setSelectedServerId] = React.useState(null);
   const [selectedChannelId, setSelectedChannelId] = React.useState(null);
-  const [ready, setReady] = React.useState(false);
 
   const selectedServer = state.selectServer(selectedServerId);
   const serverChannels = selectedServer?.channels ?? [];
-  const serverMembersByUserId =
-    state.selectServerMembersByUserId(selectedServerId);
-  const selectedChannel = selectedServer?.channels.find(
+  const selectedChannel = serverChannels.find(
     (c) => c.id === selectedChannelId
   );
+  const serverMembersByUserId =
+    state.selectServerMembersByUserId(selectedServerId);
   const channelMessages = state.selectChannelMessages(selectedChannelId);
 
-  const submitMessage = (content) =>
-    actions.createMessage({
-      server: selectedServerId,
-      channel: selectedChannelId,
-      content,
-    });
-
+  // Fetch messages when switching channels
   React.useEffect(() => {
     if (selectedChannelId == null) return;
     actions.fetchMessages({ channelId: selectedChannelId });
@@ -219,10 +215,20 @@ const AuthenticatedApp = () => {
 
   React.useEffect(() => {
     const handler = (name, data) => {
-      onServerMessage(name, data);
-
       switch (name) {
         case "user-data":
+          // Temporary ofc
+          if (data.servers.length === 0) {
+            const serverName = prompt(
+              "Name your server",
+              `${user.display_name}’a server`
+            );
+            actions.createServer({ name: serverName }).then((server) => {
+              setSelectedServerId(server.id);
+            });
+            break;
+          }
+
           // Select server and channel
           setSelectedServerId((id) => {
             const selectedServer = data.servers.find((s) => s.id === id);
@@ -250,19 +256,6 @@ const AuthenticatedApp = () => {
             return newId;
           });
 
-          setReady(true);
-
-          // Temporary ofc
-          if (data.servers.length === 0) {
-            const serverName = prompt(
-              "Name your server",
-              `${user.display_name}’a server`
-            );
-            actions.createServer({ name: serverName }).then((server) => {
-              setSelectedServerId(server.id);
-            });
-          }
-
           break;
         default: // Ignore
       }
@@ -274,7 +267,7 @@ const AuthenticatedApp = () => {
     };
   }, [serverConnection.addListener]);
 
-  if (!ready || selectedServer == null) return null;
+  if (selectedServer == null) return null;
 
   return (
     <div style={{ background: "rgb(255 255 255 / 5%)" }}>
@@ -409,7 +402,13 @@ const AuthenticatedApp = () => {
           </div>
           {selectedChannel != null && (
             <NewMessageInput
-              submit={submitMessage}
+              submit={(content) =>
+                actions.createMessage({
+                  server: selectedServerId,
+                  channel: selectedChannelId,
+                  content,
+                })
+              }
               placeholder={
                 selectedChannel == null
                   ? "..."
@@ -527,7 +526,6 @@ const NewMessageInput = ({ submit: submit_, placeholder }) => {
 };
 
 const SignInScreen = ({ onSignIn }) => {
-  const { isNative } = useGlobalState();
   const [isPending, setPending] = React.useState(false);
 
   const requestUserAccounts = async () => {

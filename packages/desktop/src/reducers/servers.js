@@ -6,7 +6,7 @@ const initialState = {
 
 const reducer = (state = initialState, action) => {
   switch (action.type) {
-    case "user-data":
+    case "server-event:user-data":
       return {
         ...state,
         entriesById: indexBy((s) => s.id, action.data.servers),

@@ -7,7 +7,7 @@ const entriesById = (state = {}, action) => {
     case "messages-fetched":
       return indexBy((m) => m.id, action.messages);
 
-    case "message-created":
+    case "server-event:message-created":
       return {
         ...state,
         [action.message.id]: action.message,
@@ -38,7 +38,7 @@ const entryIdsByChannelId = (state = [], action) => {
         groupBy((m) => m.channel, action.messages)
       );
 
-    case "message-created": {
+    case "server-event:message-created": {
       const channelId = action.message.channel;
       const channelMessageIds = state[channelId] ?? [];
       return {
