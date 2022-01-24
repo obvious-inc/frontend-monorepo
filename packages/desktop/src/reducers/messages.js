@@ -5,7 +5,7 @@ import { omitKey, mapValues } from "../utils/object";
 const entriesById = (state = {}, action) => {
   switch (action.type) {
     case "messages-fetched":
-      return indexBy((m) => m.id, action.messages);
+      return { ...state, ...indexBy((m) => m.id, action.messages) };
 
     case "server-event:message-created":
       return {
@@ -30,13 +30,16 @@ const entriesById = (state = {}, action) => {
   }
 };
 
-const entryIdsByChannelId = (state = [], action) => {
+const entryIdsByChannelId = (state = {}, action) => {
   switch (action.type) {
-    case "messages-fetched":
-      return mapValues(
+    case "messages-fetched": {
+      const messageIdsByChannelId = mapValues(
         (ms) => ms.map((m) => m.id),
         groupBy((m) => m.channel, action.messages)
       );
+
+      return { ...state, ...messageIdsByChannelId };
+    }
 
     case "server-event:message-created": {
       const channelId = action.message.channel;
