@@ -475,7 +475,7 @@ const NewMessageInput = ({ submit: submit_, placeholder }) => {
   const [pendingMessage, setPendingMessage] = React.useState("");
 
   const submit = async () => {
-    await submit_(pendingMessage);
+    submit_(pendingMessage);
     setPendingMessage("");
   };
 
