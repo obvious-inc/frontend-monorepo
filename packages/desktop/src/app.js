@@ -16,7 +16,7 @@ import TitleBar from "./components/title-bar";
 const isNative = window.Native != null;
 
 let prevId = 0;
-const generateId = () => {
+const generateDummyId = () => {
   const id = prevId++;
   prevId = id;
   return id;
@@ -85,7 +85,7 @@ const App = () => {
     async ({ server, channel, content }) => {
       // TODO: Less hacky way of posting eagerly
       const message = { server, channel, content };
-      const dummyId = generateId();
+      const dummyId = generateDummyId();
 
       dispatch({
         type: "message-create-request-sent",
