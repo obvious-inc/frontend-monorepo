@@ -453,7 +453,7 @@ const MessageItem = ({ author, content, timestamp }) => (
       </div>
       <div
         css={css`
-          color: rgb(255 255 255 / 20%);
+          color: rgb(255 255 255 / 30%);
           font-size: 1rem;
         `}
       >
