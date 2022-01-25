@@ -43,7 +43,9 @@ module.exports = (_, argv) => {
 
   return {
     entry: "./src/web-entry.js",
+    output: { publicPath: "/" },
     devServer: {
+      historyApiFallback: true,
       proxy: {
         "/api": { target: API_ENDPOINT, pathRewrite: { "^/api": "" } },
       },

@@ -1,4 +1,12 @@
 import React from "react";
+import {
+  Routes,
+  Route,
+  useNavigate,
+  useParams,
+  NavLink,
+  Outlet,
+} from "react-router-dom";
 import { css } from "@emotion/react";
 import { IntlProvider, FormattedDate } from "react-intl";
 import createProvider from "eth-provider";
@@ -25,6 +33,7 @@ const generateDummyId = () => {
 const provider = createProvider("frame");
 
 const App = () => {
+  const navigate = useNavigate();
   const [accessToken, { set: setAccessToken, clear: clearAccessToken }] =
     useAccessToken();
   const [user, setUser] = React.useState(null);
@@ -143,6 +152,33 @@ const App = () => {
       switch (name) {
         case "user-data":
           handle();
+          const server = data.servers[0];
+          const channel = server?.channels[0];
+
+          if (server == null) {
+            // Temporary ofc
+            const defaultServerName = `${user.display_name}’a server`;
+            const serverName = prompt("Name your server", defaultServerName);
+            createServer({ name: serverName ?? defaultServerName });
+            break;
+          }
+
+          if (channel == null) {
+            // We’re just playing, anything goes
+            const defaultChannelName = "General";
+            const channelName = prompt(
+              "Create your first channel",
+              defaultChannelName
+            );
+            createChannel({
+              name: channelName ?? defaultChannelName,
+              kind: "server",
+              server: server.id,
+            });
+            break;
+          }
+
+          navigate(`/channels/${server.id}/${channel.id}`, { replace: true });
           break;
         case "message-created":
           // Ignore the signed in user’s messages, they are handled elsewhere
@@ -157,7 +193,7 @@ const App = () => {
     return () => {
       removeListener();
     };
-  }, [serverConnection.addListener]);
+  }, [serverConnection.addListener, user?.id]);
 
   return (
     <>
@@ -175,10 +211,17 @@ const App = () => {
                 createChannel,
                 createMessage,
               },
-              serverConnection,
             }}
           >
-            <MainScreen />
+            <Routes>
+              <Route element={<ChannelLayout />}>
+                <Route
+                  path="/channels/:serverId/:channelId"
+                  element={<Channel />}
+                />
+              </Route>
+              <Route path="*" element={null} />
+            </Routes>
           </GlobalStateProvider>
         )
       ) : (
@@ -192,82 +235,14 @@ const App = () => {
   );
 };
 
-const MainScreen = () => {
-  const { user, actions, state, serverConnection } = useGlobalState();
+const ChannelLayout = () => {
+  const params = useParams();
+  const { actions, state } = useGlobalState();
 
-  const [selectedServerId, setSelectedServerId] = React.useState(null);
-  const [selectedChannelId, setSelectedChannelId] = React.useState(null);
+  const server = state.selectServer(params.serverId);
+  const channels = server?.channels ?? [];
 
-  const selectedServer = state.selectServer(selectedServerId);
-  const serverChannels = selectedServer?.channels ?? [];
-  const selectedChannel = serverChannels.find(
-    (c) => c.id === selectedChannelId
-  );
-  const serverMembersByUserId =
-    state.selectServerMembersByUserId(selectedServerId);
-  const channelMessages = state.selectChannelMessages(selectedChannelId);
-
-  // Fetch messages when switching channels
-  React.useEffect(() => {
-    if (selectedChannelId == null) return;
-    actions.fetchMessages({ channelId: selectedChannelId });
-  }, [actions.fetchMessages, selectedChannelId]);
-
-  React.useEffect(() => {
-    const handler = (name, data) => {
-      switch (name) {
-        case "user-data":
-          // Temporary ofc
-          if (data.servers.length === 0) {
-            const serverName = prompt(
-              "Name your server",
-              `${user.display_name}’a server`
-            );
-            actions.createServer({ name: serverName }).then((server) => {
-              setSelectedServerId(server.id);
-            });
-            break;
-          }
-
-          // Select server and channel
-          setSelectedServerId((id) => {
-            const selectedServer = data.servers.find((s) => s.id === id);
-            const newId =
-              (selectedServer != null ? id : data.servers[0]?.id) ?? null;
-
-            setSelectedChannelId((id) => {
-              const newSelectedServer = data.servers.find(
-                (s) => s.id === newId
-              );
-
-              if (newSelectedServer == null) return null;
-
-              const selectedChannelExists = newSelectedServer.channels.some(
-                (c) => c.id === id
-              );
-
-              return (
-                (selectedChannelExists
-                  ? id
-                  : newSelectedServer.channels[0]?.id) ?? null
-              );
-            });
-
-            return newId;
-          });
-
-          break;
-        default: // Ignore
-      }
-    };
-
-    const removeListener = serverConnection.addListener(handler);
-    return () => {
-      removeListener();
-    };
-  }, [serverConnection.addListener]);
-
-  if (selectedServer == null) return null;
+  if (server == null) return null;
 
   return (
     <div style={{ background: "rgb(255 255 255 / 5%)" }}>
@@ -310,23 +285,22 @@ const MainScreen = () => {
               aria-label="Create channel"
               onClick={() => {
                 const name = prompt("Create channel", "My channel");
+                if (name == null) return;
                 actions.createChannel({
                   name,
                   kind: "server",
-                  server: selectedServerId,
+                  server: params.serverId,
                 });
               }}
             >
               <Plus width="1.6rem" />
             </button>
           </div>
-          {serverChannels.map((c) => (
-            <div key={c.id}>
-              <button
-                onClick={() => {
-                  setSelectedChannelId(c.id);
-                }}
-                css={css`
+          {channels.map((c) => (
+            <div
+              key={c.id}
+              css={css`
+                a {
                   display: block;
                   width: 100%;
                   border: 0;
@@ -338,86 +312,113 @@ const MainScreen = () => {
                   cursor: pointer;
                   color: rgb(255 255 255 / 40%);
                   padding: 0.7rem 1.1rem;
-                  &:hover {
-                    background: rgb(255 255 255 / 3%);
-                  }
-                  &:hover > .name {
-                    color: white;
-                  }
-                  .name {
-                    color: ${c.id === selectedChannelId ? "white" : "inherit"};
-                  }
-                `}
+                  text-decoration: none;
+                }
+                a:hover {
+                  background: rgb(255 255 255 / 3%);
+                }
+                a:hover > .name {
+                  color: white;
+                }
+                a.active .name {
+                  color: white;
+                }
+              `}
+            >
+              <NavLink
+                to={`/channels/${params.serverId}/${c.id}`}
+                className={({ isActive }) => (isActive ? "active" : "")}
               >
                 # <span className="name">{c.name}</span>
-              </button>
+              </NavLink>
             </div>
           ))}
         </div>
+
+        <Outlet />
+      </div>
+    </div>
+  );
+};
+
+const Channel = () => {
+  const params = useParams();
+  const { actions, state } = useGlobalState();
+
+  const selectedServer = state.selectServer(params.serverId);
+  const serverChannels = selectedServer?.channels ?? [];
+  const selectedChannel = serverChannels.find((c) => c.id === params.channelId);
+  const serverMembersByUserId = state.selectServerMembersByUserId(
+    params.serverId
+  );
+  const channelMessages = state.selectChannelMessages(params.channelId);
+
+  // Fetch messages when switching channels
+  React.useEffect(() => {
+    actions.fetchMessages({ channelId: params.channelId });
+  }, [actions.fetchMessages, params.channelId]);
+
+  if (selectedChannel == null) return null;
+
+  return (
+    <div
+      css={css`
+        flex: 1;
+        background: rgb(255 255 255 / 3%);
+        display: flex;
+        flex-direction: column;
+        justify-content: flex-end;
+      `}
+    >
+      <div
+        css={css`
+          overflow: auto;
+          font-size: 1.3rem;
+          font-weight: 300;
+          padding: 1.6rem 0 0;
+          overscroll-behavior-y: contain;
+          scroll-snap-type: y proximity;
+        `}
+      >
+        {channelMessages
+          .sort((m1, m2) => new Date(m1.created_at) - new Date(m2.created_at))
+          .map((m) => (
+            <MessageItem
+              key={m.id}
+              content={m.content}
+              author={serverMembersByUserId[m.author].display_name}
+              timestamp={
+                <FormattedDate
+                  value={new Date(m.created_at)}
+                  hour="numeric"
+                  minute="numeric"
+                  day="numeric"
+                  month="short"
+                />
+              }
+            />
+          ))}
         <div
           css={css`
-            flex: 1;
-            background: rgb(255 255 255 / 3%);
-            display: flex;
-            flex-direction: column;
-            justify-content: flex-end;
+            height: 1.6rem;
+            scroll-snap-align: end;
           `}
-        >
-          <div
-            css={css`
-              overflow: auto;
-              font-size: 1.3rem;
-              font-weight: 300;
-              padding: 1.6rem 0 0;
-              overscroll-behavior-y: contain;
-              scroll-snap-type: y proximity;
-            `}
-          >
-            {channelMessages
-              .sort(
-                (m1, m2) => new Date(m1.created_at) - new Date(m2.created_at)
-              )
-              .map((m) => (
-                <MessageItem
-                  key={m.id}
-                  content={m.content}
-                  author={serverMembersByUserId[m.author].display_name}
-                  timestamp={
-                    <FormattedDate
-                      value={new Date(m.created_at)}
-                      hour="numeric"
-                      minute="numeric"
-                      day="numeric"
-                      month="short"
-                    />
-                  }
-                />
-              ))}
-            <div
-              css={css`
-                height: 1.6rem;
-                scroll-snap-align: end;
-              `}
-            />
-          </div>
-          {selectedChannel != null && (
-            <NewMessageInput
-              submit={(content) =>
-                actions.createMessage({
-                  server: selectedServerId,
-                  channel: selectedChannelId,
-                  content,
-                })
-              }
-              placeholder={
-                selectedChannel == null
-                  ? "..."
-                  : `Message #${selectedChannel.name}`
-              }
-            />
-          )}
-        </div>
+        />
       </div>
+      {selectedChannel != null && (
+        <NewMessageInput
+          submit={(content) =>
+            actions.createMessage({
+              server: params.serverId,
+              channel: params.channelId,
+              content,
+            })
+          }
+          placeholder={
+            selectedChannel == null ? "..." : `Message #${selectedChannel.name}`
+          }
+        />
+      )}
     </div>
   );
 };
