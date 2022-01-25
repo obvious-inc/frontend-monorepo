@@ -30,7 +30,7 @@ const useServerConnection = ({
   const addListener = React.useCallback((fn) => {
     listenersRef.current = [...listenersRef.current, fn];
     return () => {
-      listenersRef.current.filter((fn_) => fn !== fn_);
+      listenersRef.current = listenersRef.current.filter((fn_) => fn !== fn_);
     };
   }, []);
 
