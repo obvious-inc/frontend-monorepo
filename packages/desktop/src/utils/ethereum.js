@@ -1,5 +1,6 @@
 import createEthProvider from "eth-provider";
-import { utils as ethersUtils } from "ethers";
+import { utils as ethersUtils, providers } from "ethers";
+import WalletConnectProvider from "@walletconnect/web3-provider";
 
 export const connectProvider = () =>
   new Promise((resolve, reject) => {
@@ -13,9 +14,22 @@ export const connectProvider = () =>
     provider.on("connect", () => {
       resolve(provider);
     });
+
+    // This way we can detect then Frame can’t connect to any targets
     provider.on("disconnect", () => {
-      // This way we can detect then Frame can’t connect to any targets
-      reject(new Error());
+      // Fall back to WalletConnect Provider
+      const provider = new WalletConnectProvider({
+        infuraId: process.env.INFURA_PROJECT_ID,
+      });
+
+      provider
+        .enable()
+        .then(() => {
+          resolve(provider);
+        })
+        .catch((e) => {
+          reject(e);
+        });
     });
   });
 
@@ -36,9 +50,10 @@ export const signAddress = async (provider, address) => {
     address,
     signed_at: new Date().toISOString(),
   };
+
   const signature = await provider.request({
     method: "personal_sign",
-    params: [address, JSON.stringify(message)],
+    params: [JSON.stringify(message), address],
   });
 
   return [signature, message];

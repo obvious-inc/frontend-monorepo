@@ -487,6 +487,7 @@ const SignInScreen = () => {
     try {
       const provider = await eth.connectProvider();
       const addresses = await eth.getUserAccounts(provider);
+      console.log("add", addresses);
       const [signature, message] = await eth.signAddress(
         provider,
         addresses[0]
