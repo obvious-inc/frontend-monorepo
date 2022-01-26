@@ -1,5 +1,7 @@
+import React from "react";
+
 const useCachedState = (key, initialState, storage = window.localStorage) => {
-  const [cachedState, setState] = useState(() => {
+  const [cachedState, setState] = React.useState(() => {
     const initialState_ =
       typeof initialState === "function" ? initialState() : initialState;
 
@@ -8,7 +10,7 @@ const useCachedState = (key, initialState, storage = window.localStorage) => {
       return cachedState == null ? initialState_ : JSON.parse(cachedState);
     } catch (error) {
       console.error(error);
-      return initialValue;
+      return initialState;
     }
   });
 

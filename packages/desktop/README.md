@@ -6,7 +6,7 @@ Some desktop builds can be found on [the release page](https://github.com/NewSha
 
 ## Introduction
 
-*NewShades desktop* is a [`React`](https://reactjs.org/) web app, using a thin [`Electron`](https://www.electronjs.org/) wrapper to build for desktop. The details might change quickly but at the time of writing we bundle our Javascript with [`webpack`](https://webpack.js.org/), transpile with [`SWC`](https://swc.rs/); and  package, make distributals, and publish our desktop builds with [`Electron Forge`](https://www.electronforge.io/).
+_NewShades desktop_ is a [`React`](https://reactjs.org/) web app, using a thin [`Electron`](https://www.electronjs.org/) wrapper to build for desktop. The details might change quickly but at the time of writing we bundle our Javascript with [`webpack`](https://webpack.js.org/), transpile with [`SWC`](https://swc.rs/); and package, make distributals, and publish our desktop builds with [`Electron Forge`](https://www.electronforge.io/).
 
 ## Development setup
 
@@ -41,10 +41,8 @@ npm run start-desktop
 
 `HEAD` of `main` is automatically deployed to [app.newshades.xyz](https://app.newshades.xyz) with [Vercel](https://vercel.com/).
 
-Desktop builds are currently manual. 
+Desktop builds are currently manual.
 
 ## Contributing
 
 We’re just getting started and things are still rather messy, but we’d love your help if you’re up for it! Pull requests are welcome, but the best place to start right now is probably the [#development channel](https://discord.com/channels/913721755670040587/929759842682429490) on the [NewShades Discord](https://discord.com/invite/2jy5A5h63H).
-
-
