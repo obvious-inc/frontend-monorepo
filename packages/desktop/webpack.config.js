@@ -79,6 +79,7 @@ module.exports = (_, argv) => {
         http: require.resolve("stream-http"),
         assert: require.resolve("assert"),
         stream: require.resolve("stream-browserify"),
+        url: require.resolve("url/"),
       },
     },
   };
