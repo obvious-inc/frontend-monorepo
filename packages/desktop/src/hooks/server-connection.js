@@ -1,8 +1,16 @@
 import React from "react";
 import { API_ENDPOINT } from "../constants/api";
+import { identity } from "../utils/function";
 
 const clientEventMap = {
-  "request-user-data": "client-connection-request",
+  "request-user-data": ["client-connection-request"],
+  "mark-channel-read": [
+    "client-channel-mark",
+    (clientPayload) => ({
+      channel_id: clientPayload.channelId,
+      last_read_ts: clientPayload.date.getTime(), // Or some other format
+    }),
+  ],
 };
 const serverEventMap = {
   CONNECTION_READY: "user-data",
@@ -19,11 +27,11 @@ const useServerConnection = ({
   const channelRef = React.useRef();
   const listenersRef = React.useRef([]);
 
-  const send = React.useCallback((event, data = { no: "data" }) => {
-    const serverEvent = clientEventMap[event];
+  const send = React.useCallback((event, payload = { no: "data" }) => {
+    const [serverEvent, payloadMapper = identity] = clientEventMap[event];
     if (serverEvent == null) throw new Error(`Unknown event "${event}"`);
 
-    channelRef.current.trigger(serverEvent, data);
+    channelRef.current.trigger(serverEvent, payloadMapper(payload));
   }, []);
 
   const addListener = React.useCallback((fn) => {

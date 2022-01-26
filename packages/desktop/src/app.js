@@ -98,6 +98,17 @@ const App = () => {
     [authorizedFetch]
   );
 
+  const markChannelRead = React.useCallback(
+    ({ channelId }) => {
+      // TODO: optimistic UI changes
+      serverConnection.send("mark-channel-read", {
+        channelId,
+        date: new Date(),
+      });
+    },
+    [serverConnection]
+  );
+
   React.useEffect(() => {
     const handler = (name, data) => {
       const handle = () =>
@@ -163,6 +174,7 @@ const App = () => {
               createServer,
               createChannel,
               createMessage,
+              markChannelRead,
             },
           }}
         >
@@ -299,12 +311,25 @@ const Channel = () => {
   const serverMembersByUserId = state.selectServerMembersByUserId(
     params.serverId
   );
-  const channelMessages = state.selectChannelMessages(params.channelId);
+  const messages = state.selectChannelMessages(params.channelId);
+
+  const sortedMessages = messages.sort(
+    (m1, m2) => new Date(m1.created_at) - new Date(m2.created_at)
+  );
+
+  const mostRecentMessage = sortedMessages.slice(-1)[0];
 
   // Fetch messages when switching channels
   React.useEffect(() => {
     actions.fetchMessages({ channelId: params.channelId });
   }, [actions.fetchMessages, params.channelId]);
+
+  // Mark channel as read whenever the user enters a channel, or whenever a new
+  // message appears
+  React.useEffect(() => {
+    if (mostRecentMessage == null) return;
+    actions.markChannelRead({ channelId: params.channelId });
+  }, [mostRecentMessage, params.channelId, actions.markChannelRead]);
 
   if (selectedChannel == null) return null;
 
@@ -328,24 +353,22 @@ const Channel = () => {
           scroll-snap-type: y proximity;
         `}
       >
-        {channelMessages
-          .sort((m1, m2) => new Date(m1.created_at) - new Date(m2.created_at))
-          .map((m) => (
-            <MessageItem
-              key={m.id}
-              content={m.content}
-              author={serverMembersByUserId[m.author].display_name}
-              timestamp={
-                <FormattedDate
-                  value={new Date(m.created_at)}
-                  hour="numeric"
-                  minute="numeric"
-                  day="numeric"
-                  month="short"
-                />
-              }
-            />
-          ))}
+        {sortedMessages.map((m) => (
+          <MessageItem
+            key={m.id}
+            content={m.content}
+            author={serverMembersByUserId[m.author].display_name}
+            timestamp={
+              <FormattedDate
+                value={new Date(m.created_at)}
+                hour="numeric"
+                minute="numeric"
+                day="numeric"
+                month="short"
+              />
+            }
+          />
+        ))}
         <div
           css={css`
             height: 1.6rem;
