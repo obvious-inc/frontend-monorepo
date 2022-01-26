@@ -199,7 +199,7 @@ const ChannelLayout = () => {
       <div style={{ display: "flex", height: "100vh" }}>
         <div
           css={css`
-            padding: 2rem 1rem;
+            padding: ${isNative ? "3.5rem 1rem 2rem" : "2rem 1rem"};
             width: min(30%, 24rem);
           `}
         >
