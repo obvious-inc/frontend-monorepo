@@ -507,6 +507,7 @@ const SignInScreen = () => {
         justify-content: center;
         color: white;
         text-align: center;
+        padding: 2rem;
       `}
       style={{
         height: isNative ? `calc(100vh - ${TITLE_BAR_HEIGHT})` : "100vh",
