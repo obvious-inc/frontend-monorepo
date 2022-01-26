@@ -4,32 +4,37 @@ import WalletConnectProvider from "@walletconnect/web3-provider";
 
 export const connectProvider = () =>
   new Promise((resolve, reject) => {
+    // Try `window.etherem` providers first
     if (window.ethereum != null) {
       resolve(window.ethereum);
       return;
     }
 
+    // If not, check from Frame wallet with eth-provider
     const provider = createEthProvider({ origin: "NewShades" });
 
     provider.on("connect", () => {
       resolve(provider);
     });
 
-    // This way we can detect then Frame can’t connect to any targets
+    // (olli) This is the only way I’ve found of detecting when Frame can’t
+    // connect to any targets
     provider.on("disconnect", () => {
-      // Fall back to WalletConnect Provider
+      // Fall back to WalletConnect Provider as last resort
       const provider = new WalletConnectProvider({
         infuraId: process.env.INFURA_PROJECT_ID,
       });
 
-      provider
-        .enable()
-        .then(() => {
+      // You have to `enable` first, WC blocks all other calls
+      provider.enable().then(
+        () => {
           resolve(provider);
-        })
-        .catch((e) => {
+        },
+        (e) => {
+          // No providers worked T_T
           reject(e);
-        });
+        }
+      );
     });
   });
 
