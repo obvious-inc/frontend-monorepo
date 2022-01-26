@@ -11,62 +11,27 @@ import { css } from "@emotion/react";
 import { IntlProvider, FormattedDate } from "react-intl";
 import createProvider from "eth-provider";
 import { utils as ethersUtils } from "ethers";
-import { API_ENDPOINT } from "./constants/api";
 import { TITLE_BAR_HEIGHT } from "./constants/ui";
-import useGlobalState, {
-  Provider as GlobalStateProvider,
-} from "./hooks/global-state";
+import { generateDummyId } from "./utils/misc";
+import useAppScope, { Provider as AppScopeProvider } from "./hooks/app-scope";
 import useRootReducer from "./hooks/root-reducer";
-import useAccessToken from "./hooks/access-token";
+import useAuth, { Provider as AuthProvider } from "./hooks/auth";
 import useServerConnection from "./hooks/server-connection";
 import TitleBar from "./components/title-bar";
 
 const isNative = window.Native != null;
 
-let prevId = 0;
-const generateDummyId = () => {
-  const id = prevId++;
-  prevId = id;
-  return id;
-};
-
 const provider = createProvider("frame");
 
 const App = () => {
   const navigate = useNavigate();
-  const [accessToken, { set: setAccessToken, clear: clearAccessToken }] =
-    useAccessToken();
-  const [user, setUser] = React.useState(null);
 
+  const { isSignedIn, user, accessToken, authorizedFetch } = useAuth();
   const [stateSelectors, dispatch] = useRootReducer();
   const serverConnection = useServerConnection({
     accessToken,
     userId: user?.id,
   });
-
-  const isSignedIn = accessToken != null;
-
-  const authorizedFetch = React.useCallback(
-    async (url, options) => {
-      if (accessToken == null) throw new Error("Missing access token");
-
-      const headers = new Headers(options?.headers);
-      headers.append("Authorization", `Bearer ${accessToken}`);
-
-      const response = await fetch(`${API_ENDPOINT}${url}`, {
-        ...options,
-        headers,
-      });
-
-      // TODO
-      if (response.status === 401) clearAccessToken();
-
-      if (response.ok) return response.json();
-
-      return Promise.reject(new Error(response.statusText));
-    },
-    [accessToken]
-  );
 
   const fetchMessages = React.useCallback(
     ({ channelId }) =>
@@ -114,7 +79,7 @@ const App = () => {
         dispatch({
           type: "message-create-request-successful",
           message,
-          dummyId,
+          optimisticEntryId: dummyId,
         });
         return message;
       });
@@ -135,14 +100,6 @@ const App = () => {
       }),
     [authorizedFetch]
   );
-
-  React.useEffect(() => {
-    if (!isSignedIn) return;
-
-    authorizedFetch("/users/me").then((user) => {
-      setUser(user);
-    });
-  }, [isSignedIn]);
 
   React.useEffect(() => {
     const handler = (name, data) => {
@@ -200,36 +157,29 @@ const App = () => {
       {isNative && <TitleBar />}
 
       {isSignedIn ? (
-        user == null ? null : (
-          <GlobalStateProvider
-            value={{
-              user,
-              state: stateSelectors,
-              actions: {
-                fetchMessages,
-                createServer,
-                createChannel,
-                createMessage,
-              },
-            }}
-          >
-            <Routes>
-              <Route element={<ChannelLayout />}>
-                <Route
-                  path="/channels/:serverId/:channelId"
-                  element={<Channel />}
-                />
-              </Route>
-              <Route path="*" element={null} />
-            </Routes>
-          </GlobalStateProvider>
-        )
-      ) : (
-        <SignInScreen
-          onSignIn={(accessToken) => {
-            setAccessToken(accessToken);
+        <AppScopeProvider
+          value={{
+            state: stateSelectors,
+            actions: {
+              fetchMessages,
+              createServer,
+              createChannel,
+              createMessage,
+            },
           }}
-        />
+        >
+          <Routes>
+            <Route element={<ChannelLayout />}>
+              <Route
+                path="/channels/:serverId/:channelId"
+                element={<Channel />}
+              />
+            </Route>
+            <Route path="*" element={null} />
+          </Routes>
+        </AppScopeProvider>
+      ) : (
+        <SignInScreen />
       )}
     </>
   );
@@ -237,7 +187,7 @@ const App = () => {
 
 const ChannelLayout = () => {
   const params = useParams();
-  const { actions, state } = useGlobalState();
+  const { actions, state } = useAppScope();
 
   const server = state.selectServer(params.serverId);
   const channels = server?.channels ?? [];
@@ -343,7 +293,7 @@ const ChannelLayout = () => {
 
 const Channel = () => {
   const params = useParams();
-  const { actions, state } = useGlobalState();
+  const { actions, state } = useAppScope();
 
   const selectedServer = state.selectServer(params.serverId);
   const serverChannels = selectedServer?.channels ?? [];
@@ -526,8 +476,11 @@ const NewMessageInput = ({ submit: submit_, placeholder }) => {
   );
 };
 
-const SignInScreen = ({ onSignIn }) => {
+const SignInScreen = () => {
+  const { signIn } = useAuth();
+
   const [isPending, setPending] = React.useState(false);
+  const [error, setError] = React.useState(null);
 
   const requestUserAccounts = async () => {
     const userAddresses = await provider.enable();
@@ -549,21 +502,19 @@ const SignInScreen = ({ onSignIn }) => {
   };
 
   const handleClickSignIn = async () => {
+    setError(null);
     setPending(true);
 
     const addresses = await requestUserAccounts();
-
     const [signature, message] = await signAddress(addresses[0]);
 
-    const responseBody = await fetch(`${API_ENDPOINT}/auth/login`, {
-      method: "POST",
-      body: JSON.stringify({ message, signature }),
-      headers: {
-        "Content-Type": "application/json",
-      },
-    }).then((res) => res.json());
-
-    onSignIn(responseBody.access_token);
+    try {
+      await signIn({ message, signature });
+    } catch (e) {
+      // TODO
+      setError(e.message);
+      setPending(false);
+    }
   };
 
   return (
@@ -573,6 +524,7 @@ const SignInScreen = ({ onSignIn }) => {
         align-items: center;
         justify-content: center;
         color: white;
+        text-align: center;
       `}
       style={{
         height: isNative ? `calc(100vh - ${TITLE_BAR_HEIGHT})` : "100vh",
@@ -581,7 +533,12 @@ const SignInScreen = ({ onSignIn }) => {
       {isPending ? (
         "..."
       ) : (
-        <Button onClick={handleClickSignIn}>Sign in with Frame wallet</Button>
+        <div>
+          {error != null && (
+            <div style={{ margin: "0 0 3rem" }}>Something went wrong</div>
+          )}
+          <Button onClick={handleClickSignIn}>Sign in with Frame wallet</Button>
+        </div>
       )}
     </div>
   );
@@ -620,6 +577,8 @@ const Plus = ({ width = "auto", height = "auto" }) => (
 
 export default () => (
   <IntlProvider locale="en">
-    <App />
+    <AuthProvider>
+      <App />
+    </AuthProvider>
   </IntlProvider>
 );

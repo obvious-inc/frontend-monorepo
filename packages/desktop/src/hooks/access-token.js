@@ -8,15 +8,15 @@ const useAccessToken = () => {
     localStorage.getItem(CACHE_KEY)
   );
 
-  const set = (token) => {
+  const set = React.useCallback((token) => {
     setToken(token);
     localStorage.setItem(CACHE_KEY, token);
-  };
+  }, []);
 
-  const clear = () => {
+  const clear = React.useCallback(() => {
     setToken(null);
     localStorage.removeItem(CACHE_KEY);
-  };
+  }, []);
 
   return [token, { set, clear }];
 };

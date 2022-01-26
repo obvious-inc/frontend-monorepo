@@ -1,6 +1,5 @@
 import React from "react";
 import { API_ENDPOINT } from "../constants/api";
-import useGlobalState from "../hooks/global-state";
 
 const clientEventMap = {
   "request-user-data": "client-connection-request",

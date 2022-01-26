@@ -21,7 +21,8 @@ const entriesById = (state = {}, action) => {
 
     case "message-create-request-successful":
       return {
-        ...omitKey(action.dummyId, state),
+        // Remove the optimistic entry
+        ...omitKey(action.optimisticEntryId, state),
         [action.message.id]: action.message,
       };
 
@@ -65,7 +66,8 @@ const entryIdsByChannelId = (state = {}, action) => {
       return {
         ...state,
         [channelId]: [
-          ...channelMessageIds.filter((id) => id !== action.dummyId),
+          // Remove the optimistic entry
+          ...channelMessageIds.filter((id) => id !== action.optimisticEntryId),
           action.message.id,
         ],
       };
