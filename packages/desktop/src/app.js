@@ -9,9 +9,8 @@ import {
 } from "react-router-dom";
 import { css } from "@emotion/react";
 import { IntlProvider, FormattedDate } from "react-intl";
-import createEthProvider from "eth-provider";
-import { utils as ethersUtils } from "ethers";
 import { TITLE_BAR_HEIGHT } from "./constants/ui";
+import * as eth from "./utils/ethereum";
 import { generateDummyId } from "./utils/misc";
 import useAppScope, { Provider as AppScopeProvider } from "./hooks/app-scope";
 import useRootReducer from "./hooks/root-reducer";
@@ -475,67 +474,26 @@ const NewMessageInput = ({ submit: submit_, placeholder }) => {
   );
 };
 
-const p = createEthProvider();
-console.log("here", p);
-setTimeout(() => console.log(p), 3000);
-
-const connectEthProvider = async () =>
-  new Promise((resolve, reject) => {
-    console.log("ok go");
-    const ethProvider = createEthProvider();
-    console.log("wat", ethProvider);
-
-    // ethProvider.on("connect", () => {
-    //   resolve(ethProvider);
-    // });
-    // ethProvider.on("disconnect", () => {
-    //   reject(new Error());
-    // });
-    console.log("hmm", ethProvider);
-  });
-
 const SignInScreen = () => {
   const { signIn } = useAuth();
 
   const [isPending, setPending] = React.useState(false);
   const [signInError, setSignInError] = React.useState(null);
 
-  const requestUserAccounts = async (provider) => {
-    const userAddresses = await provider
-      .request({ method: "eth_accounts" })
-      .catch((e) => {
-        console.log("no accounts", e);
-        return provider.request({ method: "eth_requestAccounts" });
-      });
-    // Login endpoint expects a checksum address
-    return userAddresses.map(ethersUtils.getAddress);
-  };
-
-  const signAddress = async (provider, address) => {
-    const message = {
-      address,
-      signed_at: new Date().toISOString(),
-    };
-    const signature = await provider.request({
-      method: "personal_sign",
-      params: [address, JSON.stringify(message)],
-    });
-
-    return [signature, message];
-  };
-
   const handleClickSignIn = async () => {
     setSignInError(null);
     setPending(true);
 
     try {
-      const provider = await connectEthProvider();
-      console.log("pr", provider);
-      const addresses = await requestUserAccounts(provider);
-      console.log("adr", addresses);
-      const [signature, message] = await signAddress(provider, addresses[0]);
+      const provider = await eth.connectProvider();
+      const addresses = await eth.getUserAccounts(provider);
+      const [signature, message] = await eth.signAddress(
+        provider,
+        addresses[0]
+      );
       await signIn({ message, signature });
     } catch (e) {
+      console.error(e);
       setSignInError(e.message);
       setPending(false);
     }
@@ -559,9 +517,12 @@ const SignInScreen = () => {
       ) : (
         <div>
           {signInError != null && (
-            <div style={{ margin: "0 0 3rem" }}>Something went wrong</div>
+            <div style={{ fontSize: "1.4rem", margin: "0 0 5rem" }}>
+              Something went wrong. Check the console for hints if you’re into
+              that kind of thing.
+            </div>
           )}
-          <Button onClick={handleClickSignIn}>Sign in with Frame wallet</Button>
+          <Button onClick={handleClickSignIn}>Sign in with wallet</Button>
         </div>
       )}
     </div>
