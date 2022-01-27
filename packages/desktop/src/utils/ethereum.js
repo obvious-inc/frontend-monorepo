@@ -32,14 +32,20 @@ export const getUserAccounts = async (provider) => {
 };
 
 export const signAddress = async (provider, address) => {
-  const message = {
-    address,
-    signed_at: new Date().toISOString(),
-  };
+  const signedAt = new Date().toISOString();
+  const nonce = Math.floor(Math.random() * (999999 - 100000) + 100000);
+
+  const message = `NewShades wants you to sign in with your web3 account
+${address}
+
+URI: ...
+Nonce: ${nonce}
+Issued At: ${signedAt}`;
+
   const signature = await provider.request({
     method: "personal_sign",
-    params: [address, JSON.stringify(message)],
+    params: [address, message],
   });
 
-  return [signature, message];
+  return [signature, message, signedAt, nonce];
 };

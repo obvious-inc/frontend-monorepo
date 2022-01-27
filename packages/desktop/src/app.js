@@ -487,11 +487,11 @@ const SignInScreen = () => {
     try {
       const provider = await eth.connectProvider();
       const addresses = await eth.getUserAccounts(provider);
-      const [signature, message] = await eth.signAddress(
+      const [signature, message, signedAt, nonce] = await eth.signAddress(
         provider,
         addresses[0]
       );
-      await signIn({ message, signature });
+      await signIn({ message, signature, signedAt, address: addresses[0], nonce });
     } catch (e) {
       console.error(e);
       setSignInError(e.message);
