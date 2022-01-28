@@ -27,7 +27,10 @@ export const Provider = (props) => {
         headers: {
           "Content-Type": "application/json",
         },
-      }).then((res) => res.json());
+      }).then((response) => {
+        if (response.ok) return response.json();
+        return Promise.reject(new Error(response.statusText));
+      });
 
       setAccessToken(responseBody.access_token);
     },

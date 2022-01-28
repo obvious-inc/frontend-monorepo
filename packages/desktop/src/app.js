@@ -470,25 +470,39 @@ const NewMessageInput = ({ submit: submit_, placeholder }) => {
 const SignInScreen = () => {
   const { signIn } = useAuth();
 
-  const [isPending, setPending] = React.useState(false);
+  const [status, setStatus] = React.useState("idle");
   const [signInError, setSignInError] = React.useState(null);
 
   const handleClickSignIn = async () => {
     setSignInError(null);
-    setPending(true);
 
     try {
+      setStatus("connecting-provider");
       const provider = await eth.connectProvider();
+
+      setStatus("requesting-address");
       const addresses = await eth.getUserAccounts(provider);
+      setStatus("requesting-signature");
       const [signature, message, signedAt, nonce] = await eth.signAddress(
         provider,
         addresses[0]
       );
-      await signIn({ message, signature, signedAt, address: addresses[0], nonce });
+
+      setStatus("requesting-access-token");
+      await signIn({
+        message,
+        signature,
+        signedAt,
+        address: addresses[0],
+        nonce,
+      });
     } catch (e) {
+      setStatus("idle");
+
+      if (e.message === "wallet-connect:user-closed-modal") return;
+
       console.error(e);
       setSignInError(e.message);
-      setPending(false);
     }
   };
 
@@ -500,13 +514,20 @@ const SignInScreen = () => {
         justify-content: center;
         color: white;
         text-align: center;
+        padding: 2rem;
       `}
       style={{
         height: isNative ? `calc(100vh - ${TITLE_BAR_HEIGHT})` : "100vh",
       }}
     >
-      {isPending ? (
-        "..."
+      {status === "connecting-provider" ? (
+        "Connecting wallet..."
+      ) : status === "requesting-address" ? (
+        "Requesting wallet address..."
+      ) : status === "requesting-signature" ? (
+        "Requesting signature..."
+      ) : status === "requesting-access-token" ? (
+        "Signing in..."
       ) : (
         <div>
           {signInError != null && (
