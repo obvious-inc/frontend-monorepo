@@ -126,11 +126,14 @@ const App = () => {
               name: channelName ?? defaultChannelName,
               kind: "server",
               server: server.id,
+            }).then(() => {
+              navigate(`/channels/${server.id}/${channel.id}`, {
+                replace: true,
+              });
             });
             break;
           }
 
-          navigate(`/channels/${server.id}/${channel.id}`, { replace: true });
           break;
         }
         default: // Ignore
