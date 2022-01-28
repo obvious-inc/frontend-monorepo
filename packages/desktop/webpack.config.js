@@ -72,6 +72,7 @@ module.exports = (_, argv) => {
       ],
     },
     plugins,
+    // All for WalletConnect to build T_T
     resolve: {
       fallback: {
         os: require.resolve("os-browserify/browser"),
