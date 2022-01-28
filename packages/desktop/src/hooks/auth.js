@@ -13,17 +13,29 @@ export const Provider = (props) => {
 
   const isSignedIn = accessToken != null;
 
-  const signIn = React.useCallback(async ({ message, signature }) => {
-    const responseBody = await fetch(`${API_ENDPOINT}/auth/login`, {
-      method: "POST",
-      body: JSON.stringify({ message, signature }),
-      headers: {
-        "Content-Type": "application/json",
-      },
-    }).then((res) => res.json());
+  const signIn = React.useCallback(
+    async ({ message, signature, address, signedAt, nonce }) => {
+      const responseBody = await fetch(`${API_ENDPOINT}/auth/login`, {
+        method: "POST",
+        body: JSON.stringify({
+          message,
+          signature,
+          address,
+          signed_at: signedAt,
+          nonce,
+        }),
+        headers: {
+          "Content-Type": "application/json",
+        },
+      }).then((response) => {
+        if (response.ok) return response.json();
+        return Promise.reject(new Error(response.statusText));
+      });
 
-    setAccessToken(responseBody.access_token);
-  }, []);
+      setAccessToken(responseBody.access_token);
+    },
+    []
+  );
 
   const authorizedFetch = React.useCallback(
     async (url, options) => {

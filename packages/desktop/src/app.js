@@ -482,15 +482,20 @@ const SignInScreen = () => {
 
       setStatus("requesting-address");
       const addresses = await eth.getUserAccounts(provider);
-
       setStatus("requesting-signature");
-      const [signature, message] = await eth.signAddress(
+      const [signature, message, signedAt, nonce] = await eth.signAddress(
         provider,
         addresses[0]
       );
 
       setStatus("requesting-access-token");
-      await signIn({ message, signature });
+      await signIn({
+        message,
+        signature,
+        signedAt,
+        address: addresses[0],
+        nonce,
+      });
     } catch (e) {
       setStatus("idle");
 
