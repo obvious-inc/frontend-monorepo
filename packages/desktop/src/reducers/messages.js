@@ -1,5 +1,5 @@
 import combineReducers from "../utils/combine-reducers";
-import { indexBy, groupBy } from "../utils/array";
+import { indexBy, groupBy, unique } from "../utils/array";
 import { omitKey, mapValues } from "../utils/object";
 
 const entriesById = (state = {}, action) => {
@@ -10,7 +10,7 @@ const entriesById = (state = {}, action) => {
     case "server-event:message-created":
       return {
         ...state,
-        [action.message.id]: action.message,
+        [action.data.id]: action.data,
       };
 
     case "message-create-request-sent":
@@ -43,11 +43,11 @@ const entryIdsByChannelId = (state = {}, action) => {
     }
 
     case "server-event:message-created": {
-      const channelId = action.message.channel;
+      const channelId = action.data.channel;
       const channelMessageIds = state[channelId] ?? [];
       return {
         ...state,
-        [channelId]: [...channelMessageIds, action.message.id],
+        [channelId]: unique([...channelMessageIds, action.data.id]),
       };
     }
 
