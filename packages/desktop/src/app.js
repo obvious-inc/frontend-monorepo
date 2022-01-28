@@ -4,6 +4,7 @@ import {
   Route,
   useNavigate,
   useParams,
+  useLocation,
   NavLink,
   Outlet,
 } from "react-router-dom";
@@ -21,6 +22,7 @@ import TitleBar from "./components/title-bar";
 const isNative = window.Native != null;
 
 const App = () => {
+  const location = useLocation();
   const navigate = useNavigate();
 
   const { isSignedIn, user, accessToken, authorizedFetch } = useAuth();
@@ -107,6 +109,11 @@ const App = () => {
           const server = data.servers[0];
           const channel = server?.channels[0];
 
+          const redirectToChannel = (channelId) =>
+            navigate(`/channels/${server.id}/${channelId}`, {
+              replace: true,
+            });
+
           if (server == null) {
             // Temporary ofc
             const defaultServerName = `${user.display_name}’a server`;
@@ -126,13 +133,13 @@ const App = () => {
               name: channelName ?? defaultChannelName,
               kind: "server",
               server: server.id,
-            }).then(() => {
-              navigate(`/channels/${server.id}/${channel.id}`, {
-                replace: true,
-              });
+            }).then((channel) => {
+              redirectToChannel(channel.id);
             });
             break;
           }
+
+          if (location.pathname === "/") redirectToChannel(channel.id);
 
           break;
         }
