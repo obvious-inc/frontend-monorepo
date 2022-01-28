@@ -100,12 +100,10 @@ const App = () => {
 
   React.useEffect(() => {
     const handler = (name, data) => {
-      const handle = () =>
-        dispatch({ type: ["server-event", name].join(":"), data });
+      dispatch({ type: ["server-event", name].join(":"), data });
 
       switch (name) {
         case "user-data": {
-          handle();
           const server = data.servers[0];
           const channel = server?.channels[0];
 
@@ -135,11 +133,6 @@ const App = () => {
           navigate(`/channels/${server.id}/${channel.id}`, { replace: true });
           break;
         }
-        case "message-created":
-          // Ignore the signed in user’s messages, they are handled elsewhere
-          if (data.author === user.id) return;
-          handle();
-          break;
         default: // Ignore
       }
     };
