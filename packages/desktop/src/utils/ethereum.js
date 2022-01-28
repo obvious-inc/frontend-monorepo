@@ -33,8 +33,7 @@ export const getUserAccounts = async (provider) => {
 
 export const signAddress = async (provider, address) => {
   const signedAt = new Date().toISOString();
-  const nonce = Math.floor(Math.random() * (999999 - 100000) + 100000);
-
+  const nonce = crypto.getRandomValues(new Uint32Array(1))[0];
   const message = `NewShades wants you to sign in with your web3 account
 ${address}
 
