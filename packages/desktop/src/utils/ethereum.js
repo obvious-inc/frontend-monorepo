@@ -37,7 +37,7 @@ export const signAddress = async (provider, address) => {
   const message = `NewShades wants you to sign in with your web3 account
 ${address}
 
-URI: ...
+URI: ${location.origin}
 Nonce: ${nonce}
 Issued At: ${signedAt}`;
 
