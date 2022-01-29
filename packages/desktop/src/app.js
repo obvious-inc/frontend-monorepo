@@ -296,6 +296,8 @@ const Channel = () => {
   const params = useParams();
   const { actions, state } = useAppScope();
 
+  const inputRef = React.useRef();
+
   const selectedServer = state.selectServer(params.serverId);
   const serverChannels = selectedServer?.channels ?? [];
   const selectedChannel = serverChannels.find((c) => c.id === params.channelId);
@@ -308,6 +310,11 @@ const Channel = () => {
   React.useEffect(() => {
     actions.fetchMessages({ channelId: params.channelId });
   }, [actions.fetchMessages, params.channelId]);
+
+  React.useEffect(() => {
+    if (selectedChannel?.id == null) return;
+    inputRef.current.focus();
+  }, [selectedChannel?.id]);
 
   if (selectedChannel == null) return null;
 
@@ -356,20 +363,19 @@ const Channel = () => {
           `}
         />
       </div>
-      {selectedChannel != null && (
-        <NewMessageInput
-          submit={(content) =>
-            actions.createMessage({
-              server: params.serverId,
-              channel: params.channelId,
-              content,
-            })
-          }
-          placeholder={
-            selectedChannel == null ? "..." : `Message #${selectedChannel.name}`
-          }
-        />
-      )}
+      <NewMessageInput
+        ref={inputRef}
+        submit={(content) =>
+          actions.createMessage({
+            server: params.serverId,
+            channel: params.channelId,
+            content,
+          })
+        }
+        placeholder={
+          selectedChannel == null ? "..." : `Message #${selectedChannel.name}`
+        }
+      />
     </div>
   );
 };
@@ -424,60 +430,63 @@ const MessageItem = ({ author, content, timestamp }) => (
   </div>
 );
 
-const NewMessageInput = ({ submit: submit_, placeholder }) => {
-  const formRef = React.useRef();
-  const [pendingMessage, setPendingMessage] = React.useState("");
+const NewMessageInput = React.forwardRef(
+  ({ submit: submit_, placeholder }, ref) => {
+    const formRef = React.useRef();
+    const [pendingMessage, setPendingMessage] = React.useState("");
 
-  const submit = async () => {
-    submit_(pendingMessage);
-    setPendingMessage("");
-  };
+    const submit = async () => {
+      submit_(pendingMessage);
+      setPendingMessage("");
+    };
 
-  return (
-    <form
-      ref={formRef}
-      onSubmit={(e) => {
-        e.preventDefault();
-        submit();
-      }}
-      css={css`
-        padding: 0 1.6rem 1.6rem;
-      `}
-    >
-      <textarea
-        rows={1}
-        value={pendingMessage}
-        onChange={(e) => setPendingMessage(e.target.value)}
-        style={{
-          font: "inherit",
-          fontSize: "1.3rem",
-          padding: "1.4rem 1.6rem",
-          background: "rgb(255 255 255 / 4%)",
-          color: "white",
-          border: 0,
-          borderRadius: "0.5rem",
-          outline: "none",
-          display: "block",
-          width: "100%",
-          resize: "none",
+    return (
+      <form
+        ref={formRef}
+        onSubmit={(e) => {
+          e.preventDefault();
+          submit();
         }}
-        placeholder={placeholder}
-        onKeyPress={(e) => {
-          if (!e.shiftKey && e.key === "Enter") {
-            e.preventDefault();
-            if (pendingMessage.trim().length === 0) return;
-            submit();
-          }
-        }}
-      />
-      <input
-        type="submit"
-        hidden
-        disabled={pendingMessage.trim().length === 0}
-      />
-    </form>
-  );
-};
+        css={css`
+          padding: 0 1.6rem 1.6rem;
+        `}
+      >
+        <textarea
+          ref={ref}
+          rows={1}
+          value={pendingMessage}
+          onChange={(e) => setPendingMessage(e.target.value)}
+          style={{
+            font: "inherit",
+            fontSize: "1.3rem",
+            padding: "1.4rem 1.6rem",
+            background: "rgb(255 255 255 / 4%)",
+            color: "white",
+            border: 0,
+            borderRadius: "0.5rem",
+            outline: "none",
+            display: "block",
+            width: "100%",
+            resize: "none",
+          }}
+          placeholder={placeholder}
+          onKeyPress={(e) => {
+            if (!e.shiftKey && e.key === "Enter") {
+              e.preventDefault();
+              if (pendingMessage.trim().length === 0) return;
+              submit();
+            }
+          }}
+        />
+        <input
+          type="submit"
+          hidden
+          disabled={pendingMessage.trim().length === 0}
+        />
+      </form>
+    );
+  }
+);
 
 const SignInScreen = () => {
   const { signIn } = useAuth();
