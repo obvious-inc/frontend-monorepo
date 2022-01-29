@@ -17,6 +17,7 @@ module.exports = (_, argv) => {
       API_ENDPOINT: isProduction ? null : "/api",
       PUSHER_KEY: null,
       INFURA_PROJECT_ID: null,
+      SENTRY_DSN: null,
     }),
     new webpack.ProvidePlugin({
       process: "process/browser",
