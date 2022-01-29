@@ -379,6 +379,7 @@ const MessageItem = ({ author, content, timestamp }) => (
     css={css`
       line-height: 1.6;
       padding: 0.7rem 1.6rem 0.5rem;
+      user-select: text;
       &:hover {
         background: rgb(0 0 0 / 15%);
       }
@@ -392,6 +393,7 @@ const MessageItem = ({ author, content, timestamp }) => (
         align-items: flex-end;
         grid-gap: 1.2rem;
         margin: 0 0 0.4rem;
+        cursor: default;
       `}
     >
       <div
