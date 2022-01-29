@@ -45,6 +45,7 @@
     "electron-squirrel-startup": "^1.0.0",
     "eth-provider": "^0.10.0",
     "ethers": "^5.5.3",
+    "pusher-js": "^7.0.4",
     "react": "^17.0.2",
     "react-dom": "^17.0.2",
     "react-intl": "^5.24.3",

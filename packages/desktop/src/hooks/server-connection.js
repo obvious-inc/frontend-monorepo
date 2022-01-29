@@ -1,4 +1,5 @@
 import React from "react";
+import Pusher from "pusher-js";
 import { API_ENDPOINT } from "../constants/api";
 
 const clientEventMap = {
