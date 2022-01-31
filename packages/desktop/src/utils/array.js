@@ -11,3 +11,5 @@ export const groupBy = (computeKey, list) =>
     acc[key] = [...group, item];
     return acc;
   }, {});
+
+export const unique = (list) => [...new Set(list)];

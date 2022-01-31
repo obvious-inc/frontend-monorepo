@@ -16,6 +16,12 @@ module.exports = (_, argv) => {
     new webpack.EnvironmentPlugin({
       API_ENDPOINT: isProduction ? null : "/api",
       PUSHER_KEY: null,
+      INFURA_PROJECT_ID: null,
+      SENTRY_DSN: null,
+    }),
+    new webpack.ProvidePlugin({
+      process: "process/browser",
+      Buffer: ["buffer", "Buffer"],
     }),
   ];
 
@@ -67,5 +73,16 @@ module.exports = (_, argv) => {
       ],
     },
     plugins,
+    // All for WalletConnect to build T_T
+    resolve: {
+      fallback: {
+        os: require.resolve("os-browserify/browser"),
+        https: require.resolve("https-browserify"),
+        http: require.resolve("stream-http"),
+        assert: require.resolve("assert"),
+        stream: require.resolve("stream-browserify"),
+        url: require.resolve("url/"),
+      },
+    },
   };
 };

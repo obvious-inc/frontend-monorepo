@@ -4,6 +4,7 @@ import {
   Route,
   useNavigate,
   useParams,
+  useLocation,
   NavLink,
   Outlet,
 } from "react-router-dom";
@@ -21,6 +22,7 @@ import TitleBar from "./components/title-bar";
 const isNative = window.Native != null;
 
 const App = () => {
+  const location = useLocation();
   const navigate = useNavigate();
 
   const { isSignedIn, user, accessToken, authorizedFetch } = useAuth();
@@ -111,14 +113,17 @@ const App = () => {
 
   React.useEffect(() => {
     const handler = (name, data) => {
-      const handle = () =>
-        dispatch({ type: ["server-event", name].join(":"), data });
+      dispatch({ type: ["server-event", name].join(":"), data });
 
       switch (name) {
         case "user-data": {
-          handle();
           const server = data.servers[0];
           const channel = server?.channels[0];
+
+          const redirectToChannel = (channelId) =>
+            navigate(`/channels/${server.id}/${channelId}`, {
+              replace: true,
+            });
 
           if (server == null) {
             // Temporary ofc
@@ -139,18 +144,16 @@ const App = () => {
               name: channelName ?? defaultChannelName,
               kind: "server",
               server: server.id,
+            }).then((channel) => {
+              redirectToChannel(channel.id);
             });
             break;
           }
 
-          navigate(`/channels/${server.id}/${channel.id}`, { replace: true });
+          if (location.pathname === "/") redirectToChannel(channel.id);
+
           break;
         }
-        case "message-created":
-          // Ignore the signed in user’s messages, they are handled elsewhere
-          if (data.author === user.id) return;
-          handle();
-          break;
         default: // Ignore
       }
     };
@@ -305,6 +308,8 @@ const Channel = () => {
   const params = useParams();
   const { actions, state } = useAppScope();
 
+  const inputRef = React.useRef();
+
   const selectedServer = state.selectServer(params.serverId);
   const serverChannels = selectedServer?.channels ?? [];
   const selectedChannel = serverChannels.find((c) => c.id === params.channelId);
@@ -324,12 +329,17 @@ const Channel = () => {
     actions.fetchMessages({ channelId: params.channelId });
   }, [actions.fetchMessages, params.channelId]);
 
-  // Mark channel as read whenever the user enters a channel, or whenever a new
-  // message appears
   React.useEffect(() => {
+    if (selectedChannel?.id == null) return;
+    inputRef.current.focus();
     if (mostRecentMessage == null) return;
     actions.markChannelRead({ channelId: params.channelId });
-  }, [mostRecentMessage, params.channelId, actions.markChannelRead]);
+  }, [
+    selectedChannel?.id,
+    mostRecentMessage,
+    params.channelId,
+    actions.markChannelRead,
+  ]);
 
   if (selectedChannel == null) return null;
 
@@ -376,20 +386,19 @@ const Channel = () => {
           `}
         />
       </div>
-      {selectedChannel != null && (
-        <NewMessageInput
-          submit={(content) =>
-            actions.createMessage({
-              server: params.serverId,
-              channel: params.channelId,
-              content,
-            })
-          }
-          placeholder={
-            selectedChannel == null ? "..." : `Message #${selectedChannel.name}`
-          }
-        />
-      )}
+      <NewMessageInput
+        ref={inputRef}
+        submit={(content) =>
+          actions.createMessage({
+            server: params.serverId,
+            channel: params.channelId,
+            content,
+          })
+        }
+        placeholder={
+          selectedChannel == null ? "..." : `Message #${selectedChannel.name}`
+        }
+      />
     </div>
   );
 };
@@ -399,6 +408,7 @@ const MessageItem = ({ author, content, timestamp }) => (
     css={css`
       line-height: 1.6;
       padding: 0.7rem 1.6rem 0.5rem;
+      user-select: text;
       &:hover {
         background: rgb(0 0 0 / 15%);
       }
@@ -412,6 +422,7 @@ const MessageItem = ({ author, content, timestamp }) => (
         align-items: flex-end;
         grid-gap: 1.2rem;
         margin: 0 0 0.4rem;
+        cursor: default;
       `}
     >
       <div
@@ -442,83 +453,100 @@ const MessageItem = ({ author, content, timestamp }) => (
   </div>
 );
 
-const NewMessageInput = ({ submit: submit_, placeholder }) => {
-  const formRef = React.useRef();
-  const [pendingMessage, setPendingMessage] = React.useState("");
+const NewMessageInput = React.forwardRef(
+  ({ submit: submit_, placeholder }, ref) => {
+    const formRef = React.useRef();
+    const [pendingMessage, setPendingMessage] = React.useState("");
 
-  const submit = async () => {
-    submit_(pendingMessage);
-    setPendingMessage("");
-  };
+    const submit = async () => {
+      submit_(pendingMessage);
+      setPendingMessage("");
+    };
 
-  return (
-    <form
-      ref={formRef}
-      onSubmit={(e) => {
-        e.preventDefault();
-        submit();
-      }}
-      css={css`
-        padding: 0 1.6rem 1.6rem;
-      `}
-    >
-      <textarea
-        rows={1}
-        value={pendingMessage}
-        onChange={(e) => setPendingMessage(e.target.value)}
-        style={{
-          font: "inherit",
-          fontSize: "1.3rem",
-          padding: "1.4rem 1.6rem",
-          background: "rgb(255 255 255 / 4%)",
-          color: "white",
-          border: 0,
-          borderRadius: "0.5rem",
-          outline: "none",
-          display: "block",
-          width: "100%",
-          resize: "none",
+    return (
+      <form
+        ref={formRef}
+        onSubmit={(e) => {
+          e.preventDefault();
+          submit();
         }}
-        placeholder={placeholder}
-        onKeyPress={(e) => {
-          if (!e.shiftKey && e.key === "Enter") {
-            e.preventDefault();
-            if (pendingMessage.trim().length === 0) return;
-            submit();
-          }
-        }}
-      />
-      <input
-        type="submit"
-        hidden
-        disabled={pendingMessage.trim().length === 0}
-      />
-    </form>
-  );
-};
+        css={css`
+          padding: 0 1.6rem 1.6rem;
+        `}
+      >
+        <textarea
+          ref={ref}
+          rows={1}
+          value={pendingMessage}
+          onChange={(e) => setPendingMessage(e.target.value)}
+          style={{
+            font: "inherit",
+            fontSize: "1.3rem",
+            padding: "1.4rem 1.6rem",
+            background: "rgb(255 255 255 / 4%)",
+            color: "white",
+            border: 0,
+            borderRadius: "0.5rem",
+            outline: "none",
+            display: "block",
+            width: "100%",
+            resize: "none",
+          }}
+          placeholder={placeholder}
+          onKeyPress={(e) => {
+            if (!e.shiftKey && e.key === "Enter") {
+              e.preventDefault();
+              if (pendingMessage.trim().length === 0) return;
+              submit();
+            }
+          }}
+        />
+        <input
+          type="submit"
+          hidden
+          disabled={pendingMessage.trim().length === 0}
+        />
+      </form>
+    );
+  }
+);
 
 const SignInScreen = () => {
   const { signIn } = useAuth();
 
-  const [isPending, setPending] = React.useState(false);
+  const [status, setStatus] = React.useState("idle");
   const [signInError, setSignInError] = React.useState(null);
 
   const handleClickSignIn = async () => {
     setSignInError(null);
-    setPending(true);
 
     try {
+      setStatus("connecting-provider");
       const provider = await eth.connectProvider();
+
+      setStatus("requesting-address");
       const addresses = await eth.getUserAccounts(provider);
-      const [signature, message] = await eth.signAddress(
+      setStatus("requesting-signature");
+      const [signature, message, signedAt, nonce] = await eth.signAddress(
         provider,
         addresses[0]
       );
-      await signIn({ message, signature });
+
+      setStatus("requesting-access-token");
+      await signIn({
+        message,
+        signature,
+        signedAt,
+        address: addresses[0],
+        nonce,
+      });
     } catch (e) {
+      setStatus("idle");
+
+      if (e.message === "wallet-connect:user-closed-modal") return;
+
       console.error(e);
       setSignInError(e.message);
-      setPending(false);
     }
   };
 
@@ -530,13 +558,20 @@ const SignInScreen = () => {
         justify-content: center;
         color: white;
         text-align: center;
+        padding: 2rem;
       `}
       style={{
         height: isNative ? `calc(100vh - ${TITLE_BAR_HEIGHT})` : "100vh",
       }}
     >
-      {isPending ? (
-        "..."
+      {status === "connecting-provider" ? (
+        "Connecting wallet..."
+      ) : status === "requesting-address" ? (
+        "Requesting wallet address..."
+      ) : status === "requesting-signature" ? (
+        "Requesting signature..."
+      ) : status === "requesting-access-token" ? (
+        "Signing in..."
       ) : (
         <div>
           {signInError != null && (
