@@ -103,12 +103,11 @@ const App = () => {
   const markChannelRead = React.useCallback(
     ({ channelId }) => {
       // TODO: optimistic UI changes
-      serverConnection.send("mark-channel-read", {
-        channelId,
-        date: new Date(),
-      });
+      const now = new Date();
+      dispatch({ type: "mark-channel-read", channelId, date: now });
+      serverConnection.send("mark-channel-read", { channelId, date: now });
     },
-    [serverConnection]
+    [serverConnection.send]
   );
 
   React.useEffect(() => {
@@ -202,10 +201,7 @@ const ChannelLayout = () => {
   const params = useParams();
   const { actions, state } = useAppScope();
 
-  const server = state.selectServer(params.serverId);
-  const channels = server?.channels ?? [];
-
-  if (server == null) return null;
+  const channels = state.selectServerChannels(params.serverId);
 
   return (
     <div style={{ background: "rgb(255 255 255 / 5%)" }}>
@@ -277,13 +273,12 @@ const ChannelLayout = () => {
                   padding: 0.7rem 1.1rem;
                   text-decoration: none;
                 }
+                a.active,
                 a:hover {
                   background: rgb(255 255 255 / 3%);
                 }
+                a.active > .name,
                 a:hover > .name {
-                  color: white;
-                }
-                a.active .name {
                   color: white;
                 }
               `}
@@ -292,7 +287,13 @@ const ChannelLayout = () => {
                 to={`/channels/${params.serverId}/${c.id}`}
                 className={({ isActive }) => (isActive ? "active" : "")}
               >
-                # <span className="name">{c.name}</span>
+                #{" "}
+                <span
+                  className="name"
+                  style={{ color: c.hasUnread ? "white" : undefined }}
+                >
+                  {c.name}
+                </span>
               </NavLink>
             </div>
           ))}
@@ -332,14 +333,12 @@ const Channel = () => {
   React.useEffect(() => {
     if (selectedChannel?.id == null) return;
     inputRef.current.focus();
+  }, [selectedChannel?.id, params.channelId]);
+
+  React.useEffect(() => {
     if (mostRecentMessage == null) return;
     actions.markChannelRead({ channelId: params.channelId });
-  }, [
-    selectedChannel?.id,
-    mostRecentMessage,
-    params.channelId,
-    actions.markChannelRead,
-  ]);
+  }, [params.channelId, actions.markChannelRead]);
 
   if (selectedChannel == null) return null;
 
