@@ -62,7 +62,8 @@ export const selectServerChannels = (state) => (serverId) => {
       state.channels.lastMessageTimestampByChannelId[c.id];
     return {
       ...c,
-      hasUnread: lastReadTimestamp < lastMessageTimestamp,
+      hasUnread:
+        lastReadTimestamp == null || lastReadTimestamp < lastMessageTimestamp,
     };
   });
 };

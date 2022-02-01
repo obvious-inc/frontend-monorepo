@@ -338,7 +338,7 @@ const Channel = () => {
   React.useEffect(() => {
     if (mostRecentMessage == null) return;
     actions.markChannelRead({ channelId: params.channelId });
-  }, [params.channelId, actions.markChannelRead]);
+  }, [params.channelId, mostRecentMessage, actions.markChannelRead]);
 
   if (selectedChannel == null) return null;
 
