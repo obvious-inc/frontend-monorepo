@@ -317,6 +317,7 @@ const ChannelLayout = () => {
 
 const Channel = () => {
   const params = useParams();
+  const { user } = useAuth();
   const { actions, state } = useAppScope();
 
   const inputRef = React.useRef();
@@ -346,9 +347,14 @@ const Channel = () => {
   }, [selectedChannel?.id]);
 
   React.useEffect(() => {
-    if (mostRecentMessage == null) return;
+    if (
+      mostRecentMessage?.id == null ||
+      // Assume the user’s own messages are marked read on the backend
+      mostRecentMessage.author.id === user.id
+    )
+      return;
     actions.markChannelRead({ channelId: params.channelId });
-  }, [params.channelId, mostRecentMessage, actions.markChannelRead]);
+  }, [params.channelId, mostRecentMessage?.id, actions.markChannelRead]);
 
   if (selectedChannel == null) return null;
 
