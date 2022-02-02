@@ -9,7 +9,7 @@ const clientEventMap = {
     "client-channel-mark",
     (clientPayload) => ({
       channel_id: clientPayload.channelId,
-      last_read_ts: clientPayload.date.toISOString(),
+      last_read_at: clientPayload.date.toISOString(),
     }),
   ],
 };

@@ -7,7 +7,7 @@ const readTimestampByChannelId = (state = {}, action) => {
   switch (action.type) {
     case "server-event:user-data": {
       const timestampsByChannelId = mapValues(
-        (s) => new Date(s.last_read_ts).getTime(),
+        (s) => new Date(s.last_read_at).getTime(),
         indexBy((s) => s.channel, action.data.read_states)
       );
       return {
