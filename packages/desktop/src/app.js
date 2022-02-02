@@ -66,7 +66,7 @@ const App = () => {
 
   const createMessage = React.useCallback(
     async ({ server, channel, content }) => {
-      // TODO: Less hacky way of posting eagerly
+      // TODO: Less hacky optimistc UI
       const message = { server, channel, content };
       const dummyId = generateDummyId();
 
@@ -111,8 +111,8 @@ const App = () => {
   );
 
   const markChannelRead = React.useCallback(
-    ({ channelId }) => {
-      sendServerMessage("mark-channel-read", { channelId, date: new Date() });
+    ({ channelId, date = new Date() }) => {
+      sendServerMessage("mark-channel-read", { channelId, date });
     },
     [sendServerMessage]
   );
