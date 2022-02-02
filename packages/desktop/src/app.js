@@ -119,7 +119,7 @@ const App = () => {
 
   React.useEffect(() => {
     const handler = (name, data) => {
-      dispatch({ type: ["server-event", name].join(":"), data });
+      dispatch({ type: ["server-event", name].join(":"), data, user });
 
       switch (name) {
         case "user-data": {
@@ -168,7 +168,7 @@ const App = () => {
     return () => {
       removeListener();
     };
-  }, [serverConnection.addListener, user?.id]);
+  }, [serverConnection.addListener, user]);
 
   return (
     <>
@@ -317,7 +317,6 @@ const ChannelLayout = () => {
 
 const Channel = () => {
   const params = useParams();
-  const { user } = useAuth();
   const { actions, state } = useAppScope();
 
   const inputRef = React.useRef();
@@ -334,27 +333,24 @@ const Channel = () => {
     (m1, m2) => new Date(m1.created_at) - new Date(m2.created_at)
   );
 
-  const mostRecentMessage = sortedMessages.slice(-1)[0];
-
   // Fetch messages when switching channels
   React.useEffect(() => {
-    actions.fetchMessages({ channelId: params.channelId });
-  }, [actions.fetchMessages, params.channelId]);
+    let didChangeChannel = false;
+
+    actions.fetchMessages({ channelId: params.channelId }).then(() => {
+      if (didChangeChannel) return;
+      actions.markChannelRead({ channelId: params.channelId });
+    });
+
+    return () => {
+      didChangeChannel = true;
+    };
+  }, [actions.fetchMessages, actions.markChannelRead, params.channelId]);
 
   React.useEffect(() => {
     if (selectedChannel?.id == null) return;
     inputRef.current.focus();
   }, [selectedChannel?.id]);
-
-  React.useEffect(() => {
-    if (
-      mostRecentMessage?.id == null ||
-      // Assume the user’s own messages are marked read on the backend
-      mostRecentMessage.author.id === user.id
-    )
-      return;
-    actions.markChannelRead({ channelId: params.channelId });
-  }, [params.channelId, mostRecentMessage?.id, actions.markChannelRead]);
 
   if (selectedChannel == null) return null;
 
