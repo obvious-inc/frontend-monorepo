@@ -22,6 +22,13 @@ const readTimestampByChannelId = (state = {}, action) => {
         [action.data.channelId]: action.data.date.getTime(),
       };
 
+    case "message-create-request-sent":
+    case "message-create-request-successful":
+      return {
+        ...state,
+        [action.message.channel]: new Date(action.message.created_at).getTime(),
+      };
+
     default:
       return state;
   }
