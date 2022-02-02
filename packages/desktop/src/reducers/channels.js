@@ -39,7 +39,7 @@ const lastMessageTimestampByChannelId = (state = {}, action) => {
     case "server-event:user-data": {
       const allChannels = action.data.servers.flatMap((s) => s.channels);
       const timestampsByChannelId = mapValues(
-        (c) => new Date(c.last_message_ts).getTime(),
+        (c) => new Date(c.last_message_at).getTime(),
         indexBy((c) => c.id, allChannels)
       );
       return {
