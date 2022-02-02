@@ -32,7 +32,8 @@ const useServerConnection = ({
     const [serverEvent, payloadMapper = identity] = clientEventMap[event];
     if (serverEvent == null) throw new Error(`Unknown event "${event}"`);
 
-    channelRef.current.trigger(serverEvent, payloadMapper(payload));
+    // Pusher returns true if the message is successfully sent, false otherwise
+    return channelRef.current.trigger(serverEvent, payloadMapper(payload));
   }, []);
 
   const addListener = React.useCallback((fn) => {

@@ -7,7 +7,7 @@ const readTimestampByChannelId = (state = {}, action) => {
   switch (action.type) {
     case "server-event:user-data": {
       const timestampsByChannelId = mapValues(
-        (s) => s.last_read_ts,
+        (s) => new Date(s.last_read_ts).getTime(),
         indexBy((s) => s.channel, action.data.read_states)
       );
       return {
@@ -15,10 +15,11 @@ const readTimestampByChannelId = (state = {}, action) => {
         ...timestampsByChannelId,
       };
     }
+
     case "mark-channel-read":
       return {
         ...state,
-        [action.channelId]: action.date.getTime() / 1000,
+        [action.data.channelId]: action.data.date.getTime(),
       };
 
     default:
@@ -31,7 +32,7 @@ const lastMessageTimestampByChannelId = (state = {}, action) => {
     case "server-event:user-data": {
       const allChannels = action.data.servers.flatMap((s) => s.channels);
       const timestampsByChannelId = mapValues(
-        (c) => c.last_message_ts,
+        (c) => new Date(c.last_message_ts).getTime(),
         indexBy((c) => c.id, allChannels)
       );
       return {
@@ -39,11 +40,11 @@ const lastMessageTimestampByChannelId = (state = {}, action) => {
         ...timestampsByChannelId,
       };
     }
+
     case "server-event:message-created":
       return {
         ...state,
-        [action.data.channel]:
-          new Date(action.data.created_at).getTime() / 1000,
+        [action.data.channel]: new Date(action.data.created_at).getTime(),
       };
 
     default:

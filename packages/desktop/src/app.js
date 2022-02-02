@@ -32,6 +32,16 @@ const App = () => {
     userId: user?.id,
   });
 
+  const sendServerMessage = React.useCallback(
+    (name, data) => {
+      const messageSent = serverConnection.send(name, data);
+      // Dispatch a client action if the message was successfully sent
+      if (messageSent) dispatch({ type: name, data });
+      return messageSent;
+    },
+    [dispatch, serverConnection.send]
+  );
+
   const fetchMessages = React.useCallback(
     ({ channelId }) =>
       authorizedFetch(`/channels/${channelId}/messages`).then((messages) => {
@@ -102,12 +112,9 @@ const App = () => {
 
   const markChannelRead = React.useCallback(
     ({ channelId }) => {
-      // TODO: optimistic UI changes
-      const now = new Date();
-      dispatch({ type: "mark-channel-read", channelId, date: now });
-      serverConnection.send("mark-channel-read", { channelId, date: now });
+      sendServerMessage("mark-channel-read", { channelId, date: new Date() });
     },
-    [serverConnection.send]
+    [sendServerMessage]
   );
 
   React.useEffect(() => {
@@ -201,7 +208,10 @@ const ChannelLayout = () => {
   const params = useParams();
   const { actions, state } = useAppScope();
 
+  const server = state.selectServer(params.serverId);
   const channels = state.selectServerChannels(params.serverId);
+
+  if (server == null) return null;
 
   return (
     <div style={{ background: "rgb(255 255 255 / 5%)" }}>
@@ -333,7 +343,7 @@ const Channel = () => {
   React.useEffect(() => {
     if (selectedChannel?.id == null) return;
     inputRef.current.focus();
-  }, [selectedChannel?.id, params.channelId]);
+  }, [selectedChannel?.id]);
 
   React.useEffect(() => {
     if (mostRecentMessage == null) return;
