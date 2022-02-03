@@ -46,6 +46,7 @@ const App = () => {
     ({ channelId }) =>
       authorizedFetch(`/channels/${channelId}/messages`).then((messages) => {
         dispatch({ type: "messages-fetched", messages });
+        return messages;
       }),
     [authorizedFetch]
   );
@@ -317,6 +318,7 @@ const ChannelLayout = () => {
 
 const Channel = () => {
   const params = useParams();
+  const { user } = useAuth();
   const { actions, state } = useAppScope();
 
   const inputRef = React.useRef();
@@ -333,12 +335,14 @@ const Channel = () => {
     (m1, m2) => new Date(m1.created_at) - new Date(m2.created_at)
   );
 
+  const lastMessage = sortedMessages.slice(-1)[0];
+
   // Fetch messages when switching channels
   React.useEffect(() => {
     let didChangeChannel = false;
 
-    actions.fetchMessages({ channelId: params.channelId }).then(() => {
-      if (didChangeChannel) return;
+    actions.fetchMessages({ channelId: params.channelId }).then((messages) => {
+      if (didChangeChannel || messages.length !== 0) return;
       actions.markChannelRead({ channelId: params.channelId });
     });
 
@@ -346,6 +350,11 @@ const Channel = () => {
       didChangeChannel = true;
     };
   }, [actions.fetchMessages, actions.markChannelRead, params.channelId]);
+
+  React.useEffect(() => {
+    if (lastMessage?.id == null || lastMessage.author === user.id) return;
+    actions.markChannelRead({ channelId: params.channelId });
+  }, [lastMessage?.id, lastMessage?.author, user.id, params.channelId]);
 
   React.useEffect(() => {
     if (selectedChannel?.id == null) return;
