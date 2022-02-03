@@ -32,10 +32,21 @@ const App = () => {
     userId: user?.id,
   });
 
+  const sendServerMessage = React.useCallback(
+    (name, data) => {
+      const messageSent = serverConnection.send(name, data);
+      // Dispatch a client action if the message was successfully sent
+      if (messageSent) dispatch({ type: name, data });
+      return messageSent;
+    },
+    [dispatch, serverConnection.send]
+  );
+
   const fetchMessages = React.useCallback(
     ({ channelId }) =>
       authorizedFetch(`/channels/${channelId}/messages`).then((messages) => {
         dispatch({ type: "messages-fetched", messages });
+        return messages;
       }),
     [authorizedFetch]
   );
@@ -54,9 +65,16 @@ const App = () => {
     [authorizedFetch]
   );
 
+  const markChannelRead = React.useCallback(
+    ({ channelId, date = new Date() }) => {
+      sendServerMessage("mark-channel-read", { channelId, date });
+    },
+    [sendServerMessage]
+  );
+
   const createMessage = React.useCallback(
     async ({ server, channel, content }) => {
-      // TODO: Less hacky way of posting eagerly
+      // TODO: Less hacky optimistc UI
       const message = { server, channel, content };
       const dummyId = generateDummyId();
 
@@ -80,10 +98,11 @@ const App = () => {
           message,
           optimisticEntryId: dummyId,
         });
+        markChannelRead({ channelId: channel });
         return message;
       });
     },
-    [authorizedFetch, user]
+    [authorizedFetch, user, markChannelRead]
   );
 
   const createChannel = React.useCallback(
@@ -102,7 +121,7 @@ const App = () => {
 
   React.useEffect(() => {
     const handler = (name, data) => {
-      dispatch({ type: ["server-event", name].join(":"), data });
+      dispatch({ type: ["server-event", name].join(":"), data, user });
 
       switch (name) {
         case "user-data": {
@@ -151,7 +170,7 @@ const App = () => {
     return () => {
       removeListener();
     };
-  }, [serverConnection.addListener, user?.id]);
+  }, [serverConnection.addListener, user]);
 
   return (
     <>
@@ -166,6 +185,7 @@ const App = () => {
               createServer,
               createChannel,
               createMessage,
+              markChannelRead,
             },
           }}
         >
@@ -191,7 +211,7 @@ const ChannelLayout = () => {
   const { actions, state } = useAppScope();
 
   const server = state.selectServer(params.serverId);
-  const channels = server?.channels ?? [];
+  const channels = state.selectServerChannels(params.serverId);
 
   if (server == null) return null;
 
@@ -265,13 +285,12 @@ const ChannelLayout = () => {
                   padding: 0.7rem 1.1rem;
                   text-decoration: none;
                 }
+                a.active,
                 a:hover {
                   background: rgb(255 255 255 / 3%);
                 }
+                a.active > .name,
                 a:hover > .name {
-                  color: white;
-                }
-                a.active .name {
                   color: white;
                 }
               `}
@@ -280,7 +299,13 @@ const ChannelLayout = () => {
                 to={`/channels/${params.serverId}/${c.id}`}
                 className={({ isActive }) => (isActive ? "active" : "")}
               >
-                # <span className="name">{c.name}</span>
+                #{" "}
+                <span
+                  className="name"
+                  style={{ color: c.hasUnread ? "white" : undefined }}
+                >
+                  {c.name}
+                </span>
               </NavLink>
             </div>
           ))}
@@ -294,6 +319,7 @@ const ChannelLayout = () => {
 
 const Channel = () => {
   const params = useParams();
+  const { user } = useAuth();
   const { actions, state } = useAppScope();
 
   const inputRef = React.useRef();
@@ -304,12 +330,32 @@ const Channel = () => {
   const serverMembersByUserId = state.selectServerMembersByUserId(
     params.serverId
   );
-  const channelMessages = state.selectChannelMessages(params.channelId);
+  const messages = state.selectChannelMessages(params.channelId);
+
+  const sortedMessages = messages.sort(
+    (m1, m2) => new Date(m1.created_at) - new Date(m2.created_at)
+  );
+
+  const lastMessage = sortedMessages.slice(-1)[0];
 
   // Fetch messages when switching channels
   React.useEffect(() => {
-    actions.fetchMessages({ channelId: params.channelId });
-  }, [actions.fetchMessages, params.channelId]);
+    let didChangeChannel = false;
+
+    actions.fetchMessages({ channelId: params.channelId }).then((messages) => {
+      if (didChangeChannel || messages.length !== 0) return;
+      actions.markChannelRead({ channelId: params.channelId });
+    });
+
+    return () => {
+      didChangeChannel = true;
+    };
+  }, [actions.fetchMessages, actions.markChannelRead, params.channelId]);
+
+  React.useEffect(() => {
+    if (lastMessage?.id == null || lastMessage.author === user.id) return;
+    actions.markChannelRead({ channelId: params.channelId });
+  }, [lastMessage?.id, lastMessage?.author, user.id, params.channelId]);
 
   React.useEffect(() => {
     if (selectedChannel?.id == null) return;
@@ -338,24 +384,22 @@ const Channel = () => {
           scroll-snap-type: y proximity;
         `}
       >
-        {channelMessages
-          .sort((m1, m2) => new Date(m1.created_at) - new Date(m2.created_at))
-          .map((m) => (
-            <MessageItem
-              key={m.id}
-              content={m.content}
-              author={serverMembersByUserId[m.author].display_name}
-              timestamp={
-                <FormattedDate
-                  value={new Date(m.created_at)}
-                  hour="numeric"
-                  minute="numeric"
-                  day="numeric"
-                  month="short"
-                />
-              }
-            />
-          ))}
+        {sortedMessages.map((m) => (
+          <MessageItem
+            key={m.id}
+            content={m.content}
+            author={serverMembersByUserId[m.author].display_name}
+            timestamp={
+              <FormattedDate
+                value={new Date(m.created_at)}
+                hour="numeric"
+                minute="numeric"
+                day="numeric"
+                month="short"
+              />
+            }
+          />
+        ))}
         <div
           css={css`
             height: 1.6rem;
