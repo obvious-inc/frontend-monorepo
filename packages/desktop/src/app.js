@@ -352,7 +352,7 @@ const Channel = () => {
   }, [actions.fetchMessages, actions.markChannelRead, params.channelId]);
 
   React.useEffect(() => {
-    if (lastMessage?.id == null || lastMessage.author === user.id) return;
+    if (lastMessage?.id == null) return;
     actions.markChannelRead({ channelId: params.channelId });
   }, [lastMessage?.id, lastMessage?.author, user.id, params.channelId]);
 
