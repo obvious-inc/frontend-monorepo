@@ -65,6 +65,13 @@ const App = () => {
     [authorizedFetch]
   );
 
+  const markChannelRead = React.useCallback(
+    ({ channelId, date = new Date() }) => {
+      sendServerMessage("mark-channel-read", { channelId, date });
+    },
+    [sendServerMessage]
+  );
+
   const createMessage = React.useCallback(
     async ({ server, channel, content }) => {
       // TODO: Less hacky optimistc UI
@@ -91,10 +98,11 @@ const App = () => {
           message,
           optimisticEntryId: dummyId,
         });
+        markChannelRead({ channelId: channel });
         return message;
       });
     },
-    [authorizedFetch, user]
+    [authorizedFetch, user, markChannelRead]
   );
 
   const createChannel = React.useCallback(
@@ -109,13 +117,6 @@ const App = () => {
         return res;
       }),
     [authorizedFetch]
-  );
-
-  const markChannelRead = React.useCallback(
-    ({ channelId, date = new Date() }) => {
-      sendServerMessage("mark-channel-read", { channelId, date });
-    },
-    [sendServerMessage]
   );
 
   React.useEffect(() => {
@@ -352,7 +353,7 @@ const Channel = () => {
   }, [actions.fetchMessages, actions.markChannelRead, params.channelId]);
 
   React.useEffect(() => {
-    if (lastMessage?.id == null) return;
+    if (lastMessage?.id == null || lastMessage.author === user.id) return;
     actions.markChannelRead({ channelId: params.channelId });
   }, [lastMessage?.id, lastMessage?.author, user.id, params.channelId]);
 
