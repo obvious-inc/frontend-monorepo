@@ -13,6 +13,7 @@ import { IntlProvider, FormattedDate } from "react-intl";
 import { TITLE_BAR_HEIGHT } from "./constants/ui";
 import * as eth from "./utils/ethereum";
 import { generateDummyId } from "./utils/misc";
+import usePageVisibilityChangeListener from "./hooks/page-visibility-change-listener";
 import useAppScope, { Provider as AppScopeProvider } from "./hooks/app-scope";
 import useRootReducer from "./hooks/root-reducer";
 import useAuth, { Provider as AuthProvider } from "./hooks/auth";
@@ -42,6 +43,10 @@ const App = () => {
     [dispatch, serverConnection.send]
   );
 
+  const fetchUserData = React.useCallback(() => {
+    serverConnection.send("request-user-data");
+  }, [serverConnection.send]);
+
   const fetchMessages = React.useCallback(
     ({ channelId }) =>
       authorizedFetch(`/channels/${channelId}/messages`).then((messages) => {
@@ -59,10 +64,10 @@ const App = () => {
         body: JSON.stringify({ name }),
       }).then((res) => {
         // TODO
-        serverConnection.send("request-user-data");
+        fetchUserData();
         return res;
       }),
-    [authorizedFetch]
+    [authorizedFetch, fetchUserData]
   );
 
   const markChannelRead = React.useCallback(
@@ -113,10 +118,10 @@ const App = () => {
         body: JSON.stringify({ name, kind, server }),
       }).then((res) => {
         // TODO
-        serverConnection.send("request-user-data");
+        fetchUserData();
         return res;
       }),
-    [authorizedFetch]
+    [authorizedFetch, fetchUserData]
   );
 
   React.useEffect(() => {
@@ -181,6 +186,7 @@ const App = () => {
           value={{
             state: stateSelectors,
             actions: {
+              fetchUserData,
               fetchMessages,
               createServer,
               createChannel,
@@ -317,6 +323,27 @@ const ChannelLayout = () => {
   );
 };
 
+const useChannelMessages = (channelId) => {
+  const { actions, state } = useAppScope();
+
+  const messages = state.selectChannelMessages(channelId);
+
+  React.useEffect(() => {
+    actions.fetchMessages({ channelId });
+  }, [actions.fetchMessages, channelId]);
+
+  usePageVisibilityChangeListener((state) => {
+    if (state !== "visible") return;
+    actions.fetchMessages({ channelId });
+  });
+
+  const sortedMessages = messages.sort(
+    (m1, m2) => new Date(m1.created_at) - new Date(m2.created_at)
+  );
+
+  return sortedMessages;
+};
+
 const Channel = () => {
   const params = useParams();
   const { user } = useAuth();
@@ -330,19 +357,17 @@ const Channel = () => {
   const serverMembersByUserId = state.selectServerMembersByUserId(
     params.serverId
   );
-  const messages = state.selectChannelMessages(params.channelId);
 
-  const sortedMessages = messages.sort(
-    (m1, m2) => new Date(m1.created_at) - new Date(m2.created_at)
-  );
+  const messages = useChannelMessages(params.channelId);
 
-  const lastMessage = sortedMessages.slice(-1)[0];
+  const lastMessage = messages.slice(-1)[0];
 
   // Fetch messages when switching channels
   React.useEffect(() => {
     let didChangeChannel = false;
 
     actions.fetchMessages({ channelId: params.channelId }).then((messages) => {
+      // Mark empty channels as read
       if (didChangeChannel || messages.length !== 0) return;
       actions.markChannelRead({ channelId: params.channelId });
     });
@@ -352,6 +377,7 @@ const Channel = () => {
     };
   }, [actions.fetchMessages, actions.markChannelRead, params.channelId]);
 
+  // Make channels as read as new messages arrive
   React.useEffect(() => {
     if (lastMessage?.id == null || lastMessage.author === user.id) return;
     actions.markChannelRead({ channelId: params.channelId });
@@ -361,6 +387,11 @@ const Channel = () => {
     if (selectedChannel?.id == null) return;
     inputRef.current.focus();
   }, [selectedChannel?.id]);
+
+  usePageVisibilityChangeListener((state) => {
+    if (state === "visible") return;
+    actions.fetchUserData();
+  });
 
   if (selectedChannel == null) return null;
 
@@ -384,7 +415,7 @@ const Channel = () => {
           scroll-snap-type: y proximity;
         `}
       >
-        {sortedMessages.map((m) => (
+        {messages.map((m) => (
           <MessageItem
             key={m.id}
             content={m.content}
