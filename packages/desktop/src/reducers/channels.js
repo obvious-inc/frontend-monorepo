@@ -32,10 +32,10 @@ const readTimestampByChannelId = (state = {}, action) => {
     case "server-event:message-created": {
       // Mark channels as read when receiving the user’s own messages.
       // This only matters when the same user is logged in on multiple clients.
-      if (action.data.author === action.user.id)
+      if (action.data.message.author === action.user.id)
         return {
           ...state,
-          [action.data.channel]: new Date(action.data.created_at).getTime(),
+          [action.data.message.channel]: new Date(action.data.message.created_at).getTime(),
         };
 
       return state;
@@ -63,7 +63,7 @@ const lastMessageTimestampByChannelId = (state = {}, action) => {
     case "server-event:message-created":
       return {
         ...state,
-        [action.data.channel]: new Date(action.data.created_at).getTime(),
+        [action.data.message.channel]: new Date(action.data.message.created_at).getTime(),
       };
 
     default:
