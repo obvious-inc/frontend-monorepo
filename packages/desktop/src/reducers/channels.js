@@ -35,7 +35,9 @@ const readTimestampByChannelId = (state = {}, action) => {
       if (action.data.message.author === action.user.id)
         return {
           ...state,
-          [action.data.message.channel]: new Date(action.data.message.created_at).getTime(),
+          [action.data.message.channel]: new Date(
+            action.data.message.created_at
+          ).getTime(),
         };
 
       return state;
@@ -63,7 +65,9 @@ const lastMessageTimestampByChannelId = (state = {}, action) => {
     case "server-event:message-created":
       return {
         ...state,
-        [action.data.message.channel]: new Date(action.data.message.created_at).getTime(),
+        [action.data.message.channel]: new Date(
+          action.data.message.created_at
+        ).getTime(),
       };
 
     default:
