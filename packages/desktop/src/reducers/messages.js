@@ -10,7 +10,7 @@ const entriesById = (state = {}, action) => {
     case "server-event:message-created":
       return {
         ...state,
-        [action.data.id]: action.data,
+        [action.data.message.id]: action.data.message,
       };
 
     case "message-create-request-sent":
@@ -43,11 +43,11 @@ const entryIdsByChannelId = (state = {}, action) => {
     }
 
     case "server-event:message-created": {
-      const channelId = action.data.channel;
+      const channelId = action.data.message.channel;
       const channelMessageIds = state[channelId] ?? [];
       return {
         ...state,
-        [channelId]: unique([...channelMessageIds, action.data.id]),
+        [channelId]: unique([...channelMessageIds, action.data.message.id]),
       };
     }
 
