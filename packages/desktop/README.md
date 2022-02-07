@@ -15,8 +15,11 @@ Make sure you have [`Node.js`](https://nodejs.org/en/) and [`NPM`](https://www.n
 Clone the repo and install dependencies with:
 
 ```sh
-npm install
+# You have to run this from the repo root folder
+npm install -w desktop
 ```
+
+Why the `-w desktop`? Read up on npm workspaces [here](https://docs.npmjs.com/cli/v8/using-npm/workspaces).
 
 Start a local dev server with:
 

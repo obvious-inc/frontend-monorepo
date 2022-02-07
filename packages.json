@@ -1,4 +1,0 @@
-{
-  "name": "shades",
-  "workspaces": ["packages/*"]
-}
