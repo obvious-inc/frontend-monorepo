@@ -1,0 +1,6 @@
+{
+  "name": "newshades-frontend-monorepo",
+  "workspaces": [
+    "packages/*"
+  ]
+}
