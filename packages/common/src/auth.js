@@ -1,12 +1,34 @@
 import React from "react";
-import { API_ENDPOINT } from "../constants/api";
-import useAccessToken from "./access-token";
+
+const ACCESS_TOKEN_CACHE_KEY = "access-token";
+
+const useAccessToken = ({ storage = window.localStorage } = {}) => {
+  const [token, setToken] = React.useState(() =>
+    storage.getItem(ACCESS_TOKEN_CACHE_KEY)
+  );
+
+  const set = React.useCallback(
+    (token) => {
+      setToken(token);
+      storage.setItem(ACCESS_TOKEN_CACHE_KEY, token);
+    },
+    [storage]
+  );
+
+  const clear = React.useCallback(() => {
+    setToken(null);
+    storage.removeItem(ACCESS_TOKEN_CACHE_KEY);
+  }, [storage]);
+
+  return [token, { set, clear }];
+};
 
 const AuthContext = React.createContext(null);
 
-const useAuth = () => React.useContext(AuthContext);
+export const useAuth = () => React.useContext(AuthContext);
 
-export const Provider = (props) => {
+export const Provider = ({ apiBase, ...props }) => {
+  console.log("from common", apiBase, props);
   const [accessToken, { set: setAccessToken, clear: clearAccessToken }] =
     useAccessToken();
   const [user, setUser] = React.useState(null);
@@ -15,7 +37,7 @@ export const Provider = (props) => {
 
   const signIn = React.useCallback(
     async ({ message, signature, address, signedAt, nonce }) => {
-      const responseBody = await fetch(`${API_ENDPOINT}/auth/login`, {
+      const responseBody = await fetch(`${apiBase}/auth/login`, {
         method: "POST",
         body: JSON.stringify({
           message,
@@ -34,7 +56,7 @@ export const Provider = (props) => {
 
       setAccessToken(responseBody.access_token);
     },
-    [setAccessToken]
+    [apiBase, setAccessToken]
   );
 
   const authorizedFetch = React.useCallback(
@@ -44,7 +66,7 @@ export const Provider = (props) => {
       const headers = new Headers(options?.headers);
       headers.append("Authorization", `Bearer ${accessToken}`);
 
-      const response = await fetch(`${API_ENDPOINT}${url}`, {
+      const response = await fetch(`${apiBase}${url}`, {
         ...options,
         headers,
       });
@@ -55,7 +77,7 @@ export const Provider = (props) => {
 
       return Promise.reject(new Error(response.statusText));
     },
-    [accessToken, clearAccessToken]
+    [apiBase, accessToken, clearAccessToken]
   );
 
   const contextValue = React.useMemo(
@@ -73,5 +95,3 @@ export const Provider = (props) => {
 
   return <AuthContext.Provider value={contextValue} {...props} />;
 };
-
-export default useAuth;

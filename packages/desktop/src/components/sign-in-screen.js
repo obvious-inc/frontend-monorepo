@@ -2,7 +2,7 @@ import React from "react";
 import { css } from "@emotion/react";
 import { TITLE_BAR_HEIGHT } from "../constants/ui";
 import * as eth from "../utils/ethereum";
-import useAuth from "../hooks/auth";
+import { useAuth } from "@shades/common";
 
 const isNative = window.Native != null;
 
