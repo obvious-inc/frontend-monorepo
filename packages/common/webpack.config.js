@@ -1,6 +1,10 @@
 module.exports = {
   entry: "./src/index.js",
-  output: { filename: "index.js", library: { type: "commonjs" } },
+  output: {
+    filename: "index.js",
+    library: { type: "commonjs" },
+    clean: true,
+  },
   externals: { react: "react" },
   module: {
     rules: [
