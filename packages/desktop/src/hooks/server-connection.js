@@ -2,6 +2,7 @@ import React from "react";
 import Pusher from "pusher-js";
 import { API_ENDPOINT } from "../constants/api";
 import { identity } from "../utils/function";
+import { decompressData } from "../utils/misc";
 
 const clientEventMap = {
   "request-user-data": ["client-connection-request"],
@@ -67,7 +68,15 @@ const useServerConnection = ({
     for (let event of serverEvents)
       channel.bind(event, (data) => {
         const clientEventName = serverEventMap[event];
-        listenersRef.current.forEach((fn) => fn(clientEventName, data));
+        if (data.compressed) {
+          let compressedData = data.compressed.data;
+          let compressionAlg = data.compressed.alg;
+          data = decompressData(compressedData, compressionAlg);
+        }
+
+        listenersRef.current.forEach((fn) =>
+          fn(clientEventName, data)
+        );
       });
   }, [PUSHER_KEY, debug, userId, accessToken]);
 
