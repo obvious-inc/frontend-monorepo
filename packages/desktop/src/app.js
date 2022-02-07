@@ -1,10 +1,11 @@
 import React from "react";
 import { Routes, Route, useNavigate, useLocation } from "react-router-dom";
 import { IntlProvider } from "react-intl";
+import { API_ENDPOINT } from "./constants/api";
 import { generateDummyId } from "./utils/misc";
 import { Provider as AppScopeProvider } from "./hooks/app-scope";
 import useRootReducer from "./hooks/root-reducer";
-import useAuth, { Provider as AuthProvider } from "./hooks/auth";
+import { useAuth, AuthProvider } from "@shades/common";
 import useServerConnection from "./hooks/server-connection";
 import SignInScreen from "./components/sign-in-screen";
 import Channel from "./components/channel";
@@ -226,7 +227,7 @@ const App = () => {
 export default function Root() {
   return (
     <IntlProvider locale="en">
-      <AuthProvider>
+      <AuthProvider apiBase={API_ENDPOINT}>
         <App />
       </AuthProvider>
     </IntlProvider>

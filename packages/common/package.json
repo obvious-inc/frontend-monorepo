@@ -1,0 +1,17 @@
+{
+  "name": "@shades/common",
+  "version": "1.0.0",
+  "main": "dist/index.js",
+  "scripts": {
+    "build": "webpack --mode=production"
+  },
+  "peerDependencies": {
+    "react": "17.x"
+  },
+  "devDependencies": {
+    "@swc/core": "^1.2.136",
+    "swc-loader": "^0.1.15",
+    "webpack": "^5.68.0",
+    "webpack-cli": "^4.9.2"
+  }
+}
