@@ -34,7 +34,7 @@ export const Provider = (props) => {
 
       setAccessToken(responseBody.access_token);
     },
-    []
+    [setAccessToken]
   );
 
   const authorizedFetch = React.useCallback(

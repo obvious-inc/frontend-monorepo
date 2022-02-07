@@ -13,7 +13,7 @@ const useChannelMessages = (channelId) => {
 
   React.useEffect(() => {
     actions.fetchMessages({ channelId });
-  }, [actions.fetchMessages, channelId]);
+  }, [actions, channelId]);
 
   usePageVisibilityChangeListener((state) => {
     if (state !== "visible") return;
@@ -58,13 +58,19 @@ const Channel = () => {
     return () => {
       didChangeChannel = true;
     };
-  }, [actions.fetchMessages, actions.markChannelRead, params.channelId]);
+  }, [actions, params.channelId]);
 
   // Make channels as read as new messages arrive
   React.useEffect(() => {
     if (lastMessage?.id == null || lastMessage.author === user.id) return;
     actions.markChannelRead({ channelId: params.channelId });
-  }, [lastMessage?.id, lastMessage?.author, user.id, params.channelId]);
+  }, [
+    lastMessage?.id,
+    lastMessage?.author,
+    user.id,
+    params.channelId,
+    actions,
+  ]);
 
   React.useEffect(() => {
     if (selectedChannel?.id == null) return;

@@ -8,6 +8,7 @@ module.exports = {
     "eslint:recommended",
     "plugin:react/recommended",
     "plugin:react/jsx-runtime",
+    "plugin:react-hooks/recommended",
     "prettier",
   ],
   parserOptions: {
@@ -20,6 +21,7 @@ module.exports = {
   plugins: ["react"],
   rules: {
     "react/prop-types": "off",
+    "react/display-name": "off",
   },
   settings: {
     react: {

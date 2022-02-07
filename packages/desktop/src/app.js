@@ -31,7 +31,7 @@ const App = () => {
       if (messageSent) dispatch({ type: name, data });
       return messageSent;
     },
-    [dispatch, serverConnection.send]
+    [dispatch, serverConnection]
   );
 
   const fetchUserData = React.useCallback(() => {
@@ -44,7 +44,7 @@ const App = () => {
         dispatch({ type: "messages-fetched", messages });
         return messages;
       }),
-    [authorizedFetch]
+    [authorizedFetch, dispatch]
   );
 
   const createServer = React.useCallback(
@@ -98,7 +98,7 @@ const App = () => {
         return message;
       });
     },
-    [authorizedFetch, user, markChannelRead]
+    [authorizedFetch, user, markChannelRead, dispatch]
   );
 
   const createChannel = React.useCallback(
@@ -166,7 +166,34 @@ const App = () => {
     return () => {
       removeListener();
     };
-  }, [serverConnection.addListener, user]);
+  }, [
+    serverConnection,
+    user,
+    dispatch,
+    createChannel,
+    createServer,
+    location.pathname,
+    navigate,
+  ]);
+
+  const actions = React.useMemo(
+    () => ({
+      fetchUserData,
+      fetchMessages,
+      createServer,
+      createChannel,
+      createMessage,
+      markChannelRead,
+    }),
+    [
+      fetchUserData,
+      fetchMessages,
+      createServer,
+      createChannel,
+      createMessage,
+      markChannelRead,
+    ]
+  );
 
   return (
     <>
@@ -176,14 +203,7 @@ const App = () => {
         <AppScopeProvider
           value={{
             state: stateSelectors,
-            actions: {
-              fetchUserData,
-              fetchMessages,
-              createServer,
-              createChannel,
-              createMessage,
-              markChannelRead,
-            },
+            actions,
           }}
         >
           <Routes>

@@ -1,9 +1,4 @@
 {
-  "name": "newshades-frontend-monorepo",
-  "scripts": {
-    "test": "npm -v"
-  },
-  "workspaces": [
-    "packages/*"
-  ]
+  "name": "shades",
+  "workspaces": ["packages/*"]
 }

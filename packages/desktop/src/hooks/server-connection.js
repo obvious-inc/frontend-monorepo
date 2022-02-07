@@ -21,7 +21,6 @@ const serverEventMap = {
 const useServerConnection = ({
   accessToken,
   userId,
-  Pusher = window.Pusher,
   PUSHER_KEY = process.env.PUSHER_KEY,
   debug = false,
 } = {}) => {
@@ -70,9 +69,14 @@ const useServerConnection = ({
         const clientEventName = serverEventMap[event];
         listenersRef.current.forEach((fn) => fn(clientEventName, data));
       });
-  }, [userId, accessToken]);
+  }, [PUSHER_KEY, debug, userId, accessToken]);
 
-  return { send, addListener };
+  const serverConnection = React.useMemo(
+    () => ({ send, addListener }),
+    [send, addListener]
+  );
+
+  return serverConnection;
 };
 
 export default useServerConnection;

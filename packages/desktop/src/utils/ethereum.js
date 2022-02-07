@@ -1,5 +1,5 @@
 import createEthProvider from "eth-provider";
-import { utils as ethersUtils, providers } from "ethers";
+import { utils as ethersUtils } from "ethers";
 import WalletConnectProvider from "@walletconnect/web3-provider";
 
 const connectWalletConnectProvider = ({
