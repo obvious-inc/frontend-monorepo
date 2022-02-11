@@ -85,12 +85,18 @@ const SignInScreen = () => {
 const Button = ({ css: cssProp, ...props }) => (
   <button
     css={css`
-      background: #e588f8;
+      color: white;
+      background: hsl(0 0% 100% / 7%);
       border: 0;
-      padding: 1.2rem 2.2rem;
+      padding: 1.1rem 2.4rem;
+      font-weight: 500;
       font-size: 1.5rem;
       border-radius: 0.3rem;
       cursor: pointer;
+      transition: 0.15s ease-out background;
+      :hover {
+        background: hsl(0 0% 100% / 9%);
+      }
       ${cssProp}
     `}
     {...props}

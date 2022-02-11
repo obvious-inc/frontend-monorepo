@@ -28,7 +28,6 @@ const AuthContext = React.createContext(null);
 export const useAuth = () => React.useContext(AuthContext);
 
 export const Provider = ({ apiBase, ...props }) => {
-  console.log("from common", apiBase, props);
   const [accessToken, { set: setAccessToken, clear: clearAccessToken }] =
     useAccessToken();
   const [user, setUser] = React.useState(null);
