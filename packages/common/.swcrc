@@ -12,5 +12,6 @@
       "syntax": "ecmascript",
       "jsx": true
     }
-  }
+  },
+  "sourceMaps": true
 }

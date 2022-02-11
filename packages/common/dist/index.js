@@ -1,1 +1,117 @@
-(()=>{"use strict";var e={n:t=>{var r=t&&t.__esModule?()=>t.default:()=>t;return e.d(r,{a:r}),r},d:(t,r)=>{for(var n in r)e.o(r,n)&&!e.o(t,n)&&Object.defineProperty(t,n,{enumerable:!0,get:r[n]})},o:(e,t)=>Object.prototype.hasOwnProperty.call(e,t),r:e=>{"undefined"!=typeof Symbol&&Symbol.toStringTag&&Object.defineProperty(e,Symbol.toStringTag,{value:"Module"}),Object.defineProperty(e,"__esModule",{value:!0})}},t={};e.r(t),e.d(t,{AuthProvider:()=>l,useAuth:()=>c});const r=require("react");var n=e.n(r);function o(){return o=Object.assign||function(e){for(var t=1;t<arguments.length;t++){var r=arguments[t];for(var n in r)Object.prototype.hasOwnProperty.call(r,n)&&(e[n]=r[n])}return e},o.apply(this,arguments)}const s="access-token",a=n().createContext(null),c=()=>n().useContext(a),l=e=>{let{apiBase:t,...r}=e;console.log("from common",t,r);const[c,{set:l,clear:u}]=function(){let{storage:e=window.localStorage}=arguments.length>0&&void 0!==arguments[0]?arguments[0]:{};const[t,r]=n().useState((()=>e.getItem(s))),o=n().useCallback((t=>{r(t),e.setItem(s,t)}),[e]),a=n().useCallback((()=>{r(null),e.removeItem(s)}),[e]);return[t,{set:o,clear:a}]}(),[i,d]=n().useState(null),g=null!=c,f=n().useCallback((async e=>{let{message:r,signature:n,address:o,signedAt:s,nonce:a}=e;const c=await fetch(`${t}/auth/login`,{method:"POST",body:JSON.stringify({message:r,signature:n,address:o,signed_at:s,nonce:a}),headers:{"Content-Type":"application/json"}}).then((e=>e.ok?e.json():Promise.reject(new Error(e.statusText))));l(c.access_token)}),[t,l]),h=n().useCallback((async(e,r)=>{if(null==c)throw new Error("Missing access token");const n=new Headers(r?.headers);n.append("Authorization",`Bearer ${c}`);const o=await fetch(`${t}${e}`,{...r,headers:n});return 401===o.status&&u(),o.ok?o.json():Promise.reject(new Error(o.statusText))}),[t,c,u]),p=n().useMemo((()=>({isSignedIn:g,accessToken:c,user:i,authorizedFetch:h,signIn:f})),[g,c,i,h,f]);return n().useEffect((()=>{g&&h("/users/me").then((e=>{d(e)}))}),[h,g]),n().createElement(a.Provider,o({value:p},r))};var u=exports;for(var i in t)u[i]=t[i];t.__esModule&&Object.defineProperty(u,"__esModule",{value:!0})})();
+import React from 'react';
+
+function _extends() {
+    _extends = Object.assign || function(target) {
+        for(var i = 1; i < arguments.length; i++){
+            var source = arguments[i];
+            for(var key in source){
+                if (Object.prototype.hasOwnProperty.call(source, key)) {
+                    target[key] = source[key];
+                }
+            }
+        }
+        return target;
+    };
+    return _extends.apply(this, arguments);
+}
+const ACCESS_TOKEN_CACHE_KEY = "access-token";
+const useAccessToken = function() {
+    let { storage =window.localStorage  } = arguments.length > 0 && arguments[0] !== void 0 ? arguments[0] : {};
+    const [token1, setToken] = React.useState(()=>storage.getItem(ACCESS_TOKEN_CACHE_KEY)
+    );
+    const set = React.useCallback((token)=>{
+        setToken(token);
+        storage.setItem(ACCESS_TOKEN_CACHE_KEY, token);
+    }, [
+        storage
+    ]);
+    const clear = React.useCallback(()=>{
+        setToken(null);
+        storage.removeItem(ACCESS_TOKEN_CACHE_KEY);
+    }, [
+        storage
+    ]);
+    return [
+        token1,
+        {
+            set,
+            clear
+        }
+    ];
+};
+const AuthContext = /*#__PURE__*/ React.createContext(null);
+const useAuth = ()=>React.useContext(AuthContext)
+;
+const Provider = (param1)=>{
+    let { apiBase , ...props } = param1;
+    const [accessToken, { set: setAccessToken , clear: clearAccessToken  }] = useAccessToken();
+    const [user1, setUser] = React.useState(null);
+    const isSignedIn = accessToken != null;
+    const signIn = React.useCallback(async (param)=>{
+        let { message , signature , address , signedAt , nonce  } = param;
+        const responseBody = await fetch(`${apiBase}/auth/login`, {
+            method: "POST",
+            body: JSON.stringify({
+                message,
+                signature,
+                address,
+                signed_at: signedAt,
+                nonce
+            }),
+            headers: {
+                "Content-Type": "application/json"
+            }
+        }).then((response)=>{
+            if (response.ok) return response.json();
+            return Promise.reject(new Error(response.statusText));
+        });
+        setAccessToken(responseBody.access_token);
+    }, [
+        apiBase,
+        setAccessToken
+    ]);
+    const authorizedFetch = React.useCallback(async (url, options)=>{
+        if (accessToken == null) throw new Error("Missing access token");
+        const headers = new Headers(options?.headers);
+        headers.append("Authorization", `Bearer ${accessToken}`);
+        const response = await fetch(`${apiBase}${url}`, {
+            ...options,
+            headers
+        });
+        if (response.status === 401) clearAccessToken();
+        if (response.ok) return response.json();
+        return Promise.reject(new Error(response.statusText));
+    }, [
+        apiBase,
+        accessToken,
+        clearAccessToken
+    ]);
+    const contextValue = React.useMemo(()=>({
+            isSignedIn,
+            accessToken,
+            user: user1,
+            authorizedFetch,
+            signIn
+        })
+    , [
+        isSignedIn,
+        accessToken,
+        user1,
+        authorizedFetch,
+        signIn
+    ]);
+    React.useEffect(()=>{
+        if (!isSignedIn) return;
+        authorizedFetch("/users/me").then((user)=>{
+            setUser(user);
+        });
+    }, [
+        authorizedFetch,
+        isSignedIn
+    ]);
+    return(/*#__PURE__*/ React.createElement(AuthContext.Provider, _extends({
+        value: contextValue
+    }, props)));
+};
+
+export { Provider as AuthProvider, useAuth };
