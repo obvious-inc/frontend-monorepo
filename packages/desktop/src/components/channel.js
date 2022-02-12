@@ -3,8 +3,7 @@ import { useParams } from "react-router";
 import { css } from "@emotion/react";
 import { FormattedDate } from "react-intl";
 import usePageVisibilityChangeListener from "../hooks/page-visibility-change-listener";
-import useAppScope from "../hooks/app-scope";
-import { useAuth } from "@shades/common";
+import { useAuth, useAppScope } from "@shades/common";
 
 const useChannelMessages = (channelId) => {
   const { actions, state } = useAppScope();

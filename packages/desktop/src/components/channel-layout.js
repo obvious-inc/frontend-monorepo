@@ -1,6 +1,6 @@
 import { NavLink, Outlet, useParams } from "react-router-dom";
 import { css } from "@emotion/react";
-import useAppScope from "../hooks/app-scope";
+import { useAppScope } from "@shades/common";
 
 const isNative = window.Native != null;
 
@@ -14,11 +14,18 @@ const ChannelLayout = () => {
   if (server == null) return null;
 
   return (
-    <div style={{ display: "flex", height: "100vh" }}>
+    <div
+      css={css`
+        display: flex;
+        height: 100vh;
+      `}
+    >
       <div
         css={css`
           padding: ${isNative ? "3.5rem 1rem 2rem" : "2rem 1rem"};
           width: min(30%, 24rem);
+          overflow: auto;
+          overscroll-behavior-y: contain;
         `}
       >
         <div

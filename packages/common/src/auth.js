@@ -2,41 +2,71 @@ import React from "react";
 
 const ACCESS_TOKEN_CACHE_KEY = "access-token";
 
-const useAccessToken = ({ storage = window.localStorage } = {}) => {
-  const [token, setToken] = React.useState(() =>
-    storage.getItem(ACCESS_TOKEN_CACHE_KEY)
-  );
+const createAsyncWebStorage = (storage = window.localStorage) => ({
+  async getItem(...args) {
+    return storage.getItem(...args);
+  },
+  async setItem(...args) {
+    return storage.setItem(...args);
+  },
+  async removeItem(...args) {
+    return storage.removeItem(...args);
+  },
+});
 
-  const set = React.useCallback(
-    (token) => {
-      setToken(token);
-      storage.setItem(ACCESS_TOKEN_CACHE_KEY, token);
-    },
-    [storage]
-  );
+const asyncWebStorage = createAsyncWebStorage();
+
+const useAccessToken = ({ storage = asyncWebStorage } = {}) => {
+  const storageRef = React.useRef(storage);
+
+  const [token, setToken] = React.useState(undefined);
+
+  React.useEffect(() => {
+    storageRef.current = storage;
+  });
+
+  const set = React.useCallback((token) => {
+    setToken(token);
+    storageRef.current.setItem(ACCESS_TOKEN_CACHE_KEY, token);
+  }, []);
 
   const clear = React.useCallback(() => {
     setToken(null);
-    storage.removeItem(ACCESS_TOKEN_CACHE_KEY);
-  }, [storage]);
+    storageRef.current.removeItem(ACCESS_TOKEN_CACHE_KEY);
+  }, []);
+
+  React.useEffect(() => {
+    storageRef.current.getItem(ACCESS_TOKEN_CACHE_KEY).then((maybeToken) => {
+      setToken(maybeToken ?? null);
+    });
+  }, []);
 
   return [token, { set, clear }];
 };
 
-const AuthContext = React.createContext(null);
+const Context = React.createContext({});
 
-export const useAuth = () => React.useContext(AuthContext);
+export const useAuth = () => React.useContext(Context);
 
-export const Provider = ({ apiBase, ...props }) => {
+export const Provider = ({
+  apiOrigin,
+  tokenStorage = asyncWebStorage,
+  ...props
+}) => {
   const [accessToken, { set: setAccessToken, clear: clearAccessToken }] =
-    useAccessToken();
+    useAccessToken({ storage: tokenStorage });
   const [user, setUser] = React.useState(null);
 
-  const isSignedIn = accessToken != null;
+  const status =
+    accessToken === undefined
+      ? "loading"
+      : accessToken == null
+      ? "not-authenticated"
+      : "authenticated";
 
   const signIn = React.useCallback(
     async ({ message, signature, address, signedAt, nonce }) => {
-      const responseBody = await fetch(`${apiBase}/auth/login`, {
+      const responseBody = await fetch(`${apiOrigin}/auth/login`, {
         method: "POST",
         body: JSON.stringify({
           message,
@@ -55,7 +85,7 @@ export const Provider = ({ apiBase, ...props }) => {
 
       setAccessToken(responseBody.access_token);
     },
-    [apiBase, setAccessToken]
+    [apiOrigin, setAccessToken]
   );
 
   const authorizedFetch = React.useCallback(
@@ -65,7 +95,7 @@ export const Provider = ({ apiBase, ...props }) => {
       const headers = new Headers(options?.headers);
       headers.append("Authorization", `Bearer ${accessToken}`);
 
-      const response = await fetch(`${apiBase}${url}`, {
+      const response = await fetch(`${apiOrigin}${url}`, {
         ...options,
         headers,
       });
@@ -76,21 +106,44 @@ export const Provider = ({ apiBase, ...props }) => {
 
       return Promise.reject(new Error(response.statusText));
     },
-    [apiBase, accessToken, clearAccessToken]
+    [apiOrigin, accessToken, clearAccessToken]
   );
 
+  const verifyAccessToken = React.useCallback(() => {
+    // This will have to do for now
+    return authorizedFetch("/users/me").then(() => null);
+  }, [authorizedFetch]);
+
   const contextValue = React.useMemo(
-    () => ({ isSignedIn, accessToken, user, authorizedFetch, signIn }),
-    [isSignedIn, accessToken, user, authorizedFetch, signIn]
+    () => ({
+      status,
+      accessToken,
+      user,
+      apiOrigin,
+      authorizedFetch,
+      signIn,
+      setAccessToken,
+      verifyAccessToken,
+    }),
+    [
+      status,
+      accessToken,
+      user,
+      apiOrigin,
+      authorizedFetch,
+      signIn,
+      setAccessToken,
+      verifyAccessToken,
+    ]
   );
 
   React.useEffect(() => {
-    if (!isSignedIn) return;
+    if (status !== "authenticated") return;
 
     authorizedFetch("/users/me").then((user) => {
       setUser(user);
     });
-  }, [authorizedFetch, isSignedIn]);
+  }, [authorizedFetch, status]);
 
-  return <AuthContext.Provider value={contextValue} {...props} />;
+  return <Context.Provider value={contextValue} {...props} />;
 };

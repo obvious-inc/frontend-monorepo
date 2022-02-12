@@ -1,7 +1,6 @@
 import React from "react";
-import Pusher from "pusher-js";
-import { API_ENDPOINT } from "../constants/api";
-import { identity } from "../utils/function";
+import { identity } from "./utils/function";
+import { useAuth } from "./auth";
 
 const clientEventMap = {
   "request-user-data": ["client-connection-request"],
@@ -18,12 +17,10 @@ const serverEventMap = {
   MESSAGE_CREATE: "message-created",
 };
 
-const useServerConnection = ({
-  accessToken,
-  userId,
-  PUSHER_KEY = process.env.PUSHER_KEY,
-  debug = false,
-} = {}) => {
+const Context = React.createContext(null);
+
+export const Provider = ({ Pusher, pusherKey, debug = false, children }) => {
+  const { accessToken, user, apiOrigin } = useAuth();
   const channelRef = React.useRef();
   const listenersRef = React.useRef([]);
 
@@ -43,19 +40,19 @@ const useServerConnection = ({
   }, []);
 
   React.useEffect(() => {
-    if (accessToken == null || userId == null) return;
+    if (accessToken == null || user == null) return;
     Pusher.logToConsole = debug;
 
-    const pusher = new Pusher(PUSHER_KEY, {
+    const pusher = new Pusher(pusherKey, {
       cluster: "eu",
-      authEndpoint: `${API_ENDPOINT}/websockets/auth`,
+      authEndpoint: `${apiOrigin}/websockets/auth`,
       auth: {
         params: { provider: "pusher" },
         headers: { Authorization: `Bearer ${accessToken}` },
       },
     });
 
-    const channel = pusher.subscribe(`private-${userId}`);
+    const channel = pusher.subscribe(`private-${user.id}`);
     channelRef.current = channel;
 
     channel.bind("pusher:subscription_succeeded", () => {
@@ -69,14 +66,16 @@ const useServerConnection = ({
         const clientEventName = serverEventMap[event];
         listenersRef.current.forEach((fn) => fn(clientEventName, data));
       });
-  }, [PUSHER_KEY, debug, userId, accessToken]);
+  }, [Pusher, apiOrigin, pusherKey, debug, user, accessToken]);
 
   const serverConnection = React.useMemo(
     () => ({ send, addListener }),
     [send, addListener]
   );
 
-  return serverConnection;
+  return (
+    <Context.Provider value={serverConnection}>{children}</Context.Provider>
+  );
 };
 
-export default useServerConnection;
+export const useServerConnection = () => React.useContext(Context);
