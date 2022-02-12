@@ -2,7 +2,7 @@
   "env": {
     "targets": [
       "electron 16",
-      "node 16",
+      "node 14",
       "last 1 chrome version",
       "last 1 safari version"
     ]
