@@ -1,4 +1,5 @@
 import React from "react";
+import { useSearchParams } from "react-router-dom";
 import { css } from "@emotion/react";
 import { TITLE_BAR_HEIGHT } from "../constants/ui";
 import * as eth from "../utils/ethereum";
@@ -7,7 +8,8 @@ import { useAuth } from "@shades/common";
 const isNative = window.Native != null;
 
 const SignInScreen = () => {
-  const { signIn } = useAuth();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const { accessToken, signIn, verifyAccessToken } = useAuth();
 
   const [status, setStatus] = React.useState("idle");
   const [signInError, setSignInError] = React.useState(null);
@@ -44,6 +46,15 @@ const SignInScreen = () => {
       setSignInError(e.message);
     }
   };
+
+  React.useEffect(() => {
+    if (accessToken == null || searchParams.get("redirect") == null) return;
+
+    verifyAccessToken().then(() => {
+      searchParams.set("token", encodeURIComponent(accessToken));
+      setSearchParams(searchParams);
+    });
+  }, [accessToken, verifyAccessToken, searchParams, setSearchParams]);
 
   return (
     <div
