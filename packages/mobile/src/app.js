@@ -60,7 +60,7 @@ const App = () => {
     const handler = (name, data) => {
       switch (name) {
         case "user-data": {
-          setServerId(data.servers[1]?.id);
+          setServerId(data.servers[0]?.id);
           break;
         }
         default: // Ignore
