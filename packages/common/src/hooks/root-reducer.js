@@ -15,24 +15,24 @@ const selectors = {
   selectServerMembersByUserId,
 };
 
-const globalReducer = combineReducers({
+const rootReducer = combineReducers({
   servers,
   channels,
   serverMembers,
   messages,
 });
 
-const initialState = globalReducer(undefined, {});
+const initialState = rootReducer(undefined, {});
 
 const applyStateToSelectors = (selectors, state) =>
   mapValues((selector) => selector(state), selectors);
 
-const useGlobalState = () => {
-  const [state, dispatch] = React.useReducer(globalReducer, initialState);
+const useRootReducer = () => {
+  const [state, dispatch] = React.useReducer(rootReducer, initialState);
 
   const appliedSelectors = applyStateToSelectors(selectors, state);
 
   return [appliedSelectors, dispatch];
 };
 
-export default useGlobalState;
+export default useRootReducer;

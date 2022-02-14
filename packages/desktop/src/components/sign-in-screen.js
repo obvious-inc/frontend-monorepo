@@ -1,13 +1,15 @@
 import React from "react";
+import { useSearchParams } from "react-router-dom";
 import { css } from "@emotion/react";
 import { TITLE_BAR_HEIGHT } from "../constants/ui";
 import * as eth from "../utils/ethereum";
-import useAuth from "../hooks/auth";
+import { useAuth } from "@shades/common";
 
 const isNative = window.Native != null;
 
 const SignInScreen = () => {
-  const { signIn } = useAuth();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const { accessToken, signIn, verifyAccessToken } = useAuth();
 
   const [status, setStatus] = React.useState("idle");
   const [signInError, setSignInError] = React.useState(null);
@@ -44,6 +46,15 @@ const SignInScreen = () => {
       setSignInError(e.message);
     }
   };
+
+  React.useEffect(() => {
+    if (accessToken == null || searchParams.get("redirect") == null) return;
+
+    verifyAccessToken().then(() => {
+      searchParams.set("token", encodeURIComponent(accessToken));
+      setSearchParams(searchParams);
+    });
+  }, [accessToken, verifyAccessToken, searchParams, setSearchParams]);
 
   return (
     <div
@@ -85,12 +96,18 @@ const SignInScreen = () => {
 const Button = ({ css: cssProp, ...props }) => (
   <button
     css={css`
-      background: #e588f8;
+      color: white;
+      background: hsl(0 0% 100% / 7%);
       border: 0;
-      padding: 1.2rem 2.2rem;
+      padding: 1.1rem 2.4rem;
+      font-weight: 500;
       font-size: 1.5rem;
       border-radius: 0.3rem;
       cursor: pointer;
+      transition: 0.15s ease-out background;
+      :hover {
+        background: hsl(0 0% 100% / 9%);
+      }
       ${cssProp}
     `}
     {...props}

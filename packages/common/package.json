@@ -1,0 +1,19 @@
+{
+  "name": "@shades/common",
+  "version": "0.0.0",
+  "main": "dist/index.js",
+  "private": true,
+  "scripts": {
+    "start": "rollup -c -w",
+    "build": "rollup -c"
+  },
+  "peerDependencies": {
+    "react": "17.x"
+  },
+  "devDependencies": {
+    "@swc/core": "^1.2.130",
+    "rollup": "^2.67.2",
+    "rollup-plugin-swc": "^0.2.1",
+    "swc-loader": "^0.1.15"
+  }
+}

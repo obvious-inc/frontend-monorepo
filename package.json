@@ -1,4 +1,6 @@
 {
-  "name": "shades",
-  "workspaces": ["packages/*"]
+  "name": "newshades-frontend-monorepo",
+  "workspaces": [
+    "packages/*"
+  ]
 }
