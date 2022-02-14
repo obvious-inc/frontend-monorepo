@@ -27,4 +27,3 @@ Build a bundle with:
 npm run build -w @shades/common
 ```
 
-For now, we check in our build output, and you have to manually build before you commit. I’m sorry.
