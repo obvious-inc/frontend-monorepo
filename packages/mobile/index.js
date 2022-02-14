@@ -1,5 +1,4 @@
 import { registerRootComponent } from "expo";
-import "node-libs-react-native/globals";
 
 import App from "./src/app";
 
