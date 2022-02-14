@@ -20,6 +20,7 @@ const zlibDecompressData = (data) => {
 };
 
 export const decompressData = (data, compressionAlgorithm = "zlib") => {
-  if (compressionAlgorithm === "zlib") return zlibDecompressData(data);
+  if (!compressionAlgorithm || compressionAlgorithm === "zlib")
+    return zlibDecompressData(data);
   else throw `unknown compression algorithm: ${compressionAlgorithm}`;
 };
