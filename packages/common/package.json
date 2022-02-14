@@ -15,5 +15,8 @@
     "rollup": "^2.67.2",
     "rollup-plugin-swc": "^0.2.1",
     "swc-loader": "^0.1.15"
+  },
+  "dependencies": {
+    "pako": "^2.0.4"
   }
 }

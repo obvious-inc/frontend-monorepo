@@ -8,15 +8,9 @@ export const generateDummyId = () => {
 };
 
 const zlibDecompressData = (data) => {
-  var strData = atob(data);
-  var charData = strData.split("").map(function (x) {
-    return x.charCodeAt(0);
-  });
-
-  var binData = new Uint8Array(charData);
-  var data = inflate(binData);
-  var strData = String.fromCharCode.apply(null, new Uint16Array(data));
-  return JSON.parse(strData);
+  var bufferData = Buffer.from(data, "base64");
+  var binData = new Uint8Array(bufferData);
+  return JSON.parse(inflate(binData, { to: "string" }));
 };
 
 export const decompressData = (data, compressionAlgorithm = "zlib") => {

@@ -1,4 +1,5 @@
 import React from 'react';
+import { inflate } from 'pako';
 
 function _extends() {
     _extends = Object.assign || function(target) {
@@ -160,6 +161,25 @@ const Provider$2 = (param1)=>{
 const identity = (_)=>_
 ;
 
+let prevDummyId = 0;
+const generateDummyId = ()=>{
+    const id = prevDummyId++;
+    prevDummyId = id;
+    return id;
+};
+const zlibDecompressData = (data)=>{
+    var bufferData = Buffer.from(data, "base64");
+    var binData = new Uint8Array(bufferData);
+    return JSON.parse(inflate(binData, {
+        to: "string"
+    }));
+};
+const decompressData = function(data) {
+    let compressionAlgorithm = arguments.length > 1 && arguments[1] !== void 0 ? arguments[1] : "zlib";
+    if (!compressionAlgorithm || compressionAlgorithm === "zlib") return zlibDecompressData(data);
+    else throw `unknown compression algorithm: ${compressionAlgorithm}`;
+};
+
 const clientEventMap = {
     "request-user-data": [
         "client-connection-request"
@@ -227,6 +247,11 @@ const Provider$1 = (param)=>{
         const serverEvents = Object.keys(serverEventMap);
         for (let event of serverEvents)channel.bind(event, (data)=>{
             const clientEventName = serverEventMap[event];
+            if (data.compressed) {
+                let compressedData = data.compressed.data;
+                let compressionAlg = data.compressed.alg;
+                data = decompressData(compressedData, compressionAlg);
+            }
             listenersRef.current.forEach((fn)=>fn(clientEventName, data)
             );
         });
@@ -252,13 +277,6 @@ const Provider$1 = (param)=>{
 };
 const useServerConnection = ()=>React.useContext(Context$1)
 ;
-
-let prevDummyId = 0;
-const generateDummyId = ()=>{
-    const id = prevDummyId++;
-    prevDummyId = id;
-    return id;
-};
 
 const omitKey = (key, obj)=>Object.fromEntries(Object.entries(obj).filter((param)=>{
         let [key_] = param;
