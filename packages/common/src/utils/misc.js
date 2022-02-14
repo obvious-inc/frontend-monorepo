@@ -1,3 +1,5 @@
+import { Buffer } from "buffer";
+
 let prevDummyId = 0;
 export const generateDummyId = () => {
   const id = prevDummyId++;
