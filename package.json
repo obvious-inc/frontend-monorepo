@@ -2,5 +2,8 @@
   "name": "newshades-frontend-monorepo",
   "workspaces": [
     "packages/*"
-  ]
+  ],
+  "scripts": {
+    "format": "npm run format --workspaces --if-present"
+  }
 }

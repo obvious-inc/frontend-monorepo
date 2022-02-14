@@ -8,7 +8,8 @@
     "build-web": "webpack --mode=production",
     "start-desktop": "electron-forge start",
     "make-desktop": "electron-forge make",
-    "publish-desktop": "electron-forge publish"
+    "publish-desktop": "electron-forge publish",
+    "format": "prettier . --write"
   },
   "config": {
     "forge": "./forge.config.js"

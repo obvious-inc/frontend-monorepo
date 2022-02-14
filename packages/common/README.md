@@ -26,4 +26,3 @@ Build a bundle with:
 ```sh
 npm run build -w @shades/common
 ```
-
