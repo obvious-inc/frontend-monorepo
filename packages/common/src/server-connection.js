@@ -65,13 +65,16 @@ export const Provider = ({ Pusher, pusherKey, debug = false, children }) => {
     for (let event of serverEvents)
       channel.bind(event, (data) => {
         const clientEventName = serverEventMap[event];
-        if (data.compressed) {
-          let compressedData = data.compressed.data;
-          let compressionAlg = data.compressed.alg;
-          data = decompressData(compressedData, compressionAlg);
+        if (!data.compressed) {
+          listenersRef.current.forEach((fn) => fn(clientEventName, data));
+          return;
         }
 
-        listenersRef.current.forEach((fn) => fn(clientEventName, data));
+        let compressedData = data.compressed.data;
+        let compressionAlg = data.compressed.alg;
+        decompressData(compressedData, compressionAlg).then((data) => {
+          listenersRef.current.forEach((fn) => fn(clientEventName, data));
+        });
       });
   }, [Pusher, apiOrigin, pusherKey, debug, user, accessToken]);
 

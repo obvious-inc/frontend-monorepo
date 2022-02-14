@@ -1,5 +1,3 @@
-import { inflate } from "pako";
-
 let prevDummyId = 0;
 export const generateDummyId = () => {
   const id = prevDummyId++;
@@ -7,14 +5,15 @@ export const generateDummyId = () => {
   return id;
 };
 
-const zlibDecompressData = (data) => {
+const zlibDecompressData = async (data) => {
+  const { default: pako } = await import("pako");
   var bufferData = Buffer.from(data, "base64");
   var binData = new Uint8Array(bufferData);
-  return JSON.parse(inflate(binData, { to: "string" }));
+  return JSON.parse(pako.inflate(binData, { to: "string" }));
 };
 
-export const decompressData = (data, compressionAlgorithm = "zlib") => {
+export const decompressData = async (data, compressionAlgorithm = "zlib") => {
   if (!compressionAlgorithm || compressionAlgorithm === "zlib")
-    return zlibDecompressData(data);
+    return await zlibDecompressData(data);
   else throw `unknown compression algorithm: ${compressionAlgorithm}`;
 };
