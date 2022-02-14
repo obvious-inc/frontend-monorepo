@@ -6,6 +6,7 @@
   "scripts": {
     "start": "rollup -c -w",
     "build": "rollup -c",
+    "format": "prettier . --write",
     "postinstall": "npm run build"
   },
   "peerDependencies": {
@@ -13,6 +14,7 @@
   },
   "devDependencies": {
     "@swc/core": "^1.2.130",
+    "prettier": "^2.5.1",
     "rollup": "^2.67.2",
     "rollup-plugin-swc": "^0.2.1",
     "swc-loader": "^0.1.15"
