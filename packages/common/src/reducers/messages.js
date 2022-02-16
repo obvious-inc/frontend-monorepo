@@ -8,10 +8,17 @@ const entriesById = (state = {}, action) => {
       return { ...state, ...indexBy((m) => m.id, action.messages) };
 
     case "server-event:message-created":
+    case "server-event:message-updated":
       return {
         ...state,
         [action.data.message.id]: action.data.message,
       };
+
+    case "server-event:message-removed":
+      return omitKey(action.data.message.id, state);
+
+    case "message-delete-request-successful":
+      return omitKey(action.messageId, state);
 
     case "message-create-request-sent":
       return {
@@ -23,6 +30,11 @@ const entriesById = (state = {}, action) => {
       return {
         // Remove the optimistic entry
         ...omitKey(action.optimisticEntryId, state),
+        [action.message.id]: action.message,
+      };
+    case "message-update-request-successful":
+      return {
+        ...state,
         [action.message.id]: action.message,
       };
 
@@ -72,6 +84,18 @@ const entryIdsByChannelId = (state = {}, action) => {
         ],
       };
     }
+
+    case "server-event:message-removed":
+      return mapValues(
+        (messageIds) =>
+          messageIds.filter((id) => id !== action.data.message.id),
+        state
+      );
+    case "message-delete-request-successful":
+      return mapValues(
+        (messageIds) => messageIds.filter((id) => id !== action.messageId),
+        state
+      );
 
     default:
       return state;

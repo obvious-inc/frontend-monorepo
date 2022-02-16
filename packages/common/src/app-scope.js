@@ -90,6 +90,38 @@ export const Provider = ({ children }) => {
     [authorizedFetch, user, markChannelRead, dispatch]
   );
 
+  const updateMessage = React.useCallback(
+    async (messageId, { content }) => {
+      return authorizedFetch(`/messages/${messageId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ content }),
+      }).then((message) => {
+        dispatch({
+          type: "message-update-request-successful",
+          message,
+        });
+        return message;
+      });
+    },
+    [authorizedFetch, dispatch]
+  );
+
+  const removeMessage = React.useCallback(
+    async (messageId) => {
+      return authorizedFetch(`/messages/${messageId}`, {
+        method: "DELETE",
+      }).then((message) => {
+        dispatch({
+          type: "message-delete-request-successful",
+          messageId,
+        });
+        return message;
+      });
+    },
+    [authorizedFetch, dispatch]
+  );
+
   const createChannel = React.useCallback(
     ({ name, kind, server }) =>
       authorizedFetch("/channels", {
@@ -111,6 +143,8 @@ export const Provider = ({ children }) => {
       createServer,
       createChannel,
       createMessage,
+      updateMessage,
+      removeMessage,
       markChannelRead,
     }),
     [
@@ -119,6 +153,8 @@ export const Provider = ({ children }) => {
       createServer,
       createChannel,
       createMessage,
+      updateMessage,
+      removeMessage,
       markChannelRead,
     ]
   );

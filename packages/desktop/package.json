@@ -43,6 +43,9 @@
   },
   "dependencies": {
     "@emotion/react": "^11.7.1",
+    "@radix-ui/react-dropdown-menu": "^0.1.4",
+    "@radix-ui/react-icons": "^1.0.3",
+    "@radix-ui/react-toolbar": "^0.1.4",
     "@sentry/react": "^6.17.3",
     "@shades/common": "*",
     "@walletconnect/web3-provider": "^1.7.1",
