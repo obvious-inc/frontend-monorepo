@@ -1,6 +1,7 @@
 import React from "react";
 import { useAuth } from "./auth";
 import { generateDummyId } from "./utils/misc";
+import invariant from "./utils/invariant";
 import { useServerConnection } from "./server-connection";
 import useRootReducer from "./hooks/root-reducer";
 
@@ -122,6 +123,48 @@ export const Provider = ({ children }) => {
     [authorizedFetch, dispatch]
   );
 
+  const addMessageReaction = React.useCallback(
+    async (messageId, { emoji }) => {
+      invariant(
+        // https://stackoverflow.com/questions/18862256/how-to-detect-emoji-using-javascript#answer-64007175
+        /\p{Emoji}/u.test(emoji),
+        "Only emojis allowed"
+      );
+
+      dispatch({
+        type: "add-message-reaction:request-sent",
+        messageId,
+        emoji,
+        userId: user.id,
+      });
+
+      // TODO: Undo the optimistic update if the request fails
+      return authorizedFetch(
+        `/messages/${messageId}/reactions/${encodeURIComponent(emoji)}`,
+        { method: "POST" }
+      );
+    },
+    [authorizedFetch, dispatch, user?.id]
+  );
+
+  const removeMessageReaction = React.useCallback(
+    async (messageId, { emoji }) => {
+      dispatch({
+        type: "remove-message-reaction:request-sent",
+        messageId,
+        emoji,
+        userId: user.id,
+      });
+
+      // TODO: Undo the optimistic update if the request fails
+      return authorizedFetch(
+        `/messages/${messageId}/reactions/${encodeURIComponent(emoji)}`,
+        { method: "DELETE" }
+      );
+    },
+    [authorizedFetch, dispatch, user?.id]
+  );
+
   const createChannel = React.useCallback(
     ({ name, kind, server }) =>
       authorizedFetch("/channels", {
@@ -145,6 +188,8 @@ export const Provider = ({ children }) => {
       createMessage,
       updateMessage,
       removeMessage,
+      addMessageReaction,
+      removeMessageReaction,
       markChannelRead,
     }),
     [
@@ -155,6 +200,8 @@ export const Provider = ({ children }) => {
       createMessage,
       updateMessage,
       removeMessage,
+      addMessageReaction,
+      removeMessageReaction,
       markChannelRead,
     ]
   );

@@ -17,6 +17,8 @@ const serverEventMap = {
   MESSAGE_CREATE: "message-created",
   MESSAGE_UPDATE: "message-updated",
   MESSAGE_REMOVE: "message-removed",
+  MESSAGE_REACTION_ADD: "message-reaction-added",
+  MESSAGE_REACTION_REMOVE: "message-reaction-removed",
 };
 
 const Context = React.createContext(null);

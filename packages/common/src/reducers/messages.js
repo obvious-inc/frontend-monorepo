@@ -38,6 +38,71 @@ const entriesById = (state = {}, action) => {
         [action.message.id]: action.message,
       };
 
+    case "add-message-reaction:request-sent": {
+      const message = state[action.messageId];
+      const existingReaction = message.reactions.find(
+        (r) => r.emoji === action.emoji
+      );
+      return {
+        ...state,
+        [action.messageId]: {
+          ...message,
+          reactions:
+            existingReaction == null
+              ? // Add a new reaction
+                [
+                  ...message.reactions,
+                  { emoji: action.emoji, count: 1, users: [action.userId] },
+                ]
+              : // Update the existing one
+                message.reactions.map((r) =>
+                  r.emoji === action.emoji
+                    ? {
+                        ...r,
+                        count: r.count + 1,
+                        users: [...r.users, action.userId],
+                      }
+                    : r
+                ),
+        },
+      };
+    }
+
+    case "remove-message-reaction:request-sent": {
+      const message = state[action.messageId];
+      const reaction = message.reactions.find((r) => r.emoji === action.emoji);
+      return {
+        ...state,
+        [action.messageId]: {
+          ...message,
+          reactions:
+            reaction.count === 1
+              ? // Remove the reaction
+                message.reactions.filter((r) => r.emoji !== action.emoji)
+              : // Update the existing one
+                message.reactions.map((r) =>
+                  r.emoji === action.emoji
+                    ? {
+                        ...r,
+                        count: r.count - 1,
+                        users: r.users.filter(
+                          (userId) => userId !== action.userId
+                        ),
+                      }
+                    : r
+                ),
+        },
+      };
+    }
+
+    // TODO: Update the reactions individually to prevent race conditions
+    case "server-event:message-reaction-added":
+    case "server-event:message-reaction-removed":
+      return {
+        ...state,
+        [action.data.message.id]: action.data.message,
+      };
+
     default:
       return state;
   }

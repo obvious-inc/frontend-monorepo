@@ -2,14 +2,18 @@ import React from "react";
 import { useParams } from "react-router";
 import { css } from "@emotion/react";
 import { FormattedDate } from "react-intl";
-import { useAuth, useAppScope } from "@shades/common";
+import { useAuth, useAppScope, arrayUtils, objectUtils } from "@shades/common";
 import usePageVisibilityChangeListener from "../hooks/page-visibility-change-listener";
 import useHover from "../hooks/hover";
 import { FaceIcon, DotsHorizontalIcon, Pencil1Icon } from "./icons";
 import AutoAdjustingHeightTextarea from "./auto-adjusting-height-textarea";
 import Button from "./button";
+import * as Popover from "./popover";
 import * as DropdownMenu from "./dropdown-menu";
 import * as Toolbar from "./toolbar";
+
+const { groupBy } = arrayUtils;
+const { mapValues } = objectUtils;
 
 const useChannelMessages = (channelId) => {
   const { actions, state } = useAppScope();
@@ -114,6 +118,7 @@ const Channel = () => {
             key={m.id}
             content={m.content}
             author={serverMembersByUserId[m.author].display_name}
+            reactions={m.reactions}
             timestamp={
               <FormattedDate
                 value={new Date(m.created_at)}
@@ -127,6 +132,18 @@ const Channel = () => {
             canEditMessage={user.id === m.author}
             update={(content) => actions.updateMessage(m.id, { content })}
             remove={() => actions.removeMessage(m.id)}
+            addReaction={(emoji) => {
+              const existingReaction = m.reactions.find(
+                (r) => r.emoji === emoji
+              );
+
+              if (existingReaction?.users.includes(user.id)) return;
+
+              actions.addMessageReaction(m.id, { emoji });
+            }}
+            removeReaction={(emoji) =>
+              actions.removeMessageReaction(m.id, { emoji })
+            }
           />
         ))}
         <div
@@ -153,16 +170,192 @@ const Channel = () => {
   );
 };
 
+// Super hacky and inaccessible
+const EmojiPicker = ({ addReaction }) => {
+  const inputRef = React.useRef();
+
+  const [emojiData, setEmojiData] = React.useState([]);
+
+  const emojis = React.useMemo(
+    () =>
+      groupBy(
+        (e) => e.category,
+        emojiData.filter((e) => parseFloat(e.unicode_version) < 13)
+      ),
+    [emojiData]
+  );
+
+  const [query, setQuery] = React.useState("");
+  const trimmedQuery = query.trim().toLowerCase();
+
+  const filteredEmojisByCategory = React.useMemo(() => {
+    const match = (e) =>
+      [e.description.toLowerCase(), ...e.aliases, ...e.tags].some((prop) =>
+        prop.includes(trimmedQuery)
+      );
+
+    return Object.fromEntries(
+      Object.entries(mapValues((es) => es.filter(match), emojis)).filter(
+        (entry) => entry[1].length !== 0
+      )
+    );
+  }, [emojis, trimmedQuery]);
+
+  React.useEffect(() => {
+    inputRef.current.focus();
+  }, []);
+
+  React.useEffect(() => {
+    import("../emojis").then(({ default: emojis }) => {
+      setEmojiData(emojis);
+    });
+  });
+
+  return (
+    <>
+      <div css={css({ padding: "0.7rem 0.7rem 0.3rem" })}>
+        <input
+          ref={inputRef}
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+          placeholder="Search"
+          css={(theme) =>
+            css({
+              color: "white",
+              background: "rgb(0 0 0 / 20%)",
+              fontSize: "1.3rem",
+              fontWeight: "300",
+              borderRadius: "0.3rem",
+              padding: "0.5rem 0.7rem",
+              width: "100%",
+              outline: "none",
+              border: 0,
+              "&::placeholder": { fontWeight: "400" },
+              "&:focus": {
+                boxShadow: `0 0 0 0.2rem ${theme.colors.primary}`,
+              },
+            })
+          }
+        />
+      </div>
+
+      <div css={css({ position: "relative", flex: 1, overflow: "auto" })}>
+        {Object.entries(filteredEmojisByCategory).map(([category, emojis]) => (
+          <div key={category}>
+            <div
+              css={css({
+                position: "sticky",
+                top: 0,
+                zIndex: 1,
+                background:
+                  "linear-gradient(-180deg, hsl(0 0% 18%) 50%, transparent)",
+                padding: "0.6rem 0.9rem",
+                fontSize: "1.2rem",
+                fontWeight: "500",
+                color: "rgb(255 255 255 / 40%)",
+                textTransform: "uppercase",
+              })}
+            >
+              {category}
+            </div>
+            <div
+              css={css({
+                display: "grid",
+                gridTemplateColumns: "repeat(9, max-content)",
+                padding: "0 0.5rem",
+              })}
+            >
+              {emojis.map(({ emoji }) => (
+                <button
+                  key={emoji}
+                  onClick={() => {
+                    addReaction(emoji);
+                  }}
+                  css={(theme) =>
+                    css({
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      fontSize: "2.2rem",
+                      width: "3.4rem",
+                      height: "2.9rem",
+                      background: "none",
+                      borderRadius: "0.5rem",
+                      border: 0,
+                      cursor: "pointer",
+                      outline: "none",
+                      "&:hover": {
+                        background: "rgb(255 255 255 / 10%)",
+                      },
+                      "&:focus": {
+                        position: "relative",
+                        zIndex: 2,
+                        boxShadow: `0 0 0 0.2rem ${theme.colors.primary}`,
+                      },
+                    })
+                  }
+                >
+                  {emoji}
+                </button>
+              ))}
+            </div>
+          </div>
+        ))}
+      </div>
+    </>
+  );
+};
+
 const MessageToolbar = ({
   canEditMessage,
   startEditMode,
+  addReaction,
   requestMessageRemoval,
   onDropdownOpenChange,
+  isEmojiPickerOpen,
+  onEmojiPickerOpenChange,
 }) => (
   <Toolbar.Root>
-    <Toolbar.Button disabled aria-label="React">
-      <FaceIcon />
-    </Toolbar.Button>
+    <Popover.Root
+      open={isEmojiPickerOpen}
+      onOpenChange={onEmojiPickerOpenChange}
+    >
+      <Toolbar.Button
+        asChild
+        aria-label="Add reaction"
+        style={{ position: "relative" }}
+      >
+        <Popover.Trigger>
+          <FaceIcon />
+          <Popover.Anochor
+            style={{
+              width: "3.3rem",
+              height: "3.3rem",
+              position: "absolute",
+              top: "50%",
+              left: "50%",
+              transform: "translateY(-50%) translateX(-50%)",
+              pointerEvents: "none",
+            }}
+          />
+        </Popover.Trigger>
+      </Toolbar.Button>
+      <Popover.Content
+        side="left"
+        align="center"
+        sideOffset={4}
+        style={{
+          width: "31.6rem",
+          height: "28.4rem",
+          display: "flex",
+          flexDirection: "column",
+        }}
+      >
+        <Popover.Arrow offset={13} />
+        <EmojiPicker addReaction={addReaction} />
+      </Popover.Content>
+    </Popover.Root>
+
     {canEditMessage && (
       <Toolbar.Button
         onClick={() => {
@@ -210,19 +403,26 @@ const MessageItem = ({
   author,
   content,
   timestamp,
+  reactions = [],
   isEdited,
   canEditMessage,
+  addReaction,
+  removeReaction,
   update,
   remove,
 }) => {
   const inputRef = React.useRef();
   const containerRef = React.useRef();
 
+  const { user } = useAuth();
+
   const [isHovering, hoverHandlers] = useHover();
   const [isDropdownOpen, setDropdownOpen] = React.useState(false);
+  const [isEmojiPickerOpen, setEmojiPickerOpen] = React.useState(false);
   const [isEditing, setEditingMessage] = React.useState(false);
 
-  const showAsFocused = !isEditing && (isHovering || isDropdownOpen);
+  const showAsFocused =
+    !isEditing && (isHovering || isDropdownOpen || isEmojiPickerOpen);
 
   React.useEffect(() => {
     if (!isEditing) return;
@@ -266,12 +466,20 @@ const MessageItem = ({
           startEditMode={() => {
             setEditingMessage(true);
           }}
+          addReaction={(emoji) => {
+            addReaction(emoji);
+            setEmojiPickerOpen(false);
+          }}
           requestMessageRemoval={() => {
             if (confirm("Are you sure you want to remove this message?"))
               remove();
           }}
           onDropdownOpenChange={(isOpen) => {
             setDropdownOpen(isOpen);
+          }}
+          isEmojiPickerOpen={isEmojiPickerOpen}
+          onEmojiPickerOpenChange={(isOpen) => {
+            setEmojiPickerOpen(isOpen);
           }}
         />
       </div>
@@ -336,6 +544,66 @@ const MessageItem = ({
               </span>
             </>
           )}
+        </div>
+      )}
+
+      {reactions.length !== 0 && (
+        <div
+          css={css({
+            display: "grid",
+            gridAutoFlow: "column",
+            gridAutoColumns: "auto",
+            gridGap: "0.4rem",
+            justifyContent: "flex-start",
+            margin: "0.5rem -1px 0",
+            button: {
+              display: "flex",
+              alignItems: "center",
+              height: "2.5rem",
+              fontSize: "1.5rem",
+              background: "rgb(255 255 255 / 4%)",
+              borderRadius: "0.7rem",
+              padding: "0 0.7rem 0 0.6rem",
+              lineHeight: 1,
+              userSelect: "none",
+              border: "1px solid transparent",
+              cursor: "pointer",
+              "&.active": {
+                background: "#3f42ea45",
+                borderColor: "#4c4ffe96",
+              },
+              "&:not(.active):hover": {
+                borderColor: "rgb(255 255 255 / 20%)",
+              },
+              ".count": {
+                fontSize: "1rem",
+                fontWeight: "400",
+                color: "rgb(255 255 255 / 70%)",
+                marginLeft: "0.5rem",
+              },
+            },
+          })}
+        >
+          {reactions.map((r) => {
+            const isLoggedInUserReaction = r.users.includes(user.id);
+            return (
+              <button
+                key={r.emoji}
+                onClick={() => {
+                  if (isLoggedInUserReaction) {
+                    removeReaction(r.emoji);
+                    return;
+                  }
+
+                  addReaction(r.emoji);
+                }}
+                className={isLoggedInUserReaction ? "active" : undefined}
+              >
+                <span>{r.emoji}</span>
+                <span className="count">{r.count}</span>
+              </button>
+            );
+          })}
         </div>
       )}
     </div>
