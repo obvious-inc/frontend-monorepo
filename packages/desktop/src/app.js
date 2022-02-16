@@ -1,6 +1,7 @@
 import React from "react";
 import { Routes, Route, useNavigate, useLocation } from "react-router-dom";
 import { IntlProvider } from "react-intl";
+import { ThemeProvider } from "@emotion/react";
 import Pusher from "pusher-js";
 import {
   useAuth,
@@ -14,6 +15,7 @@ import SignInScreen from "./components/sign-in-screen";
 import Channel from "./components/channel";
 import ChannelLayout from "./components/channel-layout";
 import TitleBar from "./components/title-bar";
+import { dark as defaultTheme } from "./themes";
 
 const isNative = window.Native != null;
 
@@ -111,7 +113,9 @@ export default function Root() {
           pusherKey={process.env.PUSHER_KEY}
         >
           <AppScopeProvider>
-            <App />
+            <ThemeProvider theme={defaultTheme}>
+              <App />
+            </ThemeProvider>
           </AppScopeProvider>
         </ServerConnectionProvider>
       </AuthProvider>

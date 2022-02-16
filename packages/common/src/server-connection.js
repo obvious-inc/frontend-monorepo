@@ -15,6 +15,8 @@ const clientEventMap = {
 const serverEventMap = {
   CONNECTION_READY: "user-data",
   MESSAGE_CREATE: "message-created",
+  MESSAGE_UPDATE: "message-updated",
+  MESSAGE_REMOVE: "message-removed",
 };
 
 const Context = React.createContext(null);
