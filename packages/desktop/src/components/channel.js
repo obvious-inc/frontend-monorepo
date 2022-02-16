@@ -170,6 +170,7 @@ const Channel = () => {
   );
 };
 
+// Super hacky and inaccessible
 const EmojiPicker = ({ addReaction }) => {
   const inputRef = React.useRef();
 
