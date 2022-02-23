@@ -6,7 +6,7 @@ const initialState = {
 
 const reducer = (state = initialState, action) => {
   switch (action.type) {
-    case "server-event:user-data":
+    case "initial-data-request-successful":
       return {
         ...state,
         entriesById: indexBy((s) => s.id, action.data.servers),

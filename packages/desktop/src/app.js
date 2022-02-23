@@ -8,7 +8,6 @@ import {
   AuthProvider,
   useAppScope,
   AppScopeProvider,
-  useServerConnection,
   ServerConnectionProvider,
 } from "@shades/common";
 import SignInScreen from "./components/sign-in-screen";
@@ -24,61 +23,50 @@ const App = () => {
   const navigate = useNavigate();
 
   const { status: authStatus, user } = useAuth();
-  const serverConnection = useServerConnection();
   const { actions } = useAppScope();
 
   React.useEffect(() => {
-    const handler = (name, data) => {
-      switch (name) {
-        case "user-data": {
-          const server = data.servers[0];
-          const channel = server?.channels[0];
+    if (authStatus !== "authenticated") return;
 
-          const redirectToChannel = (channelId) =>
-            navigate(`/channels/${server.id}/${channelId}`, {
-              replace: true,
-            });
+    actions.fetchUserData().then((data) => {
+      const server = data.servers[0];
+      const channel = server?.channels[0];
 
-          if (server == null) {
-            // Temporary ofc
-            const defaultServerName = `${user.display_name}’a server`;
-            const serverName = prompt("Name your server", defaultServerName);
-            actions.createServer({ name: serverName ?? defaultServerName });
-            break;
-          }
+      const redirectToChannel = (channelId) =>
+        navigate(`/channels/${server.id}/${channelId}`, {
+          replace: true,
+        });
 
-          if (channel == null) {
-            // We’re just playing, anything goes
-            const defaultChannelName = "General";
-            const channelName = prompt(
-              "Create your first channel",
-              defaultChannelName
-            );
-            actions
-              .createChannel({
-                name: channelName ?? defaultChannelName,
-                kind: "server",
-                server: server.id,
-              })
-              .then((channel) => {
-                redirectToChannel(channel.id);
-              });
-            break;
-          }
-
-          if (location.pathname === "/") redirectToChannel(channel.id);
-
-          break;
-        }
-        default: // Ignore
+      if (server == null) {
+        // Temporary ofc
+        const defaultServerName = `${user.display_name}’a server`;
+        const serverName = prompt("Name your server", defaultServerName);
+        actions.createServer({ name: serverName ?? defaultServerName });
+        return;
       }
-    };
 
-    const removeListener = serverConnection.addListener(handler);
-    return () => {
-      removeListener();
-    };
-  }, [serverConnection, user, actions, location.pathname, navigate]);
+      if (channel == null) {
+        // We’re just playing, anything goes
+        const defaultChannelName = "General";
+        const channelName = prompt(
+          "Create your first channel",
+          defaultChannelName
+        );
+        actions
+          .createChannel({
+            name: channelName ?? defaultChannelName,
+            kind: "server",
+            server: server.id,
+          })
+          .then((channel) => {
+            redirectToChannel(channel.id);
+          });
+        return;
+      }
+
+      if (location.pathname === "/") redirectToChannel(channel.id);
+    });
+  }, [authStatus, user, actions, location.pathname, navigate]);
 
   return (
     <>

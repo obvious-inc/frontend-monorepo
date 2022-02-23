@@ -9,7 +9,7 @@ const initialState = {
 
 const reducer = (state = initialState, action) => {
   switch (action.type) {
-    case "server-event:user-data": {
+    case "initial-data-request-successful": {
       const members = action.data.servers.flatMap((s) => s.members);
       const membersById = indexBy((m) => m.id, members);
       const membersByUserId = indexBy((m) => m.user, members);

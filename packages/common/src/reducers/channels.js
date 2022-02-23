@@ -5,7 +5,7 @@ import { selectServer } from "./servers";
 
 const readTimestampByChannelId = (state = {}, action) => {
   switch (action.type) {
-    case "server-event:user-data": {
+    case "initial-data-request-successful": {
       const timestampsByChannelId = mapValues(
         (s) => new Date(s.last_read_at).getTime(),
         indexBy((s) => s.channel, action.data.read_states)
@@ -50,7 +50,7 @@ const readTimestampByChannelId = (state = {}, action) => {
 
 const lastMessageTimestampByChannelId = (state = {}, action) => {
   switch (action.type) {
-    case "server-event:user-data": {
+    case "initial-data-request-successful": {
       const allChannels = action.data.servers.flatMap((s) => s.channels);
       const timestampsByChannelId = mapValues(
         (c) => new Date(c.last_message_at).getTime(),

@@ -24,9 +24,14 @@ export const Provider = ({ children }) => {
     [dispatch, serverConnection]
   );
 
-  const fetchUserData = React.useCallback(() => {
-    sendServerMessage("request-user-data");
-  }, [sendServerMessage]);
+  const fetchUserData = React.useCallback(
+    () =>
+      authorizedFetch("/ready").then((data) => {
+        dispatch({ type: "initial-data-request-successful", data });
+        return data;
+      }),
+    [authorizedFetch, dispatch]
+  );
 
   const fetchMessages = React.useCallback(
     ({ channelId }) =>
