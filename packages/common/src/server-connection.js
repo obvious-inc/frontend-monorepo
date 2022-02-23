@@ -3,7 +3,6 @@ import { identity } from "./utils/function";
 import { useAuth } from "./auth";
 
 const clientEventMap = {
-  "request-user-data": ["client-connection-request"],
   "mark-channel-read": [
     "client-channel-mark",
     (clientPayload) => ({
@@ -13,7 +12,6 @@ const clientEventMap = {
   ],
 };
 const serverEventMap = {
-  CONNECTION_READY: "user-data",
   MESSAGE_CREATE: "message-created",
   MESSAGE_UPDATE: "message-updated",
   MESSAGE_REMOVE: "message-removed",

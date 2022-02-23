@@ -1,6 +1,6 @@
 import React from "react";
 import { View, useWindowDimensions } from "react-native";
-import { NavigationContainer, useNavigation } from "@react-navigation/native";
+import { NavigationContainer } from "@react-navigation/native";
 import { createDrawerNavigator } from "@react-navigation/drawer";
 import { WebView } from "react-native-webview";
 import { SafeAreaProvider } from "react-native-safe-area-context";
@@ -9,7 +9,6 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import {
   AuthProvider,
   useAuth,
-  useServerConnection,
   ServerConnectionProvider,
   useAppScope,
   AppScopeProvider,
@@ -44,34 +43,21 @@ const createDrawerScreenOptions = ({ dimensions }) => ({
 });
 
 const App = () => {
-  const navigation = useNavigation();
   const dimensions = useWindowDimensions();
 
   // TODO: Put this in the routing state instead
   const [serverId, setServerId] = React.useState(null);
 
   const { status: authStatus, user, setAccessToken } = useAuth();
-  const { state } = useAppScope();
-  const serverConnection = useServerConnection();
+  const { state, actions } = useAppScope();
 
   const channels = state.selectServerChannels(serverId);
 
   React.useEffect(() => {
-    const handler = (name, data) => {
-      switch (name) {
-        case "user-data": {
-          setServerId(data.servers[0]?.id);
-          break;
-        }
-        default: // Ignore
-      }
-    };
-
-    const removeListener = serverConnection.addListener(handler);
-    return () => {
-      removeListener();
-    };
-  }, [serverConnection, navigation]);
+    actions.fetchInitialData().then((data) => {
+      setServerId(data.servers[0]?.id);
+    });
+  }, [actions]);
 
   if (authStatus === "not-authenticated")
     return (
