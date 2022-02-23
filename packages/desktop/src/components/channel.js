@@ -102,6 +102,7 @@ const Channel = () => {
     <div
       css={(theme) => css`
         flex: 1;
+        min-width: min(30.6rem, 100vw);
         background: ${theme.colors.backgroundPrimary};
         display: flex;
         flex-direction: column;
@@ -602,7 +603,7 @@ const MessageItem = ({
         <div
           css={css`
             white-space: pre-wrap;
-            work-break: break-word;
+            word-break: break-word;
           `}
         >
           {content}
