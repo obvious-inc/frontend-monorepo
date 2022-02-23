@@ -728,6 +728,10 @@ const EditMessageInput = React.forwardRef(
             background: theme.colors.channelInputBackground,
             padding: "0.6rem 0.8rem 0.8rem",
             borderRadius: "0.7rem",
+            // Prevents iOS zooming in on input fields
+            "@supports (-webkit-touch-callout: none)": {
+              ".input": { fontSize: "1.6rem" },
+            },
           })
         }
       >
@@ -736,6 +740,7 @@ const EditMessageInput = React.forwardRef(
           rows={1}
           value={pendingMessage}
           onChange={(e) => setPendingMessage(e.target.value)}
+          className="input"
           style={{
             font: "inherit",
             padding: 0,
@@ -833,6 +838,10 @@ const NewMessageInput = React.forwardRef(
                   overflow: "hidden",
                   textOverflow: "ellipsis",
                 },
+              },
+              // Prevents iOS zooming in on input fields
+              "@supports (-webkit-touch-callout: none)": {
+                ".input": { fontSize: "1.6rem" },
               },
             })
           }

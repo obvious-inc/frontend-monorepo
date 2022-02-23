@@ -23,6 +23,7 @@ const ChannelLayout = () => {
         css={css({
           display: isMenuCollapsed ? "none" : "flex",
           flexDirection: "column",
+          width: "24rem",
           maxWidth: "calc(100vw - 6.6rem - 4.8rem)",
           minWidth: "min(calc(100vw - 6.6rem - 4.8rem), 24rem)",
         })}
