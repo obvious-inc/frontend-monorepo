@@ -1,6 +1,6 @@
 import React from "react";
 import { useParams } from "react-router";
-import { css } from "@emotion/react";
+import { css, useTheme } from "@emotion/react";
 import { FormattedDate } from "react-intl";
 import { useAuth, useAppScope, arrayUtils, objectUtils } from "@shades/common";
 import usePageVisibilityChangeListener from "../hooks/page-visibility-change-listener";
@@ -11,6 +11,9 @@ import Button from "./button";
 import * as Popover from "./popover";
 import * as DropdownMenu from "./dropdown-menu";
 import * as Toolbar from "./toolbar";
+import { Hash as HashIcon } from "./icons";
+import { HamburgerMenu as HamburgerMenuIcon } from "./icons";
+import { useMenuState } from "./app-layout";
 
 const { groupBy } = arrayUtils;
 const { mapValues } = objectUtils;
@@ -40,6 +43,8 @@ const Channel = () => {
   const params = useParams();
   const { user } = useAuth();
   const { actions, state } = useAppScope();
+
+  const { isEnabled: isMenuEnabled, toggle: toggleMenu } = useMenuState();
 
   const inputRef = React.useRef();
 
@@ -88,70 +93,136 @@ const Channel = () => {
 
   usePageVisibilityChangeListener((state) => {
     if (state === "visible") return;
-    actions.fetchUserData();
+    actions.fetchInitialData();
   });
 
   if (selectedChannel == null) return null;
 
   return (
     <div
-      css={css`
+      css={(theme) => css`
         flex: 1;
-        background: rgb(255 255 255 / 3%);
+        background: ${theme.colors.backgroundPrimary};
         display: flex;
         flex-direction: column;
-        justify-content: flex-end;
       `}
     >
       <div
+        css={css({
+          height: "4.8rem",
+          padding: "0 1.6rem",
+          display: "flex",
+          alignItems: "center",
+          boxShadow:
+            "0 1px 0 rgba(4,4,5,0.2),0 1.5px 0 rgba(6,6,7,0.05),0 2px 0 rgba(4,4,5,0.05)",
+        })}
+      >
+        {isMenuEnabled ? (
+          <button
+            onClick={() => {
+              toggleMenu();
+            }}
+            css={(theme) =>
+              css({
+                background: "none",
+                border: 0,
+                color: "white",
+                cursor: "pointer",
+                padding: "0.8rem 0.6rem",
+                marginLeft: "-0.6rem",
+                marginRight: "calc(-0.6rem + 1.6rem)",
+                borderRadius: "0.4rem",
+                ":hover": {
+                  background: theme.colors.backgroundModifierHover,
+                },
+              })
+            }
+          >
+            <HamburgerMenuIcon style={{ width: "1.5rem" }} />
+          </button>
+        ) : (
+          <div
+            css={(theme) =>
+              css({ color: theme.colors.textMuted, marginRight: "0.9rem" })
+            }
+          >
+            <HashIcon style={{ width: "1.9rem" }} />
+          </div>
+        )}
+        <div
+          css={(theme) =>
+            css({
+              fontSize: "1.5rem",
+              fontWeight: "600",
+              color: theme.colors.textHeader,
+              whiteSpace: "nowrap",
+              textOverflow: "ellipsis",
+            })
+          }
+        >
+          {selectedChannel.name}
+        </div>
+      </div>
+
+      <div
         css={css`
+          flex: 1;
+          display: flex;
+          flex-direction: column;
+          justify-content: flex-end;
           overflow: auto;
-          font-size: 1.3rem;
-          font-weight: 300;
-          padding: 1.6rem 0 0;
           overscroll-behavior-y: contain;
           scroll-snap-type: y proximity;
         `}
       >
-        {messages.map((m) => (
-          <MessageItem
-            key={m.id}
-            content={m.content}
-            author={serverMembersByUserId[m.author].display_name}
-            reactions={m.reactions}
-            timestamp={
-              <FormattedDate
-                value={new Date(m.created_at)}
-                hour="numeric"
-                minute="numeric"
-                day="numeric"
-                month="short"
-              />
-            }
-            isEdited={m.edited_at != null}
-            canEditMessage={user.id === m.author}
-            update={(content) => actions.updateMessage(m.id, { content })}
-            remove={() => actions.removeMessage(m.id)}
-            addReaction={(emoji) => {
-              const existingReaction = m.reactions.find(
-                (r) => r.emoji === emoji
-              );
-
-              if (existingReaction?.users.includes(user.id)) return;
-
-              actions.addMessageReaction(m.id, { emoji });
-            }}
-            removeReaction={(emoji) =>
-              actions.removeMessageReaction(m.id, { emoji })
-            }
-          />
-        ))}
         <div
-          css={css`
-            height: 1.6rem;
-            scroll-snap-align: end;
+          css={(theme) => css`
+            min-height: 0;
+            font-size: ${theme.fontSizes.channelMessages};
+            font-weight: 400;
+            padding: 1.6rem 0 0;
           `}
-        />
+        >
+          {messages.map((m) => (
+            <MessageItem
+              key={m.id}
+              content={m.content}
+              author={serverMembersByUserId[m.author].display_name}
+              reactions={m.reactions}
+              timestamp={
+                <FormattedDate
+                  value={new Date(m.created_at)}
+                  hour="numeric"
+                  minute="numeric"
+                  day="numeric"
+                  month="short"
+                />
+              }
+              isEdited={m.edited_at != null}
+              canEditMessage={user.id === m.author}
+              update={(content) => actions.updateMessage(m.id, { content })}
+              remove={() => actions.removeMessage(m.id)}
+              addReaction={(emoji) => {
+                const existingReaction = m.reactions.find(
+                  (r) => r.emoji === emoji
+                );
+
+                if (existingReaction?.users.includes(user.id)) return;
+
+                actions.addMessageReaction(m.id, { emoji });
+              }}
+              removeReaction={(emoji) =>
+                actions.removeMessageReaction(m.id, { emoji })
+              }
+            />
+          ))}
+          <div
+            css={css`
+              height: 1.6rem;
+              scroll-snap-align: end;
+            `}
+          />
+        </div>
       </div>
       <NewMessageInput
         ref={inputRef}
@@ -222,15 +293,14 @@ const EmojiPicker = ({ addReaction }) => {
           css={(theme) =>
             css({
               color: "white",
-              background: "rgb(0 0 0 / 20%)",
-              fontSize: "1.3rem",
-              fontWeight: "300",
+              background: theme.colors.backgroundSecondary,
+              fontSize: "1.5rem",
+              fontWeight: "400",
               borderRadius: "0.3rem",
               padding: "0.5rem 0.7rem",
               width: "100%",
               outline: "none",
               border: 0,
-              "&::placeholder": { fontWeight: "400" },
               "&:focus": {
                 boxShadow: `0 0 0 0.2rem ${theme.colors.primary}`,
               },
@@ -243,18 +313,19 @@ const EmojiPicker = ({ addReaction }) => {
         {Object.entries(filteredEmojisByCategory).map(([category, emojis]) => (
           <div key={category}>
             <div
-              css={css({
-                position: "sticky",
-                top: 0,
-                zIndex: 1,
-                background:
-                  "linear-gradient(-180deg, hsl(0 0% 18%) 50%, transparent)",
-                padding: "0.6rem 0.9rem",
-                fontSize: "1.2rem",
-                fontWeight: "500",
-                color: "rgb(255 255 255 / 40%)",
-                textTransform: "uppercase",
-              })}
+              css={(theme) =>
+                css({
+                  position: "sticky",
+                  top: 0,
+                  zIndex: 1,
+                  background: `linear-gradient(-180deg, ${theme.colors.dialogBackground} 50%, transparent)`,
+                  padding: "0.6rem 0.9rem",
+                  fontSize: "1.2rem",
+                  fontWeight: "500",
+                  color: "rgb(255 255 255 / 40%)",
+                  textTransform: "uppercase",
+                })
+              }
             >
               {category}
             </div>
@@ -421,6 +492,8 @@ const MessageItem = ({
   const [isEmojiPickerOpen, setEmojiPickerOpen] = React.useState(false);
   const [isEditing, setEditingMessage] = React.useState(false);
 
+  const theme = useTheme();
+
   const showAsFocused =
     !isEditing && (isHovering || isDropdownOpen || isEmojiPickerOpen);
 
@@ -438,10 +511,8 @@ const MessageItem = ({
     <div
       ref={containerRef}
       style={{
-        background: isEditing
-          ? "rgb(255 255 255 / 3%)"
-          : showAsFocused
-          ? "rgb(255 255 255 / 1%)"
+        background: showAsFocused
+          ? theme.colors.messageHoverBackground
           : undefined,
       }}
       css={css`
@@ -531,6 +602,7 @@ const MessageItem = ({
         <div
           css={css`
             white-space: pre-wrap;
+            work-break: break-word;
           `}
         >
           {content}
@@ -651,6 +723,13 @@ const EditMessageInput = React.forwardRef(
           e.preventDefault();
           submit();
         }}
+        css={(theme) =>
+          css({
+            background: theme.colors.channelInputBackground,
+            padding: "0.6rem 0.8rem 0.8rem",
+            borderRadius: "0.7rem",
+          })
+        }
       >
         <AutoAdjustingHeightTextarea
           ref={ref}
@@ -659,7 +738,6 @@ const EditMessageInput = React.forwardRef(
           onChange={(e) => setPendingMessage(e.target.value)}
           style={{
             font: "inherit",
-            fontSize: "1.3rem",
             padding: 0,
             background: "none",
             color: "white",
@@ -690,8 +768,8 @@ const EditMessageInput = React.forwardRef(
               display: "grid",
               gridTemplateColumns: "repeat(2, minmax(max-content, 1fr))",
               justifyContent: "flex-end",
-              gridGap: "1rem",
-              padding: "1rem 0",
+              gridGap: "0.8rem",
+              padding: "0.5rem 0 0",
             })}
           >
             <Button size="small" onClick={onCancel} disabled={!allowSubmit}>
@@ -734,28 +812,37 @@ const NewMessageInput = React.forwardRef(
         `}
       >
         <div
-          css={css({
-            padding: "1.4rem 1.6rem",
-            background: "rgb(255 255 255 / 4%)",
-            borderRadius: "0.5rem",
-          })}
+          css={(theme) =>
+            css({
+              padding: "1rem 1.5rem",
+              background: theme.colors.channelInputBackground,
+              borderRadius: "0.7rem",
+              ".input": {
+                background: "none",
+                font: "inherit",
+                fontSize: theme.fontSizes.channelMessages,
+                color: theme.colors.textNormal,
+                fontWeight: "400",
+                border: 0,
+                outline: "none",
+                display: "block",
+                width: "100%",
+                "::placeholder": {
+                  color: "rgb(255 255 255 / 50%)",
+                  whiteSpace: "nowrap",
+                  overflow: "hidden",
+                  textOverflow: "ellipsis",
+                },
+              },
+            })
+          }
         >
           <AutoAdjustingHeightTextarea
             ref={ref}
             rows={1}
             value={pendingMessage}
             onChange={(e) => setPendingMessage(e.target.value)}
-            style={{
-              background: "none",
-              font: "inherit",
-              fontSize: "1.3rem",
-              color: "white",
-              border: 0,
-              outline: "none",
-              display: "block",
-              width: "100%",
-              resize: "none",
-            }}
+            className="input"
             placeholder={placeholder}
             onKeyPress={(e) => {
               if (!e.shiftKey && e.key === "Enter") {

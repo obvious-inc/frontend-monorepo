@@ -18,4 +18,7 @@ const reducer = (state = initialState, action) => {
 
 export const selectServer = (state) => (id) => state.servers.entriesById[id];
 
+export const selectServers = (state) => () =>
+  Object.values(state.servers.entriesById);
+
 export default reducer;

@@ -5,14 +5,17 @@ import * as Toolbar from "@radix-ui/react-toolbar";
 export const Root = React.forwardRef((props, ref) => (
   <Toolbar.Root
     ref={ref}
-    css={css({
-      width: "100%",
-      minWidth: "max-content",
-      display: "flex",
-      padding: "0.4rem",
-      borderRadius: "0.5rem",
-      background: "hsl(0,0%,18%)",
-    })}
+    css={(theme) =>
+      css({
+        width: "100%",
+        minWidth: "max-content",
+        display: "flex",
+        padding: "0.4rem",
+        borderRadius: "0.5rem",
+        background: theme.colors.dialogBackground,
+        boxShadow: theme.shadows.elevationHigh,
+      })
+    }
     {...props}
   />
 ));

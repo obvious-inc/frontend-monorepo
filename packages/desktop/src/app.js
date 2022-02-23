@@ -1,5 +1,6 @@
 import React from "react";
-import { Routes, Route, useNavigate, useLocation } from "react-router-dom";
+import { css } from "@emotion/react";
+import { Routes, Route, useNavigate } from "react-router-dom";
 import { IntlProvider } from "react-intl";
 import { ThemeProvider } from "@emotion/react";
 import Pusher from "pusher-js";
@@ -12,14 +13,18 @@ import {
 } from "@shades/common";
 import SignInScreen from "./components/sign-in-screen";
 import Channel from "./components/channel";
+import AppLayout from "./components/app-layout";
 import ChannelLayout from "./components/channel-layout";
 import TitleBar from "./components/title-bar";
+import {
+  Home as HomeIcon,
+  ChatBubbles as ChatBubblesIcon,
+} from "./components/icons";
 import { dark as defaultTheme } from "./themes";
 
 const isNative = window.Native != null;
 
 const App = () => {
-  const location = useLocation();
   const navigate = useNavigate();
 
   const { status: authStatus, user } = useAuth();
@@ -28,7 +33,7 @@ const App = () => {
   React.useEffect(() => {
     if (authStatus !== "authenticated") return;
 
-    actions.fetchUserData().then((data) => {
+    actions.fetchInitialData().then((data) => {
       const server = data.servers[0];
       const channel = server?.channels[0];
 
@@ -64,9 +69,9 @@ const App = () => {
         return;
       }
 
-      if (location.pathname === "/") redirectToChannel(channel.id);
+      if (window.location.pathname === "/") redirectToChannel(channel.id);
     });
-  }, [authStatus, user, actions, location.pathname, navigate]);
+  }, [authStatus]);
 
   return (
     <>
@@ -77,14 +82,52 @@ const App = () => {
           <SignInScreen />
         ) : authStatus === "authenticated" ? (
           <Routes>
-            <Route element={<ChannelLayout />}>
+            <Route element={<AppLayout />}>
               <Route
-                path="/channels/:serverId/:channelId"
-                element={<Channel />}
+                path="/"
+                element={
+                  <div
+                    css={css({
+                      flex: 1,
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      height: "100%",
+                    })}
+                  >
+                    <HomeIcon
+                      style={{ width: "6rem", color: "rgb(255 255 255 / 5%)" }}
+                    />
+                  </div>
+                }
               />
+              <Route
+                path="/channels/@me"
+                element={
+                  <div
+                    css={css({
+                      flex: 1,
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      height: "100%",
+                    })}
+                  >
+                    <ChatBubblesIcon
+                      style={{ width: "6rem", color: "rgb(255 255 255 / 5%)" }}
+                    />
+                  </div>
+                }
+              />
+              <Route element={<ChannelLayout />}>
+                <Route
+                  path="/channels/:serverId/:channelId"
+                  element={<Channel />}
+                />
+              </Route>
+              <Route path="/login" element={<SignInScreen />} />
+              <Route path="*" element={null} />
             </Route>
-            <Route path="/login" element={<SignInScreen />} />
-            <Route path="*" element={null} />
           </Routes>
         ) : null // Loading
       }

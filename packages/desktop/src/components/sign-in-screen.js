@@ -67,7 +67,7 @@ const SignInScreen = () => {
         padding: 2rem;
       `}
       style={{
-        height: isNative ? `calc(100vh - ${TITLE_BAR_HEIGHT})` : "100vh",
+        height: isNative ? `calc(100% - ${TITLE_BAR_HEIGHT})` : "100%",
       }}
     >
       {status === "connecting-provider" ? (

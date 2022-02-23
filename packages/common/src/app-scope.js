@@ -24,7 +24,7 @@ export const Provider = ({ children }) => {
     [dispatch, serverConnection]
   );
 
-  const fetchUserData = React.useCallback(
+  const fetchInitialData = React.useCallback(
     () =>
       authorizedFetch("/ready").then((data) => {
         dispatch({ type: "initial-data-request-successful", data });
@@ -50,10 +50,10 @@ export const Provider = ({ children }) => {
         body: JSON.stringify({ name }),
       }).then((res) => {
         // TODO
-        fetchUserData();
+        fetchInitialData();
         return res;
       }),
-    [authorizedFetch, fetchUserData]
+    [authorizedFetch, fetchInitialData]
   );
 
   const markChannelRead = React.useCallback(
@@ -178,15 +178,15 @@ export const Provider = ({ children }) => {
         body: JSON.stringify({ name, kind, server }),
       }).then((res) => {
         // TODO
-        fetchUserData();
+        fetchInitialData();
         return res;
       }),
-    [authorizedFetch, fetchUserData]
+    [authorizedFetch, fetchInitialData]
   );
 
   const actions = React.useMemo(
     () => ({
-      fetchUserData,
+      fetchInitialData,
       fetchMessages,
       createServer,
       createChannel,
@@ -198,7 +198,7 @@ export const Provider = ({ children }) => {
       markChannelRead,
     }),
     [
-      fetchUserData,
+      fetchInitialData,
       fetchMessages,
       createServer,
       createChannel,

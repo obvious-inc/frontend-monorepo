@@ -11,7 +11,7 @@ const baseStyles = {
 
 const stylesByVariant = (theme) => ({
   default: {
-    color: "white",
+    color: theme.colors.textNormal,
     background: "rgb(255 255 255 / 7%)",
     "&:hover": {
       background: "rgb(255 255 255 / 9%)",
@@ -28,8 +28,8 @@ const stylesByVariant = (theme) => ({
 
 const stylesBySize = {
   small: {
-    fontSize: "1.2rem",
-    padding: "0.7rem 0.9rem",
+    fontSize: "1.3rem",
+    padding: "0.8rem 1rem",
   },
 };
 
