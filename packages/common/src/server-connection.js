@@ -57,10 +57,6 @@ export const Provider = ({ Pusher, pusherKey, debug = false, children }) => {
     const channel = pusher.subscribe(`private-${user.id}`);
     channelRef.current = channel;
 
-    channel.bind("pusher:subscription_succeeded", () => {
-      channel.trigger("client-connection-request", { no: "data" });
-    });
-
     const serverEvents = Object.keys(serverEventMap);
 
     for (let event of serverEvents)
