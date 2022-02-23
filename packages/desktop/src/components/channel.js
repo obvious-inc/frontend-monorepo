@@ -19,22 +19,43 @@ const { groupBy } = arrayUtils;
 const { mapValues } = objectUtils;
 
 const useChannelMessages = (channelId) => {
+  const { user } = useAuth();
   const { actions, state } = useAppScope();
 
   const messages = state.selectChannelMessages(channelId);
 
+  const sortedMessages = messages.sort(
+    (m1, m2) => new Date(m1.created_at) - new Date(m2.created_at)
+  );
+
+  // Fetch messages when switching channels
   React.useEffect(() => {
-    actions.fetchMessages({ channelId });
+    let didChangeChannel = false;
+
+    actions.fetchMessages({ channelId }).then((messages) => {
+      // Mark empty channels as read
+      if (didChangeChannel || messages.length !== 0) return;
+      actions.markChannelRead({ channelId });
+    });
+
+    return () => {
+      didChangeChannel = true;
+    };
   }, [actions, channelId]);
 
+  // Fetch messages when tab get visibility
   usePageVisibilityChangeListener((state) => {
     if (state !== "visible") return;
     actions.fetchMessages({ channelId });
   });
 
-  const sortedMessages = messages.sort(
-    (m1, m2) => new Date(m1.created_at) - new Date(m2.created_at)
-  );
+  const lastMessage = sortedMessages.slice(-1)[0];
+
+  // Make channels as read as new messages arrive
+  React.useEffect(() => {
+    if (lastMessage?.id == null || lastMessage.author === user.id) return;
+    actions.markChannelRead({ channelId });
+  }, [lastMessage?.id, lastMessage?.author, user.id, channelId, actions]);
 
   return sortedMessages;
 };
@@ -56,35 +77,6 @@ const Channel = () => {
   );
 
   const messages = useChannelMessages(params.channelId);
-
-  const lastMessage = messages.slice(-1)[0];
-
-  // Fetch messages when switching channels
-  React.useEffect(() => {
-    let didChangeChannel = false;
-
-    actions.fetchMessages({ channelId: params.channelId }).then((messages) => {
-      // Mark empty channels as read
-      if (didChangeChannel || messages.length !== 0) return;
-      actions.markChannelRead({ channelId: params.channelId });
-    });
-
-    return () => {
-      didChangeChannel = true;
-    };
-  }, [actions, params.channelId]);
-
-  // Make channels as read as new messages arrive
-  React.useEffect(() => {
-    if (lastMessage?.id == null || lastMessage.author === user.id) return;
-    actions.markChannelRead({ channelId: params.channelId });
-  }, [
-    lastMessage?.id,
-    lastMessage?.author,
-    user.id,
-    params.channelId,
-    actions,
-  ]);
 
   React.useEffect(() => {
     if (selectedChannel?.id == null) return;
