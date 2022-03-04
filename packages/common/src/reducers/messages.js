@@ -172,7 +172,8 @@ export const selectChannelMessages = (state) => (channelId) => {
   return channelMessageIds.map((id) => {
     const message = state.messages.entriesById[id];
 
-    if (message.blocks != null) return { ...message, content: message.blocks };
+    if (message.blocks?.length > 0)
+      return { ...message, content: message.blocks };
 
     return {
       ...message,
