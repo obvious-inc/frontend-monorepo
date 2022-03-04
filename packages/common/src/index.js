@@ -7,4 +7,5 @@ export { useAppScope, Provider as AppScopeProvider } from "./app-scope";
 export { default as invariant } from "./utils/invariant";
 export * as arrayUtils from "./utils/array";
 export * as objectUtils from "./utils/object";
+export * as functionUtils from "./utils/function";
 export { isTouchDevice } from "./utils/misc";

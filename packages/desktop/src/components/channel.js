@@ -5,8 +5,11 @@ import { FormattedDate } from "react-intl";
 import { useAuth, useAppScope, arrayUtils, objectUtils } from "@shades/common";
 import usePageVisibilityChangeListener from "../hooks/page-visibility-change-listener";
 import useHover from "../hooks/hover";
+import stringifyMessageBlocks from "../slate/stringify";
+import { createEmptyParagraph, isNodeEmpty, cleanNodes } from "../slate/utils";
 import { FaceIcon, DotsHorizontalIcon, Pencil1Icon } from "./icons";
-import AutoAdjustingHeightTextarea from "./auto-adjusting-height-textarea";
+import RichTextInput from "./rich-text-input";
+import RichText from "./rich-text";
 import Button from "./button";
 import * as Popover from "./popover";
 import * as DropdownMenu from "./dropdown-menu";
@@ -193,7 +196,12 @@ const Channel = () => {
               }
               isEdited={m.edited_at != null}
               canEditMessage={user.id === m.author}
-              update={(content) => actions.updateMessage(m.id, { content })}
+              update={(blocks) =>
+                actions.updateMessage(m.id, {
+                  blocks,
+                  content: stringifyMessageBlocks(blocks),
+                })
+              }
               remove={() => actions.removeMessage(m.id)}
               addReaction={(emoji) => {
                 const existingReaction = m.reactions.find(
@@ -217,19 +225,22 @@ const Channel = () => {
           />
         </div>
       </div>
-      <NewMessageInput
-        ref={inputRef}
-        submit={(content) =>
-          actions.createMessage({
-            server: params.serverId,
-            channel: params.channelId,
-            content,
-          })
-        }
-        placeholder={
-          selectedChannel == null ? "..." : `Message #${selectedChannel.name}`
-        }
-      />
+      <div css={css({ padding: "0 1.6rem 1.6rem" })}>
+        <NewMessageInput
+          ref={inputRef}
+          submit={(blocks) =>
+            actions.createMessage({
+              server: params.serverId,
+              channel: params.channelId,
+              content: stringifyMessageBlocks(blocks),
+              blocks,
+            })
+          }
+          placeholder={
+            selectedChannel == null ? "..." : `Message #${selectedChannel.name}`
+          }
+        />
+      </div>
     </div>
   );
 };
@@ -510,7 +521,7 @@ const MessageItem = ({
       }}
       css={css`
         position: relative;
-        line-height: 1.6;
+        line-height: 1.46668;
         padding: 0.7rem 1.6rem 0.5rem;
         user-select: text;
       `}
@@ -592,24 +603,15 @@ const MessageItem = ({
           }
         />
       ) : (
-        <div
-          css={css`
-            white-space: pre-wrap;
-            word-break: break-word;
-          `}
-        >
-          {content}
+        <RichText blocks={content}>
           {isEdited && (
-            <>
-              {" "}
-              <span
-                css={css({ fontSize: "1rem", color: "rgb(255 255 255 / 35%)" })}
-              >
-                (edited)
-              </span>
-            </>
+            <span
+              css={css({ fontSize: "1rem", color: "rgb(255 255 255 / 35%)" })}
+            >
+              (edited)
+            </span>
           )}
-        </div>
+        </RichText>
       )}
 
       {reactions.length !== 0 && (
@@ -682,12 +684,7 @@ const EditMessageInput = React.forwardRef(
     const [isSaving, setSaving] = React.useState(false);
 
     const submit = async () => {
-      if (!hasChanges) {
-        onCancel();
-        return;
-      }
-
-      const isEmpty = pendingMessage.trim().length === 0;
+      const isEmpty = pendingMessage.every(isNodeEmpty);
 
       setSaving(true);
       try {
@@ -699,14 +696,13 @@ const EditMessageInput = React.forwardRef(
           return;
         }
 
-        save(pendingMessage);
+        save(cleanNodes(pendingMessage));
       } catch (e) {
         console.error(e);
         setSaving(false);
       }
     };
 
-    const hasChanges = pendingMessage.trim() !== value;
     const allowSubmit = !isSaving;
 
     return (
@@ -728,11 +724,10 @@ const EditMessageInput = React.forwardRef(
           })
         }
       >
-        <AutoAdjustingHeightTextarea
+        <RichTextInput
           ref={ref}
-          rows={1}
           value={pendingMessage}
-          onChange={(e) => setPendingMessage(e.target.value)}
+          onChange={(value) => setPendingMessage(value)}
           className="input"
           style={{
             font: "inherit",
@@ -740,7 +735,6 @@ const EditMessageInput = React.forwardRef(
             background: "none",
             color: "white",
             border: 0,
-            borderRadius: "0.5rem",
             outline: "none",
             display: "block",
             width: "100%",
@@ -790,77 +784,69 @@ const EditMessageInput = React.forwardRef(
 
 const NewMessageInput = React.forwardRef(
   ({ submit: submit_, placeholder }, ref) => {
-    const formRef = React.useRef();
-    const [pendingMessage, setPendingMessage] = React.useState("");
+    const [pendingMessage, setPendingMessage] = React.useState([
+      createEmptyParagraph(),
+    ]);
+
+    const isEmpty = pendingMessage.every(isNodeEmpty);
 
     const submit = async () => {
-      submit_(pendingMessage);
-      setPendingMessage("");
+      submit_(cleanNodes(pendingMessage));
+      ref.current.clear();
     };
 
     return (
-      <form
-        ref={formRef}
-        onSubmit={(e) => {
-          e.preventDefault();
-          submit();
-        }}
-        css={css`
-          padding: 0 1.6rem 1.6rem;
-        `}
+      <div
+        css={(theme) =>
+          css({
+            position: "relative",
+            padding: "1rem 1.5rem",
+            background: theme.colors.channelInputBackground,
+            borderRadius: "0.7rem",
+            ".input": {
+              background: "none",
+              font: "inherit",
+              fontSize: theme.fontSizes.channelMessages,
+              color: theme.colors.textNormal,
+              fontWeight: "400",
+              border: 0,
+              outline: "none",
+              display: "block",
+              width: "100%",
+              "[data-slate-placeholder]": {
+                color: "rgb(255 255 255 / 40%)",
+                opacity: "1 !important",
+                whiteSpace: "nowrap",
+                overflow: "hidden",
+                textOverflow: "ellipsis",
+              },
+            },
+            // Prevents iOS zooming in on input fields
+            "@supports (-webkit-touch-callout: none)": {
+              ".input": { fontSize: "1.6rem" },
+            },
+          })
+        }
       >
-        <div
-          css={(theme) =>
-            css({
-              padding: "1rem 1.5rem",
-              background: theme.colors.channelInputBackground,
-              borderRadius: "0.7rem",
-              ".input": {
-                background: "none",
-                font: "inherit",
-                fontSize: theme.fontSizes.channelMessages,
-                color: theme.colors.textNormal,
-                fontWeight: "400",
-                border: 0,
-                outline: "none",
-                display: "block",
-                width: "100%",
-                "::placeholder": {
-                  color: "rgb(255 255 255 / 50%)",
-                  whiteSpace: "nowrap",
-                  overflow: "hidden",
-                  textOverflow: "ellipsis",
-                },
-              },
-              // Prevents iOS zooming in on input fields
-              "@supports (-webkit-touch-callout: none)": {
-                ".input": { fontSize: "1.6rem" },
-              },
-            })
-          }
-        >
-          <AutoAdjustingHeightTextarea
-            ref={ref}
-            rows={1}
-            value={pendingMessage}
-            onChange={(e) => setPendingMessage(e.target.value)}
-            className="input"
-            placeholder={placeholder}
-            onKeyPress={(e) => {
-              if (!e.shiftKey && e.key === "Enter") {
-                e.preventDefault();
-                if (pendingMessage.trim().length === 0) return;
-                submit();
-              }
-            }}
-          />
-        </div>
-        <input
-          type="submit"
-          hidden
-          disabled={pendingMessage.trim().length === 0}
+        <RichTextInput
+          ref={ref}
+          value={pendingMessage}
+          onChange={(value) => {
+            setPendingMessage(value);
+          }}
+          className="input"
+          placeholder={placeholder}
+          onKeyDown={(e) => {
+            if (e.isDefaultPrevented()) return;
+
+            if (!e.shiftKey && e.key === "Enter") {
+              e.preventDefault();
+              if (isEmpty) return;
+              submit();
+            }
+          }}
         />
-      </form>
+      </div>
     );
   }
 );

@@ -64,9 +64,9 @@ export const Provider = ({ children }) => {
   );
 
   const createMessage = React.useCallback(
-    async ({ server, channel, content }) => {
+    async ({ server, channel, content, blocks }) => {
       // TODO: Less hacky optimistc UI
-      const message = { server, channel, content };
+      const message = { server, channel, blocks, content };
       const dummyId = generateDummyId();
 
       dispatch({
@@ -97,11 +97,11 @@ export const Provider = ({ children }) => {
   );
 
   const updateMessage = React.useCallback(
-    async (messageId, { content }) => {
+    async (messageId, { blocks, content }) => {
       return authorizedFetch(`/messages/${messageId}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ content }),
+        body: JSON.stringify({ blocks, content }),
       }).then((message) => {
         dispatch({
           type: "message-update-request-successful",

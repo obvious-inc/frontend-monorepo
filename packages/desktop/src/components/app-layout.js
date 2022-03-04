@@ -1,7 +1,7 @@
 import React from "react";
 import { NavLink, Outlet, useParams, Link } from "react-router-dom";
 import { css } from "@emotion/react";
-import { useAppScope } from "@shades/common";
+import { useAppScope, useAuth } from "@shades/common";
 import {
   Home as HomeIcon,
   ChatBubbles as ChatBubblesIcon,
@@ -44,6 +44,7 @@ const useSidebarMenu = () => {
 const AppLayout = () => {
   const params = useParams();
   const { state } = useAppScope();
+  const { user } = useAuth();
 
   const { isEnabled, isCollapsed, toggle } = useSidebarMenu();
   const menuContextValue = React.useMemo(
@@ -55,7 +56,7 @@ const AppLayout = () => {
 
   const hasServers = servers.length > 0;
 
-  if (!state.selectHasFetchedInitialData()) return null;
+  if (!state.selectHasFetchedInitialData() || user == null) return null;
 
   return (
     <div

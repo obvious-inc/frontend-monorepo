@@ -169,7 +169,16 @@ const entryIdsByChannelId = (state = {}, action) => {
 
 export const selectChannelMessages = (state) => (channelId) => {
   const channelMessageIds = state.messages.entryIdsByChannelId[channelId] ?? [];
-  return channelMessageIds.map((id) => state.messages.entriesById[id]);
+  return channelMessageIds.map((id) => {
+    const message = state.messages.entriesById[id];
+
+    if (message.blocks != null) return { ...message, content: message.blocks };
+
+    return {
+      ...message,
+      content: [{ type: "paragraph", children: [{ text: message.content }] }],
+    };
+  });
 };
 
 export default combineReducers({ entriesById, entryIdsByChannelId });
