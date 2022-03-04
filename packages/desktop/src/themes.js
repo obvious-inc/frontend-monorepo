@@ -7,6 +7,7 @@ export const dark = {
     textNormal: "#dcddde",
     textMuted: "#72767d",
     textHeader: "white",
+    linkColor: "hsl(197,100%,47.8%)",
     backgroundPrimary: "#36393f",
     backgroundPrimaryAlt: "#36393f",
     backgroundSecondary: "#2f3136",
