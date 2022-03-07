@@ -713,7 +713,11 @@ const EditMessageInput = React.forwardRef(
   ({ initialValue, save, remove, onCancel, ...props }, ref) => {
     const [isSaving, setSaving] = React.useState(false);
 
+    const allowSubmit = !isSaving;
+
     const submit = async (blocks) => {
+      if (!allowSubmit) return;
+
       const isEmpty = blocks.every(isNodeEmpty);
 
       setSaving(true);
@@ -733,12 +737,11 @@ const EditMessageInput = React.forwardRef(
       }
     };
 
-    const allowSubmit = !isSaving;
-
     return (
       <div
         css={(theme) =>
           css({
+            position: "relative",
             background: theme.colors.channelInputBackground,
             padding: "0.6rem 0.8rem 0.8rem",
             borderRadius: "0.7rem",
@@ -758,12 +761,6 @@ const EditMessageInput = React.forwardRef(
             if (e.key === "Escape") {
               onCancel();
               return;
-            }
-
-            if (!e.shiftKey && e.key === "Enter") {
-              e.preventDefault();
-              if (!allowSubmit) return;
-              submit();
             }
           }}
           {...props}
@@ -832,6 +829,9 @@ const NewMessageInput = React.forwardRef(({ submit, ...props }, ref) => (
     <MessageInput
       ref={ref}
       submit={(blocks) => {
+        const isEmpty = blocks.every(isNodeEmpty);
+        if (isEmpty) return;
+
         submit(blocks);
         ref.current.clear();
       }}
@@ -846,6 +846,7 @@ const MessageInput = React.forwardRef(
       initialValue,
       submit,
       placeholder,
+      onKeyDown,
       serverMembers,
       getUserMentionDisplayName,
     },
@@ -1000,13 +1001,12 @@ const MessageInput = React.forwardRef(
           onKeyDown={(e) => {
             autoCompleteInputKeyDownHandler(e);
 
-            if (e.isDefaultPrevented()) return;
-
-            if (!e.shiftKey && e.key === "Enter") {
+            if (!e.isDefaultPrevented() && !e.shiftKey && e.key === "Enter") {
               e.preventDefault();
-              if (isEmpty) return;
               executeMessage(pendingMessage);
             }
+
+            if (onKeyDown) onKeyDown(e);
           }}
           onBlur={() => {
             if (preventInputBlurRef.current) {
