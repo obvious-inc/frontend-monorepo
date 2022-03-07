@@ -125,11 +125,17 @@ const AppLayout = () => {
                 const shortName =
                   abbreviation.length === 2 ? abbreviation : s.name.slice(0, 2);
 
+                const hasChannels = s.channels.length !== 0;
+
                 return (
                   <RoundButton
                     component={Link}
                     key={i}
-                    to={`/channels/${s.id}/${s.channels[0].id}`}
+                    to={
+                      hasChannels
+                        ? `/channels/${s.id}/${s.channels[0].id}`
+                        : `/channels/${s.id}`
+                    }
                     className={params.serverId === s.id ? "active" : undefined}
                   >
                     <div

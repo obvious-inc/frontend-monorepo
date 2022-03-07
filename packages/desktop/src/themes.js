@@ -19,6 +19,7 @@ export const dark = {
     channelInputBackground: "#40444b",
     // dialogBackground: "#202225",
     dialogBackground: "#40444b",
+    mentionFocusBorder: "#7375ffb8",
   },
   fontSizes: {
     channelMessages: "1.5rem",
