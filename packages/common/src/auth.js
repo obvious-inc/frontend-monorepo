@@ -88,6 +88,10 @@ export const Provider = ({
     [apiOrigin, setAccessToken]
   );
 
+  const signOut = React.useCallback(() => {
+    setAccessToken(null);
+  }, [setAccessToken]);
+
   const authorizedFetch = React.useCallback(
     async (url, options) => {
       if (accessToken == null) throw new Error("Missing access token");
@@ -124,6 +128,7 @@ export const Provider = ({
       apiOrigin,
       authorizedFetch,
       signIn,
+      signOut,
       setAccessToken,
       verifyAccessToken,
     }),
@@ -134,6 +139,7 @@ export const Provider = ({
       apiOrigin,
       authorizedFetch,
       signIn,
+      signOut,
       setAccessToken,
       verifyAccessToken,
     ]

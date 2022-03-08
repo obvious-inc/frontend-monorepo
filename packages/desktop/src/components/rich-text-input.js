@@ -5,7 +5,6 @@ import {
   Transforms,
   Editor,
   Range,
-  Path,
 } from "slate";
 import { Slate, Editable, withReact, ReactEditor } from "slate-react";
 import { withHistory } from "slate-history";
@@ -190,6 +189,27 @@ const RichTextInput = React.forwardRef(
 
                 if (trigger.match == null || trigger.match(wordString))
                   trigger.handler(wordString, wordRange);
+                break;
+              }
+              case "command": {
+                const string = Editor.string(editor, []);
+
+                const isCommand =
+                  editor.selection != null &&
+                  Range.isCollapsed(editor.selection) &&
+                  string.split(" ")[0].match(/^\/([a-z]*)?$/);
+
+                if (!isCommand) {
+                  trigger.handler(null);
+                  break;
+                }
+
+                const parts = string.slice(1).split(" ");
+                const [command, ...args] = parts;
+                trigger.handler(
+                  command,
+                  args.map((a) => a.trim()).filter(Boolean)
+                );
                 break;
               }
 

@@ -12,6 +12,7 @@ import {
   normalizeNodes,
   cleanNodes,
 } from "../slate/utils";
+import useCommands from "../hooks/commands";
 import { FaceIcon, DotsHorizontalIcon, Pencil1Icon } from "./icons";
 import RichTextInput from "./rich-text-input";
 import RichText from "./rich-text";
@@ -613,7 +614,7 @@ const MessageItem = ({
       {isEditing ? (
         <EditMessageInput
           ref={inputRef}
-          initialValue={content}
+          blocks={content}
           onCancel={() => {
             setEditingMessage(false);
           }}
@@ -710,13 +711,20 @@ const MessageItem = ({
 };
 
 const EditMessageInput = React.forwardRef(
-  ({ initialValue, save, remove, onCancel, ...props }, ref) => {
+  ({ blocks, save, remove, onCancel, ...props }, editorRef) => {
+    const [pendingMessage, setPendingMessage] = React.useState(() =>
+      normalizeNodes(blocks)
+    );
+
     const [isSaving, setSaving] = React.useState(false);
 
     const allowSubmit = !isSaving;
+    const isDisabled = !allowSubmit;
 
-    const submit = async (blocks) => {
+    const submit = async () => {
       if (!allowSubmit) return;
+
+      const blocks = cleanNodes(pendingMessage);
 
       const isEmpty = blocks.every(isNodeEmpty);
 
@@ -726,11 +734,11 @@ const EditMessageInput = React.forwardRef(
           isEmpty &&
           confirm("Are you sure you want to remove this message?")
         ) {
-          remove();
+          await remove();
           return;
         }
 
-        save(blocks);
+        await save(blocks);
       } catch (e) {
         console.error(e);
         setSaving(false);
@@ -738,7 +746,11 @@ const EditMessageInput = React.forwardRef(
     };
 
     return (
-      <div
+      <form
+        onSubmit={(e) => {
+          e.preventDefault();
+          submit();
+        }}
         css={(theme) =>
           css({
             position: "relative",
@@ -747,22 +759,31 @@ const EditMessageInput = React.forwardRef(
             borderRadius: "0.7rem",
             // Prevents iOS zooming in on input fields
             "@supports (-webkit-touch-callout: none)": {
-              ".input": { fontSize: "1.6rem" },
+              "[role=textbox]": { fontSize: "1.6rem" },
             },
           })
         }
       >
         <MessageInput
-          ref={ref}
-          initialValue={initialValue}
-          submit={submit}
+          ref={editorRef}
+          initialValue={pendingMessage}
+          onChange={(value) => {
+            setPendingMessage(value);
+          }}
           placeholder={`Press "Enter" to delete message`}
           onKeyDown={(e) => {
             if (e.key === "Escape") {
               onCancel();
               return;
             }
+
+            if (!e.isDefaultPrevented() && !e.shiftKey && e.key === "Enter") {
+              e.preventDefault();
+              submit();
+            }
           }}
+          disabled={isDisabled}
+          disableCommands
           {...props}
         />
         <div css={css({ display: "flex", justifyContent: "flex-end" })}>
@@ -788,65 +809,99 @@ const EditMessageInput = React.forwardRef(
             </Button>
           </div>
         </div>
-      </div>
+      </form>
     );
   }
 );
 
-const NewMessageInput = React.forwardRef(({ submit, ...props }, ref) => (
-  <div
-    css={(theme) =>
-      css({
-        position: "relative",
-        padding: "1rem 1.5rem",
-        background: theme.colors.channelInputBackground,
-        borderRadius: "0.7rem",
-        ".input": {
-          background: "none",
-          font: "inherit",
-          fontSize: theme.fontSizes.channelMessages,
-          color: theme.colors.textNormal,
-          fontWeight: "400",
-          border: 0,
-          outline: "none",
-          display: "block",
-          width: "100%",
-          "[data-slate-placeholder]": {
+const NewMessageInput = React.forwardRef(({ submit, ...props }, editorRef) => {
+  const [pendingMessage, setPendingMessage] = React.useState(() => [
+    createEmptyParagraph(),
+  ]);
+
+  const { execute: executeCommand, isCommand } = useCommands();
+
+  const executeMessage = async () => {
+    const blocks = cleanNodes(pendingMessage);
+
+    const isEmpty = blocks.every(isNodeEmpty);
+
+    if (isEmpty) return;
+
+    const messageString = stringifyMessageBlocks(blocks);
+
+    if (messageString.startsWith("/")) {
+      const [commandName, ...args] = messageString
+        .slice(1)
+        .split(" ")
+        .map((s) => s.trim());
+
+      if (isCommand(commandName)) {
+        await executeCommand(commandName, {
+          args,
+          editor: editorRef.current,
+        });
+        return;
+      }
+    }
+
+    await submit(blocks);
+    editorRef.current.clear();
+  };
+
+  return (
+    <form
+      onSubmit={(e) => {
+        e.preventDefault();
+        executeMessage();
+      }}
+      css={(theme) =>
+        css({
+          position: "relative",
+          padding: "1rem 1.5rem",
+          background: theme.colors.channelInputBackground,
+          borderRadius: "0.7rem",
+          "[role=textbox] [data-slate-placeholder]": {
             color: "rgb(255 255 255 / 40%)",
             opacity: "1 !important",
             whiteSpace: "nowrap",
             overflow: "hidden",
             textOverflow: "ellipsis",
           },
-        },
-        // Prevents iOS zooming in on input fields
-        "@supports (-webkit-touch-callout: none)": {
-          ".input": { fontSize: "1.6rem" },
-        },
-      })
-    }
-  >
-    <MessageInput
-      ref={ref}
-      submit={(blocks) => {
-        const isEmpty = blocks.every(isNodeEmpty);
-        if (isEmpty) return;
-
-        submit(blocks);
-        ref.current.clear();
-      }}
-      {...props}
-    />
-  </div>
-));
+          // Prevents iOS zooming in on input fields
+          "@supports (-webkit-touch-callout: none)": {
+            "[role=textbox]": { fontSize: "1.6rem" },
+          },
+        })
+      }
+    >
+      <MessageInput
+        ref={editorRef}
+        initialValue={pendingMessage}
+        onChange={(value) => {
+          setPendingMessage(value);
+        }}
+        onKeyDown={(e) => {
+          if (!e.isDefaultPrevented() && !e.shiftKey && e.key === "Enter") {
+            e.preventDefault();
+            executeMessage();
+          }
+        }}
+        {...props}
+      />
+      <input type="submit" hidden />
+    </form>
+  );
+});
 
 const MessageInput = React.forwardRef(
   (
     {
       initialValue,
-      submit,
+      onChange,
       placeholder,
       onKeyDown,
+      disableCommands = false,
       serverMembers,
       getUserMentionDisplayName,
     },
@@ -855,19 +910,19 @@ const MessageInput = React.forwardRef(
     const preventInputBlurRef = React.useRef();
     const mentionQueryRangeRef = React.useRef();
 
-    const [pendingMessage, setPendingMessage] = React.useState(() =>
-      initialValue == null
-        ? [createEmptyParagraph()]
-        : normalizeNodes(initialValue)
-    );
-
-    const isEmpty = pendingMessage.every(isNodeEmpty);
+    const { commands } = useCommands();
 
     const [mentionQuery, setMentionQuery] = React.useState(null);
+    const [commandQuery, setCommandQuery] = React.useState(null);
     const [selectedAutoCompleteIndex, setSelectedAutoCompleteIndex] =
       React.useState(-1);
 
-    const autoCompleteMode = mentionQuery != null ? "mentions" : null;
+    const autoCompleteMode =
+      mentionQuery != null
+        ? "mentions"
+        : commandQuery != null
+        ? "commands"
+        : null;
 
     const isAutoCompleteMenuOpen = autoCompleteMode != null;
 
@@ -897,8 +952,35 @@ const MessageInput = React.forwardRef(
         .map((m) => ({ value: m.id, label: m.display_name }));
     }, [autoCompleteMode, mentionQuery, serverMembers]);
 
+    const filteredCommandOptions = React.useMemo(() => {
+      if (autoCompleteMode !== "commands") return [];
+
+      const lowerCaseQuery = commandQuery?.toLowerCase() ?? null;
+
+      const unorderedCommands = Object.keys(commands).filter(
+        (command) => lowerCaseQuery != null && command.includes(lowerCaseQuery)
+      );
+
+      const orderedCommands = sort((o1, o2) => {
+        const [i1, i2] = [o1, o2].map((command) =>
+          command.toLowerCase().indexOf(lowerCaseQuery)
+        );
+
+        if (i1 < i2) return -1;
+        if (i1 > i2) return 1;
+        return 0;
+      }, unorderedCommands);
+
+      return orderedCommands.slice(0, 10).map((c) => ({
+        value: c,
+        label: `/${c}`,
+        description: commands[c].description,
+      }));
+    }, [commands, autoCompleteMode, commandQuery]);
+
     const autoCompleteOptions = {
       mentions: filteredMentionOptions,
+      commands: filteredCommandOptions,
     }[autoCompleteMode];
 
     const selectAutoCompleteOption = React.useCallback(
@@ -909,6 +991,11 @@ const MessageInput = React.forwardRef(
               at: mentionQueryRangeRef.current,
             });
             setMentionQuery(null);
+            break;
+
+          case "commands":
+            editorRef.current.replaceAll(`/${option.value} `);
+            setCommandQuery(null);
             break;
 
           default:
@@ -939,6 +1026,13 @@ const MessageInput = React.forwardRef(
           }
           case "Tab":
           case "Enter": {
+            const commandNames = Object.keys(commands);
+
+            if (commandNames.includes(commandQuery)) {
+              setCommandQuery(null);
+              return;
+            }
+
             event.preventDefault();
             const option = autoCompleteOptions[selectedAutoCompleteIndex];
             selectAutoCompleteOption(option);
@@ -951,6 +1045,8 @@ const MessageInput = React.forwardRef(
         }
       },
       [
+        commands,
+        commandQuery,
         isAutoCompleteMenuOpen,
         autoCompleteOptions,
         selectedAutoCompleteIndex,
@@ -958,30 +1054,22 @@ const MessageInput = React.forwardRef(
       ]
     );
 
-    const executeMessage = async () => {
-      const blocks = cleanNodes(pendingMessage);
-      submit(blocks);
-    };
-
-    const mentionsMenuInputAccesibilityProps = {
+    const autoCompleteInputAccesibilityProps = {
       "aria-expanded": isAutoCompleteMenuOpen ? "true" : "false",
       "aria-haspopup": "listbox",
       "aria-autocomplete": "list",
-      "aria-owns": "mentions-menu",
-      "aria-controls": "mentions-menu",
-      "aria-activedescendant": `mention-option-${selectedAutoCompleteIndex}`,
+      "aria-owns": "autocomplete-listbox",
+      "aria-controls": "autocomplete-listbox",
+      "aria-activedescendant": `autocomplete-listbox-option-${selectedAutoCompleteIndex}`,
     };
 
     return (
       <>
         <RichTextInput
           ref={editorRef}
-          {...mentionsMenuInputAccesibilityProps}
-          value={pendingMessage}
-          onChange={(value) => {
-            setPendingMessage(value);
-          }}
-          className="input"
+          {...autoCompleteInputAccesibilityProps}
+          value={initialValue}
+          onChange={onChange}
           placeholder={placeholder}
           triggers={[
             {
@@ -997,14 +1085,21 @@ const MessageInput = React.forwardRef(
                 setMentionQuery(null);
               },
             },
-          ]}
+            !disableCommands && {
+              type: "command",
+              handler: (command /* , args */) => {
+                if (command == null) {
+                  setCommandQuery(null);
+                  return;
+                }
+
+                setCommandQuery(command);
+                setSelectedAutoCompleteIndex(0);
+              },
+            },
+          ].filter(Boolean)}
           onKeyDown={(e) => {
             autoCompleteInputKeyDownHandler(e);
-
-            if (!e.isDefaultPrevented() && !e.shiftKey && e.key === "Enter") {
-              e.preventDefault();
-              executeMessage(pendingMessage);
-            }
 
             if (onKeyDown) onKeyDown(e);
           }}
@@ -1046,7 +1141,7 @@ const AutoCompleteListbox = ({
   return (
     <ul
       onMouseDown={onListboxMouseDown}
-      id="autocomplete-menu"
+      id="autocomplete-listbox"
       role="listbox"
       css={(theme) =>
         css({
@@ -1097,7 +1192,7 @@ const AutoCompleteListbox = ({
         <li
           key={item.value}
           role="option"
-          id={`autocomplete-option-${selectedIndex}`}
+          id={`autocomplete-listbox-option-${selectedIndex}`}
           aria-selected={`${i === selectedIndex}`}
           data-selected={`${i === selectedIndex}`}
           onClick={() => {
