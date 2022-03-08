@@ -29,6 +29,11 @@ const reducer = (state = initialState, action) => {
   }
 };
 
+export const selectServerMembers = (state) => (serverId) => {
+  const memberIds = state.serverMembers.entryIdsByServerId[serverId] ?? [];
+  return memberIds.map((id) => state.serverMembers.entriesById[id]);
+};
+
 export const selectServerMembersByUserId = (state) => (serverId) => {
   const memberIds = state.serverMembers.entryIdsByServerId[serverId] ?? [];
   return indexBy(

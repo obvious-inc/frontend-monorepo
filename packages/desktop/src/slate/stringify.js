@@ -7,11 +7,14 @@ const stringifyTextNode = (l) => {
 };
 
 const stringifyElement = (el) => {
-  const children = el.children.map(stringifyNode).join("");
+  const children = () => el.children.map(stringifyNode).join("");
 
   switch (el.type) {
     case "paragraph":
-      return `\n${children}\n`;
+      return `\n${children()}\n`;
+    case "user":
+      // TODO
+      return `<@${el.ref}>`;
     case "link":
       return el.url;
     default:
@@ -25,7 +28,10 @@ const stringifyNode = (n) => {
 };
 
 const stringify = (blockElements) =>
-  // `trim` to get rid of the the outer paragraph line breaks, I dunno
-  blockElements.map(stringifyElement).join("").trim();
+  blockElements
+    .map(stringifyElement)
+    .join("")
+    // Gets rid of the the outer paragraph line breaks, I dunno
+    .replace(/^[\n]|[\n]$/g, "");
 
 export default stringify;

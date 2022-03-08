@@ -13,6 +13,26 @@ export const createCss = (theme) => ({
     textDecoration: "none",
   },
   "a:hover": { textDecoration: "underline" },
+  ".mention": {
+    border: 0,
+    lineHeight: "inherit",
+    borderRadius: "0.3rem",
+    padding: "0 0.2rem",
+    color: "hsl(236,calc(var(--saturation-factor, 1)*83.3%),92.9%)",
+    background: "hsla(235,85.6%,64.7%,0.3)",
+    fontWeight: "500",
+    cursor: "pointer",
+    fontVariantLigatures: "no-contextual",
+  },
+  ".mention:hover": {
+    color: "white",
+    background: "hsl(235,85.6%,64.7%)",
+  },
+  ".mention[data-focused]": {
+    position: "relative",
+    zIndex: 1,
+    boxShadow: `0 0 0 0.2rem ${theme.colors.mentionFocusBorder}`,
+  },
 });
 
 const parseLeaf = (l, i) => {
@@ -23,7 +43,7 @@ const parseLeaf = (l, i) => {
   return <React.Fragment key={i}>{children}</React.Fragment>;
 };
 
-const createParser = () => {
+const createParser = ({ getUserMentionDisplayName, onClickUserMention }) => {
   const parse = (blocks) => {
     const parseElement = (el, i) => {
       const parseNode = (n, i) =>
@@ -40,6 +60,18 @@ const createParser = () => {
               {children()}
             </a>
           );
+        case "user":
+          return (
+            <button
+              className="mention"
+              key={i}
+              onClick={() => {
+                onClickUserMention?.({ ref: el.ref });
+              }}
+            >
+              @{getUserMentionDisplayName(el.ref)}
+            </button>
+          );
         default:
           return (
             <React.Fragment key={i}>
@@ -55,8 +87,17 @@ const createParser = () => {
   return parse;
 };
 
-const RichText = ({ blocks, children, ...props }) => {
-  const parse = React.useMemo(() => createParser(), []);
+const RichText = ({
+  blocks,
+  getUserMentionDisplayName,
+  onClickUserMention,
+  children,
+  ...props
+}) => {
+  const parse = React.useMemo(
+    () => createParser({ getUserMentionDisplayName, onClickUserMention }),
+    [getUserMentionDisplayName, onClickUserMention]
+  );
   return (
     <div css={(theme) => css(createCss(theme))} {...props}>
       {parse(blocks)}

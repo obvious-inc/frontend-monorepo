@@ -1,6 +1,12 @@
 import React from "react";
 import { css } from "@emotion/react";
-import { createEditor as createSlateEditor, Transforms, Editor } from "slate";
+import {
+  createEditor as createSlateEditor,
+  Transforms,
+  Editor,
+  Range,
+  Path,
+} from "slate";
 import { Slate, Editable, withReact, ReactEditor } from "slate-react";
 import { withHistory } from "slate-history";
 import isHotkey from "is-hotkey";
@@ -8,7 +14,8 @@ import { functionUtils } from "@shades/common";
 import { createCss as createRichTextCss } from "./rich-text";
 import createControlledParagraphLineBreaksPlugin from "../slate/plugins/controlled-paragraph-line-breaks";
 import createInlineLinksPlugin from "../slate/plugins/inline-links";
-import { mergePlugins } from "../slate/utils";
+import createUserMentionsPlugin from "../slate/plugins/user-mentions";
+import { search, mergePlugins } from "../slate/utils";
 
 const { compose } = functionUtils;
 
@@ -38,27 +45,60 @@ const withMarks = (editor) => {
   return editor;
 };
 
-const withFocus = (editor) => {
-  editor.focus = () => ReactEditor.focus(editor);
+const withTextCommands = (editor) => {
+  editor.select = (target) => Transforms.select(editor, target);
+
+  editor.search = (query, { at }) => search(editor, query, { at });
+
+  editor.replaceAll = (text) => {
+    Transforms.select(editor, []);
+    editor.insertText(text);
+  };
+
+  editor.appendText = (text) => {
+    Transforms.select(editor, []);
+    Transforms.collapse(editor, { edge: "end" });
+    editor.insertText(text);
+  };
+
+  editor.prependText = (text) => {
+    Transforms.select(editor, []);
+    Transforms.collapse(editor, { edge: "start" });
+    editor.insertText(text);
+  };
+
   return editor;
 };
 
-const withClear = (editor) => {
+const withEditorCommands = (editor) => {
+  editor.focus = () => ReactEditor.focus(editor);
+
   editor.clear = () => {
     editor.children = [{ type: "paragraph", children: [{ text: "" }] }];
     // Move cursor to start
     Transforms.select(editor, Editor.start(editor, []));
   };
+
   return editor;
 };
 
 const RichTextInput = React.forwardRef(
-  ({ value, onChange, onKeyDown, ...props }, ref) => {
+  (
+    {
+      value,
+      onChange,
+      onKeyDown,
+      triggers = [],
+      getUserMentionDisplayName,
+      ...props
+    },
+    ref
+  ) => {
     const { editor, handlers, customElementsByNodeType } = React.useMemo(() => {
       const editor = compose(
         withMarks,
-        withFocus,
-        withClear,
+        withTextCommands,
+        withEditorCommands,
         withReact,
         withHistory
       )(createSlateEditor());
@@ -66,6 +106,7 @@ const RichTextInput = React.forwardRef(
       const { middleware, elements, handlers } = mergePlugins([
         createControlledParagraphLineBreaksPlugin(),
         createInlineLinksPlugin(),
+        createUserMentionsPlugin(),
       ]);
 
       return {
@@ -78,15 +119,26 @@ const RichTextInput = React.forwardRef(
     const renderElement = React.useCallback(
       (props) => {
         const CustomComponent = customElementsByNodeType[props.element.type];
-        if (CustomComponent) return <CustomComponent {...props} />;
+        if (CustomComponent) {
+          if (props.element.type === "user")
+            return (
+              <CustomComponent
+                {...props}
+                displayName={getUserMentionDisplayName(props.element.ref)}
+              />
+            );
+          return <CustomComponent {...props} />;
+        }
         return <Element {...props} />;
       },
-      [customElementsByNodeType]
+      [customElementsByNodeType, getUserMentionDisplayName]
     );
     const renderLeaf = React.useCallback((props) => <Leaf {...props} />, []);
 
     React.useEffect(() => {
       ref.current = editor;
+      // :this-is-fine:
+      Editor.normalize(editor, { force: true });
     }, [ref, editor, onChange]);
 
     return (
@@ -96,6 +148,55 @@ const RichTextInput = React.forwardRef(
         onChange={(value) => {
           handlers.onChange(value, editor);
           onChange(value);
+
+          const findWordStart = (p = editor.selection.anchor) => {
+            const prevPoint = Editor.before(editor, p, { unit: "character" });
+            if (prevPoint == null) return p;
+            const char = Editor.string(
+              editor,
+              Editor.range(editor, prevPoint, p)
+            );
+            if (char === " ") return p;
+            return findWordStart(prevPoint);
+          };
+
+          const findWordEnd = (p = editor.selection.anchor) => {
+            const nextPoint = Editor.after(editor, p, { unit: "character" });
+            if (nextPoint == null) return p;
+            const char = Editor.string(
+              editor,
+              Editor.range(editor, p, nextPoint)
+            );
+            if (char === " ") return p;
+            return findWordEnd(nextPoint);
+          };
+
+          const getWordRange = (p = editor.selection.focus) => ({
+            anchor: findWordStart(p),
+            focus: findWordEnd(p),
+          });
+
+          for (let trigger of triggers) {
+            switch (trigger.type) {
+              case "word": {
+                if (
+                  editor.selection == null ||
+                  !Range.isCollapsed(editor.selection)
+                )
+                  continue;
+
+                const wordRange = getWordRange();
+                const wordString = Editor.string(editor, wordRange);
+
+                if (trigger.match == null || trigger.match(wordString))
+                  trigger.handler(wordString, wordRange);
+                break;
+              }
+
+              default:
+                throw new Error();
+            }
+          }
         }}
       >
         <Editable

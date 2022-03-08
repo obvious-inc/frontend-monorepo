@@ -6,7 +6,12 @@ import { useAuth, useAppScope, arrayUtils, objectUtils } from "@shades/common";
 import usePageVisibilityChangeListener from "../hooks/page-visibility-change-listener";
 import useHover from "../hooks/hover";
 import stringifyMessageBlocks from "../slate/stringify";
-import { createEmptyParagraph, isNodeEmpty, cleanNodes } from "../slate/utils";
+import {
+  createEmptyParagraph,
+  isNodeEmpty,
+  normalizeNodes,
+  cleanNodes,
+} from "../slate/utils";
 import { FaceIcon, DotsHorizontalIcon, Pencil1Icon } from "./icons";
 import RichTextInput from "./rich-text-input";
 import RichText from "./rich-text";
@@ -18,7 +23,7 @@ import { Hash as HashIcon } from "./icons";
 import { HamburgerMenu as HamburgerMenuIcon } from "./icons";
 import { useMenuState } from "./app-layout";
 
-const { groupBy } = arrayUtils;
+const { groupBy, sort } = arrayUtils;
 const { mapValues } = objectUtils;
 
 const useChannelMessages = (channelId) => {
@@ -75,8 +80,17 @@ const Channel = () => {
   const selectedServer = state.selectServer(params.serverId);
   const serverChannels = selectedServer?.channels ?? [];
   const selectedChannel = serverChannels.find((c) => c.id === params.channelId);
+  const serverMembers = state.selectServerMembers(params.serverId);
   const serverMembersByUserId = state.selectServerMembersByUserId(
     params.serverId
+  );
+
+  const getUserMentionDisplayName = React.useCallback(
+    (ref) => {
+      const member = serverMembers.find((m) => m.id === ref);
+      return member.display_name;
+    },
+    [serverMembers]
   );
 
   const messages = useChannelMessages(params.channelId);
@@ -215,6 +229,8 @@ const Channel = () => {
               removeReaction={(emoji) =>
                 actions.removeMessageReaction(m.id, { emoji })
               }
+              serverMembers={serverMembers}
+              getUserMentionDisplayName={getUserMentionDisplayName}
             />
           ))}
           <div
@@ -239,6 +255,8 @@ const Channel = () => {
           placeholder={
             selectedChannel == null ? "..." : `Message #${selectedChannel.name}`
           }
+          serverMembers={serverMembers}
+          getUserMentionDisplayName={getUserMentionDisplayName}
         />
       </div>
     </div>
@@ -485,6 +503,8 @@ const MessageItem = ({
   removeReaction,
   update,
   remove,
+  serverMembers,
+  getUserMentionDisplayName,
 }) => {
   const inputRef = React.useRef();
   const containerRef = React.useRef();
@@ -570,11 +590,14 @@ const MessageItem = ({
         `}
       >
         <div
-          css={(theme) => css`
-            line-height: 1.2;
-            color: ${theme.colors.pink};
-            font-weight: 500;
-          `}
+          css={(theme) =>
+            css({
+              lineHeight: 1.2,
+              color: theme.colors.pink,
+              fontWeight: "500",
+              fontVariantLigatures: "no-contextual",
+            })
+          }
         >
           {author}
         </div>
@@ -590,7 +613,7 @@ const MessageItem = ({
       {isEditing ? (
         <EditMessageInput
           ref={inputRef}
-          value={content}
+          initialValue={content}
           onCancel={() => {
             setEditingMessage(false);
           }}
@@ -601,9 +624,18 @@ const MessageItem = ({
               return message;
             })
           }
+          serverMembers={serverMembers}
+          getUserMentionDisplayName={getUserMentionDisplayName}
         />
       ) : (
-        <RichText blocks={content}>
+        <RichText
+          blocks={content}
+          onClickUserMention={(mention) => {
+            const mentionDisplayName = getUserMentionDisplayName(mention.ref);
+            alert(`Congratulations, you clicked "@${mentionDisplayName}"!`);
+          }}
+          getUserMentionDisplayName={getUserMentionDisplayName}
+        >
           {isEdited && (
             <span
               css={css({ fontSize: "1rem", color: "rgb(255 255 255 / 35%)" })}
@@ -678,13 +710,15 @@ const MessageItem = ({
 };
 
 const EditMessageInput = React.forwardRef(
-  ({ value, save, remove, onCancel, ...props }, ref) => {
-    const formRef = React.useRef();
-    const [pendingMessage, setPendingMessage] = React.useState(value);
+  ({ initialValue, save, remove, onCancel, ...props }, ref) => {
     const [isSaving, setSaving] = React.useState(false);
 
-    const submit = async () => {
-      const isEmpty = pendingMessage.every(isNodeEmpty);
+    const allowSubmit = !isSaving;
+
+    const submit = async (blocks) => {
+      if (!allowSubmit) return;
+
+      const isEmpty = blocks.every(isNodeEmpty);
 
       setSaving(true);
       try {
@@ -696,24 +730,18 @@ const EditMessageInput = React.forwardRef(
           return;
         }
 
-        save(cleanNodes(pendingMessage));
+        save(blocks);
       } catch (e) {
         console.error(e);
         setSaving(false);
       }
     };
 
-    const allowSubmit = !isSaving;
-
     return (
-      <form
-        ref={formRef}
-        onSubmit={(e) => {
-          e.preventDefault();
-          submit();
-        }}
+      <div
         css={(theme) =>
           css({
+            position: "relative",
             background: theme.colors.channelInputBackground,
             padding: "0.6rem 0.8rem 0.8rem",
             borderRadius: "0.7rem",
@@ -724,32 +752,15 @@ const EditMessageInput = React.forwardRef(
           })
         }
       >
-        <RichTextInput
+        <MessageInput
           ref={ref}
-          value={pendingMessage}
-          onChange={(value) => setPendingMessage(value)}
-          className="input"
-          style={{
-            font: "inherit",
-            padding: 0,
-            background: "none",
-            color: "white",
-            border: 0,
-            outline: "none",
-            display: "block",
-            width: "100%",
-          }}
+          initialValue={initialValue}
+          submit={submit}
           placeholder={`Press "Enter" to delete message`}
           onKeyDown={(e) => {
             if (e.key === "Escape") {
               onCancel();
               return;
-            }
-
-            if (!e.shiftKey && e.key === "Enter") {
-              e.preventDefault();
-              if (!allowSubmit) return;
-              submit();
             }
           }}
           {...props}
@@ -777,78 +788,330 @@ const EditMessageInput = React.forwardRef(
             </Button>
           </div>
         </div>
-      </form>
+      </div>
     );
   }
 );
 
-const NewMessageInput = React.forwardRef(
-  ({ submit: submit_, placeholder }, ref) => {
-    const [pendingMessage, setPendingMessage] = React.useState([
-      createEmptyParagraph(),
-    ]);
+const NewMessageInput = React.forwardRef(({ submit, ...props }, ref) => (
+  <div
+    css={(theme) =>
+      css({
+        position: "relative",
+        padding: "1rem 1.5rem",
+        background: theme.colors.channelInputBackground,
+        borderRadius: "0.7rem",
+        ".input": {
+          background: "none",
+          font: "inherit",
+          fontSize: theme.fontSizes.channelMessages,
+          color: theme.colors.textNormal,
+          fontWeight: "400",
+          border: 0,
+          outline: "none",
+          display: "block",
+          width: "100%",
+          "[data-slate-placeholder]": {
+            color: "rgb(255 255 255 / 40%)",
+            opacity: "1 !important",
+            whiteSpace: "nowrap",
+            overflow: "hidden",
+            textOverflow: "ellipsis",
+          },
+        },
+        // Prevents iOS zooming in on input fields
+        "@supports (-webkit-touch-callout: none)": {
+          ".input": { fontSize: "1.6rem" },
+        },
+      })
+    }
+  >
+    <MessageInput
+      ref={ref}
+      submit={(blocks) => {
+        const isEmpty = blocks.every(isNodeEmpty);
+        if (isEmpty) return;
+
+        submit(blocks);
+        ref.current.clear();
+      }}
+      {...props}
+    />
+  </div>
+));
+
+const MessageInput = React.forwardRef(
+  (
+    {
+      initialValue,
+      submit,
+      placeholder,
+      onKeyDown,
+      serverMembers,
+      getUserMentionDisplayName,
+    },
+    editorRef
+  ) => {
+    const preventInputBlurRef = React.useRef();
+    const mentionQueryRangeRef = React.useRef();
+
+    const [pendingMessage, setPendingMessage] = React.useState(() =>
+      initialValue == null
+        ? [createEmptyParagraph()]
+        : normalizeNodes(initialValue)
+    );
 
     const isEmpty = pendingMessage.every(isNodeEmpty);
 
-    const submit = async () => {
-      submit_(cleanNodes(pendingMessage));
-      ref.current.clear();
+    const [mentionQuery, setMentionQuery] = React.useState(null);
+    const [selectedAutoCompleteIndex, setSelectedAutoCompleteIndex] =
+      React.useState(-1);
+
+    const autoCompleteMode = mentionQuery != null ? "mentions" : null;
+
+    const isAutoCompleteMenuOpen = autoCompleteMode != null;
+
+    const filteredMentionOptions = React.useMemo(() => {
+      if (autoCompleteMode !== "mentions") return [];
+
+      const lowerCaseQuery = mentionQuery?.toLowerCase() ?? null;
+
+      const unorderedFilteredServerMembers = serverMembers.filter(
+        (member) =>
+          lowerCaseQuery != null &&
+          member.display_name.toLowerCase().includes(lowerCaseQuery)
+      );
+
+      const orderedFilteredServerMembers = sort((o1, o2) => {
+        const [i1, i2] = [o1, o2].map((o) =>
+          o.display_name.toLowerCase().indexOf(lowerCaseQuery)
+        );
+
+        if (i1 < i2) return -1;
+        if (i1 > i2) return 1;
+        return 0;
+      }, unorderedFilteredServerMembers);
+
+      return orderedFilteredServerMembers
+        .slice(0, 10)
+        .map((m) => ({ value: m.id, label: m.display_name }));
+    }, [autoCompleteMode, mentionQuery, serverMembers]);
+
+    const autoCompleteOptions = {
+      mentions: filteredMentionOptions,
+    }[autoCompleteMode];
+
+    const selectAutoCompleteOption = React.useCallback(
+      (option) => {
+        switch (autoCompleteMode) {
+          case "mentions":
+            editorRef.current.insertMention(option.value, {
+              at: mentionQueryRangeRef.current,
+            });
+            setMentionQuery(null);
+            break;
+
+          default:
+            throw new Error();
+        }
+      },
+      [autoCompleteMode, editorRef, mentionQueryRangeRef]
+    );
+
+    const autoCompleteInputKeyDownHandler = React.useCallback(
+      (event) => {
+        if (!isAutoCompleteMenuOpen || autoCompleteOptions.length === 0) return;
+
+        switch (event.key) {
+          case "ArrowDown": {
+            event.preventDefault();
+            setSelectedAutoCompleteIndex((i) =>
+              i >= autoCompleteOptions.length - 1 ? 0 : i + 1
+            );
+            break;
+          }
+          case "ArrowUp": {
+            event.preventDefault();
+            setSelectedAutoCompleteIndex((i) =>
+              i <= 0 ? autoCompleteOptions.length - 1 : i - 1
+            );
+            break;
+          }
+          case "Tab":
+          case "Enter": {
+            event.preventDefault();
+            const option = autoCompleteOptions[selectedAutoCompleteIndex];
+            selectAutoCompleteOption(option);
+            break;
+          }
+          case "Escape":
+            event.preventDefault();
+            setMentionQuery(null);
+            break;
+        }
+      },
+      [
+        isAutoCompleteMenuOpen,
+        autoCompleteOptions,
+        selectedAutoCompleteIndex,
+        selectAutoCompleteOption,
+      ]
+    );
+
+    const executeMessage = async () => {
+      const blocks = cleanNodes(pendingMessage);
+      submit(blocks);
+    };
+
+    const mentionsMenuInputAccesibilityProps = {
+      "aria-expanded": isAutoCompleteMenuOpen ? "true" : "false",
+      "aria-haspopup": "listbox",
+      "aria-autocomplete": "list",
+      "aria-owns": "mentions-menu",
+      "aria-controls": "mentions-menu",
+      "aria-activedescendant": `mention-option-${selectedAutoCompleteIndex}`,
     };
 
     return (
-      <div
-        css={(theme) =>
-          css({
-            position: "relative",
-            padding: "1rem 1.5rem",
-            background: theme.colors.channelInputBackground,
-            borderRadius: "0.7rem",
-            ".input": {
-              background: "none",
-              font: "inherit",
-              fontSize: theme.fontSizes.channelMessages,
-              color: theme.colors.textNormal,
-              fontWeight: "400",
-              border: 0,
-              outline: "none",
-              display: "block",
-              width: "100%",
-              "[data-slate-placeholder]": {
-                color: "rgb(255 255 255 / 40%)",
-                opacity: "1 !important",
-                whiteSpace: "nowrap",
-                overflow: "hidden",
-                textOverflow: "ellipsis",
-              },
-            },
-            // Prevents iOS zooming in on input fields
-            "@supports (-webkit-touch-callout: none)": {
-              ".input": { fontSize: "1.6rem" },
-            },
-          })
-        }
-      >
+      <>
         <RichTextInput
-          ref={ref}
+          ref={editorRef}
+          {...mentionsMenuInputAccesibilityProps}
           value={pendingMessage}
           onChange={(value) => {
             setPendingMessage(value);
           }}
           className="input"
           placeholder={placeholder}
-          onKeyDown={(e) => {
-            if (e.isDefaultPrevented()) return;
+          triggers={[
+            {
+              type: "word",
+              handler: (word, range) => {
+                if (word.startsWith("@")) {
+                  setMentionQuery(word.slice(1));
+                  setSelectedAutoCompleteIndex(0);
+                  mentionQueryRangeRef.current = range;
+                  return;
+                }
 
-            if (!e.shiftKey && e.key === "Enter") {
+                setMentionQuery(null);
+              },
+            },
+          ]}
+          onKeyDown={(e) => {
+            autoCompleteInputKeyDownHandler(e);
+
+            if (!e.isDefaultPrevented() && !e.shiftKey && e.key === "Enter") {
               e.preventDefault();
-              if (isEmpty) return;
-              submit();
+              executeMessage(pendingMessage);
             }
+
+            if (onKeyDown) onKeyDown(e);
           }}
+          onBlur={() => {
+            if (preventInputBlurRef.current) {
+              preventInputBlurRef.current = false;
+              editorRef.current.focus();
+              return;
+            }
+
+            setMentionQuery(null);
+          }}
+          getUserMentionDisplayName={getUserMentionDisplayName}
         />
-      </div>
+
+        {isAutoCompleteMenuOpen && autoCompleteOptions.length !== 0 && (
+          <AutoCompleteListbox
+            items={autoCompleteOptions}
+            selectedIndex={selectedAutoCompleteIndex}
+            onItemClick={(item) => {
+              selectAutoCompleteOption(item);
+            }}
+            onListboxMouseDown={() => {
+              preventInputBlurRef.current = true;
+            }}
+          />
+        )}
+      </>
     );
   }
 );
+
+const AutoCompleteListbox = ({
+  selectedIndex = -1,
+  onItemClick,
+  items = [],
+  onListboxMouseDown,
+}) => {
+  return (
+    <ul
+      onMouseDown={onListboxMouseDown}
+      id="autocomplete-menu"
+      role="listbox"
+      css={(theme) =>
+        css({
+          position: "absolute",
+          bottom: "100%",
+          left: 0,
+          width: "100%",
+          zIndex: 1,
+          background: theme.colors.dialogBackground,
+          borderRadius: "0.7rem",
+          padding: "0.5rem 0",
+          boxShadow:
+            "rgb(15 15 15 / 5%) 0px 0px 0px 1px, rgba(15, 15, 15, 0.1) 0px 3px 6px, rgba(15, 15, 15, 0.2) 0px 9px 24px",
+          "[role=option]": {
+            display: "block",
+            width: "100%",
+            padding: "0.8rem 1.2rem 0.6rem",
+            lineHeight: 1.3,
+            fontWeight: "400",
+            cursor: "pointer",
+            // Prevent the "x" in 0x4... addresses from looking strange
+            fontVariantLigatures: "no-contextual",
+            '&:hover, &:focus, &[data-selected="true"]': {
+              outline: "none",
+            },
+            "&:hover": {
+              background: theme.colors.backgroundModifierHover,
+            },
+            '&:focus, &[data-selected="true"]': {
+              background: theme.colors.backgroundModifierSelected,
+            },
+            ".label": {
+              display: "inline-flex",
+              alignItems: "center",
+              justifyContent: "flex-start",
+              height: "1.8rem",
+              color: theme.colors.textNormal,
+            },
+            ".description": {
+              color: theme.colors.textMuted,
+              fontSize: "1.2rem",
+            },
+          },
+        })
+      }
+    >
+      {items.map((item, i) => (
+        <li
+          key={item.value}
+          role="option"
+          id={`autocomplete-option-${selectedIndex}`}
+          aria-selected={`${i === selectedIndex}`}
+          data-selected={`${i === selectedIndex}`}
+          onClick={() => {
+            onItemClick(item, i);
+          }}
+        >
+          <div className="label">{item.label}</div>
+          {item.description && (
+            <div className="description">{item.description}</div>
+          )}
+        </li>
+      ))}
+    </ul>
+  );
+};
 
 export default Channel;
