@@ -14,7 +14,7 @@ const stringifyElement = (el) => {
       return `\n${children()}\n`;
     case "user":
       // TODO
-      return `<@${el.ref}>`;
+      return `@<u:${el.ref}>`;
     case "link":
       return el.url;
     default:

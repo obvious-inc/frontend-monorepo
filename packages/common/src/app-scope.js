@@ -33,6 +33,16 @@ export const Provider = ({ children }) => {
     [authorizedFetch, dispatch]
   );
 
+  const updateMe = React.useCallback(
+    ({ displayName }) =>
+      authorizedFetch("/users/me", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ display_name: displayName }),
+      }),
+    [authorizedFetch]
+  );
+
   const fetchMessages = React.useCallback(
     ({ channelId }) =>
       authorizedFetch(`/channels/${channelId}/messages`).then((messages) => {
@@ -187,6 +197,7 @@ export const Provider = ({ children }) => {
   const actions = React.useMemo(
     () => ({
       fetchInitialData,
+      updateMe,
       fetchMessages,
       createServer,
       createChannel,
@@ -199,6 +210,7 @@ export const Provider = ({ children }) => {
     }),
     [
       fetchInitialData,
+      updateMe,
       fetchMessages,
       createServer,
       createChannel,
