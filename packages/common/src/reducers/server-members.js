@@ -1,32 +1,32 @@
-import { mapValues, omitKey } from "../utils/object";
+import { mapValues } from "../utils/object";
 import { indexBy, groupBy } from "../utils/array";
 import combineReducers from "../utils/combine-reducers";
 
-const entriesByUserId = (state = {}, action) => {
+const entriesById = (state = {}, action) => {
   switch (action.type) {
     case "initial-data-request-successful": {
       const members = action.data.servers.flatMap((s) => s.members);
-      return indexBy((m) => m.user.id, members);
+      return indexBy((m) => m.id, members);
     }
 
     case "server-event:user-profile-updated":
-      return {
-        ...state,
-        [action.data.user]: {
-          ...state[action.data.user],
+      return mapValues((member) => {
+        if (member.user.id !== action.data.user) return member;
+        return {
+          ...member,
           user: {
-            ...state[action.data.user].user,
-            ...omitKey("user", action.data),
+            ...member.user,
+            display_name: action.data.display_name,
           },
-        },
-      };
+        };
+      }, state);
 
     case "server-event:server-profile-updated":
       return {
         ...state,
-        [action.data.user]: {
-          ...state[action.data.user],
-          ...omitKey("user", action.data),
+        [action.data.member]: {
+          ...state[action.data.member],
+          display_name: action.data.display_name,
         },
       };
 
@@ -35,16 +35,16 @@ const entriesByUserId = (state = {}, action) => {
   }
 };
 
-const userIdsByServerId = (state = [], action) => {
+const memberIdsByServerId = (state = [], action) => {
   switch (action.type) {
     case "initial-data-request-successful": {
       const members = action.data.servers.flatMap((s) => s.members);
-      const userIdsByServerId = mapValues(
-        (members) => members.map((m) => m.user.id),
+      const memberIdsByServerId = mapValues(
+        (members) => members.map((m) => m.id),
         groupBy((m) => m.server, members)
       );
 
-      return userIdsByServerId;
+      return memberIdsByServerId;
     }
 
     default:
@@ -53,19 +53,21 @@ const userIdsByServerId = (state = [], action) => {
 };
 
 export const selectServerMembers = (state) => (serverId) => {
-  const userIds = state.serverMembers.userIdsByServerId[serverId] ?? [];
-  return userIds.map((id) => state.serverMembers.entriesByUserId[id]);
+  const userIds = state.serverMembers.memberIdsByServerId[serverId] ?? [];
+  return userIds.map((id) => state.serverMembers.entriesById[id]);
 };
 
 export const selectServerMembersByUserId = (state) => (serverId) => {
-  const userIds = state.serverMembers.userIdsByServerId[serverId] ?? [];
+  const memberIds = state.serverMembers.memberIdsByServerId[serverId] ?? [];
 
-  const members = userIds.map((id) => {
-    const member = state.serverMembers.entriesByUserId[id];
+  const members = memberIds.map((id) => {
+    const member = state.serverMembers.entriesById[id];
+
     const displayName =
       member.display_name != null && member.display_name !== ""
         ? member.display_name
         : member.user.display_name;
+
     return {
       ...member,
       displayName,
@@ -77,4 +79,4 @@ export const selectServerMembersByUserId = (state) => (serverId) => {
   return indexBy((m) => m.user.id, members);
 };
 
-export default combineReducers({ entriesByUserId, userIdsByServerId });
+export default combineReducers({ entriesById, memberIdsByServerId });
