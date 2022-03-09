@@ -12,6 +12,7 @@ import {
   normalizeNodes,
   cleanNodes,
 } from "../slate/utils";
+import generateAvatar from "../utils/avatar-generator";
 import useCommands from "../hooks/commands";
 import { FaceIcon, DotsHorizontalIcon, Pencil1Icon } from "./icons";
 import MessageInput from "./message-input";
@@ -41,8 +42,9 @@ const useChannelMessages = (channelId) => {
   React.useEffect(() => {
     let didChangeChannel = false;
 
-    actions.fetchMessages({ channelId }).then(() => {
-      if (didChangeChannel) return;
+    actions.fetchMessages({ channelId }).then((messages) => {
+      // Mark empty channels as read
+      if (didChangeChannel || messages.length !== 0) return;
       actions.markChannelRead({ channelId });
     });
 
@@ -197,7 +199,8 @@ const Channel = () => {
             <MessageItem
               key={m.id}
               content={m.content}
-              author={serverMembersByUserId[m.author].display_name}
+              authorNick={serverMembersByUserId[m.author].display_name}
+              authorAddress={serverMembersByUserId[m.author].id}
               reactions={m.reactions}
               timestamp={
                 <FormattedDate
@@ -493,7 +496,8 @@ const MessageToolbar = ({
 );
 
 const MessageItem = ({
-  author,
+  authorNick,
+  authorAddress,
   content,
   timestamp,
   reactions = [],
@@ -520,6 +524,16 @@ const MessageItem = ({
 
   const showAsFocused =
     !isEditing && (isHovering || isDropdownOpen || isEmojiPickerOpen);
+
+  const avatarDataUrl = React.useMemo(
+    () =>
+      generateAvatar({
+        seed: authorAddress,
+        size: 8,
+        scale: 10,
+      }),
+    [authorAddress]
+  );
 
   React.useEffect(() => {
     if (!isEditing) return;
@@ -581,130 +595,178 @@ const MessageItem = ({
       <div
         css={css`
           display: grid;
-          grid-template-columns: repeat(2, minmax(0, auto));
-          justify-content: flex-start;
-          align-items: flex-end;
+          grid-template-columns: auto minmax(0, 1fr);
+          align-items: flex-start;
           grid-gap: 1.2rem;
-          margin: 0 0 0.4rem;
-          cursor: default;
         `}
       >
-        <div
-          css={(theme) =>
-            css({
-              lineHeight: 1.2,
-              color: theme.colors.pink,
-              fontWeight: "500",
-              fontVariantLigatures: "no-contextual",
-            })
-          }
-        >
-          {author}
+        <div css={css({ padding: "0.4rem 0 0" })}>
+          <button
+            css={css({
+              borderRadius: "50%",
+              overflow: "hidden",
+              cursor: "pointer",
+              ":hover": { boxShadow: "0 0 0 0.3rem rgb(255 255 255 / 10%)" },
+              ":active": { transform: "translateY(0.1rem)" },
+            })}
+            onClick={() => {
+              alert(`Congratulations, you clicked ${authorNick}’s avatar!`);
+            }}
+          >
+            <img
+              src={avatarDataUrl}
+              css={(theme) =>
+                css({
+                  background: theme.colors.backgroundSecondary,
+                  height: "3.4rem",
+                  width: "3.4rem",
+                })
+              }
+            />
+          </button>
         </div>
-        <div
-          css={css`
-            color: rgb(255 255 255 / 35%);
-            font-size: 1rem;
-          `}
-        >
-          {timestamp}
+        <div>
+          <div
+            css={css`
+              display: grid;
+              grid-template-columns: repeat(2, minmax(0, auto));
+              justify-content: flex-start;
+              align-items: flex-end;
+              grid-gap: 1.2rem;
+              margin: 0 0 0.4rem;
+              cursor: default;
+            `}
+          >
+            <button
+              css={(theme) =>
+                css({
+                  lineHeight: 1.2,
+                  color: theme.colors.pink,
+                  fontWeight: "500",
+                  fontVariantLigatures: "no-contextual",
+                  cursor: "pointer",
+                  ":hover": {
+                    textDecoration: "underline",
+                  },
+                })
+              }
+              onClick={() => {
+                alert(`Congratulations, you clicked ${authorNick}!`);
+              }}
+            >
+              {authorNick}
+            </button>
+            <div
+              css={css`
+                color: rgb(255 255 255 / 35%);
+                font-size: 1rem;
+              `}
+            >
+              {timestamp}
+            </div>
+          </div>
+          {isEditing ? (
+            <EditMessageInput
+              ref={inputRef}
+              blocks={content}
+              onCancel={() => {
+                setEditingMessage(false);
+              }}
+              remove={remove}
+              save={(content) =>
+                update(content).then((message) => {
+                  setEditingMessage(false);
+                  return message;
+                })
+              }
+              serverMembers={serverMembers}
+              getUserMentionDisplayName={getUserMentionDisplayName}
+            />
+          ) : (
+            <RichText
+              blocks={content}
+              onClickUserMention={(mention) => {
+                const mentionDisplayName = getUserMentionDisplayName(
+                  mention.ref
+                );
+                alert(`Congratulations, you clicked "@${mentionDisplayName}"!`);
+              }}
+              getUserMentionDisplayName={getUserMentionDisplayName}
+            >
+              {isEdited && (
+                <span
+                  css={css({
+                    fontSize: "1rem",
+                    color: "rgb(255 255 255 / 35%)",
+                  })}
+                >
+                  (edited)
+                </span>
+              )}
+            </RichText>
+          )}
+
+          {reactions.length !== 0 && (
+            <div
+              css={css({
+                display: "grid",
+                gridAutoFlow: "column",
+                gridAutoColumns: "auto",
+                gridGap: "0.4rem",
+                justifyContent: "flex-start",
+                margin: "0.5rem -1px 0",
+                button: {
+                  display: "flex",
+                  alignItems: "center",
+                  height: "2.5rem",
+                  fontSize: "1.5rem",
+                  background: "rgb(255 255 255 / 4%)",
+                  borderRadius: "0.7rem",
+                  padding: "0 0.7rem 0 0.6rem",
+                  lineHeight: 1,
+                  userSelect: "none",
+                  border: "1px solid transparent",
+                  cursor: "pointer",
+                  "&.active": {
+                    background: "#3f42ea45",
+                    borderColor: "#4c4ffe96",
+                  },
+                  "&:not(.active):hover": {
+                    borderColor: "rgb(255 255 255 / 20%)",
+                  },
+                  ".count": {
+                    fontSize: "1rem",
+                    fontWeight: "400",
+                    color: "rgb(255 255 255 / 70%)",
+                    marginLeft: "0.5rem",
+                  },
+                },
+              })}
+            >
+              {reactions.map((r) => {
+                const isLoggedInUserReaction = r.users.includes(user.id);
+                return (
+                  <button
+                    key={r.emoji}
+                    onClick={() => {
+                      if (isLoggedInUserReaction) {
+                        removeReaction(r.emoji);
+                        return;
+                      }
+
+                      addReaction(r.emoji);
+                    }}
+                    className={isLoggedInUserReaction ? "active" : undefined}
+                  >
+                    <span>{r.emoji}</span>
+                    <span className="count">{r.count}</span>
+                  </button>
+                );
+              })}
+            </div>
+          )}
         </div>
       </div>
-      {isEditing ? (
-        <EditMessageInput
-          ref={inputRef}
-          blocks={content}
-          onCancel={() => {
-            setEditingMessage(false);
-          }}
-          remove={remove}
-          save={(content) =>
-            update(content).then((message) => {
-              setEditingMessage(false);
-              return message;
-            })
-          }
-          serverMembers={serverMembers}
-          getUserMentionDisplayName={getUserMentionDisplayName}
-        />
-      ) : (
-        <RichText
-          blocks={content}
-          onClickUserMention={(mention) => {
-            const mentionDisplayName = getUserMentionDisplayName(mention.ref);
-            alert(`Congratulations, you clicked "@${mentionDisplayName}"!`);
-          }}
-          getUserMentionDisplayName={getUserMentionDisplayName}
-        >
-          {isEdited && (
-            <span
-              css={css({ fontSize: "1rem", color: "rgb(255 255 255 / 35%)" })}
-            >
-              (edited)
-            </span>
-          )}
-        </RichText>
-      )}
-
-      {reactions.length !== 0 && (
-        <div
-          css={css({
-            display: "grid",
-            gridAutoFlow: "column",
-            gridAutoColumns: "auto",
-            gridGap: "0.4rem",
-            justifyContent: "flex-start",
-            margin: "0.5rem -1px 0",
-            button: {
-              display: "flex",
-              alignItems: "center",
-              height: "2.5rem",
-              fontSize: "1.5rem",
-              background: "rgb(255 255 255 / 4%)",
-              borderRadius: "0.7rem",
-              padding: "0 0.7rem 0 0.6rem",
-              lineHeight: 1,
-              userSelect: "none",
-              border: "1px solid transparent",
-              cursor: "pointer",
-              "&.active": {
-                background: "#3f42ea45",
-                borderColor: "#4c4ffe96",
-              },
-              "&:not(.active):hover": {
-                borderColor: "rgb(255 255 255 / 20%)",
-              },
-              ".count": {
-                fontSize: "1rem",
-                fontWeight: "400",
-                color: "rgb(255 255 255 / 70%)",
-                marginLeft: "0.5rem",
-              },
-            },
-          })}
-        >
-          {reactions.map((r) => {
-            const isLoggedInUserReaction = r.users.includes(user.id);
-            return (
-              <button
-                key={r.emoji}
-                onClick={() => {
-                  if (isLoggedInUserReaction) {
-                    removeReaction(r.emoji);
-                    return;
-                  }
-
-                  addReaction(r.emoji);
-                }}
-                className={isLoggedInUserReaction ? "active" : undefined}
-              >
-                <span>{r.emoji}</span>
-                <span className="count">{r.count}</span>
-              </button>
-            );
-          })}
-        </div>
-      )}
     </div>
   );
 };
