@@ -27,15 +27,16 @@ const appendTextCommands = {
 };
 
 const otherCommands = {
-  nick: ({ actions }) => ({
-    description: "Update your global nickname",
+  "nick-global": ({ actions }) => ({
+    description:
+      "Update your global nickname. This will be used if you don’t set a server specific nickname with the /nick command.",
     execute: async ({ args, editor }) => {
       const displayName = args.join(" ");
       await actions.updateMe({ displayName });
       editor.clear();
     },
   }),
-  "nick-server": ({ actions }) => ({
+  nick: ({ actions }) => ({
     description: "Update your nickname for this server",
     execute: async ({ args, editor, serverId }) => {
       const displayName = args.join(" ");
