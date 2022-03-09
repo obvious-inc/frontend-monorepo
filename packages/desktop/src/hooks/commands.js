@@ -27,14 +27,22 @@ const appendTextCommands = {
 };
 
 const otherCommands = {
-  // nick: ({ actions }) => ({
-  //   description: "Update your global nickname",
-  //   execute: async ({ args, editor }) => {
-  //     const displayName = args.join(" ");
-  //     await actions.updateMe({ displayName });
-  //     clearEditor(editor);
-  //   },
-  // }),
+  nick: ({ actions }) => ({
+    description: "Update your global nickname",
+    execute: async ({ args, editor }) => {
+      const displayName = args.join(" ");
+      await actions.updateMe({ displayName });
+      editor.clear();
+    },
+  }),
+  "nick-server": ({ actions }) => ({
+    description: "Update your nickname for this server",
+    execute: async ({ args, editor, serverId }) => {
+      const displayName = args.join(" ");
+      await actions.updateMe({ displayName, serverId });
+      editor.clear();
+    },
+  }),
   logout: ({ signOut }) => ({
     description: "Logs you out, really fast.",
     execute: async () => {
@@ -42,11 +50,6 @@ const otherCommands = {
     },
   }),
 };
-
-// const clearEditor = (editor) => {
-//   Transforms.select(editor, []);
-//   editor.deleteFragment();
-// };
 
 const removeCommandString = (editor, command) => {
   let [commandStart, commandEnd] = editor.search(`/${command}`, { at: [] });

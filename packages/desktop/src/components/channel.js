@@ -198,8 +198,10 @@ const Channel = () => {
             <MessageItem
               key={m.id}
               content={m.content}
-              authorNick={serverMembersByUserId[m.author].display_name}
-              authorAddress={serverMembersByUserId[m.author].id}
+              authorNick={serverMembersByUserId[m.author].displayName}
+              authorWalletAddress={
+                serverMembersByUserId[m.author].walletAddress
+              }
               reactions={m.reactions}
               timestamp={
                 <FormattedDate
@@ -496,7 +498,7 @@ const MessageToolbar = ({
 
 const MessageItem = ({
   authorNick,
-  authorAddress,
+  authorWalletAddress,
   content,
   timestamp,
   reactions = [],
@@ -527,11 +529,11 @@ const MessageItem = ({
   const avatarDataUrl = React.useMemo(
     () =>
       generateAvatar({
-        seed: authorAddress,
+        seed: authorWalletAddress,
         size: 8,
         scale: 10,
       }),
-    [authorAddress]
+    [authorWalletAddress]
   );
 
   React.useEffect(() => {
@@ -878,6 +880,7 @@ const NewMessageInput = React.forwardRef(({ submit, ...props }, editorRef) => {
   const [pendingMessage, setPendingMessage] = React.useState(() => [
     createEmptyParagraph(),
   ]);
+  const { serverId } = useParams();
 
   const { execute: executeCommand, isCommand } = useCommands();
 
@@ -900,6 +903,7 @@ const NewMessageInput = React.forwardRef(({ submit, ...props }, editorRef) => {
         await executeCommand(commandName, {
           args,
           editor: editorRef.current,
+          serverId,
         });
         return;
       }

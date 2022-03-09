@@ -34,12 +34,19 @@ export const Provider = ({ children }) => {
   );
 
   const updateMe = React.useCallback(
-    ({ displayName }) =>
-      authorizedFetch("/users/me", {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ display_name: displayName }),
-      }),
+    ({ displayName, serverId }) => {
+      const searchParams = serverId == null ? null : `server_id=${serverId}`;
+      return authorizedFetch(
+        ["/users/me", searchParams].filter(Boolean).join("?"),
+        {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            display_name: displayName,
+          }),
+        }
+      );
+    },
     [authorizedFetch]
   );
 
