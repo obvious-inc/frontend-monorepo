@@ -75,6 +75,13 @@ const withTextCommands = (editor) => {
     editor.insertText(text);
   };
 
+  editor.replaceFirstWord = (text) => {
+    const p = Editor.edges(editor, [])[0];
+    const wordRange = editor.getWordRange(p);
+    Transforms.select(editor, wordRange);
+    editor.insertText(text);
+  };
+
   editor.replaceCurrentWord = (text) => {
     const wordRange = editor.getWordRange();
     Transforms.select(editor, wordRange);
@@ -199,7 +206,7 @@ const RichTextInput = React.forwardRef(
                 const isCommand =
                   editor.selection != null &&
                   Range.isCollapsed(editor.selection) &&
-                  string.split(" ")[0].match(/^\/([a-z]*)?$/);
+                  string.split(" ")[0].match(/^\/([a-z][a-z-]*)?$/);
 
                 if (!isCommand) {
                   trigger.handler(null);

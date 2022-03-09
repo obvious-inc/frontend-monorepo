@@ -46,12 +46,12 @@ const MessageInput = React.forwardRef(
       const unorderedFilteredServerMembers = serverMembers.filter(
         (member) =>
           lowerCaseQuery != null &&
-          member.display_name.toLowerCase().includes(lowerCaseQuery)
+          member.displayName.toLowerCase().includes(lowerCaseQuery)
       );
 
       const orderedFilteredServerMembers = sort((o1, o2) => {
         const [i1, i2] = [o1, o2].map((o) =>
-          o.display_name.toLowerCase().indexOf(lowerCaseQuery)
+          o.displayName.toLowerCase().indexOf(lowerCaseQuery)
         );
 
         if (i1 < i2) return -1;
@@ -61,7 +61,7 @@ const MessageInput = React.forwardRef(
 
       return orderedFilteredServerMembers
         .slice(0, 10)
-        .map((m) => ({ value: m.id, label: m.display_name }));
+        .map((m) => ({ value: m.user.id, label: m.displayName }));
     }, [autoCompleteMode, mentionQuery, serverMembers]);
 
     const filteredCommandOptions = React.useMemo(() => {
@@ -80,6 +80,8 @@ const MessageInput = React.forwardRef(
 
         if (i1 < i2) return -1;
         if (i1 > i2) return 1;
+        if (o1.length < o2.length) return -1;
+        if (o1.length > o2.length) return 1;
         return 0;
       }, unorderedCommands);
 
@@ -96,25 +98,34 @@ const MessageInput = React.forwardRef(
     }[autoCompleteMode];
 
     const selectAutoCompleteOption = React.useCallback(
-      (option) => {
+      (option, event) => {
         switch (autoCompleteMode) {
           case "mentions":
+            event.preventDefault();
             editorRef.current.insertMention(option.value, {
               at: mentionQueryRangeRef.current,
             });
             setMentionQuery(null);
             break;
 
-          case "commands":
-            editorRef.current.replaceCurrentWord(`/${option.value} `);
+          case "commands": {
+            event.preventDefault();
+
+            if (commandQuery === option.value) {
+              setCommandQuery(null);
+              break;
+            }
+
+            editorRef.current.replaceFirstWord(`/${option.value} `);
             setCommandQuery(null);
             break;
+          }
 
           default:
             throw new Error();
         }
       },
-      [autoCompleteMode, editorRef, mentionQueryRangeRef]
+      [autoCompleteMode, editorRef, mentionQueryRangeRef, commandQuery]
     );
 
     const autoCompleteInputKeyDownHandler = React.useCallback(
@@ -138,16 +149,8 @@ const MessageInput = React.forwardRef(
           }
           case "Tab":
           case "Enter": {
-            const commandNames = Object.keys(commands);
-
-            if (commandNames.includes(commandQuery)) {
-              setCommandQuery(null);
-              return;
-            }
-
-            event.preventDefault();
             const option = autoCompleteOptions[selectedAutoCompleteIndex];
-            selectAutoCompleteOption(option);
+            selectAutoCompleteOption(option, event);
             break;
           }
           case "Escape":
@@ -157,8 +160,6 @@ const MessageInput = React.forwardRef(
         }
       },
       [
-        commands,
-        commandQuery,
         isAutoCompleteMenuOpen,
         autoCompleteOptions,
         selectedAutoCompleteIndex,
@@ -199,8 +200,13 @@ const MessageInput = React.forwardRef(
             },
             !disableCommands && {
               type: "command",
-              handler: (command /* , args */) => {
-                if (command == null) {
+              handler: (command, args) => {
+                if (command == null || args.length !== 0) {
+                  setCommandQuery(null);
+                  return;
+                }
+
+                if (command && editorRef.current.string().endsWith(" ")) {
                   setCommandQuery(null);
                   return;
                 }

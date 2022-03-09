@@ -53,14 +53,9 @@ const memberIdsByServerId = (state = [], action) => {
 };
 
 export const selectServerMembers = (state) => (serverId) => {
-  const userIds = state.serverMembers.memberIdsByServerId[serverId] ?? [];
-  return userIds.map((id) => state.serverMembers.entriesById[id]);
-};
-
-export const selectServerMembersByUserId = (state) => (serverId) => {
   const memberIds = state.serverMembers.memberIdsByServerId[serverId] ?? [];
 
-  const members = memberIds.map((id) => {
+  return memberIds.map((id) => {
     const member = state.serverMembers.entriesById[id];
 
     const displayName =
@@ -75,7 +70,10 @@ export const selectServerMembersByUserId = (state) => (serverId) => {
       walletAddress: member.user.id,
     };
   });
+};
 
+export const selectServerMembersByUserId = (state) => (serverId) => {
+  const members = selectServerMembers(state)(serverId);
   return indexBy((m) => m.user.id, members);
 };
 
