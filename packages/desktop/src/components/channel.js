@@ -41,9 +41,8 @@ const useChannelMessages = (channelId) => {
   React.useEffect(() => {
     let didChangeChannel = false;
 
-    actions.fetchMessages({ channelId }).then((messages) => {
-      // Mark empty channels as read
-      if (didChangeChannel || messages.length !== 0) return;
+    actions.fetchMessages({ channelId }).then(() => {
+      if (didChangeChannel) return;
       actions.markChannelRead({ channelId });
     });
 
