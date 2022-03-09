@@ -43,7 +43,7 @@ const useSidebarMenu = () => {
 
 const AppLayout = () => {
   const params = useParams();
-  const { state } = useAppScope();
+  const { state, actions } = useAppScope();
   const { user } = useAuth();
 
   const { isEnabled, isCollapsed, toggle } = useSidebarMenu();
@@ -157,6 +157,12 @@ const AppLayout = () => {
 
         <RoundButton
           onClick={() => {
+            if (process.env.DEV) {
+              const name = prompt("Name plz");
+              actions.createServer({ name });
+              return;
+            }
+
             alert("Soon :tm:");
           }}
         >

@@ -47,6 +47,7 @@ module.exports = (_, argv) => {
         PUSHER_KEY: null,
         INFURA_PROJECT_ID: null,
         SENTRY_DSN: null,
+        DEV: null,
       }),
       new webpack.ProvidePlugin({
         process: "process/browser",

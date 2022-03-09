@@ -17,6 +17,8 @@ const serverEventMap = {
   MESSAGE_REMOVE: "message-removed",
   MESSAGE_REACTION_ADD: "message-reaction-added",
   MESSAGE_REACTION_REMOVE: "message-reaction-removed",
+  USER_PROFILE_UPDATE: "user-profile-updated",
+  SERVER_PROFILE_UPDATE: "server-profile-updated",
 };
 
 const Context = React.createContext(null);
