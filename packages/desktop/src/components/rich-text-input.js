@@ -45,12 +45,39 @@ const withMarks = (editor) => {
 };
 
 const withTextCommands = (editor) => {
+  const findWordStart = (p = editor.selection.anchor) => {
+    const prevPoint = Editor.before(editor, p, { unit: "character" });
+    if (prevPoint == null) return p;
+    const char = Editor.string(editor, Editor.range(editor, prevPoint, p));
+    if (char === " ") return p;
+    return findWordStart(prevPoint);
+  };
+
+  const findWordEnd = (p = editor.selection.anchor) => {
+    const nextPoint = Editor.after(editor, p, { unit: "character" });
+    if (nextPoint == null) return p;
+    const char = Editor.string(editor, Editor.range(editor, p, nextPoint));
+    if (char === " ") return p;
+    return findWordEnd(nextPoint);
+  };
+
+  editor.getWordRange = (p = editor.selection.focus) => ({
+    anchor: findWordStart(p),
+    focus: findWordEnd(p),
+  });
+
   editor.select = (target) => Transforms.select(editor, target);
 
   editor.search = (query, { at }) => search(editor, query, { at });
 
   editor.replaceAll = (text) => {
     Transforms.select(editor, []);
+    editor.insertText(text);
+  };
+
+  editor.replaceCurrentWord = (text) => {
+    const wordRange = editor.getWordRange();
+    Transforms.select(editor, wordRange);
     editor.insertText(text);
   };
 
@@ -77,6 +104,8 @@ const withEditorCommands = (editor) => {
     // Move cursor to start
     Transforms.select(editor, Editor.start(editor, []));
   };
+
+  editor.string = () => Editor.string(editor, []);
 
   return editor;
 };
@@ -148,33 +177,6 @@ const RichTextInput = React.forwardRef(
           handlers.onChange(value, editor);
           onChange(value);
 
-          const findWordStart = (p = editor.selection.anchor) => {
-            const prevPoint = Editor.before(editor, p, { unit: "character" });
-            if (prevPoint == null) return p;
-            const char = Editor.string(
-              editor,
-              Editor.range(editor, prevPoint, p)
-            );
-            if (char === " ") return p;
-            return findWordStart(prevPoint);
-          };
-
-          const findWordEnd = (p = editor.selection.anchor) => {
-            const nextPoint = Editor.after(editor, p, { unit: "character" });
-            if (nextPoint == null) return p;
-            const char = Editor.string(
-              editor,
-              Editor.range(editor, p, nextPoint)
-            );
-            if (char === " ") return p;
-            return findWordEnd(nextPoint);
-          };
-
-          const getWordRange = (p = editor.selection.focus) => ({
-            anchor: findWordStart(p),
-            focus: findWordEnd(p),
-          });
-
           for (let trigger of triggers) {
             switch (trigger.type) {
               case "word": {
@@ -184,7 +186,7 @@ const RichTextInput = React.forwardRef(
                 )
                   continue;
 
-                const wordRange = getWordRange();
+                const wordRange = editor.getWordRange();
                 const wordString = Editor.string(editor, wordRange);
 
                 if (trigger.match == null || trigger.match(wordString))
