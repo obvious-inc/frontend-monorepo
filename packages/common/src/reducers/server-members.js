@@ -81,8 +81,7 @@ export const selectServerMember = (state) => (id) => {
   return {
     ...member,
     displayName,
-    // TODO: Use real address
-    walletAddress: member.user.id,
+    walletAddress: member.user.wallet_address,
   };
 };
 
