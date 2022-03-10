@@ -52,24 +52,50 @@ const memberIdsByServerId = (state = [], action) => {
   }
 };
 
+const memberIdsByUserId = (state = [], action) => {
+  switch (action.type) {
+    case "initial-data-request-successful": {
+      const members = action.data.servers.flatMap((s) => s.members);
+      const membersByUserId = groupBy((m) => m.user.id, members);
+      const memberIdsByUserId = mapValues(
+        (members) => members.map((m) => m.id),
+        membersByUserId
+      );
+
+      return memberIdsByUserId;
+    }
+
+    default:
+      return state;
+  }
+};
+
+export const selectServerMember = (state) => (id) => {
+  const member = state.serverMembers.entriesById[id];
+
+  const displayName =
+    member.display_name != null && member.display_name !== ""
+      ? member.display_name
+      : member.user.display_name;
+
+  return {
+    ...member,
+    displayName,
+    // TODO: Use real address
+    walletAddress: member.user.id,
+  };
+};
+
+export const selectServerMemberWithUserId = (state) => (serverId, userId) => {
+  const userServerMembers = state.serverMembers.memberIdsByUserId[userId].map(
+    selectServerMember(state)
+  );
+  return userServerMembers.find((m) => m.server === serverId);
+};
+
 export const selectServerMembers = (state) => (serverId) => {
   const memberIds = state.serverMembers.memberIdsByServerId[serverId] ?? [];
-
-  return memberIds.map((id) => {
-    const member = state.serverMembers.entriesById[id];
-
-    const displayName =
-      member.display_name != null && member.display_name !== ""
-        ? member.display_name
-        : member.user.display_name;
-
-    return {
-      ...member,
-      displayName,
-      // TODO: Use real address
-      walletAddress: member.user.id,
-    };
-  });
+  return memberIds.map(selectServerMember(state));
 };
 
 export const selectServerMembersByUserId = (state) => (serverId) => {
@@ -77,4 +103,8 @@ export const selectServerMembersByUserId = (state) => (serverId) => {
   return indexBy((m) => m.user.id, members);
 };
 
-export default combineReducers({ entriesById, memberIdsByServerId });
+export default combineReducers({
+  entriesById,
+  memberIdsByServerId,
+  memberIdsByUserId,
+});

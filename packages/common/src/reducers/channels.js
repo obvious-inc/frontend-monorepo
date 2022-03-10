@@ -2,6 +2,7 @@ import combineReducers from "../utils/combine-reducers";
 import { indexBy } from "../utils/array";
 import { mapValues } from "../utils/object";
 import { selectServer } from "./servers";
+import { selectServerMemberWithUserId } from "./server-members";
 
 const readTimestampByChannelId = (state = {}, action) => {
   switch (action.type) {
@@ -80,14 +81,23 @@ export const selectServerChannels = (state) => (serverId) => {
 
   if (server == null) return [];
 
+  const userServerMember = selectServerMemberWithUserId(state)(
+    serverId,
+    state.user.id
+  );
+
+  const serverJoinTimestamp = new Date(userServerMember.joined_at).getTime();
+
   return server.channels.map((c) => {
-    const lastReadTimestamp = state.channels.readTimestampByChannelId[c.id];
+    const lastReadTimestamp =
+      state.channels.readTimestampByChannelId[c.id] ?? serverJoinTimestamp;
+
     const lastMessageTimestamp =
       state.channels.lastMessageTimestampByChannelId[c.id];
+
     return {
       ...c,
-      hasUnread:
-        lastReadTimestamp == null || lastReadTimestamp < lastMessageTimestamp,
+      hasUnread: lastReadTimestamp < lastMessageTimestamp,
     };
   });
 };
