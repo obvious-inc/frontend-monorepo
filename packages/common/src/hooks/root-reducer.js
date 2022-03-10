@@ -1,6 +1,7 @@
 import React from "react";
 import { mapValues } from "../utils/object";
 import combineReducers from "../utils/combine-reducers";
+import { useAuth } from "../auth";
 import ui, { selectHasFetchedInitialData } from "../reducers/ui";
 import servers, { selectServer, selectServers } from "../reducers/servers";
 import channels, { selectServerChannels } from "../reducers/channels";
@@ -34,9 +35,11 @@ const applyStateToSelectors = (selectors, state) =>
   mapValues((selector) => selector(state), selectors);
 
 const useRootReducer = () => {
+  const { user } = useAuth();
+
   const [state, dispatch] = React.useReducer(rootReducer, initialState);
 
-  const appliedSelectors = applyStateToSelectors(selectors, state);
+  const appliedSelectors = applyStateToSelectors(selectors, { ...state, user });
 
   return [appliedSelectors, dispatch];
 };
