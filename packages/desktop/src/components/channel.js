@@ -89,7 +89,7 @@ const Channel = () => {
   const getUserMentionDisplayName = React.useCallback(
     (ref) => {
       const member = serverMembers.find((m) => m.user.id === ref);
-      return member.displayName;
+      return member?.displayName ?? ref;
     },
     [serverMembers]
   );
