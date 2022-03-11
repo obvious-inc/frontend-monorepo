@@ -61,7 +61,7 @@ const ChannelLayout = () => {
               font-weight: 500;
               color: rgb(255 255 255 / 40%);
               padding-left: 0.6rem;
-              padding-right: 0.3rem;
+              padding-right: 0.8rem;
               margin-bottom: 0.4rem;
               display: grid;
               align-items: center;
@@ -156,6 +156,26 @@ const ChannelLayout = () => {
                 >
                   {c.name}
                 </span>
+                {c.mentionCount > 0 && (
+                  <div
+                    css={css({
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      background: "hsl(359, 82.6%, 59.4%)",
+                      color: "white",
+                      height: "1.6rem",
+                      minWidth: "1.6rem",
+                      fontSize: "1.2rem",
+                      fontWeight: "600",
+                      lineHeight: 1,
+                      borderRadius: "0.8rem",
+                      paddingRight: "0 0.5rem 0 0.4rem",
+                    })}
+                  >
+                    {c.mentionCount}
+                  </div>
+                )}
               </NavLink>
             </div>
           ))}

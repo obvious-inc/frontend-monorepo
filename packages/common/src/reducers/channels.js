@@ -1,6 +1,7 @@
 import combineReducers from "../utils/combine-reducers";
 import { indexBy } from "../utils/array";
 import { mapValues } from "../utils/object";
+import { getMentions } from "../utils/message";
 import { selectServer } from "./servers";
 import { selectServerMemberWithUserId } from "./server-members";
 
@@ -42,6 +43,49 @@ const readTimestampByChannelId = (state = {}, action) => {
         };
 
       return state;
+    }
+
+    default:
+      return state;
+  }
+};
+
+const mentionCountByChannelId = (state = {}, action) => {
+  // TODO: handle edits and deletions
+  switch (action.type) {
+    case "initial-data-request-successful": {
+      const mentionCountByChannelId = mapValues(
+        (s) => s.mention_count,
+        indexBy((s) => s.channel, action.data.read_states)
+      );
+      return {
+        ...state,
+        ...mentionCountByChannelId,
+      };
+    }
+
+    case "mark-channel-read":
+      return {
+        ...state,
+        [action.data.channelId]: 0,
+      };
+
+    case "server-event:message-created": {
+      // Assume your own messages are already read
+      if (action.data.message.author === action.user.id) return state;
+
+      const userMentions = getMentions(action.data.message.blocks).filter(
+        (m) => m.ref === action.user.id
+      );
+
+      if (userMentions.length === 0) return state;
+
+      const channelId = action.data.message.channel;
+
+      return {
+        ...state,
+        [channelId]: state[channelId] + userMentions.length,
+      };
     }
 
     default:
@@ -95,9 +139,12 @@ export const selectServerChannels = (state) => (serverId) => {
     const lastMessageTimestamp =
       state.channels.lastMessageTimestampByChannelId[c.id];
 
+    const mentionCount = state.channels.mentionCountByChannelId[c.id] ?? 0;
+
     return {
       ...c,
       hasUnread: lastReadTimestamp < lastMessageTimestamp,
+      mentionCount,
     };
   });
 };
@@ -105,4 +152,5 @@ export const selectServerChannels = (state) => (serverId) => {
 export default combineReducers({
   readTimestampByChannelId,
   lastMessageTimestampByChannelId,
+  mentionCountByChannelId,
 });

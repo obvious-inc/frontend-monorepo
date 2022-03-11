@@ -62,7 +62,7 @@ const useChannelMessages = (channelId) => {
 
   // Make channels as read as new messages arrive
   React.useEffect(() => {
-    if (lastMessage?.id == null || lastMessage.author === user.id) return;
+    if (lastMessage?.id == null) return;
     actions.markChannelRead({ channelId });
   }, [lastMessage?.id, lastMessage?.author, user.id, channelId, actions]);
 
