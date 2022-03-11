@@ -39,9 +39,7 @@ export const createEmptyParagraph = () => ({
 
 export const isNodeEmpty = (el) => {
   if (el.type === "user") return false;
-  return el.children == null
-    ? el.text.trim() === ""
-    : el.children.every(isNodeEmpty);
+  return el.children == null ? el.text === "" : el.children.every(isNodeEmpty);
 };
 
 export const cleanNodes = (nodes) =>
