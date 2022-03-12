@@ -199,6 +199,7 @@ const Channel = () => {
               key={m.id}
               content={m.content}
               authorNick={serverMembersByUserId[m.author].displayName}
+              avatar={serverMembersByUserId[m.author].pfp}
               authorWalletAddress={
                 serverMembersByUserId[m.author].walletAddress
               }
@@ -499,6 +500,7 @@ const MessageToolbar = ({
 const MessageItem = ({
   authorNick,
   authorWalletAddress,
+  avatar,
   content,
   timestamp,
   reactions = [],
@@ -615,7 +617,7 @@ const MessageItem = ({
             }}
           >
             <img
-              src={avatarDataUrl}
+              src={avatar ?? avatarDataUrl}
               css={(theme) =>
                 css({
                   background: theme.colors.backgroundSecondary,

@@ -78,9 +78,13 @@ export const selectServerMember = (state) => (id) => {
       ? member.display_name
       : member.user.display_name;
 
+  const pfp =
+    member.pfp != null && member.pfp !== "" ? member.pfp : member.user.pfp;
+
   return {
     ...member,
     displayName,
+    pfp,
     walletAddress: member.user.wallet_address,
   };
 };

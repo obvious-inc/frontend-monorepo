@@ -50,6 +50,23 @@ const otherCommands = {
       signOut();
     },
   }),
+  pfp: ({ actions }) => ({
+    description: "Update your profile picture for this server",
+    execute: async ({ args, editor, serverId }) => {
+      const pfp = args.join(" ");
+      await actions.updateMe({ pfp, serverId });
+      editor.clear();
+    },
+  }),
+  "pfp-global": ({ actions }) => ({
+    description:
+      "Update your global profile picture. This will be used if you don’t set a server specific profile picture.",
+    execute: async ({ args, editor }) => {
+      const pfp = args.join(" ");
+      await actions.updateMe({ pfp });
+      editor.clear();
+    },
+  }),
 };
 
 const removeCommandString = (editor, command) => {

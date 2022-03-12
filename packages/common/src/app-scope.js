@@ -34,7 +34,7 @@ export const Provider = ({ children }) => {
   );
 
   const updateMe = React.useCallback(
-    ({ displayName, serverId }) => {
+    ({ displayName, pfp, serverId }) => {
       const searchParams = serverId == null ? null : `server_id=${serverId}`;
       return authorizedFetch(
         ["/users/me", searchParams].filter(Boolean).join("?"),
@@ -43,6 +43,7 @@ export const Provider = ({ children }) => {
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             display_name: displayName,
+            pfp,
           }),
         }
       );
