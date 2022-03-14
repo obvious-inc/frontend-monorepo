@@ -72,6 +72,14 @@ const createParser = ({ getUserMentionDisplayName, onClickUserMention }) => {
               @{getUserMentionDisplayName(el.ref)}
             </button>
           );
+        case "attachments":
+          return (
+            <div key={i} className="attachments-container">
+              {children()}
+            </div>
+          );
+        case "image-attachment":
+          return <img key={i} src={el.url} />;
         default:
           return (
             <React.Fragment key={i}>
@@ -99,7 +107,32 @@ const RichText = ({
     [getUserMentionDisplayName, onClickUserMention]
   );
   return (
-    <div css={(theme) => css(createCss(theme))} {...props}>
+    <div
+      css={(theme) =>
+        css({
+          ...createCss(theme),
+          ".attachments-container": {
+            paddingTop: "0.5rem",
+            display: "flex",
+            alignItems: "flex-start",
+            justifyContent: "flex-start",
+            flexWrap: "wrap",
+            margin: "-1rem 0 0 -1rem",
+            img: {
+              display: "block",
+              borderRadius: "0.5rem",
+              height: "10rem",
+              width: "auto",
+              maxWidth: "16rem",
+              objectFit: "cover",
+              background: theme.colors.backgroundSecondary,
+              margin: "1rem 0 0 1rem",
+            },
+          },
+        })
+      }
+      {...props}
+    >
       {parse(blocks)}
       {children}
     </div>

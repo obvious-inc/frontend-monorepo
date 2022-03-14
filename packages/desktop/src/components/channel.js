@@ -248,6 +248,7 @@ const Channel = () => {
       <div css={css({ padding: "0 1.6rem 1.6rem" })}>
         <NewMessageInput
           ref={inputRef}
+          uploadImage={actions.uploadImage}
           submit={(blocks) =>
             actions.createMessage({
               server: params.serverId,
@@ -876,86 +877,221 @@ const EditMessageInput = React.forwardRef(
   }
 );
 
-const NewMessageInput = React.forwardRef(({ submit, ...props }, editorRef) => {
-  const [pendingMessage, setPendingMessage] = React.useState(() => [
-    createEmptyParagraph(),
-  ]);
-  const { serverId } = useParams();
+const NewMessageInput = React.forwardRef(
+  ({ submit, uploadImage, ...props }, editorRef) => {
+    const [pendingMessage, setPendingMessage] = React.useState(() => [
+      createEmptyParagraph(),
+    ]);
 
-  const { execute: executeCommand, isCommand } = useCommands();
+    const [imageUploads, setImageUploads] = React.useState([]);
 
-  const executeMessage = async () => {
-    const blocks = cleanNodes(pendingMessage);
+    const fileInputRef = React.useRef();
 
-    const isEmpty = blocks.every(isNodeEmpty);
+    const { serverId } = useParams();
 
-    if (isEmpty) return;
+    const { execute: executeCommand, isCommand } = useCommands();
 
-    const messageString = editorRef.current.string();
+    const executeMessage = async () => {
+      const blocks = cleanNodes(pendingMessage);
 
-    if (messageString.startsWith("/")) {
-      const [commandName, ...args] = messageString
-        .slice(1)
-        .split(" ")
-        .map((s) => s.trim());
+      const isEmpty = blocks.every(isNodeEmpty);
 
-      if (isCommand(commandName)) {
-        await executeCommand(commandName, {
-          args,
-          editor: editorRef.current,
-          serverId,
-        });
-        return;
+      if (isEmpty && imageUploads.length === 0) return;
+
+      const messageString = editorRef.current.string();
+
+      if (messageString.startsWith("/")) {
+        const [commandName, ...args] = messageString
+          .slice(1)
+          .split(" ")
+          .map((s) => s.trim());
+
+        if (isCommand(commandName)) {
+          await executeCommand(commandName, {
+            args,
+            editor: editorRef.current,
+            serverId,
+          });
+          return;
+        }
       }
-    }
 
-    await submit(blocks);
-    editorRef.current.clear();
-  };
+      const attachmentsBlock = {
+        type: "attachments",
+        children: imageUploads
+          .filter((u) => u.id != null)
+          .map((u) => ({
+            type: "image-attachment",
+            url: u.url,
+          })),
+      };
 
-  return (
-    <form
-      onSubmit={(e) => {
-        e.preventDefault();
-        executeMessage();
-      }}
-      css={(theme) =>
-        css({
-          position: "relative",
-          padding: "1rem 1.5rem",
-          background: theme.colors.channelInputBackground,
-          borderRadius: "0.7rem",
-          "[role=textbox] [data-slate-placeholder]": {
-            color: "rgb(255 255 255 / 40%)",
-            opacity: "1 !important",
-            whiteSpace: "nowrap",
-            overflow: "hidden",
-            textOverflow: "ellipsis",
-          },
-          // Prevents iOS zooming in on input fields
-          "@supports (-webkit-touch-callout: none)": {
-            "[role=textbox]": { fontSize: "1.6rem" },
-          },
-        })
-      }
-    >
-      <MessageInput
-        ref={editorRef}
-        initialValue={pendingMessage}
-        onChange={(value) => {
-          setPendingMessage(value);
+      await submit([...blocks, attachmentsBlock]);
+
+      editorRef.current.clear();
+      setImageUploads([]);
+    };
+
+    return (
+      <form
+        onSubmit={(e) => {
+          e.preventDefault();
+          executeMessage();
         }}
-        onKeyDown={(e) => {
-          if (!e.isDefaultPrevented() && !e.shiftKey && e.key === "Enter") {
-            e.preventDefault();
-            executeMessage();
-          }
-        }}
-        {...props}
-      />
-      <input type="submit" hidden />
-    </form>
-  );
-});
+        css={(theme) =>
+          css({
+            position: "relative",
+            padding: "1rem",
+            background: theme.colors.channelInputBackground,
+            borderRadius: "0.7rem",
+            "[role=textbox] [data-slate-placeholder]": {
+              color: "rgb(255 255 255 / 40%)",
+              opacity: "1 !important",
+              whiteSpace: "nowrap",
+              overflow: "hidden",
+              textOverflow: "ellipsis",
+            },
+            // Prevents iOS zooming in on input fields
+            "@supports (-webkit-touch-callout: none)": {
+              "[role=textbox]": { fontSize: "1.6rem" },
+            },
+          })
+        }
+      >
+        <div
+          css={{
+            display: "grid",
+            gridTemplateColumns: "auto minmax(0,1fr)",
+            gridGap: "1rem",
+            alignItems: "center",
+          }}
+        >
+          <button
+            type="button"
+            onClick={() => {
+              fileInputRef.current.click();
+            }}
+            css={(theme) =>
+              css({
+                cursor: "pointer",
+                color: theme.colors.interactiveNormal,
+                svg: {
+                  display: "block",
+                  width: "2.4rem",
+                  height: "auto",
+                },
+                ":hover": {
+                  color: theme.colors.interactiveHover,
+                },
+              })
+            }
+          >
+            <svg width="24" height="24" viewBox="0 0 24 24">
+              <path
+                fill="currentColor"
+                d="M12 2.00098C6.486 2.00098 2 6.48698 2 12.001C2 17.515 6.486 22.001 12 22.001C17.514 22.001 22 17.515 22 12.001C22 6.48698 17.514 2.00098 12 2.00098ZM17 13.001H13V17.001H11V13.001H7V11.001H11V7.00098H13V11.001H17V13.001Z"
+              />
+            </svg>
+          </button>
+
+          <MessageInput
+            ref={editorRef}
+            initialValue={pendingMessage}
+            onChange={(value) => {
+              setPendingMessage(value);
+            }}
+            onKeyDown={(e) => {
+              if (!e.isDefaultPrevented() && !e.shiftKey && e.key === "Enter") {
+                e.preventDefault();
+                executeMessage();
+              }
+            }}
+            {...props}
+          />
+        </div>
+
+        {imageUploads.length !== 0 && (
+          <div css={css({ overflow: "auto", marginTop: "1.2rem" })}>
+            <div
+              css={(theme) =>
+                css({
+                  display: "grid",
+                  gridAutoColumns: "auto",
+                  gridAutoFlow: "column",
+                  justifyContent: "flex-start",
+                  gridGap: "1rem",
+                  img: {
+                    display: "block",
+                    width: "6rem",
+                    height: "6rem",
+                    borderRadius: "0.5rem",
+                    objectFit: "cover",
+                    background: theme.colors.backgroundSecondary,
+                  },
+                })
+              }
+            >
+              {imageUploads.map(({ id, url, previewUrl }) => (
+                <img
+                  key={url}
+                  src={url}
+                  onClick={() => {
+                    setImageUploads((fs) => fs.filter((f) => f.url !== url));
+                  }}
+                  style={{
+                    opacity: id == null ? 0.5 : 1,
+                    background:
+                      previewUrl == null ? undefined : `url(${previewUrl})`,
+                    backgroundSize: "cover",
+                  }}
+                />
+              ))}
+            </div>
+          </div>
+        )}
+
+        <input
+          ref={fileInputRef}
+          type="file"
+          multiple
+          onChange={(e) => {
+            const filesToUpload = [...e.target.files];
+
+            setImageUploads((fs) => [
+              ...fs,
+              ...filesToUpload.map((f) => ({
+                name: encodeURIComponent(f.name),
+                url: URL.createObjectURL(f),
+              })),
+            ]);
+
+            fileInputRef.current.value = "";
+
+            uploadImage({ files: filesToUpload }).then((uploadedFiles) => {
+              setImageUploads((fs) => [
+                ...fs.map((f) => {
+                  const file = uploadedFiles.find((f_) =>
+                    f_.filename.endsWith(f.name)
+                  );
+
+                  if (file == null) return f;
+
+                  return {
+                    id: file.id,
+                    name: file.filename,
+                    url: file.variants[0],
+                    previewUrl: f.url,
+                  };
+                }),
+              ]);
+            });
+          }}
+          hidden
+        />
+        <input type="submit" hidden />
+      </form>
+    );
+  }
+);
 
 export default Channel;

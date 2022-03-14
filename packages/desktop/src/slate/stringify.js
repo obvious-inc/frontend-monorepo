@@ -17,6 +17,9 @@ const stringifyElement = (el) => {
       return `@<u:${el.ref}>`;
     case "link":
       return el.url;
+    case "attachments":
+    case "image-attachment":
+      return "";
     default:
       throw new Error();
   }
