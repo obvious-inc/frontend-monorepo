@@ -28,7 +28,7 @@ const App = () => {
   const navigate = useNavigate();
 
   const { status: authStatus, user } = useAuth();
-  const { actions } = useAppScope();
+  const { actions, serverConnection } = useAppScope();
 
   React.useEffect(() => {
     if (authStatus !== "authenticated") return;
@@ -81,54 +81,73 @@ const App = () => {
         authStatus === "not-authenticated" ? (
           <SignInScreen />
         ) : authStatus === "authenticated" ? (
-          <Routes>
-            <Route element={<AppLayout />}>
-              <Route
-                path="/"
-                element={
-                  <div
-                    css={css({
-                      flex: 1,
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      height: "100%",
-                    })}
-                  >
-                    <HomeIcon
-                      style={{ width: "6rem", color: "rgb(255 255 255 / 5%)" }}
-                    />
-                  </div>
-                }
-              />
-              <Route
-                path="/channels/@me"
-                element={
-                  <div
-                    css={css({
-                      flex: 1,
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      height: "100%",
-                    })}
-                  >
-                    <ChatBubblesIcon
-                      style={{ width: "6rem", color: "rgb(255 255 255 / 5%)" }}
-                    />
-                  </div>
-                }
-              />
-              <Route element={<ChannelLayout />}>
+          !serverConnection.isConnected ? (
+            <div
+              css={css({
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                height: "100%",
+              })}
+            >
+              Connecting...
+            </div>
+          ) : (
+            <Routes>
+              <Route element={<AppLayout />}>
                 <Route
-                  path="/channels/:serverId/:channelId"
-                  element={<Channel />}
+                  path="/"
+                  element={
+                    <div
+                      css={css({
+                        flex: 1,
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        height: "100%",
+                      })}
+                    >
+                      <HomeIcon
+                        style={{
+                          width: "6rem",
+                          color: "rgb(255 255 255 / 5%)",
+                        }}
+                      />
+                    </div>
+                  }
                 />
+                <Route
+                  path="/channels/@me"
+                  element={
+                    <div
+                      css={css({
+                        flex: 1,
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        height: "100%",
+                      })}
+                    >
+                      <ChatBubblesIcon
+                        style={{
+                          width: "6rem",
+                          color: "rgb(255 255 255 / 5%)",
+                        }}
+                      />
+                    </div>
+                  }
+                />
+                <Route element={<ChannelLayout />}>
+                  <Route
+                    path="/channels/:serverId/:channelId"
+                    element={<Channel />}
+                  />
+                </Route>
+                <Route path="/login" element={<SignInScreen />} />
+                <Route path="*" element={null} />
               </Route>
-              <Route path="/login" element={<SignInScreen />} />
-              <Route path="*" element={null} />
-            </Route>
-          </Routes>
+            </Routes>
+          )
         ) : null // Loading
       }
     </>

@@ -242,8 +242,8 @@ export const Provider = ({ children }) => {
   }, [user, serverConnection, dispatch]);
 
   const contextValue = React.useMemo(
-    () => ({ state: stateSelectors, actions }),
-    [stateSelectors, actions]
+    () => ({ serverConnection, state: stateSelectors, actions }),
+    [stateSelectors, actions, serverConnection]
   );
 
   return <Context.Provider value={contextValue}>{children}</Context.Provider>;
