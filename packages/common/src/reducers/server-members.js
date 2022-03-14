@@ -81,10 +81,16 @@ export const selectServerMember = (state) => (id) => {
   const pfp =
     member.pfp != null && member.pfp !== "" ? member.pfp : member.user.pfp;
 
+  const pfpVerified =
+    member.pfp_verified != null && member.pfp_verified !== ""
+      ? member.pfp_verified
+      : member.user.pfp_verified;
+
   return {
     ...member,
     displayName,
     pfp,
+    pfpVerified,
     walletAddress: member.user.wallet_address,
   };
 };

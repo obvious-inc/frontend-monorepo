@@ -200,6 +200,7 @@ const Channel = () => {
               content={m.content}
               authorNick={serverMembersByUserId[m.author].displayName}
               avatar={serverMembersByUserId[m.author].pfp}
+              avatarVerified={serverMembersByUserId[m.author].pfpVerified}
               authorWalletAddress={
                 serverMembersByUserId[m.author].walletAddress
               }
@@ -501,6 +502,7 @@ const MessageItem = ({
   authorNick,
   authorWalletAddress,
   avatar,
+  avatarVerified,
   content,
   timestamp,
   reactions = [],
@@ -607,6 +609,7 @@ const MessageItem = ({
           <button
             css={css({
               borderRadius: "50%",
+              border: avatarVerified ? "2px solid green" : "2px solid grey",
               overflow: "hidden",
               cursor: "pointer",
               ":hover": { boxShadow: "0 0 0 0.3rem rgb(255 255 255 / 10%)" },
