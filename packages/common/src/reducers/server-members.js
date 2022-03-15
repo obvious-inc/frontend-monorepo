@@ -17,6 +17,7 @@ const entriesById = (state = {}, action) => {
           user: {
             ...member.user,
             display_name: action.data.display_name,
+            pfp: action.data.pfp,
           },
         };
       }, state);
@@ -27,6 +28,7 @@ const entriesById = (state = {}, action) => {
         [action.data.member]: {
           ...state[action.data.member],
           display_name: action.data.display_name,
+          pfp: action.data.pfp,
         },
       };
 
@@ -78,19 +80,17 @@ export const selectServerMember = (state) => (id) => {
       ? member.display_name
       : member.user.display_name;
 
-  const pfp =
-    member.pfp != null && member.pfp !== "" ? member.pfp : member.user.pfp;
-
-  const pfpVerified =
-    member.pfp_verified != null && member.pfp_verified !== ""
-      ? member.pfp_verified
-      : member.user.pfp_verified;
+  const pfp = member.pfp ?? member.user.pfp;
+  const pfpUrl =
+    pfp?.cf_id && process.env.CLOUDFLARE_ACCT_HASH
+      ? `https://imagedelivery.net/${process.env.CLOUDFLARE_ACCT_HASH}/${pfp.cf_id}/avatar`
+      : pfp?.input_image_url;
 
   return {
     ...member,
     displayName,
     pfp,
-    pfpVerified,
+    pfpUrl,
     walletAddress: member.user.wallet_address,
   };
 };

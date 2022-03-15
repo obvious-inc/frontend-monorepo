@@ -199,8 +199,10 @@ const Channel = () => {
               key={m.id}
               content={m.content}
               authorNick={serverMembersByUserId[m.author].displayName}
-              avatar={serverMembersByUserId[m.author].pfp}
-              avatarVerified={serverMembersByUserId[m.author].pfpVerified}
+              avatar={serverMembersByUserId[m.author].pfpUrl}
+              avatarVerified={
+                serverMembersByUserId[m.author].pfp?.verified ?? false
+              }
               authorWalletAddress={
                 serverMembersByUserId[m.author].walletAddress
               }
