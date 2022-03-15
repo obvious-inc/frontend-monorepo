@@ -43,7 +43,11 @@ const parseLeaf = (l, i) => {
   return <React.Fragment key={i}>{children}</React.Fragment>;
 };
 
-const createParser = ({ getUserMentionDisplayName, onClickUserMention }) => {
+const createParser = ({
+  getUserMentionDisplayName,
+  onClickElement,
+  onClickUserMention,
+}) => {
   const parse = (blocks) => {
     const parseElement = (el, i) => {
       const parseNode = (n, i) =>
@@ -72,14 +76,58 @@ const createParser = ({ getUserMentionDisplayName, onClickUserMention }) => {
               @{getUserMentionDisplayName(el.ref)}
             </button>
           );
-        case "attachments":
+        case "attachments": {
+          const attachmentCount = el.children.length;
+          const [maxWidth, maxHeight] =
+            attachmentCount === 1 ? ["100%", "28rem"] : ["28rem", "18rem"];
           return (
-            <div key={i} className="attachments-container">
+            <div
+              key={i}
+              css={(theme) =>
+                css({
+                  paddingTop: "0.5rem",
+                  display: "flex",
+                  alignItems: "flex-start",
+                  justifyContent: "flex-start",
+                  flexWrap: "wrap",
+                  margin: "-1rem 0 0 -1rem",
+                  button: {
+                    borderRadius: "0.3rem",
+                    overflow: "hidden",
+                    background: theme.colors.backgroundSecondary,
+                    margin: "1rem 0 0 1rem",
+                    cursor: "zoom-in",
+                    transition: "0.14s all ease-out",
+                    maxWidth,
+                    ":hover": {
+                      filter: "brightness(1.05)",
+                      transform: "scale(1.02)",
+                    },
+                  },
+                  img: {
+                    display: "block",
+                    height: "auto",
+                    width: "100%",
+                    maxHeight,
+                  },
+                })
+              }
+            >
               {children()}
             </div>
           );
+        }
         case "image-attachment":
-          return <img key={i} src={el.url} />;
+          return (
+            <button
+              key={i}
+              onClick={() => {
+                onClickElement(el);
+              }}
+            >
+              <img src={el.url} />
+            </button>
+          );
         default:
           return (
             <React.Fragment key={i}>
@@ -98,41 +146,22 @@ const createParser = ({ getUserMentionDisplayName, onClickUserMention }) => {
 const RichText = ({
   blocks,
   getUserMentionDisplayName,
+  onClickElement,
   onClickUserMention,
   children,
   ...props
 }) => {
   const parse = React.useMemo(
-    () => createParser({ getUserMentionDisplayName, onClickUserMention }),
-    [getUserMentionDisplayName, onClickUserMention]
+    () =>
+      createParser({
+        getUserMentionDisplayName,
+        onClickElement,
+        onClickUserMention,
+      }),
+    [getUserMentionDisplayName, onClickUserMention, onClickElement]
   );
   return (
-    <div
-      css={(theme) =>
-        css({
-          ...createCss(theme),
-          ".attachments-container": {
-            paddingTop: "0.5rem",
-            display: "flex",
-            alignItems: "flex-start",
-            justifyContent: "flex-start",
-            flexWrap: "wrap",
-            margin: "-1rem 0 0 -1rem",
-            img: {
-              display: "block",
-              borderRadius: "0.5rem",
-              height: "10rem",
-              width: "auto",
-              maxWidth: "16rem",
-              objectFit: "cover",
-              background: theme.colors.backgroundSecondary,
-              margin: "1rem 0 0 1rem",
-            },
-          },
-        })
-      }
-      {...props}
-    >
+    <div css={(theme) => css(createCss(theme))} {...props}>
       {parse(blocks)}
       {children}
     </div>

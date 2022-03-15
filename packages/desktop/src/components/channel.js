@@ -2,7 +2,13 @@ import React from "react";
 import { useParams } from "react-router";
 import { css, useTheme } from "@emotion/react";
 import { FormattedDate } from "react-intl";
-import { useAuth, useAppScope, arrayUtils, objectUtils } from "@shades/common";
+import {
+  useAuth,
+  useAppScope,
+  arrayUtils,
+  objectUtils,
+  messageUtils,
+} from "@shades/common";
 import usePageVisibilityChangeListener from "../hooks/page-visibility-change-listener";
 import useHover from "../hooks/hover";
 import stringifyMessageBlocks from "../slate/stringify";
@@ -27,6 +33,7 @@ import { useMenuState } from "./app-layout";
 
 const { groupBy } = arrayUtils;
 const { mapValues } = objectUtils;
+const { filter: filterMessageNodes } = messageUtils;
 
 const useChannelMessages = (channelId) => {
   const { user } = useAuth();
@@ -687,6 +694,15 @@ const MessageItem = ({
           ) : (
             <RichText
               blocks={content}
+              onClickElement={(el) => {
+                switch (el.type) {
+                  case "image-attachment":
+                    window.open(el.url, "_blank");
+                    break;
+                  default:
+                    throw new Error();
+                }
+              }}
               onClickUserMention={(mention) => {
                 const mentionDisplayName = getUserMentionDisplayName(
                   mention.ref
@@ -776,7 +792,9 @@ const MessageItem = ({
 const EditMessageInput = React.forwardRef(
   ({ blocks, save, remove, onCancel, ...props }, editorRef) => {
     const [pendingMessage, setPendingMessage] = React.useState(() =>
-      normalizeNodes(blocks)
+      normalizeNodes(
+        filterMessageNodes((node) => node.type !== "attachments", blocks)
+      )
     );
 
     const [isSaving, setSaving] = React.useState(false);
@@ -896,7 +914,9 @@ const NewMessageInput = React.forwardRef(
 
       const isEmpty = blocks.every(isNodeEmpty);
 
-      if (isEmpty && imageUploads.length === 0) return;
+      const completedImageUploads = imageUploads.filter((u) => u.id != null);
+
+      if (isEmpty && completedImageUploads.length === 0) return;
 
       const messageString = editorRef.current.string();
 
@@ -918,12 +938,10 @@ const NewMessageInput = React.forwardRef(
 
       const attachmentsBlock = {
         type: "attachments",
-        children: imageUploads
-          .filter((u) => u.id != null)
-          .map((u) => ({
-            type: "image-attachment",
-            url: u.url,
-          })),
+        children: completedImageUploads.map((u) => ({
+          type: "image-attachment",
+          url: u.url,
+        })),
       };
 
       await submit([...blocks, attachmentsBlock]);
@@ -1011,7 +1029,7 @@ const NewMessageInput = React.forwardRef(
         </div>
 
         {imageUploads.length !== 0 && (
-          <div css={css({ overflow: "auto", marginTop: "1.2rem" })}>
+          <div css={css({ overflow: "auto", paddingTop: "1.2rem" })}>
             <div
               css={(theme) =>
                 css({
@@ -1032,19 +1050,75 @@ const NewMessageInput = React.forwardRef(
               }
             >
               {imageUploads.map(({ id, url, previewUrl }) => (
-                <img
+                <div
                   key={url}
-                  src={url}
-                  onClick={() => {
-                    setImageUploads((fs) => fs.filter((f) => f.url !== url));
-                  }}
-                  style={{
-                    opacity: id == null ? 0.5 : 1,
-                    background:
-                      previewUrl == null ? undefined : `url(${previewUrl})`,
-                    backgroundSize: "cover",
-                  }}
-                />
+                  css={css({
+                    position: "relative",
+                    ".x": { opacity: 0 },
+                    ":hover .x": { opacity: 1 },
+                  })}
+                >
+                  <button
+                    type="button"
+                    onClick={() => {
+                      window.open(url, "_blank");
+                    }}
+                    css={css({
+                      display: "block",
+                      cursor: "pointer",
+                    })}
+                  >
+                    <img
+                      src={url}
+                      style={{
+                        opacity: id == null ? 0.5 : 1,
+                        background:
+                          previewUrl == null ? undefined : `url(${previewUrl})`,
+                        backgroundSize: "cover",
+                        backgroundPosition: "center",
+                      }}
+                    />
+                  </button>
+                  <button
+                    type="button"
+                    className="x"
+                    css={(theme) =>
+                      css({
+                        position: "absolute",
+                        top: 0,
+                        right: 0,
+                        transform: "translateX(50%) translateY(-50%)",
+                        cursor: "pointer",
+                        background: theme.colors.channelInputBackground,
+                        borderRadius: "50%",
+                        boxShadow: `0 0 0 0.2rem ${theme.colors.channelInputBackground}`,
+                        svg: {
+                          width: "2.2rem",
+                          height: "auto",
+                          color: theme.colors.interactiveNormal,
+                        },
+                        ":hover svg": {
+                          color: theme.colors.interactiveHover,
+                        },
+                      })
+                    }
+                    onClick={() => {
+                      setImageUploads((fs) => fs.filter((f) => f.url !== url));
+                    }}
+                  >
+                    <svg
+                      width="24"
+                      height="24"
+                      viewBox="0 0 24 24"
+                      style={{ transform: "rotate(45deg" }}
+                    >
+                      <path
+                        fill="currentColor"
+                        d="M12 2.00098C6.486 2.00098 2 6.48698 2 12.001C2 17.515 6.486 22.001 12 22.001C17.514 22.001 22 17.515 22 12.001C22 6.48698 17.514 2.00098 12 2.00098ZM17 13.001H13V17.001H11V13.001H7V11.001H11V7.00098H13V11.001H17V13.001Z"
+                      />
+                    </svg>
+                  </button>
+                </div>
               ))}
             </div>
           </div>
