@@ -901,9 +901,12 @@ const NewMessageInput = React.forwardRef(
       createEmptyParagraph(),
     ]);
 
+    const [isPending, setPending] = React.useState(false);
+
     const [imageUploads, setImageUploads] = React.useState([]);
 
     const fileInputRef = React.useRef();
+    const uploadPromiseRef = React.useRef();
 
     const { serverId } = useParams();
 
@@ -914,9 +917,7 @@ const NewMessageInput = React.forwardRef(
 
       const isEmpty = blocks.every(isNodeEmpty);
 
-      const completedImageUploads = imageUploads.filter((u) => u.id != null);
-
-      if (isEmpty && completedImageUploads.length === 0) return;
+      if (isEmpty && imageUploads.length === 0) return;
 
       const messageString = editorRef.current.string();
 
@@ -927,27 +928,45 @@ const NewMessageInput = React.forwardRef(
           .map((s) => s.trim());
 
         if (isCommand(commandName)) {
+          setPending(true);
           await executeCommand(commandName, {
             args,
             editor: editorRef.current,
             serverId,
           });
+          setPending(false);
           return;
         }
       }
 
-      const attachmentsBlock = {
-        type: "attachments",
-        children: completedImageUploads.map((u) => ({
-          type: "image-attachment",
-          url: u.url,
-        })),
+      const submitMessage = async (attachments) => {
+        editorRef.current.clear();
+
+        if (attachments == null) {
+          await submit(blocks);
+          return;
+        }
+
+        const attachmentsBlock = {
+          type: "attachments",
+          children: attachments.map((u) => ({
+            type: "image-attachment",
+            url: u.url,
+          })),
+        };
+
+        setImageUploads([]);
+        await submit([...blocks, attachmentsBlock]);
       };
 
-      await submit([...blocks, attachmentsBlock]);
+      if (uploadPromiseRef.current) {
+        setPending(true);
+        const attachments = await uploadPromiseRef.current.then();
+        setPending(false);
+        return await submitMessage(attachments);
+      }
 
-      editorRef.current.clear();
-      setImageUploads([]);
+      return await submitMessage(imageUploads);
     };
 
     return (
@@ -989,6 +1008,7 @@ const NewMessageInput = React.forwardRef(
             onClick={() => {
               fileInputRef.current.click();
             }}
+            disabled={isPending}
             css={(theme) =>
               css({
                 cursor: "pointer",
@@ -998,6 +1018,7 @@ const NewMessageInput = React.forwardRef(
                   width: "2.4rem",
                   height: "auto",
                 },
+                "&[disabled]": { pointerEvents: "none" },
                 ":hover": {
                   color: theme.colors.interactiveHover,
                 },
@@ -1024,12 +1045,19 @@ const NewMessageInput = React.forwardRef(
                 executeMessage();
               }
             }}
+            disabled={isPending}
             {...props}
           />
         </div>
 
         {imageUploads.length !== 0 && (
-          <div css={css({ overflow: "auto", paddingTop: "1.2rem" })}>
+          <div
+            css={css({
+              overflow: "auto",
+              paddingTop: "1.2rem",
+              pointerEvents: isPending ? "none" : "all",
+            })}
+          >
             <div
               css={(theme) =>
                 css({
@@ -1054,8 +1082,8 @@ const NewMessageInput = React.forwardRef(
                   key={url}
                   css={css({
                     position: "relative",
-                    ".x": { opacity: 0 },
-                    ":hover .x": { opacity: 1 },
+                    ".delete-button": { opacity: 0 },
+                    ":hover .delete-button": { opacity: 1 },
                   })}
                 >
                   <button
@@ -1081,7 +1109,7 @@ const NewMessageInput = React.forwardRef(
                   </button>
                   <button
                     type="button"
-                    className="x"
+                    className="delete-button"
                     css={(theme) =>
                       css({
                         position: "absolute",
@@ -1129,6 +1157,8 @@ const NewMessageInput = React.forwardRef(
           type="file"
           multiple
           onChange={(e) => {
+            editorRef.current.focus();
+
             const filesToUpload = [...e.target.files];
 
             setImageUploads((fs) => [
@@ -1141,23 +1171,32 @@ const NewMessageInput = React.forwardRef(
 
             fileInputRef.current.value = "";
 
-            uploadImage({ files: filesToUpload }).then((uploadedFiles) => {
-              setImageUploads((fs) => [
-                ...fs.map((f) => {
-                  const file = uploadedFiles.find((f_) =>
-                    f_.filename.endsWith(f.name)
-                  );
+            uploadPromiseRef.current = uploadImage({
+              files: filesToUpload,
+            }).then((uploadedFiles) => {
+              uploadPromiseRef.current = null;
+              return new Promise((resolve) => {
+                setImageUploads((fs) => {
+                  const files = [
+                    ...fs.map((f) => {
+                      const file = uploadedFiles.find((f_) =>
+                        f_.filename.endsWith(f.name)
+                      );
 
-                  if (file == null) return f;
+                      if (file == null) return f;
 
-                  return {
-                    id: file.id,
-                    name: file.filename,
-                    url: file.variants[0],
-                    previewUrl: f.url,
-                  };
-                }),
-              ]);
+                      return {
+                        id: file.id,
+                        name: file.filename,
+                        url: file.variants[0],
+                        previewUrl: f.url,
+                      };
+                    }),
+                  ];
+                  resolve(files);
+                  return files;
+                });
+              });
             });
           }}
           hidden
