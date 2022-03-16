@@ -29,6 +29,7 @@ import Spinner from "./spinner";
 import * as Popover from "./popover";
 import * as DropdownMenu from "./dropdown-menu";
 import * as Toolbar from "./toolbar";
+import * as Tooltip from "./tooltip";
 import { Hash as HashIcon } from "./icons";
 import {
   HamburgerMenu as HamburgerMenuIcon,
@@ -651,25 +652,39 @@ const MessageItem = ({
               cursor: default;
             `}
           >
-            <button
-              css={(theme) =>
-                css({
-                  lineHeight: 1.2,
-                  color: theme.colors.pink,
-                  fontWeight: "500",
-                  fontVariantLigatures: "no-contextual",
-                  cursor: "pointer",
-                  ":hover": {
-                    textDecoration: "underline",
-                  },
-                })
-              }
-              onClick={() => {
-                alert(`Congratulations, you clicked ${authorNick}!`);
-              }}
-            >
-              {authorNick}
-            </button>
+            <Tooltip.Root>
+              <Tooltip.Trigger asChild>
+                <button
+                  css={(theme) =>
+                    css({
+                      lineHeight: 1.2,
+                      color: theme.colors.pink,
+                      fontWeight: "500",
+                      fontVariantLigatures: "no-contextual",
+                      cursor: "pointer",
+                      ":hover": {
+                        textDecoration: "underline",
+                      },
+                    })
+                  }
+                  onClick={() => {
+                    alert(`Congratulations, you clicked ${authorNick}!`);
+                  }}
+                >
+                  {authorNick}
+                </button>
+              </Tooltip.Trigger>
+              <Tooltip.Content side="top" sideOffset={4}>
+                <span
+                  css={css({
+                    fontVariantLigatures: "no-contextual",
+                    color: "rgb(255 255 255 / 54%)",
+                  })}
+                >
+                  {authorWalletAddress}
+                </span>
+              </Tooltip.Content>
+            </Tooltip.Root>
             <div
               css={css`
                 color: rgb(255 255 255 / 35%);
