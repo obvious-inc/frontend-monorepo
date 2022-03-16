@@ -38,3 +38,6 @@ export const getMentions = (nodes) => {
 
   return mentions;
 };
+
+export const withoutAttachments = (nodes) =>
+  filter((n) => n.type !== "attachments", nodes);

@@ -8,6 +8,7 @@ import {
   arrayUtils,
   objectUtils,
   messageUtils,
+  getImageFileDimensions,
 } from "@shades/common";
 import usePageVisibilityChangeListener from "../hooks/page-visibility-change-listener";
 import useHover from "../hooks/hover";
@@ -33,7 +34,7 @@ import { useMenuState } from "./app-layout";
 
 const { groupBy } = arrayUtils;
 const { mapValues } = objectUtils;
-const { filter: filterMessageNodes } = messageUtils;
+const { withoutAttachments } = messageUtils;
 
 const useChannelMessages = (channelId) => {
   const { user } = useAuth();
@@ -792,9 +793,7 @@ const MessageItem = ({
 const EditMessageInput = React.forwardRef(
   ({ blocks, save, remove, onCancel, ...props }, editorRef) => {
     const [pendingMessage, setPendingMessage] = React.useState(() =>
-      normalizeNodes(
-        filterMessageNodes((node) => node.type !== "attachments", blocks)
-      )
+      normalizeNodes(withoutAttachments(blocks))
     );
 
     const [isSaving, setSaving] = React.useState(false);
@@ -961,9 +960,13 @@ const NewMessageInput = React.forwardRef(
 
       if (uploadPromiseRef.current) {
         setPending(true);
-        const attachments = await uploadPromiseRef.current.then();
-        setPending(false);
-        return await submitMessage(attachments);
+        try {
+          const attachments = await uploadPromiseRef.current.then();
+          setPending(false);
+          return await submitMessage(attachments);
+        } catch (e) {
+          setPending(false);
+        }
       }
 
       return await submitMessage(imageUploads);
@@ -1063,7 +1066,7 @@ const NewMessageInput = React.forwardRef(
               css={(theme) =>
                 css({
                   display: "grid",
-                  gridAutoColumns: "auto",
+                  gridAutoColumns: "max-content",
                   gridAutoFlow: "column",
                   justifyContent: "flex-start",
                   gridGap: "1rem",
@@ -1189,32 +1192,50 @@ const NewMessageInput = React.forwardRef(
 
             fileInputRef.current.value = "";
 
-            uploadPromiseRef.current = uploadImage({
-              files: filesToUpload,
-            }).then((uploadedFiles) => {
-              uploadPromiseRef.current = null;
-              return new Promise((resolve) => {
-                setImageUploads((fs) => {
-                  const files = [
-                    ...fs.map((f) => {
-                      const file = uploadedFiles.find((f_) =>
-                        f_.filename.endsWith(f.name)
-                      );
+            let lastImageUploads = imageUploads;
 
-                      if (file == null) return f;
+            // Buckle up!
+            uploadPromiseRef.current = Promise.all([
+              uploadPromiseRef.current ?? Promise.resolve(),
+              ...filesToUpload.map((file) =>
+                Promise.all([
+                  getImageFileDimensions(file),
+                  uploadImage({ files: [file] }).catch(() => {
+                    setImageUploads((fs) => {
+                      const newImageUploads = fs.filter(
+                        (f) => f.name !== file.name
+                      );
+                      lastImageUploads = newImageUploads;
+                      return newImageUploads;
+                    });
+                    const error = new Error(
+                      `Could not upload file "${file.name}"`
+                    );
+                    alert(error.message);
+                    return Promise.reject(error);
+                  }),
+                ]).then(([dimensions, [uploadedFile]]) => {
+                  setImageUploads((fs) => {
+                    const newImageUploads = fs.map((f) => {
+                      if (!uploadedFile.filename.endsWith(f.name)) return f;
 
                       return {
-                        id: file.id,
-                        name: file.filename,
-                        url: file.variants[0],
+                        id: uploadedFile.id,
+                        name: uploadedFile.filename,
+                        url: uploadedFile.variants[0],
                         previewUrl: f.url,
+                        ...dimensions,
                       };
-                    }),
-                  ];
-                  resolve(files);
-                  return files;
-                });
-              });
+                    });
+
+                    lastImageUploads = newImageUploads;
+                    return newImageUploads;
+                  });
+                })
+              ),
+            ]).then(() => {
+              uploadPromiseRef.current = null;
+              return lastImageUploads;
             });
           }}
           hidden

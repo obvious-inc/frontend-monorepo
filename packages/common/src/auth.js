@@ -106,7 +106,7 @@ export const Provider = ({
 
       if (response.status === 401) clearAccessToken();
 
-      if (!response.ok) return Promise.reject(new Error(response.json()));
+      if (!response.ok) return Promise.reject(new Error(response.statusText));
 
       if (response.status === 204) return undefined;
 
