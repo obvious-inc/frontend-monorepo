@@ -699,20 +699,23 @@ const MessageItem = ({
           ) : (
             <RichText
               blocks={content}
-              onClickElement={(el) => {
+              onClickInteractiveElement={(el) => {
                 switch (el.type) {
+                  case "user": {
+                    const mentionDisplayName = getUserMentionDisplayName(
+                      el.ref
+                    );
+                    alert(
+                      `Congratulations, you clicked "@${mentionDisplayName}"!`
+                    );
+                    break;
+                  }
                   case "image-attachment":
                     window.open(el.url, "_blank");
                     break;
                   default:
                     throw new Error();
                 }
-              }}
-              onClickUserMention={(mention) => {
-                const mentionDisplayName = getUserMentionDisplayName(
-                  mention.ref
-                );
-                alert(`Congratulations, you clicked "@${mentionDisplayName}"!`);
               }}
               getUserMentionDisplayName={getUserMentionDisplayName}
             >
@@ -969,6 +972,8 @@ const NewMessageInput = React.forwardRef(
           children: attachments.map((u) => ({
             type: "image-attachment",
             url: u.url,
+            width: u.width,
+            height: u.height,
           })),
         };
 

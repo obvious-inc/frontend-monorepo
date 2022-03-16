@@ -45,8 +45,7 @@ const parseLeaf = (l, i) => {
 
 const createParser = ({
   getUserMentionDisplayName,
-  onClickElement,
-  onClickUserMention,
+  onClickInteractiveElement,
 }) => {
   const parse = (blocks) => {
     const parseElement = (el, i) => {
@@ -70,7 +69,7 @@ const createParser = ({
               className="mention"
               key={i}
               onClick={() => {
-                onClickUserMention?.({ ref: el.ref });
+                onClickInteractiveElement(el);
               }}
             >
               @{getUserMentionDisplayName(el.ref)}
@@ -117,17 +116,18 @@ const createParser = ({
             </div>
           );
         }
-        case "image-attachment":
+        case "image-attachment": {
           return (
             <button
               key={i}
               onClick={() => {
-                onClickElement(el);
+                onClickInteractiveElement(el);
               }}
             >
-              <img src={el.url} />
+              <img src={el.url} width={el.width} height={el.height} />
             </button>
           );
+        }
         default:
           return (
             <React.Fragment key={i}>
@@ -146,8 +146,7 @@ const createParser = ({
 const RichText = ({
   blocks,
   getUserMentionDisplayName,
-  onClickElement,
-  onClickUserMention,
+  onClickInteractiveElement,
   children,
   ...props
 }) => {
@@ -155,10 +154,9 @@ const RichText = ({
     () =>
       createParser({
         getUserMentionDisplayName,
-        onClickElement,
-        onClickUserMention,
+        onClickInteractiveElement,
       }),
-    [getUserMentionDisplayName, onClickUserMention, onClickElement]
+    [getUserMentionDisplayName, onClickInteractiveElement]
   );
   return (
     <div css={(theme) => css(createCss(theme))} {...props}>
