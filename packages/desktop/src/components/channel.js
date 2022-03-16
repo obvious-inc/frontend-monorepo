@@ -1,6 +1,6 @@
 import React from "react";
 import { useParams } from "react-router";
-import { css, useTheme, keyframes } from "@emotion/react";
+import { css, useTheme } from "@emotion/react";
 import { FormattedDate } from "react-intl";
 import {
   useAuth,
@@ -25,11 +25,15 @@ import { FaceIcon, DotsHorizontalIcon, Pencil1Icon } from "./icons";
 import MessageInput from "./message-input";
 import RichText from "./rich-text";
 import Button from "./button";
+import Spinner from "./spinner";
 import * as Popover from "./popover";
 import * as DropdownMenu from "./dropdown-menu";
 import * as Toolbar from "./toolbar";
 import { Hash as HashIcon } from "./icons";
-import { HamburgerMenu as HamburgerMenuIcon } from "./icons";
+import {
+  HamburgerMenu as HamburgerMenuIcon,
+  PlusCircle as PlusCircleIcon,
+} from "./icons";
 import { useMenuState } from "./app-layout";
 
 const { groupBy } = arrayUtils;
@@ -916,7 +920,12 @@ const NewMessageInput = React.forwardRef(
 
       const isEmpty = blocks.every(isNodeEmpty);
 
-      if (isEmpty && imageUploads.length === 0) return;
+      if (
+        isEmpty &&
+        // We want to allow "empty" messages if it has attachements
+        imageUploads.length === 0
+      )
+        return;
 
       const messageString = editorRef.current.string();
 
@@ -938,13 +947,22 @@ const NewMessageInput = React.forwardRef(
         }
       }
 
-      const submitMessage = async (attachments) => {
+      // Regular submit if we don’t have pending file uploads
+      if (uploadPromiseRef.current == null) {
         editorRef.current.clear();
+        return submit(blocks);
+      }
 
-        if (attachments == null) {
-          await submit(blocks);
-          return;
-        }
+      // Craziness otherwise
+      try {
+        setPending(true);
+        const attachments = await uploadPromiseRef.current.then();
+        // Only mark as pending during the upload phase. We don’t want to wait
+        // for the message creation to complete since the UI is optimistic
+        // and adds the message right away
+        setPending(false);
+        editorRef.current.clear();
+        setImageUploads([]);
 
         const attachmentsBlock = {
           type: "attachments",
@@ -954,22 +972,11 @@ const NewMessageInput = React.forwardRef(
           })),
         };
 
-        setImageUploads([]);
-        await submit([...blocks, attachmentsBlock]);
-      };
-
-      if (uploadPromiseRef.current) {
-        setPending(true);
-        try {
-          const attachments = await uploadPromiseRef.current.then();
-          setPending(false);
-          return await submitMessage(attachments);
-        } catch (e) {
-          setPending(false);
-        }
+        return submit([...blocks, attachmentsBlock]);
+      } catch (e) {
+        setPending(false);
+        return Promise.reject(e);
       }
-
-      return await submitMessage(imageUploads);
     };
 
     return (
@@ -997,6 +1004,7 @@ const NewMessageInput = React.forwardRef(
             },
           })
         }
+        // TODO: Nicer pending state
         style={{ opacity: isPending ? 0.5 : 1 }}
       >
         <div
@@ -1029,12 +1037,7 @@ const NewMessageInput = React.forwardRef(
               })
             }
           >
-            <svg width="24" height="24" viewBox="0 0 24 24">
-              <path
-                fill="currentColor"
-                d="M12 2.00098C6.486 2.00098 2 6.48698 2 12.001C2 17.515 6.486 22.001 12 22.001C17.514 22.001 22 17.515 22 12.001C22 6.48698 17.514 2.00098 12 2.00098ZM17 13.001H13V17.001H11V13.001H7V11.001H11V7.00098H13V11.001H17V13.001Z"
-              />
-            </svg>
+            <PlusCircleIcon />
           </button>
 
           <MessageInput
@@ -1062,114 +1065,12 @@ const NewMessageInput = React.forwardRef(
               pointerEvents: isPending ? "none" : "all",
             })}
           >
-            <div
-              css={(theme) =>
-                css({
-                  display: "grid",
-                  gridAutoColumns: "max-content",
-                  gridAutoFlow: "column",
-                  justifyContent: "flex-start",
-                  gridGap: "1rem",
-                  img: {
-                    display: "block",
-                    width: "6rem",
-                    height: "6rem",
-                    borderRadius: "0.5rem",
-                    objectFit: "cover",
-                    background: theme.colors.backgroundSecondary,
-                  },
-                })
-              }
-            >
-              {imageUploads.map(({ id, url, previewUrl }) => (
-                <div
-                  key={url}
-                  css={css({
-                    position: "relative",
-                    ".delete-button": { opacity: 0 },
-                    ":hover .delete-button": { opacity: 1 },
-                  })}
-                >
-                  <button
-                    type="button"
-                    onClick={() => {
-                      window.open(url, "_blank");
-                    }}
-                    css={css({
-                      display: "block",
-                      cursor: "pointer",
-                    })}
-                  >
-                    <img
-                      src={url}
-                      style={{
-                        transition: "0.1s opacity",
-                        opacity: id == null ? 0.7 : 1,
-                        background:
-                          previewUrl == null ? undefined : `url(${previewUrl})`,
-                        backgroundSize: "cover",
-                        backgroundPosition: "center",
-                      }}
-                    />
-                  </button>
-                  {id == null && (
-                    <div
-                      style={{
-                        pointerEvents: "none",
-                        position: "absolute",
-                        top: "50%",
-                        left: "50%",
-                        transform: "translateX(-50%) translateY(-50%)",
-                      }}
-                      css={(theme) =>
-                        css({ color: theme.colors.interactiveNormal })
-                      }
-                    >
-                      <Spinner />
-                    </div>
-                  )}
-                  <button
-                    type="button"
-                    className="delete-button"
-                    css={(theme) =>
-                      css({
-                        position: "absolute",
-                        top: 0,
-                        right: 0,
-                        transform: "translateX(50%) translateY(-50%)",
-                        cursor: "pointer",
-                        background: theme.colors.channelInputBackground,
-                        borderRadius: "50%",
-                        boxShadow: `0 0 0 0.2rem ${theme.colors.channelInputBackground}`,
-                        svg: {
-                          width: "2.2rem",
-                          height: "auto",
-                          color: theme.colors.interactiveNormal,
-                        },
-                        ":hover svg": {
-                          color: theme.colors.interactiveHover,
-                        },
-                      })
-                    }
-                    onClick={() => {
-                      setImageUploads((fs) => fs.filter((f) => f.url !== url));
-                    }}
-                  >
-                    <svg
-                      width="24"
-                      height="24"
-                      viewBox="0 0 24 24"
-                      style={{ transform: "rotate(45deg" }}
-                    >
-                      <path
-                        fill="currentColor"
-                        d="M12 2.00098C6.486 2.00098 2 6.48698 2 12.001C2 17.515 6.486 22.001 12 22.001C17.514 22.001 22 17.515 22 12.001C22 6.48698 17.514 2.00098 12 2.00098ZM17 13.001H13V17.001H11V13.001H7V11.001H11V7.00098H13V11.001H17V13.001Z"
-                      />
-                    </svg>
-                  </button>
-                </div>
-              ))}
-            </div>
+            <AttachmentList
+              items={imageUploads}
+              remove={({ url }) => {
+                setImageUploads((fs) => fs.filter((f) => f.url !== url));
+              }}
+            />
           </div>
         )}
 
@@ -1177,6 +1078,7 @@ const NewMessageInput = React.forwardRef(
           ref={fileInputRef}
           type="file"
           multiple
+          accept="image/*"
           onChange={(e) => {
             editorRef.current.focus();
 
@@ -1246,53 +1148,104 @@ const NewMessageInput = React.forwardRef(
   }
 );
 
-const rotateAnimation = keyframes({
-  "100%": {
-    transform: "rotate(360deg)",
-  },
-});
-
-const dashAnimation = keyframes({
-  "0%": {
-    strokeDasharray: "90 150",
-    strokeDashoffset: 90,
-  },
-  "50%": {
-    strokeDasharray: "90 150",
-    strokeDashoffset: -45,
-  },
-  "100%": {
-    strokeDasharray: "90 150",
-    strokeDashoffset: -120,
-  },
-});
-
-const Spinner = ({
-  size = "2rem",
-  color = "currentColor",
-  strokeWidth = 6,
-  style,
-}) => (
-  <svg
-    viewBox="0 0 50 50"
-    style={{ width: size, height: "auto", color, ...style }}
-    css={css({
-      animation: `${rotateAnimation} 2.5s linear infinite`,
-      circle: {
-        animation: `${dashAnimation} 2s ease-in-out infinite`,
-      },
-    })}
+const AttachmentList = ({ items, remove }) => (
+  <div
+    css={(theme) =>
+      css({
+        display: "grid",
+        gridAutoColumns: "max-content",
+        gridAutoFlow: "column",
+        justifyContent: "flex-start",
+        gridGap: "1rem",
+        img: {
+          display: "block",
+          width: "6rem",
+          height: "6rem",
+          borderRadius: "0.5rem",
+          objectFit: "cover",
+          background: theme.colors.backgroundSecondary,
+        },
+      })
+    }
   >
-    <circle
-      cx="25"
-      cy="25"
-      r="20"
-      fill="none"
-      stroke="currentColor"
-      strokeLinecap="round"
-      strokeWidth={strokeWidth}
-    />
-  </svg>
+    {items.map(({ id, url, previewUrl }) => (
+      <div
+        key={url}
+        css={css({
+          position: "relative",
+          ".delete-button": { opacity: 0 },
+          ":hover .delete-button": { opacity: 1 },
+        })}
+      >
+        <button
+          type="button"
+          onClick={() => {
+            window.open(url, "_blank");
+          }}
+          css={css({
+            display: "block",
+            cursor: "pointer",
+          })}
+        >
+          <img
+            src={url}
+            style={{
+              transition: "0.1s opacity",
+              opacity: id == null ? 0.7 : 1,
+              background: previewUrl == null ? undefined : `url(${previewUrl})`,
+              backgroundSize: "cover",
+              backgroundPosition: "center",
+            }}
+          />
+        </button>
+
+        {id == null && (
+          <div
+            style={{
+              pointerEvents: "none",
+              position: "absolute",
+              top: "50%",
+              left: "50%",
+              transform: "translateX(-50%) translateY(-50%)",
+            }}
+            css={(theme) => css({ color: theme.colors.interactiveNormal })}
+          >
+            <Spinner />
+          </div>
+        )}
+
+        <button
+          type="button"
+          className="delete-button"
+          css={(theme) =>
+            css({
+              position: "absolute",
+              top: 0,
+              right: 0,
+              transform: "translateX(50%) translateY(-50%)",
+              cursor: "pointer",
+              background: theme.colors.channelInputBackground,
+              borderRadius: "50%",
+              boxShadow: `0 0 0 0.2rem ${theme.colors.channelInputBackground}`,
+              svg: {
+                width: "2.2rem",
+                height: "auto",
+                color: theme.colors.interactiveNormal,
+              },
+              ":hover svg": {
+                color: theme.colors.interactiveHover,
+              },
+            })
+          }
+          onClick={() => {
+            remove({ url });
+          }}
+        >
+          <PlusCircleIcon style={{ transform: "rotate(45deg" }} />
+        </button>
+      </div>
+    ))}
+  </div>
 );
 
 export default Channel;
