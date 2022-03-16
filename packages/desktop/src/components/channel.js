@@ -984,6 +984,11 @@ const NewMessageInput = React.forwardRef(
       }
     };
 
+    React.useEffect(() => {
+      if (isPending) return;
+      editorRef.current.focus();
+    }, [isPending, editorRef]);
+
     return (
       <form
         onSubmit={(e) => {
