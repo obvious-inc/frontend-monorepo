@@ -1,6 +1,6 @@
 import React from "react";
 import { useParams } from "react-router";
-import { css, useTheme } from "@emotion/react";
+import { css, useTheme, keyframes } from "@emotion/react";
 import { FormattedDate } from "react-intl";
 import {
   useAuth,
@@ -994,13 +994,14 @@ const NewMessageInput = React.forwardRef(
             },
           })
         }
+        style={{ opacity: isPending ? 0.5 : 1 }}
       >
         <div
           css={{
             display: "grid",
             gridTemplateColumns: "auto minmax(0,1fr)",
             gridGap: "1rem",
-            alignItems: "center",
+            alignItems: "flex-start",
           }}
         >
           <button
@@ -1099,7 +1100,8 @@ const NewMessageInput = React.forwardRef(
                     <img
                       src={url}
                       style={{
-                        opacity: id == null ? 0.5 : 1,
+                        transition: "0.1s opacity",
+                        opacity: id == null ? 0.7 : 1,
                         background:
                           previewUrl == null ? undefined : `url(${previewUrl})`,
                         backgroundSize: "cover",
@@ -1107,6 +1109,22 @@ const NewMessageInput = React.forwardRef(
                       }}
                     />
                   </button>
+                  {id == null && (
+                    <div
+                      style={{
+                        pointerEvents: "none",
+                        position: "absolute",
+                        top: "50%",
+                        left: "50%",
+                        transform: "translateX(-50%) translateY(-50%)",
+                      }}
+                      css={(theme) =>
+                        css({ color: theme.colors.interactiveNormal })
+                      }
+                    >
+                      <Spinner />
+                    </div>
+                  )}
                   <button
                     type="button"
                     className="delete-button"
@@ -1205,6 +1223,55 @@ const NewMessageInput = React.forwardRef(
       </form>
     );
   }
+);
+
+const rotateAnimation = keyframes({
+  "100%": {
+    transform: "rotate(360deg)",
+  },
+});
+
+const dashAnimation = keyframes({
+  "0%": {
+    strokeDasharray: "90 150",
+    strokeDashoffset: 90,
+  },
+  "50%": {
+    strokeDasharray: "90 150",
+    strokeDashoffset: -45,
+  },
+  "100%": {
+    strokeDasharray: "90 150",
+    strokeDashoffset: -120,
+  },
+});
+
+const Spinner = ({
+  size = "2rem",
+  color = "currentColor",
+  strokeWidth = 6,
+  style,
+}) => (
+  <svg
+    viewBox="0 0 50 50"
+    style={{ width: size, height: "auto", color, ...style }}
+    css={css({
+      animation: `${rotateAnimation} 2.5s linear infinite`,
+      circle: {
+        animation: `${dashAnimation} 2s ease-in-out infinite`,
+      },
+    })}
+  >
+    <circle
+      cx="25"
+      cy="25"
+      r="20"
+      fill="none"
+      stroke="currentColor"
+      strokeLinecap="round"
+      strokeWidth={strokeWidth}
+    />
+  </svg>
 );
 
 export default Channel;
