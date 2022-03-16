@@ -123,6 +123,7 @@ const RichTextInput = React.forwardRef(
       value,
       onChange,
       onKeyDown,
+      disabled = false,
       triggers = [],
       getUserMentionDisplayName,
       ...props
@@ -248,6 +249,7 @@ const RichTextInput = React.forwardRef(
             const styles = createRichTextCss(theme);
             return css({ ...styles, "a:hover": { textDecoration: "none" } });
           }}
+          readOnly={disabled}
           {...props}
         />
       </Slate>

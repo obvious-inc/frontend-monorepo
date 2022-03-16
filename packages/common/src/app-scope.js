@@ -201,6 +201,18 @@ export const Provider = ({ children }) => {
     [authorizedFetch, fetchInitialData]
   );
 
+  const uploadImage = React.useCallback(
+    ({ files }) => {
+      const formData = new FormData();
+      for (let file of files) formData.append("files", file);
+      return authorizedFetch("/media/images", {
+        method: "POST",
+        body: formData,
+      });
+    },
+    [authorizedFetch]
+  );
+
   const actions = React.useMemo(
     () => ({
       fetchInitialData,
@@ -214,6 +226,7 @@ export const Provider = ({ children }) => {
       addMessageReaction,
       removeMessageReaction,
       markChannelRead,
+      uploadImage,
     }),
     [
       fetchInitialData,
@@ -227,6 +240,7 @@ export const Provider = ({ children }) => {
       addMessageReaction,
       removeMessageReaction,
       markChannelRead,
+      uploadImage,
     ]
   );
 

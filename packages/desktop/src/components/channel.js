@@ -2,7 +2,14 @@ import React from "react";
 import { useParams } from "react-router";
 import { css, useTheme } from "@emotion/react";
 import { FormattedDate } from "react-intl";
-import { useAuth, useAppScope, arrayUtils, objectUtils } from "@shades/common";
+import {
+  useAuth,
+  useAppScope,
+  arrayUtils,
+  objectUtils,
+  messageUtils,
+  getImageFileDimensions,
+} from "@shades/common";
 import usePageVisibilityChangeListener from "../hooks/page-visibility-change-listener";
 import useHover from "../hooks/hover";
 import stringifyMessageBlocks from "../slate/stringify";
@@ -18,15 +25,20 @@ import { FaceIcon, DotsHorizontalIcon, Pencil1Icon } from "./icons";
 import MessageInput from "./message-input";
 import RichText from "./rich-text";
 import Button from "./button";
+import Spinner from "./spinner";
 import * as Popover from "./popover";
 import * as DropdownMenu from "./dropdown-menu";
 import * as Toolbar from "./toolbar";
 import { Hash as HashIcon } from "./icons";
-import { HamburgerMenu as HamburgerMenuIcon } from "./icons";
+import {
+  HamburgerMenu as HamburgerMenuIcon,
+  PlusCircle as PlusCircleIcon,
+} from "./icons";
 import { useMenuState } from "./app-layout";
 
 const { groupBy } = arrayUtils;
 const { mapValues } = objectUtils;
+const { withoutAttachments } = messageUtils;
 
 const useChannelMessages = (channelId) => {
   const { user } = useAuth();
@@ -248,6 +260,7 @@ const Channel = () => {
       <div css={css({ padding: "0 1.6rem 1.6rem" })}>
         <NewMessageInput
           ref={inputRef}
+          uploadImage={actions.uploadImage}
           submit={(blocks) =>
             actions.createMessage({
               server: params.serverId,
@@ -686,11 +699,23 @@ const MessageItem = ({
           ) : (
             <RichText
               blocks={content}
-              onClickUserMention={(mention) => {
-                const mentionDisplayName = getUserMentionDisplayName(
-                  mention.ref
-                );
-                alert(`Congratulations, you clicked "@${mentionDisplayName}"!`);
+              onClickInteractiveElement={(el) => {
+                switch (el.type) {
+                  case "user": {
+                    const mentionDisplayName = getUserMentionDisplayName(
+                      el.ref
+                    );
+                    alert(
+                      `Congratulations, you clicked "@${mentionDisplayName}"!`
+                    );
+                    break;
+                  }
+                  case "image-attachment":
+                    window.open(el.url, "_blank");
+                    break;
+                  default:
+                    throw new Error();
+                }
               }}
               getUserMentionDisplayName={getUserMentionDisplayName}
             >
@@ -775,7 +800,7 @@ const MessageItem = ({
 const EditMessageInput = React.forwardRef(
   ({ blocks, save, remove, onCancel, ...props }, editorRef) => {
     const [pendingMessage, setPendingMessage] = React.useState(() =>
-      normalizeNodes(blocks)
+      normalizeNodes(withoutAttachments(blocks))
     );
 
     const [isSaving, setSaving] = React.useState(false);
@@ -876,86 +901,356 @@ const EditMessageInput = React.forwardRef(
   }
 );
 
-const NewMessageInput = React.forwardRef(({ submit, ...props }, editorRef) => {
-  const [pendingMessage, setPendingMessage] = React.useState(() => [
-    createEmptyParagraph(),
-  ]);
-  const { serverId } = useParams();
+const NewMessageInput = React.forwardRef(
+  ({ submit, uploadImage, ...props }, editorRef) => {
+    const [pendingMessage, setPendingMessage] = React.useState(() => [
+      createEmptyParagraph(),
+    ]);
 
-  const { execute: executeCommand, isCommand } = useCommands();
+    const [isPending, setPending] = React.useState(false);
 
-  const executeMessage = async () => {
-    const blocks = cleanNodes(pendingMessage);
+    const [imageUploads, setImageUploads] = React.useState([]);
 
-    const isEmpty = blocks.every(isNodeEmpty);
+    const fileInputRef = React.useRef();
+    const uploadPromiseRef = React.useRef();
 
-    if (isEmpty) return;
+    const { serverId } = useParams();
 
-    const messageString = editorRef.current.string();
+    const { execute: executeCommand, isCommand } = useCommands();
 
-    if (messageString.startsWith("/")) {
-      const [commandName, ...args] = messageString
-        .slice(1)
-        .split(" ")
-        .map((s) => s.trim());
+    const executeMessage = async () => {
+      const blocks = cleanNodes(pendingMessage);
 
-      if (isCommand(commandName)) {
-        await executeCommand(commandName, {
-          args,
-          editor: editorRef.current,
-          serverId,
-        });
+      const isEmpty = blocks.every(isNodeEmpty);
+
+      if (
+        isEmpty &&
+        // We want to allow "empty" messages if it has attachements
+        imageUploads.length === 0
+      )
         return;
+
+      const messageString = editorRef.current.string();
+
+      if (messageString.startsWith("/")) {
+        const [commandName, ...args] = messageString
+          .slice(1)
+          .split(" ")
+          .map((s) => s.trim());
+
+        if (isCommand(commandName)) {
+          setPending(true);
+          await executeCommand(commandName, {
+            args,
+            editor: editorRef.current,
+            serverId,
+          });
+          setPending(false);
+          return;
+        }
       }
+
+      // Regular submit if we don’t have pending file uploads
+      if (uploadPromiseRef.current == null) {
+        editorRef.current.clear();
+        return submit(blocks);
+      }
+
+      // Craziness otherwise
+      try {
+        setPending(true);
+        const attachments = await uploadPromiseRef.current.then();
+        // Only mark as pending during the upload phase. We don’t want to wait
+        // for the message creation to complete since the UI is optimistic
+        // and adds the message right away
+        setPending(false);
+        editorRef.current.clear();
+        setImageUploads([]);
+
+        const attachmentsBlock = {
+          type: "attachments",
+          children: attachments.map((u) => ({
+            type: "image-attachment",
+            url: u.url,
+            width: u.width,
+            height: u.height,
+          })),
+        };
+
+        return submit([...blocks, attachmentsBlock]);
+      } catch (e) {
+        setPending(false);
+        return Promise.reject(e);
+      }
+    };
+
+    return (
+      <form
+        onSubmit={(e) => {
+          e.preventDefault();
+          executeMessage();
+        }}
+        css={(theme) =>
+          css({
+            position: "relative",
+            padding: "1rem",
+            background: theme.colors.channelInputBackground,
+            borderRadius: "0.7rem",
+            "[role=textbox] [data-slate-placeholder]": {
+              color: "rgb(255 255 255 / 40%)",
+              opacity: "1 !important",
+              whiteSpace: "nowrap",
+              overflow: "hidden",
+              textOverflow: "ellipsis",
+            },
+            // Prevents iOS zooming in on input fields
+            "@supports (-webkit-touch-callout: none)": {
+              "[role=textbox]": { fontSize: "1.6rem" },
+            },
+          })
+        }
+        // TODO: Nicer pending state
+        style={{ opacity: isPending ? 0.5 : 1 }}
+      >
+        <div
+          css={{
+            display: "grid",
+            gridTemplateColumns: "auto minmax(0,1fr)",
+            gridGap: "1rem",
+            alignItems: "flex-start",
+          }}
+        >
+          <button
+            type="button"
+            onClick={() => {
+              fileInputRef.current.click();
+            }}
+            disabled={isPending}
+            css={(theme) =>
+              css({
+                cursor: "pointer",
+                color: theme.colors.interactiveNormal,
+                svg: {
+                  display: "block",
+                  width: "2.4rem",
+                  height: "auto",
+                },
+                "&[disabled]": { pointerEvents: "none" },
+                ":hover": {
+                  color: theme.colors.interactiveHover,
+                },
+              })
+            }
+          >
+            <PlusCircleIcon />
+          </button>
+
+          <MessageInput
+            ref={editorRef}
+            initialValue={pendingMessage}
+            onChange={(value) => {
+              setPendingMessage(value);
+            }}
+            onKeyDown={(e) => {
+              if (!e.isDefaultPrevented() && !e.shiftKey && e.key === "Enter") {
+                e.preventDefault();
+                executeMessage();
+              }
+            }}
+            disabled={isPending}
+            {...props}
+          />
+        </div>
+
+        {imageUploads.length !== 0 && (
+          <div
+            css={css({
+              overflow: "auto",
+              paddingTop: "1.2rem",
+              pointerEvents: isPending ? "none" : "all",
+            })}
+          >
+            <AttachmentList
+              items={imageUploads}
+              remove={({ url }) => {
+                setImageUploads((fs) => fs.filter((f) => f.url !== url));
+              }}
+            />
+          </div>
+        )}
+
+        <input
+          ref={fileInputRef}
+          type="file"
+          multiple
+          accept="image/*"
+          onChange={(e) => {
+            editorRef.current.focus();
+
+            const filesToUpload = [...e.target.files];
+
+            setImageUploads((fs) => [
+              ...fs,
+              ...filesToUpload.map((f) => ({
+                name: encodeURIComponent(f.name),
+                url: URL.createObjectURL(f),
+              })),
+            ]);
+
+            fileInputRef.current.value = "";
+
+            let lastImageUploads = imageUploads;
+
+            // Buckle up!
+            uploadPromiseRef.current = Promise.all([
+              uploadPromiseRef.current ?? Promise.resolve(),
+              ...filesToUpload.map((file) =>
+                Promise.all([
+                  getImageFileDimensions(file),
+                  uploadImage({ files: [file] }).catch(() => {
+                    setImageUploads((fs) => {
+                      const newImageUploads = fs.filter(
+                        (f) => f.name !== file.name
+                      );
+                      lastImageUploads = newImageUploads;
+                      return newImageUploads;
+                    });
+                    const error = new Error(
+                      `Could not upload file "${file.name}"`
+                    );
+                    alert(error.message);
+                    return Promise.reject(error);
+                  }),
+                ]).then(([dimensions, [uploadedFile]]) => {
+                  setImageUploads((fs) => {
+                    const newImageUploads = fs.map((f) => {
+                      if (!uploadedFile.filename.endsWith(f.name)) return f;
+
+                      return {
+                        id: uploadedFile.id,
+                        name: uploadedFile.filename,
+                        url: uploadedFile.variants[0],
+                        previewUrl: f.url,
+                        ...dimensions,
+                      };
+                    });
+
+                    lastImageUploads = newImageUploads;
+                    return newImageUploads;
+                  });
+                })
+              ),
+            ]).then(() => {
+              uploadPromiseRef.current = null;
+              return lastImageUploads;
+            });
+          }}
+          hidden
+        />
+        <input type="submit" hidden />
+      </form>
+    );
+  }
+);
+
+const AttachmentList = ({ items, remove }) => (
+  <div
+    css={(theme) =>
+      css({
+        display: "grid",
+        gridAutoColumns: "max-content",
+        gridAutoFlow: "column",
+        justifyContent: "flex-start",
+        gridGap: "1rem",
+        img: {
+          display: "block",
+          width: "6rem",
+          height: "6rem",
+          borderRadius: "0.5rem",
+          objectFit: "cover",
+          background: theme.colors.backgroundSecondary,
+        },
+      })
     }
-
-    await submit(blocks);
-    editorRef.current.clear();
-  };
-
-  return (
-    <form
-      onSubmit={(e) => {
-        e.preventDefault();
-        executeMessage();
-      }}
-      css={(theme) =>
-        css({
+  >
+    {items.map(({ id, url, previewUrl }) => (
+      <div
+        key={url}
+        css={css({
           position: "relative",
-          padding: "1rem 1.5rem",
-          background: theme.colors.channelInputBackground,
-          borderRadius: "0.7rem",
-          "[role=textbox] [data-slate-placeholder]": {
-            color: "rgb(255 255 255 / 40%)",
-            opacity: "1 !important",
-            whiteSpace: "nowrap",
-            overflow: "hidden",
-            textOverflow: "ellipsis",
-          },
-          // Prevents iOS zooming in on input fields
-          "@supports (-webkit-touch-callout: none)": {
-            "[role=textbox]": { fontSize: "1.6rem" },
-          },
-        })
-      }
-    >
-      <MessageInput
-        ref={editorRef}
-        initialValue={pendingMessage}
-        onChange={(value) => {
-          setPendingMessage(value);
-        }}
-        onKeyDown={(e) => {
-          if (!e.isDefaultPrevented() && !e.shiftKey && e.key === "Enter") {
-            e.preventDefault();
-            executeMessage();
+          ".delete-button": { opacity: 0 },
+          ":hover .delete-button": { opacity: 1 },
+        })}
+      >
+        <button
+          type="button"
+          onClick={() => {
+            window.open(url, "_blank");
+          }}
+          css={css({
+            display: "block",
+            cursor: "pointer",
+          })}
+        >
+          <img
+            src={url}
+            style={{
+              transition: "0.1s opacity",
+              opacity: id == null ? 0.7 : 1,
+              background: previewUrl == null ? undefined : `url(${previewUrl})`,
+              backgroundSize: "cover",
+              backgroundPosition: "center",
+            }}
+          />
+        </button>
+
+        {id == null && (
+          <div
+            style={{
+              pointerEvents: "none",
+              position: "absolute",
+              top: "50%",
+              left: "50%",
+              transform: "translateX(-50%) translateY(-50%)",
+            }}
+            css={(theme) => css({ color: theme.colors.interactiveNormal })}
+          >
+            <Spinner />
+          </div>
+        )}
+
+        <button
+          type="button"
+          className="delete-button"
+          css={(theme) =>
+            css({
+              position: "absolute",
+              top: 0,
+              right: 0,
+              transform: "translateX(50%) translateY(-50%)",
+              cursor: "pointer",
+              background: theme.colors.channelInputBackground,
+              borderRadius: "50%",
+              boxShadow: `0 0 0 0.2rem ${theme.colors.channelInputBackground}`,
+              svg: {
+                width: "2.2rem",
+                height: "auto",
+                color: theme.colors.interactiveNormal,
+              },
+              ":hover svg": {
+                color: theme.colors.interactiveHover,
+              },
+            })
           }
-        }}
-        {...props}
-      />
-      <input type="submit" hidden />
-    </form>
-  );
-});
+          onClick={() => {
+            remove({ url });
+          }}
+        >
+          <PlusCircleIcon style={{ transform: "rotate(45deg" }} />
+        </button>
+      </div>
+    ))}
+  </div>
+);
 
 export default Channel;
