@@ -617,7 +617,7 @@ const MessageItem = ({
         <div css={css({ padding: "0.4rem 0 0" })}>
           <button
             css={css({
-              borderRadius: "50%",
+              borderRadius: "0.3rem",
               overflow: "hidden",
               cursor: "pointer",
               ":hover": { boxShadow: "0 0 0 0.3rem rgb(255 255 255 / 10%)" },
