@@ -1,5 +1,9 @@
-export const omitKey = (key, obj) =>
-  Object.fromEntries(Object.entries(obj).filter(([key_]) => key_ !== key));
+export const omitKey = (key, obj) => omitKeys([key], obj);
+
+export const omitKeys = (keys, obj) =>
+  Object.fromEntries(
+    Object.entries(obj).filter(([key_]) => !keys.includes(key_))
+  );
 
 export const mapValues = (mapper, obj) =>
   Object.fromEntries(

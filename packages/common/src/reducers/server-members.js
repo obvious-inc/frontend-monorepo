@@ -1,4 +1,4 @@
-import { mapValues } from "../utils/object";
+import { mapValues, omitKeys } from "../utils/object";
 import { indexBy, groupBy } from "../utils/array";
 import combineReducers from "../utils/combine-reducers";
 
@@ -16,7 +16,7 @@ const entriesById = (state = {}, action) => {
           ...member,
           user: {
             ...member.user,
-            display_name: action.data.display_name,
+            ...omitKeys(["user", "member"], action.data),
           },
         };
       }, state);
@@ -26,7 +26,7 @@ const entriesById = (state = {}, action) => {
         ...state,
         [action.data.member]: {
           ...state[action.data.member],
-          display_name: action.data.display_name,
+          ...omitKeys(["user", "member"], action.data),
         },
       };
 
