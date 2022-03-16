@@ -1,108 +1,160 @@
 import combineReducers from "../utils/combine-reducers";
-import { indexBy } from "../utils/array";
-import { mapValues } from "../utils/object";
-import { selectServer } from "./servers";
+import { indexBy, unique } from "../utils/array";
+import { getMentions } from "../utils/message";
 import { selectServerMemberWithUserId } from "./server-members";
 
-const readTimestampByChannelId = (state = {}, action) => {
+const entriesById = (state = {}, action) => {
   switch (action.type) {
     case "initial-data-request-successful": {
-      const timestampsByChannelId = mapValues(
-        (s) => new Date(s.last_read_at).getTime(),
-        indexBy((s) => s.channel, action.data.read_states)
+      const readStatesByChannelId = indexBy(
+        (s) => s.channel,
+        action.data.read_states
       );
+
+      const channelsById = indexBy(
+        (c) => c.id,
+        action.data.servers.flatMap((s) =>
+          s.channels.map((c) => ({ ...c, serverId: s.id }))
+        )
+      );
+
+      const entriesById = Object.fromEntries(
+        Object.entries(channelsById).map(([id, channel]) => {
+          const readStates = readStatesByChannelId[id];
+          return [
+            id,
+            {
+              id,
+              name: channel.name,
+              serverId: channel.serverId,
+              lastMessageAt: channel.last_message_at,
+              lastReadAt: readStates?.last_read_at ?? null,
+              unreadMentionMessageIds: Array(
+                readStates?.mention_count ?? 0
+              ).fill(null),
+            },
+          ];
+        })
+      );
+
       return {
         ...state,
-        ...timestampsByChannelId,
+        ...entriesById,
       };
     }
 
     case "mark-channel-read":
       return {
         ...state,
-        [action.data.channelId]: action.data.date.getTime(),
+        [action.data.channelId]: {
+          ...state[action.data.channelId],
+          lastReadAt: action.data.date.toISOString(),
+          unreadMentionMessageIds: [],
+        },
       };
 
     case "message-create-request-sent":
     case "message-create-request-successful":
       return {
         ...state,
-        [action.message.channel]: new Date(action.message.created_at).getTime(),
+        [action.message.channel]: {
+          ...state[action.message.channel],
+          lastReadAt: action.message.created_at,
+          lastMessageAt: action.message.created_at,
+        },
       };
 
     case "server-event:message-created": {
-      // Mark channels as read when receiving the user’s own messages.
-      // This only matters when the same user is logged in on multiple clients.
-      if (action.data.message.author === action.user.id)
-        return {
-          ...state,
-          [action.data.message.channel]: new Date(
-            action.data.message.created_at
-          ).getTime(),
-        };
+      const isOwnMessage = action.data.message.author === action.user.id;
+      const channel = state[action.data.message.channel];
 
-      return state;
-    }
-
-    default:
-      return state;
-  }
-};
-
-const lastMessageTimestampByChannelId = (state = {}, action) => {
-  switch (action.type) {
-    case "initial-data-request-successful": {
-      const allChannels = action.data.servers.flatMap((s) => s.channels);
-      const timestampsByChannelId = mapValues(
-        (c) => new Date(c.last_message_at).getTime(),
-        indexBy((c) => c.id, allChannels)
+      const userMentions = getMentions(action.data.message.blocks).filter(
+        (m) => m.ref === action.user.id
       );
+
       return {
         ...state,
-        ...timestampsByChannelId,
+        [action.data.message.channel]: {
+          ...channel,
+          lastMessageAt: action.data.message.created_at,
+          lastReadAt: isOwnMessage
+            ? action.data.message.created_at
+            : channel.lastReadAt,
+          unreadMentionMessageIds:
+            userMentions.length === 0
+              ? channel.unreadMentionMessageIds
+              : [...channel.unreadMentionMessageIds, action.data.message.id],
+        },
       };
     }
 
-    case "server-event:message-created":
+    case "server-event:message-removed": {
+      const channel = state[action.data.message.channel];
       return {
         ...state,
-        [action.data.message.channel]: new Date(
-          action.data.message.created_at
-        ).getTime(),
+        [action.data.message.channel]: {
+          ...channel,
+          unreadMentionMessageIds: channel.unreadMentionMessageIds.filter(
+            (id) => id !== action.data.message.id
+          ),
+        },
       };
+    }
+
+    case "server-event:message-updated": {
+      const channel = state[action.data.message.channel];
+      const messageId = action.data.message.id;
+      const userMentions = getMentions(action.data.message.blocks).filter(
+        (m) => m.ref === action.user.id
+      );
+
+      return {
+        ...state,
+        [action.data.message.channel]: {
+          ...channel,
+          unreadMentionMessageIds:
+            userMentions.length === 0
+              ? channel.unreadMentionMessageIds.filter((id) => id !== messageId)
+              : unique([...channel.unreadMentionMessageIds, messageId]),
+        },
+      };
+    }
 
     default:
       return state;
   }
 };
 
-export const selectServerChannels = (state) => (serverId) => {
-  const server = selectServer(state)(serverId);
+export const selectChannel = (state) => (id) => {
+  const channel = state.channels.entriesById[id];
 
-  if (server == null) return [];
+  if (channel == null) return null;
 
   const userServerMember = selectServerMemberWithUserId(state)(
-    serverId,
+    channel.serverId,
     state.user.id
   );
 
   const serverJoinTimestamp = new Date(userServerMember.joined_at).getTime();
 
-  return server.channels.map((c) => {
-    const lastReadTimestamp =
-      state.channels.readTimestampByChannelId[c.id] ?? serverJoinTimestamp;
+  const lastReadTimestamp =
+    channel.lastReadAt == null
+      ? serverJoinTimestamp
+      : new Date(channel.lastReadAt).getTime();
 
-    const lastMessageTimestamp =
-      state.channels.lastMessageTimestampByChannelId[c.id];
+  const lastMessageTimestamp = new Date(channel.lastMessageAt).getTime();
 
-    return {
-      ...c,
-      hasUnread: lastReadTimestamp < lastMessageTimestamp,
-    };
-  });
+  return {
+    ...channel,
+    hasUnread: lastReadTimestamp < lastMessageTimestamp,
+    mentionCount: channel.unreadMentionMessageIds.length,
+  };
 };
 
-export default combineReducers({
-  readTimestampByChannelId,
-  lastMessageTimestampByChannelId,
-});
+export const selectServerChannels = (state) => (serverId) => {
+  return Object.values(state.channels.entriesById)
+    .filter((channel) => channel.serverId === serverId)
+    .map((c) => selectChannel(state)(c.id));
+};
+
+export default combineReducers({ entriesById });

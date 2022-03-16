@@ -13,6 +13,7 @@ const MessageInput = React.forwardRef(
       onChange,
       placeholder,
       onKeyDown,
+      disabled,
       disableCommands = false,
       serverMembers,
       getUserMentionDisplayName,
@@ -183,6 +184,7 @@ const MessageInput = React.forwardRef(
           {...autoCompleteInputAccesibilityProps}
           value={initialValue}
           onChange={onChange}
+          disabled={disabled}
           placeholder={placeholder}
           triggers={[
             {

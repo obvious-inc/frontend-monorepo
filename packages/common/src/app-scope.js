@@ -202,6 +202,18 @@ export const Provider = ({ children }) => {
     [authorizedFetch, fetchInitialData]
   );
 
+  const uploadImage = React.useCallback(
+    ({ files }) => {
+      const formData = new FormData();
+      for (let file of files) formData.append("files", file);
+      return authorizedFetch("/media/images", {
+        method: "POST",
+        body: formData,
+      });
+    },
+    [authorizedFetch]
+  );
+
   const actions = React.useMemo(
     () => ({
       fetchInitialData,
@@ -215,6 +227,7 @@ export const Provider = ({ children }) => {
       addMessageReaction,
       removeMessageReaction,
       markChannelRead,
+      uploadImage,
     }),
     [
       fetchInitialData,
@@ -228,6 +241,7 @@ export const Provider = ({ children }) => {
       addMessageReaction,
       removeMessageReaction,
       markChannelRead,
+      uploadImage,
     ]
   );
 
@@ -243,8 +257,8 @@ export const Provider = ({ children }) => {
   }, [user, serverConnection, dispatch]);
 
   const contextValue = React.useMemo(
-    () => ({ state: stateSelectors, actions }),
-    [stateSelectors, actions]
+    () => ({ serverConnection, state: stateSelectors, actions }),
+    [stateSelectors, actions, serverConnection]
   );
 
   return <Context.Provider value={contextValue}>{children}</Context.Provider>;
