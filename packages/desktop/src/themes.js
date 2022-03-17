@@ -28,6 +28,10 @@ export const dark = {
   fontSizes: {
     channelMessages: "1.5rem",
   },
+  fontStacks: {
+    monospace:
+      "Menlo, Consolas, Monaco, Liberation Mono, Lucida Console, monospace",
+  },
   shadows: {
     elevationLow:
       "0 1px 0 rgba(4,4,5,0.2),0 1.5px 0 rgba(6,6,7,0.05),0 2px 0 rgba(4,4,5,0.05)",
