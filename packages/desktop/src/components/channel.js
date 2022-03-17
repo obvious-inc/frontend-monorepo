@@ -966,19 +966,12 @@ const NewMessageInput = React.forwardRef(
       }
 
       // Regular submit if we don’t have pending file uploads
-      if (uploadPromiseRef.current == null) {
+      if (imageUploads.length === 0 && uploadPromiseRef.current == null) {
         editorRef.current.clear();
         return submit(blocks);
       }
 
-      // Craziness otherwise
-      try {
-        setPending(true);
-        const attachments = await uploadPromiseRef.current.then();
-        // Only mark as pending during the upload phase. We don’t want to wait
-        // for the message creation to complete since the UI is optimistic
-        // and adds the message right away
-        setPending(false);
+      const submitWithAttachments = (attachments) => {
         editorRef.current.clear();
         setImageUploads([]);
 
@@ -993,6 +986,20 @@ const NewMessageInput = React.forwardRef(
         };
 
         return submit([...blocks, attachmentsBlock]);
+      };
+
+      if (uploadPromiseRef.current == null)
+        return submitWithAttachments(imageUploads);
+
+      // Craziness otherwise
+      try {
+        setPending(true);
+        const attachments = await uploadPromiseRef.current.then();
+        // Only mark as pending during the upload phase. We don’t want to wait
+        // for the message creation to complete since the UI is optimistic
+        // and adds the message right away
+        setPending(false);
+        submitWithAttachments(attachments);
       } catch (e) {
         setPending(false);
         return Promise.reject(e);
