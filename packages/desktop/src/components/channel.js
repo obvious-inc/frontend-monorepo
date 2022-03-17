@@ -528,7 +528,9 @@ const MessageItem = ({
   const inputRef = React.useRef();
   const containerRef = React.useRef();
 
+  const params = useParams();
   const { user } = useAuth();
+  const { state } = useAppScope();
 
   const [isHovering, hoverHandlers] = useHover();
   const [isDropdownOpen, setDropdownOpen] = React.useState(false);
@@ -786,22 +788,63 @@ const MessageItem = ({
             >
               {reactions.map((r) => {
                 const isLoggedInUserReaction = r.users.includes(user.id);
+                const members = r.users
+                  .map((id) =>
+                    state.selectServerMemberWithUserId(params.serverId, id)
+                  )
+                  .map((m) => m.displayName);
                 return (
-                  <button
-                    key={r.emoji}
-                    onClick={() => {
-                      if (isLoggedInUserReaction) {
-                        removeReaction(r.emoji);
-                        return;
-                      }
+                  <Tooltip.Root key={r.emoji}>
+                    <Tooltip.Trigger asChild>
+                      <button
+                        onClick={() => {
+                          if (isLoggedInUserReaction) {
+                            removeReaction(r.emoji);
+                            return;
+                          }
 
-                      addReaction(r.emoji);
-                    }}
-                    className={isLoggedInUserReaction ? "active" : undefined}
-                  >
-                    <span>{r.emoji}</span>
-                    <span className="count">{r.count}</span>
-                  </button>
+                          addReaction(r.emoji);
+                        }}
+                        className={
+                          isLoggedInUserReaction ? "active" : undefined
+                        }
+                      >
+                        <span>{r.emoji}</span>
+                        <span className="count">{r.count}</span>
+                      </button>
+                    </Tooltip.Trigger>
+                    <Tooltip.Content side="top" sideOffset={4}>
+                      <div
+                        css={css({
+                          display: "grid",
+                          gridTemplateColumns: "auto minmax(0,auto)",
+                          gridGap: "0.8rem",
+                          alignItems: "center",
+                          padding: "0 0.4rem 0 0.2rem",
+                          lineHeight: 1.4,
+                          maxWidth: "24rem",
+                        })}
+                      >
+                        <div css={css({ fontSize: "2.8rem" })}>{r.emoji}</div>
+                        <div
+                          css={css({
+                            hyphens: "auto",
+                            fontVariant: "no-contextual",
+                            wordBreak: "break-word",
+                            padding: "0.2rem 0",
+                          })}
+                        >
+                          {[
+                            members.slice(0, -1).join(", "),
+                            members.slice(-1)[0],
+                          ]
+                            .filter(Boolean)
+                            .join(" and ")}{" "}
+                          reacted
+                        </div>
+                      </div>
+                    </Tooltip.Content>
+                  </Tooltip.Root>
                 );
               })}
             </div>

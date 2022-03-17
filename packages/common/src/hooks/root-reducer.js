@@ -9,6 +9,7 @@ import messages, { selectChannelMessages } from "../reducers/messages";
 import serverMembers, {
   selectServerMembers,
   selectServerMembersByUserId,
+  selectServerMemberWithUserId,
 } from "../reducers/server-members";
 
 const selectors = {
@@ -18,6 +19,7 @@ const selectors = {
   selectServers,
   selectServerMembers,
   selectServerMembersByUserId,
+  selectServerMemberWithUserId,
   selectHasFetchedInitialData,
 };
 
