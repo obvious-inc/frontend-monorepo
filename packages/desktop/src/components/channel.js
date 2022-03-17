@@ -624,11 +624,16 @@ const MessageItem = ({
         <div css={css({ padding: "0.4rem 0 0" })}>
           <button
             css={css({
+              position: "relative",
               borderRadius: "0.3rem",
-              border: avatarVerified ? "2px solid green" : "2px solid grey",
               overflow: "hidden",
+              boxShadow: avatarVerified ? "0 3px 0 0 #4f52ff" : undefined,
               cursor: "pointer",
-              ":hover": { boxShadow: "0 0 0 0.3rem rgb(255 255 255 / 10%)" },
+              ":hover": {
+                boxShadow: avatarVerified
+                  ? "0 0 0 2px #4f52ff"
+                  : "0 0 0 2px rgb(255 255 255 / 10%)",
+              },
               ":active": { transform: "translateY(0.1rem)" },
             })}
             onClick={() => {
@@ -639,9 +644,11 @@ const MessageItem = ({
               src={avatar ?? avatarDataUrl}
               css={(theme) =>
                 css({
+                  borderRadius: "0.3rem",
                   background: theme.colors.backgroundSecondary,
                   height: "3.4rem",
                   width: "3.4rem",
+                  objectFit: "cover",
                 })
               }
             />
