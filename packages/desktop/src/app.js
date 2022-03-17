@@ -16,6 +16,7 @@ import Channel from "./components/channel";
 import AppLayout from "./components/app-layout";
 import ChannelLayout from "./components/channel-layout";
 import TitleBar from "./components/title-bar";
+import * as Tooltip from "./components/tooltip";
 import {
   Home as HomeIcon,
   ChatBubbles as ChatBubblesIcon,
@@ -164,7 +165,9 @@ export default function Root() {
         >
           <AppScopeProvider>
             <ThemeProvider theme={defaultTheme}>
-              <App />
+              <Tooltip.Provider delayDuration={400}>
+                <App />
+              </Tooltip.Provider>
             </ThemeProvider>
           </AppScopeProvider>
         </ServerConnectionProvider>

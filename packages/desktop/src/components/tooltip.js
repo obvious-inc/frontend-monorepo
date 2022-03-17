@@ -20,6 +20,7 @@ export const Content = React.forwardRef((props, ref) => (
         padding: "0.4rem 0.7rem",
         borderRadius: "0.3rem",
         lineHeight: 1.3,
+        boxShadow: theme.shadows.elevationHigh,
       })
     }
     {...props}

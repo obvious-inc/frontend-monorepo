@@ -813,7 +813,11 @@ const MessageItem = ({
                         <span className="count">{r.count}</span>
                       </button>
                     </Tooltip.Trigger>
-                    <Tooltip.Content side="top" sideOffset={4}>
+                    <Tooltip.Content
+                      side="top"
+                      sideOffset={4}
+                      style={{ borderRadius: "0.5rem" }}
+                    >
                       <div
                         css={css({
                           display: "grid",
@@ -825,7 +829,11 @@ const MessageItem = ({
                           maxWidth: "24rem",
                         })}
                       >
-                        <div css={css({ fontSize: "2.8rem" })}>{r.emoji}</div>
+                        <div
+                          css={css({ fontSize: "2.8rem", lineHeight: "1.1" })}
+                        >
+                          {r.emoji}
+                        </div>
                         <div
                           css={css({
                             hyphens: "auto",
