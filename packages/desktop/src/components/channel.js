@@ -215,8 +215,8 @@ const Channel = () => {
             <MessageItem
               key={m.id}
               content={m.content}
+              authorUserId={m.author}
               authorNick={serverMembersByUserId[m.author].displayName}
-              avatar={serverMembersByUserId[m.author].pfpUrl}
               avatarVerified={
                 serverMembersByUserId[m.author].pfp?.verified ?? false
               }
@@ -529,7 +529,7 @@ const MessageToolbar = ({
 const MessageItem = ({
   authorNick,
   authorWalletAddress,
-  avatar,
+  authorUserId,
   avatarVerified,
   content,
   timestamp,
@@ -565,16 +565,6 @@ const MessageItem = ({
   const showAsFocused =
     !isEditing && (isHovering || isDropdownOpen || isEmojiPickerOpen);
 
-  const avatarDataUrl = React.useMemo(
-    () =>
-      generateAvatar({
-        seed: authorWalletAddress,
-        size: 8,
-        scale: 10,
-      }),
-    [authorWalletAddress]
-  );
-
   React.useEffect(() => {
     if (!isEditing) return;
 
@@ -608,6 +598,7 @@ const MessageItem = ({
           right: "1.6rem",
           transform: "translateY(-50%)",
           display: showAsFocused ? "block" : "none",
+          zIndex: 1,
         })}
       >
         <MessageToolbar
@@ -633,27 +624,64 @@ const MessageItem = ({
           }}
         />
       </div>
+
       {replyMessage && (
         <div
           css={css({
+            position: "relative",
             paddingLeft: "4.6rem",
-            fontSize: "1.3rem",
-            whiteSpace: "nowrap",
-            overflow: "hidden",
-            textOverflow: "ellipsis",
+            marginBottom: "0.5rem",
+            ":before": {
+              content: '""',
+              position: "absolute",
+              right: "calc(100% - 4.6rem + 0.3rem)",
+              top: "calc(50% - 1px)",
+              width: "2.7rem",
+              height: "1.6rem",
+              borderTop: "2px solid rgb(255 255 255 / 15%)",
+              borderLeft: "2px solid rgb(255 255 255 / 15%)",
+              borderRight: 0,
+              borderBottom: 0,
+              borderTopLeftRadius: "0.4rem",
+            },
           })}
         >
-          <span style={{ fontWeight: "500" }}>
-            {
-              state.selectServerMemberWithUserId(
-                params.serverId,
-                replyMessage.author
-              )?.displayName
-            }
-          </span>{" "}
-          <span>
-            <RichText inline blocks={replyMessage.content} />
-          </span>
+          <div
+            css={css({
+              display: "grid",
+              gridTemplateColumns: "auto minmax(0,1fr)",
+              alignItems: "center",
+              gridGap: "0.5rem",
+            })}
+          >
+            <ServerMemberAvatar
+              userId={replyMessage.author}
+              serverId={params.serverId}
+              size="1.4rem"
+              borderRadius="0.2rem"
+            />
+            <div
+              css={css({
+                fontSize: "1.3rem",
+                whiteSpace: "nowrap",
+                overflow: "hidden",
+                textOverflow: "ellipsis",
+                color: "rgb(255 255 255 / 54%)",
+              })}
+            >
+              <span style={{ fontWeight: "500" }}>
+                {
+                  state.selectServerMemberWithUserId(
+                    params.serverId,
+                    replyMessage.author
+                  )?.displayName
+                }
+              </span>{" "}
+              <span>
+                <RichText inline blocks={replyMessage.content} />
+              </span>
+            </div>
+          </div>
         </div>
       )}
       <div
@@ -684,17 +712,10 @@ const MessageItem = ({
                   alert(`Congratulations, you clicked ${authorNick}’s avatar!`);
                 }}
               >
-                <img
-                  src={avatar ?? avatarDataUrl}
-                  css={(theme) =>
-                    css({
-                      borderRadius: "0.3rem",
-                      background: theme.colors.backgroundSecondary,
-                      height: "3.4rem",
-                      width: "3.4rem",
-                      objectFit: "cover",
-                    })
-                  }
+                <ServerMemberAvatar
+                  userId={authorUserId}
+                  serverId={params.serverId}
+                  size="3.4rem"
                 />
               </button>
             </Tooltip.Trigger>
@@ -716,17 +737,10 @@ const MessageItem = ({
                   NFT verified
                 </div>
               )}
-              <img
-                src={avatar ?? avatarDataUrl}
-                css={(theme) =>
-                  css({
-                    borderRadius: "0.3rem",
-                    background: theme.colors.backgroundSecondary,
-                    height: "6.4rem",
-                    width: "6.4rem",
-                    objectFit: "cover",
-                  })
-                }
+              <ServerMemberAvatar
+                userId={authorUserId}
+                serverId={params.serverId}
+                size="6.4rem"
               />
             </Tooltip.Content>
           </Tooltip.Root>
@@ -739,7 +753,7 @@ const MessageItem = ({
               justify-content: flex-start;
               align-items: flex-end;
               grid-gap: 1.2rem;
-              margin: 0 0 0.4rem;
+              margin: 0 0 0.2rem;
               cursor: default;
             `}
           >
@@ -1097,7 +1111,7 @@ const EditMessageInput = React.forwardRef(
 );
 
 const NewMessageInput = React.forwardRef(
-  ({ isReply, submit, uploadImage, ...props }, editorRef) => {
+  ({ submit, uploadImage, ...props }, editorRef) => {
     const [pendingMessage, setPendingMessage] = React.useState(() => [
       createEmptyParagraph(),
     ]);
@@ -1461,5 +1475,44 @@ const AttachmentList = ({ items, remove }) => (
     ))}
   </div>
 );
+
+const ServerMemberAvatar = ({
+  serverMemberId,
+  serverId,
+  userId,
+  size = "2rem",
+  borderRadius = "0.3rem",
+}) => {
+  const { state } = useAppScope();
+  const member =
+    serverMemberId == null
+      ? state.selectServerMemberWithUserId(serverId, userId)
+      : state.selectServerMember(serverMemberId);
+
+  const avatarDataUrl = React.useMemo(() => {
+    if (member.pfpUrl != null) return;
+
+    return generateAvatar({
+      seed: member.walletAddress,
+      size: 8,
+      scale: 10,
+    });
+  }, [member.pfpUrl, member.walletAddress]);
+
+  return (
+    <img
+      src={member.pfpUrl ?? avatarDataUrl}
+      css={(theme) =>
+        css({
+          borderRadius,
+          background: theme.colors.backgroundSecondary,
+          height: size,
+          width: size,
+          objectFit: "cover",
+        })
+      }
+    />
+  );
+};
 
 export default Channel;

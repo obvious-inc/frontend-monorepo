@@ -7,6 +7,7 @@ import servers, { selectServer, selectServers } from "../reducers/servers";
 import channels, { selectServerChannels } from "../reducers/channels";
 import messages, { selectChannelMessages } from "../reducers/messages";
 import serverMembers, {
+  selectServerMember,
   selectServerMembers,
   selectServerMembersByUserId,
   selectServerMemberWithUserId,
@@ -17,6 +18,7 @@ const selectors = {
   selectChannelMessages,
   selectServer,
   selectServers,
+  selectServerMember,
   selectServerMembers,
   selectServerMembersByUserId,
   selectServerMemberWithUserId,
