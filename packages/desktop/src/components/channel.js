@@ -88,6 +88,9 @@ const Channel = () => {
   const { user } = useAuth();
   const { actions, state } = useAppScope();
 
+  const [pendingReplyMessageId, setPendingReplyMessageId] =
+    React.useState(null);
+
   const { isEnabled: isMenuEnabled, toggle: toggleMenu } = useMenuState();
 
   const inputRef = React.useRef();
@@ -230,6 +233,7 @@ const Channel = () => {
                   month="short"
                 />
               }
+              replyMessage={m.replyMessage}
               isEdited={m.edited_at != null}
               canEditMessage={user.id === m.author}
               update={(blocks) =>
@@ -251,6 +255,9 @@ const Channel = () => {
               removeReaction={(emoji) =>
                 actions.removeMessageReaction(m.id, { emoji })
               }
+              initReply={() => {
+                setPendingReplyMessageId(m.id);
+              }}
               serverMembers={serverMembers}
               getUserMentionDisplayName={getUserMentionDisplayName}
             />
@@ -264,17 +271,20 @@ const Channel = () => {
         </div>
       </div>
       <div css={css({ padding: "0 1.6rem 1.6rem" })}>
+        {pendingReplyMessageId}
         <NewMessageInput
           ref={inputRef}
           uploadImage={actions.uploadImage}
-          submit={(blocks) =>
-            actions.createMessage({
+          submit={(blocks) => {
+            setPendingReplyMessageId(null);
+            return actions.createMessage({
               server: params.serverId,
               channel: params.channelId,
               content: stringifyMessageBlocks(blocks),
               blocks,
-            })
-          }
+              replyToMessageId: pendingReplyMessageId,
+            });
+          }}
           placeholder={
             selectedChannel == null ? "..." : `Message #${selectedChannel.name}`
           }
@@ -425,6 +435,7 @@ const EmojiPicker = ({ addReaction }) => {
 const MessageToolbar = ({
   canEditMessage,
   startEditMode,
+  initReply,
   addReaction,
   requestMessageRemoval,
   onDropdownOpenChange,
@@ -490,7 +501,7 @@ const MessageToolbar = ({
         </DropdownMenu.Trigger>
       </Toolbar.Button>
       <DropdownMenu.Content>
-        <DropdownMenu.Item disabled>Reply</DropdownMenu.Item>
+        <DropdownMenu.Item onSelect={initReply}>Reply</DropdownMenu.Item>
         <DropdownMenu.Item disabled>Mark unread</DropdownMenu.Item>
         {canEditMessage && (
           <>
@@ -523,8 +534,10 @@ const MessageItem = ({
   content,
   timestamp,
   reactions = [],
+  replyMessage,
   isEdited,
   canEditMessage,
+  initReply,
   addReaction,
   removeReaction,
   update,
@@ -598,6 +611,7 @@ const MessageItem = ({
         })}
       >
         <MessageToolbar
+          initReply={initReply}
           canEditMessage={canEditMessage}
           startEditMode={() => {
             setEditingMessage(true);
@@ -619,6 +633,29 @@ const MessageItem = ({
           }}
         />
       </div>
+      {replyMessage && (
+        <div
+          css={css({
+            paddingLeft: "4.6rem",
+            fontSize: "1.3rem",
+            whiteSpace: "nowrap",
+            overflow: "hidden",
+            textOverflow: "ellipsis",
+          })}
+        >
+          <span style={{ fontWeight: "500" }}>
+            {
+              state.selectServerMemberWithUserId(
+                params.serverId,
+                replyMessage.author
+              )?.displayName
+            }
+          </span>{" "}
+          <span>
+            <RichText inline blocks={replyMessage.content} />
+          </span>
+        </div>
+      )}
       <div
         css={css`
           display: grid;
@@ -1060,7 +1097,7 @@ const EditMessageInput = React.forwardRef(
 );
 
 const NewMessageInput = React.forwardRef(
-  ({ submit, uploadImage, ...props }, editorRef) => {
+  ({ isReply, submit, uploadImage, ...props }, editorRef) => {
     const [pendingMessage, setPendingMessage] = React.useState(() => [
       createEmptyParagraph(),
     ]);
@@ -1295,7 +1332,7 @@ const NewMessageInput = React.forwardRef(
                   setImageUploads((fs) => {
                     const newImageUploads = fs.map((f) => {
                       if (!uploadedFile.filename.endsWith(f.name)) return f;
-
+                      console.log(uploadedFile);
                       return {
                         id: uploadedFile.id,
                         name: uploadedFile.filename,

@@ -17,6 +17,9 @@ const entriesById = (state = {}, action) => {
     case "server-event:message-removed":
       return omitKey(action.data.message.id, state);
 
+    case "message-fetch-request-successful":
+      return { ...state, [action.message.id]: action.message };
+
     case "message-delete-request-successful":
       return omitKey(action.messageId, state);
 
@@ -171,6 +174,9 @@ export const selectMessage = (state) => (id) => {
   const message = state.messages.entriesById[id];
 
   if (message == null) return null;
+
+  if (message.reply_to != null)
+    message.replyMessage = selectMessage(state)(message.reply_to);
 
   if (message.blocks?.length > 0)
     return { ...message, content: message.blocks };

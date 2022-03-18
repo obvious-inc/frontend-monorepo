@@ -81,10 +81,28 @@ export const Provider = ({ children }) => {
     [sendServerMessage]
   );
 
+  const fetchMessage = React.useCallback(
+    (id) =>
+      authorizedFetch(`/messages/${id}`).then((message) => {
+        dispatch({
+          type: "message-fetch-request-successful",
+          message,
+        });
+        return message;
+      }),
+    [authorizedFetch, dispatch]
+  );
+
   const createMessage = React.useCallback(
-    async ({ server, channel, content, blocks }) => {
+    async ({ server, channel, content, blocks, replyToMessageId }) => {
       // TODO: Less hacky optimistc UI
-      const message = { server, channel, blocks, content };
+      const message = {
+        server,
+        channel,
+        blocks,
+        content,
+        reply_to: replyToMessageId,
+      };
       const dummyId = generateDummyId();
 
       dispatch({
@@ -217,6 +235,7 @@ export const Provider = ({ children }) => {
   const actions = React.useMemo(
     () => ({
       fetchInitialData,
+      fetchMessage,
       updateMe,
       fetchMessages,
       createServer,
@@ -231,6 +250,7 @@ export const Provider = ({ children }) => {
     }),
     [
       fetchInitialData,
+      fetchMessage,
       updateMe,
       fetchMessages,
       createServer,
