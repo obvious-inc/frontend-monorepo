@@ -21,7 +21,7 @@ import {
 } from "../slate/utils";
 import generateAvatar from "../utils/avatar-generator";
 import useCommands from "../hooks/commands";
-import { FaceIcon, DotsHorizontalIcon, Pencil1Icon } from "./icons";
+import { DotsHorizontalIcon, Pencil1Icon } from "./icons";
 import MessageInput from "./message-input";
 import RichText from "./rich-text";
 import Button from "./button";
@@ -34,6 +34,7 @@ import { Hash as HashIcon } from "./icons";
 import {
   HamburgerMenu as HamburgerMenuIcon,
   PlusCircle as PlusCircleIcon,
+  AddEmojiReaction as AddEmojiReactionIcon,
 } from "./icons";
 import { useMenuState } from "./app-layout";
 
@@ -441,7 +442,7 @@ const MessageToolbar = ({
         style={{ position: "relative" }}
       >
         <Popover.Trigger>
-          <FaceIcon />
+          <AddEmojiReactionIcon style={{ width: "1.6rem" }} />
           <Popover.Anochor
             style={{
               width: "3.3rem",
@@ -904,6 +905,36 @@ const MessageItem = ({
                   </Tooltip.Root>
                 );
               })}
+
+              <Popover.Root>
+                <Popover.Trigger asChild>
+                  <button
+                    css={css({
+                      color: "white",
+                      border: "1px solid white",
+                      transition: "0.1s opacity ease-out",
+                      svg: { width: "1.6rem", height: "auto" },
+                    })}
+                    style={{ opacity: isHovering ? 1 : 0 }}
+                  >
+                    <AddEmojiReactionIcon />
+                  </button>
+                </Popover.Trigger>
+                <Popover.Content
+                  side="top"
+                  align="center"
+                  sideOffset={4}
+                  style={{
+                    width: "31.6rem",
+                    height: "28.4rem",
+                    display: "flex",
+                    flexDirection: "column",
+                  }}
+                >
+                  <Popover.Arrow />
+                  <EmojiPicker addReaction={addReaction} />
+                </Popover.Content>
+              </Popover.Root>
             </div>
           )}
         </div>
