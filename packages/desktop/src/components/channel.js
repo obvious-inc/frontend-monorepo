@@ -544,6 +544,9 @@ const MessageItem = ({
   const [isEmojiPickerOpen, setEmojiPickerOpen] = React.useState(false);
   const [isEditing, setEditingMessage] = React.useState(false);
 
+  const [isInlineEmojiPickerOpen, setInlineEmojiPickerOpen] =
+    React.useState(false);
+
   const theme = useTheme();
 
   const showAsFocused =
@@ -906,7 +909,12 @@ const MessageItem = ({
                 );
               })}
 
-              <Popover.Root>
+              <Popover.Root
+                open={isInlineEmojiPickerOpen}
+                onOpenChange={(isOpen) => {
+                  setInlineEmojiPickerOpen(isOpen);
+                }}
+              >
                 <Popover.Trigger asChild>
                   <button
                     css={css({
@@ -932,7 +940,12 @@ const MessageItem = ({
                   }}
                 >
                   <Popover.Arrow />
-                  <EmojiPicker addReaction={addReaction} />
+                  <EmojiPicker
+                    addReaction={(...args) => {
+                      setInlineEmojiPickerOpen(false);
+                      return addReaction(...args);
+                    }}
+                  />
                 </Popover.Content>
               </Popover.Root>
             </div>
