@@ -125,12 +125,13 @@ export const Provider = ({
   }, [setAccessToken]);
 
   const refreshAccessToken = React.useCallback(async () => {
+    if (refreshToken == null) throw new Error("Missing refresh token");
+
     const responseBody = await fetch(`${apiOrigin}/auth/refresh`, {
       method: "POST",
       body: JSON.stringify({ refresh_token: refreshToken }),
       headers: {
         "Content-Type": "application/json",
-        Authorization: `Bearer ${accessToken}`,
       },
     }).then((response) => {
       if (response.ok) return response.json();
@@ -141,16 +142,17 @@ export const Provider = ({
       return Promise.reject(new Error(response.statusText));
     });
 
-    setAccessToken(responseBody.access_token);
     setRefreshToken(responseBody.refresh_token);
+    setAccessToken(responseBody.access_token);
+
+    return responseBody.access_token;
   }, [
     apiOrigin,
-    accessToken,
     refreshToken,
-    clearAccessToken,
-    clearRefreshToken,
     setAccessToken,
     setRefreshToken,
+    clearAccessToken,
+    clearRefreshToken,
   ]);
 
   const authorizedFetch = React.useCallback(
@@ -158,7 +160,7 @@ export const Provider = ({
       if (accessToken == null) throw new Error("Missing access token");
 
       const headers = new Headers(options?.headers);
-      headers.append("Authorization", `Bearer ${accessToken}`);
+      headers.set("Authorization", `Bearer ${accessToken}`);
 
       const response = await fetch(`${apiOrigin}${url}`, {
         ...options,
@@ -166,8 +168,10 @@ export const Provider = ({
       });
 
       if (response.status === 401) {
-        refreshAccessToken();
-        return authorizedFetch(url, options);
+        const newAccessToken = await refreshAccessToken();
+        const headers = new Headers(options?.headers);
+        headers.set("Authorization", `Bearer ${newAccessToken}`);
+        return authorizedFetch(url, { ...options, headers });
       }
 
       if (!response.ok) return Promise.reject(new Error(response.statusText));
@@ -176,7 +180,7 @@ export const Provider = ({
 
       return response.json();
     },
-    [apiOrigin, accessToken]
+    [apiOrigin, accessToken, refreshAccessToken]
   );
 
   const verifyAccessToken = React.useCallback(() => {
