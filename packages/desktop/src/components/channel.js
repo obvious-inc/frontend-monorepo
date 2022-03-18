@@ -1299,7 +1299,9 @@ const NewMessageInput = React.forwardRef(
                       return {
                         id: uploadedFile.id,
                         name: uploadedFile.filename,
-                        url: uploadedFile.variants[0],
+                        url: uploadedFile.variants.find((url) =>
+                          url.endsWith("/public")
+                        ),
                         previewUrl: f.url,
                         ...dimensions,
                       };
