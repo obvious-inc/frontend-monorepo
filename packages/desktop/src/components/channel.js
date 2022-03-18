@@ -624,37 +624,72 @@ const MessageItem = ({
         `}
       >
         <div css={css({ padding: "0.4rem 0 0" })}>
-          <button
-            css={css({
-              position: "relative",
-              borderRadius: "0.3rem",
-              overflow: "hidden",
-              boxShadow: avatarVerified ? "0 3px 0 0 #4f52ff" : undefined,
-              cursor: "pointer",
-              ":hover": {
-                boxShadow: avatarVerified
-                  ? "0 0 0 2px #4f52ff"
-                  : "0 0 0 2px rgb(255 255 255 / 10%)",
-              },
-              ":active": { transform: "translateY(0.1rem)" },
-            })}
-            onClick={() => {
-              alert(`Congratulations, you clicked ${authorNick}’s avatar!`);
-            }}
-          >
-            <img
-              src={avatar ?? avatarDataUrl}
-              css={(theme) =>
-                css({
+          <Tooltip.Root>
+            <Tooltip.Trigger asChild>
+              <button
+                css={css({
+                  position: "relative",
                   borderRadius: "0.3rem",
-                  background: theme.colors.backgroundSecondary,
-                  height: "3.4rem",
-                  width: "3.4rem",
-                  objectFit: "cover",
-                })
-              }
-            />
-          </button>
+                  overflow: "hidden",
+                  boxShadow: avatarVerified ? "0 3px 0 0 #4f52ff" : undefined,
+                  cursor: "pointer",
+                  ":hover": {
+                    boxShadow: avatarVerified
+                      ? "0 0 0 2px #4f52ff"
+                      : "0 0 0 2px rgb(255 255 255 / 10%)",
+                  },
+                  ":active": { transform: "translateY(0.1rem)" },
+                })}
+                onClick={() => {
+                  alert(`Congratulations, you clicked ${authorNick}’s avatar!`);
+                }}
+              >
+                <img
+                  src={avatar ?? avatarDataUrl}
+                  css={(theme) =>
+                    css({
+                      borderRadius: "0.3rem",
+                      background: theme.colors.backgroundSecondary,
+                      height: "3.4rem",
+                      width: "3.4rem",
+                      objectFit: "cover",
+                    })
+                  }
+                />
+              </button>
+            </Tooltip.Trigger>
+            <Tooltip.Content
+              side="top"
+              sideOffset={6}
+              css={css({ padding: "0.4rem", borderRadius: "0.6rem" })}
+            >
+              {avatarVerified && (
+                <div
+                  css={(theme) =>
+                    css({
+                      fontSize: "1rem",
+                      margin: "0 0 0.3rem",
+                      color: theme.colors.textNormal,
+                    })
+                  }
+                >
+                  NFT verified
+                </div>
+              )}
+              <img
+                src={avatar ?? avatarDataUrl}
+                css={(theme) =>
+                  css({
+                    borderRadius: "0.3rem",
+                    background: theme.colors.backgroundSecondary,
+                    height: "6.4rem",
+                    width: "6.4rem",
+                    objectFit: "cover",
+                  })
+                }
+              />
+            </Tooltip.Content>
+          </Tooltip.Root>
         </div>
         <div>
           <div
