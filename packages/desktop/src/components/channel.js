@@ -635,7 +635,6 @@ const MessageItem = ({
                   position: "relative",
                   borderRadius: "0.3rem",
                   overflow: "hidden",
-                  boxShadow: avatarVerified ? "0 3px 0 0 #4f52ff" : undefined,
                   cursor: "pointer",
                   ":hover": {
                     boxShadow: avatarVerified
