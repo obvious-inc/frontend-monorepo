@@ -48,6 +48,7 @@ module.exports = (_, argv) => {
         INFURA_PROJECT_ID: null,
         SENTRY_DSN: null,
         DEV: null,
+        CLOUDFLARE_ACCT_HASH: null,
       }),
       new webpack.ProvidePlugin({
         process: "process/browser",

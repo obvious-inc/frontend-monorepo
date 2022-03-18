@@ -78,9 +78,17 @@ export const selectServerMember = (state) => (id) => {
       ? member.display_name
       : member.user.display_name;
 
+  const pfp = member.pfp ?? member.user.pfp;
+  const pfpUrl =
+    pfp?.cf_id && process.env.CLOUDFLARE_ACCT_HASH
+      ? `https://imagedelivery.net/${process.env.CLOUDFLARE_ACCT_HASH}/${pfp.cf_id}/avatar`
+      : pfp?.input_image_url;
+
   return {
     ...member,
     displayName,
+    pfp,
+    pfpUrl,
     walletAddress: member.user.wallet_address,
   };
 };

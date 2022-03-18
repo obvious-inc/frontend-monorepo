@@ -212,6 +212,10 @@ const Channel = () => {
               key={m.id}
               content={m.content}
               authorNick={serverMembersByUserId[m.author].displayName}
+              avatar={serverMembersByUserId[m.author].pfpUrl}
+              avatarVerified={
+                serverMembersByUserId[m.author].pfp?.verified ?? false
+              }
               authorWalletAddress={
                 serverMembersByUserId[m.author].walletAddress
               }
@@ -513,6 +517,8 @@ const MessageToolbar = ({
 const MessageItem = ({
   authorNick,
   authorWalletAddress,
+  avatar,
+  avatarVerified,
   content,
   timestamp,
   reactions = [],
@@ -620,10 +626,16 @@ const MessageItem = ({
         <div css={css({ padding: "0.4rem 0 0" })}>
           <button
             css={css({
+              position: "relative",
               borderRadius: "0.3rem",
               overflow: "hidden",
+              boxShadow: avatarVerified ? "0 3px 0 0 #4f52ff" : undefined,
               cursor: "pointer",
-              ":hover": { boxShadow: "0 0 0 0.3rem rgb(255 255 255 / 10%)" },
+              ":hover": {
+                boxShadow: avatarVerified
+                  ? "0 0 0 2px #4f52ff"
+                  : "0 0 0 2px rgb(255 255 255 / 10%)",
+              },
               ":active": { transform: "translateY(0.1rem)" },
             })}
             onClick={() => {
@@ -631,12 +643,14 @@ const MessageItem = ({
             }}
           >
             <img
-              src={avatarDataUrl}
+              src={avatar ?? avatarDataUrl}
               css={(theme) =>
                 css({
+                  borderRadius: "0.3rem",
                   background: theme.colors.backgroundSecondary,
                   height: "3.4rem",
                   width: "3.4rem",
+                  objectFit: "cover",
                 })
               }
             />
