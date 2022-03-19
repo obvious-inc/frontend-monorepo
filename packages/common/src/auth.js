@@ -143,18 +143,8 @@ export const Provider = ({
       return Promise.reject(new Error(response.statusText));
     });
 
-    setAccessToken(responseBody.access_token);
-    setRefreshToken(responseBody.refresh_token);
-
     return responseBody;
-  }, [
-    apiOrigin,
-    refreshToken,
-    clearAccessToken,
-    clearRefreshToken,
-    setAccessToken,
-    setRefreshToken,
-  ]);
+  }, [apiOrigin, refreshToken, clearAccessToken, clearRefreshToken]);
 
   const authorizedFetch = React.useCallback(
     async (url, options) => {
@@ -163,7 +153,6 @@ export const Provider = ({
       const headers = new Headers(options?.headers);
       if (!headers.has("Authorization"))
         headers.set("Authorization", `Bearer ${accessToken}`);
-
 
       const response = await fetch(`${apiOrigin}${url}`, {
         ...options,
@@ -174,7 +163,11 @@ export const Provider = ({
         const newToken = await refreshAccessToken();
         const headers = new Headers(options?.headers);
         headers.set("Authorization", `Bearer ${newToken.access_token}`);
-        return authorizedFetch(url, { ...options, headers });
+        authorizedFetch(url, { ...options, headers }).then((jsonResponse) => {
+          setAccessToken(newToken.access_token);
+          setRefreshToken(newToken.refresh_token);
+          return jsonResponse;
+        });
       }
 
       if (!response.ok) return Promise.reject(new Error(response.statusText));
@@ -183,7 +176,14 @@ export const Provider = ({
 
       return response.json();
     },
-    [apiOrigin, accessToken, refreshToken, refreshAccessToken]
+    [
+      apiOrigin,
+      accessToken,
+      refreshToken,
+      refreshAccessToken,
+      setAccessToken,
+      setRefreshToken,
+    ]
   );
 
   const verifyAccessToken = React.useCallback(() => {
