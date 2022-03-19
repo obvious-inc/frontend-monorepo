@@ -122,7 +122,8 @@ export const Provider = ({
 
   const signOut = React.useCallback(() => {
     setAccessToken(null);
-  }, [setAccessToken]);
+    setRefreshToken(null);
+  }, [setAccessToken, setRefreshToken]);
 
   const refreshAccessToken = React.useCallback(async () => {
     if (refreshToken == null) throw new Error("Missing refresh token");
@@ -142,17 +143,17 @@ export const Provider = ({
       return Promise.reject(new Error(response.statusText));
     });
 
-    setRefreshToken(responseBody.refresh_token);
     setAccessToken(responseBody.access_token);
+    setRefreshToken(responseBody.refresh_token);
 
-    return responseBody.access_token;
+    return responseBody;
   }, [
     apiOrigin,
     refreshToken,
-    setAccessToken,
-    setRefreshToken,
     clearAccessToken,
     clearRefreshToken,
+    setAccessToken,
+    setRefreshToken,
   ]);
 
   const authorizedFetch = React.useCallback(
@@ -160,7 +161,9 @@ export const Provider = ({
       if (accessToken == null) throw new Error("Missing access token");
 
       const headers = new Headers(options?.headers);
-      headers.set("Authorization", `Bearer ${accessToken}`);
+      if (!headers.has("Authorization"))
+        headers.set("Authorization", `Bearer ${accessToken}`);
+
 
       const response = await fetch(`${apiOrigin}${url}`, {
         ...options,
@@ -168,9 +171,9 @@ export const Provider = ({
       });
 
       if (response.status === 401) {
-        const newAccessToken = await refreshAccessToken();
+        const newToken = await refreshAccessToken();
         const headers = new Headers(options?.headers);
-        headers.set("Authorization", `Bearer ${newAccessToken}`);
+        headers.set("Authorization", `Bearer ${newToken.access_token}`);
         return authorizedFetch(url, { ...options, headers });
       }
 
@@ -180,7 +183,7 @@ export const Provider = ({
 
       return response.json();
     },
-    [apiOrigin, accessToken, refreshAccessToken]
+    [apiOrigin, accessToken, refreshToken, refreshAccessToken]
   );
 
   const verifyAccessToken = React.useCallback(() => {
