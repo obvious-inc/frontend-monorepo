@@ -179,7 +179,6 @@ export const Provider = ({
     [
       apiOrigin,
       accessToken,
-      refreshToken,
       refreshAccessToken,
       setAccessToken,
       setRefreshToken,
