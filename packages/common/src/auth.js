@@ -20,6 +20,7 @@ const useAccessToken = ({ storage = asyncWebStorage } = {}) => {
   const storageRef = React.useRef(storage);
 
   const [token, setToken] = React.useState(undefined);
+  const tokenRef = React.useRef();
 
   React.useEffect(() => {
     storageRef.current = storage;
@@ -27,21 +28,24 @@ const useAccessToken = ({ storage = asyncWebStorage } = {}) => {
 
   const set = React.useCallback((token) => {
     setToken(token);
+    tokenRef.current = token;
     storageRef.current.setItem(ACCESS_TOKEN_CACHE_KEY, token);
   }, []);
 
   const clear = React.useCallback(() => {
     setToken(null);
+    tokenRef.current = null;
     storageRef.current.removeItem(ACCESS_TOKEN_CACHE_KEY);
   }, []);
 
   React.useEffect(() => {
     storageRef.current.getItem(ACCESS_TOKEN_CACHE_KEY).then((maybeToken) => {
       setToken(maybeToken ?? null);
+      tokenRef.current = maybeToken ?? null;
     });
   }, []);
 
-  return [token, { set, clear }];
+  return [token, { set, clear, ref: tokenRef }];
 };
 
 const Context = React.createContext({});
@@ -53,8 +57,10 @@ export const Provider = ({
   tokenStorage = asyncWebStorage,
   ...props
 }) => {
-  const [accessToken, { set: setAccessToken, clear: clearAccessToken }] =
-    useAccessToken({ storage: tokenStorage });
+  const [
+    accessToken,
+    { set: setAccessToken, clear: clearAccessToken, ref: accessTokenRef },
+  ] = useAccessToken({ storage: tokenStorage });
   const [user, setUser] = React.useState(null);
 
   const status =
@@ -94,6 +100,7 @@ export const Provider = ({
 
   const authorizedFetch = React.useCallback(
     async (url, options) => {
+      const accessToken = accessTokenRef.current;
       if (accessToken == null) throw new Error("Missing access token");
 
       const headers = new Headers(options?.headers);
@@ -112,7 +119,7 @@ export const Provider = ({
 
       return response.json();
     },
-    [apiOrigin, accessToken, clearAccessToken]
+    [apiOrigin, accessTokenRef, clearAccessToken]
   );
 
   const verifyAccessToken = React.useCallback(() => {
