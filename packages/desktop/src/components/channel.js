@@ -625,65 +625,7 @@ const MessageItem = ({
         />
       </div>
 
-      {replyMessage && (
-        <div
-          css={css({
-            position: "relative",
-            paddingLeft: "4.6rem",
-            marginBottom: "0.5rem",
-            ":before": {
-              content: '""',
-              position: "absolute",
-              right: "calc(100% - 4.6rem + 0.3rem)",
-              top: "calc(50% - 1px)",
-              width: "2.7rem",
-              height: "1.6rem",
-              borderTop: "2px solid rgb(255 255 255 / 15%)",
-              borderLeft: "2px solid rgb(255 255 255 / 15%)",
-              borderRight: 0,
-              borderBottom: 0,
-              borderTopLeftRadius: "0.4rem",
-            },
-          })}
-        >
-          <div
-            css={css({
-              display: "grid",
-              gridTemplateColumns: "auto minmax(0,1fr)",
-              alignItems: "center",
-              gridGap: "0.5rem",
-            })}
-          >
-            <ServerMemberAvatar
-              userId={replyMessage.author}
-              serverId={params.serverId}
-              size="1.4rem"
-              borderRadius="0.2rem"
-            />
-            <div
-              css={css({
-                fontSize: "1.3rem",
-                whiteSpace: "nowrap",
-                overflow: "hidden",
-                textOverflow: "ellipsis",
-                color: "rgb(255 255 255 / 54%)",
-              })}
-            >
-              <span style={{ fontWeight: "500" }}>
-                {
-                  state.selectServerMemberWithUserId(
-                    params.serverId,
-                    replyMessage.author
-                  )?.displayName
-                }
-              </span>{" "}
-              <span>
-                <RichText inline blocks={replyMessage.content} />
-              </span>
-            </div>
-          </div>
-        </div>
-      )}
+      {replyMessage && <RepliedMessage message={replyMessage} />}
       <div
         css={css`
           display: grid;
@@ -1512,6 +1454,95 @@ const ServerMemberAvatar = ({
         })
       }
     />
+  );
+};
+
+const RepliedMessage = ({ message }) => {
+  const params = useParams();
+  const { state } = useAppScope();
+  const authorMember = state.selectServerMemberWithUserId(
+    params.serverId,
+    message.author
+  );
+
+  return (
+    <div
+      css={css({
+        position: "relative",
+        paddingLeft: "4.6rem",
+        marginBottom: "0.5rem",
+        ":before": {
+          content: '""',
+          position: "absolute",
+          right: "calc(100% - 4.6rem + 0.3rem)",
+          top: "calc(50% - 1px)",
+          width: "2.7rem",
+          height: "1.6rem",
+          borderTop: "2px solid rgb(255 255 255 / 15%)",
+          borderLeft: "2px solid rgb(255 255 255 / 15%)",
+          borderRight: 0,
+          borderBottom: 0,
+          borderTopLeftRadius: "0.4rem",
+        },
+      })}
+    >
+      <div
+        css={css({
+          display: "grid",
+          gridTemplateColumns: "auto minmax(0,1fr)",
+          alignItems: "center",
+          gridGap: "0.5rem",
+        })}
+      >
+        <ServerMemberAvatar
+          userId={message.author}
+          serverId={params.serverId}
+          size="1.4rem"
+          borderRadius="0.2rem"
+        />
+        <div
+          css={css({
+            fontSize: "1.3rem",
+            whiteSpace: "nowrap",
+            overflow: "hidden",
+            textOverflow: "ellipsis",
+            color: "rgb(255 255 255 / 54%)",
+          })}
+        >
+          <span
+            role="button"
+            tabIndex={0}
+            css={css({
+              cursor: "pointer",
+              fontWeight: "500",
+              ":hover": { textDecoration: "underline" },
+            })}
+            onClick={() => {
+              alert(
+                `Congratulations, you clicked "${authorMember?.displayName}"`
+              );
+            }}
+          >
+            {authorMember?.displayName}
+          </span>{" "}
+          <span
+            role="button"
+            tabIndex={0}
+            css={(theme) =>
+              css({
+                cursor: "pointer",
+                ":hover": { color: theme.colors.textNormal },
+              })
+            }
+            onClick={() => {
+              alert("Congratulations, you clicked a replied message!");
+            }}
+          >
+            <RichText inline blocks={message.content} />
+          </span>
+        </div>
+      </div>
+    </div>
   );
 };
 
