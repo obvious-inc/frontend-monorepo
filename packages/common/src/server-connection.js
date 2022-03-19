@@ -51,7 +51,7 @@ export const Provider = ({ Pusher, pusherKey, debug = false, children }) => {
   }, []);
 
   React.useEffect(() => {
-    if (accessToken == null || user == null) return;
+    if (accessToken == null || user?.id == null) return;
     Pusher.logToConsole = debug;
 
     const pusher = new Pusher(pusherKey, {
@@ -79,7 +79,7 @@ export const Provider = ({ Pusher, pusherKey, debug = false, children }) => {
         const clientEventName = serverEventMap[event];
         listenersRef.current.forEach((fn) => fn(clientEventName, data));
       });
-  }, [Pusher, apiOrigin, pusherKey, debug, user, accessToken]);
+  }, [Pusher, apiOrigin, pusherKey, debug, user?.id, accessToken]);
 
   const serverConnection = React.useMemo(
     () => ({ send, addListener, isConnected: pusherState === "connected" }),
