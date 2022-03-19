@@ -175,8 +175,10 @@ export const selectMessage = (state) => (id) => {
 
   if (message == null) return null;
 
-  if (message.reply_to != null)
-    message.replyMessage = selectMessage(state)(message.reply_to);
+  if (message.reply_to != null) {
+    message.repliedMessage = selectMessage(state)(message.reply_to);
+    message.isReply = true;
+  }
 
   if (message.blocks?.length > 0)
     return { ...message, content: message.blocks };

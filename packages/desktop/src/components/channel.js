@@ -233,7 +233,8 @@ const Channel = () => {
                   month="short"
                 />
               }
-              replyMessage={m.replyMessage}
+              isReply={m.isReply}
+              repliedMessage={m.repliedMessage}
               isEdited={m.edited_at != null}
               canEditMessage={user.id === m.author}
               update={(blocks) =>
@@ -534,7 +535,8 @@ const MessageItem = ({
   content,
   timestamp,
   reactions = [],
-  replyMessage,
+  isReply,
+  repliedMessage,
   isEdited,
   canEditMessage,
   initReply,
@@ -625,7 +627,7 @@ const MessageItem = ({
         />
       </div>
 
-      {replyMessage && <RepliedMessage message={replyMessage} />}
+      {isReply && <RepliedMessage message={repliedMessage} />}
       <div
         css={css`
           display: grid;
@@ -1460,10 +1462,10 @@ const ServerMemberAvatar = ({
 const RepliedMessage = ({ message }) => {
   const params = useParams();
   const { state } = useAppScope();
-  const authorMember = state.selectServerMemberWithUserId(
-    params.serverId,
-    message.author
-  );
+  const authorMember =
+    message == null
+      ? null
+      : state.selectServerMemberWithUserId(params.serverId, message.author);
 
   return (
     <div
@@ -1489,17 +1491,29 @@ const RepliedMessage = ({ message }) => {
       <div
         css={css({
           display: "grid",
-          gridTemplateColumns: "auto minmax(0,1fr)",
+          gridTemplateColumns: "1.4rem minmax(0,1fr)",
           alignItems: "center",
           gridGap: "0.5rem",
         })}
       >
-        <ServerMemberAvatar
-          userId={message.author}
-          serverId={params.serverId}
-          size="1.4rem"
-          borderRadius="0.2rem"
-        />
+        {message == null ? (
+          <div
+            style={{
+              width: "1.4rem",
+              height: "1.4rem",
+              borderRadius: "0.2rem",
+              background: "rgb(255 255 255 / 10%)",
+            }}
+          />
+        ) : (
+          <ServerMemberAvatar
+            userId={message.author}
+            serverId={params.serverId}
+            size="1.4rem"
+            borderRadius="0.2rem"
+          />
+        )}
+
         <div
           css={css({
             fontSize: "1.3rem",
@@ -1523,7 +1537,7 @@ const RepliedMessage = ({ message }) => {
               );
             }}
           >
-            {authorMember?.displayName}
+            {authorMember?.displayName ?? "..."}
           </span>{" "}
           <span
             role="button"
@@ -1538,7 +1552,7 @@ const RepliedMessage = ({ message }) => {
               alert("Congratulations, you clicked a replied message!");
             }}
           >
-            <RichText inline blocks={message.content} />
+            <RichText inline blocks={message?.content ?? []} />
           </span>
         </div>
       </div>
