@@ -7,6 +7,7 @@ import {
   ChatBubbles as ChatBubblesIcon,
   Plus as PlusIcon,
 } from "./icons";
+import Spinner from "./spinner";
 
 const MenuContext = React.createContext();
 export const useMenuState = () => React.useContext(MenuContext);
@@ -43,7 +44,7 @@ const useSidebarMenu = () => {
 
 const AppLayout = () => {
   const params = useParams();
-  const { state, actions } = useAppScope();
+  const { state, actions, serverConnection } = useAppScope();
   const { user } = useAuth();
 
   const { isEnabled, isCollapsed, toggle } = useSidebarMenu();
@@ -59,120 +60,149 @@ const AppLayout = () => {
   if (!state.selectHasFetchedInitialData() || user == null) return null;
 
   return (
-    <div
-      css={(theme) => css`
-        height: 100%;
-        display: flex;
-        background: ${theme.colors.backgroundSecondary};
-        color: ${theme.colors.textNormal};
-      `}
-    >
+    <div css={css({ position: "relative", height: "100%" })}>
+      <div
+        css={(theme) => css`
+          height: 100%;
+          display: flex;
+          background: ${theme.colors.backgroundSecondary};
+          color: ${theme.colors.textNormal};
+        `}
+      >
+        <div
+          css={(theme) =>
+            css({
+              display: isCollapsed ? "none" : "flex",
+              width: "6.6rem",
+              background: theme.colors.backgroundTertiary,
+              padding: "1.2rem 0",
+              flexDirection: "column",
+              alignItems: "center",
+              justifyContent: "space-between",
+            })
+          }
+        >
+          <div
+            css={css({
+              display: "grid",
+              gridAutoFlow: "rows",
+              gridAutoRows: "auto",
+              justifyItems: "center",
+              gridGap: "0.8rem",
+            })}
+          >
+            {[
+              {
+                to: "/",
+                icon: <HomeIcon style={{ width: "2.2rem" }} />,
+              },
+              {
+                to: "/channels/@me",
+                icon: <ChatBubblesIcon style={{ width: "2.2rem" }} />,
+              },
+            ].map(({ to, icon }, i) => (
+              <RoundButton key={i} component={NavLink} to={to}>
+                {icon}
+              </RoundButton>
+            ))}
+
+            {hasServers && (
+              <>
+                <div
+                  css={(theme) =>
+                    css({
+                      height: "2px",
+                      background: theme.colors.backgroundPrimaryAlt,
+                      width: "3rem",
+                    })
+                  }
+                />
+
+                {servers.map((s, i) => {
+                  const abbreviation = s.name
+                    .split(" ")
+                    .map((s) => s[0])
+                    .join("")
+                    .slice(0, 3);
+                  const shortName =
+                    abbreviation.length === 2
+                      ? abbreviation
+                      : s.name.slice(0, 2);
+
+                  const hasChannels = s.channels.length !== 0;
+
+                  return (
+                    <RoundButton
+                      component={Link}
+                      key={i}
+                      to={
+                        hasChannels
+                          ? `/channels/${s.id}/${s.channels[0].id}`
+                          : `/channels/${s.id}`
+                      }
+                      className={
+                        params.serverId === s.id ? "active" : undefined
+                      }
+                    >
+                      <div
+                        css={css({
+                          textTransform: "uppercase",
+                          fontSize: "1.5rem",
+                          fontWeight: "500",
+                          lineHeight: 1,
+                        })}
+                      >
+                        {shortName}
+                      </div>
+                    </RoundButton>
+                  );
+                })}
+              </>
+            )}
+          </div>
+
+          <RoundButton
+            onClick={() => {
+              if (process.env.DEV) {
+                const name = prompt("Name plz");
+                actions.createServer({ name });
+                return;
+              }
+
+              alert("Soon :tm:");
+            }}
+          >
+            <PlusIcon style={{ width: "1.7rem" }} />
+          </RoundButton>
+        </div>
+
+        <MenuContext.Provider value={menuContextValue}>
+          <Outlet />
+        </MenuContext.Provider>
+      </div>
+
       <div
         css={(theme) =>
           css({
-            display: isCollapsed ? "none" : "flex",
-            width: "6.6rem",
-            background: theme.colors.backgroundTertiary,
-            padding: "1.2rem 0",
-            flexDirection: "column",
+            position: "absolute",
+            top: 0,
+            left: 0,
+            width: "100%",
+            height: "100%",
+            display: "flex",
             alignItems: "center",
-            justifyContent: "space-between",
+            justifyContent: "center",
+            transition: "0.2s opacity ease-out",
+            background: theme.colors.backgroundPrimary,
           })
         }
+        style={{
+          pointerEvents: serverConnection.isConnected ? "none" : "all",
+          opacity: serverConnection.isConnected ? 0 : 1,
+        }}
       >
-        <div
-          css={css({
-            display: "grid",
-            gridAutoFlow: "rows",
-            gridAutoRows: "auto",
-            justifyItems: "center",
-            gridGap: "0.8rem",
-          })}
-        >
-          {[
-            {
-              to: "/",
-              icon: <HomeIcon style={{ width: "2.2rem" }} />,
-            },
-            {
-              to: "/channels/@me",
-              icon: <ChatBubblesIcon style={{ width: "2.2rem" }} />,
-            },
-          ].map(({ to, icon }, i) => (
-            <RoundButton key={i} component={NavLink} to={to}>
-              {icon}
-            </RoundButton>
-          ))}
-
-          {hasServers && (
-            <>
-              <div
-                css={(theme) =>
-                  css({
-                    height: "2px",
-                    background: theme.colors.backgroundPrimaryAlt,
-                    width: "3rem",
-                  })
-                }
-              />
-
-              {servers.map((s, i) => {
-                const abbreviation = s.name
-                  .split(" ")
-                  .map((s) => s[0])
-                  .join("")
-                  .slice(0, 3);
-                const shortName =
-                  abbreviation.length === 2 ? abbreviation : s.name.slice(0, 2);
-
-                const hasChannels = s.channels.length !== 0;
-
-                return (
-                  <RoundButton
-                    component={Link}
-                    key={i}
-                    to={
-                      hasChannels
-                        ? `/channels/${s.id}/${s.channels[0].id}`
-                        : `/channels/${s.id}`
-                    }
-                    className={params.serverId === s.id ? "active" : undefined}
-                  >
-                    <div
-                      css={css({
-                        textTransform: "uppercase",
-                        fontSize: "1.5rem",
-                        fontWeight: "500",
-                        lineHeight: 1,
-                      })}
-                    >
-                      {shortName}
-                    </div>
-                  </RoundButton>
-                );
-              })}
-            </>
-          )}
-        </div>
-
-        <RoundButton
-          onClick={() => {
-            if (process.env.DEV) {
-              const name = prompt("Name plz");
-              actions.createServer({ name });
-              return;
-            }
-
-            alert("Soon :tm:");
-          }}
-        >
-          <PlusIcon style={{ width: "1.7rem" }} />
-        </RoundButton>
+        <Spinner size="2.4rem" />
       </div>
-
-      <MenuContext.Provider value={menuContextValue}>
-        <Outlet />
-      </MenuContext.Provider>
     </div>
   );
 };
