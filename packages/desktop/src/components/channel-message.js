@@ -33,6 +33,7 @@ const ChannelMessage = ({
   content,
   timestamp,
   reactions = [],
+  hasPendingReply,
   isReply,
   repliedMessage,
   isEdited,
@@ -79,7 +80,9 @@ const ChannelMessage = ({
     <div
       ref={containerRef}
       style={{
-        background: showAsFocused
+        background: hasPendingReply
+          ? "#3f42ea2b"
+          : showAsFocused
           ? theme.colors.messageHoverBackground
           : undefined,
       }}

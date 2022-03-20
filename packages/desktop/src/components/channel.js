@@ -202,6 +202,7 @@ const Channel = () => {
                 />
               }
               isReply={m.isReply}
+              hasPendingReply={pendingReplyMessageId === m.id}
               repliedMessage={m.repliedMessage}
               isEdited={m.edited_at != null}
               canEditMessage={user.id === m.authorUserId}
