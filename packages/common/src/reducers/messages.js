@@ -1,6 +1,7 @@
 import combineReducers from "../utils/combine-reducers";
 import { indexBy, groupBy, unique } from "../utils/array";
 import { omitKey, mapValues } from "../utils/object";
+import { selectServerMemberWithUserId } from "./server-members";
 
 const entriesById = (state = {}, action) => {
   switch (action.type) {
@@ -115,7 +116,11 @@ const entryIdsByChannelId = (state = {}, action) => {
   switch (action.type) {
     case "messages-fetched": {
       const messageIdsByChannelId = mapValues(
-        (ms) => ms.map((m) => m.id),
+        (ms, channelId) => {
+          const previousIds = state[channelId] ?? [];
+          const newIds = ms.map((m) => m.id);
+          return unique([...previousIds, ...newIds]);
+        },
         groupBy((m) => m.channel, action.messages)
       );
 
@@ -174,6 +179,14 @@ export const selectMessage = (state) => (id) => {
   const message = state.messages.entriesById[id];
 
   if (message == null) return null;
+
+  message.authorServerMember = selectServerMemberWithUserId(state)(
+    message.server,
+    message.author
+  );
+
+  message.serverId = message.server;
+  message.authorUserId = message.author;
 
   if (message.reply_to != null) {
     message.repliedMessage = selectMessage(state)(message.reply_to);

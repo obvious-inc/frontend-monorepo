@@ -55,6 +55,17 @@ export const Provider = ({ children }) => {
     ({ channelId }) =>
       authorizedFetch(`/channels/${channelId}/messages`).then((messages) => {
         dispatch({ type: "messages-fetched", messages });
+
+        const replies = messages.filter((m) => m.reply_to != null);
+
+        // Fetch all messages replied to async. Works for now!
+        for (let reply of replies)
+          authorizedFetch(
+            `/channels/${channelId}/messages/${reply.reply_to}`
+          ).then((message) => {
+            dispatch({ type: "messages-fetched", messages: [message] });
+          });
+
         return messages;
       }),
     [authorizedFetch, dispatch]

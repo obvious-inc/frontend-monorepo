@@ -5,7 +5,10 @@ import { useAuth } from "../auth";
 import ui, { selectHasFetchedInitialData } from "../reducers/ui";
 import servers, { selectServer, selectServers } from "../reducers/servers";
 import channels, { selectServerChannels } from "../reducers/channels";
-import messages, { selectChannelMessages } from "../reducers/messages";
+import messages, {
+  selectMessage,
+  selectChannelMessages,
+} from "../reducers/messages";
 import serverMembers, {
   selectServerMember,
   selectServerMembers,
@@ -14,6 +17,7 @@ import serverMembers, {
 } from "../reducers/server-members";
 
 const selectors = {
+  selectMessage,
   selectServerChannels,
   selectChannelMessages,
   selectServer,
