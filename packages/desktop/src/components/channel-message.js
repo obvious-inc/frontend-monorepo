@@ -207,7 +207,6 @@ const ChannelMessage = ({
                       lineHeight: 1.2,
                       color: theme.colors.pink,
                       fontWeight: "500",
-                      fontVariantLigatures: "no-contextual",
                       cursor: "pointer",
                       ":hover": {
                         textDecoration: "underline",
@@ -222,12 +221,7 @@ const ChannelMessage = ({
                 </button>
               </Tooltip.Trigger>
               <Tooltip.Content side="top" sideOffset={4}>
-                <span
-                  css={css({
-                    fontVariantLigatures: "no-contextual",
-                    color: "rgb(255 255 255 / 54%)",
-                  })}
-                >
+                <span css={css({ color: "rgb(255 255 255 / 54%)" })}>
                   {authorWalletAddress}
                 </span>
               </Tooltip.Content>
@@ -382,7 +376,6 @@ const ChannelMessage = ({
                         <div
                           css={css({
                             hyphens: "auto",
-                            fontVariant: "no-contextual",
                             wordBreak: "break-word",
                             padding: "0.2rem 0",
                           })}

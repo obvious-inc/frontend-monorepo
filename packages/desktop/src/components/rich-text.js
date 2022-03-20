@@ -23,7 +23,6 @@ export const createCss = (theme, { inline = false } = {}) => ({
     background: "hsla(235,85.6%,64.7%,0.3)",
     fontWeight: "500",
     cursor: "pointer",
-    fontVariantLigatures: "no-contextual",
   },
   ".mention:hover": {
     color: "white",
