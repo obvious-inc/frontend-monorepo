@@ -53,6 +53,7 @@ const useRefreshToken = ({ storage = asyncWebStorage } = {}) => {
   const storageRef = React.useRef(storage);
 
   const [token, setToken] = React.useState(undefined);
+  const tokenRef = React.useRef();
 
   React.useEffect(() => {
     storageRef.current = storage;
@@ -60,21 +61,24 @@ const useRefreshToken = ({ storage = asyncWebStorage } = {}) => {
 
   const set = React.useCallback((token) => {
     setToken(token);
+    tokenRef.current = token;
     storageRef.current.setItem(REFRESH_TOKEN_CACHE_KEY, token);
   }, []);
 
   const clear = React.useCallback(() => {
     setToken(null);
+    tokenRef.current = null;
     storageRef.current.removeItem(REFRESH_TOKEN_CACHE_KEY);
   }, []);
 
   React.useEffect(() => {
     storageRef.current.getItem(REFRESH_TOKEN_CACHE_KEY).then((maybeToken) => {
       setToken(maybeToken ?? null);
+      tokenRef.current = maybeToken ?? null;
     });
   }, []);
 
-  return [token, { set, clear }];
+  return [token, { set, clear, ref: tokenRef }];
 };
 
 const Context = React.createContext({});
@@ -91,8 +95,10 @@ export const Provider = ({
     { set: setAccessToken, clear: clearAccessToken, ref: accessTokenRef },
   ] = useAccessToken({ storage: tokenStorage });
 
-  const [refreshToken, { set: setRefreshToken, clear: clearRefreshToken }] =
-    useRefreshToken({ storage: tokenStorage });
+  const [
+    refreshToken,
+    { set: setRefreshToken, clear: clearRefreshToken, ref: refreshTokenRef },
+  ] = useRefreshToken({ storage: tokenStorage });
 
   const [user, setUser] = React.useState(null);
 
@@ -134,6 +140,7 @@ export const Provider = ({
   }, [setAccessToken, setRefreshToken]);
 
   const refreshAccessToken = React.useCallback(async () => {
+    const refreshToken = refreshTokenRef.current;
     if (refreshToken == null) throw new Error("Missing refresh token");
 
     const responseBody = await fetch(`${apiOrigin}/auth/refresh`, {
@@ -152,7 +159,7 @@ export const Provider = ({
     });
 
     return responseBody;
-  }, [apiOrigin, refreshToken, clearAccessToken, clearRefreshToken]);
+  }, [apiOrigin, refreshTokenRef, clearAccessToken, clearRefreshToken]);
 
   const authorizedFetch = React.useCallback(
     async (url, options) => {
@@ -170,11 +177,11 @@ export const Provider = ({
 
       if (response.status === 401) {
         const newToken = await refreshAccessToken();
+        setAccessToken(newToken.access_token);
+        setRefreshToken(newToken.refresh_token);
         const headers = new Headers(options?.headers);
         headers.set("Authorization", `Bearer ${newToken.access_token}`);
         authorizedFetch(url, { ...options, headers }).then((jsonResponse) => {
-          setAccessToken(newToken.access_token);
-          setRefreshToken(newToken.refresh_token);
           return jsonResponse;
         });
       }
