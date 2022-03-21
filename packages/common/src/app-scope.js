@@ -16,6 +16,9 @@ export const Provider = ({ children }) => {
 
   const sendServerMessage = React.useCallback(
     (name, data) => {
+      if (!serverConnection.isConnected)
+        throw new Error("Not connected to server");
+
       const messageSent = serverConnection.send(name, data);
       // Dispatch a client action if the message was successfully sent
       if (messageSent) dispatch({ type: name, data });

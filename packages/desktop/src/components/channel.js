@@ -19,7 +19,7 @@ import {
 import { useMenuState } from "./app-layout";
 
 const useChannelMessages = (channelId) => {
-  const { actions, state } = useAppScope();
+  const { actions, state, serverConnection } = useAppScope();
 
   const messages = state.selectChannelMessages(channelId);
 
@@ -29,16 +29,7 @@ const useChannelMessages = (channelId) => {
 
   // Fetch messages when switching channels
   React.useEffect(() => {
-    let didChangeChannel = false;
-
-    actions.fetchMessages({ channelId }).then(() => {
-      if (didChangeChannel) return;
-      actions.markChannelRead({ channelId });
-    });
-
-    return () => {
-      didChangeChannel = true;
-    };
+    actions.fetchMessages({ channelId });
   }, [actions, channelId]);
 
   // Fetch messages when tab get visibility
@@ -51,9 +42,9 @@ const useChannelMessages = (channelId) => {
 
   // Make channels as read as new messages arrive
   React.useEffect(() => {
-    if (lastMessage?.id == null) return;
+    if (lastMessage?.id == null || !serverConnection.isConnected) return;
     actions.markChannelRead({ channelId });
-  }, [lastMessage?.id, channelId, actions]);
+  }, [lastMessage?.id, channelId, actions, serverConnection.isConnected]);
 
   return sortedMessages;
 };
