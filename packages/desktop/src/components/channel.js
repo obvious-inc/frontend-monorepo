@@ -174,7 +174,7 @@ const Channel = () => {
             padding: 1.6rem 0 0;
           `}
         >
-          {messages.map((m) => (
+          {messages.map((m, i, ms) => (
             <ChannelMessage
               key={m.id}
               content={m.content}
@@ -183,16 +183,9 @@ const Channel = () => {
               avatarVerified={m.authorServerMember?.pfp?.verified ?? false}
               authorWalletAddress={m.authorServerMember?.walletAddress}
               authorOnlineStatus={m.authorServerMember?.onlineStatus}
+              previousMessage={ms[i - 1]}
               reactions={m.reactions}
-              timestamp={
-                <FormattedDate
-                  value={new Date(m.created_at)}
-                  hour="numeric"
-                  minute="numeric"
-                  day="numeric"
-                  month="short"
-                />
-              }
+              createdAt={new Date(m.created_at)}
               isReply={m.isReply}
               hasPendingReply={pendingReplyMessageId === m.id}
               repliedMessage={m.repliedMessage}
@@ -438,8 +431,9 @@ const NewMessageInput = React.forwardRef(
           css={{
             display: "grid",
             gridTemplateColumns: "auto minmax(0,1fr)",
-            gridGap: "1rem",
+            gridGap: "1.2rem",
             alignItems: "flex-start",
+            paddingLeft: "0.3rem",
           }}
         >
           <button
