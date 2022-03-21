@@ -282,8 +282,6 @@ const AutoCompleteListbox = ({
             lineHeight: 1.3,
             fontWeight: "400",
             cursor: "pointer",
-            // Prevent the "x" in 0x4... addresses from looking strange
-            fontVariantLigatures: "no-contextual",
             '&:hover, &:focus, &[data-selected="true"]': {
               outline: "none",
             },
