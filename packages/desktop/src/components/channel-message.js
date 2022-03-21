@@ -13,6 +13,7 @@ import { isNodeEmpty, normalizeNodes, cleanNodes } from "../slate/utils";
 import {
   DotsHorizontal as DotsHorizontalIcon,
   EditPen as EditPenIcon,
+  ReplyArrow as ReplyArrowIcon,
 } from "./icons";
 import MessageInput from "./message-input";
 import RichText from "./rich-text";
@@ -109,6 +110,7 @@ const ChannelMessage = ({
       >
         <MessageToolbar
           initReply={initReply}
+          isOwnMessage={user.id === authorUserId}
           canEditMessage={canEditMessage}
           startEditMode={() => {
             setEditingMessage(true);
@@ -589,6 +591,7 @@ const EmojiPicker = ({ addReaction }) => {
 };
 
 const MessageToolbar = ({
+  isOwnMessage,
   canEditMessage,
   startEditMode,
   initReply,
@@ -638,6 +641,17 @@ const MessageToolbar = ({
         <EmojiPicker addReaction={addReaction} />
       </Popover.Content>
     </Popover.Root>
+
+    {!isOwnMessage && (
+      <Toolbar.Button
+        onClick={() => {
+          initReply();
+        }}
+        aria-label="Reply"
+      >
+        <ReplyArrowIcon css={css({ width: "1.6rem", height: "auto" })} />
+      </Toolbar.Button>
+    )}
 
     {canEditMessage && (
       <Toolbar.Button
