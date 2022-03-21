@@ -131,7 +131,12 @@ const ChannelMessage = ({
         />
       </div>
 
-      {isReply && <RepliedMessage message={repliedMessage} />}
+      {isReply && (
+        <RepliedMessage
+          message={repliedMessage}
+          getUserMentionDisplayName={getUserMentionDisplayName}
+        />
+      )}
       <div
         css={css`
           display: grid;
@@ -781,7 +786,7 @@ const EditMessageInput = React.forwardRef(
   }
 );
 
-const RepliedMessage = ({ message }) => {
+const RepliedMessage = ({ message, getUserMentionDisplayName }) => {
   const params = useParams();
   const { state } = useAppScope();
   const authorMember =
@@ -874,7 +879,11 @@ const RepliedMessage = ({ message }) => {
               alert("Congratulations, you clicked a replied message!");
             }}
           >
-            <RichText inline blocks={message?.content ?? []} />
+            <RichText
+              inline
+              blocks={message?.content ?? []}
+              getUserMentionDisplayName={getUserMentionDisplayName}
+            />
           </span>
         </div>
       </div>
