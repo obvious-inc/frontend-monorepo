@@ -10,7 +10,10 @@ import {
 } from "@shades/common";
 import useHover from "../hooks/hover";
 import { isNodeEmpty, normalizeNodes, cleanNodes } from "../slate/utils";
-import { DotsHorizontalIcon, Pencil1Icon } from "./icons";
+import {
+  DotsHorizontal as DotsHorizontalIcon,
+  EditPen as EditPenIcon,
+} from "./icons";
 import MessageInput from "./message-input";
 import RichText from "./rich-text";
 import Button from "./button";
@@ -638,14 +641,14 @@ const MessageToolbar = ({
         }}
         aria-label="Edit"
       >
-        <Pencil1Icon />
+        <EditPenIcon />
       </Toolbar.Button>
     )}
     <Toolbar.Separator />
     <DropdownMenu.Root modal={false} onOpenChange={onDropdownOpenChange}>
       <Toolbar.Button asChild>
         <DropdownMenu.Trigger>
-          <DotsHorizontalIcon />
+          <DotsHorizontalIcon css={css({ width: "1.6rem", height: "auto" })} />
         </DropdownMenu.Trigger>
       </Toolbar.Button>
       <DropdownMenu.Content>
