@@ -33,6 +33,7 @@ const ChannelMessage = ({
   authorNick,
   authorWalletAddress,
   authorUserId,
+  authorOnlineStatus,
   avatarVerified,
   content,
   timestamp,
@@ -69,6 +70,8 @@ const ChannelMessage = ({
 
   const showAsFocused =
     !isEditing && (isHovering || isDropdownOpen || isEmojiPickerOpen);
+
+  const isOwnMessage = user.id === authorUserId;
 
   React.useEffect(() => {
     if (!isEditing) return;
@@ -110,7 +113,7 @@ const ChannelMessage = ({
       >
         <MessageToolbar
           initReply={initReply}
-          isOwnMessage={user.id === authorUserId}
+          isOwnMessage={isOwnMessage}
           canEditMessage={canEditMessage}
           startEditMode={() => {
             setEditingMessage(true);
@@ -212,33 +215,58 @@ const ChannelMessage = ({
               cursor: default;
             `}
           >
-            <Tooltip.Root>
-              <Tooltip.Trigger asChild>
-                <button
-                  css={(theme) =>
-                    css({
-                      lineHeight: 1.2,
-                      color: theme.colors.pink,
-                      fontWeight: "500",
-                      cursor: "pointer",
-                      ":hover": {
-                        textDecoration: "underline",
-                      },
-                    })
-                  }
-                  onClick={() => {
-                    alert(`Congratulations, you clicked ${authorNick}!`);
-                  }}
-                >
-                  {authorNick}
-                </button>
-              </Tooltip.Trigger>
-              <Tooltip.Content side="top" sideOffset={4}>
-                <span css={css({ color: "rgb(255 255 255 / 54%)" })}>
-                  {authorWalletAddress}
-                </span>
-              </Tooltip.Content>
-            </Tooltip.Root>
+            <div css={css({ display: "flex", alignItems: "center" })}>
+              <Tooltip.Root>
+                <Tooltip.Trigger asChild>
+                  <button
+                    css={(theme) =>
+                      css({
+                        lineHeight: 1.2,
+                        color: theme.colors.pink,
+                        fontWeight: "500",
+                        cursor: "pointer",
+                        ":hover": {
+                          textDecoration: "underline",
+                        },
+                      })
+                    }
+                    onClick={() => {
+                      alert(`Congratulations, you clicked ${authorNick}!`);
+                    }}
+                  >
+                    {authorNick}
+                  </button>
+                </Tooltip.Trigger>
+                <Tooltip.Content side="top" sideOffset={4}>
+                  <span css={css({ color: "rgb(255 255 255 / 54%)" })}>
+                    {authorWalletAddress}
+                  </span>
+                </Tooltip.Content>
+              </Tooltip.Root>
+
+              {authorOnlineStatus === "online" && (
+                <Tooltip.Root>
+                  <Tooltip.Trigger asChild>
+                    <div css={css({ padding: "0.4rem", marginLeft: "0.3rem" })}>
+                      <div
+                        css={css({
+                          width: "0.7rem",
+                          height: "0.7rem",
+                          borderRadius: "50%",
+                          background: "hsl(139 47.3%  43.9%)",
+                        })}
+                      />
+                    </div>
+                  </Tooltip.Trigger>
+                  <Tooltip.Content side="top" align="center" sideOffset={4}>
+                    <span css={css({ color: "rgb(255 255 255 / 54%)" })}>
+                      User online
+                    </span>
+                  </Tooltip.Content>
+                </Tooltip.Root>
+              )}
+            </div>
+
             <div
               css={css`
                 color: rgb(255 255 255 / 35%);

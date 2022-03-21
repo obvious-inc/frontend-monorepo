@@ -182,6 +182,7 @@ const Channel = () => {
               authorNick={m.authorServerMember?.displayName}
               avatarVerified={m.authorServerMember?.pfp?.verified ?? false}
               authorWalletAddress={m.authorServerMember?.walletAddress}
+              authorOnlineStatus={m.authorServerMember?.onlineStatus}
               reactions={m.reactions}
               timestamp={
                 <FormattedDate

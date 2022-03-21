@@ -21,6 +21,18 @@ const entriesById = (state = {}, action) => {
         };
       }, state);
 
+    case "server-event:user-presence-updated":
+      return mapValues((member) => {
+        if (member.user.id !== action.data.user.id) return member;
+        return {
+          ...member,
+          user: {
+            ...member.user,
+            status: action.data.user.status,
+          },
+        };
+      }, state);
+
     case "server-event:server-profile-updated":
       return {
         ...state,
@@ -73,6 +85,8 @@ const memberIdsByUserId = (state = [], action) => {
 export const selectServerMember = (state) => (id) => {
   const member = state.serverMembers.entriesById[id];
 
+  const isLoggedInUser = member.user.id === state.user.id;
+
   const displayName =
     member.display_name != null && member.display_name !== ""
       ? member.display_name
@@ -90,6 +104,7 @@ export const selectServerMember = (state) => (id) => {
     pfp,
     pfpUrl,
     walletAddress: member.user.wallet_address,
+    onlineStatus: isLoggedInUser ? "online" : member.user.status,
   };
 };
 
