@@ -12,6 +12,9 @@ body {
   color: white;
   overflow: hidden;
   text-rendering: optimizeLegibility;
+
+  /* The contextuals make hex addresses look ugly */
+  font-variant: no-contextual;
 }
 
 ::selection {

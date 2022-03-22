@@ -16,6 +16,9 @@ export const Provider = ({ children }) => {
 
   const sendServerMessage = React.useCallback(
     (name, data) => {
+      if (!serverConnection.isConnected)
+        throw new Error("Not connected to server");
+
       const messageSent = serverConnection.send(name, data);
       // Dispatch a client action if the message was successfully sent
       if (messageSent) dispatch({ type: name, data });
@@ -55,6 +58,17 @@ export const Provider = ({ children }) => {
     ({ channelId }) =>
       authorizedFetch(`/channels/${channelId}/messages`).then((messages) => {
         dispatch({ type: "messages-fetched", messages });
+
+        const replies = messages.filter((m) => m.reply_to != null);
+
+        // Fetch all messages replied to async. Works for now!
+        for (let reply of replies)
+          authorizedFetch(
+            `/channels/${channelId}/messages/${reply.reply_to}`
+          ).then((message) => {
+            dispatch({ type: "messages-fetched", messages: [message] });
+          });
+
         return messages;
       }),
     [authorizedFetch, dispatch]
@@ -81,10 +95,28 @@ export const Provider = ({ children }) => {
     [sendServerMessage]
   );
 
+  const fetchMessage = React.useCallback(
+    (id) =>
+      authorizedFetch(`/messages/${id}`).then((message) => {
+        dispatch({
+          type: "message-fetch-request-successful",
+          message,
+        });
+        return message;
+      }),
+    [authorizedFetch, dispatch]
+  );
+
   const createMessage = React.useCallback(
-    async ({ server, channel, content, blocks }) => {
+    async ({ server, channel, content, blocks, replyToMessageId }) => {
       // TODO: Less hacky optimistc UI
-      const message = { server, channel, blocks, content };
+      const message = {
+        server,
+        channel,
+        blocks,
+        content,
+        reply_to: replyToMessageId,
+      };
       const dummyId = generateDummyId();
 
       dispatch({
@@ -217,6 +249,7 @@ export const Provider = ({ children }) => {
   const actions = React.useMemo(
     () => ({
       fetchInitialData,
+      fetchMessage,
       updateMe,
       fetchMessages,
       createServer,
@@ -231,6 +264,7 @@ export const Provider = ({ children }) => {
     }),
     [
       fetchInitialData,
+      fetchMessage,
       updateMe,
       fetchMessages,
       createServer,

@@ -6,6 +6,7 @@ const baseStyles = {
   border: 0,
   borderRadius: "4px",
   cursor: "pointer",
+  textAlign: "center",
   "&[disabled]": { opacity: 0.5 },
 };
 

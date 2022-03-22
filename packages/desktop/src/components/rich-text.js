@@ -1,10 +1,11 @@
 import React from "react";
 import { css } from "@emotion/react";
 
-export const createCss = (theme) => ({
-  whiteSpace: "pre-wrap",
+export const createCss = (theme, { inline = false } = {}) => ({
+  display: inline ? "inline" : "block",
+  whiteSpace: inline ? "inherit" : "pre-wrap",
   wordBreak: "break-word",
-  p: { margin: "0" },
+  p: { margin: "0", display: inline ? "inline" : undefined },
   "p + p": { marginTop: "1rem" },
   em: { fontStyle: "italic" },
   strong: { fontWeight: "600" },
@@ -22,7 +23,6 @@ export const createCss = (theme) => ({
     background: "hsla(235,85.6%,64.7%,0.3)",
     fontWeight: "500",
     cursor: "pointer",
-    fontVariantLigatures: "no-contextual",
   },
   ".mention:hover": {
     color: "white",
@@ -44,6 +44,7 @@ const parseLeaf = (l, i) => {
 };
 
 const createParser = ({
+  inline,
   getUserMentionDisplayName,
   onClickInteractiveElement,
 }) => {
@@ -56,7 +57,12 @@ const createParser = ({
 
       switch (el.type) {
         case "paragraph":
-          return <p key={i}>{children()}</p>;
+          return (
+            <p key={i}>
+              {children()}
+              {inline && " "}
+            </p>
+          );
         case "link":
           return (
             <a key={i} href={el.url} target="_blank" rel="noreferrer">
@@ -79,6 +85,7 @@ const createParser = ({
           const attachmentCount = el.children.length;
           const [maxWidth, maxHeight] =
             attachmentCount === 1 ? ["100%", "28rem"] : ["28rem", "18rem"];
+          if (inline) return null;
           return (
             <div
               key={i}
@@ -117,6 +124,7 @@ const createParser = ({
           );
         }
         case "image-attachment": {
+          if (inline) return null;
           return (
             <button
               key={i}
@@ -144,6 +152,7 @@ const createParser = ({
 };
 
 const RichText = ({
+  inline,
   blocks,
   getUserMentionDisplayName,
   onClickInteractiveElement,
@@ -153,13 +162,14 @@ const RichText = ({
   const parse = React.useMemo(
     () =>
       createParser({
+        inline,
         getUserMentionDisplayName,
         onClickInteractiveElement,
       }),
-    [getUserMentionDisplayName, onClickInteractiveElement]
+    [inline, getUserMentionDisplayName, onClickInteractiveElement]
   );
   return (
-    <div css={(theme) => css(createCss(theme))} {...props}>
+    <div css={(theme) => css(createCss(theme, { inline }))} {...props}>
       {parse(blocks)}
       {children}
     </div>
