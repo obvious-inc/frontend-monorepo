@@ -1,5 +1,4 @@
 import Head from "next/head";
-import NewShadesLogo from "../components/NewShadesLogo";
 
 export default function Home() {
   return (
@@ -15,8 +14,8 @@ export default function Home() {
         <link
           rel="icon"
           type="image/png"
-          sizes="16x16"
-          href="/favicon-16x16.png"
+          sizes="192x192"
+          href="/favicon-192x192.png"
         />
       </Head>
 
