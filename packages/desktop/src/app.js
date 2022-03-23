@@ -151,7 +151,7 @@ export default function Root() {
         >
           <AppScopeProvider>
             <ThemeProvider theme={defaultTheme}>
-              <Tooltip.Provider delayDuration={400}>
+              <Tooltip.Provider delayDuration={300}>
                 <App />
               </Tooltip.Provider>
             </ThemeProvider>

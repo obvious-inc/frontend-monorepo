@@ -1,24 +1,11 @@
 const connectWalletConnectProvider = ({
   infuraId = process.env.INFURA_PROJECT_ID,
 } = {}) =>
-  new Promise((resolve, reject) => {
-    import("@walletconnect/web3-provider").then(
+  new Promise((resolve) => {
+    import("@walletconnect/ethereum-provider").then(
       ({ default: WalletConnectProvider }) => {
         const provider = new WalletConnectProvider({ infuraId });
-
-        // You have to `enable` first, WC blocks all other calls
-        provider.enable().then(
-          () => {
-            resolve(provider);
-          },
-          (e) => {
-            if (e.message === "User closed modal") {
-              reject(new Error("wallet-connect:user-closed-modal"));
-              return;
-            }
-            reject(e);
-          }
-        );
+        resolve(provider);
       }
     );
   });
@@ -51,18 +38,14 @@ export const connectProvider = () => {
   });
 };
 
-export const getUserAccounts = async (provider) => {
-  const userAddresses = await provider
-    .request({ method: "eth_accounts" })
-    .then((addresses) => {
-      if (addresses.length !== 0) return addresses;
-      return provider.request({ method: "eth_requestAccounts" });
-    });
-
+export const getChecksumAddress = async (address) => {
   const { utils: ethersUtils } = await import("ethers");
+  return ethersUtils.getAddress(address);
+};
 
-  // Login endpoint expects a checksum address
-  return userAddresses.map(ethersUtils.getAddress);
+export const numberToHex = async (number) => {
+  const { utils: ethersUtils } = await import("ethers");
+  return ethersUtils.hexValue(number);
 };
 
 export const signAddress = async (provider, address) => {

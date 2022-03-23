@@ -5,9 +5,11 @@ export const dark = {
     primary: BLUE,
     pink: "#e588f8",
     textNormal: "#dcddde",
-    textMuted: "#72767d",
+    textMuted: "#bcc3cc7a",
+    // textMuted: "#72767d",
     textHeader: "white",
     linkColor: "hsl(197,100%,47.8%)",
+    linkColorHighlight: "hsl(197deg 100% 59%)",
     interactiveNormal: "#b9bbbe",
     interactiveHover: "#dcddde",
     interactiveActive: "#fff",
@@ -26,6 +28,7 @@ export const dark = {
     mentionFocusBorder: "#7375ffb8",
   },
   fontSizes: {
+    small: "1.3rem",
     channelMessages: "1.5rem",
   },
   fontStacks: {
