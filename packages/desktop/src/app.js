@@ -32,7 +32,7 @@ const App = () => {
   const { actions } = useAppScope();
 
   React.useEffect(() => {
-    if (authStatus !== "authenticated") return;
+    if (user == null) return;
 
     actions.fetchInitialData().then((data) => {
       const server = data.servers[0];
@@ -72,7 +72,7 @@ const App = () => {
 
       if (window.location.pathname === "/") redirectToChannel(channel.id);
     });
-  }, [authStatus]);
+  }, [user]);
 
   return (
     <>

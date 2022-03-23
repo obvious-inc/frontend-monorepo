@@ -1,7 +1,6 @@
 import React from "react";
 import { useParams } from "react-router";
 import { css } from "@emotion/react";
-import { FormattedDate } from "react-intl";
 import { useAuth, useAppScope, getImageFileDimensions } from "@shades/common";
 import usePageVisibilityChangeListener from "../hooks/page-visibility-change-listener";
 import stringifyMessageBlocks from "../slate/stringify";
