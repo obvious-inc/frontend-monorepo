@@ -14,17 +14,17 @@ export const Provider = ({ children }) => {
   const serverConnection = useServerConnection();
   const [stateSelectors, dispatch] = useRootReducer();
 
+  // Eslint compains if I put `serverConnection.send` in `useCallback` deps for some reason
+  const { send: serverConnectionSend } = serverConnection;
+
   const sendServerMessage = React.useCallback(
     (name, data) => {
-      if (!serverConnection.isConnected)
-        throw new Error("Not connected to server");
-
-      const messageSent = serverConnection.send(name, data);
+      const messageSent = serverConnectionSend(name, data);
       // Dispatch a client action if the message was successfully sent
       if (messageSent) dispatch({ type: name, data });
       return messageSent;
     },
-    [dispatch, serverConnection]
+    [dispatch, serverConnectionSend]
   );
 
   const fetchInitialData = React.useCallback(

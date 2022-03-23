@@ -22,10 +22,29 @@ const serverEventMap = {
   SERVER_PROFILE_UPDATE: "server-profile-updated",
 };
 
+const initPusherConnection = ({ Pusher, key, accessToken, apiOrigin }) => {
+  const pusher = new Pusher(key, {
+    cluster: "eu",
+    authEndpoint: `${apiOrigin}/websockets/auth`,
+    auth: {
+      params: { provider: "pusher" },
+      headers: { Authorization: `Bearer ${accessToken}` },
+    },
+  });
+
+  return new Promise((resolve) => {
+    pusher.connection.bind("connected", () => {
+      resolve(pusher);
+    });
+  });
+};
+
 const Context = React.createContext(null);
 
 export const Provider = ({ Pusher, pusherKey, debug = false, children }) => {
   const { accessToken, user, apiOrigin } = useAuth();
+
+  const pusherRef = React.useRef();
   const channelRef = React.useRef();
   const listenersRef = React.useRef([]);
 
@@ -55,31 +74,36 @@ export const Provider = ({ Pusher, pusherKey, debug = false, children }) => {
     if (accessToken == null || user?.id == null) return;
     Pusher.logToConsole = debug;
 
-    const pusher = new Pusher(pusherKey, {
-      cluster: "eu",
-      authEndpoint: `${apiOrigin}/websockets/auth`,
-      auth: {
-        params: { provider: "pusher" },
-        headers: { Authorization: `Bearer ${accessToken}` },
-      },
-    });
-
-    setPusherState(pusher.connection.state);
-
-    pusher.connection.bind("state_change", (states) => {
-      setPusherState(states.current);
-    });
-
-    const channel = pusher.subscribe(`private-${user.id}`);
-    channelRef.current = channel;
-
-    const serverEvents = Object.keys(serverEventMap);
-
-    for (let event of serverEvents)
-      channel.bind(event, (data) => {
-        const clientEventName = serverEventMap[event];
-        listenersRef.current.forEach((fn) => fn(clientEventName, data));
+    const connect = async () => {
+      const pusher = await initPusherConnection({
+        Pusher,
+        key: pusherKey,
+        accessToken,
+        apiOrigin,
       });
+
+      if (pusherRef.current != null) {
+        pusherRef.current.connection.unbind("state_change");
+        pusherRef.current.disconnect();
+      }
+
+      pusherRef.current = pusher;
+      channelRef.current = pusher.subscribe(`private-${user.id}`);
+
+      for (let event of Object.keys(serverEventMap))
+        channelRef.current.bind(event, (data) => {
+          const clientEventName = serverEventMap[event];
+          listenersRef.current.forEach((fn) => fn(clientEventName, data));
+        });
+
+      pusher.connection.bind("state_change", ({ current }) => {
+        setPusherState(current);
+      });
+
+      setPusherState(pusher.connection.state);
+    };
+
+    connect();
   }, [Pusher, apiOrigin, pusherKey, debug, user?.id, accessToken]);
 
   const serverConnection = React.useMemo(
