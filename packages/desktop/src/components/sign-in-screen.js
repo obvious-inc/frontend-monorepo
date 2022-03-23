@@ -127,6 +127,12 @@ const SignInScreen = () => {
   );
 
   const connectProvider = React.useCallback(async () => {
+    try {
+      window.localStorage.removeItem("wallet-connect");
+    } catch (e) {
+      // Ignore
+    }
+
     const handleDisconnect = () => {
       setStatus("idle");
       setSelectedAddress(null);
