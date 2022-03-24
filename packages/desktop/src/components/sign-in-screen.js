@@ -4,9 +4,12 @@ import { css } from "@emotion/react";
 import { TITLE_BAR_HEIGHT } from "../constants/ui";
 import { useAuth } from "@shades/common";
 import * as eth from "../utils/ethereum";
+import { alertify } from "../utils/misc";
 import usePageVisibilityChangeListener from "../hooks/page-visibility-change-listener";
 import * as Tooltip from "../components/tooltip";
 import Spinner from "../components/spinner";
+
+const DEBUG_SESSION = window.location.search.includes("debug");
 
 const isNative = window.Native != null;
 
@@ -27,7 +30,6 @@ const SignInScreen = () => {
 
     try {
       setStatus("requesting-address");
-      // if (providerRef.current == null) await connectProvider();
       const addresses = await providerRef.current.request({
         method: "eth_requestAccounts",
       });
@@ -127,11 +129,8 @@ const SignInScreen = () => {
   );
 
   const connectProvider = React.useCallback(async () => {
-    try {
-      window.localStorage.removeItem("wallet-connect");
-    } catch (e) {
-      // Ignore
-    }
+    if (DEBUG_SESSION)
+      alert(alertify(JSON.parse(localStorage.getItem("walletconnect"))));
 
     const handleDisconnect = () => {
       setStatus("idle");
