@@ -4,12 +4,9 @@ import { css } from "@emotion/react";
 import { TITLE_BAR_HEIGHT } from "../constants/ui";
 import { useAuth } from "@shades/common";
 import * as eth from "../utils/ethereum";
-import { alertify } from "../utils/misc";
 import usePageVisibilityChangeListener from "../hooks/page-visibility-change-listener";
 import * as Tooltip from "../components/tooltip";
 import Spinner from "../components/spinner";
-
-const DEBUG_SESSION = window.location.search.includes("debug");
 
 const isNative = window.Native != null;
 
@@ -20,7 +17,7 @@ const SignInScreen = () => {
   const providerRef = React.useRef();
 
   const [isProviderConnected, setProviderConnected] = React.useState(false);
-  const [selectedNetwork, setSelectedNetwork] = React.useState(null);
+  const [selectedChainId, setSelectedChainId] = React.useState(null);
   const [selectedAddress, setSelectedAddress] = React.useState(null);
   const [status, setStatus] = React.useState("idle");
   const [error, setError] = React.useState(null);
@@ -33,7 +30,7 @@ const SignInScreen = () => {
       const addresses = await providerRef.current.request({
         method: "eth_requestAccounts",
       });
-      handleAccountChange(addresses);
+      handleAccountsChange(addresses);
       setStatus("idle");
     } catch (e) {
       // Love WalletConnect
@@ -86,13 +83,13 @@ const SignInScreen = () => {
       });
   };
 
-  const handleNetworkChange = React.useCallback((chainId) => {
+  const handleChainChange = React.useCallback((chainId) => {
     eth.numberToHex(parseInt(chainId)).then((hexChainId) => {
-      setSelectedNetwork(hexChainId);
+      setSelectedChainId(hexChainId);
     });
   }, []);
 
-  const handleAccountChange = React.useCallback((accounts) => {
+  const handleAccountsChange = React.useCallback((accounts) => {
     if (accounts.length === 0) {
       setSelectedAddress(null);
       return;
@@ -104,73 +101,66 @@ const SignInScreen = () => {
     });
   }, []);
 
-  const updateNetwork = React.useCallback(
+  const updateChainId = React.useCallback(
     async (provider) => {
       try {
         const chainId = await provider.request({ method: "net_version" });
-        handleNetworkChange(chainId);
+        handleChainChange(chainId);
       } catch (e) {
-        setSelectedNetwork("unsupported");
+        setSelectedChainId("unsupported");
       }
     },
-    [handleNetworkChange]
+    [handleChainChange]
   );
 
   const updateAccount = React.useCallback(
     async (provider) => {
       try {
         const addresses = await provider.request({ method: "eth_accounts" });
-        handleAccountChange(addresses);
+        handleAccountsChange(addresses);
       } catch (e) {
-        handleAccountChange([]);
+        handleAccountsChange([]);
       }
     },
-    [handleAccountChange]
+    [handleAccountsChange]
   );
 
   const connectProvider = React.useCallback(async () => {
-    if (DEBUG_SESSION)
-      alert(alertify(JSON.parse(localStorage.getItem("walletconnect"))));
-
-    const handleDisconnect = () => {
-      setStatus("idle");
-      setSelectedAddress(null);
-      setSelectedNetwork(null);
-    };
-
     const provider = await eth.connectProvider();
     providerRef.current = provider;
 
-    provider.on("accountsChanged", handleAccountChange);
+    provider.on("accountsChanged", handleAccountsChange);
 
-    provider.on("chainChanged", (chainId) => {
-      handleNetworkChange(chainId);
+    provider.on("chainChanged", handleChainChange);
+
+    provider.on("disconnect", () => {
+      setStatus("idle");
+      setSelectedAddress(null);
+      setSelectedChainId(null);
+
+      // WalletConnect kills the previous provider so we have to reconnect
+      if (provider.isWalletConnect) connectProvider();
     });
 
-    provider.on("disconnect", (/* code, reason */) => {
-      handleDisconnect();
-    });
+    await updateChainId(provider);
 
-    provider.on("error", (e) => {
-      console.error("ERROR", e);
-    });
-    provider.on("close", (e) => {
-      console.error("CLOSE", e);
-    });
-
-    // Love WalletConnect
-    provider.connector?.on("disconnect", () => {
-      handleDisconnect();
-      // WalletConnect kills the previous connection so we have to reconnect
-      connectProvider();
-    });
-
-    await updateNetwork(provider);
+    // WalletConnect will prompt the connect modal when sending requests
+    if (!provider.isWalletConnect) {
+      try {
+        const permissions = await provider.request({
+          method: "wallet_getPermissions",
+        });
+        if (permissions.some((p) => p.parentCapability === "eth_accounts"))
+          updateAccount(provider);
+      } catch (e) {
+        // We can’t expect wallet_getPermissions to be supported
+      }
+    }
 
     setProviderConnected(true);
 
     return provider;
-  }, [updateNetwork, handleNetworkChange, handleAccountChange]);
+  }, [updateChainId, updateAccount, handleChainChange, handleAccountsChange]);
 
   React.useEffect(() => {
     connectProvider();
@@ -190,7 +180,7 @@ const SignInScreen = () => {
 
     if (selectedAddress != null) updateAccount(providerRef.current);
 
-    updateNetwork(providerRef.current);
+    updateChainId(providerRef.current);
   });
 
   return (
@@ -211,9 +201,9 @@ const SignInScreen = () => {
         height: isNative ? `calc(100% - ${TITLE_BAR_HEIGHT})` : "100%",
       }}
     >
-      {!isProviderConnected || selectedNetwork == null ? (
+      {!isProviderConnected || selectedChainId == null ? (
         <Spinner color="rgb(255 255 255 / 15%)" size="2.6rem" />
-      ) : selectedNetwork !== "0x1" ? (
+      ) : selectedChainId !== "0x1" ? (
         status === "requesting-network-switch" ? (
           <div>
             <Spinner
