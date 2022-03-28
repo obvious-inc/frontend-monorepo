@@ -1,5 +1,11 @@
 import React from "react";
-import { NavLink, Outlet, useParams, Link } from "react-router-dom";
+import {
+  NavLink,
+  Outlet,
+  useParams,
+  useLocation,
+  Link,
+} from "react-router-dom";
 import { css } from "@emotion/react";
 import { useAppScope, useAuth } from "@shades/common";
 import {
@@ -8,6 +14,8 @@ import {
   Plus as PlusIcon,
 } from "./icons";
 import Spinner from "./spinner";
+import ServerMemberAvatar from "./server-member-avatar";
+import { NotificationBadge } from "./channel-layout";
 
 const MenuContext = React.createContext();
 export const useMenuState = () => React.useContext(MenuContext);
@@ -46,6 +54,7 @@ const AppLayout = () => {
   const params = useParams();
   const { state, actions, serverConnection } = useAppScope();
   const { user } = useAuth();
+  const location = useLocation();
 
   const { isEnabled, isCollapsed, toggle } = useSidebarMenu();
   const menuContextValue = React.useMemo(
@@ -56,6 +65,9 @@ const AppLayout = () => {
   const servers = state.selectServers();
 
   const hasServers = servers.length > 0;
+
+  const dmChannels = state.selectDmChannels();
+  const unreadDmChannels = dmChannels.filter((c) => c.hasUnread);
 
   if (!state.selectHasFetchedInitialData() || user == null) return null;
 
@@ -97,12 +109,30 @@ const AppLayout = () => {
                 icon: <HomeIcon style={{ width: "2.2rem" }} />,
               },
               {
-                to: "/channels/@me",
+                to:
+                  dmChannels.length === 0
+                    ? "/channels/@me"
+                    : `/channels/@me/${dmChannels[0].id}`,
                 icon: <ChatBubblesIcon style={{ width: "2.2rem" }} />,
+                component: Link,
+                className: location.pathname.startsWith("/channels/@me")
+                  ? "active"
+                  : undefined,
               },
-            ].map(({ to, icon }, i) => (
-              <RoundButton key={i} component={NavLink} to={to}>
+            ].map(({ icon, ...props }, i) => (
+              <RoundButton key={i} component={NavLink} {...props}>
                 {icon}
+              </RoundButton>
+            ))}
+
+            {unreadDmChannels.map((c) => (
+              <RoundButton
+                key={c.id}
+                component={NavLink}
+                to={`/channels/@me/${c.id}`}
+                notificationCount={1} // TODO
+              >
+                <ServerMemberAvatar userId={c.memberUserIds[0]} size="4.6rem" />
               </RoundButton>
             ))}
 
@@ -207,34 +237,53 @@ const AppLayout = () => {
   );
 };
 
-const RoundButton = ({ component: Component = "button", ...props }) => (
-  <Component
-    css={(theme) =>
-      css({
-        borderRadius: "50%",
-        background: theme.colors.backgroundPrimary,
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        width: "4.6rem",
-        height: "4.6rem",
-        color: theme.colors.textMuted,
-        cursor: "pointer",
-        border: 0,
-        textDecoration: "none",
-        transition: "0.1s all",
-        ":hover, &.active": {
-          color: "white",
-          borderRadius: "1.2rem",
-        },
-        "&.active": {
-          background: theme.colors.primary,
-        },
-        svg: { display: "block", width: "2.4rem", height: "auto" },
-      })
-    }
-    {...props}
-  />
+const RoundButton = ({
+  component: Component = "button",
+  notificationCount = 0,
+  ...props
+}) => (
+  <div style={{ position: "relative" }}>
+    <Component
+      css={(theme) =>
+        css({
+          borderRadius: "50%",
+          background: theme.colors.backgroundPrimary,
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          width: "4.6rem",
+          height: "4.6rem",
+          color: theme.colors.textMuted,
+          cursor: "pointer",
+          border: 0,
+          textDecoration: "none",
+          transition: "0.1s all",
+          overflow: "hidden",
+          ":hover, &.active": {
+            color: "white",
+            borderRadius: "1.2rem",
+          },
+          "&.active": {
+            background: theme.colors.primary,
+          },
+          svg: { display: "block", width: "2.4rem", height: "auto" },
+        })
+      }
+      {...props}
+    />
+    {notificationCount > 0 && (
+      <NotificationBadge
+        count={notificationCount}
+        css={(theme) => ({
+          pointerEvents: "none",
+          position: "absolute",
+          right: 0,
+          bottom: 0,
+          boxShadow: `0 0 0 0.4rem ${theme.colors.backgroundTertiary}`,
+        })}
+      />
+    )}
+  </div>
 );
 
 export default AppLayout;

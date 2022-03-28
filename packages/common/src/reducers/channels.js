@@ -1,7 +1,11 @@
 import combineReducers from "../utils/combine-reducers";
 import { indexBy, unique } from "../utils/array";
 import { getMentions } from "../utils/message";
-import { selectServerMemberWithUserId } from "./server-members";
+import {
+  selectServerMembers,
+  selectServerMemberWithUserId,
+  selectUser,
+} from "./server-members";
 
 const entriesById = (state = {}, action) => {
   switch (action.type) {
@@ -11,29 +15,31 @@ const entriesById = (state = {}, action) => {
         action.data.read_states
       );
 
-      const channelsById = indexBy(
-        (c) => c.id,
-        action.data.servers.flatMap((s) =>
+      const allChannels = [
+        ...action.data.servers.flatMap((s) =>
           s.channels.map((c) => ({ ...c, serverId: s.id }))
-        )
-      );
+        ),
+        ...action.data.dms,
+      ];
+
+      const channelsById = indexBy((c) => c.id, allChannels);
 
       const entriesById = Object.fromEntries(
         Object.entries(channelsById).map(([id, channel]) => {
           const readStates = readStatesByChannelId[id];
-          return [
+          const properties = {
             id,
-            {
-              id,
-              name: channel.name,
-              serverId: channel.serverId,
-              lastMessageAt: channel.last_message_at,
-              lastReadAt: readStates?.last_read_at ?? null,
-              unreadMentionMessageIds: Array(
-                readStates?.mention_count ?? 0
-              ).fill(null),
-            },
-          ];
+            name: channel.name,
+            kind: channel.kind,
+            serverId: channel.serverId,
+            lastMessageAt: channel.last_message_at,
+            lastReadAt: readStates?.last_read_at ?? null,
+            unreadMentionMessageIds: Array(readStates?.mention_count ?? 0).fill(
+              null
+            ),
+          };
+          if (channel.kind === "dm") properties.memberUserIds = channel.members;
+          return [id, properties];
         })
       );
 
@@ -130,30 +136,87 @@ export const selectChannel = (state) => (id) => {
 
   if (channel == null) return null;
 
-  const userServerMember = selectServerMemberWithUserId(state)(
-    channel.serverId,
-    state.user.id
-  );
+  const getLastReadTimestamp = () => {
+    if (channel.kind === "dm")
+      return channel.lastReadAt == null
+        ? new Date().getTime()
+        : new Date(channel.lastReadAt).getTime();
 
-  const serverJoinTimestamp = new Date(userServerMember.joined_at).getTime();
+    const userServerMember = selectServerMemberWithUserId(state)(
+      channel.serverId,
+      state.user.id
+    );
 
-  const lastReadTimestamp =
-    channel.lastReadAt == null
+    const serverJoinTimestamp = new Date(userServerMember.joined_at).getTime();
+
+    return channel.lastReadAt == null
       ? serverJoinTimestamp
       : new Date(channel.lastReadAt).getTime();
+  };
+
+  const buildName = () => {
+    if (channel.kind !== "dm") return channel.name;
+
+    if (channel.memberUserIds.length === 1) return "Me";
+
+    return channel.memberUserIds
+      .filter((id) => id !== state.user.id)
+      .map((id) => {
+        const user = selectUser(state)(id);
+        return user?.displayName;
+      })
+      .filter(Boolean)
+      .join(", ");
+  };
+
+  const lastReadTimestamp = getLastReadTimestamp();
 
   const lastMessageTimestamp = new Date(channel.lastMessageAt).getTime();
 
   return {
     ...channel,
+    name: buildName(),
     hasUnread: lastReadTimestamp < lastMessageTimestamp,
     mentionCount: channel.unreadMentionMessageIds.length,
   };
 };
 
+export const selectDmChannelFromUserId = (state) => (userId) => {
+  const dmChannels = selectDmChannels(state)();
+  const userDmChannels = dmChannels.filter(
+    (c) => c.memberUserIds.length <= 2 && c.memberUserIds.includes(userId)
+  );
+
+  if (userDmChannels.length > 1) throw new Error();
+
+  return userDmChannels[0];
+};
+
+export const selectDmChannelFromUserIds = (state) => (userIds) => {
+  const dmChannels = selectDmChannels(state)();
+  return dmChannels.find(
+    (c) =>
+      c.memberUserIds.length === userIds.length &&
+      c.memberUserIds.every((id) => userIds.includes(id))
+  );
+};
+
 export const selectServerChannels = (state) => (serverId) => {
   return Object.values(state.channels.entriesById)
     .filter((channel) => channel.serverId === serverId)
+    .map((c) => selectChannel(state)(c.id));
+};
+
+export const selectServerDmChannels = (state) => (serverId) => {
+  const memberUserIds = selectServerMembers(state)(serverId).map((m) => m.id);
+  return selectDmChannels(state)().filter((c) =>
+    c.memberUserIds.some((userId) => memberUserIds.includes(userId))
+  );
+};
+
+export const selectDmChannels = (state) => () => {
+  return Object.values(state.channels.entriesById)
+    .filter((channel) => channel.kind === "dm")
     .map((c) => selectChannel(state)(c.id));
 };
 

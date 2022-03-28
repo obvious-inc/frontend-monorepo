@@ -1,7 +1,6 @@
 import React from "react";
 import { css } from "@emotion/react";
 import { arrayUtils } from "@shades/common";
-import useCommands from "../hooks/commands";
 import RichTextInput from "./rich-text-input";
 
 const { sort } = arrayUtils;
@@ -14,16 +13,15 @@ const MessageInput = React.forwardRef(
       placeholder,
       onKeyDown,
       disabled,
+      commands,
       disableCommands = false,
-      serverMembers,
+      members,
       getUserMentionDisplayName,
     },
     editorRef
   ) => {
     const preventInputBlurRef = React.useRef();
     const mentionQueryRangeRef = React.useRef();
-
-    const { commands } = useCommands();
 
     const [mentionQuery, setMentionQuery] = React.useState(null);
     const [commandQuery, setCommandQuery] = React.useState(null);
@@ -44,7 +42,7 @@ const MessageInput = React.forwardRef(
 
       const lowerCaseQuery = mentionQuery?.toLowerCase() ?? null;
 
-      const unorderedFilteredServerMembers = serverMembers.filter(
+      const unorderedFilteredServerMembers = members.filter(
         (member) =>
           lowerCaseQuery != null &&
           member.displayName.toLowerCase().includes(lowerCaseQuery)
@@ -62,8 +60,8 @@ const MessageInput = React.forwardRef(
 
       return orderedFilteredServerMembers
         .slice(0, 10)
-        .map((m) => ({ value: m.user.id, label: m.displayName }));
-    }, [autoCompleteMode, mentionQuery, serverMembers]);
+        .map((m) => ({ value: m.id, label: m.displayName }));
+    }, [autoCompleteMode, mentionQuery, members]);
 
     const filteredCommandOptions = React.useMemo(() => {
       if (autoCompleteMode !== "commands") return [];

@@ -1,7 +1,7 @@
 import combineReducers from "../utils/combine-reducers";
 import { indexBy, groupBy, unique } from "../utils/array";
 import { omitKey, mapValues } from "../utils/object";
-import { selectServerMemberWithUserId } from "./server-members";
+import { selectServerMemberWithUserId, selectUser } from "./server-members";
 
 const entriesById = (state = {}, action) => {
   switch (action.type) {
@@ -180,13 +180,18 @@ export const selectMessage = (state) => (id) => {
 
   if (message == null) return null;
 
-  message.authorServerMember = selectServerMemberWithUserId(state)(
-    message.server,
-    message.author
-  );
-
   message.serverId = message.server;
   message.authorUserId = message.author;
+
+  // `server` doesn’t exist on dm messages
+  if (message.serverId != null) {
+    message.authorServerMember = selectServerMemberWithUserId(state)(
+      message.serverId,
+      message.authorUserId
+    );
+  } else {
+    message.authorUser = selectUser(state)(message.authorUserId);
+  }
 
   if (message.reply_to != null) {
     message.repliedMessage = selectMessage(state)(message.reply_to);

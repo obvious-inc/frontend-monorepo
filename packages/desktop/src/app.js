@@ -14,7 +14,7 @@ import {
 import SignInScreen from "./components/sign-in-screen";
 import Channel from "./components/channel";
 import AppLayout from "./components/app-layout";
-import ChannelLayout from "./components/channel-layout";
+import ChannelLayout, { DmChannelLayout } from "./components/channel-layout";
 import TitleBar from "./components/title-bar";
 import * as Tooltip from "./components/tooltip";
 import {
@@ -105,32 +105,39 @@ const App = () => {
                   </div>
                 }
               />
-              <Route
-                path="/channels/@me"
-                element={
-                  <div
-                    css={css({
-                      flex: 1,
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      height: "100%",
-                    })}
-                  >
-                    <ChatBubblesIcon
-                      style={{
-                        width: "6rem",
-                        color: "rgb(255 255 255 / 5%)",
-                      }}
-                    />
-                  </div>
-                }
-              />
+              <Route element={<DmChannelLayout />}>
+                <Route
+                  path="/channels/@me"
+                  element={
+                    <div
+                      css={(theme) =>
+                        css({
+                          flex: 1,
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          height: "100%",
+                          background: theme.colors.backgroundPrimary,
+                        })
+                      }
+                    >
+                      <ChatBubblesIcon
+                        style={{
+                          width: "6rem",
+                          color: "rgb(255 255 255 / 5%)",
+                        }}
+                      />
+                    </div>
+                  }
+                />
+                <Route path="/channels/@me/:channelId" element={<Channel />} />
+              </Route>
               <Route element={<ChannelLayout />}>
                 <Route
                   path="/channels/:serverId/:channelId"
                   element={<Channel />}
                 />
+                <Route path="/channels/:serverId" element={<Channel />} />
               </Route>
               <Route path="*" element={null} />
             </Route>
