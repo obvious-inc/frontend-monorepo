@@ -179,10 +179,15 @@ export const Provider = ({
       });
 
       if (response.status === 401) {
-        const newAccessToken = await refreshAccessToken();
-        const headers = new Headers(options?.headers);
-        headers.set("Authorization", `Bearer ${newAccessToken}`);
-        return authorizedFetch(url, { ...options, headers });
+        try {
+          const newAccessToken = await refreshAccessToken();
+          const headers = new Headers(options?.headers);
+          headers.set("Authorization", `Bearer ${newAccessToken}`);
+          return authorizedFetch(url, { ...options, headers });
+        } catch (e) {
+          // Sign out if the access token refresh doesn’t succeed
+          signOut();
+        }
       }
 
       if (!response.ok) return Promise.reject(new Error(response.statusText));
@@ -191,7 +196,7 @@ export const Provider = ({
 
       return response.json();
     },
-    [apiOrigin, accessTokenRef, refreshAccessToken]
+    [apiOrigin, accessTokenRef, refreshAccessToken, signOut]
   );
 
   const verifyAccessToken = React.useCallback(() => {
