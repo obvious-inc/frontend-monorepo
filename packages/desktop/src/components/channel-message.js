@@ -1,14 +1,7 @@
 import React from "react";
-import { useParams } from "react-router";
 import { FormattedDate } from "react-intl";
 import { css, useTheme } from "@emotion/react";
-import {
-  useAuth,
-  useAppScope,
-  arrayUtils,
-  objectUtils,
-  messageUtils,
-} from "@shades/common";
+import { useAuth, arrayUtils, objectUtils, messageUtils } from "@shades/common";
 import useHover from "../hooks/hover";
 import { isNodeEmpty, normalizeNodes, cleanNodes } from "../slate/utils";
 import {
@@ -33,9 +26,11 @@ const { withoutAttachments } = messageUtils;
 const ONE_MINUTE_IN_MILLIS = 1000 * 60;
 
 const ChannelMessage = ({
+  isDM,
   authorNick,
   authorWalletAddress,
   authorUserId,
+  serverId,
   authorOnlineStatus,
   previousMessage,
   avatarVerified,
@@ -52,15 +47,15 @@ const ChannelMessage = ({
   removeReaction,
   update,
   remove,
-  serverMembers,
+  members,
+  selectChannelMemberWithUserId,
   getUserMentionDisplayName,
+  sendDirectMessageToAuthor,
 }) => {
   const inputRef = React.useRef();
   const containerRef = React.useRef();
 
-  const params = useParams();
   const { user } = useAuth();
-  const { state } = useAppScope();
 
   const [isHovering, hoverHandlers] = useHover();
   const [isDropdownOpen, setDropdownOpen] = React.useState(false);
@@ -130,6 +125,11 @@ const ChannelMessage = ({
           startEditMode={() => {
             setEditingMessage(true);
           }}
+          sendDirectMessage={
+            isOwnMessage || (isDM && members.length <= 2)
+              ? undefined
+              : sendDirectMessageToAuthor
+          }
           addReaction={(emoji) => {
             addReaction(emoji);
             setEmojiPickerOpen(false);
@@ -204,7 +204,7 @@ const ChannelMessage = ({
                 >
                   <ServerMemberAvatar
                     userId={authorUserId}
-                    serverId={params.serverId}
+                    serverId={serverId}
                     size="3.8rem"
                   />
                 </button>
@@ -229,7 +229,7 @@ const ChannelMessage = ({
                 )}
                 <ServerMemberAvatar
                   userId={authorUserId}
-                  serverId={params.serverId}
+                  serverId={serverId}
                   size="6.4rem"
                 />
               </Tooltip.Content>
@@ -285,12 +285,14 @@ const ChannelMessage = ({
                         css={css({ padding: "0.4rem", marginLeft: "0.3rem" })}
                       >
                         <div
-                          css={css({
-                            width: "0.7rem",
-                            height: "0.7rem",
-                            borderRadius: "50%",
-                            background: "hsl(139 47.3%  43.9%)",
-                          })}
+                          css={(theme) =>
+                            css({
+                              width: "0.7rem",
+                              height: "0.7rem",
+                              borderRadius: "50%",
+                              background: theme.colors.onlineIndicator,
+                            })
+                          }
                         />
                       </div>
                     </Tooltip.Trigger>
@@ -329,7 +331,7 @@ const ChannelMessage = ({
                   return message;
                 })
               }
-              serverMembers={serverMembers}
+              members={members}
               getUserMentionDisplayName={getUserMentionDisplayName}
             />
           ) : (
@@ -407,10 +409,8 @@ const ChannelMessage = ({
             >
               {reactions.map((r) => {
                 const isLoggedInUserReaction = r.users.includes(user.id);
-                const members = r.users
-                  .map((id) =>
-                    state.selectServerMemberWithUserId(params.serverId, id)
-                  )
+                const authorDisplayNames = r.users
+                  .map(selectChannelMemberWithUserId)
                   .map((m) => m.displayName);
                 return (
                   <Tooltip.Root key={r.emoji}>
@@ -461,8 +461,8 @@ const ChannelMessage = ({
                           })}
                         >
                           {[
-                            members.slice(0, -1).join(", "),
-                            members.slice(-1)[0],
+                            authorDisplayNames.slice(0, -1).join(", "),
+                            authorDisplayNames.slice(-1)[0],
                           ]
                             .filter(Boolean)
                             .join(" and ")}{" "}
@@ -661,6 +661,7 @@ const MessageToolbar = ({
   isOwnMessage,
   canEditMessage,
   startEditMode,
+  sendDirectMessage,
   initReply,
   addReaction,
   requestMessageRemoval,
@@ -741,14 +742,27 @@ const MessageToolbar = ({
         <DropdownMenu.Item onSelect={initReply}>Reply</DropdownMenu.Item>
         <DropdownMenu.Item disabled>Mark unread</DropdownMenu.Item>
         {canEditMessage && (
+          <DropdownMenu.Item
+            onSelect={() => {
+              startEditMode();
+            }}
+          >
+            Edit message
+          </DropdownMenu.Item>
+        )}
+
+        {sendDirectMessage != null && (
+          <DropdownMenu.Item
+            onSelect={() => {
+              sendDirectMessage();
+            }}
+          >
+            Send direct message
+          </DropdownMenu.Item>
+        )}
+
+        {canEditMessage && (
           <>
-            <DropdownMenu.Item
-              onSelect={() => {
-                startEditMode();
-              }}
-            >
-              Edit message
-            </DropdownMenu.Item>
             <DropdownMenu.Separator />
             <DropdownMenu.Item
               onSelect={requestMessageRemoval}
@@ -868,12 +882,7 @@ const EditMessageInput = React.forwardRef(
 );
 
 const RepliedMessage = ({ message, getUserMentionDisplayName }) => {
-  const params = useParams();
-  const { state } = useAppScope();
-  const authorMember =
-    message == null
-      ? null
-      : state.selectServerMemberWithUserId(params.serverId, message.author);
+  const authorMember = message.authorServerMember ?? message.authorUser;
 
   return (
     <div
@@ -915,8 +924,8 @@ const RepliedMessage = ({ message, getUserMentionDisplayName }) => {
           />
         ) : (
           <ServerMemberAvatar
-            userId={message.author}
-            serverId={params.serverId}
+            userId={message.authorUserId}
+            serverId={message.serverId}
             size="1.4rem"
             borderRadius="0.2rem"
           />

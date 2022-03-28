@@ -221,11 +221,11 @@ export const Provider = ({ children }) => {
   );
 
   const createChannel = React.useCallback(
-    ({ name, kind, server }) =>
+    ({ name, kind, server, memberUserIds }) =>
       authorizedFetch("/channels", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name, kind, server }),
+        body: JSON.stringify({ name, kind, server, members: memberUserIds }),
       }).then((res) => {
         // TODO
         fetchInitialData();

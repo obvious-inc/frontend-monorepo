@@ -262,8 +262,7 @@ const SignInScreen = () => {
             style={{ margin: "0 auto 2rem" }}
           />
           <div style={{ marginBottom: "1rem" }}>
-            Requesting signature from{" "}
-            <TruncatedAddress address={selectedAddress} />
+            Requesting signature from {eth.truncateAddress(selectedAddress)}
             ...
           </div>
           <Small>Check your wallet</Small>
@@ -335,7 +334,7 @@ const SignInScreen = () => {
                         })
                       }
                     >
-                      <TruncatedAddress address={selectedAddress} />
+                      {eth.truncateAddress(selectedAddress)}
                     </a>
                   </Tooltip.Trigger>
                   <Tooltip.Content side="top" sideOffset={4}>
@@ -401,8 +400,5 @@ const Small = (props) => (
     {...props}
   />
 );
-
-const TruncatedAddress = ({ address }) =>
-  [address.slice(0, 5), address.slice(-3)].join("...");
 
 export default SignInScreen;

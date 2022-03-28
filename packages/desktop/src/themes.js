@@ -26,6 +26,7 @@ export const dark = {
     // dialogBackground: "#202225",
     dialogBackground: "#40444b",
     mentionFocusBorder: "#7375ffb8",
+    onlineIndicator: "hsl(139 47.3%  43.9%)",
   },
   fontSizes: {
     small: "1.3rem",

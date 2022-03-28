@@ -16,7 +16,11 @@ const reducer = (state = initialState, action) => {
   }
 };
 
-export const selectServer = (state) => (id) => state.servers.entriesById[id];
+export const selectServer = (state) => (id) => {
+  const server = state.servers.entriesById[id];
+  if (server == null) return null;
+  return { ...server, ownerUserId: server.owner };
+};
 
 export const selectServers = (state) => () =>
   Object.values(state.servers.entriesById);

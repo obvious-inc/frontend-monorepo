@@ -1,5 +1,5 @@
 import React from "react";
-import { useParams } from "react-router";
+import { useParams, useNavigate } from "react-router";
 import { css } from "@emotion/react";
 import { useAuth, useAppScope, getImageFileDimensions } from "@shades/common";
 import usePageVisibilityChangeListener from "../hooks/page-visibility-change-listener";
@@ -8,8 +8,9 @@ import { createEmptyParagraph, isNodeEmpty, cleanNodes } from "../slate/utils";
 import useCommands from "../hooks/commands";
 import MessageInput from "./message-input";
 import Spinner from "./spinner";
+import { Header } from "./channel-layout";
 import ChannelMessage from "./channel-message";
-import { Hash as HashIcon } from "./icons";
+import { Hash as HashIcon, AtSign as AtSignIcon } from "./icons";
 import {
   HamburgerMenu as HamburgerMenuIcon,
   PlusCircle as PlusCircleIcon,
@@ -48,10 +49,16 @@ const useChannelMessages = (channelId) => {
   return sortedMessages;
 };
 
-const Channel = () => {
-  const params = useParams();
+export const ChannelBase = ({
+  channel,
+  members,
+  selectChannelMemberWithUserId,
+  createMessage,
+  headerContent,
+}) => {
   const { user } = useAuth();
   const { actions, state } = useAppScope();
+  const navigate = useNavigate();
 
   const [pendingReplyMessageId, setPendingReplyMessageId] =
     React.useState(null);
@@ -60,32 +67,24 @@ const Channel = () => {
 
   const inputRef = React.useRef();
 
-  const selectedServer = state.selectServer(params.serverId);
-  const serverChannels = selectedServer?.channels ?? [];
-  const selectedChannel = serverChannels.find((c) => c.id === params.channelId);
-  const serverMembers = state.selectServerMembers(params.serverId);
-
   const getUserMentionDisplayName = React.useCallback(
     (ref) => {
-      const member = serverMembers.find((m) => m.user.id === ref);
+      const member = members.find((m) => m.id === ref);
       return member?.displayName ?? ref;
     },
-    [serverMembers]
+    [members]
   );
 
-  const messages = useChannelMessages(params.channelId);
+  const messages = useChannelMessages(channel.id);
 
   React.useEffect(() => {
-    if (selectedChannel?.id == null) return;
     inputRef.current.focus();
-  }, [selectedChannel?.id]);
+  }, []);
 
   usePageVisibilityChangeListener((state) => {
     if (state === "visible") return;
     actions.fetchInitialData();
   });
-
-  if (selectedChannel == null) return null;
 
   return (
     <div
@@ -107,7 +106,7 @@ const Channel = () => {
             "0 1px 0 rgba(4,4,5,0.2),0 1.5px 0 rgba(6,6,7,0.05),0 2px 0 rgba(4,4,5,0.05)",
         })}
       >
-        {isMenuEnabled ? (
+        {isMenuEnabled && (
           <button
             onClick={() => {
               toggleMenu();
@@ -130,28 +129,8 @@ const Channel = () => {
           >
             <HamburgerMenuIcon style={{ width: "1.5rem" }} />
           </button>
-        ) : (
-          <div
-            css={(theme) =>
-              css({ color: theme.colors.textMuted, marginRight: "0.9rem" })
-            }
-          >
-            <HashIcon style={{ width: "1.9rem" }} />
-          </div>
         )}
-        <div
-          css={(theme) =>
-            css({
-              fontSize: "1.5rem",
-              fontWeight: "600",
-              color: theme.colors.textHeader,
-              whiteSpace: "nowrap",
-              textOverflow: "ellipsis",
-            })
-          }
-        >
-          {selectedChannel.name}
-        </div>
+        {headerContent}
       </div>
 
       <div
@@ -176,12 +155,26 @@ const Channel = () => {
           {messages.map((m, i, ms) => (
             <ChannelMessage
               key={m.id}
+              isDM={channel.kind === "dm"}
+              serverId={channel.serverId}
               content={m.content}
               authorUserId={m.authorUserId}
-              authorNick={m.authorServerMember?.displayName}
-              avatarVerified={m.authorServerMember?.pfp?.verified ?? false}
-              authorWalletAddress={m.authorServerMember?.walletAddress}
-              authorOnlineStatus={m.authorServerMember?.onlineStatus}
+              authorNick={
+                m.authorServerMember?.displayName ?? m.authorUser?.displayName
+              }
+              avatarVerified={
+                m.authorServerMember?.pfp?.verified ??
+                m.authorUser?.pfp?.verified ??
+                false
+              }
+              authorWalletAddress={
+                m.authorServerMember?.walletAddress ??
+                m.authorUser?.walletAddress
+              }
+              authorOnlineStatus={
+                m.authorServerMember?.onlineStatus ?? m.authorUser?.onlineStatus
+              }
+              selectChannelMemberWithUserId={selectChannelMemberWithUserId}
               previousMessage={ms[i - 1]}
               reactions={m.reactions}
               createdAt={new Date(m.created_at)}
@@ -213,8 +206,25 @@ const Channel = () => {
                 setPendingReplyMessageId(m.id);
                 inputRef.current.focus();
               }}
-              serverMembers={serverMembers}
+              members={members}
               getUserMentionDisplayName={getUserMentionDisplayName}
+              sendDirectMessageToAuthor={() => {
+                const redirect = (c) => navigate(`/channels/@me/${c.id}`);
+                const dmChannel = state.selectDmChannelFromUserId(
+                  m.authorUserId
+                );
+                if (dmChannel != null) {
+                  redirect(dmChannel);
+                  return;
+                }
+
+                actions
+                  .createChannel({
+                    kind: "dm",
+                    memberUserIds: [m.authorUserId],
+                  })
+                  .then(redirect);
+              }}
             />
           ))}
           <div
@@ -228,6 +238,8 @@ const Channel = () => {
       <div css={css({ padding: "0 1.6rem 1.6rem" })}>
         <NewMessageInput
           ref={inputRef}
+          isDM={channel.kind === "dm"}
+          serverId={channel.serverId}
           replyingToMessage={
             pendingReplyMessageId == null
               ? null
@@ -240,18 +252,17 @@ const Channel = () => {
           uploadImage={actions.uploadImage}
           submit={(blocks) => {
             setPendingReplyMessageId(null);
-            return actions.createMessage({
-              server: params.serverId,
-              channel: params.channelId,
-              content: stringifyMessageBlocks(blocks),
+            return createMessage({
               blocks,
               replyToMessageId: pendingReplyMessageId,
             });
           }}
           placeholder={
-            selectedChannel == null ? "..." : `Message #${selectedChannel.name}`
+            channel.kind === "dm"
+              ? `Message ${channel.name}`
+              : `Message #${channel.name}`
           }
-          serverMembers={serverMembers}
+          members={members}
           getUserMentionDisplayName={getUserMentionDisplayName}
         />
       </div>
@@ -261,7 +272,15 @@ const Channel = () => {
 
 const NewMessageInput = React.forwardRef(
   (
-    { submit, uploadImage, replyingToMessage, cancelReply, ...props },
+    {
+      submit,
+      uploadImage,
+      replyingToMessage,
+      cancelReply,
+      isDM,
+      serverId,
+      ...props
+    },
     editorRef
   ) => {
     const [pendingMessage, setPendingMessage] = React.useState(() => [
@@ -275,9 +294,13 @@ const NewMessageInput = React.forwardRef(
     const fileInputRef = React.useRef();
     const uploadPromiseRef = React.useRef();
 
-    const { serverId } = useParams();
-
-    const { execute: executeCommand, isCommand } = useCommands();
+    const {
+      execute: executeCommand,
+      isCommand,
+      commands,
+    } = useCommands({
+      context: isDM ? "dm" : "server-channel",
+    });
 
     const executeMessage = async () => {
       const blocks = cleanNodes(pendingMessage);
@@ -297,15 +320,20 @@ const NewMessageInput = React.forwardRef(
         const [commandName, ...args] = messageString
           .slice(1)
           .split(" ")
-          .map((s) => s.trim());
+          .map((s) => s.trim())
+          .filter(Boolean);
 
         if (isCommand(commandName)) {
           setPending(true);
-          await executeCommand(commandName, {
-            args,
-            editor: editorRef.current,
-            serverId,
-          });
+          try {
+            await executeCommand(commandName, {
+              args,
+              editor: editorRef.current,
+              serverId,
+            });
+          } catch (e) {
+            alert(e.message);
+          }
           setPending(false);
           return;
         }
@@ -472,6 +500,7 @@ const NewMessageInput = React.forwardRef(
                 executeMessage();
               }
             }}
+            commands={commands}
             disabled={isPending}
             {...props}
           />
@@ -669,5 +698,66 @@ const AttachmentList = ({ items, remove }) => (
     ))}
   </div>
 );
+
+const Channel = () => {
+  const params = useParams();
+  const { state, actions } = useAppScope();
+  const { isEnabled: isMenuEnabled } = useMenuState();
+
+  const channel = state.selectChannel(params.channelId);
+
+  if (channel == null)
+    return (
+      <div
+        css={(theme) =>
+          css({ background: theme.colors.backgroundPrimary, flex: 1 })
+        }
+      />
+    );
+
+  const members =
+    channel.kind === "dm"
+      ? channel.memberUserIds.map(state.selectUser)
+      : state.selectServerMembers(params.serverId);
+
+  return (
+    <ChannelBase
+      channel={channel}
+      members={members}
+      createMessage={({ blocks, replyToMessageId }) => {
+        return actions.createMessage({
+          server: channel.kind === "dm" ? undefined : params.serverId,
+          channel: params.channelId,
+          content: stringifyMessageBlocks(blocks),
+          blocks,
+          replyToMessageId,
+        });
+      }}
+      selectChannelMemberWithUserId={(userId) =>
+        channel.kind === "dm"
+          ? state.selectUser(userId)
+          : state.selectServerMemberWithUserId(params.serverId, userId)
+      }
+      headerContent={
+        <>
+          {!isMenuEnabled && (
+            <div
+              css={(theme) =>
+                css({ color: theme.colors.textMuted, marginRight: "0.9rem" })
+              }
+            >
+              {channel.kind === "dm" ? (
+                <AtSignIcon style={{ width: "2.2rem" }} />
+              ) : (
+                <HashIcon style={{ width: "1.9rem" }} />
+              )}
+            </div>
+          )}
+          <Header>{channel.name}</Header>
+        </>
+      }
+    />
+  );
+};
 
 export default Channel;
