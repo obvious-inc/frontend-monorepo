@@ -4,12 +4,8 @@ import combineReducers from "../utils/combine-reducers";
 
 const userEntriesById = (state = {}, action) => {
   switch (action.type) {
-    case "initial-data-request-successful": {
-      const users = action.data.servers.flatMap((s) =>
-        s.members.map((m) => m.user)
-      );
-      return indexBy((u) => u.id, users);
-    }
+    case "initial-data-request-successful":
+      return indexBy((u) => u.id, action.data.users);
 
     case "server-event:user-profile-updated":
       return mapValues((user) => {
@@ -100,7 +96,7 @@ const memberIdsByUserId = (state = [], action) => {
   switch (action.type) {
     case "initial-data-request-successful": {
       const members = action.data.servers.flatMap((s) => s.members);
-      const membersByUserId = groupBy((m) => m.user.id, members);
+      const membersByUserId = groupBy((m) => m.user, members);
       const memberIdsByUserId = mapValues(
         (members) => members.map((m) => m.id),
         membersByUserId
@@ -140,7 +136,7 @@ export const selectUsers = (state) => () =>
 export const selectServerMember = (state) => (id) => {
   const member = state.serverMembers.entriesById[id];
 
-  const user = selectUser(state)(member.user.id);
+  const user = selectUser(state)(member.user);
 
   const displayName =
     member.display_name != null && member.display_name !== ""
