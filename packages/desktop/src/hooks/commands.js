@@ -80,7 +80,6 @@ const otherCommands = {
         throw e;
       }
     },
-    exclude: () => !window.location.search.includes("beta"),
   }),
   logout: ({ signOut }) => ({
     description: "Logs you out, really fast.",
