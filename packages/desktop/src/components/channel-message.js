@@ -154,10 +154,11 @@ const ChannelMessage = ({
               style: { color: "#ff5968" },
             },
             { type: "separator" },
-            (isOwnMessage || (isDM && members.length <= 2)) && {
-              onSelect: sendDirectMessageToAuthor,
-              label: "Send direct message",
-            },
+            !isOwnMessage &&
+              !(isDM && members.length <= 2) && {
+                onSelect: sendDirectMessageToAuthor,
+                label: "Send direct message",
+              },
             {
               onSelect: () => {
                 navigator.clipboard.writeText(authorWalletAddress);
