@@ -10,7 +10,7 @@ export const Separator = React.forwardRef((props, ref) => (
     css={css({
       height: "1px",
       background: "rgb(255 255 255 / 5%)",
-      margin: "0.5rem 0",
+      margin: "0.5rem -0.5rem",
     })}
     {...props}
   />
@@ -23,15 +23,16 @@ export const Item = React.forwardRef((props, ref) => (
       css({
         width: "100%",
         height: "2.9rem",
-        padding: "0 1.2rem",
+        padding: "0 0.8rem",
         display: "inline-flex",
         alignItems: "center",
         justifyContent: "flex-start",
-        lineHeight: 1,
+        lineHeight: 1.4,
         fontSize: "1.3rem",
         fontWeight: "400",
         cursor: "pointer",
         color: theme.colors.textNormal,
+        borderRadius: "0.3rem",
         "&:hover, &:focus": {
           background: "rgb(255 255 255 / 5%)",
           outline: "none",
@@ -53,8 +54,10 @@ export const Content = React.forwardRef((props, ref) => (
     alignOffset={-4}
     css={(theme) =>
       css({
-        width: "16rem",
-        padding: "0.5rem 0",
+        width: "22rem",
+        minWidth: "18rem",
+        maxWidth: "calc(100% - 2rem)",
+        padding: "0.5rem",
         background: theme.colors.dialogBackground,
         borderRadius: "0.4rem",
         boxShadow:

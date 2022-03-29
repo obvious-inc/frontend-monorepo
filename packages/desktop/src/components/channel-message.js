@@ -119,24 +119,15 @@ const ChannelMessage = ({
         })}
       >
         <MessageToolbar
-          initReply={initReply}
           isOwnMessage={isOwnMessage}
           canEditMessage={canEditMessage}
+          initReply={initReply}
           startEditMode={() => {
             setEditingMessage(true);
           }}
-          sendDirectMessage={
-            isOwnMessage || (isDM && members.length <= 2)
-              ? undefined
-              : sendDirectMessageToAuthor
-          }
           addReaction={(emoji) => {
             addReaction(emoji);
             setEmojiPickerOpen(false);
-          }}
-          requestMessageRemoval={() => {
-            if (confirm("Are you sure you want to remove this message?"))
-              remove();
           }}
           onDropdownOpenChange={(isOpen) => {
             setDropdownOpen(isOpen);
@@ -145,6 +136,35 @@ const ChannelMessage = ({
           onEmojiPickerOpenChange={(isOpen) => {
             setEmojiPickerOpen(isOpen);
           }}
+          dropdownItems={[
+            { onSelect: initReply, label: "Reply" },
+            { disabled: true, label: "Mark unread" },
+            canEditMessage && {
+              onSelect: () => {
+                setEditingMessage(true);
+              },
+              label: "Edit message",
+            },
+            canEditMessage && {
+              onSelect: () => {
+                if (confirm("Are you sure you want to remove this message?"))
+                  remove();
+              },
+              label: "Delete message",
+              style: { color: "#ff5968" },
+            },
+            { type: "separator" },
+            (isOwnMessage || (isDM && members.length <= 2)) && {
+              onSelect: sendDirectMessageToAuthor,
+              label: "Send direct message",
+            },
+            {
+              onSelect: () => {
+                navigator.clipboard.writeText(authorWalletAddress);
+              },
+              label: "Copy user wallet address",
+            },
+          ].filter(Boolean)}
         />
       </div>
 
@@ -658,13 +678,12 @@ const EmojiPicker = ({ addReaction }) => {
 };
 
 const MessageToolbar = ({
+  dropdownItems = [],
   isOwnMessage,
   canEditMessage,
   startEditMode,
-  sendDirectMessage,
   initReply,
   addReaction,
-  requestMessageRemoval,
   onDropdownOpenChange,
   isEmojiPickerOpen,
   onEmojiPickerOpenChange,
@@ -739,39 +758,14 @@ const MessageToolbar = ({
         </DropdownMenu.Trigger>
       </Toolbar.Button>
       <DropdownMenu.Content>
-        <DropdownMenu.Item onSelect={initReply}>Reply</DropdownMenu.Item>
-        <DropdownMenu.Item disabled>Mark unread</DropdownMenu.Item>
-        {canEditMessage && (
-          <DropdownMenu.Item
-            onSelect={() => {
-              startEditMode();
-            }}
-          >
-            Edit message
-          </DropdownMenu.Item>
-        )}
-
-        {sendDirectMessage != null && (
-          <DropdownMenu.Item
-            onSelect={() => {
-              sendDirectMessage();
-            }}
-          >
-            Send direct message
-          </DropdownMenu.Item>
-        )}
-
-        {canEditMessage && (
-          <>
-            <DropdownMenu.Separator />
-            <DropdownMenu.Item
-              onSelect={requestMessageRemoval}
-              style={{ color: "#ff5968" }}
-            >
-              Delete message
+        {dropdownItems.map(({ onSelect, label, type, ...props }, i) => {
+          if (type === "separator") return <DropdownMenu.Separator key={i} />;
+          return (
+            <DropdownMenu.Item key={i} onSelect={onSelect} {...props}>
+              {label}
             </DropdownMenu.Item>
-          </>
-        )}
+          );
+        })}
       </DropdownMenu.Content>
     </DropdownMenu.Root>
   </Toolbar.Root>
