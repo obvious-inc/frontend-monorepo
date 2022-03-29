@@ -132,7 +132,10 @@ const AppLayout = () => {
                 to={`/channels/@me/${c.id}`}
                 notificationCount={1} // TODO
               >
-                <ServerMemberAvatar userId={c.memberUserIds[0]} size="4.6rem" />
+                <ServerMemberAvatar
+                  userId={c.memberUserIds.filter((id) => id !== user.id)[0]}
+                  size="4.6rem"
+                />
               </RoundButton>
             ))}
 
