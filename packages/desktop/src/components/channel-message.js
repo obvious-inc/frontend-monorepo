@@ -882,7 +882,7 @@ const EditMessageInput = React.forwardRef(
 );
 
 const RepliedMessage = ({ message, getUserMentionDisplayName }) => {
-  const authorMember = message.authorServerMember ?? message.authorUser;
+  const authorMember = message?.authorServerMember ?? message?.authorUser;
 
   return (
     <div
