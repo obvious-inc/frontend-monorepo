@@ -1,5 +1,5 @@
 import combineReducers from "../utils/combine-reducers";
-import { indexBy, unique } from "../utils/array";
+import { indexBy, unique, sort } from "../utils/array";
 import { getMentions } from "../utils/message";
 import {
   selectServerMembers,
@@ -215,9 +215,14 @@ export const selectServerDmChannels = (state) => (serverId) => {
 };
 
 export const selectDmChannels = (state) => () => {
-  return Object.values(state.channels.entriesById)
+  const channels = Object.values(state.channels.entriesById)
     .filter((channel) => channel.kind === "dm")
     .map((c) => selectChannel(state)(c.id));
+
+  return sort((c1, c2) => {
+    const [t1, t2] = [c1, c2].map((c) => new Date(c.lastMessageAt).getTime());
+    return t1 > t2 ? -1 : t1 < t2 ? 1 : 0;
+  }, channels);
 };
 
 export default combineReducers({ entriesById });
