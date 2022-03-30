@@ -4,6 +4,7 @@ import { useAppScope, useAuth } from "@shades/common";
 import { useMenuState } from "./app-layout";
 import { Hash as HashIcon } from "./icons";
 import Avatar from "./server-member-avatar";
+import Button from "./button";
 
 const isNative = window.Native != null;
 
@@ -98,7 +99,19 @@ const ChannelLayout = () => {
           })
         }
       >
-        Congratulations, you found an empty server!
+        <div>
+          Congratulations, you found an empty server!
+          <div style={{ marginTop: "2rem" }}>
+            <Button
+              onClick={() => {
+                const name = prompt("Channel name", "General") || "General";
+                actions.createChannel({ name, serverId: params.serverId });
+              }}
+            >
+              Click me!
+            </Button>
+          </div>
+        </div>
       </div>
     );
 
@@ -121,7 +134,7 @@ const ChannelLayout = () => {
                         actions.createChannel({
                           name,
                           kind: "server",
-                          server: params.serverId,
+                          serverId: params.serverId,
                         });
                       },
                     }

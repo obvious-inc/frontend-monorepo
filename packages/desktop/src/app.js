@@ -29,50 +29,24 @@ const App = () => {
   const navigate = useNavigate();
 
   const { status: authStatus, user } = useAuth();
-  const { actions } = useAppScope();
+  const { state, actions } = useAppScope();
 
   React.useEffect(() => {
-    if (user == null) return;
+    if (user == null || state.selectHasFetchedInitialData()) return null;
 
     actions.fetchInitialData().then((data) => {
       const server = data.servers[0];
+
       const channel = server?.channels[0];
 
-      const redirectToChannel = (channelId) =>
-        navigate(`/channels/${server.id}/${channelId}`, {
+      if (channel == null) return;
+
+      if (window.location.pathname === "/")
+        navigate(`/channels/${server.id}/${channel.id}`, {
           replace: true,
         });
-
-      if (server == null) {
-        // Temporary ofc
-        const defaultServerName = `${user.display_name}’a server`;
-        const serverName = prompt("Name your server", defaultServerName);
-        actions.createServer({ name: serverName ?? defaultServerName });
-        return;
-      }
-
-      if (channel == null) {
-        // We’re just playing, anything goes
-        const defaultChannelName = "General";
-        const channelName = prompt(
-          "Create your first channel",
-          defaultChannelName
-        );
-        actions
-          .createChannel({
-            name: channelName ?? defaultChannelName,
-            kind: "server",
-            server: server.id,
-          })
-          .then((channel) => {
-            redirectToChannel(channel.id);
-          });
-        return;
-      }
-
-      if (window.location.pathname === "/") redirectToChannel(channel.id);
     });
-  }, [user]);
+  }, [user, navigate, actions, state]);
 
   return (
     <>
