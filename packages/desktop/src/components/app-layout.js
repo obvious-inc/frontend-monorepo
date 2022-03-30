@@ -133,7 +133,10 @@ const AppLayout = () => {
                 notificationCount={1} // TODO
               >
                 <ServerMemberAvatar
-                  userId={c.memberUserIds.filter((id) => id !== user.id)[0]}
+                  userId={
+                    c.memberUserIds.filter((id) => id !== user.id)[0] ??
+                    c.memberUserIds[0]
+                  }
                   size="4.6rem"
                 />
               </RoundButton>
