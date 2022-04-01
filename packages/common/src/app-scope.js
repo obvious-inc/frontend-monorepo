@@ -54,6 +54,20 @@ export const Provider = ({ children }) => {
     [authorizedFetch]
   );
 
+  const fetchServers = React.useCallback(
+    () =>
+      authorizedFetch("/servers").then((servers) => {
+        console.log(servers);
+        return servers;
+      }),
+    [authorizedFetch]
+  );
+
+  const joinServer = React.useCallback(
+    (id) => authorizedFetch(`/servers/${id}/join`, { method: "POST" }),
+    [authorizedFetch]
+  );
+
   const fetchMessages = React.useCallback(
     ({ channelId }) =>
       authorizedFetch(`/channels/${channelId}/messages`).then((messages) => {
@@ -256,6 +270,8 @@ export const Provider = ({ children }) => {
       fetchInitialData,
       fetchMessage,
       updateMe,
+      fetchServers,
+      joinServer,
       fetchMessages,
       createServer,
       createChannel,
@@ -269,9 +285,11 @@ export const Provider = ({ children }) => {
     }),
     [
       fetchInitialData,
+      fetchServers,
       fetchMessage,
       updateMe,
       fetchMessages,
+      joinServer,
       createServer,
       createChannel,
       createMessage,

@@ -8,6 +8,7 @@ export const dark = {
     textMuted: "#bcc3cc7a",
     // textMuted: "#72767d",
     textHeader: "white",
+    textHeaderSecondary: "#b9bbbe",
     linkColor: "hsl(197,100%,47.8%)",
     linkColorHighlight: "hsl(197deg 100% 59%)",
     interactiveNormal: "#b9bbbe",
@@ -30,6 +31,7 @@ export const dark = {
   },
   fontSizes: {
     small: "1.3rem",
+    tiny: "1.1rem",
     channelMessages: "1.5rem",
   },
   fontStacks: {

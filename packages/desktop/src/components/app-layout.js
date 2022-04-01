@@ -199,7 +199,7 @@ const AppLayout = () => {
 
           <RoundButton
             onClick={() => {
-              if (process.env.DEV) {
+              if (process.env.DEV || window.location.search.includes("beta")) {
                 const name = prompt("Name plz");
                 actions.createServer({ name });
                 return;

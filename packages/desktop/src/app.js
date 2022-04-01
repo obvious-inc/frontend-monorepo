@@ -13,6 +13,7 @@ import {
 } from "@shades/common";
 import SignInScreen from "./components/sign-in-screen";
 import Channel from "./components/channel";
+import Discover from "./components/discover";
 import AppLayout from "./components/app-layout";
 import ChannelLayout, { DmChannelLayout } from "./components/channel-layout";
 import TitleBar from "./components/title-bar";
@@ -113,6 +114,7 @@ const App = () => {
                 />
                 <Route path="/channels/:serverId" element={<Channel />} />
               </Route>
+              <Route path="/discover" element={<Discover />} />
               <Route path="*" element={null} />
             </Route>
           </Routes>
