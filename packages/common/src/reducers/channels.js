@@ -210,7 +210,7 @@ export const selectServerChannels = (state) => (serverId) => {
 export const selectServerDmChannels = (state) => (serverId) => {
   const memberUserIds = selectServerMembers(state)(serverId).map((m) => m.id);
   return selectDmChannels(state)().filter((c) =>
-    c.memberUserIds.some((userId) => memberUserIds.includes(userId))
+    c.memberUserIds.every((userId) => memberUserIds.includes(userId))
   );
 };
 
