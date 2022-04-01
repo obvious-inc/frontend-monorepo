@@ -557,21 +557,151 @@ const EmojiPicker = ({ addReaction }) => {
     [emojiData]
   );
 
+  const [highlightedEntry, setHighlightedEntry] = React.useState(null);
+
   const [query, setQuery] = React.useState("");
   const trimmedQuery = query.trim().toLowerCase();
 
-  const filteredEmojisByCategory = React.useMemo(() => {
+  const filteredEmojisByCategoryEntries = React.useMemo(() => {
     const match = (e) =>
       [e.description.toLowerCase(), ...e.aliases, ...e.tags].some((prop) =>
         prop.includes(trimmedQuery)
       );
 
-    return Object.fromEntries(
-      Object.entries(mapValues((es) => es.filter(match), emojis)).filter(
-        (entry) => entry[1].length !== 0
-      )
+    return Object.entries(mapValues((es) => es.filter(match), emojis)).filter(
+      (entry) => entry[1].length !== 0
     );
   }, [emojis, trimmedQuery]);
+
+  const highlightedEmojiItem =
+    highlightedEntry == null
+      ? null
+      : filteredEmojisByCategoryEntries[highlightedEntry[0]][1][
+          highlightedEntry[1]
+        ];
+
+  const ROW_LENGTH = 9;
+
+  const addReactionAtEntry = ([ci, ei]) => {
+    const { emoji } = filteredEmojisByCategoryEntries[ci][1][ei];
+    addReaction(emoji);
+  };
+
+  const navigationBlockedRef = React.useRef();
+
+  // Hack to make the UI not freeze when you navigate by pressing and holding e.g. arrow down
+  const wrapNavigationKeydownHandler = (handler) => {
+    if (navigationBlockedRef.current) return;
+    navigationBlockedRef.current = true;
+    handler();
+    requestAnimationFrame(() => {
+      navigationBlockedRef.current = false;
+    });
+  };
+
+  const handleKeyDown = (event) => {
+    switch (event.key) {
+      case "ArrowUp": {
+        wrapNavigationKeydownHandler(() => {
+          setHighlightedEntry((e) => {
+            if (e == null) return null;
+            const [ci, ei] = e;
+            if (ei - ROW_LENGTH >= 0) return [ci, ei - ROW_LENGTH];
+            if (ci === 0) return null;
+            const targetColumn = ei;
+            const previousCategoryItems =
+              filteredEmojisByCategoryEntries[ci - 1][1];
+            const lastRowLength =
+              previousCategoryItems.length % ROW_LENGTH === 0
+                ? ROW_LENGTH
+                : previousCategoryItems.length % ROW_LENGTH;
+            return [
+              ci - 1,
+              lastRowLength - 1 >= targetColumn
+                ? previousCategoryItems.length - lastRowLength + targetColumn
+                : previousCategoryItems.length - 1,
+            ];
+          });
+          event.preventDefault();
+        });
+        break;
+      }
+      case "ArrowDown": {
+        wrapNavigationKeydownHandler(() => {
+          setHighlightedEntry((e) => {
+            if (filteredEmojisByCategoryEntries.length === 0) return null;
+            if (e == null) return [0, 0];
+            const [ci, ei] = e;
+            const categoryItems = filteredEmojisByCategoryEntries[ci][1];
+            if (ei + ROW_LENGTH <= categoryItems.length - 1)
+              return [ci, ei + ROW_LENGTH];
+            const lastRowStartIndex =
+              categoryItems.length % ROW_LENGTH === 0
+                ? categoryItems.length - ROW_LENGTH
+                : categoryItems.length - (categoryItems.length % ROW_LENGTH);
+
+            if (ei < lastRowStartIndex) return [ci, categoryItems.length - 1];
+            if (ci === filteredEmojisByCategoryEntries.length - 1)
+              return [ci, ei];
+            const targetColumn = ei % ROW_LENGTH;
+            const nextCategoryItems =
+              filteredEmojisByCategoryEntries[ci + 1][1];
+            return [
+              ci + 1,
+              nextCategoryItems.length - 1 >= targetColumn
+                ? targetColumn
+                : nextCategoryItems.length - 1,
+            ];
+          });
+          event.preventDefault();
+        });
+        break;
+      }
+      case "ArrowLeft": {
+        wrapNavigationKeydownHandler(() => {
+          setHighlightedEntry((e) => {
+            if (e == null) return null;
+            const [ci, ei] = e;
+            if (ei - 1 >= 0) return [ci, ei - 1];
+            if (ci === 0) {
+              const categoryItems = filteredEmojisByCategoryEntries[ci][1];
+              return [
+                ci,
+                categoryItems.length >= ROW_LENGTH
+                  ? ROW_LENGTH - 1
+                  : categoryItems.length - 1,
+              ];
+            }
+            const previousCategoryItems =
+              filteredEmojisByCategoryEntries[ci - 1][1];
+            return [ci - 1, previousCategoryItems.length - 1];
+          });
+          event.preventDefault();
+        });
+        break;
+      }
+      case "ArrowRight": {
+        wrapNavigationKeydownHandler(() => {
+          setHighlightedEntry((e) => {
+            if (e == null) return null;
+            const [ci, ei] = e;
+            const categoryItems = filteredEmojisByCategoryEntries[ci][1];
+            if (ei + 1 <= categoryItems.length - 1) return [ci, ei + 1];
+            if (ci === filteredEmojisByCategoryEntries.length - 1)
+              return [ci, ei];
+            return [ci + 1, 0];
+          });
+          event.preventDefault();
+        });
+        break;
+      }
+      case "Enter": {
+        addReactionAtEntry(highlightedEntry);
+        event.preventDefault();
+        break;
+      }
+    }
+  };
 
   React.useEffect(() => {
     inputRef.current.focus();
@@ -589,8 +719,17 @@ const EmojiPicker = ({ addReaction }) => {
         <input
           ref={inputRef}
           value={query}
-          onChange={(e) => setQuery(e.target.value)}
-          placeholder="Search"
+          onChange={(e) => {
+            setQuery(e.target.value);
+            setHighlightedEntry(null);
+          }}
+          onKeyDown={handleKeyDown}
+          placeholder={
+            highlightedEmojiItem == null
+              ? "Search"
+              : highlightedEmojiItem.description ?? "Search"
+            // : `:${highlightedEmojiItem.aliases?.[0]}:` ?? "Search"
+          }
           css={(theme) =>
             css({
               color: "white",
@@ -610,8 +749,16 @@ const EmojiPicker = ({ addReaction }) => {
         />
       </div>
 
-      <div css={css({ position: "relative", flex: 1, overflow: "auto" })}>
-        {Object.entries(filteredEmojisByCategory).map(([category, emojis]) => (
+      <div
+        css={css({
+          position: "relative",
+          flex: 1,
+          overflow: "auto",
+          scrollPaddingTop: "3rem",
+          scrollPaddingBottom: "0.5rem",
+        })}
+      >
+        {filteredEmojisByCategoryEntries.map(([category, emojis], ci) => (
           <div key={category}>
             <div
               css={(theme) =>
@@ -625,51 +772,48 @@ const EmojiPicker = ({ addReaction }) => {
                   fontWeight: "500",
                   color: "rgb(255 255 255 / 40%)",
                   textTransform: "uppercase",
+                  pointerEvents: "none",
                 })
               }
             >
               {category}
             </div>
             <div
-              css={css({
-                display: "grid",
-                gridTemplateColumns: "repeat(9, max-content)",
-                padding: "0 0.5rem",
-              })}
+              css={css({ display: "grid", padding: "0 0.5rem" })}
+              style={{
+                gridTemplateColumns: `repeat(${ROW_LENGTH}, max-content)`,
+              }}
             >
-              {emojis.map(({ emoji }) => (
-                <button
-                  key={emoji}
-                  onClick={() => {
-                    addReaction(emoji);
-                  }}
-                  css={(theme) =>
-                    css({
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      fontSize: "2.2rem",
-                      width: "3.4rem",
-                      height: "2.9rem",
-                      background: "none",
-                      borderRadius: "0.5rem",
-                      border: 0,
-                      cursor: "pointer",
-                      outline: "none",
-                      "&:hover": {
-                        background: "rgb(255 255 255 / 10%)",
-                      },
-                      "&:focus": {
-                        position: "relative",
-                        zIndex: 2,
-                        boxShadow: `0 0 0 0.2rem ${theme.colors.primary}`,
-                      },
-                    })
-                  }
-                >
-                  {emoji}
-                </button>
-              ))}
+              {emojis.map(({ emoji }, i) => {
+                const isHighlighted =
+                  highlightedEntry != null &&
+                  highlightedEntry[0] === ci &&
+                  highlightedEntry[1] === i;
+                return (
+                  <Emoji
+                    key={emoji}
+                    emoji={emoji}
+                    isHighlighted={isHighlighted}
+                    ref={(el) => {
+                      if (el == null) return;
+                      if (isHighlighted)
+                        el.scrollIntoView({ block: "nearest" });
+                    }}
+                    onClick={() => {
+                      addReaction(emoji);
+                    }}
+                    onMouseMove={() => {
+                      if (
+                        highlightedEntry != null &&
+                        highlightedEntry[0] === ci &&
+                        highlightedEntry[1] === i
+                      )
+                        return;
+                      setHighlightedEntry([ci, i]);
+                    }}
+                  />
+                );
+              })}
             </div>
           </div>
         ))}
@@ -677,6 +821,39 @@ const EmojiPicker = ({ addReaction }) => {
     </>
   );
 };
+
+const Emoji = React.forwardRef(({ emoji, isHighlighted, ...props }, ref) => (
+  <button
+    ref={ref}
+    data-selected={isHighlighted ? "true" : undefined}
+    css={(theme) =>
+      css({
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        fontSize: "2.2rem",
+        width: "3.4rem",
+        height: "2.9rem",
+        background: "none",
+        borderRadius: "0.5rem",
+        border: 0,
+        cursor: "pointer",
+        outline: "none",
+        "&[data-selected]": {
+          background: "rgb(255 255 255 / 10%)",
+        },
+        "&:focus": {
+          position: "relative",
+          zIndex: 2,
+          boxShadow: `0 0 0 0.2rem ${theme.colors.primary}`,
+        },
+      })
+    }
+    {...props}
+  >
+    {emoji}
+  </button>
+));
 
 const MessageToolbar = ({
   dropdownItems = [],
