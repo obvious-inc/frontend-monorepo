@@ -17,6 +17,8 @@ const Discover = () => {
     });
   }, [actions]);
 
+  if (servers.length === 0) return null;
+
   return (
     <div
       css={(theme) =>
@@ -28,6 +30,7 @@ const Discover = () => {
           background: theme.colors.backgroundPrimary,
           padding: "6rem 2rem",
           overflow: "auto",
+          overflowWrap: "break-word",
         })
       }
     >
