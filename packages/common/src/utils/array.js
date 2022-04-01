@@ -14,4 +14,6 @@ export const groupBy = (computeKey, list) =>
 
 export const unique = (list) => [...new Set(list)];
 
-export const sort = (comparator, list) => [...list.sort(comparator)];
+export const reverse = (list) => [...list].reverse();
+
+export const sort = (comparator, list) => [...list].sort(comparator);

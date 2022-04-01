@@ -1,10 +1,12 @@
 import { NavLink, Outlet, useParams } from "react-router-dom";
 import { css } from "@emotion/react";
-import { useAppScope, useAuth } from "@shades/common";
+import { useAppScope, useAuth, arrayUtils } from "@shades/common";
 import { useMenuState } from "./app-layout";
 import { Hash as HashIcon } from "./icons";
 import Avatar from "./server-member-avatar";
 import Button from "./button";
+
+const { reverse } = arrayUtils;
 
 const isNative = window.Native != null;
 
@@ -329,6 +331,11 @@ export const DmChannelItem = ({
   size,
 }) => {
   const { user } = useAuth();
+  const membersUsersIdsExcludingMe = memberUserIds.filter(
+    (id) => id !== user.id
+  );
+  const avatarSize = size === "large" ? "3.2rem" : "1.8rem";
+  const avatarBorderRadius = size === "large" ? "0.3rem" : "0.2rem";
   return (
     <div
       css={(theme) => css`
@@ -357,18 +364,20 @@ export const DmChannelItem = ({
         a:not(.active):hover {
           background: ${theme.colors.backgroundModifierHover};
         }
-        .name {
+        .title,
+        .subtitle {
           white-space: nowrap;
           text-overflow: ellipsis;
           overflow: hidden;
         }
-        .note {
-          font-size: 1.3rem;
-          margin-top: 0.3rem;
+        .subtitle {
+          font-size: 1.2rem;
+          font-weight: 400;
+          line-height: 1.2;
         }
-        a.active .name,
-        a:hover .name {
-          color: white;
+        a.active,
+        a:hover {
+          color: ${theme.colors.textNormal};
         }
       `}
     >
@@ -377,22 +386,54 @@ export const DmChannelItem = ({
         className={({ isActive }) => (isActive ? "active" : "")}
       >
         <span style={{ marginRight: size === "large" ? "1rem" : "0.6rem" }}>
-          <Avatar
-            userId={
-              memberUserIds.filter((id) => id !== user.id)[0] ??
-              memberUserIds[0]
-            }
-            size={size === "large" ? "3.2rem" : "1.8rem"}
-            borderRadius={size === "large" ? "0.3rem" : "0.2rem"}
-          />
+          {membersUsersIdsExcludingMe.length <= 1 ? (
+            <Avatar
+              userId={membersUsersIdsExcludingMe[0] ?? user.id}
+              size={avatarSize}
+              borderRadius={avatarBorderRadius}
+            />
+          ) : (
+            <div
+              style={{
+                width: avatarSize,
+                height: avatarSize,
+                position: "relative",
+              }}
+            >
+              {reverse(membersUsersIdsExcludingMe.slice(0, 2)).map(
+                (userId, i) => (
+                  <Avatar
+                    key={userId}
+                    userId={userId}
+                    size={avatarSize}
+                    borderRadius={avatarBorderRadius}
+                    css={css({
+                      position: "absolute",
+                      top: i === 0 ? "3px" : 0,
+                      left: i === 0 ? "3px" : 0,
+                      width: "calc(100% - 3px)",
+                      height: "calc(100% - 3px)",
+                      boxShadow:
+                        i !== 0 ? `1px 1px 0 0px rgb(0 0 0 / 30%)` : undefined,
+                    })}
+                  />
+                )
+              )}
+            </div>
+          )}
         </span>
         <div style={{ flex: 1, minWidth: 0 }}>
           <div
-            className="name"
-            style={{ color: hasUnread ? "white" : undefined }}
+            className="title"
+            css={(theme) =>
+              css({ color: hasUnread ? theme.colors.textNormal : undefined })
+            }
           >
             {name}
           </div>
+          {size === "large" && memberUserIds.length > 2 && (
+            <div className="subtitle">{memberUserIds.length} members</div>
+          )}
         </div>
         {notificationCount > 0 && (
           <NotificationBadge count={notificationCount} />

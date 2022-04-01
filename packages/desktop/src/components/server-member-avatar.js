@@ -8,6 +8,7 @@ const ServerMemberAvatar = ({
   userId,
   size = "2rem",
   borderRadius = "0.3rem",
+  ...props
 }) => {
   const { state } = useAppScope();
   const member =
@@ -37,6 +38,7 @@ const ServerMemberAvatar = ({
           objectFit: "cover",
         })
       }
+      {...props}
     />
   );
 };
