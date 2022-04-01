@@ -4,7 +4,6 @@ import { useAppScope, useAuth, arrayUtils } from "@shades/common";
 import { useMenuState } from "./app-layout";
 import { Hash as HashIcon } from "./icons";
 import Avatar from "./server-member-avatar";
-import Button from "./button";
 
 const { reverse } = arrayUtils;
 
@@ -85,37 +84,6 @@ const ChannelLayout = () => {
   const serverDmChannels = state.selectServerDmChannels(params.serverId);
 
   if (server == null) return null;
-
-  if (channels.length === 0)
-    return (
-      <div
-        css={(theme) =>
-          css({
-            flex: 1,
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            color: theme.colors.textMuted,
-            padding: "2rem",
-            textAlign: "center",
-          })
-        }
-      >
-        <div>
-          Congratulations, you found an empty server!
-          <div style={{ marginTop: "2rem" }}>
-            <Button
-              onClick={() => {
-                const name = prompt("Channel name", "General") || "General";
-                actions.createChannel({ name, serverId: params.serverId });
-              }}
-            >
-              Click me!
-            </Button>
-          </div>
-        </div>
-      </div>
-    );
 
   return (
     <SidebarLayout
