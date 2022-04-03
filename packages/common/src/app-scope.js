@@ -55,17 +55,32 @@ export const Provider = ({ children }) => {
   );
 
   const fetchServers = React.useCallback(
-    () =>
-      authorizedFetch("/servers").then((servers) => {
-        console.log(servers);
-        return servers;
-      }),
+    () => authorizedFetch("/servers"),
     [authorizedFetch]
   );
 
   const joinServer = React.useCallback(
-    (id) => authorizedFetch(`/servers/${id}/join`, { method: "POST" }),
-    [authorizedFetch]
+    (id) =>
+      authorizedFetch(`/servers/${id}/join`, { method: "POST" }).then((res) => {
+        // TODO
+        fetchInitialData();
+        return res;
+      }),
+    [authorizedFetch, fetchInitialData]
+  );
+
+  const updateServer = React.useCallback(
+    (id, { name, description, avatar }) =>
+      authorizedFetch(`/servers/${id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name, description, avatar }),
+      }).then((res) => {
+        // TODO
+        fetchInitialData();
+        return res;
+      }),
+    [authorizedFetch, fetchInitialData]
   );
 
   const fetchMessages = React.useCallback(
@@ -253,6 +268,20 @@ export const Provider = ({ children }) => {
     [authorizedFetch, fetchInitialData]
   );
 
+  const updateChannel = React.useCallback(
+    (id, { name }) =>
+      authorizedFetch(`/channels/${id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name }),
+      }).then((res) => {
+        // TODO
+        fetchInitialData();
+        return res;
+      }),
+    [authorizedFetch, fetchInitialData]
+  );
+
   const uploadImage = React.useCallback(
     ({ files }) => {
       const formData = new FormData();
@@ -270,11 +299,13 @@ export const Provider = ({ children }) => {
       fetchInitialData,
       fetchMessage,
       updateMe,
-      fetchServers,
-      joinServer,
       fetchMessages,
+      fetchServers,
       createServer,
+      updateServer,
+      joinServer,
       createChannel,
+      updateChannel,
       createMessage,
       updateMessage,
       removeMessage,
@@ -285,13 +316,15 @@ export const Provider = ({ children }) => {
     }),
     [
       fetchInitialData,
-      fetchServers,
       fetchMessage,
       updateMe,
       fetchMessages,
-      joinServer,
+      fetchServers,
       createServer,
+      updateServer,
+      joinServer,
       createChannel,
+      updateChannel,
       createMessage,
       updateMessage,
       removeMessage,

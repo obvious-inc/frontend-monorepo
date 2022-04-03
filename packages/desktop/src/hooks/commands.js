@@ -38,14 +38,14 @@ const otherCommands = {
       editor.clear();
     },
   }),
-  nick: ({ actions }) => ({
+  nick: ({ actions, context }) => ({
     description: "Update your nickname for this server",
     execute: async ({ args, editor, serverId }) => {
       const displayName = args.join(" ");
       await actions.updateMe({ displayName, serverId });
       editor.clear();
     },
-    exclude: ({ context }) => context === "dm",
+    exclude: () => context === "dm",
   }),
   dm: ({ actions, state, navigate }) => ({
     description:
@@ -81,13 +81,49 @@ const otherCommands = {
       }
     },
   }),
+  "update-server": ({ user, state, actions, serverId }) => ({
+    description: "Update a server property",
+    arguments: ["propery-name", "property-value"],
+    execute: async ({ args, editor }) => {
+      if (args.length < 2) {
+        alert('Arguments #1 "property", and #2 "value", are required.');
+        return;
+      }
+      const [property, ...valueWords] = args;
+      const value = valueWords.join(" ");
+      await actions.updateServer(serverId, { [property]: value });
+      editor.clear();
+    },
+    exclude: () => {
+      const server = state.selectServer(serverId);
+      return server?.ownerUserId !== user.id;
+    },
+  }),
+  "update-channel": ({ user, state, actions, serverId, channelId }) => ({
+    description: "Update a channel property",
+    arguments: ["propery-name", "property-value"],
+    execute: async ({ args, editor }) => {
+      if (args.length < 2) {
+        alert('Arguments #1 "property", and #2 "value", are required.');
+        return;
+      }
+      const [property, ...valueWords] = args;
+      const value = valueWords.join(" ");
+      await actions.updateChannel(channelId, { [property]: value });
+      editor.clear();
+    },
+    exclude: () => {
+      const server = state.selectServer(serverId);
+      return server?.ownerUserId !== user.id;
+    },
+  }),
   logout: ({ signOut }) => ({
     description: "Logs you out, really fast.",
     execute: async () => {
       signOut();
     },
   }),
-  pfp: ({ actions }) => ({
+  pfp: ({ context, actions }) => ({
     description:
       "Update your server profile picture. Use a URL from OpenSea, Rarible, or LooksRare OR copy paste the specific '<contract_address> <token_id>'.",
     execute: async ({ args, editor, serverId }) => {
@@ -95,7 +131,7 @@ const otherCommands = {
       await actions.updateMe({ pfp, serverId });
       editor.clear();
     },
-    exclude: ({ context }) => context === "dm",
+    exclude: () => context === "dm",
   }),
   "pfp-global": ({ actions }) => ({
     description:
@@ -127,14 +163,23 @@ const appendTextCommand = (editor, text, command) => {
   editor.appendText(Editor.string(editor, []) === "" ? text : ` ${text}`);
 };
 
-const useCommands = ({ context } = {}) => {
-  const { signOut } = useAuth();
+const useCommands = ({ context, serverId, channelId } = {}) => {
+  const { user, signOut } = useAuth();
   const { state, actions } = useAppScope();
   const navigate = useNavigate();
 
   const commandDependencies = React.useMemo(
-    () => ({ navigate, state, actions, signOut }),
-    [navigate, state, actions, signOut]
+    () => ({
+      user,
+      navigate,
+      state,
+      actions,
+      signOut,
+      context,
+      serverId,
+      channelId,
+    }),
+    [user, navigate, state, actions, signOut, context, serverId, channelId]
   );
 
   const commands = React.useMemo(() => {
@@ -162,11 +207,10 @@ const useCommands = ({ context } = {}) => {
 
     return Object.fromEntries(
       Object.entries(allCommands).filter(
-        ([_, command]) =>
-          command.exclude == null || !command.exclude?.({ context })
+        ([_, command]) => command.exclude == null || !command.exclude?.()
       )
     );
-  }, [commandDependencies, context]);
+  }, [commandDependencies]);
 
   const isCommand = React.useCallback(
     (name) => Object.keys(commands).includes(name),

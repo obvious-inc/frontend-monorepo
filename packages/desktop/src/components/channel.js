@@ -240,6 +240,7 @@ export const ChannelBase = ({
           ref={inputRef}
           isDM={channel.kind === "dm"}
           serverId={channel.serverId}
+          channelId={channel.id}
           replyingToMessage={
             pendingReplyMessageId == null
               ? null
@@ -279,6 +280,7 @@ const NewMessageInput = React.forwardRef(
       cancelReply,
       isDM,
       serverId,
+      channelId,
       ...props
     },
     editorRef
@@ -300,6 +302,8 @@ const NewMessageInput = React.forwardRef(
       commands,
     } = useCommands({
       context: isDM ? "dm" : "server-channel",
+      serverId,
+      channelId,
     });
 
     const executeMessage = async () => {
@@ -329,7 +333,6 @@ const NewMessageInput = React.forwardRef(
             await executeCommand(commandName, {
               args,
               editor: editorRef.current,
-              serverId,
             });
           } catch (e) {
             alert(e.message);

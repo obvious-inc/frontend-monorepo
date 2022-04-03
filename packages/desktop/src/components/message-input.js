@@ -84,11 +84,26 @@ const MessageInput = React.forwardRef(
         return 0;
       }, unorderedCommands);
 
-      return orderedCommands.slice(0, 10).map((c) => ({
-        value: c,
-        label: `/${c}`,
-        description: commands[c].description,
-      }));
+      return orderedCommands.slice(0, 10).map((c) => {
+        const command = commands[c];
+        return {
+          value: c,
+          label: (
+            <span>
+              /{c}
+              {command.arguments != null && (
+                <>
+                  {" "}
+                  <span css={(theme) => css({ color: theme.colors.textMuted })}>
+                    {command.arguments.map((a) => `<${a}>`).join(" ")}
+                  </span>
+                </>
+              )}
+            </span>
+          ),
+          description: command.description,
+        };
+      });
     }, [commands, autoCompleteMode, commandQuery]);
 
     const autoCompleteOptions = {
@@ -299,6 +314,7 @@ const AutoCompleteListbox = ({
             ".description": {
               color: theme.colors.textMuted,
               fontSize: "1.2rem",
+              whiteSpace: "pre-line",
             },
           },
         })
