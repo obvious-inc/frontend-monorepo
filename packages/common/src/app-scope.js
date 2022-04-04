@@ -294,6 +294,12 @@ export const Provider = ({ children }) => {
     [authorizedFetch]
   );
 
+  const registerChannelTypingActivity = React.useCallback(
+    (channelId) =>
+      authorizedFetch(`/channels/${channelId}/typing`, { method: "POST" }),
+    [authorizedFetch]
+  );
+
   const actions = React.useMemo(
     () => ({
       fetchInitialData,
@@ -313,6 +319,7 @@ export const Provider = ({ children }) => {
       removeMessageReaction,
       markChannelRead,
       uploadImage,
+      registerChannelTypingActivity,
     }),
     [
       fetchInitialData,
@@ -332,11 +339,34 @@ export const Provider = ({ children }) => {
       removeMessageReaction,
       markChannelRead,
       uploadImage,
+      registerChannelTypingActivity,
     ]
   );
 
   React.useEffect(() => {
+    let typingEndedTimeoutHandles = {};
+
     const handler = (name, data) => {
+      // Dispatch a 'user-typing-ended' action when a user+channel combo has
+      // been silent for a while
+      if (name === "user-typed") {
+        const id = [data.channel.id, data.user.id].join(":");
+
+        if (typingEndedTimeoutHandles[id]) {
+          clearTimeout(typingEndedTimeoutHandles[id]);
+          delete typingEndedTimeoutHandles[id];
+        }
+
+        typingEndedTimeoutHandles[id] = setTimeout(() => {
+          delete typingEndedTimeoutHandles[id];
+          dispatch({
+            type: "user-typing-ended",
+            channelId: data.channel.id,
+            userId: data.user.id,
+          });
+        }, 6000);
+      }
+
       dispatch({ type: ["server-event", name].join(":"), data, user });
     };
 

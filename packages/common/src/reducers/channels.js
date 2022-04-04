@@ -131,6 +131,32 @@ const entriesById = (state = {}, action) => {
   }
 };
 
+const typingUserIdsByChannelId = (state = {}, action) => {
+  switch (action.type) {
+    case "server-event:user-typed": {
+      const channelId = action.data.channel.id;
+      const channelTypingUserIds = state[channelId] ?? [];
+      return {
+        ...state,
+        [channelId]: unique([...channelTypingUserIds, action.data.user.id]),
+      };
+    }
+
+    case "user-typing-ended":
+      return {
+        ...state,
+        [action.channelId]:
+          state[action.channelId]?.filter((id) => id !== action.userId) ?? [],
+      };
+
+    default:
+      return state;
+  }
+};
+
+const selectChannelTypingUserIds = (state) => (channelId) =>
+  state.channels.typingUserIdsByChannelId[channelId] ?? [];
+
 export const selectChannel = (state) => (id) => {
   const channel = state.channels.entriesById[id];
 
@@ -173,11 +199,20 @@ export const selectChannel = (state) => (id) => {
 
   const lastMessageTimestamp = new Date(channel.lastMessageAt).getTime();
 
+  const typingMembersUserIds = selectChannelTypingUserIds(state)(id);
+  const typingMembers =
+    channel.kind === "dm"
+      ? typingMembersUserIds.map(selectUser(state))
+      : typingMembersUserIds.map((userId) =>
+          selectServerMemberWithUserId(state)(channel.serverId, userId)
+        );
+
   return {
     ...channel,
     name: buildName(),
     hasUnread: lastReadTimestamp < lastMessageTimestamp,
     mentionCount: channel.unreadMentionMessageIds.length,
+    typingMembers,
   };
 };
 
@@ -225,4 +260,4 @@ export const selectDmChannels = (state) => () => {
   }, channels);
 };
 
-export default combineReducers({ entriesById });
+export default combineReducers({ entriesById, typingUserIdsByChannelId });

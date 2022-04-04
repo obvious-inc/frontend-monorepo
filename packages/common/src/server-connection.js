@@ -20,6 +20,7 @@ const serverEventMap = {
   MESSAGE_REACTION_REMOVE: "message-reaction-removed",
   USER_PROFILE_UPDATE: "user-profile-updated",
   USER_PRESENCE_UPDATE: "user-presence-updated",
+  USER_TYPING: "user-typed",
   SERVER_USER_JOINED: "server-member-joined",
   SERVER_PROFILE_UPDATE: "server-member-profile-updated",
 };
