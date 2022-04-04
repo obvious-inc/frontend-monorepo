@@ -26,26 +26,14 @@ const { withoutAttachments } = messageUtils;
 const ONE_MINUTE_IN_MILLIS = 1000 * 60;
 
 const ChannelMessage = ({
-  isDM,
-  authorNick,
-  authorWalletAddress,
-  authorUserId,
-  serverId,
-  authorOnlineStatus,
+  message,
+  channel,
   previousMessage,
-  avatarVerified,
-  content,
-  createdAt,
-  reactions = [],
   hasPendingReply,
-  isReply,
-  repliedMessage,
-  isEdited,
-  canEditMessage,
   initReply,
   addReaction,
   removeReaction,
-  update,
+  save,
   remove,
   members,
   selectChannelMemberWithUserId,
@@ -53,7 +41,7 @@ const ChannelMessage = ({
   sendDirectMessageToAuthor,
   isSystemMessage,
 }) => {
-  const inputRef = React.useRef();
+  const editInputRef = React.useRef();
   const containerRef = React.useRef();
 
   const { user } = useAuth();
@@ -63,31 +51,78 @@ const ChannelMessage = ({
   const [isEmojiPickerOpen, setEmojiPickerOpen] = React.useState(false);
   const [isEditing, setEditingMessage] = React.useState(false);
 
-  const [isInlineEmojiPickerOpen, setInlineEmojiPickerOpen] =
-    React.useState(false);
-
   const theme = useTheme();
 
   const showAsFocused =
     !isEditing && (isHovering || isDropdownOpen || isEmojiPickerOpen);
 
-  const isOwnMessage = user.id === authorUserId;
+  const isDirectMessage = channel.kind === "dm";
+  const isOwnMessage = user.id === message.authorUserId;
+  const canEditMessage = user.id === message.authorUserId;
+
+  const createdAtDate = React.useMemo(
+    () => new Date(message.created_at),
+    [message.created_at]
+  );
 
   const showSimplifiedMessage =
-    !isReply &&
+    !message.isReply &&
     previousMessage != null &&
-    previousMessage.authorUserId === authorUserId &&
+    previousMessage.authorUserId === message.authorUserId &&
     previousMessage.type !== 1 &&
-    createdAt - new Date(previousMessage.created_at) < 5 * ONE_MINUTE_IN_MILLIS;
+    createdAtDate - new Date(previousMessage.created_at) <
+      5 * ONE_MINUTE_IN_MILLIS;
+
+  const reactions = React.useMemo(
+    () =>
+      message.reactions.map((r) => ({
+        ...r,
+        authorMembers: r.users.map(selectChannelMemberWithUserId),
+      })),
+    [message.reactions, selectChannelMemberWithUserId]
+  );
+
+  const toolbarDropdownItems = [
+    { onSelect: initReply, label: "Reply" },
+    { disabled: true, label: "Mark unread" },
+    {
+      onSelect: () => {
+        setEditingMessage(true);
+      },
+      label: "Edit message",
+      visible: canEditMessage,
+    },
+    {
+      onSelect: () => {
+        if (confirm("Are you sure you want to remove this message?")) remove();
+      },
+      label: "Delete message",
+      visible: canEditMessage,
+      style: { color: "#ff5968" },
+    },
+    { type: "separator" },
+    {
+      onSelect: sendDirectMessageToAuthor,
+      label: "Send direct message",
+      visible: !isOwnMessage && !(isDirectMessage && members.length <= 2),
+    },
+    {
+      onSelect: () => {
+        navigator.clipboard.writeText(message.author.walletAddress);
+      },
+      label: "Copy user wallet address",
+      visible: message.author?.walletAddress != null,
+    },
+  ].filter((i) => i.visible == null || i.visible);
 
   if (isSystemMessage)
-    content = [
+    message.content = [
       {
         type: "paragraph",
         children: [
           {
             type: "user",
-            ref: authorUserId,
+            ref: message.authorUserId,
           },
           {
             text: " just joined the server!",
@@ -99,7 +134,7 @@ const ChannelMessage = ({
   React.useEffect(() => {
     if (!isEditing) return;
 
-    inputRef.current.focus();
+    editInputRef.current.focus();
     containerRef.current.scrollIntoView({
       behavior: "smooth",
       block: "nearest",
@@ -137,10 +172,10 @@ const ChannelMessage = ({
         })}
       >
         <MessageToolbar
-          isOwnMessage={isOwnMessage}
-          canEditMessage={canEditMessage}
+          allowReplies={!isOwnMessage}
+          allowEdit={canEditMessage}
           initReply={initReply}
-          startEditMode={() => {
+          initEdit={() => {
             setEditingMessage(true);
           }}
           addReaction={(emoji) => {
@@ -154,45 +189,17 @@ const ChannelMessage = ({
           onEmojiPickerOpenChange={(isOpen) => {
             setEmojiPickerOpen(isOpen);
           }}
-          dropdownItems={[
-            { onSelect: initReply, label: "Reply" },
-            { disabled: true, label: "Mark unread" },
-            canEditMessage && {
-              onSelect: () => {
-                setEditingMessage(true);
-              },
-              label: "Edit message",
-            },
-            canEditMessage && {
-              onSelect: () => {
-                if (confirm("Are you sure you want to remove this message?"))
-                  remove();
-              },
-              label: "Delete message",
-              style: { color: "#ff5968" },
-            },
-            { type: "separator" },
-            !isOwnMessage &&
-              !(isDM && members.length <= 2) && {
-                onSelect: sendDirectMessageToAuthor,
-                label: "Send direct message",
-              },
-            {
-              onSelect: () => {
-                navigator.clipboard.writeText(authorWalletAddress);
-              },
-              label: "Copy user wallet address",
-            },
-          ].filter(Boolean)}
+          dropdownItems={toolbarDropdownItems}
         />
       </div>
 
-      {isReply && (
+      {message.isReply && (
         <RepliedMessage
-          message={repliedMessage}
+          message={message.repliedMessage}
           getUserMentionDisplayName={getUserMentionDisplayName}
         />
       )}
+
       <div
         css={css`
           display: grid;
@@ -212,7 +219,7 @@ const ChannelMessage = ({
           >
             <TinyMutedText nowrap>
               <FormattedDate
-                value={createdAt}
+                value={createdAtDate}
                 hour="numeric"
                 minute="numeric"
               />
@@ -226,158 +233,54 @@ const ChannelMessage = ({
               transition: "0.15s opacity",
             })}
           >
-            <TinyMutedText nowrap>———></TinyMutedText>
+            <TinyMutedText nowrap>{"———>"}</TinyMutedText>
           </div>
         ) : (
           <div css={css({ padding: "0.2rem 0 0" })}>
-            <Tooltip.Root>
-              <Tooltip.Trigger asChild>
-                <button
-                  css={css({
-                    position: "relative",
-                    borderRadius: "0.3rem",
-                    overflow: "hidden",
-                    cursor: "pointer",
-                    ":hover": {
-                      boxShadow: avatarVerified
-                        ? "0 0 0 2px #4f52ff"
-                        : "0 0 0 2px rgb(255 255 255 / 10%)",
-                    },
-                    ":active": { transform: "translateY(0.1rem)" },
-                  })}
-                  onClick={() => {
-                    alert(
-                      `Congratulations, you clicked ${authorNick}’s avatar!`
-                    );
-                  }}
-                >
-                  <ServerMemberAvatar
-                    userId={authorUserId}
-                    serverId={serverId}
-                    size="3.8rem"
-                  />
-                </button>
-              </Tooltip.Trigger>
-              <Tooltip.Content
-                side="top"
-                sideOffset={6}
-                css={css({ padding: "0.4rem", borderRadius: "0.6rem" })}
-              >
-                {avatarVerified && (
-                  <div
-                    css={(theme) =>
-                      css({
-                        fontSize: "1rem",
-                        margin: "0 0 0.3rem",
-                        color: theme.colors.textNormal,
-                      })
-                    }
-                  >
-                    NFT verified
-                  </div>
-                )}
-                <ServerMemberAvatar
-                  userId={authorUserId}
-                  serverId={serverId}
-                  size="6.4rem"
-                />
-              </Tooltip.Content>
-            </Tooltip.Root>
+            <Avatar
+              serverId={channel.serverId}
+              userId={message.authorUserId}
+              isVerifiedNft={message.author?.pfp?.verified}
+              onClick={() => {
+                alert(
+                  `Congratulations, you clicked ${message.author?.displayName}’s avatar!`
+                );
+              }}
+            />
           </div>
         )}
         <div>
           {!showSimplifiedMessage && !isSystemMessage && (
-            <div
-              css={css`
-                display: grid;
-                grid-template-columns: repeat(2, minmax(0, auto));
-                justify-content: flex-start;
-                align-items: flex-end;
-                grid-gap: 1.2rem;
-                margin: 0 0 0.2rem;
-                cursor: default;
-              `}
-            >
-              <div css={css({ display: "flex", alignItems: "center" })}>
-                <Tooltip.Root>
-                  <Tooltip.Trigger asChild>
-                    <button
-                      css={(theme) =>
-                        css({
-                          lineHeight: 1.2,
-                          color: theme.colors.pink,
-                          fontWeight: "500",
-                          cursor: "pointer",
-                          ":hover": {
-                            textDecoration: "underline",
-                          },
-                        })
-                      }
-                      onClick={() => {
-                        alert(`Congratulations, you clicked ${authorNick}!`);
-                      }}
-                    >
-                      {authorNick}
-                    </button>
-                  </Tooltip.Trigger>
-                  <Tooltip.Content side="top" sideOffset={4}>
-                    <span css={css({ color: "rgb(255 255 255 / 54%)" })}>
-                      {authorWalletAddress}
-                    </span>
-                  </Tooltip.Content>
-                </Tooltip.Root>
-
-                {authorOnlineStatus === "online" && (
-                  <Tooltip.Root>
-                    <Tooltip.Trigger asChild>
-                      <div
-                        css={css({ padding: "0.4rem", marginLeft: "0.3rem" })}
-                      >
-                        <div
-                          css={(theme) =>
-                            css({
-                              width: "0.7rem",
-                              height: "0.7rem",
-                              borderRadius: "50%",
-                              background: theme.colors.onlineIndicator,
-                            })
-                          }
-                        />
-                      </div>
-                    </Tooltip.Trigger>
-                    <Tooltip.Content side="top" align="center" sideOffset={4}>
-                      <span css={css({ color: "rgb(255 255 255 / 54%)" })}>
-                        User online
-                      </span>
-                    </Tooltip.Content>
-                  </Tooltip.Root>
-                )}
-              </div>
-
-              <TinyMutedText>
-                <FormattedDate
-                  value={createdAt}
-                  hour="numeric"
-                  minute="numeric"
-                  day="numeric"
-                  month="short"
-                />
-              </TinyMutedText>
-            </div>
+            <MessageHeader
+              authorDisplayName={message.author?.displayName}
+              authorWalletAddress={message.author?.walletAddress}
+              authorOnlineStatus={message.author?.onlineStatus}
+              createdAt={createdAtDate}
+            />
           )}
 
           {isEditing ? (
             <EditMessageInput
-              ref={inputRef}
-              blocks={content}
+              ref={editInputRef}
+              blocks={message.content}
               onCancel={() => {
                 setEditingMessage(false);
               }}
-              remove={remove}
+              requestRemove={() =>
+                new Promise((resolve, reject) => {
+                  if (
+                    !confirm("Are you sure you want to remove this message?")
+                  ) {
+                    reject(new Error());
+                    return;
+                  }
+
+                  remove().then(resolve, reject);
+                })
+              }
               save={(content) =>
-                update(content).then((message) => {
+                save(content).then(() => {
                   setEditingMessage(false);
-                  return message;
                 })
               }
               members={members}
@@ -385,7 +288,7 @@ const ChannelMessage = ({
             />
           ) : (
             <RichText
-              blocks={content}
+              blocks={message.content}
               style={{ opacity: isSystemMessage ? 0.5 : 1 }}
               onClickInteractiveElement={(el) => {
                 switch (el.type) {
@@ -407,7 +310,7 @@ const ChannelMessage = ({
               }}
               getUserMentionDisplayName={getUserMentionDisplayName}
             >
-              {isEdited && (
+              {message.isEdited && (
                 <span
                   css={css({
                     fontSize: "1rem",
@@ -421,155 +324,299 @@ const ChannelMessage = ({
           )}
 
           {reactions.length !== 0 && (
-            <div
-              css={css({
-                display: "grid",
-                gridAutoFlow: "column",
-                gridAutoColumns: "auto",
-                gridGap: "0.4rem",
-                justifyContent: "flex-start",
-                margin: "0.5rem -1px 0",
-                button: {
-                  display: "flex",
-                  alignItems: "center",
-                  height: "2.5rem",
-                  fontSize: "1.5rem",
-                  background: "rgb(255 255 255 / 4%)",
-                  borderRadius: "0.7rem",
-                  padding: "0 0.7rem 0 0.6rem",
-                  lineHeight: 1,
-                  userSelect: "none",
-                  border: "1px solid transparent",
-                  cursor: "pointer",
-                  "&.active": {
-                    background: "#3f42ea45",
-                    borderColor: "#4c4ffe96",
-                  },
-                  "&:not(.active):hover": {
-                    borderColor: "rgb(255 255 255 / 20%)",
-                  },
-                  ".count": {
-                    fontSize: "1rem",
-                    fontWeight: "400",
-                    color: "rgb(255 255 255 / 70%)",
-                    marginLeft: "0.5rem",
-                  },
-                },
-              })}
-            >
-              {reactions.map((r) => {
-                const isLoggedInUserReaction = r.users.includes(user.id);
-                const authorDisplayNames = r.users
-                  .map(selectChannelMemberWithUserId)
-                  .map((m) => m.displayName);
-                return (
-                  <Tooltip.Root key={r.emoji}>
-                    <Tooltip.Trigger asChild>
-                      <button
-                        onClick={() => {
-                          if (isLoggedInUserReaction) {
-                            removeReaction(r.emoji);
-                            return;
-                          }
-
-                          addReaction(r.emoji);
-                        }}
-                        className={
-                          isLoggedInUserReaction ? "active" : undefined
-                        }
-                      >
-                        <span>{r.emoji}</span>
-                        <span className="count">{r.count}</span>
-                      </button>
-                    </Tooltip.Trigger>
-                    <Tooltip.Content
-                      side="top"
-                      sideOffset={4}
-                      style={{ borderRadius: "0.5rem" }}
-                    >
-                      <div
-                        css={css({
-                          display: "grid",
-                          gridTemplateColumns: "auto minmax(0,auto)",
-                          gridGap: "0.8rem",
-                          alignItems: "center",
-                          padding: "0 0.4rem 0 0.2rem",
-                          lineHeight: 1.4,
-                          maxWidth: "24rem",
-                        })}
-                      >
-                        <div
-                          css={css({ fontSize: "2.8rem", lineHeight: "1.1" })}
-                        >
-                          {r.emoji}
-                        </div>
-                        <div
-                          css={css({
-                            hyphens: "auto",
-                            wordBreak: "break-word",
-                            padding: "0.2rem 0",
-                          })}
-                        >
-                          {[
-                            authorDisplayNames.slice(0, -1).join(", "),
-                            authorDisplayNames.slice(-1)[0],
-                          ]
-                            .filter(Boolean)
-                            .join(" and ")}{" "}
-                          reacted
-                        </div>
-                      </div>
-                    </Tooltip.Content>
-                  </Tooltip.Root>
-                );
-              })}
-
-              <Popover.Root
-                open={isInlineEmojiPickerOpen}
-                onOpenChange={(isOpen) => {
-                  setInlineEmojiPickerOpen(isOpen);
-                }}
-              >
-                <Popover.Trigger asChild>
-                  <button
-                    css={css({
-                      color: "white",
-                      border: "1px solid white",
-                      transition: "0.1s opacity ease-out",
-                      svg: { width: "1.6rem", height: "auto" },
-                    })}
-                    style={{ opacity: isHovering ? 1 : 0 }}
-                  >
-                    <AddEmojiReactionIcon />
-                  </button>
-                </Popover.Trigger>
-                <Popover.Content
-                  side="top"
-                  align="center"
-                  sideOffset={4}
-                  style={{
-                    width: "31.6rem",
-                    height: "28.4rem",
-                    display: "flex",
-                    flexDirection: "column",
-                  }}
-                >
-                  <Popover.Arrow />
-                  <EmojiPicker
-                    addReaction={(...args) => {
-                      setInlineEmojiPickerOpen(false);
-                      return addReaction(...args);
-                    }}
-                  />
-                </Popover.Content>
-              </Popover.Root>
-            </div>
+            <Reactions
+              items={reactions}
+              addReaction={addReaction}
+              removeReaction={removeReaction}
+              showAddReactionButton={isHovering}
+            />
           )}
         </div>
       </div>
     </div>
   );
 };
+
+const Reactions = ({
+  items = [],
+  addReaction,
+  removeReaction,
+  showAddReactionButton,
+}) => {
+  const [isInlineEmojiPickerOpen, setInlineEmojiPickerOpen] =
+    React.useState(false);
+  return (
+    <div
+      css={css({
+        display: "grid",
+        gridAutoFlow: "column",
+        gridAutoColumns: "auto",
+        gridGap: "0.4rem",
+        justifyContent: "flex-start",
+        margin: "0.5rem -1px 0",
+        button: {
+          display: "flex",
+          alignItems: "center",
+          height: "2.5rem",
+          fontSize: "1.5rem",
+          background: "rgb(255 255 255 / 4%)",
+          borderRadius: "0.7rem",
+          padding: "0 0.7rem 0 0.6rem",
+          lineHeight: 1,
+          userSelect: "none",
+          border: "1px solid transparent",
+          cursor: "pointer",
+          "&.active": {
+            background: "#3f42ea45",
+            borderColor: "#4c4ffe96",
+          },
+          "&:not(.active):hover": {
+            borderColor: "rgb(255 255 255 / 20%)",
+          },
+          ".count": {
+            fontSize: "1rem",
+            fontWeight: "400",
+            color: "rgb(255 255 255 / 70%)",
+            marginLeft: "0.5rem",
+          },
+        },
+      })}
+    >
+      {items.map((r) => {
+        const authorDisplayNames = r.authorMembers.map((m) => m.displayName);
+        return (
+          <Tooltip.Root key={r.emoji}>
+            <Tooltip.Trigger asChild>
+              <button
+                onClick={() => {
+                  if (r.hasReacted) {
+                    removeReaction(r.emoji);
+                    return;
+                  }
+
+                  addReaction(r.emoji);
+                }}
+                className={r.hasReacted ? "active" : undefined}
+              >
+                <span>{r.emoji}</span>
+                <span className="count">{r.count}</span>
+              </button>
+            </Tooltip.Trigger>
+            <Tooltip.Content
+              side="top"
+              sideOffset={4}
+              style={{ borderRadius: "0.5rem" }}
+            >
+              <div
+                css={css({
+                  display: "grid",
+                  gridTemplateColumns: "auto minmax(0,auto)",
+                  gridGap: "0.8rem",
+                  alignItems: "center",
+                  padding: "0 0.4rem 0 0.2rem",
+                  lineHeight: 1.4,
+                  maxWidth: "24rem",
+                })}
+              >
+                <div
+                  css={css({
+                    fontSize: "2.8rem",
+                    lineHeight: "1.1",
+                    padding: "0.1rem 0 0",
+                  })}
+                >
+                  {r.emoji}
+                </div>
+                <div
+                  css={css({
+                    hyphens: "auto",
+                    wordBreak: "break-word",
+                    padding: "0.2rem 0",
+                  })}
+                >
+                  {[
+                    authorDisplayNames.slice(0, -1).join(", "),
+                    authorDisplayNames.slice(-1)[0],
+                  ]
+                    .filter(Boolean)
+                    .join(" and ")}{" "}
+                  reacted
+                </div>
+              </div>
+            </Tooltip.Content>
+          </Tooltip.Root>
+        );
+      })}
+
+      <Popover.Root
+        open={isInlineEmojiPickerOpen}
+        onOpenChange={(isOpen) => {
+          setInlineEmojiPickerOpen(isOpen);
+        }}
+      >
+        <Popover.Trigger asChild>
+          <button
+            css={css({
+              color: "white",
+              border: "1px solid white",
+              transition: "0.1s opacity ease-out",
+              svg: { width: "1.6rem", height: "auto" },
+            })}
+            style={{ opacity: showAddReactionButton ? 1 : 0 }}
+          >
+            <AddEmojiReactionIcon />
+          </button>
+        </Popover.Trigger>
+        <Popover.Content
+          side="top"
+          align="center"
+          sideOffset={4}
+          style={{
+            width: "31.6rem",
+            height: "28.4rem",
+            display: "flex",
+            flexDirection: "column",
+          }}
+        >
+          <Popover.Arrow />
+          <EmojiPicker
+            addReaction={(...args) => {
+              setInlineEmojiPickerOpen(false);
+              return addReaction(...args);
+            }}
+          />
+        </Popover.Content>
+      </Popover.Root>
+    </div>
+  );
+};
+
+const MessageHeader = ({
+  authorDisplayName,
+  authorWalletAddress,
+  authorOnlineStatus,
+  createdAt,
+}) => (
+  <div
+    css={css`
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, auto));
+      justify-content: flex-start;
+      align-items: flex-end;
+      grid-gap: 1.2rem;
+      margin: 0 0 0.2rem;
+      cursor: default;
+    `}
+  >
+    <div css={css({ display: "flex", alignItems: "center" })}>
+      <Tooltip.Root>
+        <Tooltip.Trigger asChild>
+          <button
+            css={(theme) =>
+              css({
+                lineHeight: 1.2,
+                color: theme.colors.pink,
+                fontWeight: "500",
+                cursor: "pointer",
+                ":hover": {
+                  textDecoration: "underline",
+                },
+              })
+            }
+            onClick={() => {
+              alert(`Congratulations, you clicked ${authorDisplayName}!`);
+            }}
+          >
+            {authorDisplayName}
+          </button>
+        </Tooltip.Trigger>
+        <Tooltip.Content side="top" sideOffset={4}>
+          <span css={css({ color: "rgb(255 255 255 / 54%)" })}>
+            {authorWalletAddress}
+          </span>
+        </Tooltip.Content>
+      </Tooltip.Root>
+
+      {authorOnlineStatus === "online" && (
+        <Tooltip.Root>
+          <Tooltip.Trigger asChild>
+            <div css={css({ padding: "0.4rem", marginLeft: "0.3rem" })}>
+              <div
+                css={(theme) =>
+                  css({
+                    width: "0.7rem",
+                    height: "0.7rem",
+                    borderRadius: "50%",
+                    background: theme.colors.onlineIndicator,
+                  })
+                }
+              />
+            </div>
+          </Tooltip.Trigger>
+          <Tooltip.Content side="top" align="center" sideOffset={4}>
+            <span css={css({ color: "rgb(255 255 255 / 54%)" })}>
+              User online
+            </span>
+          </Tooltip.Content>
+        </Tooltip.Root>
+      )}
+    </div>
+
+    <TinyMutedText>
+      <FormattedDate
+        value={createdAt}
+        hour="numeric"
+        minute="numeric"
+        day="numeric"
+        month="short"
+      />
+    </TinyMutedText>
+  </div>
+);
+
+const Avatar = ({ serverId, userId, isVerifiedNft = false, onClick }) => (
+  <Tooltip.Root>
+    <Tooltip.Trigger asChild>
+      <button
+        css={css({
+          position: "relative",
+          borderRadius: "0.3rem",
+          overflow: "hidden",
+          cursor: "pointer",
+          ":hover": {
+            boxShadow: isVerifiedNft
+              ? "0 0 0 2px #4f52ff"
+              : "0 0 0 2px rgb(255 255 255 / 10%)",
+          },
+          ":active": { transform: "translateY(0.1rem)" },
+        })}
+        onClick={onClick}
+      >
+        <ServerMemberAvatar userId={userId} serverId={serverId} size="3.8rem" />
+      </button>
+    </Tooltip.Trigger>
+    <Tooltip.Content
+      side="top"
+      sideOffset={6}
+      css={css({ padding: "0.4rem", borderRadius: "0.6rem" })}
+    >
+      {isVerifiedNft && (
+        <div
+          css={(theme) =>
+            css({
+              fontSize: "1rem",
+              margin: "0 0 0.3rem",
+              color: theme.colors.textNormal,
+            })
+          }
+        >
+          NFT verified
+        </div>
+      )}
+      <ServerMemberAvatar userId={userId} serverId={serverId} size="6.4rem" />
+    </Tooltip.Content>
+  </Tooltip.Root>
+);
 
 // Super hacky and inaccessible
 const EmojiPicker = ({ addReaction }) => {
@@ -886,10 +933,10 @@ const Emoji = React.forwardRef(({ emoji, isHighlighted, ...props }, ref) => (
 
 const MessageToolbar = ({
   dropdownItems = [],
-  isOwnMessage,
-  canEditMessage,
-  startEditMode,
+  allowReplies,
+  allowEdit,
   initReply,
+  initEdit,
   addReaction,
   onDropdownOpenChange,
   isEmojiPickerOpen,
@@ -936,7 +983,7 @@ const MessageToolbar = ({
       </Popover.Content>
     </Popover.Root>
 
-    {!isOwnMessage && (
+    {allowReplies && (
       <Toolbar.Button
         onClick={() => {
           initReply();
@@ -947,39 +994,54 @@ const MessageToolbar = ({
       </Toolbar.Button>
     )}
 
-    {canEditMessage && (
+    {allowEdit && (
       <Toolbar.Button
         onClick={() => {
-          startEditMode();
+          initEdit();
         }}
         aria-label="Edit"
       >
         <EditPenIcon />
       </Toolbar.Button>
     )}
-    <Toolbar.Separator />
-    <DropdownMenu.Root modal={false} onOpenChange={onDropdownOpenChange}>
-      <Toolbar.Button asChild>
-        <DropdownMenu.Trigger>
-          <DotsHorizontalIcon css={css({ width: "1.6rem", height: "auto" })} />
-        </DropdownMenu.Trigger>
-      </Toolbar.Button>
-      <DropdownMenu.Content>
-        {dropdownItems.map(({ onSelect, label, type, ...props }, i) => {
-          if (type === "separator") return <DropdownMenu.Separator key={i} />;
-          return (
-            <DropdownMenu.Item key={i} onSelect={onSelect} {...props}>
-              {label}
-            </DropdownMenu.Item>
-          );
-        })}
-      </DropdownMenu.Content>
-    </DropdownMenu.Root>
+
+    {dropdownItems.length > 0 && (
+      <>
+        <Toolbar.Separator />
+        <DropdownMenu.Root modal={false} onOpenChange={onDropdownOpenChange}>
+          <Toolbar.Button asChild>
+            <DropdownMenu.Trigger>
+              <DotsHorizontalIcon
+                css={css({ width: "1.6rem", height: "auto" })}
+              />
+            </DropdownMenu.Trigger>
+          </Toolbar.Button>
+          <DropdownMenu.Content>
+            {dropdownItems.map(
+              ({ onSelect, label, type, disabled, style }, i) => {
+                if (type === "separator")
+                  return <DropdownMenu.Separator key={i} />;
+                return (
+                  <DropdownMenu.Item
+                    key={i}
+                    onSelect={onSelect}
+                    disabled={disabled}
+                    style={style}
+                  >
+                    {label}
+                  </DropdownMenu.Item>
+                );
+              }
+            )}
+          </DropdownMenu.Content>
+        </DropdownMenu.Root>
+      </>
+    )}
   </Toolbar.Root>
 );
 
 const EditMessageInput = React.forwardRef(
-  ({ blocks, save, remove, onCancel, ...props }, editorRef) => {
+  ({ blocks, save, requestRemove, onCancel, ...props }, editorRef) => {
     const [pendingMessage, setPendingMessage] = React.useState(() =>
       normalizeNodes(withoutAttachments(blocks))
     );
@@ -998,11 +1060,8 @@ const EditMessageInput = React.forwardRef(
 
       setSaving(true);
       try {
-        if (
-          isEmpty &&
-          confirm("Are you sure you want to remove this message?")
-        ) {
-          await remove();
+        if (isEmpty) {
+          await requestRemove();
           return;
         }
 
