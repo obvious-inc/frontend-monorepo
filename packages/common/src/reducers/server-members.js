@@ -37,36 +37,13 @@ const entriesById = (state = {}, action) => {
       return indexBy((m) => m.id, members);
     }
 
-    case "server-event:user-profile-updated":
-      return mapValues((member) => {
-        if (member.user.id !== action.data.user) return member;
-        return {
-          ...member,
-          user: {
-            ...member.user,
-            ...omitKeys(["user", "member"], action.data),
-          },
-        };
-      }, state);
 
-    case "server-event:user-presence-updated":
-      return mapValues((member) => {
-        if (member.user.id !== action.data.user.id) return member;
-        return {
-          ...member,
-          user: {
-            ...member.user,
-            status: action.data.user.status,
-          },
-        };
-      }, state);
-
-    case "server-event:server-profile-updated":
+    case "server-event:server-member-profile-updated":
       return {
         ...state,
         [action.data.member]: {
           ...state[action.data.member],
-          ...omitKeys(["user", "member"], action.data),
+          ...omitKeys(["user"], action.data),
         },
       };
 
@@ -75,6 +52,7 @@ const entriesById = (state = {}, action) => {
   }
 };
 
+// TODO Remove when we memoize selectors, this is error prone, only for performance
 const memberIdsByServerId = (state = [], action) => {
   switch (action.type) {
     case "initial-data-request-successful": {
@@ -92,6 +70,7 @@ const memberIdsByServerId = (state = [], action) => {
   }
 };
 
+// TODO Remove when we memoize selectors, this is error prone, only for performance
 const memberIdsByUserId = (state = [], action) => {
   switch (action.type) {
     case "initial-data-request-successful": {

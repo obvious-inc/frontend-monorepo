@@ -11,6 +11,7 @@ const clientEventMap = {
     }),
   ],
 };
+
 const serverEventMap = {
   MESSAGE_CREATE: "message-created",
   MESSAGE_UPDATE: "message-updated",
@@ -19,7 +20,7 @@ const serverEventMap = {
   MESSAGE_REACTION_REMOVE: "message-reaction-removed",
   USER_PROFILE_UPDATE: "user-profile-updated",
   USER_PRESENCE_UPDATE: "user-presence-updated",
-  SERVER_PROFILE_UPDATE: "server-profile-updated",
+  SERVER_PROFILE_UPDATE: "server-member-profile-updated",
 };
 
 const initPusherConnection = ({ Pusher, key, accessToken, apiOrigin }) => {
