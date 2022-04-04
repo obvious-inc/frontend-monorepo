@@ -51,6 +51,7 @@ const ChannelMessage = ({
   selectChannelMemberWithUserId,
   getUserMentionDisplayName,
   sendDirectMessageToAuthor,
+  isSystemMessage,
 }) => {
   const inputRef = React.useRef();
   const containerRef = React.useRef();
@@ -76,7 +77,24 @@ const ChannelMessage = ({
     !isReply &&
     previousMessage != null &&
     previousMessage.authorUserId === authorUserId &&
+    previousMessage.type !== 1 &&
     createdAt - new Date(previousMessage.created_at) < 5 * ONE_MINUTE_IN_MILLIS;
+
+  if (isSystemMessage)
+    content = [
+      {
+        type: "paragraph",
+        children: [
+          {
+            type: "user",
+            ref: authorUserId,
+          },
+          {
+            text: " just joined the server!",
+          },
+        ],
+      },
+    ];
 
   React.useEffect(() => {
     if (!isEditing) return;
@@ -200,6 +218,16 @@ const ChannelMessage = ({
               />
             </TinyMutedText>
           </div>
+        ) : isSystemMessage ? (
+          <div
+            css={css({
+              paddingTop: "0.5rem",
+              textAlign: "right",
+              transition: "0.15s opacity",
+            })}
+          >
+            <TinyMutedText nowrap>———></TinyMutedText>
+          </div>
         ) : (
           <div css={css({ padding: "0.2rem 0 0" })}>
             <Tooltip.Root>
@@ -258,7 +286,7 @@ const ChannelMessage = ({
           </div>
         )}
         <div>
-          {!showSimplifiedMessage && (
+          {!showSimplifiedMessage && !isSystemMessage && (
             <div
               css={css`
                 display: grid;
@@ -358,6 +386,7 @@ const ChannelMessage = ({
           ) : (
             <RichText
               blocks={content}
+              style={{ opacity: isSystemMessage ? 0.5 : 1 }}
               onClickInteractiveElement={(el) => {
                 switch (el.type) {
                   case "user": {

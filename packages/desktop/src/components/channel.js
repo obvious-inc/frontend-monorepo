@@ -182,7 +182,7 @@ export const ChannelBase = ({
               hasPendingReply={pendingReplyMessageId === m.id}
               repliedMessage={m.repliedMessage}
               isEdited={m.edited_at != null}
-              canEditMessage={user.id === m.authorUserId}
+              canEditMessage={user.id === m.authorUserId && m.type !== 1}
               update={(blocks) =>
                 actions.updateMessage(m.id, {
                   blocks,
@@ -225,6 +225,7 @@ export const ChannelBase = ({
                   })
                   .then(redirect);
               }}
+              isSystemMessage={m.type === 1}
             />
           ))}
           <div
