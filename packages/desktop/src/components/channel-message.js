@@ -17,13 +17,19 @@ import * as Popover from "./popover";
 import * as DropdownMenu from "./dropdown-menu";
 import * as Toolbar from "./toolbar";
 import * as Tooltip from "./tooltip";
-import { AddEmojiReaction as AddEmojiReactionIcon } from "./icons";
+import {
+  AddEmojiReaction as AddEmojiReactionIcon,
+  JoinArrowRight as JoinArrowRightIcon,
+} from "./icons";
 
 const { groupBy } = arrayUtils;
 const { mapValues } = objectUtils;
 const { withoutAttachments } = messageUtils;
 
 const ONE_MINUTE_IN_MILLIS = 1000 * 60;
+
+const AVATAR_SIZE = "3.8rem";
+const GUTTER_SIZE = "1.2rem";
 
 const ChannelMessage = ({
   message,
@@ -39,7 +45,6 @@ const ChannelMessage = ({
   selectChannelMemberWithUserId,
   getUserMentionDisplayName,
   sendDirectMessageToAuthor,
-  isSystemMessage,
 }) => {
   const editInputRef = React.useRef();
   const containerRef = React.useRef();
@@ -58,7 +63,8 @@ const ChannelMessage = ({
 
   const isDirectMessage = channel.kind === "dm";
   const isOwnMessage = user.id === message.authorUserId;
-  const canEditMessage = user.id === message.authorUserId;
+  const canEditMessage =
+    !message.isSystemMessage && user.id === message.authorUserId;
 
   const createdAtDate = React.useMemo(
     () => new Date(message.created_at),
@@ -69,7 +75,7 @@ const ChannelMessage = ({
     !message.isReply &&
     previousMessage != null &&
     previousMessage.authorUserId === message.authorUserId &&
-    previousMessage.type !== 1 &&
+    !previousMessage.isSystemMessage &&
     createdAtDate - new Date(previousMessage.created_at) <
       5 * ONE_MINUTE_IN_MILLIS;
 
@@ -82,54 +88,41 @@ const ChannelMessage = ({
     [message.reactions, selectChannelMemberWithUserId]
   );
 
-  const toolbarDropdownItems = [
-    { onSelect: initReply, label: "Reply" },
-    { disabled: true, label: "Mark unread" },
-    {
-      onSelect: () => {
-        setEditingMessage(true);
-      },
-      label: "Edit message",
-      visible: canEditMessage,
-    },
-    {
-      onSelect: () => {
-        if (confirm("Are you sure you want to remove this message?")) remove();
-      },
-      label: "Delete message",
-      visible: canEditMessage,
-      style: { color: "#ff5968" },
-    },
-    { type: "separator" },
-    {
-      onSelect: sendDirectMessageToAuthor,
-      label: "Send direct message",
-      visible: !isOwnMessage && !(isDirectMessage && members.length <= 2),
-    },
-    {
-      onSelect: () => {
-        navigator.clipboard.writeText(message.author.walletAddress);
-      },
-      label: "Copy user wallet address",
-      visible: message.author?.walletAddress != null,
-    },
-  ].filter((i) => i.visible == null || i.visible);
-
-  if (isSystemMessage)
-    message.content = [
-      {
-        type: "paragraph",
-        children: [
-          {
-            type: "user",
-            ref: message.authorUserId,
+  const toolbarDropdownItems = message.isSystemMessage
+    ? []
+    : [
+        { onSelect: initReply, label: "Reply" },
+        { disabled: true, label: "Mark unread" },
+        {
+          onSelect: () => {
+            setEditingMessage(true);
           },
-          {
-            text: " just joined the server!",
+          label: "Edit message",
+          visible: canEditMessage,
+        },
+        {
+          onSelect: () => {
+            if (confirm("Are you sure you want to remove this message?"))
+              remove();
           },
-        ],
-      },
-    ];
+          label: "Delete message",
+          visible: canEditMessage,
+          style: { color: "#ff5968" },
+        },
+        { type: "separator" },
+        {
+          onSelect: sendDirectMessageToAuthor,
+          label: "Send direct message",
+          visible: !isOwnMessage && !(isDirectMessage && members.length <= 2),
+        },
+        {
+          onSelect: () => {
+            navigator.clipboard.writeText(message.author.walletAddress);
+          },
+          label: "Copy user wallet address",
+          visible: message.author?.walletAddress != null,
+        },
+      ].filter((i) => i.visible == null || i.visible);
 
   React.useEffect(() => {
     if (!isEditing) return;
@@ -172,7 +165,7 @@ const ChannelMessage = ({
         })}
       >
         <MessageToolbar
-          allowReplies={!isOwnMessage}
+          allowReplies={!isOwnMessage && !message.isSystemMessage}
           allowEdit={canEditMessage}
           initReply={initReply}
           initEdit={() => {
@@ -193,146 +186,157 @@ const ChannelMessage = ({
         />
       </div>
 
-      {message.isReply && (
-        <RepliedMessage
-          message={message.repliedMessage}
-          getUserMentionDisplayName={getUserMentionDisplayName}
-        />
-      )}
-
-      <div
-        css={css`
-          display: grid;
-          grid-template-columns: 3.8rem minmax(0, 1fr);
-          align-items: flex-start;
-          grid-gap: 1.2rem;
-        `}
-      >
-        {showSimplifiedMessage ? (
-          <div
-            css={css({
-              paddingTop: "0.5rem",
-              textAlign: "right",
-              transition: "0.15s opacity",
-            })}
-            style={{ opacity: isHovering ? 1 : 0 }}
-          >
-            <TinyMutedText nowrap>
-              <FormattedDate
-                value={createdAtDate}
-                hour="numeric"
-                minute="numeric"
+      {message.isSystemMessage ? (
+        <SystemMessage
+          isHovering={isHovering}
+          message={message}
+          reactions={
+            reactions.length === 0 ? null : (
+              <Reactions
+                items={reactions}
+                addReaction={addReaction}
+                removeReaction={removeReaction}
+                showAddReactionButton={isHovering}
               />
-            </TinyMutedText>
-          </div>
-        ) : isSystemMessage ? (
+            )
+          }
+        />
+      ) : (
+        <>
+          {message.isReply && (
+            <RepliedMessage
+              message={message.repliedMessage}
+              getUserMentionDisplayName={getUserMentionDisplayName}
+            />
+          )}
+
           <div
             css={css({
-              paddingTop: "0.5rem",
-              textAlign: "right",
-              transition: "0.15s opacity",
+              display: "grid",
+              gridTemplateColumns: `${AVATAR_SIZE} minmax(0, 1fr)`,
+              alignItems: "flex-start",
+              gridGap: GUTTER_SIZE,
             })}
           >
-            <TinyMutedText nowrap>{"———>"}</TinyMutedText>
-          </div>
-        ) : (
-          <div css={css({ padding: "0.2rem 0 0" })}>
-            <Avatar
-              serverId={channel.serverId}
-              userId={message.authorUserId}
-              isVerifiedNft={message.author?.pfp?.verified}
-              onClick={() => {
-                alert(
-                  `Congratulations, you clicked ${message.author?.displayName}’s avatar!`
-                );
-              }}
-            />
-          </div>
-        )}
-        <div>
-          {!showSimplifiedMessage && !isSystemMessage && (
-            <MessageHeader
-              authorDisplayName={message.author?.displayName}
-              authorWalletAddress={message.author?.walletAddress}
-              authorOnlineStatus={message.author?.onlineStatus}
-              createdAt={createdAtDate}
-            />
-          )}
-
-          {isEditing ? (
-            <EditMessageInput
-              ref={editInputRef}
-              blocks={message.content}
-              onCancel={() => {
-                setEditingMessage(false);
-              }}
-              requestRemove={() =>
-                new Promise((resolve, reject) => {
-                  if (
-                    !confirm("Are you sure you want to remove this message?")
-                  ) {
-                    reject(new Error());
-                    return;
-                  }
-
-                  remove().then(resolve, reject);
-                })
-              }
-              save={(content) =>
-                save(content).then(() => {
-                  setEditingMessage(false);
-                })
-              }
-              members={members}
-              getUserMentionDisplayName={getUserMentionDisplayName}
-            />
-          ) : (
-            <RichText
-              blocks={message.content}
-              style={{ opacity: isSystemMessage ? 0.5 : 1 }}
-              onClickInteractiveElement={(el) => {
-                switch (el.type) {
-                  case "user": {
-                    const mentionDisplayName = getUserMentionDisplayName(
-                      el.ref
-                    );
+            {showSimplifiedMessage ? (
+              <div
+                css={css({
+                  paddingTop: "0.5rem",
+                  textAlign: "right",
+                  transition: "0.15s opacity",
+                })}
+                style={{ opacity: isHovering ? 1 : 0 }}
+              >
+                <TinyMutedText nowrap>
+                  <FormattedDate
+                    value={new Date(message.created_at)}
+                    hour="numeric"
+                    minute="numeric"
+                  />
+                </TinyMutedText>
+              </div>
+            ) : (
+              <div css={css({ padding: "0.2rem 0 0" })}>
+                <Avatar
+                  serverId={channel.serverId}
+                  userId={message.authorUserId}
+                  isVerifiedNft={message.author?.pfp?.verified}
+                  onClick={() => {
                     alert(
-                      `Congratulations, you clicked "@${mentionDisplayName}"!`
+                      `Congratulations, you clicked ${message.author?.displayName}’s avatar!`
                     );
-                    break;
-                  }
-                  case "image-attachment":
-                    window.open(el.url, "_blank");
-                    break;
-                  default:
-                    throw new Error();
-                }
-              }}
-              getUserMentionDisplayName={getUserMentionDisplayName}
-            >
-              {message.isEdited && (
-                <span
-                  css={css({
-                    fontSize: "1rem",
-                    color: "rgb(255 255 255 / 35%)",
-                  })}
-                >
-                  (edited)
-                </span>
-              )}
-            </RichText>
-          )}
+                  }}
+                />
+              </div>
+            )}
 
-          {reactions.length !== 0 && (
-            <Reactions
-              items={reactions}
-              addReaction={addReaction}
-              removeReaction={removeReaction}
-              showAddReactionButton={isHovering}
-            />
-          )}
-        </div>
-      </div>
+            <div>
+              {!showSimplifiedMessage && (
+                <MessageHeader
+                  authorDisplayName={message.author?.displayName}
+                  authorWalletAddress={message.author?.walletAddress}
+                  authorOnlineStatus={message.author?.onlineStatus}
+                  createdAt={createdAtDate}
+                />
+              )}
+
+              {isEditing ? (
+                <EditMessageInput
+                  ref={editInputRef}
+                  blocks={message.content}
+                  onCancel={() => {
+                    setEditingMessage(false);
+                  }}
+                  requestRemove={() =>
+                    new Promise((resolve, reject) => {
+                      if (
+                        !confirm(
+                          "Are you sure you want to remove this message?"
+                        )
+                      ) {
+                        reject(new Error());
+                        return;
+                      }
+
+                      remove().then(resolve, reject);
+                    })
+                  }
+                  save={(content) =>
+                    save(content).then(() => {
+                      setEditingMessage(false);
+                    })
+                  }
+                  members={members}
+                  getUserMentionDisplayName={getUserMentionDisplayName}
+                />
+              ) : (
+                <RichText
+                  blocks={message.content}
+                  onClickInteractiveElement={(el) => {
+                    switch (el.type) {
+                      case "user": {
+                        const mentionDisplayName = getUserMentionDisplayName(
+                          el.ref
+                        );
+                        alert(
+                          `Congratulations, you clicked "@${mentionDisplayName}"!`
+                        );
+                        break;
+                      }
+                      case "image-attachment":
+                        window.open(el.url, "_blank");
+                        break;
+                      default:
+                        throw new Error();
+                    }
+                  }}
+                  getUserMentionDisplayName={getUserMentionDisplayName}
+                >
+                  {message.isEdited != null && (
+                    <span
+                      css={css({
+                        fontSize: "1rem",
+                        color: "rgb(255 255 255 / 35%)",
+                      })}
+                    >
+                      (edited)
+                    </span>
+                  )}
+                </RichText>
+              )}
+
+              {reactions.length !== 0 && (
+                <Reactions
+                  items={reactions}
+                  addReaction={addReaction}
+                  removeReaction={removeReaction}
+                  showAddReactionButton={isHovering}
+                />
+              )}
+            </div>
+          </div>
+        </>
+      )}
     </div>
   );
 };
@@ -491,6 +495,36 @@ const Reactions = ({
   );
 };
 
+const MemberDisplayName = ({ displayName, walletAddress, color }) => (
+  <Tooltip.Root>
+    <Tooltip.Trigger asChild>
+      <button
+        css={(theme) =>
+          css({
+            lineHeight: 1.2,
+            color: color ?? theme.colors.pink,
+            fontWeight: "500",
+            cursor: "pointer",
+            ":hover": {
+              textDecoration: "underline",
+            },
+          })
+        }
+        onClick={() => {
+          alert(`Congratulations, you clicked ${displayName}!`);
+        }}
+      >
+        {displayName}
+      </button>
+    </Tooltip.Trigger>
+    <Tooltip.Content side="top" sideOffset={4}>
+      <span css={css({ color: "rgb(255 255 255 / 54%)" })}>
+        {walletAddress}
+      </span>
+    </Tooltip.Content>
+  </Tooltip.Root>
+);
+
 const MessageHeader = ({
   authorDisplayName,
   authorWalletAddress,
@@ -509,33 +543,10 @@ const MessageHeader = ({
     `}
   >
     <div css={css({ display: "flex", alignItems: "center" })}>
-      <Tooltip.Root>
-        <Tooltip.Trigger asChild>
-          <button
-            css={(theme) =>
-              css({
-                lineHeight: 1.2,
-                color: theme.colors.pink,
-                fontWeight: "500",
-                cursor: "pointer",
-                ":hover": {
-                  textDecoration: "underline",
-                },
-              })
-            }
-            onClick={() => {
-              alert(`Congratulations, you clicked ${authorDisplayName}!`);
-            }}
-          >
-            {authorDisplayName}
-          </button>
-        </Tooltip.Trigger>
-        <Tooltip.Content side="top" sideOffset={4}>
-          <span css={css({ color: "rgb(255 255 255 / 54%)" })}>
-            {authorWalletAddress}
-          </span>
-        </Tooltip.Content>
-      </Tooltip.Root>
+      <MemberDisplayName
+        displayName={authorDisplayName}
+        walletAddress={authorWalletAddress}
+      />
 
       {authorOnlineStatus === "online" && (
         <Tooltip.Root>
@@ -1236,6 +1247,75 @@ const RepliedMessage = ({ message, getUserMentionDisplayName }) => {
             />
           </span>
         </div>
+      </div>
+    </div>
+  );
+};
+
+const SystemMessage = ({ isHovering, message, reactions }) => {
+  const content = React.useMemo(() => {
+    switch (message.type) {
+      case "member-joined":
+        return (
+          <>
+            <MemberDisplayName
+              color="white"
+              displayName={message.author?.displayName}
+              walletAddress={message.author?.walletAddress}
+            />{" "}
+            joined the server!
+          </>
+        );
+
+      default:
+        throw new Error();
+    }
+  }, [message]);
+
+  return (
+    <div
+      css={css({
+        display: "grid",
+        gridTemplateColumns: `${AVATAR_SIZE} minmax(0, 1fr)`,
+        alignItems: "flex-start",
+        gridGap: GUTTER_SIZE,
+      })}
+    >
+      {isHovering ? (
+        <div
+          css={css({
+            paddingTop: "0.5rem",
+            textAlign: "right",
+            transition: "0.15s opacity",
+          })}
+        >
+          <TinyMutedText nowrap>
+            <FormattedDate
+              value={new Date(message.created_at)}
+              hour="numeric"
+              minute="numeric"
+            />
+          </TinyMutedText>
+        </div>
+      ) : (
+        <div css={css({ margin: "0 auto", paddingTop: "0.3rem" })}>
+          <JoinArrowRightIcon
+            css={(theme) =>
+              css({
+                width: "1.5rem",
+                color: theme.colors.onlineIndicator,
+              })
+            }
+          />
+        </div>
+      )}
+
+      <div>
+        <div css={(theme) => css({ color: theme.colors.channelDefault })}>
+          {content}
+        </div>
+
+        {reactions}
       </div>
     </div>
   );

@@ -24,6 +24,7 @@ export const dark = {
     backgroundModifierSelected: "rgb(79 84 92 / 32%)",
     messageHoverBackground: "rgb(4 4 5 / 7%)",
     channelInputBackground: "#40444b",
+    channelDefault: "#96989d",
     // dialogBackground: "#202225",
     dialogBackground: "#40444b",
     mentionFocusBorder: "#7375ffb8",

@@ -175,6 +175,19 @@ const entryIdsByChannelId = (state = {}, action) => {
   }
 };
 
+const systemMessageTypes = ["member-joined"];
+
+const deriveMessageType = (message) => {
+  switch (message.type) {
+    case 0:
+      return "regular";
+    case 1:
+      return "member-joined";
+    default:
+      throw new Error();
+  }
+};
+
 export const selectMessage = (state) => (id) => {
   const message = state.messages.entriesById[id];
 
@@ -198,11 +211,15 @@ export const selectMessage = (state) => (id) => {
     message.isReply = true;
   }
 
+  const type = deriveMessageType(message);
+
   return {
     ...message,
     serverId,
     authorUserId,
     isEdited: message.edited_at != null,
+    type,
+    isSystemMessage: systemMessageTypes.includes(type),
     author: message.authorServerMember ?? message.authorUser,
     content:
       message.blocks?.length > 0
