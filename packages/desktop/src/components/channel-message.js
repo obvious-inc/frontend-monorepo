@@ -281,7 +281,7 @@ const ChannelMessage = ({
               }}
               getUserMentionDisplayName={getUserMentionDisplayName}
             >
-              {message.isEdited != null && (
+              {message.isEdited && (
                 <span
                   css={css({
                     fontSize: "1rem",
