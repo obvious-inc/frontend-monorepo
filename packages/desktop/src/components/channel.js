@@ -155,35 +155,15 @@ export const ChannelBase = ({
           {messages.map((m, i, ms) => (
             <ChannelMessage
               key={m.id}
-              isDM={channel.kind === "dm"}
-              serverId={channel.serverId}
-              content={m.content}
-              authorUserId={m.authorUserId}
-              authorNick={
-                m.authorServerMember?.displayName ?? m.authorUser?.displayName
-              }
-              avatarVerified={
-                m.authorServerMember?.pfp?.verified ??
-                m.authorUser?.pfp?.verified ??
-                false
-              }
-              authorWalletAddress={
-                m.authorServerMember?.walletAddress ??
-                m.authorUser?.walletAddress
-              }
-              authorOnlineStatus={
-                m.authorServerMember?.onlineStatus ?? m.authorUser?.onlineStatus
-              }
-              selectChannelMemberWithUserId={selectChannelMemberWithUserId}
+              channel={channel}
+              message={m}
               previousMessage={ms[i - 1]}
-              reactions={m.reactions}
-              createdAt={new Date(m.created_at)}
-              isReply={m.isReply}
               hasPendingReply={pendingReplyMessageId === m.id}
-              repliedMessage={m.repliedMessage}
-              isEdited={m.edited_at != null}
-              canEditMessage={user.id === m.authorUserId}
-              update={(blocks) =>
+              initReply={() => {
+                setPendingReplyMessageId(m.id);
+                inputRef.current.focus();
+              }}
+              save={(blocks) =>
                 actions.updateMessage(m.id, {
                   blocks,
                   content: stringifyMessageBlocks(blocks),
@@ -202,11 +182,8 @@ export const ChannelBase = ({
               removeReaction={(emoji) =>
                 actions.removeMessageReaction(m.id, { emoji })
               }
-              initReply={() => {
-                setPendingReplyMessageId(m.id);
-                inputRef.current.focus();
-              }}
               members={members}
+              selectChannelMemberWithUserId={selectChannelMemberWithUserId}
               getUserMentionDisplayName={getUserMentionDisplayName}
               sendDirectMessageToAuthor={() => {
                 const redirect = (c) => navigate(`/channels/@me/${c.id}`);

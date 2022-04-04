@@ -180,17 +180,17 @@ export const selectMessage = (state) => (id) => {
 
   if (message == null) return null;
 
-  message.serverId = message.server;
-  message.authorUserId = message.author;
+  const serverId = message.server;
+  const authorUserId = message.author;
 
   // `server` doesn’t exist on dm messages
   if (message.serverId != null) {
     message.authorServerMember = selectServerMemberWithUserId(state)(
-      message.serverId,
-      message.authorUserId
+      serverId,
+      authorUserId
     );
   } else {
-    message.authorUser = selectUser(state)(message.authorUserId);
+    message.authorUser = selectUser(state)(authorUserId);
   }
 
   if (message.reply_to != null) {
@@ -198,12 +198,21 @@ export const selectMessage = (state) => (id) => {
     message.isReply = true;
   }
 
-  if (message.blocks?.length > 0)
-    return { ...message, content: message.blocks };
-
   return {
     ...message,
-    content: [{ type: "paragraph", children: [{ text: message.content }] }],
+    serverId,
+    authorUserId,
+    isEdited: message.edited_at != null,
+    author: message.authorServerMember ?? message.authorUser,
+    content:
+      message.blocks?.length > 0
+        ? message.blocks
+        : [{ type: "paragraph", children: [{ text: message.content }] }],
+    reactions:
+      message.reactions?.map((r) => ({
+        ...r,
+        hasReacted: r.users.includes(state.user.id),
+      })) ?? [],
   };
 };
 
