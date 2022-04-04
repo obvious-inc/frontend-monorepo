@@ -1,5 +1,5 @@
 import { mapValues, omitKeys } from "../utils/object";
-import { indexBy, groupBy } from "../utils/array";
+import { indexBy, groupBy, unique } from "../utils/array";
 import combineReducers from "../utils/combine-reducers";
 
 const userEntriesById = (state = {}, action) => {
@@ -15,6 +15,12 @@ const userEntriesById = (state = {}, action) => {
           ...omitKeys(["user"], action.data),
         };
       }, state);
+
+    case "server-event:server-member-joined":
+      return {
+        ...state,
+        [action.data.user.id]: action.data.user,
+      };
 
     case "server-event:user-presence-updated":
       return mapValues((user) => {
@@ -37,6 +43,11 @@ const entriesById = (state = {}, action) => {
       return indexBy((m) => m.id, members);
     }
 
+    case "server-event:server-member-joined":
+      return {
+        ...state,
+        [action.data.member.id]: action.data.member,
+      };
 
     case "server-event:server-member-profile-updated":
       return {
@@ -65,6 +76,15 @@ const memberIdsByServerId = (state = [], action) => {
       return memberIdsByServerId;
     }
 
+    case "server-event:server-member-joined": {
+      const serverId = action.data.member.server;
+      const serverMembers = state[serverId] ?? [];
+      return {
+        ...state,
+        [serverId]: unique([...serverMembers, action.data.member.id]),
+      };
+    }
+
     default:
       return state;
   }
@@ -82,6 +102,15 @@ const memberIdsByUserId = (state = [], action) => {
       );
 
       return memberIdsByUserId;
+    }
+
+    case "server-event:server-member-joined": {
+      const userId = action.data.user.id;
+      const userMembers = state[userId] ?? [];
+      return {
+        ...state,
+        [userId]: unique([...userMembers, action.data.member.id]),
+      };
     }
 
     default:
