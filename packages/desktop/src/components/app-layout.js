@@ -64,10 +64,10 @@ const AppLayout = () => {
 
   const servers = state.selectServers();
 
-  const hasServers = servers.length > 0;
-
   const dmChannels = state.selectDmChannels();
   const unreadDmChannels = dmChannels.filter((c) => c.hasUnread);
+
+  const hasUnreadDms = unreadDmChannels.length > 0;
 
   if (!state.selectHasFetchedInitialData() || user == null) return null;
 
@@ -87,7 +87,6 @@ const AppLayout = () => {
               display: isCollapsed ? "none" : "flex",
               width: "6.6rem",
               background: theme.colors.backgroundTertiary,
-              padding: "1.2rem 0",
               flexDirection: "column",
               alignItems: "center",
               justifyContent: "space-between",
@@ -96,63 +95,85 @@ const AppLayout = () => {
         >
           <div
             css={css({
-              display: "grid",
-              gridAutoFlow: "rows",
-              gridAutoRows: "auto",
-              justifyItems: "center",
-              gridGap: "0.8rem",
+              flex: 1,
+              minHeight: 0,
+              display: "flex",
+              flexDirection: "column",
+              alignItems: "center",
             })}
           >
-            {[
-              {
-                to: "/",
-                icon: <HomeIcon style={{ width: "2.2rem" }} />,
-              },
-              {
-                to:
-                  dmChannels.length === 0
-                    ? "/channels/@me"
-                    : `/channels/@me/${dmChannels[0].id}`,
-                icon: <ChatBubblesIcon style={{ width: "2.2rem" }} />,
-                component: Link,
-                className: location.pathname.startsWith("/channels/@me")
-                  ? "active"
-                  : undefined,
-              },
-            ].map(({ icon, ...props }, i) => (
-              <RoundButton key={i} component={NavLink} {...props}>
-                {icon}
-              </RoundButton>
-            ))}
+            <div
+              css={css({
+                display: "grid",
+                gridAutoFlow: "row",
+                gridAutoRows: "auto",
+                justifyItems: "center",
+                gridGap: "0.8rem",
+                padding: "1.2rem 0 0.8rem",
+              })}
+            >
+              {[
+                {
+                  to: "/",
+                  icon: <HomeIcon style={{ width: "2.2rem" }} />,
+                },
+                {
+                  to:
+                    dmChannels.length === 0
+                      ? "/channels/@me"
+                      : `/channels/@me/${dmChannels[0].id}`,
+                  icon: <ChatBubblesIcon style={{ width: "2.2rem" }} />,
+                  component: Link,
+                  className: location.pathname.startsWith("/channels/@me")
+                    ? "active"
+                    : undefined,
+                },
+              ].map(({ icon, ...props }, i) => (
+                <RoundButton key={i} component={NavLink} {...props}>
+                  {icon}
+                </RoundButton>
+              ))}
+            </div>
 
-            {unreadDmChannels.map((c) => (
-              <RoundButton
-                key={c.id}
-                component={NavLink}
-                to={`/channels/@me/${c.id}`}
-                notificationCount={1} // TODO
+            <Divider />
+
+            <div
+              css={css({
+                flex: 1,
+                minHeight: 0,
+                overflow: "auto",
+                padding: "0.8rem 0 1.2rem",
+                scrollbarWidth: "none", // Firefox
+                "::-webkit-scrollbar": { display: "none" },
+              })}
+            >
+              <div
+                css={css({
+                  display: "grid",
+                  gridAutoFlow: "row",
+                  gridAutoRows: "auto",
+                  justifyItems: "center",
+                  gridGap: "0.8rem",
+                })}
               >
-                <ServerMemberAvatar
-                  userId={
-                    c.memberUserIds.filter((id) => id !== user.id)[0] ??
-                    c.memberUserIds[0]
-                  }
-                  size="4.6rem"
-                />
-              </RoundButton>
-            ))}
+                {unreadDmChannels.map((c) => (
+                  <RoundButton
+                    key={c.id}
+                    component={NavLink}
+                    to={`/channels/@me/${c.id}`}
+                    notificationCount={1} // TODO
+                  >
+                    <ServerMemberAvatar
+                      userId={
+                        c.memberUserIds.filter((id) => id !== user.id)[0] ??
+                        c.memberUserIds[0]
+                      }
+                      size="4.6rem"
+                    />
+                  </RoundButton>
+                ))}
 
-            {hasServers && (
-              <>
-                <div
-                  css={(theme) =>
-                    css({
-                      height: "2px",
-                      background: theme.colors.backgroundPrimaryAlt,
-                      width: "3rem",
-                    })
-                  }
-                />
+                {hasUnreadDms && <Divider />}
 
                 {servers.map((s, i) => {
                   const abbreviation = s.name
@@ -193,23 +214,26 @@ const AppLayout = () => {
                     </RoundButton>
                   );
                 })}
-              </>
-            )}
+
+                <RoundButton
+                  onClick={() => {
+                    if (
+                      process.env.DEV ||
+                      window.location.search.includes("beta")
+                    ) {
+                      const name = prompt("Name plz");
+                      actions.createServer({ name });
+                      return;
+                    }
+
+                    alert("Soon :tm:");
+                  }}
+                >
+                  <PlusIcon style={{ width: "1.7rem" }} />
+                </RoundButton>
+              </div>
+            </div>
           </div>
-
-          <RoundButton
-            onClick={() => {
-              if (process.env.DEV || window.location.search.includes("beta")) {
-                const name = prompt("Name plz");
-                actions.createServer({ name });
-                return;
-              }
-
-              alert("Soon :tm:");
-            }}
-          >
-            <PlusIcon style={{ width: "1.7rem" }} />
-          </RoundButton>
         </div>
 
         <MenuContext.Provider value={menuContextValue}>
@@ -290,6 +314,18 @@ const RoundButton = ({
       />
     )}
   </div>
+);
+
+const Divider = () => (
+  <div
+    css={(theme) =>
+      css({
+        height: "2px",
+        background: theme.colors.backgroundPrimaryAlt,
+        width: "3rem",
+      })
+    }
+  />
 );
 
 export default AppLayout;
