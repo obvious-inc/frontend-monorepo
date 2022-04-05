@@ -1,3 +1,15 @@
+export const JoinArrowRight = (props) => (
+  <svg height="18" width="18" viewBox="0 0 18 18" {...props}>
+    <g fill="none" fillRule="evenodd">
+      <path d="m18 0h-18v18h18z" />
+      <path
+        d="m0 8h14.2l-3.6-3.6 1.4-1.4 6 6-6 6-1.4-1.4 3.6-3.6h-14.2"
+        fill="currentColor"
+      />
+    </g>
+  </svg>
+);
+
 export const AtSign = (props) => (
   <svg x="0" y="0" width="24" height="24" viewBox="0 0 24 24" {...props}>
     <path

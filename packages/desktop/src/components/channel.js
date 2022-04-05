@@ -202,6 +202,7 @@ export const ChannelBase = ({
                   })
                   .then(redirect);
               }}
+              isSystemMessage={m.type === 1}
             />
           ))}
           <div

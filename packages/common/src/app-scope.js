@@ -70,11 +70,16 @@ export const Provider = ({ children }) => {
   );
 
   const updateServer = React.useCallback(
-    (id, { name, description, avatar }) =>
+    (id, { name, description, avatar, system_channel }) =>
       authorizedFetch(`/servers/${id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name, description, avatar }),
+        body: JSON.stringify({
+          name,
+          description,
+          avatar,
+          system_channel,
+        }),
       }).then((res) => {
         // TODO
         fetchInitialData();
