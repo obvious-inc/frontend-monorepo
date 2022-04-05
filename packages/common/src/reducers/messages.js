@@ -196,9 +196,8 @@ export const selectMessage = (state) => (id) => {
 
   const serverId = message.server;
   const authorUserId = message.author;
-
   // `server` doesn’t exist on dm messages
-  if (message.serverId != null) {
+  if (serverId != null) {
     message.authorServerMember = selectServerMemberWithUserId(state)(
       serverId,
       authorUserId
