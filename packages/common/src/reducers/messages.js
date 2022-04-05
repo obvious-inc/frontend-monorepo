@@ -179,6 +179,7 @@ const systemMessageTypes = ["member-joined"];
 
 const deriveMessageType = (message) => {
   switch (message.type) {
+    case undefined:
     case 0:
       return "regular";
     case 1:
