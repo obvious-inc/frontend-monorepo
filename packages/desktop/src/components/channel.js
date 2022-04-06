@@ -1,3 +1,4 @@
+import throttle from "lodash.throttle";
 import React from "react";
 import { useParams, useNavigate } from "react-router";
 import { css } from "@emotion/react";
@@ -74,6 +75,12 @@ export const ChannelBase = ({
       return member?.displayName ?? ref;
     },
     [members]
+  );
+
+  const throttledRegisterTypingActivity = React.useMemo(
+    () =>
+      throttle(() => actions.registerChannelTypingActivity(channel.id), 3000),
+    [actions, channel.id]
   );
 
   const messages = useChannelMessages(channel.id);
@@ -214,7 +221,7 @@ export const ChannelBase = ({
           />
         </div>
       </div>
-      <div css={css({ padding: "0 1.6rem 1.6rem" })}>
+      <div css={css({ padding: "0 1.6rem 2.4rem", position: "relative" })}>
         <NewMessageInput
           ref={inputRef}
           isDM={channel.kind === "dm"}
@@ -244,11 +251,73 @@ export const ChannelBase = ({
           }
           members={members}
           getUserMentionDisplayName={getUserMentionDisplayName}
+          onInputChange={() => {
+            throttledRegisterTypingActivity();
+          }}
         />
+        {channel.typingMembers.filter((m) => m.id !== user.id).length > 0 && (
+          <TypingIndicator members={channel.typingMembers} />
+        )}
       </div>
     </div>
   );
 };
+
+const TypingIndicator = ({ members }) => (
+  <div
+    css={(theme) =>
+      css({
+        position: "absolute",
+        left: 0,
+        bottom: 0,
+        padding: "0 1.5rem 0.4rem 6.5rem",
+        pointerEvents: "none",
+        color: theme.colors.textHeaderSecondary,
+        width: "100%",
+        overflow: "hidden",
+        textOverflow: "ellipsis",
+        whiteSpace: "nowrap",
+        lineHeight: 1.4,
+        fontSize: theme.fontSizes.tiny,
+        strong: { fontWeight: "600" },
+      })
+    }
+  >
+    {/* <svg width="24.5" height="7"> */}
+    {/*   <g> */}
+    {/*     <circle cx="3.5" cy="3.5" r="3.5" fill="currentColor" /> */}
+    {/*     <circle cx="12.25" cy="3.5" r="3.5" fill="currentColor" /> */}
+    {/*     <circle cx="21" cy="3.5" r="3.5" fill="currentColor" /> */}
+    {/*   </g> */}
+    {/* </svg> */}
+    <span aria-live="polite" aria-atomic="true">
+      {members.length === 1 ? (
+        <strong>{members[0].displayName}</strong>
+      ) : members.length === 2 ? (
+        <></>
+      ) : (
+        members.map((m, i, ms) => {
+          if (i === 0) return <strong key={m.id}>{m.displayName}</strong>;
+          const isLast = i === ms.length - 1;
+          if (isLast)
+            return (
+              <React.Fragment key={m.id}>
+                {" "}
+                , and<strong>{m.displayName}</strong>
+              </React.Fragment>
+            );
+          return (
+            <React.Fragment key={m.id}>
+              {" "}
+              , <strong>{m.displayName}</strong>
+            </React.Fragment>
+          );
+        })
+      )}{" "}
+      is typing...
+    </span>
+  </div>
+);
 
 const NewMessageInput = React.forwardRef(
   (
@@ -260,6 +329,7 @@ const NewMessageInput = React.forwardRef(
       isDM,
       serverId,
       channelId,
+      onInputChange,
       ...props
     },
     editorRef
@@ -274,6 +344,14 @@ const NewMessageInput = React.forwardRef(
 
     const fileInputRef = React.useRef();
     const uploadPromiseRef = React.useRef();
+    const previousPendingMessageRef = React.useRef(pendingMessage);
+
+    React.useEffect(() => {
+      if (previousPendingMessageRef.current !== pendingMessage) {
+        onInputChange();
+      }
+      previousPendingMessageRef.current = pendingMessage;
+    }, [pendingMessage, onInputChange]);
 
     const {
       execute: executeCommand,
