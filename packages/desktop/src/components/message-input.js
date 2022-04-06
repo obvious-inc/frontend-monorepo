@@ -5,6 +5,23 @@ import RichTextInput from "./rich-text-input";
 
 const { sort } = arrayUtils;
 
+let emojiModulePromise = null;
+
+const fetchEmojis = () => {
+  if (emojiModulePromise) return emojiModulePromise;
+  emojiModulePromise = import("../emojis.js").then(
+    (module) => {
+      emojiModulePromise = null;
+      return module.default;
+    },
+    (error) => {
+      emojiModulePromise = null;
+      return Promise.reject(error);
+    }
+  );
+  return emojiModulePromise;
+};
+
 const MessageInput = React.forwardRef(
   (
     {
@@ -20,11 +37,14 @@ const MessageInput = React.forwardRef(
     },
     editorRef
   ) => {
+    const [emojis, setEmojis] = React.useState([]);
+
     const preventInputBlurRef = React.useRef();
     const mentionQueryRangeRef = React.useRef();
 
     const [mentionQuery, setMentionQuery] = React.useState(null);
     const [commandQuery, setCommandQuery] = React.useState(null);
+    const [emojiQuery, setEmojiQuery] = React.useState(null);
     const [selectedAutoCompleteIndex, setSelectedAutoCompleteIndex] =
       React.useState(-1);
 
@@ -33,6 +53,8 @@ const MessageInput = React.forwardRef(
         ? "mentions"
         : commandQuery != null
         ? "commands"
+        : emojiQuery != null
+        ? "emojis"
         : null;
 
     const isAutoCompleteMenuOpen = autoCompleteMode != null;
@@ -62,6 +84,45 @@ const MessageInput = React.forwardRef(
         .slice(0, 10)
         .map((m) => ({ value: m.id, label: m.displayName }));
     }, [autoCompleteMode, mentionQuery, members]);
+
+    const filteredEmojiOptions = React.useMemo(() => {
+      if (autoCompleteMode !== "emojis") return [];
+
+      const lowerCaseQuery = emojiQuery?.toLowerCase() ?? null;
+
+      const unorderedFilteredEmojis = emojis.filter(
+        (emoji) =>
+          lowerCaseQuery != null && emoji.aliases[0].includes(lowerCaseQuery)
+      );
+
+      const orderedFilteredEmojis = sort((o1, o2) => {
+        const [i1, i2] = [o1, o2].map((o) =>
+          o.aliases[0].indexOf(lowerCaseQuery)
+        );
+
+        if (i1 < i2) return -1;
+        if (i1 > i2) return 1;
+        return 0;
+      }, unorderedFilteredEmojis);
+
+      return orderedFilteredEmojis.slice(0, 10).map((e) => ({
+        value: e.emoji,
+        label: (
+          <span>
+            <span
+              css={css({
+                display: "inline-flex",
+                transform: "scale(1.35)",
+                marginRight: "0.5rem",
+              })}
+            >
+              {e.emoji}
+            </span>{" "}
+            :{e.aliases[0]}:
+          </span>
+        ),
+      }));
+    }, [emojis, autoCompleteMode, emojiQuery]);
 
     const filteredCommandOptions = React.useMemo(() => {
       if (autoCompleteMode !== "commands") return [];
@@ -109,6 +170,7 @@ const MessageInput = React.forwardRef(
     const autoCompleteOptions = {
       mentions: filteredMentionOptions,
       commands: filteredCommandOptions,
+      emojis: filteredEmojiOptions,
     }[autoCompleteMode];
 
     const selectAutoCompleteOption = React.useCallback(
@@ -120,6 +182,13 @@ const MessageInput = React.forwardRef(
               at: mentionQueryRangeRef.current,
             });
             setMentionQuery(null);
+            break;
+
+          case "emojis":
+            event.preventDefault();
+            editorRef.current.replaceCurrentWord(option.value);
+            editorRef.current.insertText(" ");
+            setEmojiQuery(null);
             break;
 
           case "commands": {
@@ -170,6 +239,8 @@ const MessageInput = React.forwardRef(
           case "Escape":
             event.preventDefault();
             setMentionQuery(null);
+            setEmojiQuery(null);
+            setCommandQuery(null);
             break;
         }
       },
@@ -189,6 +260,13 @@ const MessageInput = React.forwardRef(
       "aria-controls": "autocomplete-listbox",
       "aria-activedescendant": `autocomplete-listbox-option-${selectedAutoCompleteIndex}`,
     };
+
+    React.useEffect(() => {
+      if (autoCompleteMode !== "emojis" || emojis.length !== 0) return;
+      fetchEmojis().then((es) => {
+        setEmojis(es);
+      });
+    }, [autoCompleteMode, emojis]);
 
     return (
       <>
@@ -211,6 +289,18 @@ const MessageInput = React.forwardRef(
                 }
 
                 setMentionQuery(null);
+              },
+            },
+            {
+              type: "word",
+              handler: (word) => {
+                if (word.startsWith(":")) {
+                  setEmojiQuery(word.slice(1));
+                  setSelectedAutoCompleteIndex(0);
+                  return;
+                }
+
+                setEmojiQuery(null);
               },
             },
             !disableCommands && {
@@ -244,6 +334,8 @@ const MessageInput = React.forwardRef(
             }
 
             setMentionQuery(null);
+            setEmojiQuery(null);
+            setCommandQuery(null);
           }}
           getUserMentionDisplayName={getUserMentionDisplayName}
         />
