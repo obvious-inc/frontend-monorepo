@@ -186,7 +186,10 @@ const AppLayout = () => {
                       ? abbreviation
                       : s.name.slice(0, 2);
 
+                  const isActive = params.serverId === s.id;
+
                   const hasChannels = s.channels.length !== 0;
+                  const unreadChannels = s.channels.filter((c) => c.hasUnread);
 
                   return (
                     <RoundButton
@@ -197,9 +200,8 @@ const AppLayout = () => {
                           ? `/channels/${s.id}/${s.channels[0].id}`
                           : `/channels/${s.id}`
                       }
-                      className={
-                        params.serverId === s.id ? "active" : undefined
-                      }
+                      notificationCount={isActive ? 0 : unreadChannels.length}
+                      className={isActive ? "active" : undefined}
                     >
                       <div
                         css={css({
