@@ -253,8 +253,9 @@ export const ChannelBase = ({
           }
           members={members}
           getUserMentionDisplayName={getUserMentionDisplayName}
-          onInputChange={() => {
-            throttledRegisterTypingActivity();
+          onInputChange={(blocks) => {
+            if (blocks.length > 1 || !isNodeEmpty(blocks[0]))
+              throttledRegisterTypingActivity();
           }}
         />
         {channel.typingMembers.filter((m) => m.id !== user.id).length > 0 && (
@@ -352,7 +353,7 @@ const NewMessageInput = React.forwardRef(
 
     React.useEffect(() => {
       if (previousPendingMessageRef.current !== pendingMessage) {
-        onInputChange();
+        onInputChange(pendingMessage);
       }
       previousPendingMessageRef.current = pendingMessage;
     }, [pendingMessage, onInputChange]);
