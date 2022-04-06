@@ -143,6 +143,16 @@ const typingUserIdsByChannelId = (state = {}, action) => {
       };
     }
 
+    case "server-event:message-created": {
+      const channelId = action.data.message.channel;
+      const authorUserId = action.data.message.author;
+      return {
+        ...state,
+        [channelId]:
+          state[channelId]?.filter((id) => id !== authorUserId) ?? [],
+      };
+    }
+
     case "user-typing-ended":
       return {
         ...state,
