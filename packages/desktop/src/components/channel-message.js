@@ -45,6 +45,7 @@ const ChannelMessage = ({
   selectChannelMemberWithUserId,
   getUserMentionDisplayName,
   sendDirectMessageToAuthor,
+  isAdmin,
 }) => {
   const editInputRef = React.useRef();
   const containerRef = React.useRef();
@@ -63,7 +64,8 @@ const ChannelMessage = ({
 
   const isDirectMessage = channel.kind === "dm";
   const isOwnMessage = user.id === message.authorUserId;
-  const canEditMessage =
+
+  const allowEdit =
     !message.isSystemMessage && user.id === message.authorUserId;
 
   const createdAtDate = React.useMemo(
@@ -98,15 +100,15 @@ const ChannelMessage = ({
             setEditingMessage(true);
           },
           label: "Edit message",
-          visible: canEditMessage,
+          visible: allowEdit,
         },
         {
           onSelect: () => {
             if (confirm("Are you sure you want to remove this message?"))
               remove();
           },
-          label: "Delete message",
-          visible: canEditMessage,
+          label: allowEdit ? "Delete message" : "Admin delete",
+          visible: allowEdit || isAdmin,
           style: { color: "#ff5968" },
         },
         { type: "separator" },
@@ -166,7 +168,7 @@ const ChannelMessage = ({
       >
         <MessageToolbar
           allowReplies={!isOwnMessage && !message.isSystemMessage}
-          allowEdit={canEditMessage}
+          allowEdit={allowEdit}
           initReply={initReply}
           initEdit={() => {
             setEditingMessage(true);

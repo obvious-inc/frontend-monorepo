@@ -19,7 +19,8 @@ const reducer = (state = initialState, action) => {
 export const selectServer = (state) => (id) => {
   const server = state.servers.entriesById[id];
   if (server == null) return null;
-  return { ...server, ownerUserId: server.owner };
+  const ownerUserId = server.owner;
+  return { ...server, ownerUserId, isAdmin: state.user.id === ownerUserId };
 };
 
 export const selectServers = (state) => () =>

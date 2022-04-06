@@ -52,6 +52,7 @@ const useChannelMessages = (channelId) => {
 export const ChannelBase = ({
   channel,
   members,
+  isAdmin = false,
   selectChannelMemberWithUserId,
   createMessage,
   headerContent,
@@ -202,7 +203,7 @@ export const ChannelBase = ({
                   })
                   .then(redirect);
               }}
-              isSystemMessage={m.type === 1}
+              isAdmin={isAdmin}
             />
           ))}
           <div
@@ -686,6 +687,7 @@ const Channel = () => {
   const { isEnabled: isMenuEnabled } = useMenuState();
 
   const channel = state.selectChannel(params.channelId);
+  const server = state.selectServer(params.serverId);
 
   if (channel == null)
     return (
@@ -714,6 +716,7 @@ const Channel = () => {
           replyToMessageId,
         });
       }}
+      isAdmin={server?.isAdmin}
       selectChannelMemberWithUserId={(userId) =>
         channel.kind === "dm"
           ? state.selectUser(userId)
