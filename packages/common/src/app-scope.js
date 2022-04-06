@@ -100,7 +100,16 @@ export const Provider = ({ children }) => {
           authorizedFetch(
             `/channels/${channelId}/messages/${reply.reply_to}`
           ).then((message) => {
-            dispatch({ type: "messages-fetched", messages: [message] });
+            dispatch({
+              type: "messages-fetched",
+              messages: [
+                message ?? {
+                  id: reply.reply_to,
+                  channel: channelId,
+                  deleted: true,
+                },
+              ],
+            });
           });
 
         return messages;

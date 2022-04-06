@@ -193,12 +193,12 @@ export const selectMessage = (state) => (id) => {
   const message = state.messages.entriesById[id];
 
   if (message == null) return null;
+  if (message.deleted) return message;
 
   const serverId = message.server;
   const authorUserId = message.author;
-
   // `server` doesn’t exist on dm messages
-  if (message.serverId != null) {
+  if (serverId != null) {
     message.authorServerMember = selectServerMemberWithUserId(state)(
       serverId,
       authorUserId
@@ -236,7 +236,9 @@ export const selectMessage = (state) => (id) => {
 
 export const selectChannelMessages = (state) => (channelId) => {
   const channelMessageIds = state.messages.entryIdsByChannelId[channelId] ?? [];
-  return channelMessageIds.map(selectMessage(state));
+  return channelMessageIds
+    .map(selectMessage(state))
+    .filter((m) => m != null && !m.deleted);
 };
 
 export default combineReducers({ entriesById, entryIdsByChannelId });

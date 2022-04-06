@@ -45,6 +45,7 @@ const ChannelMessage = ({
   selectChannelMemberWithUserId,
   getUserMentionDisplayName,
   sendDirectMessageToAuthor,
+  isAdmin,
 }) => {
   const editInputRef = React.useRef();
   const containerRef = React.useRef();
@@ -63,7 +64,8 @@ const ChannelMessage = ({
 
   const isDirectMessage = channel.kind === "dm";
   const isOwnMessage = user.id === message.authorUserId;
-  const canEditMessage =
+
+  const allowEdit =
     !message.isSystemMessage && user.id === message.authorUserId;
 
   const createdAtDate = React.useMemo(
@@ -98,15 +100,15 @@ const ChannelMessage = ({
             setEditingMessage(true);
           },
           label: "Edit message",
-          visible: canEditMessage,
+          visible: allowEdit,
         },
         {
           onSelect: () => {
             if (confirm("Are you sure you want to remove this message?"))
               remove();
           },
-          label: "Delete message",
-          visible: canEditMessage,
+          label: allowEdit ? "Delete message" : "Admin delete",
+          visible: allowEdit || isAdmin,
           style: { color: "#ff5968" },
         },
         { type: "separator" },
@@ -166,7 +168,7 @@ const ChannelMessage = ({
       >
         <MessageToolbar
           allowReplies={!isOwnMessage && !message.isSystemMessage}
-          allowEdit={canEditMessage}
+          allowEdit={allowEdit}
           initReply={initReply}
           initEdit={() => {
             setEditingMessage(true);
@@ -1184,7 +1186,7 @@ const RepliedMessage = ({ message, getUserMentionDisplayName }) => {
           gridGap: "0.5rem",
         })}
       >
-        {message == null ? (
+        {message == null || message.deleted ? (
           <div
             style={{
               width: "1.4rem",
@@ -1211,41 +1213,53 @@ const RepliedMessage = ({ message, getUserMentionDisplayName }) => {
             color: "rgb(255 255 255 / 54%)",
           })}
         >
-          <span
-            role="button"
-            tabIndex={0}
-            css={css({
-              cursor: "pointer",
-              fontWeight: "500",
-              ":hover": { textDecoration: "underline" },
-            })}
-            onClick={() => {
-              alert(
-                `Congratulations, you clicked "${authorMember?.displayName}"`
-              );
-            }}
-          >
-            {authorMember?.displayName ?? "..."}
-          </span>{" "}
-          <span
-            role="button"
-            tabIndex={0}
-            css={(theme) =>
-              css({
-                cursor: "pointer",
-                ":hover": { color: theme.colors.textNormal },
-              })
-            }
-            onClick={() => {
-              alert("Congratulations, you clicked a replied message!");
-            }}
-          >
-            <RichText
-              inline
-              blocks={message?.content ?? []}
-              getUserMentionDisplayName={getUserMentionDisplayName}
-            />
-          </span>
+          {message?.deleted ? (
+            <span
+              css={(theme) =>
+                css({ fontStyle: "italic", color: theme.colors.textMuted })
+              }
+            >
+              Message deleted
+            </span>
+          ) : (
+            <>
+              <span
+                role="button"
+                tabIndex={0}
+                css={css({
+                  cursor: "pointer",
+                  fontWeight: "500",
+                  ":hover": { textDecoration: "underline" },
+                })}
+                onClick={() => {
+                  alert(
+                    `Congratulations, you clicked "${authorMember?.displayName}"`
+                  );
+                }}
+              >
+                {authorMember?.displayName ?? "..."}
+              </span>{" "}
+              <span
+                role="button"
+                tabIndex={0}
+                css={(theme) =>
+                  css({
+                    cursor: "pointer",
+                    ":hover": { color: theme.colors.textNormal },
+                  })
+                }
+                onClick={() => {
+                  alert("Congratulations, you clicked a replied message!");
+                }}
+              >
+                <RichText
+                  inline
+                  blocks={message?.content ?? []}
+                  getUserMentionDisplayName={getUserMentionDisplayName}
+                />
+              </span>
+            </>
+          )}
         </div>
       </div>
     </div>

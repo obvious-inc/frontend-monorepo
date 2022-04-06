@@ -77,6 +77,7 @@ const entriesById = (state = {}, action) => {
       const userMentions = getMentions(action.data.message.blocks).filter(
         (m) => m.ref === action.user.id
       );
+      const unreadMentionMessageIds = channel?.unreadMentionMessageIds ?? [];
 
       return {
         ...state,
@@ -85,11 +86,11 @@ const entriesById = (state = {}, action) => {
           lastMessageAt: action.data.message.created_at,
           lastReadAt: isOwnMessage
             ? action.data.message.created_at
-            : channel.lastReadAt,
+            : channel?.lastReadAt,
           unreadMentionMessageIds:
             userMentions.length === 0
-              ? channel.unreadMentionMessageIds
-              : [...channel.unreadMentionMessageIds, action.data.message.id],
+              ? unreadMentionMessageIds
+              : [...unreadMentionMessageIds, action.data.message.id],
         },
       };
     }

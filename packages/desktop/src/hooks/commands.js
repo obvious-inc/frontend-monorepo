@@ -38,9 +38,9 @@ const otherCommands = {
       editor.clear();
     },
   }),
-  nick: ({ actions, context }) => ({
+  nick: ({ actions, context, serverId }) => ({
     description: "Update your nickname for this server",
-    execute: async ({ args, editor, serverId }) => {
+    execute: async ({ args, editor }) => {
       const displayName = args.join(" ");
       await actions.updateMe({ displayName, serverId });
       editor.clear();
@@ -123,10 +123,10 @@ const otherCommands = {
       signOut();
     },
   }),
-  pfp: ({ context, actions }) => ({
+  pfp: ({ context, actions, serverId }) => ({
     description:
       "Update your server profile picture. Use a URL from OpenSea, Rarible, or LooksRare OR copy paste the specific '<contract_address> <token_id>'.",
-    execute: async ({ args, editor, serverId }) => {
+    execute: async ({ args, editor }) => {
       const pfp = args.join(" ");
       await actions.updateMe({ pfp, serverId });
       editor.clear();

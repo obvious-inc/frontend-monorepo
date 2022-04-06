@@ -66,7 +66,7 @@ const createParser = ({
         case "link":
           return (
             <a key={i} href={el.url} target="_blank" rel="noreferrer">
-              {children()}
+              {el.url}
             </a>
           );
         case "user":
