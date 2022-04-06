@@ -79,7 +79,9 @@ export const ChannelBase = ({
 
   const throttledRegisterTypingActivity = React.useMemo(
     () =>
-      throttle(() => actions.registerChannelTypingActivity(channel.id), 3000),
+      throttle(() => actions.registerChannelTypingActivity(channel.id), 3000, {
+        trailing: false,
+      }),
     [actions, channel.id]
   );
 
