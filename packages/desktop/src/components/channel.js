@@ -258,7 +258,7 @@ export const ChannelBase = ({
               throttledRegisterTypingActivity();
           }}
         />
-        {channel.typingMembers.filter((m) => m.id !== user.id).length > 0 && (
+        {channel.typingMembers.length > 0 && (
           <TypingIndicator members={channel.typingMembers} />
         )}
       </div>

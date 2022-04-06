@@ -213,7 +213,9 @@ export const selectChannel = (state) => (id) => {
 
   const lastMessageTimestamp = new Date(channel.lastMessageAt).getTime();
 
-  const typingMembersUserIds = selectChannelTypingUserIds(state)(id);
+  const typingMembersUserIds = selectChannelTypingUserIds(state)(id).filter(
+    (id) => id !== state.user.id
+  );
   const typingMembers =
     channel.kind === "dm"
       ? typingMembersUserIds.map(selectUser(state))
