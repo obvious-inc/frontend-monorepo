@@ -296,7 +296,9 @@ const TypingIndicator = ({ members }) => (
       {members.length === 1 ? (
         <strong>{members[0].displayName}</strong>
       ) : members.length === 2 ? (
-        <></>
+        <>
+          {members[0].displayName} and {members[1].displayName}
+        </>
       ) : (
         members.map((m, i, ms) => {
           if (i === 0) return <strong key={m.id}>{m.displayName}</strong>;
@@ -631,7 +633,6 @@ const NewMessageInput = React.forwardRef(
                   setImageUploads((fs) => {
                     const newImageUploads = fs.map((f) => {
                       if (!uploadedFile.filename.endsWith(f.name)) return f;
-                      console.log(uploadedFile);
                       return {
                         id: uploadedFile.id,
                         name: uploadedFile.filename,
