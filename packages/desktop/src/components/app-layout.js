@@ -190,6 +190,11 @@ const AppLayout = () => {
 
                   const hasChannels = s.channels.length !== 0;
                   const unreadChannels = s.channels.filter((c) => c.hasUnread);
+                  const hasUnread = unreadChannels.length > 0;
+                  const mentionCount = s.channels.reduce(
+                    (count, c) => count + c.mentionCount,
+                    0
+                  );
 
                   return (
                     <RoundButton
@@ -200,7 +205,7 @@ const AppLayout = () => {
                           ? `/channels/${s.id}/${s.channels[0].id}`
                           : `/channels/${s.id}`
                       }
-                      notificationCount={isActive ? 0 : unreadChannels.length}
+                      notificationCount={mentionCount}
                       className={isActive ? "active" : undefined}
                     >
                       <div
@@ -210,6 +215,7 @@ const AppLayout = () => {
                           fontWeight: "500",
                           lineHeight: 1,
                         })}
+                        style={{ color: hasUnread ? "white" : undefined }}
                       >
                         {shortName}
                       </div>
