@@ -38,7 +38,10 @@ const entriesById = (state = {}, action) => {
               null
             ),
           };
-          if (channel.kind === "dm") properties.memberUserIds = channel.members;
+          if (channel.kind === "dm") {
+            properties.memberUserIds = channel.members;
+            properties.ownerUserId = channel.owner;
+          }
           return [id, properties];
         })
       );
@@ -192,7 +195,7 @@ export const selectChannel = (state) => (id) => {
   };
 
   const buildName = () => {
-    if (channel.kind !== "dm") return channel.name;
+    if (channel.kind !== "dm" || channel.name != null) return channel.name;
 
     if (channel.memberUserIds.length === 1) return "Me";
 

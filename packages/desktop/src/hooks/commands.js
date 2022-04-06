@@ -99,7 +99,14 @@ const otherCommands = {
       return server?.ownerUserId !== user.id;
     },
   }),
-  "update-channel": ({ user, state, actions, serverId, channelId }) => ({
+  "update-channel": ({
+    context,
+    user,
+    state,
+    actions,
+    serverId,
+    channelId,
+  }) => ({
     description: "Update a channel property",
     arguments: ["propery-name", "property-value"],
     execute: async ({ args, editor }) => {
@@ -113,6 +120,11 @@ const otherCommands = {
       editor.clear();
     },
     exclude: () => {
+      if (context === "dm") {
+        const channel = state.selectChannel(channelId);
+        return user.id !== channel.ownerUserId;
+      }
+
       const server = state.selectServer(serverId);
       return server?.ownerUserId !== user.id;
     },
