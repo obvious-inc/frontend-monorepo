@@ -17,14 +17,29 @@ const ServerMemberAvatar = ({
       : state.selectUser(userId);
 
   const avatarDataUrl = React.useMemo(() => {
-    if (member.pfpUrl != null) return;
+    if (member?.pfpUrl != null) return;
 
     return generateAvatar({
       seed: member.walletAddress,
       size: 8,
       scale: 10,
     });
-  }, [member.pfpUrl, member.walletAddress]);
+  }, [member?.pfpUrl, member?.walletAddress]);
+
+  if (member == null)
+    return (
+      <div
+        css={(theme) =>
+          css({
+            borderRadius,
+            background: theme.colors.backgroundSecondary,
+            height: size,
+            width: size,
+          })
+        }
+        {...props}
+      />
+    );
 
   return (
     <img
