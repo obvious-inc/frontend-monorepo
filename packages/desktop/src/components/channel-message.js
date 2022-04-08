@@ -226,14 +226,16 @@ const ChannelMessage = ({
                   paddingTop: "0.5rem",
                   textAlign: "right",
                   transition: "0.15s opacity",
+                  cursor: "default",
                 })}
                 style={{ opacity: isHovering ? 1 : 0 }}
               >
                 <TinyMutedText nowrap>
-                  <FormattedDate
+                  <FormattedDateWithTooltip
                     value={new Date(message.created_at)}
                     hour="numeric"
                     minute="numeric"
+                    tooltipContentProps={{ sideOffset: 7 }}
                   />
                 </TinyMutedText>
               </div>
@@ -564,7 +566,7 @@ const MessageHeader = ({
               />
             </div>
           </Tooltip.Trigger>
-          <Tooltip.Content side="top" align="center" sideOffset={5}>
+          <Tooltip.Content side="top" align="center" sideOffset={6}>
             User online
           </Tooltip.Content>
         </Tooltip.Root>
@@ -572,12 +574,13 @@ const MessageHeader = ({
     </div>
 
     <TinyMutedText>
-      <FormattedDate
+      <FormattedDateWithTooltip
         value={createdAt}
         hour="numeric"
         minute="numeric"
         day="numeric"
         month="short"
+        tooltipContentProps={{ sideOffset: 8 }}
       />
     </TinyMutedText>
   </div>
@@ -1343,6 +1346,26 @@ const TinyMutedText = ({ children, nowrap = false }) => (
   >
     {children}
   </div>
+);
+
+const FormattedDateWithTooltip = ({ value, tooltipContentProps, ...props }) => (
+  <Tooltip.Root>
+    <Tooltip.Trigger asChild>
+      <span>
+        <FormattedDate value={value} {...props} />
+      </span>
+    </Tooltip.Trigger>
+    <Tooltip.Content side="top" sideOffset={5} {...tooltipContentProps}>
+      <FormattedDate
+        value={value}
+        weekday="long"
+        hour="numeric"
+        minute="numeric"
+        day="numeric"
+        month="long"
+      />
+    </Tooltip.Content>
+  </Tooltip.Root>
 );
 
 export default ChannelMessage;
