@@ -14,6 +14,7 @@ import {
 import SignInScreen from "./components/sign-in-screen";
 import Channel from "./components/channel";
 import Discover from "./components/discover";
+import JoinServer from "./components/join-server";
 import AppLayout from "./components/app-layout";
 import ChannelLayout, { DmChannelLayout } from "./components/channel-layout";
 import TitleBar from "./components/title-bar";
@@ -115,8 +116,10 @@ const App = () => {
                 <Route path="/channels/:serverId" element={<Channel />} />
               </Route>
               <Route path="/discover" element={<Discover />} />
-              <Route path="*" element={null} />
             </Route>
+
+            <Route path="/join/:serverId" element={<JoinServer />} />
+            <Route path="*" element={null} />
           </Routes>
         ) : null // Loading
       }

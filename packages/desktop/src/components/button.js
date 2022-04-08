@@ -32,11 +32,16 @@ const stylesBySize = {
     fontSize: "1.3rem",
     padding: "0.8rem 1rem",
   },
+  large: {
+    fontSize: "1.5rem",
+    padding: "1.2rem 2rem",
+  },
 };
 
 const Button = ({
   size = "small",
   variant = "default",
+  fullWidth = false,
   css: customStyles,
   ...props
 }) => (
@@ -50,6 +55,7 @@ const Button = ({
       }),
       customStyles,
     ]}
+    style={{ width: fullWidth ? "100%" : undefined }}
     {...props}
   />
 );

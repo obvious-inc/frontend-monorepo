@@ -33,6 +33,7 @@ export const dark = {
   fontSizes: {
     small: "1.3rem",
     tiny: "1.1rem",
+    default: "1.5rem",
     channelMessages: "1.5rem",
   },
   fontStacks: {
