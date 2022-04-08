@@ -16,6 +16,7 @@ import {
 import Spinner from "./spinner";
 import ServerMemberAvatar from "./server-member-avatar";
 import { NotificationBadge } from "./channel-layout";
+import * as Tooltip from "./tooltip";
 
 const MenuContext = React.createContext();
 export const useMenuState = () => React.useContext(MenuContext);
@@ -116,6 +117,7 @@ const AppLayout = () => {
                 {
                   to: "/",
                   icon: <HomeIcon style={{ width: "2.2rem" }} />,
+                  tooltip: "Home",
                 },
                 {
                   to:
@@ -123,6 +125,7 @@ const AppLayout = () => {
                       ? "/channels/@me"
                       : `/channels/@me/${dmChannels[0].id}`,
                   icon: <ChatBubblesIcon style={{ width: "2.2rem" }} />,
+                  tooltip: "Direct messages",
                   component: Link,
                   className: location.pathname.startsWith("/channels/@me")
                     ? "active"
@@ -162,6 +165,7 @@ const AppLayout = () => {
                     component={NavLink}
                     to={`/channels/@me/${c.id}`}
                     notificationCount={1} // TODO
+                    tooltip={c.name}
                   >
                     <ServerMemberAvatar
                       userId={
@@ -206,6 +210,7 @@ const AppLayout = () => {
                           : `/channels/${s.id}`
                       }
                       notificationCount={mentionCount}
+                      tooltip={s.name}
                       className={isActive ? "active" : undefined}
                     >
                       <div
@@ -236,6 +241,7 @@ const AppLayout = () => {
 
                     alert("Soon :tm:");
                   }}
+                  tooltip="Create a server"
                 >
                   <PlusIcon style={{ width: "1.7rem" }} />
                 </RoundButton>
@@ -278,50 +284,60 @@ const AppLayout = () => {
 const RoundButton = ({
   component: Component = "button",
   notificationCount = 0,
+  tooltip,
   ...props
 }) => (
-  <div style={{ position: "relative" }}>
-    <Component
-      css={(theme) =>
-        css({
-          borderRadius: "50%",
-          background: theme.colors.backgroundPrimary,
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          width: "4.6rem",
-          height: "4.6rem",
-          color: theme.colors.textMuted,
-          cursor: "pointer",
-          border: 0,
-          textDecoration: "none",
-          transition: "0.1s all",
-          overflow: "hidden",
-          ":hover, &.active": {
-            color: "white",
-            borderRadius: "1.2rem",
-          },
-          "&.active": {
-            background: theme.colors.primary,
-          },
-          svg: { display: "block", width: "2.4rem", height: "auto" },
-        })
-      }
-      {...props}
-    />
-    {notificationCount > 0 && (
-      <NotificationBadge
-        count={notificationCount}
-        css={(theme) => ({
-          pointerEvents: "none",
-          position: "absolute",
-          right: 0,
-          bottom: 0,
-          boxShadow: `0 0 0 0.4rem ${theme.colors.backgroundTertiary}`,
-        })}
-      />
+  <Tooltip.Root>
+    <Tooltip.Trigger asChild>
+      <div style={{ position: "relative" }}>
+        <Component
+          css={(theme) =>
+            css({
+              borderRadius: "50%",
+              background: theme.colors.backgroundPrimary,
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              width: "4.6rem",
+              height: "4.6rem",
+              color: theme.colors.textMuted,
+              cursor: "pointer",
+              border: 0,
+              textDecoration: "none",
+              transition: "0.1s all",
+              overflow: "hidden",
+              ":hover, &.active": {
+                color: "white",
+                borderRadius: "1.2rem",
+              },
+              "&.active": {
+                background: theme.colors.primary,
+              },
+              svg: { display: "block", width: "2.4rem", height: "auto" },
+            })
+          }
+          {...props}
+        />
+        {notificationCount > 0 && (
+          <NotificationBadge
+            count={notificationCount}
+            css={(theme) => ({
+              pointerEvents: "none",
+              position: "absolute",
+              right: 0,
+              bottom: 0,
+              boxShadow: `0 0 0 0.4rem ${theme.colors.backgroundTertiary}`,
+            })}
+          />
+        )}
+      </div>
+    </Tooltip.Trigger>
+    {tooltip != null && (
+      <Tooltip.Content side="right" sideOffset={5}>
+        {tooltip}
+      </Tooltip.Content>
     )}
-  </div>
+  </Tooltip.Root>
 );
 
 const Divider = () => (

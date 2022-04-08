@@ -14,10 +14,10 @@ export const Content = React.forwardRef((props, ref) => (
     css={(theme) =>
       css({
         fontSize: "1.2rem",
-        fontWeight: "400",
-        color: "white",
+        fontWeight: "500",
+        color: theme.colors.textNormal,
         background: theme.colors.dialogBackground,
-        padding: "0.4rem 0.7rem",
+        padding: "0.4rem 0.8rem",
         borderRadius: "0.3rem",
         lineHeight: 1.3,
         boxShadow: theme.shadows.elevationHigh,

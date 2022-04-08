@@ -519,10 +519,8 @@ const MemberDisplayName = ({ displayName, walletAddress, color }) => (
         {displayName}
       </button>
     </Tooltip.Trigger>
-    <Tooltip.Content side="top" sideOffset={4}>
-      <span css={css({ color: "rgb(255 255 255 / 54%)" })}>
-        {walletAddress}
-      </span>
+    <Tooltip.Content side="top" sideOffset={5}>
+      {walletAddress}
     </Tooltip.Content>
   </Tooltip.Root>
 );
@@ -566,10 +564,8 @@ const MessageHeader = ({
               />
             </div>
           </Tooltip.Trigger>
-          <Tooltip.Content side="top" align="center" sideOffset={4}>
-            <span css={css({ color: "rgb(255 255 255 / 54%)" })}>
-              User online
-            </span>
+          <Tooltip.Content side="top" align="center" sideOffset={5}>
+            User online
           </Tooltip.Content>
         </Tooltip.Root>
       )}
