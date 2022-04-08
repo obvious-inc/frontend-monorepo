@@ -33,6 +33,7 @@ const entriesById = (state = {}, action) => {
             kind: channel.kind,
             serverId: channel.serverId,
             lastMessageAt: channel.last_message_at,
+            createdAt: channel.created_at,
             lastReadAt: readStates?.last_read_at ?? null,
             unreadMentionMessageIds: Array(readStates?.mention_count ?? 0).fill(
               null
@@ -271,7 +272,9 @@ export const selectDmChannels = (state) => () => {
     .map((c) => selectChannel(state)(c.id));
 
   return sort((c1, c2) => {
-    const [t1, t2] = [c1, c2].map((c) => new Date(c.lastMessageAt).getTime());
+    const [t1, t2] = [c1, c2].map((c) =>
+      new Date(c.lastMessageAt ?? c.createdAt).getTime()
+    );
     return t1 > t2 ? -1 : t1 < t2 ? 1 : 0;
   }, channels);
 };
