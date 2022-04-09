@@ -11,13 +11,14 @@ import {
   AppScopeProvider,
   ServerConnectionProvider,
 } from "@shades/common";
+import { Provider as SideMenuProvider } from "./hooks/side-menu";
 import SignInScreen from "./components/sign-in-screen";
 import Channel from "./components/channel";
 import Discover from "./components/discover";
 import JoinServer from "./components/join-server";
-import AppLayout from "./components/app-layout";
 import ChannelLayout, { DmChannelLayout } from "./components/channel-layout";
 import TitleBar from "./components/title-bar";
+import MainMenu from "./components/main-menu";
 import * as Tooltip from "./components/tooltip";
 import {
   Home as HomeIcon,
@@ -59,20 +60,58 @@ const App = () => {
           <SignInScreen />
         ) : authStatus === "authenticated" ? (
           <Routes>
-            <Route element={<AppLayout />}>
+            <Route>
               <Route
                 path="/"
                 element={
                   <div
-                    css={css({
-                      flex: 1,
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      height: "100%",
-                    })}
+                    css={(theme) =>
+                      css({
+                        height: "100%",
+                        display: "flex",
+                        background: theme.colors.backgroundSecondary,
+                      })
+                    }
                   >
-                    <HomeIcon
+                    <MainMenu />
+                    <div
+                      css={css({
+                        flex: 1,
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        height: "100%",
+                      })}
+                    >
+                      <HomeIcon
+                        style={{
+                          width: "6rem",
+                          color: "rgb(255 255 255 / 5%)",
+                        }}
+                      />
+                    </div>
+                  </div>
+                }
+              />
+            </Route>
+
+            <Route element={<DmChannelLayout />}>
+              <Route
+                path="/channels/@me"
+                element={
+                  <div
+                    css={(theme) =>
+                      css({
+                        flex: 1,
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        height: "100%",
+                        background: theme.colors.backgroundPrimary,
+                      })
+                    }
+                  >
+                    <ChatBubblesIcon
                       style={{
                         width: "6rem",
                         color: "rgb(255 255 255 / 5%)",
@@ -81,44 +120,19 @@ const App = () => {
                   </div>
                 }
               />
-              <Route element={<DmChannelLayout />}>
-                <Route
-                  path="/channels/@me"
-                  element={
-                    <div
-                      css={(theme) =>
-                        css({
-                          flex: 1,
-                          display: "flex",
-                          alignItems: "center",
-                          justifyContent: "center",
-                          height: "100%",
-                          background: theme.colors.backgroundPrimary,
-                        })
-                      }
-                    >
-                      <ChatBubblesIcon
-                        style={{
-                          width: "6rem",
-                          color: "rgb(255 255 255 / 5%)",
-                        }}
-                      />
-                    </div>
-                  }
-                />
-                <Route path="/channels/@me/:channelId" element={<Channel />} />
-              </Route>
-              <Route element={<ChannelLayout />}>
-                <Route
-                  path="/channels/:serverId/:channelId"
-                  element={<Channel />}
-                />
-                <Route path="/channels/:serverId" element={<Channel />} />
-              </Route>
-              <Route path="/discover" element={<Discover />} />
+              <Route path="/channels/@me/:channelId" element={<Channel />} />
+            </Route>
+
+            <Route element={<ChannelLayout />}>
+              <Route
+                path="/channels/:serverId/:channelId"
+                element={<Channel />}
+              />
+              <Route path="/channels/:serverId" element={<Channel />} />
             </Route>
 
             <Route path="/join/:serverId" element={<JoinServer />} />
+            <Route path="/discover" element={<Discover />} />
             <Route path="*" element={null} />
           </Routes>
         ) : null // Loading
@@ -138,7 +152,9 @@ export default function Root() {
           <AppScopeProvider>
             <ThemeProvider theme={defaultTheme}>
               <Tooltip.Provider delayDuration={300}>
-                <App />
+                <SideMenuProvider>
+                  <App />
+                </SideMenuProvider>
               </Tooltip.Provider>
             </ThemeProvider>
           </AppScopeProvider>

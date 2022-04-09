@@ -1,70 +1,129 @@
 import { NavLink, Outlet, useParams } from "react-router-dom";
 import { css } from "@emotion/react";
 import { useAppScope, useAuth, arrayUtils } from "@shades/common";
-import { useMenuState } from "./app-layout";
+import useSideMenu from "../hooks/side-menu";
 import { Hash as HashIcon } from "./icons";
 import Avatar from "./server-member-avatar";
+import Spinner from "./spinner";
+import MainMenu from "./main-menu";
 
 const { reverse } = arrayUtils;
 
 const isNative = window.Native != null;
 
-export const Header = ({ children }) => (
-  <div
-    css={(theme) =>
-      css({
-        fontSize: "1.5rem",
-        fontWeight: "600",
-        color: theme.colors.textHeader,
-        whiteSpace: "nowrap",
-        textOverflow: "ellipsis",
-      })
-    }
-  >
-    {children}
-  </div>
-);
+const SIDE_MENU_WIDTH = "31rem";
 
-const SidebarLayout = ({ title, collapse, sidebarContent, children }) => {
+const SideMenuLayout = ({ title, sidebarContent, children }) => {
+  const { user } = useAuth();
+  const { state, serverConnection } = useAppScope();
+  const {
+    isFloating: isFloatingMenuEnabled,
+    isCollapsed,
+    toggle: toggleMenu,
+  } = useSideMenu();
+
+  if (!state.selectHasFetchedInitialData() || user == null) return null;
+
   return (
-    <div css={css({ flex: 1, minWidth: 0, display: "flex" })}>
+    <div
+      css={(theme) =>
+        css({
+          height: "100%",
+          display: "flex",
+          color: theme.colors.textNormal,
+          position: "relative",
+        })
+      }
+    >
       <div
-        css={css({
-          display: collapse ? "none" : "flex",
-          flexDirection: "column",
-          width: "24rem",
-          maxWidth: "calc(100vw - 6.6rem - 4.8rem)",
-          minWidth: "min(calc(100vw - 6.6rem - 4.8rem), 24rem)",
-        })}
+        css={(theme) =>
+          css({
+            display: "flex",
+            width: SIDE_MENU_WIDTH,
+            maxWidth: "calc(100vw - 4.8rem)",
+            minWidth: `min(calc(100vw - 4.8rem), ${SIDE_MENU_WIDTH})`,
+            right: "100%",
+            height: "100%",
+            zIndex: isFloatingMenuEnabled ? 2 : undefined,
+            background: theme.colors.backgroundSecondary,
+            boxShadow:
+              !isFloatingMenuEnabled || isCollapsed
+                ? ""
+                : "rgb(15 15 15 / 10%) 0px 0px 0px 1px, rgb(15 15 15 / 20%) 0px 3px 6px, rgb(15 15 15 / 40%) 0px 9px 24px",
+          })
+        }
+        style={{
+          position: isFloatingMenuEnabled ? "fixed" : "static",
+          transition: "200ms transform ease-out",
+          transform:
+            !isFloatingMenuEnabled || isCollapsed ? "" : "translateX(31rem)",
+        }}
       >
+        <MainMenu />
         <div
-          css={(theme) =>
-            css({
-              height: "4.8rem",
-              padding: "0 1.6rem",
-              display: "flex",
-              alignItems: "center",
-              fontSize: "1.5rem",
-              fontWeight: "600",
-              color: theme.colors.textHeader,
-              boxShadow:
-                "0 1px 0 rgba(4,4,5,0.2),0 1.5px 0 rgba(6,6,7,0.05),0 2px 0 rgba(4,4,5,0.05)",
-              whiteSpace: "nowrap",
-            })
-          }
+          css={css({
+            flex: 1,
+            minWidth: 0,
+            display: "flex",
+            flexDirection: "column",
+          })}
         >
-          {title}
+          <div
+            css={(theme) =>
+              css({
+                height: "4.8rem",
+                padding: "0 1.6rem",
+                display: "flex",
+                alignItems: "center",
+                fontSize: "1.5rem",
+                fontWeight: "600",
+                color: theme.colors.textHeader,
+                boxShadow:
+                  "0 1px 0 rgba(4,4,5,0.2),0 1.5px 0 rgba(6,6,7,0.05),0 2px 0 rgba(4,4,5,0.05)",
+                whiteSpace: "nowrap",
+              })
+            }
+          >
+            {title}
+          </div>
+          <div
+            css={css`
+              padding: ${isNative ? "3.5rem 1rem 2rem" : "1.5rem 1rem 2rem"};
+              overflow: auto;
+              overscroll-behavior-y: contain;
+              flex: 1;
+            `}
+          >
+            {sidebarContent}
+          </div>
         </div>
+      </div>
+      {isFloatingMenuEnabled && (
         <div
-          css={css`
-            padding: ${isNative ? "3.5rem 1rem 2rem" : "1.5rem 1rem 2rem"};
-            overflow: auto;
-            overscroll-behavior-y: contain;
-            flex: 1;
-          `}
-        >
-          {sidebarContent}
-        </div>
+          style={{
+            display: isCollapsed ? "none" : "block",
+            position: "fixed",
+            height: "100%",
+            width: "100%",
+            zIndex: 1,
+          }}
+          onClick={() => {
+            toggleMenu();
+          }}
+        />
+      )}
+      <div
+        style={{
+          position: "absolute",
+          top: 0,
+          bottom: 0,
+          left: "6.6rem",
+          right: 0,
+          zIndex: 1,
+          pointerEvents: "none",
+        }}
+      >
+        <OverlaySpinner show={!serverConnection.isConnected} />
       </div>
 
       {children}
@@ -74,21 +133,20 @@ const SidebarLayout = ({ title, collapse, sidebarContent, children }) => {
 
 const ChannelLayout = () => {
   const params = useParams();
+
   const { user } = useAuth();
   const { actions, state } = useAppScope();
 
-  const { isCollapsed: isMenuCollapsed } = useMenuState();
-
   const server = state.selectServer(params.serverId);
-  const channels = state.selectServerChannels(params.serverId);
-  const serverDmChannels = state.selectServerDmChannels(params.serverId);
 
   if (server == null) return null;
 
+  const channels = state.selectServerChannels(params.serverId);
+  const serverDmChannels = state.selectServerDmChannels(params.serverId);
+
   return (
-    <SidebarLayout
+    <SideMenuLayout
       title={server.name}
-      collapse={isMenuCollapsed}
       sidebarContent={
         <>
           {channels.length > 0 && (
@@ -147,21 +205,18 @@ const ChannelLayout = () => {
       }
     >
       <Outlet />
-    </SidebarLayout>
+    </SideMenuLayout>
   );
 };
 
 export const DmChannelLayout = () => {
   const { state } = useAppScope();
 
-  const { isCollapsed: isMenuCollapsed } = useMenuState();
-
   const dmChannels = state.selectDmChannels();
 
   return (
-    <SidebarLayout
+    <SideMenuLayout
       title="Direct messages"
-      collapse={isMenuCollapsed}
       sidebarContent={
         <>
           {dmChannels.map((c) => (
@@ -179,7 +234,7 @@ export const DmChannelLayout = () => {
       }
     >
       <Outlet />
-    </SidebarLayout>
+    </SideMenuLayout>
   );
 };
 
@@ -447,6 +502,31 @@ const Plus = ({ width = "auto", height = "auto" }) => (
       points="15 10 10 10 10 15 8 15 8 10 3 10 3 8 8 8 8 3 10 3 10 8 15 8"
     />
   </svg>
+);
+
+const OverlaySpinner = ({ show }) => (
+  <div
+    css={(theme) =>
+      css({
+        position: "absolute",
+        top: 0,
+        left: 0,
+        width: "100%",
+        height: "100%",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        transition: "0.2s opacity ease-out",
+        background: theme.colors.backgroundSecondary,
+      })
+    }
+    style={{
+      pointerEvents: show ? "all" : "none",
+      opacity: show ? 1 : 0,
+    }}
+  >
+    <Spinner size="2.4rem" />
+  </div>
 );
 
 export default ChannelLayout;

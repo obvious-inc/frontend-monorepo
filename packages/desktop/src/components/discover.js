@@ -23,11 +23,11 @@ const Discover = () => {
     <div
       css={(theme) =>
         css({
-          flex: 1,
+          height: "100%",
           display: "flex",
           flexDirection: "column",
           alignItems: "center",
-          background: theme.colors.backgroundPrimary,
+          background: theme.colors.backgroundTertiary,
           padding: "6rem 2rem",
           overflow: "auto",
           overflowWrap: "break-word",
@@ -79,7 +79,7 @@ const Discover = () => {
                   marginBottom: "1.2rem",
                 },
                 ":hover": {
-                  background: theme.colors.backgroundTertiary,
+                  background: theme.colors.backgroundPrimary,
                   transform: "translateY(-1px)",
                   boxShadow: theme.shadows.elevationHigh,
                 },

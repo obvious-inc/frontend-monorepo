@@ -8,7 +8,7 @@ body {
   font-size: 1.5rem;
   user-select: none;
   -webkit-user-select: none;
-  background: hsl(225deg 8% 12%);
+  background: #2f3136;
   color: white;
   overflow: hidden;
   text-rendering: optimizeLegibility;

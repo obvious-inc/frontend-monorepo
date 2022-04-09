@@ -9,7 +9,6 @@ import { createEmptyParagraph, isNodeEmpty, cleanNodes } from "../slate/utils";
 import useCommands from "../hooks/commands";
 import MessageInput from "./message-input";
 import Spinner from "./spinner";
-import { Header } from "./channel-layout";
 import ChannelMessage from "./channel-message";
 import { Hash as HashIcon, AtSign as AtSignIcon } from "./icons";
 import {
@@ -17,7 +16,7 @@ import {
   PlusCircle as PlusCircleIcon,
   CrossCircle as CrossCircleIcon,
 } from "./icons";
-import { useMenuState } from "./app-layout";
+import useSideMenu from "../hooks/side-menu";
 
 const useChannelMessages = (channelId) => {
   const { actions, state, serverConnection } = useAppScope();
@@ -65,7 +64,8 @@ export const ChannelBase = ({
   const [pendingReplyMessageId, setPendingReplyMessageId] =
     React.useState(null);
 
-  const { isEnabled: isMenuEnabled, toggle: toggleMenu } = useMenuState();
+  const { isFloating: isMenuTogglingEnabled, toggle: toggleMenu } =
+    useSideMenu();
 
   const inputRef = React.useRef();
 
@@ -116,7 +116,7 @@ export const ChannelBase = ({
             "0 1px 0 rgba(4,4,5,0.2),0 1.5px 0 rgba(6,6,7,0.05),0 2px 0 rgba(4,4,5,0.05)",
         })}
       >
-        {isMenuEnabled && (
+        {isMenuTogglingEnabled && (
           <button
             onClick={() => {
               toggleMenu();
@@ -763,10 +763,26 @@ const AttachmentList = ({ items, remove }) => (
   </div>
 );
 
+const Header = ({ children }) => (
+  <div
+    css={(theme) =>
+      css({
+        fontSize: "1.5rem",
+        fontWeight: "600",
+        color: theme.colors.textHeader,
+        whiteSpace: "nowrap",
+        textOverflow: "ellipsis",
+      })
+    }
+  >
+    {children}
+  </div>
+);
+
 const Channel = () => {
   const params = useParams();
   const { state, actions } = useAppScope();
-  const { isEnabled: isMenuEnabled } = useMenuState();
+  const { isFloating: isMenuTogglingEnabled } = useSideMenu();
 
   const channel = state.selectChannel(params.channelId);
   const server = state.selectServer(params.serverId);
@@ -806,7 +822,7 @@ const Channel = () => {
       }
       headerContent={
         <>
-          {!isMenuEnabled && (
+          {!isMenuTogglingEnabled && (
             <div
               css={(theme) =>
                 css({ color: theme.colors.textMuted, marginRight: "0.9rem" })
