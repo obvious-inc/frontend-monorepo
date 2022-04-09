@@ -24,7 +24,7 @@ Why the `-w desktop`? Read up on npm workspaces [here](https://docs.npmjs.com/cl
 Start a local dev server with:
 
 ```sh
-npm run start-web
+npm run start-web -w desktop
 ```
 
 By default this expects the [NewShades API](https://github.com/NewShadesDAO/api) to be running on `localhost:5001`, but you can override that with an environment variable `API_ENDPOINT` if you like:
@@ -37,7 +37,7 @@ Start the desktop client with:
 
 ```sh
 # This expects the dev server described above to be running
-npm run start-desktop
+npm run start-desktop -w desktop
 ```
 
 ## Deployment
