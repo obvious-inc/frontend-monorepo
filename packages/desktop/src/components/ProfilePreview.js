@@ -162,8 +162,7 @@ const executeMessage = async () => {
   <h6 style={{margin: '0'}}>Roles here</h6> 
   </div>
   {!isOwnMessage &&
-  <div style={{paddingTop: '5px'}}>
-           <NewMessageInput
+        <NewMessageInput
           ref={inputRef}
           isDM={false}
           serverId={serverId}
@@ -177,25 +176,23 @@ const executeMessage = async () => {
           uploadImage={actions.uploadImage}
           submit={async (blocks) => {
             if(blocks) {
-            setIsLoading(true)
             await executeCommand('dm', {
               args:[[walletAddress],blocks],
               editor: inputRef.current,
             })
-            setIsLoading(false)
+            
+            //not sure if I should close right away, there is a delay currently
             setIsOpen(false)
           }
           }}
-          placeholder={ `Send a DM to ${displayName}!`
+          placeholder={ `Send DM to ${displayName}!`
           }
           members={[]}
           getUserMentionDisplayName={displayName}
           onInputChange={(blocks) => {
-            if (blocks.length > 1 || !isNodeEmpty(blocks[0]))
-              throttledRegisterTypingActivity();
+
           }}
         />
-        </div>
 }
   </div>
     </PopoverContent>

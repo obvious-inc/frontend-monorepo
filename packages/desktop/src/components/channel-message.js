@@ -242,7 +242,6 @@ const ChannelMessage = ({
             ) : (
               <div css={css({ padding: "0.2rem 0 0" })}>
                  <ProfilePreview avatar={<Avatar
-                  isInPopup={true}
                   serverId={channel.serverId}
                   userId={message.authorUserId}
                   isVerifiedNft={message.author?.pfp?.verified}
@@ -571,7 +570,6 @@ const MessageHeader = ({
           serverId={serverId}
           userId={authorUserId}
           isVerifiedNft={isVerifiedNft}
-          isInPopup={true}
           onClick={() => {
             setShowProfilePreview(true)
           }}
@@ -636,7 +634,7 @@ const Avatar = ({serverId, userId, isVerifiedNft = false, onClick, isInPopup=fal
       </button>
     </Tooltip.Trigger>
     {
-    //ui looks very weird so I want to take the zoomed in avi out for now when in popup
+    //ui looks very weird so I want to take the zoomed in avi out for now when in popup 
     !isInPopup && (
     <Tooltip.Content
       side="top"
