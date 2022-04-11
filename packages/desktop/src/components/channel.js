@@ -89,7 +89,7 @@ export const ChannelBase = ({
 
   React.useEffect(() => {
     inputRef.current.focus();
-  }, []);
+  }, [channel.id]);
 
   usePageVisibilityChangeListener((state) => {
     if (state === "visible") return;
