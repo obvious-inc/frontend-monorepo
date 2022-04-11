@@ -1,32 +1,28 @@
 import React from "react";
 import { css } from "@emotion/react";
-import { useAppScope } from "@shades/common";
 import generateAvatar from "../utils/avatar-generator";
 
-const ServerMemberAvatar = ({
-  serverId,
-  userId,
+const Avatar = ({
+  url,
+  walletAddress,
   size = "2rem",
+  pixelSize = 20,
   borderRadius = "0.3rem",
   ...props
 }) => {
-  const { state } = useAppScope();
-  const member =
-    serverId != null
-      ? state.selectServerMemberWithUserId(serverId, userId)
-      : state.selectUser(userId);
-
   const avatarDataUrl = React.useMemo(() => {
-    if (member == null || member.pfpUrl != null) return;
+    if (url != null || walletAddress == null) return;
+
+    const size = 8;
 
     return generateAvatar({
-      seed: member.walletAddress,
-      size: 8,
-      scale: 10,
+      seed: walletAddress,
+      size,
+      scale: Math.ceil((pixelSize * 2) / size),
     });
-  }, [member]);
+  }, [url, walletAddress, pixelSize]);
 
-  if (member == null)
+  if (url === undefined)
     return (
       <div
         css={(theme) =>
@@ -43,7 +39,7 @@ const ServerMemberAvatar = ({
 
   return (
     <img
-      src={member.pfpUrl ?? avatarDataUrl}
+      src={url ?? avatarDataUrl}
       css={(theme) =>
         css({
           borderRadius,
@@ -58,4 +54,4 @@ const ServerMemberAvatar = ({
   );
 };
 
-export default ServerMemberAvatar;
+export default Avatar;

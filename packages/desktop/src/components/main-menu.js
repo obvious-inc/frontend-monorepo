@@ -7,7 +7,7 @@ import {
   ChatBubbles as ChatBubblesIcon,
   Plus as PlusIcon,
 } from "./icons";
-import ServerMemberAvatar from "./server-member-avatar";
+import Avatar from "./avatar";
 import { NotificationBadge } from "./channel-layout";
 import * as Tooltip from "./tooltip";
 
@@ -102,23 +102,29 @@ const MainMenu = () => {
               gridGap: "0.8rem",
             })}
           >
-            {unreadDmChannels.map((c) => (
-              <RoundButton
-                key={c.id}
-                component={NavLink}
-                to={`/channels/@me/${c.id}`}
-                notificationCount={1} // TODO
-                tooltip={c.name}
-              >
-                <ServerMemberAvatar
-                  userId={
-                    c.memberUserIds.filter((id) => id !== user.id)[0] ??
-                    c.memberUserIds[0]
-                  }
-                  size="4.6rem"
-                />
-              </RoundButton>
-            ))}
+            {unreadDmChannels.map((c) => {
+              const firstUserId =
+                // Filter out the logged in user if it’s not their own DM
+                c.memberUserIds.filter((id) => id !== user.id)[0] ??
+                c.memberUserIds[0];
+              const avatarMember = state.selectUser(firstUserId);
+              return (
+                <RoundButton
+                  key={c.id}
+                  component={NavLink}
+                  to={`/channels/@me/${c.id}`}
+                  notificationCount={1} // TODO
+                  tooltip={c.name}
+                >
+                  <Avatar
+                    url={avatarMember?.pfpUrl}
+                    walletAddress={avatarMember?.walletAddress}
+                    size="4.6rem"
+                    pixelSize={46}
+                  />
+                </RoundButton>
+              );
+            })}
 
             {hasUnreadDms && <Divider />}
 

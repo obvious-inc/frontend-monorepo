@@ -12,7 +12,7 @@ import {
 import MessageInput from "./message-input";
 import RichText from "./rich-text";
 import Button from "./button";
-import ServerMemberAvatar from "./server-member-avatar";
+import Avatar from "./avatar";
 import * as Popover from "./popover";
 import * as DropdownMenu from "./dropdown-menu";
 import * as Toolbar from "./toolbar";
@@ -241,9 +241,9 @@ const ChannelMessage = ({
               </div>
             ) : (
               <div css={css({ padding: "0.2rem 0 0" })}>
-                <Avatar
-                  serverId={channel.serverId}
-                  userId={message.authorUserId}
+                <AvatarWithZoomTooltip
+                  url={message.author?.pfpUrl}
+                  walletAddress={message.author?.walletAddress}
                   isVerifiedNft={message.author?.pfp?.verified}
                   onClick={() => {
                     alert(
@@ -586,7 +586,12 @@ const MessageHeader = ({
   </div>
 );
 
-const Avatar = ({ serverId, userId, isVerifiedNft = false, onClick }) => (
+const AvatarWithZoomTooltip = ({
+  url,
+  walletAddress,
+  isVerifiedNft = false,
+  onClick,
+}) => (
   <Tooltip.Root>
     <Tooltip.Trigger asChild>
       <button
@@ -604,7 +609,12 @@ const Avatar = ({ serverId, userId, isVerifiedNft = false, onClick }) => (
         })}
         onClick={onClick}
       >
-        <ServerMemberAvatar userId={userId} serverId={serverId} size="3.8rem" />
+        <Avatar
+          url={url}
+          walletAddress={walletAddress}
+          size="3.8rem"
+          pixelSize={38}
+        />
       </button>
     </Tooltip.Trigger>
     <Tooltip.Content
@@ -625,7 +635,12 @@ const Avatar = ({ serverId, userId, isVerifiedNft = false, onClick }) => (
           NFT verified
         </div>
       )}
-      <ServerMemberAvatar userId={userId} serverId={serverId} size="6.4rem" />
+      <Avatar
+        url={url}
+        walletAddress={walletAddress}
+        size="6.4rem"
+        pixelSize={64}
+      />
     </Tooltip.Content>
   </Tooltip.Root>
 );
@@ -1195,10 +1210,11 @@ const RepliedMessage = ({ message, getUserMentionDisplayName }) => {
             }}
           />
         ) : (
-          <ServerMemberAvatar
-            userId={message.authorUserId}
-            serverId={message.serverId}
+          <Avatar
+            url={authorMember?.pfpUrl}
+            walletAddress={authorMember?.walletAddress}
             size="1.4rem"
+            pixelSize={14}
             borderRadius="0.2rem"
           />
         )}
