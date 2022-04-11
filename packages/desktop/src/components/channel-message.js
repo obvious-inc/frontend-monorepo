@@ -266,7 +266,6 @@ const ChannelMessage = ({
               {!showSimplifiedMessage && (
                 <MessageHeader
                   authorDisplayName={message.author?.displayName}
-                  isOnline={message.author?.onlineStatus === "online"}
                   authorWalletAddress={message.author?.walletAddress}
                   authorOnlineStatus={message.author?.onlineStatus}
                   createdAt={createdAtDate}
@@ -566,7 +565,7 @@ const MessageHeader = ({
     <div css={css({ display: "flex", alignItems: "center" })}>
       <MemberDisplayName
         displayName={authorDisplayName}
-        isOnline={authorOnlineStatus}
+        isOnline={authorOnlineStatus === "online"}
         walletAddress={authorWalletAddress}
         serverId={serverId}
         channelId={channelId}
