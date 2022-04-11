@@ -21,7 +21,7 @@ npm install -w desktop
 
 Why the `-w desktop`? Read up on npm workspaces [here](https://docs.npmjs.com/cli/v8/using-npm/workspaces).
 
-Copy `.env.template` and tweak the config as you wish. By default the app is setup to talk to out staging API at [staging-api.newshades.xyz](https://staging-api.newshades.xyz/). For more info on how to run the API locally, check out the repo [NewShadesDAO/api](https://github.com/NewShadesDAO/api).
+Copy `.env.template` and tweak the config as you wish. By default the app is setup to talk to our staging API at [staging-api.newshades.xyz](https://staging-api.newshades.xyz/). For more info on how to run the API locally, check out the repo [NewShadesDAO/api](https://github.com/NewShadesDAO/api).
 
 ```sh
 cp packages/desktop/.env.template packages/desktop/.env
