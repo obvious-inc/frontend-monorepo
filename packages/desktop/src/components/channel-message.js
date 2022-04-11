@@ -249,8 +249,11 @@ const ChannelMessage = ({
                     setShowProfilePreview(true)
                   }}
                 />} 
-                displayName={message.author?.displayName} walletAddress={message.author?.walletAddress} isOwnMessage={isOwnMessage} trigger={<Avatar
+                displayName={message.author?.displayName} walletAddress={message.author?.walletAddress}
+                isOnline={message.author?.onlineStatus === "online"}
+                isOwnMessage={isOwnMessage} trigger={<Avatar
                   serverId={channel.serverId}
+                 
                   userId={message.authorUserId}
                   isVerifiedNft={message.author?.pfp?.verified}
                   onClick={() => {
@@ -263,6 +266,7 @@ const ChannelMessage = ({
               {!showSimplifiedMessage && (
                 <MessageHeader
                   authorDisplayName={message.author?.displayName}
+                  isOnline={message.author?.onlineStatus === "online"}
                   authorWalletAddress={message.author?.walletAddress}
                   authorOnlineStatus={message.author?.onlineStatus}
                   createdAt={createdAtDate}
@@ -510,9 +514,9 @@ const Reactions = ({
   );
 };
 
-const MemberDisplayName = ({ displayName, walletAddress, color, avatar, serverId, channelId, isOwnMessage }) => {
+const MemberDisplayName = ({ displayName, walletAddress, color, avatar, serverId, channelId, isOwnMessage, isOnline }) => {
   return (
-  <ProfilePreview avatar={avatar} displayName={displayName} walletAddress={walletAddress} isOwnMessage={isOwnMessage} trigger={<Tooltip.Root>
+  <ProfilePreview avatar={avatar} isOnline={isOnline} displayName={displayName} walletAddress={walletAddress} isOwnMessage={isOwnMessage} trigger={<Tooltip.Root>
     <Tooltip.Trigger asChild>
       <button
         css={(theme) =>
@@ -562,6 +566,7 @@ const MessageHeader = ({
     <div css={css({ display: "flex", alignItems: "center" })}>
       <MemberDisplayName
         displayName={authorDisplayName}
+        isOnline={authorOnlineStatus}
         walletAddress={authorWalletAddress}
         serverId={serverId}
         channelId={channelId}

@@ -13,6 +13,7 @@ import Spinner from "./spinner";
   
 const ProfilePreview = ({
   displayName,
+  isOnline,
   walletAddress,
   trigger,
   avatar,
@@ -57,9 +58,28 @@ const { actions, state } = useAppScope();
       align="end"
     >
  <div style={{display: "flex", flexDirection:"column", justifyContent: "space-evenly"}}>
-   <div style={{display: "flex", flexWrap: "nowrap", alignItems:"center"}}>
+   <div style={{display: "flex", flexDirection:"row",flexWrap: "nowrap", alignItems:"flex-start", justifyContent:"center"}}>
       {avatar}
-       <h2 style={{fontWeight: '100',textAlign:"center", flexGrow: '0.75'}}>{displayName} </h2>
+      <div style={{display: "flex", flexDirection:"row", justifyContent: "center", flexGrow: '1'}}>
+        
+       <h2 style={{fontWeight: '100'}}>{displayName} </h2>
+       { isOnline && (
+       <div
+                css={(theme) =>
+                  css({
+                    marginTop: "12px",
+                    marginLeft: "5px",
+                    width: "1rem",
+                    height: "1rem",
+                    borderRadius: "50%",
+                    background: theme.colors.onlineIndicator,
+                  })
+                }
+              />
+       )
+}
+            
+       </div>
        </div>
        <h3 style={{fontWeight: '100'}}>Wallet address</h3>
        <h6 style={{margin: '0', marginTop: '5px', fontSize: "11px"}}>{walletAddress}</h6>   
