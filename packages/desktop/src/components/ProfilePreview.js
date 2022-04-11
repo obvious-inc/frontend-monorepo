@@ -181,7 +181,7 @@ const executeMessage = async () => {
               editor: inputRef.current,
             })
             
-            //not sure if I should close right away, there is a delay currently
+            //TODO: add a loading state
             setIsOpen(false)
           }
           }}
