@@ -41,21 +41,7 @@ const {
   serverId,
   channelId,
 });
-
-
-
-const [pendingMessage, setPendingMessage] = React.useState(() => [
-  createEmptyParagraph(),
-]);
 const { actions, state } = useAppScope();
-const [isPending, setPending] = React.useState(false);
-const throttledRegisterTypingActivity = React.useMemo(
-  () =>
-    throttle(() => actions.registerChannelTypingActivity(channelId), 3000, {
-      trailing: false,
-    }),
-  [actions, channelId]
-);
   return (
     <Popover.Root
     open={open}
@@ -104,7 +90,7 @@ const throttledRegisterTypingActivity = React.useMemo(
               args:[[walletAddress],blocks],
               editor: inputRef.current,
             })
-            
+
             //TODO: add a loading state
             setIsOpen(false)
           }
