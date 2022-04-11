@@ -250,6 +250,7 @@ const ChannelMessage = ({
                   }}
                 />} 
                 displayName={message.author?.displayName} walletAddress={message.author?.walletAddress}
+                authorUserId={message.authorUserId}
                 isOnline={message.author?.onlineStatus === "online"}
                 isOwnMessage={isOwnMessage} trigger={<Avatar
                   serverId={channel.serverId}
@@ -567,6 +568,7 @@ const MessageHeader = ({
         displayName={authorDisplayName}
         isOnline={authorOnlineStatus === "online"}
         walletAddress={authorWalletAddress}
+        authorUserId={authorUserId}
         serverId={serverId}
         channelId={channelId}
         isOwnMessage={isOwnMessage}

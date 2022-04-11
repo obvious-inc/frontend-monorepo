@@ -1,15 +1,13 @@
 
 import React from 'react';
-import throttle from "lodash.throttle";
-import { styled, keyframes } from '@stitches/react';
+
+import { styled } from '@stitches/react';
 import * as Popover from '@radix-ui/react-popover';
 import { css, useTheme } from "@emotion/react";
 import { useAppScope } from "@shades/common";
-import { NewMessageInput } from './channel';
-import { createEmptyParagraph, isNodeEmpty, cleanNodes } from "../slate/utils";
-import useCommands from "../hooks/commands";
-import Spinner from "./spinner";
-
+import Button from "./button";
+import { useNavigate } from "react-router-dom";
+import { getChecksumAddress } from "../utils/ethereum";
   
 const ProfilePreview = ({
   displayName,
@@ -17,13 +15,12 @@ const ProfilePreview = ({
   walletAddress,
   trigger,
   avatar,
-  channelId,
-  serverId,
+  authorUserId,
   isOwnMessage,
 }) => { 
-  const inputRef = React.useRef();
   const [open,setIsOpen] = React.useState(false)
   const theme = useTheme();
+  const navigate = useNavigate();
   const StyledContent = styled(Popover.Content, {
     borderRadius: 3,
     padding: '20px',
@@ -33,16 +30,8 @@ const ProfilePreview = ({
   });
   
   const PopoverContent = StyledContent;
-const {
-  execute: executeCommand,
-  isCommand,
-  commands,
-} = useCommands({
-  context: "dm",
-  serverId,
-  channelId,
-});
-const { actions, state } = useAppScope();
+
+const { actions, state} = useAppScope();
   return (
     <Popover.Root
     open={open}
@@ -92,36 +81,29 @@ const { actions, state } = useAppScope();
   <h6 style={{margin: '0'}}>Roles here</h6> 
   </div>
   {!isOwnMessage &&
-        <NewMessageInput
-          ref={inputRef}
-          isDM={true}
-          serverId={serverId}
-          channelId={channelId}
-          replyingToMessage={
-           null
-          }
-          cancelReply={() => {
-            inputRef.current.focus();
-          }}
-          uploadImage={actions.uploadImage}
-          submit={async (blocks) => {
-            if(blocks) {
-            await executeCommand('dm', {
-              args:[[walletAddress],blocks],
-              editor: inputRef.current,
-            })
-            //TODO: add a loading state
-            setIsOpen(false)
-          }
-          }}
-          placeholder={`Send a DM to ${displayName}!`
-          }
-          members={[]}
-          getUserMentionDisplayName={displayName}
-          onInputChange={(blocks) => {
+      <Button
+      variant="primary"
+      size="large"
+      onClick={async ()=> {
+        const redirect = (c) => navigate(`/channels/@me/${c.id}`);
+        const dmChannel = state.selectDmChannelFromUserId(
+          authorUserId
+        );
+        if (dmChannel != null) {
+          redirect(dmChannel);
+          return;
+        }
 
-          }}
-        />
+        actions
+          .createChannel({
+            kind: "dm",
+            memberUserIds: [authorUserId],
+          })
+          .then(redirect);
+      } }
+    >
+      Message
+    </Button>
 }
   </div>
     </PopoverContent>
