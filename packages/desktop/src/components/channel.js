@@ -204,7 +204,6 @@ export const ChannelBase = ({
                   redirect(dmChannel);
                   return;
                 }
-
                 actions
                   .createChannel({
                     kind: "dm",
@@ -324,7 +323,7 @@ const TypingIndicator = ({ members }) => (
   </div>
 );
 
-const NewMessageInput = React.forwardRef(
+export const NewMessageInput = React.forwardRef(
   (
     {
       submit,

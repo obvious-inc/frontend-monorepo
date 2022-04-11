@@ -3,7 +3,7 @@ import React from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth, useAppScope, objectUtils } from "@shades/common";
 import { getChecksumAddress } from "../utils/ethereum";
-
+import stringifyMessageBlocks from "../slate/stringify";
 const { mapValues } = objectUtils;
 
 const prependTextCommands = {
@@ -49,18 +49,19 @@ const otherCommands = {
   }),
   dm: ({ actions, state, navigate }) => ({
     description:
-      'Direct message. Usage: "/dm <wallet-address> [...<wallet-address>]"',
+      'Direct message. Usage: "/dm [[<wallet-address>,...,<wallet-address>],*content here*]"',
     execute: async ({ args, editor }) => {
-      let addresses = args;
-      if (addresses[0] == null) {
+      let addresses = args[0];
+      if (addresses == null) {
         const addressPromptAnswer = prompt(
           "Give the wallet address of the user you want to message"
         );
         if (addressPromptAnswer == null) return;
         addresses = addressPromptAnswer.split(" ").map((s) => s.trim());
       }
-
+ 
       try {
+        const blocks = args[1] ? args[1] : null;
         const checksumAddresses = await Promise.all(
           addresses.map(getChecksumAddress)
         );
@@ -73,6 +74,15 @@ const otherCommands = {
             kind: "dm",
             memberUserIds: users.map((u) => u.id),
           }));
+          blocks && (
+          await actions.createMessage({
+            server: undefined,
+            channel: channel.id,
+            content: stringifyMessageBlocks(blocks),
+            blocks,
+            replyTo: null,
+          })
+          )
         editor.clear();
         navigate(`/channels/@me/${channel.id}`);
       } catch (e) {

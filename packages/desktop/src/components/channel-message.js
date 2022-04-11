@@ -21,6 +21,7 @@ import {
   AddEmojiReaction as AddEmojiReactionIcon,
   JoinArrowRight as JoinArrowRightIcon,
 } from "./icons";
+import ProfilePreview from "./ProfilePreview"
 
 const { groupBy } = arrayUtils;
 const { mapValues } = objectUtils;
@@ -56,7 +57,6 @@ const ChannelMessage = ({
   const [isDropdownOpen, setDropdownOpen] = React.useState(false);
   const [isEmojiPickerOpen, setEmojiPickerOpen] = React.useState(false);
   const [isEditing, setEditingMessage] = React.useState(false);
-
   const theme = useTheme();
 
   const showAsFocused =
@@ -241,19 +241,25 @@ const ChannelMessage = ({
               </div>
             ) : (
               <div css={css({ padding: "0.2rem 0 0" })}>
-                <Avatar
+                 <ProfilePreview avatar={<Avatar
+                  isInPopup={true}
                   serverId={channel.serverId}
                   userId={message.authorUserId}
                   isVerifiedNft={message.author?.pfp?.verified}
                   onClick={() => {
-                    alert(
-                      `Congratulations, you clicked ${message.author?.displayName}’s avatar!`
-                    );
+                    setShowProfilePreview(true)
                   }}
-                />
+                />} 
+                displayName={message.author?.displayName} walletAddress={message.author?.walletAddress} isOwnMessage={isOwnMessage} trigger={<Avatar
+                  serverId={channel.serverId}
+                  userId={message.authorUserId}
+                  isVerifiedNft={message.author?.pfp?.verified}
+                  onClick={() => {
+                    setShowProfilePreview(true)
+                  }}
+                />} channelId={channel.id} serverId={channel.serverId} />
               </div>
             )}
-
             <div>
               {!showSimplifiedMessage && (
                 <MessageHeader
@@ -261,7 +267,13 @@ const ChannelMessage = ({
                   authorWalletAddress={message.author?.walletAddress}
                   authorOnlineStatus={message.author?.onlineStatus}
                   createdAt={createdAtDate}
+                  authorUserId={message.authorUserId}
+                  serverId={channel.serverId}
+                  isVerifiedNft={message.author?.pfp?.verified}
+                  channelId={channel.id}
+                  isOwnMessage={isOwnMessage}
                 />
+       
               )}
 
               {isEditing ? (
@@ -499,8 +511,9 @@ const Reactions = ({
   );
 };
 
-const MemberDisplayName = ({ displayName, walletAddress, color }) => (
-  <Tooltip.Root>
+const MemberDisplayName = ({ displayName, walletAddress, color, avatar, serverId, channelId, isOwnMessage }) => {
+  return (
+  <ProfilePreview avatar={avatar} displayName={displayName} walletAddress={walletAddress} isOwnMessage={isOwnMessage} trigger={<Tooltip.Root>
     <Tooltip.Trigger asChild>
       <button
         css={(theme) =>
@@ -514,9 +527,6 @@ const MemberDisplayName = ({ displayName, walletAddress, color }) => (
             },
           })
         }
-        onClick={() => {
-          alert(`Congratulations, you clicked ${displayName}!`);
-        }}
       >
         {displayName}
       </button>
@@ -524,14 +534,20 @@ const MemberDisplayName = ({ displayName, walletAddress, color }) => (
     <Tooltip.Content side="top" sideOffset={5}>
       {walletAddress}
     </Tooltip.Content>
-  </Tooltip.Root>
-);
+  </Tooltip.Root>} channelId={channelId} serverId={serverId} />
+  
+)};
 
 const MessageHeader = ({
   authorDisplayName,
   authorWalletAddress,
   authorOnlineStatus,
   createdAt,
+  authorUserId,
+  serverId,
+  channelId,
+  isVerifiedNft,
+  isOwnMessage,
 }) => (
   <div
     css={css`
@@ -548,6 +564,18 @@ const MessageHeader = ({
       <MemberDisplayName
         displayName={authorDisplayName}
         walletAddress={authorWalletAddress}
+        serverId={serverId}
+        channelId={channelId}
+        isOwnMessage={isOwnMessage}
+        avatar={<Avatar
+          serverId={serverId}
+          userId={authorUserId}
+          isVerifiedNft={isVerifiedNft}
+          isInPopup={true}
+          onClick={() => {
+            setShowProfilePreview(true)
+          }}
+        />}
       />
 
       {authorOnlineStatus === "online" && (
@@ -586,7 +614,7 @@ const MessageHeader = ({
   </div>
 );
 
-const Avatar = ({ serverId, userId, isVerifiedNft = false, onClick }) => (
+const Avatar = ({serverId, userId, isVerifiedNft = false, onClick, isInPopup=false  }) => (
   <Tooltip.Root>
     <Tooltip.Trigger asChild>
       <button
@@ -596,9 +624,9 @@ const Avatar = ({ serverId, userId, isVerifiedNft = false, onClick }) => (
           overflow: "hidden",
           cursor: "pointer",
           ":hover": {
-            boxShadow: isVerifiedNft
+            boxShadow: !isInPopup ? isVerifiedNft 
               ? "0 0 0 2px #4f52ff"
-              : "0 0 0 2px rgb(255 255 255 / 10%)",
+              : "0 0 0 2px rgb(255 255 255 / 10%)": undefined,
           },
           ":active": { transform: "translateY(0.1rem)" },
         })}
@@ -607,6 +635,9 @@ const Avatar = ({ serverId, userId, isVerifiedNft = false, onClick }) => (
         <ServerMemberAvatar userId={userId} serverId={serverId} size="3.8rem" />
       </button>
     </Tooltip.Trigger>
+    {
+    //ui looks very weird so I want to take the zoomed in avi out for now when in popup
+    !isInPopup && (
     <Tooltip.Content
       side="top"
       sideOffset={6}
@@ -625,8 +656,11 @@ const Avatar = ({ serverId, userId, isVerifiedNft = false, onClick }) => (
           NFT verified
         </div>
       )}
+      
       <ServerMemberAvatar userId={userId} serverId={serverId} size="6.4rem" />
     </Tooltip.Content>
+    )
+    }
   </Tooltip.Root>
 );
 
@@ -635,6 +669,7 @@ const EmojiPicker = ({ addReaction }) => {
   const inputRef = React.useRef();
 
   const [emojiData, setEmojiData] = React.useState([]);
+
 
   const emojis = React.useMemo(
     () =>

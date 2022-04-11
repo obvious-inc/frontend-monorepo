@@ -131,6 +131,9 @@ const SideMenuLayout = ({ title, sidebarContent, children }) => {
   );
 };
 
+/*
+This is the sidebar layout on the side of the screen when signed in!
+*/
 const ChannelLayout = () => {
   const params = useParams();
 

@@ -5,5 +5,9 @@
   ],
   "scripts": {
     "format": "npm run format --workspaces --if-present"
+  },
+  "dependencies": {
+    "@radix-ui/react-popover": "^0.1.6",
+    "@stitches/react": "^1.2.7"
   }
 }
