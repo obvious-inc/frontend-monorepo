@@ -83,7 +83,7 @@ const otherCommands = {
             replyTo: null,
           })
           )
-        editor.clear();
+        // commenting this because discord doesn't clear editor.clear();
         navigate(`/channels/@me/${channel.id}`);
       } catch (e) {
         if (e.code === "INVALID_ARGUMENT") throw new Error("Invalid address");
