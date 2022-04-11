@@ -90,12 +90,11 @@ const { actions, state } = useAppScope();
               args:[[walletAddress],blocks],
               editor: inputRef.current,
             })
-
             //TODO: add a loading state
             setIsOpen(false)
           }
           }}
-          placeholder={`Send DM to ${displayName}!`
+          placeholder={`Send a DM to ${displayName}!`
           }
           members={[]}
           getUserMentionDisplayName={displayName}
