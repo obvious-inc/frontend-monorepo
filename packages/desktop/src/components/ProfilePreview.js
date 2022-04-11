@@ -164,7 +164,7 @@ const executeMessage = async () => {
   {!isOwnMessage &&
         <NewMessageInput
           ref={inputRef}
-          isDM={false}
+          isDM={true}
           serverId={serverId}
           channelId={channelId}
           replyingToMessage={
@@ -185,7 +185,7 @@ const executeMessage = async () => {
             setIsOpen(false)
           }
           }}
-          placeholder={ `Send DM to ${displayName}!`
+          placeholder={`Send DM to ${displayName}!`
           }
           members={[]}
           getUserMentionDisplayName={displayName}
