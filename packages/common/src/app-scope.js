@@ -88,6 +88,34 @@ export const Provider = ({ children }) => {
     [authorizedFetch, fetchInitialData]
   );
 
+  const createChannelSection = React.useCallback(
+    (serverId, { name }) =>
+      authorizedFetch(`/servers/${serverId}/sections`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name }),
+      }).then((res) => {
+        // TODO
+        fetchInitialData();
+        return res;
+      }),
+    [authorizedFetch, fetchInitialData]
+  );
+
+  const updateChannelSection = React.useCallback(
+    (serverId, sectionId, { name, channelIds }) =>
+      authorizedFetch(`/servers/${serverId}/sections/${sectionId}`, {
+        method: "PATCh",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name, channels: channelIds }),
+      }).then((res) => {
+        // TODO
+        fetchInitialData();
+        return res;
+      }),
+    [authorizedFetch, fetchInitialData]
+  );
+
   const fetchMessages = React.useCallback(
     ({ channelId }) =>
       authorizedFetch(`/channels/${channelId}/messages`).then((messages) => {
@@ -324,6 +352,8 @@ export const Provider = ({ children }) => {
       createServer,
       updateServer,
       joinServer,
+      createChannelSection,
+      updateChannelSection,
       createChannel,
       updateChannel,
       createMessage,
@@ -344,6 +374,8 @@ export const Provider = ({ children }) => {
       createServer,
       updateServer,
       joinServer,
+      createChannelSection,
+      updateChannelSection,
       createChannel,
       updateChannel,
       createMessage,

@@ -7,6 +7,21 @@ import {
   selectUser,
 } from "./server-members";
 
+const sectionEntriesById = (state = {}, action) => {
+  switch (action.type) {
+    case "initial-data-request-successful": {
+      const sections = action.data.servers.flatMap((s) =>
+        s.sections.map((section) => ({ ...section, serverId: s.id }))
+      );
+
+      return indexBy((s) => s.id, sections);
+    }
+
+    default:
+      return state;
+  }
+};
+
 const entriesById = (state = {}, action) => {
   switch (action.type) {
     case "initial-data-request-successful": {
@@ -279,4 +294,19 @@ export const selectDmChannels = (state) => () => {
   }, channels);
 };
 
-export default combineReducers({ entriesById, typingUserIdsByChannelId });
+export const selectServerChannelSections = (state) => (serverId) => {
+  const sections = Object.values(state.channels.sectionEntriesById).filter(
+    (s) => s.serverId === serverId
+  );
+  return sections.map((s) => ({
+    id: s.id,
+    name: s.name,
+    channelIds: s.channels,
+  }));
+};
+
+export default combineReducers({
+  entriesById,
+  typingUserIdsByChannelId,
+  sectionEntriesById,
+});

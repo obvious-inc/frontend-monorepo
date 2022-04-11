@@ -129,6 +129,47 @@ const otherCommands = {
       return server?.ownerUserId !== user.id;
     },
   }),
+  "create-channel-section": ({ user, state, actions, serverId }) => ({
+    description: "Create a new channel section",
+    arguments: ["section-name"],
+    execute: async ({ args, editor }) => {
+      const [name = ""] = args;
+      if (name.trim().length === 0) {
+        alert('Missing "section-name" argument!');
+        return;
+      }
+      await actions.createChannelSection(serverId, { name });
+      editor.clear();
+    },
+    exclude: () => {
+      const server = state.selectServer(serverId);
+      return server?.ownerUserId !== user.id;
+    },
+  }),
+  "rename-channel-section": ({
+    user,
+    state,
+    actions,
+    serverId,
+    channelSectionId,
+  }) => ({
+    description: "Rename the current channel section",
+    arguments: ["section-name"],
+    execute: async ({ args, editor }) => {
+      const [name = ""] = args;
+      if (name.trim().length === 0) {
+        alert('Missing "section-name" argument!');
+        return;
+      }
+      await actions.updateChannelSection(serverId, channelSectionId, { name });
+      editor.clear();
+    },
+    exclude: () => {
+      if (channelSectionId == null) return true;
+      const server = state.selectServer(serverId);
+      return server?.ownerUserId !== user.id;
+    },
+  }),
   logout: ({ signOut }) => ({
     description: "Logs you out, really fast.",
     execute: async () => {

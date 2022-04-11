@@ -1,3 +1,4 @@
+import React from "react";
 import { NavLink, Outlet, useParams } from "react-router-dom";
 import { css } from "@emotion/react";
 import { useAppScope, useAuth, arrayUtils } from "@shades/common";
@@ -139,17 +140,37 @@ const ChannelLayout = () => {
 
   const server = state.selectServer(params.serverId);
 
-  if (server == null) return null;
-
   const channels = state.selectServerChannels(params.serverId);
+  const channelSections = state.selectServerChannelSections(params.serverId);
   const serverDmChannels = state.selectServerDmChannels(params.serverId);
+
+  const [sections, channelsWithoutSection] = React.useMemo(() => {
+    const sections = [];
+    for (let section of channelSections) {
+      sections.push({
+        ...section,
+        channels: section.channelIds.map((id) =>
+          channels.find((c) => c.id === id)
+        ),
+      });
+    }
+    const sectionChannelIds = sections.flatMap((s) =>
+      s.channels.map((c) => c.id)
+    );
+    const channelsWithoutSection = channels.filter(
+      (c) => !sectionChannelIds.includes(c.id)
+    );
+    return [sections, channelsWithoutSection];
+  }, [channels, channelSections]);
+
+  if (server == null) return null;
 
   return (
     <SideMenuLayout
       title={server.name}
       sidebarContent={
         <>
-          {channels.length > 0 && (
+          {channelsWithoutSection.length > 0 && (
             <Section
               title="Channels"
               addAction={
@@ -182,9 +203,27 @@ const ChannelLayout = () => {
             </Section>
           )}
 
+          {sections.map((s) => (
+            <React.Fragment key={s.id}>
+              <div style={{ height: "2.6rem" }} />
+              <Section title={s.name}>
+                {s.channels.map((c) => (
+                  <ChannelItem
+                    key={c.id}
+                    channelId={c.id}
+                    serverId={params.serverId}
+                    name={c.name}
+                    hasUnread={c.hasUnread}
+                    mentionCount={c.mentionCount}
+                  />
+                ))}
+              </Section>
+            </React.Fragment>
+          ))}
+
           {serverDmChannels.length > 0 && (
             <>
-              <div style={{ height: "1.6rem" }} />
+              <div style={{ height: "2.6rem" }} />
               <Section title="Direct messages">
                 {serverDmChannels.map((c) => (
                   <DmChannelItem
