@@ -246,7 +246,7 @@ const ChannelMessage = ({
                   userId={message.authorUserId}
                   isVerifiedNft={message.author?.pfp?.verified}
                   onClick={() => {
-                    setShowProfilePreview(true)
+                    console.log('click')
                   }}
                 />} 
                 displayName={message.author?.displayName} walletAddress={message.author?.walletAddress}
@@ -257,7 +257,7 @@ const ChannelMessage = ({
                   userId={message.authorUserId}
                   isVerifiedNft={message.author?.pfp?.verified}
                   onClick={() => {
-                    setShowProfilePreview(true)
+                    console.log('click')
                   }}
                 />} channelId={channel.id} serverId={channel.serverId} />
               </div>
@@ -575,7 +575,7 @@ const MessageHeader = ({
           userId={authorUserId}
           isVerifiedNft={isVerifiedNft}
           onClick={() => {
-            setShowProfilePreview(true)
+            console.log('clicked on avi')
           }}
         />}
       />
