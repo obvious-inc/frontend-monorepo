@@ -257,11 +257,9 @@ const ChannelMessage = ({
                   createdAt={createdAtDate}
                   authorUserId={message.authorUserId}
                   serverId={channel.serverId}
-                  isVerifiedNft={message.author?.pfp?.verified}
                   channelId={channel.id}
                   isOwnMessage={isOwnMessage}
                 />
-       
               )}
 
               {isEditing ? (
@@ -534,7 +532,6 @@ const MessageHeader = ({
   authorUserId,
   serverId,
   channelId,
-  isVerifiedNft,
   isOwnMessage,
 }) => (
   <div
@@ -557,7 +554,6 @@ const MessageHeader = ({
         serverId={serverId}
         channelId={channelId}
         isOwnMessage={isOwnMessage}
-        
         avatar={<ServerMemberAvatar userId={authorUserId} serverId={serverId} size="3.8rem" />}
       />
 
