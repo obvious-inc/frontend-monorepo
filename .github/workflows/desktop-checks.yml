@@ -1,0 +1,27 @@
+name: Desktop | CI checks
+on:
+  push:
+    branches:
+    paths-ignore:
+      - "packages/landing"
+      - "packages/mobile"
+  pull_request:
+    types: [opened, synchronize]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Set up Node
+        uses: actions/setup-node@v3
+        with:
+          node-version: 14
+
+      - name: Install dependencies
+        run: npm install -w desktop
+
+      - name: Lint
+        run: npm run lint -w desktop
