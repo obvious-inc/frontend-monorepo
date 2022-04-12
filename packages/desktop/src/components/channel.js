@@ -323,7 +323,7 @@ const TypingIndicator = ({ members }) => (
   </div>
 );
 
-export const NewMessageInput = React.forwardRef(
+const NewMessageInput = React.forwardRef(
   (
     {
       submit,

@@ -3,6 +3,7 @@ import React from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth, useAppScope, objectUtils } from "@shades/common";
 import { getChecksumAddress } from "../utils/ethereum";
+
 const { mapValues } = objectUtils;
 
 const prependTextCommands = {
