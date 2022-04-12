@@ -12,7 +12,7 @@ import {
 import MessageInput from "./message-input";
 import RichText from "./rich-text";
 import Button from "./button";
-import ServerMemberAvatar from "./server-member-avatar";
+import Avatar from "./avatar";
 import * as Popover from "./popover";
 import * as DropdownMenu from "./dropdown-menu";
 import * as Toolbar from "./toolbar";
@@ -241,11 +241,23 @@ const ChannelMessage = ({
               </div>
             ) : (
               <div css={css({ padding: "0.2rem 0 0" })}>
-                 <ProfilePreview avatar={<ServerMemberAvatar userId={message.authorUserId} serverId={channel.serverId} size="3.8rem" />} 
+                    <ProfilePreview avatar={<Avatar
+          url={message.author?.pfpUrl}
+          walletAddress={message.author?.walletAddress}
+          size="3.8rem"
+          pixelSize={38}
+        />} 
                 displayName={message.author?.displayName} walletAddress={message.author?.walletAddress}
                 authorUserId={message.authorUserId}
                 isOnline={message.author?.onlineStatus === "online"}
-                isOwnMessage={isOwnMessage} trigger={<ServerMemberAvatar userId={message.authorUserId} serverId={channel.serverId} size="3.8rem" />} channelId={channel.id} serverId={channel.serverId} />
+                isOwnMessage={isOwnMessage} trigger={<AvatarWithZoomTooltip
+                  url={message.author?.pfpUrl}
+                  walletAddress={message.author?.walletAddress}
+                  isVerifiedNft={message.author?.pfp?.verified}
+                  onClick={() => {
+                  }}
+                />} channelId={channel.id} serverId={channel.serverId} />
+              
               </div>
             )}
             <div>
@@ -259,6 +271,7 @@ const ChannelMessage = ({
                   serverId={channel.serverId}
                   channelId={channel.id}
                   isOwnMessage={isOwnMessage}
+                  url={message.author?.pfpUrl}
                 />
               )}
 
@@ -497,9 +510,9 @@ const Reactions = ({
   );
 };
 
-const MemberDisplayName = ({ displayName, walletAddress, color, avatar, serverId, authorUserId, channelId, isOwnMessage, isOnline }) => {
+const MemberDisplayName = ({ displayName, walletAddress, color, avatar, serverId, authorUserId, channelId, isOwnMessage, isOnline,url}) => {
   return (
-  <ProfilePreview avatar={avatar} authorUserId={authorUserId} isOnline={isOnline} displayName={displayName} walletAddress={walletAddress} isOwnMessage={isOwnMessage} trigger={<Tooltip.Root>
+  <ProfilePreview url={url} avatar={avatar} authorUserId={authorUserId} isOnline={isOnline} displayName={displayName} walletAddress={walletAddress} isOwnMessage={isOwnMessage} trigger={<Tooltip.Root>
     <Tooltip.Trigger asChild>
       <button
         css={(theme) =>
@@ -533,6 +546,7 @@ const MessageHeader = ({
   serverId,
   channelId,
   isOwnMessage,
+  url,
 }) => (
   <div
     css={css`
@@ -554,7 +568,12 @@ const MessageHeader = ({
         serverId={serverId}
         channelId={channelId}
         isOwnMessage={isOwnMessage}
-        avatar={<ServerMemberAvatar userId={authorUserId} serverId={serverId} size="3.8rem" />}
+        avatar={<Avatar
+          url={url}
+          walletAddress={authorWalletAddress}
+          size="3.2rem"
+          pixelSize={64}
+        />}
       />
 
       {authorOnlineStatus === "online" && (
@@ -593,7 +612,12 @@ const MessageHeader = ({
   </div>
 );
 
-const Avatar = ({serverId, userId, isVerifiedNft = false, onClick }) => (
+const AvatarWithZoomTooltip = ({
+  url,
+  walletAddress,
+  isVerifiedNft = false,
+  onClick,
+}) => (
   <Tooltip.Root>
     <Tooltip.Trigger asChild>
       <button
@@ -611,7 +635,12 @@ const Avatar = ({serverId, userId, isVerifiedNft = false, onClick }) => (
         })}
         onClick={onClick}
       >
-        <ServerMemberAvatar userId={userId} serverId={serverId} size="3.8rem" />
+        <Avatar
+          url={url}
+          walletAddress={walletAddress}
+          size="3.8rem"
+          pixelSize={38}
+        />
       </button>
     </Tooltip.Trigger>
     {
@@ -633,8 +662,12 @@ const Avatar = ({serverId, userId, isVerifiedNft = false, onClick }) => (
           NFT verified
         </div>
       )}
-      
-      <ServerMemberAvatar userId={userId} serverId={serverId} size="6.4rem" />
+      <Avatar
+        url={url}
+        walletAddress={walletAddress}
+        size="6.4rem"
+        pixelSize={64}
+      />
     </Tooltip.Content>
     }
   </Tooltip.Root>
@@ -1206,10 +1239,11 @@ const RepliedMessage = ({ message, getUserMentionDisplayName }) => {
             }}
           />
         ) : (
-          <ServerMemberAvatar
-            userId={message.authorUserId}
-            serverId={message.serverId}
+          <Avatar
+            url={authorMember?.pfpUrl}
+            walletAddress={authorMember?.walletAddress}
             size="1.4rem"
+            pixelSize={14}
             borderRadius="0.2rem"
           />
         )}

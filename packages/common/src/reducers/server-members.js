@@ -121,7 +121,7 @@ const memberIdsByUserId = (state = [], action) => {
 const buildPfpUrl = (pfp) =>
   pfp?.cf_id && process.env.CLOUDFLARE_ACCT_HASH
     ? `https://imagedelivery.net/${process.env.CLOUDFLARE_ACCT_HASH}/${pfp.cf_id}/avatar`
-    : pfp?.input_image_url;
+    : pfp?.input_image_url ?? null;
 
 export const selectUser = (state) => (id) => {
   const user = state.serverMembers.userEntriesById[id];

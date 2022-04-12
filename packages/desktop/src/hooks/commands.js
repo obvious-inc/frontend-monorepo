@@ -219,6 +219,7 @@ const useCommands = ({ context, serverId, channelId } = {}) => {
 
     return Object.fromEntries(
       Object.entries(allCommands).filter(
+        // eslint-disable-next-line no-unused-vars
         ([_, command]) => command.exclude == null || !command.exclude?.()
       )
     );
