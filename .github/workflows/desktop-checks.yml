@@ -9,7 +9,7 @@ on:
     types: [opened, synchronize]
 
 jobs:
-  test:
+  checks:
     runs-on: ubuntu-latest
 
     steps:
