@@ -130,6 +130,7 @@ const SideMenuLayout = ({ title, sidebarContent, children }) => {
     </div>
   );
 };
+
 const ChannelLayout = () => {
   const params = useParams();
 

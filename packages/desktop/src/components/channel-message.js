@@ -241,26 +241,11 @@ const ChannelMessage = ({
               </div>
             ) : (
               <div css={css({ padding: "0.2rem 0 0" })}>
-                 <ProfilePreview avatar={<Avatar
-                  serverId={channel.serverId}
-                  userId={message.authorUserId}
-                  isVerifiedNft={message.author?.pfp?.verified}
-                  onClick={() => {
-                    console.log('click')
-                  }}
-                />} 
+                 <ProfilePreview avatar={<ServerMemberAvatar userId={message.authorUserId} serverId={channel.serverId} size="3.8rem" />} 
                 displayName={message.author?.displayName} walletAddress={message.author?.walletAddress}
                 authorUserId={message.authorUserId}
                 isOnline={message.author?.onlineStatus === "online"}
-                isOwnMessage={isOwnMessage} trigger={<Avatar
-                  serverId={channel.serverId}
-                 
-                  userId={message.authorUserId}
-                  isVerifiedNft={message.author?.pfp?.verified}
-                  onClick={() => {
-                    console.log('click')
-                  }}
-                />} channelId={channel.id} serverId={channel.serverId} />
+                isOwnMessage={isOwnMessage} trigger={<ServerMemberAvatar userId={message.authorUserId} serverId={channel.serverId} size="3.8rem" />} channelId={channel.id} serverId={channel.serverId} />
               </div>
             )}
             <div>
@@ -572,14 +557,8 @@ const MessageHeader = ({
         serverId={serverId}
         channelId={channelId}
         isOwnMessage={isOwnMessage}
-        avatar={<Avatar
-          serverId={serverId}
-          userId={authorUserId}
-          isVerifiedNft={isVerifiedNft}
-          onClick={() => {
-            console.log('clicked on avi')
-          }}
-        />}
+        
+        avatar={<ServerMemberAvatar userId={authorUserId} serverId={serverId} size="3.8rem" />}
       />
 
       {authorOnlineStatus === "online" && (
@@ -618,7 +597,7 @@ const MessageHeader = ({
   </div>
 );
 
-const Avatar = ({serverId, userId, isVerifiedNft = false, onClick, isInPopup=false  }) => (
+const Avatar = ({serverId, userId, isVerifiedNft = false, onClick }) => (
   <Tooltip.Root>
     <Tooltip.Trigger asChild>
       <button
@@ -628,9 +607,9 @@ const Avatar = ({serverId, userId, isVerifiedNft = false, onClick, isInPopup=fal
           overflow: "hidden",
           cursor: "pointer",
           ":hover": {
-            boxShadow: !isInPopup ? isVerifiedNft 
+            boxShadow: isVerifiedNft 
               ? "0 0 0 2px #4f52ff"
-              : "0 0 0 2px rgb(255 255 255 / 10%)": undefined,
+              : "0 0 0 2px rgb(255 255 255 / 10%)",
           },
           ":active": { transform: "translateY(0.1rem)" },
         })}
@@ -640,8 +619,6 @@ const Avatar = ({serverId, userId, isVerifiedNft = false, onClick, isInPopup=fal
       </button>
     </Tooltip.Trigger>
     {
-    //ui looks very weird so I want to take the zoomed in avi out for now when in popup 
-    !isInPopup && (
     <Tooltip.Content
       side="top"
       sideOffset={6}
@@ -663,7 +640,6 @@ const Avatar = ({serverId, userId, isVerifiedNft = false, onClick, isInPopup=fal
       
       <ServerMemberAvatar userId={userId} serverId={serverId} size="6.4rem" />
     </Tooltip.Content>
-    )
     }
   </Tooltip.Root>
 );
