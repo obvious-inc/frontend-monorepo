@@ -3,7 +3,7 @@ import { css } from "@emotion/react";
 import { useAppScope, useAuth, arrayUtils } from "@shades/common";
 import useSideMenu from "../hooks/side-menu";
 import { Hash as HashIcon } from "./icons";
-import Avatar from "./server-member-avatar";
+import Avatar from "./avatar";
 import Spinner from "./spinner";
 import MainMenu from "./main-menu";
 
@@ -353,12 +353,16 @@ export const DmChannelItem = ({
   notificationCount,
   size,
 }) => {
+  const { state } = useAppScope();
   const { user } = useAuth();
-  const membersUsersIdsExcludingMe = memberUserIds.filter(
-    (id) => id !== user.id
-  );
+
+  const memberUsers = memberUserIds.map(state.selectUser);
+  const memberUsersExcludingMe = memberUsers.filter((u) => u.id !== user.id);
+
   const avatarSize = size === "large" ? "3.2rem" : "1.8rem";
+  const avatarPixelSize = size === "large" ? 32 : 18;
   const avatarBorderRadius = size === "large" ? "0.3rem" : "0.2rem";
+
   return (
     <div
       css={(theme) => css`
@@ -409,10 +413,14 @@ export const DmChannelItem = ({
         className={({ isActive }) => (isActive ? "active" : "")}
       >
         <span style={{ marginRight: size === "large" ? "1rem" : "0.6rem" }}>
-          {membersUsersIdsExcludingMe.length <= 1 ? (
+          {memberUsersExcludingMe.length <= 1 ? (
             <Avatar
-              userId={membersUsersIdsExcludingMe[0] ?? user.id}
+              url={(memberUsersExcludingMe[0] ?? memberUsers[0])?.pfpUrl}
+              walletAddress={
+                (memberUsersExcludingMe[0] ?? memberUsers[0])?.walletAddress
+              }
               size={avatarSize}
+              pixelSize={avatarPixelSize}
               borderRadius={avatarBorderRadius}
             />
           ) : (
@@ -423,25 +431,25 @@ export const DmChannelItem = ({
                 position: "relative",
               }}
             >
-              {reverse(membersUsersIdsExcludingMe.slice(0, 2)).map(
-                (userId, i) => (
-                  <Avatar
-                    key={userId}
-                    userId={userId}
-                    size={avatarSize}
-                    borderRadius={avatarBorderRadius}
-                    css={css({
-                      position: "absolute",
-                      top: i === 0 ? "3px" : 0,
-                      left: i === 0 ? "3px" : 0,
-                      width: "calc(100% - 3px)",
-                      height: "calc(100% - 3px)",
-                      boxShadow:
-                        i !== 0 ? `1px 1px 0 0px rgb(0 0 0 / 30%)` : undefined,
-                    })}
-                  />
-                )
-              )}
+              {reverse(memberUsersExcludingMe.slice(0, 2)).map((user, i) => (
+                <Avatar
+                  key={user.id}
+                  url={user?.pfpUrl}
+                  walletAddress={user?.walletAddress}
+                  size={avatarSize}
+                  pixelSize={avatarPixelSize}
+                  borderRadius={avatarBorderRadius}
+                  css={css({
+                    position: "absolute",
+                    top: i === 0 ? "3px" : 0,
+                    left: i === 0 ? "3px" : 0,
+                    width: "calc(100% - 3px)",
+                    height: "calc(100% - 3px)",
+                    boxShadow:
+                      i !== 0 ? `1px 1px 0 0px rgb(0 0 0 / 30%)` : undefined,
+                  })}
+                />
+              ))}
             </div>
           )}
         </span>

@@ -3,6 +3,8 @@ const webpack = require("webpack");
 const HtmlWebpackPlugin = require("html-webpack-plugin");
 const CopyPlugin = require("copy-webpack-plugin");
 
+require("dotenv").config();
+
 const API_ENDPOINT = process.env.API_ENDPOINT ?? "http://localhost:5001";
 
 module.exports = (_, argv) => {
@@ -43,12 +45,12 @@ module.exports = (_, argv) => {
         title: "NewShades",
       }),
       new webpack.EnvironmentPlugin({
-        API_ENDPOINT: isProduction ? null : "/api",
-        PUSHER_KEY: null,
+        API_ENDPOINT: isProduction ? undefined : "/api",
+        PUSHER_KEY: undefined,
         INFURA_PROJECT_ID: null,
-        SENTRY_DSN: null,
-        DEV: null,
         CLOUDFLARE_ACCT_HASH: null,
+        DEV: null,
+        SENTRY_DSN: null,
       }),
       new webpack.ProvidePlugin({
         process: "process/browser",

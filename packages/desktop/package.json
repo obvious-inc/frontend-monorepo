@@ -9,6 +9,7 @@
     "start-desktop": "electron-forge start",
     "make-desktop": "electron-forge make",
     "publish-desktop": "electron-forge publish",
+    "lint": "eslint . && prettier . --check",
     "format": "prettier . --write"
   },
   "config": {
@@ -52,6 +53,7 @@
     "@shades/common": "*",
     "@walletconnect/ethereum-provider": "^1.7.5",
     "@walletconnect/web3-provider": "^1.7.5",
+    "dotenv": "^16.0.0",
     "electron-squirrel-startup": "^1.0.0",
     "eth-provider": "^0.10.0",
     "ethers": "^5.6.1",
