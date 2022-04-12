@@ -1,13 +1,10 @@
 
 import React from 'react';
-
-import { styled } from '@stitches/react';
 import * as Popover from '@radix-ui/react-popover';
-import { css, useTheme } from "@emotion/react";
+import { css } from "@emotion/react";
 import { useAppScope } from "@shades/common";
 import Button from "./button";
 import { useNavigate } from "react-router-dom";
-import { getChecksumAddress } from "../utils/ethereum";
   
 const ProfilePreview = ({
   displayName,
@@ -19,17 +16,7 @@ const ProfilePreview = ({
   isOwnMessage,
 }) => { 
   const [open,setIsOpen] = React.useState(false)
-  const theme = useTheme();
   const navigate = useNavigate();
-  const StyledContent = styled(Popover.Content, {
-    borderRadius: 3,
-    padding: '20px',
-    paddingBottom:"5px",
-    backgroundColor: theme.colors.backgroundPrimaryAlt,
-    color: theme.colors.textNormal,
-  });
-  
-  const PopoverContent = StyledContent;
 
 const { actions, state} = useAppScope();
   return (
@@ -42,7 +29,15 @@ const { actions, state} = useAppScope();
     <Popover.Trigger>
  {trigger}
  </Popover.Trigger>
-    <PopoverContent
+    <Popover.Content
+      css={(theme) =>
+        css({
+          borderRadius: 3,
+          padding: '20px',
+          paddingBottom:"5px",
+          backgroundColor: theme.colors.backgroundPrimaryAlt,
+          color: theme.colors.textNormal,
+        })}
       side="right"
       align="end"
     >
@@ -93,7 +88,6 @@ const { actions, state} = useAppScope();
           redirect(dmChannel);
           return;
         }
-
         actions
           .createChannel({
             kind: "dm",
@@ -106,7 +100,7 @@ const { actions, state} = useAppScope();
     </Button>
 }
   </div>
-    </PopoverContent>
+    </Popover.Content>
   </Popover.Root>
 )
 };

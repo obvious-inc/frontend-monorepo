@@ -514,9 +514,9 @@ const Reactions = ({
   );
 };
 
-const MemberDisplayName = ({ displayName, walletAddress, color, avatar, serverId, channelId, isOwnMessage, isOnline }) => {
+const MemberDisplayName = ({ displayName, walletAddress, color, avatar, serverId, authorUserId, channelId, isOwnMessage, isOnline }) => {
   return (
-  <ProfilePreview avatar={avatar} isOnline={isOnline} displayName={displayName} walletAddress={walletAddress} isOwnMessage={isOwnMessage} trigger={<Tooltip.Root>
+  <ProfilePreview avatar={avatar} authorUserId={authorUserId} isOnline={isOnline} displayName={displayName} walletAddress={walletAddress} isOwnMessage={isOwnMessage} trigger={<Tooltip.Root>
     <Tooltip.Trigger asChild>
       <button
         css={(theme) =>
