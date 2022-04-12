@@ -1,12 +1,9 @@
 name: Desktop | CI checks
 on:
   push:
-    branches:
     paths-ignore:
       - "packages/landing"
       - "packages/mobile"
-  pull_request:
-    types: [opened, synchronize]
 
 jobs:
   checks:
