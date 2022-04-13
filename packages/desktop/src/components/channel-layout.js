@@ -8,7 +8,7 @@ import Avatar from "./avatar";
 import Spinner from "./spinner";
 import MainMenu from "./main-menu";
 
-const { reverse, sort } = arrayUtils;
+const { reverse } = arrayUtils;
 
 const isNative = window.Native != null;
 
@@ -118,7 +118,7 @@ const SideMenuLayout = ({ title, sidebarContent, children }) => {
           position: "absolute",
           top: 0,
           bottom: 0,
-          left: "6.6rem",
+          left: isFloatingMenuEnabled ? 0 : "6.6rem",
           right: 0,
           zIndex: 1,
           pointerEvents: "none",
@@ -164,6 +164,8 @@ const ChannelLayout = () => {
     return [sections, channelsWithoutSection];
   }, [channels, channelSections]);
 
+  const hasSections = sections.length > 0;
+
   if (server == null) return null;
 
   return (
@@ -173,7 +175,7 @@ const ChannelLayout = () => {
         <>
           {channelsWithoutSection.length > 0 && (
             <Section
-              title="Channels"
+              title={hasSections ? null : "Channels"}
               addAction={
                 server.ownerUserId === user.id
                   ? {
@@ -282,40 +284,42 @@ export const DmChannelLayout = () => {
 
 const Section = ({ title, addAction, children }) => (
   <>
-    <div
-      css={css`
-        text-transform: uppercase;
-        font-size: 1.2rem;
-        font-weight: 500;
-        color: rgb(255 255 255 / 40%);
-        padding-left: 0.6rem;
-        padding-right: 0.8rem;
-        margin-bottom: 0.4rem;
-        display: grid;
-        align-items: center;
-        grid-template-columns: minmax(0, 1fr) auto;
-        grid-gap: 1rem;
+    {title != null && (
+      <div
+        css={css`
+          text-transform: uppercase;
+          font-size: 1.2rem;
+          font-weight: 500;
+          color: rgb(255 255 255 / 40%);
+          padding-left: 0.6rem;
+          padding-right: 0.8rem;
+          margin-bottom: 0.4rem;
+          display: grid;
+          align-items: center;
+          grid-template-columns: minmax(0, 1fr) auto;
+          grid-gap: 1rem;
 
-        button {
-          padding: 0.2rem;
-          background: none;
-          border: 0;
-          color: inherit;
-          cursor: pointer;
+          button {
+            padding: 0.2rem;
+            background: none;
+            border: 0;
+            color: inherit;
+            cursor: pointer;
 
-          &:hover {
-            color: white;
+            &:hover {
+              color: white;
+            }
           }
-        }
-      `}
-    >
-      <div>{title}</div>
-      {addAction && (
-        <button aria-label={addAction["aria-label"]} onClick={addAction.run}>
-          <Plus width="1.6rem" />
-        </button>
-      )}
-    </div>
+        `}
+      >
+        <div>{title}</div>
+        {addAction && (
+          <button aria-label={addAction["aria-label"]} onClick={addAction.run}>
+            <Plus width="1.6rem" />
+          </button>
+        )}
+      </div>
+    )}
 
     {children}
   </>

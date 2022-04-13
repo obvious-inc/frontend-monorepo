@@ -63,7 +63,7 @@ const commands = {
         alert('Missing "section-name" argument!');
         return;
       }
-      const channelSection = state.selectChannelSection(channelId);
+      const channelSection = state.selectChannelSectionWithChild(channelId);
       await actions.updateChannelSection(channelSection.id, { name });
       editor.clear();
     },
@@ -85,26 +85,18 @@ const commands = {
     arguments: ["section-name"],
     execute: async ({ args, editor }) => {
       const name = args.join(" ");
-      if (name.trim().length === 0) {
-        alert('Missing "section-name" argument!');
-        return;
-      }
 
       const sections = state.selectServerChannelSections(serverId);
       const section = sections.find(
         (s) => s.name.toLowerCase() === name.toLowerCase()
       );
 
-      if (section == null) {
-        alert(`No section named "${name}"`);
-        return;
-      }
-
       const updatedSections = sections.map((s) => ({
         id: s.id,
         name: s.name,
         channelIds: (() => {
-          if (s.id === section.id) return [...s.channelIds, channelId];
+          if (section != null && s.id === section.id)
+            return [...s.channelIds, channelId];
           return s.channelIds.filter((id) => id !== channelId);
         })(),
       }));
@@ -129,7 +121,8 @@ const commands = {
       }
 
       const sections = state.selectServerChannelSections(serverId);
-      const currentSection = state.selectChannelSection(channelId);
+      const currentSection = state.selectChannelSectionWithChild(channelId);
+
       const currentSectionIndex = sections.findIndex(
         (s) => s.id === currentSection.id
       );
@@ -157,6 +150,9 @@ const commands = {
     },
     exclude: () => {
       if (context != "server-channel") return true;
+      const currentSection = state.selectChannelSectionWithChild(channelId);
+      // Hide command if the current channel doesn’t have a parent section
+      if (currentSection == null) return true;
       const server = state.selectServer(serverId);
       return server?.ownerUserId !== user.id;
     },
