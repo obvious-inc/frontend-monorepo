@@ -9,6 +9,7 @@
     "start-desktop": "electron-forge start",
     "make-desktop": "electron-forge make",
     "publish-desktop": "electron-forge publish",
+    "lint": "eslint . && prettier . --check",
     "format": "prettier . --write"
   },
   "config": {

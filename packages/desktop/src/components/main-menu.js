@@ -1,4 +1,3 @@
-import React from "react";
 import { NavLink, useParams, useLocation, Link } from "react-router-dom";
 import { css } from "@emotion/react";
 import { useAppScope, useAuth } from "@shades/common";
