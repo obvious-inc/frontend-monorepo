@@ -1,9 +1,12 @@
 import React from "react";
+import { arrayUtils } from "@shades/common";
 import { useAuth } from "./auth";
 import { generateDummyId } from "./utils/misc";
 import invariant from "./utils/invariant";
 import { useServerConnection } from "./server-connection";
 import useRootReducer from "./hooks/root-reducer";
+
+const { unique } = arrayUtils;
 
 const Context = React.createContext({});
 
@@ -88,7 +91,7 @@ export const Provider = ({ children }) => {
     [authorizedFetch, fetchInitialData]
   );
 
-  const createChannelSection = React.useCallback(
+  const createServerChannelSection = React.useCallback(
     (serverId, { name }) =>
       authorizedFetch(`/servers/${serverId}/sections`, {
         method: "POST",
@@ -102,17 +105,48 @@ export const Provider = ({ children }) => {
     [authorizedFetch, fetchInitialData]
   );
 
-  const updateChannelSection = React.useCallback(
-    (serverId, sectionId, { name, channelIds }) =>
-      authorizedFetch(`/servers/${serverId}/sections/${sectionId}`, {
-        method: "PATCh",
+  const updateServerChannelSections = React.useCallback(
+    (serverId, sections) =>
+      authorizedFetch(`/servers/${serverId}/sections`, {
+        method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name, channels: channelIds }),
+        body: JSON.stringify(
+          sections.map((s) => ({ ...s, channels: s.channelIds }))
+        ),
       }).then((res) => {
         // TODO
         fetchInitialData();
         return res;
       }),
+    [authorizedFetch, fetchInitialData]
+  );
+
+  const updateChannelSection = React.useCallback(
+    (sectionId, { name, channelIds }) =>
+      authorizedFetch(`/sections/${sectionId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name,
+          channels: channelIds == null ? undefined : unique(channelIds),
+        }),
+      }).then((res) => {
+        // TODO
+        fetchInitialData();
+        return res;
+      }),
+    [authorizedFetch, fetchInitialData]
+  );
+
+  const deleteChannelSection = React.useCallback(
+    (sectionId) =>
+      authorizedFetch(`/sections/${sectionId}`, { method: "DELETE" }).then(
+        (res) => {
+          // TODO
+          fetchInitialData();
+          return res;
+        }
+      ),
     [authorizedFetch, fetchInitialData]
   );
 
@@ -352,8 +386,10 @@ export const Provider = ({ children }) => {
       createServer,
       updateServer,
       joinServer,
-      createChannelSection,
       updateChannelSection,
+      deleteChannelSection,
+      createServerChannelSection,
+      updateServerChannelSections,
       createChannel,
       updateChannel,
       createMessage,
@@ -374,8 +410,10 @@ export const Provider = ({ children }) => {
       createServer,
       updateServer,
       joinServer,
-      createChannelSection,
+      createServerChannelSection,
+      updateServerChannelSections,
       updateChannelSection,
+      deleteChannelSection,
       createChannel,
       updateChannel,
       createMessage,

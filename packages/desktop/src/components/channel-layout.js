@@ -8,7 +8,7 @@ import Avatar from "./avatar";
 import Spinner from "./spinner";
 import MainMenu from "./main-menu";
 
-const { reverse } = arrayUtils;
+const { reverse, sort } = arrayUtils;
 
 const isNative = window.Native != null;
 
@@ -160,6 +160,7 @@ const ChannelLayout = () => {
     const channelsWithoutSection = channels.filter(
       (c) => !sectionChannelIds.includes(c.id)
     );
+
     return [sections, channelsWithoutSection];
   }, [channels, channelSections]);
 
@@ -190,7 +191,7 @@ const ChannelLayout = () => {
                   : undefined
               }
             >
-              {channels.map((c) => (
+              {channelsWithoutSection.map((c) => (
                 <ChannelItem
                   key={c.id}
                   channelId={c.id}
@@ -203,9 +204,11 @@ const ChannelLayout = () => {
             </Section>
           )}
 
-          {sections.map((s) => (
+          {sections.map((s, i) => (
             <React.Fragment key={s.id}>
-              <div style={{ height: "2.6rem" }} />
+              {(channelsWithoutSection.length > 0 || i !== 0) && (
+                <div style={{ height: "1.5rem" }} />
+              )}
               <Section title={s.name}>
                 {s.channels.map((c) => (
                   <ChannelItem
@@ -223,7 +226,7 @@ const ChannelLayout = () => {
 
           {serverDmChannels.length > 0 && (
             <>
-              <div style={{ height: "2.6rem" }} />
+              <div style={{ height: "1.5rem" }} />
               <Section title="Direct messages">
                 {serverDmChannels.map((c) => (
                   <DmChannelItem

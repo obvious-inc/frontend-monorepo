@@ -298,11 +298,25 @@ export const selectServerChannelSections = (state) => (serverId) => {
   const sections = Object.values(state.channels.sectionEntriesById).filter(
     (s) => s.serverId === serverId
   );
-  return sections.map((s) => ({
+  const unsortedSections = sections.map((s) => ({
     id: s.id,
     name: s.name,
+    position: s.position,
     channelIds: s.channels,
   }));
+
+  return sort((s1, s2) => {
+    const [p1, p2] = [s1, s2].map((s) => s.position);
+    if (p1 > p2) return 1;
+    if (p1 < p2) return -1;
+    return 0;
+  }, unsortedSections);
+};
+
+export const selectChannelSection = (state) => (channelId) => {
+  const channel = selectChannel(state)(channelId);
+  const sections = selectServerChannelSections(state)(channel.serverId);
+  return sections.find((s) => s.channelIds.includes(channelId));
 };
 
 export default combineReducers({
