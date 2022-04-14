@@ -1,3 +1,4 @@
+import React from "react";
 import { NavLink, Outlet, useParams } from "react-router-dom";
 import { css } from "@emotion/react";
 import { useAppScope, useAuth, arrayUtils } from "@shades/common";
@@ -117,7 +118,7 @@ const SideMenuLayout = ({ title, sidebarContent, children }) => {
           position: "absolute",
           top: 0,
           bottom: 0,
-          left: "6.6rem",
+          left: isFloatingMenuEnabled ? 0 : "6.6rem",
           right: 0,
           zIndex: 1,
           pointerEvents: "none",
@@ -139,19 +140,42 @@ const ChannelLayout = () => {
 
   const server = state.selectServer(params.serverId);
 
-  if (server == null) return null;
-
   const channels = state.selectServerChannels(params.serverId);
+  const channelSections = state.selectServerChannelSections(params.serverId);
   const serverDmChannels = state.selectServerDmChannels(params.serverId);
+
+  const [sections, channelsWithoutSection] = React.useMemo(() => {
+    const sections = [];
+    for (let section of channelSections) {
+      sections.push({
+        ...section,
+        channels: section.channelIds.map((id) =>
+          channels.find((c) => c.id === id)
+        ),
+      });
+    }
+    const sectionChannelIds = sections.flatMap((s) =>
+      s.channels.map((c) => c.id)
+    );
+    const channelsWithoutSection = channels.filter(
+      (c) => !sectionChannelIds.includes(c.id)
+    );
+
+    return [sections, channelsWithoutSection];
+  }, [channels, channelSections]);
+
+  const hasSections = sections.length > 0;
+
+  if (server == null) return null;
 
   return (
     <SideMenuLayout
       title={server.name}
       sidebarContent={
         <>
-          {channels.length > 0 && (
+          {channelsWithoutSection.length > 0 && (
             <Section
-              title="Channels"
+              title={hasSections ? null : "Channels"}
               addAction={
                 server.ownerUserId === user.id
                   ? {
@@ -169,7 +193,7 @@ const ChannelLayout = () => {
                   : undefined
               }
             >
-              {channels.map((c) => (
+              {channelsWithoutSection.map((c) => (
                 <ChannelItem
                   key={c.id}
                   channelId={c.id}
@@ -182,9 +206,29 @@ const ChannelLayout = () => {
             </Section>
           )}
 
+          {sections.map((s, i) => (
+            <React.Fragment key={s.id}>
+              {(channelsWithoutSection.length > 0 || i !== 0) && (
+                <div style={{ height: "1.5rem" }} />
+              )}
+              <Section title={s.name}>
+                {s.channels.map((c) => (
+                  <ChannelItem
+                    key={c.id}
+                    channelId={c.id}
+                    serverId={params.serverId}
+                    name={c.name}
+                    hasUnread={c.hasUnread}
+                    mentionCount={c.mentionCount}
+                  />
+                ))}
+              </Section>
+            </React.Fragment>
+          ))}
+
           {serverDmChannels.length > 0 && (
             <>
-              <div style={{ height: "1.6rem" }} />
+              <div style={{ height: "1.5rem" }} />
               <Section title="Direct messages">
                 {serverDmChannels.map((c) => (
                   <DmChannelItem
@@ -240,40 +284,42 @@ export const DmChannelLayout = () => {
 
 const Section = ({ title, addAction, children }) => (
   <>
-    <div
-      css={css`
-        text-transform: uppercase;
-        font-size: 1.2rem;
-        font-weight: 500;
-        color: rgb(255 255 255 / 40%);
-        padding-left: 0.6rem;
-        padding-right: 0.8rem;
-        margin-bottom: 0.4rem;
-        display: grid;
-        align-items: center;
-        grid-template-columns: minmax(0, 1fr) auto;
-        grid-gap: 1rem;
+    {title != null && (
+      <div
+        css={css`
+          text-transform: uppercase;
+          font-size: 1.2rem;
+          font-weight: 500;
+          color: rgb(255 255 255 / 40%);
+          padding-left: 0.6rem;
+          padding-right: 0.8rem;
+          margin-bottom: 0.4rem;
+          display: grid;
+          align-items: center;
+          grid-template-columns: minmax(0, 1fr) auto;
+          grid-gap: 1rem;
 
-        button {
-          padding: 0.2rem;
-          background: none;
-          border: 0;
-          color: inherit;
-          cursor: pointer;
+          button {
+            padding: 0.2rem;
+            background: none;
+            border: 0;
+            color: inherit;
+            cursor: pointer;
 
-          &:hover {
-            color: white;
+            &:hover {
+              color: white;
+            }
           }
-        }
-      `}
-    >
-      <div>{title}</div>
-      {addAction && (
-        <button aria-label={addAction["aria-label"]} onClick={addAction.run}>
-          <Plus width="1.6rem" />
-        </button>
-      )}
-    </div>
+        `}
+      >
+        <div>{title}</div>
+        {addAction && (
+          <button aria-label={addAction["aria-label"]} onClick={addAction.run}>
+            <Plus width="1.6rem" />
+          </button>
+        )}
+      </div>
+    )}
 
     {children}
   </>

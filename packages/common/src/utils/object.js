@@ -9,3 +9,6 @@ export const mapValues = (mapper, obj) =>
   Object.fromEntries(
     Object.entries(obj).map(([key, value]) => [key, mapper(value, key, obj)])
   );
+
+export const filter = (predicate, obj) =>
+  Object.fromEntries(Object.entries(obj).filter(predicate));

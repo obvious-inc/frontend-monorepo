@@ -279,4 +279,7 @@ export const selectDmChannels = (state) => () => {
   }, channels);
 };
 
-export default combineReducers({ entriesById, typingUserIdsByChannelId });
+export default combineReducers({
+  entriesById,
+  typingUserIdsByChannelId,
+});
