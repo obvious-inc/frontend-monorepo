@@ -451,35 +451,7 @@ const NewMessageInput = React.forwardRef(
     }, [isPending, editorRef]);
 
     return (
-      <form
-        onSubmit={(e) => {
-          e.preventDefault();
-          executeMessage();
-        }}
-        css={(theme) =>
-          css({
-            position: "relative",
-            padding: "1rem",
-            background: theme.colors.channelInputBackground,
-            borderRadius: "0.7rem",
-            borderTopLeftRadius: replyingToMessage ? 0 : undefined,
-            borderTopRightRadius: replyingToMessage ? 0 : undefined,
-            "[role=textbox] [data-slate-placeholder]": {
-              color: "rgb(255 255 255 / 40%)",
-              opacity: "1 !important",
-              whiteSpace: "nowrap",
-              overflow: "hidden",
-              textOverflow: "ellipsis",
-            },
-            // Prevents iOS zooming in on input fields
-            "@supports (-webkit-touch-callout: none)": {
-              "[role=textbox]": { fontSize: "1.6rem" },
-            },
-          })
-        }
-        // TODO: Nicer pending state
-        style={{ opacity: isPending ? 0.5 : 1 }}
-      >
+      <div css={css({ position: "relative" })}>
         {replyingToMessage && (
           <div
             css={(theme) =>
@@ -519,146 +491,182 @@ const NewMessageInput = React.forwardRef(
             </button>
           </div>
         )}
-        <div
-          css={{
-            display: "grid",
-            gridTemplateColumns: "auto minmax(0,1fr)",
-            gridGap: "1.2rem",
-            alignItems: "flex-start",
-            paddingLeft: "0.3rem",
+
+        <form
+          onSubmit={(e) => {
+            e.preventDefault();
+            executeMessage();
           }}
-        >
-          <button
-            type="button"
-            onClick={() => {
-              fileInputRef.current.click();
-            }}
-            disabled={isPending}
-            css={(theme) =>
-              css({
-                cursor: "pointer",
-                color: theme.colors.interactiveNormal,
-                svg: {
-                  display: "block",
-                  width: "2.4rem",
-                  height: "auto",
-                },
-                "&[disabled]": { pointerEvents: "none" },
-                ":hover": {
-                  color: theme.colors.interactiveHover,
-                },
-              })
-            }
-          >
-            <PlusCircleIcon />
-          </button>
-
-          <MessageInput
-            ref={editorRef}
-            initialValue={pendingMessage}
-            onChange={(value) => {
-              setPendingMessage(value);
-            }}
-            onKeyDown={(e) => {
-              if (!e.isDefaultPrevented() && !e.shiftKey && e.key === "Enter") {
-                e.preventDefault();
-                executeMessage();
-              }
-            }}
-            commands={commands}
-            disabled={isPending}
-            {...props}
-          />
-        </div>
-
-        {imageUploads.length !== 0 && (
-          <div
-            css={css({
+          css={(theme) =>
+            css({
+              padding: "1rem",
+              maxHeight: "60vh",
               overflow: "auto",
-              paddingTop: "1.2rem",
-              pointerEvents: isPending ? "none" : "all",
-            })}
+              background: theme.colors.channelInputBackground,
+              borderRadius: "0.7rem",
+              borderTopLeftRadius: replyingToMessage ? 0 : undefined,
+              borderTopRightRadius: replyingToMessage ? 0 : undefined,
+              "[role=textbox] [data-slate-placeholder]": {
+                color: "rgb(255 255 255 / 40%)",
+                opacity: "1 !important",
+                whiteSpace: "nowrap",
+                overflow: "hidden",
+                textOverflow: "ellipsis",
+              },
+              // Prevents iOS zooming in on input fields
+              "@supports (-webkit-touch-callout: none)": {
+                "[role=textbox]": { fontSize: "1.6rem" },
+              },
+            })
+          }
+          // TODO: Nicer pending state
+          style={{ opacity: isPending ? 0.5 : 1 }}
+        >
+          <div
+            css={{
+              display: "grid",
+              gridTemplateColumns: "auto minmax(0,1fr)",
+              gridGap: "1.2rem",
+              alignItems: "flex-start",
+              paddingLeft: "0.3rem",
+            }}
           >
-            <AttachmentList
-              items={imageUploads}
-              remove={({ url }) => {
-                setImageUploads((fs) => fs.filter((f) => f.url !== url));
+            <button
+              type="button"
+              onClick={() => {
+                fileInputRef.current.click();
               }}
+              disabled={isPending}
+              css={(theme) =>
+                css({
+                  cursor: "pointer",
+                  color: theme.colors.interactiveNormal,
+                  svg: {
+                    display: "block",
+                    width: "2.4rem",
+                    height: "auto",
+                  },
+                  "&[disabled]": { pointerEvents: "none" },
+                  ":hover": {
+                    color: theme.colors.interactiveHover,
+                  },
+                })
+              }
+            >
+              <PlusCircleIcon />
+            </button>
+
+            <MessageInput
+              ref={editorRef}
+              initialValue={pendingMessage}
+              onChange={(value) => {
+                setPendingMessage(value);
+              }}
+              onKeyDown={(e) => {
+                if (
+                  !e.isDefaultPrevented() &&
+                  !e.shiftKey &&
+                  e.key === "Enter"
+                ) {
+                  e.preventDefault();
+                  executeMessage();
+                }
+              }}
+              commands={commands}
+              disabled={isPending}
+              {...props}
             />
           </div>
-        )}
 
-        <input
-          ref={fileInputRef}
-          type="file"
-          multiple
-          accept="image/*"
-          onChange={(e) => {
-            editorRef.current.focus();
+          {imageUploads.length !== 0 && (
+            <div
+              css={css({
+                overflow: "auto",
+                paddingTop: "1.2rem",
+                pointerEvents: isPending ? "none" : "all",
+              })}
+            >
+              <AttachmentList
+                items={imageUploads}
+                remove={({ url }) => {
+                  setImageUploads((fs) => fs.filter((f) => f.url !== url));
+                }}
+              />
+            </div>
+          )}
 
-            const filesToUpload = [...e.target.files];
+          <input
+            ref={fileInputRef}
+            type="file"
+            multiple
+            accept="image/*"
+            onChange={(e) => {
+              editorRef.current.focus();
 
-            setImageUploads((fs) => [
-              ...fs,
-              ...filesToUpload.map((f) => ({
-                name: encodeURIComponent(f.name),
-                url: URL.createObjectURL(f),
-              })),
-            ]);
+              const filesToUpload = [...e.target.files];
 
-            fileInputRef.current.value = "";
+              setImageUploads((fs) => [
+                ...fs,
+                ...filesToUpload.map((f) => ({
+                  name: encodeURIComponent(f.name),
+                  url: URL.createObjectURL(f),
+                })),
+              ]);
 
-            let lastImageUploads = imageUploads;
+              fileInputRef.current.value = "";
 
-            // Buckle up!
-            uploadPromiseRef.current = Promise.all([
-              uploadPromiseRef.current ?? Promise.resolve(),
-              ...filesToUpload.map((file) =>
-                Promise.all([
-                  getImageFileDimensions(file),
-                  uploadImage({ files: [file] }).catch(() => {
-                    setImageUploads((fs) => {
-                      const newImageUploads = fs.filter(
-                        (f) => f.name !== file.name
+              let lastImageUploads = imageUploads;
+
+              // Buckle up!
+              uploadPromiseRef.current = Promise.all([
+                uploadPromiseRef.current ?? Promise.resolve(),
+                ...filesToUpload.map((file) =>
+                  Promise.all([
+                    getImageFileDimensions(file),
+                    uploadImage({ files: [file] }).catch(() => {
+                      setImageUploads((fs) => {
+                        const newImageUploads = fs.filter(
+                          (f) => f.name !== file.name
+                        );
+                        lastImageUploads = newImageUploads;
+                        return newImageUploads;
+                      });
+                      const error = new Error(
+                        `Could not upload file "${file.name}"`
                       );
+                      alert(error.message);
+                      return Promise.reject(error);
+                    }),
+                  ]).then(([dimensions, [uploadedFile]]) => {
+                    setImageUploads((fs) => {
+                      const newImageUploads = fs.map((f) => {
+                        if (!uploadedFile.filename.endsWith(f.name)) return f;
+                        return {
+                          id: uploadedFile.id,
+                          name: uploadedFile.filename,
+                          url: uploadedFile.variants.find((url) =>
+                            url.endsWith("/public")
+                          ),
+                          previewUrl: f.url,
+                          ...dimensions,
+                        };
+                      });
+
                       lastImageUploads = newImageUploads;
                       return newImageUploads;
                     });
-                    const error = new Error(
-                      `Could not upload file "${file.name}"`
-                    );
-                    alert(error.message);
-                    return Promise.reject(error);
-                  }),
-                ]).then(([dimensions, [uploadedFile]]) => {
-                  setImageUploads((fs) => {
-                    const newImageUploads = fs.map((f) => {
-                      if (!uploadedFile.filename.endsWith(f.name)) return f;
-                      return {
-                        id: uploadedFile.id,
-                        name: uploadedFile.filename,
-                        url: uploadedFile.variants.find((url) =>
-                          url.endsWith("/public")
-                        ),
-                        previewUrl: f.url,
-                        ...dimensions,
-                      };
-                    });
-
-                    lastImageUploads = newImageUploads;
-                    return newImageUploads;
-                  });
-                })
-              ),
-            ]).then(() => {
-              uploadPromiseRef.current = null;
-              return lastImageUploads;
-            });
-          }}
-          hidden
-        />
-        <input type="submit" hidden />
-      </form>
+                  })
+                ),
+              ]).then(() => {
+                uploadPromiseRef.current = null;
+                return lastImageUploads;
+              });
+            }}
+            hidden
+          />
+          <input type="submit" hidden />
+        </form>
+      </div>
     );
   }
 );
