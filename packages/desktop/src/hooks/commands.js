@@ -2,6 +2,7 @@ import React from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth, useAppScope, objectUtils } from "@shades/common";
 import textCommands from "../commands/text";
+import userCommands from "../commands/user";
 import channelCommands from "../commands/channels";
 import channelSectionCommands from "../commands/channel-sections";
 import miscCommands from "../commands/misc";
@@ -10,6 +11,7 @@ const { mapValues, filter: filterObject } = objectUtils;
 
 const allCommands = {
   ...textCommands,
+  ...userCommands,
   ...channelCommands,
   ...channelSectionCommands,
   ...miscCommands,
