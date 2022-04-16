@@ -82,6 +82,8 @@ const SideMenuLayout = ({ title, sidebarContent, children }) => {
                 boxShadow:
                   "0 1px 0 rgba(4,4,5,0.2),0 1.5px 0 rgba(6,6,7,0.05),0 2px 0 rgba(4,4,5,0.05)",
                 whiteSpace: "nowrap",
+                position: "relative",
+                zIndex: 2,
               })
             }
           >
@@ -89,7 +91,7 @@ const SideMenuLayout = ({ title, sidebarContent, children }) => {
           </div>
           <div
             css={css`
-              padding: ${isNative ? "3.5rem 1rem 2rem" : "1.5rem 1rem 2rem"};
+              padding: ${isNative ? "1.5rem 1rem 2rem" : "0 1rem 2rem"};
               overflow: auto;
               overscroll-behavior-y: contain;
               flex: 1;
@@ -209,7 +211,7 @@ const ChannelLayout = () => {
           {sections.map((s, i) => (
             <React.Fragment key={s.id}>
               {(channelsWithoutSection.length > 0 || i !== 0) && (
-                <div style={{ height: "1.5rem" }} />
+                <div style={{ height: "0.7rem" }} />
               )}
               <Section title={s.name}>
                 {s.channels.map((c) => (
@@ -293,30 +295,18 @@ const Section = ({ title, addAction, children }) => (
           font-size: 1.2rem;
           font-weight: 500;
           color: rgb(255 255 255 / 40%);
-          padding-left: 0.6rem;
-          padding-right: 0.8rem;
-          margin-bottom: 0.4rem;
+          padding: 1.5rem 0.8rem 0.4rem 0.4rem;
+          /* padding-left: 0.6rem; */
+          /* padding-right: 0.8rem; */
           display: grid;
           align-items: center;
           grid-template-columns: minmax(0, 1fr) auto;
           grid-gap: 1rem;
-          background: ${theme.colors.backgroundSecondary};
-
-          &:after {
-            content: "";
-            display: block;
-            position: absolute;
-            top: 100%;
-            left: 0;
-            width: 100%;
-            height: 1rem;
-            background: linear-gradient(
-              -180deg,
-              ${theme.colors.backgroundSecondary} 0%,
-              transparent
-            );
-            pointer-events: none;
-          }
+          background: linear-gradient(
+            -180deg,
+            ${theme.colors.backgroundSecondary} 85%,
+            transparent
+          );
 
           button {
             padding: 0.2rem;
