@@ -61,6 +61,7 @@ const useChannelMessages = (
   React.useEffect(() => {
     const scrollHandler = (e) => {
       console.log(e);
+
     };
     scrollContainerRef.current.addEventListener("scroll", scrollHandler, {
       passive: true,
