@@ -283,10 +283,12 @@ export const DmChannelLayout = () => {
 };
 
 const Section = ({ title, addAction, children }) => (
-  <>
+  <div css={css({ position: "relative" })}>
     {title != null && (
       <div
-        css={css`
+        css={(theme) => css`
+          position: sticky;
+          top: 0;
           text-transform: uppercase;
           font-size: 1.2rem;
           font-weight: 500;
@@ -298,6 +300,23 @@ const Section = ({ title, addAction, children }) => (
           align-items: center;
           grid-template-columns: minmax(0, 1fr) auto;
           grid-gap: 1rem;
+          background: ${theme.colors.backgroundSecondary};
+
+          &:after {
+            content: "";
+            display: block;
+            position: absolute;
+            top: 100%;
+            left: 0;
+            width: 100%;
+            height: 1rem;
+            background: linear-gradient(
+              -180deg,
+              ${theme.colors.backgroundSecondary} 0%,
+              transparent
+            );
+            pointer-events: none;
+          }
 
           button {
             padding: 0.2rem;
@@ -322,7 +341,7 @@ const Section = ({ title, addAction, children }) => (
     )}
 
     {children}
-  </>
+  </div>
 );
 
 const ChannelItem = ({
