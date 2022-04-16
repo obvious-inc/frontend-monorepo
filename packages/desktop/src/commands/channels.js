@@ -1,5 +1,12 @@
 const commands = {
-  "create-channel": ({ context, user, state, actions, serverId }) => ({
+  "create-channel": ({
+    context,
+    user,
+    state,
+    actions,
+    serverId,
+    navigate,
+  }) => ({
     description: "Create a new channel",
     arguments: ["name"],
     execute: async ({ args, editor }) => {
@@ -8,8 +15,13 @@ const commands = {
         alert('"name" is a required argument!');
         return;
       }
-      await actions.createChannel({ name, kind: "server", serverId });
+      const channel = await actions.createChannel({
+        name,
+        kind: "server",
+        serverId,
+      });
       editor.clear();
+      navigate(`/channels/${serverId}/${channel.id}`);
     },
     exclude: () => {
       if (context != "server-channel") return true;
