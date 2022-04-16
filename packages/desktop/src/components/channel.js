@@ -18,7 +18,10 @@ import {
 } from "./icons";
 import useSideMenu from "../hooks/side-menu";
 
-const useChannelMessages = (channelId) => {
+const useChannelMessages = (
+  channelId,
+  { scrollToBottom, scrollContainerRef }
+) => {
   const { actions, state, serverConnection } = useAppScope();
 
   const messages = state.selectChannelMessages(channelId);
@@ -27,15 +30,24 @@ const useChannelMessages = (channelId) => {
     (m1, m2) => new Date(m1.created_at) - new Date(m2.created_at)
   );
 
+  const fetchMessages = React.useCallback(
+    async (channelId) => {
+      const messages = await actions.fetchMessages({ channelId });
+      scrollToBottom();
+      return messages;
+    },
+    [actions, scrollToBottom]
+  );
+
   // Fetch messages when switching channels
   React.useEffect(() => {
-    actions.fetchMessages({ channelId });
-  }, [actions, channelId]);
+    fetchMessages(channelId);
+  }, [fetchMessages, channelId]);
 
   // Fetch messages when tab get visibility
   usePageVisibilityChangeListener((state) => {
     if (state !== "visible") return;
-    actions.fetchMessages({ channelId });
+    fetchMessages(channelId);
   });
 
   const lastMessage = sortedMessages.slice(-1)[0];
@@ -45,6 +57,45 @@ const useChannelMessages = (channelId) => {
     if (lastMessage?.id == null || !serverConnection.isConnected) return;
     actions.markChannelRead({ channelId });
   }, [lastMessage?.id, channelId, actions, serverConnection.isConnected]);
+
+  React.useEffect(() => {
+    const scrollHandler = (e) => {
+      console.log(e);
+    };
+    scrollContainerRef.current.addEventListener("scroll", scrollHandler, {
+      passive: true,
+    });
+
+    return () => {
+      scrollContainerRef.current.removeEventListener("scroll", scrollHandler);
+    };
+  }, [scrollContainerRef]);
+
+  //  React.useEffect(() => {
+  //    const scrollContainer = scrollContainerRef.current;
+  //    const rect = scrollContainer.getBoundingClientRect();
+  //    console.log(
+  //      scrollContainer.scrollTop + rect.height,
+  //      scrollContainer.scrollHeight
+  //    );
+  //    if (
+  //      scrollContainer.scrollTop + rect.height ===
+  //      scrollContainer.scrollHeight
+  //    )
+  //      scrollToBottom({ behavior: "smooth" });
+  //  }, [lastMessage?.id, scrollToBottom, scrollContainerRef]);
+
+  //  React.useEffect(() => {
+  //    const removeListener = serverConnection.addListener((event) => {
+  //      //
+  //      console.log(event);
+  //      if (event === "message-created") scrollToBottom();
+  //    });
+
+  //    return () => {
+  //      removeListener();
+  //    };
+  //  }, [scrollToBottom, serverConnection]);
 
   return sortedMessages;
 };
@@ -68,6 +119,7 @@ export const ChannelBase = ({
     useSideMenu();
 
   const inputRef = React.useRef();
+  const scrollContainerRef = React.useRef();
 
   const getUserMentionDisplayName = React.useCallback(
     (ref) => {
@@ -85,11 +137,26 @@ export const ChannelBase = ({
     [actions, channel.id]
   );
 
-  const messages = useChannelMessages(channel.id);
+  const scrollToBottom = React.useCallback((options) => {
+    scrollContainerRef.current.scrollTo({
+      left: 0,
+      top: scrollContainerRef.current.scrollHeight,
+      ...options,
+    });
+  }, []);
+
+  const messages = useChannelMessages(channel.id, {
+    scrollToBottom,
+    scrollContainerRef,
+  });
 
   React.useEffect(() => {
     inputRef.current.focus();
   }, [channel.id]);
+
+  React.useEffect(() => {
+    scrollToBottom();
+  }, [channel.id, scrollToBottom]);
 
   usePageVisibilityChangeListener((state) => {
     if (state === "visible") return;
@@ -144,14 +211,15 @@ export const ChannelBase = ({
       </div>
 
       <div
+        ref={scrollContainerRef}
         css={css`
           flex: 1;
           display: flex;
           flex-direction: column;
           justify-content: flex-end;
           overflow: auto;
-          overscroll-behavior-y: contain;
-          scroll-snap-type: y proximity;
+          /* overscroll-behavior-y: contain; */
+          /* scroll-snap-type: y proximity; */
         `}
       >
         <div
