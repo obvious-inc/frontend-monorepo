@@ -22,6 +22,7 @@ const useChannelMessages = (
   channelId,
   { scrollToBottom, scrollContainerRef }
 ) => {
+  const scrolledToBottomRef = React.useRef();
   const { actions, state, serverConnection } = useAppScope();
 
   const messages = state.selectChannelMessages(channelId);
@@ -60,8 +61,10 @@ const useChannelMessages = (
 
   React.useEffect(() => {
     const scrollHandler = (e) => {
-      console.log(e);
-
+      const isAtBottom =
+        e.target.scrollTop + e.target.getBoundingClientRect().height >=
+        e.target.scrollHeight;
+      scrolledToBottomRef.current = isAtBottom;
     };
     scrollContainerRef.current.addEventListener("scroll", scrollHandler, {
       passive: true,
@@ -72,31 +75,9 @@ const useChannelMessages = (
     };
   }, [scrollContainerRef]);
 
-  //  React.useEffect(() => {
-  //    const scrollContainer = scrollContainerRef.current;
-  //    const rect = scrollContainer.getBoundingClientRect();
-  //    console.log(
-  //      scrollContainer.scrollTop + rect.height,
-  //      scrollContainer.scrollHeight
-  //    );
-  //    if (
-  //      scrollContainer.scrollTop + rect.height ===
-  //      scrollContainer.scrollHeight
-  //    )
-  //      scrollToBottom({ behavior: "smooth" });
-  //  }, [lastMessage?.id, scrollToBottom, scrollContainerRef]);
-
-  //  React.useEffect(() => {
-  //    const removeListener = serverConnection.addListener((event) => {
-  //      //
-  //      console.log(event);
-  //      if (event === "message-created") scrollToBottom();
-  //    });
-
-  //    return () => {
-  //      removeListener();
-  //    };
-  //  }, [scrollToBottom, serverConnection]);
+  React.useEffect(() => {
+    if (scrolledToBottomRef.current) scrollToBottom({ behavior: "smooth" });
+  }, [lastMessage?.id, scrollToBottom, scrollContainerRef]);
 
   return sortedMessages;
 };
