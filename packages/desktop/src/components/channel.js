@@ -22,7 +22,8 @@ const useChannelMessages = (
   channelId,
   { scrollToBottom, scrollContainerRef }
 ) => {
-  const [scrolledToBottom, setScrolledToBottom] = React.useState(false);
+  const { user } = useAuth();
+  const [scrolledToBottom, setScrolledToBottom] = React.useState(true);
   const { actions, state, serverConnection } = useAppScope();
 
   const messages = state.selectChannelMessages(channelId);
@@ -34,10 +35,10 @@ const useChannelMessages = (
   const fetchMessages = React.useCallback(
     async (channelId) => {
       const messages = await actions.fetchMessages({ channelId });
-      scrollToBottom();
+      if (scrolledToBottom) scrollToBottom();
       return messages;
     },
-    [actions, scrollToBottom]
+    [actions, scrolledToBottom, scrollToBottom]
   );
 
   // Fetch messages when switching channels
@@ -51,7 +52,9 @@ const useChannelMessages = (
     fetchMessages(channelId);
   });
 
+  const messageCount = sortedMessages.length;
   const lastMessage = sortedMessages.slice(-1)[0];
+  const lastMessageWasMine = lastMessage?.authorUserId === user.id;
 
   // Make channels as read as new messages arrive
   React.useEffect(() => {
@@ -80,8 +83,9 @@ const useChannelMessages = (
   }, [scrollContainerRef, scrolledToBottom]);
 
   React.useEffect(() => {
-    if (scrolledToBottom) scrollToBottom({ behavior: "smooth" });
-  }, [lastMessage?.id, scrollToBottom, scrolledToBottom]);
+    if (scrolledToBottom || lastMessageWasMine)
+      scrollToBottom({ behavior: "smooth" });
+  }, [messageCount, lastMessageWasMine, scrollToBottom, scrolledToBottom]);
 
   return sortedMessages;
 };

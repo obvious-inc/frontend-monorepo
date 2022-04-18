@@ -176,36 +176,40 @@ const ChannelLayout = () => {
       sidebarContent={
         <>
           {channelsWithoutSection.length > 0 && (
-            <Section
-              title={hasSections ? null : "Channels"}
-              addAction={
-                server.ownerUserId === user.id
-                  ? {
-                      "aria-label": "Create channel",
-                      run: () => {
-                        const name = prompt("Create channel", "My channel");
-                        if (name == null) return;
-                        actions.createChannel({
-                          name,
-                          kind: "server",
-                          serverId: params.serverId,
-                        });
-                      },
-                    }
-                  : undefined
-              }
-            >
-              {channelsWithoutSection.map((c) => (
-                <ChannelItem
-                  key={c.id}
-                  channelId={c.id}
-                  serverId={params.serverId}
-                  name={c.name}
-                  hasUnread={c.hasUnread}
-                  mentionCount={c.mentionCount}
-                />
-              ))}
-            </Section>
+            <>
+              {hasSections && <div style={{ height: "1.5rem" }} />}
+
+              <Section
+                title={hasSections ? null : "Channels"}
+                addAction={
+                  server.ownerUserId === user.id
+                    ? {
+                        "aria-label": "Create channel",
+                        run: () => {
+                          const name = prompt("Create channel", "My channel");
+                          if (name == null) return;
+                          actions.createChannel({
+                            name,
+                            kind: "server",
+                            serverId: params.serverId,
+                          });
+                        },
+                      }
+                    : undefined
+                }
+              >
+                {channelsWithoutSection.map((c) => (
+                  <ChannelItem
+                    key={c.id}
+                    channelId={c.id}
+                    serverId={params.serverId}
+                    name={c.name}
+                    hasUnread={c.hasUnread}
+                    mentionCount={c.mentionCount}
+                  />
+                ))}
+              </Section>
+            </>
           )}
 
           {sections.map((s, i) => (
@@ -265,6 +269,7 @@ export const DmChannelLayout = () => {
       title="Direct messages"
       sidebarContent={
         <>
+          <div style={{ height: "1.5rem" }} />
           {dmChannels.map((c) => (
             <DmChannelItem
               key={c.id}
