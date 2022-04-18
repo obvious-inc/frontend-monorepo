@@ -49,9 +49,9 @@ const createParser = ({
   onClickInteractiveElement,
 }) => {
   const parse = (blocks) => {
-    const parseElement = (el, i) => {
-      const parseNode = (n, i) =>
-        n.text == null ? parseElement(n, i) : parseLeaf(n, i);
+    const parseElement = (el, i, els) => {
+      const parseNode = (n, i, ns) =>
+        n.text == null ? parseElement(n, i, ns) : parseLeaf(n, i, ns);
 
       const children = () => el.children.map(parseNode);
 
@@ -82,9 +82,6 @@ const createParser = ({
             </button>
           );
         case "attachments": {
-          const attachmentCount = el.children.length;
-          const [maxWidth, maxHeight] =
-            attachmentCount === 1 ? ["100%", "28rem"] : ["28rem", "18rem"];
           if (inline) return null;
           return (
             <div
@@ -104,18 +101,12 @@ const createParser = ({
                     margin: "1rem 0 0 1rem",
                     cursor: "zoom-in",
                     transition: "0.14s all ease-out",
-                    maxWidth,
                     ":hover": {
                       filter: "brightness(1.05)",
                       transform: "scale(1.02)",
                     },
                   },
-                  img: {
-                    display: "block",
-                    height: "auto",
-                    width: "100%",
-                    maxHeight,
-                  },
+                  img: { display: "block" },
                 })
               }
             >
@@ -125,6 +116,31 @@ const createParser = ({
         }
         case "image-attachment": {
           if (inline) return null;
+          const attachmentCount = els.length;
+          const [maxWidth, maxHeight] =
+            attachmentCount === 1 ? [null, 280] : [280, 180];
+
+          const getImageProps = () => {
+            const aspectRatioNumber = el.width / el.height;
+            const aspectRatio = `${el.width} / ${el.height}`;
+
+            // When max width is 100%
+            if (maxWidth == null)
+              return maxHeight > el.height
+                ? { width: el.width, style: { maxWidth: "100%", aspectRatio } }
+                : { height: el.height, style: { maxHeight, aspectRatio } };
+
+            const dimensionToConstrain =
+              Math.min(el.width, maxWidth) / aspectRatioNumber > maxHeight
+                ? "height"
+                : "width";
+
+            if (dimensionToConstrain === "width")
+              return { width: el.width, style: { maxWidth, aspectRatio } };
+
+            return { height: el.height, style: { maxHeight, aspectRatio } };
+          };
+
           return (
             <button
               key={i}
@@ -132,7 +148,7 @@ const createParser = ({
                 onClickInteractiveElement(el);
               }}
             >
-              <img src={el.url} width={el.width} height={el.height} />
+              <img src={el.url} {...getImageProps()} />
             </button>
           );
         }

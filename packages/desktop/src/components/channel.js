@@ -206,6 +206,7 @@ export const ChannelBase = ({
           flex-direction: column;
           justify-content: flex-end;
           overflow: auto;
+          overflow-anchor: none;
           /* overscroll-behavior-y: contain; */
           /* scroll-snap-type: y proximity; */
         `}
