@@ -122,7 +122,7 @@ const SideMenuLayout = ({ title, sidebarContent, children }) => {
           bottom: 0,
           left: isFloatingMenuEnabled ? 0 : "6.6rem",
           right: 0,
-          zIndex: 1,
+          zIndex: 2,
           pointerEvents: "none",
         }}
       >

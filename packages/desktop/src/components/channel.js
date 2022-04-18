@@ -148,6 +148,8 @@ export const ChannelBase = ({
   return (
     <div
       css={(theme) => css`
+        position: relative;
+        z-index: 1;
         flex: 1;
         min-width: min(30.6rem, 100vw);
         background: ${theme.colors.backgroundPrimary};
