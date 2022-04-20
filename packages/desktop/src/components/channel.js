@@ -26,19 +26,25 @@ const useChannelMessages = (
   const [scrolledToBottom, setScrolledToBottom] = React.useState(true);
   const { actions, state, serverConnection } = useAppScope();
 
+  const scrolledToBottomRef = React.useRef(scrolledToBottom);
+
   const messages = state.selectChannelMessages(channelId);
 
   const sortedMessages = messages.sort(
     (m1, m2) => new Date(m1.created_at) - new Date(m2.created_at)
   );
 
+  React.useEffect(() => {
+    scrolledToBottomRef.current = scrollToBottom;
+  });
+
   const fetchMessages = React.useCallback(
     async (channelId) => {
       const messages = await actions.fetchMessages({ channelId });
-      if (scrolledToBottom) scrollToBottom();
+      if (scrolledToBottomRef.current) scrollToBottom();
       return messages;
     },
-    [actions, scrolledToBottom, scrollToBottom]
+    [actions, scrollToBottom]
   );
 
   // Fetch messages when switching channels
@@ -71,6 +77,9 @@ const useChannelMessages = (
         e.target.scrollHeight;
 
       if (scrolledToBottom !== isAtBottom) setScrolledToBottom(isAtBottom);
+
+      if (e.target.scrollTop < e.target.getBoundingClientRect().height * 2)
+        alert("now");
     };
 
     scrollContainer.addEventListener("scroll", scrollHandler, {
