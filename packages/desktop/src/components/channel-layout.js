@@ -108,7 +108,7 @@ const SideMenuLayout = ({ title, sidebarContent, children }) => {
             position: "fixed",
             height: "100%",
             width: "100%",
-            zIndex: 2,
+            zIndex: 1,
           }}
           onClick={() => {
             toggleMenu();
@@ -122,7 +122,7 @@ const SideMenuLayout = ({ title, sidebarContent, children }) => {
           bottom: 0,
           left: isFloatingMenuEnabled ? 0 : "6.6rem",
           right: 0,
-          zIndex: 2,
+          zIndex: 1,
           pointerEvents: "none",
         }}
       >
