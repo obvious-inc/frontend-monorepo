@@ -1,8 +1,8 @@
 import throttle from "lodash.throttle";
 import React from "react";
-import { useParams, useNavigate } from "react-router";
+import { useParams } from "react-router";
 import { css } from "@emotion/react";
-import { useAuth, useAppScope, getImageFileDimensions } from "@shades/common";
+import { useAppScope, getImageFileDimensions } from "@shades/common";
 import usePageVisibilityChangeListener from "../hooks/page-visibility-change-listener";
 import stringifyMessageBlocks from "../slate/stringify";
 import { createEmptyParagraph, isNodeEmpty, cleanNodes } from "../slate/utils";
@@ -18,11 +18,13 @@ import {
 } from "./icons";
 import useSideMenu from "../hooks/side-menu";
 
+const pendingFetchMessagePromisesByQuery = {};
+
 const useChannelMessages = (
   channelId,
   { scrollToBottom, scrollContainerRef }
 ) => {
-  const { user } = useAuth();
+  const [channelWithAllMessages, setHasAll] = React.useState([]);
   const [scrolledToBottom, setScrolledToBottom] = React.useState(true);
   const { actions, state, serverConnection } = useAppScope();
 
@@ -39,28 +41,50 @@ const useChannelMessages = (
   });
 
   const fetchMessages = React.useCallback(
-    async (channelId) => {
-      const messages = await actions.fetchMessages({ channelId });
-      if (scrolledToBottomRef.current) scrollToBottom();
-      return messages;
+    async (channelId, { scrollDown, limit = 50, beforeMessageId } = {}) => {
+      const query = `channel=${channelId}&limit=${limit}&before=${beforeMessageId}`;
+      let pendingPromise = pendingFetchMessagePromisesByQuery[query];
+
+      if (pendingPromise == null) {
+        pendingPromise = actions.fetchMessages({
+          channelId,
+          beforeMessageId,
+        });
+        pendingFetchMessagePromisesByQuery[query] = pendingPromise;
+      }
+
+      try {
+        const messages = await pendingPromise;
+        if (messages.length < limit) setHasAll((ids) => [...ids, channelId]);
+
+        if (scrollDown && scrolledToBottomRef.current) scrollToBottom();
+        return messages;
+      } finally {
+        delete pendingFetchMessagePromisesByQuery[query];
+      }
     },
     [actions, scrollToBottom]
   );
 
   // Fetch messages when switching channels
   React.useEffect(() => {
-    fetchMessages(channelId);
+    fetchMessages(channelId, { scrollDown: true });
   }, [fetchMessages, channelId]);
 
   // Fetch messages when tab get visibility
   usePageVisibilityChangeListener((state) => {
     if (state !== "visible") return;
-    fetchMessages(channelId);
+    fetchMessages(channelId, { scrollDown: true });
   });
 
   const messageCount = sortedMessages.length;
   const lastMessage = sortedMessages.slice(-1)[0];
-  const lastMessageWasMine = lastMessage?.authorUserId === user.id;
+
+  const triggerFetch = React.useCallback(() => {
+    console.log("here");
+    if (channelWithAllMessages.includes(channelId)) return;
+    fetchMessages(channelId, { beforeMessageId: sortedMessages[0]?.id });
+  }, [channelId, fetchMessages, sortedMessages, channelWithAllMessages]);
 
   // Make channels as read as new messages arrive
   React.useEffect(() => {
@@ -70,16 +94,28 @@ const useChannelMessages = (
 
   React.useEffect(() => {
     const scrollContainer = scrollContainerRef.current;
+    let prevScrollTop = null;
+    let scrollDirection = null;
 
     const scrollHandler = (e) => {
+      if (prevScrollTop) {
+        scrollDirection =
+          e.target.scrollTop - prevScrollTop > 0 ? "down" : "up";
+      }
+      prevScrollTop = e.target.scrollTop;
+
       const isAtBottom =
         e.target.scrollTop + e.target.getBoundingClientRect().height >=
         e.target.scrollHeight;
 
       if (scrolledToBottom !== isAtBottom) setScrolledToBottom(isAtBottom);
 
-      if (e.target.scrollTop < e.target.getBoundingClientRect().height * 2)
-        alert("now");
+      if (scrollDirection !== "up") return;
+
+      const isCloseToTop =
+        e.target.scrollTop < e.target.getBoundingClientRect().height * 2;
+
+      if (scrollDirection === "up" && isCloseToTop) triggerFetch();
     };
 
     scrollContainer.addEventListener("scroll", scrollHandler, {
@@ -89,12 +125,11 @@ const useChannelMessages = (
     return () => {
       scrollContainer.removeEventListener("scroll", scrollHandler);
     };
-  }, [scrollContainerRef, scrolledToBottom]);
+  }, [scrollContainerRef, scrolledToBottom, triggerFetch]);
 
   React.useEffect(() => {
-    if (scrolledToBottom || lastMessageWasMine)
-      scrollToBottom({ behavior: "smooth" });
-  }, [messageCount, lastMessageWasMine, scrollToBottom, scrolledToBottom]);
+    if (scrolledToBottom) scrollToBottom({ behavior: "smooth" });
+  }, [messageCount, scrollToBottom, scrolledToBottom]);
 
   return sortedMessages;
 };
@@ -107,9 +142,7 @@ export const ChannelBase = ({
   createMessage,
   headerContent,
 }) => {
-  const { user } = useAuth();
   const { actions, state } = useAppScope();
-  const navigate = useNavigate();
 
   const [pendingReplyMessageId, setPendingReplyMessageId] =
     React.useState(null);
@@ -161,6 +194,11 @@ export const ChannelBase = ({
     if (state === "visible") return;
     actions.fetchInitialData();
   });
+
+  const initReply = React.useCallback((messageId) => {
+    setPendingReplyMessageId(messageId);
+    inputRef.current.focus();
+  }, []);
 
   return (
     <div
@@ -219,9 +257,6 @@ export const ChannelBase = ({
           flex-direction: column;
           justify-content: flex-end;
           overflow: auto;
-          overflow-anchor: none;
-          /* overscroll-behavior-y: contain; */
-          /* scroll-snap-type: y proximity; */
         `}
       >
         <div
@@ -239,49 +274,10 @@ export const ChannelBase = ({
               message={m}
               previousMessage={ms[i - 1]}
               hasPendingReply={pendingReplyMessageId === m.id}
-              initReply={() => {
-                setPendingReplyMessageId(m.id);
-                inputRef.current.focus();
-              }}
-              save={(blocks) =>
-                actions.updateMessage(m.id, {
-                  blocks,
-                  content: stringifyMessageBlocks(blocks),
-                })
-              }
-              remove={() => actions.removeMessage(m.id)}
-              addReaction={(emoji) => {
-                const existingReaction = m.reactions.find(
-                  (r) => r.emoji === emoji
-                );
-
-                if (existingReaction?.users.includes(user.id)) return;
-
-                actions.addMessageReaction(m.id, { emoji });
-              }}
-              removeReaction={(emoji) =>
-                actions.removeMessageReaction(m.id, { emoji })
-              }
+              initReply={initReply}
               members={members}
               selectChannelMemberWithUserId={selectChannelMemberWithUserId}
               getUserMentionDisplayName={getUserMentionDisplayName}
-              sendDirectMessageToAuthor={() => {
-                const redirect = (c) => navigate(`/channels/@me/${c.id}`);
-                const dmChannel = state.selectDmChannelFromUserId(
-                  m.authorUserId
-                );
-                if (dmChannel != null) {
-                  redirect(dmChannel);
-                  return;
-                }
-
-                actions
-                  .createChannel({
-                    kind: "dm",
-                    memberUserIds: [m.authorUserId],
-                  })
-                  .then(redirect);
-              }}
               isAdmin={isAdmin}
             />
           ))}

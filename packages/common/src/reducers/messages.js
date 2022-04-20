@@ -141,7 +141,7 @@ const entryIdsByChannelId = (state = {}, action) => {
       const channelMessageIds = state[channelId] ?? [];
       return {
         ...state,
-        [channelId]: [...channelMessageIds, action.message.id],
+        [channelId]: unique([...channelMessageIds, action.message.id]),
       };
     }
 
@@ -150,11 +150,11 @@ const entryIdsByChannelId = (state = {}, action) => {
       const channelMessageIds = state[channelId] ?? [];
       return {
         ...state,
-        [channelId]: [
+        [channelId]: unique([
           // Remove the optimistic entry
           ...channelMessageIds.filter((id) => id !== action.optimisticEntryId),
           action.message.id,
-        ],
+        ]),
       };
     }
 

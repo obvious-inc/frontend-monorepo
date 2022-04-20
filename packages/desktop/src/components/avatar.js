@@ -2,6 +2,8 @@ import React from "react";
 import { css } from "@emotion/react";
 import generateAvatar from "../utils/avatar-generator";
 
+const cache = {};
+
 const Avatar = ({
   url,
   walletAddress,
@@ -15,11 +17,21 @@ const Avatar = ({
 
     const size = 8;
 
-    return generateAvatar({
+    const cacheKey = [walletAddress, pixelSize, size].join("-");
+
+    const cachedAvatar = cache[cacheKey];
+
+    if (cachedAvatar) return cachedAvatar;
+
+    const avatar = generateAvatar({
       seed: walletAddress,
       size,
       scale: Math.ceil((pixelSize * 2) / size),
     });
+
+    cache[cacheKey] = avatar;
+
+    return avatar;
   }, [url, walletAddress, pixelSize]);
 
   if (url === undefined)

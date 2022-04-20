@@ -167,29 +167,31 @@ const createParser = ({
   return parse;
 };
 
-const RichText = ({
-  inline,
-  blocks,
-  getUserMentionDisplayName,
-  onClickInteractiveElement,
-  children,
-  ...props
-}) => {
-  const parse = React.useMemo(
-    () =>
-      createParser({
-        inline,
-        getUserMentionDisplayName,
-        onClickInteractiveElement,
-      }),
-    [inline, getUserMentionDisplayName, onClickInteractiveElement]
-  );
-  return (
-    <div css={(theme) => css(createCss(theme, { inline }))} {...props}>
-      {parse(blocks)}
-      {children}
-    </div>
-  );
-};
+const RichText = React.memo(
+  ({
+    inline,
+    blocks,
+    getUserMentionDisplayName,
+    onClickInteractiveElement,
+    children,
+    ...props
+  }) => {
+    const parse = React.useMemo(
+      () =>
+        createParser({
+          inline,
+          getUserMentionDisplayName,
+          onClickInteractiveElement,
+        }),
+      [inline, getUserMentionDisplayName, onClickInteractiveElement]
+    );
+    return (
+      <div css={(theme) => css(createCss(theme, { inline }))} {...props}>
+        {parse(blocks)}
+        {children}
+      </div>
+    );
+  }
+);
 
 export default RichText;
