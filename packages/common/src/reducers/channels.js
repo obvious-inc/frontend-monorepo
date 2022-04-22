@@ -180,67 +180,6 @@ const selectChannelTypingUsers = createSelector(
   (users) => users
 );
 
-const selectChannelOutput = (
-  channel,
-  loggedInUser,
-  // selectServerMemberWithUserId,
-  // selectUser,
-  channelTypingUsers
-) => {
-  if (channel == null) return null;
-
-  const getLastReadTimestamp = () => {
-    if (channel.kind === "dm")
-      return channel.lastReadAt == null
-        ? new Date().getTime()
-        : new Date(channel.lastReadAt).getTime();
-
-    return new Date().getTime();
-
-    // const userServerMember = selectServerMemberWithUserId(
-    //   channel.serverId,
-    //   loggedInUser.id
-    // );
-
-    // const serverJoinTimestamp = new Date(userServerMember.joined_at).getTime();
-
-    // return channel.lastReadAt == null
-    //   ? serverJoinTimestamp
-    //   : new Date(channel.lastReadAt).getTime();
-  };
-
-  const buildName = () => {
-    if (channel.kind !== "dm" || channel.name != null) return channel.name;
-
-    if (channel.memberUserIds.length === 1) return "Me";
-
-    return channel.memberUserIds
-      .filter((id) => id !== loggedInUser.id)
-      .map((id) => {
-        return id;
-        // const user = selectUser(id);
-        // return user?.displayName;
-      })
-      .filter(Boolean)
-      .join(", ");
-  };
-
-  const lastReadTimestamp = getLastReadTimestamp();
-
-  const lastMessageTimestamp = new Date(channel.lastMessageAt).getTime();
-
-  // const typingMembersUserIds = channelTypingUserIds.filter(
-  //   (id) => id !== loggedInUser.id
-  // );
-
-  return {
-    ...channel,
-    name: buildName(),
-    hasUnread: lastReadTimestamp < lastMessageTimestamp,
-    mentionCount: channel.unreadMentionMessageIds.length,
-  };
-};
-
 export const selectServerChannelTypingMembers = createSelector(
   (state, channelId) => {
     const channel = state.channels.entriesById[channelId];
@@ -263,10 +202,69 @@ export const selectChannel = createSelector(
   //   ),
   // (state) => defaultMemoize((state, userId) => selectUser(state, userId)),
   selectChannelTypingUsers,
-  selectChannelOutput,
+  (
+    channel,
+    loggedInUser,
+    // selectServerMemberWithUserId,
+    // selectUser,
+    channelTypingUsers
+  ) => {
+    if (channel == null) return null;
+
+    const getLastReadTimestamp = () => {
+      if (channel.kind === "dm")
+        return channel.lastReadAt == null
+          ? new Date().getTime()
+          : new Date(channel.lastReadAt).getTime();
+
+      return new Date().getTime();
+
+      // const userServerMember = selectServerMemberWithUserId(
+      //   channel.serverId,
+      //   loggedInUser.id
+      // );
+
+      // const serverJoinTimestamp = new Date(userServerMember.joined_at).getTime();
+
+      // return channel.lastReadAt == null
+      //   ? serverJoinTimestamp
+      //   : new Date(channel.lastReadAt).getTime();
+    };
+
+    const buildName = () => {
+      if (channel.kind !== "dm" || channel.name != null) return channel.name;
+
+      if (channel.memberUserIds.length === 1) return "Me";
+
+      return channel.memberUserIds
+        .filter((id) => id !== loggedInUser.id)
+        .map((id) => {
+          return id;
+          // const user = selectUser(id);
+          // return user?.displayName;
+        })
+        .filter(Boolean)
+        .join(", ");
+    };
+
+    const lastReadTimestamp = getLastReadTimestamp();
+
+    const lastMessageTimestamp = new Date(channel.lastMessageAt).getTime();
+
+    // const typingMembersUserIds = channelTypingUserIds.filter(
+    //   (id) => id !== loggedInUser.id
+    // );
+
+    return {
+      ...channel,
+      name: buildName(),
+      hasUnread: lastReadTimestamp < lastMessageTimestamp,
+      mentionCount: channel.unreadMentionMessageIds.length,
+    };
+  },
   {
     memoizeOptions: {
-      maxSize: 10000,
+      maxSize: 1000,
       // equalityCheck: (v1, v2) => {
       //   if (v1 !== v2) console.log(v1, v2);
       //   return v1 === v2;
