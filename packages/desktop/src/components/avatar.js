@@ -2,7 +2,9 @@ import React from "react";
 import { css } from "@emotion/react";
 import generateAvatar from "../utils/avatar-generator";
 
-const cache = {};
+// Caching expensive avatar generation outside of react so that we can share
+// between multiple component instances
+const cache = new Map();
 
 const Avatar = React.memo(
   ({
@@ -20,9 +22,7 @@ const Avatar = React.memo(
 
       const cacheKey = [walletAddress, pixelSize, size].join("-");
 
-      const cachedAvatar = cache[cacheKey];
-
-      if (cachedAvatar) return cachedAvatar;
+      if (cache.has(cacheKey)) return cache.get(cacheKey);
 
       const avatar = generateAvatar({
         seed: walletAddress,
@@ -30,7 +30,7 @@ const Avatar = React.memo(
         scale: Math.ceil((pixelSize * 2) / size),
       });
 
-      cache[cacheKey] = avatar;
+      cache.set(cacheKey, avatar);
 
       return avatar;
     }, [url, walletAddress, pixelSize]);
