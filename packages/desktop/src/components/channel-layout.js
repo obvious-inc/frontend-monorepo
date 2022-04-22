@@ -269,6 +269,7 @@ export const DmChannelLayout = () => {
       title="Direct messages"
       sidebarContent={
         <>
+          <div style={{ height: "1.5rem" }} />
           {dmChannels.map((c) => (
             <DmChannelItem
               key={c.id}
