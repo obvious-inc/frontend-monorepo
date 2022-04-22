@@ -1,3 +1,4 @@
+import React from "react";
 import { NavLink, useParams, useLocation, Link } from "react-router-dom";
 import { css } from "@emotion/react";
 import { useAppScope, useAuth } from "@shades/common";
@@ -73,8 +74,8 @@ const MainMenu = () => {
                 ? "active"
                 : undefined,
             },
-          ].map(({ icon, ...props }, i) => (
-            <RoundButton key={i} component={NavLink} {...props}>
+          ].map(({ icon, ...props }) => (
+            <RoundButton key={props.tooltip} component={NavLink} {...props}>
               {icon}
             </RoundButton>
           ))}
@@ -127,15 +128,7 @@ const MainMenu = () => {
 
             {hasUnreadDms && <Divider />}
 
-            {servers.map((s, i) => {
-              const abbreviation = s.name
-                .split(" ")
-                .map((s) => s[0])
-                .join("")
-                .slice(0, 3);
-              const shortName =
-                abbreviation.length === 2 ? abbreviation : s.name.slice(0, 2);
-
+            {servers.map((s) => {
               const isActive = params.serverId === s.id;
 
               const hasChannels = s.channels.length !== 0;
@@ -149,7 +142,7 @@ const MainMenu = () => {
               return (
                 <RoundButton
                   component={Link}
-                  key={i}
+                  key={s.id}
                   to={
                     hasChannels
                       ? `/channels/${s.id}/${s.channels[0].id}`
@@ -159,17 +152,7 @@ const MainMenu = () => {
                   tooltip={s.name}
                   className={isActive ? "active" : undefined}
                 >
-                  <div
-                    css={css({
-                      textTransform: "uppercase",
-                      fontSize: "1.5rem",
-                      fontWeight: "500",
-                      lineHeight: 1,
-                    })}
-                    style={{ color: hasUnread ? "white" : undefined }}
-                  >
-                    {shortName}
-                  </div>
+                  <ServerButtonContent name={s.name} hasUnread={hasUnread} />
                 </RoundButton>
               );
             })}
@@ -256,6 +239,29 @@ const RoundButton = ({
     )}
   </Tooltip.Root>
 );
+
+const ServerButtonContent = ({ name, hasUnread }) => {
+  const abbreviation = name
+    .split(" ")
+    .map((s) => s[0])
+    .join("")
+    .slice(0, 3);
+  const shortName = abbreviation.length === 2 ? abbreviation : name.slice(0, 2);
+
+  return (
+    <div
+      css={css({
+        textTransform: "uppercase",
+        fontSize: "1.5rem",
+        fontWeight: "500",
+        lineHeight: 1,
+      })}
+      style={{ color: hasUnread ? "white" : undefined }}
+    >
+      {shortName}
+    </div>
+  );
+};
 
 const Divider = () => (
   <div

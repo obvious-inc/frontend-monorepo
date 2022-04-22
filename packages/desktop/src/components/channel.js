@@ -99,6 +99,30 @@ export const ChannelBase = ({
     inputRef.current.focus();
   }, []);
 
+  const cancelReply = React.useCallback(() => {
+    setPendingReplyMessageId(null);
+    inputRef.current.focus();
+  }, []);
+
+  const submitMessage = React.useCallback(
+    (blocks) => {
+      setPendingReplyMessageId(null);
+      return createMessage({
+        blocks,
+        replyToMessageId: pendingReplyMessageId,
+      });
+    },
+    [createMessage, pendingReplyMessageId]
+  );
+
+  const handleInputChange = React.useCallback(
+    (blocks) => {
+      if (blocks.length > 1 || !isNodeEmpty(blocks[0]))
+        throttledRegisterTypingActivity();
+    },
+    [throttledRegisterTypingActivity]
+  );
+
   return (
     <div
       css={(theme) => css`
@@ -199,18 +223,9 @@ export const ChannelBase = ({
               ? null
               : state.selectMessage(pendingReplyMessageId)
           }
-          cancelReply={() => {
-            setPendingReplyMessageId(null);
-            inputRef.current.focus();
-          }}
+          cancelReply={cancelReply}
           uploadImage={actions.uploadImage}
-          submit={(blocks) => {
-            setPendingReplyMessageId(null);
-            return createMessage({
-              blocks,
-              replyToMessageId: pendingReplyMessageId,
-            });
-          }}
+          submit={submitMessage}
           placeholder={
             channel.kind === "dm"
               ? `Message ${channel.name}`
@@ -218,10 +233,7 @@ export const ChannelBase = ({
           }
           members={members}
           getUserMentionDisplayName={getUserMentionDisplayName}
-          onInputChange={(blocks) => {
-            if (blocks.length > 1 || !isNodeEmpty(blocks[0]))
-              throttledRegisterTypingActivity();
-          }}
+          onInputChange={handleInputChange}
         />
         {typingMembers.length > 0 && (
           <TypingIndicator members={typingMembers} />
@@ -289,8 +301,8 @@ const TypingIndicator = ({ members }) => (
   </div>
 );
 
-const NewMessageInput = React.forwardRef(
-  (
+const NewMessageInput = React.memo(
+  React.forwardRef(function NewMessageInput_(
     {
       submit,
       uploadImage,
@@ -303,7 +315,7 @@ const NewMessageInput = React.forwardRef(
       ...props
     },
     editorRef
-  ) => {
+  ) {
     const [pendingMessage, setPendingMessage] = React.useState(() => [
       createEmptyParagraph(),
     ]);
@@ -633,7 +645,7 @@ const NewMessageInput = React.forwardRef(
         </form>
       </div>
     );
-  }
+  })
 );
 
 const AttachmentList = ({ items, remove }) => (
@@ -807,7 +819,7 @@ const Channel = () => {
       />
     );
 
-  const typingMembers =
+  const typingChannelMembers =
     channel.kind === "dm"
       ? []
       : state.selectServerChannelTypingMembers(params.channelId);
@@ -816,7 +828,7 @@ const Channel = () => {
     <ChannelBase
       channel={channel}
       members={members}
-      typingMembers={typingMembers}
+      typingMembers={typingChannelMembers}
       createMessage={createMessage}
       isAdmin={server?.isAdmin}
       headerContent={headerContent}
