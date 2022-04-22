@@ -129,21 +129,19 @@ const buildPfpUrl = (pfp) =>
     ? `https://imagedelivery.net/${process.env.CLOUDFLARE_ACCT_HASH}/${pfp.cf_id}/avatar`
     : pfp?.input_image_url ?? null;
 
-export const userOutputSelector = (user, loggedInUser) => {
-  const isLoggedInUser = user.id === loggedInUser.id;
-  return {
-    ...user,
-    pfpUrl: buildPfpUrl(user.pfp),
-    displayName: user.display_name,
-    walletAddress: user.wallet_address,
-    onlineStatus: isLoggedInUser ? "online" : user.status,
-  };
-};
-
 export const selectUser = createSelector(
   (state, userId) => state.serverMembers.userEntriesById[userId],
   (state) => state.user,
-  userOutputSelector,
+  (user, loggedInUser) => {
+    const isLoggedInUser = user.id === loggedInUser.id;
+    return {
+      ...user,
+      pfpUrl: buildPfpUrl(user.pfp),
+      displayName: user.display_name,
+      walletAddress: user.wallet_address,
+      onlineStatus: isLoggedInUser ? "online" : user.status,
+    };
+  },
   { memoizeOptions: { maxSize: 1000 } }
 );
 
@@ -201,33 +199,31 @@ export const selectUserFromWalletAddress = (state) => (address) =>
 export const selectUsers = (state) => () =>
   Object.keys(state.serverMembers.userEntriesById).map(selectUser(state));
 
-const serverMemberOutputSelector = (member, user) => {
-  const displayName =
-    member.display_name != null && member.display_name !== ""
-      ? member.display_name
-      : user.displayName;
-
-  const pfp = member.pfp ?? user.pfp;
-  const pfpUrl = buildPfpUrl(pfp);
-
-  return {
-    ...member,
-    id: user.id, // Should be ok right?
-    displayName,
-    pfp,
-    pfpUrl,
-    walletAddress: user.wallet_address,
-    onlineStatus: user.onlineStatus,
-  };
-};
-
 export const selectServerMember = createSelector(
   (state, memberId) => state.serverMembers.entriesById[memberId],
   (state, memberId) => {
     const serverMember = state.serverMembers.entriesById[memberId];
     return selectUser(state, serverMember.user);
   },
-  serverMemberOutputSelector,
+  (member, user) => {
+    const displayName =
+      member.display_name != null && member.display_name !== ""
+        ? member.display_name
+        : user.displayName;
+
+    const pfp = member.pfp ?? user.pfp;
+    const pfpUrl = buildPfpUrl(pfp);
+
+    return {
+      ...member,
+      id: user.id, // Should be ok right?
+      displayName,
+      pfp,
+      pfpUrl,
+      walletAddress: user.wallet_address,
+      onlineStatus: user.onlineStatus,
+    };
+  },
   { memoizeOptions: { maxSize: 1000 } }
 );
 
