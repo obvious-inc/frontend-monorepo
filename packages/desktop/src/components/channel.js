@@ -18,17 +18,8 @@ import {
 } from "./icons";
 import useSideMenu from "../hooks/side-menu";
 
-const pendingFetchMessagePromisesByQuery = {};
-
-const useChannelMessages = (
-  channelId,
-  { scrollToBottom, scrollContainerRef }
-) => {
-  const [channelWithAllMessages, setHasAll] = React.useState([]);
-  const [scrolledToBottom, setScrolledToBottom] = React.useState(true);
+const useChannelMessages = (channelId) => {
   const { actions, state, serverConnection } = useAppScope();
-
-  const scrolledToBottomRef = React.useRef(scrolledToBottom);
 
   const messages = state.selectChannelMessages(channelId);
 
@@ -36,99 +27,24 @@ const useChannelMessages = (
     (m1, m2) => new Date(m1.created_at) - new Date(m2.created_at)
   );
 
-  React.useEffect(() => {
-    scrolledToBottomRef.current = scrollToBottom;
-  });
-
-  const fetchMessages = React.useCallback(
-    async (channelId, { scrollDown, limit = 10, beforeMessageId } = {}) => {
-      const query = `channel=${channelId}&limit=${limit}&before=${beforeMessageId}`;
-      let pendingPromise = pendingFetchMessagePromisesByQuery[query];
-
-      if (pendingPromise == null) {
-        pendingPromise = actions.fetchMessages({
-          channelId,
-          beforeMessageId,
-        });
-        pendingFetchMessagePromisesByQuery[query] = pendingPromise;
-      }
-
-      try {
-        const messages = await pendingPromise;
-        if (messages.length < limit) setHasAll((ids) => [...ids, channelId]);
-
-        if (scrollDown && scrolledToBottomRef.current) scrollToBottom();
-        return messages;
-      } finally {
-        delete pendingFetchMessagePromisesByQuery[query];
-      }
-    },
-    [actions, scrollToBottom]
-  );
-
   // Fetch messages when switching channels
   React.useEffect(() => {
-    fetchMessages(channelId, { scrollDown: true });
-  }, [fetchMessages, channelId]);
+    actions.fetchMessages({ channelId });
+  }, [actions, channelId]);
 
   // Fetch messages when tab get visibility
   usePageVisibilityChangeListener((state) => {
     if (state !== "visible") return;
-    fetchMessages(channelId, { scrollDown: true });
+    actions.fetchMessages({ channelId });
   });
 
-  const messageCount = sortedMessages.length;
   const lastMessage = sortedMessages.slice(-1)[0];
-
-  const triggerFetch = React.useCallback(() => {
-    if (channelWithAllMessages.includes(channelId)) return;
-    fetchMessages(channelId, { beforeMessageId: sortedMessages[0]?.id });
-  }, [channelId, fetchMessages, sortedMessages, channelWithAllMessages]);
 
   // Make channels as read as new messages arrive
   React.useEffect(() => {
     if (lastMessage?.id == null || !serverConnection.isConnected) return;
     actions.markChannelRead({ channelId });
   }, [lastMessage?.id, channelId, actions, serverConnection.isConnected]);
-
-  React.useEffect(() => {
-    const scrollContainer = scrollContainerRef.current;
-    let prevScrollTop = null;
-    let scrollDirection = null;
-
-    const scrollHandler = (e) => {
-      if (prevScrollTop) {
-        scrollDirection =
-          e.target.scrollTop - prevScrollTop > 0 ? "down" : "up";
-      }
-      prevScrollTop = e.target.scrollTop;
-
-      const isAtBottom =
-        e.target.scrollTop + e.target.getBoundingClientRect().height >=
-        e.target.scrollHeight;
-
-      if (scrolledToBottom !== isAtBottom) setScrolledToBottom(isAtBottom);
-
-      if (scrollDirection !== "up") return;
-
-      const isCloseToTop =
-        e.target.scrollTop < e.target.getBoundingClientRect().height * 2;
-
-      if (scrollDirection === "up" && isCloseToTop) triggerFetch();
-    };
-
-    scrollContainer.addEventListener("scroll", scrollHandler, {
-      passive: true,
-    });
-
-    return () => {
-      scrollContainer.removeEventListener("scroll", scrollHandler);
-    };
-  }, [scrollContainerRef, scrolledToBottom, triggerFetch]);
-
-  React.useEffect(() => {
-    if (scrolledToBottom) scrollToBottom({ behavior: "smooth" });
-  }, [messageCount, scrollToBottom, scrolledToBottom]);
 
   return sortedMessages;
 };
