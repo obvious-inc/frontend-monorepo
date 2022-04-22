@@ -1,6 +1,10 @@
 import React from "react";
 import { css } from "@emotion/react";
 
+const SINGLE_IMAGE_ATTACHMENT_MAX_HEIGHT = 280;
+const MULTI_IMAGE_ATTACHMENT_MAX_WIDTH = 280;
+const MULTI_IMAGE_ATTACHMENT_MAX_HEIGHT = 180;
+
 export const createCss = (theme, { inline = false } = {}) => ({
   display: inline ? "inline" : "block",
   whiteSpace: inline ? "inherit" : "pre-wrap",
@@ -118,9 +122,14 @@ const createParser = ({
           if (inline) return null;
           const attachmentCount = els.length;
           const [maxWidth, maxHeight] =
-            attachmentCount === 1 ? [null, 280] : [280, 180];
+            attachmentCount === 1
+              ? [null, SINGLE_IMAGE_ATTACHMENT_MAX_HEIGHT]
+              : [
+                  MULTI_IMAGE_ATTACHMENT_MAX_WIDTH,
+                  MULTI_IMAGE_ATTACHMENT_MAX_HEIGHT,
+                ];
 
-          const getImageProps = () => {
+          const getImageLayoutProps = () => {
             const aspectRatioNumber = el.width / el.height;
             const aspectRatio = `${el.width} / ${el.height}`;
 
@@ -148,7 +157,7 @@ const createParser = ({
                 onClickInteractiveElement(el);
               }}
             >
-              <img src={el.url} {...getImageProps()} />
+              <img src={el.url} {...getImageLayoutProps()} />
             </button>
           );
         }
@@ -167,31 +176,29 @@ const createParser = ({
   return parse;
 };
 
-const RichText = React.memo(
-  ({
-    inline,
-    blocks,
-    getUserMentionDisplayName,
-    onClickInteractiveElement,
-    children,
-    ...props
-  }) => {
-    const parse = React.useMemo(
-      () =>
-        createParser({
-          inline,
-          getUserMentionDisplayName,
-          onClickInteractiveElement,
-        }),
-      [inline, getUserMentionDisplayName, onClickInteractiveElement]
-    );
-    return (
-      <div css={(theme) => css(createCss(theme, { inline }))} {...props}>
-        {parse(blocks)}
-        {children}
-      </div>
-    );
-  }
-);
+const RichText = ({
+  inline,
+  blocks,
+  getUserMentionDisplayName,
+  onClickInteractiveElement,
+  children,
+  ...props
+}) => {
+  const parse = React.useMemo(
+    () =>
+      createParser({
+        inline,
+        getUserMentionDisplayName,
+        onClickInteractiveElement,
+      }),
+    [inline, getUserMentionDisplayName, onClickInteractiveElement]
+  );
+  return (
+    <div css={(theme) => css(createCss(theme, { inline }))} {...props}>
+      {parse(blocks)}
+      {children}
+    </div>
+  );
+};
 
 export default RichText;
