@@ -1,12 +1,10 @@
-import { createSelector, defaultMemoize } from "reselect";
+import { createSelector } from "reselect";
 import combineReducers from "../utils/combine-reducers";
 import { indexBy, groupBy, unique } from "../utils/array";
 import { omitKey, mapValues } from "../utils/object";
-import {
-  selectServerMemberWithUserId,
-  selectUser,
-  arrayShallowEquals,
-} from "./server-members";
+import { arrayShallowEquals } from "../utils/reselect";
+import { selectUser } from "./users";
+import { selectServerMemberWithUserId } from "./server-members";
 
 const entriesById = (state = {}, action) => {
   switch (action.type) {
@@ -193,51 +191,6 @@ const deriveMessageType = (message) => {
       throw new Error();
   }
 };
-
-// export const selectMessage = (state) => (id) => {
-//   const message = state.messages.entriesById[id];
-
-//   if (message == null) return null;
-//   if (message.deleted) return message;
-
-//   const serverId = message.server;
-//   const authorUserId = message.author;
-//   // `server` doesn’t exist on dm messages
-//   if (serverId != null) {
-//     message.authorServerMember = selectServerMemberWithUserId(state)(
-//       serverId,
-//       authorUserId
-//     );
-//   } else {
-//     message.authorUser = selectUser(state)(authorUserId);
-//   }
-
-//   if (message.reply_to != null) {
-//     message.repliedMessage = selectMessage(state)(message.reply_to);
-//     message.isReply = true;
-//   }
-
-//   const type = deriveMessageType(message);
-
-//   return {
-//     ...message,
-//     serverId,
-//     authorUserId,
-//     isEdited: message.edited_at != null,
-//     type,
-//     isSystemMessage: systemMessageTypes.includes(type),
-//     author: message.authorServerMember ?? message.authorUser,
-//     content:
-//       message.blocks?.length > 0
-//         ? message.blocks
-//         : [{ type: "paragraph", children: [{ text: message.content }] }],
-//     reactions:
-//       message.reactions?.map((r) => ({
-//         ...r,
-//         hasReacted: r.users.includes(state.user.id),
-//       })) ?? [],
-//   };
-// };
 
 export const selectMessage = createSelector(
   (state, messageId) => state.messages.entriesById[messageId],

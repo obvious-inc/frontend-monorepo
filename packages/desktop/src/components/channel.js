@@ -819,10 +819,9 @@ const Channel = () => {
       />
     );
 
-  const typingChannelMembers =
-    channel.kind === "dm"
-      ? []
-      : state.selectServerChannelTypingMembers(params.channelId);
+  const typingChannelMembers = state.selectChannelTypingMembers(
+    params.channelId
+  );
 
   return (
     <ChannelBase

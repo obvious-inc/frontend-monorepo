@@ -14,7 +14,7 @@ const reducer = (state = initialState, action) => {
   }
 };
 
-export const selectHasFetchedInitialData = (state) => () =>
+export const selectHasFetchedInitialData = (state) =>
   state.ui.hasFetchedInitialData;
 
 export default reducer;

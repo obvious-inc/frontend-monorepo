@@ -1,13 +1,12 @@
-import { createSelector, defaultMemoize } from "reselect";
+import { createSelector } from "reselect";
 import combineReducers from "../utils/combine-reducers";
 import { indexBy, unique, sort } from "../utils/array";
 import { getMentions } from "../utils/message";
+import { arrayShallowEquals } from "../utils/reselect";
+import { selectUser } from "./users";
 import {
   selectServerMembers,
   selectServerMemberWithUserId,
-  selectUser,
-  selectMultipleUsers,
-  arrayShallowEquals,
 } from "./server-members";
 
 const entriesById = (state = {}, action) => {
@@ -139,76 +138,20 @@ const entriesById = (state = {}, action) => {
   }
 };
 
-const typingUserIdsByChannelId = (state = {}, action) => {
-  switch (action.type) {
-    case "server-event:user-typed": {
-      const channelId = action.data.channel.id;
-      const channelTypingUserIds = state[channelId] ?? [];
-      return {
-        ...state,
-        [channelId]: unique([...channelTypingUserIds, action.data.user.id]),
-      };
-    }
-
-    case "server-event:message-created": {
-      const channelId = action.data.message.channel;
-      const authorUserId = action.data.message.author;
-      return {
-        ...state,
-        [channelId]:
-          state[channelId]?.filter((id) => id !== authorUserId) ?? [],
-      };
-    }
-
-    case "user-typing-ended":
-      return {
-        ...state,
-        [action.channelId]:
-          state[action.channelId]?.filter((id) => id !== action.userId) ?? [],
-      };
-
-    default:
-      return state;
-  }
-};
-
-const selectChannelTypingUsers = createSelector(
-  (state, channelId) => {
-    const userIds = state.channels.typingUserIdsByChannelId[channelId] ?? [];
-    return selectMultipleUsers(state, userIds);
-  },
-  (users) => users
-);
-
-export const selectServerChannelTypingMembers = createSelector(
-  (state, channelId) => {
-    const channel = state.channels.entriesById[channelId];
-    if (channel == null) return [];
-    const userIds = state.channels.typingUserIdsByChannelId[channelId] ?? [];
-    return userIds.map((userId) =>
-      selectServerMemberWithUserId(state, channel.serverId, userId)
-    );
-  },
-  (members) => members,
-  { memoizeOptions: { equalityCheck: arrayShallowEquals } }
-);
-
 export const selectChannel = createSelector(
   (state, channelId) => state.channels.entriesById[channelId],
   (state) => state.user,
-  // (state) =>
-  //   defaultMemoize((serverId, userId) =>
-  //     selectServerMemberWithUserId(state, serverId, userId)
-  //   ),
-  // (state) => defaultMemoize((state, userId) => selectUser(state, userId)),
-  selectChannelTypingUsers,
-  (
-    channel,
-    loggedInUser,
-    // selectServerMemberWithUserId,
-    // selectUser,
-    channelTypingUsers
-  ) => {
+  (state, channelId) => {
+    const channel = state.channels.entriesById[channelId];
+    if (channel == null) return null;
+    return selectServerMemberWithUserId(state, channel.serverId, state.user.id);
+  },
+  (state, channelId) => {
+    const channel = state.channels.entriesById[channelId];
+    if (channel == null || channel.kind !== "dm") return null;
+    return channel.memberUserIds.map((userId) => selectUser(state, userId));
+  },
+  (channel, loggedInUser, loggedInServerMember, channelMemberUsers) => {
     if (channel == null) return null;
 
     const getLastReadTimestamp = () => {
@@ -217,18 +160,13 @@ export const selectChannel = createSelector(
           ? new Date().getTime()
           : new Date(channel.lastReadAt).getTime();
 
-      return new Date().getTime();
+      const serverJoinTimestamp = new Date(
+        loggedInServerMember.joined_at
+      ).getTime();
 
-      // const userServerMember = selectServerMemberWithUserId(
-      //   channel.serverId,
-      //   loggedInUser.id
-      // );
-
-      // const serverJoinTimestamp = new Date(userServerMember.joined_at).getTime();
-
-      // return channel.lastReadAt == null
-      //   ? serverJoinTimestamp
-      //   : new Date(channel.lastReadAt).getTime();
+      return channel.lastReadAt == null
+        ? serverJoinTimestamp
+        : new Date(channel.lastReadAt).getTime();
     };
 
     const buildName = () => {
@@ -236,13 +174,9 @@ export const selectChannel = createSelector(
 
       if (channel.memberUserIds.length === 1) return "Me";
 
-      return channel.memberUserIds
-        .filter((id) => id !== loggedInUser.id)
-        .map((id) => {
-          return id;
-          // const user = selectUser(id);
-          // return user?.displayName;
-        })
+      return channelMemberUsers
+        .filter((u) => u.id !== loggedInUser.id)
+        .map((u) => u?.displayName)
         .filter(Boolean)
         .join(", ");
     };
@@ -251,10 +185,6 @@ export const selectChannel = createSelector(
 
     const lastMessageTimestamp = new Date(channel.lastMessageAt).getTime();
 
-    // const typingMembersUserIds = channelTypingUserIds.filter(
-    //   (id) => id !== loggedInUser.id
-    // );
-
     return {
       ...channel,
       name: buildName(),
@@ -262,19 +192,11 @@ export const selectChannel = createSelector(
       mentionCount: channel.unreadMentionMessageIds.length,
     };
   },
-  {
-    memoizeOptions: {
-      maxSize: 1000,
-      // equalityCheck: (v1, v2) => {
-      //   if (v1 !== v2) console.log(v1, v2);
-      //   return v1 === v2;
-      // },
-    },
-  }
+  { memoizeOptions: { maxSize: 1000 } }
 );
 
-export const selectDmChannelFromUserId = (state) => (userId) => {
-  const dmChannels = selectDmChannels(state)();
+export const selectDmChannelFromUserId = (state, userId) => {
+  const dmChannels = selectDmChannels(state);
   const userDmChannels = dmChannels.filter(
     (c) => c.memberUserIds.length <= 2 && c.memberUserIds.includes(userId)
   );
@@ -284,8 +206,8 @@ export const selectDmChannelFromUserId = (state) => (userId) => {
   return userDmChannels[0];
 };
 
-export const selectDmChannelFromUserIds = (state) => (userIds) => {
-  const dmChannels = selectDmChannels(state)();
+export const selectDmChannelFromUserIds = (state, userIds) => {
+  const dmChannels = selectDmChannels(state);
   return dmChannels.find(
     (c) =>
       c.memberUserIds.length === userIds.length &&
@@ -293,33 +215,41 @@ export const selectDmChannelFromUserIds = (state) => (userIds) => {
   );
 };
 
-export const selectServerChannels = (state) => (serverId) => {
-  return Object.values(state.channels.entriesById)
-    .filter((channel) => channel.serverId === serverId)
-    .map((c) => selectChannel(state, c.id));
-};
+export const selectServerChannels = createSelector(
+  (state, serverId) =>
+    Object.values(state.channels.entriesById)
+      .filter((channel) => channel.serverId === serverId)
+      .map((c) => selectChannel(state, c.id)),
+  (channels) => channels,
+  { memoizeOptions: { equalityCheck: arrayShallowEquals } }
+);
 
-export const selectServerDmChannels = (state) => (serverId) => {
-  const memberUserIds = selectServerMembers(state, serverId).map((m) => m.id);
-  return selectDmChannels(state)().filter((c) =>
-    c.memberUserIds.every((userId) => memberUserIds.includes(userId))
-  );
-};
+export const selectDmChannels = createSelector(
+  (state) => {
+    const channels = Object.values(state.channels.entriesById)
+      .filter((channel) => channel.kind === "dm")
+      .map((c) => selectChannel(state, c.id));
 
-export const selectDmChannels = (state) => () => {
-  const channels = Object.values(state.channels.entriesById)
-    .filter((channel) => channel.kind === "dm")
-    .map((c) => selectChannel(state, c.id));
+    return sort((c1, c2) => {
+      const [t1, t2] = [c1, c2].map((c) =>
+        new Date(c.lastMessageAt ?? c.createdAt).getTime()
+      );
+      return t1 > t2 ? -1 : t1 < t2 ? 1 : 0;
+    }, channels);
+  },
+  (channels) => channels,
+  { memoizeOptions: { equalityCheck: arrayShallowEquals } }
+);
 
-  return sort((c1, c2) => {
-    const [t1, t2] = [c1, c2].map((c) =>
-      new Date(c.lastMessageAt ?? c.createdAt).getTime()
+export const selectServerDmChannels = createSelector(
+  (state, serverId) => {
+    const memberUserIds = selectServerMembers(state, serverId).map((m) => m.id);
+    return selectDmChannels(state).filter((c) =>
+      c.memberUserIds.every((userId) => memberUserIds.includes(userId))
     );
-    return t1 > t2 ? -1 : t1 < t2 ? 1 : 0;
-  }, channels);
-};
+  },
+  (channels) => channels,
+  { memoizeOptions: { equalityCheck: arrayShallowEquals } }
+);
 
-export default combineReducers({
-  entriesById,
-  typingUserIdsByChannelId,
-});
+export default combineReducers({ entriesById });

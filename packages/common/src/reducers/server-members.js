@@ -1,46 +1,10 @@
-import { createSelector, defaultMemoize } from "reselect";
+import { createSelector } from "reselect";
 import { mapValues, omitKeys } from "../utils/object";
 import { indexBy, groupBy, unique } from "../utils/array";
 import combineReducers from "../utils/combine-reducers";
-
-export const arrayShallowEquals = (v1, v2) => {
-  if (v1.length !== v2.length) return false;
-  return v1.every((v, i) => v === v2[i]);
-};
-
-const userEntriesById = (state = {}, action) => {
-  switch (action.type) {
-    case "initial-data-request-successful":
-      return indexBy((u) => u.id, action.data.users);
-
-    case "server-event:user-profile-updated":
-      return mapValues((user) => {
-        if (user.id !== action.data.user) return user;
-        return {
-          ...user,
-          ...omitKeys(["user"], action.data),
-        };
-      }, state);
-
-    case "server-event:server-member-joined":
-      return {
-        ...state,
-        [action.data.user.id]: action.data.user,
-      };
-
-    case "server-event:user-presence-updated":
-      return mapValues((user) => {
-        if (user.id !== action.data.user.id) return user;
-        return {
-          ...user,
-          status: action.data.user.status,
-        };
-      }, state);
-
-    default:
-      return state;
-  }
-};
+import { arrayShallowEquals } from "../utils/reselect";
+import { buildUrl as buildPfpUrl } from "../utils/pfps";
+import { selectUser, selectUsers } from "./users";
 
 const entriesById = (state = {}, action) => {
   switch (action.type) {
@@ -124,44 +88,10 @@ const memberIdsByUserId = (state = [], action) => {
   }
 };
 
-const buildPfpUrl = (pfp) =>
-  pfp?.cf_id && process.env.CLOUDFLARE_ACCT_HASH
-    ? `https://imagedelivery.net/${process.env.CLOUDFLARE_ACCT_HASH}/${pfp.cf_id}/avatar`
-    : pfp?.input_image_url ?? null;
-
-export const selectUser = createSelector(
-  (state, userId) => state.serverMembers.userEntriesById[userId],
-  (state) => state.user,
-  (user, loggedInUser) => {
-    const isLoggedInUser = user.id === loggedInUser.id;
-    return {
-      ...user,
-      pfpUrl: buildPfpUrl(user.pfp),
-      displayName: user.display_name,
-      walletAddress: user.wallet_address,
-      onlineStatus: isLoggedInUser ? "online" : user.status,
-    };
-  },
-  { memoizeOptions: { maxSize: 1000 } }
-);
-
-export const selectMultipleUsers = createSelector(
-  (state, userIds) => userIds.map((userId) => selectUser(state, userId)),
-  (users) => users,
-  {
-    memoizeOptions: {
-      equalityCheck: arrayShallowEquals,
-    },
-  }
-);
-
-export const selectServerChannelMembers = createSelector(
-  (state, channelId) => {
-    const channel = state.channels.entriesById[channelId];
-    return selectServerMembers(state, channel.serverId);
-  },
-  (members) => members
-);
+export const selectServerChannelMembers = (state, channelId) => {
+  const channel = state.channels.entriesById[channelId];
+  return selectServerMembers(state, channel.serverId);
+};
 
 const selectDmChannelMembers = createSelector(
   (state, channelId) => {
@@ -172,15 +102,13 @@ const selectDmChannelMembers = createSelector(
   { memoizeOptions: { equalityCheck: arrayShallowEquals } }
 );
 
-export const selectChannelMembers = createSelector(
-  (state, channelId) => {
-    const channel = state.channels.entriesById[channelId];
-    return channel.kind === "dm"
-      ? selectDmChannelMembers(state, channelId)
-      : selectServerChannelMembers(state, channelId);
-  },
-  (members) => members
-);
+export const selectChannelMembers = (state, channelId) => {
+  const channel = state.channels.entriesById[channelId];
+  if (channel == null) return [];
+  return channel.kind === "dm"
+    ? selectDmChannelMembers(state, channelId)
+    : selectServerChannelMembers(state, channelId);
+};
 
 export const selectChannelMember = createSelector(
   (state, channelId, userId) => {
@@ -192,12 +120,6 @@ export const selectChannelMember = createSelector(
   (member) => member,
   { memoizeOptions: { maxSize: 1000 } }
 );
-
-export const selectUserFromWalletAddress = (state) => (address) =>
-  selectUsers(state)().find((u) => u.walletAddress === address);
-
-export const selectUsers = (state) => () =>
-  Object.keys(state.serverMembers.userEntriesById).map(selectUser(state));
 
 export const selectServerMember = createSelector(
   (state, memberId) => state.serverMembers.entriesById[memberId],
@@ -249,14 +171,8 @@ export const selectServerMemberWithUserId = createSelector(
   { memoizeOptions: { maxSize: 1000 } }
 );
 
-export const selectServerMembersByUserId = (state) => (serverId) => {
-  const members = selectServerMembers(state)(serverId);
-  return indexBy((m) => m.user.id, members);
-};
-
 export default combineReducers({
   entriesById,
-  userEntriesById,
   memberIdsByServerId,
   memberIdsByUserId,
 });

@@ -130,10 +130,12 @@ const MainMenu = () => {
             {servers.map((s) => {
               const isActive = params.serverId === s.id;
 
-              const hasChannels = s.channels.length !== 0;
-              const unreadChannels = s.channels.filter((c) => c.hasUnread);
+              const channels = state.selectServerChannels(params.serverId);
+
+              const hasChannels = channels.length !== 0;
+              const unreadChannels = channels.filter((c) => c.hasUnread);
               const hasUnread = unreadChannels.length > 0;
-              const mentionCount = s.channels.reduce(
+              const mentionCount = channels.reduce(
                 (count, c) => count + c.mentionCount,
                 0
               );

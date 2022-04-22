@@ -15,14 +15,10 @@ import FormattedDate from "../components/formatted-date";
 // Region might return `null` on Android
 const locale = ["en", Localization.region].filter(Boolean).join("-");
 
-const useChannelMessages = ({ serverId, channelId }) => {
+const useChannelMessages = ({ channelId }) => {
   const { actions, state } = useAppScope();
 
-  const serverMembersByUserId = state.selectServerMembersByUserId(serverId);
-
-  const messages = state
-    .selectChannelMessages(channelId)
-    .map((m) => ({ ...m, author: serverMembersByUserId[m.author] }));
+  const messages = state.selectChannelMessages(channelId);
 
   React.useEffect(() => {
     actions.fetchMessages({ channelId });
@@ -43,7 +39,7 @@ const Channel = ({ route: { params } }) => {
     .selectServerChannels(params.serverId)
     .find((c) => c.id === params.channelId);
 
-  const messages = useChannelMessages({ channelId, serverId });
+  const messages = useChannelMessages({ channelId });
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: "hsl(0, 0%, 8%)" }}>
