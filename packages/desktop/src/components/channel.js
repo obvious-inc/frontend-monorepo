@@ -66,7 +66,6 @@ export const ChannelBase = ({
     useSideMenu();
 
   const inputRef = React.useRef();
-  const scrollContainerRef = React.useRef();
 
   const getUserMentionDisplayName = React.useCallback(
     (ref) => {
@@ -84,26 +83,11 @@ export const ChannelBase = ({
     [actions, channel.id]
   );
 
-  const scrollToBottom = React.useCallback((options) => {
-    scrollContainerRef.current.scrollTo({
-      left: 0,
-      top: scrollContainerRef.current.scrollHeight,
-      ...options,
-    });
-  }, []);
-
-  const messages = useChannelMessages(channel.id, {
-    scrollToBottom,
-    scrollContainerRef,
-  });
+  const messages = useChannelMessages(channel.id);
 
   React.useEffect(() => {
     inputRef.current.focus();
   }, [channel.id]);
-
-  React.useEffect(() => {
-    scrollToBottom();
-  }, [channel.id, scrollToBottom]);
 
   usePageVisibilityChangeListener((state) => {
     if (state === "visible") return;
@@ -165,13 +149,14 @@ export const ChannelBase = ({
       </div>
 
       <div
-        ref={scrollContainerRef}
         css={css`
           flex: 1;
           display: flex;
           flex-direction: column;
           justify-content: flex-end;
           overflow: auto;
+          overscroll-behavior-y: contain;
+          scroll-snap-type: y proximity;
         `}
       >
         <div
