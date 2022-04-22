@@ -1,8 +1,8 @@
 import throttle from "lodash.throttle";
 import React from "react";
-import { useParams, useNavigate } from "react-router";
+import { useParams } from "react-router";
 import { css } from "@emotion/react";
-import { useAuth, useAppScope, getImageFileDimensions } from "@shades/common";
+import { useAppScope, getImageFileDimensions } from "@shades/common";
 import usePageVisibilityChangeListener from "../hooks/page-visibility-change-listener";
 import stringifyMessageBlocks from "../slate/stringify";
 import { createEmptyParagraph, isNodeEmpty, cleanNodes } from "../slate/utils";
@@ -52,14 +52,12 @@ const useChannelMessages = (channelId) => {
 export const ChannelBase = ({
   channel,
   members,
+  typingMembers,
   isAdmin = false,
-  selectChannelMemberWithUserId,
   createMessage,
   headerContent,
 }) => {
-  const { user } = useAuth();
   const { actions, state } = useAppScope();
-  const navigate = useNavigate();
 
   const [pendingReplyMessageId, setPendingReplyMessageId] =
     React.useState(null);
@@ -95,6 +93,35 @@ export const ChannelBase = ({
     if (state === "visible") return;
     actions.fetchInitialData();
   });
+
+  const initReply = React.useCallback((messageId) => {
+    setPendingReplyMessageId(messageId);
+    inputRef.current.focus();
+  }, []);
+
+  const cancelReply = React.useCallback(() => {
+    setPendingReplyMessageId(null);
+    inputRef.current.focus();
+  }, []);
+
+  const submitMessage = React.useCallback(
+    (blocks) => {
+      setPendingReplyMessageId(null);
+      return createMessage({
+        blocks,
+        replyToMessageId: pendingReplyMessageId,
+      });
+    },
+    [createMessage, pendingReplyMessageId]
+  );
+
+  const handleInputChange = React.useCallback(
+    (blocks) => {
+      if (blocks.length > 1 || !isNodeEmpty(blocks[0]))
+        throttledRegisterTypingActivity();
+    },
+    [throttledRegisterTypingActivity]
+  );
 
   return (
     <div
@@ -171,49 +198,9 @@ export const ChannelBase = ({
               message={m}
               previousMessage={ms[i - 1]}
               hasPendingReply={pendingReplyMessageId === m.id}
-              initReply={() => {
-                setPendingReplyMessageId(m.id);
-                inputRef.current.focus();
-              }}
-              save={(blocks) =>
-                actions.updateMessage(m.id, {
-                  blocks,
-                  content: stringifyMessageBlocks(blocks),
-                })
-              }
-              remove={() => actions.removeMessage(m.id)}
-              addReaction={(emoji) => {
-                const existingReaction = m.reactions.find(
-                  (r) => r.emoji === emoji
-                );
-
-                if (existingReaction?.users.includes(user.id)) return;
-
-                actions.addMessageReaction(m.id, { emoji });
-              }}
-              removeReaction={(emoji) =>
-                actions.removeMessageReaction(m.id, { emoji })
-              }
+              initReply={initReply}
               members={members}
-              selectChannelMemberWithUserId={selectChannelMemberWithUserId}
               getUserMentionDisplayName={getUserMentionDisplayName}
-              sendDirectMessageToAuthor={() => {
-                const redirect = (c) => navigate(`/channels/@me/${c.id}`);
-                const dmChannel = state.selectDmChannelFromUserId(
-                  m.authorUserId
-                );
-                if (dmChannel != null) {
-                  redirect(dmChannel);
-                  return;
-                }
-
-                actions
-                  .createChannel({
-                    kind: "dm",
-                    memberUserIds: [m.authorUserId],
-                  })
-                  .then(redirect);
-              }}
               isAdmin={isAdmin}
             />
           ))}
@@ -236,18 +223,9 @@ export const ChannelBase = ({
               ? null
               : state.selectMessage(pendingReplyMessageId)
           }
-          cancelReply={() => {
-            setPendingReplyMessageId(null);
-            inputRef.current.focus();
-          }}
+          cancelReply={cancelReply}
           uploadImage={actions.uploadImage}
-          submit={(blocks) => {
-            setPendingReplyMessageId(null);
-            return createMessage({
-              blocks,
-              replyToMessageId: pendingReplyMessageId,
-            });
-          }}
+          submit={submitMessage}
           placeholder={
             channel.kind === "dm"
               ? `Message ${channel.name}`
@@ -255,13 +233,10 @@ export const ChannelBase = ({
           }
           members={members}
           getUserMentionDisplayName={getUserMentionDisplayName}
-          onInputChange={(blocks) => {
-            if (blocks.length > 1 || !isNodeEmpty(blocks[0]))
-              throttledRegisterTypingActivity();
-          }}
+          onInputChange={handleInputChange}
         />
-        {channel.typingMembers.length > 0 && (
-          <TypingIndicator members={channel.typingMembers} />
+        {typingMembers.length > 0 && (
+          <TypingIndicator members={typingMembers} />
         )}
       </div>
     </div>
@@ -326,8 +301,8 @@ const TypingIndicator = ({ members }) => (
   </div>
 );
 
-const NewMessageInput = React.forwardRef(
-  (
+const NewMessageInput = React.memo(
+  React.forwardRef(function NewMessageInput_(
     {
       submit,
       uploadImage,
@@ -340,7 +315,7 @@ const NewMessageInput = React.forwardRef(
       ...props
     },
     editorRef
-  ) => {
+  ) {
     const [pendingMessage, setPendingMessage] = React.useState(() => [
       createEmptyParagraph(),
     ]);
@@ -670,7 +645,7 @@ const NewMessageInput = React.forwardRef(
         </form>
       </div>
     );
-  }
+  })
 );
 
 const AttachmentList = ({ items, remove }) => (
@@ -795,7 +770,45 @@ const Channel = () => {
   const { isFloating: isMenuTogglingEnabled } = useSideMenu();
 
   const channel = state.selectChannel(params.channelId);
+
   const server = state.selectServer(params.serverId);
+
+  const members = state.selectChannelMembers(params.channelId);
+
+  const createMessage = React.useCallback(
+    ({ blocks, replyToMessageId }) => {
+      return actions.createMessage({
+        server: channel.kind === "dm" ? undefined : params.serverId,
+        channel: params.channelId,
+        content: stringifyMessageBlocks(blocks),
+        blocks,
+        replyToMessageId,
+      });
+    },
+    [actions, channel.kind, params.serverId, params.channelId]
+  );
+
+  const headerContent = React.useMemo(
+    () => (
+      <>
+        {!isMenuTogglingEnabled && (
+          <div
+            css={(theme) =>
+              css({ color: theme.colors.textMuted, marginRight: "0.9rem" })
+            }
+          >
+            {channel.kind === "dm" ? (
+              <AtSignIcon style={{ width: "2.2rem" }} />
+            ) : (
+              <HashIcon style={{ width: "1.9rem" }} />
+            )}
+          </div>
+        )}
+        <Header>{channel.name}</Header>
+      </>
+    ),
+    [isMenuTogglingEnabled, channel.kind, channel.name]
+  );
 
   if (channel == null)
     return (
@@ -806,48 +819,18 @@ const Channel = () => {
       />
     );
 
-  const members =
-    channel.kind === "dm"
-      ? channel.memberUserIds.map(state.selectUser)
-      : state.selectServerMembers(params.serverId);
+  const typingChannelMembers = state.selectChannelTypingMembers(
+    params.channelId
+  );
 
   return (
     <ChannelBase
       channel={channel}
       members={members}
-      createMessage={({ blocks, replyToMessageId }) => {
-        return actions.createMessage({
-          server: channel.kind === "dm" ? undefined : params.serverId,
-          channel: params.channelId,
-          content: stringifyMessageBlocks(blocks),
-          blocks,
-          replyToMessageId,
-        });
-      }}
+      typingMembers={typingChannelMembers}
+      createMessage={createMessage}
       isAdmin={server?.isAdmin}
-      selectChannelMemberWithUserId={(userId) =>
-        channel.kind === "dm"
-          ? state.selectUser(userId)
-          : state.selectServerMemberWithUserId(params.serverId, userId)
-      }
-      headerContent={
-        <>
-          {!isMenuTogglingEnabled && (
-            <div
-              css={(theme) =>
-                css({ color: theme.colors.textMuted, marginRight: "0.9rem" })
-              }
-            >
-              {channel.kind === "dm" ? (
-                <AtSignIcon style={{ width: "2.2rem" }} />
-              ) : (
-                <HashIcon style={{ width: "1.9rem" }} />
-              )}
-            </div>
-          )}
-          <Header>{channel.name}</Header>
-        </>
-      }
+      headerContent={headerContent}
     />
   );
 };
