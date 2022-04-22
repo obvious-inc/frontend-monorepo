@@ -2,6 +2,10 @@ import React from "react";
 import { css } from "@emotion/react";
 import generateAvatar from "../utils/avatar-generator";
 
+// Caching expensive avatar generation outside of react so that we can share
+// between multiple component instances
+const cache = new Map();
+
 const Avatar = ({
   url,
   walletAddress,
@@ -15,11 +19,19 @@ const Avatar = ({
 
     const size = 8;
 
-    return generateAvatar({
+    const cacheKey = [walletAddress, pixelSize, size].join("-");
+
+    if (cache.has(cacheKey)) return cache.get(cacheKey);
+
+    const avatar = generateAvatar({
       seed: walletAddress,
       size,
       scale: Math.ceil((pixelSize * 2) / size),
     });
+
+    cache.set(cacheKey, avatar);
+
+    return avatar;
   }, [url, walletAddress, pixelSize]);
 
   if (url === undefined)

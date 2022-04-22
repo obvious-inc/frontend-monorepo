@@ -1,7 +1,10 @@
+import { createSelector } from "reselect";
 import combineReducers from "../utils/combine-reducers";
 import { indexBy, groupBy, unique } from "../utils/array";
 import { omitKey, mapValues } from "../utils/object";
-import { selectServerMemberWithUserId, selectUser } from "./server-members";
+import { arrayShallowEquals } from "../utils/reselect";
+import { selectUser } from "./users";
+import { selectServerMemberWithUserId } from "./server-members";
 
 const entriesById = (state = {}, action) => {
   switch (action.type) {
@@ -141,7 +144,7 @@ const entryIdsByChannelId = (state = {}, action) => {
       const channelMessageIds = state[channelId] ?? [];
       return {
         ...state,
-        [channelId]: [...channelMessageIds, action.message.id],
+        [channelId]: unique([...channelMessageIds, action.message.id]),
       };
     }
 
@@ -150,11 +153,11 @@ const entryIdsByChannelId = (state = {}, action) => {
       const channelMessageIds = state[channelId] ?? [];
       return {
         ...state,
-        [channelId]: [
+        [channelId]: unique([
           // Remove the optimistic entry
           ...channelMessageIds.filter((id) => id !== action.optimisticEntryId),
           action.message.id,
-        ],
+        ]),
       };
     }
 
@@ -189,56 +192,76 @@ const deriveMessageType = (message) => {
   }
 };
 
-export const selectMessage = (state) => (id) => {
-  const message = state.messages.entriesById[id];
+export const selectMessage = createSelector(
+  (state, messageId) => state.messages.entriesById[messageId],
+  (state, messageId) => {
+    const message = state.messages.entriesById[messageId];
 
-  if (message == null) return null;
-  if (message.deleted) return message;
+    if (message == null) return null;
 
-  const serverId = message.server;
-  const authorUserId = message.author;
-  // `server` doesn’t exist on dm messages
-  if (serverId != null) {
-    message.authorServerMember = selectServerMemberWithUserId(state)(
+    // `server` doesn’t exist on dm messages
+    if (message.server == null) {
+      return selectUser(state, message.author);
+    } else {
+      return selectServerMemberWithUserId(
+        state,
+        message.server,
+        message.author
+      );
+    }
+  },
+  (state, messageId) => {
+    const message = state.messages.entriesById[messageId];
+    if (message == null || message.reply_to == null) return null;
+    return selectMessage(state, message.reply_to);
+  },
+  (state) => state.user,
+  (message, author, repliedMessage, loggedInUser) => {
+    if (message == null) return null;
+    if (message.deleted) return message;
+
+    const serverId = message.server;
+    const authorUserId = message.author;
+
+    if (message.reply_to != null) {
+      message.repliedMessage = repliedMessage;
+      message.isReply = true;
+    }
+
+    const type = deriveMessageType(message);
+
+    return {
+      ...message,
       serverId,
-      authorUserId
-    );
-  } else {
-    message.authorUser = selectUser(state)(authorUserId);
-  }
+      authorUserId,
+      isEdited: message.edited_at != null,
+      type,
+      isSystemMessage: systemMessageTypes.includes(type),
+      author,
+      content:
+        message.blocks?.length > 0
+          ? message.blocks
+          : [{ type: "paragraph", children: [{ text: message.content }] }],
+      reactions:
+        message.reactions?.map((r) => ({
+          ...r,
+          hasReacted: r.users.includes(loggedInUser.id),
+        })) ?? [],
+    };
+  },
+  { memoizeOptions: { maxSize: 1000 } }
+);
 
-  if (message.reply_to != null) {
-    message.repliedMessage = selectMessage(state)(message.reply_to);
-    message.isReply = true;
-  }
-
-  const type = deriveMessageType(message);
-
-  return {
-    ...message,
-    serverId,
-    authorUserId,
-    isEdited: message.edited_at != null,
-    type,
-    isSystemMessage: systemMessageTypes.includes(type),
-    author: message.authorServerMember ?? message.authorUser,
-    content:
-      message.blocks?.length > 0
-        ? message.blocks
-        : [{ type: "paragraph", children: [{ text: message.content }] }],
-    reactions:
-      message.reactions?.map((r) => ({
-        ...r,
-        hasReacted: r.users.includes(state.user.id),
-      })) ?? [],
-  };
-};
-
-export const selectChannelMessages = (state) => (channelId) => {
-  const channelMessageIds = state.messages.entryIdsByChannelId[channelId] ?? [];
-  return channelMessageIds
-    .map(selectMessage(state))
-    .filter((m) => m != null && !m.deleted);
-};
+export const selectChannelMessages = createSelector(
+  (state, channelId) => {
+    const channelMessageIds =
+      state.messages.entryIdsByChannelId[channelId] ?? [];
+    return channelMessageIds
+      .map((messageId) => selectMessage(state, messageId))
+      .filter((m) => m != null && !m.deleted);
+  },
+  (messages) => messages,
+  { memoizeOptions: { equalityCheck: arrayShallowEquals } }
+);
 
 export default combineReducers({ entriesById, entryIdsByChannelId });

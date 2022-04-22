@@ -1,9 +1,17 @@
 import React from "react";
+import { useNavigate } from "react-router";
 import { FormattedDate } from "react-intl";
 import { css, useTheme } from "@emotion/react";
-import { useAuth, arrayUtils, objectUtils, messageUtils } from "@shades/common";
+import {
+  useAppScope,
+  useAuth,
+  arrayUtils,
+  objectUtils,
+  messageUtils,
+} from "@shades/common";
 import useHover from "../hooks/hover";
 import { isNodeEmpty, normalizeNodes, cleanNodes } from "../slate/utils";
+import stringifyMessageBlocks from "../slate/stringify";
 import {
   DotsHorizontal as DotsHorizontalIcon,
   EditPen as EditPenIcon,
@@ -21,7 +29,7 @@ import {
   AddEmojiReaction as AddEmojiReactionIcon,
   JoinArrowRight as JoinArrowRightIcon,
 } from "./icons";
-import ProfilePreview from "./ProfilePreview"
+import ProfilePreview from "./ProfilePreview";
 
 const { groupBy } = arrayUtils;
 const { mapValues } = objectUtils;
@@ -32,329 +40,393 @@ const ONE_MINUTE_IN_MILLIS = 1000 * 60;
 const AVATAR_SIZE = "3.8rem";
 const GUTTER_SIZE = "1.2rem";
 
-const ChannelMessage = ({
-  message,
-  channel,
-  previousMessage,
-  hasPendingReply,
-  initReply,
-  addReaction,
-  removeReaction,
-  save,
-  remove,
-  members,
-  selectChannelMemberWithUserId,
-  getUserMentionDisplayName,
-  sendDirectMessageToAuthor,
-  isAdmin,
-}) => {
-  const editInputRef = React.useRef();
-  const containerRef = React.useRef();
+const ChannelMessage = React.memo(
+  ({
+    message,
+    channel,
+    previousMessage,
+    hasPendingReply,
+    initReply: initReply_,
+    members,
+    getUserMentionDisplayName,
+    isAdmin,
+  }) => {
+    const editInputRef = React.useRef();
+    const containerRef = React.useRef();
 
-  const { user } = useAuth();
+    const { user } = useAuth();
+    const { actions, state } = useAppScope();
+    const navigate = useNavigate();
 
-  const [isHovering, hoverHandlers] = useHover();
-  const [isDropdownOpen, setDropdownOpen] = React.useState(false);
-  const [isEmojiPickerOpen, setEmojiPickerOpen] = React.useState(false);
-  const [isEditing, setEditingMessage] = React.useState(false);
-  const theme = useTheme();
+    const [isHovering, hoverHandlers] = useHover();
+    const [isDropdownOpen, setDropdownOpen] = React.useState(false);
+    const [isEmojiPickerOpen, setEmojiPickerOpen] = React.useState(false);
+    const [isEditing, setEditingMessage] = React.useState(false);
 
-  const showAsFocused =
-    !isEditing && (isHovering || isDropdownOpen || isEmojiPickerOpen);
+    const theme = useTheme();
 
-  const isDirectMessage = channel.kind === "dm";
-  const isOwnMessage = user.id === message.authorUserId;
+    const showAsFocused =
+      !isEditing && (isHovering || isDropdownOpen || isEmojiPickerOpen);
 
-  const allowEdit =
-    !message.isSystemMessage && user.id === message.authorUserId;
+    const isDirectMessage = channel.kind === "dm";
+    const isOwnMessage = user.id === message.authorUserId;
 
-  const createdAtDate = React.useMemo(
-    () => new Date(message.created_at),
-    [message.created_at]
-  );
+    const allowEdit =
+      !message.isSystemMessage && user.id === message.authorUserId;
 
-  const showSimplifiedMessage =
-    !message.isReply &&
-    previousMessage != null &&
-    previousMessage.authorUserId === message.authorUserId &&
-    !previousMessage.isSystemMessage &&
-    createdAtDate - new Date(previousMessage.created_at) <
-      5 * ONE_MINUTE_IN_MILLIS;
+    const createdAtDate = React.useMemo(
+      () => new Date(message.created_at),
+      [message.created_at]
+    );
 
-  const reactions = React.useMemo(
-    () =>
-      message.reactions.map((r) => ({
-        ...r,
-        authorMembers: r.users.map(selectChannelMemberWithUserId),
-      })),
-    [message.reactions, selectChannelMemberWithUserId]
-  );
+    const initReply = React.useCallback(
+      () => initReply_(message.id),
+      [message.id, initReply_]
+    );
 
-  const toolbarDropdownItems = message.isSystemMessage
-    ? []
-    : [
-        { onSelect: initReply, label: "Reply" },
-        { disabled: true, label: "Mark unread" },
-        {
-          onSelect: () => {
-            setEditingMessage(true);
-          },
-          label: "Edit message",
-          visible: allowEdit,
-        },
-        {
-          onSelect: () => {
-            if (confirm("Are you sure you want to remove this message?"))
-              remove();
-          },
-          label: allowEdit ? "Delete message" : "Admin delete",
-          visible: allowEdit || isAdmin,
-          style: { color: "#ff5968" },
-        },
-        { type: "separator" },
-        {
-          onSelect: sendDirectMessageToAuthor,
-          label: "Send direct message",
-          visible: !isOwnMessage && !(isDirectMessage && members.length <= 2),
-        },
-        {
-          onSelect: () => {
-            navigator.clipboard.writeText(message.author.walletAddress);
-          },
-          label: "Copy user wallet address",
-          visible: message.author?.walletAddress != null,
-        },
-      ].filter((i) => i.visible == null || i.visible);
+    const initEdit = React.useCallback(() => {
+      setEditingMessage(true);
+    }, []);
 
-  React.useEffect(() => {
-    if (!isEditing) return;
+    const showSimplifiedMessage =
+      !message.isReply &&
+      previousMessage != null &&
+      previousMessage.authorUserId === message.authorUserId &&
+      !previousMessage.isSystemMessage &&
+      createdAtDate - new Date(previousMessage.created_at) <
+        5 * ONE_MINUTE_IN_MILLIS;
 
-    editInputRef.current.focus();
-    containerRef.current.scrollIntoView({
-      behavior: "smooth",
-      block: "nearest",
-    });
-  }, [isEditing]);
+    const reactions = React.useMemo(
+      () =>
+        message.reactions.map((r) => ({
+          ...r,
+          authorMembers: r.users.map((userId) =>
+            members.find((m) => m.id === userId)
+          ),
+        })),
+      [message.reactions, members]
+    );
 
-  return (
-    <div
-      ref={containerRef}
-      style={{
-        background: hasPendingReply
-          ? "#3f42ea2b"
-          : showAsFocused
-          ? theme.colors.messageHoverBackground
-          : undefined,
-      }}
-      css={css({
-        position: "relative",
-        lineHeight: 1.46668,
-        padding: showSimplifiedMessage
-          ? "0.5rem 1.6rem"
-          : "0.7rem 1.6rem 0.3rem",
-        userSelect: "text",
-      })}
-      {...hoverHandlers}
-    >
-      <div
-        css={css({
-          position: "absolute",
-          top: 0,
-          right: "1.6rem",
-          transform: "translateY(-50%)",
-          display: showAsFocused ? "block" : "none",
-          zIndex: 1,
-        })}
-      >
-        <MessageToolbar
-          allowReplies={!isOwnMessage && !message.isSystemMessage}
-          allowEdit={allowEdit}
-          initReply={initReply}
-          initEdit={() => {
-            setEditingMessage(true);
-          }}
-          addReaction={(emoji) => {
-            addReaction(emoji);
-            setEmojiPickerOpen(false);
-          }}
-          onDropdownOpenChange={(isOpen) => {
-            setDropdownOpen(isOpen);
-          }}
-          isEmojiPickerOpen={isEmojiPickerOpen}
-          onEmojiPickerOpenChange={(isOpen) => {
-            setEmojiPickerOpen(isOpen);
-          }}
-          dropdownItems={toolbarDropdownItems}
-        />
-      </div>
+    const save = React.useCallback(
+      (blocks) =>
+        actions.updateMessage(message.id, {
+          blocks,
+          content: stringifyMessageBlocks(blocks),
+        }),
+      [actions, message.id]
+    );
 
-      {message.isSystemMessage ? (
-        <SystemMessage
-          isHovering={isHovering}
-          message={message}
-          reactions={
-            reactions.length === 0 ? null : (
-              <Reactions
-                items={reactions}
-                addReaction={addReaction}
-                removeReaction={removeReaction}
-                showAddReactionButton={isHovering}
-              />
-            )
+    const sendDirectMessageToAuthor = React.useCallback(() => {
+      const redirect = (c) => navigate(`/channels/@me/${c.id}`);
+
+      const dmChannel = state.selectDmChannelFromUserId(message.authorUserId);
+      if (dmChannel != null) {
+        redirect(dmChannel);
+        return;
+      }
+
+      actions
+        .createChannel({
+          kind: "dm",
+          memberUserIds: [message.authorUserId],
+        })
+        .then(redirect);
+    }, [actions, navigate, state, message.authorUserId]);
+
+    const remove = React.useCallback(
+      () => actions.removeMessage(message.id),
+      [actions, message.id]
+    );
+
+    const addReaction = React.useCallback(
+      (emoji) => {
+        const existingReaction = message.reactions.find(
+          (r) => r.emoji === emoji
+        );
+
+        if (existingReaction?.users.includes(user.id)) return;
+
+        actions.addMessageReaction(message.id, { emoji });
+        setEmojiPickerOpen(false);
+      },
+      [message.id, message.reactions, actions, user.id]
+    );
+    const removeReaction = React.useCallback(
+      (emoji) => actions.removeMessageReaction(message.id, { emoji }),
+      [actions, message.id]
+    );
+
+    const toolbarDropdownItems = React.useMemo(
+      () =>
+        message.isSystemMessage
+          ? []
+          : [
+              { onSelect: initReply, label: "Reply" },
+              { disabled: true, label: "Mark unread" },
+              {
+                onSelect: () => {
+                  setEditingMessage(true);
+                },
+                label: "Edit message",
+                visible: allowEdit,
+              },
+              {
+                onSelect: () => {
+                  if (confirm("Are you sure you want to remove this message?"))
+                    remove();
+                },
+                label: allowEdit ? "Delete message" : "Admin delete",
+                visible: allowEdit || isAdmin,
+                style: { color: "#ff5968" },
+              },
+              { type: "separator" },
+              {
+                onSelect: sendDirectMessageToAuthor,
+                label: "Send direct message",
+                visible:
+                  !isOwnMessage && !(isDirectMessage && members.length <= 2),
+              },
+              {
+                onSelect: () => {
+                  navigator.clipboard.writeText(message.author.walletAddress);
+                },
+                label: "Copy user wallet address",
+                visible: message.author?.walletAddress != null,
+              },
+            ].filter((i) => i.visible == null || i.visible),
+      [
+        allowEdit,
+        isAdmin,
+        isDirectMessage,
+        isOwnMessage,
+        members.length,
+        initReply,
+        message.author?.walletAddress,
+        message.isSystemMessage,
+        remove,
+        sendDirectMessageToAuthor,
+      ]
+    );
+
+    React.useEffect(() => {
+      if (!isEditing) return;
+
+      editInputRef.current.focus();
+      containerRef.current.scrollIntoView({
+        behavior: "smooth",
+        block: "nearest",
+      });
+    }, [isEditing]);
+
+    const onDropdownOpenChange = React.useCallback((isOpen) => {
+      setDropdownOpen(isOpen);
+    }, []);
+
+    const onEmojiPickerOpenChange = React.useCallback((isOpen) => {
+      setEmojiPickerOpen(isOpen);
+    }, []);
+
+    const onClickInteractiveElement = React.useCallback(
+      (el) => {
+        switch (el.type) {
+          case "user": {
+            const mentionDisplayName = getUserMentionDisplayName(el.ref);
+            alert(`Congratulations, you clicked "@${mentionDisplayName}"!`);
+            break;
           }
-        />
-      ) : (
-        <>
-          {message.isReply && (
-            <RepliedMessage
-              message={message.repliedMessage}
-              getUserMentionDisplayName={getUserMentionDisplayName}
-            />
-          )}
+          case "image-attachment":
+            window.open(el.url, "_blank");
+            break;
+          default:
+            throw new Error();
+        }
+      },
+      [getUserMentionDisplayName]
+    );
 
-          <div
-            css={css({
-              display: "grid",
-              gridTemplateColumns: `${AVATAR_SIZE} minmax(0, 1fr)`,
-              alignItems: "flex-start",
-              gridGap: GUTTER_SIZE,
-            })}
-          >
-            {showSimplifiedMessage ? (
-              <div
-                css={css({
-                  paddingTop: "0.5rem",
-                  textAlign: "right",
-                  transition: "0.15s opacity",
-                  cursor: "default",
-                })}
-                style={{ opacity: isHovering ? 1 : 0 }}
-              >
-                <TinyMutedText nowrap>
-                  <FormattedDateWithTooltip
-                    value={new Date(message.created_at)}
-                    hour="numeric"
-                    minute="numeric"
-                    tooltipContentProps={{ sideOffset: 7 }}
-                  />
-                </TinyMutedText>
-              </div>
-            ) : (
-              <div css={css({ padding: "0.2rem 0 0" })}>
-                    <ProfilePreview avatar={<Avatar
-          url={message.author?.pfpUrl}
-          walletAddress={message.author?.walletAddress}
-          size="3.8rem"
-          pixelSize={38}
-        />} 
-                displayName={message.author?.displayName} walletAddress={message.author?.walletAddress}
-                authorUserId={message.authorUserId}
-                isOnline={message.author?.onlineStatus === "online"}
-                isOwnMessage={isOwnMessage} trigger={<AvatarWithZoomTooltip
-                  url={message.author?.pfpUrl}
-                  walletAddress={message.author?.walletAddress}
-                  isVerifiedNft={message.author?.pfp?.verified}
-                  onClick={() => {
-                  }}
-                />} channelId={channel.id} serverId={channel.serverId} />
-              
-              </div>
-            )}
-            <div>
-              {!showSimplifiedMessage && (
-                <MessageHeader
-                  authorDisplayName={message.author?.displayName}
-                  authorWalletAddress={message.author?.walletAddress}
-                  authorOnlineStatus={message.author?.onlineStatus}
-                  createdAt={createdAtDate}
-                  authorUserId={message.authorUserId}
-                  serverId={channel.serverId}
-                  channelId={channel.id}
-                  isOwnMessage={isOwnMessage}
-                  url={message.author?.pfpUrl}
-                />
-              )}
+    return (
+      <div
+        ref={containerRef}
+        style={{
+          background: hasPendingReply
+            ? "#3f42ea2b"
+            : showAsFocused
+            ? theme.colors.messageHoverBackground
+            : undefined,
+        }}
+        css={css({
+          position: "relative",
+          lineHeight: 1.46668,
+          padding: showSimplifiedMessage
+            ? "0.5rem 1.6rem"
+            : "0.7rem 1.6rem 0.3rem",
+          userSelect: "text",
+        })}
+        {...hoverHandlers}
+      >
+        <div
+          css={css({
+            position: "absolute",
+            top: 0,
+            right: "1.6rem",
+            transform: "translateY(-50%)",
+            display: showAsFocused ? "block" : "none",
+            zIndex: 1,
+          })}
+        >
+          <MessageToolbar
+            allowReplies={!isOwnMessage && !message.isSystemMessage}
+            allowEdit={allowEdit}
+            initReply={initReply}
+            initEdit={initEdit}
+            addReaction={addReaction}
+            onDropdownOpenChange={onDropdownOpenChange}
+            isEmojiPickerOpen={isEmojiPickerOpen}
+            onEmojiPickerOpenChange={onEmojiPickerOpenChange}
+            dropdownItems={toolbarDropdownItems}
+          />
+        </div>
 
-              {isEditing ? (
-                <EditMessageInput
-                  ref={editInputRef}
-                  blocks={message.content}
-                  onCancel={() => {
-                    setEditingMessage(false);
-                  }}
-                  requestRemove={() =>
-                    new Promise((resolve, reject) => {
-                      if (
-                        !confirm(
-                          "Are you sure you want to remove this message?"
-                        )
-                      ) {
-                        reject(new Error());
-                        return;
-                      }
-
-                      remove().then(resolve, reject);
-                    })
-                  }
-                  save={(content) =>
-                    save(content).then(() => {
-                      setEditingMessage(false);
-                    })
-                  }
-                  members={members}
-                  getUserMentionDisplayName={getUserMentionDisplayName}
-                />
-              ) : (
-                <RichText
-                  blocks={message.content}
-                  onClickInteractiveElement={(el) => {
-                    switch (el.type) {
-                      case "user": {
-                        const mentionDisplayName = getUserMentionDisplayName(
-                          el.ref
-                        );
-                        alert(
-                          `Congratulations, you clicked "@${mentionDisplayName}"!`
-                        );
-                        break;
-                      }
-                      case "image-attachment":
-                        window.open(el.url, "_blank");
-                        break;
-                      default:
-                        throw new Error();
-                    }
-                  }}
-                  getUserMentionDisplayName={getUserMentionDisplayName}
-                >
-                  {message.isEdited && (
-                    <span
-                      css={css({
-                        fontSize: "1rem",
-                        color: "rgb(255 255 255 / 35%)",
-                      })}
-                    >
-                      (edited)
-                    </span>
-                  )}
-                </RichText>
-              )}
-
-              {reactions.length !== 0 && (
+        {message.isSystemMessage ? (
+          <SystemMessage
+            isHovering={isHovering}
+            message={message}
+            reactions={
+              reactions.length === 0 ? null : (
                 <Reactions
                   items={reactions}
                   addReaction={addReaction}
                   removeReaction={removeReaction}
                   showAddReactionButton={isHovering}
                 />
+              )
+            }
+          />
+        ) : (
+          <>
+            {message.isReply && (
+              <RepliedMessage
+                message={message.repliedMessage}
+                getUserMentionDisplayName={getUserMentionDisplayName}
+              />
+            )}
+
+            <div
+              css={css({
+                display: "grid",
+                gridTemplateColumns: `${AVATAR_SIZE} minmax(0, 1fr)`,
+                alignItems: "flex-start",
+                gridGap: GUTTER_SIZE,
+              })}
+            >
+              {showSimplifiedMessage ? (
+                <div
+                  css={css({
+                    paddingTop: "0.5rem",
+                    textAlign: "right",
+                    transition: "0.15s opacity",
+                    cursor: "default",
+                  })}
+                  style={{ opacity: isHovering ? 1 : 0 }}
+                >
+                  <TinyMutedText nowrap>
+                    <FormattedDateWithTooltip
+                      value={new Date(message.created_at)}
+                      hour="numeric"
+                      minute="numeric"
+                      tooltipContentProps={{ sideOffset: 7 }}
+                    />
+                  </TinyMutedText>
+                </div>
+              ) : (
+                <div css={css({ padding: "0.2rem 0 0" })}>
+                  <AvatarWithZoomTooltip
+                    url={message.author?.pfpUrl}
+                    walletAddress={message.author?.walletAddress}
+                    isVerifiedNft={message.author?.pfp?.verified}
+                    onClick={() => {
+                      alert(
+                        `Congratulations, you clicked ${message.author?.displayName}’s avatar!`
+                      );
+                    }}
+                  />
+                </div>
               )}
+
+              <div>
+                {!showSimplifiedMessage && (
+                  <MessageHeader
+                    authorDisplayName={message.author?.displayName}
+                    authorWalletAddress={message.author?.walletAddress}
+                    authorOnlineStatus={message.author?.onlineStatus}
+                    createdAt={createdAtDate}
+                  />
+                )}
+
+                {isEditing ? (
+                  <EditMessageInput
+                    ref={editInputRef}
+                    blocks={message.content}
+                    onCancel={() => {
+                      setEditingMessage(false);
+                    }}
+                    requestRemove={() =>
+                      new Promise((resolve, reject) => {
+                        if (
+                          !confirm(
+                            "Are you sure you want to remove this message?"
+                          )
+                        ) {
+                          reject(new Error());
+                          return;
+                        }
+
+                        remove().then(resolve, reject);
+                      })
+                    }
+                    save={(content) =>
+                      save(content).then(() => {
+                        setEditingMessage(false);
+                      })
+                    }
+                    members={members}
+                    getUserMentionDisplayName={getUserMentionDisplayName}
+                  />
+                ) : (
+                  <RichText
+                    blocks={message.content}
+                    onClickInteractiveElement={onClickInteractiveElement}
+                    getUserMentionDisplayName={getUserMentionDisplayName}
+                  >
+                    {message.isEdited && (
+                      <span
+                        css={css({
+                          fontSize: "1rem",
+                          color: "rgb(255 255 255 / 35%)",
+                        })}
+                      >
+                        (edited)
+                      </span>
+                    )}
+                  </RichText>
+                )}
+
+                {reactions.length !== 0 && (
+                  <Reactions
+                    items={reactions}
+                    addReaction={addReaction}
+                    removeReaction={removeReaction}
+                    showAddReactionButton={isHovering}
+                  />
+                )}
+              </div>
             </div>
-          </div>
-        </>
-      )}
-    </div>
-  );
-};
+          </>
+        )}
+      </div>
+    );
+  }
+);
 
 const Reactions = ({
   items = [],
@@ -510,32 +582,56 @@ const Reactions = ({
   );
 };
 
-const MemberDisplayName = ({ displayName, walletAddress, color, avatar, serverId, authorUserId, channelId, isOwnMessage, isOnline,url}) => {
+const MemberDisplayName = ({
+  displayName,
+  walletAddress,
+  color,
+  avatar,
+  serverId,
+  authorUserId,
+  channelId,
+  isOwnMessage,
+  isOnline,
+  url,
+}) => {
   return (
-  <ProfilePreview url={url} avatar={avatar} authorUserId={authorUserId} isOnline={isOnline} displayName={displayName} walletAddress={walletAddress} isOwnMessage={isOwnMessage} trigger={<Tooltip.Root>
-    <Tooltip.Trigger asChild>
-      <button
-        css={(theme) =>
-          css({
-            lineHeight: 1.2,
-            color: color ?? theme.colors.pink,
-            fontWeight: "500",
-            cursor: "pointer",
-            ":hover": {
-              textDecoration: "underline",
-            },
-          })
-        }
-      >
-        {displayName}
-      </button>
-    </Tooltip.Trigger>
-    <Tooltip.Content side="top" sideOffset={5}>
-      {walletAddress}
-    </Tooltip.Content>
-  </Tooltip.Root>} channelId={channelId} serverId={serverId} />
-  
-)};
+    <ProfilePreview
+      url={url}
+      avatar={avatar}
+      authorUserId={authorUserId}
+      isOnline={isOnline}
+      displayName={displayName}
+      walletAddress={walletAddress}
+      isOwnMessage={isOwnMessage}
+      trigger={
+        <Tooltip.Root>
+          <Tooltip.Trigger asChild>
+            <button
+              css={(theme) =>
+                css({
+                  lineHeight: 1.2,
+                  color: color ?? theme.colors.pink,
+                  fontWeight: "500",
+                  cursor: "pointer",
+                  ":hover": {
+                    textDecoration: "underline",
+                  },
+                })
+              }
+            >
+              {displayName}
+            </button>
+          </Tooltip.Trigger>
+          <Tooltip.Content side="top" sideOffset={5}>
+            {walletAddress}
+          </Tooltip.Content>
+        </Tooltip.Root>
+      }
+      channelId={channelId}
+      serverId={serverId}
+    />
+  );
+};
 
 const MessageHeader = ({
   authorDisplayName,
@@ -568,12 +664,14 @@ const MessageHeader = ({
         serverId={serverId}
         channelId={channelId}
         isOwnMessage={isOwnMessage}
-        avatar={<Avatar
-          url={url}
-          walletAddress={authorWalletAddress}
-          size="3.2rem"
-          pixelSize={64}
-        />}
+        avatar={
+          <Avatar
+            url={url}
+            walletAddress={authorWalletAddress}
+            size="3.2rem"
+            pixelSize={64}
+          />
+        }
       />
 
       {authorOnlineStatus === "online" && (
@@ -627,7 +725,7 @@ const AvatarWithZoomTooltip = ({
           overflow: "hidden",
           cursor: "pointer",
           ":hover": {
-            boxShadow: isVerifiedNft 
+            boxShadow: isVerifiedNft
               ? "0 0 0 2px #4f52ff"
               : "0 0 0 2px rgb(255 255 255 / 10%)",
           },
@@ -644,31 +742,31 @@ const AvatarWithZoomTooltip = ({
       </button>
     </Tooltip.Trigger>
     {
-    <Tooltip.Content
-      side="top"
-      sideOffset={6}
-      css={css({ padding: "0.4rem", borderRadius: "0.6rem" })}
-    >
-      {isVerifiedNft && (
-        <div
-          css={(theme) =>
-            css({
-              fontSize: "1rem",
-              margin: "0 0 0.3rem",
-              color: theme.colors.textNormal,
-            })
-          }
-        >
-          NFT verified
-        </div>
-      )}
-      <Avatar
-        url={url}
-        walletAddress={walletAddress}
-        size="6.4rem"
-        pixelSize={64}
-      />
-    </Tooltip.Content>
+      <Tooltip.Content
+        side="top"
+        sideOffset={6}
+        css={css({ padding: "0.4rem", borderRadius: "0.6rem" })}
+      >
+        {isVerifiedNft && (
+          <div
+            css={(theme) =>
+              css({
+                fontSize: "1rem",
+                margin: "0 0 0.3rem",
+                color: theme.colors.textNormal,
+              })
+            }
+          >
+            NFT verified
+          </div>
+        )}
+        <Avatar
+          url={url}
+          walletAddress={walletAddress}
+          size="6.4rem"
+          pixelSize={64}
+        />
+      </Tooltip.Content>
     }
   </Tooltip.Root>
 );
@@ -678,7 +776,6 @@ const EmojiPicker = ({ addReaction }) => {
   const inputRef = React.useRef();
 
   const [emojiData, setEmojiData] = React.useState([]);
-
 
   const emojis = React.useMemo(
     () =>
@@ -987,113 +1084,115 @@ const Emoji = React.forwardRef(({ emoji, isHighlighted, ...props }, ref) => (
   </button>
 ));
 
-const MessageToolbar = ({
-  dropdownItems = [],
-  allowReplies,
-  allowEdit,
-  initReply,
-  initEdit,
-  addReaction,
-  onDropdownOpenChange,
-  isEmojiPickerOpen,
-  onEmojiPickerOpenChange,
-}) => (
-  <Toolbar.Root>
-    <Popover.Root
-      open={isEmojiPickerOpen}
-      onOpenChange={onEmojiPickerOpenChange}
-    >
-      <Toolbar.Button
-        asChild
-        aria-label="Add reaction"
-        style={{ position: "relative" }}
+const MessageToolbar = React.memo(
+  ({
+    dropdownItems = [],
+    allowReplies,
+    allowEdit,
+    initReply,
+    initEdit,
+    addReaction,
+    onDropdownOpenChange,
+    isEmojiPickerOpen,
+    onEmojiPickerOpenChange,
+  }) => (
+    <Toolbar.Root>
+      <Popover.Root
+        open={isEmojiPickerOpen}
+        onOpenChange={onEmojiPickerOpenChange}
       >
-        <Popover.Trigger>
-          <AddEmojiReactionIcon style={{ width: "1.6rem" }} />
-          <Popover.Anochor
-            style={{
-              width: "3.3rem",
-              height: "3.3rem",
-              position: "absolute",
-              top: "50%",
-              left: "50%",
-              transform: "translateY(-50%) translateX(-50%)",
-              pointerEvents: "none",
-            }}
-          />
-        </Popover.Trigger>
-      </Toolbar.Button>
-      <Popover.Content
-        side="left"
-        align="center"
-        sideOffset={4}
-        style={{
-          width: "31.6rem",
-          height: "28.4rem",
-          display: "flex",
-          flexDirection: "column",
-        }}
-      >
-        <Popover.Arrow offset={13} />
-        <EmojiPicker addReaction={addReaction} />
-      </Popover.Content>
-    </Popover.Root>
+        <Toolbar.Button
+          asChild
+          aria-label="Add reaction"
+          style={{ position: "relative" }}
+        >
+          <Popover.Trigger>
+            <AddEmojiReactionIcon style={{ width: "1.6rem" }} />
+            <Popover.Anochor
+              style={{
+                width: "3.3rem",
+                height: "3.3rem",
+                position: "absolute",
+                top: "50%",
+                left: "50%",
+                transform: "translateY(-50%) translateX(-50%)",
+                pointerEvents: "none",
+              }}
+            />
+          </Popover.Trigger>
+        </Toolbar.Button>
+        <Popover.Content
+          side="left"
+          align="center"
+          sideOffset={4}
+          style={{
+            width: "31.6rem",
+            height: "28.4rem",
+            display: "flex",
+            flexDirection: "column",
+          }}
+        >
+          <Popover.Arrow offset={13} />
+          <EmojiPicker addReaction={addReaction} />
+        </Popover.Content>
+      </Popover.Root>
 
-    {allowReplies && (
-      <Toolbar.Button
-        onClick={() => {
-          initReply();
-        }}
-        aria-label="Reply"
-      >
-        <ReplyArrowIcon css={css({ width: "1.6rem", height: "auto" })} />
-      </Toolbar.Button>
-    )}
+      {allowReplies && (
+        <Toolbar.Button
+          onClick={() => {
+            initReply();
+          }}
+          aria-label="Reply"
+        >
+          <ReplyArrowIcon css={css({ width: "1.6rem", height: "auto" })} />
+        </Toolbar.Button>
+      )}
 
-    {allowEdit && (
-      <Toolbar.Button
-        onClick={() => {
-          initEdit();
-        }}
-        aria-label="Edit"
-      >
-        <EditPenIcon />
-      </Toolbar.Button>
-    )}
+      {allowEdit && (
+        <Toolbar.Button
+          onClick={() => {
+            initEdit();
+          }}
+          aria-label="Edit"
+        >
+          <EditPenIcon />
+        </Toolbar.Button>
+      )}
 
-    {dropdownItems.length > 0 && (
-      <>
-        <Toolbar.Separator />
-        <DropdownMenu.Root modal={false} onOpenChange={onDropdownOpenChange}>
-          <Toolbar.Button asChild>
-            <DropdownMenu.Trigger>
-              <DotsHorizontalIcon
-                css={css({ width: "1.6rem", height: "auto" })}
-              />
-            </DropdownMenu.Trigger>
-          </Toolbar.Button>
-          <DropdownMenu.Content>
-            {dropdownItems.map(
-              ({ onSelect, label, type, disabled, style }, i) => {
-                if (type === "separator")
-                  return <DropdownMenu.Separator key={i} />;
-                return (
-                  <DropdownMenu.Item
-                    key={i}
-                    onSelect={onSelect}
-                    disabled={disabled}
-                    style={style}
-                  >
-                    {label}
-                  </DropdownMenu.Item>
-                );
-              }
-            )}
-          </DropdownMenu.Content>
-        </DropdownMenu.Root>
-      </>
-    )}
-  </Toolbar.Root>
+      {dropdownItems.length > 0 && (
+        <>
+          <Toolbar.Separator />
+          <DropdownMenu.Root modal={false} onOpenChange={onDropdownOpenChange}>
+            <Toolbar.Button asChild>
+              <DropdownMenu.Trigger>
+                <DotsHorizontalIcon
+                  css={css({ width: "1.6rem", height: "auto" })}
+                />
+              </DropdownMenu.Trigger>
+            </Toolbar.Button>
+            <DropdownMenu.Content>
+              {dropdownItems.map(
+                ({ onSelect, label, type, disabled, style }, i) => {
+                  if (type === "separator")
+                    return <DropdownMenu.Separator key={i} />;
+                  return (
+                    <DropdownMenu.Item
+                      key={i}
+                      onSelect={onSelect}
+                      disabled={disabled}
+                      style={style}
+                    >
+                      {label}
+                    </DropdownMenu.Item>
+                  );
+                }
+              )}
+            </DropdownMenu.Content>
+          </DropdownMenu.Root>
+        </>
+      )}
+    </Toolbar.Root>
+  )
 );
 
 const EditMessageInput = React.forwardRef(
@@ -1198,7 +1297,7 @@ const EditMessageInput = React.forwardRef(
 );
 
 const RepliedMessage = ({ message, getUserMentionDisplayName }) => {
-  const authorMember = message?.authorServerMember ?? message?.authorUser;
+  const authorMember = message?.author;
 
   return (
     <div
