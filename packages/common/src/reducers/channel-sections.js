@@ -37,7 +37,7 @@ export const selectServerChannelSections = (state) => (serverId) => {
 };
 
 export const selectChannelSectionWithChild = (state) => (childChannelId) => {
-  const channel = selectChannel(state)(childChannelId);
+  const channel = selectChannel(state, childChannelId);
   const sections = selectServerChannelSections(state)(channel.serverId);
   return sections.find((s) => s.channelIds.includes(childChannelId));
 };

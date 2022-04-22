@@ -1,6 +1,12 @@
+import { createSelector, defaultMemoize } from "reselect";
 import { mapValues, omitKeys } from "../utils/object";
 import { indexBy, groupBy, unique } from "../utils/array";
 import combineReducers from "../utils/combine-reducers";
+
+export const arrayShallowEquals = (v1, v2) => {
+  if (v1.length !== v2.length) return false;
+  return v1.every((v, i) => v === v2[i]);
+};
 
 const userEntriesById = (state = {}, action) => {
   switch (action.type) {
@@ -123,9 +129,8 @@ const buildPfpUrl = (pfp) =>
     ? `https://imagedelivery.net/${process.env.CLOUDFLARE_ACCT_HASH}/${pfp.cf_id}/avatar`
     : pfp?.input_image_url ?? null;
 
-export const selectUser = (state) => (id) => {
-  const user = state.serverMembers.userEntriesById[id];
-  const isLoggedInUser = user.id === state.user.id;
+export const userOutputSelector = (user, loggedInUser) => {
+  const isLoggedInUser = user.id === loggedInUser.id;
   return {
     ...user,
     pfpUrl: buildPfpUrl(user.pfp),
@@ -135,17 +140,68 @@ export const selectUser = (state) => (id) => {
   };
 };
 
+export const selectUser = createSelector(
+  (state, userId) => state.serverMembers.userEntriesById[userId],
+  (state) => state.user,
+  userOutputSelector,
+  { memoizeOptions: { maxSize: 1000 } }
+);
+
+export const selectMultipleUsers = createSelector(
+  (state, userIds) => userIds.map((userId) => selectUser(state, userId)),
+  (users) => users,
+  {
+    memoizeOptions: {
+      equalityCheck: arrayShallowEquals,
+    },
+  }
+);
+
+export const selectServerChannelMembers = createSelector(
+  (state, channelId) => {
+    const channel = state.channels.entriesById[channelId];
+    return selectServerMembers(state, channel.serverId);
+  },
+  (members) => members
+);
+
+const selectDmChannelMembers = createSelector(
+  (state, channelId) => {
+    const channel = state.channels.entriesById[channelId];
+    return selectUsers(state, channel.memberUserIds);
+  },
+  (members) => members,
+  { memoizeOptions: { equalityCheck: arrayShallowEquals } }
+);
+
+export const selectChannelMembers = createSelector(
+  (state, channelId) => {
+    const channel = state.channels.entriesById[channelId];
+    return channel.kind === "dm"
+      ? selectDmChannelMembers(state, channelId)
+      : selectServerChannelMembers(state, channelId);
+  },
+  (members) => members
+);
+
+export const selectChannelMember = createSelector(
+  (state, channelId, userId) => {
+    const channel = state.channels.entriesById[channelId];
+    return channel.kind === "dm"
+      ? selectUser(state, userId)
+      : selectServerMemberWithUserId(state, channel.serverId, userId);
+  },
+  (member) => member,
+  { memoizeOptions: { maxSize: 1000 } }
+);
+
 export const selectUserFromWalletAddress = (state) => (address) =>
   selectUsers(state)().find((u) => u.walletAddress === address);
 
 export const selectUsers = (state) => () =>
   Object.keys(state.serverMembers.userEntriesById).map(selectUser(state));
 
-export const selectServerMember = (state) => (id) => {
-  const member = state.serverMembers.entriesById[id];
-
-  const user = selectUser(state)(member.user);
-
+const serverMemberOutputSelector = (member, user) => {
   const displayName =
     member.display_name != null && member.display_name !== ""
       ? member.display_name
@@ -165,17 +221,37 @@ export const selectServerMember = (state) => (id) => {
   };
 };
 
-export const selectServerMemberWithUserId = (state) => (serverId, userId) => {
-  const userServerMembers = (
-    state.serverMembers.memberIdsByUserId[userId] ?? []
-  ).map(selectServerMember(state));
-  return userServerMembers.find((m) => m.server === serverId);
-};
+export const selectServerMember = createSelector(
+  (state, memberId) => state.serverMembers.entriesById[memberId],
+  (state, memberId) => {
+    const serverMember = state.serverMembers.entriesById[memberId];
+    return selectUser(state, serverMember.user);
+  },
+  serverMemberOutputSelector,
+  { memoizeOptions: { maxSize: 1000 } }
+);
 
-export const selectServerMembers = (state) => (serverId) => {
-  const memberIds = state.serverMembers.memberIdsByServerId[serverId] ?? [];
-  return memberIds.map(selectServerMember(state));
-};
+export const selectServerMembers = createSelector(
+  (state, serverId) => {
+    const serverMemberIds =
+      state.serverMembers.memberIdsByServerId[serverId] ?? [];
+    return serverMemberIds.map((id) => selectServerMember(state, id));
+  },
+  (members) => members,
+  { memoizeOptions: { equalityCheck: arrayShallowEquals } }
+);
+
+export const selectServerMemberWithUserId = createSelector(
+  (state, serverId, userId) => {
+    const userMemberIds = state.serverMembers.memberIdsByUserId[userId];
+    const userServerMembers = userMemberIds.map((memberId) =>
+      selectServerMember(state, memberId)
+    );
+    return userServerMembers.find((m) => m.server === serverId);
+  },
+  (member) => member,
+  { memoizeOptions: { maxSize: 1000 } }
+);
 
 export const selectServerMembersByUserId = (state) => (serverId) => {
   const members = selectServerMembers(state)(serverId);

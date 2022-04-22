@@ -41,7 +41,7 @@ const useChannelMessages = (
   });
 
   const fetchMessages = React.useCallback(
-    async (channelId, { scrollDown, limit = 50, beforeMessageId } = {}) => {
+    async (channelId, { scrollDown, limit = 10, beforeMessageId } = {}) => {
       const query = `channel=${channelId}&limit=${limit}&before=${beforeMessageId}`;
       let pendingPromise = pendingFetchMessagePromisesByQuery[query];
 
@@ -81,7 +81,6 @@ const useChannelMessages = (
   const lastMessage = sortedMessages.slice(-1)[0];
 
   const triggerFetch = React.useCallback(() => {
-    console.log("here");
     if (channelWithAllMessages.includes(channelId)) return;
     fetchMessages(channelId, { beforeMessageId: sortedMessages[0]?.id });
   }, [channelId, fetchMessages, sortedMessages, channelWithAllMessages]);
@@ -137,8 +136,8 @@ const useChannelMessages = (
 export const ChannelBase = ({
   channel,
   members,
+  typingMembers,
   isAdmin = false,
-  selectChannelMemberWithUserId,
   createMessage,
   headerContent,
 }) => {
@@ -276,7 +275,6 @@ export const ChannelBase = ({
               hasPendingReply={pendingReplyMessageId === m.id}
               initReply={initReply}
               members={members}
-              selectChannelMemberWithUserId={selectChannelMemberWithUserId}
               getUserMentionDisplayName={getUserMentionDisplayName}
               isAdmin={isAdmin}
             />
@@ -324,8 +322,8 @@ export const ChannelBase = ({
               throttledRegisterTypingActivity();
           }}
         />
-        {channel.typingMembers.length > 0 && (
-          <TypingIndicator members={channel.typingMembers} />
+        {typingMembers.length > 0 && (
+          <TypingIndicator members={typingMembers} />
         )}
       </div>
     </div>
@@ -859,7 +857,45 @@ const Channel = () => {
   const { isFloating: isMenuTogglingEnabled } = useSideMenu();
 
   const channel = state.selectChannel(params.channelId);
+
   const server = state.selectServer(params.serverId);
+
+  const members = state.selectChannelMembers(params.channelId);
+
+  const createMessage = React.useCallback(
+    ({ blocks, replyToMessageId }) => {
+      return actions.createMessage({
+        server: channel.kind === "dm" ? undefined : params.serverId,
+        channel: params.channelId,
+        content: stringifyMessageBlocks(blocks),
+        blocks,
+        replyToMessageId,
+      });
+    },
+    [actions, channel.kind, params.serverId, params.channelId]
+  );
+
+  const headerContent = React.useMemo(
+    () => (
+      <>
+        {!isMenuTogglingEnabled && (
+          <div
+            css={(theme) =>
+              css({ color: theme.colors.textMuted, marginRight: "0.9rem" })
+            }
+          >
+            {channel.kind === "dm" ? (
+              <AtSignIcon style={{ width: "2.2rem" }} />
+            ) : (
+              <HashIcon style={{ width: "1.9rem" }} />
+            )}
+          </div>
+        )}
+        <Header>{channel.name}</Header>
+      </>
+    ),
+    [isMenuTogglingEnabled, channel.kind, channel.name]
+  );
 
   if (channel == null)
     return (
@@ -870,48 +906,19 @@ const Channel = () => {
       />
     );
 
-  const members =
+  const typingMembers =
     channel.kind === "dm"
-      ? channel.memberUserIds.map(state.selectUser)
-      : state.selectServerMembers(params.serverId);
+      ? []
+      : state.selectServerChannelTypingMembers(params.channelId);
 
   return (
     <ChannelBase
       channel={channel}
       members={members}
-      createMessage={({ blocks, replyToMessageId }) => {
-        return actions.createMessage({
-          server: channel.kind === "dm" ? undefined : params.serverId,
-          channel: params.channelId,
-          content: stringifyMessageBlocks(blocks),
-          blocks,
-          replyToMessageId,
-        });
-      }}
+      typingMembers={typingMembers}
+      createMessage={createMessage}
       isAdmin={server?.isAdmin}
-      selectChannelMemberWithUserId={(userId) =>
-        channel.kind === "dm"
-          ? state.selectUser(userId)
-          : state.selectServerMemberWithUserId(params.serverId, userId)
-      }
-      headerContent={
-        <>
-          {!isMenuTogglingEnabled && (
-            <div
-              css={(theme) =>
-                css({ color: theme.colors.textMuted, marginRight: "0.9rem" })
-              }
-            >
-              {channel.kind === "dm" ? (
-                <AtSignIcon style={{ width: "2.2rem" }} />
-              ) : (
-                <HashIcon style={{ width: "1.9rem" }} />
-              )}
-            </div>
-          )}
-          <Header>{channel.name}</Header>
-        </>
-      }
+      headerContent={headerContent}
     />
   );
 };

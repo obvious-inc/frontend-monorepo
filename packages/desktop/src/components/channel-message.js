@@ -47,7 +47,6 @@ const ChannelMessage = React.memo(
     hasPendingReply,
     initReply: initReply_,
     members,
-    selectChannelMemberWithUserId,
     getUserMentionDisplayName,
     isAdmin,
   }) => {
@@ -100,9 +99,11 @@ const ChannelMessage = React.memo(
       () =>
         message.reactions.map((r) => ({
           ...r,
-          authorMembers: r.users.map(selectChannelMemberWithUserId),
+          authorMembers: r.users.map((userId) =>
+            members.find((m) => m.id === userId)
+          ),
         })),
-      [message.reactions, selectChannelMemberWithUserId]
+      [message.reactions, members]
     );
 
     const save = React.useCallback(

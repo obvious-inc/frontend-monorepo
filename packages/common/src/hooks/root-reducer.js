@@ -11,6 +11,7 @@ import channels, {
   selectDmChannels,
   selectDmChannelFromUserId,
   selectDmChannelFromUserIds,
+  selectServerChannelTypingMembers,
 } from "../reducers/channels";
 import channelSections, {
   selectServerChannelSections,
@@ -28,29 +29,37 @@ import serverMembers, {
   selectServerMembers,
   selectServerMembersByUserId,
   selectServerMemberWithUserId,
+  selectChannelMember,
+  selectChannelMembers,
 } from "../reducers/server-members";
 
 const selectors = {
-  selectUser,
   selectUsers,
   selectUserFromWalletAddress,
-  selectMessage,
   selectServerChannels,
   selectServerDmChannels,
   selectDmChannels,
   selectDmChannelFromUserId,
   selectDmChannelFromUserIds,
-  selectChannel,
-  selectChannelMessages,
   selectServer,
   selectServers,
-  selectServerMember,
-  selectServerMembers,
   selectServerMembersByUserId,
-  selectServerMemberWithUserId,
   selectHasFetchedInitialData,
   selectServerChannelSections,
   selectChannelSectionWithChild,
+};
+
+const memoizedSelectors = {
+  selectUser,
+  selectMessage,
+  selectChannelMessages,
+  selectServerMember,
+  selectServerMemberWithUserId,
+  selectChannel,
+  selectServerChannelTypingMembers,
+  selectServerMembers,
+  selectChannelMember,
+  selectChannelMembers,
 };
 
 const rootReducer = combineReducers({
@@ -67,14 +76,29 @@ const initialState = rootReducer(undefined, {});
 const applyStateToSelectors = (selectors, state) =>
   mapValues((selector) => selector(state), selectors);
 
+const applyStateToMemoizedSelectors = (selectors, state) =>
+  mapValues((selector) => selector.bind(null, state), selectors);
+
 const useRootReducer = () => {
   const { user } = useAuth();
 
-  const [state, dispatch] = React.useReducer(rootReducer, initialState);
+  const [state, dispatch_] = React.useReducer(rootReducer, initialState);
+
+  const dispatch = React.useCallback(
+    (...args) => {
+      console.log(...args);
+      return dispatch_(...args);
+    },
+    [dispatch_]
+  );
 
   const appliedSelectors = applyStateToSelectors(selectors, { ...state, user });
+  const appliedMemoizedSelectors = applyStateToMemoizedSelectors(
+    memoizedSelectors,
+    { ...state, user }
+  );
 
-  return [appliedSelectors, dispatch];
+  return [{ ...appliedSelectors, ...appliedMemoizedSelectors }, dispatch];
 };
 
 export default useRootReducer;
