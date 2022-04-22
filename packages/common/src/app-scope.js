@@ -151,20 +151,8 @@ export const Provider = ({ children }) => {
   );
 
   const fetchMessages = React.useCallback(
-    ({ channelId, beforeMessageId, afterMessageId }) => {
-      const searchParams = new URLSearchParams(
-        [
-          ["before", beforeMessageId],
-          ["after", afterMessageId],
-          ["limit", 50],
-        ].filter((e) => e[1] != null)
-      );
-
-      const url = [`/channels/${channelId}/messages`, searchParams.toString()]
-        .filter((s) => s !== "")
-        .join("?");
-
-      return authorizedFetch(url).then((messages) => {
+    ({ channelId }) =>
+      authorizedFetch(`/channels/${channelId}/messages`).then((messages) => {
         dispatch({ type: "messages-fetched", messages });
 
         const replies = messages.filter((m) => m.reply_to != null);
@@ -187,8 +175,7 @@ export const Provider = ({ children }) => {
           });
 
         return messages;
-      });
-    },
+      }),
     [authorizedFetch, dispatch]
   );
 
