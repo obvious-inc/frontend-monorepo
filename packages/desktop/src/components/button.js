@@ -18,6 +18,16 @@ const stylesByVariant = (theme) => ({
       background: "rgb(255 255 255 / 9%)",
     },
   },
+  transparent: {
+    color: theme.colors.textNormal,
+    border: "0.1rem solid",
+    borderColor: "rgb(255 255 255 / 20%)",
+    background: "none",
+    "&:hover": {
+      color: "white",
+      borderColor: "rgb(255 255 255 / 25%)",
+    },
+  },
   primary: {
     color: "white",
     background: theme.colors.primary,
@@ -28,6 +38,11 @@ const stylesByVariant = (theme) => ({
 });
 
 const stylesBySize = {
+  default: {
+    fontSize: "1.4rem",
+    padding: "0.8rem 1.5rem",
+    minHeight: "3.6rem",
+  },
   small: {
     fontSize: "1.3rem",
     padding: "0.8rem 1rem",
