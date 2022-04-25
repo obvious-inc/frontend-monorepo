@@ -475,7 +475,10 @@ export const DmChannelItem = ({
         <span style={{ marginRight: size === "large" ? "1rem" : "0.6rem" }}>
           {memberUsersExcludingMe.length <= 1 ? (
             <Avatar
-              url={(memberUsersExcludingMe[0] ?? memberUsers[0])?.pfpUrl}
+              url={
+                (memberUsersExcludingMe[0] ?? memberUsers[0])?.profilePicture
+                  .small
+              }
               walletAddress={
                 (memberUsersExcludingMe[0] ?? memberUsers[0])?.walletAddress
               }
@@ -494,7 +497,7 @@ export const DmChannelItem = ({
               {reverse(memberUsersExcludingMe.slice(0, 2)).map((user, i) => (
                 <Avatar
                   key={user.id}
-                  url={user?.pfpUrl}
+                  url={user?.profilePicture.small}
                   walletAddress={user?.walletAddress}
                   size={avatarSize}
                   pixelSize={avatarPixelSize}

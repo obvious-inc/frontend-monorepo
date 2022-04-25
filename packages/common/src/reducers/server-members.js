@@ -3,7 +3,7 @@ import { mapValues, omitKeys } from "../utils/object";
 import { indexBy, groupBy, unique } from "../utils/array";
 import combineReducers from "../utils/combine-reducers";
 import { arrayShallowEquals } from "../utils/reselect";
-import { buildUrl as buildPfpUrl } from "../utils/pfps";
+import { build as buildProfilePicture } from "../utils/profile-pictures";
 import { selectUser, selectUsers } from "./users";
 
 const entriesById = (state = {}, action) => {
@@ -134,16 +134,13 @@ export const selectServerMember = createSelector(
         : user.displayName;
 
     const pfp = member.pfp ?? user.pfp;
-    const pfpUrl = buildPfpUrl(pfp);
 
     return {
-      ...member,
-      id: user.id, // Should be ok right?
+      ...user,
+      serverId: member.server,
+      joinedAt: member.joined_at,
       displayName,
-      pfp,
-      pfpUrl,
-      walletAddress: user.wallet_address,
-      onlineStatus: user.onlineStatus,
+      profilePicture: buildProfilePicture(pfp),
     };
   },
   { memoizeOptions: { maxSize: 1000 } }
@@ -165,7 +162,7 @@ export const selectServerMemberWithUserId = createSelector(
     const userServerMembers = userMemberIds.map((memberId) =>
       selectServerMember(state, memberId)
     );
-    return userServerMembers.find((m) => m.server === serverId);
+    return userServerMembers.find((m) => m.serverId === serverId);
   },
   (member) => member,
   { memoizeOptions: { maxSize: 1000 } }

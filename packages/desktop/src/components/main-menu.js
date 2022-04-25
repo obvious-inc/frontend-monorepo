@@ -116,7 +116,7 @@ const MainMenu = () => {
                   tooltip={c.name}
                 >
                   <Avatar
-                    url={avatarMember?.pfpUrl}
+                    url={avatarMember?.profilePicture.small}
                     walletAddress={avatarMember?.walletAddress}
                     size="4.6rem"
                     pixelSize={46}

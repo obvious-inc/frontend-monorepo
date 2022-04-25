@@ -3,7 +3,7 @@ import { mapValues, omitKeys } from "../utils/object";
 import { indexBy } from "../utils/array";
 import combineReducers from "../utils/combine-reducers";
 import { arrayShallowEquals } from "../utils/reselect";
-import { buildUrl as buildPfpUrl } from "../utils/pfps";
+import { build as buildProfilePicture } from "../utils/profile-pictures";
 
 const entriesById = (state = {}, action) => {
   switch (action.type) {
@@ -48,13 +48,14 @@ export const selectUser = createSelector(
   (state, userId) => state.users.entriesById[userId],
   (state) => state.user,
   (user, loggedInUser) => {
+    if (user == null) return null;
     const isLoggedInUser = user.id === loggedInUser.id;
     return {
       ...user,
-      pfpUrl: buildPfpUrl(user.pfp),
       displayName: user.display_name,
       walletAddress: user.wallet_address,
       onlineStatus: isLoggedInUser ? "online" : user.status,
+      profilePicture: buildProfilePicture(user.pfp),
     };
   },
   { memoizeOptions: { maxSize: 1000 } }
