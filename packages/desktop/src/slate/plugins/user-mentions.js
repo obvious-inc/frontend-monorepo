@@ -27,7 +27,7 @@ const middleware = (editor) => {
   return editor;
 };
 
-const MentionComponent = ({ displayName, attributes, children }) => {
+const MentionComponent = ({ id, displayName, attributes, children }) => {
   const selected = useSelected();
   const focused = useFocused();
   const isFocused = selected && focused;
@@ -37,7 +37,7 @@ const MentionComponent = ({ displayName, attributes, children }) => {
       data-focused={isFocused ? "true" : undefined}
       {...attributes}
     >
-      @{displayName}
+      @{displayName ?? id}
       {children}
     </span>
   );

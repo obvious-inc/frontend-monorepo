@@ -73,8 +73,8 @@ const MainMenu = () => {
                 ? "active"
                 : undefined,
             },
-          ].map(({ icon, ...props }, i) => (
-            <RoundButton key={i} component={NavLink} {...props}>
+          ].map(({ icon, ...props }) => (
+            <RoundButton key={props.tooltip} component={NavLink} {...props}>
               {icon}
             </RoundButton>
           ))}
@@ -116,7 +116,7 @@ const MainMenu = () => {
                   tooltip={c.name}
                 >
                   <Avatar
-                    url={avatarMember?.pfpUrl}
+                    url={avatarMember?.profilePicture.small}
                     walletAddress={avatarMember?.walletAddress}
                     size="4.6rem"
                     pixelSize={46}
@@ -127,21 +127,15 @@ const MainMenu = () => {
 
             {hasUnreadDms && <Divider />}
 
-            {servers.map((s, i) => {
-              const abbreviation = s.name
-                .split(" ")
-                .map((s) => s[0])
-                .join("")
-                .slice(0, 3);
-              const shortName =
-                abbreviation.length === 2 ? abbreviation : s.name.slice(0, 2);
-
+            {servers.map((s) => {
               const isActive = params.serverId === s.id;
 
-              const hasChannels = s.channels.length !== 0;
-              const unreadChannels = s.channels.filter((c) => c.hasUnread);
+              const channels = state.selectServerChannels(params.serverId);
+
+              const hasChannels = channels.length !== 0;
+              const unreadChannels = channels.filter((c) => c.hasUnread);
               const hasUnread = unreadChannels.length > 0;
-              const mentionCount = s.channels.reduce(
+              const mentionCount = channels.reduce(
                 (count, c) => count + c.mentionCount,
                 0
               );
@@ -149,7 +143,7 @@ const MainMenu = () => {
               return (
                 <RoundButton
                   component={Link}
-                  key={i}
+                  key={s.id}
                   to={
                     hasChannels
                       ? `/channels/${s.id}/${s.channels[0].id}`
@@ -159,17 +153,7 @@ const MainMenu = () => {
                   tooltip={s.name}
                   className={isActive ? "active" : undefined}
                 >
-                  <div
-                    css={css({
-                      textTransform: "uppercase",
-                      fontSize: "1.5rem",
-                      fontWeight: "500",
-                      lineHeight: 1,
-                    })}
-                    style={{ color: hasUnread ? "white" : undefined }}
-                  >
-                    {shortName}
-                  </div>
+                  <ServerButtonContent name={s.name} hasUnread={hasUnread} />
                 </RoundButton>
               );
             })}
@@ -256,6 +240,29 @@ const RoundButton = ({
     )}
   </Tooltip.Root>
 );
+
+const ServerButtonContent = ({ name, hasUnread }) => {
+  const abbreviation = name
+    .split(" ")
+    .map((s) => s[0])
+    .join("")
+    .slice(0, 3);
+  const shortName = abbreviation.length === 2 ? abbreviation : name.slice(0, 2);
+
+  return (
+    <div
+      css={css({
+        textTransform: "uppercase",
+        fontSize: "1.5rem",
+        fontWeight: "500",
+        lineHeight: 1,
+      })}
+      style={{ color: hasUnread ? "white" : undefined }}
+    >
+      {shortName}
+    </div>
+  );
+};
 
 const Divider = () => (
   <div

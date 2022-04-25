@@ -1,8 +1,8 @@
 import throttle from "lodash.throttle";
 import React from "react";
-import { useParams, useNavigate } from "react-router";
+import { useParams } from "react-router";
 import { css } from "@emotion/react";
-import { useAuth, useAppScope, getImageFileDimensions } from "@shades/common";
+import { useAppScope, getImageFileDimensions } from "@shades/common";
 import usePageVisibilityChangeListener from "../hooks/page-visibility-change-listener";
 import stringifyMessageBlocks from "../slate/stringify";
 import { createEmptyParagraph, isNodeEmpty, cleanNodes } from "../slate/utils";
@@ -52,14 +52,12 @@ const useChannelMessages = (channelId) => {
 export const ChannelBase = ({
   channel,
   members,
+  typingMembers,
   isAdmin = false,
-  selectChannelMemberWithUserId,
   createMessage,
   headerContent,
 }) => {
-  const { user } = useAuth();
   const { actions, state } = useAppScope();
-  const navigate = useNavigate();
 
   const [pendingReplyMessageId, setPendingReplyMessageId] =
     React.useState(null);
@@ -69,11 +67,8 @@ export const ChannelBase = ({
 
   const inputRef = React.useRef();
 
-  const getUserMentionDisplayName = React.useCallback(
-    (ref) => {
-      const member = members.find((m) => m.id === ref);
-      return member?.displayName ?? ref;
-    },
+  const getMember = React.useCallback(
+    (ref) => members.find((m) => m.id === ref),
     [members]
   );
 
@@ -96,9 +91,40 @@ export const ChannelBase = ({
     actions.fetchInitialData();
   });
 
+  const initReply = React.useCallback((messageId) => {
+    setPendingReplyMessageId(messageId);
+    inputRef.current.focus();
+  }, []);
+
+  const cancelReply = React.useCallback(() => {
+    setPendingReplyMessageId(null);
+    inputRef.current.focus();
+  }, []);
+
+  const submitMessage = React.useCallback(
+    (blocks) => {
+      setPendingReplyMessageId(null);
+      return createMessage({
+        blocks,
+        replyToMessageId: pendingReplyMessageId,
+      });
+    },
+    [createMessage, pendingReplyMessageId]
+  );
+
+  const handleInputChange = React.useCallback(
+    (blocks) => {
+      if (blocks.length > 1 || !isNodeEmpty(blocks[0]))
+        throttledRegisterTypingActivity();
+    },
+    [throttledRegisterTypingActivity]
+  );
+
   return (
     <div
       css={(theme) => css`
+        position: relative;
+        z-index: 0;
         flex: 1;
         min-width: min(30.6rem, 100vw);
         background: ${theme.colors.backgroundPrimary};
@@ -169,48 +195,9 @@ export const ChannelBase = ({
               message={m}
               previousMessage={ms[i - 1]}
               hasPendingReply={pendingReplyMessageId === m.id}
-              initReply={() => {
-                setPendingReplyMessageId(m.id);
-                inputRef.current.focus();
-              }}
-              save={(blocks) =>
-                actions.updateMessage(m.id, {
-                  blocks,
-                  content: stringifyMessageBlocks(blocks),
-                })
-              }
-              remove={() => actions.removeMessage(m.id)}
-              addReaction={(emoji) => {
-                const existingReaction = m.reactions.find(
-                  (r) => r.emoji === emoji
-                );
-
-                if (existingReaction?.users.includes(user.id)) return;
-
-                actions.addMessageReaction(m.id, { emoji });
-              }}
-              removeReaction={(emoji) =>
-                actions.removeMessageReaction(m.id, { emoji })
-              }
+              initReply={initReply}
               members={members}
-              selectChannelMemberWithUserId={selectChannelMemberWithUserId}
-              getUserMentionDisplayName={getUserMentionDisplayName}
-              sendDirectMessageToAuthor={() => {
-                const redirect = (c) => navigate(`/channels/@me/${c.id}`);
-                const dmChannel = state.selectDmChannelFromUserId(
-                  m.authorUserId
-                );
-                if (dmChannel != null) {
-                  redirect(dmChannel);
-                  return;
-                }
-                actions
-                  .createChannel({
-                    kind: "dm",
-                    memberUserIds: [m.authorUserId],
-                  })
-                  .then(redirect);
-              }}
+              getMember={getMember}
               isAdmin={isAdmin}
             />
           ))}
@@ -233,32 +220,20 @@ export const ChannelBase = ({
               ? null
               : state.selectMessage(pendingReplyMessageId)
           }
-          cancelReply={() => {
-            setPendingReplyMessageId(null);
-            inputRef.current.focus();
-          }}
+          cancelReply={cancelReply}
           uploadImage={actions.uploadImage}
-          submit={(blocks) => {
-            setPendingReplyMessageId(null);
-            return createMessage({
-              blocks,
-              replyToMessageId: pendingReplyMessageId,
-            });
-          }}
+          submit={submitMessage}
           placeholder={
             channel.kind === "dm"
               ? `Message ${channel.name}`
               : `Message #${channel.name}`
           }
           members={members}
-          getUserMentionDisplayName={getUserMentionDisplayName}
-          onInputChange={(blocks) => {
-            if (blocks.length > 1 || !isNodeEmpty(blocks[0]))
-              throttledRegisterTypingActivity();
-          }}
+          getMember={getMember}
+          onInputChange={handleInputChange}
         />
-        {channel.typingMembers.length > 0 && (
-          <TypingIndicator members={channel.typingMembers} />
+        {typingMembers.length > 0 && (
+          <TypingIndicator members={typingMembers} />
         )}
       </div>
     </div>
@@ -323,8 +298,8 @@ const TypingIndicator = ({ members }) => (
   </div>
 );
 
-const NewMessageInput = React.forwardRef(
-  (
+const NewMessageInput = React.memo(
+  React.forwardRef(function NewMessageInput_(
     {
       submit,
       uploadImage,
@@ -337,7 +312,7 @@ const NewMessageInput = React.forwardRef(
       ...props
     },
     editorRef
-  ) => {
+  ) {
     const [pendingMessage, setPendingMessage] = React.useState(() => [
       createEmptyParagraph(),
     ]);
@@ -450,35 +425,7 @@ const NewMessageInput = React.forwardRef(
     }, [isPending, editorRef]);
 
     return (
-      <form
-        onSubmit={(e) => {
-          e.preventDefault();
-          executeMessage();
-        }}
-        css={(theme) =>
-          css({
-            position: "relative",
-            padding: "1rem",
-            background: theme.colors.channelInputBackground,
-            borderRadius: "0.7rem",
-            borderTopLeftRadius: replyingToMessage ? 0 : undefined,
-            borderTopRightRadius: replyingToMessage ? 0 : undefined,
-            "[role=textbox] [data-slate-placeholder]": {
-              color: "rgb(255 255 255 / 40%)",
-              opacity: "1 !important",
-              whiteSpace: "nowrap",
-              overflow: "hidden",
-              textOverflow: "ellipsis",
-            },
-            // Prevents iOS zooming in on input fields
-            "@supports (-webkit-touch-callout: none)": {
-              "[role=textbox]": { fontSize: "1.6rem" },
-            },
-          })
-        }
-        // TODO: Nicer pending state
-        style={{ opacity: isPending ? 0.5 : 1 }}
-      >
+      <div css={css({ position: "relative" })}>
         {replyingToMessage && (
           <div
             css={(theme) =>
@@ -518,148 +465,184 @@ const NewMessageInput = React.forwardRef(
             </button>
           </div>
         )}
-        <div
-          css={{
-            display: "grid",
-            gridTemplateColumns: "auto minmax(0,1fr)",
-            gridGap: "1.2rem",
-            alignItems: "flex-start",
-            paddingLeft: "0.3rem",
+
+        <form
+          onSubmit={(e) => {
+            e.preventDefault();
+            executeMessage();
           }}
-        >
-          <button
-            type="button"
-            onClick={() => {
-              fileInputRef.current.click();
-            }}
-            disabled={isPending}
-            css={(theme) =>
-              css({
-                cursor: "pointer",
-                color: theme.colors.interactiveNormal,
-                svg: {
-                  display: "block",
-                  width: "2.4rem",
-                  height: "auto",
-                },
-                "&[disabled]": { pointerEvents: "none" },
-                ":hover": {
-                  color: theme.colors.interactiveHover,
-                },
-              })
-            }
-          >
-            <PlusCircleIcon />
-          </button>
-
-          <MessageInput
-            ref={editorRef}
-            initialValue={pendingMessage}
-            onChange={(value) => {
-              setPendingMessage(value);
-            }}
-            onKeyDown={(e) => {
-              if (!e.isDefaultPrevented() && !e.shiftKey && e.key === "Enter") {
-                e.preventDefault();
-                executeMessage();
-              }
-            }}
-            commands={commands}
-            disabled={isPending}
-            {...props}
-          />
-        </div>
-
-        {imageUploads.length !== 0 && (
-          <div
-            css={css({
+          css={(theme) =>
+            css({
+              padding: "1rem",
+              maxHeight: "60vh",
               overflow: "auto",
-              paddingTop: "1.2rem",
-              pointerEvents: isPending ? "none" : "all",
-            })}
+              background: theme.colors.channelInputBackground,
+              borderRadius: "0.7rem",
+              borderTopLeftRadius: replyingToMessage ? 0 : undefined,
+              borderTopRightRadius: replyingToMessage ? 0 : undefined,
+              "[role=textbox] [data-slate-placeholder]": {
+                color: "rgb(255 255 255 / 40%)",
+                opacity: "1 !important",
+                whiteSpace: "nowrap",
+                overflow: "hidden",
+                textOverflow: "ellipsis",
+              },
+              // Prevents iOS zooming in on input fields
+              "@supports (-webkit-touch-callout: none)": {
+                "[role=textbox]": { fontSize: "1.6rem" },
+              },
+            })
+          }
+          // TODO: Nicer pending state
+          style={{ opacity: isPending ? 0.5 : 1 }}
+        >
+          <div
+            css={{
+              display: "grid",
+              gridTemplateColumns: "auto minmax(0,1fr)",
+              gridGap: "1.2rem",
+              alignItems: "flex-start",
+              paddingLeft: "0.3rem",
+            }}
           >
-            <AttachmentList
-              items={imageUploads}
-              remove={({ url }) => {
-                setImageUploads((fs) => fs.filter((f) => f.url !== url));
+            <button
+              type="button"
+              onClick={() => {
+                fileInputRef.current.click();
               }}
+              disabled={isPending}
+              css={(theme) =>
+                css({
+                  cursor: "pointer",
+                  color: theme.colors.interactiveNormal,
+                  svg: {
+                    display: "block",
+                    width: "2.4rem",
+                    height: "auto",
+                  },
+                  "&[disabled]": { pointerEvents: "none" },
+                  ":hover": {
+                    color: theme.colors.interactiveHover,
+                  },
+                })
+              }
+            >
+              <PlusCircleIcon />
+            </button>
+
+            <MessageInput
+              ref={editorRef}
+              initialValue={pendingMessage}
+              onChange={(value) => {
+                setPendingMessage(value);
+              }}
+              onKeyDown={(e) => {
+                if (
+                  !e.isDefaultPrevented() &&
+                  !e.shiftKey &&
+                  e.key === "Enter"
+                ) {
+                  e.preventDefault();
+                  executeMessage();
+                }
+              }}
+              commands={commands}
+              disabled={isPending}
+              {...props}
             />
           </div>
-        )}
 
-        <input
-          ref={fileInputRef}
-          type="file"
-          multiple
-          accept="image/*"
-          onChange={(e) => {
-            editorRef.current.focus();
+          {imageUploads.length !== 0 && (
+            <div
+              css={css({
+                overflow: "auto",
+                paddingTop: "1.2rem",
+                pointerEvents: isPending ? "none" : "all",
+              })}
+            >
+              <AttachmentList
+                items={imageUploads}
+                remove={({ url }) => {
+                  setImageUploads((fs) => fs.filter((f) => f.url !== url));
+                }}
+              />
+            </div>
+          )}
 
-            const filesToUpload = [...e.target.files];
+          <input
+            ref={fileInputRef}
+            type="file"
+            multiple
+            accept="image/*"
+            onChange={(e) => {
+              editorRef.current.focus();
 
-            setImageUploads((fs) => [
-              ...fs,
-              ...filesToUpload.map((f) => ({
-                name: encodeURIComponent(f.name),
-                url: URL.createObjectURL(f),
-              })),
-            ]);
+              const filesToUpload = [...e.target.files];
 
-            fileInputRef.current.value = "";
+              setImageUploads((fs) => [
+                ...fs,
+                ...filesToUpload.map((f) => ({
+                  name: encodeURIComponent(f.name),
+                  url: URL.createObjectURL(f),
+                })),
+              ]);
 
-            let lastImageUploads = imageUploads;
+              fileInputRef.current.value = "";
 
-            // Buckle up!
-            uploadPromiseRef.current = Promise.all([
-              uploadPromiseRef.current ?? Promise.resolve(),
-              ...filesToUpload.map((file) =>
-                Promise.all([
-                  getImageFileDimensions(file),
-                  uploadImage({ files: [file] }).catch(() => {
-                    setImageUploads((fs) => {
-                      const newImageUploads = fs.filter(
-                        (f) => f.name !== file.name
+              let lastImageUploads = imageUploads;
+
+              // Buckle up!
+              uploadPromiseRef.current = Promise.all([
+                uploadPromiseRef.current ?? Promise.resolve(),
+                ...filesToUpload.map((file) =>
+                  Promise.all([
+                    getImageFileDimensions(file),
+                    uploadImage({ files: [file] }).catch(() => {
+                      setImageUploads((fs) => {
+                        const newImageUploads = fs.filter(
+                          (f) => f.name !== file.name
+                        );
+                        lastImageUploads = newImageUploads;
+                        return newImageUploads;
+                      });
+                      const error = new Error(
+                        `Could not upload file "${file.name}"`
                       );
+                      alert(error.message);
+                      return Promise.reject(error);
+                    }),
+                  ]).then(([dimensions, [uploadedFile]]) => {
+                    setImageUploads((fs) => {
+                      const newImageUploads = fs.map((f) => {
+                        if (!uploadedFile.filename.endsWith(f.name)) return f;
+                        return {
+                          id: uploadedFile.id,
+                          name: uploadedFile.filename,
+                          url: uploadedFile.variants.find((url) =>
+                            url.endsWith("/public")
+                          ),
+                          previewUrl: f.url,
+                          ...dimensions,
+                        };
+                      });
+
                       lastImageUploads = newImageUploads;
                       return newImageUploads;
                     });
-                    const error = new Error(
-                      `Could not upload file "${file.name}"`
-                    );
-                    alert(error.message);
-                    return Promise.reject(error);
-                  }),
-                ]).then(([dimensions, [uploadedFile]]) => {
-                  setImageUploads((fs) => {
-                    const newImageUploads = fs.map((f) => {
-                      if (!uploadedFile.filename.endsWith(f.name)) return f;
-                      return {
-                        id: uploadedFile.id,
-                        name: uploadedFile.filename,
-                        url: uploadedFile.variants.find((url) =>
-                          url.endsWith("/public")
-                        ),
-                        previewUrl: f.url,
-                        ...dimensions,
-                      };
-                    });
-
-                    lastImageUploads = newImageUploads;
-                    return newImageUploads;
-                  });
-                })
-              ),
-            ]).then(() => {
-              uploadPromiseRef.current = null;
-              return lastImageUploads;
-            });
-          }}
-          hidden
-        />
-        <input type="submit" hidden />
-      </form>
+                  })
+                ),
+              ]).then(() => {
+                uploadPromiseRef.current = null;
+                return lastImageUploads;
+              });
+            }}
+            hidden
+          />
+          <input type="submit" hidden />
+        </form>
+      </div>
     );
-  }
+  })
 );
 
 const AttachmentList = ({ items, remove }) => (
@@ -784,42 +767,27 @@ const Channel = () => {
   const { isFloating: isMenuTogglingEnabled } = useSideMenu();
 
   const channel = state.selectChannel(params.channelId);
+
   const server = state.selectServer(params.serverId);
 
-  if (channel == null)
-    return (
-      <div
-        css={(theme) =>
-          css({ background: theme.colors.backgroundPrimary, flex: 1 })
-        }
-      />
-    );
+  const members = state.selectChannelMembers(params.channelId);
 
-  const members =
-    channel.kind === "dm"
-      ? channel.memberUserIds.map(state.selectUser)
-      : state.selectServerMembers(params.serverId);
+  const createMessage = React.useCallback(
+    ({ blocks, replyToMessageId }) => {
+      return actions.createMessage({
+        server: channel.kind === "dm" ? undefined : params.serverId,
+        channel: params.channelId,
+        content: stringifyMessageBlocks(blocks),
+        blocks,
+        replyToMessageId,
+      });
+    },
+    [actions, channel?.kind, params.serverId, params.channelId]
+  );
 
-  return (
-    <ChannelBase
-      channel={channel}
-      members={members}
-      createMessage={({ blocks, replyToMessageId }) => {
-        return actions.createMessage({
-          server: channel.kind === "dm" ? undefined : params.serverId,
-          channel: params.channelId,
-          content: stringifyMessageBlocks(blocks),
-          blocks,
-          replyToMessageId,
-        });
-      }}
-      isAdmin={server?.isAdmin}
-      selectChannelMemberWithUserId={(userId) =>
-        channel.kind === "dm"
-          ? state.selectUser(userId)
-          : state.selectServerMemberWithUserId(params.serverId, userId)
-      }
-      headerContent={
+  const headerContent = React.useMemo(
+    () =>
+      channel == null ? null : (
         <>
           {!isMenuTogglingEnabled && (
             <div
@@ -836,7 +804,31 @@ const Channel = () => {
           )}
           <Header>{channel.name}</Header>
         </>
-      }
+      ),
+    [isMenuTogglingEnabled, channel]
+  );
+
+  if (channel == null)
+    return (
+      <div
+        css={(theme) =>
+          css({ background: theme.colors.backgroundPrimary, flex: 1 })
+        }
+      />
+    );
+
+  const typingChannelMembers = state.selectChannelTypingMembers(
+    params.channelId
+  );
+
+  return (
+    <ChannelBase
+      channel={channel}
+      members={members}
+      typingMembers={typingChannelMembers}
+      createMessage={createMessage}
+      isAdmin={server?.isAdmin}
+      headerContent={headerContent}
     />
   );
 };

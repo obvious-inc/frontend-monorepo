@@ -1,40 +1,10 @@
+import { createSelector } from "reselect";
 import { mapValues, omitKeys } from "../utils/object";
 import { indexBy, groupBy, unique } from "../utils/array";
 import combineReducers from "../utils/combine-reducers";
-
-const userEntriesById = (state = {}, action) => {
-  switch (action.type) {
-    case "initial-data-request-successful":
-      return indexBy((u) => u.id, action.data.users);
-
-    case "server-event:user-profile-updated":
-      return mapValues((user) => {
-        if (user.id !== action.data.user) return user;
-        return {
-          ...user,
-          ...omitKeys(["user"], action.data),
-        };
-      }, state);
-
-    case "server-event:server-member-joined":
-      return {
-        ...state,
-        [action.data.user.id]: action.data.user,
-      };
-
-    case "server-event:user-presence-updated":
-      return mapValues((user) => {
-        if (user.id !== action.data.user.id) return user;
-        return {
-          ...user,
-          status: action.data.user.status,
-        };
-      }, state);
-
-    default:
-      return state;
-  }
-};
+import { arrayShallowEquals } from "../utils/reselect";
+import { build as buildProfilePicture } from "../utils/profile-pictures";
+import { selectUser, selectUsers } from "./users";
 
 const entriesById = (state = {}, action) => {
   switch (action.type) {
@@ -118,73 +88,88 @@ const memberIdsByUserId = (state = [], action) => {
   }
 };
 
-const buildPfpUrl = (pfp) =>
-  pfp?.cf_id && process.env.CLOUDFLARE_ACCT_HASH
-    ? `https://imagedelivery.net/${process.env.CLOUDFLARE_ACCT_HASH}/${pfp.cf_id}/avatar`
-    : pfp?.input_image_url ?? null;
-
-export const selectUser = (state) => (id) => {
-  const user = state.serverMembers.userEntriesById[id];
-  const isLoggedInUser = user.id === state.user.id;
-  return {
-    ...user,
-    pfpUrl: buildPfpUrl(user.pfp),
-    displayName: user.display_name,
-    walletAddress: user.wallet_address,
-    onlineStatus: isLoggedInUser ? "online" : user.status,
-  };
+export const selectServerChannelMembers = (state, channelId) => {
+  const channel = state.channels.entriesById[channelId];
+  return selectServerMembers(state, channel.serverId);
 };
 
-export const selectUserFromWalletAddress = (state) => (address) =>
-  selectUsers(state)().find((u) => u.walletAddress === address);
+const selectDmChannelMembers = createSelector(
+  (state, channelId) => {
+    const channel = state.channels.entriesById[channelId];
+    return selectUsers(state, channel.memberUserIds);
+  },
+  (members) => members,
+  { memoizeOptions: { equalityCheck: arrayShallowEquals } }
+);
 
-export const selectUsers = (state) => () =>
-  Object.keys(state.serverMembers.userEntriesById).map(selectUser(state));
-
-export const selectServerMember = (state) => (id) => {
-  const member = state.serverMembers.entriesById[id];
-
-  const user = selectUser(state)(member.user);
-
-  const displayName =
-    member.display_name != null && member.display_name !== ""
-      ? member.display_name
-      : user.displayName;
-
-  const pfp = member.pfp ?? user.pfp;
-  const pfpUrl = buildPfpUrl(pfp);
-
-  return {
-    ...member,
-    id: user.id, // Should be ok right?
-    displayName,
-    pfp,
-    pfpUrl,
-    walletAddress: user.wallet_address,
-    onlineStatus: user.onlineStatus,
-  };
+export const selectChannelMembers = (state, channelId) => {
+  const channel = state.channels.entriesById[channelId];
+  if (channel == null) return [];
+  return channel.kind === "dm"
+    ? selectDmChannelMembers(state, channelId)
+    : selectServerChannelMembers(state, channelId);
 };
 
-export const selectServerMemberWithUserId = (state) => (serverId, userId) => {
-  const userServerMembers = (
-    state.serverMembers.memberIdsByUserId[userId] ?? []
-  ).map(selectServerMember(state));
-  return userServerMembers.find((m) => m.server === serverId);
-};
+export const selectChannelMember = createSelector(
+  (state, channelId, userId) => {
+    const channel = state.channels.entriesById[channelId];
+    return channel.kind === "dm"
+      ? selectUser(state, userId)
+      : selectServerMemberWithUserId(state, channel.serverId, userId);
+  },
+  (member) => member,
+  { memoizeOptions: { maxSize: 1000 } }
+);
 
-export const selectServerMembers = (state) => (serverId) => {
-  const memberIds = state.serverMembers.memberIdsByServerId[serverId] ?? [];
-  return memberIds.map(selectServerMember(state));
-};
+export const selectServerMember = createSelector(
+  (state, memberId) => state.serverMembers.entriesById[memberId],
+  (state, memberId) => {
+    const serverMember = state.serverMembers.entriesById[memberId];
+    return selectUser(state, serverMember.user);
+  },
+  (member, user) => {
+    const displayName =
+      member.display_name != null && member.display_name !== ""
+        ? member.display_name
+        : user.displayName;
 
-export const selectServerMembersByUserId = (state) => (serverId) => {
-  const members = selectServerMembers(state)(serverId);
-  return indexBy((m) => m.user.id, members);
-};
+    const pfp = member.pfp ?? user.pfp;
+
+    return {
+      ...user,
+      serverId: member.server,
+      joinedAt: member.joined_at,
+      displayName,
+      profilePicture: buildProfilePicture(pfp),
+    };
+  },
+  { memoizeOptions: { maxSize: 1000 } }
+);
+
+export const selectServerMembers = createSelector(
+  (state, serverId) => {
+    const serverMemberIds =
+      state.serverMembers.memberIdsByServerId[serverId] ?? [];
+    return serverMemberIds.map((id) => selectServerMember(state, id));
+  },
+  (members) => members,
+  { memoizeOptions: { equalityCheck: arrayShallowEquals } }
+);
+
+export const selectServerMemberWithUserId = createSelector(
+  (state, serverId, userId) => {
+    const userMemberIds = state.serverMembers.memberIdsByUserId[userId];
+    const userServerMembers = userMemberIds.map((memberId) =>
+      selectServerMember(state, memberId)
+    );
+    return userServerMembers.find((m) => m.serverId === serverId);
+  },
+  (member) => member,
+  { memoizeOptions: { maxSize: 1000 } }
+);
 
 export default combineReducers({
   entriesById,
-  userEntriesById,
   memberIdsByServerId,
   memberIdsByUserId,
 });

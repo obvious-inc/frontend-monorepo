@@ -12,60 +12,76 @@ import channels, {
   selectDmChannelFromUserId,
   selectDmChannelFromUserIds,
 } from "../reducers/channels";
+import channelSections, {
+  selectServerChannelSections,
+  selectChannelSectionWithChild,
+} from "../reducers/channel-sections";
 import messages, {
   selectMessage,
   selectChannelMessages,
 } from "../reducers/messages";
-import serverMembers, {
+import users, {
   selectUser,
-  selectUsers,
   selectUserFromWalletAddress,
-  selectServerMember,
+} from "../reducers/users";
+import serverMembers, {
   selectServerMembers,
-  selectServerMembersByUserId,
   selectServerMemberWithUserId,
+  selectChannelMember,
+  selectChannelMembers,
 } from "../reducers/server-members";
+import channelTypingStatus, {
+  selectChannelTypingMembers,
+} from "../reducers/channel-typing-status";
 
 const selectors = {
-  selectUser,
-  selectUsers,
-  selectUserFromWalletAddress,
-  selectMessage,
-  selectServerChannels,
-  selectServerDmChannels,
-  selectDmChannels,
-  selectDmChannelFromUserId,
-  selectDmChannelFromUserIds,
-  selectChannel,
-  selectChannelMessages,
   selectServer,
   selectServers,
-  selectServerMember,
+  selectChannel,
+  selectServerChannels,
+  selectDmChannels,
+  selectServerDmChannels,
+  selectMessage,
+  selectChannelMessages,
+  selectUser,
+  selectUserFromWalletAddress,
   selectServerMembers,
-  selectServerMembersByUserId,
   selectServerMemberWithUserId,
+  selectChannelMember,
+  selectChannelMembers,
+  selectDmChannelFromUserId,
+  selectDmChannelFromUserIds,
   selectHasFetchedInitialData,
+  selectServerChannelSections,
+  selectChannelSectionWithChild,
+  selectChannelTypingMembers,
 };
 
 const rootReducer = combineReducers({
   ui,
   servers,
   channels,
+  channelSections,
+  users,
   serverMembers,
   messages,
+  channelTypingStatus,
 });
 
 const initialState = rootReducer(undefined, {});
 
 const applyStateToSelectors = (selectors, state) =>
-  mapValues((selector) => selector(state), selectors);
+  mapValues((selector) => selector.bind(null, state), selectors);
 
 const useRootReducer = () => {
   const { user } = useAuth();
 
   const [state, dispatch] = React.useReducer(rootReducer, initialState);
 
-  const appliedSelectors = applyStateToSelectors(selectors, { ...state, user });
+  const appliedSelectors = React.useMemo(
+    () => applyStateToSelectors(selectors, { ...state, user }),
+    [state, user]
+  );
 
   return [appliedSelectors, dispatch];
 };
