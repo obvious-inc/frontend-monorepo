@@ -161,7 +161,7 @@ export const selectChannel = createSelector(
           : new Date(channel.lastReadAt).getTime();
 
       const serverJoinTimestamp = new Date(
-        loggedInServerMember.joined_at
+        loggedInServerMember.joinedAt
       ).getTime();
 
       return channel.lastReadAt == null

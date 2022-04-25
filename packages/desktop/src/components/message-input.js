@@ -33,7 +33,7 @@ const MessageInput = React.forwardRef(
       commands,
       disableCommands = false,
       members,
-      getUserMentionDisplayName,
+      getMember,
     },
     editorRef
   ) => {
@@ -337,7 +337,7 @@ const MessageInput = React.forwardRef(
             setEmojiQuery(null);
             setCommandQuery(null);
           }}
-          getUserMentionDisplayName={getUserMentionDisplayName}
+          getMember={getMember}
         />
 
         {isAutoCompleteMenuOpen && autoCompleteOptions.length !== 0 && (

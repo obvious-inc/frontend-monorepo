@@ -1,5 +1,7 @@
 import React from "react";
 import { css } from "@emotion/react";
+import * as Popover from "./popover";
+import ProfilePreview from "./profile-preview";
 
 const SINGLE_IMAGE_ATTACHMENT_MAX_HEIGHT = 280;
 const MULTI_IMAGE_ATTACHMENT_MAX_WIDTH = 280;
@@ -47,11 +49,7 @@ const parseLeaf = (l, i) => {
   return <React.Fragment key={i}>{children}</React.Fragment>;
 };
 
-const createParser = ({
-  inline,
-  getUserMentionDisplayName,
-  onClickInteractiveElement,
-}) => {
+const createParser = ({ inline, getMember, onClickInteractiveElement }) => {
   const parse = (blocks) => {
     const parseElement = (el, i, els) => {
       const parseNode = (n, i, ns) =>
@@ -73,18 +71,32 @@ const createParser = ({
               {el.url}
             </a>
           );
-        case "user":
+        case "user": {
+          const member = getMember(el.ref);
           return (
-            <button
-              className="mention"
-              key={i}
-              onClick={() => {
-                onClickInteractiveElement(el);
-              }}
-            >
-              @{getUserMentionDisplayName(el.ref)}
-            </button>
+            <Popover.Root key={i}>
+              <Popover.Trigger asChild>
+                <button className="mention">
+                  @{member?.displayName ?? el.ref}
+                </button>
+              </Popover.Trigger>
+              <Popover.Content
+                collisionTolerance={5}
+                side="right"
+                sideOffset={5}
+                align="center"
+              >
+                <ProfilePreview
+                  profilePicture={member.profilePicture}
+                  displayName={member.displayName}
+                  walletAddress={member.walletAddress}
+                  onlineStatus={member.onlineStatus}
+                  userId={member.id}
+                />
+              </Popover.Content>
+            </Popover.Root>
           );
+        }
         case "attachments": {
           if (inline) return null;
           return (
@@ -179,7 +191,7 @@ const createParser = ({
 const RichText = ({
   inline,
   blocks,
-  getUserMentionDisplayName,
+  getMember,
   onClickInteractiveElement,
   children,
   ...props
@@ -188,10 +200,10 @@ const RichText = ({
     () =>
       createParser({
         inline,
-        getUserMentionDisplayName,
+        getMember,
         onClickInteractiveElement,
       }),
-    [inline, getUserMentionDisplayName, onClickInteractiveElement]
+    [inline, getMember, onClickInteractiveElement]
   );
   return (
     <div css={(theme) => css(createCss(theme, { inline }))} {...props}>
