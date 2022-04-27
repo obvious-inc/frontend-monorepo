@@ -125,7 +125,7 @@ const RichTextInput = React.forwardRef(
       onKeyDown,
       disabled = false,
       triggers = [],
-      getUserMentionDisplayName,
+      getMember,
       ...props
     },
     ref
@@ -156,18 +156,21 @@ const RichTextInput = React.forwardRef(
       (props) => {
         const CustomComponent = customElementsByNodeType[props.element.type];
         if (CustomComponent) {
-          if (props.element.type === "user")
+          if (props.element.type === "user") {
+            const member = getMember(props.element.ref);
             return (
               <CustomComponent
                 {...props}
-                displayName={getUserMentionDisplayName(props.element.ref)}
+                id={props.element.ref}
+                displayName={member?.displayName}
               />
             );
+          }
           return <CustomComponent {...props} />;
         }
         return <Element {...props} />;
       },
-      [customElementsByNodeType, getUserMentionDisplayName]
+      [customElementsByNodeType, getMember]
     );
     const renderLeaf = React.useCallback((props) => <Leaf {...props} />, []);
 

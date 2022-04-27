@@ -123,11 +123,8 @@ export const ChannelBase = ({
   const { isFloating: isMenuTogglingEnabled, toggle: toggleMenu } =
     useSideMenu();
 
-  const getUserMentionDisplayName = React.useCallback(
-    (ref) => {
-      const member = members.find((m) => m.id === ref);
-      return member?.displayName ?? ref;
-    },
+  const getMember = React.useCallback(
+    (ref) => members.find((m) => m.id === ref),
     [members]
   );
 
@@ -404,7 +401,7 @@ export const ChannelBase = ({
               hasPendingReply={pendingReplyMessageId === m.id}
               initReply={initReply}
               members={members}
-              getUserMentionDisplayName={getUserMentionDisplayName}
+              getMember={getMember}
               isAdmin={isAdmin}
             />
           ))}
@@ -431,7 +428,7 @@ export const ChannelBase = ({
               : `Message #${channel.name}`
           }
           members={members}
-          getUserMentionDisplayName={getUserMentionDisplayName}
+          getMember={getMember}
           onInputChange={handleInputChange}
         />
         {typingMembers.length > 0 && (
@@ -988,25 +985,26 @@ const Channel = () => {
   );
 
   const headerContent = React.useMemo(
-    () => (
-      <>
-        {!isMenuTogglingEnabled && (
-          <div
-            css={(theme) =>
-              css({ color: theme.colors.textMuted, marginRight: "0.9rem" })
-            }
-          >
-            {channel?.kind === "dm" ? (
-              <AtSignIcon style={{ width: "2.2rem" }} />
-            ) : (
-              <HashIcon style={{ width: "1.9rem" }} />
-            )}
-          </div>
-        )}
-        <Header>{channel?.name}</Header>
-      </>
-    ),
-    [isMenuTogglingEnabled, channel?.kind, channel?.name]
+    () =>
+      channel == null ? null : (
+        <>
+          {!isMenuTogglingEnabled && (
+            <div
+              css={(theme) =>
+                css({ color: theme.colors.textMuted, marginRight: "0.9rem" })
+              }
+            >
+              {channel?.kind === "dm" ? (
+                <AtSignIcon style={{ width: "2.2rem" }} />
+              ) : (
+                <HashIcon style={{ width: "1.9rem" }} />
+              )}
+            </div>
+          )}
+          <Header>{channel?.name}</Header>
+        </>
+      ),
+    [isMenuTogglingEnabled, channel]
   );
 
   if (channel == null)

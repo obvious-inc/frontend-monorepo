@@ -29,6 +29,7 @@ import {
   AddEmojiReaction as AddEmojiReactionIcon,
   JoinArrowRight as JoinArrowRightIcon,
 } from "./icons";
+import ProfilePreview from "./profile-preview";
 
 const { groupBy } = arrayUtils;
 const { mapValues } = objectUtils;
@@ -47,7 +48,7 @@ const ChannelMessage = React.memo(
     hasPendingReply,
     initReply: initReply_,
     members,
-    getUserMentionDisplayName,
+    getMember,
     isAdmin,
   }) => {
     const editInputRef = React.useRef();
@@ -225,23 +226,15 @@ const ChannelMessage = React.memo(
       setEmojiPickerOpen(isOpen);
     }, []);
 
-    const onClickInteractiveElement = React.useCallback(
-      (el) => {
-        switch (el.type) {
-          case "user": {
-            const mentionDisplayName = getUserMentionDisplayName(el.ref);
-            alert(`Congratulations, you clicked "@${mentionDisplayName}"!`);
-            break;
-          }
-          case "image-attachment":
-            window.open(el.url, "_blank");
-            break;
-          default:
-            throw new Error();
-        }
-      },
-      [getUserMentionDisplayName]
-    );
+    const onClickInteractiveElement = React.useCallback((el) => {
+      switch (el.type) {
+        case "image-attachment":
+          window.open(el.url, "_blank");
+          break;
+        default:
+          throw new Error();
+      }
+    }, []);
 
     return (
       <div
@@ -306,7 +299,7 @@ const ChannelMessage = React.memo(
             {message.isReply && (
               <RepliedMessage
                 message={message.repliedMessage}
-                getUserMentionDisplayName={getUserMentionDisplayName}
+                getMember={getMember}
               />
             )}
 
@@ -339,26 +332,56 @@ const ChannelMessage = React.memo(
                 </div>
               ) : (
                 <div css={css({ padding: "0.2rem 0 0" })}>
-                  <AvatarWithZoomTooltip
-                    url={message.author?.pfpUrl}
-                    walletAddress={message.author?.walletAddress}
-                    isVerifiedNft={message.author?.pfp?.verified}
-                    onClick={() => {
-                      alert(
-                        `Congratulations, you clicked ${message.author?.displayName}’s avatar!`
-                      );
-                    }}
-                  />
+                  <Popover.Root>
+                    <Popover.Trigger asChild>
+                      <button
+                        css={css({
+                          position: "relative",
+                          borderRadius: "0.3rem",
+                          overflow: "hidden",
+                          cursor: "pointer",
+                          ":hover": {
+                            boxShadow: message.author?.profilePicture
+                              .isVerifiedNft
+                              ? "0 0 0 2px #4f52ff"
+                              : "0 0 0 2px rgb(255 255 255 / 10%)",
+                          },
+                          ":active": { transform: "translateY(0.1rem)" },
+                        })}
+                      >
+                        <Avatar
+                          url={message.author?.profilePicture.small}
+                          walletAddress={message.author?.walletAddress}
+                          size="3.8rem"
+                          pixelSize={38}
+                        />
+                      </button>
+                    </Popover.Trigger>
+                    <Popover.Content
+                      collisionTolerance={5}
+                      side="right"
+                      sideOffset={5}
+                      align="center"
+                    >
+                      <ProfilePreview
+                        profilePicture={message.author?.profilePicture}
+                        displayName={message.author?.displayName}
+                        walletAddress={message.author?.walletAddress}
+                        onlineStatus={message.author?.onlineStatus}
+                        userId={message.authorUserId}
+                      />
+                    </Popover.Content>
+                  </Popover.Root>
                 </div>
               )}
 
               <div>
                 {!showSimplifiedMessage && (
                   <MessageHeader
-                    authorDisplayName={message.author?.displayName}
-                    authorWalletAddress={message.author?.walletAddress}
-                    authorOnlineStatus={message.author?.onlineStatus}
+                    author={message.author}
                     createdAt={createdAtDate}
+                    authorUserId={message.authorUserId}
+                    isOwnMessage={isOwnMessage}
                   />
                 )}
 
@@ -389,13 +412,13 @@ const ChannelMessage = React.memo(
                       })
                     }
                     members={members}
-                    getUserMentionDisplayName={getUserMentionDisplayName}
+                    getMember={getMember}
                   />
                 ) : (
                   <RichText
                     blocks={message.content}
                     onClickInteractiveElement={onClickInteractiveElement}
-                    getUserMentionDisplayName={getUserMentionDisplayName}
+                    getMember={getMember}
                   >
                     {message.isEdited && (
                       <span
@@ -581,40 +604,29 @@ const Reactions = ({
   );
 };
 
-const MemberDisplayName = ({ displayName, walletAddress, color }) => (
-  <Tooltip.Root>
-    <Tooltip.Trigger asChild>
-      <button
-        css={(theme) =>
-          css({
-            lineHeight: 1.2,
-            color: color ?? theme.colors.pink,
-            fontWeight: "500",
-            cursor: "pointer",
-            ":hover": {
-              textDecoration: "underline",
-            },
-          })
-        }
-        onClick={() => {
-          alert(`Congratulations, you clicked ${displayName}!`);
-        }}
-      >
-        {displayName}
-      </button>
-    </Tooltip.Trigger>
-    <Tooltip.Content side="top" sideOffset={5}>
-      {walletAddress}
-    </Tooltip.Content>
-  </Tooltip.Root>
+const MemberDisplayName = React.forwardRef(
+  ({ displayName, color, ...props }, ref) => (
+    <button
+      ref={ref}
+      css={(theme) =>
+        css({
+          lineHeight: 1.2,
+          color: color ?? theme.colors.pink,
+          fontWeight: "500",
+          cursor: "pointer",
+          ":hover": {
+            textDecoration: "underline",
+          },
+        })
+      }
+      {...props}
+    >
+      {displayName}
+    </button>
+  )
 );
 
-const MessageHeader = ({
-  authorDisplayName,
-  authorWalletAddress,
-  authorOnlineStatus,
-  createdAt,
-}) => (
+const MessageHeader = ({ author, createdAt, authorUserId }) => (
   <div
     css={css`
       display: grid;
@@ -627,12 +639,26 @@ const MessageHeader = ({
     `}
   >
     <div css={css({ display: "flex", alignItems: "center" })}>
-      <MemberDisplayName
-        displayName={authorDisplayName}
-        walletAddress={authorWalletAddress}
-      />
-
-      {authorOnlineStatus === "online" && (
+      <Popover.Root>
+        <Popover.Trigger asChild>
+          <MemberDisplayName displayName={author.displayName} />
+        </Popover.Trigger>
+        <Popover.Content
+          collisionTolerance={5}
+          side="right"
+          sideOffset={5}
+          align="center"
+        >
+          <ProfilePreview
+            profilePicture={author.profilePicture}
+            displayName={author.displayName}
+            walletAddress={author.walletAddress}
+            onlineStatus={author.onlineStatus}
+            userId={authorUserId}
+          />
+        </Popover.Content>
+      </Popover.Root>
+      {author.onlineStatus === "online" && (
         <Tooltip.Root>
           <Tooltip.Trigger asChild>
             <div css={css({ padding: "0.4rem", marginLeft: "0.3rem" })}>
@@ -666,65 +692,6 @@ const MessageHeader = ({
       />
     </TinyMutedText>
   </div>
-);
-
-const AvatarWithZoomTooltip = ({
-  url,
-  walletAddress,
-  isVerifiedNft = false,
-  onClick,
-}) => (
-  <Tooltip.Root>
-    <Tooltip.Trigger asChild>
-      <button
-        css={css({
-          position: "relative",
-          borderRadius: "0.3rem",
-          overflow: "hidden",
-          cursor: "pointer",
-          ":hover": {
-            boxShadow: isVerifiedNft
-              ? "0 0 0 2px #4f52ff"
-              : "0 0 0 2px rgb(255 255 255 / 10%)",
-          },
-          ":active": { transform: "translateY(0.1rem)" },
-        })}
-        onClick={onClick}
-      >
-        <Avatar
-          url={url}
-          walletAddress={walletAddress}
-          size="3.8rem"
-          pixelSize={38}
-        />
-      </button>
-    </Tooltip.Trigger>
-    <Tooltip.Content
-      side="top"
-      sideOffset={6}
-      css={css({ padding: "0.4rem", borderRadius: "0.6rem" })}
-    >
-      {isVerifiedNft && (
-        <div
-          css={(theme) =>
-            css({
-              fontSize: "1rem",
-              margin: "0 0 0.3rem",
-              color: theme.colors.textNormal,
-            })
-          }
-        >
-          NFT verified
-        </div>
-      )}
-      <Avatar
-        url={url}
-        walletAddress={walletAddress}
-        size="6.4rem"
-        pixelSize={64}
-      />
-    </Tooltip.Content>
-  </Tooltip.Root>
 );
 
 // Super hacky and inaccessible
@@ -1252,7 +1219,7 @@ const EditMessageInput = React.forwardRef(
   }
 );
 
-const RepliedMessage = ({ message, getUserMentionDisplayName }) => {
+const RepliedMessage = ({ message, getMember }) => {
   const authorMember = message?.author;
 
   return (
@@ -1295,7 +1262,7 @@ const RepliedMessage = ({ message, getUserMentionDisplayName }) => {
           />
         ) : (
           <Avatar
-            url={authorMember?.pfpUrl}
+            url={authorMember?.profilePicture.small}
             walletAddress={authorMember?.walletAddress}
             size="1.4rem"
             pixelSize={14}
@@ -1322,22 +1289,39 @@ const RepliedMessage = ({ message, getUserMentionDisplayName }) => {
             </span>
           ) : (
             <>
-              <span
-                role="button"
-                tabIndex={0}
-                css={css({
-                  cursor: "pointer",
-                  fontWeight: "500",
-                  ":hover": { textDecoration: "underline" },
-                })}
-                onClick={() => {
-                  alert(
-                    `Congratulations, you clicked "${authorMember?.displayName}"`
-                  );
-                }}
-              >
-                {authorMember?.displayName ?? "..."}
-              </span>{" "}
+              {authorMember == null ? (
+                <span css={css({ fontWeight: "500" })}>...</span>
+              ) : (
+                <Popover.Root>
+                  <Popover.Trigger asChild>
+                    <span
+                      role="button"
+                      tabIndex={0}
+                      css={css({
+                        cursor: "pointer",
+                        fontWeight: "500",
+                        ":hover": { textDecoration: "underline" },
+                      })}
+                    >
+                      {authorMember.displayName}
+                    </span>
+                  </Popover.Trigger>
+                  <Popover.Content
+                    collisionTolerance={5}
+                    side="right"
+                    sideOffset={5}
+                    align="center"
+                  >
+                    <ProfilePreview
+                      profilePicture={message.author?.profilePicture}
+                      displayName={message.author?.displayName}
+                      walletAddress={message.author?.walletAddress}
+                      onlineStatus={message.author?.onlineStatus}
+                      userId={message.authorUserId}
+                    />
+                  </Popover.Content>
+                </Popover.Root>
+              )}{" "}
               <span
                 role="button"
                 tabIndex={0}
@@ -1347,14 +1331,11 @@ const RepliedMessage = ({ message, getUserMentionDisplayName }) => {
                     ":hover": { color: theme.colors.textNormal },
                   })
                 }
-                onClick={() => {
-                  alert("Congratulations, you clicked a replied message!");
-                }}
               >
                 <RichText
                   inline
                   blocks={message?.content ?? []}
-                  getUserMentionDisplayName={getUserMentionDisplayName}
+                  getMember={getMember}
                 />
               </span>
             </>
@@ -1374,7 +1355,6 @@ const SystemMessage = ({ isHovering, message, reactions }) => {
             <MemberDisplayName
               color="white"
               displayName={message.author?.displayName}
-              walletAddress={message.author?.walletAddress}
             />{" "}
             joined the server!
           </>
