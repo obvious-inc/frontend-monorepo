@@ -11,11 +11,17 @@ const entriesById = (state = {}, action) => {
     case "messages-fetched":
       return { ...state, ...indexBy((m) => m.id, action.messages) };
 
+    case "message-fetched":
+      return { ...state, [action.message.id]: action.message };
+
     case "server-event:message-created":
     case "server-event:message-updated":
       return {
         ...state,
-        [action.data.message.id]: action.data.message,
+        [action.data.message.id]: {
+          ...state[action.data.message.id],
+          ...action.data.message,
+        },
       };
 
     case "server-event:message-removed":
@@ -30,14 +36,14 @@ const entriesById = (state = {}, action) => {
     case "message-create-request-sent":
       return {
         ...state,
-        [action.message.id]: action.message,
+        [action.message.id]: { ...action.message, isOptimistic: true },
       };
 
     case "message-create-request-successful":
       return {
         // Remove the optimistic entry
         ...omitKey(action.optimisticEntryId, state),
-        [action.message.id]: action.message,
+        [action.message.id]: { ...action.message, wasOptimistic: true },
       };
     case "message-update-request-successful":
       return {
@@ -128,6 +134,16 @@ const entryIdsByChannelId = (state = {}, action) => {
       );
 
       return { ...state, ...messageIdsByChannelId };
+    }
+
+    case "message-fetched": {
+      const channelId = action.message.channel;
+      const channelMessageIds = state[channelId] ?? [];
+
+      return {
+        ...state,
+        [channelId]: unique([...channelMessageIds, action.message]),
+      };
     }
 
     case "server-event:message-created": {

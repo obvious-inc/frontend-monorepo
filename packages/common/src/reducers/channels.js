@@ -138,6 +138,19 @@ const entriesById = (state = {}, action) => {
   }
 };
 
+const metaById = (state = {}, action) => {
+  switch (action.type) {
+    case "messages-fetched": {
+      const config = state[action.channelId];
+      const hasAllMessages = action.messages.length < action.limit;
+      return { ...state, [action.channelId]: { ...config, hasAllMessages } };
+    }
+
+    default:
+      return state;
+  }
+};
+
 export const selectChannel = createSelector(
   (state, channelId) => state.channels.entriesById[channelId],
   (state) => state.user,
@@ -252,4 +265,7 @@ export const selectServerDmChannels = createSelector(
   { memoizeOptions: { equalityCheck: arrayShallowEquals } }
 );
 
-export default combineReducers({ entriesById });
+export const selectHasAllMessages = (state, channelId) =>
+  state.channels.metaById[channelId]?.hasAllMessages ?? false;
+
+export default combineReducers({ entriesById, metaById });

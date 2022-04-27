@@ -11,6 +11,7 @@ import channels, {
   selectDmChannels,
   selectDmChannelFromUserId,
   selectDmChannelFromUserIds,
+  selectHasAllMessages,
 } from "../reducers/channels";
 import channelSections, {
   selectServerChannelSections,
@@ -55,6 +56,7 @@ const selectors = {
   selectServerChannelSections,
   selectChannelSectionWithChild,
   selectChannelTypingMembers,
+  selectHasAllMessages,
 };
 
 const rootReducer = combineReducers({
