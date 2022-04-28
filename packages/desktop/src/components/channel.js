@@ -89,6 +89,91 @@ const useMessageFetcher = () => {
   return fetchMessages;
 };
 
+const useMessages = (channelId) => {
+  const { state } = useAppScope();
+  const unsortedMessages = state.selectChannelMessages(channelId);
+  const hasAllMessages = state.selectHasAllMessages(channelId);
+
+  const messages = React.useMemo(
+    () =>
+      unsortedMessages.sort(
+        (m1, m2) => new Date(m1.created_at) - new Date(m2.created_at)
+      ),
+    [unsortedMessages]
+  );
+
+  return { messages, hasAllMessages };
+};
+
+const useScroll = (scrollContainerRef, channelId) => {
+  const [didScrollToBottom, setScrolledToBottom] = React.useState(
+    false // TODO
+    // scrollPositionCache[channel.id] == null
+  );
+
+  const scrollToBottom = React.useCallback(
+    (options) => {
+      const isScrollable =
+        scrollContainerRef.current.scrollHeight >
+        scrollContainerRef.current.getBoundingClientRect().height;
+
+      if (!isScrollable) {
+        setScrolledToBottom(true);
+        return;
+      }
+
+      scrollContainerRef.current.scrollTo({
+        left: 0,
+        top: scrollContainerRef.current.scrollHeight * 2,
+        ...options,
+      });
+    },
+    [scrollContainerRef]
+  );
+
+  React.useEffect(() => {
+    const cachedScrollPosition = scrollPositionCache[channelId];
+
+    if (cachedScrollPosition == null) {
+      scrollToBottom();
+      return;
+    }
+
+    scrollContainerRef.current.scrollTo({
+      left: 0,
+      top: cachedScrollPosition,
+    });
+  }, [scrollContainerRef, channelId, scrollToBottom]);
+
+  return { didScrollToBottom, setScrolledToBottom, scrollToBottom };
+};
+
+const useInputFocuser = (inputRef, channelId) => {
+  React.useEffect(() => {
+    inputRef.current.focus();
+  }, [inputRef, channelId]);
+};
+
+const useReplies = ({ inputRef }) => {
+  const [pendingReplyMessageId, setPendingReplyMessageId] =
+    React.useState(null);
+
+  const init = React.useCallback(
+    (messageId) => {
+      setPendingReplyMessageId(messageId);
+      inputRef.current.focus();
+    },
+    [inputRef]
+  );
+
+  const cancel = React.useCallback(() => {
+    setPendingReplyMessageId(null);
+    inputRef.current.focus();
+  }, [inputRef]);
+
+  return { pendingReplyMessageId, init, cancel };
+};
+
 const scrollPositionCache = {};
 
 export const ChannelBase = ({
@@ -99,26 +184,21 @@ export const ChannelBase = ({
   createMessage,
   headerContent,
 }) => {
+  const { actions, state, serverConnection } = useAppScope();
+  const { user } = useAuth();
+
   const scrollContainerRef = React.useRef();
-  const channelEndElementRef = React.useRef();
-  const inputRef = React.useRef();
-
-  const [didScrollToBottom, setScrolledToBottom] = React.useState(true);
+  const { didScrollToBottom, setScrolledToBottom, scrollToBottom } = useScroll(
+    scrollContainerRef,
+    channel.id
+  );
   const didScrollToBottomRef = React.useRef(didScrollToBottom);
-
   React.useEffect(() => {
     didScrollToBottomRef.current = didScrollToBottom;
   });
 
   const fetchMessages = useMessageFetcher();
-
-  const { actions, state, serverConnection } = useAppScope();
-  const { user } = useAuth();
-
-  const hasAllMessages = state.selectHasAllMessages(channel.id);
-
-  const [pendingReplyMessageId, setPendingReplyMessageId] =
-    React.useState(null);
+  const { messages, hasAllMessages } = useMessages(channel.id);
 
   const { isFloating: isMenuTogglingEnabled, toggle: toggleMenu } =
     useSideMenu();
@@ -128,27 +208,48 @@ export const ChannelBase = ({
     [members]
   );
 
-  const throttledRegisterTypingActivity = React.useMemo(
-    () =>
-      throttle(() => actions.registerChannelTypingActivity(channel.id), 3000, {
-        trailing: false,
-      }),
-    [actions, channel.id]
-  );
+  const inputRef = React.useRef();
 
-  const scrollToBottom = React.useCallback((options) => {
-    scrollContainerRef.current.scrollTo({
-      left: 0,
-      top: scrollContainerRef.current.scrollHeight,
-      ...options,
+  useInputFocuser(inputRef, channel.id);
+
+  const {
+    pendingReplyMessageId,
+    init: initReply,
+    cancel: cancelReply,
+  } = useReplies({ inputRef });
+
+  React.useEffect(() => {
+    if (messages.length !== 0) return;
+
+    // This should be called after the first render, and when switching between
+    // channels
+    fetchMessages(channel.id).then(() => {
+      if (didScrollToBottomRef.current) scrollToBottom();
     });
-  }, []);
+  }, [scrollToBottom, fetchMessages, channel.id, messages]);
 
-  const unsortedMessages = state.selectChannelMessages(channel.id);
+  const channelEndElementRef = React.useRef();
+  const isChannelEndVisible = useIsOnScreen(channelEndElementRef);
 
-  const messages = unsortedMessages.sort(
-    (m1, m2) => new Date(m1.created_at) - new Date(m2.created_at)
-  );
+  React.useEffect(() => {
+    if (hasAllMessages || messages.length === 0 || !isChannelEndVisible) return;
+
+    // This should only happen on huge viewports where all messages from the
+    // initial fetch fit in view without a scrollbar. All other cases should be
+    // covered by the scroll listener
+    fetchMessages(channel.id, { beforeMessageId: messages[0].id }).then(() => {
+      if (didScrollToBottomRef.current) scrollToBottom();
+    });
+  }, [
+    scrollToBottom,
+    fetchMessages,
+    channel.id,
+    isChannelEndVisible,
+    hasAllMessages,
+    messages,
+  ]);
+
+  const channelHasUnread = state.selectChannelHasUnread(channel.id);
 
   useScrollListener(scrollContainerRef, (e, { direction }) => {
     scrollPositionCache[channel.id] = e.target.scrollTop;
@@ -159,7 +260,9 @@ export const ChannelBase = ({
 
     if (didScrollToBottom !== isAtBottom) setScrolledToBottom(isAtBottom);
 
-    if (isAtBottom && channel.hasUnread)
+    if (isAtBottom) console.log("bottom");
+
+    if (isAtBottom && channelHasUnread)
       actions.markChannelRead({ channelId: channel.id });
 
     if (direction !== "up" || messages.length === 0 || hasAllMessages) return;
@@ -174,65 +277,15 @@ export const ChannelBase = ({
     });
   });
 
-  React.useEffect(() => {
-    inputRef.current.focus();
-  }, [channel.id]);
-
-  const isChannelEndVisible = useIsOnScreen(channelEndElementRef);
-
-  React.useEffect(() => {
-    if (hasAllMessages) return;
-
-    if (messages.length === 0) {
-      fetchMessages(channel.id).then(() => {
-        if (didScrollToBottomRef.current) scrollToBottom();
-      });
-      return;
-    }
-
-    if (!isChannelEndVisible) return;
-
-    fetchMessages(channel.id, {
-      beforeMessageId: messages[0] == null ? undefined : messages[0].id,
-    }).then(() => {
-      if (didScrollToBottomRef.current) scrollToBottom();
-    });
-  }, [
-    scrollToBottom,
-    fetchMessages,
-    channel.id,
-    isChannelEndVisible,
-    hasAllMessages,
-    messages,
-  ]);
-
-  React.useEffect(() => {
-    const cachedScrollPosition = scrollPositionCache[channel.id];
-    if (cachedScrollPosition == null) {
-      scrollToBottom();
-      return;
-    }
-
-    scrollContainerRef.current.scrollTo({
-      left: 0,
-      top: cachedScrollPosition,
-    });
-  }, [channel.id, scrollToBottom]);
-
   const lastMessage = messages.slice(-1)[0];
 
-  // Make channels as read as new messages arrive
+  // Mark channel as read when new messages arrive
   React.useEffect(() => {
-    if (lastMessage == null) return;
-
-    if (!didScrollToBottomRef.current) return;
-
-    if (lastMessage.authorUserId !== user.id || lastMessage.isOptimistic)
-      scrollToBottom({ behavior: "smooth" });
+    if (lastMessage == null || !didScrollToBottomRef.current) return;
 
     if (
       serverConnection.isConnected &&
-      channel.hasUnread &&
+      channelHasUnread &&
       lastMessage.optimisticEntryId == null
     )
       actions.markChannelRead({ channelId: channel.id });
@@ -240,12 +293,18 @@ export const ChannelBase = ({
     actions,
     user.id,
     channel.id,
-    channel.hasUnread,
+    channelHasUnread,
     lastMessage,
     serverConnection.isConnected,
     scrollToBottom,
     didScrollToBottomRef,
   ]);
+
+  // Scroll to bottom when new messages arrive
+  React.useLayoutEffect(() => {
+    if (lastMessage == null || !didScrollToBottomRef.current) return;
+    scrollToBottom();
+  }, [user.id, lastMessage, scrollToBottom, didScrollToBottomRef]);
 
   usePageVisibilityChangeListener((state) => {
     if (state === "visible") return;
@@ -253,27 +312,29 @@ export const ChannelBase = ({
     fetchMessages(channel.id);
   });
 
-  const initReply = React.useCallback((messageId) => {
-    setPendingReplyMessageId(messageId);
-    inputRef.current.focus();
-  }, []);
-
-  const cancelReply = React.useCallback(() => {
-    setPendingReplyMessageId(null);
-    inputRef.current.focus();
-  }, []);
-
   const submitMessage = React.useCallback(
     (blocks) => {
-      setPendingReplyMessageId(null);
-      return createMessage({
-        blocks,
-        replyToMessageId: pendingReplyMessageId,
+      cancelReply();
+      return new Promise((resolve, reject) => {
+        // TODO
+        requestAnimationFrame(() => {
+          createMessage({
+            blocks,
+            replyToMessageId: pendingReplyMessageId,
+          }).then(resolve, reject);
+        });
       });
     },
-    [createMessage, pendingReplyMessageId]
+    [cancelReply, createMessage, pendingReplyMessageId]
   );
 
+  const throttledRegisterTypingActivity = React.useMemo(
+    () =>
+      throttle(() => actions.registerChannelTypingActivity(channel.id), 3000, {
+        trailing: false,
+      }),
+    [actions, channel.id]
+  );
   const handleInputChange = React.useCallback(
     (blocks) => {
       if (blocks.length > 1 || !isNodeEmpty(blocks[0]))
@@ -340,10 +401,6 @@ export const ChannelBase = ({
           justify-content: flex-end;
           overflow: auto;
         `}
-        style={{
-          background:
-            !didScrollToBottom && channel.hasUnread ? "red" : undefined,
-        }}
       >
         {hasAllMessages && (
           <div

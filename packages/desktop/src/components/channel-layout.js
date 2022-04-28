@@ -204,8 +204,8 @@ const ChannelLayout = () => {
                     channelId={c.id}
                     serverId={params.serverId}
                     name={c.name}
-                    hasUnread={c.hasUnread}
-                    mentionCount={c.mentionCount}
+                    hasUnread={state.selectChannelHasUnread(c.id)}
+                    mentionCount={state.selectChannelMentionCount(c.id)}
                   />
                 ))}
               </Section>
@@ -224,8 +224,8 @@ const ChannelLayout = () => {
                     channelId={c.id}
                     serverId={params.serverId}
                     name={c.name}
-                    hasUnread={c.hasUnread}
-                    mentionCount={c.mentionCount}
+                    hasUnread={state.selectChannelHasUnread(c.id)}
+                    mentionCount={state.selectChannelMentionCount(c.id)}
                   />
                 ))}
               </Section>
@@ -241,8 +241,8 @@ const ChannelLayout = () => {
                     key={c.id}
                     name={c.name}
                     link={`/channels/${params.serverId}/${c.id}`}
-                    hasUnread={c.hasUnread}
-                    notificationCount={c.mentionCount}
+                    hasUnread={state.selectChannelHasUnread(c.id)}
+                    notificationCount={state.selectChannelMentionCount(c.id)}
                     memberUserIds={c.memberUserIds}
                   />
                 ))}
@@ -275,8 +275,8 @@ export const DmChannelLayout = () => {
               key={c.id}
               name={c.name}
               link={`/channels/@me/${c.id}`}
-              hasUnread={c.hasUnread}
-              notificationCount={c.mentionCount}
+              hasUnread={state.selectChannelHasUnread(c.id)}
+              notificationCount={state.selectChannelMentionCount(c.id)}
               memberUserIds={c.memberUserIds}
               size="large"
             />

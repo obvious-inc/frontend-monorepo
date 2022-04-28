@@ -245,13 +245,13 @@ const ChannelMessage = React.memo(
             : showAsFocused
             ? theme.colors.messageHoverBackground
             : undefined,
+          padding: showSimplifiedMessage
+            ? "0.5rem 1.6rem"
+            : "0.7rem 1.6rem 0.3rem",
         }}
         css={css({
           position: "relative",
           lineHeight: 1.46668,
-          padding: showSimplifiedMessage
-            ? "0.5rem 1.6rem"
-            : "0.7rem 1.6rem 0.3rem",
           userSelect: "text",
         })}
         {...hoverHandlers}
@@ -262,9 +262,9 @@ const ChannelMessage = React.memo(
             top: 0,
             right: "1.6rem",
             transform: "translateY(-50%)",
-            display: showAsFocused ? "block" : "none",
             zIndex: 1,
           })}
+          style={{ display: showAsFocused ? "block" : "none" }}
         >
           <MessageToolbar
             allowReplies={!isOwnMessage && !message.isSystemMessage}
@@ -1420,32 +1420,34 @@ const TinyMutedText = ({ children, nowrap = false }) => (
       css({
         color: theme.colors.textMuted,
         fontSize: "1rem",
-        whiteSpace: nowrap ? "nowrap" : undefined,
       })
     }
+    style={{ whiteSpace: nowrap ? "nowrap" : undefined }}
   >
     {children}
   </div>
 );
 
-const FormattedDateWithTooltip = ({ value, tooltipContentProps, ...props }) => (
-  <Tooltip.Root>
-    <Tooltip.Trigger asChild>
-      <span>
-        <FormattedDate value={value} {...props} />
-      </span>
-    </Tooltip.Trigger>
-    <Tooltip.Content side="top" sideOffset={5} {...tooltipContentProps}>
-      <FormattedDate
-        value={value}
-        weekday="long"
-        hour="numeric"
-        minute="numeric"
-        day="numeric"
-        month="long"
-      />
-    </Tooltip.Content>
-  </Tooltip.Root>
+const FormattedDateWithTooltip = React.memo(
+  ({ value, tooltipContentProps, ...props }) => (
+    <Tooltip.Root>
+      <Tooltip.Trigger asChild>
+        <span>
+          <FormattedDate value={value} {...props} />
+        </span>
+      </Tooltip.Trigger>
+      <Tooltip.Content side="top" sideOffset={5} {...tooltipContentProps}>
+        <FormattedDate
+          value={value}
+          weekday="long"
+          hour="numeric"
+          minute="numeric"
+          day="numeric"
+          month="long"
+        />
+      </Tooltip.Content>
+    </Tooltip.Root>
+  )
 );
 
 export default ChannelMessage;

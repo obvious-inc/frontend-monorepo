@@ -15,6 +15,22 @@ const entriesById = (state = {}, action) => {
       return { ...state, [action.message.id]: action.message };
 
     case "server-event:message-created":
+      if (action.data.message.author === action.user.id) {
+        const optimisticEntries = Object.values(state).filter(
+          (m) => m.isOptimistic
+        );
+
+        if (optimisticEntries.length > 0) return state;
+      }
+
+      return {
+        ...state,
+        [action.data.message.id]: {
+          ...state[action.data.message.id],
+          ...action.data.message,
+        },
+      };
+
     case "server-event:message-updated":
       return {
         ...state,
