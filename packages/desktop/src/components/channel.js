@@ -2,7 +2,7 @@ import throttle from "lodash.throttle";
 import React from "react";
 import { useParams } from "react-router";
 import { css } from "@emotion/react";
-import { useAppScope, useAuth, getImageFileDimensions } from "@shades/common";
+import { useAppScope, getImageFileDimensions } from "@shades/common";
 import usePageVisibilityChangeListener from "../hooks/page-visibility-change-listener";
 import stringifyMessageBlocks from "../slate/stringify";
 import { createEmptyParagraph, isNodeEmpty, cleanNodes } from "../slate/utils";
