@@ -23,8 +23,7 @@ export const selectServer = createSelector(
       ownerUserId,
       isAdmin: loggedInUserId === ownerUserId,
     };
-  },
-  (s) => s
+  }
 );
 
 export const selectServers = createSelector(
