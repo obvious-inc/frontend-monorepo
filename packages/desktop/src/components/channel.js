@@ -27,7 +27,7 @@ const useMessageFetcher = () => {
   const fetchMessages = React.useCallback(
     async (channelId, { limit, beforeMessageId, afterMessageId } = {}) => {
       const key = new URLSearchParams([
-        ["limit", limit],
+        ["lt", limit],
         ["before", beforeMessageId],
         ["after", afterMessageId],
       ]).toString();
@@ -111,12 +111,6 @@ const useScroll = (scrollContainerRef, channelId) => {
   return { didScrollToBottom, setScrolledToBottom, scrollToBottom };
 };
 
-const useInputFocuser = (inputRef, channelId) => {
-  React.useEffect(() => {
-    inputRef.current.focus();
-  }, [inputRef, channelId]);
-};
-
 const useReplies = ({ inputRef }) => {
   const [pendingReplyMessageId, setPendingReplyMessageId] =
     React.useState(null);
@@ -181,13 +175,22 @@ export const ChannelBase = ({
 
   const inputRef = React.useRef();
 
-  useInputFocuser(inputRef, channel.id);
+  React.useEffect(() => {
+    inputRef.current.focus();
+  }, [inputRef, channel.id]);
 
-  const {
-    pendingReplyMessageId,
-    init: initReply,
-    cancel: cancelReply,
-  } = useReplies({ inputRef });
+  const [pendingReplyMessageId, setPendingReplyMessageId] =
+    React.useState(null);
+
+  const initReply = React.useCallback((messageId) => {
+    setPendingReplyMessageId(messageId);
+    inputRef.current.focus();
+  }, []);
+
+  const cancelReply = React.useCallback(() => {
+    setPendingReplyMessageId(null);
+    inputRef.current.focus();
+  }, []);
 
   React.useEffect(() => {
     if (messages.length !== 0) return;
@@ -301,7 +304,7 @@ export const ChannelBase = ({
   const lastMessage = messages.slice(-1)[0];
 
   // Scroll to bottom when new messages arrive
-  React.useLayoutEffect(() => {
+  React.useEffect(() => {
     if (lastMessage == null || !didScrollToBottomRef.current) return;
     scrollToBottom();
   }, [lastMessage, scrollToBottom, didScrollToBottomRef]);
@@ -314,7 +317,7 @@ export const ChannelBase = ({
 
   const submitMessage = React.useCallback(
     (blocks) => {
-      cancelReply();
+      setPendingReplyMessageId(null);
       return new Promise((resolve, reject) => {
         // TODO
         requestAnimationFrame(() => {
@@ -325,7 +328,7 @@ export const ChannelBase = ({
         });
       });
     },
-    [cancelReply, createMessage, pendingReplyMessageId]
+    [createMessage, pendingReplyMessageId]
   );
 
   const throttledRegisterTypingActivity = React.useMemo(
