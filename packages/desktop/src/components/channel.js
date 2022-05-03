@@ -18,41 +18,7 @@ import {
 } from "./icons";
 import useSideMenu from "../hooks/side-menu";
 import useIsOnScreen from "../hooks/is-on-screen";
-
-const useScrollListener = (scrollContainerRef, handler) => {
-  const handlerRef = React.useRef(handler);
-
-  React.useEffect(() => {
-    handlerRef.current = handler;
-  });
-
-  React.useEffect(() => {
-    const scrollContainer = scrollContainerRef.current;
-
-    let prevScrollTop = null;
-
-    const scrollHandler = (e) => {
-      let scrollDirection = null;
-
-      if (prevScrollTop) {
-        scrollDirection =
-          e.target.scrollTop - prevScrollTop > 0 ? "down" : "up";
-      }
-
-      prevScrollTop = e.target.scrollTop;
-
-      handlerRef.current(e, { direction: scrollDirection });
-    };
-
-    scrollContainer.addEventListener("scroll", scrollHandler, {
-      passive: true,
-    });
-
-    return () => {
-      scrollContainer.removeEventListener("scroll", scrollHandler);
-    };
-  }, [scrollContainerRef]);
-};
+import useScrollListener from "../hooks/scroll-listener";
 
 const useMessageFetcher = () => {
   const pendingPromisesRef = React.useRef({});
@@ -106,10 +72,7 @@ const useMessages = (channelId) => {
 };
 
 const useScroll = (scrollContainerRef, channelId) => {
-  const [didScrollToBottom, setScrolledToBottom] = React.useState(
-    false // TODO
-    // scrollPositionCache[channel.id] == null
-  );
+  const [didScrollToBottom, setScrolledToBottom] = React.useState(false);
 
   const scrollToBottom = React.useCallback(
     (options) => {
@@ -185,8 +148,8 @@ export const ChannelBase = ({
   headerContent,
 }) => {
   const { actions, state, serverConnection } = useAppScope();
-  const { user } = useAuth();
 
+  const messagesContainerRef = React.useRef();
   const scrollContainerRef = React.useRef();
   const { didScrollToBottom, setScrolledToBottom, scrollToBottom } = useScroll(
     scrollContainerRef,
@@ -198,6 +161,14 @@ export const ChannelBase = ({
   });
 
   const fetchMessages = useMessageFetcher();
+  const fetchMessagesAndMaintainScrollPosition = React.useCallback(
+    (...args) =>
+      fetchMessages(...args).then((res) => {
+        if (didScrollToBottomRef.current) scrollToBottom();
+        return res;
+      }),
+    [fetchMessages, scrollToBottom]
+  );
   const { messages, hasAllMessages } = useMessages(channel.id);
 
   const { isFloating: isMenuTogglingEnabled, toggle: toggleMenu } =
@@ -223,10 +194,13 @@ export const ChannelBase = ({
 
     // This should be called after the first render, and when switching between
     // channels
-    fetchMessages(channel.id).then(() => {
-      if (didScrollToBottomRef.current) scrollToBottom();
-    });
-  }, [scrollToBottom, fetchMessages, channel.id, messages]);
+    fetchMessagesAndMaintainScrollPosition(channel.id);
+  }, [
+    scrollToBottom,
+    fetchMessagesAndMaintainScrollPosition,
+    channel.id,
+    messages,
+  ]);
 
   const channelEndElementRef = React.useRef();
   const isChannelEndVisible = useIsOnScreen(channelEndElementRef);
@@ -237,12 +211,13 @@ export const ChannelBase = ({
     // This should only happen on huge viewports where all messages from the
     // initial fetch fit in view without a scrollbar. All other cases should be
     // covered by the scroll listener
-    fetchMessages(channel.id, { beforeMessageId: messages[0].id }).then(() => {
-      if (didScrollToBottomRef.current) scrollToBottom();
+    fetchMessagesAndMaintainScrollPosition(channel.id, {
+      beforeMessageId: messages[0].id,
+      limit: 30,
     });
   }, [
     scrollToBottom,
-    fetchMessages,
+    fetchMessagesAndMaintainScrollPosition,
     channel.id,
     isChannelEndVisible,
     hasAllMessages,
@@ -251,65 +226,90 @@ export const ChannelBase = ({
 
   const channelHasUnread = state.selectChannelHasUnread(channel.id);
 
-  useScrollListener(scrollContainerRef, (e, { direction }) => {
+  useScrollListener(scrollContainerRef, (e) => {
     scrollPositionCache[channel.id] = e.target.scrollTop;
+    if (e.target.scrollTop === 0 && !hasAllMessages)
+      scrollContainerRef.current.scrollTo({ top: 10 });
+  });
 
+  const [isFetchingMessagesBefore, setFetchingMessagesBefore] =
+    React.useState(0);
+
+  const [averageMessageListItemHeight, setAverageMessageListItemHeight] =
+    React.useState(0);
+
+  React.useEffect(() => {
+    if (messages.length === 0) return;
+    setAverageMessageListItemHeight(
+      messagesContainerRef.current.scrollHeight / messages.length
+    );
+  }, [messages.length]);
+
+  useScrollListener(scrollContainerRef, (e, { direction }) => {
+    if (direction !== "up" || messages.length === 0 || hasAllMessages) return;
+
+    const isCloseToTop =
+      // ~4 viewport heights from top
+      e.target.scrollTop < e.target.getBoundingClientRect().height * 4;
+
+    if (!isCloseToTop) return;
+
+    const messagesCountToFetch = 30;
+
+    setFetchingMessagesBefore((s) => s + messagesCountToFetch);
+    fetchMessages(channel.id, {
+      beforeMessageId: messages[0].id,
+      limit: messagesCountToFetch,
+    }).finally(() => {
+      setFetchingMessagesBefore((s) => Math.max(0, s - messagesCountToFetch));
+    });
+  });
+
+  useScrollListener(scrollContainerRef, (e) => {
     const isAtBottom =
       e.target.scrollTop + e.target.getBoundingClientRect().height >=
       e.target.scrollHeight;
 
     if (didScrollToBottom !== isAtBottom) setScrolledToBottom(isAtBottom);
-
-    if (isAtBottom) console.log("bottom");
-
-    if (isAtBottom && channelHasUnread)
-      actions.markChannelRead({ channelId: channel.id });
-
-    if (direction !== "up" || messages.length === 0 || hasAllMessages) return;
-
-    const isCloseToTop =
-      e.target.scrollTop < e.target.getBoundingClientRect().height * 2;
-
-    if (!isCloseToTop) return;
-
-    fetchMessages(channel.id, {
-      beforeMessageId: messages[0].id,
-    });
   });
 
-  const lastMessage = messages.slice(-1)[0];
-
-  // Mark channel as read when new messages arrive
+  // Mark channel as read when new messages arrive when scrolled to bottom
   React.useEffect(() => {
-    if (lastMessage == null || !didScrollToBottomRef.current) return;
-
     if (
-      serverConnection.isConnected &&
-      channelHasUnread &&
-      lastMessage.optimisticEntryId == null
+      messages.length === 0 ||
+      !didScrollToBottom ||
+      !channelHasUnread ||
+      !serverConnection.isConnected
     )
+      return;
+
+    const lastPersistedMessage = messages
+      .filter((m) => !m.isOptimistic)
+      .slice(-1)[0];
+
+    if (lastPersistedMessage != null)
       actions.markChannelRead({ channelId: channel.id });
   }, [
     actions,
-    user.id,
     channel.id,
     channelHasUnread,
-    lastMessage,
+    messages,
     serverConnection.isConnected,
-    scrollToBottom,
-    didScrollToBottomRef,
+    didScrollToBottom,
   ]);
+
+  const lastMessage = messages.slice(-1)[0];
 
   // Scroll to bottom when new messages arrive
   React.useLayoutEffect(() => {
     if (lastMessage == null || !didScrollToBottomRef.current) return;
     scrollToBottom();
-  }, [user.id, lastMessage, scrollToBottom, didScrollToBottomRef]);
+  }, [lastMessage, scrollToBottom, didScrollToBottomRef]);
 
   usePageVisibilityChangeListener((state) => {
     if (state === "visible") return;
     actions.fetchInitialData();
-    fetchMessages(channel.id);
+    fetchMessagesAndMaintainScrollPosition(channel.id);
   });
 
   const submitMessage = React.useCallback(
@@ -393,76 +393,112 @@ export const ChannelBase = ({
       </div>
 
       <div
-        ref={scrollContainerRef}
-        css={css`
-          flex: 1;
-          display: flex;
-          flex-direction: column;
-          justify-content: flex-end;
-          overflow: auto;
-        `}
+        css={css({
+          position: "relative",
+          flex: 1,
+          display: "flex",
+          minHeight: 0,
+          minWidth: 0,
+        })}
       >
-        {hasAllMessages && (
+        <div
+          ref={scrollContainerRef}
+          css={css({
+            position: "absolute",
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            overflowY: "scroll",
+            overflowX: "hidden",
+            minHeight: 0,
+            flex: 1,
+          })}
+        >
           <div
-            css={css({ padding: "6rem 1.6rem 0" })}
-            style={{ paddingBottom: messages.length !== 0 ? "1rem" : 0 }}
+            css={css({
+              display: "flex",
+              flexDirection: "column",
+              justifyContent: "flex-end",
+              alignItems: "stretch",
+              minHeight: "100%",
+            })}
           >
+            {hasAllMessages && (
+              <div
+                css={css({ padding: "6rem 1.6rem 0" })}
+                style={{ paddingBottom: messages.length !== 0 ? "1rem" : 0 }}
+              >
+                <div
+                  css={(theme) =>
+                    css({
+                      borderBottom: "0.1rem solid",
+                      borderColor: theme.colors.backgroundModifierAccent,
+                      padding: "0 0 1.5rem",
+                    })
+                  }
+                >
+                  <div
+                    css={(theme) =>
+                      css({
+                        fontSize: "2.5rem",
+                        fontWeight: "500",
+                        color: theme.colors.textHeader,
+                        margin: "0 0 0.5rem",
+                      })
+                    }
+                  >
+                    Welcome to #{channel.name}!
+                  </div>
+                  <div
+                    css={(theme) =>
+                      css({
+                        fontSize: theme.fontSizes.default,
+                        color: theme.colors.textHeaderSecondary,
+                      })
+                    }
+                  >
+                    This is the start of #{channel.name}.
+                  </div>
+                </div>
+              </div>
+            )}
+            <div ref={channelEndElementRef} />
+            {isFetchingMessagesBefore > 0 && (
+              <div
+                css={css({
+                  height: `${
+                    isFetchingMessagesBefore * averageMessageListItemHeight
+                  }px`,
+                })}
+              />
+            )}
             <div
+              ref={messagesContainerRef}
               css={(theme) =>
                 css({
-                  borderBottom: "0.1rem solid",
-                  borderColor: theme.colors.backgroundModifierAccent,
-                  padding: "0 0 1.5rem",
+                  minHeight: 0,
+                  fontSize: theme.fontSizes.channelMessages,
+                  fontWeight: "400",
                 })
               }
             >
-              <div
-                css={(theme) =>
-                  css({
-                    fontSize: "2.5rem",
-                    fontWeight: "500",
-                    color: theme.colors.textHeader,
-                    margin: "0 0 0.5rem",
-                  })
-                }
-              >
-                Welcome to #{channel.name}!
-              </div>
-              <div
-                css={(theme) =>
-                  css({
-                    fontSize: theme.fontSizes.default,
-                    color: theme.colors.textHeaderSecondary,
-                  })
-                }
-              >
-                This is the start of #{channel.name}.
-              </div>
+              {messages.map((m, i, ms) => (
+                <ChannelMessage
+                  key={m.id}
+                  channel={channel}
+                  message={m}
+                  previousMessage={ms[i - 1]}
+                  hasPendingReply={pendingReplyMessageId === m.id}
+                  initReply={initReply}
+                  members={members}
+                  getMember={getMember}
+                  isAdmin={isAdmin}
+                />
+              ))}
+              <div css={css({ height: "1.6rem" })} />
             </div>
           </div>
-        )}
-        <div ref={channelEndElementRef} />
-        <div
-          css={(theme) => css`
-            min-height: 0;
-            font-size: ${theme.fontSizes.channelMessages};
-            font-weight: 400;
-          `}
-        >
-          {messages.map((m, i, ms) => (
-            <ChannelMessage
-              key={m.id}
-              channel={channel}
-              message={m}
-              previousMessage={ms[i - 1]}
-              hasPendingReply={pendingReplyMessageId === m.id}
-              initReply={initReply}
-              members={members}
-              getMember={getMember}
-              isAdmin={isAdmin}
-            />
-          ))}
-          <div css={css({ height: "1.6rem" })} />
         </div>
       </div>
       <div css={css({ padding: "0 1.6rem 2.4rem", position: "relative" })}>

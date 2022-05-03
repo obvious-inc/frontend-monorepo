@@ -40,415 +40,411 @@ const ONE_MINUTE_IN_MILLIS = 1000 * 60;
 const AVATAR_SIZE = "3.8rem";
 const GUTTER_SIZE = "1.2rem";
 
-const ChannelMessage = React.memo(
-  ({
-    message,
-    channel,
-    previousMessage,
-    hasPendingReply,
-    initReply: initReply_,
-    members,
-    getMember,
-    isAdmin,
-  }) => {
-    const editInputRef = React.useRef();
-    const containerRef = React.useRef();
+const ChannelMessage = React.memo(function ChannelMessage_({
+  message,
+  channel,
+  previousMessage,
+  hasPendingReply,
+  initReply: initReply_,
+  members,
+  getMember,
+  isAdmin,
+}) {
+  const editInputRef = React.useRef();
+  const containerRef = React.useRef();
 
-    const { user } = useAuth();
-    const { actions, state } = useAppScope();
-    const navigate = useNavigate();
+  const { user } = useAuth();
+  const { actions, state } = useAppScope();
+  const navigate = useNavigate();
 
-    const [isHovering, hoverHandlers] = useHover();
-    const [isDropdownOpen, setDropdownOpen] = React.useState(false);
-    const [isEmojiPickerOpen, setEmojiPickerOpen] = React.useState(false);
-    const [isEditing, setEditingMessage] = React.useState(false);
+  const [isHovering, hoverHandlers] = useHover();
+  const [isDropdownOpen, setDropdownOpen] = React.useState(false);
+  const [isEmojiPickerOpen, setEmojiPickerOpen] = React.useState(false);
+  const [isEditing, setEditingMessage] = React.useState(false);
 
-    const theme = useTheme();
+  const theme = useTheme();
 
-    const showAsFocused =
-      !isEditing && (isHovering || isDropdownOpen || isEmojiPickerOpen);
+  const showAsFocused =
+    !isEditing && (isHovering || isDropdownOpen || isEmojiPickerOpen);
 
-    const isDirectMessage = channel.kind === "dm";
-    const isOwnMessage = user.id === message.authorUserId;
+  const isDirectMessage = channel.kind === "dm";
+  const isOwnMessage = user.id === message.authorUserId;
 
-    const allowEdit =
-      !message.isSystemMessage && user.id === message.authorUserId;
+  const allowEdit =
+    !message.isSystemMessage && user.id === message.authorUserId;
 
-    const createdAtDate = React.useMemo(
-      () => new Date(message.created_at),
-      [message.created_at]
-    );
+  const createdAtDate = React.useMemo(
+    () => new Date(message.created_at),
+    [message.created_at]
+  );
 
-    const initReply = React.useCallback(
-      () => initReply_(message.id),
-      [message.id, initReply_]
-    );
+  const initReply = React.useCallback(
+    () => initReply_(message.id),
+    [message.id, initReply_]
+  );
 
-    const initEdit = React.useCallback(() => {
-      setEditingMessage(true);
-    }, []);
+  const initEdit = React.useCallback(() => {
+    setEditingMessage(true);
+  }, []);
 
-    const showSimplifiedMessage =
-      !message.isReply &&
-      previousMessage != null &&
-      previousMessage.authorUserId === message.authorUserId &&
-      !previousMessage.isSystemMessage &&
-      createdAtDate - new Date(previousMessage.created_at) <
-        5 * ONE_MINUTE_IN_MILLIS;
+  const showSimplifiedMessage =
+    !message.isReply &&
+    previousMessage != null &&
+    previousMessage.authorUserId === message.authorUserId &&
+    !previousMessage.isSystemMessage &&
+    createdAtDate - new Date(previousMessage.created_at) <
+      5 * ONE_MINUTE_IN_MILLIS;
 
-    const reactions = React.useMemo(
-      () =>
-        message.reactions.map((r) => ({
-          ...r,
-          authorMembers: r.users.map((userId) =>
-            members.find((m) => m.id === userId)
-          ),
-        })),
-      [message.reactions, members]
-    );
+  const reactions = React.useMemo(
+    () =>
+      message.reactions.map((r) => ({
+        ...r,
+        authorMembers: r.users.map((userId) =>
+          members.find((m) => m.id === userId)
+        ),
+      })),
+    [message.reactions, members]
+  );
 
-    const save = React.useCallback(
-      (blocks) =>
-        actions.updateMessage(message.id, {
-          blocks,
-          content: stringifyMessageBlocks(blocks),
-        }),
-      [actions, message.id]
-    );
+  const save = React.useCallback(
+    (blocks) =>
+      actions.updateMessage(message.id, {
+        blocks,
+        content: stringifyMessageBlocks(blocks),
+      }),
+    [actions, message.id]
+  );
 
-    const sendDirectMessageToAuthor = React.useCallback(() => {
-      const redirect = (c) => navigate(`/channels/@me/${c.id}`);
+  const sendDirectMessageToAuthor = React.useCallback(() => {
+    const redirect = (c) => navigate(`/channels/@me/${c.id}`);
 
-      const dmChannel = state.selectDmChannelFromUserId(message.authorUserId);
-      if (dmChannel != null) {
-        redirect(dmChannel);
-        return;
-      }
+    const dmChannel = state.selectDmChannelFromUserId(message.authorUserId);
+    if (dmChannel != null) {
+      redirect(dmChannel);
+      return;
+    }
 
-      actions
-        .createChannel({
-          kind: "dm",
-          memberUserIds: [message.authorUserId],
-        })
-        .then(redirect);
-    }, [actions, navigate, state, message.authorUserId]);
+    actions
+      .createChannel({
+        kind: "dm",
+        memberUserIds: [message.authorUserId],
+      })
+      .then(redirect);
+  }, [actions, navigate, state, message.authorUserId]);
 
-    const remove = React.useCallback(
-      () => actions.removeMessage(message.id),
-      [actions, message.id]
-    );
+  const remove = React.useCallback(
+    () => actions.removeMessage(message.id),
+    [actions, message.id]
+  );
 
-    const addReaction = React.useCallback(
-      (emoji) => {
-        const existingReaction = message.reactions.find(
-          (r) => r.emoji === emoji
-        );
+  const addReaction = React.useCallback(
+    (emoji) => {
+      const existingReaction = message.reactions.find((r) => r.emoji === emoji);
 
-        if (existingReaction?.users.includes(user.id)) return;
+      if (existingReaction?.users.includes(user.id)) return;
 
-        actions.addMessageReaction(message.id, { emoji });
-        setEmojiPickerOpen(false);
-      },
-      [message.id, message.reactions, actions, user.id]
-    );
-    const removeReaction = React.useCallback(
-      (emoji) => actions.removeMessageReaction(message.id, { emoji }),
-      [actions, message.id]
-    );
+      actions.addMessageReaction(message.id, { emoji });
+      setEmojiPickerOpen(false);
+    },
+    [message.id, message.reactions, actions, user.id]
+  );
+  const removeReaction = React.useCallback(
+    (emoji) => actions.removeMessageReaction(message.id, { emoji }),
+    [actions, message.id]
+  );
 
-    const toolbarDropdownItems = React.useMemo(
-      () =>
-        message.isSystemMessage
-          ? []
-          : [
-              { onSelect: initReply, label: "Reply" },
-              { disabled: true, label: "Mark unread" },
-              {
-                onSelect: () => {
-                  setEditingMessage(true);
-                },
-                label: "Edit message",
-                visible: allowEdit,
+  const toolbarDropdownItems = React.useMemo(
+    () =>
+      message.isSystemMessage
+        ? []
+        : [
+            { onSelect: initReply, label: "Reply" },
+            { disabled: true, label: "Mark unread" },
+            {
+              onSelect: () => {
+                setEditingMessage(true);
               },
-              {
-                onSelect: () => {
-                  if (confirm("Are you sure you want to remove this message?"))
-                    remove();
-                },
-                label: allowEdit ? "Delete message" : "Admin delete",
-                visible: allowEdit || isAdmin,
-                style: { color: "#ff5968" },
+              label: "Edit message",
+              visible: allowEdit,
+            },
+            {
+              onSelect: () => {
+                if (confirm("Are you sure you want to remove this message?"))
+                  remove();
               },
-              { type: "separator" },
-              {
-                onSelect: sendDirectMessageToAuthor,
-                label: "Send direct message",
-                visible:
-                  !isOwnMessage && !(isDirectMessage && members.length <= 2),
+              label: allowEdit ? "Delete message" : "Admin delete",
+              visible: allowEdit || isAdmin,
+              style: { color: "#ff5968" },
+            },
+            { type: "separator" },
+            {
+              onSelect: sendDirectMessageToAuthor,
+              label: "Send direct message",
+              visible:
+                !isOwnMessage && !(isDirectMessage && members.length <= 2),
+            },
+            {
+              onSelect: () => {
+                navigator.clipboard.writeText(message.author.walletAddress);
               },
-              {
-                onSelect: () => {
-                  navigator.clipboard.writeText(message.author.walletAddress);
-                },
-                label: "Copy user wallet address",
-                visible: message.author?.walletAddress != null,
-              },
-            ].filter((i) => i.visible == null || i.visible),
-      [
-        allowEdit,
-        isAdmin,
-        isDirectMessage,
-        isOwnMessage,
-        members.length,
-        initReply,
-        message.author?.walletAddress,
-        message.isSystemMessage,
-        remove,
-        sendDirectMessageToAuthor,
-      ]
-    );
+              label: "Copy user wallet address",
+              visible: message.author?.walletAddress != null,
+            },
+          ].filter((i) => i.visible == null || i.visible),
+    [
+      allowEdit,
+      isAdmin,
+      isDirectMessage,
+      isOwnMessage,
+      members.length,
+      initReply,
+      message.author?.walletAddress,
+      message.isSystemMessage,
+      remove,
+      sendDirectMessageToAuthor,
+    ]
+  );
 
-    React.useEffect(() => {
-      if (!isEditing) return;
+  React.useEffect(() => {
+    if (!isEditing) return;
 
-      editInputRef.current.focus();
-      containerRef.current.scrollIntoView({
-        behavior: "smooth",
-        block: "nearest",
-      });
-    }, [isEditing]);
+    editInputRef.current.focus();
+    containerRef.current.scrollIntoView({
+      behavior: "smooth",
+      block: "nearest",
+    });
+  }, [isEditing]);
 
-    const onDropdownOpenChange = React.useCallback((isOpen) => {
-      setDropdownOpen(isOpen);
-    }, []);
+  const onDropdownOpenChange = React.useCallback((isOpen) => {
+    setDropdownOpen(isOpen);
+  }, []);
 
-    const onEmojiPickerOpenChange = React.useCallback((isOpen) => {
-      setEmojiPickerOpen(isOpen);
-    }, []);
+  const onEmojiPickerOpenChange = React.useCallback((isOpen) => {
+    setEmojiPickerOpen(isOpen);
+  }, []);
 
-    const onClickInteractiveElement = React.useCallback((el) => {
-      switch (el.type) {
-        case "image-attachment":
-          window.open(el.url, "_blank");
-          break;
-        default:
-          throw new Error();
-      }
-    }, []);
+  const onClickInteractiveElement = React.useCallback((el) => {
+    switch (el.type) {
+      case "image-attachment":
+        window.open(el.url, "_blank");
+        break;
+      default:
+        throw new Error();
+    }
+  }, []);
 
-    return (
+  return (
+    <div
+      ref={containerRef}
+      style={{
+        background: hasPendingReply
+          ? "#3f42ea2b"
+          : showAsFocused
+          ? theme.colors.messageHoverBackground
+          : undefined,
+        padding: showSimplifiedMessage
+          ? "0.5rem 1.6rem"
+          : "0.7rem 1.6rem 0.3rem",
+      }}
+      css={css({
+        position: "relative",
+        lineHeight: 1.46668,
+        userSelect: "text",
+      })}
+      {...hoverHandlers}
+    >
       <div
-        ref={containerRef}
-        style={{
-          background: hasPendingReply
-            ? "#3f42ea2b"
-            : showAsFocused
-            ? theme.colors.messageHoverBackground
-            : undefined,
-          padding: showSimplifiedMessage
-            ? "0.5rem 1.6rem"
-            : "0.7rem 1.6rem 0.3rem",
-        }}
         css={css({
-          position: "relative",
-          lineHeight: 1.46668,
-          userSelect: "text",
+          position: "absolute",
+          top: 0,
+          right: "1.6rem",
+          transform: "translateY(-50%)",
+          zIndex: 1,
         })}
-        {...hoverHandlers}
+        style={{ display: showAsFocused ? "block" : "none" }}
       >
-        <div
-          css={css({
-            position: "absolute",
-            top: 0,
-            right: "1.6rem",
-            transform: "translateY(-50%)",
-            zIndex: 1,
-          })}
-          style={{ display: showAsFocused ? "block" : "none" }}
-        >
-          <MessageToolbar
-            allowReplies={!isOwnMessage && !message.isSystemMessage}
-            allowEdit={allowEdit}
-            initReply={initReply}
-            initEdit={initEdit}
-            addReaction={addReaction}
-            onDropdownOpenChange={onDropdownOpenChange}
-            isEmojiPickerOpen={isEmojiPickerOpen}
-            onEmojiPickerOpenChange={onEmojiPickerOpenChange}
-            dropdownItems={toolbarDropdownItems}
-          />
-        </div>
+        <MessageToolbar
+          allowReplies={!isOwnMessage && !message.isSystemMessage}
+          allowEdit={allowEdit}
+          initReply={initReply}
+          initEdit={initEdit}
+          addReaction={addReaction}
+          onDropdownOpenChange={onDropdownOpenChange}
+          isEmojiPickerOpen={isEmojiPickerOpen}
+          onEmojiPickerOpenChange={onEmojiPickerOpenChange}
+          dropdownItems={toolbarDropdownItems}
+        />
+      </div>
 
-        {message.isSystemMessage ? (
-          <SystemMessage
-            isHovering={isHovering}
-            message={message}
-            reactions={
-              reactions.length === 0 ? null : (
+      {message.isSystemMessage ? (
+        <SystemMessage
+          isHovering={isHovering}
+          message={message}
+          reactions={
+            reactions.length === 0 ? null : (
+              <Reactions
+                items={reactions}
+                addReaction={addReaction}
+                removeReaction={removeReaction}
+                showAddReactionButton={isHovering}
+              />
+            )
+          }
+        />
+      ) : (
+        <>
+          {message.isReply && (
+            <RepliedMessage
+              message={message.repliedMessage}
+              getMember={getMember}
+            />
+          )}
+
+          <div
+            css={css({
+              display: "grid",
+              gridTemplateColumns: `${AVATAR_SIZE} minmax(0, 1fr)`,
+              alignItems: "flex-start",
+              gridGap: GUTTER_SIZE,
+            })}
+          >
+            {showSimplifiedMessage ? (
+              <div
+                css={css({
+                  paddingTop: "0.5rem",
+                  textAlign: "right",
+                  transition: "0.15s opacity",
+                  cursor: "default",
+                })}
+                style={{ opacity: isHovering ? 1 : 0 }}
+              >
+                <TinyMutedText nowrap>
+                  <FormattedDateWithTooltip
+                    value={new Date(message.created_at)}
+                    hour="numeric"
+                    minute="numeric"
+                    tooltipContentProps={{ sideOffset: 7 }}
+                  />
+                </TinyMutedText>
+              </div>
+            ) : (
+              <div css={css({ padding: "0.2rem 0 0" })}>
+                <Popover.Root>
+                  <Popover.Trigger asChild>
+                    <button
+                      css={css({
+                        position: "relative",
+                        borderRadius: "0.3rem",
+                        overflow: "hidden",
+                        cursor: "pointer",
+                        ":hover": {
+                          boxShadow: message.author?.profilePicture
+                            .isVerifiedNft
+                            ? "0 0 0 2px #4f52ff"
+                            : "0 0 0 2px rgb(255 255 255 / 10%)",
+                        },
+                        ":active": { transform: "translateY(0.1rem)" },
+                      })}
+                    >
+                      <Avatar
+                        url={message.author?.profilePicture.small}
+                        walletAddress={message.author?.walletAddress}
+                        size="3.8rem"
+                        pixelSize={38}
+                      />
+                    </button>
+                  </Popover.Trigger>
+                  <Popover.Content
+                    collisionTolerance={5}
+                    side="right"
+                    sideOffset={5}
+                    align="center"
+                  >
+                    <ProfilePreview
+                      profilePicture={message.author?.profilePicture}
+                      displayName={message.author?.displayName}
+                      walletAddress={message.author?.walletAddress}
+                      onlineStatus={message.author?.onlineStatus}
+                      userId={message.authorUserId}
+                    />
+                  </Popover.Content>
+                </Popover.Root>
+              </div>
+            )}
+
+            <div>
+              {!showSimplifiedMessage && (
+                <MessageHeader
+                  author={message.author}
+                  createdAt={createdAtDate}
+                  authorUserId={message.authorUserId}
+                  isOwnMessage={isOwnMessage}
+                />
+              )}
+
+              {isEditing ? (
+                <EditMessageInput
+                  ref={editInputRef}
+                  blocks={message.content}
+                  onCancel={() => {
+                    setEditingMessage(false);
+                  }}
+                  requestRemove={() =>
+                    new Promise((resolve, reject) => {
+                      if (
+                        !confirm(
+                          "Are you sure you want to remove this message?"
+                        )
+                      ) {
+                        reject(new Error());
+                        return;
+                      }
+
+                      remove().then(resolve, reject);
+                    })
+                  }
+                  save={(content) =>
+                    save(content).then(() => {
+                      setEditingMessage(false);
+                    })
+                  }
+                  members={members}
+                  getMember={getMember}
+                />
+              ) : (
+                <RichText
+                  blocks={message.content}
+                  onClickInteractiveElement={onClickInteractiveElement}
+                  getMember={getMember}
+                >
+                  {message.isEdited && (
+                    <span
+                      css={css({
+                        fontSize: "1rem",
+                        color: "rgb(255 255 255 / 35%)",
+                      })}
+                    >
+                      (edited)
+                    </span>
+                  )}
+                </RichText>
+              )}
+
+              {reactions.length !== 0 && (
                 <Reactions
                   items={reactions}
                   addReaction={addReaction}
                   removeReaction={removeReaction}
                   showAddReactionButton={isHovering}
                 />
-              )
-            }
-          />
-        ) : (
-          <>
-            {message.isReply && (
-              <RepliedMessage
-                message={message.repliedMessage}
-                getMember={getMember}
-              />
-            )}
-
-            <div
-              css={css({
-                display: "grid",
-                gridTemplateColumns: `${AVATAR_SIZE} minmax(0, 1fr)`,
-                alignItems: "flex-start",
-                gridGap: GUTTER_SIZE,
-              })}
-            >
-              {showSimplifiedMessage ? (
-                <div
-                  css={css({
-                    paddingTop: "0.5rem",
-                    textAlign: "right",
-                    transition: "0.15s opacity",
-                    cursor: "default",
-                  })}
-                  style={{ opacity: isHovering ? 1 : 0 }}
-                >
-                  <TinyMutedText nowrap>
-                    <FormattedDateWithTooltip
-                      value={new Date(message.created_at)}
-                      hour="numeric"
-                      minute="numeric"
-                      tooltipContentProps={{ sideOffset: 7 }}
-                    />
-                  </TinyMutedText>
-                </div>
-              ) : (
-                <div css={css({ padding: "0.2rem 0 0" })}>
-                  <Popover.Root>
-                    <Popover.Trigger asChild>
-                      <button
-                        css={css({
-                          position: "relative",
-                          borderRadius: "0.3rem",
-                          overflow: "hidden",
-                          cursor: "pointer",
-                          ":hover": {
-                            boxShadow: message.author?.profilePicture
-                              .isVerifiedNft
-                              ? "0 0 0 2px #4f52ff"
-                              : "0 0 0 2px rgb(255 255 255 / 10%)",
-                          },
-                          ":active": { transform: "translateY(0.1rem)" },
-                        })}
-                      >
-                        <Avatar
-                          url={message.author?.profilePicture.small}
-                          walletAddress={message.author?.walletAddress}
-                          size="3.8rem"
-                          pixelSize={38}
-                        />
-                      </button>
-                    </Popover.Trigger>
-                    <Popover.Content
-                      collisionTolerance={5}
-                      side="right"
-                      sideOffset={5}
-                      align="center"
-                    >
-                      <ProfilePreview
-                        profilePicture={message.author?.profilePicture}
-                        displayName={message.author?.displayName}
-                        walletAddress={message.author?.walletAddress}
-                        onlineStatus={message.author?.onlineStatus}
-                        userId={message.authorUserId}
-                      />
-                    </Popover.Content>
-                  </Popover.Root>
-                </div>
               )}
-
-              <div>
-                {!showSimplifiedMessage && (
-                  <MessageHeader
-                    author={message.author}
-                    createdAt={createdAtDate}
-                    authorUserId={message.authorUserId}
-                    isOwnMessage={isOwnMessage}
-                  />
-                )}
-
-                {isEditing ? (
-                  <EditMessageInput
-                    ref={editInputRef}
-                    blocks={message.content}
-                    onCancel={() => {
-                      setEditingMessage(false);
-                    }}
-                    requestRemove={() =>
-                      new Promise((resolve, reject) => {
-                        if (
-                          !confirm(
-                            "Are you sure you want to remove this message?"
-                          )
-                        ) {
-                          reject(new Error());
-                          return;
-                        }
-
-                        remove().then(resolve, reject);
-                      })
-                    }
-                    save={(content) =>
-                      save(content).then(() => {
-                        setEditingMessage(false);
-                      })
-                    }
-                    members={members}
-                    getMember={getMember}
-                  />
-                ) : (
-                  <RichText
-                    blocks={message.content}
-                    onClickInteractiveElement={onClickInteractiveElement}
-                    getMember={getMember}
-                  >
-                    {message.isEdited && (
-                      <span
-                        css={css({
-                          fontSize: "1rem",
-                          color: "rgb(255 255 255 / 35%)",
-                        })}
-                      >
-                        (edited)
-                      </span>
-                    )}
-                  </RichText>
-                )}
-
-                {reactions.length !== 0 && (
-                  <Reactions
-                    items={reactions}
-                    addReaction={addReaction}
-                    removeReaction={removeReaction}
-                    showAddReactionButton={isHovering}
-                  />
-                )}
-              </div>
             </div>
-          </>
-        )}
-      </div>
-    );
-  }
-);
+          </div>
+        </>
+      )}
+    </div>
+  );
+});
 
 const Reactions = ({
   items = [],

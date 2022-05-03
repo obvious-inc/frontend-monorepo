@@ -12,6 +12,9 @@ const entriesById = (state = {}, action) => {
       return { ...state, ...indexBy((m) => m.id, action.messages) };
 
     case "message-fetched":
+      // Ignore messages already in cache to prevent rerenders. Updates should
+      // be covered by server events anyway. Should be fine. Right? RIGHT?
+      if (state[action.message.id] != null) return state;
       return { ...state, [action.message.id]: action.message };
 
     case "server-event:message-created":
