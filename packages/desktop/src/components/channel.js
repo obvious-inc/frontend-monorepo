@@ -318,14 +318,9 @@ export const ChannelBase = ({
   const submitMessage = React.useCallback(
     (blocks) => {
       setPendingReplyMessageId(null);
-      return new Promise((resolve, reject) => {
-        // TODO
-        requestAnimationFrame(() => {
-          createMessage({
-            blocks,
-            replyToMessageId: pendingReplyMessageId,
-          }).then(resolve, reject);
-        });
+      return createMessage({
+        blocks,
+        replyToMessageId: pendingReplyMessageId,
       });
     },
     [createMessage, pendingReplyMessageId]
