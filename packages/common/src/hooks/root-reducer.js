@@ -82,14 +82,30 @@ const applyStateToSelectors = (selectors, state) =>
 const useRootReducer = () => {
   const { user } = useAuth();
 
-  const [state, dispatch] = React.useReducer(rootReducer, initialState);
+  const [state, dispatch_] = React.useReducer(rootReducer, initialState);
+
+  const afterEffectHooksRef = React.useRef([]);
+
+  const addAfterEffectHook = React.useCallback((fn) => {
+    afterEffectHooksRef.current.push(fn);
+
+    return () => {
+      afterEffectHooksRef.current.filter((fn_) => fn_ !== fn);
+    };
+  }, []);
+
+  const dispatch = React.useCallback((action) => {
+    const result = dispatch_(action);
+    for (let callback of afterEffectHooksRef.current) callback(action);
+    return result;
+  }, []);
 
   const appliedSelectors = React.useMemo(
     () => applyStateToSelectors(selectors, { ...state, user }),
     [state, user]
   );
 
-  return [appliedSelectors, dispatch];
+  return [appliedSelectors, dispatch, { addAfterEffectHook }];
 };
 
 export default useRootReducer;

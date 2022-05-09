@@ -15,7 +15,7 @@ export const useAppScope = () => React.useContext(Context);
 export const Provider = ({ children }) => {
   const { user, authorizedFetch } = useAuth();
   const serverConnection = useServerConnection();
-  const [stateSelectors, dispatch] = useRootReducer();
+  const [stateSelectors, dispatch, { addAfterEffectHook }] = useRootReducer();
 
   // Eslint compains if I put `serverConnection.send` in `useCallback` deps for some reason
   const { send: serverConnectionSend } = serverConnection;
@@ -481,8 +481,13 @@ export const Provider = ({ children }) => {
   }, [user, serverConnection, dispatch]);
 
   const contextValue = React.useMemo(
-    () => ({ serverConnection, state: stateSelectors, actions }),
-    [stateSelectors, actions, serverConnection]
+    () => ({
+      serverConnection,
+      state: stateSelectors,
+      actions,
+      addAfterEffectHook,
+    }),
+    [stateSelectors, actions, serverConnection, addAfterEffectHook]
   );
 
   return <Context.Provider value={contextValue}>{children}</Context.Provider>;
