@@ -158,20 +158,20 @@ const useReverseScrollPositionMaintainer = (
 
         const scrollHeightDiff = el.scrollHeight - prevScrollHeightRef.current;
 
-        console.log(
-          "scroll adjust",
-          [el.scrollTop, el.scrollTop + scrollHeightDiff].join(" -> ")
-        );
+        // console.log(
+        //   "scroll adjust",
+        //   [el.scrollTop, el.scrollTop + scrollHeightDiff].join(" -> ")
+        // );
         el.scrollTop = prevScrollTopRef.current + scrollHeightDiff;
         prevScrollTopRef.current = el.scrollTop;
       }
 
-      if (prevScrollHeightRef.current !== el.scrollHeight) {
-        console.log(
-          "height change",
-          [prevScrollHeightRef.current, el.scrollHeight].join(" -> ")
-        );
-      }
+      // if (prevScrollHeightRef.current !== el.scrollHeight) {
+      //   console.log(
+      //     "height change",
+      //     [prevScrollHeightRef.current, el.scrollHeight].join(" -> ")
+      //   );
+      // }
       prevScrollHeightRef.current = el.scrollHeight;
     },
     { subtree: true, childList: true }
@@ -215,13 +215,8 @@ export const ChannelBase = ({
 
   React.useEffect(() => {
     const removeHook = addAfterEffectHook((action) => {
-      if (
-        action.type === "messages-fetched" &&
-        action.channelId === channel.id
-      ) {
-        console.log("fetched hook");
+      if (action.type === "messages-fetched" && action.channelId === channel.id)
         maintainScrollPositionRef.current = true;
-      }
     });
     return () => {
       removeHook();
@@ -231,18 +226,12 @@ export const ChannelBase = ({
   const fetchMessages_ = useMessageFetcher();
   const fetchMessages = useLatestCallback((channelId, query) => {
     if (query.beforeMessageId) {
-      console.log(
-        "add placeholder maintain on",
-        isFetchingMessagesBefore,
-        query.limit
-      );
       maintainScrollPositionRef.current = true;
       setFetchingMessagesBefore((s) => s + query.limit);
     }
 
     return fetchMessages_(channelId, query).finally(() => {
       if (query.beforeMessageId) {
-        console.log("remove placeholder maintain on");
         maintainScrollPositionRef.current = true;
         setFetchingMessagesBefore((s) => Math.max(0, s - query.limit));
       }
