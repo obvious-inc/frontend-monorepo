@@ -137,37 +137,49 @@ const useReverseScrollPositionMaintainer = (
   maintainScrollPositionRef
 ) => {
   const prevScrollHeightRef = React.useRef();
+  const prevScrollTopRef = React.useRef();
 
   React.useEffect(() => {
     if (prevScrollHeightRef.current == null)
       prevScrollHeightRef.current = scrollContainerRef.current.scrollHeight;
+    if (prevScrollTopRef.current == null)
+      prevScrollTopRef.current = scrollContainerRef.current.scrollTop;
   }, [scrollContainerRef]);
 
   useMutationObserver(
     scrollContainerRef,
     () => {
-      if (!maintainScrollPositionRef.current) return;
-      maintainScrollPositionRef.current = false;
-
       const el = scrollContainerRef.current;
 
-      if (prevScrollHeightRef.current === el.scrollHeight) return;
+      if (maintainScrollPositionRef.current) {
+        maintainScrollPositionRef.current = false;
 
-      const scrollHeightDiff = el.scrollHeight - prevScrollHeightRef.current;
+        if (prevScrollHeightRef.current === el.scrollHeight) return;
 
-      const isAtBottom =
-        Math.ceil(el.scrollTop) + el.getBoundingClientRect().height >=
-        el.scrollHeight;
+        const scrollHeightDiff = el.scrollHeight - prevScrollHeightRef.current;
 
-      el.scrollTop = isAtBottom
-        ? el.scrollHeight
-        : el.scrollTop + scrollHeightDiff;
+        console.log(
+          "scroll adjust",
+          [el.scrollTop, el.scrollTop + scrollHeightDiff].join(" -> ")
+        );
+        el.scrollTop = prevScrollTopRef.current + scrollHeightDiff;
+        prevScrollTopRef.current = el.scrollTop;
+      }
 
-      console.log("DOM mutation scroll adjust", scrollHeightDiff);
+      if (prevScrollHeightRef.current !== el.scrollHeight) {
+        console.log(
+          "height change",
+          [prevScrollHeightRef.current, el.scrollHeight].join(" -> ")
+        );
+      }
       prevScrollHeightRef.current = el.scrollHeight;
     },
     { subtree: true, childList: true }
   );
+
+  useScrollListener(scrollContainerRef, () => {
+    prevScrollTopRef.current = scrollContainerRef.current.scrollTop;
+  });
 };
 
 const scrollPositionCache = {};
@@ -203,8 +215,13 @@ export const ChannelBase = ({
 
   React.useEffect(() => {
     const removeHook = addAfterEffectHook((action) => {
-      if (action.type === "messages-fetched" && action.channelId === channel.id)
+      if (
+        action.type === "messages-fetched" &&
+        action.channelId === channel.id
+      ) {
+        console.log("fetched hook");
         maintainScrollPositionRef.current = true;
+      }
     });
     return () => {
       removeHook();
@@ -287,6 +304,13 @@ export const ChannelBase = ({
       messagesContainerRef.current.scrollHeight / messages.length
     );
   }, [messages.length]);
+
+  useScrollListener(scrollContainerRef, () => {
+    if (scrollContainerRef.current.scrollTop < 10 && isFetchingMessagesBefore)
+      scrollContainerRef.current.scrollTop =
+        isFetchingMessagesBefore * averageMessageListItemHeight -
+        scrollContainerRef.current.getBoundingClientRect().height;
+  });
 
   const fetchingMessagesBeforeMessageIdsRef = React.useRef([]);
 

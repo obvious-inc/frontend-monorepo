@@ -95,8 +95,8 @@ const useRootReducer = () => {
   }, []);
 
   const dispatch = React.useCallback((action) => {
-    const result = dispatch_(action);
     for (let callback of afterEffectHooksRef.current) callback(action);
+    const result = dispatch_(action);
     return result;
   }, []);
 
