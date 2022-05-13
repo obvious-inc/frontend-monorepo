@@ -253,30 +253,28 @@ const ChannelMessage = React.memo(function ChannelMessage_({
       })}
       {...hoverHandlers}
     >
-      {isHovering && (
-        <div
-          css={css({
-            position: "absolute",
-            top: 0,
-            right: "1.6rem",
-            transform: "translateY(-50%)",
-            zIndex: 1,
-          })}
-          style={{ display: showAsFocused ? "block" : "none" }}
-        >
-          <MessageToolbar
-            allowReplies={!isOwnMessage && !message.isSystemMessage}
-            allowEdit={allowEdit}
-            initReply={initReply}
-            initEdit={initEdit}
-            addReaction={addReaction}
-            onDropdownOpenChange={onDropdownOpenChange}
-            isEmojiPickerOpen={isEmojiPickerOpen}
-            onEmojiPickerOpenChange={onEmojiPickerOpenChange}
-            dropdownItems={toolbarDropdownItems}
-          />
-        </div>
-      )}
+      <div
+        css={css({
+          position: "absolute",
+          top: 0,
+          right: "1.6rem",
+          transform: "translateY(-50%)",
+          zIndex: 1,
+        })}
+        style={{ display: showAsFocused ? "block" : "none" }}
+      >
+        <MessageToolbar
+          allowReplies={!isOwnMessage && !message.isSystemMessage}
+          allowEdit={allowEdit}
+          initReply={initReply}
+          initEdit={initEdit}
+          addReaction={addReaction}
+          onDropdownOpenChange={onDropdownOpenChange}
+          isEmojiPickerOpen={isEmojiPickerOpen}
+          onEmojiPickerOpenChange={onEmojiPickerOpenChange}
+          dropdownItems={toolbarDropdownItems}
+        />
+      </div>
 
       {message.isSystemMessage ? (
         <SystemMessage
@@ -332,70 +330,46 @@ const ChannelMessage = React.memo(function ChannelMessage_({
               </div>
             ) : (
               <div css={css({ padding: "0.2rem 0 0" })}>
-                {isHovering ? (
-                  <Popover.Root>
-                    <Popover.Trigger asChild>
-                      <button
-                        css={css({
-                          position: "relative",
-                          borderRadius: "0.3rem",
-                          overflow: "hidden",
-                          cursor: "pointer",
-                          ":hover": {
-                            boxShadow: message.author?.profilePicture
-                              .isVerifiedNft
-                              ? "0 0 0 2px #4f52ff"
-                              : "0 0 0 2px rgb(255 255 255 / 10%)",
-                          },
-                          ":active": { transform: "translateY(0.1rem)" },
-                        })}
-                      >
-                        <Avatar
-                          url={message.author?.profilePicture.small}
-                          walletAddress={message.author?.walletAddress}
-                          size="3.8rem"
-                          pixelSize={38}
-                        />
-                      </button>
-                    </Popover.Trigger>
-                    <Popover.Content
-                      collisionTolerance={5}
-                      side="right"
-                      sideOffset={5}
-                      align="center"
+                <Popover.Root>
+                  <Popover.Trigger asChild>
+                    <button
+                      css={css({
+                        position: "relative",
+                        borderRadius: "0.3rem",
+                        overflow: "hidden",
+                        cursor: "pointer",
+                        ":hover": {
+                          boxShadow: message.author?.profilePicture
+                            .isVerifiedNft
+                            ? "0 0 0 2px #4f52ff"
+                            : "0 0 0 2px rgb(255 255 255 / 10%)",
+                        },
+                        ":active": { transform: "translateY(0.1rem)" },
+                      })}
                     >
-                      <ProfilePreview
-                        profilePicture={message.author?.profilePicture}
-                        displayName={message.author?.displayName}
+                      <Avatar
+                        url={message.author?.profilePicture.small}
                         walletAddress={message.author?.walletAddress}
-                        onlineStatus={message.author?.onlineStatus}
-                        userId={message.authorUserId}
+                        size="3.8rem"
+                        pixelSize={38}
                       />
-                    </Popover.Content>
-                  </Popover.Root>
-                ) : (
-                  <button
-                    css={css({
-                      position: "relative",
-                      borderRadius: "0.3rem",
-                      overflow: "hidden",
-                      cursor: "pointer",
-                      ":hover": {
-                        boxShadow: message.author?.profilePicture.isVerifiedNft
-                          ? "0 0 0 2px #4f52ff"
-                          : "0 0 0 2px rgb(255 255 255 / 10%)",
-                      },
-                      ":active": { transform: "translateY(0.1rem)" },
-                    })}
+                    </button>
+                  </Popover.Trigger>
+                  <Popover.Content
+                    collisionTolerance={5}
+                    side="right"
+                    sideOffset={5}
+                    align="center"
                   >
-                    <Avatar
-                      url={message.author?.profilePicture.small}
+                    <ProfilePreview
+                      profilePicture={message.author?.profilePicture}
+                      displayName={message.author?.displayName}
                       walletAddress={message.author?.walletAddress}
-                      size="3.8rem"
-                      pixelSize={38}
+                      onlineStatus={message.author?.onlineStatus}
+                      userId={message.authorUserId}
                     />
-                  </button>
-                )}
+                  </Popover.Content>
+                </Popover.Root>
               </div>
             )}
 
