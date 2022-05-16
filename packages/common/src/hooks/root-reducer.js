@@ -11,6 +11,9 @@ import channels, {
   selectDmChannels,
   selectDmChannelFromUserId,
   selectDmChannelFromUserIds,
+  selectHasAllMessages,
+  selectChannelHasUnread,
+  selectChannelMentionCount,
 } from "../reducers/channels";
 import channelSections, {
   selectServerChannelSections,
@@ -55,6 +58,9 @@ const selectors = {
   selectServerChannelSections,
   selectChannelSectionWithChild,
   selectChannelTypingMembers,
+  selectHasAllMessages,
+  selectChannelHasUnread,
+  selectChannelMentionCount,
 };
 
 const rootReducer = combineReducers({
@@ -76,14 +82,30 @@ const applyStateToSelectors = (selectors, state) =>
 const useRootReducer = () => {
   const { user } = useAuth();
 
-  const [state, dispatch] = React.useReducer(rootReducer, initialState);
+  const [state, dispatch_] = React.useReducer(rootReducer, initialState);
+
+  const beforeDispatchListenersRef = React.useRef([]);
+
+  const addBeforeDispatchListener = React.useCallback((fn) => {
+    beforeDispatchListenersRef.current.push(fn);
+
+    return () => {
+      beforeDispatchListenersRef.current.filter((fn_) => fn_ !== fn);
+    };
+  }, []);
+
+  const dispatch = React.useCallback((action) => {
+    for (let callback of beforeDispatchListenersRef.current) callback(action);
+    const result = dispatch_(action);
+    return result;
+  }, []);
 
   const appliedSelectors = React.useMemo(
     () => applyStateToSelectors(selectors, { ...state, user }),
     [state, user]
   );
 
-  return [appliedSelectors, dispatch];
+  return [appliedSelectors, dispatch, { addBeforeDispatchListener }];
 };
 
 export default useRootReducer;

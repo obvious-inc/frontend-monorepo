@@ -19,7 +19,9 @@ const MainMenu = () => {
   const servers = state.selectServers();
 
   const dmChannels = state.selectDmChannels();
-  const unreadDmChannels = dmChannels.filter((c) => c.hasUnread);
+  const unreadDmChannels = dmChannels.filter((c) =>
+    state.selectChannelHasUnread(c.id)
+  );
 
   const hasUnreadDms = unreadDmChannels.length > 0;
 
@@ -133,10 +135,12 @@ const MainMenu = () => {
               const channels = state.selectServerChannels(params.serverId);
 
               const hasChannels = channels.length !== 0;
-              const unreadChannels = channels.filter((c) => c.hasUnread);
+              const unreadChannels = channels.filter((c) =>
+                state.selectChannelHasUnread(c.id)
+              );
               const hasUnread = unreadChannels.length > 0;
               const mentionCount = channels.reduce(
-                (count, c) => count + c.mentionCount,
+                (count, c) => count + state.selectChannelMentionCount(c.id),
                 0
               );
 

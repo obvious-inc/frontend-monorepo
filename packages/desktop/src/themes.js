@@ -21,6 +21,7 @@ export const dark = {
     backgroundTertiary: "#202225",
     backgroundModifierHover: "rgb(79 84 92 / 16%)",
     backgroundModifierSelected: "rgb(79 84 92 / 32%)",
+    backgroundModifierAccent: "rgb(79 84 92 / 48%)",
     messageHoverBackground: "rgb(4 4 5 / 7%)",
     channelInputBackground: "#40444b",
     channelDefault: "#96989d",

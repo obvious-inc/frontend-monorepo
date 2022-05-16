@@ -143,23 +143,25 @@ const App = () => {
 
 export default function Root() {
   return (
-    <IntlProvider locale="en">
-      <AuthProvider apiOrigin={process.env.API_ENDPOINT}>
-        <ServerConnectionProvider
-          Pusher={Pusher}
-          pusherKey={process.env.PUSHER_KEY}
-        >
-          <AppScopeProvider>
-            <ThemeProvider theme={defaultTheme}>
-              <Tooltip.Provider delayDuration={300}>
-                <SideMenuProvider>
-                  <App />
-                </SideMenuProvider>
-              </Tooltip.Provider>
-            </ThemeProvider>
-          </AppScopeProvider>
-        </ServerConnectionProvider>
-      </AuthProvider>
-    </IntlProvider>
+    <React.StrictMode>
+      <IntlProvider locale="en">
+        <AuthProvider apiOrigin={process.env.API_ENDPOINT}>
+          <ServerConnectionProvider
+            Pusher={Pusher}
+            pusherKey={process.env.PUSHER_KEY}
+          >
+            <AppScopeProvider>
+              <ThemeProvider theme={defaultTheme}>
+                <Tooltip.Provider delayDuration={300}>
+                  <SideMenuProvider>
+                    <App />
+                  </SideMenuProvider>
+                </Tooltip.Provider>
+              </ThemeProvider>
+            </AppScopeProvider>
+          </ServerConnectionProvider>
+        </AuthProvider>
+      </IntlProvider>
+    </React.StrictMode>
   );
 }

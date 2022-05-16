@@ -15,7 +15,8 @@ export const useAppScope = () => React.useContext(Context);
 export const Provider = ({ children }) => {
   const { user, authorizedFetch } = useAuth();
   const serverConnection = useServerConnection();
-  const [stateSelectors, dispatch] = useRootReducer();
+  const [stateSelectors, dispatch, { addBeforeDispatchListener }] =
+    useRootReducer();
 
   // Eslint compains if I put `serverConnection.send` in `useCallback` deps for some reason
   const { send: serverConnectionSend } = serverConnection;
@@ -151,9 +152,30 @@ export const Provider = ({ children }) => {
   );
 
   const fetchMessages = React.useCallback(
-    ({ channelId }) =>
-      authorizedFetch(`/channels/${channelId}/messages`).then((messages) => {
-        dispatch({ type: "messages-fetched", messages });
+    (channelId, { limit = 50, beforeMessageId, afterMessageId } = {}) => {
+      if (limit == null) throw new Error(`Missing required "limit" argument`);
+
+      const searchParams = new URLSearchParams(
+        [
+          ["before", beforeMessageId],
+          ["after", afterMessageId],
+          ["limit", limit],
+        ].filter((e) => e[1] != null)
+      );
+
+      const url = [`/channels/${channelId}/messages`, searchParams.toString()]
+        .filter((s) => s !== "")
+        .join("?");
+
+      return authorizedFetch(url).then((messages) => {
+        dispatch({
+          type: "messages-fetched",
+          channelId,
+          limit,
+          beforeMessageId,
+          afterMessageId,
+          messages,
+        });
 
         const replies = messages.filter((m) => m.reply_to != null);
 
@@ -163,19 +185,18 @@ export const Provider = ({ children }) => {
             `/channels/${channelId}/messages/${reply.reply_to}`
           ).then((message) => {
             dispatch({
-              type: "messages-fetched",
-              messages: [
-                message ?? {
-                  id: reply.reply_to,
-                  channel: channelId,
-                  deleted: true,
-                },
-              ],
+              type: "message-fetched",
+              message: message ?? {
+                id: reply.reply_to,
+                channel: channelId,
+                deleted: true,
+              },
             });
           });
 
         return messages;
-      }),
+      });
+    },
     [authorizedFetch, dispatch]
   );
 
@@ -461,8 +482,13 @@ export const Provider = ({ children }) => {
   }, [user, serverConnection, dispatch]);
 
   const contextValue = React.useMemo(
-    () => ({ serverConnection, state: stateSelectors, actions }),
-    [stateSelectors, actions, serverConnection]
+    () => ({
+      serverConnection,
+      state: stateSelectors,
+      actions,
+      addBeforeDispatchListener,
+    }),
+    [stateSelectors, actions, serverConnection, addBeforeDispatchListener]
   );
 
   return <Context.Provider value={contextValue}>{children}</Context.Provider>;

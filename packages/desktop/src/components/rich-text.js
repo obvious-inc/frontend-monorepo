@@ -169,7 +169,7 @@ const createParser = ({ inline, getMember, onClickInteractiveElement }) => {
                 onClickInteractiveElement(el);
               }}
             >
-              <img src={el.url} {...getImageLayoutProps()} />
+              <img src={el.url} {...getImageLayoutProps()} loading="lazy" />
             </button>
           );
         }

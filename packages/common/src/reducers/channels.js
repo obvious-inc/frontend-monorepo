@@ -12,6 +12,59 @@ import {
 const entriesById = (state = {}, action) => {
   switch (action.type) {
     case "initial-data-request-successful": {
+      const allChannels = [
+        ...action.data.servers.flatMap((s) =>
+          s.channels.map((c) => ({ ...c, serverId: s.id }))
+        ),
+        ...action.data.dms,
+      ];
+
+      const channelsById = indexBy((c) => c.id, allChannels);
+
+      const entriesById = Object.fromEntries(
+        Object.entries(channelsById).map(([id, channel]) => {
+          const properties = {
+            id,
+            name: channel.name,
+            kind: channel.kind,
+            serverId: channel.serverId,
+            createdAt: channel.created_at,
+          };
+          if (channel.kind === "dm") {
+            properties.memberUserIds = channel.members;
+            properties.ownerUserId = channel.owner;
+          }
+          return [id, properties];
+        })
+      );
+
+      return {
+        ...state,
+        ...entriesById,
+      };
+    }
+
+    default:
+      return state;
+  }
+};
+
+const metaById = (state = {}, action) => {
+  switch (action.type) {
+    case "messages-fetched": {
+      const config = state[action.channelId];
+      const hasAllMessages = action.messages.length < action.limit;
+      return { ...state, [action.channelId]: { ...config, hasAllMessages } };
+    }
+
+    default:
+      return state;
+  }
+};
+
+const readStatesById = (state = {}, action) => {
+  switch (action.type) {
+    case "initial-data-request-successful": {
       const readStatesByChannelId = indexBy(
         (s) => s.channel,
         action.data.read_states
@@ -30,21 +83,12 @@ const entriesById = (state = {}, action) => {
         Object.entries(channelsById).map(([id, channel]) => {
           const readStates = readStatesByChannelId[id];
           const properties = {
-            id,
-            name: channel.name,
-            kind: channel.kind,
-            serverId: channel.serverId,
             lastMessageAt: channel.last_message_at,
-            createdAt: channel.created_at,
             lastReadAt: readStates?.last_read_at ?? null,
             unreadMentionMessageIds: Array(readStates?.mention_count ?? 0).fill(
               null
             ),
           };
-          if (channel.kind === "dm") {
-            properties.memberUserIds = channel.members;
-            properties.ownerUserId = channel.owner;
-          }
           return [id, properties];
         })
       );
@@ -78,21 +122,22 @@ const entriesById = (state = {}, action) => {
 
     case "server-event:message-created": {
       const isOwnMessage = action.data.message.author === action.user.id;
-      const channel = state[action.data.message.channel];
+      const channelState = state[action.data.message.channel];
 
       const userMentions = getMentions(action.data.message.blocks).filter(
         (m) => m.ref === action.user.id
       );
-      const unreadMentionMessageIds = channel?.unreadMentionMessageIds ?? [];
+      const unreadMentionMessageIds =
+        channelState?.unreadMentionMessageIds ?? [];
 
       return {
         ...state,
         [action.data.message.channel]: {
-          ...channel,
+          ...channelState,
           lastMessageAt: action.data.message.created_at,
           lastReadAt: isOwnMessage
             ? action.data.message.created_at
-            : channel?.lastReadAt,
+            : channelState?.lastReadAt,
           unreadMentionMessageIds:
             userMentions.length === 0
               ? unreadMentionMessageIds
@@ -102,12 +147,12 @@ const entriesById = (state = {}, action) => {
     }
 
     case "server-event:message-removed": {
-      const channel = state[action.data.message.channel];
+      const channelState = state[action.data.message.channel];
       return {
         ...state,
         [action.data.message.channel]: {
-          ...channel,
-          unreadMentionMessageIds: channel.unreadMentionMessageIds.filter(
+          ...channelState,
+          unreadMentionMessageIds: channelState.unreadMentionMessageIds.filter(
             (id) => id !== action.data.message.id
           ),
         },
@@ -143,31 +188,11 @@ export const selectChannel = createSelector(
   (state) => state.user,
   (state, channelId) => {
     const channel = state.channels.entriesById[channelId];
-    if (channel == null) return null;
-    return selectServerMemberWithUserId(state, channel.serverId, state.user.id);
-  },
-  (state, channelId) => {
-    const channel = state.channels.entriesById[channelId];
     if (channel == null || channel.kind !== "dm") return null;
     return channel.memberUserIds.map((userId) => selectUser(state, userId));
   },
-  (channel, loggedInUser, loggedInServerMember, channelMemberUsers) => {
+  (channel, loggedInUser, channelMemberUsers) => {
     if (channel == null) return null;
-
-    const getLastReadTimestamp = () => {
-      if (channel.kind === "dm")
-        return channel.lastReadAt == null
-          ? new Date().getTime()
-          : new Date(channel.lastReadAt).getTime();
-
-      const serverJoinTimestamp = new Date(
-        loggedInServerMember.joinedAt
-      ).getTime();
-
-      return channel.lastReadAt == null
-        ? serverJoinTimestamp
-        : new Date(channel.lastReadAt).getTime();
-    };
 
     const buildName = () => {
       if (channel.kind !== "dm" || channel.name != null) return channel.name;
@@ -181,16 +206,54 @@ export const selectChannel = createSelector(
         .join(", ");
     };
 
-    const lastReadTimestamp = getLastReadTimestamp();
-
-    const lastMessageTimestamp = new Date(channel.lastMessageAt).getTime();
-
     return {
       ...channel,
       name: buildName(),
-      hasUnread: lastReadTimestamp < lastMessageTimestamp,
-      mentionCount: channel.unreadMentionMessageIds.length,
     };
+  },
+  { memoizeOptions: { maxSize: 1000 } }
+);
+
+export const selectChannelMentionCount = createSelector(
+  (state, channelId) => state.channels.readStatesById[channelId],
+  (channelState) => {
+    if (channelState == null) return 0;
+    return channelState.unreadMentionMessageIds.length;
+  },
+  { memoizeOptions: { maxSize: 1000 } }
+);
+
+export const selectChannelHasUnread = createSelector(
+  (state, channelId) => state.channels.readStatesById[channelId],
+  (state, channelId) => state.channels.entriesById[channelId]?.kind,
+  (state, channelId) => {
+    const channel = state.channels.entriesById[channelId];
+    if (channel == null) return null;
+    return selectServerMemberWithUserId(state, channel.serverId, state.user.id);
+  },
+  (channelState, channelKind, loggedInServerMember) => {
+    if (channelState == null) return false;
+
+    const getLastReadTimestamp = () => {
+      if (channelKind === "dm")
+        return channelState.lastReadAt == null
+          ? new Date().getTime()
+          : new Date(channelState.lastReadAt).getTime();
+
+      const serverJoinTimestamp = new Date(
+        loggedInServerMember.joinedAt
+      ).getTime();
+
+      return channelState.lastReadAt == null
+        ? serverJoinTimestamp
+        : new Date(channelState.lastReadAt).getTime();
+    };
+
+    const lastReadTimestamp = getLastReadTimestamp();
+
+    const lastMessageTimestamp = new Date(channelState.lastMessageAt).getTime();
+
+    return lastReadTimestamp < lastMessageTimestamp;
   },
   { memoizeOptions: { maxSize: 1000 } }
 );
@@ -252,4 +315,7 @@ export const selectServerDmChannels = createSelector(
   { memoizeOptions: { equalityCheck: arrayShallowEquals } }
 );
 
-export default combineReducers({ entriesById });
+export const selectHasAllMessages = (state, channelId) =>
+  state.channels.metaById[channelId]?.hasAllMessages ?? false;
+
+export default combineReducers({ entriesById, metaById, readStatesById });
