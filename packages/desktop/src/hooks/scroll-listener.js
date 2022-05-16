@@ -1,6 +1,6 @@
 import React from "react";
 
-const useScrollListener = (scrollContainerRef, handler) => {
+const useScrollListener = (scrollContainerRef, handler, deps = []) => {
   const handlerRef = React.useRef(handler);
 
   React.useEffect(() => {
@@ -32,7 +32,7 @@ const useScrollListener = (scrollContainerRef, handler) => {
     return () => {
       scrollContainer.removeEventListener("scroll", scrollHandler);
     };
-  }, [scrollContainerRef]);
+  }, [scrollContainerRef, ...deps]);
 };
 
 export default useScrollListener;

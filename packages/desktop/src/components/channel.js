@@ -314,30 +314,35 @@ export const ChannelBase = ({
   });
 
   // Fetch new messages as the user scrolls up
-  useScrollListener(scrollContainerRef, (e, { direction }) => {
-    if (
-      // We only care about upward scroll
-      direction !== "up" ||
-      // Wait until we have fetched the initial batch of messages
-      messages.length === 0 ||
-      // No need to react if we’ve already fetched the full message history
-      hasAllMessages ||
-      // Wait for any pending fetch requests to finish before we fetch again
-      pendingMessagesBeforeCount !== 0
-    )
-      return;
+  useScrollListener(
+    scrollContainerRef,
+    (e, { direction }) => {
+      if (
+        // We only care about upward scroll
+        direction !== "up" ||
+        // Wait until we have fetched the initial batch of messages
+        messages.length === 0 ||
+        // No need to react if we’ve already fetched the full message history
+        hasAllMessages ||
+        // Wait for any pending fetch requests to finish before we fetch again
+        pendingMessagesBeforeCount !== 0
+      )
+        return;
 
-    const isCloseToTop =
-      // ~4 viewport heights from top
-      e.target.scrollTop < e.target.getBoundingClientRect().height * 4;
+      const isCloseToTop =
+        // ~4 viewport heights from top
+        e.target.scrollTop < e.target.getBoundingClientRect().height * 4;
 
-    if (!isCloseToTop) return;
+      if (!isCloseToTop) return;
 
-    fetchMessages(channel.id, {
-      beforeMessageId: messages[0].id,
-      limit: 50,
-    });
-  });
+      fetchMessages(channel.id, {
+        beforeMessageId: messages[0].id,
+        limit: 50,
+      });
+    },
+    [channel.id]
+  );
+
   const hasFetchedChannelMessagesAtLeastOnce = state.selectHasFetchedMessages(
     channel.id
   );
