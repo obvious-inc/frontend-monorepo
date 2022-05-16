@@ -84,18 +84,18 @@ const useRootReducer = () => {
 
   const [state, dispatch_] = React.useReducer(rootReducer, initialState);
 
-  const afterEffectHooksRef = React.useRef([]);
+  const beforeDispatchListenersRef = React.useRef([]);
 
-  const addAfterEffectHook = React.useCallback((fn) => {
-    afterEffectHooksRef.current.push(fn);
+  const addBeforeDispatchListener = React.useCallback((fn) => {
+    beforeDispatchListenersRef.current.push(fn);
 
     return () => {
-      afterEffectHooksRef.current.filter((fn_) => fn_ !== fn);
+      beforeDispatchListenersRef.current.filter((fn_) => fn_ !== fn);
     };
   }, []);
 
   const dispatch = React.useCallback((action) => {
-    for (let callback of afterEffectHooksRef.current) callback(action);
+    for (let callback of beforeDispatchListenersRef.current) callback(action);
     const result = dispatch_(action);
     return result;
   }, []);
@@ -105,7 +105,7 @@ const useRootReducer = () => {
     [state, user]
   );
 
-  return [appliedSelectors, dispatch, { addAfterEffectHook }];
+  return [appliedSelectors, dispatch, { addBeforeDispatchListener }];
 };
 
 export default useRootReducer;
