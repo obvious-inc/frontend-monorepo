@@ -54,7 +54,14 @@ const metaById = (state = {}, action) => {
     case "messages-fetched": {
       const config = state[action.channelId];
       const hasAllMessages = action.messages.length < action.limit;
-      return { ...state, [action.channelId]: { ...config, hasAllMessages } };
+      return {
+        ...state,
+        [action.channelId]: {
+          ...config,
+          hasAllMessages,
+          hasFetchedMessages: true,
+        },
+      };
     }
 
     default:
@@ -99,12 +106,12 @@ const readStatesById = (state = {}, action) => {
       };
     }
 
-    case "mark-channel-read":
+    case "mark-channel-read-request-sent":
       return {
         ...state,
-        [action.data.channelId]: {
-          ...state[action.data.channelId],
-          lastReadAt: action.data.date.toISOString(),
+        [action.channelId]: {
+          ...state[action.channelId],
+          lastReadAt: action.readAt.toISOString(),
           unreadMentionMessageIds: [],
         },
       };
@@ -317,5 +324,8 @@ export const selectServerDmChannels = createSelector(
 
 export const selectHasAllMessages = (state, channelId) =>
   state.channels.metaById[channelId]?.hasAllMessages ?? false;
+
+export const selectHasFetchedMessages = (state, channelId) =>
+  state.channels.metaById[channelId]?.hasFetchedMessages ?? false;
 
 export default combineReducers({ entriesById, metaById, readStatesById });

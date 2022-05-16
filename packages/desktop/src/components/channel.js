@@ -338,13 +338,22 @@ export const ChannelBase = ({
       limit: 50,
     });
   });
+  const hasFetchedChannelMessagesAtLeastOnce = state.selectHasFetchedMessages(
+    channel.id
+  );
 
-  // Mark channel as read when new messages arrive, if scrolled to bottom
+  // Mark channel as read when new messages arrive
   React.useEffect(() => {
-    // Can’t send event if not connected
-    if (!serverConnection.isConnected) return;
-
-    if (messages.length === 0 || !didScrollToBottom || !channelHasUnread)
+    if (
+      // We can’t send the event before the server connection is established
+      !serverConnection.isConnected ||
+      // Wait until the initial message batch is fetched
+      !hasFetchedChannelMessagesAtLeastOnce ||
+      // Only mark as read when scrolled to the bottom
+      !didScrollToBottom ||
+      // Don’t bother if the channel is already marked as read
+      !channelHasUnread
+    )
       return;
 
     // Ignore the users’s own messages before we know they have been persisted
@@ -352,14 +361,20 @@ export const ChannelBase = ({
       .filter((m) => !m.isOptimistic)
       .slice(-1)[0];
 
-    if (lastPersistedMessage != null)
-      actions.markChannelRead({ channelId: channel.id });
+    actions.markChannelRead(channel.id, {
+      // Use the current time in case the channel is empty
+      readAt:
+        lastPersistedMessage == null
+          ? new Date()
+          : new Date(lastPersistedMessage.createdAt),
+    });
   }, [
     actions,
     channel.id,
     channelHasUnread,
     messages,
     serverConnection.isConnected,
+    hasFetchedChannelMessagesAtLeastOnce,
     didScrollToBottom,
   ]);
 

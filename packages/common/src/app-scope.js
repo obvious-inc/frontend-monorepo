@@ -5,6 +5,7 @@ import { generateDummyId } from "./utils/misc";
 import invariant from "./utils/invariant";
 import { useServerConnection } from "./server-connection";
 import useRootReducer from "./hooks/root-reducer";
+import useLatestCallback from "./hooks/latest-callback";
 
 const { unique } = arrayUtils;
 
@@ -17,19 +18,6 @@ export const Provider = ({ children }) => {
   const serverConnection = useServerConnection();
   const [stateSelectors, dispatch, { addBeforeDispatchListener }] =
     useRootReducer();
-
-  // Eslint compains if I put `serverConnection.send` in `useCallback` deps for some reason
-  const { send: serverConnectionSend } = serverConnection;
-
-  const sendServerMessage = React.useCallback(
-    (name, data) => {
-      const messageSent = serverConnectionSend(name, data);
-      // Dispatch a client action if the message was successfully sent
-      if (messageSent) dispatch({ type: name, data });
-      return messageSent;
-    },
-    [dispatch, serverConnectionSend]
-  );
 
   const fetchInitialData = React.useCallback(
     () =>
@@ -214,11 +202,17 @@ export const Provider = ({ children }) => {
     [authorizedFetch, fetchInitialData]
   );
 
-  const markChannelRead = React.useCallback(
-    ({ channelId, date = new Date() }) => {
-      sendServerMessage("mark-channel-read", { channelId, date });
+  const markChannelRead = useLatestCallback(
+    (channelId, { readAt }) => {
+      // TODO: Undo if request fails
+      dispatch({ type: "mark-channel-read-request-sent", channelId, readAt });
+      return authorizedFetch(`/channels/${channelId}/ack`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ last_read_at: readAt.toISOString() }),
+      });
     },
-    [sendServerMessage]
+    [authorizedFetch]
   );
 
   const fetchMessage = React.useCallback(
@@ -233,7 +227,7 @@ export const Provider = ({ children }) => {
     [authorizedFetch, dispatch]
   );
 
-  const createMessage = React.useCallback(
+  const createMessage = useLatestCallback(
     async ({ server, channel, content, blocks, replyToMessageId }) => {
       // TODO: Less hacky optimistc UI
       const message = {
@@ -265,11 +259,12 @@ export const Provider = ({ children }) => {
           message,
           optimisticEntryId: dummyId,
         });
-        markChannelRead({ channelId: channel });
+        markChannelRead(message.channel, {
+          readAt: new Date(message.created_at),
+        });
         return message;
       });
-    },
-    [authorizedFetch, user, markChannelRead, dispatch]
+    }
   );
 
   const updateMessage = React.useCallback(

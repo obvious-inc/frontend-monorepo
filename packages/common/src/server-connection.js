@@ -1,16 +1,5 @@
 import React from "react";
-import { identity } from "./utils/function";
 import { useAuth } from "./auth";
-
-const clientEventMap = {
-  "mark-channel-read": [
-    "client-channel-mark",
-    (clientPayload) => ({
-      channel_id: clientPayload.channelId,
-      last_read_at: clientPayload.date.toISOString(),
-    }),
-  ],
-};
 
 const serverEventMap = {
   MESSAGE_CREATE: "message-created",
@@ -52,19 +41,6 @@ export const Provider = ({ Pusher, pusherKey, debug = false, children }) => {
   const listenersRef = React.useRef([]);
 
   const [pusherState, setPusherState] = React.useState(null);
-
-  const send = React.useCallback((event, payload = { no: "data" }) => {
-    const [serverEvent, payloadMapper = identity] = clientEventMap[event];
-    if (serverEvent == null) throw new Error(`Unknown event "${event}"`);
-
-    // Pusher returns true if the message is successfully sent, false otherwise
-    const sent = channelRef.current.trigger(
-      serverEvent,
-      payloadMapper(payload)
-    );
-    if (!sent) console.log("failed to send", event, payload);
-    return sent;
-  }, []);
 
   const addListener = React.useCallback((fn) => {
     listenersRef.current = [...listenersRef.current, fn];
@@ -110,8 +86,8 @@ export const Provider = ({ Pusher, pusherKey, debug = false, children }) => {
   }, [Pusher, apiOrigin, pusherKey, debug, user?.id, accessToken]);
 
   const serverConnection = React.useMemo(
-    () => ({ send, addListener, isConnected: pusherState === "connected" }),
-    [send, addListener, pusherState]
+    () => ({ addListener, isConnected: pusherState === "connected" }),
+    [addListener, pusherState]
   );
 
   return (

@@ -12,6 +12,7 @@ import channels, {
   selectDmChannelFromUserId,
   selectDmChannelFromUserIds,
   selectHasAllMessages,
+  selectHasFetchedMessages,
   selectChannelHasUnread,
   selectChannelMentionCount,
 } from "../reducers/channels";
@@ -59,6 +60,7 @@ const selectors = {
   selectChannelSectionWithChild,
   selectChannelTypingMembers,
   selectHasAllMessages,
+  selectHasFetchedMessages,
   selectChannelHasUnread,
   selectChannelMentionCount,
 };

@@ -267,6 +267,7 @@ export const selectMessage = createSelector(
 
     return {
       ...message,
+      createdAt: message.created_at,
       serverId,
       authorUserId,
       isEdited: message.edited_at != null,
