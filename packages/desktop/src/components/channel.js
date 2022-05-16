@@ -107,6 +107,10 @@ const useScroll = (scrollContainerRef, channelId) => {
     scrollContainerRef.current.scrollTop = cachedScrollTop;
   }, [scrollContainerRef, channelId, scrollToBottom]);
 
+  useScrollListener(scrollContainerRef, (e) => {
+    scrollPositionCache[channelId] = e.target.scrollTop;
+  });
+
   return { didScrollToBottom, setScrolledToBottom, scrollToBottom };
 };
 
@@ -132,10 +136,9 @@ const useMutationObserver = (elementRef, handler, options) => {
   }, [elementRef]);
 };
 
-const useReverseScrollPositionMaintainer = (
-  scrollContainerRef,
-  maintainScrollPositionRef
-) => {
+const useReverseScrollPositionMaintainer = (scrollContainerRef) => {
+  const maintainScrollPositionRef = React.useRef(false);
+
   const prevScrollHeightRef = React.useRef();
   const prevScrollTopRef = React.useRef();
 
@@ -145,6 +148,11 @@ const useReverseScrollPositionMaintainer = (
     if (prevScrollTopRef.current == null)
       prevScrollTopRef.current = scrollContainerRef.current.scrollTop;
   }, [scrollContainerRef]);
+
+  const maintainScrollPositionDuringTheNextDomMutation =
+    React.useCallback(() => {
+      maintainScrollPositionRef.current = true;
+    }, []);
 
   useMutationObserver(
     scrollContainerRef,
@@ -180,6 +188,8 @@ const useReverseScrollPositionMaintainer = (
   useScrollListener(scrollContainerRef, () => {
     prevScrollTopRef.current = scrollContainerRef.current.scrollTop;
   });
+
+  return maintainScrollPositionDuringTheNextDomMutation;
 };
 
 const scrollPositionCache = {};
@@ -197,12 +207,9 @@ export const ChannelBase = ({
 
   const messagesContainerRef = React.useRef();
   const scrollContainerRef = React.useRef();
-  const maintainScrollPositionRef = React.useRef(false);
 
-  useReverseScrollPositionMaintainer(
-    scrollContainerRef,
-    maintainScrollPositionRef
-  );
+  const maintainScrollPositionDuringTheNextDomMutation =
+    useReverseScrollPositionMaintainer(scrollContainerRef);
 
   const { didScrollToBottom, setScrolledToBottom, scrollToBottom } = useScroll(
     scrollContainerRef,
@@ -216,24 +223,28 @@ export const ChannelBase = ({
   React.useEffect(() => {
     const removeHook = addAfterEffectHook((action) => {
       if (action.type === "messages-fetched" && action.channelId === channel.id)
-        maintainScrollPositionRef.current = true;
+        maintainScrollPositionDuringTheNextDomMutation();
     });
     return () => {
       removeHook();
     };
-  }, [channel.id, addAfterEffectHook]);
+  }, [
+    channel.id,
+    addAfterEffectHook,
+    maintainScrollPositionDuringTheNextDomMutation,
+  ]);
 
   const fetchMessages_ = useMessageFetcher();
   const fetchMessages = useLatestCallback((channelId, query) => {
     if (query.beforeMessageId) {
-      maintainScrollPositionRef.current = true;
-      setFetchingMessagesBefore((s) => s + query.limit);
+      maintainScrollPositionDuringTheNextDomMutation();
+      setPendingMessagesBeforeCount((s) => s + query.limit);
     }
 
     return fetchMessages_(channelId, query).finally(() => {
       if (query.beforeMessageId) {
-        maintainScrollPositionRef.current = true;
-        setFetchingMessagesBefore((s) => Math.max(0, s - query.limit));
+        maintainScrollPositionDuringTheNextDomMutation();
+        setPendingMessagesBeforeCount((s) => Math.max(0, s - query.limit));
       }
     });
   });
@@ -277,11 +288,7 @@ export const ChannelBase = ({
 
   const channelHasUnread = state.selectChannelHasUnread(channel.id);
 
-  useScrollListener(scrollContainerRef, (e) => {
-    scrollPositionCache[channel.id] = e.target.scrollTop;
-  });
-
-  const [isFetchingMessagesBefore, setFetchingMessagesBefore] =
+  const [pendingMessagesBeforeCount, setPendingMessagesBeforeCount] =
     React.useState(0);
 
   const [averageMessageListItemHeight, setAverageMessageListItemHeight] =
@@ -295,16 +302,27 @@ export const ChannelBase = ({
   }, [messages.length]);
 
   useScrollListener(scrollContainerRef, () => {
-    if (scrollContainerRef.current.scrollTop < 10 && isFetchingMessagesBefore)
+    // Bounce back when scrolling to the top of the "loading" placeholder. Makes
+    // it feel like you keep scrolling like normal (ish).
+    if (scrollContainerRef.current.scrollTop < 10 && pendingMessagesBeforeCount)
       scrollContainerRef.current.scrollTop =
-        isFetchingMessagesBefore * averageMessageListItemHeight -
+        pendingMessagesBeforeCount * averageMessageListItemHeight -
         scrollContainerRef.current.getBoundingClientRect().height;
   });
 
   const fetchingMessagesBeforeMessageIdsRef = React.useRef([]);
 
+  // Fetch new messages as the user scroll up
   useScrollListener(scrollContainerRef, (e, { direction }) => {
-    if (direction !== "up" || messages.length === 0 || hasAllMessages) return;
+    if (
+      // We only care about upward scroll
+      direction !== "up" ||
+      // Wait until the have fetched the initial batch of messages
+      messages.length === 0 ||
+      // No need to react if we’ve already fetching all messages in this channel
+      hasAllMessages
+    )
+      return;
 
     const isCloseToTop =
       // ~4 viewport heights from top
@@ -317,7 +335,6 @@ export const ChannelBase = ({
 
     fetchingMessagesBeforeMessageIdsRef.current.push(messages[0].id);
 
-    // maintainScrollPositionRef.current = true;
     fetchMessages(channel.id, {
       beforeMessageId: messages[0].id,
       limit: 50,
@@ -334,12 +351,10 @@ export const ChannelBase = ({
 
   // Mark channel as read when new messages arrive when scrolled to bottom
   React.useEffect(() => {
-    if (
-      messages.length === 0 ||
-      !didScrollToBottom ||
-      !channelHasUnread ||
-      !serverConnection.isConnected
-    )
+    // Can’t send event if not connected
+    if (!serverConnection.isConnected) return;
+
+    if (messages.length === 0 || !didScrollToBottom || !channelHasUnread)
       return;
 
     const lastPersistedMessage = messages
@@ -359,7 +374,7 @@ export const ChannelBase = ({
 
   const lastMessage = messages.slice(-1)[0];
 
-  // Scroll to bottom when new messages arrive
+  // Keep scroll at bottom when new messages arrive
   React.useEffect(() => {
     if (lastMessage == null || !didScrollToBottomRef.current) return;
     scrollToBottom();
@@ -531,11 +546,11 @@ export const ChannelBase = ({
                 }}
               />
             )}
-            {isFetchingMessagesBefore > 0 && (
+            {pendingMessagesBeforeCount > 0 && (
               <div
                 css={css({
                   height: `${
-                    isFetchingMessagesBefore * averageMessageListItemHeight
+                    pendingMessagesBeforeCount * averageMessageListItemHeight
                   }px`,
                 })}
               />
