@@ -217,6 +217,8 @@ export const selectChannel = createSelector(
         .join(", ");
     };
 
+    console.log(channel);
+
     return {
       ...channel,
       name: buildName(),
@@ -305,9 +307,10 @@ export const selectDmChannels = createSelector(
       .map((c) => selectChannel(state, c.id));
 
     return sort((c1, c2) => {
-      const [t1, t2] = [c1, c2].map((c) =>
-        new Date(c.lastMessageAt ?? c.createdAt).getTime()
-      );
+      const [t1, t2] = [c1, c2].map((c) => {
+        const readState = state.channels.readStatesById[c.id];
+        return new Date(readState?.lastMessageAt ?? c.createdAt).getTime();
+      });
       return t1 > t2 ? -1 : t1 < t2 ? 1 : 0;
     }, channels);
   },
