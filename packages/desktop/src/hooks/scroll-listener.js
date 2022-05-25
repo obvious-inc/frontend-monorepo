@@ -32,6 +32,7 @@ const useScrollListener = (scrollContainerRef, handler, deps = []) => {
     return () => {
       scrollContainer.removeEventListener("scroll", scrollHandler);
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [scrollContainerRef, ...deps]);
 };
 

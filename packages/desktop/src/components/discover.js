@@ -2,13 +2,12 @@ import React from "react";
 import { css } from "@emotion/react";
 import { useNavigate } from "react-router";
 import { Link } from "react-router-dom";
-import { useAppScope, useAuth, arrayUtils } from "@shades/common";
+import { useAppScope, arrayUtils } from "@shades/common";
 import Button from "./button";
 
 const { sort } = arrayUtils;
 
 const Discover = () => {
-  const { user } = useAuth();
   const { state, actions } = useAppScope();
   const servers = state.selectServers();
 
