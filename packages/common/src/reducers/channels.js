@@ -217,8 +217,6 @@ export const selectChannel = createSelector(
         .join(", ");
     };
 
-    console.log(channel);
-
     return {
       ...channel,
       name: buildName(),
