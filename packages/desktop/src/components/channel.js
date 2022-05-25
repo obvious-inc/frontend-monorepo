@@ -1,6 +1,6 @@
 import throttle from "lodash.throttle";
 import React from "react";
-import { useParams } from "react-router";
+import { useParams, useNavigate } from "react-router";
 import { css } from "@emotion/react";
 import {
   useAppScope,
@@ -1148,6 +1148,7 @@ const Header = ({ children }) => (
 
 const Channel = () => {
   const params = useParams();
+  const navigate = useNavigate();
   const { state, actions } = useAppScope();
   const { isFloating: isMenuTogglingEnabled } = useSideMenu();
 
@@ -1156,6 +1157,15 @@ const Channel = () => {
   const server = state.selectServer(params.serverId);
 
   const members = state.selectChannelMembers(params.channelId);
+
+  React.useEffect(() => {
+    if (server == null || params.channelId != null) return;
+    const serverChannels = state.selectServerChannels(params.serverId);
+    if (serverChannels.length === 0) return;
+    navigate(`/channels/${params.serverId}/${serverChannels[0].id}`, {
+      replace: true,
+    });
+  }, [navigate, params.channelId, params.serverId, state, server]);
 
   const createMessage = React.useCallback(
     ({ blocks, replyToMessageId }) => {

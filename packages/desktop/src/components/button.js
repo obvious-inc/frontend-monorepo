@@ -2,11 +2,15 @@ import { css } from "@emotion/react";
 
 const baseStyles = {
   fontWeight: "400",
-  lineHeight: 1,
+  lineHeight: 1.2,
   border: 0,
   borderRadius: "4px",
   cursor: "pointer",
   textAlign: "center",
+  display: "inline-flex",
+  alignItems: "center",
+  justifyContent: "center",
+  textDecoration: "none",
   "&[disabled]": { opacity: 0.5 },
 };
 
@@ -53,15 +57,22 @@ const stylesBySize = {
   },
 };
 
+const defaultPropsByComponent = {
+  button: {
+    type: "button",
+  },
+};
+
 const Button = ({
   size = "small",
   variant = "default",
   fullWidth = false,
   css: customStyles,
+  component: Component = "button",
   ...props
 }) => (
-  <button
-    type="button"
+  <Component
+    {...defaultPropsByComponent[Component]}
     css={(theme) => [
       css({
         ...baseStyles,

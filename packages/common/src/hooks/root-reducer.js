@@ -3,7 +3,11 @@ import { mapValues } from "../utils/object";
 import combineReducers from "../utils/combine-reducers";
 import { useAuth } from "../auth";
 import ui, { selectHasFetchedInitialData } from "../reducers/ui";
-import servers, { selectServer, selectServers } from "../reducers/servers";
+import servers, {
+  selectServer,
+  selectServers,
+  selectJoinedServers,
+} from "../reducers/servers";
 import channels, {
   selectChannel,
   selectServerChannels,
@@ -41,6 +45,7 @@ import channelTypingStatus, {
 const selectors = {
   selectServer,
   selectServers,
+  selectJoinedServers,
   selectChannel,
   selectServerChannels,
   selectDmChannels,

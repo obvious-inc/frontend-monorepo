@@ -68,7 +68,9 @@ const commands = {
       editor.clear();
     },
     exclude: () => {
-      if (context != "server-channel") return true;
+      if (context !== "server-channel") return true;
+      const channelSection = state.selectChannelSectionWithChild(channelId);
+      if (channelSection == null) return true;
       const server = state.selectServer(serverId);
       return server?.ownerUserId !== user.id;
     },

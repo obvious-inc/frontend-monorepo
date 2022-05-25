@@ -1,6 +1,7 @@
 import { createSelector } from "reselect";
 import combineReducers from "../utils/combine-reducers";
 import { indexBy, unique, sort } from "../utils/array";
+import { omitKey } from "../utils/object";
 import { getMentions } from "../utils/message";
 import { arrayShallowEquals } from "../utils/reselect";
 import { selectUser } from "./users";
@@ -43,6 +44,9 @@ const entriesById = (state = {}, action) => {
         ...entriesById,
       };
     }
+
+    case "delete-channel-request-successful":
+      return omitKey(action.id, state);
 
     default:
       return state;

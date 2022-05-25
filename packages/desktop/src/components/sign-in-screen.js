@@ -2,7 +2,7 @@ import React from "react";
 import { useSearchParams } from "react-router-dom";
 import { css } from "@emotion/react";
 import { TITLE_BAR_HEIGHT } from "../constants/ui";
-import { useAuth } from "@shades/common";
+import { useAuth, useLatestCallback } from "@shades/common";
 import * as eth from "../utils/ethereum";
 import usePageVisibilityChangeListener from "../hooks/page-visibility-change-listener";
 import * as Tooltip from "../components/tooltip";
@@ -10,86 +10,44 @@ import Spinner from "../components/spinner";
 
 const isNative = window.Native != null;
 
-const SignInScreen = () => {
-  const [searchParams, setSearchParams] = useSearchParams();
-  const { accessToken, signIn, verifyAccessToken } = useAuth();
-
+const useWallet = ({ onDisconnect }) => {
   const providerRef = React.useRef();
 
   const [isProviderConnected, setProviderConnected] = React.useState(false);
   const [selectedChainId, setSelectedChainId] = React.useState(null);
   const [selectedAddress, setSelectedAddress] = React.useState(null);
-  const [status, setStatus] = React.useState("idle");
-  const [error, setError] = React.useState(null);
 
-  const handleClickConnectWallet = async () => {
-    setError(null);
+  const { signIn: signIn_ } = useAuth();
 
+  const connectWallet = useLatestCallback(async () => {
     try {
-      setStatus("requesting-address");
       const addresses = await providerRef.current.request({
         method: "eth_requestAccounts",
       });
       handleAccountsChange(addresses);
-      setStatus("idle");
     } catch (e) {
-      // Love WalletConnect
+      // WalletConnect throws an error and disconnects the provider when the
+      // user closes the modal with the cross
       if (e.message === "User closed modal") {
         await connectProvider();
-        setStatus("idle");
         return;
       }
 
-      if (e.code === 4001) {
-        // User rejected the request
-        setStatus("idle");
-        return;
+      // Ignore 4001s (rejected by user)
+      if (e.code !== 4001) {
+        console.error(e);
+        throw e;
       }
-
-      setStatus("idle");
-      setError("connect-wallet-error");
-      console.error(e);
     }
-  };
+  });
 
-  const handleClickSignIn = async () => {
-    setError(null);
-    setStatus("requesting-signature");
-
-    eth
-      .signAddress(providerRef.current, selectedAddress)
-      .catch((e) =>
-        Promise.reject(
-          new Error(
-            e.code === 4001
-              ? "signature-rejected"
-              : "signature-rejected-or-failed"
-          )
-        )
-      )
-      .then(([signature, message, signedAt, nonce]) => {
-        setStatus("requesting-access-token");
-        return signIn({
-          message,
-          signature,
-          signedAt,
-          address: selectedAddress,
-          nonce,
-        }).catch(() => Promise.reject(new Error("login-error")));
-      })
-      .catch((e) => {
-        setStatus("idle");
-        setError(e.message);
-      });
-  };
-
-  const handleChainChange = React.useCallback((chainId) => {
+  const handleChainChange = useLatestCallback((chainId) => {
     eth.numberToHex(parseInt(chainId)).then((hexChainId) => {
       setSelectedChainId(hexChainId);
     });
-  }, []);
+  });
 
-  const handleAccountsChange = React.useCallback((accounts) => {
+  const handleAccountsChange = useLatestCallback((accounts) => {
     if (accounts.length === 0) {
       setSelectedAddress(null);
       return;
@@ -99,33 +57,27 @@ const SignInScreen = () => {
     eth.getChecksumAddress(accounts[0]).then((a) => {
       setSelectedAddress(a);
     });
-  }, []);
+  });
 
-  const updateChainId = React.useCallback(
-    async (provider) => {
-      try {
-        const chainId = await provider.request({ method: "net_version" });
-        handleChainChange(chainId);
-      } catch (e) {
-        setSelectedChainId("unsupported");
-      }
-    },
-    [handleChainChange]
-  );
+  const updateChainId = useLatestCallback(async (provider) => {
+    try {
+      const chainId = await provider.request({ method: "net_version" });
+      handleChainChange(chainId);
+    } catch (e) {
+      setSelectedChainId("unsupported");
+    }
+  });
 
-  const updateAccount = React.useCallback(
-    async (provider) => {
-      try {
-        const addresses = await provider.request({ method: "eth_accounts" });
-        handleAccountsChange(addresses);
-      } catch (e) {
-        handleAccountsChange([]);
-      }
-    },
-    [handleAccountsChange]
-  );
+  const updateAccount = useLatestCallback(async (provider) => {
+    try {
+      const addresses = await provider.request({ method: "eth_accounts" });
+      handleAccountsChange(addresses);
+    } catch (e) {
+      handleAccountsChange([]);
+    }
+  });
 
-  const connectProvider = React.useCallback(async () => {
+  const connectProvider = useLatestCallback(async () => {
     const provider = await eth.connectProvider();
     providerRef.current = provider;
 
@@ -134,7 +86,7 @@ const SignInScreen = () => {
     provider.on("chainChanged", handleChainChange);
 
     provider.on("disconnect", () => {
-      setStatus("idle");
+      onDisconnect();
       setSelectedAddress(null);
       setSelectedChainId(null);
 
@@ -160,11 +112,137 @@ const SignInScreen = () => {
     setProviderConnected(true);
 
     return provider;
-  }, [updateChainId, updateAccount, handleChainChange, handleAccountsChange]);
+  });
+
+  const requestEthereumChainSwitch = (chainId) =>
+    providerRef.current.request({
+      method: "wallet_switchEthereumChain",
+      params: [{ chainId }],
+    });
+
+  const signIn = () =>
+    eth
+      .signAddress(providerRef.current, selectedAddress)
+      .catch((e) =>
+        Promise.reject(
+          new Error(
+            e.code === 4001
+              ? "signature-rejected"
+              : "signature-rejected-or-failed"
+          )
+        )
+      )
+      .then(([signature, message, signedAt, nonce]) =>
+        signIn_({
+          message,
+          signature,
+          signedAt,
+          address: selectedAddress,
+          nonce,
+        }).catch(() => Promise.reject(new Error("login-error")))
+      );
 
   React.useEffect(() => {
     connectProvider();
   }, [connectProvider]);
+
+  usePageVisibilityChangeListener((visibilityState) => {
+    if (visibilityState !== "visible" || providerRef.current == null) return;
+
+    if (selectedAddress != null) updateAccount(providerRef.current);
+
+    updateChainId(providerRef.current);
+  });
+
+  return {
+    connectWallet,
+    signIn,
+    requestEthereumChainSwitch,
+    isProviderConnected,
+    selectedAddress,
+    selectedChainId,
+  };
+};
+
+export const useWalletLogin = () => {
+  const [status, setStatus] = React.useState("idle");
+  const [error, setError] = React.useState(null);
+
+  const {
+    connectWallet: connectWallet_,
+    signIn: signIn_,
+    requestEthereumChainSwitch: requestEthereumChainSwitch_,
+    isProviderConnected,
+    selectedAddress,
+    selectedChainId,
+  } = useWallet({
+    onDisconnect: () => {
+      setError(null);
+      setStatus("idle");
+    },
+  });
+
+  const connectWallet = async () => {
+    setError(null);
+    setStatus("requesting-address");
+    try {
+      await connectWallet_();
+    } finally {
+      setStatus("idle");
+    }
+  };
+
+  const signIn = async () => {
+    setError(null);
+    setStatus("requesting-signature");
+
+    try {
+      await signIn_();
+    } catch (e) {
+      setError(e.message);
+    } finally {
+      setStatus("idle");
+    }
+  };
+
+  const requestEthereumChainSwitch = async (chainId) => {
+    setError(null);
+    setStatus("requesting-network-switch");
+    try {
+      await requestEthereumChainSwitch_(chainId);
+    } catch (e) {
+      // Ignore
+    } finally {
+      setStatus("idle");
+    }
+  };
+
+  return {
+    status,
+    error,
+    isProviderConnected,
+    selectedAddress,
+    selectedChainId,
+    connectWallet,
+    signIn,
+    requestEthereumChainSwitch,
+  };
+};
+
+const SignInScreen = () => {
+  const [searchParams, setSearchParams] = useSearchParams();
+  const { accessToken, verifyAccessToken } = useAuth();
+
+  const {
+    connectWallet,
+    signIn,
+    requestEthereumChainSwitch,
+    isProviderConnected,
+    selectedAddress,
+    selectedChainId,
+    error,
+    status,
+  } = useWalletLogin();
 
   React.useEffect(() => {
     if (accessToken == null || searchParams.get("redirect") == null) return;
@@ -174,14 +252,6 @@ const SignInScreen = () => {
       setSearchParams(searchParams);
     });
   }, [accessToken, verifyAccessToken, searchParams, setSearchParams]);
-
-  usePageVisibilityChangeListener((visibilityState) => {
-    if (visibilityState !== "visible" || providerRef.current == null) return;
-
-    if (selectedAddress != null) updateAccount(providerRef.current);
-
-    updateChainId(providerRef.current);
-  });
 
   return (
     <div
@@ -223,19 +293,7 @@ const SignInScreen = () => {
             </div>
             <Button
               onClick={() => {
-                setError(null);
-                setStatus("requesting-network-switch");
-                providerRef.current
-                  .request({
-                    method: "wallet_switchEthereumChain",
-                    params: [{ chainId: "0x1" }],
-                  })
-                  .catch(() => {
-                    // Ignore
-                  })
-                  .then(() => {
-                    setStatus("idle");
-                  });
+                requestEthereumChainSwitch("0x1");
               }}
             >
               Switch to Ethereum Mainnet
@@ -293,7 +351,7 @@ const SignInScreen = () => {
           )}
           {selectedAddress == null ? (
             <>
-              <Button onClick={handleClickConnectWallet}>Connect wallet</Button>
+              <Button onClick={connectWallet}>Connect wallet</Button>
               <Small
                 style={{
                   width: "42rem",
@@ -305,12 +363,25 @@ const SignInScreen = () => {
                 Make sure to enable any browser extension wallets before you try
                 to connect. If you use a mobile wallet, no action is requred.
               </Small>
+              <Small style={{ marginTop: "1.2rem" }}>
+                <a
+                  href="https://learn.rainbow.me/what-is-a-cryptoweb3-wallet-actually"
+                  rel="noreferrer"
+                  target="_blank"
+                  css={(theme) =>
+                    css({
+                      color: theme.colors.linkColor,
+                      ":hover": { color: theme.colors.linkColorHighlight },
+                    })
+                  }
+                >
+                  What is a wallet?
+                </a>
+              </Small>
             </>
           ) : (
             <>
-              <Button onClick={handleClickSignIn}>
-                Log in with wallet signature
-              </Button>
+              <Button onClick={signIn}>Log in with wallet signature</Button>
               <div
                 css={(theme) =>
                   css({

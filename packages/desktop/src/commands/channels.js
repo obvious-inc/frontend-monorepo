@@ -29,6 +29,61 @@ const commands = {
       return server?.ownerUserId !== user.id;
     },
   }),
+  "rename-channel": ({
+    context,
+    user,
+    state,
+    actions,
+    serverId,
+    channelId,
+  }) => ({
+    description: "Set a new name for this channel",
+    arguments: ["channel-name"],
+    execute: async ({ args, editor }) => {
+      if (args.length < 1) {
+        alert('Argument "channel-name" is required');
+        return;
+      }
+      const channelName = args.join(" ");
+      await actions.updateChannel(channelId, { name: channelName });
+      editor.clear();
+    },
+    exclude: () => {
+      if (context === "dm") {
+        const channel = state.selectChannel(channelId);
+        return user.id !== channel.ownerUserId;
+      }
+
+      const server = state.selectServer(serverId);
+      return server?.ownerUserId !== user.id;
+    },
+  }),
+  "delete-channel": ({
+    context,
+    user,
+    state,
+    actions,
+    navigate,
+    serverId,
+    channelId,
+  }) => ({
+    description: "Delete the current channel",
+    execute: async ({ editor }) => {
+      if (!confirm("Are you sure you want to delete this channel?")) return;
+      await actions.deleteChannel(channelId);
+      editor.clear();
+      navigate(`/channels/${serverId}`);
+    },
+    exclude: () => {
+      if (context === "dm") {
+        const channel = state.selectChannel(channelId);
+        return user.id !== channel.ownerUserId;
+      }
+
+      const server = state.selectServer(serverId);
+      return server?.ownerUserId !== user.id;
+    },
+  }),
   "update-channel": ({
     context,
     user,
@@ -50,6 +105,8 @@ const commands = {
       editor.clear();
     },
     exclude: () => {
+      if (!location.search.includes("root")) return true;
+
       if (context === "dm") {
         const channel = state.selectChannel(channelId);
         return user.id !== channel.ownerUserId;

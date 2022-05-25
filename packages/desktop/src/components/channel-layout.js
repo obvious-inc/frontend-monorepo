@@ -81,13 +81,20 @@ const SideMenuLayout = ({ title, sidebarContent, children }) => {
                 color: theme.colors.textHeader,
                 boxShadow:
                   "0 1px 0 rgba(4,4,5,0.2),0 1.5px 0 rgba(6,6,7,0.05),0 2px 0 rgba(4,4,5,0.05)",
-                whiteSpace: "nowrap",
                 position: "relative",
-                zIndex: 2,
+                zIndex: 1,
               })
             }
           >
-            {title}
+            <span
+              css={css({
+                overflow: "hidden",
+                textOverflow: "ellipsis",
+                whiteSpace: "nowrap",
+              })}
+            >
+              {title}
+            </span>
           </div>
           <div
             css={css`
@@ -149,11 +156,14 @@ const ChannelLayout = () => {
   const [sections, channelsWithoutSection] = React.useMemo(() => {
     const sections = [];
     for (let section of channelSections) {
+      const sectionChannels = section.channelIds.map((id) =>
+        channels.find((c) => c.id === id)
+      );
+      if (sectionChannels.some((c) => c == null))
+        console.warn("`null` channel in section data");
       sections.push({
         ...section,
-        channels: section.channelIds.map((id) =>
-          channels.find((c) => c.id === id)
-        ),
+        channels: sectionChannels.filter(Boolean),
       });
     }
     const sectionChannelIds = sections.flatMap((s) =>

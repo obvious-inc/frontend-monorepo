@@ -14,7 +14,7 @@ const Context = React.createContext({});
 export const useAppScope = () => React.useContext(Context);
 
 export const Provider = ({ children }) => {
-  const { user, authorizedFetch } = useAuth();
+  const { user, authorizedFetch, apiOrigin } = useAuth();
   const serverConnection = useServerConnection();
   const [stateSelectors, dispatch, { addBeforeDispatchListener }] =
     useRootReducer();
@@ -46,10 +46,25 @@ export const Provider = ({ children }) => {
     [authorizedFetch]
   );
 
-  const fetchServers = React.useCallback(
-    () => authorizedFetch("/servers"),
-    [authorizedFetch]
-  );
+  const fetchServers = React.useCallback(async () => {
+    const servers = await authorizedFetch("/servers");
+    dispatch({ type: "fetch-servers-request-successful", servers });
+    return servers;
+  }, [dispatch, authorizedFetch]);
+
+  const fetchPublicServerData = useLatestCallback(async (id) => {
+    const response = await fetch(`${apiOrigin}/servers/${id}`);
+    if (!response.ok) {
+      const error = new Error(
+        response.status === 400 ? "not-found" : response.statusText
+      );
+      return Promise.reject(error);
+    }
+
+    const server = await response.json();
+    dispatch({ type: "fetch-server-request-successful", server });
+    return server;
+  });
 
   const joinServer = React.useCallback(
     (id) =>
@@ -374,6 +389,13 @@ export const Provider = ({ children }) => {
     [authorizedFetch, fetchInitialData]
   );
 
+  const deleteChannel = useLatestCallback((id) =>
+    authorizedFetch(`/channels/${id}`, { method: "DELETE" }).then((res) => {
+      dispatch({ type: "delete-channel-request-successful", id });
+      return res;
+    })
+  );
+
   const uploadImage = React.useCallback(
     ({ files }) => {
       const formData = new FormData();
@@ -394,6 +416,7 @@ export const Provider = ({ children }) => {
 
   const actions = React.useMemo(
     () => ({
+      fetchPublicServerData,
       fetchInitialData,
       fetchMessage,
       updateMe,
@@ -408,6 +431,7 @@ export const Provider = ({ children }) => {
       updateServerChannelSections,
       createChannel,
       updateChannel,
+      deleteChannel,
       createMessage,
       updateMessage,
       removeMessage,
@@ -418,6 +442,7 @@ export const Provider = ({ children }) => {
       registerChannelTypingActivity,
     }),
     [
+      fetchPublicServerData,
       fetchInitialData,
       fetchMessage,
       updateMe,
@@ -432,6 +457,7 @@ export const Provider = ({ children }) => {
       deleteChannelSection,
       createChannel,
       updateChannel,
+      deleteChannel,
       createMessage,
       updateMessage,
       removeMessage,

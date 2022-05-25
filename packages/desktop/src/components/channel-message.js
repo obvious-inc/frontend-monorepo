@@ -1349,11 +1349,12 @@ const SystemMessage = ({ isHovering, message, reactions }) => {
       case "member-joined":
         return (
           <>
+            A wild{" "}
             <MemberDisplayName
               color="white"
               displayName={message.author?.displayName}
             />{" "}
-            joined the server!
+            has appeared. Welcome!
           </>
         );
 

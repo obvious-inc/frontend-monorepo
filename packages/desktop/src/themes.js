@@ -1,15 +1,15 @@
-const BLUE = "#3336d1";
+// const BLUE = "#3336d1";
 
 export const dark = {
   colors: {
-    primary: BLUE,
+    primary: "#007ab3", // BLUE,
     pink: "#e588f8",
     textNormal: "#dcddde",
     textMuted: "#bcc3cc7a",
     textHeader: "white",
     textHeaderSecondary: "#b9bbbe",
-    linkColor: "hsl(197,100%,47.8%)",
-    linkColorHighlight: "hsl(197deg 100% 59%)",
+    linkColor: "hsl(199deg 100% 46%)", // "hsl(197,100%,47.8%)",
+    linkColorHighlight: "hsl(199deg 100% 55%)", // "hsl(197deg 100% 59%)",
     interactiveNormal: "#b9bbbe",
     interactiveHover: "#dcddde",
     interactiveActive: "#fff",

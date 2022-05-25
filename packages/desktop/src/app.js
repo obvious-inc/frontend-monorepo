@@ -31,7 +31,7 @@ const isNative = window.Native != null;
 const App = () => {
   const navigate = useNavigate();
 
-  const { status: authStatus, user } = useAuth();
+  const { user } = useAuth();
   const { state, actions } = useAppScope();
 
   React.useEffect(() => {
@@ -55,90 +55,111 @@ const App = () => {
     <>
       {isNative && <TitleBar />}
 
-      {
-        authStatus === "not-authenticated" ? (
-          <SignInScreen />
-        ) : authStatus === "authenticated" ? (
-          <Routes>
-            <Route>
-              <Route
-                path="/"
-                element={
-                  <div
-                    css={(theme) =>
-                      css({
-                        height: "100%",
-                        display: "flex",
-                        background: theme.colors.backgroundSecondary,
-                      })
-                    }
-                  >
-                    <MainMenu />
-                    <div
-                      css={css({
-                        flex: 1,
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "center",
-                        height: "100%",
-                      })}
-                    >
-                      <HomeIcon
-                        style={{
-                          width: "6rem",
-                          color: "rgb(255 255 255 / 5%)",
-                        }}
-                      />
-                    </div>
-                  </div>
+      <Routes>
+        <Route
+          path="/"
+          element={
+            <RequireAuth>
+              <div
+                css={(theme) =>
+                  css({
+                    height: "100%",
+                    display: "flex",
+                    background: theme.colors.backgroundSecondary,
+                  })
                 }
-              />
-            </Route>
+              >
+                <MainMenu />
+                <div
+                  css={css({
+                    flex: 1,
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    height: "100%",
+                  })}
+                >
+                  <HomeIcon
+                    style={{
+                      width: "6rem",
+                      color: "rgb(255 255 255 / 5%)",
+                    }}
+                  />
+                </div>
+              </div>
+            </RequireAuth>
+          }
+        />
 
-            <Route element={<DmChannelLayout />}>
-              <Route
-                path="/channels/@me"
-                element={
-                  <div
-                    css={(theme) =>
-                      css({
-                        flex: 1,
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "center",
-                        height: "100%",
-                        background: theme.colors.backgroundPrimary,
-                      })
-                    }
-                  >
-                    <ChatBubblesIcon
-                      style={{
-                        width: "6rem",
-                        color: "rgb(255 255 255 / 5%)",
-                      }}
-                    />
-                  </div>
+        <Route
+          element={
+            <RequireAuth>
+              <DmChannelLayout />
+            </RequireAuth>
+          }
+        >
+          <Route
+            path="/channels/@me"
+            element={
+              <div
+                css={(theme) =>
+                  css({
+                    flex: 1,
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    height: "100%",
+                    background: theme.colors.backgroundPrimary,
+                  })
                 }
-              />
-              <Route path="/channels/@me/:channelId" element={<Channel />} />
-            </Route>
+              >
+                <ChatBubblesIcon
+                  style={{
+                    width: "6rem",
+                    color: "rgb(255 255 255 / 5%)",
+                  }}
+                />
+              </div>
+            }
+          />
+          <Route path="/channels/@me/:channelId" element={<Channel />} />
+        </Route>
 
-            <Route element={<ChannelLayout />}>
-              <Route
-                path="/channels/:serverId/:channelId"
-                element={<Channel />}
-              />
-              <Route path="/channels/:serverId" element={<Channel />} />
-            </Route>
+        <Route
+          element={
+            <RequireAuth>
+              <ChannelLayout />
+            </RequireAuth>
+          }
+        >
+          <Route path="/channels/:serverId/:channelId" element={<Channel />} />
+          <Route path="/channels/:serverId" element={<Channel />} />
+        </Route>
 
-            <Route path="/join/:serverId" element={<JoinServer />} />
-            <Route path="/discover" element={<Discover />} />
-            <Route path="*" element={null} />
-          </Routes>
-        ) : null // Loading
-      }
+        <Route
+          path="/discover"
+          element={
+            <RequireAuth>
+              <Discover />
+            </RequireAuth>
+          }
+        />
+        {/* Public routes below */}
+        <Route path="/join/:serverId" element={<JoinServer />} />
+        <Route path="*" element={null} />
+      </Routes>
     </>
   );
+};
+
+const RequireAuth = ({ children }) => {
+  const { status: authStatus } = useAuth();
+
+  if (authStatus === "not-authenticated") return <SignInScreen />;
+
+  if (authStatus !== "authenticated") return null; // Spinner
+
+  return children;
 };
 
 export default function Root() {

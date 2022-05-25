@@ -1,4 +1,10 @@
-import { NavLink, useParams, useLocation, Link } from "react-router-dom";
+import {
+  NavLink,
+  useParams,
+  useLocation,
+  useNavigate,
+  Link,
+} from "react-router-dom";
 import { css } from "@emotion/react";
 import { useAppScope, useAuth } from "@shades/common";
 import {
@@ -12,11 +18,12 @@ import * as Tooltip from "./tooltip";
 
 const MainMenu = () => {
   const params = useParams();
+  const navigate = useNavigate();
   const { state, actions } = useAppScope();
   const { user } = useAuth();
   const location = useLocation();
 
-  const servers = state.selectServers();
+  const servers = state.selectJoinedServers();
 
   const dmChannels = state.selectDmChannels();
   const unreadDmChannels = dmChannels.filter((c) =>
@@ -132,7 +139,7 @@ const MainMenu = () => {
             {servers.map((s) => {
               const isActive = params.serverId === s.id;
 
-              const channels = state.selectServerChannels(params.serverId);
+              const channels = state.selectServerChannels(s.id);
 
               const hasChannels = channels.length !== 0;
               const unreadChannels = channels.filter((c) =>
@@ -150,7 +157,7 @@ const MainMenu = () => {
                   key={s.id}
                   to={
                     hasChannels
-                      ? `/channels/${s.id}/${s.channels[0].id}`
+                      ? `/channels/${s.id}/${channels[0].id}`
                       : `/channels/${s.id}`
                   }
                   notificationCount={mentionCount}
@@ -169,13 +176,15 @@ const MainMenu = () => {
                   window.location.search.includes("beta")
                 ) {
                   const name = prompt("Name plz");
-                  actions.createServer({ name });
+                  actions.createServer({ name }).then((t) => {
+                    navigate(`/channels/${t.id}`);
+                  });
                   return;
                 }
 
                 alert("Soon :tm:");
               }}
-              tooltip="Create a server"
+              tooltip="Start a new town"
             >
               <PlusIcon style={{ width: "1.7rem" }} />
             </RoundButton>
