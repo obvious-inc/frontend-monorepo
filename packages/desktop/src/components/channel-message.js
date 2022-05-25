@@ -1,6 +1,7 @@
+import isDateToday from "date-fns/isToday";
 import React from "react";
 import { useNavigate } from "react-router";
-import { FormattedDate } from "react-intl";
+import { FormattedDate, FormattedRelativeTime } from "react-intl";
 import { css, useTheme } from "@emotion/react";
 import {
   useAppScope,
@@ -630,7 +631,7 @@ const MessageHeader = ({ author, createdAt, authorUserId }) => (
       grid-template-columns: repeat(2, minmax(0, auto));
       justify-content: flex-start;
       align-items: flex-end;
-      grid-gap: 1.2rem;
+      grid-gap: 0.8rem;
       margin: 0 0 0.2rem;
       cursor: default;
     `}
@@ -1427,17 +1428,26 @@ const TinyMutedText = ({ children, nowrap = false }) => (
 );
 
 const FormattedDateWithTooltip = React.memo(
-  ({ value, tooltipContentProps, disableTooltip, ...props }) =>
-    disableTooltip ? (
-      <span>
-        <FormattedDate value={value} {...props} />
+  ({ value, tooltipContentProps, disableTooltip, ...props }) => {
+    const formattedDate = isDateToday(value) ? (
+      <span css={css({ textTransform: "capitalize" })}>
+        <FormattedRelativeTime
+          value={0}
+          unit="day"
+          style="long"
+          numeric="auto"
+        />
       </span>
     ) : (
+      <FormattedDate value={value} {...props} />
+    );
+
+    if (disableTooltip) return formattedDate;
+
+    return (
       <Tooltip.Root>
         <Tooltip.Trigger asChild>
-          <span>
-            <FormattedDate value={value} {...props} />
-          </span>
+          <span>{formattedDate}</span>
         </Tooltip.Trigger>
         <Tooltip.Content side="top" sideOffset={5} {...tooltipContentProps}>
           <FormattedDate
@@ -1450,7 +1460,8 @@ const FormattedDateWithTooltip = React.memo(
           />
         </Tooltip.Content>
       </Tooltip.Root>
-    )
+    );
+  }
 );
 
 export default ChannelMessage;
