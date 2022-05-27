@@ -120,10 +120,10 @@ const commands = {
       return server?.ownerUserId !== user.id;
     },
   }),
-  logout: ({ navigate, signOut }) => ({
+  logout: ({ navigate, actions }) => ({
     description: "Logs you out, really fast.",
     execute: async () => {
-      signOut();
+      actions.logout();
       navigate("/");
     },
   }),

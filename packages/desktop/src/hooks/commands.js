@@ -18,7 +18,7 @@ const allCommands = {
 };
 
 const useCommands = ({ context, serverId, channelId } = {}) => {
-  const { user, signOut } = useAuth();
+  const { user } = useAuth();
   const { state, actions } = useAppScope();
   const navigate = useNavigate();
 
@@ -28,12 +28,11 @@ const useCommands = ({ context, serverId, channelId } = {}) => {
       navigate,
       state,
       actions,
-      signOut,
       context,
       serverId,
       channelId,
     }),
-    [user, navigate, state, actions, signOut, context, serverId, channelId]
+    [user, navigate, state, actions, context, serverId, channelId]
   );
 
   const commands = React.useMemo(() => {

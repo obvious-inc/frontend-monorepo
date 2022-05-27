@@ -48,6 +48,9 @@ const entriesById = (state = {}, action) => {
     case "delete-channel-request-successful":
       return omitKey(action.id, state);
 
+    case "logout":
+      return {};
+
     default:
       return state;
   }
@@ -67,6 +70,9 @@ const metaById = (state = {}, action) => {
         },
       };
     }
+
+    case "logout":
+      return {};
 
     default:
       return state;
@@ -188,6 +194,9 @@ const readStatesById = (state = {}, action) => {
         },
       };
     }
+
+    case "logout":
+      return {};
 
     default:
       return state;

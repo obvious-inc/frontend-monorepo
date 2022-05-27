@@ -1,3 +1,13 @@
+import {
+  WagmiConfig,
+  createClient as createWagmiClient,
+  configureChains as configureWagmiChains,
+  chain as wagmiChain,
+} from "wagmi";
+import { infuraProvider } from "wagmi/providers/infura";
+import { publicProvider } from "wagmi/providers/public";
+import { InjectedConnector } from "wagmi/connectors/injected";
+import { WalletConnectConnector } from "wagmi/connectors/walletConnect";
 import React from "react";
 import { css } from "@emotion/react";
 import { Routes, Route, useNavigate } from "react-router-dom";
@@ -11,7 +21,9 @@ import {
   AppScopeProvider,
   ServerConnectionProvider,
 } from "@shades/common";
+import * as eth from "./utils/ethereum";
 import { Provider as SideMenuProvider } from "./hooks/side-menu";
+import useWalletEvent from "./hooks/wallet-event";
 import SignInScreen from "./components/sign-in-screen";
 import Channel from "./components/channel";
 import Discover from "./components/discover";
@@ -25,14 +37,65 @@ import {
   ChatBubbles as ChatBubblesIcon,
 } from "./components/icons";
 import { dark as defaultTheme } from "./themes";
+import {
+  useWalletLogin,
+  WalletLoginProvider,
+} from "./components/sign-in-screen";
 
 const isNative = window.Native != null;
+
+const { chains, provider } = configureWagmiChains(
+  [wagmiChain.mainnet],
+  [
+    infuraProvider({ infuraId: process.env.INFURA_PROJECT_ID }),
+    publicProvider(),
+  ]
+);
+
+const wagmiClient = createWagmiClient({
+  autoConnect: true,
+  provider,
+  connectors: [
+    new InjectedConnector({ chains }),
+    new WalletConnectConnector({
+      chains,
+      options: {
+        qrcode: true,
+      },
+    }),
+  ],
+});
 
 const App = () => {
   const navigate = useNavigate();
 
-  const { user } = useAuth();
+  const { user, status: authStatus } = useAuth();
   const { state, actions } = useAppScope();
+  const { login } = useWalletLogin();
+
+  useWalletEvent("account-change", (newAddress, previousAddress) => {
+    if (
+      // Ignore initial connect
+      previousAddress == null ||
+      // We only care about logged in users
+      authStatus === "not-authenticated" ||
+      user?.wallet_address.toLowerCase() === newAddress.toLowerCase()
+    )
+      return;
+
+    // Suggest login with new account
+    if (
+      !confirm(
+        `Do you wish to login as ${eth.truncateAddress(newAddress)} instead?`
+      )
+    )
+      return;
+
+    actions.logout();
+    login(newAddress).then(() => {
+      navigate("/");
+    });
+  });
 
   React.useEffect(() => {
     if (user == null || state.selectHasFetchedInitialData()) return null;
@@ -165,24 +228,28 @@ const RequireAuth = ({ children }) => {
 export default function Root() {
   return (
     <React.StrictMode>
-      <IntlProvider locale="en">
-        <AuthProvider apiOrigin={process.env.API_ENDPOINT}>
-          <ServerConnectionProvider
-            Pusher={Pusher}
-            pusherKey={process.env.PUSHER_KEY}
-          >
-            <AppScopeProvider>
-              <ThemeProvider theme={defaultTheme}>
-                <Tooltip.Provider delayDuration={300}>
-                  <SideMenuProvider>
-                    <App />
-                  </SideMenuProvider>
-                </Tooltip.Provider>
-              </ThemeProvider>
-            </AppScopeProvider>
-          </ServerConnectionProvider>
-        </AuthProvider>
-      </IntlProvider>
+      <WagmiConfig client={wagmiClient}>
+        <IntlProvider locale="en">
+          <AuthProvider apiOrigin={process.env.API_ENDPOINT}>
+            <ServerConnectionProvider
+              Pusher={Pusher}
+              pusherKey={process.env.PUSHER_KEY}
+            >
+              <AppScopeProvider>
+                <WalletLoginProvider>
+                  <ThemeProvider theme={defaultTheme}>
+                    <Tooltip.Provider delayDuration={300}>
+                      <SideMenuProvider>
+                        <App />
+                      </SideMenuProvider>
+                    </Tooltip.Provider>
+                  </ThemeProvider>
+                </WalletLoginProvider>
+              </AppScopeProvider>
+            </ServerConnectionProvider>
+          </AuthProvider>
+        </IntlProvider>
+      </WagmiConfig>
     </React.StrictMode>
   );
 }

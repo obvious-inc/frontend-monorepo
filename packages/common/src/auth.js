@@ -30,7 +30,8 @@ const useAccessToken = ({ storage = asyncWebStorage } = {}) => {
   const set = React.useCallback((token) => {
     tokenRef.current = token;
     setToken(token);
-    storageRef.current.setItem(ACCESS_TOKEN_CACHE_KEY, token);
+    if (token == null) storageRef.current.removeItem(ACCESS_TOKEN_CACHE_KEY);
+    else storageRef.current.setItem(ACCESS_TOKEN_CACHE_KEY, token);
   }, []);
 
   const clear = React.useCallback(() => {
@@ -59,7 +60,8 @@ const useRefreshToken = ({ storage = asyncWebStorage } = {}) => {
 
   const set = React.useCallback((token) => {
     tokenRef.current = token;
-    storageRef.current.setItem(REFRESH_TOKEN_CACHE_KEY, token);
+    if (token == null) storageRef.current.removeItem(REFRESH_TOKEN_CACHE_KEY);
+    else storageRef.current.setItem(REFRESH_TOKEN_CACHE_KEY, token);
   }, []);
 
   const clear = React.useCallback(() => {
@@ -102,7 +104,7 @@ export const Provider = ({
       ? "not-authenticated"
       : "authenticated";
 
-  const signIn = React.useCallback(
+  const login = React.useCallback(
     async ({ message, signature, address, signedAt, nonce }) => {
       const responseBody = await fetch(`${apiOrigin}/auth/login`, {
         method: "POST",
@@ -127,7 +129,7 @@ export const Provider = ({
     [apiOrigin, setAccessToken, setRefreshToken]
   );
 
-  const signOut = React.useCallback(() => {
+  const logout = React.useCallback(() => {
     setAccessToken(null);
     setRefreshToken(null);
   }, [setAccessToken, setRefreshToken]);
@@ -186,7 +188,7 @@ export const Provider = ({
           return authorizedFetch(url, { ...options, headers });
         } catch (e) {
           // Sign out if the access token refresh doesn’t succeed
-          signOut();
+          logout();
         }
       }
 
@@ -196,7 +198,7 @@ export const Provider = ({
 
       return response.json();
     },
-    [apiOrigin, accessTokenRef, refreshAccessToken, signOut]
+    [apiOrigin, accessTokenRef, refreshAccessToken, logout]
   );
 
   const verifyAccessToken = React.useCallback(() => {
@@ -211,8 +213,8 @@ export const Provider = ({
       user,
       apiOrigin,
       authorizedFetch,
-      signIn,
-      signOut,
+      login,
+      logout,
       setAccessToken,
       verifyAccessToken,
       refreshAccessToken,
@@ -223,8 +225,8 @@ export const Provider = ({
       user,
       apiOrigin,
       authorizedFetch,
-      signIn,
-      signOut,
+      login,
+      logout,
       setAccessToken,
       verifyAccessToken,
       refreshAccessToken,
