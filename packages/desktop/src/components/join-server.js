@@ -4,9 +4,10 @@ import { useNavigate, useParams } from "react-router";
 import { Link } from "react-router-dom";
 import { useAppScope, useAuth, useLatestCallback } from "@shades/common";
 import * as eth from "../utils/ethereum";
+import useWallet from "../hooks/wallet";
+import useWalletLogin from "../hooks/wallet-login";
 import Button from "./button";
 import * as Tooltip from "./tooltip";
-import { useWalletLogin } from "./sign-in-screen";
 
 const ViewportCenter = (props) => (
   <div
@@ -38,7 +39,14 @@ const JoinServer = () => {
   const params = useParams();
 
   const [isJoining, setJoining] = React.useState(false);
-  const { connectWallet, signIn, status, selectedAddress } = useWalletLogin();
+  const {
+    connect: connectWallet,
+    isConnecting: isConnectingWallet,
+    accountAddress,
+    chain,
+    switchToEthereumMainnet,
+  } = useWallet();
+  const { login, status: loginStatus } = useWalletLogin();
 
   const [notFound, setNotFound] = React.useState(false);
 
@@ -89,20 +97,32 @@ const JoinServer = () => {
       server={server}
       isMember={server.isMember}
       isLoggedIn={isLoggedIn}
-      status={isJoining ? "joining-server" : status}
-      selectedAddress={selectedAddress}
+      unsupportedNetwork={chain?.unsupported}
+      status={
+        isJoining
+          ? "joining-server"
+          : isConnectingWallet
+          ? "requesting-address"
+          : loginStatus
+      }
+      accountAddress={accountAddress}
       onClickJoinServer={() => {
         if (authStatus === "authenticated") {
           joinServer();
           return;
         }
 
-        if (selectedAddress == null) {
+        if (accountAddress == null) {
           connectWallet();
           return;
         }
 
-        signIn().then(joinServer);
+        if (chain?.unsupported) {
+          switchToEthereumMainnet();
+          return;
+        }
+
+        login(accountAddress).then(joinServer);
       }}
     />
   );
@@ -112,10 +132,12 @@ const Content = ({
   server,
   isMember,
   isLoggedIn,
+  unsupportedNetwork,
   onClickJoinServer,
   status,
-  selectedAddress,
+  accountAddress,
 }) => {
+  const truncatedAccountAddress = eth.truncateAddress(accountAddress);
   return (
     <div
       css={(theme) =>
@@ -167,6 +189,7 @@ const Content = ({
           {server.member_count}{" "}
           {server.member_count === 1 ? "member" : "members"}
         </div>
+
         {isMember ? (
           <Button
             component={Link}
@@ -189,74 +212,88 @@ const Content = ({
               "Requesting wallet address..."
             ) : status === "requesting-signature" ? (
               <>
-                Requesting signature from {eth.truncateAddress(selectedAddress)}
+                Requesting signature from {truncatedAccountAddress}
                 ...
               </>
             ) : status === "joining-server" ? (
               "Joining town..."
             ) : isLoggedIn ? (
               "Join town"
-            ) : selectedAddress == null ? (
+            ) : accountAddress == null ? (
               "Connect wallet to join"
+            ) : unsupportedNetwork ? (
+              "Switch to Ethereum mainnet"
             ) : (
               "Authenticate and join"
             )}
           </Button>
         )}
 
-        {!isMember && selectedAddress != null && (
-          <div
-            css={(theme) =>
-              css({
-                fontSize: theme.fontSizes.small,
-                color: theme.colors.textMuted,
-                marginTop: "2rem",
-                textAlign: "center",
-              })
-            }
-          >
-            Connected as{" "}
-            <Tooltip.Root>
-              <Tooltip.Trigger asChild>
-                <a
-                  href={`https://etherscan.io/address/${selectedAddress}`}
-                  rel="noreferrer"
-                  target="_blank"
-                  css={(theme) =>
-                    css({
-                      color: theme.colors.linkColor,
-                      ":hover": { color: theme.colors.linkColorHighlight },
-                    })
-                  }
-                >
-                  {eth.truncateAddress(selectedAddress)}
-                </a>
-              </Tooltip.Trigger>
-              <Tooltip.Content side="top" sideOffset={4}>
-                <div>
-                  Click to see address on{" "}
-                  <span
+        {!isLoggedIn && unsupportedNetwork ? (
+          <SmallText style={{ color: "#ffb84b", marginTop: "2rem" }}>
+            Ops, looks like you are on an unsupported chain
+          </SmallText>
+        ) : (
+          accountAddress != null && (
+            <SmallText style={{ marginTop: "2rem" }}>
+              Connected as{" "}
+              <Tooltip.Root>
+                <Tooltip.Trigger asChild>
+                  <a
+                    href={`https://etherscan.io/address/${accountAddress}`}
+                    rel="noreferrer"
+                    target="_blank"
                     css={(theme) =>
                       css({
                         color: theme.colors.linkColor,
-                        marginBottom: "0.3rem",
+                        ":hover": { color: theme.colors.linkColorHighlight },
                       })
                     }
                   >
-                    etherscan.io
-                  </span>
-                </div>
-                <div css={(theme) => css({ color: theme.colors.textMuted })}>
-                  {selectedAddress}
-                </div>
-              </Tooltip.Content>
-            </Tooltip.Root>
-          </div>
+                    {truncatedAccountAddress}
+                  </a>
+                </Tooltip.Trigger>
+                <Tooltip.Content side="top" sideOffset={4}>
+                  <div>
+                    Click to see address on{" "}
+                    <span
+                      css={(theme) =>
+                        css({
+                          color: theme.colors.linkColor,
+                          marginBottom: "0.3rem",
+                        })
+                      }
+                    >
+                      etherscan.io
+                    </span>
+                  </div>
+                  <div css={(theme) => css({ color: theme.colors.textMuted })}>
+                    {accountAddress}
+                  </div>
+                </Tooltip.Content>
+              </Tooltip.Root>
+            </SmallText>
+          )
         )}
       </div>
     </div>
   );
 };
+
+const SmallText = ({ children, ...props }) => (
+  <div
+    css={(theme) =>
+      css({
+        fontSize: theme.fontSizes.small,
+        color: theme.colors.textMuted,
+        textAlign: "center",
+      })
+    }
+    {...props}
+  >
+    {children}
+  </div>
+);
 
 export default (props) => (
   <AwaitAuthStatus>

@@ -135,6 +135,9 @@ const entriesById = (state = {}, action) => {
         [action.data.message.id]: action.data.message,
       };
 
+    case "logout":
+      return {};
+
     default:
       return state;
   }
@@ -207,6 +210,9 @@ const entryIdsByChannelId = (state = {}, action) => {
         (messageIds) => messageIds.filter((id) => id !== action.messageId),
         state
       );
+
+    case "logout":
+      return {};
 
     default:
       return state;
