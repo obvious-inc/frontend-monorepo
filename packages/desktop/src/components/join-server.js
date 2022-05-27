@@ -4,9 +4,10 @@ import { useNavigate, useParams } from "react-router";
 import { Link } from "react-router-dom";
 import { useAppScope, useAuth, useLatestCallback } from "@shades/common";
 import * as eth from "../utils/ethereum";
+import useWallet from "../hooks/wallet";
+import useWalletLogin from "../hooks/wallet-login";
 import Button from "./button";
 import * as Tooltip from "./tooltip";
-import { useWallet, useWalletLogin } from "./sign-in-screen";
 
 const ViewportCenter = (props) => (
   <div

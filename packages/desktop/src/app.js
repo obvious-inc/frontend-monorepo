@@ -24,6 +24,9 @@ import {
 import * as eth from "./utils/ethereum";
 import { Provider as SideMenuProvider } from "./hooks/side-menu";
 import useWalletEvent from "./hooks/wallet-event";
+import useWalletLogin, {
+  Provider as WalletLoginProvider,
+} from "./hooks/wallet-login";
 import SignInScreen from "./components/sign-in-screen";
 import Channel from "./components/channel";
 import Discover from "./components/discover";
@@ -37,10 +40,6 @@ import {
   ChatBubbles as ChatBubblesIcon,
 } from "./components/icons";
 import { dark as defaultTheme } from "./themes";
-import {
-  useWalletLogin,
-  WalletLoginProvider,
-} from "./components/sign-in-screen";
 
 const isNative = window.Native != null;
 
@@ -72,6 +71,13 @@ const App = () => {
   const { user, status: authStatus } = useAuth();
   const { state, actions } = useAppScope();
   const { login } = useWalletLogin();
+
+  useWalletEvent("disconnect", () => {
+    if (authStatus === "not-authenticated") return;
+    if (!confirm("Wallet disconnected. Do you wish to log out?")) return;
+    actions.logout();
+    navigate("/");
+  });
 
   useWalletEvent("account-change", (newAddress, previousAddress) => {
     if (

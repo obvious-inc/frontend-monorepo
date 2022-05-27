@@ -132,6 +132,7 @@ export const Provider = ({
   const logout = React.useCallback(() => {
     setAccessToken(null);
     setRefreshToken(null);
+    setUser(null);
   }, [setAccessToken, setRefreshToken]);
 
   const refreshAccessToken = React.useCallback(async () => {

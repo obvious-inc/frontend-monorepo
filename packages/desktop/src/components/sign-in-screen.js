@@ -1,129 +1,16 @@
-import {
-  chain as wagmiChain,
-  useConnect,
-  useAccount,
-  useNetwork,
-  useSignMessage,
-} from "wagmi";
+import { chain as wagmiChain, useConnect, useAccount, useNetwork } from "wagmi";
 import React from "react";
 import { useSearchParams } from "react-router-dom";
 import { css } from "@emotion/react";
 import { TITLE_BAR_HEIGHT } from "../constants/ui";
 import { useAuth, useLatestCallback } from "@shades/common";
 import * as eth from "../utils/ethereum";
+import useWallet from "../hooks/wallet";
+import useWalletLogin from "../hooks/wallet-login";
 import * as Tooltip from "../components/tooltip";
 import Spinner from "../components/spinner";
 
-const ETHEREUM_MAINNET_CHAIN_ID = wagmiChain.mainnet.id;
-
 const isNative = window.Native != null;
-
-const WalletLoginContext = React.createContext({});
-
-export const WalletLoginProvider = ({ children }) => {
-  const { signMessageAsync: signMessage } = useSignMessage();
-  const [status, setStatus] = React.useState("idle");
-  const [error, setError] = React.useState(null);
-
-  const { login } = useAuth();
-
-  const loginWithWalletSignature = useLatestCallback(async (address) => {
-    setError(null);
-    setStatus("requesting-signature");
-    try {
-      return await eth
-        .signLoginMessage(signMessage, address)
-        .catch((e) =>
-          Promise.reject(
-            new Error(
-              e.code === 4001
-                ? "signature-rejected"
-                : "signature-rejected-or-failed"
-            )
-          )
-        )
-        .then(({ signature, message, signedAt, nonce }) =>
-          login({
-            message,
-            signature,
-            signedAt,
-            address,
-            nonce,
-          }).catch(() =>
-            Promise.reject(new Error("server-login-request-error"))
-          )
-        );
-    } catch (e) {
-      setError(e.message);
-    } finally {
-      setStatus("idle");
-    }
-  });
-
-  const contextValue = React.useMemo(
-    () => ({ login: loginWithWalletSignature, status, error }),
-    [loginWithWalletSignature, status, error]
-  );
-
-  return (
-    <WalletLoginContext.Provider value={contextValue}>
-      {children}
-    </WalletLoginContext.Provider>
-  );
-};
-
-export const useWalletLogin = () => React.useContext(WalletLoginContext);
-
-export const useWallet = () => {
-  const [connectError, setConnectError] = React.useState(null);
-  const {
-    connectAsync: connectWallet,
-    reset: cancelConnectionAttempt,
-    connectors,
-    // error,
-    isConnecting,
-  } = useConnect();
-  const {
-    data: account,
-    // Not sure when these two happen
-    // isLoading,
-    // error,
-  } = useAccount();
-
-  const {
-    activeChain,
-    switchNetworkAsync: switchNetwork,
-    // error,
-  } = useNetwork();
-
-  const firstReadyConnector = connectors.find((c) => c.ready);
-
-  const connect = useLatestCallback(async () => {
-    if (firstReadyConnector == null) throw new Error("No connector ready");
-    try {
-      return await connectWallet(firstReadyConnector);
-    } catch (e) {
-      // Rejected by user
-      if (e.code === 4001) return Promise.resolve();
-      setConnectError(e);
-      return Promise.reject(e);
-    }
-  });
-
-  const switchToEthereumMainnet = () =>
-    switchNetwork(ETHEREUM_MAINNET_CHAIN_ID);
-
-  return {
-    accountAddress: account?.address,
-    chain: activeChain,
-    isConnecting,
-    canConnect: firstReadyConnector != null,
-    error: connectError,
-    connect,
-    cancel: cancelConnectionAttempt,
-    switchToEthereumMainnet,
-  };
-};
 
 const SignInScreen = () => {
   const {
