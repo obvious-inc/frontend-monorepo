@@ -1,9 +1,8 @@
-import { chain as wagmiChain, useConnect, useAccount, useNetwork } from "wagmi";
 import React from "react";
 import { useSearchParams } from "react-router-dom";
 import { css } from "@emotion/react";
 import { TITLE_BAR_HEIGHT } from "../constants/ui";
-import { useAuth, useLatestCallback } from "@shades/common";
+import { useAuth } from "@shades/common";
 import * as eth from "../utils/ethereum";
 import useWallet from "../hooks/wallet";
 import useWalletLogin from "../hooks/wallet-login";
