@@ -50,6 +50,8 @@ const ChannelMessage = React.memo(function ChannelMessage_({
   members,
   getMember,
   isAdmin,
+  hasTouchFocus,
+  giveTouchFocus,
 }) {
   const editInputRef = React.useRef();
   const containerRef = React.useRef();
@@ -66,7 +68,8 @@ const ChannelMessage = React.memo(function ChannelMessage_({
   const theme = useTheme();
 
   const showAsFocused =
-    !isEditing && (isHovering || isDropdownOpen || isEmojiPickerOpen);
+    !isEditing &&
+    (hasTouchFocus || isHovering || isDropdownOpen || isEmojiPickerOpen);
 
   const isDirectMessage = channel.kind === "dm";
   const isOwnMessage = user.id === message.authorUserId;
@@ -252,7 +255,13 @@ const ChannelMessage = React.memo(function ChannelMessage_({
         lineHeight: 1.46668,
         userSelect: "text",
       })}
-      {...hoverHandlers}
+      {...(giveTouchFocus == null
+        ? hoverHandlers
+        : {
+            onClick: () => {
+              giveTouchFocus(message.id);
+            },
+          })}
     >
       <div
         css={css({
@@ -893,6 +902,10 @@ const EmojiPicker = ({ addReaction }) => {
               border: 0,
               "&:focus": {
                 boxShadow: `0 0 0 0.2rem ${theme.colors.primary}`,
+              },
+              // Prevents iOS zooming in on input fields
+              "@supports (-webkit-touch-callout: none)": {
+                fontSize: "1.6rem",
               },
             })
           }

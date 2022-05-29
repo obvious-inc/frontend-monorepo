@@ -8,6 +8,7 @@ import {
   getImageFileDimensions,
 } from "@shades/common";
 import usePageVisibilityChangeListener from "../hooks/page-visibility-change-listener";
+import useMatchMedia from "../hooks/match-media";
 import stringifyMessageBlocks from "../slate/stringify";
 import { createEmptyParagraph, isNodeEmpty, cleanNodes } from "../slate/utils";
 import useCommands from "../hooks/commands";
@@ -202,6 +203,10 @@ export const ChannelBase = ({
 }) => {
   const { actions, state, serverConnection, addBeforeDispatchListener } =
     useAppScope();
+
+  const inputDeviceCanHover = useMatchMedia("(hover: hover)");
+  const [touchFocusedMessageId, setTouchFocusedMessageId] =
+    React.useState(null);
 
   const messagesContainerRef = React.useRef();
   const scrollContainerRef = React.useRef();
@@ -587,6 +592,10 @@ export const ChannelBase = ({
                   members={members}
                   getMember={getMember}
                   isAdmin={isAdmin}
+                  hasTouchFocus={touchFocusedMessageId === m.id}
+                  giveTouchFocus={
+                    inputDeviceCanHover ? undefined : setTouchFocusedMessageId
+                  }
                 />
               ))}
               <div css={css({ height: "1.6rem" })} />
