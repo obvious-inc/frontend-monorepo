@@ -18,15 +18,18 @@ import {
   useAuth,
   AuthProvider,
   useAppScope,
+  useLatestCallback,
   AppScopeProvider,
   ServerConnectionProvider,
 } from "@shades/common";
 import * as eth from "./utils/ethereum";
+import { send as sendNotification } from "./utils/notifications";
 import { Provider as SideMenuProvider } from "./hooks/side-menu";
 import useWalletEvent from "./hooks/wallet-event";
 import useWalletLogin, {
   Provider as WalletLoginProvider,
 } from "./hooks/wallet-login";
+import { generateCachedAvatar } from "./components/avatar";
 import SignInScreen from "./components/sign-in-screen";
 import Channel from "./components/channel";
 import Discover from "./components/discover";
@@ -65,12 +68,62 @@ const wagmiClient = createWagmiClient({
   ],
 });
 
+const useSystemNotifications = () => {
+  const navigate = useNavigate();
+  const { user } = useAuth();
+  const { state, addAfterDispatchListener } = useAppScope();
+
+  const afterDispatchListener = useLatestCallback((action) => {
+    switch (action.type) {
+      case "server-event:message-created": {
+        const message = state.selectMessage(action.data.message.id);
+
+        if (message.authorUserId === user.id) break;
+
+        const channel = state.selectChannel(message.channelId);
+
+        sendNotification({
+          title: `Message from ${message.author.displayName}`,
+          body: message.stringContent,
+          icon:
+            message.author.profilePicture.small ??
+            generateCachedAvatar(message.author.walletAddress, {
+              pixelSize: 24,
+            }),
+          onClick: ({ close }) => {
+            navigate(
+              channel.kind === "dm"
+                ? `/channels/@me/${channel.id}`
+                : `/channels/${channel.serverId}/${channel.id}`
+            );
+            close();
+          },
+        });
+
+        break;
+      }
+
+      default: // Ignore
+    }
+  });
+
+  React.useEffect(() => {
+    if (Notification.permission !== "granted") return;
+    const removeListener = addAfterDispatchListener(afterDispatchListener);
+    return () => {
+      removeListener();
+    };
+  }, [addAfterDispatchListener, afterDispatchListener]);
+};
+
 const App = () => {
   const navigate = useNavigate();
 
   const { user, status: authStatus } = useAuth();
   const { state, actions } = useAppScope();
   const { login } = useWalletLogin();
+
+  useSystemNotifications();
 
   useWalletEvent("disconnect", () => {
     if (authStatus === "not-authenticated") return;

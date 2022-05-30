@@ -21,8 +21,11 @@ export const Provider = ({ children }) => {
     logout: clearAuthTokens,
   } = useAuth();
   const serverConnection = useServerConnection();
-  const [stateSelectors, dispatch, { addBeforeDispatchListener }] =
-    useRootReducer();
+  const [
+    stateSelectors,
+    dispatch,
+    { addBeforeDispatchListener, addAfterDispatchListener },
+  ] = useRootReducer();
 
   const logout = useLatestCallback(() => {
     clearAuthTokens();
@@ -520,8 +523,15 @@ export const Provider = ({ children }) => {
       state: stateSelectors,
       actions,
       addBeforeDispatchListener,
+      addAfterDispatchListener,
     }),
-    [stateSelectors, actions, serverConnection, addBeforeDispatchListener]
+    [
+      stateSelectors,
+      actions,
+      serverConnection,
+      addBeforeDispatchListener,
+      addAfterDispatchListener,
+    ]
   );
 
   return <Context.Provider value={contextValue}>{children}</Context.Provider>;

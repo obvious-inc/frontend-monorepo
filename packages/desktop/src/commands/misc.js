@@ -1,4 +1,5 @@
 import { getChecksumAddress } from "../utils/ethereum";
+import { send as sendNotification } from "../utils/notifications";
 
 const commands = {
   dm: ({ actions, state, navigate }) => ({
@@ -125,6 +126,29 @@ const commands = {
     execute: async () => {
       actions.logout();
       navigate("/");
+    },
+  }),
+  "enable-notifications": () => ({
+    description:
+      "Turn on system notifications. Super alpha, it’s not meant to be used really.",
+    execute: async ({ editor }) => {
+      if (Notification.permission === "granted") {
+        sendNotification("System notifications already enabled!");
+        editor.clear();
+        return;
+      }
+
+      const permission = await Notification.requestPermission();
+      if (permission === "granted") {
+        sendNotification("System notifications enabled!");
+        window.location.reload();
+      } else {
+        alert(
+          "Permission to send system notification rejected. Run this command again and grant permission, to turn on system notifications."
+        );
+      }
+
+      editor.clear();
     },
   }),
 };
