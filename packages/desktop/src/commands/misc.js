@@ -130,21 +130,21 @@ const commands = {
   }),
   "enable-notifications": () => ({
     description:
-      "Turn on system notifications. Super alpha, it’s not meant to be used really.",
+      "Turn on system notifications. Super alpha, only for the brave or crazy.",
     execute: async ({ editor }) => {
       if (Notification.permission === "granted") {
-        sendNotification("System notifications already enabled!");
+        sendNotification({ title: "System notifications already enabled!" });
         editor.clear();
         return;
       }
 
       const permission = await Notification.requestPermission();
       if (permission === "granted") {
-        sendNotification("System notifications enabled!");
+        sendNotification({ title: "System notifications enabled!" });
         window.location.reload();
       } else {
         alert(
-          "Permission to send system notification rejected. Run this command again and grant permission, to turn on system notifications."
+          "Permission rejected. If you wish to turn system notification on, run the command again and grant permission when prompted."
         );
       }
 
