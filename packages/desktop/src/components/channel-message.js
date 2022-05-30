@@ -637,56 +637,34 @@ const MessageHeader = ({ author, createdAt, authorUserId }) => (
   <div
     css={css`
       display: grid;
-      grid-template-columns: repeat(2, minmax(0, auto));
+      grid-auto-flow: column;
+      grid-auto-columns: minmax(0, auto);
       justify-content: flex-start;
       align-items: flex-end;
-      grid-gap: 0.8rem;
+      grid-gap: 0.6rem;
       margin: 0 0 0.2rem;
       cursor: default;
     `}
   >
-    <div css={css({ display: "flex", alignItems: "center" })}>
-      <Popover.Root>
-        <Popover.Trigger asChild>
-          <MemberDisplayName displayName={author.displayName} />
-        </Popover.Trigger>
-        <Popover.Content
-          collisionTolerance={5}
-          side="right"
-          sideOffset={5}
-          align="center"
-        >
-          <ProfilePreview
-            profilePicture={author.profilePicture}
-            displayName={author.displayName}
-            walletAddress={author.walletAddress}
-            onlineStatus={author.onlineStatus}
-            userId={authorUserId}
-          />
-        </Popover.Content>
-      </Popover.Root>
-      {author.onlineStatus === "online" && (
-        <Tooltip.Root>
-          <Tooltip.Trigger asChild>
-            <div css={css({ padding: "0.4rem", marginLeft: "0.3rem" })}>
-              <div
-                css={(theme) =>
-                  css({
-                    width: "0.7rem",
-                    height: "0.7rem",
-                    borderRadius: "50%",
-                    background: theme.colors.onlineIndicator,
-                  })
-                }
-              />
-            </div>
-          </Tooltip.Trigger>
-          <Tooltip.Content side="top" align="center" sideOffset={6}>
-            User online
-          </Tooltip.Content>
-        </Tooltip.Root>
-      )}
-    </div>
+    <Popover.Root>
+      <Popover.Trigger asChild>
+        <MemberDisplayName displayName={author.displayName} />
+      </Popover.Trigger>
+      <Popover.Content
+        collisionTolerance={5}
+        side="right"
+        sideOffset={5}
+        align="center"
+      >
+        <ProfilePreview
+          profilePicture={author.profilePicture}
+          displayName={author.displayName}
+          walletAddress={author.walletAddress}
+          onlineStatus={author.onlineStatus}
+          userId={authorUserId}
+        />
+      </Popover.Content>
+    </Popover.Root>
 
     <TinyMutedText>
       <FormattedDateWithTooltip
@@ -698,6 +676,28 @@ const MessageHeader = ({ author, createdAt, authorUserId }) => (
         tooltipContentProps={{ sideOffset: 8 }}
       />
     </TinyMutedText>
+
+    {author.onlineStatus === "online" && (
+      <Tooltip.Root>
+        <Tooltip.Trigger asChild>
+          <div css={css({ padding: "0.5rem 0.2rem" })}>
+            <div
+              css={(theme) =>
+                css({
+                  width: "0.6rem",
+                  height: "0.6rem",
+                  borderRadius: "50%",
+                  background: theme.colors.onlineIndicator,
+                })
+              }
+            />
+          </div>
+        </Tooltip.Trigger>
+        <Tooltip.Content side="top" align="center" sideOffset={6}>
+          User online
+        </Tooltip.Content>
+      </Tooltip.Root>
+    )}
   </div>
 );
 
@@ -1443,13 +1443,16 @@ const TinyMutedText = ({ children, nowrap = false }) => (
 const FormattedDateWithTooltip = React.memo(
   ({ value, tooltipContentProps, disableTooltip, ...props }) => {
     const formattedDate = isDateToday(value) ? (
-      <span css={css({ textTransform: "capitalize" })}>
-        <FormattedRelativeTime
-          value={0}
-          unit="day"
-          style="long"
-          numeric="auto"
-        />
+      <span>
+        <span css={css({ textTransform: "capitalize" })}>
+          <FormattedRelativeTime
+            value={0}
+            unit="day"
+            style="long"
+            numeric="auto"
+          />
+        </span>{" "}
+        at <FormattedDate value={value} hour="numeric" minute="numeric" />
       </span>
     ) : (
       <FormattedDate value={value} {...props} />
