@@ -151,6 +151,8 @@ const useReverseScrollPositionMaintainer = (scrollContainerRef) => {
     () => {
       const el = scrollContainerRef.current;
 
+      if (el == null) return;
+
       if (maintainScrollPositionRef.current) {
         maintainScrollPositionRef.current = false;
 
