@@ -296,7 +296,7 @@ const ChannelMessage = React.memo(function ChannelMessage_({
                 items={reactions}
                 addReaction={addReaction}
                 removeReaction={removeReaction}
-                showAddReactionButton={isHovering}
+                showAddReactionButton={isHovering || hasTouchFocus}
               />
             )
           }
