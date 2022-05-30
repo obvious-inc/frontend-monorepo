@@ -115,7 +115,7 @@ const useSystemNotifications = () => {
   });
 
   React.useEffect(() => {
-    if (Notification.permission !== "granted") return;
+    if (window.Notification?.permission !== "granted") return;
     const removeListener = addAfterDispatchListener(afterDispatchListener);
     return () => {
       removeListener();
