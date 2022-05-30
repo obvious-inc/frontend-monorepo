@@ -335,6 +335,7 @@ const ChannelMessage = React.memo(function ChannelMessage_({
                     minute="numeric"
                     tooltipContentProps={{ sideOffset: 7 }}
                     disableTooltip={!isHovering}
+                    disableRelative
                   />
                 </TinyMutedText>
               </div>
@@ -1441,22 +1442,29 @@ const TinyMutedText = ({ children, nowrap = false }) => (
 );
 
 const FormattedDateWithTooltip = React.memo(
-  ({ value, tooltipContentProps, disableTooltip, ...props }) => {
-    const formattedDate = isDateToday(value) ? (
-      <span>
-        <span css={css({ textTransform: "capitalize" })}>
-          <FormattedRelativeTime
-            value={0}
-            unit="day"
-            style="long"
-            numeric="auto"
-          />
-        </span>{" "}
-        at <FormattedDate value={value} hour="numeric" minute="numeric" />
-      </span>
-    ) : (
-      <FormattedDate value={value} {...props} />
-    );
+  ({
+    value,
+    disableRelative,
+    tooltipContentProps,
+    disableTooltip,
+    ...props
+  }) => {
+    const formattedDate =
+      !disableRelative && isDateToday(value) ? (
+        <span>
+          <span css={css({ textTransform: "capitalize" })}>
+            <FormattedRelativeTime
+              value={0}
+              unit="day"
+              style="long"
+              numeric="auto"
+            />
+          </span>{" "}
+          at <FormattedDate value={value} hour="numeric" minute="numeric" />
+        </span>
+      ) : (
+        <FormattedDate value={value} {...props} />
+      );
 
     if (disableTooltip) return formattedDate;
 
