@@ -268,8 +268,8 @@ export const ChannelBase = ({
   const inputRef = React.useRef();
 
   React.useEffect(() => {
-    inputRef.current.focus();
-  }, [inputRef, channel.id]);
+    if (inputDeviceCanHover) inputRef.current.focus();
+  }, [inputRef, inputDeviceCanHover, channel.id]);
 
   const [pendingReplyMessageId, setPendingReplyMessageId] =
     React.useState(null);
