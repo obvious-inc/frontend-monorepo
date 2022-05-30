@@ -80,6 +80,10 @@ const useSystemNotifications = () => {
 
         if (message.authorUserId === user.id) break;
 
+        const hasUnread = state.selectChannelHasUnread(message.channelId);
+
+        if (!hasUnread) break;
+
         const channel = state.selectChannel(message.channelId);
 
         sendNotification({
@@ -96,6 +100,7 @@ const useSystemNotifications = () => {
                 ? `/channels/@me/${channel.id}`
                 : `/channels/${channel.serverId}/${channel.id}`
             );
+            window.focus();
             close();
           },
         });

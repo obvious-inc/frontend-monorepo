@@ -7,7 +7,7 @@ import {
   useLatestCallback,
   getImageFileDimensions,
 } from "@shades/common";
-import usePageVisibilityChangeListener from "../hooks/page-visibility-change-listener";
+import useWindowFocusListener from "../hooks/window-focus-listener";
 import useMatchMedia from "../hooks/match-media";
 import stringifyMessageBlocks from "../slate/stringify";
 import { createEmptyParagraph, isNodeEmpty, cleanNodes } from "../slate/utils";
@@ -203,8 +203,7 @@ export const ChannelBase = ({
   createMessage,
   headerContent,
 }) => {
-  const { actions, state, serverConnection, addBeforeDispatchListener } =
-    useAppScope();
+  const { actions, state, addBeforeDispatchListener } = useAppScope();
 
   const inputDeviceCanHover = useMatchMedia("(hover: hover)");
   const [touchFocusedMessageId, setTouchFocusedMessageId] =
@@ -354,11 +353,26 @@ export const ChannelBase = ({
     channel.id
   );
 
+  const markChannelRead = useLatestCallback(() => {
+    // Ignore the users’s own messages before we know they have been persisted
+    const lastPersistedMessage = messages
+      .filter((m) => !m.isOptimistic)
+      .slice(-1)[0];
+
+    return actions.markChannelRead(channel.id, {
+      // Use the current time in case the channel is empty
+      readAt:
+        lastPersistedMessage == null
+          ? new Date()
+          : new Date(lastPersistedMessage.createdAt),
+    });
+  });
+
   // Mark channel as read when new messages arrive
   React.useEffect(() => {
     if (
-      // We can’t send the event before the server connection is established
-      !serverConnection.isConnected ||
+      // Only mark as read when the page has focus
+      !document.hasFocus() ||
       // Wait until the initial message batch is fetched
       !hasFetchedChannelMessagesAtLeastOnce ||
       // Only mark as read when scrolled to the bottom
@@ -368,26 +382,13 @@ export const ChannelBase = ({
     )
       return;
 
-    // Ignore the users’s own messages before we know they have been persisted
-    const lastPersistedMessage = messages
-      .filter((m) => !m.isOptimistic)
-      .slice(-1)[0];
-
-    actions.markChannelRead(channel.id, {
-      // Use the current time in case the channel is empty
-      readAt:
-        lastPersistedMessage == null
-          ? new Date()
-          : new Date(lastPersistedMessage.createdAt),
-    });
+    markChannelRead();
   }, [
-    actions,
     channel.id,
     channelHasUnread,
-    messages,
-    serverConnection.isConnected,
     hasFetchedChannelMessagesAtLeastOnce,
     didScrollToBottom,
+    markChannelRead,
   ]);
 
   const lastMessage = messages.slice(-1)[0];
@@ -398,10 +399,10 @@ export const ChannelBase = ({
     scrollToBottom();
   }, [lastMessage, scrollToBottom, didScrollToBottomRef]);
 
-  usePageVisibilityChangeListener((state) => {
-    if (state !== "visible") return;
+  useWindowFocusListener(() => {
     actions.fetchInitialData();
     fetchMessages(channel.id, { limit: 50 });
+    if (channelHasUnread && didScrollToBottom) markChannelRead();
   });
 
   const submitMessage = React.useCallback(
