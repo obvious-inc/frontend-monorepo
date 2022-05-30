@@ -8,6 +8,7 @@ import {
   getImageFileDimensions,
 } from "@shades/common";
 import useWindowFocusListener from "../hooks/window-focus-listener";
+import useOnlineListener from "../hooks/window-online-listener";
 import useMatchMedia from "../hooks/match-media";
 import stringifyMessageBlocks from "../slate/stringify";
 import { createEmptyParagraph, isNodeEmpty, cleanNodes } from "../slate/utils";
@@ -400,9 +401,12 @@ export const ChannelBase = ({
   }, [lastMessage, scrollToBottom, didScrollToBottomRef]);
 
   useWindowFocusListener(() => {
-    actions.fetchInitialData();
     fetchMessages(channel.id, { limit: 50 });
     if (channelHasUnread && didScrollToBottom) markChannelRead();
+  });
+
+  useOnlineListener(() => {
+    fetchMessages(channel.id, { limit: 50 });
   });
 
   const submitMessage = React.useCallback(

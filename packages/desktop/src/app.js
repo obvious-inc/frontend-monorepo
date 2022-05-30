@@ -24,6 +24,8 @@ import {
 } from "@shades/common";
 import * as eth from "./utils/ethereum";
 import { send as sendNotification } from "./utils/notifications";
+import useWindowFocusListener from "./hooks/window-focus-listener";
+import useOnlineListener from "./hooks/window-online-listener";
 import { Provider as SideMenuProvider } from "./hooks/side-menu";
 import useWalletEvent from "./hooks/wallet-event";
 import useWalletLogin, {
@@ -177,6 +179,14 @@ const App = () => {
         });
     });
   }, [user, navigate, actions, state]);
+
+  useWindowFocusListener(() => {
+    actions.fetchInitialData();
+  });
+
+  useOnlineListener(() => {
+    actions.fetchInitialData();
+  });
 
   return (
     <>
