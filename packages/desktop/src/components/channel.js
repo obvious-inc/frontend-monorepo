@@ -399,7 +399,7 @@ export const ChannelBase = ({
   }, [lastMessage, scrollToBottom, didScrollToBottomRef]);
 
   usePageVisibilityChangeListener((state) => {
-    if (state === "visible") return;
+    if (state !== "visible") return;
     actions.fetchInitialData();
     fetchMessages(channel.id, { limit: 50 });
   });
