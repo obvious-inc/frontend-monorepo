@@ -625,6 +625,7 @@ const EmojiPickerMobileDialog = ({ trigger, onSelect, open, onOpenChange }) => (
   <Dialog.Root open={open} onOpenChange={onOpenChange}>
     <Dialog.Trigger asChild>{trigger}</Dialog.Trigger>
     <Dialog.Portal>
+      <Dialog.Overlay />
       <Dialog.Content
         css={css({
           position: "fixed",
