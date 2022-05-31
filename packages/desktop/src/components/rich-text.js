@@ -5,7 +5,7 @@ import ProfilePreview from "./profile-preview";
 
 const SINGLE_IMAGE_ATTACHMENT_MAX_HEIGHT = 280;
 const MULTI_IMAGE_ATTACHMENT_MAX_WIDTH = 280;
-const MULTI_IMAGE_ATTACHMENT_MAX_HEIGHT = 180;
+const MULTI_IMAGE_ATTACHMENT_MAX_HEIGHT = 240;
 
 export const createCss = (theme, { inline = false } = {}) => ({
   display: inline ? "inline" : "block",
@@ -149,7 +149,10 @@ const createParser = ({ inline, getMember, onClickInteractiveElement }) => {
             if (maxWidth == null)
               return maxHeight > el.height
                 ? { width: el.width, style: { maxWidth: "100%", aspectRatio } }
-                : { height: el.height, style: { maxHeight, aspectRatio } };
+                : {
+                    height: el.height,
+                    style: { height: "auto", maxHeight, aspectRatio },
+                  };
 
             const dimensionToConstrain =
               Math.min(el.width, maxWidth) / aspectRatioNumber > maxHeight
@@ -159,7 +162,10 @@ const createParser = ({ inline, getMember, onClickInteractiveElement }) => {
             if (dimensionToConstrain === "width")
               return { width: el.width, style: { maxWidth, aspectRatio } };
 
-            return { height: el.height, style: { maxHeight, aspectRatio } };
+            return {
+              height: el.height,
+              style: { height: "auto", maxHeight, aspectRatio },
+            };
           };
 
           return (
