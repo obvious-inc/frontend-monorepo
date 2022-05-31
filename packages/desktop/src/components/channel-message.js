@@ -10,9 +10,10 @@ import {
   objectUtils,
   messageUtils,
 } from "@shades/common";
-import useHover from "../hooks/hover";
 import { isNodeEmpty, normalizeNodes, cleanNodes } from "../slate/utils";
 import stringifyMessageBlocks from "../slate/stringify";
+import useHover from "../hooks/hover";
+import useGlobalMediaQueries from "../hooks/global-media-queries";
 import {
   DotsHorizontal as DotsHorizontalIcon,
   EditPen as EditPenIcon,
@@ -26,6 +27,7 @@ import * as Popover from "./popover";
 import * as DropdownMenu from "./dropdown-menu";
 import * as Toolbar from "./toolbar";
 import * as Tooltip from "./tooltip";
+import * as Dialog from "@radix-ui/react-dialog";
 import {
   AddEmojiReaction as AddEmojiReactionIcon,
   JoinArrowRight as JoinArrowRightIcon,
@@ -447,7 +449,7 @@ const ChannelMessage = React.memo(function ChannelMessage_({
                   items={reactions}
                   addReaction={addReaction}
                   removeReaction={removeReaction}
-                  showAddReactionButton={isHovering}
+                  showAddReactionButton={isHovering || hasTouchFocus}
                 />
               )}
             </div>
@@ -464,153 +466,210 @@ const Reactions = ({
   removeReaction,
   showAddReactionButton,
 }) => {
+  const { inputDeviceCanHover } = useGlobalMediaQueries();
   const [isInlineEmojiPickerOpen, setInlineEmojiPickerOpen] =
     React.useState(false);
-  return (
-    <div
+
+  const addReactionButton = (
+    <button
       css={css({
-        display: "grid",
-        gridAutoFlow: "column",
-        gridAutoColumns: "auto",
-        gridGap: "0.4rem",
-        justifyContent: "flex-start",
-        margin: "0.5rem -1px 0",
-        button: {
-          display: "flex",
-          alignItems: "center",
-          height: "2.5rem",
-          fontSize: "1.5rem",
-          background: "rgb(255 255 255 / 4%)",
-          borderRadius: "0.7rem",
-          padding: "0 0.7rem 0 0.6rem",
-          lineHeight: 1,
-          userSelect: "none",
-          border: "1px solid transparent",
-          cursor: "pointer",
-          "&.active": {
-            background: "#3f42ea45",
-            borderColor: "#4c4ffe96",
-          },
-          "&:not(.active):hover": {
-            borderColor: "rgb(255 255 255 / 20%)",
-          },
-          ".count": {
-            fontSize: "1rem",
-            fontWeight: "400",
-            color: "rgb(255 255 255 / 70%)",
-            marginLeft: "0.5rem",
-          },
-        },
+        color: "white",
+        border: "1px solid white",
+        transition: "0.1s opacity ease-out",
+        svg: { width: "1.6rem", height: "auto" },
       })}
+      style={{ opacity: showAddReactionButton ? 1 : 0 }}
     >
-      {items.map((r) => {
-        const authorDisplayNames = r.authorMembers.map((m) => m.displayName);
-        return (
-          <Tooltip.Root key={r.emoji}>
-            <Tooltip.Trigger asChild>
-              <button
-                onClick={() => {
-                  if (r.hasReacted) {
-                    removeReaction(r.emoji);
-                    return;
-                  }
-
-                  addReaction(r.emoji);
-                }}
-                className={r.hasReacted ? "active" : undefined}
-              >
-                <span>{r.emoji}</span>
-                <span className="count">{r.count}</span>
-              </button>
-            </Tooltip.Trigger>
-            <Tooltip.Content
-              side="top"
-              sideOffset={4}
-              style={{ borderRadius: "0.5rem" }}
-            >
-              <div
-                css={css({
-                  display: "grid",
-                  gridTemplateColumns: "auto minmax(0,auto)",
-                  gridGap: "0.8rem",
-                  alignItems: "center",
-                  padding: "0 0.4rem 0 0.2rem",
-                  lineHeight: 1.4,
-                  maxWidth: "24rem",
-                })}
-              >
-                <div
-                  css={css({
-                    fontSize: "2.8rem",
-                    lineHeight: "1.1",
-                    padding: "0.1rem 0 0",
-                  })}
-                >
-                  {r.emoji}
-                </div>
-                <div
-                  css={css({
-                    hyphens: "auto",
-                    wordBreak: "break-word",
-                    padding: "0.2rem 0",
-                  })}
-                >
-                  {[
-                    authorDisplayNames.slice(0, -1).join(", "),
-                    authorDisplayNames.slice(-1)[0],
-                  ]
-                    .filter(Boolean)
-                    .join(" and ")}{" "}
-                  reacted
-                </div>
-              </div>
-            </Tooltip.Content>
-          </Tooltip.Root>
-        );
-      })}
-
-      <Popover.Root
-        open={isInlineEmojiPickerOpen}
-        onOpenChange={(isOpen) => {
-          setInlineEmojiPickerOpen(isOpen);
-        }}
-      >
-        <Popover.Trigger asChild>
-          <button
-            css={css({
-              color: "white",
-              border: "1px solid white",
-              transition: "0.1s opacity ease-out",
-              svg: { width: "1.6rem", height: "auto" },
-            })}
-            style={{ opacity: showAddReactionButton ? 1 : 0 }}
-          >
-            <AddEmojiReactionIcon />
-          </button>
-        </Popover.Trigger>
-        <Popover.Content
-          side="top"
-          align="center"
-          sideOffset={4}
-          style={{
-            width: "31.6rem",
-            height: "28.4rem",
+      <AddEmojiReactionIcon />
+    </button>
+  );
+  return (
+    <>
+      <div
+        css={css({
+          display: "grid",
+          gridAutoFlow: "column",
+          gridAutoColumns: "auto",
+          gridGap: "0.4rem",
+          justifyContent: "flex-start",
+          margin: "0.5rem -1px 0",
+          button: {
             display: "flex",
-            flexDirection: "column",
-          }}
-        >
-          <Popover.Arrow />
-          <EmojiPicker
-            addReaction={(...args) => {
+            alignItems: "center",
+            height: "2.5rem",
+            fontSize: "1.5rem",
+            background: "rgb(255 255 255 / 4%)",
+            borderRadius: "0.7rem",
+            padding: "0 0.7rem 0 0.6rem",
+            lineHeight: 1,
+            userSelect: "none",
+            border: "1px solid transparent",
+            cursor: "pointer",
+            "&.active": {
+              background: "#3f42ea45",
+              borderColor: "#4c4ffe96",
+            },
+            "&:not(.active):hover": {
+              borderColor: "rgb(255 255 255 / 20%)",
+            },
+            ".count": {
+              fontSize: "1rem",
+              fontWeight: "400",
+              color: "rgb(255 255 255 / 70%)",
+              marginLeft: "0.5rem",
+            },
+          },
+        })}
+      >
+        {items.map((r) => {
+          const authorDisplayNames = r.authorMembers.map((m) => m.displayName);
+          return (
+            <Tooltip.Root key={r.emoji}>
+              <Tooltip.Trigger asChild>
+                <button
+                  onClick={() => {
+                    if (r.hasReacted) {
+                      removeReaction(r.emoji);
+                      return;
+                    }
+
+                    addReaction(r.emoji);
+                  }}
+                  className={r.hasReacted ? "active" : undefined}
+                >
+                  <span>{r.emoji}</span>
+                  <span className="count">{r.count}</span>
+                </button>
+              </Tooltip.Trigger>
+              <Tooltip.Content
+                side="top"
+                sideOffset={4}
+                style={{ borderRadius: "0.5rem" }}
+              >
+                <div
+                  css={css({
+                    display: "grid",
+                    gridTemplateColumns: "auto minmax(0,auto)",
+                    gridGap: "0.8rem",
+                    alignItems: "center",
+                    padding: "0 0.4rem 0 0.2rem",
+                    lineHeight: 1.4,
+                    maxWidth: "24rem",
+                  })}
+                >
+                  <div
+                    css={css({
+                      fontSize: "2.8rem",
+                      lineHeight: "1.1",
+                      padding: "0.1rem 0 0",
+                    })}
+                  >
+                    {r.emoji}
+                  </div>
+                  <div
+                    css={css({
+                      hyphens: "auto",
+                      wordBreak: "break-word",
+                      padding: "0.2rem 0",
+                    })}
+                  >
+                    {[
+                      authorDisplayNames.slice(0, -1).join(", "),
+                      authorDisplayNames.slice(-1)[0],
+                    ]
+                      .filter(Boolean)
+                      .join(" and ")}{" "}
+                    reacted
+                  </div>
+                </div>
+              </Tooltip.Content>
+            </Tooltip.Root>
+          );
+        })}
+
+        {inputDeviceCanHover ? (
+          <Popover.Root
+            open={isInlineEmojiPickerOpen}
+            onOpenChange={setInlineEmojiPickerOpen}
+          >
+            <Popover.Trigger asChild>{addReactionButton}</Popover.Trigger>
+            <Popover.Content side="top" align="center" sideOffset={4}>
+              <Popover.Arrow />
+              <EmojiPicker
+                width="31.6rem"
+                height="28.4rem"
+                onSelect={(emoji) => {
+                  setInlineEmojiPickerOpen(false);
+                  return addReaction(emoji);
+                }}
+              />
+            </Popover.Content>
+          </Popover.Root>
+        ) : (
+          <EmojiPickerMobileDialog
+            trigger={addReactionButton}
+            open={isInlineEmojiPickerOpen}
+            onOpenChange={setInlineEmojiPickerOpen}
+            onSelect={(...args) => {
               setInlineEmojiPickerOpen(false);
               return addReaction(...args);
             }}
           />
-        </Popover.Content>
-      </Popover.Root>
-    </div>
+        )}
+      </div>
+    </>
   );
 };
+
+const EmojiPickerMobileDialog = ({ trigger, onSelect, open, onOpenChange }) => (
+  <Dialog.Root open={open} onOpenChange={onOpenChange}>
+    <Dialog.Trigger asChild>{trigger}</Dialog.Trigger>
+    <Dialog.Portal>
+      <Dialog.Content
+        css={css({
+          position: "fixed",
+          top: "1.5rem",
+          left: "1rem",
+          right: "1rem",
+        })}
+      >
+        <Dialog.Close
+          css={css({
+            padding: "0.8rem",
+            display: "block",
+            margin: "0 auto",
+          })}
+        >
+          <div
+            css={(theme) =>
+              css({
+                height: "0.4rem",
+                width: "4.2rem",
+                borderRadius: "0.2rem",
+                background: theme.colors.interactiveNormal,
+                boxShadow:
+                  "rgb(15 15 15 / 5%) 0px 0px 0px 1px, rgba(15, 15, 15, 0.1) 0px 3px 6px, rgba(15, 15, 15, 0.2) 0px 9px 24px",
+              })
+            }
+          />
+        </Dialog.Close>
+        <div
+          css={(theme) =>
+            css({
+              padding: "0.4rem 0.4rem 0",
+              background: theme.colors.dialogBackground,
+              borderRadius: "0.4rem",
+              boxShadow:
+                "rgb(15 15 15 / 5%) 0px 0px 0px 1px, rgba(15, 15, 15, 0.1) 0px 3px 6px, rgba(15, 15, 15, 0.2) 0px 9px 24px",
+            })
+          }
+        >
+          <EmojiPicker height="40vh" onSelect={onSelect} />
+        </div>
+      </Dialog.Content>
+    </Dialog.Portal>
+  </Dialog.Root>
+);
 
 const MemberDisplayName = React.forwardRef(
   ({ displayName, color, ...props }, ref) => (
@@ -703,7 +762,7 @@ const MessageHeader = ({ author, createdAt, authorUserId }) => (
 );
 
 // Super hacky and inaccessible
-const EmojiPicker = ({ addReaction }) => {
+const EmojiPicker = ({ width = "auto", height = "100%", onSelect }) => {
   const inputRef = React.useRef();
 
   const [emojiData, setEmojiData] = React.useState([]);
@@ -744,7 +803,7 @@ const EmojiPicker = ({ addReaction }) => {
 
   const addReactionAtEntry = ([ci, ei]) => {
     const { emoji } = filteredEmojisByCategoryEntries[ci][1][ei];
-    addReaction(emoji);
+    onSelect(emoji);
   };
 
   const navigationBlockedRef = React.useRef();
@@ -874,7 +933,10 @@ const EmojiPicker = ({ addReaction }) => {
   });
 
   return (
-    <>
+    <div
+      css={css({ display: "flex", flexDirection: "column" })}
+      style={{ height, width }}
+    >
       <div css={css({ padding: "0.7rem 0.7rem 0.3rem" })}>
         <input
           ref={inputRef}
@@ -943,10 +1005,16 @@ const EmojiPicker = ({ addReaction }) => {
               {category}
             </div>
             <div
-              css={css({ display: "grid", padding: "0 0.5rem" })}
-              style={{
-                gridTemplateColumns: `repeat(${ROW_LENGTH}, max-content)`,
-              }}
+              css={css({
+                display: "grid",
+                justifyContent: "space-between",
+                padding: "0 0.5rem",
+                // gridAutoFlow: "column",
+                gridTemplateColumns: "repeat(auto-fill, minmax(3.4rem, 1fr))",
+              })}
+              // style={{
+              //   gridTemplateColumns: `repeat(${ROW_LENGTH}, max-content)`,
+              // }}
             >
               {emojis.map(({ emoji }, i) => {
                 const isHighlighted =
@@ -964,15 +1032,16 @@ const EmojiPicker = ({ addReaction }) => {
                         el.scrollIntoView({ block: "nearest" });
                     }}
                     onClick={() => {
-                      addReaction(emoji);
+                      onSelect(emoji);
                     }}
-                    onMouseMove={() => {
+                    onPointerMove={() => {
                       if (
                         highlightedEntry != null &&
                         highlightedEntry[0] === ci &&
                         highlightedEntry[1] === i
                       )
                         return;
+
                       setHighlightedEntry([ci, i]);
                     }}
                   />
@@ -982,7 +1051,7 @@ const EmojiPicker = ({ addReaction }) => {
           </div>
         ))}
       </div>
-    </>
+    </div>
   );
 };
 
@@ -1030,104 +1099,124 @@ const MessageToolbar = React.memo(
     onDropdownOpenChange,
     isEmojiPickerOpen,
     onEmojiPickerOpenChange,
-  }) => (
-    <Toolbar.Root>
-      <Popover.Root
-        open={isEmojiPickerOpen}
-        onOpenChange={onEmojiPickerOpenChange}
-      >
-        <Toolbar.Button
-          asChild
-          aria-label="Add reaction"
-          style={{ position: "relative" }}
-        >
-          <Popover.Trigger>
-            <AddEmojiReactionIcon style={{ width: "1.6rem" }} />
-            <Popover.Anochor
-              style={{
-                width: "3.3rem",
-                height: "3.3rem",
-                position: "absolute",
-                top: "50%",
-                left: "50%",
-                transform: "translateY(-50%) translateX(-50%)",
-                pointerEvents: "none",
-              }}
-            />
-          </Popover.Trigger>
-        </Toolbar.Button>
-        <Popover.Content
-          side="left"
-          align="center"
-          sideOffset={4}
-          style={{
-            width: "31.6rem",
-            height: "28.4rem",
-            display: "flex",
-            flexDirection: "column",
-          }}
-        >
-          <Popover.Arrow offset={13} />
-          <EmojiPicker addReaction={addReaction} />
-        </Popover.Content>
-      </Popover.Root>
-
-      {allowReplies && (
-        <Toolbar.Button
-          onClick={() => {
-            initReply();
-          }}
-          aria-label="Reply"
-        >
-          <ReplyArrowIcon css={css({ width: "1.6rem", height: "auto" })} />
-        </Toolbar.Button>
-      )}
-
-      {allowEdit && (
-        <Toolbar.Button
-          onClick={() => {
-            initEdit();
-          }}
-          aria-label="Edit"
-        >
-          <EditPenIcon />
-        </Toolbar.Button>
-      )}
-
-      {dropdownItems.length > 0 && (
-        <>
-          <Toolbar.Separator />
-          <DropdownMenu.Root modal={false} onOpenChange={onDropdownOpenChange}>
-            <Toolbar.Button asChild>
-              <DropdownMenu.Trigger>
-                <DotsHorizontalIcon
-                  css={css({ width: "1.6rem", height: "auto" })}
+  }) => {
+    const { inputDeviceCanHover } = useGlobalMediaQueries();
+    return (
+      <Toolbar.Root>
+        {inputDeviceCanHover ? (
+          <Popover.Root
+            open={isEmojiPickerOpen}
+            onOpenChange={onEmojiPickerOpenChange}
+          >
+            <Toolbar.Button
+              asChild
+              aria-label="Add reaction"
+              style={{ position: "relative" }}
+            >
+              <Popover.Trigger>
+                <AddEmojiReactionIcon style={{ width: "1.6rem" }} />
+                <Popover.Anochor
+                  style={{
+                    width: "3.3rem",
+                    height: "3.3rem",
+                    position: "absolute",
+                    top: "50%",
+                    left: "50%",
+                    transform: "translateY(-50%) translateX(-50%)",
+                    pointerEvents: "none",
+                  }}
                 />
-              </DropdownMenu.Trigger>
+              </Popover.Trigger>
             </Toolbar.Button>
-            <DropdownMenu.Content>
-              {dropdownItems.map(
-                ({ onSelect, label, type, disabled, style }, i) => {
-                  if (type === "separator")
-                    return <DropdownMenu.Separator key={i} />;
-                  return (
-                    <DropdownMenu.Item
-                      key={i}
-                      onSelect={onSelect}
-                      disabled={disabled}
-                      style={style}
-                    >
-                      {label}
-                    </DropdownMenu.Item>
-                  );
-                }
-              )}
-            </DropdownMenu.Content>
-          </DropdownMenu.Root>
-        </>
-      )}
-    </Toolbar.Root>
-  )
+            <Popover.Content side="left" align="center" sideOffset={4}>
+              <Popover.Arrow offset={13} />
+              <EmojiPicker
+                onSelect={addReaction}
+                width="31.6rem"
+                height="28.4rem"
+              />
+            </Popover.Content>
+          </Popover.Root>
+        ) : (
+          <EmojiPickerMobileDialog
+            trigger={
+              <Toolbar.Button
+                asChild
+                aria-label="Add reaction"
+                style={{ position: "relative" }}
+              >
+                <AddEmojiReactionIcon style={{ width: "1.6rem" }} />
+              </Toolbar.Button>
+            }
+            open={isEmojiPickerOpen}
+            onOpenChange={onEmojiPickerOpenChange}
+            onSelect={(emoji) => {
+              onEmojiPickerOpenChange(false);
+              return addReaction(emoji);
+            }}
+          />
+        )}
+
+        {allowReplies && (
+          <Toolbar.Button
+            onClick={() => {
+              initReply();
+            }}
+            aria-label="Reply"
+          >
+            <ReplyArrowIcon css={css({ width: "1.6rem", height: "auto" })} />
+          </Toolbar.Button>
+        )}
+
+        {allowEdit && (
+          <Toolbar.Button
+            onClick={() => {
+              initEdit();
+            }}
+            aria-label="Edit"
+          >
+            <EditPenIcon />
+          </Toolbar.Button>
+        )}
+
+        {dropdownItems.length > 0 && (
+          <>
+            <Toolbar.Separator />
+            <DropdownMenu.Root
+              modal={false}
+              onOpenChange={onDropdownOpenChange}
+            >
+              <Toolbar.Button asChild>
+                <DropdownMenu.Trigger>
+                  <DotsHorizontalIcon
+                    css={css({ width: "1.6rem", height: "auto" })}
+                  />
+                </DropdownMenu.Trigger>
+              </Toolbar.Button>
+              <DropdownMenu.Content>
+                {dropdownItems.map(
+                  ({ onSelect, label, type, disabled, style }, i) => {
+                    if (type === "separator")
+                      return <DropdownMenu.Separator key={i} />;
+                    return (
+                      <DropdownMenu.Item
+                        key={i}
+                        onSelect={onSelect}
+                        disabled={disabled}
+                        style={style}
+                      >
+                        {label}
+                      </DropdownMenu.Item>
+                    );
+                  }
+                )}
+              </DropdownMenu.Content>
+            </DropdownMenu.Root>
+          </>
+        )}
+      </Toolbar.Root>
+    );
+  }
 );
 
 const EditMessageInput = React.forwardRef(

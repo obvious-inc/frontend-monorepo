@@ -7,9 +7,9 @@ import {
   useLatestCallback,
   getImageFileDimensions,
 } from "@shades/common";
+import useGlobalMediaQueries from "../hooks/global-media-queries";
 import useWindowFocusListener from "../hooks/window-focus-listener";
 import useOnlineListener from "../hooks/window-online-listener";
-import useMatchMedia from "../hooks/match-media";
 import stringifyMessageBlocks from "../slate/stringify";
 import { createEmptyParagraph, isNodeEmpty, cleanNodes } from "../slate/utils";
 import useCommands from "../hooks/commands";
@@ -206,7 +206,7 @@ export const ChannelBase = ({
 }) => {
   const { actions, state, addBeforeDispatchListener } = useAppScope();
 
-  const inputDeviceCanHover = useMatchMedia("(hover: hover)");
+  const { inputDeviceCanHover } = useGlobalMediaQueries();
   const [touchFocusedMessageId, setTouchFocusedMessageId] =
     React.useState(null);
 

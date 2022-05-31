@@ -23,6 +23,7 @@ import {
   ServerConnectionProvider,
 } from "@shades/common";
 import * as eth from "./utils/ethereum";
+import { Provider as GlobalMediaQueriesProvider } from "./hooks/global-media-queries";
 import { send as sendNotification } from "./utils/notifications";
 import useWindowFocusListener from "./hooks/window-focus-listener";
 import useOnlineListener from "./hooks/window-online-listener";
@@ -314,7 +315,9 @@ export default function Root() {
                   <ThemeProvider theme={defaultTheme}>
                     <Tooltip.Provider delayDuration={300}>
                       <SideMenuProvider>
-                        <App />
+                        <GlobalMediaQueriesProvider>
+                          <App />
+                        </GlobalMediaQueriesProvider>
                       </SideMenuProvider>
                     </Tooltip.Provider>
                   </ThemeProvider>
