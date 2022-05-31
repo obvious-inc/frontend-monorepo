@@ -1114,18 +1114,20 @@ const MessageToolbar = React.memo(
               style={{ position: "relative" }}
             >
               <Popover.Trigger>
-                <AddEmojiReactionIcon style={{ width: "1.6rem" }} />
-                <Popover.Anochor
-                  style={{
-                    width: "3.3rem",
-                    height: "3.3rem",
-                    position: "absolute",
-                    top: "50%",
-                    left: "50%",
-                    transform: "translateY(-50%) translateX(-50%)",
-                    pointerEvents: "none",
-                  }}
-                />
+                <span>
+                  <AddEmojiReactionIcon style={{ width: "1.6rem" }} />
+                  <Popover.Anochor
+                    style={{
+                      width: "3.3rem",
+                      height: "3.3rem",
+                      position: "absolute",
+                      top: "50%",
+                      left: "50%",
+                      transform: "translateY(-50%) translateX(-50%)",
+                      pointerEvents: "none",
+                    }}
+                  />
+                </span>
               </Popover.Trigger>
             </Toolbar.Button>
             <Popover.Content side="left" align="center" sideOffset={4}>
