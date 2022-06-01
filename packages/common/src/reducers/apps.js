@@ -16,6 +16,7 @@ const entriesById = (state = {}, action) => {
 
 export const selectApp = createSelector(
   (state, appId) => state.apps.entriesById[appId],
+  (app) => app,
   { memoizeOptions: { maxSize: 1000 } }
 );
 
