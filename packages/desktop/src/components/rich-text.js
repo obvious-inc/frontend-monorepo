@@ -49,7 +49,12 @@ const parseLeaf = (l, i) => {
   return <React.Fragment key={i}>{children}</React.Fragment>;
 };
 
-const createParser = ({ inline, getMember, onClickInteractiveElement }) => {
+const createParser = ({
+  inline,
+  suffix,
+  getMember,
+  onClickInteractiveElement,
+}) => {
   const parse = (blocks) => {
     const parseElement = (el, i, els) => {
       const parseNode = (n, i, ns) =>
@@ -58,19 +63,24 @@ const createParser = ({ inline, getMember, onClickInteractiveElement }) => {
       const children = () => el.children.map(parseNode);
 
       switch (el.type) {
-        case "paragraph":
+        case "paragraph": {
+          const isLast = i === els.length - 1;
           return (
             <p key={i}>
               {children()}
               {inline && " "}
+              {isLast && suffix}
             </p>
           );
+        }
+
         case "link":
           return (
             <a key={i} href={el.url} target="_blank" rel="noreferrer">
               {el.url}
             </a>
           );
+
         case "user": {
           const member = getMember(el.ref);
           return (
@@ -97,6 +107,7 @@ const createParser = ({ inline, getMember, onClickInteractiveElement }) => {
             </Popover.Root>
           );
         }
+
         case "attachments": {
           if (inline) return null;
           return (
@@ -130,6 +141,7 @@ const createParser = ({ inline, getMember, onClickInteractiveElement }) => {
             </div>
           );
         }
+
         case "image-attachment": {
           if (inline) return null;
           const attachmentCount = els.length;
@@ -193,22 +205,22 @@ const RichText = ({
   blocks,
   getMember,
   onClickInteractiveElement,
-  children,
+  suffix,
   ...props
 }) => {
   const parse = React.useMemo(
     () =>
       createParser({
         inline,
+        suffix,
         getMember,
         onClickInteractiveElement,
       }),
-    [inline, getMember, onClickInteractiveElement]
+    [inline, suffix, getMember, onClickInteractiveElement]
   );
   return (
     <div css={(theme) => css(createCss(theme, { inline }))} {...props}>
       {parse(blocks)}
-      {children}
     </div>
   );
 };

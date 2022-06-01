@@ -239,6 +239,21 @@ const ChannelMessage = React.memo(function ChannelMessage_({
     }
   }, []);
 
+  const editedMessageSuffix = React.useMemo(
+    () => (
+      <span
+        css={css({
+          fontSize: "1rem",
+          color: "rgb(255 255 255 / 35%)",
+        })}
+      >
+        {" "}
+        (edited)
+      </span>
+    ),
+    []
+  );
+
   return (
     <div
       ref={containerRef}
@@ -430,18 +445,8 @@ const ChannelMessage = React.memo(function ChannelMessage_({
                   blocks={message.content}
                   onClickInteractiveElement={onClickInteractiveElement}
                   getMember={getMember}
-                >
-                  {message.isEdited && (
-                    <span
-                      css={css({
-                        fontSize: "1rem",
-                        color: "rgb(255 255 255 / 35%)",
-                      })}
-                    >
-                      (edited)
-                    </span>
-                  )}
-                </RichText>
+                  suffix={message.isEdited && editedMessageSuffix}
+                />
               )}
 
               {reactions.length !== 0 && (
