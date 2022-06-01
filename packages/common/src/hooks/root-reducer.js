@@ -41,6 +41,7 @@ import serverMembers, {
 import channelTypingStatus, {
   selectChannelTypingMembers,
 } from "../reducers/channel-typing-status";
+import apps, { selectApp } from "../reducers/apps";
 
 const selectors = {
   selectServer,
@@ -68,6 +69,7 @@ const selectors = {
   selectHasFetchedMessages,
   selectChannelHasUnread,
   selectChannelMentionCount,
+  selectApp,
 };
 
 const rootReducer = combineReducers({
@@ -79,6 +81,7 @@ const rootReducer = combineReducers({
   serverMembers,
   messages,
   channelTypingStatus,
+  apps,
 });
 
 const initialState = rootReducer(undefined, {});
