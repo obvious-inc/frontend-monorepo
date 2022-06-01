@@ -1441,12 +1441,7 @@ const AppMessage = ({ isHovering, message, reactions }) => {
       case "webhook":
         return (
           <>
-            <div css={(theme) => css({ color: theme.colors.channelDefault })}>
-              <MemberDisplayName
-                // color="white"
-                displayName={message.author.name}
-              />
-            </div>
+            <MemberDisplayName displayName={message.author.name} />
             <RichText blocks={message.content} />
           </>
         );
