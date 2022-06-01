@@ -141,31 +141,17 @@ const createParser = ({ inline, getMember, onClickInteractiveElement }) => {
                   MULTI_IMAGE_ATTACHMENT_MAX_HEIGHT,
                 ];
 
-          const getImageLayoutProps = () => {
-            const aspectRatioNumber = el.width / el.height;
-            const aspectRatio = `${el.width} / ${el.height}`;
+          const calculateWidth = () => {
+            const aspectRatio = el.width / el.height;
 
             // When max width is 100%
             if (maxWidth == null)
-              return maxHeight > el.height
-                ? { width: el.width, style: { maxWidth: "100%", aspectRatio } }
-                : {
-                    height: el.height,
-                    style: { height: "auto", maxHeight, aspectRatio },
-                  };
+              return maxHeight > el.height ? el.width : maxHeight * aspectRatio;
 
-            const dimensionToConstrain =
-              Math.min(el.width, maxWidth) / aspectRatioNumber > maxHeight
-                ? "height"
-                : "width";
+            const widthAfterHeightAdjustment =
+              Math.min(el.height, maxHeight) * aspectRatio;
 
-            if (dimensionToConstrain === "width")
-              return { width: el.width, style: { maxWidth, aspectRatio } };
-
-            return {
-              height: el.height,
-              style: { height: "auto", maxHeight, aspectRatio },
-            };
+            return Math.min(widthAfterHeightAdjustment, maxWidth);
           };
 
           return (
@@ -175,7 +161,15 @@ const createParser = ({ inline, getMember, onClickInteractiveElement }) => {
                 onClickInteractiveElement(el);
               }}
             >
-              <img src={el.url} {...getImageLayoutProps()} loading="lazy" />
+              <img
+                src={el.url}
+                loading="lazy"
+                width={calculateWidth()}
+                style={{
+                  maxWidth: "100%",
+                  aspectRatio: `${el.width} / ${el.height}`,
+                }}
+              />
             </button>
           );
         }
