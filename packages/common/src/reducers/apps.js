@@ -14,10 +14,6 @@ const entriesById = (state = {}, action) => {
   }
 };
 
-export const selectApp = createSelector(
-  (state, appId) => state.apps.entriesById[appId],
-  (app) => app,
-  { memoizeOptions: { maxSize: 1000 } }
-);
+export const selectApp = (state, appId) => state.apps.entriesById[appId];
 
 export default combineReducers({ entriesById });
