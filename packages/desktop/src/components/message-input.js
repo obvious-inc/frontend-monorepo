@@ -174,10 +174,9 @@ const MessageInput = React.forwardRef(
     }[autoCompleteMode];
 
     const selectAutoCompleteOption = React.useCallback(
-      (option, event) => {
+      (option) => {
         switch (autoCompleteMode) {
           case "mentions":
-            event.preventDefault();
             editorRef.current.insertMention(option.value, {
               at: mentionQueryRangeRef.current,
             });
@@ -185,15 +184,12 @@ const MessageInput = React.forwardRef(
             break;
 
           case "emojis":
-            event.preventDefault();
             editorRef.current.replaceCurrentWord(option.value);
             editorRef.current.insertText(" ");
             setEmojiQuery(null);
             break;
 
           case "commands": {
-            event.preventDefault();
-
             if (commandQuery === option.value) {
               setCommandQuery(null);
               break;
@@ -233,7 +229,8 @@ const MessageInput = React.forwardRef(
           case "Tab":
           case "Enter": {
             const option = autoCompleteOptions[selectedAutoCompleteIndex];
-            selectAutoCompleteOption(option, event);
+            event.preventDefault();
+            selectAutoCompleteOption(option);
             break;
           }
           case "Escape":

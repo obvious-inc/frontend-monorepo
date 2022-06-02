@@ -34,6 +34,10 @@ const entriesById = (state = {}, action) => {
         [action.server.id]: { ...existingEntry, ...action.server },
       };
     }
+
+    case "logout":
+      return {};
+
     default:
       return state;
   }

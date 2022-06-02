@@ -7,7 +7,9 @@ import {
   useLatestCallback,
   getImageFileDimensions,
 } from "@shades/common";
-import usePageVisibilityChangeListener from "../hooks/page-visibility-change-listener";
+import useGlobalMediaQueries from "../hooks/global-media-queries";
+import useWindowFocusListener from "../hooks/window-focus-listener";
+import useOnlineListener from "../hooks/window-online-listener";
 import stringifyMessageBlocks from "../slate/stringify";
 import { createEmptyParagraph, isNodeEmpty, cleanNodes } from "../slate/utils";
 import useCommands from "../hooks/commands";
@@ -150,6 +152,8 @@ const useReverseScrollPositionMaintainer = (scrollContainerRef) => {
     () => {
       const el = scrollContainerRef.current;
 
+      if (el == null) return;
+
       if (maintainScrollPositionRef.current) {
         maintainScrollPositionRef.current = false;
 
@@ -200,8 +204,11 @@ export const ChannelBase = ({
   createMessage,
   headerContent,
 }) => {
-  const { actions, state, serverConnection, addBeforeDispatchListener } =
-    useAppScope();
+  const { actions, state, addBeforeDispatchListener } = useAppScope();
+
+  const { inputDeviceCanHover } = useGlobalMediaQueries();
+  const [touchFocusedMessageId, setTouchFocusedMessageId] =
+    React.useState(null);
 
   const messagesContainerRef = React.useRef();
   const scrollContainerRef = React.useRef();
@@ -263,8 +270,8 @@ export const ChannelBase = ({
   const inputRef = React.useRef();
 
   React.useEffect(() => {
-    inputRef.current.focus();
-  }, [inputRef, channel.id]);
+    if (inputDeviceCanHover) inputRef.current.focus();
+  }, [inputRef, inputDeviceCanHover, channel.id]);
 
   const [pendingReplyMessageId, setPendingReplyMessageId] =
     React.useState(null);
@@ -347,11 +354,26 @@ export const ChannelBase = ({
     channel.id
   );
 
+  const markChannelRead = useLatestCallback(() => {
+    // Ignore the users’s own messages before we know they have been persisted
+    const lastPersistedMessage = messages
+      .filter((m) => !m.isOptimistic)
+      .slice(-1)[0];
+
+    return actions.markChannelRead(channel.id, {
+      // Use the current time in case the channel is empty
+      readAt:
+        lastPersistedMessage == null
+          ? new Date()
+          : new Date(lastPersistedMessage.createdAt),
+    });
+  });
+
   // Mark channel as read when new messages arrive
   React.useEffect(() => {
     if (
-      // We can’t send the event before the server connection is established
-      !serverConnection.isConnected ||
+      // Only mark as read when the page has focus
+      !document.hasFocus() ||
       // Wait until the initial message batch is fetched
       !hasFetchedChannelMessagesAtLeastOnce ||
       // Only mark as read when scrolled to the bottom
@@ -361,26 +383,13 @@ export const ChannelBase = ({
     )
       return;
 
-    // Ignore the users’s own messages before we know they have been persisted
-    const lastPersistedMessage = messages
-      .filter((m) => !m.isOptimistic)
-      .slice(-1)[0];
-
-    actions.markChannelRead(channel.id, {
-      // Use the current time in case the channel is empty
-      readAt:
-        lastPersistedMessage == null
-          ? new Date()
-          : new Date(lastPersistedMessage.createdAt),
-    });
+    markChannelRead();
   }, [
-    actions,
     channel.id,
     channelHasUnread,
-    messages,
-    serverConnection.isConnected,
     hasFetchedChannelMessagesAtLeastOnce,
     didScrollToBottom,
+    markChannelRead,
   ]);
 
   const lastMessage = messages.slice(-1)[0];
@@ -391,9 +400,12 @@ export const ChannelBase = ({
     scrollToBottom();
   }, [lastMessage, scrollToBottom, didScrollToBottomRef]);
 
-  usePageVisibilityChangeListener((state) => {
-    if (state === "visible") return;
-    actions.fetchInitialData();
+  useWindowFocusListener(() => {
+    fetchMessages(channel.id, { limit: 50 });
+    if (channelHasUnread && didScrollToBottom) markChannelRead();
+  });
+
+  useOnlineListener(() => {
     fetchMessages(channel.id, { limit: 50 });
   });
 
@@ -450,23 +462,25 @@ export const ChannelBase = ({
             onClick={() => {
               toggleMenu();
             }}
-            css={(theme) =>
-              css({
-                background: "none",
-                border: 0,
-                color: "white",
-                cursor: "pointer",
-                padding: "0.8rem 0.6rem",
-                marginLeft: "-0.6rem",
-                marginRight: "calc(-0.6rem + 1.6rem)",
-                borderRadius: "0.4rem",
-                ":hover": {
-                  background: theme.colors.backgroundModifierHover,
-                },
-              })
-            }
+            css={css({
+              background: "none",
+              border: 0,
+              color: "white",
+              cursor: "pointer",
+              padding: "0.8rem 0.6rem",
+              marginLeft: "-0.6rem",
+              marginRight: "calc(-0.6rem + 1.6rem)",
+            })}
           >
-            <HamburgerMenuIcon style={{ width: "1.5rem" }} />
+            <HamburgerMenuIcon
+              css={(theme) =>
+                css({
+                  fill: theme.colors.interactiveNormal,
+                  width: "1.5rem",
+                  ":hover": { fill: theme.colors.interactiveHover },
+                })
+              }
+            />
           </button>
         )}
         {headerContent}
@@ -587,6 +601,10 @@ export const ChannelBase = ({
                   members={members}
                   getMember={getMember}
                   isAdmin={isAdmin}
+                  hasTouchFocus={touchFocusedMessageId === m.id}
+                  giveTouchFocus={
+                    inputDeviceCanHover ? undefined : setTouchFocusedMessageId
+                  }
                 />
               ))}
               <div css={css({ height: "1.6rem" })} />

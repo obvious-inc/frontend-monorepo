@@ -28,6 +28,9 @@ const entriesById = (state = {}, action) => {
         },
       };
 
+    case "logout":
+      return {};
+
     default:
       return state;
   }
@@ -54,6 +57,9 @@ const memberIdsByServerId = (state = [], action) => {
         [serverId]: unique([...serverMembers, action.data.member.id]),
       };
     }
+
+    case "logout":
+      return {};
 
     default:
       return state;
@@ -82,6 +88,9 @@ const memberIdsByUserId = (state = [], action) => {
         [userId]: unique([...userMembers, action.data.member.id]),
       };
     }
+
+    case "logout":
+      return {};
 
     default:
       return state;

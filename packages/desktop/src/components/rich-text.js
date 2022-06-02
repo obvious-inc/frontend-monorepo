@@ -5,7 +5,7 @@ import ProfilePreview from "./profile-preview";
 
 const SINGLE_IMAGE_ATTACHMENT_MAX_HEIGHT = 280;
 const MULTI_IMAGE_ATTACHMENT_MAX_WIDTH = 280;
-const MULTI_IMAGE_ATTACHMENT_MAX_HEIGHT = 180;
+const MULTI_IMAGE_ATTACHMENT_MAX_HEIGHT = 240;
 
 export const createCss = (theme, { inline = false } = {}) => ({
   display: inline ? "inline" : "block",
@@ -49,7 +49,12 @@ const parseLeaf = (l, i) => {
   return <React.Fragment key={i}>{children}</React.Fragment>;
 };
 
-const createParser = ({ inline, getMember, onClickInteractiveElement }) => {
+const createParser = ({
+  inline,
+  suffix,
+  getMember,
+  onClickInteractiveElement,
+}) => {
   const parse = (blocks) => {
     const parseElement = (el, i, els) => {
       const parseNode = (n, i, ns) =>
@@ -58,19 +63,24 @@ const createParser = ({ inline, getMember, onClickInteractiveElement }) => {
       const children = () => el.children.map(parseNode);
 
       switch (el.type) {
-        case "paragraph":
+        case "paragraph": {
+          const isLast = i === els.length - 1;
           return (
             <p key={i}>
               {children()}
               {inline && " "}
+              {isLast && suffix}
             </p>
           );
+        }
+
         case "link":
           return (
             <a key={i} href={el.url} target="_blank" rel="noreferrer">
               {el.url}
             </a>
           );
+
         case "user": {
           const member = getMember(el.ref);
           return (
@@ -97,6 +107,7 @@ const createParser = ({ inline, getMember, onClickInteractiveElement }) => {
             </Popover.Root>
           );
         }
+
         case "attachments": {
           if (inline) return null;
           return (
@@ -130,6 +141,7 @@ const createParser = ({ inline, getMember, onClickInteractiveElement }) => {
             </div>
           );
         }
+
         case "image-attachment": {
           if (inline) return null;
           const attachmentCount = els.length;
@@ -141,25 +153,17 @@ const createParser = ({ inline, getMember, onClickInteractiveElement }) => {
                   MULTI_IMAGE_ATTACHMENT_MAX_HEIGHT,
                 ];
 
-          const getImageLayoutProps = () => {
-            const aspectRatioNumber = el.width / el.height;
-            const aspectRatio = `${el.width} / ${el.height}`;
+          const calculateWidth = () => {
+            const aspectRatio = el.width / el.height;
 
             // When max width is 100%
             if (maxWidth == null)
-              return maxHeight > el.height
-                ? { width: el.width, style: { maxWidth: "100%", aspectRatio } }
-                : { height: el.height, style: { maxHeight, aspectRatio } };
+              return maxHeight > el.height ? el.width : maxHeight * aspectRatio;
 
-            const dimensionToConstrain =
-              Math.min(el.width, maxWidth) / aspectRatioNumber > maxHeight
-                ? "height"
-                : "width";
+            const widthAfterHeightAdjustment =
+              Math.min(el.height, maxHeight) * aspectRatio;
 
-            if (dimensionToConstrain === "width")
-              return { width: el.width, style: { maxWidth, aspectRatio } };
-
-            return { height: el.height, style: { maxHeight, aspectRatio } };
+            return Math.min(widthAfterHeightAdjustment, maxWidth);
           };
 
           return (
@@ -169,7 +173,15 @@ const createParser = ({ inline, getMember, onClickInteractiveElement }) => {
                 onClickInteractiveElement(el);
               }}
             >
-              <img src={el.url} {...getImageLayoutProps()} loading="lazy" />
+              <img
+                src={el.url}
+                loading="lazy"
+                width={calculateWidth()}
+                style={{
+                  maxWidth: "100%",
+                  aspectRatio: `${el.width} / ${el.height}`,
+                }}
+              />
             </button>
           );
         }
@@ -193,22 +205,22 @@ const RichText = ({
   blocks,
   getMember,
   onClickInteractiveElement,
-  children,
+  suffix,
   ...props
 }) => {
   const parse = React.useMemo(
     () =>
       createParser({
         inline,
+        suffix,
         getMember,
         onClickInteractiveElement,
       }),
-    [inline, getMember, onClickInteractiveElement]
+    [inline, suffix, getMember, onClickInteractiveElement]
   );
   return (
     <div css={(theme) => css(createCss(theme, { inline }))} {...props}>
       {parse(blocks)}
-      {children}
     </div>
   );
 };

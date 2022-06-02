@@ -1,3 +1,13 @@
+import {
+  WagmiConfig,
+  createClient as createWagmiClient,
+  configureChains as configureWagmiChains,
+  chain as wagmiChain,
+} from "wagmi";
+import { infuraProvider } from "wagmi/providers/infura";
+import { publicProvider } from "wagmi/providers/public";
+import { InjectedConnector } from "wagmi/connectors/injected";
+import { WalletConnectConnector } from "wagmi/connectors/walletConnect";
 import React from "react";
 import { css } from "@emotion/react";
 import { Routes, Route, useNavigate } from "react-router-dom";
@@ -8,10 +18,21 @@ import {
   useAuth,
   AuthProvider,
   useAppScope,
+  useLatestCallback,
   AppScopeProvider,
   ServerConnectionProvider,
 } from "@shades/common";
+import * as eth from "./utils/ethereum";
+import { Provider as GlobalMediaQueriesProvider } from "./hooks/global-media-queries";
+import { send as sendNotification } from "./utils/notifications";
+import useWindowFocusListener from "./hooks/window-focus-listener";
+import useOnlineListener from "./hooks/window-online-listener";
 import { Provider as SideMenuProvider } from "./hooks/side-menu";
+import useWalletEvent from "./hooks/wallet-event";
+import useWalletLogin, {
+  Provider as WalletLoginProvider,
+} from "./hooks/wallet-login";
+import { generateCachedAvatar } from "./components/avatar";
 import SignInScreen from "./components/sign-in-screen";
 import Channel from "./components/channel";
 import Discover from "./components/discover";
@@ -28,11 +49,120 @@ import { dark as defaultTheme } from "./themes";
 
 const isNative = window.Native != null;
 
+const { chains, provider } = configureWagmiChains(
+  [wagmiChain.mainnet],
+  [
+    infuraProvider({ infuraId: process.env.INFURA_PROJECT_ID }),
+    publicProvider(),
+  ]
+);
+
+const wagmiClient = createWagmiClient({
+  autoConnect: true,
+  provider,
+  connectors: [
+    new InjectedConnector({ chains }),
+    new WalletConnectConnector({
+      chains,
+      options: {
+        qrcode: true,
+      },
+    }),
+  ],
+});
+
+const useSystemNotifications = () => {
+  const navigate = useNavigate();
+  const { user } = useAuth();
+  const { state, addAfterDispatchListener } = useAppScope();
+
+  const afterDispatchListener = useLatestCallback((action) => {
+    switch (action.type) {
+      case "server-event:message-created": {
+        const message = state.selectMessage(action.data.message.id);
+
+        if (message.authorUserId === user.id) break;
+
+        const hasUnread = state.selectChannelHasUnread(message.channelId);
+
+        if (!hasUnread) break;
+
+        const channel = state.selectChannel(message.channelId);
+
+        sendNotification({
+          title: `Message from ${message.author.displayName}`,
+          body: message.stringContent,
+          icon:
+            message.author.profilePicture.small ??
+            generateCachedAvatar(message.author.walletAddress, {
+              pixelSize: 24,
+            }),
+          onClick: ({ close }) => {
+            navigate(
+              channel.kind === "dm"
+                ? `/channels/@me/${channel.id}`
+                : `/channels/${channel.serverId}/${channel.id}`
+            );
+            window.focus();
+            close();
+          },
+        });
+
+        break;
+      }
+
+      default: // Ignore
+    }
+  });
+
+  React.useEffect(() => {
+    if (window.Notification?.permission !== "granted") return;
+    const removeListener = addAfterDispatchListener(afterDispatchListener);
+    return () => {
+      removeListener();
+    };
+  }, [addAfterDispatchListener, afterDispatchListener]);
+};
+
 const App = () => {
   const navigate = useNavigate();
 
-  const { user } = useAuth();
+  const { user, status: authStatus } = useAuth();
   const { state, actions } = useAppScope();
+  const { login } = useWalletLogin();
+
+  useSystemNotifications();
+
+  useWalletEvent("disconnect", () => {
+    if (authStatus === "not-authenticated") return;
+    if (!confirm("Wallet disconnected. Do you wish to log out?")) return;
+    actions.logout();
+    navigate("/");
+  });
+
+  useWalletEvent("account-change", (newAddress, previousAddress) => {
+    if (
+      // Ignore initial connect
+      previousAddress == null ||
+      // We only care about logged in users
+      authStatus === "not-authenticated" ||
+      user?.wallet_address.toLowerCase() === newAddress.toLowerCase()
+    )
+      return;
+
+    // Suggest login with new account
+    if (
+      !confirm(
+        `Do you wish to login as ${eth.truncateAddress(newAddress)} instead?`
+      )
+    )
+      return;
+
+    actions.logout();
+    login(newAddress).then(() => {
+      navigate("/");
+    });
+  });
 
   React.useEffect(() => {
     if (user == null || state.selectHasFetchedInitialData()) return null;
@@ -50,6 +180,14 @@ const App = () => {
         });
     });
   }, [user, navigate, actions, state]);
+
+  useWindowFocusListener(() => {
+    actions.fetchInitialData();
+  });
+
+  useOnlineListener(() => {
+    actions.fetchInitialData();
+  });
 
   return (
     <>
@@ -165,24 +303,30 @@ const RequireAuth = ({ children }) => {
 export default function Root() {
   return (
     <React.StrictMode>
-      <IntlProvider locale="en">
-        <AuthProvider apiOrigin={process.env.API_ENDPOINT}>
-          <ServerConnectionProvider
-            Pusher={Pusher}
-            pusherKey={process.env.PUSHER_KEY}
-          >
-            <AppScopeProvider>
-              <ThemeProvider theme={defaultTheme}>
-                <Tooltip.Provider delayDuration={300}>
-                  <SideMenuProvider>
-                    <App />
-                  </SideMenuProvider>
-                </Tooltip.Provider>
-              </ThemeProvider>
-            </AppScopeProvider>
-          </ServerConnectionProvider>
-        </AuthProvider>
-      </IntlProvider>
+      <WagmiConfig client={wagmiClient}>
+        <IntlProvider locale="en">
+          <AuthProvider apiOrigin={process.env.API_ENDPOINT}>
+            <ServerConnectionProvider
+              Pusher={Pusher}
+              pusherKey={process.env.PUSHER_KEY}
+            >
+              <AppScopeProvider>
+                <WalletLoginProvider>
+                  <ThemeProvider theme={defaultTheme}>
+                    <Tooltip.Provider delayDuration={300}>
+                      <SideMenuProvider>
+                        <GlobalMediaQueriesProvider>
+                          <App />
+                        </GlobalMediaQueriesProvider>
+                      </SideMenuProvider>
+                    </Tooltip.Provider>
+                  </ThemeProvider>
+                </WalletLoginProvider>
+              </AppScopeProvider>
+            </ServerConnectionProvider>
+          </AuthProvider>
+        </IntlProvider>
+      </WagmiConfig>
     </React.StrictMode>
   );
 }

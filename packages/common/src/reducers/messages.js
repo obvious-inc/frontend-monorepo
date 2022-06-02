@@ -136,6 +136,9 @@ const entriesById = (state = {}, action) => {
         [action.data.message.id]: action.data.message,
       };
 
+    case "logout":
+      return {};
+
     default:
       return state;
   }
@@ -209,6 +212,9 @@ const entryIdsByChannelId = (state = {}, action) => {
         state
       );
 
+    case "logout":
+      return {};
+
     default:
       return state;
   }
@@ -275,6 +281,7 @@ export const selectMessage = createSelector(
       ...message,
       createdAt: message.created_at,
       serverId,
+      channelId: message.channel,
       authorUserId,
       isEdited: message.edited_at != null,
       type,
@@ -285,6 +292,7 @@ export const selectMessage = createSelector(
         message.blocks?.length > 0
           ? message.blocks
           : [{ type: "paragraph", children: [{ text: message.content }] }],
+      stringContent: message.content,
       reactions:
         message.reactions?.map((r) => ({
           ...r,

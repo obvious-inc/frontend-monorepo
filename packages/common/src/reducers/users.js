@@ -34,6 +34,9 @@ const entriesById = (state = {}, action) => {
         };
       }, state);
 
+    case "logout":
+      return {};
+
     default:
       return state;
   }

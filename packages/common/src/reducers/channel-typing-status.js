@@ -33,6 +33,9 @@ const typingUserIdsByChannelId = (state = {}, action) => {
           state[action.channelId]?.filter((id) => id !== action.userId) ?? [],
       };
 
+    case "logout":
+      return {};
+
     default:
       return state;
   }

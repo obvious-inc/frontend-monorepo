@@ -6,7 +6,8 @@ import {
   Link,
 } from "react-router-dom";
 import { css } from "@emotion/react";
-import { useAppScope, useAuth } from "@shades/common";
+import { useAppScope, useAuth, useLatestCallback } from "@shades/common";
+import useSideMenu from "../hooks/side-menu";
 import {
   Home as HomeIcon,
   ChatBubbles as ChatBubblesIcon,
@@ -23,6 +24,9 @@ const MainMenu = () => {
   const { user } = useAuth();
   const location = useLocation();
 
+  const { isFloating: isFloatingMenuEnabled, toggle: toggleMenu } =
+    useSideMenu();
+
   const servers = state.selectJoinedServers();
 
   const dmChannels = state.selectDmChannels();
@@ -31,6 +35,10 @@ const MainMenu = () => {
   );
 
   const hasUnreadDms = unreadDmChannels.length > 0;
+
+  const closeMenu = useLatestCallback(() => {
+    if (isFloatingMenuEnabled) toggleMenu();
+  });
 
   return (
     <div
@@ -83,7 +91,12 @@ const MainMenu = () => {
                 : undefined,
             },
           ].map(({ icon, ...props }) => (
-            <RoundButton key={props.tooltip} component={NavLink} {...props}>
+            <RoundButton
+              key={props.tooltip}
+              component={NavLink}
+              onClick={closeMenu}
+              {...props}
+            >
               {icon}
             </RoundButton>
           ))}
@@ -120,6 +133,7 @@ const MainMenu = () => {
                 <RoundButton
                   key={c.id}
                   component={NavLink}
+                  onClick={closeMenu}
                   to={`/channels/@me/${c.id}`}
                   notificationCount={1} // TODO
                   tooltip={c.name}
@@ -160,6 +174,7 @@ const MainMenu = () => {
                       ? `/channels/${s.id}/${channels[0].id}`
                       : `/channels/${s.id}`
                   }
+                  onClick={closeMenu}
                   notificationCount={mentionCount}
                   tooltip={s.name}
                   className={isActive ? "active" : undefined}
@@ -178,6 +193,7 @@ const MainMenu = () => {
                   const name = prompt("Name plz");
                   actions.createServer({ name }).then((t) => {
                     navigate(`/channels/${t.id}`);
+                    closeMenu();
                   });
                   return;
                 }

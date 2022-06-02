@@ -14,10 +14,23 @@ const Context = React.createContext({});
 export const useAppScope = () => React.useContext(Context);
 
 export const Provider = ({ children }) => {
-  const { user, authorizedFetch, apiOrigin } = useAuth();
+  const {
+    user,
+    authorizedFetch,
+    apiOrigin,
+    logout: clearAuthTokens,
+  } = useAuth();
   const serverConnection = useServerConnection();
-  const [stateSelectors, dispatch, { addBeforeDispatchListener }] =
-    useRootReducer();
+  const [
+    stateSelectors,
+    dispatch,
+    { addBeforeDispatchListener, addAfterDispatchListener },
+  ] = useRootReducer();
+
+  const logout = useLatestCallback(() => {
+    clearAuthTokens();
+    dispatch({ type: "logout" });
+  });
 
   const fetchInitialData = React.useCallback(
     () =>
@@ -416,6 +429,7 @@ export const Provider = ({ children }) => {
 
   const actions = React.useMemo(
     () => ({
+      logout,
       fetchPublicServerData,
       fetchInitialData,
       fetchMessage,
@@ -442,6 +456,7 @@ export const Provider = ({ children }) => {
       registerChannelTypingActivity,
     }),
     [
+      logout,
       fetchPublicServerData,
       fetchInitialData,
       fetchMessage,
@@ -508,8 +523,15 @@ export const Provider = ({ children }) => {
       state: stateSelectors,
       actions,
       addBeforeDispatchListener,
+      addAfterDispatchListener,
     }),
-    [stateSelectors, actions, serverConnection, addBeforeDispatchListener]
+    [
+      stateSelectors,
+      actions,
+      serverConnection,
+      addBeforeDispatchListener,
+      addAfterDispatchListener,
+    ]
   );
 
   return <Context.Provider value={contextValue}>{children}</Context.Provider>;

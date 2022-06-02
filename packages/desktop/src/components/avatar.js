@@ -6,6 +6,24 @@ import generateAvatar from "../utils/avatar-generator";
 // between multiple component instances
 const cache = new Map();
 
+export const generateCachedAvatar = (walletAddress, { pixelSize }) => {
+  const size = 8;
+
+  const cacheKey = [walletAddress, pixelSize, size].join("-");
+
+  if (cache.has(cacheKey)) return cache.get(cacheKey);
+
+  const avatar = generateAvatar({
+    seed: walletAddress,
+    size,
+    scale: Math.ceil((pixelSize * 2) / size),
+  });
+
+  cache.set(cacheKey, avatar);
+
+  return avatar;
+};
+
 const Avatar = React.forwardRef(
   (
     {
@@ -20,22 +38,7 @@ const Avatar = React.forwardRef(
   ) => {
     const avatarDataUrl = React.useMemo(() => {
       if (url != null || walletAddress == null) return;
-
-      const size = 8;
-
-      const cacheKey = [walletAddress, pixelSize, size].join("-");
-
-      if (cache.has(cacheKey)) return cache.get(cacheKey);
-
-      const avatar = generateAvatar({
-        seed: walletAddress,
-        size,
-        scale: Math.ceil((pixelSize * 2) / size),
-      });
-
-      cache.set(cacheKey, avatar);
-
-      return avatar;
+      return generateCachedAvatar(walletAddress, { pixelSize });
     }, [url, walletAddress, pixelSize]);
 
     if (url === undefined)

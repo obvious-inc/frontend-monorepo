@@ -355,65 +355,76 @@ const ChannelItem = ({
   name,
   hasUnread,
   mentionCount,
-}) => (
-  <div
-    css={(theme) => css`
-      &:not(:last-of-type) {
-        margin-bottom: 2px;
-      }
-      a {
-        display: flex;
-        align-items: center;
-        width: 100%;
-        border: 0;
-        font-size: 1.5rem;
-        font-weight: 500;
-        text-align: left;
-        background: transparent;
-        border-radius: 0.4rem;
-        cursor: pointer;
-        color: rgb(255 255 255 / 40%);
-        padding: 0.6rem 0.8rem;
-        text-decoration: none;
-        line-height: 1.3;
-      }
-      a.active {
-        background: ${theme.colors.backgroundModifierSelected};
-      }
-      a:not(.active):hover {
-        background: ${theme.colors.backgroundModifierHover};
-      }
-      .name {
-        flex: 1;
-        min-width: 0;
-        white-space: nowrap;
-        text-overflow: ellipsis;
-        overflow: hidden;
-      }
-      a.active > .name,
-      a:hover > .name {
-        color: white;
-      }
-    `}
-  >
-    <NavLink
-      to={`/channels/${serverId}/${channelId}`}
-      className={({ isActive }) => (isActive ? "active" : "")}
+}) => {
+  const { isFloating: isFloatingMenuEnabled, toggle: toggleMenu } =
+    useSideMenu();
+  const closeMenu = () => {
+    if (isFloatingMenuEnabled) toggleMenu();
+  };
+  return (
+    <div
+      css={(theme) => css`
+        &:not(:last-of-type) {
+          margin-bottom: 2px;
+        }
+        a {
+          display: flex;
+          align-items: center;
+          width: 100%;
+          border: 0;
+          font-size: 1.5rem;
+          font-weight: 500;
+          text-align: left;
+          background: transparent;
+          border-radius: 0.4rem;
+          cursor: pointer;
+          color: rgb(255 255 255 / 40%);
+          padding: 0.6rem 0.8rem;
+          text-decoration: none;
+          line-height: 1.3;
+        }
+        a.active {
+          background: ${theme.colors.backgroundModifierSelected};
+        }
+        a:not(.active):hover {
+          background: ${theme.colors.backgroundModifierHover};
+        }
+        .name {
+          flex: 1;
+          min-width: 0;
+          white-space: nowrap;
+          text-overflow: ellipsis;
+          overflow: hidden;
+        }
+        a.active > .name,
+        a:hover > .name {
+          color: white;
+        }
+      `}
     >
-      <HashIcon
-        style={{
-          display: "inline-flex",
-          width: "1.5rem",
-          marginRight: "0.6rem",
-        }}
-      />
-      <span className="name" style={{ color: hasUnread ? "white" : undefined }}>
-        {name}
-      </span>
-      {mentionCount > 0 && <NotificationBadge count={mentionCount} />}
-    </NavLink>
-  </div>
-);
+      <NavLink
+        to={`/channels/${serverId}/${channelId}`}
+        className={({ isActive }) => (isActive ? "active" : "")}
+        onClick={closeMenu}
+      >
+        <HashIcon
+          style={{
+            display: "inline-flex",
+            width: "1.5rem",
+            marginRight: "0.6rem",
+          }}
+        />
+        <span
+          className="name"
+          style={{ color: hasUnread ? "white" : undefined }}
+        >
+          {name}
+        </span>
+        {mentionCount > 0 && <NotificationBadge count={mentionCount} />}
+      </NavLink>
+    </div>
+  );
+};
 
 export const DmChannelItem = ({
   link,
@@ -425,6 +436,12 @@ export const DmChannelItem = ({
 }) => {
   const { state } = useAppScope();
   const { user } = useAuth();
+
+  const { isFloating: isFloatingMenuEnabled, toggle: toggleMenu } =
+    useSideMenu();
+  const closeMenu = () => {
+    if (isFloatingMenuEnabled) toggleMenu();
+  };
 
   const memberUsers = memberUserIds.map(state.selectUser);
   const memberUsersExcludingMe = memberUsers.filter((u) => u.id !== user.id);
@@ -481,6 +498,7 @@ export const DmChannelItem = ({
       <NavLink
         to={link}
         className={({ isActive }) => (isActive ? "active" : "")}
+        onClick={closeMenu}
       >
         <span style={{ marginRight: size === "large" ? "1rem" : "0.6rem" }}>
           {memberUsersExcludingMe.length <= 1 ? (

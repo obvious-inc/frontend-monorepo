@@ -9,6 +9,10 @@ const reducer = (state = initialState, action) => {
         ...state,
         hasFetchedInitialData: true,
       };
+
+    case "logout":
+      return initialState;
+
     default:
       return state;
   }

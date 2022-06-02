@@ -13,6 +13,9 @@ const entriesById = (state = {}, action) => {
       return indexBy((s) => s.id, sections);
     }
 
+    case "logout":
+      return {};
+
     default:
       return state;
   }
