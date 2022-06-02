@@ -462,23 +462,25 @@ export const ChannelBase = ({
             onClick={() => {
               toggleMenu();
             }}
-            css={(theme) =>
-              css({
-                background: "none",
-                border: 0,
-                color: "white",
-                cursor: "pointer",
-                padding: "0.8rem 0.6rem",
-                marginLeft: "-0.6rem",
-                marginRight: "calc(-0.6rem + 1.6rem)",
-                borderRadius: "0.4rem",
-                ":hover": {
-                  background: theme.colors.backgroundModifierHover,
-                },
-              })
-            }
+            css={css({
+              background: "none",
+              border: 0,
+              color: "white",
+              cursor: "pointer",
+              padding: "0.8rem 0.6rem",
+              marginLeft: "-0.6rem",
+              marginRight: "calc(-0.6rem + 1.6rem)",
+            })}
           >
-            <HamburgerMenuIcon style={{ width: "1.5rem" }} />
+            <HamburgerMenuIcon
+              css={(theme) =>
+                css({
+                  fill: theme.colors.interactiveNormal,
+                  width: "1.5rem",
+                  ":hover": { fill: theme.colors.interactiveHover },
+                })
+              }
+            />
           </button>
         )}
         {headerContent}
