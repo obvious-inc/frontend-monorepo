@@ -1382,7 +1382,7 @@ const RepliedMessage = ({ message, getMember }) => {
       >
         {showAvatar && (
           <Avatar
-            url={authorMember?.profilePicture?.small}
+            url={authorMember?.profilePicture.small}
             walletAddress={authorMember?.walletAddress}
             size="1.4rem"
             pixelSize={14}
