@@ -15,6 +15,6 @@ const entriesById = (state = {}, action) => {
   }
 };
 
-export const selectApp = (state, appId) => state.apps?.entriesById[appId];
+export const selectApp = (state, appId) => state.apps.entriesById[appId];
 
 export default combineReducers({ entriesById });
