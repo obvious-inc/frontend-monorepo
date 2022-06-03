@@ -1352,6 +1352,8 @@ const EditMessageInput = React.forwardRef(
 
 const RepliedMessage = ({ message, getMember }) => {
   const authorMember = message?.author;
+  const showAvatar =
+    (message != null || !message?.deleted) && authorMember?.profilePicture;
 
   return (
     <div
@@ -1376,22 +1378,13 @@ const RepliedMessage = ({ message, getMember }) => {
     >
       <div
         css={css({
-          display: "grid",
+          display: showAvatar ? "grid" : "block",
           gridTemplateColumns: "1.4rem minmax(0,1fr)",
           alignItems: "center",
           gridGap: "0.5rem",
         })}
       >
-        {message == null || message.deleted ? (
-          <div
-            style={{
-              width: "1.4rem",
-              height: "1.4rem",
-              borderRadius: "0.2rem",
-              background: "rgb(255 255 255 / 10%)",
-            }}
-          />
-        ) : (
+        {showAvatar && (
           <Avatar
             url={authorMember?.profilePicture?.small}
             walletAddress={authorMember?.walletAddress}
