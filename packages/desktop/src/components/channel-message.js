@@ -77,7 +77,9 @@ const ChannelMessage = React.memo(function ChannelMessage_({
   const isOwnMessage = user.id === message.authorUserId;
 
   const allowEdit =
-    !message.isSystemMessage && user.id === message.authorUserId;
+    !message.isSystemMessage &&
+    !message.isAppMessage &&
+    user.id === message.authorUserId;
 
   const createdAtDate = React.useMemo(
     () => new Date(message.created_at),
@@ -161,7 +163,7 @@ const ChannelMessage = React.memo(function ChannelMessage_({
 
   const toolbarDropdownItems = React.useMemo(
     () =>
-      message.isSystemMessage
+      message.isSystemMessage || message.isAppMessage
         ? []
         : [
             { onSelect: initReply, label: "Reply" },
@@ -206,6 +208,7 @@ const ChannelMessage = React.memo(function ChannelMessage_({
       initReply,
       message.author?.walletAddress,
       message.isSystemMessage,
+      message.isAppMessage,
       remove,
       sendDirectMessageToAuthor,
     ]
@@ -314,6 +317,21 @@ const ChannelMessage = React.memo(function ChannelMessage_({
                 addReaction={addReaction}
                 removeReaction={removeReaction}
                 showAddReactionButton={isHovering || hasTouchFocus}
+              />
+            )
+          }
+        />
+      ) : message.isAppMessage ? (
+        <AppMessage
+          isHovering={isHovering}
+          message={message}
+          reactions={
+            reactions.length === 0 ? null : (
+              <Reactions
+                items={reactions}
+                addReaction={addReaction}
+                removeReaction={removeReaction}
+                showAddReactionButton={isHovering}
               />
             )
           }
@@ -1330,6 +1348,8 @@ const EditMessageInput = React.forwardRef(
 
 const RepliedMessage = ({ message, getMember }) => {
   const authorMember = message?.author;
+  const showAvatar =
+    (message != null || !message?.deleted) && authorMember?.profilePicture;
 
   return (
     <div
@@ -1354,22 +1374,13 @@ const RepliedMessage = ({ message, getMember }) => {
     >
       <div
         css={css({
-          display: "grid",
+          display: showAvatar ? "grid" : "block",
           gridTemplateColumns: "1.4rem minmax(0,1fr)",
           alignItems: "center",
           gridGap: "0.5rem",
         })}
       >
-        {message == null || message.deleted ? (
-          <div
-            style={{
-              width: "1.4rem",
-              height: "1.4rem",
-              borderRadius: "0.2rem",
-              background: "rgb(255 255 255 / 10%)",
-            }}
-          />
-        ) : (
+        {showAvatar && (
           <Avatar
             url={authorMember?.profilePicture.small}
             walletAddress={authorMember?.walletAddress}
@@ -1518,6 +1529,68 @@ const SystemMessage = ({ isHovering, message, reactions }) => {
           {content}
         </div>
 
+        {reactions}
+      </div>
+    </div>
+  );
+};
+
+const AppMessage = ({ isHovering, message, reactions }) => {
+  const content = React.useMemo(() => {
+    switch (message.type) {
+      case "webhook":
+        return (
+          <>
+            <MemberDisplayName displayName={message.author.name} />
+            <RichText blocks={message.content} />
+          </>
+        );
+
+      default:
+        throw new Error();
+    }
+  }, [message]);
+
+  return (
+    <div
+      css={css({
+        display: "grid",
+        gridTemplateColumns: `${AVATAR_SIZE} minmax(0, 1fr)`,
+        alignItems: "flex-start",
+        gridGap: GUTTER_SIZE,
+      })}
+    >
+      {isHovering ? (
+        <div
+          css={css({
+            paddingTop: "0.5rem",
+            textAlign: "right",
+            transition: "0.15s opacity",
+          })}
+        >
+          <TinyMutedText nowrap>
+            <FormattedDate
+              value={new Date(message.created_at)}
+              hour="numeric"
+              minute="numeric"
+            />
+          </TinyMutedText>
+        </div>
+      ) : (
+        <div css={css({ margin: "0 auto", paddingTop: "0.3rem" })}>
+          <JoinArrowRightIcon
+            css={(theme) =>
+              css({
+                width: "1.5rem",
+                color: theme.colors.pink,
+              })
+            }
+          />
+        </div>
+      )}
+
+      <div>
+        {content}
         {reactions}
       </div>
     </div>

@@ -5,6 +5,7 @@ import { omitKey, mapValues } from "../utils/object";
 import { arrayShallowEquals } from "../utils/reselect";
 import { selectUser } from "./users";
 import { selectServerMemberWithUserId } from "./server-members";
+import { selectApp } from "./apps";
 
 const entriesById = (state = {}, action) => {
   switch (action.type) {
@@ -220,6 +221,7 @@ const entryIdsByChannelId = (state = {}, action) => {
 };
 
 const systemMessageTypes = ["member-joined"];
+const appMessageTypes = ["webhook", "app"];
 
 const deriveMessageType = (message) => {
   switch (message.type) {
@@ -228,6 +230,8 @@ const deriveMessageType = (message) => {
       return "regular";
     case 1:
       return "member-joined";
+    case 2:
+      return "webhook";
     default:
       throw new Error();
   }
@@ -241,14 +245,16 @@ export const selectMessage = createSelector(
     if (message == null) return null;
 
     // `server` doesn’t exist on dm messages
-    if (message.server == null) {
-      return selectUser(state, message.author);
-    } else {
+    if (message.server != null) {
       return selectServerMemberWithUserId(
         state,
         message.server,
         message.author
       );
+    } else if (message.app != null) {
+      return selectApp(state, message.app);
+    } else {
+      return selectUser(state, message.author);
     }
   },
   (state, messageId) => {
@@ -280,6 +286,7 @@ export const selectMessage = createSelector(
       isEdited: message.edited_at != null,
       type,
       isSystemMessage: systemMessageTypes.includes(type),
+      isAppMessage: appMessageTypes.includes(type),
       author,
       content:
         message.blocks?.length > 0
