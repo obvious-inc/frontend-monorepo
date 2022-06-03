@@ -29,7 +29,7 @@ const commands = {
             memberUserIds: users.map((u) => u.id),
           }));
         editor.clear();
-        navigate(`/channels/@me/${channel.id}`);
+        navigate(`/dms/${channel.id}`);
       } catch (e) {
         if (e.code === "INVALID_ARGUMENT") throw new Error("Invalid address");
         throw e;

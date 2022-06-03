@@ -22,7 +22,7 @@ const ProfilePreview = React.forwardRef(
     const isOnline = onlineStatus === "online";
 
     const sendMessage = () => {
-      const redirect = (c) => navigate(`/channels/@me/${c.id}`);
+      const redirect = (c) => navigate(`/dms/${c.id}`);
       const dmChannel = state.selectDmChannelFromUserId(userId);
 
       if (dmChannel != null) {

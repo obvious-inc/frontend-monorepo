@@ -8,13 +8,13 @@ import Avatar from "./avatar";
 import Spinner from "./spinner";
 import MainMenu from "./main-menu";
 
-const { reverse } = arrayUtils;
+const { reverse, groupBy } = arrayUtils;
 
 const isNative = window.Native != null;
 
 const SIDE_MENU_WIDTH = "31rem";
 
-const SideMenuLayout = ({ title, sidebarContent, children }) => {
+const SideMenuLayout = ({ title, filterable, sidebarContent, children }) => {
   const { user } = useAuth();
   const { state, serverConnection } = useAppScope();
   const {
@@ -73,7 +73,7 @@ const SideMenuLayout = ({ title, sidebarContent, children }) => {
             css={(theme) =>
               css({
                 height: "4.8rem",
-                padding: "0 1.6rem",
+                padding: filterable ? "0 1rem" : "0 1.6rem",
                 display: "flex",
                 alignItems: "center",
                 fontSize: "1.5rem",
@@ -86,15 +86,39 @@ const SideMenuLayout = ({ title, sidebarContent, children }) => {
               })
             }
           >
-            <span
-              css={css({
-                overflow: "hidden",
-                textOverflow: "ellipsis",
-                whiteSpace: "nowrap",
-              })}
-            >
-              {title}
-            </span>
+            {filterable ? (
+              <input
+                placeholder="Filter channels"
+                css={(theme) =>
+                  css({
+                    display: "block",
+                    width: "100%",
+                    background: theme.colors.backgroundTertiary,
+                    border: 0,
+                    borderRadius: "0.4rem",
+                    outline: "none",
+                    fontSize: "1.3rem",
+                    fontWeight: "500",
+                    padding: "0.2rem 0.6rem",
+                    color: theme.colors.textHeader,
+                  })
+                }
+                value=""
+                onChange={() => {
+                  alert("Coming soon!");
+                }}
+              />
+            ) : (
+              <span
+                css={css({
+                  overflow: "hidden",
+                  textOverflow: "ellipsis",
+                  whiteSpace: "nowrap",
+                })}
+              >
+                {title}
+              </span>
+            )}
           </div>
           <div
             css={css`
@@ -141,7 +165,89 @@ const SideMenuLayout = ({ title, sidebarContent, children }) => {
   );
 };
 
-const ChannelLayout = () => {
+export const HomeLayout = () => {
+  const { user } = useAuth();
+  const { state } = useAppScope();
+
+  const starredChannels = state.selectStarredChannels();
+
+  const channelsByKind = React.useMemo(
+    () => groupBy((c) => c.kind ?? "server", starredChannels),
+    [starredChannels]
+  );
+
+  const dmChannels = channelsByKind.dm ?? [];
+  const serverChannelsByServerName = React.useMemo(
+    () =>
+      groupBy(
+        (c) => state.selectServer(c.serverId).name,
+        channelsByKind.server ?? []
+      ),
+    [state, channelsByKind.server]
+  );
+
+  if (starredChannels.length === 0)
+    return (
+      <div
+        css={(theme) =>
+          css({
+            height: "100%",
+            display: "flex",
+            background: theme.colors.backgroundSecondary,
+          })
+        }
+      >
+        <MainMenu />
+        <Outlet />
+      </div>
+    );
+
+  return (
+    <SideMenuLayout
+      filterable
+      // title="Starred"
+      sidebarContent={
+        <>
+          {Object.entries(serverChannelsByServerName).map(
+            ([title, channels]) => (
+              <Section key={title} title={title}>
+                {channels.map((c) => (
+                  <ChannelItem
+                    key={c.id}
+                    link={`/me/${c.id}`}
+                    channelId={c.id}
+                    name={c.name}
+                    hasUnread={state.selectChannelHasUnread(c.id)}
+                    mentionCount={state.selectChannelMentionCount(c.id)}
+                  />
+                ))}
+              </Section>
+            )
+          )}
+
+          <Section title="Direct messages">
+            {dmChannels.map((c) => (
+              <DmChannelItem
+                key={c.id}
+                name={c.name}
+                link={`/me/${c.id}`}
+                hasUnread={state.selectChannelHasUnread(c.id)}
+                notificationCount={state.selectChannelMentionCount(c.id)}
+                memberUserIds={c.memberUserIds}
+              />
+            ))}
+          </Section>
+
+          <div style={{ height: "2rem" }} />
+        </>
+      }
+    >
+      <Outlet />
+    </SideMenuLayout>
+  );
+};
+
+export const ServerLayout = () => {
   const params = useParams();
 
   const { user } = useAuth();
@@ -269,7 +375,7 @@ const ChannelLayout = () => {
   );
 };
 
-export const DmChannelLayout = () => {
+export const DirectMessagesLayout = () => {
   const { state } = useAppScope();
 
   const dmChannels = state.selectDmChannels();
@@ -284,7 +390,7 @@ export const DmChannelLayout = () => {
             <DmChannelItem
               key={c.id}
               name={c.name}
-              link={`/channels/@me/${c.id}`}
+              link={`/dms/${c.id}`}
               hasUnread={state.selectChannelHasUnread(c.id)}
               notificationCount={state.selectChannelMentionCount(c.id)}
               memberUserIds={c.memberUserIds}
@@ -350,6 +456,7 @@ const Section = ({ title, addAction, children }) => (
 );
 
 const ChannelItem = ({
+  link,
   serverId,
   channelId,
   name,
@@ -403,7 +510,7 @@ const ChannelItem = ({
       `}
     >
       <NavLink
-        to={`/channels/${serverId}/${channelId}`}
+        to={link ?? `/channels/${serverId}/${channelId}`}
         className={({ isActive }) => (isActive ? "active" : "")}
         onClick={closeMenu}
       >
@@ -627,5 +734,3 @@ const OverlaySpinner = ({ show }) => (
     <Spinner size="2.4rem" />
   </div>
 );
-
-export default ChannelLayout;

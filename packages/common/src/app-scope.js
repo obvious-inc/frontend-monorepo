@@ -409,6 +409,40 @@ export const Provider = ({ children }) => {
     })
   );
 
+  const fetchStarredItems = useLatestCallback(() =>
+    authorizedFetch("/stars").then((res) => {
+      dispatch({
+        type: "fetch-starred-channels-request-successful",
+        stars: res.map((s) => ({ id: s.id, channelId: s.channel })),
+      });
+      return res;
+    })
+  );
+
+  const starChannel = useLatestCallback((channelId) =>
+    authorizedFetch("/stars", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ channel: channelId }),
+    }).then((res) => {
+      dispatch({
+        type: "star-channel-request-successful",
+        star: { id: res.id, channelId },
+      });
+      return res;
+    })
+  );
+
+  const unstarChannel = useLatestCallback((channelId) => {
+    const starId = stateSelectors.selectChannelStarId(channelId);
+    return authorizedFetch(`/stars/${starId}`, { method: "DELETE" }).then(
+      (res) => {
+        dispatch({ type: "unstar-channel-request-successful", channelId });
+        return res;
+      }
+    );
+  });
+
   const uploadImage = React.useCallback(
     ({ files }) => {
       const formData = new FormData();
@@ -452,6 +486,9 @@ export const Provider = ({ children }) => {
       addMessageReaction,
       removeMessageReaction,
       markChannelRead,
+      fetchStarredItems,
+      starChannel,
+      unstarChannel,
       uploadImage,
       registerChannelTypingActivity,
     }),
@@ -479,6 +516,9 @@ export const Provider = ({ children }) => {
       addMessageReaction,
       removeMessageReaction,
       markChannelRead,
+      fetchStarredItems,
+      starChannel,
+      unstarChannel,
       uploadImage,
       registerChannelTypingActivity,
     ]

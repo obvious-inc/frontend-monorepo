@@ -164,6 +164,38 @@ const commands = {
       return server?.ownerUserId !== user.id;
     },
   }),
+  "star-channel": ({ navigate, state, actions, channelId }) => ({
+    description: "Star this channel to list it on your home screen",
+    execute: async ({ editor }) => {
+      const channels = state.selectStarredChannels();
+      const isStarred = channels.some((c) => c.id === channelId);
+      if (!isStarred) await actions.starChannel(channelId);
+      navigate(`/me/${channelId}`);
+      editor.clear();
+    },
+    exclude: () => {
+      const channels = state.selectStarredChannels();
+      const isStarred = channels.some((c) => c.id === channelId);
+      return isStarred;
+    },
+  }),
+  "unstar-channel": ({ navigate, state, actions, channelId }) => ({
+    description: "Unstar this channel to remove it from your home screen",
+    execute: async ({ editor }) => {
+      const channels = state.selectStarredChannels();
+      const index = channels.findIndex((c) => c.id === channelId);
+      await actions.unstarChannel(channelId);
+      const indexToSelect = Math.max(0, index - 1);
+      const channelsAfterUnstar = channels.filter((c) => c.id !== channelId);
+      const channelToSelect = channelsAfterUnstar[indexToSelect];
+      navigate(channelToSelect == null ? "/" : `/me/${channelToSelect.id}`);
+      editor.clear();
+    },
+    exclude: () => {
+      const channels = state.selectStarredChannels();
+      return channels.every((c) => c.id !== channelId);
+    },
+  }),
 };
 
 export default commands;

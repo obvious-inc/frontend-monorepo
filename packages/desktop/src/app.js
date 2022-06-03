@@ -37,7 +37,11 @@ import SignInScreen from "./components/sign-in-screen";
 import Channel from "./components/channel";
 import Discover from "./components/discover";
 import JoinServer from "./components/join-server";
-import ChannelLayout, { DmChannelLayout } from "./components/channel-layout";
+import {
+  HomeLayout,
+  ServerLayout,
+  DirectMessagesLayout,
+} from "./components/channel-layout";
 import TitleBar from "./components/title-bar";
 import MainMenu from "./components/main-menu";
 import * as Tooltip from "./components/tooltip";
@@ -100,7 +104,7 @@ const useSystemNotifications = () => {
           onClick: ({ close }) => {
             navigate(
               channel.kind === "dm"
-                ? `/channels/@me/${channel.id}`
+                ? `/dms/${channel.id}`
                 : `/channels/${channel.serverId}/${channel.id}`
             );
             window.focus();
@@ -181,6 +185,11 @@ const App = () => {
     });
   }, [user, navigate, actions, state]);
 
+  React.useEffect(() => {
+    if (authStatus !== "authenticated") return;
+    actions.fetchStarredItems();
+  }, [authStatus, actions]);
+
   useWindowFocusListener(() => {
     actions.fetchInitialData();
   });
@@ -198,16 +207,23 @@ const App = () => {
           path="/"
           element={
             <RequireAuth>
+              <HomeLayout />
+            </RequireAuth>
+          }
+        >
+          <Route
+            index
+            element={
               <div
                 css={(theme) =>
                   css({
+                    flex: 1,
                     height: "100%",
                     display: "flex",
-                    background: theme.colors.backgroundSecondary,
+                    background: theme.colors.backgroundPrimary,
                   })
                 }
               >
-                <MainMenu />
                 <div
                   css={css({
                     flex: 1,
@@ -225,19 +241,21 @@ const App = () => {
                   />
                 </div>
               </div>
-            </RequireAuth>
-          }
-        />
+            }
+          />
+          <Route path="me/:channelId" element={<Channel />} />
+        </Route>
 
         <Route
+          path="/dms"
           element={
             <RequireAuth>
-              <DmChannelLayout />
+              <DirectMessagesLayout />
             </RequireAuth>
           }
         >
           <Route
-            path="/channels/@me"
+            index
             element={
               <div
                 css={(theme) =>
@@ -260,13 +278,13 @@ const App = () => {
               </div>
             }
           />
-          <Route path="/channels/@me/:channelId" element={<Channel />} />
+          <Route path=":channelId" element={<Channel />} />
         </Route>
 
         <Route
           element={
             <RequireAuth>
-              <ChannelLayout />
+              <ServerLayout />
             </RequireAuth>
           }
         >

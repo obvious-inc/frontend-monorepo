@@ -124,7 +124,7 @@ const ChannelMessage = React.memo(function ChannelMessage_({
   );
 
   const sendDirectMessageToAuthor = React.useCallback(() => {
-    const redirect = (c) => navigate(`/channels/@me/${c.id}`);
+    const redirect = (c) => navigate(`/dms/${c.id}`);
 
     const dmChannel = state.selectDmChannelFromUserId(message.authorUserId);
     if (dmChannel != null) {

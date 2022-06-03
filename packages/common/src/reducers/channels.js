@@ -79,6 +79,25 @@ const metaById = (state = {}, action) => {
   }
 };
 
+const starsByChannelId = (state = [], action) => {
+  switch (action.type) {
+    case "fetch-starred-channels-request-successful":
+      return indexBy((s) => s.channelId, action.stars);
+
+    case "star-channel-request-successful":
+      return { ...state, [action.star.channelId]: action.star };
+
+    case "unstar-channel-request-successful":
+      return omitKey(action.channelId, state);
+
+    case "logout":
+      return [];
+
+    default:
+      return state;
+  }
+};
+
 const readStatesById = (state = {}, action) => {
   switch (action.type) {
     case "initial-data-request-successful": {
@@ -336,10 +355,27 @@ export const selectServerDmChannels = createSelector(
   { memoizeOptions: { equalityCheck: arrayShallowEquals } }
 );
 
-export const selectHasAllMessages = (state, channelId) =>
-  state.channels.metaById[channelId]?.hasAllMessages ?? false;
+export const selectStarredChannels = createSelector(
+  (state) =>
+    Object.keys(state.channels.starsByChannelId)
+      .map((id) => selectChannel(state, id))
+      .filter(Boolean),
+  (channels) => channels,
+  { memoizeOptions: { equalityCheck: arrayShallowEquals } }
+);
+
+export const selectChannelStarId = (state, channelId) =>
+  state.channels.starsByChannelId[channelId]?.id;
 
 export const selectHasFetchedMessages = (state, channelId) =>
   state.channels.metaById[channelId]?.hasFetchedMessages ?? false;
 
-export default combineReducers({ entriesById, metaById, readStatesById });
+export const selectHasAllMessages = (state, channelId) =>
+  state.channels.metaById[channelId]?.hasAllMessages ?? false;
+
+export default combineReducers({
+  entriesById,
+  metaById,
+  readStatesById,
+  starsByChannelId,
+});

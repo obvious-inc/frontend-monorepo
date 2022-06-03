@@ -40,6 +40,15 @@ const MainMenu = () => {
     if (isFloatingMenuEnabled) toggleMenu();
   });
 
+  const unreadStarredChannels = state
+    .selectStarredChannels()
+    .filter((c) => state.selectChannelHasUnread(c.id));
+  const hasUnreadStarredChannels = unreadStarredChannels.length > 0;
+  const starredChannelsMentionCount = unreadStarredChannels.reduce(
+    (count, c) => count + state.selectChannelMentionCount(c.id),
+    0
+  );
+
   return (
     <div
       css={(theme) =>
@@ -75,18 +84,29 @@ const MainMenu = () => {
           {[
             {
               to: "/",
-              icon: <HomeIcon style={{ width: "2.2rem" }} />,
+              icon: (
+                <span
+                  style={{
+                    color: hasUnreadStarredChannels ? "white" : undefined,
+                  }}
+                >
+                  <HomeIcon style={{ width: "2.2rem" }} />
+                </span>
+              ),
               tooltip: "Home",
+              notificationCount: starredChannelsMentionCount,
+              className:
+                location.pathname === "/" ||
+                location.pathname.startsWith("/me/")
+                  ? "active"
+                  : undefined,
             },
             {
-              to:
-                dmChannels.length === 0
-                  ? "/channels/@me"
-                  : `/channels/@me/${dmChannels[0].id}`,
+              to: dmChannels.length === 0 ? "/dms" : `/dms/${dmChannels[0].id}`,
               icon: <ChatBubblesIcon style={{ width: "2.2rem" }} />,
               tooltip: "Direct messages",
               component: Link,
-              className: location.pathname.startsWith("/channels/@me")
+              className: location.pathname.startsWith("/dms")
                 ? "active"
                 : undefined,
             },
@@ -134,7 +154,7 @@ const MainMenu = () => {
                   key={c.id}
                   component={NavLink}
                   onClick={closeMenu}
-                  to={`/channels/@me/${c.id}`}
+                  to={`/dms/${c.id}`}
                   notificationCount={1} // TODO
                   tooltip={c.name}
                 >
