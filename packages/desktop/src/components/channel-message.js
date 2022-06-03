@@ -321,166 +321,162 @@ const ChannelMessage = React.memo(function ChannelMessage_({
             )
           }
         />
+      ) : message.isAppMessage ? (
+        <AppMessage
+          isHovering={isHovering}
+          message={message}
+          reactions={
+            reactions.length === 0 ? null : (
+              <Reactions
+                items={reactions}
+                addReaction={addReaction}
+                removeReaction={removeReaction}
+                showAddReactionButton={isHovering}
+              />
+            )
+          }
+        />
       ) : (
         <>
-          {message.isAppMessage ? (
-            <AppMessage
-              isHovering={isHovering}
-              message={message}
-              reactions={
-                reactions.length === 0 ? null : (
-                  <Reactions
-                    items={reactions}
-                    addReaction={addReaction}
-                    removeReaction={removeReaction}
-                    showAddReactionButton={isHovering}
-                  />
-                )
-              }
+          {message.isReply && (
+            <RepliedMessage
+              message={message.repliedMessage}
+              getMember={getMember}
             />
-          ) : (
-            <>
-              {message.isReply && (
-                <RepliedMessage
-                  message={message.repliedMessage}
-                  getMember={getMember}
+          )}
+
+          <div
+            css={css({
+              display: "grid",
+              gridTemplateColumns: `${AVATAR_SIZE} minmax(0, 1fr)`,
+              alignItems: "flex-start",
+              gridGap: GUTTER_SIZE,
+            })}
+          >
+            {showSimplifiedMessage ? (
+              <div
+                css={css({
+                  paddingTop: "0.5rem",
+                  textAlign: "right",
+                  transition: "0.15s opacity",
+                  cursor: "default",
+                })}
+                style={{ opacity: isHovering ? 1 : 0 }}
+              >
+                <TinyMutedText nowrap>
+                  <FormattedDateWithTooltip
+                    value={new Date(message.created_at)}
+                    hour="numeric"
+                    minute="numeric"
+                    tooltipContentProps={{ sideOffset: 7 }}
+                    disableRelative
+                    disableTooltip={!isHovering}
+                  />
+                </TinyMutedText>
+              </div>
+            ) : (
+              <div css={css({ padding: "0.2rem 0 0" })}>
+                <Popover.Root>
+                  <Popover.Trigger asChild>
+                    <button
+                      css={css({
+                        position: "relative",
+                        borderRadius: "0.3rem",
+                        overflow: "hidden",
+                        cursor: "pointer",
+                        ":hover": {
+                          boxShadow: message.author?.profilePicture
+                            .isVerifiedNft
+                            ? "0 0 0 2px #4f52ff"
+                            : "0 0 0 2px rgb(255 255 255 / 10%)",
+                        },
+                        ":active": { transform: "translateY(0.1rem)" },
+                      })}
+                    >
+                      <Avatar
+                        url={message.author?.profilePicture.small}
+                        walletAddress={message.author?.walletAddress}
+                        size="3.8rem"
+                        pixelSize={38}
+                      />
+                    </button>
+                  </Popover.Trigger>
+                  <Popover.Content
+                    collisionTolerance={5}
+                    side="right"
+                    sideOffset={5}
+                    align="center"
+                  >
+                    <ProfilePreview
+                      profilePicture={message.author?.profilePicture}
+                      displayName={message.author?.displayName}
+                      walletAddress={message.author?.walletAddress}
+                      onlineStatus={message.author?.onlineStatus}
+                      userId={message.authorUserId}
+                    />
+                  </Popover.Content>
+                </Popover.Root>
+              </div>
+            )}
+
+            <div>
+              {!showSimplifiedMessage && (
+                <MessageHeader
+                  author={message.author}
+                  createdAt={createdAtDate}
+                  authorUserId={message.authorUserId}
+                  isOwnMessage={isOwnMessage}
                 />
               )}
 
-              <div
-                css={css({
-                  display: "grid",
-                  gridTemplateColumns: `${AVATAR_SIZE} minmax(0, 1fr)`,
-                  alignItems: "flex-start",
-                  gridGap: GUTTER_SIZE,
-                })}
-              >
-                {showSimplifiedMessage ? (
-                  <div
-                    css={css({
-                      paddingTop: "0.5rem",
-                      textAlign: "right",
-                      transition: "0.15s opacity",
-                      cursor: "default",
-                    })}
-                    style={{ opacity: isHovering ? 1 : 0 }}
-                  >
-                    <TinyMutedText nowrap>
-                      <FormattedDateWithTooltip
-                        value={new Date(message.created_at)}
-                        hour="numeric"
-                        minute="numeric"
-                        tooltipContentProps={{ sideOffset: 7 }}
-                        disableRelative
-                        disableTooltip={!isHovering}
-                      />
-                    </TinyMutedText>
-                  </div>
-                ) : (
-                  <div css={css({ padding: "0.2rem 0 0" })}>
-                    <Popover.Root>
-                      <Popover.Trigger asChild>
-                        <button
-                          css={css({
-                            position: "relative",
-                            borderRadius: "0.3rem",
-                            overflow: "hidden",
-                            cursor: "pointer",
-                            ":hover": {
-                              boxShadow: message.author?.profilePicture
-                                .isVerifiedNft
-                                ? "0 0 0 2px #4f52ff"
-                                : "0 0 0 2px rgb(255 255 255 / 10%)",
-                            },
-                            ":active": { transform: "translateY(0.1rem)" },
-                          })}
-                        >
-                          <Avatar
-                            url={message.author?.profilePicture.small}
-                            walletAddress={message.author?.walletAddress}
-                            size="3.8rem"
-                            pixelSize={38}
-                          />
-                        </button>
-                      </Popover.Trigger>
-                      <Popover.Content
-                        collisionTolerance={5}
-                        side="right"
-                        sideOffset={5}
-                        align="center"
-                      >
-                        <ProfilePreview
-                          profilePicture={message.author?.profilePicture}
-                          displayName={message.author?.displayName}
-                          walletAddress={message.author?.walletAddress}
-                          onlineStatus={message.author?.onlineStatus}
-                          userId={message.authorUserId}
-                        />
-                      </Popover.Content>
-                    </Popover.Root>
-                  </div>
-                )}
-
-                <div>
-                  {!showSimplifiedMessage && (
-                    <MessageHeader
-                      author={message.author}
-                      createdAt={createdAtDate}
-                      authorUserId={message.authorUserId}
-                      isOwnMessage={isOwnMessage}
-                    />
-                  )}
-
-                  {isEditing ? (
-                    <EditMessageInput
-                      ref={editInputRef}
-                      blocks={message.content}
-                      onCancel={() => {
-                        setEditingMessage(false);
-                      }}
-                      requestRemove={() =>
-                        new Promise((resolve, reject) => {
-                          if (
-                            !confirm(
-                              "Are you sure you want to remove this message?"
-                            )
-                          ) {
-                            reject(new Error());
-                            return;
-                          }
-
-                          remove().then(resolve, reject);
-                        })
+              {isEditing ? (
+                <EditMessageInput
+                  ref={editInputRef}
+                  blocks={message.content}
+                  onCancel={() => {
+                    setEditingMessage(false);
+                  }}
+                  requestRemove={() =>
+                    new Promise((resolve, reject) => {
+                      if (
+                        !confirm(
+                          "Are you sure you want to remove this message?"
+                        )
+                      ) {
+                        reject(new Error());
+                        return;
                       }
-                      save={(content) =>
-                        save(content).then(() => {
-                          setEditingMessage(false);
-                        })
-                      }
-                      members={members}
-                      getMember={getMember}
-                    />
-                  ) : (
-                    <RichText
-                      blocks={message.content}
-                      onClickInteractiveElement={onClickInteractiveElement}
-                      getMember={getMember}
-                      suffix={message.isEdited && editedMessageSuffix}
-                    />
-                  )}
 
-                  {reactions.length !== 0 && (
-                    <Reactions
-                      items={reactions}
-                      addReaction={addReaction}
-                      removeReaction={removeReaction}
-                      showAddReactionButton={isHovering || hasTouchFocus}
-                    />
-                  )}
-                </div>
-              </div>
-            </>
-          )}
+                      remove().then(resolve, reject);
+                    })
+                  }
+                  save={(content) =>
+                    save(content).then(() => {
+                      setEditingMessage(false);
+                    })
+                  }
+                  members={members}
+                  getMember={getMember}
+                />
+              ) : (
+                <RichText
+                  blocks={message.content}
+                  onClickInteractiveElement={onClickInteractiveElement}
+                  getMember={getMember}
+                  suffix={message.isEdited && editedMessageSuffix}
+                />
+              )}
+
+              {reactions.length !== 0 && (
+                <Reactions
+                  items={reactions}
+                  addReaction={addReaction}
+                  removeReaction={removeReaction}
+                  showAddReactionButton={isHovering || hasTouchFocus}
+                />
+              )}
+            </div>
+          </div>
         </>
       )}
     </div>
