@@ -6,6 +6,7 @@ import { arrayShallowEquals } from "../utils/reselect";
 const entriesById = (state = {}, action) => {
   switch (action.type) {
     case "initial-data-request-successful": {
+      if (!action.data.apps) return state;
       return indexBy((a) => a.id, action.data.apps);
     }
 
