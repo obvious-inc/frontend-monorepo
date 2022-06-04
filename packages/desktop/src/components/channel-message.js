@@ -727,11 +727,29 @@ const AppDisplayName = React.forwardRef(
           lineHeight: 1.2,
           color: color ?? theme.colors.pink,
           fontWeight: "500",
+          display: "flex",
+          alignItems: "center",
         })
       }
       {...props}
     >
       {displayName}
+      <span
+        css={(theme) =>
+          css({
+            marginLeft: 5,
+            padding: "1px 3px",
+            fontSize: "1rem",
+            borderRadius: "0.3rem",
+            backgroundColor: theme.colors.textMuted,
+            color: theme.colors.textNormal,
+            fontWeight: "500",
+            textTransform: "uppercase",
+          })
+        }
+      >
+        app
+      </span>
     </div>
   )
 );
