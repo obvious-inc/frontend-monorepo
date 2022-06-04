@@ -325,6 +325,7 @@ const ChannelMessage = React.memo(function ChannelMessage_({
         <AppMessage
           isHovering={isHovering}
           message={message}
+          onClickInteractiveElement={onClickInteractiveElement}
           reactions={
             reactions.length === 0 ? null : (
               <Reactions
@@ -714,6 +715,24 @@ const MemberDisplayName = React.forwardRef(
     >
       {displayName}
     </button>
+  )
+);
+
+const AppDisplayName = React.forwardRef(
+  ({ displayName, color, ...props }, ref) => (
+    <div
+      ref={ref}
+      css={(theme) =>
+        css({
+          lineHeight: 1.2,
+          color: color ?? theme.colors.pink,
+          fontWeight: "500",
+        })
+      }
+      {...props}
+    >
+      {displayName}
+    </div>
   )
 );
 
@@ -1535,14 +1554,22 @@ const SystemMessage = ({ isHovering, message, reactions }) => {
   );
 };
 
-const AppMessage = ({ isHovering, message, reactions }) => {
+const AppMessage = ({
+  isHovering,
+  message,
+  reactions,
+  onClickInteractiveElement,
+}) => {
   const content = React.useMemo(() => {
     switch (message.type) {
       case "webhook":
         return (
           <>
-            <MemberDisplayName displayName={message.author.name} />
-            <RichText blocks={message.content} />
+            <AppDisplayName displayName={message.author.name} />
+            <RichText
+              blocks={message.content}
+              onClickInteractiveElement={onClickInteractiveElement}
+            />
           </>
         );
 

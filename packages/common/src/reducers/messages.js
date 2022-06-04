@@ -231,6 +231,7 @@ const deriveMessageType = (message) => {
     case 1:
       return "member-joined";
     case 2:
+    case 3:
       return "webhook";
     default:
       throw new Error();
