@@ -166,7 +166,6 @@ const SideMenuLayout = ({ title, filterable, sidebarContent, children }) => {
 };
 
 export const HomeLayout = () => {
-  const { user } = useAuth();
   const { state } = useAppScope();
 
   const starredChannels = state.selectStarredChannels();
@@ -205,7 +204,6 @@ export const HomeLayout = () => {
   return (
     <SideMenuLayout
       filterable
-      // title="Starred"
       sidebarContent={
         <>
           {Object.entries(serverChannelsByServerName).map(

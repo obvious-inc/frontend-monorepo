@@ -259,9 +259,6 @@ export const ChannelBase = ({
 
   const { messages, hasAllMessages } = useMessages(channel.id);
 
-  const { isFloating: isMenuTogglingEnabled, toggle: toggleMenu } =
-    useSideMenu();
-
   const getMember = React.useCallback(
     (ref) => members.find((m) => m.id === ref),
     [members]
@@ -447,44 +444,7 @@ export const ChannelBase = ({
         flex-direction: column;
       `}
     >
-      <div
-        css={css({
-          height: "4.8rem",
-          padding: "0 1.6rem",
-          display: "flex",
-          alignItems: "center",
-          boxShadow:
-            "0 1px 0 rgba(4,4,5,0.2),0 1.5px 0 rgba(6,6,7,0.05),0 2px 0 rgba(4,4,5,0.05)",
-        })}
-      >
-        {isMenuTogglingEnabled && (
-          <button
-            onClick={() => {
-              toggleMenu();
-            }}
-            css={css({
-              background: "none",
-              border: 0,
-              color: "white",
-              cursor: "pointer",
-              padding: "0.8rem 0.6rem",
-              marginLeft: "-0.6rem",
-              marginRight: "calc(-0.6rem + 1.6rem)",
-            })}
-          >
-            <HamburgerMenuIcon
-              css={(theme) =>
-                css({
-                  fill: theme.colors.interactiveNormal,
-                  width: "1.5rem",
-                  ":hover": { fill: theme.colors.interactiveHover },
-                })
-              }
-            />
-          </button>
-        )}
-        {headerContent}
-      </div>
+      <Header>{headerContent}</Header>
 
       <div
         css={css({
@@ -1148,7 +1108,7 @@ const AttachmentList = ({ items, remove }) => (
   </div>
 );
 
-const Header = ({ children }) => (
+const Heading = ({ children }) => (
   <div
     css={(theme) =>
       css({
@@ -1215,7 +1175,7 @@ const Channel = () => {
               )}
             </div>
           )}
-          <Header>{channel?.name}</Header>
+          <Heading>{channel?.name}</Heading>
         </>
       ),
     [isMenuTogglingEnabled, channel]
@@ -1261,6 +1221,51 @@ const OnScreenTrigger = ({ callback }) => {
   }, [isOnScreen]);
 
   return <div ref={ref} />;
+};
+
+export const Header = ({ children }) => {
+  const { isFloating: isMenuTogglingEnabled, toggle: toggleMenu } =
+    useSideMenu();
+  return (
+    <div
+      css={css({
+        height: "4.8rem",
+        padding: "0 1.6rem",
+        display: "flex",
+        alignItems: "center",
+        boxShadow:
+          "0 1px 0 rgba(4,4,5,0.2),0 1.5px 0 rgba(6,6,7,0.05),0 2px 0 rgba(4,4,5,0.05)",
+      })}
+    >
+      {isMenuTogglingEnabled && (
+        <button
+          onClick={() => {
+            toggleMenu();
+          }}
+          css={css({
+            background: "none",
+            border: 0,
+            color: "white",
+            cursor: "pointer",
+            padding: "0.8rem 0.6rem",
+            marginLeft: "-0.6rem",
+            marginRight: "calc(-0.6rem + 1.6rem)",
+          })}
+        >
+          <HamburgerMenuIcon
+            css={(theme) =>
+              css({
+                fill: theme.colors.interactiveNormal,
+                width: "1.5rem",
+                ":hover": { fill: theme.colors.interactiveHover },
+              })
+            }
+          />
+        </button>
+      )}
+      {children}
+    </div>
+  );
 };
 
 export default Channel;

@@ -34,7 +34,7 @@ import useWalletLogin, {
 } from "./hooks/wallet-login";
 import { generateCachedAvatar } from "./components/avatar";
 import SignInScreen from "./components/sign-in-screen";
-import Channel from "./components/channel";
+import Channel, { Header as ChannelHeader } from "./components/channel";
 import Discover from "./components/discover";
 import JoinServer from "./components/join-server";
 import {
@@ -43,12 +43,12 @@ import {
   DirectMessagesLayout,
 } from "./components/channel-layout";
 import TitleBar from "./components/title-bar";
-import MainMenu from "./components/main-menu";
 import * as Tooltip from "./components/tooltip";
 import {
   Home as HomeIcon,
   ChatBubbles as ChatBubblesIcon,
 } from "./components/icons";
+import useSideMenu from "./hooks/side-menu";
 import { dark as defaultTheme } from "./themes";
 
 const isNative = window.Native != null;
@@ -211,38 +211,7 @@ const App = () => {
             </RequireAuth>
           }
         >
-          <Route
-            index
-            element={
-              <div
-                css={(theme) =>
-                  css({
-                    flex: 1,
-                    height: "100%",
-                    display: "flex",
-                    background: theme.colors.backgroundPrimary,
-                  })
-                }
-              >
-                <div
-                  css={css({
-                    flex: 1,
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    height: "100%",
-                  })}
-                >
-                  <HomeIcon
-                    style={{
-                      width: "6rem",
-                      color: "rgb(255 255 255 / 5%)",
-                    }}
-                  />
-                </div>
-              </div>
-            }
-          />
+          <Route index element={<EmptyHome />} />
           <Route path="me/:channelId" element={<Channel />} />
         </Route>
 
@@ -305,6 +274,41 @@ const App = () => {
         <Route path="*" element={null} />
       </Routes>
     </>
+  );
+};
+
+const EmptyHome = () => {
+  const { isFloating: isMenuTogglingEnabled } = useSideMenu();
+  return (
+    <div
+      css={(theme) =>
+        css({
+          flex: 1,
+          height: "100%",
+          display: "flex",
+          flexDirection: "column",
+          background: theme.colors.backgroundPrimary,
+        })
+      }
+    >
+      {isMenuTogglingEnabled && <ChannelHeader />}
+      <div
+        css={css({
+          flex: 1,
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          height: "100%",
+        })}
+      >
+        <HomeIcon
+          style={{
+            width: "6rem",
+            color: "rgb(255 255 255 / 5%)",
+          }}
+        />
+      </div>
+    </div>
   );
 };
 
