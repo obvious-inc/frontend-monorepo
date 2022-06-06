@@ -41,7 +41,7 @@ import {
   HomeLayout,
   ServerLayout,
   DirectMessagesLayout,
-} from "./components/channel-layout";
+} from "./components/layouts";
 import TitleBar from "./components/title-bar";
 import * as Tooltip from "./components/tooltip";
 import {

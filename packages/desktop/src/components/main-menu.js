@@ -14,7 +14,7 @@ import {
   Plus as PlusIcon,
 } from "./icons";
 import Avatar from "./avatar";
-import { NotificationBadge } from "./channel-layout";
+import NotificationBadge from "./notification-badge";
 import * as Tooltip from "./tooltip";
 
 const MainMenu = () => {
@@ -106,17 +106,13 @@ const MainMenu = () => {
               icon: <ChatBubblesIcon style={{ width: "2.2rem" }} />,
               tooltip: "Direct messages",
               component: Link,
+              onClick: dmChannels.length === 0 ? closeMenu : undefined,
               className: location.pathname.startsWith("/dms")
                 ? "active"
                 : undefined,
             },
           ].map(({ icon, ...props }) => (
-            <RoundButton
-              key={props.tooltip}
-              component={NavLink}
-              onClick={closeMenu}
-              {...props}
-            >
+            <RoundButton key={props.tooltip} component={NavLink} {...props}>
               {icon}
             </RoundButton>
           ))}
@@ -194,7 +190,6 @@ const MainMenu = () => {
                       ? `/channels/${s.id}/${channels[0].id}`
                       : `/channels/${s.id}`
                   }
-                  onClick={closeMenu}
                   notificationCount={mentionCount}
                   tooltip={s.name}
                   className={isActive ? "active" : undefined}

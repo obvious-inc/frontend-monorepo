@@ -37,3 +37,10 @@ svg {
   -webkit-user-select: text;
   user-select: text;
 }
+
+@supports (-webkit-touch-callout: none) {
+  input,
+  [role="textbox"] {
+    font-size: 1.6rem;
+  }
+}
