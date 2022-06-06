@@ -1583,7 +1583,7 @@ const AppMessage = ({
       case "webhook":
         return (
           <>
-            <AppDisplayName displayName={message.author.name} />
+            <AppDisplayName displayName={message.app?.name} />
             <RichText
               blocks={message.content}
               onClickInteractiveElement={onClickInteractiveElement}

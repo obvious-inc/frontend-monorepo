@@ -252,8 +252,6 @@ export const selectMessage = createSelector(
         message.server,
         message.author
       );
-    } else if (message.app != null) {
-      return selectApp(state, message.app);
     } else {
       return selectUser(state, message.author);
     }
@@ -264,12 +262,18 @@ export const selectMessage = createSelector(
     return selectMessage(state, message.reply_to);
   },
   (state) => state.user,
-  (message, author, repliedMessage, loggedInUser) => {
+  (state, messageId) => {
+    const message = state.messages.entriesById[messageId];
+    if (message == null || !message.app) return null;
+    return selectApp(state, message.app);
+  },
+  (message, author, repliedMessage, loggedInUser, app) => {
     if (message == null) return null;
     if (message.deleted) return message;
 
     const serverId = message.server;
     const authorUserId = message.author;
+    const appId = message.app;
 
     if (message.reply_to != null) {
       message.repliedMessage = repliedMessage;
@@ -299,6 +303,8 @@ export const selectMessage = createSelector(
           ...r,
           hasReacted: r.users.includes(loggedInUser.id),
         })) ?? [],
+      appId,
+      app,
     };
   },
   { memoizeOptions: { maxSize: 1000 } }
