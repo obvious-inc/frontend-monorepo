@@ -1594,7 +1594,7 @@ const AppMessage = ({
       default:
         throw new Error();
     }
-  }, [message]);
+  }, [message, onClickInteractiveElement]);
 
   return (
     <div
