@@ -684,6 +684,9 @@ const NewMessageInput = React.memo(
 
     const [imageUploads, setImageUploads] = React.useState([]);
 
+    const isEmptyMessage =
+      imageUploads.length === 0 && pendingMessage.every(isNodeEmpty);
+
     const fileInputRef = React.useRef();
     const uploadPromiseRef = React.useRef();
     const previousPendingMessageRef = React.useRef(pendingMessage);
@@ -862,7 +865,7 @@ const NewMessageInput = React.memo(
           <div
             css={{
               display: "grid",
-              gridTemplateColumns: "auto minmax(0,1fr)",
+              gridTemplateColumns: "auto minmax(0,1fr) auto",
               gridGap: "1.2rem",
               alignItems: "flex-start",
               paddingLeft: "0.3rem",
@@ -913,6 +916,33 @@ const NewMessageInput = React.memo(
               disabled={isPending}
               {...props}
             />
+
+            <button
+              disabled={isEmptyMessage || isPending}
+              css={(theme) =>
+                css({
+                  color: theme.colors.primaryLight,
+                  padding: "0.2rem",
+                  cursor: "pointer",
+                  ":hover": { filter: "brightness(1.1) saturate(1.1)" },
+                  ":disabled": {
+                    pointerEvents: "none",
+                    color: theme.colors.disabledMessageSubmitButton,
+                  },
+                })
+              }
+              type="submit"
+            >
+              <svg width="20" height="20" viewBox="0 0 20 20">
+                <path
+                  fill="currentColor"
+                  stroke="currentColor"
+                  strokeLinejoin="round"
+                  strokeWidth="1.5"
+                  d="M2.25 2.25 17.75 10l-15.5 7.75v-4.539a1.5 1.5 0 0 1 1.46-1.5l6.54-.171a1.54 1.54 0 0 0 0-3.08l-6.54-.172a1.5 1.5 0 0 1-1.46-1.5V2.25Z"
+                />
+              </svg>
+            </button>
           </div>
 
           {imageUploads.length !== 0 && (

@@ -529,8 +529,10 @@ const Reactions = ({
             border: "1px solid transparent",
             cursor: "pointer",
             "&.active": {
-              background: "#3f42ea45",
-              borderColor: "#4c4ffe96",
+              background: "#007ab333",
+              borderColor: "#007ab3a8",
+              // background: "#3f42ea45",
+              // borderColor: "#4c4ffe96",
             },
             "&:not(.active):hover": {
               borderColor: "rgb(255 255 255 / 20%)",

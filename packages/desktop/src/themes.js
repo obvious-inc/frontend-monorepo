@@ -3,6 +3,7 @@
 export const dark = {
   colors: {
     primary: "#007ab3", // BLUE,
+    primaryLight: "#2399d0",
     pink: "#e588f8",
     textNormal: "#dcddde",
     textMuted: "#bcc3cc7a",
@@ -29,6 +30,7 @@ export const dark = {
     dialogPopoverBackground: "#575c64",
     mentionFocusBorder: "#7375ffb8",
     onlineIndicator: "hsl(139 47.3%  43.9%)",
+    disabledMessageSubmitButton: "#5f646a",
   },
   fontSizes: {
     small: "1.3rem",
