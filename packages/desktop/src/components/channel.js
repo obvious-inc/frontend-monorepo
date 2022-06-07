@@ -114,11 +114,15 @@ const useScroll = (scrollContainerRef, channelId) => {
   }, [scrollContainerRef, channelId, scrollToBottom]);
 
   useScrollListener(scrollContainerRef, (e) => {
-    scrollPositionCache[channelId] = { scrollTop: e.target.scrollTop };
-
     const isAtBottom =
       Math.ceil(e.target.scrollTop) + e.target.getBoundingClientRect().height >=
       e.target.scrollHeight;
+
+    if (isAtBottom) {
+      delete scrollPositionCache[channelId];
+    } else {
+      scrollPositionCache[channelId] = { scrollTop: e.target.scrollTop };
+    }
 
     setScrolledToBottom(isAtBottom);
   });
