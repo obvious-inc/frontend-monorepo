@@ -135,6 +135,10 @@ const App = () => {
   const { state, actions } = useAppScope();
   const { login } = useWalletLogin();
 
+  const { fetchInitialData, fetchStarredItems } = actions;
+
+  const hasFetchedInitialData = state.selectHasFetchedInitialData();
+
   useSystemNotifications();
 
   useWalletEvent("disconnect", () => {
@@ -169,9 +173,9 @@ const App = () => {
   });
 
   React.useEffect(() => {
-    if (user == null || state.selectHasFetchedInitialData()) return null;
+    if (user == null || hasFetchedInitialData) return null;
 
-    actions.fetchInitialData().then((data) => {
+    fetchInitialData().then((data) => {
       const server = data.servers[0];
 
       const channel = server?.channels[0];
@@ -183,12 +187,12 @@ const App = () => {
           replace: true,
         });
     });
-  }, [user, navigate, actions, state]);
+  }, [user, navigate, fetchInitialData, hasFetchedInitialData]);
 
   React.useEffect(() => {
     if (authStatus !== "authenticated") return;
-    actions.fetchStarredItems();
-  }, [authStatus, actions]);
+    fetchStarredItems();
+  }, [authStatus, fetchStarredItems]);
 
   useWindowFocusListener(() => {
     actions.fetchInitialData();
