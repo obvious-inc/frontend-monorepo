@@ -12,9 +12,16 @@ import NotificationBadge from "./notification-badge";
 const { reverse, groupBy } = arrayUtils;
 
 export const HomeLayout = () => {
+  const params = useParams();
   const { state } = useAppScope();
 
   const starredChannels = state.selectStarredChannels();
+  const selectedChannel =
+    params.channelId == null ? null : state.selectChannel(params.channelId);
+
+  const selectedChannelIsStarred = starredChannels.some(
+    (c) => c.id === params.channelId
+  );
 
   const channelsByKind = React.useMemo(
     () => groupBy((c) => c.kind ?? "server", starredChannels),
@@ -32,7 +39,7 @@ export const HomeLayout = () => {
     [state, channelsByKind.server]
   );
 
-  if (starredChannels.length === 0)
+  if (selectedChannel == null && starredChannels.length === 0)
     return (
       <div
         css={(theme) =>
@@ -53,6 +60,33 @@ export const HomeLayout = () => {
       filterable
       sidebarContent={
         <>
+          {!selectedChannelIsStarred && selectedChannel != null && (
+            <>
+              <div style={{ height: "1.5rem" }} />
+              {selectedChannel.kind === "dm" ? (
+                <DmChannelItem
+                  name={selectedChannel.name}
+                  link={`/me/${selectedChannel.id}`}
+                  hasUnread={state.selectChannelHasUnread(selectedChannel.id)}
+                  notificationCount={state.selectChannelMentionCount(
+                    selectedChannel.id
+                  )}
+                  memberUserIds={selectedChannel.memberUserIds}
+                />
+              ) : (
+                <ChannelItem
+                  link={`/me/${selectedChannel.id}`}
+                  channelId={selectedChannel.id}
+                  name={selectedChannel.name}
+                  hasUnread={state.selectChannelHasUnread(selectedChannel.id)}
+                  mentionCount={state.selectChannelMentionCount(
+                    selectedChannel.id
+                  )}
+                />
+              )}
+            </>
+          )}
+
           {Object.entries(serverChannelsByServerName).map(
             ([title, channels]) => (
               <Section key={title} title={title}>
