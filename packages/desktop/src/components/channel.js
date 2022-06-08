@@ -207,6 +207,7 @@ export const ChannelBase = ({
   isAdmin = false,
   createMessage,
   headerContent,
+  noSideMenu,
 }) => {
   const { actions, state, addBeforeDispatchListener } = useAppScope();
 
@@ -446,9 +447,10 @@ export const ChannelBase = ({
         background: ${theme.colors.backgroundPrimary};
         display: flex;
         flex-direction: column;
+        height: 100%;
       `}
     >
-      <Header>{headerContent}</Header>
+      <Header noSideMenu={noSideMenu}>{headerContent}</Header>
 
       <div
         css={css({
@@ -1158,11 +1160,15 @@ const Heading = ({ children }) => (
   </div>
 );
 
-const Channel = () => {
+const Channel = ({ noSideMenu }) => {
   const params = useParams();
   const navigate = useNavigate();
   const { state, actions } = useAppScope();
-  const { isFloating: isMenuTogglingEnabled } = useSideMenu();
+  const { isFloating: isSideMenuFloating } = useSideMenu();
+
+  const isMenuTogglingEnabled = !noSideMenu && isSideMenuFloating;
+
+  const { fetchChannel } = actions;
 
   const channel = state.selectChannel(params.channelId);
 
@@ -1191,6 +1197,10 @@ const Channel = () => {
     },
     [actions, channel?.kind, params.serverId, params.channelId]
   );
+
+  React.useEffect(() => {
+    if (channel == null) fetchChannel(params.channelId);
+  }, [channel, params.channelId, fetchChannel]);
 
   const headerContent = React.useMemo(
     () =>
@@ -1230,6 +1240,7 @@ const Channel = () => {
 
   return (
     <ChannelBase
+      noSideMenu={noSideMenu}
       channel={channel}
       members={members}
       typingMembers={typingChannelMembers}
@@ -1257,9 +1268,9 @@ const OnScreenTrigger = ({ callback }) => {
   return <div ref={ref} />;
 };
 
-export const Header = ({ children }) => {
-  const { isFloating: isMenuTogglingEnabled, toggle: toggleMenu } =
-    useSideMenu();
+export const Header = ({ noSideMenu, children }) => {
+  const { isFloating: isSideMenuFloating, toggle: toggleMenu } = useSideMenu();
+  const isMenuTogglingEnabled = !noSideMenu && isSideMenuFloating;
   return (
     <div
       css={css({

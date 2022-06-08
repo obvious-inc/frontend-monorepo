@@ -1173,7 +1173,9 @@ const MessageToolbar = React.memo(
                 aria-label="Add reaction"
                 style={{ position: "relative" }}
               >
-                <AddEmojiReactionIcon style={{ width: "1.6rem" }} />
+                <span>
+                  <AddEmojiReactionIcon style={{ width: "1.6rem" }} />
+                </span>
               </Toolbar.Button>
             }
             open={isEmojiPickerOpen}

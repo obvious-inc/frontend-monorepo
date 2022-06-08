@@ -45,6 +45,14 @@ const entriesById = (state = {}, action) => {
       };
     }
 
+    case "fetch-channel-request-successful": {
+      const existingChannelData = state[action.channel.id];
+      return {
+        ...state,
+        [action.channel.id]: { ...existingChannelData, ...action.channel },
+      };
+    }
+
     case "delete-channel-request-successful":
       return omitKey(action.id, state);
 

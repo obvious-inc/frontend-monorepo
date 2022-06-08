@@ -12,7 +12,7 @@ import React from "react";
 import { css } from "@emotion/react";
 import { Routes, Route, useNavigate } from "react-router-dom";
 import { IntlProvider } from "react-intl";
-import { ThemeProvider } from "@emotion/react";
+import { ThemeProvider, Global as GlobalStyleSheet } from "@emotion/react";
 import Pusher from "pusher-js";
 import {
   useAuth,
@@ -220,6 +220,15 @@ const App = () => {
         </Route>
 
         <Route
+          path="/channels/:channelId"
+          element={
+            <RequireAuth>
+              <Channel noSideMenu />
+            </RequireAuth>
+          }
+        />
+
+        <Route
           path="/dms"
           element={
             <RequireAuth>
@@ -277,6 +286,14 @@ const App = () => {
         <Route path="/join/:serverId" element={<JoinServer />} />
         <Route path="*" element={null} />
       </Routes>
+
+      <GlobalStyleSheet
+        styles={(theme) =>
+          css({
+            color: theme.colors.textNormal,
+          })
+        }
+      />
     </>
   );
 };

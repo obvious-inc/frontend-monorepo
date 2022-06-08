@@ -369,6 +369,15 @@ export const Provider = ({ children }) => {
     [authorizedFetch, dispatch, user?.id]
   );
 
+  const fetchChannel = useLatestCallback(
+    (id) =>
+      authorizedFetch(`/channels/${id}`).then((res) => {
+        dispatch({ type: "fetch-channel-request-successful", channel: res });
+        return res;
+      }),
+    [authorizedFetch]
+  );
+
   const createChannel = React.useCallback(
     ({ name, kind, serverId, memberUserIds }) =>
       authorizedFetch("/channels", {
@@ -477,6 +486,7 @@ export const Provider = ({ children }) => {
       deleteChannelSection,
       createServerChannelSection,
       updateServerChannelSections,
+      fetchChannel,
       createChannel,
       updateChannel,
       deleteChannel,
@@ -507,6 +517,7 @@ export const Provider = ({ children }) => {
       updateServerChannelSections,
       updateChannelSection,
       deleteChannelSection,
+      fetchChannel,
       createChannel,
       updateChannel,
       deleteChannel,

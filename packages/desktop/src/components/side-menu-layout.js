@@ -20,16 +20,7 @@ const SideMenuLayout = ({ title, filterable, sidebarContent, children }) => {
   if (!state.selectHasFetchedInitialData() || user == null) return null;
 
   return (
-    <div
-      css={(theme) =>
-        css({
-          height: "100%",
-          display: "flex",
-          color: theme.colors.textNormal,
-          position: "relative",
-        })
-      }
-    >
+    <div css={css({ height: "100%", display: "flex", position: "relative" })}>
       <div
         css={(theme) =>
           css({
