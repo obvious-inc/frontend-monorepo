@@ -379,7 +379,7 @@ export const Provider = ({ children }) => {
   );
 
   const createChannel = React.useCallback(
-    ({ name, kind, serverId, memberUserIds }) =>
+    ({ name, kind, serverId, memberUserIds, memberWalletAddresses }) =>
       authorizedFetch("/channels", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -387,7 +387,7 @@ export const Provider = ({ children }) => {
           name,
           kind,
           server: serverId,
-          members: memberUserIds,
+          members: memberWalletAddresses ?? memberUserIds,
         }),
       }).then((res) => {
         // TODO

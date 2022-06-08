@@ -1,5 +1,6 @@
 import React from "react";
 import { useNavigate } from "react-router-dom";
+import { useProvider as useEthersProvider } from "wagmi";
 import { useAuth, useAppScope, objectUtils } from "@shades/common";
 import textCommands from "../commands/text";
 import userCommands from "../commands/user";
@@ -21,6 +22,7 @@ const useCommands = ({ context, serverId, channelId } = {}) => {
   const { user } = useAuth();
   const { state, actions } = useAppScope();
   const navigate = useNavigate();
+  const ethersProvider = useEthersProvider();
 
   const commandDependencies = React.useMemo(
     () => ({
@@ -31,8 +33,18 @@ const useCommands = ({ context, serverId, channelId } = {}) => {
       context,
       serverId,
       channelId,
+      ethersProvider,
     }),
-    [user, navigate, state, actions, context, serverId, channelId]
+    [
+      user,
+      navigate,
+      state,
+      actions,
+      context,
+      serverId,
+      channelId,
+      ethersProvider,
+    ]
   );
 
   const commands = React.useMemo(() => {

@@ -2,7 +2,7 @@ import { getChecksumAddress } from "../utils/ethereum";
 import { send as sendNotification } from "../utils/notifications";
 
 const commands = {
-  dm: ({ actions, state, navigate }) => ({
+  dm: ({ actions, state, navigate, ethersProvider }) => ({
     description:
       'Direct message. Usage: "/dm <wallet-address> [...<wallet-address>]"',
     execute: async ({ args, editor }) => {
@@ -16,17 +16,23 @@ const commands = {
       }
 
       try {
+        const resolvedAddress = await Promise.all(
+          addresses.map((a) => ethersProvider.resolveName(a))
+        );
+
         const checksumAddresses = await Promise.all(
-          addresses.map(getChecksumAddress)
+          resolvedAddress.map(getChecksumAddress)
         );
         const users = checksumAddresses.map(state.selectUserFromWalletAddress);
-        if (users.some((u) => u == null))
-          return Promise.reject(new Error("User not found"));
+        const joinedChannel = users.some((u) => u == null)
+          ? null
+          : state.selectDmChannelFromUserIds(users.map((u) => u.id));
+
         const channel =
-          state.selectDmChannelFromUserIds(users.map((u) => u.id)) ??
+          joinedChannel ??
           (await actions.createChannel({
             kind: "dm",
-            memberUserIds: users.map((u) => u.id),
+            memberWalletAddresses: checksumAddresses,
           }));
         editor.clear();
         navigate(`/dms/${channel.id}`);
