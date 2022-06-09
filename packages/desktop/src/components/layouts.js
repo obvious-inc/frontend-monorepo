@@ -104,18 +104,20 @@ export const HomeLayout = () => {
             )
           )}
 
-          <Section title="Direct messages">
-            {dmChannels.map((c) => (
-              <DmChannelItem
-                key={c.id}
-                name={c.name}
-                link={`/me/${c.id}`}
-                hasUnread={state.selectChannelHasUnread(c.id)}
-                notificationCount={state.selectChannelMentionCount(c.id)}
-                memberUserIds={c.memberUserIds}
-              />
-            ))}
-          </Section>
+          {dmChannels.length !== 0 && (
+            <Section title="Direct messages">
+              {dmChannels.map((c) => (
+                <DmChannelItem
+                  key={c.id}
+                  name={c.name}
+                  link={`/me/${c.id}`}
+                  hasUnread={state.selectChannelHasUnread(c.id)}
+                  notificationCount={state.selectChannelMentionCount(c.id)}
+                  memberUserIds={c.memberUserIds}
+                />
+              ))}
+            </Section>
+          )}
 
           <div style={{ height: "2rem" }} />
         </>
