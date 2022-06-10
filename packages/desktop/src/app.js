@@ -348,7 +348,7 @@ export default function Root() {
     <React.StrictMode>
       <WagmiConfig client={wagmiClient}>
         <IntlProvider locale="en">
-          <AuthProvider apiOrigin={process.env.API_ENDPOINT}>
+          <AuthProvider apiOrigin="/api">
             <ServerConnectionProvider
               Pusher={Pusher}
               pusherKey={process.env.PUSHER_KEY}

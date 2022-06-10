@@ -5,14 +5,6 @@ const CopyPlugin = require("copy-webpack-plugin");
 
 require("dotenv").config();
 
-const API_ENDPOINT = process.env.API_ENDPOINT ?? "http://localhost:5001";
-
-const resolveApiEndpoint = () => {
-  if (process.env.VERCEL_ENV !== "production")
-    return [process.env.VERCEL_URL, "api"].join("/");
-  return process.env.API_ENDPOINT;
-};
-
 module.exports = (_, argv) => {
   const isProduction = argv.mode === "production";
 
@@ -26,7 +18,10 @@ module.exports = (_, argv) => {
     devServer: {
       historyApiFallback: true,
       proxy: {
-        "/api": { target: API_ENDPOINT, pathRewrite: { "^/api": "" } },
+        "/api": {
+          target: process.env.API_ENDPOINT ?? "http://localhost:5001",
+          pathRewrite: { "^/api": "" },
+        },
       },
     },
     module: {
@@ -51,15 +46,11 @@ module.exports = (_, argv) => {
         title: "NewShades",
       }),
       new webpack.EnvironmentPlugin({
-        API_ENDPOINT: isProduction ? undefined : "/api",
         PUSHER_KEY: undefined,
         INFURA_PROJECT_ID: null,
         CLOUDFLARE_ACCT_HASH: null,
         DEV: null,
         SENTRY_DSN: null,
-      }),
-      new webpack.DefinePlugin({
-        "process.env.API_ENDPOINT": JSON.stringify(resolveApiEndpoint()),
       }),
       new webpack.ProvidePlugin({
         process: "process/browser",
@@ -98,6 +89,22 @@ module.exports = (_, argv) => {
               __dirname,
               "../landing/public/favicon-192x192.png"
             ),
+          },
+          {
+            from: path.resolve(__dirname, "vercel.json"),
+            to: path.resolve(__dirname, "../.."),
+            transform: (buffer) => {
+              const config = JSON.parse(buffer.toString());
+              config.rewrites = [
+                {
+                  source: "/api/:path*",
+                  destination: `${process.env.API_ENDPOINT}/:path*`,
+                },
+                ...config.rewrites,
+              ];
+
+              return JSON.stringify(config, null, 2);
+            },
           },
         ],
       }),
