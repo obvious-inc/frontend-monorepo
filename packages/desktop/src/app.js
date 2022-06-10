@@ -219,14 +219,7 @@ const App = () => {
           <Route path="me/:channelId" element={<Channel />} />
         </Route>
 
-        <Route
-          path="/channels/:channelId"
-          element={
-            <RequireAuth>
-              <Channel noSideMenu />
-            </RequireAuth>
-          }
-        />
+        <Route path="/channels/:channelId" element={<Channel noSideMenu />} />
 
         <Route
           path="/dms"

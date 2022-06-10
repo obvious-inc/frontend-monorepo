@@ -177,10 +177,10 @@ export const Provider = ({
 
   const authorizedFetch = useLatestCallback(async (url, options) => {
     const accessToken = accessTokenRef.current;
-    if (accessToken == null) throw new Error("Missing access token");
+    // if (accessToken == null) throw new Error("Missing access token");
 
     const headers = new Headers(options?.headers);
-    if (!headers.has("Authorization"))
+    if (!headers.has("Authorization") && accessToken != null)
       headers.set("Authorization", `Bearer ${accessToken}`);
 
     const response = await fetch(`${apiOrigin}${url}`, {
