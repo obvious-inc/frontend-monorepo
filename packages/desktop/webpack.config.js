@@ -21,6 +21,7 @@ module.exports = (_, argv) => {
         "/api": {
           target: process.env.API_ENDPOINT ?? "http://localhost:5001",
           pathRewrite: { "^/api": "" },
+          changeOrigin: true,
         },
       },
     },
