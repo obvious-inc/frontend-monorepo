@@ -90,22 +90,6 @@ module.exports = (_, argv) => {
               "../landing/public/favicon-192x192.png"
             ),
           },
-          {
-            from: path.resolve(__dirname, "vercel.json"),
-            to: path.resolve(__dirname, ".."),
-            transform: (buffer) => {
-              const config = JSON.parse(buffer.toString());
-              config.rewrites = [
-                {
-                  source: "/api/:path*",
-                  destination: `${process.env.API_ENDPOINT}/:path*`,
-                },
-                ...config.rewrites,
-              ];
-
-              return JSON.stringify(config, null, 2);
-            },
-          },
         ],
       }),
     ],
