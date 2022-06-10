@@ -92,7 +92,7 @@ module.exports = (_, argv) => {
           },
           {
             from: path.resolve(__dirname, "vercel.json"),
-            to: path.resolve(__dirname, "../.."),
+            to: path.resolve(__dirname, ".."),
             transform: (buffer) => {
               const config = JSON.parse(buffer.toString());
               config.rewrites = [
