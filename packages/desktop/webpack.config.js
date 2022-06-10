@@ -7,6 +7,12 @@ require("dotenv").config();
 
 const API_ENDPOINT = process.env.API_ENDPOINT ?? "http://localhost:5001";
 
+const resolveApiEndpoint = () => {
+  if (process.env.VERCEL_ENV !== "production")
+    return [process.env.VERCEL_URL, "api"].join("/");
+  return process.env.API_ENDPOINT;
+};
+
 module.exports = (_, argv) => {
   const isProduction = argv.mode === "production";
 
@@ -51,6 +57,9 @@ module.exports = (_, argv) => {
         CLOUDFLARE_ACCT_HASH: null,
         DEV: null,
         SENTRY_DSN: null,
+      }),
+      new webpack.DefinePlugin({
+        "process.env.API_ENDPOINT": JSON.stringify(resolveApiEndpoint()),
       }),
       new webpack.ProvidePlugin({
         process: "process/browser",
