@@ -45,6 +45,8 @@
   },
   "dependencies": {
     "@emotion/react": "^11.8.2",
+    "@manypkg/find-root": "^1.1.0",
+    "@npmcli/arborist": "^5.2.1",
     "@radix-ui/react-dialog": "^0.1.7",
     "@radix-ui/react-dropdown-menu": "^0.1.6",
     "@radix-ui/react-icons": "^1.1.0",
