@@ -1,5 +1,5 @@
 const path = require("path");
-const { app, BrowserWindow, dialog } = require("electron");
+const { app, BrowserWindow, dialog, shell } = require("electron");
 
 const DEFAULT_DEV_SERVER_URL = "http://localhost:8080";
 const APP_URL = process.env.APP_URL ?? DEFAULT_DEV_SERVER_URL;
@@ -26,6 +26,12 @@ const createWindow = () => {
     webPreferences: {
       preload: path.join(__dirname, "electron-main-renderer-preload.js"),
     },
+  });
+
+  app.on("web-contents-created", (_, contents) => {
+    contents.setWindowOpenHandler(() => {
+      return { action: "allow" };
+    });
   });
 
   const loadApp = () => {
