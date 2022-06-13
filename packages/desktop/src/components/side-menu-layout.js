@@ -68,6 +68,7 @@ const SideMenuLayout = ({ title, filterable, sidebarContent, children }) => {
                   "0 1px 0 rgba(4,4,5,0.2),0 1.5px 0 rgba(6,6,7,0.05),0 2px 0 rgba(4,4,5,0.05)",
                 position: "relative",
                 zIndex: 1,
+                WebkitAppRegion: isNative ? "drag" : undefined,
               })
             }
           >

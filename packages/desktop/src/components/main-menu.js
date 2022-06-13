@@ -17,6 +17,8 @@ import Avatar from "./avatar";
 import NotificationBadge from "./notification-badge";
 import * as Tooltip from "./tooltip";
 
+const isNative = window.Native != null;
+
 const MainMenu = () => {
   const params = useParams();
   const navigate = useNavigate();
@@ -53,17 +55,20 @@ const MainMenu = () => {
     <div
       css={(theme) =>
         css({
+          position: "relative",
           display: "flex",
           width: "6.6rem",
           background: theme.colors.backgroundTertiary,
           flexDirection: "column",
           alignItems: "center",
           justifyContent: "space-between",
+          WebkitAppRegion: isNative ? "drag" : undefined,
         })
       }
     >
       <div
         css={css({
+          paddingTop: isNative ? "2rem" : 0,
           flex: 1,
           minHeight: 0,
           display: "flex",
@@ -234,7 +239,12 @@ const RoundButton = ({
 }) => (
   <Tooltip.Root>
     <Tooltip.Trigger asChild>
-      <div style={{ position: "relative" }}>
+      <div
+        style={{
+          position: "relative",
+          WebkitAppRegion: isNative ? "no-drag" : undefined,
+        }}
+      >
         <Component
           css={(theme) =>
             css({

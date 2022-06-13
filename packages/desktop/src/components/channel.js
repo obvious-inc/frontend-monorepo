@@ -27,6 +27,8 @@ import useIsOnScreen from "../hooks/is-on-screen";
 import useScrollListener from "../hooks/scroll-listener";
 import useMutationObserver from "../hooks/mutation-observer";
 
+const isNative = window.Native != null;
+
 // This fetcher only allows for a single request (with the same query) to be
 // pending at once. Subsequent "equal" request will simply return the initial
 // pending request promise.
@@ -1281,6 +1283,7 @@ export const Header = ({ noSideMenu, children }) => {
         alignItems: "center",
         boxShadow:
           "0 1px 0 rgba(4,4,5,0.2),0 1.5px 0 rgba(6,6,7,0.05),0 2px 0 rgba(4,4,5,0.05)",
+        WebkitAppRegion: isNative ? "drag" : undefined,
       })}
     >
       {isMenuTogglingEnabled && (
