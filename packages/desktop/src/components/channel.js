@@ -37,6 +37,7 @@ const useMessageFetcher = () => {
   const fetchMessages = useLatestCallback(
     async (channelId, { limit, beforeMessageId, afterMessageId } = {}) => {
       const key = new URLSearchParams([
+        ["channel", channelId],
         ["limit", limit],
         ["before-message-id", beforeMessageId],
         ["after-message-id", afterMessageId],
