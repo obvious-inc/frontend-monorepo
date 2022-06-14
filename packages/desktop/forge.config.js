@@ -1,4 +1,7 @@
+const fs = require("fs");
 const bundler = require("./electron-forge-bundler.js");
+
+const DEFAULT_DEV_APP_URL = "http://localhost:8080";
 
 module.exports = {
   packagerConfig: {
@@ -23,12 +26,13 @@ module.exports = {
     },
   ],
   hooks: {
+    generateAssets: async () => {
+      const APP_URL = process.env.APP_URL ?? DEFAULT_DEV_APP_URL;
+      fs.writeFileSync("./build-constants.json", JSON.stringify({ APP_URL }));
+    },
     // this is a workaround until we find a proper solution
     // for running electron-forge in a mono repository
-    packageAfterCopy: async (
-      /** @type {any} */ forgeConfig,
-      /** @type {string} */ buildPath
-    ) => {
+    packageAfterCopy: async (_, buildPath) => {
       await bundler.bundle(__dirname, buildPath);
     },
   },

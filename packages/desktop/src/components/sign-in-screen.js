@@ -1,15 +1,12 @@
 import React from "react";
 import { useSearchParams } from "react-router-dom";
 import { css } from "@emotion/react";
-import { TITLE_BAR_HEIGHT } from "../constants/ui";
 import { useAuth } from "@shades/common";
 import * as eth from "../utils/ethereum";
 import useWallet from "../hooks/wallet";
 import useWalletLogin from "../hooks/wallet-login";
 import * as Tooltip from "../components/tooltip";
 import Spinner from "../components/spinner";
-
-const isNative = window.Native != null;
 
 const SignInScreen = () => {
   const {
@@ -55,9 +52,7 @@ const SignInScreen = () => {
           min-width: 0;
         }
       `}
-      style={{
-        height: isNative ? `calc(100% - ${TITLE_BAR_HEIGHT})` : "100%",
-      }}
+      style={{ height: "100%" }}
     >
       {accountAddress == null && isConnecting ? (
         <div>

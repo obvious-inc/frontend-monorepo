@@ -108,7 +108,7 @@ const SideMenuLayout = ({ title, filterable, sidebarContent, children }) => {
           </div>
           <div
             css={css`
-              padding: ${isNative ? "1.5rem 1rem 2rem" : "0 1rem 2rem"};
+              padding: 0 1rem 2rem;
               overflow: auto;
               overscroll-behavior-y: contain;
               flex: 1;
