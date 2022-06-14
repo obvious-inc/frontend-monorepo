@@ -1,5 +1,5 @@
 const path = require("path");
-const { app, BrowserWindow, dialog } = require("electron");
+const { app, BrowserWindow, dialog, shell } = require("electron");
 const { APP_URL } = require("../build-constants.json");
 
 // Handle creating/removing shortcuts on Windows when installing/uninstalling.
@@ -15,8 +15,9 @@ if (require("electron-squirrel-startup")) {
 // });
 
 app.on("web-contents-created", (_, contents) => {
-  contents.setWindowOpenHandler(() => {
-    return { action: "allow" };
+  contents.setWindowOpenHandler(({ url }) => {
+    shell.openExternal(url);
+    return { action: "deny" };
   });
 });
 
