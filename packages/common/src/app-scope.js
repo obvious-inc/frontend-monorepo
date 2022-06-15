@@ -281,17 +281,28 @@ export const Provider = ({ children }) => {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(message),
-      }).then((message) => {
-        dispatch({
-          type: "message-create-request-successful",
-          message,
-          optimisticEntryId: dummyId,
-        });
-        markChannelRead(message.channel, {
-          readAt: new Date(message.created_at),
-        });
-        return message;
-      });
+      }).then(
+        (message) => {
+          dispatch({
+            type: "message-create-request-successful",
+            message,
+            optimisticEntryId: dummyId,
+          });
+          markChannelRead(message.channel, {
+            readAt: new Date(message.created_at),
+          });
+          return message;
+        },
+        (error) => {
+          dispatch({
+            type: "message-create-request-failed",
+            error,
+            channelId: channel,
+            optimisticEntryId: dummyId,
+          });
+          return Promise.reject(error);
+        }
+      );
     }
   );
 

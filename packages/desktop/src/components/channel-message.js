@@ -270,11 +270,16 @@ const ChannelMessage = React.memo(function ChannelMessage_({
           ? "0.5rem 1.6rem"
           : "0.7rem 1.6rem 0.3rem",
       }}
-      css={css({
-        position: "relative",
-        lineHeight: 1.46668,
-        userSelect: "text",
-      })}
+      css={(theme) =>
+        css({
+          color: message.isOptimistic
+            ? theme.colors.textMuted
+            : theme.colors.textNormal,
+          position: "relative",
+          lineHeight: 1.46668,
+          userSelect: "text",
+        })
+      }
       {...(giveTouchFocus == null
         ? hoverHandlers
         : {
@@ -283,28 +288,30 @@ const ChannelMessage = React.memo(function ChannelMessage_({
             },
           })}
     >
-      <div
-        css={css({
-          position: "absolute",
-          top: 0,
-          right: "1.6rem",
-          transform: "translateY(-50%)",
-          zIndex: 1,
-        })}
-        style={{ display: showAsFocused ? "block" : "none" }}
-      >
-        <MessageToolbar
-          allowReplies={!isOwnMessage && !message.isSystemMessage}
-          allowEdit={allowEdit}
-          initReply={initReply}
-          initEdit={initEdit}
-          addReaction={addReaction}
-          onDropdownOpenChange={onDropdownOpenChange}
-          isEmojiPickerOpen={isEmojiPickerOpen}
-          onEmojiPickerOpenChange={onEmojiPickerOpenChange}
-          dropdownItems={toolbarDropdownItems}
-        />
-      </div>
+      {!message.isOptimistic && (
+        <div
+          css={css({
+            position: "absolute",
+            top: 0,
+            right: "1.6rem",
+            transform: "translateY(-50%)",
+            zIndex: 1,
+          })}
+          style={{ display: showAsFocused ? "block" : "none" }}
+        >
+          <MessageToolbar
+            allowReplies={!isOwnMessage && !message.isSystemMessage}
+            allowEdit={allowEdit}
+            initReply={initReply}
+            initEdit={initEdit}
+            addReaction={addReaction}
+            onDropdownOpenChange={onDropdownOpenChange}
+            isEmojiPickerOpen={isEmojiPickerOpen}
+            onEmojiPickerOpenChange={onEmojiPickerOpenChange}
+            dropdownItems={toolbarDropdownItems}
+          />
+        </div>
+      )}
 
       {message.isSystemMessage ? (
         <SystemMessage

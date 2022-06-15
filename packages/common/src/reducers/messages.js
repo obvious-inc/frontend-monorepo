@@ -63,8 +63,13 @@ const entriesById = (state = {}, action) => {
       return {
         // Remove the optimistic entry
         ...omitKey(action.optimisticEntryId, state),
-        [action.message.id]: { ...action.message, wasOptimistic: true },
+        [action.message.id]: action.message,
       };
+
+    case "message-create-request-failed":
+      // Remove the optimistic entry
+      return omitKey(action.optimisticEntryId, state);
+
     case "message-update-request-successful":
       return {
         ...state,
@@ -200,6 +205,18 @@ const entryIdsByChannelId = (state = {}, action) => {
       };
     }
 
+    case "message-create-request-failed": {
+      const channelId = action.channelId;
+      const channelMessageIds = state[channelId] ?? [];
+      return {
+        ...state,
+        // Remove the optimistic entry
+        [channelId]: channelMessageIds.filter(
+          (id) => id !== action.optimisticEntryId
+        ),
+      };
+    }
+
     case "server-event:message-removed":
       return mapValues(
         (messageIds) =>
@@ -287,6 +304,7 @@ export const selectMessage = createSelector(
       type,
       isSystemMessage: systemMessageTypes.includes(type),
       isAppMessage: appMessageTypes.includes(type),
+      isOptimistic: message.isOptimistic,
       author,
       content:
         message.blocks?.length > 0
