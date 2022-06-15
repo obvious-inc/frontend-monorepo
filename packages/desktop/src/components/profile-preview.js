@@ -30,12 +30,7 @@ const ProfilePreview = React.forwardRef(
         return;
       }
 
-      actions
-        .createChannel({
-          kind: "dm",
-          memberUserIds: [userId],
-        })
-        .then(redirect);
+      actions.createDmChannel({ memberUserIds: [userId] }).then(redirect);
     };
 
     const copyWalletAddress = () => {

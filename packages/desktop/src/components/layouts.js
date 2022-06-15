@@ -28,6 +28,7 @@ export const HomeLayout = () => {
     [starredChannels]
   );
 
+  const topicChannels = channelsByKind.topic ?? [];
   const dmChannels = channelsByKind.dm ?? [];
 
   const serverChannelsByServerName = React.useMemo(
@@ -84,6 +85,22 @@ export const HomeLayout = () => {
                   )}
                 />
               )}
+            </>
+          )}
+
+          {topicChannels.length !== 0 && (
+            <>
+              <div style={{ height: "1.5rem" }} />
+              {topicChannels.map((c) => (
+                <DmChannelItem
+                  key={c.id}
+                  name={c.name}
+                  link={`/me/${c.id}`}
+                  hasUnread={state.selectChannelHasUnread(c.id)}
+                  notificationCount={state.selectChannelMentionCount(c.id)}
+                  memberUserIds={c.memberUserIds}
+                />
+              ))}
             </>
           )}
 
@@ -185,10 +202,8 @@ export const ServerLayout = () => {
                         run: () => {
                           const name = prompt("Create channel", "My channel");
                           if (name == null) return;
-                          actions.createChannel({
+                          actions.createServerChannel(params.serverId, {
                             name,
-                            kind: "server",
-                            serverId: params.serverId,
                           });
                         },
                       }

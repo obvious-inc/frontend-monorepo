@@ -1223,6 +1223,24 @@ const Channel = ({ noSideMenu }) => {
             </div>
           )}
           <Heading>{channel?.name}</Heading>
+          {channel.description != null && (
+            <div
+              css={(theme) =>
+                css({
+                  color: theme.colors.textHeaderSecondary,
+                  marginLeft: "1.5rem",
+                  paddingLeft: "1.5rem",
+                  borderLeft: "1px solid",
+                  borderColor: "hsl(0 0% 100% / 20%)",
+                  whiteSpace: "nowrap",
+                  overflow: "hidden",
+                  textOverflow: "ellipsis",
+                })
+              }
+            >
+              {channel.description}
+            </div>
+          )}
         </>
       ),
     [isMenuTogglingEnabled, channel]

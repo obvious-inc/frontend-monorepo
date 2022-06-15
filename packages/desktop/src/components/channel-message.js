@@ -133,10 +133,7 @@ const ChannelMessage = React.memo(function ChannelMessage_({
     }
 
     actions
-      .createChannel({
-        kind: "dm",
-        memberUserIds: [message.authorUserId],
-      })
+      .createDmChannel({ memberUserIds: [message.authorUserId] })
       .then(redirect);
   }, [actions, navigate, state, message.authorUserId]);
 

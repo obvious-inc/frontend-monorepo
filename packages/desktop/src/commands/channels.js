@@ -1,3 +1,5 @@
+import { getChecksumAddress } from "../utils/ethereum";
+
 const commands = {
   "create-channel": ({
     context,
@@ -15,11 +17,7 @@ const commands = {
         alert('"name" is a required argument!');
         return;
       }
-      const channel = await actions.createChannel({
-        name,
-        kind: "server",
-        serverId,
-      });
+      const channel = await actions.createServerChannel(serverId, { name });
       editor.clear();
       navigate(`/channels/${serverId}/${channel.id}`);
     },
@@ -194,6 +192,31 @@ const commands = {
     exclude: () => {
       const channels = state.selectStarredChannels();
       return channels.every((c) => c.id !== channelId);
+    },
+  }),
+  "add-member": ({ state, actions, channelId, user, ethersProvider }) => ({
+    description: "Add a member to this channel",
+    arguments: ["wallet-address-or-ens"],
+    execute: async ({ args, editor }) => {
+      const [walletAddressOrEns] = args;
+      if (walletAddressOrEns == null) {
+        alert("Please type a");
+      }
+      try {
+        const address = await ethersProvider
+          .resolveName(walletAddressOrEns)
+          .then(getChecksumAddress);
+
+        await actions.addMemberToChannel(channelId, address);
+        editor.clear();
+      } catch (e) {
+        if (e.code === "INVALID_ARGUMENT") throw new Error("Invalid address");
+        throw e;
+      }
+    },
+    exclude: () => {
+      const channel = state.selectChannel(channelId);
+      return channel.kind !== "topic" || channel.ownerUserId !== user.id;
     },
   }),
 };

@@ -167,7 +167,7 @@ export const selectServerMembers = createSelector(
 
 export const selectServerMemberWithUserId = createSelector(
   (state, serverId, userId) => {
-    const userMemberIds = state.serverMembers.memberIdsByUserId[userId];
+    const userMemberIds = state.serverMembers.memberIdsByUserId[userId] ?? [];
     const userServerMembers = userMemberIds.map((memberId) =>
       selectServerMember(state, memberId)
     );

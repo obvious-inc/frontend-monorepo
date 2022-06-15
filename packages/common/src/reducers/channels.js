@@ -27,14 +27,16 @@ const entriesById = (state = {}, action) => {
           const properties = {
             id,
             name: channel.name,
-            kind: channel.kind,
-            serverId: channel.serverId,
+            description: channel.description,
+            kind: channel.kind ?? "server",
             createdAt: channel.created_at,
           };
-          if (channel.kind === "dm") {
+          if (["dm", "topic"].includes(channel.kind)) {
             properties.memberUserIds = channel.members;
             properties.ownerUserId = channel.owner;
           }
+          if (properties.kind === "server")
+            properties.serverId = channel.serverId;
           return [id, properties];
         })
       );
@@ -282,7 +284,7 @@ export const selectChannelHasUnread = createSelector(
     if (channelState == null) return false;
 
     const getLastReadTimestamp = () => {
-      if (channelKind === "dm")
+      if (channelKind !== "server")
         return channelState.lastReadAt == null
           ? new Date().getTime()
           : new Date(channelState.lastReadAt).getTime();

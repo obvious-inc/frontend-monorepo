@@ -17,6 +17,9 @@ import Avatar from "./avatar";
 import NotificationBadge from "./notification-badge";
 import * as Tooltip from "./tooltip";
 
+const isBetaSession =
+  process.env.DEV || window.location.search.includes("beta");
+
 const isNative = window.Native != null;
 
 const MainMenu = () => {
@@ -206,24 +209,42 @@ const MainMenu = () => {
 
             <RoundButton
               onClick={() => {
-                if (
-                  process.env.DEV ||
-                  window.location.search.includes("beta")
-                ) {
-                  const name = prompt("Name plz");
-                  actions.createServer({ name }).then((t) => {
-                    navigate(`/channels/${t.id}`);
-                    closeMenu();
-                  });
+                if (!isBetaSession) {
+                  alert("Soon :tm:");
                   return;
                 }
-
-                alert("Soon :tm:");
+                const name = prompt("Name plz");
+                actions.createServer({ name }).then((t) => {
+                  navigate(`/channels/${t.id}`);
+                  closeMenu();
+                });
               }}
               tooltip="Start a new town"
             >
               <PlusIcon style={{ width: "1.7rem" }} />
             </RoundButton>
+
+            {isBetaSession && (
+              <RoundButton
+                onClick={() => {
+                  const name = prompt("Ok what shall we call it?", "😎");
+                  if (name.trim() === "") {
+                    alert("Name is required!");
+                    return;
+                  }
+                  const description = prompt(
+                    "...and a short description perhaps? (optional)"
+                  );
+                  actions.createChannel({ name, description }).then((c) => {
+                    navigate(`/channels/${c.id}`);
+                    closeMenu();
+                  });
+                }}
+                tooltip="Start a new topic"
+              >
+                <PlusIcon style={{ width: "1.7rem" }} />
+              </RoundButton>
+            )}
           </div>
         </div>
       </div>

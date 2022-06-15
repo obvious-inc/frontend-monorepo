@@ -30,8 +30,7 @@ const commands = {
 
         const channel =
           joinedChannel ??
-          (await actions.createChannel({
-            kind: "dm",
+          (await actions.createDmChannel({
             memberWalletAddresses: checksumAddresses,
           }));
         editor.clear();
