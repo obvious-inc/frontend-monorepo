@@ -380,7 +380,7 @@ const ChannelMessage = React.memo(function ChannelMessage_({
               </div>
             ) : (
               <div css={css({ padding: "0.2rem 0 0" })}>
-                <Popover.Root>
+                <Popover.Root modal>
                   <Popover.Trigger asChild>
                     <button
                       css={css({

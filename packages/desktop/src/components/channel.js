@@ -6,7 +6,9 @@ import {
   useAppScope,
   useLatestCallback,
   getImageFileDimensions,
+  arrayUtils,
 } from "@shades/common";
+import * as eth from "../utils/ethereum";
 import useGlobalMediaQueries from "../hooks/global-media-queries";
 import useWindowFocusListener from "../hooks/window-focus-listener";
 import useOnlineListener from "../hooks/window-online-listener";
@@ -16,6 +18,9 @@ import useCommands from "../hooks/commands";
 import MessageInput from "./message-input";
 import Spinner from "./spinner";
 import ChannelMessage from "./channel-message";
+import Avatar from "./avatar";
+import * as Tooltip from "./tooltip";
+import * as Dialog from "./dialog";
 import { Hash as HashIcon, AtSign as AtSignIcon } from "./icons";
 import {
   HamburgerMenu as HamburgerMenuIcon,
@@ -26,6 +31,8 @@ import useSideMenu from "../hooks/side-menu";
 import useIsOnScreen from "../hooks/is-on-screen";
 import useScrollListener from "../hooks/scroll-listener";
 import useMutationObserver from "../hooks/mutation-observer";
+
+const { sort } = arrayUtils;
 
 const isNative = window.Native != null;
 
@@ -1241,9 +1248,22 @@ const Channel = ({ noSideMenu }) => {
               {channel.description}
             </div>
           )}
+
+          <div style={{ flex: 1 }} />
+
+          <Dialog.Root>
+            <Dialog.Trigger asChild>
+              <MembersDisplayButton members={members} />
+            </Dialog.Trigger>
+            <Dialog.Portal>
+              <Dialog.Overlay>
+                <MembersDirectoryDialog members={members} />
+              </Dialog.Overlay>
+            </Dialog.Portal>
+          </Dialog.Root>
         </>
       ),
-    [isMenuTogglingEnabled, channel]
+    [isMenuTogglingEnabled, channel, members]
   );
 
   if (channel == null)
@@ -1332,6 +1352,305 @@ export const Header = ({ noSideMenu, children }) => {
       )}
       {children}
     </div>
+  );
+};
+const compareMembersByOnlineStatusAndDisplayName = (m1, m2) => {
+  if (m1.onlineStatus !== m2.onlineStatus)
+    return m1.onlineStatus === "online" ? -1 : 1;
+
+  const [name1, name2] = [m1, m2].map((m) => m.displayName.toLowerCase());
+
+  if (name1 < name2) return -1;
+  if (name1 > name2) return 1;
+  return 0;
+};
+
+const MembersDisplayButton = React.forwardRef(({ onClick, members }, ref) => {
+  const sortedMembers = React.useMemo(
+    () => sort(compareMembersByOnlineStatusAndDisplayName, members),
+    [members]
+  );
+
+  const memberCount = members.length;
+  const onlineMemberCount = members.filter(
+    (m) => m.onlineStatus === "online"
+  ).length;
+
+  const membersToDisplay = sortedMembers.slice(0, 3);
+
+  return (
+    <Tooltip.Root>
+      <Tooltip.Trigger asChild>
+        <button
+          ref={ref}
+          onClick={onClick}
+          css={css({
+            display: "flex",
+            alignItems: "center",
+            padding: "0.4rem",
+            borderRadius: "0.4rem",
+            boxShadow: "0 0 0 0.1rem hsl(0 0% 100% / 18%)",
+            cursor: "pointer",
+            ":hover": {
+              background: "hsl(0 0% 100% / 3%)",
+              boxShadow: "0 0 0 0.1rem hsl(0 0% 100% / 25%)",
+            },
+          })}
+        >
+          {membersToDisplay.map((user, i) => (
+            <Avatar
+              key={user.id}
+              url={user?.profilePicture.small}
+              walletAddress={user?.walletAddress}
+              size="2rem"
+              pixelSize={20}
+              borderRadius="0.2rem"
+              css={(theme) =>
+                css({
+                  marginLeft: i === 0 ? 0 : "-0.4rem",
+                  boxShadow: `0 0 0 0.2rem ${theme.colors.backgroundPrimary}`,
+                  position: "relative",
+                  zIndex: `calc(${i} * -1)`,
+                })
+              }
+            />
+          ))}
+
+          <div
+            css={(theme) =>
+              css({
+                marginLeft: "0.3rem",
+                padding: "0 0.4rem",
+                fontSize: theme.fontSizes.small,
+                color: theme.colors.textHeaderSecondary,
+              })
+            }
+          >
+            {members.length}
+          </div>
+        </button>
+      </Tooltip.Trigger>
+      <Tooltip.Content sideOffset={5}>
+        View all members of this channel
+        <div css={(theme) => css({ color: theme.colors.textMuted })}>
+          {onlineMemberCount === memberCount
+            ? "All members online"
+            : `${onlineMemberCount} ${
+                onlineMemberCount === 1 ? "member" : "members"
+              } online`}
+        </div>
+      </Tooltip.Content>
+    </Tooltip.Root>
+  );
+});
+
+const MembersDirectoryDialog = ({ members }) => {
+  const [query, setQuery] = React.useState("");
+
+  const filteredMembers = React.useMemo(() => {
+    if (query.trim() === "")
+      return sort(compareMembersByOnlineStatusAndDisplayName, members);
+
+    const q = query.trim().toLowerCase();
+    const getSearchTokens = (m) => [m.displayName, m.walletAddress];
+
+    const unorderedFilteredMembers = members.filter((member) =>
+      getSearchTokens(member).some((t) => t.toLowerCase().includes(q))
+    );
+
+    const orderedFilteredMembers = sort((m1, m2) => {
+      const [i1, i2] = [m1, m2].map((m) =>
+        Math.min(
+          ...getSearchTokens(m)
+            .map((t) => t.indexOf(q))
+            .filter((index) => index !== -1)
+        )
+      );
+
+      if (i1 < i2) return -1;
+      if (i1 > i2) return 1;
+      return 0;
+    }, unorderedFilteredMembers);
+
+    return orderedFilteredMembers;
+  }, [members, query]);
+
+  const memberCount = members.length;
+  const onlineMemberCount = members.filter(
+    (m) => m.onlineStatus === "online"
+  ).length;
+
+  return (
+    <Dialog.Content css={css({ display: "flex", flexDirection: "column" })}>
+      <div css={css({ padding: "2rem 2rem 0" })}>
+        <div
+          css={css({
+            display: "grid",
+            gridTemplateColumns: "auto auto",
+            gridGap: "1rem",
+            alignItems: "flex-end",
+            justifyContent: "flex-start",
+            margin: "0 0 1.5rem",
+          })}
+        >
+          <h1
+            css={(theme) =>
+              css({ fontSize: theme.fontSizes.large, lineHeight: "1.2" })
+            }
+          >
+            Members
+          </h1>
+          <div
+            css={(theme) =>
+              css({
+                color: theme.colors.textMuted,
+                fontSize: theme.fontSizes.small,
+              })
+            }
+          >
+            {onlineMemberCount === 0 ? (
+              memberCount
+            ) : (
+              <>
+                {onlineMemberCount} of {memberCount} online
+              </>
+            )}
+          </div>
+          {/* <Dialog.Close */}
+          {/*   css={css({ */}
+          {/*     padding: "0.8rem", */}
+          {/*     display: "block", */}
+          {/*     margin: "0 auto", */}
+          {/*   })} */}
+          {/* > */}
+          {/*   close */}
+          {/* </Dialog.Close> */}
+        </div>
+        <input
+          value={query}
+          onChange={(e) => {
+            setQuery(e.target.value);
+          }}
+          placeholder="Find members"
+          css={(theme) =>
+            css({
+              position: "relative",
+              color: "white",
+              background: theme.colors.backgroundSecondary,
+              fontSize: "1.5rem",
+              fontWeight: "400",
+              borderRadius: "0.3rem",
+              padding: "0.5rem 0.7rem",
+              width: "100%",
+              outline: "none",
+              border: 0,
+              "&:focus": {
+                boxShadow: `0 0 0 0.2rem ${theme.colors.primary}`,
+              },
+              // Prevents iOS zooming in on input fields
+              "@supports (-webkit-touch-callout: none)": {
+                fontSize: "1.6rem",
+              },
+            })
+          }
+        />
+      </div>
+      <div css={css({ flex: 1, overflow: "auto", padding: "1.3rem 0" })}>
+        <ul>
+          {filteredMembers.map((member, i) => {
+            const truncatedAddress = eth.truncateAddress(member.walletAddress);
+            return (
+              <li key={member.id}>
+                <button
+                  key={`${member.id}-${i}`}
+                  css={(theme) =>
+                    css({
+                      width: "100%",
+                      display: "grid",
+                      gridTemplateColumns: "auto minmax(0,1fr)",
+                      gridGap: "1.5rem",
+                      alignItems: "center",
+                      lineHeight: "1.4",
+                      padding: "0.7rem 2rem",
+                      ":not(:first-of-type)": {
+                        marginTop: "0.1rem",
+                      },
+                      ":hover": {
+                        background: theme.colors.backgroundModifierSelected,
+                      },
+                      cursor: "pointer",
+                    })
+                  }
+                  onClick={() => {
+                    alert(
+                      "Close your eyes and imagine a beautiful profile dialog/popover appearing"
+                    );
+                  }}
+                >
+                  <Avatar
+                    url={member.profilePicture.small}
+                    walletAddress={member.walletAddress}
+                    size="3.6rem"
+                    pixelSize={36}
+                    borderRadius="0.3rem"
+                  />
+                  <div>
+                    <div>
+                      {member.displayName}
+                      {member.onlineStatus === "online" && (
+                        <Tooltip.Root>
+                          <Tooltip.Trigger asChild>
+                            <div
+                              css={css({
+                                display: "inline-flex",
+                                padding: "0.5rem 0.2rem",
+                                marginLeft: "0.7rem",
+                                position: "relative",
+                                top: "-1px",
+                              })}
+                            >
+                              <div
+                                css={(theme) =>
+                                  css({
+                                    width: "0.7rem",
+                                    height: "0.7rem",
+                                    borderRadius: "50%",
+                                    background: theme.colors.onlineIndicator,
+                                  })
+                                }
+                              />
+                            </div>
+                          </Tooltip.Trigger>
+                          <Tooltip.Content
+                            side="top"
+                            align="center"
+                            sideOffset={6}
+                          >
+                            User online
+                          </Tooltip.Content>
+                        </Tooltip.Root>
+                      )}
+                    </div>
+                    {member.displayName !== truncatedAddress && (
+                      <div
+                        css={(theme) =>
+                          css({
+                            fontSize: theme.fontSizes.small,
+                            color: theme.colors.textMuted,
+                          })
+                        }
+                      >
+                        {truncatedAddress}
+                      </div>
+                    )}
+                  </div>
+                </button>
+              </li>
+            );
+          })}
+        </ul>
+      </div>
+    </Dialog.Content>
   );
 };
 

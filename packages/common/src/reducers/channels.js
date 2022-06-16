@@ -10,6 +10,22 @@ import {
   selectServerMemberWithUserId,
 } from "./server-members";
 
+const parseChannel = (channel) => {
+  const properties = {
+    id: channel.id,
+    name: channel.name,
+    description: channel.description,
+    kind: channel.kind ?? "server",
+    createdAt: channel.created_at,
+  };
+  if (["dm", "topic"].includes(channel.kind)) {
+    properties.memberUserIds = channel.members;
+    properties.ownerUserId = channel.owner;
+  }
+  if (properties.kind === "server") properties.serverId = channel.serverId;
+  return properties;
+};
+
 const entriesById = (state = {}, action) => {
   switch (action.type) {
     case "initial-data-request-successful": {
@@ -23,22 +39,10 @@ const entriesById = (state = {}, action) => {
       const channelsById = indexBy((c) => c.id, allChannels);
 
       const entriesById = Object.fromEntries(
-        Object.entries(channelsById).map(([id, channel]) => {
-          const properties = {
-            id,
-            name: channel.name,
-            description: channel.description,
-            kind: channel.kind ?? "server",
-            createdAt: channel.created_at,
-          };
-          if (["dm", "topic"].includes(channel.kind)) {
-            properties.memberUserIds = channel.members;
-            properties.ownerUserId = channel.owner;
-          }
-          if (properties.kind === "server")
-            properties.serverId = channel.serverId;
-          return [id, properties];
-        })
+        Object.entries(channelsById).map(([id, channel]) => [
+          id,
+          parseChannel(channel),
+        ])
       );
 
       return {
@@ -51,7 +55,10 @@ const entriesById = (state = {}, action) => {
       const existingChannelData = state[action.channel.id];
       return {
         ...state,
-        [action.channel.id]: { ...existingChannelData, ...action.channel },
+        [action.channel.id]: {
+          ...existingChannelData,
+          ...parseChannel(action.channel),
+        },
       };
     }
 
@@ -278,7 +285,9 @@ export const selectChannelHasUnread = createSelector(
   (state, channelId) => {
     const channel = state.channels.entriesById[channelId];
     if (channel == null) return null;
-    return selectServerMemberWithUserId(state, channel.serverId, state.user.id);
+    return state.user == null
+      ? null
+      : selectServerMemberWithUserId(state, channel.serverId, state.user.id);
   },
   (channelState, channelKind, loggedInServerMember) => {
     if (channelState == null) return false;
@@ -289,9 +298,10 @@ export const selectChannelHasUnread = createSelector(
           ? new Date().getTime()
           : new Date(channelState.lastReadAt).getTime();
 
-      const serverJoinTimestamp = new Date(
-        loggedInServerMember.joinedAt
-      ).getTime();
+      const serverJoinTimestamp =
+        loggedInServerMember == null
+          ? null
+          : new Date(loggedInServerMember.joinedAt).getTime();
 
       return channelState.lastReadAt == null
         ? serverJoinTimestamp
@@ -299,6 +309,8 @@ export const selectChannelHasUnread = createSelector(
     };
 
     const lastReadTimestamp = getLastReadTimestamp();
+
+    if (lastReadTimestamp == null) return false;
 
     const lastMessageTimestamp = new Date(channelState.lastMessageAt).getTime();
 

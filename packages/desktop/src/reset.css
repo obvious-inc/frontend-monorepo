@@ -64,6 +64,12 @@ button {
   border: 0;
   background: none;
   text-align: left;
+  color: inherit;
+}
+
+ul {
+  padding: 0;
+  margin: 0;
 }
 
 /* Remove all animations and transitions for people that prefer not to see them */
