@@ -1257,7 +1257,14 @@ const Channel = ({ noSideMenu }) => {
               <MembersDisplayButton members={members} />
             </Dialog.Trigger>
             <Dialog.Portal>
-              <Dialog.Overlay>
+              <Dialog.Overlay
+                css={css({
+                  padding: "2.8rem 1.5rem",
+                  "@media (min-width: 600px)": {
+                    padding: "2.8rem",
+                  },
+                })}
+              >
                 <MembersDirectoryDialog members={members} />
               </Dialog.Overlay>
             </Dialog.Portal>
@@ -1483,7 +1490,14 @@ const MembersDirectoryDialog = ({ members }) => {
 
   return (
     <Dialog.Content css={css({ display: "flex", flexDirection: "column" })}>
-      <div css={css({ padding: "2rem 2rem 0" })}>
+      <div
+        css={css({
+          padding: "1.5rem 1.5rem 0",
+          "@media (min-width: 600px)": {
+            padding: "2rem 2rem 0",
+          },
+        })}
+      >
         <div
           css={css({
             display: "grid",
@@ -1569,10 +1583,10 @@ const MembersDirectoryDialog = ({ members }) => {
                       width: "100%",
                       display: "grid",
                       gridTemplateColumns: "auto minmax(0,1fr)",
-                      gridGap: "1.5rem",
+                      gridGap: "1rem",
                       alignItems: "center",
                       lineHeight: "1.4",
-                      padding: "0.7rem 2rem",
+                      padding: "0.5rem 1.5rem",
                       ":not(:first-of-type)": {
                         marginTop: "0.1rem",
                       },
@@ -1580,6 +1594,10 @@ const MembersDirectoryDialog = ({ members }) => {
                         background: theme.colors.backgroundModifierSelected,
                       },
                       cursor: "pointer",
+                      "@media (min-width: 600px)": {
+                        gridGap: "1.5rem",
+                        padding: "0.7rem 2rem",
+                      },
                     })
                   }
                   onClick={() => {
