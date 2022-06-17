@@ -1368,6 +1368,13 @@ const compareMembersByOnlineStatusAndDisplayName = (m1, m2) => {
 
   const [name1, name2] = [m1, m2].map((m) => m.displayName.toLowerCase());
 
+  const [name1IsAddress, name2IsAddress] = [name1, name2].map(
+    (n) => n.startsWith("0x") && n.includes("...")
+  );
+
+  if (!name1IsAddress && name2IsAddress) return -1;
+  if (name1IsAddress && !name2IsAddress) return 1;
+
   if (name1 < name2) return -1;
   if (name1 > name2) return 1;
   return 0;
@@ -1572,12 +1579,11 @@ const MembersDirectoryDialog = ({ members }) => {
       </div>
       <div css={css({ flex: 1, overflow: "auto", padding: "1.3rem 0" })}>
         <ul>
-          {filteredMembers.map((member, i) => {
+          {filteredMembers.map((member) => {
             const truncatedAddress = eth.truncateAddress(member.walletAddress);
             return (
-              <li key={member.id}>
+              <li key={member.id} css={css({ display: "block" })}>
                 <button
-                  key={`${member.id}-${i}`}
                   css={(theme) =>
                     css({
                       width: "100%",
