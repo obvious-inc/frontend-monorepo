@@ -88,11 +88,14 @@ const MessageInput = React.forwardRef(
     const filteredEmojiOptions = React.useMemo(() => {
       if (autoCompleteMode !== "emojis") return [];
 
-      const lowerCaseQuery = emojiQuery?.toLowerCase() ?? null;
+      const lowerCaseQuery = emojiQuery?.toLowerCase().trim() ?? null;
 
       const unorderedFilteredEmojis = emojis.filter(
-        (emoji) =>
-          lowerCaseQuery != null && emoji.aliases[0].includes(lowerCaseQuery)
+        (e) =>
+          lowerCaseQuery != null &&
+          [e.description.toLowerCase(), ...e.aliases, ...e.tags].some((prop) =>
+            prop.includes(lowerCaseQuery)
+          )
       );
 
       const orderedFilteredEmojis = sort((o1, o2) => {
