@@ -35,7 +35,7 @@ export const Content = React.forwardRef((props, ref) => (
       css({
         width: "100%",
         maxWidth: "62rem",
-        height: "min(90vh, 82rem)",
+        height: "min(calc(100% - 3rem), 82rem)",
         background: theme.colors.backgroundPrimary,
         borderRadius: "0.4rem",
         boxShadow:
