@@ -61,6 +61,7 @@ const Avatar = React.forwardRef(
       <img
         ref={ref}
         src={url ?? avatarDataUrl}
+        loading="lazy"
         css={(theme) =>
           css({
             borderRadius,
