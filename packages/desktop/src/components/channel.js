@@ -852,6 +852,7 @@ const NewMessageInput = React.memo(
           onSubmit={(e) => {
             e.preventDefault();
             executeMessage();
+            editorRef.current.focus();
           }}
           css={(theme) =>
             css({
