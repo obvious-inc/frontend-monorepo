@@ -34,7 +34,7 @@ const commands = {
             memberWalletAddresses: checksumAddresses,
           }));
         editor.clear();
-        navigate(`/dms/${channel.id}`);
+        navigate(`/channels/${channel.id}`);
       } catch (e) {
         if (e.code === "INVALID_ARGUMENT") throw new Error("Invalid address");
         throw e;
@@ -75,7 +75,13 @@ const commands = {
       return server?.ownerUserId !== user.id;
     },
   }),
-  "set-system-messages-channel": ({ user, state, actions, serverId }) => ({
+  "set-system-messages-channel": ({
+    user,
+    state,
+    actions,
+    context,
+    serverId,
+  }) => ({
     description:
       'Configure a channel for receiving system messages, e.g. "John Doe has joined!"',
     arguments: ["channel-name"],
@@ -103,6 +109,7 @@ const commands = {
       editor.clear();
     },
     exclude: () => {
+      if (context !== "server-channel") return true;
       const server = state.selectServer(serverId);
       return server?.ownerUserId !== user.id;
     },

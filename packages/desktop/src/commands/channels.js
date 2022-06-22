@@ -17,9 +17,13 @@ const commands = {
         alert('"name" is a required argument!');
         return;
       }
-      const channel = await actions.createServerChannel(serverId, { name });
-      editor.clear();
-      navigate(`/channels/${serverId}/${channel.id}`);
+
+      if (context === "server-channel") {
+        const channel = await actions.createServerChannel(serverId, { name });
+        editor.clear();
+        navigate(`/channels/${serverId}/${channel.id}`);
+        return;
+      }
     },
     exclude: () => {
       if (context != "server-channel") return true;
@@ -47,7 +51,7 @@ const commands = {
       editor.clear();
     },
     exclude: () => {
-      if (context === "dm") {
+      if (context !== "server-channel") {
         const channel = state.selectChannel(channelId);
         return user.id !== channel.ownerUserId;
       }
@@ -73,7 +77,7 @@ const commands = {
       navigate(`/channels/${serverId}`);
     },
     exclude: () => {
-      if (context === "dm") {
+      if (context !== "server-channel") {
         const channel = state.selectChannel(channelId);
         return user.id !== channel.ownerUserId;
       }
@@ -105,7 +109,7 @@ const commands = {
     exclude: () => {
       if (!location.search.includes("root")) return true;
 
-      if (context === "dm") {
+      if (context !== "server-channel") {
         const channel = state.selectChannel(channelId);
         return user.id !== channel.ownerUserId;
       }
@@ -199,9 +203,8 @@ const commands = {
     arguments: ["wallet-address-or-ens"],
     execute: async ({ args, editor }) => {
       const [walletAddressOrEns] = args;
-      if (walletAddressOrEns == null) {
-        alert("Please type a");
-      }
+      if (walletAddressOrEns == null) return;
+
       try {
         const address = await ethersProvider
           .resolveName(walletAddressOrEns)

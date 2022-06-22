@@ -31,7 +31,8 @@ const Avatar = React.forwardRef(
       walletAddress,
       size = "2rem",
       pixelSize = 20,
-      borderRadius = "0.3rem",
+      borderRadius,
+      background,
       ...props
     },
     ref
@@ -47,7 +48,7 @@ const Avatar = React.forwardRef(
           ref={ref}
           css={(theme) =>
             css({
-              borderRadius,
+              borderRadius: borderRadius ?? theme.avatars.borderRadius,
               background: theme.colors.backgroundSecondary,
               height: size,
               width: size,
@@ -64,13 +65,14 @@ const Avatar = React.forwardRef(
         loading="lazy"
         css={(theme) =>
           css({
-            borderRadius,
+            borderRadius: borderRadius ?? theme.avatars.borderRadius,
             background: theme.colors.backgroundSecondary,
             height: size,
             width: size,
             objectFit: "cover",
           })
         }
+        style={{ background }}
         {...props}
       />
     );

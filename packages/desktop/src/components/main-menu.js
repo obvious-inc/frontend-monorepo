@@ -3,13 +3,14 @@ import {
   useParams,
   useLocation,
   useNavigate,
+  useMatch,
   Link,
 } from "react-router-dom";
 import { css } from "@emotion/react";
 import { useAppScope, useAuth, useLatestCallback } from "@shades/common";
 import useSideMenu from "../hooks/side-menu";
 import {
-  Home as HomeIcon,
+  Star as StarIcon,
   ChatBubbles as ChatBubblesIcon,
   Plus as PlusIcon,
 } from "./icons";
@@ -28,6 +29,7 @@ const MainMenu = () => {
   const { state, actions } = useAppScope();
   const { user } = useAuth();
   const location = useLocation();
+  const channelsMatch = useMatch("/channels/:channelId");
 
   const { isFloating: isFloatingMenuEnabled, toggle: toggleMenu } =
     useSideMenu();
@@ -91,6 +93,16 @@ const MainMenu = () => {
         >
           {[
             {
+              to: "/channels",
+              icon: <ChatBubblesIcon style={{ width: "2.2rem" }} />,
+              tooltip: "Channels",
+              component: Link,
+              className:
+                channelsMatch == null && location.pathname !== "/channels"
+                  ? undefined
+                  : "active",
+            },
+            {
               to: "/",
               icon: (
                 <span
@@ -98,7 +110,8 @@ const MainMenu = () => {
                     color: hasUnreadStarredChannels ? "white" : undefined,
                   }}
                 >
-                  <HomeIcon style={{ width: "2.2rem" }} />
+                  {/* <HomeIcon style={{ width: "2.2rem" }} /> */}
+                  <StarIcon style={{ width: "2.2rem" }} />
                 </span>
               ),
               tooltip: "Home",
@@ -108,16 +121,6 @@ const MainMenu = () => {
                 location.pathname.startsWith("/me/")
                   ? "active"
                   : undefined,
-            },
-            {
-              to: dmChannels.length === 0 ? "/dms" : `/dms/${dmChannels[0].id}`,
-              icon: <ChatBubblesIcon style={{ width: "2.2rem" }} />,
-              tooltip: "Direct messages",
-              component: Link,
-              onClick: dmChannels.length === 0 ? closeMenu : undefined,
-              className: location.pathname.startsWith("/dms")
-                ? "active"
-                : undefined,
             },
           ].map(({ icon, ...props }) => (
             <RoundButton key={props.tooltip} component={NavLink} {...props}>
@@ -158,7 +161,7 @@ const MainMenu = () => {
                   key={c.id}
                   component={NavLink}
                   onClick={closeMenu}
-                  to={`/dms/${c.id}`}
+                  to={`/channels/${c.id}`}
                   notificationCount={1} // TODO
                   tooltip={c.name}
                 >
