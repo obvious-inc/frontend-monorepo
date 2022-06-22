@@ -4,11 +4,14 @@ const backgroundTertiary = "#202225";
 
 export const dark = {
   sidebarWidth: "31rem",
-  mainHeaderShadow:
-    "0 1px 0 rgba(4,4,5,0.2),0 1.5px 0 rgba(6,6,7,0.05),0 2px 0 rgba(4,4,5,0.05)",
   avatars: {
     size: 18,
     borderRadius: "0.2rem",
+  },
+  mainHeader: {
+    height: "4.8rem",
+    shadow:
+      "0 1px 0 rgba(4,4,5,0.2),0 1.5px 0 rgba(6,6,7,0.05),0 2px 0 rgba(4,4,5,0.05)",
   },
   mainMenu: {
     itemHorizontalPadding: "0.7rem",
@@ -30,7 +33,6 @@ export const dark = {
     primary: "#007ab3", // BLUE,
     primaryLight: "#2399d0",
     pink: "#e588f8",
-
     textNormal: "#dcddde",
     textMuted: "#bcc3cc7a",
     textDimmed: "#b9bbbe",
@@ -101,10 +103,13 @@ const createV2 = () => {
   return {
     ...dark,
     sidebarWidth: "25rem",
-    mainHeaderShadow: undefined,
     avatars: {
       borderRadius: "50%",
-      size: 19,
+      size: 18,
+    },
+    mainHeader: {
+      height: "4.5rem",
+      shadow: undefined,
     },
     mainMenu: {
       itemHeight: "2.7rem",

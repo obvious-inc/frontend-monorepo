@@ -71,7 +71,7 @@ const SideMenuLayout = ({
           <div
             css={(theme) =>
               css({
-                height: "4.8rem",
+                height: theme.mainHeader.height,
                 padding: filterable ? "0 1rem" : title ? "0 1.6rem" : 0,
                 display: "flex",
                 alignItems: "center",

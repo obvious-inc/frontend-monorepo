@@ -37,6 +37,12 @@ export const Clock = (props) => (
   </svg>
 );
 
+export const DoubleChevronRight = (props) => (
+  <svg viewBox="0 0 14 14" fill="currentColor" {...props}>
+    <path d="M7 12.025L8.225 13.25L14 7.125L8.225 1L7 2.225L11.55 7.125L7 12.025ZM0 12.025L1.225 13.25L7 7.125L1.225 1L8.56743e-07 2.225L4.55 7.125L0 12.025Z" />
+  </svg>
+);
+
 export const Home = (props) => (
   <svg width="22" height="21" viewBox="0 0 22 21" fill="none" {...props}>
     <path

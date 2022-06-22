@@ -1352,11 +1352,11 @@ export const Header = ({ noSideMenu, children }) => {
     <div
       css={(theme) =>
         css({
-          height: "4.8rem",
+          height: theme.mainHeader.height,
           padding: "0 1.6rem",
           display: "flex",
           alignItems: "center",
-          boxShadow: theme.mainHeaderShadow,
+          boxShadow: theme.mainHeader.shadow,
           WebkitAppRegion: isNative ? "drag" : undefined,
         })
       }

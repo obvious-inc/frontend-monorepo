@@ -369,10 +369,9 @@ export const selectDmChannels = createSelector(
 export const selectServerDmChannels = createSelector(
   (state, serverId) => {
     const memberUserIds = selectServerMembers(state, serverId).map((m) => m.id);
-    return selectDmChannels(state).filter((c) => {
-      console.log(c.memberUserIds, memberUserIds);
-      return c.memberUserIds.every((userId) => memberUserIds.includes(userId));
-    });
+    return selectDmChannels(state).filter((c) =>
+      c.memberUserIds.every((userId) => memberUserIds.includes(userId))
+    );
   },
   (channels) => channels,
   { memoizeOptions: { equalityCheck: arrayShallowEquals } }

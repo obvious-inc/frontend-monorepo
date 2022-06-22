@@ -379,7 +379,6 @@ export const UnifiedLayout = () => {
                   })
                 }
               >
-                {/*
                 <div
                   css={css({
                     width: "2.2rem",
@@ -387,6 +386,7 @@ export const UnifiedLayout = () => {
                     display: "flex",
                     alignItems: "center",
                     justifyContent: "center",
+                    marginTop: "1px",
                   })}
                 >
                   <div
@@ -421,18 +421,17 @@ export const UnifiedLayout = () => {
                         walletAddress={user?.walletAddress}
                         size="1.8rem"
                         pixelSize={18}
-                        borderRadius="0.3rem"
+                        // borderRadius="0.3rem"
                       />
                     </div>
                   </div>
                 </div>
-*/}
-                <Avatar
-                  url={user?.profilePicture.small}
-                  walletAddress={user?.walletAddress}
-                  size="3rem"
-                  pixelSize={30}
-                />
+                {/* <Avatar */}
+                {/*   url={user?.profilePicture.small} */}
+                {/*   walletAddress={user?.walletAddress} */}
+                {/*   size="3rem" */}
+                {/*   pixelSize={30} */}
+                {/* /> */}
                 <div>
                   <div
                     css={(theme) =>
@@ -451,20 +450,22 @@ export const UnifiedLayout = () => {
                         color: theme.colors.textMuted,
                         fontSize: theme.fontSizes.small,
                         fontWeight: "400",
-                        lineHeight: "1.2",
+                        lineHeight: "1.2rem",
                       })
                     }
                   >
                     {truncateAddress(user.walletAddress)}
                   </div>
                 </div>
-                <svg
-                  viewBox="-1 -1 9 11"
-                  style={{ width: "0.9rem", height: "auto" }}
-                  css={(theme) => css({ fill: theme.colors.textMuted })}
-                >
-                  <path d="M 3.5 0L 3.98809 -0.569442L 3.5 -0.987808L 3.01191 -0.569442L 3.5 0ZM 3.5 9L 3.01191 9.56944L 3.5 9.98781L 3.98809 9.56944L 3.5 9ZM 0.488094 3.56944L 3.98809 0.569442L 3.01191 -0.569442L -0.488094 2.43056L 0.488094 3.56944ZM 3.01191 0.569442L 6.51191 3.56944L 7.48809 2.43056L 3.98809 -0.569442L 3.01191 0.569442ZM -0.488094 6.56944L 3.01191 9.56944L 3.98809 8.43056L 0.488094 5.43056L -0.488094 6.56944ZM 3.98809 9.56944L 7.48809 6.56944L 6.51191 5.43056L 3.01191 8.43056L 3.98809 9.56944Z" />
-                </svg>
+                <div css={css({ width: "1.2rem", height: "1.2rem" })}>
+                  <svg
+                    viewBox="-1 -1 9 11"
+                    style={{ width: "100%", height: "100%" }}
+                    css={(theme) => css({ fill: theme.colors.textMuted })}
+                  >
+                    <path d="M 3.5 0L 3.98809 -0.569442L 3.5 -0.987808L 3.01191 -0.569442L 3.5 0ZM 3.5 9L 3.01191 9.56944L 3.5 9.98781L 3.98809 9.56944L 3.5 9ZM 0.488094 3.56944L 3.98809 0.569442L 3.01191 -0.569442L -0.488094 2.43056L 0.488094 3.56944ZM 3.01191 0.569442L 6.51191 3.56944L 7.48809 2.43056L 3.98809 -0.569442L 3.01191 0.569442ZM -0.488094 6.56944L 3.01191 9.56944L 3.98809 8.43056L 0.488094 5.43056L -0.488094 6.56944ZM 3.98809 9.56944L 7.48809 6.56944L 6.51191 5.43056L 3.01191 8.43056L 3.98809 9.56944Z" />
+                  </svg>
+                </div>
               </button>
             </DropdownMenu.Trigger>
             <DropdownMenu.Content
@@ -488,7 +489,13 @@ export const UnifiedLayout = () => {
           {params.serverId != null ? (
             <>
               <div style={{ height: "1rem" }} />
-              <div css={css({ padding: "0 0.8rem" })}>
+              <div
+                css={(theme) =>
+                  css({
+                    padding: `0 calc(${theme.mainMenu.containerHorizontalPadding} + ${theme.mainMenu.itemHorizontalPadding})`,
+                  })
+                }
+              >
                 <div
                   css={(theme) =>
                     css({
@@ -522,7 +529,7 @@ export const UnifiedLayout = () => {
                     <MagnificationGlassIcon style={{ width: "1.4rem" }} />
                   </div>
                 }
-                title="Quick find"
+                title="Quick Find"
               />
               <ListItem
                 icon={
@@ -530,7 +537,7 @@ export const UnifiedLayout = () => {
                     <ClockIcon style={{ width: "1.4rem" }} />
                   </div>
                 }
-                title="Recent activity"
+                title="Recent Activity"
               />
 
               <div style={{ height: "1.5rem" }} />
@@ -863,20 +870,8 @@ const ListItem = ({
       & > *:not(.active):hover {
         background: ${theme.colors.backgroundModifierHover};
       }
-      & > *.active,
-      & > *:hover {
+      & > *.active {
         color: ${theme.colors.textNormal};
-      }
-      .title,
-      .subtitle {
-        white-space: nowrap;
-        text-overflow: ellipsis;
-        overflow: hidden;
-      }
-      .subtitle {
-        font-size: 1.2rem;
-        font-weight: 400;
-        line-height: 1.2;
       }
     `}
   >
