@@ -78,7 +78,7 @@ const SideMenuLayout = ({
                 fontSize: "1.5rem",
                 fontWeight: "600",
                 color: theme.colors.textHeader,
-                boxShadow: theme.mainHeaderShadow,
+                boxShadow: theme.mainHeader.shadow,
                 position: "relative",
                 zIndex: 1,
                 WebkitAppRegion: isNative ? "drag" : undefined,
