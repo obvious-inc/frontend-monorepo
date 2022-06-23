@@ -149,15 +149,19 @@ const SideMenuLayout = ({
         />
       )}
       <div
-        style={{
-          position: "absolute",
-          top: 0,
-          bottom: 0,
-          left: isFloatingMenuEnabled ? 0 : "6.6rem",
-          right: 0,
-          zIndex: 1,
-          pointerEvents: "none",
-        }}
+        css={(theme) =>
+          css({
+            position: "absolute",
+            top: 0,
+            bottom: 0,
+            right: 0,
+            left: isFloatingMenuEnabled
+              ? 0
+              : theme.mainMenu.leftStackNavWidth ?? 0,
+            zIndex: 1,
+            pointerEvents: "none",
+          })
+        }
       >
         <OverlaySpinner show={!serverConnection.isConnected} />
       </div>

@@ -62,7 +62,7 @@ const MainMenu = () => {
         css({
           position: "relative",
           display: "flex",
-          width: "6.6rem",
+          width: theme.mainMenu.leftStackNavWidth,
           background: theme.colors.backgroundTertiary,
           flexDirection: "column",
           alignItems: "center",

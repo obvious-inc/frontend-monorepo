@@ -311,7 +311,10 @@ const App = () => {
             </RequireAuth>
           }
         >
-          <Route path="/channels/:serverId/:channelId" element={<Channel />} />
+          <Route
+            path="/channels/:serverId/:channelId"
+            element={<Channel server />}
+          />
           {/* <Route path="/channels/:serverId" element={<Channel />} /> */}
         </Route>
 
@@ -332,7 +335,12 @@ const App = () => {
 };
 
 const EmptyHome = () => {
+  const { state } = useAppScope();
   const { isFloating: isMenuTogglingEnabled } = useSideMenu();
+  const hasFetchedInitialData = state.selectHasFetchedInitialData();
+  const starredChannels = state.selectStarredChannels();
+  const hasNoStarredChannels =
+    hasFetchedInitialData && starredChannels.length === 0;
   return (
     <div
       css={(theme) =>
@@ -365,17 +373,20 @@ const EmptyHome = () => {
           <StarIcon
             style={{
               width: "6rem",
-              // color: "rgb(255 255 255 / 5%)",
-              color: "rgb(180 130 36)",
+              color: hasNoStarredChannels
+                ? "rgb(180 130 36)"
+                : "rgb(255 255 255 / 5%)",
             }}
           />
-          <div
-            css={(theme) =>
-              css({ color: theme.colors.textMuted, marginTop: "2rem" })
-            }
-          >
-            Try the &quot;/star-channel&quot; command
-          </div>
+          {hasNoStarredChannels && (
+            <div
+              css={(theme) =>
+                css({ color: theme.colors.textMuted, marginTop: "2rem" })
+              }
+            >
+              Try the &quot;/star-channel&quot; command
+            </div>
+          )}
         </div>
       </div>
     </div>

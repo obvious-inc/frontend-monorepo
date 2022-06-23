@@ -93,12 +93,12 @@ export const HomeLayout = () => {
                   )}
                 />
               )}
+              <div style={{ height: "1.5rem" }} />
             </>
           )}
 
           {topicChannels.length !== 0 && (
             <>
-              <div style={{ height: "1.5rem" }} />
               {topicChannels.map((c) => (
                 <ChannelItem
                   key={c.id}
@@ -109,6 +109,7 @@ export const HomeLayout = () => {
                   memberUserIds={c.memberUserIds}
                 />
               ))}
+              <div style={{ height: "1.5rem" }} />
             </>
           )}
 
@@ -524,19 +525,11 @@ export const UnifiedLayout = () => {
             <>
               <div style={{ height: "1rem" }} />
               <ListItem
-                icon={
-                  <div style={{ padding: "0 0.2rem 0 0.2rem" }}>
-                    <MagnificationGlassIcon style={{ width: "1.4rem" }} />
-                  </div>
-                }
+                icon={<MagnificationGlassIcon style={{ width: "1.4rem" }} />}
                 title="Quick Find"
               />
               <ListItem
-                icon={
-                  <div style={{ padding: "0 0.2rem 0 0.2rem" }}>
-                    <ClockIcon style={{ width: "1.4rem" }} />
-                  </div>
-                }
+                icon={<ClockIcon style={{ width: "1.4rem" }} />}
                 title="Recent Activity"
               />
 
@@ -568,12 +561,13 @@ export const UnifiedLayout = () => {
                       )}
                     />
                   )}
+
+                  <div style={{ height: "1.5rem" }} />
                 </>
               )}
 
               {topicChannels.length !== 0 && (
                 <>
-                  <div style={{ height: "1.5rem" }} />
                   {topicChannels.map((c) => (
                     <ChannelItem
                       key={c.id}
@@ -582,9 +576,9 @@ export const UnifiedLayout = () => {
                       hasUnread={state.selectChannelHasUnread(c.id)}
                       notificationCount={state.selectChannelMentionCount(c.id)}
                       memberUserIds={c.memberUserIds}
-                      // size="large"
                     />
                   ))}
+                  <div style={{ height: "1.5rem" }} />
                 </>
               )}
 

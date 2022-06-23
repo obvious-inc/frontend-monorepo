@@ -21,6 +21,7 @@ export const dark = {
     itemDistance: "2px",
     itemTextColor: "rgb(255 255 255 / 40%)",
     containerHorizontalPadding: "1rem",
+    leftStackNavWidth: "6.6rem",
   },
   channelHeader: { breadcrumbs: false },
   dropdownMenus: {
@@ -38,6 +39,7 @@ export const dark = {
     textDimmed: "#b9bbbe",
     textHeader: "white",
     textHeaderSecondary: "#b9bbbe",
+    textHighlight: "#ffd376",
     linkColor: "hsl(199deg 100% 46%)", // "hsl(197,100%,47.8%)",
     linkColorHighlight: "hsl(199deg 100% 55%)", // "hsl(197deg 100% 59%)",
     interactiveNormal: "#b9bbbe",
@@ -133,6 +135,7 @@ const createV2 = () => {
       textNormal,
       textDimmed,
       textMuted: "rgba(255, 255, 255, 0.443)",
+      textHighlight: "#ffd376",
       backgroundPrimary: "rgb(25, 25, 25)",
       backgroundSecondary: "rgb(32, 32, 32)",
       dialogBackground: "rgb(37, 37, 37)",

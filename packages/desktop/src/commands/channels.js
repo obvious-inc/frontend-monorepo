@@ -18,17 +18,29 @@ const commands = {
         return;
       }
 
-      if (context === "server-channel") {
-        const channel = await actions.createServerChannel(serverId, { name });
-        editor.clear();
-        navigate(`/channels/${serverId}/${channel.id}`);
-        return;
-      }
+      const channel = await actions.createServerChannel(serverId, { name });
+      editor.clear();
+      navigate(`/channels/${serverId}/${channel.id}`);
     },
     exclude: () => {
-      if (context != "server-channel") return true;
+      if (context !== "server") return true;
       const server = state.selectServer(serverId);
       return server?.ownerUserId !== user.id;
+    },
+  }),
+  "start-topic": ({ actions, navigate }) => ({
+    description: "Start a new topic channel",
+    arguments: ["name"],
+    execute: async ({ args, editor }) => {
+      const name = args.join(" ");
+      if (name.trim().length === 0) {
+        alert('"name" is a required argument!');
+        return;
+      }
+
+      const channel = await actions.createChannel({ name });
+      editor.clear();
+      navigate(`/channels/${channel.id}`);
     },
   }),
   "rename-channel": ({
@@ -51,13 +63,51 @@ const commands = {
       editor.clear();
     },
     exclude: () => {
-      if (context !== "server-channel") {
+      if (context === "dm") return false;
+
+      if (context === "server") {
+        const server = state.selectServer(serverId);
+        return server?.ownerUserId !== user.id;
+      }
+
+      if (context === "topic") {
         const channel = state.selectChannel(channelId);
         return user.id !== channel.ownerUserId;
       }
 
-      const server = state.selectServer(serverId);
-      return server?.ownerUserId !== user.id;
+      return true;
+    },
+  }),
+  "set-channel-description": ({
+    context,
+    user,
+    state,
+    actions,
+    channelId,
+  }) => ({
+    description: "Set a new description for this channel",
+    arguments: ["channel-description"],
+    execute: async ({ args, editor }) => {
+      if (args.length < 1) return;
+      const description = args.join(" ");
+      await actions.updateChannel(channelId, { description });
+      editor.clear();
+    },
+    exclude: () => {
+      if (context === "dm") return false;
+
+      if (context === "server") return true;
+      // if (context === "server") {
+      //   const server = state.selectServer(serverId);
+      //   return server?.ownerUserId !== user.id;
+      // }
+
+      if (context === "topic") {
+        const channel = state.selectChannel(channelId);
+        return channel?.ownerUserId !== user.id;
+      }
+
+      return true;
     },
   }),
   "delete-channel": ({
@@ -77,45 +127,19 @@ const commands = {
       navigate(`/channels/${serverId}`);
     },
     exclude: () => {
-      if (context !== "server-channel") {
+      if (context === "dm") return true;
+
+      if (context === "server") {
+        const server = state.selectServer(serverId);
+        return server?.ownerUserId !== user.id;
+      }
+
+      if (context === "topic") {
         const channel = state.selectChannel(channelId);
         return user.id !== channel.ownerUserId;
       }
 
-      const server = state.selectServer(serverId);
-      return server?.ownerUserId !== user.id;
-    },
-  }),
-  "update-channel": ({
-    context,
-    user,
-    state,
-    actions,
-    serverId,
-    channelId,
-  }) => ({
-    description: "Update a channel property",
-    arguments: ["propery-name", "property-value"],
-    execute: async ({ args, editor }) => {
-      if (args.length < 2) {
-        alert('Arguments #1 "property", and #2 "value", are required.');
-        return;
-      }
-      const [property, ...valueWords] = args;
-      const value = valueWords.join(" ");
-      await actions.updateChannel(channelId, { [property]: value });
-      editor.clear();
-    },
-    exclude: () => {
-      if (!location.search.includes("root")) return true;
-
-      if (context !== "server-channel") {
-        const channel = state.selectChannel(channelId);
-        return user.id !== channel.ownerUserId;
-      }
-
-      const server = state.selectServer(serverId);
-      return server?.ownerUserId !== user.id;
+      return true;
     },
   }),
   "move-channel": ({ context, user, state, actions, serverId, channelId }) => ({
@@ -161,7 +185,7 @@ const commands = {
       editor.clear();
     },
     exclude: () => {
-      if (context != "server-channel") return true;
+      if (context !== "server") return true;
       const server = state.selectServer(serverId);
       return server?.ownerUserId !== user.id;
     },
@@ -210,7 +234,7 @@ const commands = {
           .resolveName(walletAddressOrEns)
           .then(getChecksumAddress);
 
-        await actions.addMemberToChannel(channelId, address);
+        await actions.addChannelMember(channelId, address);
         editor.clear();
       } catch (e) {
         if (e.code === "INVALID_ARGUMENT") throw new Error("Invalid address");
@@ -222,6 +246,50 @@ const commands = {
       return channel.kind !== "topic" || channel.ownerUserId !== user.id;
     },
   }),
+  "remove-member": ({ state, actions, channelId, user, ethersProvider }) => ({
+    description: "Remove a member from this channel",
+    arguments: ["wallet-address-or-ens"],
+    execute: async ({ args, editor }) => {
+      const [walletAddressOrEns] = args;
+      if (walletAddressOrEns == null) return;
+
+      try {
+        const address = await ethersProvider
+          .resolveName(walletAddressOrEns)
+          .then(getChecksumAddress);
+
+        const user = state.selectUserFromWalletAddress(address);
+
+        if (user == null) {
+          alert(`No member with address "${address}"!`);
+          return;
+        }
+
+        await actions.removeChannelMember(channelId, user.id);
+        editor.clear();
+      } catch (e) {
+        if (e.code === "INVALID_ARGUMENT") throw new Error("Invalid address");
+        throw e;
+      }
+    },
+    exclude: () => {
+      const channel = state.selectChannel(channelId);
+      return channel.kind !== "topic" || channel.ownerUserId !== user.id;
+    },
+  }),
+  "leave-channel": ({ state, actions, channelId, user }) => {
+    const channel = state.selectChannel(channelId);
+    return {
+      description: `Leave "#${channel.name}".`,
+      execute: async ({ editor }) => {
+        await actions.leaveChannel(channelId);
+        editor.clear();
+      },
+      exclude: () => {
+        return channel.kind !== "topic" || channel.ownerUserId === user.id;
+      },
+    };
+  },
 };
 
 export default commands;

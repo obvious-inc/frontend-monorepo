@@ -530,7 +530,20 @@ export const ChannelBase = ({
                       })
                     }
                   >
-                    This is the start of #{channel.name}.
+                    This is the start of #{channel.name}. {channel.description}
+                    {channel.kind === "topic" && members.length <= 1 && (
+                      <div
+                        css={(theme) =>
+                          css({
+                            color: theme.colors.textHighlight,
+                            fontSize: theme.fontSizes.default,
+                            marginTop: "1rem",
+                          })
+                        }
+                      >
+                        Add members with the &ldquo;/add-member&rdquo; command.
+                      </div>
+                    )}
                   </div>
                 </div>
               </div>
@@ -592,7 +605,7 @@ export const ChannelBase = ({
       <div css={css({ padding: "0 1.6rem 2.4rem", position: "relative" })}>
         <NewMessageInput
           ref={inputRef}
-          isDM={channel.kind === "dm"}
+          context={channel.kind}
           serverId={channel.serverId}
           channelId={channel.id}
           replyingToMessage={
@@ -685,7 +698,7 @@ const NewMessageInput = React.memo(
       uploadImage,
       replyingToMessage,
       cancelReply,
-      isDM,
+      context,
       serverId,
       channelId,
       onInputChange,
@@ -719,11 +732,7 @@ const NewMessageInput = React.memo(
       execute: executeCommand,
       isCommand,
       commands,
-    } = useCommands({
-      context: isDM ? "dm" : "server-channel",
-      serverId,
-      channelId,
-    });
+    } = useCommands({ context, serverId, channelId });
 
     const executeMessage = async () => {
       const blocks = cleanNodes(pendingMessage);
@@ -1178,7 +1187,6 @@ const Heading = ({ component: Component = "div", children, ...props }) => (
 const Channel = ({ server: serverVariant, noSideMenu }) => {
   const params = useParams();
   const navigate = useNavigate();
-  const theme = useTheme();
   const { state, actions } = useAppScope();
   const { isFloating: isSideMenuFloating } = useSideMenu();
 
@@ -1222,7 +1230,7 @@ const Channel = ({ server: serverVariant, noSideMenu }) => {
     () =>
       channel == null ? null : (
         <>
-          {theme.channelHeader.breadcrumbs && !serverVariant && server != null && (
+          {!serverVariant && server != null && (
             <>
               <Heading
                 component={NavLink}
@@ -1299,7 +1307,7 @@ const Channel = ({ server: serverVariant, noSideMenu }) => {
           </Dialog.Root>
         </>
       ),
-    [isMenuTogglingEnabled, server, channel, members, serverVariant, theme]
+    [isMenuTogglingEnabled, server, channel, members, serverVariant]
   );
 
   if (channel == null)
