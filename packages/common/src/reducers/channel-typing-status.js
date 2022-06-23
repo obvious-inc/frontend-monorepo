@@ -55,7 +55,7 @@ const selectServerChannelTypingServerMembers = createSelector(
   { memoizeOptions: { equalityCheck: arrayShallowEquals } }
 );
 
-const selectDmChannelTypingUsers = createSelector(
+const selectNonServerChannelTypingUsers = createSelector(
   (state, channelId) => {
     const userIds =
       state.channelTypingStatus.typingUserIdsByChannelId[channelId] ?? [];
@@ -71,8 +71,8 @@ export const selectChannelTypingMembers = createSelector(
     if (channel == null) return [];
 
     const members =
-      channel.kind === "dm"
-        ? selectDmChannelTypingUsers(state, channelId)
+      channel.kind !== "server"
+        ? selectNonServerChannelTypingUsers(state, channelId)
         : selectServerChannelTypingServerMembers(state, channelId);
 
     return members.filter((m) => m.id !== state.user.id);

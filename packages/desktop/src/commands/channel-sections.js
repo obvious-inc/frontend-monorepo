@@ -68,7 +68,7 @@ const commands = {
       editor.clear();
     },
     exclude: () => {
-      if (context !== "server-channel") return true;
+      if (context !== "server") return true;
       const channelSection = state.selectChannelSectionWithChild(channelId);
       if (channelSection == null) return true;
       const server = state.selectServer(serverId);
@@ -107,7 +107,7 @@ const commands = {
       editor.clear();
     },
     exclude: () => {
-      if (context != "server-channel") return true;
+      if (context !== "server") return true;
       const server = state.selectServer(serverId);
       return server?.ownerUserId !== user.id;
     },
@@ -151,7 +151,7 @@ const commands = {
       editor.clear();
     },
     exclude: () => {
-      if (context != "server-channel") return true;
+      if (context !== "server") return true;
       const currentSection = state.selectChannelSectionWithChild(channelId);
       // Hide command if the current channel doesn’t have a parent section
       if (currentSection == null) return true;

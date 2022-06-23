@@ -12,7 +12,7 @@ import React from "react";
 import { css } from "@emotion/react";
 import { Routes, Route, useNavigate } from "react-router-dom";
 import { IntlProvider } from "react-intl";
-import { ThemeProvider, Global as GlobalStyleSheet } from "@emotion/react";
+import { ThemeProvider, Global } from "@emotion/react";
 import Pusher from "pusher-js";
 import {
   useAuth,
@@ -40,16 +40,17 @@ import JoinServer from "./components/join-server";
 import {
   HomeLayout,
   ServerLayout,
-  DirectMessagesLayout,
+  ChannelLayout,
+  UnifiedLayout,
 } from "./components/layouts";
 import TitleBar from "./components/title-bar";
 import * as Tooltip from "./components/tooltip";
 import {
-  Home as HomeIcon,
+  Star as StarIcon,
   ChatBubbles as ChatBubblesIcon,
 } from "./components/icons";
 import useSideMenu from "./hooks/side-menu";
-import { dark as defaultTheme } from "./themes";
+import { dark as defaultTheme, v2 as v2Theme } from "./themes";
 
 const isNative = window.Native != null;
 
@@ -103,8 +104,8 @@ const useSystemNotifications = () => {
             }),
           onClick: ({ close }) => {
             navigate(
-              channel.kind === "dm"
-                ? `/dms/${channel.id}`
+              channel.kind !== "server"
+                ? `/channels/${channel.id}`
                 : `/channels/${channel.serverId}/${channel.id}`
             );
             window.focus();
@@ -204,9 +205,49 @@ const App = () => {
 
   return (
     <>
+      <Global
+        styles={(theme) =>
+          css({
+            body: {
+              color: theme.colors.textNormal,
+              fontFamily: theme.fontStacks.default,
+            },
+          })
+        }
+      />
+
       {isNative && <TitleBar />}
 
       <Routes>
+        <Route
+          path="/v2"
+          element={
+            <ThemeProvider theme={v2Theme}>
+              <RequireAuth>
+                <UnifiedLayout />
+              </RequireAuth>
+              <Global
+                styles={(theme) =>
+                  css({
+                    body: {
+                      color: theme.colors.textNormal,
+                      fontFamily: theme.fontStacks.default,
+                    },
+                  })
+                }
+              />
+            </ThemeProvider>
+          }
+        >
+          <Route index element={<div />} />
+          <Route path="channels/:channelId" element={<Channel />} />
+          <Route path="servers/:serverId" element={<Channel />} />
+          <Route
+            path="servers/:serverId/:channelId"
+            element={<Channel server />}
+          />
+        </Route>
+
         <Route
           path="/"
           element={
@@ -220,7 +261,7 @@ const App = () => {
         </Route>
 
         <Route
-          path="/channels/:channelId"
+          path="/c/:channelId"
           element={
             <RequireAuth>
               <Channel noSideMenu />
@@ -229,10 +270,10 @@ const App = () => {
         />
 
         <Route
-          path="/dms"
+          path="/channels"
           element={
             <RequireAuth>
-              <DirectMessagesLayout />
+              <ChannelLayout />
             </RequireAuth>
           }
         >
@@ -260,7 +301,7 @@ const App = () => {
               </div>
             }
           />
-          <Route path=":channelId" element={<Channel />} />
+          <Route path="/channels/:channelId" element={<Channel />} />
         </Route>
 
         <Route
@@ -270,8 +311,11 @@ const App = () => {
             </RequireAuth>
           }
         >
-          <Route path="/channels/:serverId/:channelId" element={<Channel />} />
-          <Route path="/channels/:serverId" element={<Channel />} />
+          <Route
+            path="/channels/:serverId/:channelId"
+            element={<Channel server />}
+          />
+          {/* <Route path="/channels/:serverId" element={<Channel />} /> */}
         </Route>
 
         <Route
@@ -286,20 +330,17 @@ const App = () => {
         <Route path="/join/:serverId" element={<JoinServer />} />
         <Route path="*" element={null} />
       </Routes>
-
-      <GlobalStyleSheet
-        styles={(theme) =>
-          css({
-            color: theme.colors.textNormal,
-          })
-        }
-      />
     </>
   );
 };
 
 const EmptyHome = () => {
+  const { state } = useAppScope();
   const { isFloating: isMenuTogglingEnabled } = useSideMenu();
+  const hasFetchedInitialData = state.selectHasFetchedInitialData();
+  const starredChannels = state.selectStarredChannels();
+  const hasNoStarredChannels =
+    hasFetchedInitialData && starredChannels.length === 0;
   return (
     <div
       css={(theme) =>
@@ -322,12 +363,31 @@ const EmptyHome = () => {
           height: "100%",
         })}
       >
-        <HomeIcon
-          style={{
-            width: "6rem",
-            color: "rgb(255 255 255 / 5%)",
-          }}
-        />
+        <div
+          css={css({
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+          })}
+        >
+          <StarIcon
+            style={{
+              width: "6rem",
+              color: hasNoStarredChannels
+                ? "rgb(180 130 36)"
+                : "rgb(255 255 255 / 5%)",
+            }}
+          />
+          {hasNoStarredChannels && (
+            <div
+              css={(theme) =>
+                css({ color: theme.colors.textMuted, marginTop: "2rem" })
+              }
+            >
+              Try the &quot;/star-channel&quot; command
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );

@@ -124,7 +124,7 @@ const ChannelMessage = React.memo(function ChannelMessage_({
   );
 
   const sendDirectMessageToAuthor = React.useCallback(() => {
-    const redirect = (c) => navigate(`/dms/${c.id}`);
+    const redirect = (c) => navigate(`/channels/${c.id}`);
 
     const dmChannel = state.selectDmChannelFromUserId(message.authorUserId);
     if (dmChannel != null) {
@@ -383,19 +383,21 @@ const ChannelMessage = React.memo(function ChannelMessage_({
                 <Popover.Root modal>
                   <Popover.Trigger asChild>
                     <button
-                      css={css({
-                        position: "relative",
-                        borderRadius: "0.3rem",
-                        overflow: "hidden",
-                        cursor: "pointer",
-                        ":hover": {
-                          boxShadow: message.author?.profilePicture
-                            .isVerifiedNft
-                            ? "0 0 0 2px #4f52ff"
-                            : "0 0 0 2px rgb(255 255 255 / 10%)",
-                        },
-                        ":active": { transform: "translateY(0.1rem)" },
-                      })}
+                      css={(theme) =>
+                        css({
+                          position: "relative",
+                          borderRadius: theme.avatars.borderRadius,
+                          overflow: "hidden",
+                          cursor: "pointer",
+                          ":hover": {
+                            boxShadow: message.author?.profilePicture
+                              .isVerifiedNft
+                              ? "0 0 0 2px #4f52ff"
+                              : "0 0 0 2px rgb(255 255 255 / 10%)",
+                          },
+                          ":active": { transform: "translateY(0.1rem)" },
+                        })
+                      }
                     >
                       <Avatar
                         url={message.author?.profilePicture.small}
@@ -708,8 +710,8 @@ const MemberDisplayName = React.forwardRef(
       css={(theme) =>
         css({
           lineHeight: 1.2,
-          color: color ?? theme.colors.pink,
-          fontWeight: "500",
+          color: color ?? theme.colors.memberDisplayName,
+          fontWeight: theme.text.weights.smallHeader,
           cursor: "pointer",
           ":hover": {
             textDecoration: "underline",
@@ -1475,6 +1477,7 @@ const RepliedMessage = ({ message, getMember }) => {
 };
 
 const SystemMessage = ({ isHovering, message, reactions }) => {
+  const theme = useTheme();
   const content = React.useMemo(() => {
     switch (message.type) {
       case "member-joined":
@@ -1482,7 +1485,7 @@ const SystemMessage = ({ isHovering, message, reactions }) => {
           <>
             A wild{" "}
             <MemberDisplayName
-              color="white"
+              color={theme.colors.textNormal}
               displayName={message.author?.displayName}
             />{" "}
             has appeared. Welcome!
@@ -1492,7 +1495,7 @@ const SystemMessage = ({ isHovering, message, reactions }) => {
       default:
         throw new Error();
     }
-  }, [message]);
+  }, [message, theme]);
 
   return (
     <div
@@ -1610,7 +1613,7 @@ const TinyMutedText = ({ children, nowrap = false }) => (
     css={(theme) =>
       css({
         color: theme.colors.textMuted,
-        fontSize: "1rem",
+        fontSize: theme.fontSizes.micro,
       })
     }
     style={{ whiteSpace: nowrap ? "nowrap" : undefined }}

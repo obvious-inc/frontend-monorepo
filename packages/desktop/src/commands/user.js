@@ -6,7 +6,7 @@ const commands = {
       await actions.updateMe({ displayName, serverId });
       editor.clear();
     },
-    exclude: () => context === "dm",
+    exclude: () => context !== "server",
   }),
   "nick-global": ({ actions }) => ({
     description:
@@ -25,7 +25,7 @@ const commands = {
       await actions.updateMe({ pfp, serverId });
       editor.clear();
     },
-    exclude: () => context === "dm",
+    exclude: () => context !== "server",
   }),
   "pfp-global": ({ actions }) => ({
     description:

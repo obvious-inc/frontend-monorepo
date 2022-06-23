@@ -6,9 +6,14 @@ import Spinner from "./spinner";
 
 const isNative = window.Native != null;
 
-const SIDE_MENU_WIDTH = "31rem";
-
-const SideMenuLayout = ({ title, filterable, sidebarContent, children }) => {
+const SideMenuLayout = ({
+  title,
+  header,
+  hideMainMenu,
+  filterable,
+  sidebarContent,
+  children,
+}) => {
   const { user } = useAuth();
   const { state, serverConnection } = useAppScope();
   const {
@@ -20,14 +25,23 @@ const SideMenuLayout = ({ title, filterable, sidebarContent, children }) => {
   if (!state.selectHasFetchedInitialData() || user == null) return null;
 
   return (
-    <div css={css({ height: "100%", display: "flex", position: "relative" })}>
+    <div
+      css={(theme) =>
+        css({
+          height: "100%",
+          display: "flex",
+          position: "relative",
+          background: theme.colors.backgroundPrimary,
+        })
+      }
+    >
       <div
         css={(theme) =>
           css({
             display: "flex",
-            width: SIDE_MENU_WIDTH,
+            width: theme.sidebarWidth,
             maxWidth: "calc(100vw - 4.8rem)",
-            minWidth: `min(calc(100vw - 4.8rem), ${SIDE_MENU_WIDTH})`,
+            minWidth: `min(calc(100vw - 4.8rem), ${theme.sidebarWidth})`,
             right: "100%",
             height: "100%",
             zIndex: isFloatingMenuEnabled ? 2 : undefined,
@@ -36,16 +50,16 @@ const SideMenuLayout = ({ title, filterable, sidebarContent, children }) => {
               !isFloatingMenuEnabled || isCollapsed
                 ? ""
                 : "rgb(15 15 15 / 10%) 0px 0px 0px 1px, rgb(15 15 15 / 20%) 0px 3px 6px, rgb(15 15 15 / 40%) 0px 9px 24px",
+            position: isFloatingMenuEnabled ? "fixed" : "static",
+            transition: "200ms transform ease-out",
+            transform:
+              !isFloatingMenuEnabled || isCollapsed
+                ? ""
+                : `translateX(${theme.sidebarWidth})`,
           })
         }
-        style={{
-          position: isFloatingMenuEnabled ? "fixed" : "static",
-          transition: "200ms transform ease-out",
-          transform:
-            !isFloatingMenuEnabled || isCollapsed ? "" : "translateX(31rem)",
-        }}
       >
-        <MainMenu />
+        {!hideMainMenu && <MainMenu />}
         <div
           css={css({
             flex: 1,
@@ -57,15 +71,14 @@ const SideMenuLayout = ({ title, filterable, sidebarContent, children }) => {
           <div
             css={(theme) =>
               css({
-                height: "4.8rem",
-                padding: filterable ? "0 1rem" : "0 1.6rem",
+                height: theme.mainHeader.height,
+                padding: filterable ? "0 1rem" : title ? "0 1.6rem" : 0,
                 display: "flex",
                 alignItems: "center",
                 fontSize: "1.5rem",
                 fontWeight: "600",
                 color: theme.colors.textHeader,
-                boxShadow:
-                  "0 1px 0 rgba(4,4,5,0.2),0 1.5px 0 rgba(6,6,7,0.05),0 2px 0 rgba(4,4,5,0.05)",
+                boxShadow: theme.mainHeader.shadow,
                 position: "relative",
                 zIndex: 1,
                 WebkitAppRegion: isNative ? "drag" : undefined,
@@ -79,14 +92,15 @@ const SideMenuLayout = ({ title, filterable, sidebarContent, children }) => {
                   css({
                     display: "block",
                     width: "100%",
-                    background: theme.colors.backgroundTertiary,
+                    background: theme.colors.inputBackground,
                     border: 0,
-                    borderRadius: "0.4rem",
+                    borderRadius: theme.mainMenu.itemBorderRadius,
                     outline: "none",
                     fontSize: "1.3rem",
                     fontWeight: "500",
                     padding: "0.4rem 0.6rem",
                     color: theme.colors.textHeader,
+                    height: theme.mainMenu.inputHeight,
                   })
                 }
                 value=""
@@ -94,7 +108,7 @@ const SideMenuLayout = ({ title, filterable, sidebarContent, children }) => {
                   alert("Coming soon!");
                 }}
               />
-            ) : (
+            ) : title ? (
               <span
                 css={css({
                   overflow: "hidden",
@@ -104,15 +118,17 @@ const SideMenuLayout = ({ title, filterable, sidebarContent, children }) => {
               >
                 {title}
               </span>
+            ) : (
+              header
             )}
           </div>
           <div
-            css={css`
-              padding: 0 1rem 2rem;
-              overflow: auto;
-              overscroll-behavior-y: contain;
-              flex: 1;
-            `}
+            css={css({
+              padding: "0 0 2rem",
+              overflow: "auto",
+              overscrollBehaviorY: "contain",
+              flex: 1,
+            })}
           >
             {sidebarContent}
           </div>
@@ -133,15 +149,19 @@ const SideMenuLayout = ({ title, filterable, sidebarContent, children }) => {
         />
       )}
       <div
-        style={{
-          position: "absolute",
-          top: 0,
-          bottom: 0,
-          left: isFloatingMenuEnabled ? 0 : "6.6rem",
-          right: 0,
-          zIndex: 1,
-          pointerEvents: "none",
-        }}
+        css={(theme) =>
+          css({
+            position: "absolute",
+            top: 0,
+            bottom: 0,
+            right: 0,
+            left: isFloatingMenuEnabled
+              ? 0
+              : theme.mainMenu.leftStackNavWidth ?? 0,
+            zIndex: 1,
+            pointerEvents: "none",
+          })
+        }
       >
         <OverlaySpinner show={!serverConnection.isConnected} />
       </div>

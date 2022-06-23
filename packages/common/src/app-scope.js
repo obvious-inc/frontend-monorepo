@@ -406,7 +406,7 @@ export const Provider = ({ children }) => {
       })
   );
 
-  const addMemberToChannel = useLatestCallback(
+  const addChannelMember = useLatestCallback(
     (channelId, walletAddressOrUserId) =>
       authorizedFetch(`/channels/${channelId}/invite`, {
         method: "POST",
@@ -419,11 +419,31 @@ export const Provider = ({ children }) => {
       })
   );
 
-  const updateChannel = useLatestCallback((id, { name }) =>
+  const removeChannelMember = useLatestCallback((channelId, userId) =>
+    authorizedFetch(`/channels/${channelId}/members/${userId}`, {
+      method: "DELETE",
+    }).then((res) => {
+      // TODO
+      fetchInitialData();
+      return res;
+    })
+  );
+
+  const leaveChannel = useLatestCallback((channelId) =>
+    authorizedFetch(`/channels/${channelId}/members/me`, {
+      method: "DELETE",
+    }).then((res) => {
+      // TODO
+      fetchInitialData();
+      return res;
+    })
+  );
+
+  const updateChannel = useLatestCallback((id, { name, description }) =>
     authorizedFetch(`/channels/${id}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ name }),
+      body: JSON.stringify({ name, description }),
     }).then((res) => {
       // TODO
       fetchInitialData();
@@ -505,7 +525,9 @@ export const Provider = ({ children }) => {
       createChannel,
       createServerChannel,
       createDmChannel,
-      addMemberToChannel,
+      addChannelMember,
+      removeChannelMember,
+      leaveChannel,
       updateChannel,
       deleteChannel,
       createMessage,
@@ -539,7 +561,9 @@ export const Provider = ({ children }) => {
       createChannel,
       createServerChannel,
       createDmChannel,
-      addMemberToChannel,
+      addChannelMember,
+      removeChannelMember,
+      leaveChannel,
       updateChannel,
       deleteChannel,
       createMessage,

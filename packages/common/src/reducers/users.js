@@ -73,6 +73,8 @@ export const selectUsers = createSelector(
 );
 
 export const selectUserFromWalletAddress = (state, address) =>
-  selectAllUsers(state).find((u) => u.walletAddress === address);
+  selectAllUsers(state).find(
+    (u) => u.walletAddress.toLowerCase() === address.toLowerCase()
+  );
 
 export default combineReducers({ entriesById });

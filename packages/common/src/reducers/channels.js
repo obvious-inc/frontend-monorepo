@@ -386,6 +386,43 @@ export const selectStarredChannels = createSelector(
   { memoizeOptions: { equalityCheck: arrayShallowEquals } }
 );
 
+export const selectTopicChannels = createSelector(
+  (state) => {
+    const channels = Object.values(state.channels.entriesById)
+      .filter((channel) => channel.kind === "topic")
+      .map((c) => selectChannel(state, c.id));
+
+    return sort((c1, c2) => {
+      const [t1, t2] = [c1, c2].map((c) => {
+        const readState = state.channels.readStatesById[c.id];
+        return new Date(readState?.lastMessageAt ?? c.createdAt).getTime();
+      });
+      return t1 > t2 ? -1 : t1 < t2 ? 1 : 0;
+    }, channels);
+  },
+  (channels) => channels,
+  { memoizeOptions: { equalityCheck: arrayShallowEquals } }
+);
+
+export const selectDmAndTopicChannels = createSelector(
+  (state) => {
+    const channels = [
+      ...selectDmChannels(state),
+      ...selectTopicChannels(state),
+    ];
+
+    return sort((c1, c2) => {
+      const [t1, t2] = [c1, c2].map((c) => {
+        const readState = state.channels.readStatesById[c.id];
+        return new Date(readState?.lastMessageAt ?? c.createdAt).getTime();
+      });
+      return t1 > t2 ? -1 : t1 < t2 ? 1 : 0;
+    }, channels);
+  },
+  (channels) => channels,
+  { memoizeOptions: { equalityCheck: arrayShallowEquals } }
+);
+
 export const selectChannelStarId = (state, channelId) =>
   state.channels.starsByChannelId[channelId]?.id;
 
