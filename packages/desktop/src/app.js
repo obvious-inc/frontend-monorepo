@@ -136,7 +136,7 @@ const App = () => {
   const { state, actions } = useAppScope();
   const { login } = useWalletLogin();
 
-  const { fetchInitialData, fetchStarredItems } = actions;
+  const { fetchInitialData, fetchStarredItems, fetchServers } = actions;
 
   const hasFetchedInitialData = state.selectHasFetchedInitialData();
 
@@ -172,6 +172,11 @@ const App = () => {
       navigate("/");
     });
   });
+
+  React.useEffect(() => {
+    if (authStatus !== "authenticated") return;
+    fetchServers();
+  }, [authStatus, fetchServers]);
 
   React.useEffect(() => {
     if (user == null || hasFetchedInitialData) return null;
@@ -240,6 +245,8 @@ const App = () => {
           }
         >
           <Route index element={<div />} />
+          <Route path="starred" element={<Channel />} />
+          <Route path="starred/channels/:channelId" element={<Channel />} />
           <Route path="channels/:channelId" element={<Channel />} />
           <Route path="servers/:serverId" element={<Channel />} />
           <Route

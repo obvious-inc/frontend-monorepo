@@ -28,21 +28,21 @@ const commands = {
       return server?.ownerUserId !== user.id;
     },
   }),
-  // "create-topic-channel": ({ actions, navigate }) => ({
-  //   description: "Start a new topic channel",
-  //   arguments: ["name"],
-  //   execute: async ({ args, editor }) => {
-  //     const name = args.join(" ");
-  //     if (name.trim().length === 0) {
-  //       alert('"name" is a required argument!');
-  //       return;
-  //     }
+  "create-topic-channel": ({ actions, navigate }) => ({
+    description: "Start a new topic channel",
+    arguments: ["name"],
+    execute: async ({ args, editor }) => {
+      const name = args.join(" ");
+      if (name.trim().length === 0) {
+        alert('"name" is a required argument!');
+        return;
+      }
 
-  //     const channel = await actions.createChannel({ name });
-  //     editor.clear();
-  //     navigate(`/channels/${channel.id}`);
-  //   },
-  // }),
+      const channel = await actions.createChannel({ name });
+      editor.clear();
+      navigate(`/channels/${channel.id}`);
+    },
+  }),
   "rename-channel": ({
     context,
     user,
