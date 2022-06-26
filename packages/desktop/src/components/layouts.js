@@ -452,10 +452,12 @@ export const UnifiedLayout = () => {
             <>
               <div style={{ height: "1rem" }} />
               <ListItem
+                compact={false}
                 icon={<MagnificationGlassIcon style={{ width: "1.4rem" }} />}
                 title="Quick Find"
               />
               <ListItem
+                compact={false}
                 component={NavLink}
                 to="/v2/starred"
                 icon={<StarIcon style={{ width: "1.4rem" }} />}
@@ -751,10 +753,12 @@ const StarredNavContent = () => {
     <>
       <div style={{ height: "1rem" }} />
       <ListItem
+        compact={false}
         icon={<MagnificationGlassIcon style={{ width: "1.4rem" }} />}
         title="Quick Find"
       />
       <ListItem
+        compact={false}
         component={NavLink}
         to="/v2"
         icon={<HomeIcon style={{ width: "1.4rem" }} />}
