@@ -48,6 +48,7 @@ import * as Tooltip from "./components/tooltip";
 import {
   Star as StarIcon,
   ChatBubbles as ChatBubblesIcon,
+  Home as HomeIcon,
 } from "./components/icons";
 import useSideMenu from "./hooks/side-menu";
 import { dark as defaultTheme, v2 as v2Theme } from "./themes";
@@ -244,7 +245,7 @@ const App = () => {
             </ThemeProvider>
           }
         >
-          <Route index element={<div />} />
+          <Route index element={<V2EmptyHome />} />
           <Route path="starred" element={<Channel />} />
           <Route path="starred/channels/:channelId" element={<Channel />} />
           <Route path="channels/:channelId" element={<Channel />} />
@@ -394,6 +395,49 @@ const EmptyHome = () => {
               Try the &quot;/star-channel&quot; command
             </div>
           )}
+        </div>
+      </div>
+    </div>
+  );
+};
+
+const V2EmptyHome = () => {
+  const { isFloating: isMenuTogglingEnabled } = useSideMenu();
+  return (
+    <div
+      css={(theme) =>
+        css({
+          flex: 1,
+          height: "100%",
+          display: "flex",
+          flexDirection: "column",
+          background: theme.colors.backgroundPrimary,
+        })
+      }
+    >
+      {isMenuTogglingEnabled && <ChannelHeader />}
+      <div
+        css={css({
+          flex: 1,
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          height: "100%",
+        })}
+      >
+        <div
+          css={css({
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+          })}
+        >
+          <HomeIcon
+            style={{
+              width: "6rem",
+              color: "rgb(255 255 255 / 5%)",
+            }}
+          />
         </div>
       </div>
     </div>
