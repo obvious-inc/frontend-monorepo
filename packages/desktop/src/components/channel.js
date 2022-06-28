@@ -1180,6 +1180,8 @@ const Heading = ({ component: Component = "div", children, ...props }) => (
         fontFamily: theme.fontStacks.headers,
         whiteSpace: "nowrap",
         textOverflow: "ellipsis",
+        userSelect: "text",
+        cursor: "default",
       })
     }
     {...props}
@@ -1286,6 +1288,8 @@ const Channel = ({ server: serverVariant, noSideMenu }) => {
                     whiteSpace: "nowrap",
                     overflow: "hidden",
                     textOverflow: "ellipsis",
+                    userSelect: "text",
+                    cursor: "default",
                   })
                 }
               >
