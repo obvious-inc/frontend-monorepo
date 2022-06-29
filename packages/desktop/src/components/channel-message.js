@@ -1481,16 +1481,33 @@ const SystemMessage = ({ isHovering, message, reactions }) => {
   const content = React.useMemo(() => {
     switch (message.type) {
       case "member-joined":
-        return (
-          <>
-            A wild{" "}
-            <MemberDisplayName
-              color={theme.colors.textNormal}
-              displayName={message.author?.displayName}
-            />{" "}
-            has appeared. Welcome!
-          </>
-        );
+        if (message.inviter) {
+          return (
+            <>
+              <MemberDisplayName
+                color={theme.colors.textNormal}
+                displayName={message.author?.displayName}
+              />{" "}
+              has been invited by{" "}
+              <MemberDisplayName
+                color={theme.colors.textNormal}
+                displayName={message.inviter?.displayName}
+              />
+              . Remember to say hi!
+            </>
+          );
+        } else {
+          return (
+            <>
+              A wild{" "}
+              <MemberDisplayName
+                color={theme.colors.textNormal}
+                displayName={message.author?.displayName}
+              />{" "}
+              has appeared. Welcome!
+            </>
+          );
+        }
 
       default:
         throw new Error();
