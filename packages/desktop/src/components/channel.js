@@ -1,7 +1,7 @@
 import throttle from "lodash.throttle";
 import React from "react";
 import { useParams, useNavigate, NavLink } from "react-router-dom";
-import { css, useTheme } from "@emotion/react";
+import { css } from "@emotion/react";
 import {
   useAppScope,
   useLatestCallback,
