@@ -237,7 +237,7 @@ const entryIdsByChannelId = (state = {}, action) => {
   }
 };
 
-const systemMessageTypes = ["member-joined"];
+const systemMessageTypes = ["member-joined", "user-invited"];
 const appMessageTypes = ["webhook", "app"];
 
 const deriveMessageType = (message) => {
@@ -246,6 +246,7 @@ const deriveMessageType = (message) => {
     case 0:
       return "regular";
     case 1:
+      if (message.inviter) return "user-invited";
       return "member-joined";
     case 2:
       return "webhook";
