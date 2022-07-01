@@ -14,7 +14,6 @@ const parseChannel = (channel) => {
   const publicPermissionGroup = channel.permission_overwrites?.find(
     (p) => p.group === "@public"
   );
-  console.log(channel);
   const properties = {
     id: channel.id,
     name: channel.name,
