@@ -1,8 +1,9 @@
 import throttle from "lodash.throttle";
 import React from "react";
 import { useParams, useNavigate, NavLink } from "react-router-dom";
-import { css, useTheme } from "@emotion/react";
+import { css } from "@emotion/react";
 import {
+  useAuth,
   useAppScope,
   useLatestCallback,
   getImageFileDimensions,
@@ -219,6 +220,7 @@ export const ChannelBase = ({
   headerContent,
   noSideMenu,
 }) => {
+  const { user } = useAuth();
   const { actions, state, addBeforeDispatchListener } = useAppScope();
 
   const { inputDeviceCanHover } = useGlobalMediaQueries();
@@ -535,19 +537,31 @@ export const ChannelBase = ({
                   >
                     This is the start of {channelPrefix}
                     {channel.name}. {channel.description}
-                    {channel.kind === "topic" && members.length <= 1 && (
-                      <div
-                        css={(theme) =>
-                          css({
-                            color: theme.colors.textHighlight,
-                            fontSize: theme.fontSizes.default,
-                            marginTop: "1rem",
-                          })
-                        }
-                      >
-                        Add members with the &ldquo;/add-member&rdquo; command.
-                      </div>
-                    )}
+                    {channel.kind === "topic" &&
+                      channel.ownerUserId === user.id &&
+                      members.length <= 1 && (
+                        <div
+                          css={(theme) =>
+                            css({
+                              color: theme.colors.textHighlight,
+                              fontSize: theme.fontSizes.default,
+                              marginTop: "1rem",
+                            })
+                          }
+                        >
+                          {channel.isPublic ? (
+                            <>
+                              This channel is open for anyone to join. Share its
+                              URL to help people find it!
+                            </>
+                          ) : (
+                            <>
+                              Add members with the &ldquo;/add-member&rdquo;
+                              command.
+                            </>
+                          )}
+                        </div>
+                      )}
                   </div>
                 </div>
               </div>
@@ -1193,6 +1207,7 @@ const Heading = ({ component: Component = "div", children, ...props }) => (
 const Channel = ({ server: serverVariant, noSideMenu }) => {
   const params = useParams();
   const navigate = useNavigate();
+  const { user } = useAuth();
   const { state, actions } = useAppScope();
   const { isFloating: isSideMenuFloating } = useSideMenu();
 
@@ -1215,17 +1230,22 @@ const Channel = ({ server: serverVariant, noSideMenu }) => {
     });
   }, [navigate, params.channelId, state, server]);
 
-  const createMessage = React.useCallback(
-    ({ blocks, replyToMessageId }) => {
+  const createMessage = useLatestCallback(
+    async ({ blocks, replyToMessageId }) => {
+      if (
+        channel.memberCount != null &&
+        !channel.memberUserIds.includes(user.id)
+      )
+        await actions.joinChannel(params.channelId);
+
       return actions.createMessage({
-        server: channel?.kind === "dm" ? undefined : channel.serverId,
+        server: channel.kind === "server" ? channel.serverId : undefined,
         channel: params.channelId,
         content: stringifyMessageBlocks(blocks),
         blocks,
         replyToMessageId,
       });
-    },
-    [actions, channel?.kind, channel?.serverId, params.channelId]
+    }
   );
 
   React.useEffect(() => {

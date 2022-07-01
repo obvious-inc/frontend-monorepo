@@ -277,6 +277,18 @@ const commands = {
       return channel.kind !== "topic" || channel.ownerUserId !== user.id;
     },
   }),
+  "join-channel": ({ state, actions, channelId, user }) => {
+    const channel = state.selectChannel(channelId);
+    return {
+      description: `Join "#${channel.name}".`,
+      execute: async ({ editor }) => {
+        await actions.joinChannel(channelId);
+        editor.clear();
+      },
+      exclude: () =>
+        channel.kind !== "topic" || channel.memberUserIds.includes(user.id),
+    };
+  },
   "leave-channel": ({ state, actions, channelId, user }) => {
     const channel = state.selectChannel(channelId);
     return {
@@ -288,6 +300,34 @@ const commands = {
       exclude: () => {
         return channel.kind !== "topic" || channel.ownerUserId === user.id;
       },
+    };
+  },
+  "make-public": ({ state, actions, channelId, user }) => {
+    const channel = state.selectChannel(channelId);
+    return {
+      description: `Make "#${channel.name}" public.`,
+      execute: async ({ editor }) => {
+        await actions.makeChannelPublic(channelId);
+        editor.clear();
+      },
+      exclude: () =>
+        channel.kind !== "topic" ||
+        channel.isPublic ||
+        channel.ownerUserId !== user.id,
+    };
+  },
+  "make-private": ({ state, actions, channelId, user }) => {
+    const channel = state.selectChannel(channelId);
+    return {
+      description: `Make "#${channel.name}" private.`,
+      execute: async ({ editor }) => {
+        await actions.makeChannelPrivate(channelId);
+        editor.clear();
+      },
+      exclude: () =>
+        channel.kind !== "topic" ||
+        !channel.isPublic ||
+        channel.ownerUserId !== user.id,
     };
   },
 };

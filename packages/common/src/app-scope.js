@@ -429,6 +429,16 @@ export const Provider = ({ children }) => {
     })
   );
 
+  const joinChannel = useLatestCallback((channelId) =>
+    authorizedFetch(`/channels/${channelId}/join`, {
+      method: "POST",
+    }).then((res) => {
+      // TODO
+      fetchInitialData();
+      return res;
+    })
+  );
+
   const leaveChannel = useLatestCallback((channelId) =>
     authorizedFetch(`/channels/${channelId}/members/me`, {
       method: "DELETE",
@@ -454,6 +464,35 @@ export const Provider = ({ children }) => {
   const deleteChannel = useLatestCallback((id) =>
     authorizedFetch(`/channels/${id}`, { method: "DELETE" }).then((res) => {
       dispatch({ type: "delete-channel-request-successful", id });
+      return res;
+    })
+  );
+
+  const makeChannelPublic = useLatestCallback((channelId) =>
+    authorizedFetch(`/channels/${channelId}/permissions`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify([
+        {
+          group: "@public",
+          permissions: ["channels.join", "channels.view", "messages.list"],
+        },
+      ]),
+    }).then((res) => {
+      // TODO
+      fetchInitialData();
+      return res;
+    })
+  );
+
+  const makeChannelPrivate = useLatestCallback((channelId) =>
+    authorizedFetch(`/channels/${channelId}/permissions`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify([{ group: "@public", permissions: [] }]),
+    }).then((res) => {
+      // TODO
+      fetchInitialData();
       return res;
     })
   );
@@ -527,9 +566,12 @@ export const Provider = ({ children }) => {
       createDmChannel,
       addChannelMember,
       removeChannelMember,
+      joinChannel,
       leaveChannel,
       updateChannel,
       deleteChannel,
+      makeChannelPublic,
+      makeChannelPrivate,
       createMessage,
       updateMessage,
       removeMessage,
@@ -559,10 +601,13 @@ export const Provider = ({ children }) => {
       deleteChannelSection,
       fetchChannel,
       createChannel,
+      makeChannelPublic,
+      makeChannelPrivate,
       createServerChannel,
       createDmChannel,
       addChannelMember,
       removeChannelMember,
+      joinChannel,
       leaveChannel,
       updateChannel,
       deleteChannel,

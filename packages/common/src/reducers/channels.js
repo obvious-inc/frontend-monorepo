@@ -11,12 +11,17 @@ import {
 } from "./server-members";
 
 const parseChannel = (channel) => {
+  const publicPermissionGroup = channel.permission_overwrites?.find(
+    (p) => p.group === "@public"
+  );
+  console.log(channel);
   const properties = {
     id: channel.id,
     name: channel.name,
     description: channel.description,
     kind: channel.kind ?? "server",
     createdAt: channel.created_at,
+    publicPermissions: publicPermissionGroup?.permissions ?? [],
   };
   if (["dm", "topic"].includes(channel.kind)) {
     properties.memberUserIds = channel.members;
@@ -265,6 +270,7 @@ export const selectChannel = createSelector(
     return {
       ...channel,
       name: buildName(),
+      isPublic: channel.publicPermissions.includes("channels.join"),
     };
   },
   { memoizeOptions: { maxSize: 1000 } }
@@ -273,7 +279,8 @@ export const selectChannel = createSelector(
 export const selectChannelMentionCount = createSelector(
   (state, channelId) => state.channels.readStatesById[channelId],
   (channelState) => {
-    if (channelState == null) return 0;
+    if (channelState == null || channelState.unreadMentionMessageIds == null)
+      return 0;
     return channelState.unreadMentionMessageIds.length;
   },
   { memoizeOptions: { maxSize: 1000 } }
