@@ -3,19 +3,25 @@ import {
   useParams,
   useLocation,
   useNavigate,
+  useMatch,
   Link,
 } from "react-router-dom";
 import { css } from "@emotion/react";
 import { useAppScope, useAuth, useLatestCallback } from "@shades/common";
 import useSideMenu from "../hooks/side-menu";
 import {
-  Home as HomeIcon,
+  Star as StarIcon,
   ChatBubbles as ChatBubblesIcon,
   Plus as PlusIcon,
 } from "./icons";
 import Avatar from "./avatar";
-import { NotificationBadge } from "./channel-layout";
+import NotificationBadge from "./notification-badge";
 import * as Tooltip from "./tooltip";
+
+const isBetaSession =
+  process.env.DEV || window.location.search.includes("beta");
+
+const isNative = window.Native != null;
 
 const MainMenu = () => {
   const params = useParams();
@@ -23,6 +29,7 @@ const MainMenu = () => {
   const { state, actions } = useAppScope();
   const { user } = useAuth();
   const location = useLocation();
+  const channelsMatch = useMatch("/channels/:channelId");
 
   const { isFloating: isFloatingMenuEnabled, toggle: toggleMenu } =
     useSideMenu();
@@ -40,21 +47,33 @@ const MainMenu = () => {
     if (isFloatingMenuEnabled) toggleMenu();
   });
 
+  const unreadStarredChannels = state
+    .selectStarredChannels()
+    .filter((c) => state.selectChannelHasUnread(c.id));
+  const hasUnreadStarredChannels = unreadStarredChannels.length > 0;
+  const starredChannelsMentionCount = unreadStarredChannels.reduce(
+    (count, c) => count + state.selectChannelMentionCount(c.id),
+    0
+  );
+
   return (
     <div
       css={(theme) =>
         css({
+          position: "relative",
           display: "flex",
-          width: "6.6rem",
+          width: theme.mainMenu.leftStackNavWidth,
           background: theme.colors.backgroundTertiary,
           flexDirection: "column",
           alignItems: "center",
           justifyContent: "space-between",
+          WebkitAppRegion: isNative ? "drag" : undefined,
         })
       }
     >
       <div
         css={css({
+          paddingTop: isNative ? "2rem" : 0,
           flex: 1,
           minHeight: 0,
           display: "flex",
@@ -74,29 +93,37 @@ const MainMenu = () => {
         >
           {[
             {
-              to: "/",
-              icon: <HomeIcon style={{ width: "2.2rem" }} />,
-              tooltip: "Home",
+              to: "/channels",
+              icon: <ChatBubblesIcon style={{ width: "2.2rem" }} />,
+              tooltip: "Channels",
+              component: Link,
+              className:
+                channelsMatch == null && location.pathname !== "/channels"
+                  ? undefined
+                  : "active",
             },
             {
-              to:
-                dmChannels.length === 0
-                  ? "/channels/@me"
-                  : `/channels/@me/${dmChannels[0].id}`,
-              icon: <ChatBubblesIcon style={{ width: "2.2rem" }} />,
-              tooltip: "Direct messages",
-              component: Link,
-              className: location.pathname.startsWith("/channels/@me")
-                ? "active"
-                : undefined,
+              to: "/",
+              icon: (
+                <span
+                  style={{
+                    color: hasUnreadStarredChannels ? "white" : undefined,
+                  }}
+                >
+                  {/* <HomeIcon style={{ width: "2.2rem" }} /> */}
+                  <StarIcon style={{ width: "2.2rem" }} />
+                </span>
+              ),
+              tooltip: "Home",
+              notificationCount: starredChannelsMentionCount,
+              className:
+                location.pathname === "/" ||
+                location.pathname.startsWith("/me/")
+                  ? "active"
+                  : undefined,
             },
           ].map(({ icon, ...props }) => (
-            <RoundButton
-              key={props.tooltip}
-              component={NavLink}
-              onClick={closeMenu}
-              {...props}
-            >
+            <RoundButton key={props.tooltip} component={NavLink} {...props}>
               {icon}
             </RoundButton>
           ))}
@@ -134,7 +161,7 @@ const MainMenu = () => {
                   key={c.id}
                   component={NavLink}
                   onClick={closeMenu}
-                  to={`/channels/@me/${c.id}`}
+                  to={`/channels/${c.id}`}
                   notificationCount={1} // TODO
                   tooltip={c.name}
                 >
@@ -174,7 +201,6 @@ const MainMenu = () => {
                       ? `/channels/${s.id}/${channels[0].id}`
                       : `/channels/${s.id}`
                   }
-                  onClick={closeMenu}
                   notificationCount={mentionCount}
                   tooltip={s.name}
                   className={isActive ? "active" : undefined}
@@ -186,24 +212,42 @@ const MainMenu = () => {
 
             <RoundButton
               onClick={() => {
-                if (
-                  process.env.DEV ||
-                  window.location.search.includes("beta")
-                ) {
-                  const name = prompt("Name plz");
-                  actions.createServer({ name }).then((t) => {
-                    navigate(`/channels/${t.id}`);
-                    closeMenu();
-                  });
+                if (!isBetaSession) {
+                  alert("Soon :tm:");
                   return;
                 }
-
-                alert("Soon :tm:");
+                const name = prompt("Name plz");
+                actions.createServer({ name }).then((t) => {
+                  navigate(`/channels/${t.id}`);
+                  closeMenu();
+                });
               }}
               tooltip="Start a new town"
             >
               <PlusIcon style={{ width: "1.7rem" }} />
             </RoundButton>
+
+            {isBetaSession && (
+              <RoundButton
+                onClick={() => {
+                  const name = prompt("Ok what shall we call it?", "😎");
+                  if (name.trim() === "") {
+                    alert("Name is required!");
+                    return;
+                  }
+                  const description = prompt(
+                    "...and a short description perhaps? (optional)"
+                  );
+                  actions.createChannel({ name, description }).then((c) => {
+                    navigate(`/channels/${c.id}`);
+                    closeMenu();
+                  });
+                }}
+                tooltip="Start a new topic"
+              >
+                <PlusIcon style={{ width: "1.7rem" }} />
+              </RoundButton>
+            )}
           </div>
         </div>
       </div>
@@ -219,7 +263,12 @@ const RoundButton = ({
 }) => (
   <Tooltip.Root>
     <Tooltip.Trigger asChild>
-      <div style={{ position: "relative" }}>
+      <div
+        style={{
+          position: "relative",
+          WebkitAppRegion: isNative ? "no-drag" : undefined,
+        }}
+      >
         <Component
           css={(theme) =>
             css({

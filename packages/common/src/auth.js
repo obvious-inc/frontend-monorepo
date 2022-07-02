@@ -1,4 +1,5 @@
 import React from "react";
+import useLatestCallback from "./hooks/latest-callback";
 
 const ACCESS_TOKEN_CACHE_KEY = "access-token";
 const REFRESH_TOKEN_CACHE_KEY = "refresh-token";
@@ -49,6 +50,8 @@ const useAccessToken = ({ storage = asyncWebStorage } = {}) => {
 
   return [token, { set, clear, ref: tokenRef }];
 };
+
+let pendingRefreshAccessTokenPromise;
 
 const useRefreshToken = ({ storage = asyncWebStorage } = {}) => {
   const storageRef = React.useRef(storage);
@@ -104,7 +107,7 @@ export const Provider = ({
       ? "not-authenticated"
       : "authenticated";
 
-  const login = React.useCallback(
+  const login = useLatestCallback(
     async ({ message, signature, address, signedAt, nonce }) => {
       const responseBody = await fetch(`${apiOrigin}/auth/login`, {
         method: "POST",
@@ -125,84 +128,86 @@ export const Provider = ({
 
       setAccessToken(responseBody.access_token);
       setRefreshToken(responseBody.refresh_token);
-    },
-    [apiOrigin, setAccessToken, setRefreshToken]
+    }
   );
 
-  const logout = React.useCallback(() => {
+  const logout = useLatestCallback(() => {
     setAccessToken(null);
     setRefreshToken(null);
     setUser(null);
-  }, [setAccessToken, setRefreshToken]);
+  });
 
-  const refreshAccessToken = React.useCallback(async () => {
+  const refreshAccessToken = useLatestCallback(async () => {
+    if (pendingRefreshAccessTokenPromise != null)
+      return pendingRefreshAccessTokenPromise;
+
     const refreshToken = refreshTokenRef.current;
     if (refreshToken == null) throw new Error("Missing refresh token");
 
-    const responseBody = await fetch(`${apiOrigin}/auth/refresh`, {
-      method: "POST",
-      body: JSON.stringify({ refresh_token: refreshToken }),
-      headers: {
-        "Content-Type": "application/json",
-      },
-    }).then((response) => {
-      if (response.ok) return response.json();
+    const run = async () => {
+      const responseBody = await fetch(`${apiOrigin}/auth/refresh`, {
+        method: "POST",
+        body: JSON.stringify({ refresh_token: refreshToken }),
+        headers: {
+          "Content-Type": "application/json",
+        },
+      }).then((response) => {
+        if (response.ok) return response.json();
 
-      clearAccessToken();
-      clearRefreshToken();
+        clearAccessToken();
+        clearRefreshToken();
 
-      return Promise.reject(new Error(response.statusText));
-    });
-
-    setAccessToken(responseBody.access_token);
-    setRefreshToken(responseBody.refresh_token);
-
-    return responseBody.access_token;
-  }, [
-    apiOrigin,
-    refreshTokenRef,
-    setAccessToken,
-    setRefreshToken,
-    clearAccessToken,
-    clearRefreshToken,
-  ]);
-
-  const authorizedFetch = React.useCallback(
-    async (url, options) => {
-      const accessToken = accessTokenRef.current;
-      if (accessToken == null) throw new Error("Missing access token");
-
-      const headers = new Headers(options?.headers);
-      if (!headers.has("Authorization"))
-        headers.set("Authorization", `Bearer ${accessToken}`);
-
-      const response = await fetch(`${apiOrigin}${url}`, {
-        ...options,
-        headers,
+        return Promise.reject(new Error(response.statusText));
       });
 
-      if (response.status === 401) {
-        try {
-          const newAccessToken = await refreshAccessToken();
-          const headers = new Headers(options?.headers);
-          headers.set("Authorization", `Bearer ${newAccessToken}`);
-          return authorizedFetch(url, { ...options, headers });
-        } catch (e) {
-          // Sign out if the access token refresh doesn’t succeed
-          logout();
-        }
+      setAccessToken(responseBody.access_token);
+      setRefreshToken(responseBody.refresh_token);
+
+      return responseBody.access_token;
+    };
+
+    const promise = run();
+
+    pendingRefreshAccessTokenPromise = promise;
+    const accessToken = await promise;
+    pendingRefreshAccessTokenPromise = null;
+
+    return accessToken;
+  });
+
+  const authorizedFetch = useLatestCallback(async (url, options) => {
+    const accessToken = accessTokenRef.current;
+    if (accessToken == null) throw new Error("Missing access token");
+
+    const headers = new Headers(options?.headers);
+    if (!headers.has("Authorization"))
+      headers.set("Authorization", `Bearer ${accessToken}`);
+
+    const response = await fetch(`${apiOrigin}${url}`, {
+      ...options,
+      headers,
+    });
+
+    if (response.status === 401) {
+      try {
+        const newAccessToken = await refreshAccessToken();
+        const headers = new Headers(options?.headers);
+        headers.set("Authorization", `Bearer ${newAccessToken}`);
+        return authorizedFetch(url, { ...options, headers });
+      } catch (e) {
+        // Sign out if the access token refresh doesn’t succeed
+        logout();
       }
+    }
 
-      if (!response.ok) return Promise.reject(new Error(response.statusText));
+    if (!response.ok) return Promise.reject(new Error(response.statusText));
 
-      if (response.status === 204) return undefined;
+    if (response.status === 204) return undefined;
 
-      return response.json();
-    },
-    [apiOrigin, accessTokenRef, refreshAccessToken, logout]
-  );
+    return response.json();
+  });
 
-  const verifyAccessToken = React.useCallback(() => {
+  const verifyAccessToken = useLatestCallback(() => {
     // This will have to do for now
     return authorizedFetch("/users/me").then(() => null);
   }, [authorizedFetch]);

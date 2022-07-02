@@ -1,12 +1,15 @@
 import throttle from "lodash.throttle";
 import React from "react";
-import { useParams, useNavigate } from "react-router";
+import { useParams, useNavigate, NavLink } from "react-router-dom";
 import { css } from "@emotion/react";
 import {
+  useAuth,
   useAppScope,
   useLatestCallback,
   getImageFileDimensions,
+  arrayUtils,
 } from "@shades/common";
+import * as eth from "../utils/ethereum";
 import useGlobalMediaQueries from "../hooks/global-media-queries";
 import useWindowFocusListener from "../hooks/window-focus-listener";
 import useOnlineListener from "../hooks/window-online-listener";
@@ -16,6 +19,9 @@ import useCommands from "../hooks/commands";
 import MessageInput from "./message-input";
 import Spinner from "./spinner";
 import ChannelMessage from "./channel-message";
+import Avatar from "./avatar";
+import * as Tooltip from "./tooltip";
+import * as Dialog from "./dialog";
 import { Hash as HashIcon, AtSign as AtSignIcon } from "./icons";
 import {
   HamburgerMenu as HamburgerMenuIcon,
@@ -27,6 +33,10 @@ import useIsOnScreen from "../hooks/is-on-screen";
 import useScrollListener from "../hooks/scroll-listener";
 import useMutationObserver from "../hooks/mutation-observer";
 
+const { sort } = arrayUtils;
+
+const isNative = window.Native != null;
+
 // This fetcher only allows for a single request (with the same query) to be
 // pending at once. Subsequent "equal" request will simply return the initial
 // pending request promise.
@@ -37,6 +47,7 @@ const useMessageFetcher = () => {
   const fetchMessages = useLatestCallback(
     async (channelId, { limit, beforeMessageId, afterMessageId } = {}) => {
       const key = new URLSearchParams([
+        ["channel", channelId],
         ["limit", limit],
         ["before-message-id", beforeMessageId],
         ["after-message-id", afterMessageId],
@@ -114,11 +125,15 @@ const useScroll = (scrollContainerRef, channelId) => {
   }, [scrollContainerRef, channelId, scrollToBottom]);
 
   useScrollListener(scrollContainerRef, (e) => {
-    scrollPositionCache[channelId] = { scrollTop: e.target.scrollTop };
-
     const isAtBottom =
       Math.ceil(e.target.scrollTop) + e.target.getBoundingClientRect().height >=
       e.target.scrollHeight;
+
+    if (isAtBottom) {
+      delete scrollPositionCache[channelId];
+    } else {
+      scrollPositionCache[channelId] = { scrollTop: e.target.scrollTop };
+    }
 
     setScrolledToBottom(isAtBottom);
   });
@@ -203,7 +218,9 @@ export const ChannelBase = ({
   isAdmin = false,
   createMessage,
   headerContent,
+  noSideMenu,
 }) => {
+  const { user } = useAuth();
   const { actions, state, addBeforeDispatchListener } = useAppScope();
 
   const { inputDeviceCanHover } = useGlobalMediaQueries();
@@ -259,9 +276,6 @@ export const ChannelBase = ({
 
   const { messages, hasAllMessages } = useMessages(channel.id);
 
-  const { isFloating: isMenuTogglingEnabled, toggle: toggleMenu } =
-    useSideMenu();
-
   const getMember = React.useCallback(
     (ref) => members.find((m) => m.id === ref),
     [members]
@@ -291,7 +305,7 @@ export const ChannelBase = ({
 
     // This should be called after the first render, and when navigating to
     // emply channels
-    fetchMessages(channel.id, { limit: 50 });
+    fetchMessages(channel.id, { limit: 30 });
   }, [fetchMessages, channel.id, messages.length]);
 
   const channelHasUnread = state.selectChannelHasUnread(channel.id);
@@ -344,7 +358,7 @@ export const ChannelBase = ({
 
       fetchMessages(channel.id, {
         beforeMessageId: messages[0].id,
-        limit: 50,
+        limit: 30,
       });
     },
     [channel.id]
@@ -401,12 +415,12 @@ export const ChannelBase = ({
   }, [lastMessage, scrollToBottom, didScrollToBottomRef]);
 
   useWindowFocusListener(() => {
-    fetchMessages(channel.id, { limit: 50 });
+    fetchMessages(channel.id, { limit: 30 });
     if (channelHasUnread && didScrollToBottom) markChannelRead();
   });
 
   useOnlineListener(() => {
-    fetchMessages(channel.id, { limit: 50 });
+    fetchMessages(channel.id, { limit: 30 });
   });
 
   const submitMessage = React.useCallback(
@@ -435,6 +449,8 @@ export const ChannelBase = ({
     [throttledRegisterTypingActivity]
   );
 
+  const channelPrefix = channel.kind === "dm" ? "@" : "#";
+
   return (
     <div
       css={(theme) => css`
@@ -445,46 +461,10 @@ export const ChannelBase = ({
         background: ${theme.colors.backgroundPrimary};
         display: flex;
         flex-direction: column;
+        height: 100%;
       `}
     >
-      <div
-        css={css({
-          height: "4.8rem",
-          padding: "0 1.6rem",
-          display: "flex",
-          alignItems: "center",
-          boxShadow:
-            "0 1px 0 rgba(4,4,5,0.2),0 1.5px 0 rgba(6,6,7,0.05),0 2px 0 rgba(4,4,5,0.05)",
-        })}
-      >
-        {isMenuTogglingEnabled && (
-          <button
-            onClick={() => {
-              toggleMenu();
-            }}
-            css={css({
-              background: "none",
-              border: 0,
-              color: "white",
-              cursor: "pointer",
-              padding: "0.8rem 0.6rem",
-              marginLeft: "-0.6rem",
-              marginRight: "calc(-0.6rem + 1.6rem)",
-            })}
-          >
-            <HamburgerMenuIcon
-              css={(theme) =>
-                css({
-                  fill: theme.colors.interactiveNormal,
-                  width: "1.5rem",
-                  ":hover": { fill: theme.colors.interactiveHover },
-                })
-              }
-            />
-          </button>
-        )}
-        {headerContent}
-      </div>
+      <Header noSideMenu={noSideMenu}>{headerContent}</Header>
 
       <div
         css={css({
@@ -536,24 +516,52 @@ export const ChannelBase = ({
                   <div
                     css={(theme) =>
                       css({
-                        fontSize: "2.5rem",
+                        fontSize: theme.fontSizes.huge,
+                        fontFamily: theme.fontStacks.headers,
                         fontWeight: "500",
                         color: theme.colors.textHeader,
                         margin: "0 0 0.5rem",
                       })
                     }
                   >
-                    Welcome to #{channel.name}!
+                    Welcome to {channelPrefix}
+                    {channel.name}!
                   </div>
                   <div
                     css={(theme) =>
                       css({
-                        fontSize: theme.fontSizes.default,
-                        color: theme.colors.textHeaderSecondary,
+                        fontSize: theme.fontSizes.channelMessages,
+                        color: theme.colors.textDimmed,
                       })
                     }
                   >
-                    This is the start of #{channel.name}.
+                    This is the start of {channelPrefix}
+                    {channel.name}. {channel.description}
+                    {channel.kind === "topic" &&
+                      channel.ownerUserId === user.id &&
+                      members.length <= 1 && (
+                        <div
+                          css={(theme) =>
+                            css({
+                              color: theme.colors.textHighlight,
+                              fontSize: theme.fontSizes.default,
+                              marginTop: "1rem",
+                            })
+                          }
+                        >
+                          {channel.isPublic ? (
+                            <>
+                              This channel is open for anyone to join. Share its
+                              URL to help people find it!
+                            </>
+                          ) : (
+                            <>
+                              Add members with the &ldquo;/add-member&rdquo;
+                              command.
+                            </>
+                          )}
+                        </div>
+                      )}
                   </div>
                 </div>
               </div>
@@ -615,7 +623,7 @@ export const ChannelBase = ({
       <div css={css({ padding: "0 1.6rem 2.4rem", position: "relative" })}>
         <NewMessageInput
           ref={inputRef}
-          isDM={channel.kind === "dm"}
+          context={channel.kind}
           serverId={channel.serverId}
           channelId={channel.id}
           replyingToMessage={
@@ -708,7 +716,7 @@ const NewMessageInput = React.memo(
       uploadImage,
       replyingToMessage,
       cancelReply,
-      isDM,
+      context,
       serverId,
       channelId,
       onInputChange,
@@ -723,6 +731,9 @@ const NewMessageInput = React.memo(
     const [isPending, setPending] = React.useState(false);
 
     const [imageUploads, setImageUploads] = React.useState([]);
+
+    const isEmptyMessage =
+      imageUploads.length === 0 && pendingMessage.every(isNodeEmpty);
 
     const fileInputRef = React.useRef();
     const uploadPromiseRef = React.useRef();
@@ -739,11 +750,7 @@ const NewMessageInput = React.memo(
       execute: executeCommand,
       isCommand,
       commands,
-    } = useCommands({
-      context: isDM ? "dm" : "server-channel",
-      serverId,
-      channelId,
-    });
+    } = useCommands({ context, serverId, channelId });
 
     const executeMessage = async () => {
       const blocks = cleanNodes(pendingMessage);
@@ -873,6 +880,7 @@ const NewMessageInput = React.memo(
           onSubmit={(e) => {
             e.preventDefault();
             executeMessage();
+            editorRef.current.focus();
           }}
           css={(theme) =>
             css({
@@ -883,6 +891,7 @@ const NewMessageInput = React.memo(
               borderRadius: "0.7rem",
               borderTopLeftRadius: replyingToMessage ? 0 : undefined,
               borderTopRightRadius: replyingToMessage ? 0 : undefined,
+              fontSize: theme.fontSizes.channelMessages,
               "[role=textbox] [data-slate-placeholder]": {
                 color: "rgb(255 255 255 / 40%)",
                 opacity: "1 !important",
@@ -902,7 +911,7 @@ const NewMessageInput = React.memo(
           <div
             css={{
               display: "grid",
-              gridTemplateColumns: "auto minmax(0,1fr)",
+              gridTemplateColumns: "auto minmax(0,1fr) auto",
               gridGap: "1.2rem",
               alignItems: "flex-start",
               paddingLeft: "0.3rem",
@@ -953,6 +962,33 @@ const NewMessageInput = React.memo(
               disabled={isPending}
               {...props}
             />
+
+            <button
+              disabled={isEmptyMessage || isPending}
+              css={(theme) =>
+                css({
+                  color: theme.colors.primaryLight,
+                  padding: "0.2rem",
+                  cursor: "pointer",
+                  ":hover": { filter: "brightness(1.1) saturate(1.1)" },
+                  ":disabled": {
+                    pointerEvents: "none",
+                    color: theme.colors.disabledMessageSubmitButton,
+                  },
+                })
+              }
+              type="submit"
+            >
+              <svg width="20" height="20" viewBox="0 0 20 20">
+                <path
+                  fill="currentColor"
+                  stroke="currentColor"
+                  strokeLinejoin="round"
+                  strokeWidth="1.5"
+                  d="M2.25 2.25 17.75 10l-15.5 7.75v-4.539a1.5 1.5 0 0 1 1.46-1.5l6.54-.171a1.54 1.54 0 0 0 0-3.08l-6.54-.172a1.5 1.5 0 0 1-1.46-1.5V2.25Z"
+                />
+              </svg>
+            </button>
           </div>
 
           {imageUploads.length !== 0 && (
@@ -1148,77 +1184,159 @@ const AttachmentList = ({ items, remove }) => (
   </div>
 );
 
-const Header = ({ children }) => (
-  <div
+const Heading = ({ component: Component = "div", children, ...props }) => (
+  <Component
     css={(theme) =>
       css({
-        fontSize: "1.5rem",
-        fontWeight: "600",
+        fontSize: theme.fontSizes.headerDefault,
+        fontWeight: theme.text.weights.header,
         color: theme.colors.textHeader,
+        fontFamily: theme.fontStacks.headers,
         whiteSpace: "nowrap",
         textOverflow: "ellipsis",
+        userSelect: "text",
+        cursor: "default",
       })
     }
+    {...props}
   >
     {children}
-  </div>
+  </Component>
 );
 
-const Channel = () => {
+const Channel = ({ server: serverVariant, noSideMenu }) => {
   const params = useParams();
   const navigate = useNavigate();
+  const { user } = useAuth();
   const { state, actions } = useAppScope();
-  const { isFloating: isMenuTogglingEnabled } = useSideMenu();
+  const { isFloating: isSideMenuFloating } = useSideMenu();
+
+  const isMenuTogglingEnabled = !noSideMenu && isSideMenuFloating;
+
+  const { fetchChannel } = actions;
 
   const channel = state.selectChannel(params.channelId);
 
-  const server = state.selectServer(params.serverId);
+  const server = state.selectServer(channel?.serverId);
 
   const members = state.selectChannelMembers(params.channelId);
 
   React.useEffect(() => {
     if (server == null || params.channelId != null) return;
-    const serverChannels = state.selectServerChannels(params.serverId);
+    const serverChannels = state.selectServerChannels(server.id);
     if (serverChannels.length === 0) return;
-    navigate(`/channels/${params.serverId}/${serverChannels[0].id}`, {
+    navigate(`/channels/${server.id}/${serverChannels[0].id}`, {
       replace: true,
     });
-  }, [navigate, params.channelId, params.serverId, state, server]);
+  }, [navigate, params.channelId, state, server]);
 
-  const createMessage = React.useCallback(
-    ({ blocks, replyToMessageId }) => {
+  const createMessage = useLatestCallback(
+    async ({ blocks, replyToMessageId }) => {
+      if (
+        channel.memberUserIds != null &&
+        !channel.memberUserIds.includes(user.id)
+      )
+        await actions.joinChannel(params.channelId);
+
       return actions.createMessage({
-        server: channel?.kind === "dm" ? undefined : params.serverId,
+        server: channel.kind === "server" ? channel.serverId : undefined,
         channel: params.channelId,
         content: stringifyMessageBlocks(blocks),
         blocks,
         replyToMessageId,
       });
-    },
-    [actions, channel?.kind, params.serverId, params.channelId]
+    }
   );
+
+  React.useEffect(() => {
+    if (channel == null) fetchChannel(params.channelId);
+  }, [channel, params.channelId, fetchChannel]);
 
   const headerContent = React.useMemo(
     () =>
       channel == null ? null : (
         <>
-          {!isMenuTogglingEnabled && (
+          {!serverVariant && server != null && (
+            <>
+              <Heading
+                component={NavLink}
+                to={`/servers/${server.id}/${channel.id}`}
+                css={css({
+                  textDecoration: "none",
+                  ":hover": { textDecoration: "underline" },
+                })}
+              >
+                {server.name}
+              </Heading>
+              <div
+                css={(theme) =>
+                  css({
+                    color: theme.colors.textMuted,
+                    fontSize: "1.8rem",
+                    padding: "0 0.7rem",
+                  })
+                }
+              >
+                /
+              </div>
+            </>
+          )}
+          {!isMenuTogglingEnabled && server == null && (
             <div
               css={(theme) =>
-                css({ color: theme.colors.textMuted, marginRight: "0.9rem" })
+                css({ color: theme.colors.textMuted, marginRight: "0.6rem" })
               }
             >
               {channel?.kind === "dm" ? (
                 <AtSignIcon style={{ width: "2.2rem" }} />
               ) : (
-                <HashIcon style={{ width: "1.9rem" }} />
+                <HashIcon style={{ width: "1.6rem" }} />
               )}
             </div>
           )}
-          <Header>{channel?.name}</Header>
+          <Heading>{channel?.name}</Heading>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            {channel.description != null && (
+              <div
+                css={(theme) =>
+                  css({
+                    color: theme.colors.textHeaderSecondary,
+                    marginLeft: "1.5rem",
+                    padding: "0 1.5rem",
+                    borderLeft: "1px solid",
+                    borderColor: "hsl(0 0% 100% / 20%)",
+                    whiteSpace: "nowrap",
+                    overflow: "hidden",
+                    textOverflow: "ellipsis",
+                    userSelect: "text",
+                    cursor: "default",
+                  })
+                }
+              >
+                {channel.description}
+              </div>
+            )}
+          </div>
+          <Dialog.Root>
+            <Dialog.Trigger asChild>
+              <MembersDisplayButton members={members} />
+            </Dialog.Trigger>
+            <Dialog.Portal>
+              <Dialog.Overlay
+                css={css({
+                  padding: "2.8rem 1.5rem",
+                  "@media (min-width: 600px)": {
+                    padding: "2.8rem",
+                  },
+                })}
+              >
+                <MembersDirectoryDialog members={members} />
+              </Dialog.Overlay>
+            </Dialog.Portal>
+          </Dialog.Root>
         </>
       ),
-    [isMenuTogglingEnabled, channel]
+    [isMenuTogglingEnabled, server, channel, members, serverVariant]
   );
 
   if (channel == null)
@@ -1236,6 +1354,7 @@ const Channel = () => {
 
   return (
     <ChannelBase
+      noSideMenu={noSideMenu}
       channel={channel}
       members={members}
       typingMembers={typingChannelMembers}
@@ -1261,6 +1380,382 @@ const OnScreenTrigger = ({ callback }) => {
   }, [isOnScreen]);
 
   return <div ref={ref} />;
+};
+
+export const Header = ({ noSideMenu, children }) => {
+  const { isFloating: isSideMenuFloating, toggle: toggleMenu } = useSideMenu();
+  const isMenuTogglingEnabled = !noSideMenu && isSideMenuFloating;
+  return (
+    <div
+      css={(theme) =>
+        css({
+          height: theme.mainHeader.height,
+          padding: "0 1.6rem",
+          display: "flex",
+          alignItems: "center",
+          boxShadow: theme.mainHeader.shadow,
+          WebkitAppRegion: isNative ? "drag" : undefined,
+        })
+      }
+    >
+      {isMenuTogglingEnabled && (
+        <button
+          onClick={() => {
+            toggleMenu();
+          }}
+          css={css({
+            background: "none",
+            border: 0,
+            color: "white",
+            cursor: "pointer",
+            padding: "0.8rem 0.6rem",
+            marginLeft: "-0.6rem",
+            marginRight: "calc(-0.6rem + 1.6rem)",
+          })}
+        >
+          <HamburgerMenuIcon
+            css={(theme) =>
+              css({
+                fill: theme.colors.interactiveNormal,
+                width: "1.5rem",
+                ":hover": { fill: theme.colors.interactiveHover },
+              })
+            }
+          />
+        </button>
+      )}
+      {children}
+    </div>
+  );
+};
+const compareMembersByOnlineStatusAndDisplayName = (m1, m2) => {
+  if (m1.onlineStatus !== m2.onlineStatus)
+    return m1.onlineStatus === "online" ? -1 : 1;
+
+  const [name1, name2] = [m1, m2].map((m) => m.displayName.toLowerCase());
+
+  const [name1IsAddress, name2IsAddress] = [name1, name2].map(
+    (n) => n.startsWith("0x") && n.includes("...")
+  );
+
+  if (!name1IsAddress && name2IsAddress) return -1;
+  if (name1IsAddress && !name2IsAddress) return 1;
+
+  if (name1 < name2) return -1;
+  if (name1 > name2) return 1;
+  return 0;
+};
+
+const MembersDisplayButton = React.forwardRef(({ onClick, members }, ref) => {
+  const sortedMembers = React.useMemo(
+    () => sort(compareMembersByOnlineStatusAndDisplayName, members),
+    [members]
+  );
+
+  const memberCount = members.length;
+  const onlineMemberCount = members.filter(
+    (m) => m.onlineStatus === "online"
+  ).length;
+
+  const membersToDisplay = sortedMembers.slice(0, 3);
+
+  return (
+    <Tooltip.Root>
+      <Tooltip.Trigger asChild>
+        <button
+          ref={ref}
+          onClick={onClick}
+          css={(theme) =>
+            css({
+              display: "flex",
+              alignItems: "center",
+              padding: "0.4rem",
+              borderRadius:
+                theme.avatars.borderRadius === "50%" ? "1.4rem" : "0.4rem",
+              boxShadow:
+                theme.avatars.borderRadius === "50%"
+                  ? "none"
+                  : "0 0 0 0.1rem hsl(0 0% 100% / 18%)",
+              cursor: "pointer",
+              ":hover": {
+                background: "hsl(0 0% 100% / 3%)",
+                boxShadow:
+                  theme.avatars.borderRadius === "50%"
+                    ? "none"
+                    : "0 0 0 0.1rem hsl(0 0% 100% / 25%)",
+              },
+            })
+          }
+        >
+          {membersToDisplay.map((user, i) => (
+            <Avatar
+              key={user.id}
+              url={user?.profilePicture.small}
+              walletAddress={user?.walletAddress}
+              size="2rem"
+              pixelSize={20}
+              css={(theme) =>
+                css({
+                  marginLeft: i === 0 ? 0 : "-0.4rem",
+                  boxShadow: `0 0 0 0.2rem ${theme.colors.backgroundPrimary}`,
+                  position: "relative",
+                  zIndex: `calc(${i} * -1)`,
+                  borderRadius: theme.avatars.borderRadius,
+                })
+              }
+            />
+          ))}
+
+          <div
+            css={(theme) =>
+              css({
+                marginLeft: "0.3rem",
+                padding: "0 0.4rem",
+                fontSize: theme.fontSizes.small,
+                color: theme.colors.textHeaderSecondary,
+              })
+            }
+          >
+            {members.length}
+          </div>
+        </button>
+      </Tooltip.Trigger>
+      <Tooltip.Content sideOffset={5}>
+        View all members of this channel
+        <div css={(theme) => css({ color: theme.colors.textMuted })}>
+          {onlineMemberCount === memberCount
+            ? "All members online"
+            : `${onlineMemberCount} ${
+                onlineMemberCount === 1 ? "member" : "members"
+              } online`}
+        </div>
+      </Tooltip.Content>
+    </Tooltip.Root>
+  );
+});
+
+const MembersDirectoryDialog = ({ members }) => {
+  const [query, setQuery] = React.useState("");
+
+  const filteredMembers = React.useMemo(() => {
+    if (query.trim() === "")
+      return sort(compareMembersByOnlineStatusAndDisplayName, members);
+
+    const q = query.trim().toLowerCase();
+    const getSearchTokens = (m) => [m.displayName, m.walletAddress];
+
+    const unorderedFilteredMembers = members.filter((member) =>
+      getSearchTokens(member).some((t) => t.toLowerCase().includes(q))
+    );
+
+    const orderedFilteredMembers = sort((m1, m2) => {
+      const [i1, i2] = [m1, m2].map((m) =>
+        Math.min(
+          ...getSearchTokens(m)
+            .map((t) => t.indexOf(q))
+            .filter((index) => index !== -1)
+        )
+      );
+
+      if (i1 < i2) return -1;
+      if (i1 > i2) return 1;
+      return 0;
+    }, unorderedFilteredMembers);
+
+    return orderedFilteredMembers;
+  }, [members, query]);
+
+  const memberCount = members.length;
+  const onlineMemberCount = members.filter(
+    (m) => m.onlineStatus === "online"
+  ).length;
+
+  return (
+    <Dialog.Content css={css({ display: "flex", flexDirection: "column" })}>
+      <div
+        css={css({
+          padding: "1.5rem 1.5rem 0",
+          "@media (min-width: 600px)": {
+            padding: "2rem 2rem 0",
+          },
+        })}
+      >
+        <div
+          css={css({
+            display: "grid",
+            gridTemplateColumns: "auto auto",
+            gridGap: "1rem",
+            alignItems: "flex-end",
+            justifyContent: "flex-start",
+            margin: "0 0 1.5rem",
+          })}
+        >
+          <h1
+            css={(theme) =>
+              css({ fontSize: theme.fontSizes.large, lineHeight: "1.2" })
+            }
+          >
+            Members
+          </h1>
+          <div
+            css={(theme) =>
+              css({
+                color: theme.colors.textMuted,
+                fontSize: theme.fontSizes.small,
+              })
+            }
+          >
+            {onlineMemberCount === 0 ? (
+              memberCount
+            ) : (
+              <>
+                {onlineMemberCount} of {memberCount} online
+              </>
+            )}
+          </div>
+          {/* <Dialog.Close */}
+          {/*   css={css({ */}
+          {/*     padding: "0.8rem", */}
+          {/*     display: "block", */}
+          {/*     margin: "0 auto", */}
+          {/*   })} */}
+          {/* > */}
+          {/*   close */}
+          {/* </Dialog.Close> */}
+        </div>
+        <input
+          value={query}
+          onChange={(e) => {
+            setQuery(e.target.value);
+          }}
+          placeholder="Find members"
+          css={(theme) =>
+            css({
+              position: "relative",
+              color: "white",
+              background: theme.colors.backgroundSecondary,
+              fontSize: "1.5rem",
+              fontWeight: "400",
+              borderRadius: "0.3rem",
+              padding: "0.5rem 0.7rem",
+              width: "100%",
+              outline: "none",
+              border: 0,
+              "&:focus": {
+                boxShadow: `0 0 0 0.2rem ${theme.colors.primary}`,
+              },
+              // Prevents iOS zooming in on input fields
+              "@supports (-webkit-touch-callout: none)": {
+                fontSize: "1.6rem",
+              },
+            })
+          }
+        />
+      </div>
+      <div css={css({ flex: 1, overflow: "auto", padding: "1.3rem 0" })}>
+        <ul>
+          {filteredMembers.map((member) => {
+            const truncatedAddress = eth.truncateAddress(member.walletAddress);
+            return (
+              <li key={member.id} css={css({ display: "block" })}>
+                <button
+                  css={(theme) =>
+                    css({
+                      width: "100%",
+                      display: "grid",
+                      gridTemplateColumns: "auto minmax(0,1fr)",
+                      gridGap: "1rem",
+                      alignItems: "center",
+                      lineHeight: "1.4",
+                      padding: "0.5rem 1.5rem",
+                      ":not(:first-of-type)": {
+                        marginTop: "0.1rem",
+                      },
+                      ":hover": {
+                        background: theme.colors.backgroundModifierSelected,
+                      },
+                      cursor: "pointer",
+                      "@media (min-width: 600px)": {
+                        gridGap: "1.5rem",
+                        padding: "0.7rem 2rem",
+                      },
+                    })
+                  }
+                  onClick={() => {
+                    navigator.clipboard
+                      .writeText(member.walletAddress)
+                      .then(() => {
+                        alert(
+                          "Close your eyes and imagine a beautiful profile dialog/popover appearing"
+                        );
+                      });
+                  }}
+                >
+                  <Avatar
+                    url={member.profilePicture.small}
+                    walletAddress={member.walletAddress}
+                    size="3.6rem"
+                    pixelSize={36}
+                    borderRadius="0.3rem"
+                  />
+                  <div>
+                    <div>
+                      {member.displayName}
+                      {member.onlineStatus === "online" && (
+                        <Tooltip.Root>
+                          <Tooltip.Trigger asChild>
+                            <div
+                              css={css({
+                                display: "inline-flex",
+                                padding: "0.5rem 0.2rem",
+                                marginLeft: "0.7rem",
+                                position: "relative",
+                                top: "-1px",
+                              })}
+                            >
+                              <div
+                                css={(theme) =>
+                                  css({
+                                    width: "0.7rem",
+                                    height: "0.7rem",
+                                    borderRadius: "50%",
+                                    background: theme.colors.onlineIndicator,
+                                  })
+                                }
+                              />
+                            </div>
+                          </Tooltip.Trigger>
+                          <Tooltip.Content
+                            side="top"
+                            align="center"
+                            sideOffset={6}
+                          >
+                            User online
+                          </Tooltip.Content>
+                        </Tooltip.Root>
+                      )}
+                    </div>
+                    {member.displayName !== truncatedAddress && (
+                      <div
+                        css={(theme) =>
+                          css({
+                            fontSize: theme.fontSizes.small,
+                            color: theme.colors.textMuted,
+                          })
+                        }
+                      >
+                        {truncatedAddress}
+                      </div>
+                    )}
+                  </div>
+                </button>
+              </li>
+            );
+          })}
+        </ul>
+      </div>
+    </Dialog.Content>
+  );
 };
 
 export default Channel;

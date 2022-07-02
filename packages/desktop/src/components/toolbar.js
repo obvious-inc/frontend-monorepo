@@ -11,7 +11,7 @@ export const Root = React.forwardRef((props, ref) => (
         minWidth: "max-content",
         display: "flex",
         padding: "0.4rem",
-        borderRadius: "0.5rem",
+        borderRadius: theme.dropdownMenus.borderRadius,
         background: theme.colors.dialogBackground,
         boxShadow: theme.shadows.elevationHigh,
       })
@@ -27,7 +27,7 @@ export const Button = React.forwardRef((props, ref) => (
       css({
         all: "unset",
         flex: "0 0 auto",
-        color: "white",
+        color: theme.colors.textNormal,
         height: 25,
         padding: "0 5px",
         borderRadius: 4,

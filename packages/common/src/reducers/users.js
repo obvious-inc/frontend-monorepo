@@ -48,11 +48,12 @@ const selectAllUsers = (state) =>
   );
 
 export const selectUser = createSelector(
-  (state, userId) => state.users.entriesById[userId],
+  (state, userId) =>
+    state.user?.id === userId ? state.user : state.users.entriesById[userId],
   (state) => state.user,
   (user, loggedInUser) => {
     if (user == null) return null;
-    const isLoggedInUser = user.id === loggedInUser.id;
+    const isLoggedInUser = user.id === loggedInUser?.id;
     return {
       ...user,
       displayName: user.display_name,
@@ -65,12 +66,15 @@ export const selectUser = createSelector(
 );
 
 export const selectUsers = createSelector(
-  (state, userIds) => userIds.map((userId) => selectUser(state, userId)),
+  (state, userIds) =>
+    userIds.map((userId) => selectUser(state, userId)).filter(Boolean),
   (users) => users,
   { memoizeOptions: { equalityCheck: arrayShallowEquals } }
 );
 
 export const selectUserFromWalletAddress = (state, address) =>
-  selectAllUsers(state).find((u) => u.walletAddress === address);
+  selectAllUsers(state).find(
+    (u) => u.walletAddress.toLowerCase() === address.toLowerCase()
+  );
 
 export default combineReducers({ entriesById });

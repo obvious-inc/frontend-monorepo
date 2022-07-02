@@ -12,7 +12,7 @@ import React from "react";
 import { css } from "@emotion/react";
 import { Routes, Route, useNavigate } from "react-router-dom";
 import { IntlProvider } from "react-intl";
-import { ThemeProvider } from "@emotion/react";
+import { ThemeProvider, Global } from "@emotion/react";
 import Pusher from "pusher-js";
 import {
   useAuth,
@@ -33,19 +33,19 @@ import useWalletLogin, {
   Provider as WalletLoginProvider,
 } from "./hooks/wallet-login";
 import { generateCachedAvatar } from "./components/avatar";
-import SignInScreen from "./components/sign-in-screen";
-import Channel from "./components/channel";
+import LoginScreen from "./components/login-screen";
+import Channel, { Header as ChannelHeader } from "./components/channel";
 import Discover from "./components/discover";
 import JoinServer from "./components/join-server";
-import ChannelLayout, { DmChannelLayout } from "./components/channel-layout";
+import { UnifiedLayout } from "./components/layouts";
 import TitleBar from "./components/title-bar";
-import MainMenu from "./components/main-menu";
 import * as Tooltip from "./components/tooltip";
 import {
-  Home as HomeIcon,
   ChatBubbles as ChatBubblesIcon,
+  Home as HomeIcon,
 } from "./components/icons";
-import { dark as defaultTheme } from "./themes";
+import useSideMenu from "./hooks/side-menu";
+import { notion as defaultTheme } from "./themes";
 
 const isNative = window.Native != null;
 
@@ -99,8 +99,8 @@ const useSystemNotifications = () => {
             }),
           onClick: ({ close }) => {
             navigate(
-              channel.kind === "dm"
-                ? `/channels/@me/${channel.id}`
+              channel.kind !== "server"
+                ? `/channels/${channel.id}`
                 : `/channels/${channel.serverId}/${channel.id}`
             );
             window.focus();
@@ -130,6 +130,10 @@ const App = () => {
   const { user, status: authStatus } = useAuth();
   const { state, actions } = useAppScope();
   const { login } = useWalletLogin();
+
+  const { fetchInitialData, fetchStarredItems, fetchServers } = actions;
+
+  const hasFetchedInitialData = state.selectHasFetchedInitialData();
 
   useSystemNotifications();
 
@@ -165,21 +169,19 @@ const App = () => {
   });
 
   React.useEffect(() => {
-    if (user == null || state.selectHasFetchedInitialData()) return null;
+    if (authStatus !== "authenticated") return;
+    fetchServers();
+  }, [authStatus, fetchServers]);
 
-    actions.fetchInitialData().then((data) => {
-      const server = data.servers[0];
+  React.useEffect(() => {
+    if (user == null || hasFetchedInitialData) return null;
+    fetchInitialData();
+  }, [user, fetchInitialData, hasFetchedInitialData]);
 
-      const channel = server?.channels[0];
-
-      if (channel == null) return;
-
-      if (window.location.pathname === "/")
-        navigate(`/channels/${server.id}/${channel.id}`, {
-          replace: true,
-        });
-    });
-  }, [user, navigate, actions, state]);
+  React.useEffect(() => {
+    if (authStatus !== "authenticated") return;
+    fetchStarredItems();
+  }, [authStatus, fetchStarredItems]);
 
   useWindowFocusListener(() => {
     actions.fetchInitialData();
@@ -191,6 +193,20 @@ const App = () => {
 
   return (
     <>
+      <Global
+        styles={(theme) =>
+          css({
+            body: {
+              color: theme.colors.textNormal,
+              fontFamily: theme.fontStacks.default,
+              "::selection": {
+                background: theme.colors.textSelectionBackground,
+              },
+            },
+          })
+        }
+      />
+
       {isNative && <TitleBar />}
 
       <Routes>
@@ -198,80 +214,46 @@ const App = () => {
           path="/"
           element={
             <RequireAuth>
-              <div
-                css={(theme) =>
-                  css({
-                    height: "100%",
-                    display: "flex",
-                    background: theme.colors.backgroundSecondary,
-                  })
-                }
-              >
-                <MainMenu />
+              <UnifiedLayout />
+            </RequireAuth>
+          }
+        >
+          <Route index element={<EmptyHome />} />
+          <Route path="starred" element={<Channel />} />
+          <Route path="starred/channels/:channelId" element={<Channel />} />
+          <Route path="/channels">
+            <Route
+              index
+              element={
                 <div
-                  css={css({
-                    flex: 1,
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    height: "100%",
-                  })}
+                  css={(theme) =>
+                    css({
+                      flex: 1,
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      height: "100%",
+                      background: theme.colors.backgroundPrimary,
+                    })
+                  }
                 >
-                  <HomeIcon
+                  <ChatBubblesIcon
                     style={{
                       width: "6rem",
                       color: "rgb(255 255 255 / 5%)",
                     }}
                   />
                 </div>
-              </div>
-            </RequireAuth>
-          }
-        />
-
-        <Route
-          element={
-            <RequireAuth>
-              <DmChannelLayout />
-            </RequireAuth>
-          }
-        >
+              }
+            />
+            <Route path=":channelId" element={<Channel />} />
+          </Route>
+          <Route path="c/:channelId" element={<Channel noSideMenu />} />
+          <Route path="servers/:serverId" element={<Channel />} />
           <Route
-            path="/channels/@me"
-            element={
-              <div
-                css={(theme) =>
-                  css({
-                    flex: 1,
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    height: "100%",
-                    background: theme.colors.backgroundPrimary,
-                  })
-                }
-              >
-                <ChatBubblesIcon
-                  style={{
-                    width: "6rem",
-                    color: "rgb(255 255 255 / 5%)",
-                  }}
-                />
-              </div>
-            }
+            path="servers/:serverId/:channelId"
+            element={<Channel server />}
           />
-          <Route path="/channels/@me/:channelId" element={<Channel />} />
-        </Route>
-
-        <Route
-          element={
-            <RequireAuth>
-              <ChannelLayout />
-            </RequireAuth>
-          }
-        >
-          <Route path="/channels/:serverId/:channelId" element={<Channel />} />
-          <Route path="/channels/:serverId" element={<Channel />} />
         </Route>
 
         <Route
@@ -283,17 +265,65 @@ const App = () => {
           }
         />
         {/* Public routes below */}
-        <Route path="/join/:serverId" element={<JoinServer />} />
+        <Route path="/servers/:serverId/join" element={<JoinServer />} />
         <Route path="*" element={null} />
       </Routes>
     </>
   );
 };
 
+const EmptyHome = () => {
+  // const { state } = useAppScope();
+  const { isFloating: isMenuTogglingEnabled } = useSideMenu();
+  // const hasFetchedInitialData = state.selectHasFetchedInitialData();
+  // const starredChannels = state.selectStarredChannels();
+  // const hasNoStarredChannels =
+  //   hasFetchedInitialData && starredChannels.length === 0;
+  return (
+    <div
+      css={(theme) =>
+        css({
+          flex: 1,
+          height: "100%",
+          display: "flex",
+          flexDirection: "column",
+          background: theme.colors.backgroundPrimary,
+        })
+      }
+    >
+      {isMenuTogglingEnabled && <ChannelHeader />}
+      <div
+        css={css({
+          flex: 1,
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          height: "100%",
+        })}
+      >
+        <div
+          css={css({
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+          })}
+        >
+          <HomeIcon
+            style={{
+              width: "6rem",
+              color: "rgb(255 255 255 / 5%)",
+            }}
+          />
+        </div>
+      </div>
+    </div>
+  );
+};
+
 const RequireAuth = ({ children }) => {
   const { status: authStatus } = useAuth();
 
-  if (authStatus === "not-authenticated") return <SignInScreen />;
+  if (authStatus === "not-authenticated") return <LoginScreen />;
 
   if (authStatus !== "authenticated") return null; // Spinner
 
@@ -305,7 +335,7 @@ export default function Root() {
     <React.StrictMode>
       <WagmiConfig client={wagmiClient}>
         <IntlProvider locale="en">
-          <AuthProvider apiOrigin={process.env.API_ENDPOINT}>
+          <AuthProvider apiOrigin="/api">
             <ServerConnectionProvider
               Pusher={Pusher}
               pusherKey={process.env.PUSHER_KEY}

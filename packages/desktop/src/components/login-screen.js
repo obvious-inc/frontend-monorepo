@@ -1,7 +1,6 @@
 import React from "react";
 import { useSearchParams } from "react-router-dom";
 import { css } from "@emotion/react";
-import { TITLE_BAR_HEIGHT } from "../constants/ui";
 import { useAuth } from "@shades/common";
 import * as eth from "../utils/ethereum";
 import useWallet from "../hooks/wallet";
@@ -9,14 +8,13 @@ import useWalletLogin from "../hooks/wallet-login";
 import * as Tooltip from "../components/tooltip";
 import Spinner from "../components/spinner";
 
-const isNative = window.Native != null;
-
 const SignInScreen = () => {
   const {
     connect: connectWallet,
     cancel: cancelWalletConnectionAttempt,
     canConnect: canConnectWallet,
     accountAddress,
+    accountEnsName,
     chain,
     isConnecting,
     error: walletError,
@@ -55,9 +53,7 @@ const SignInScreen = () => {
           min-width: 0;
         }
       `}
-      style={{
-        height: isNative ? `calc(100% - ${TITLE_BAR_HEIGHT})` : "100%",
-      }}
+      style={{ height: "100%" }}
     >
       {accountAddress == null && isConnecting ? (
         <div>
@@ -224,7 +220,14 @@ const SignInScreen = () => {
                         })
                       }
                     >
-                      {eth.truncateAddress(accountAddress)}
+                      {accountEnsName == null ? (
+                        eth.truncateAddress(accountAddress)
+                      ) : (
+                        <>
+                          {accountEnsName} (
+                          {eth.truncateAddress(accountAddress)})
+                        </>
+                      )}
                     </a>
                   </Tooltip.Trigger>
                   <Tooltip.Content side="top" sideOffset={4}>
@@ -261,7 +264,7 @@ const Button = ({ css: cssProp, ...props }) => (
   <button
     css={css`
       color: white;
-      background: hsl(0 0% 100% / 7%);
+      background: hsl(0 0% 100% / 6%);
       border: 0;
       padding: 1.1rem 2.4rem;
       font-weight: 500;
@@ -273,7 +276,7 @@ const Button = ({ css: cssProp, ...props }) => (
         cursor: pointer;
       }
       :hover:not(:disabled) {
-        background: hsl(0 0% 100% / 9%);
+        background: hsl(0 0% 100% / 8%);
       }
       :disabled {
         opacity: 0.5;

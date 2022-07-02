@@ -114,7 +114,7 @@ const selectDmChannelMembers = createSelector(
 export const selectChannelMembers = (state, channelId) => {
   const channel = state.channels.entriesById[channelId];
   if (channel == null) return [];
-  return channel.kind === "dm"
+  return ["dm", "topic"].includes(channel.kind)
     ? selectDmChannelMembers(state, channelId)
     : selectServerChannelMembers(state, channelId);
 };
@@ -122,7 +122,7 @@ export const selectChannelMembers = (state, channelId) => {
 export const selectChannelMember = createSelector(
   (state, channelId, userId) => {
     const channel = state.channels.entriesById[channelId];
-    return channel.kind === "dm"
+    return ["dm", "topic"].includes(channel.kind)
       ? selectUser(state, userId)
       : selectServerMemberWithUserId(state, channel.serverId, userId);
   },
@@ -159,7 +159,9 @@ export const selectServerMembers = createSelector(
   (state, serverId) => {
     const serverMemberIds =
       state.serverMembers.memberIdsByServerId[serverId] ?? [];
-    return serverMemberIds.map((id) => selectServerMember(state, id));
+    return serverMemberIds
+      .map((id) => selectServerMember(state, id))
+      .filter(Boolean);
   },
   (members) => members,
   { memoizeOptions: { equalityCheck: arrayShallowEquals } }
@@ -167,7 +169,7 @@ export const selectServerMembers = createSelector(
 
 export const selectServerMemberWithUserId = createSelector(
   (state, serverId, userId) => {
-    const userMemberIds = state.serverMembers.memberIdsByUserId[userId];
+    const userMemberIds = state.serverMembers.memberIdsByUserId[userId] ?? [];
     const userServerMembers = userMemberIds.map((memberId) =>
       selectServerMember(state, memberId)
     );

@@ -22,7 +22,7 @@ const ProfilePreview = React.forwardRef(
     const isOnline = onlineStatus === "online";
 
     const sendMessage = () => {
-      const redirect = (c) => navigate(`/channels/@me/${c.id}`);
+      const redirect = (c) => navigate(`/channels/${c.id}`);
       const dmChannel = state.selectDmChannelFromUserId(userId);
 
       if (dmChannel != null) {
@@ -30,12 +30,7 @@ const ProfilePreview = React.forwardRef(
         return;
       }
 
-      actions
-        .createChannel({
-          kind: "dm",
-          memberUserIds: [userId],
-        })
-        .then(redirect);
+      actions.createDmChannel({ memberUserIds: [userId] }).then(redirect);
     };
 
     const copyWalletAddress = () => {

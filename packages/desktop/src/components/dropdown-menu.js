@@ -22,13 +22,13 @@ export const Item = React.forwardRef((props, ref) => (
     css={(theme) =>
       css({
         width: "100%",
-        height: "2.9rem",
+        height: theme.dropdownMenus.itemHeight,
         padding: "0 0.8rem",
         display: "inline-flex",
         alignItems: "center",
         justifyContent: "flex-start",
         lineHeight: 1.4,
-        fontSize: "1.3rem",
+        fontSize: theme.fontSizes.menus,
         fontWeight: "400",
         cursor: "pointer",
         color: theme.colors.textNormal,
@@ -57,9 +57,9 @@ export const Content = React.forwardRef((props, ref) => (
         width: "22rem",
         minWidth: "18rem",
         maxWidth: "calc(100% - 2rem)",
-        padding: "0.5rem",
+        padding: `${theme.dropdownMenus.verticalPadding} ${theme.dropdownMenus.horizontalPadding}`,
         background: theme.colors.dialogBackground,
-        borderRadius: "0.4rem",
+        borderRadius: theme.dropdownMenus.borderRadius,
         boxShadow:
           "rgb(15 15 15 / 5%) 0px 0px 0px 1px, rgba(15, 15, 15, 0.1) 0px 3px 6px, rgba(15, 15, 15, 0.2) 0px 9px 24px",
       })

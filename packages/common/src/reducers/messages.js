@@ -63,8 +63,13 @@ const entriesById = (state = {}, action) => {
       return {
         // Remove the optimistic entry
         ...omitKey(action.optimisticEntryId, state),
-        [action.message.id]: { ...action.message, wasOptimistic: true },
+        [action.message.id]: action.message,
       };
+
+    case "message-create-request-failed":
+      // Remove the optimistic entry
+      return omitKey(action.optimisticEntryId, state);
+
     case "message-update-request-successful":
       return {
         ...state,
@@ -200,6 +205,18 @@ const entryIdsByChannelId = (state = {}, action) => {
       };
     }
 
+    case "message-create-request-failed": {
+      const channelId = action.channelId;
+      const channelMessageIds = state[channelId] ?? [];
+      return {
+        ...state,
+        // Remove the optimistic entry
+        [channelId]: channelMessageIds.filter(
+          (id) => id !== action.optimisticEntryId
+        ),
+      };
+    }
+
     case "server-event:message-removed":
       return mapValues(
         (messageIds) =>
@@ -220,7 +237,7 @@ const entryIdsByChannelId = (state = {}, action) => {
   }
 };
 
-const systemMessageTypes = ["member-joined"];
+const systemMessageTypes = ["member-joined", "user-invited"];
 const appMessageTypes = ["webhook", "app"];
 
 const deriveMessageType = (message) => {
@@ -229,6 +246,7 @@ const deriveMessageType = (message) => {
     case 0:
       return "regular";
     case 1:
+      if (message.inviter) return "user-invited";
       return "member-joined";
     case 2:
     case 3:
@@ -258,6 +276,11 @@ export const selectMessage = createSelector(
   },
   (state, messageId) => {
     const message = state.messages.entriesById[messageId];
+    if (message == null || message.inviter == null) return null;
+    return selectUser(state, message.inviter);
+  },
+  (state, messageId) => {
+    const message = state.messages.entriesById[messageId];
     if (message == null || message.reply_to == null) return null;
     return selectMessage(state, message.reply_to);
   },
@@ -267,13 +290,14 @@ export const selectMessage = createSelector(
     if (message == null || !message.app) return null;
     return selectApp(state, message.app);
   },
-  (message, author, repliedMessage, loggedInUser, app) => {
+  (message, author, inviter, repliedMessage, loggedInUser, app) => {
     if (message == null) return null;
     if (message.deleted) return message;
 
     const serverId = message.server;
     const authorUserId = message.author;
     const appId = message.app;
+    const inviterUserId = message.inviter;
 
     if (message.reply_to != null) {
       message.repliedMessage = repliedMessage;
@@ -292,7 +316,10 @@ export const selectMessage = createSelector(
       type,
       isSystemMessage: systemMessageTypes.includes(type),
       isAppMessage: appMessageTypes.includes(type),
+      isOptimistic: message.isOptimistic,
       author,
+      inviterUserId,
+      inviter,
       content:
         message.blocks?.length > 0
           ? message.blocks

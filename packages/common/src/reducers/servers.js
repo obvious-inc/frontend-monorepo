@@ -52,6 +52,7 @@ export const selectServer = createSelector(
     const members = server.members ?? [];
     return {
       ...server,
+      avatar: server.avatar === "" ? null : server.avatar ?? null,
       memberCount: server.member_count,
       members,
       ownerUserId,

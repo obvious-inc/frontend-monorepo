@@ -1,8 +1,6 @@
 const path = require("path");
-const { app, BrowserWindow, dialog } = require("electron");
-
-const DEFAULT_DEV_SERVER_URL = "http://localhost:8080";
-const APP_URL = process.env.APP_URL ?? DEFAULT_DEV_SERVER_URL;
+const { app, BrowserWindow, dialog, shell } = require("electron");
+const { APP_URL } = require("../build-constants.json");
 
 // Handle creating/removing shortcuts on Windows when installing/uninstalling.
 if (require("electron-squirrel-startup")) {
@@ -16,6 +14,19 @@ if (require("electron-squirrel-startup")) {
 //   url: `${updateServerUrl}/update/${process.platform}/${app.getVersion()}`,
 // });
 
+app.on("web-contents-created", (_, contents) => {
+  contents.setWindowOpenHandler(({ url }) => {
+    shell.openExternal(url);
+    return { action: "deny" };
+  });
+});
+
+let isQuitting = false;
+
+app.on("before-quit", () => {
+  isQuitting = true;
+});
+
 const createWindow = () => {
   // Create the browser window.
   const mainWindow = new BrowserWindow({
@@ -28,14 +39,24 @@ const createWindow = () => {
     },
   });
 
+  app.on("activate", () => {
+    mainWindow.show();
+  });
+
+  mainWindow.on("close", (e) => {
+    if (!isQuitting) {
+      e.preventDefault();
+      mainWindow.hide();
+    }
+  });
+
   const loadApp = () => {
     mainWindow.loadURL(APP_URL).catch(() => {
       // TODO: Fail gracefully
 
       dialog
         .showMessageBox(mainWindow, {
-          message:
-            "Error loading app, check your network connection and try again.",
+          message: `Error loading app on "${APP_URL}", check your network connection and try again.`,
           cancelId: 1,
           buttons: ["Retry", "Quit"],
         })

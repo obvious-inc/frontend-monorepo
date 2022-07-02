@@ -13,12 +13,16 @@ import channels, {
   selectServerChannels,
   selectServerDmChannels,
   selectDmChannels,
+  selectTopicChannels,
+  selectStarredChannels,
+  selectDmAndTopicChannels,
   selectDmChannelFromUserId,
   selectDmChannelFromUserIds,
   selectHasAllMessages,
   selectHasFetchedMessages,
   selectChannelHasUnread,
   selectChannelMentionCount,
+  selectChannelStarId,
 } from "../reducers/channels";
 import channelSections, {
   selectServerChannelSections,
@@ -50,6 +54,9 @@ const selectors = {
   selectChannel,
   selectServerChannels,
   selectDmChannels,
+  selectTopicChannels,
+  selectDmAndTopicChannels,
+  selectStarredChannels,
   selectServerDmChannels,
   selectMessage,
   selectChannelMessages,
@@ -69,6 +76,7 @@ const selectors = {
   selectHasFetchedMessages,
   selectChannelHasUnread,
   selectChannelMentionCount,
+  selectChannelStarId,
   selectApp,
 };
 

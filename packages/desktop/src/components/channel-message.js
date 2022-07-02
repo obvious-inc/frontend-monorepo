@@ -124,7 +124,7 @@ const ChannelMessage = React.memo(function ChannelMessage_({
   );
 
   const sendDirectMessageToAuthor = React.useCallback(() => {
-    const redirect = (c) => navigate(`/channels/@me/${c.id}`);
+    const redirect = (c) => navigate(`/channels/${c.id}`);
 
     const dmChannel = state.selectDmChannelFromUserId(message.authorUserId);
     if (dmChannel != null) {
@@ -133,10 +133,7 @@ const ChannelMessage = React.memo(function ChannelMessage_({
     }
 
     actions
-      .createChannel({
-        kind: "dm",
-        memberUserIds: [message.authorUserId],
-      })
+      .createDmChannel({ memberUserIds: [message.authorUserId] })
       .then(redirect);
   }, [actions, navigate, state, message.authorUserId]);
 
@@ -270,11 +267,16 @@ const ChannelMessage = React.memo(function ChannelMessage_({
           ? "0.5rem 1.6rem"
           : "0.7rem 1.6rem 0.3rem",
       }}
-      css={css({
-        position: "relative",
-        lineHeight: 1.46668,
-        userSelect: "text",
-      })}
+      css={(theme) =>
+        css({
+          color: message.isOptimistic
+            ? theme.colors.textMuted
+            : theme.colors.textNormal,
+          position: "relative",
+          lineHeight: 1.46668,
+          userSelect: "text",
+        })
+      }
       {...(giveTouchFocus == null
         ? hoverHandlers
         : {
@@ -283,28 +285,30 @@ const ChannelMessage = React.memo(function ChannelMessage_({
             },
           })}
     >
-      <div
-        css={css({
-          position: "absolute",
-          top: 0,
-          right: "1.6rem",
-          transform: "translateY(-50%)",
-          zIndex: 1,
-        })}
-        style={{ display: showAsFocused ? "block" : "none" }}
-      >
-        <MessageToolbar
-          allowReplies={!isOwnMessage && !message.isSystemMessage}
-          allowEdit={allowEdit}
-          initReply={initReply}
-          initEdit={initEdit}
-          addReaction={addReaction}
-          onDropdownOpenChange={onDropdownOpenChange}
-          isEmojiPickerOpen={isEmojiPickerOpen}
-          onEmojiPickerOpenChange={onEmojiPickerOpenChange}
-          dropdownItems={toolbarDropdownItems}
-        />
-      </div>
+      {!message.isOptimistic && (
+        <div
+          css={css({
+            position: "absolute",
+            top: 0,
+            right: "1.6rem",
+            transform: "translateY(-50%)",
+            zIndex: 1,
+          })}
+          style={{ display: showAsFocused ? "block" : "none" }}
+        >
+          <MessageToolbar
+            allowReplies={!isOwnMessage && !message.isSystemMessage}
+            allowEdit={allowEdit}
+            initReply={initReply}
+            initEdit={initEdit}
+            addReaction={addReaction}
+            onDropdownOpenChange={onDropdownOpenChange}
+            isEmojiPickerOpen={isEmojiPickerOpen}
+            onEmojiPickerOpenChange={onEmojiPickerOpenChange}
+            dropdownItems={toolbarDropdownItems}
+          />
+        </div>
+      )}
 
       {message.isSystemMessage ? (
         <SystemMessage
@@ -377,22 +381,24 @@ const ChannelMessage = React.memo(function ChannelMessage_({
               </div>
             ) : (
               <div css={css({ padding: "0.2rem 0 0" })}>
-                <Popover.Root>
+                <Popover.Root modal>
                   <Popover.Trigger asChild>
                     <button
-                      css={css({
-                        position: "relative",
-                        borderRadius: "0.3rem",
-                        overflow: "hidden",
-                        cursor: "pointer",
-                        ":hover": {
-                          boxShadow: message.author?.profilePicture
-                            .isVerifiedNft
-                            ? "0 0 0 2px #4f52ff"
-                            : "0 0 0 2px rgb(255 255 255 / 10%)",
-                        },
-                        ":active": { transform: "translateY(0.1rem)" },
-                      })}
+                      css={(theme) =>
+                        css({
+                          position: "relative",
+                          borderRadius: theme.avatars.borderRadius,
+                          overflow: "hidden",
+                          cursor: "pointer",
+                          ":hover": {
+                            boxShadow: message.author?.profilePicture
+                              .isVerifiedNft
+                              ? "0 0 0 2px #4f52ff"
+                              : "0 0 0 2px rgb(255 255 255 / 10%)",
+                          },
+                          ":active": { transform: "translateY(0.1rem)" },
+                        })
+                      }
                     >
                       <Avatar
                         url={message.author?.profilePicture.small}
@@ -530,8 +536,10 @@ const Reactions = ({
             border: "1px solid transparent",
             cursor: "pointer",
             "&.active": {
-              background: "#3f42ea45",
-              borderColor: "#4c4ffe96",
+              background: "#007ab333",
+              borderColor: "#007ab3a8",
+              // background: "#3f42ea45",
+              // borderColor: "#4c4ffe96",
             },
             "&:not(.active):hover": {
               borderColor: "rgb(255 255 255 / 20%)",
@@ -703,8 +711,8 @@ const MemberDisplayName = React.forwardRef(
       css={(theme) =>
         css({
           lineHeight: 1.2,
-          color: color ?? theme.colors.pink,
-          fontWeight: "500",
+          color: color ?? theme.colors.memberDisplayName,
+          fontWeight: theme.text.weights.smallHeader,
           cursor: "pointer",
           ":hover": {
             textDecoration: "underline",
@@ -1208,7 +1216,9 @@ const MessageToolbar = React.memo(
                 aria-label="Add reaction"
                 style={{ position: "relative" }}
               >
-                <AddEmojiReactionIcon style={{ width: "1.6rem" }} />
+                <span>
+                  <AddEmojiReactionIcon style={{ width: "1.6rem" }} />
+                </span>
               </Toolbar.Button>
             }
             open={isEmojiPickerOpen}
@@ -1504,14 +1514,30 @@ const RepliedMessage = ({ message, getMember }) => {
 };
 
 const SystemMessage = ({ isHovering, message, reactions }) => {
+  const theme = useTheme();
   const content = React.useMemo(() => {
     switch (message.type) {
+      case "user-invited":
+        return (
+          <>
+            <MemberDisplayName
+              color={theme.colors.textNormal}
+              displayName={message.author?.displayName}
+            />{" "}
+            has been invited by{" "}
+            <MemberDisplayName
+              color={theme.colors.textNormal}
+              displayName={message.inviter?.displayName}
+            />
+            . Remember to say hi!
+          </>
+        );
       case "member-joined":
         return (
           <>
             A wild{" "}
             <MemberDisplayName
-              color="white"
+              color={theme.colors.textNormal}
               displayName={message.author?.displayName}
             />{" "}
             has appeared. Welcome!
@@ -1521,7 +1547,7 @@ const SystemMessage = ({ isHovering, message, reactions }) => {
       default:
         throw new Error();
     }
-  }, [message]);
+  }, [message, theme]);
 
   return (
     <div
@@ -1647,7 +1673,7 @@ const TinyMutedText = ({ children, nowrap = false }) => (
     css={(theme) =>
       css({
         color: theme.colors.textMuted,
-        fontSize: "1rem",
+        fontSize: theme.fontSizes.micro,
       })
     }
     style={{ whiteSpace: nowrap ? "nowrap" : undefined }}
