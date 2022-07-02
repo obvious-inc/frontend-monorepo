@@ -25,121 +25,6 @@ import NotificationBadge from "./notification-badge";
 
 const { reverse, groupBy } = arrayUtils;
 
-const ServerChannels = ({ serverId }) => {
-  const { user } = useAuth();
-  const { actions, state } = useAppScope();
-
-  const server = state.selectServer(serverId);
-
-  const channels = state.selectServerChannels(serverId);
-  const channelSections = state.selectServerChannelSections(serverId);
-  const serverDmChannels = state.selectServerDmChannels(serverId);
-
-  const [sections, channelsWithoutSection] = React.useMemo(() => {
-    const sections = [];
-    for (let section of channelSections) {
-      const sectionChannels = section.channelIds.map((id) =>
-        channels.find((c) => c.id === id)
-      );
-      if (sectionChannels.some((c) => c == null))
-        console.warn("`null` channel in section data");
-      sections.push({
-        ...section,
-        channels: sectionChannels.filter(Boolean),
-      });
-    }
-    const sectionChannelIds = sections.flatMap((s) =>
-      s.channels.map((c) => c.id)
-    );
-    const channelsWithoutSection = channels.filter(
-      (c) => !sectionChannelIds.includes(c.id)
-    );
-
-    return [sections, channelsWithoutSection];
-  }, [channels, channelSections]);
-
-  const hasSections = sections.length > 0;
-
-  return (
-    <>
-      <div style={{ height: "1.5rem" }} />
-
-      {channelsWithoutSection.length > 0 && (
-        <>
-          {hasSections && <div style={{ height: "1.5rem" }} />}
-
-          <Section
-            title={hasSections ? null : "Channels"}
-            addAction={
-              server.ownerUserId === user.id
-                ? {
-                    "aria-label": "Create channel",
-                    run: () => {
-                      const name = prompt("Create channel", "My channel");
-                      if (name == null) return;
-                      actions.createServerChannel(serverId, {
-                        name,
-                      });
-                    },
-                  }
-                : undefined
-            }
-          >
-            {channelsWithoutSection.map((c) => (
-              <ServerChannelItem
-                key={c.id}
-                channelId={c.id}
-                serverId={serverId}
-                link={`/servers/${serverId}/${c.id}`}
-                name={c.name}
-                hasUnread={state.selectChannelHasUnread(c.id)}
-                mentionCount={state.selectChannelMentionCount(c.id)}
-              />
-            ))}
-          </Section>
-        </>
-      )}
-
-      {sections.map((s) => (
-        <React.Fragment key={s.id}>
-          <Section title={s.name}>
-            {s.channels.map((c) => (
-              <ServerChannelItem
-                key={c.id}
-                channelId={c.id}
-                serverId={serverId}
-                link={`/servers/${serverId}/${c.id}`}
-                name={c.name}
-                hasUnread={state.selectChannelHasUnread(c.id)}
-                mentionCount={state.selectChannelMentionCount(c.id)}
-              />
-            ))}
-          </Section>
-        </React.Fragment>
-      ))}
-
-      {serverDmChannels.length > 0 && (
-        <>
-          <Section title="Direct messages">
-            {serverDmChannels.map((c) => (
-              <ChannelItem
-                key={c.id}
-                name={c.name}
-                link={`/servers/${serverId}/${c.id}`}
-                hasUnread={state.selectChannelHasUnread(c.id)}
-                notificationCount={state.selectChannelMentionCount(c.id)}
-                memberUserIds={c.memberUserIds}
-              />
-            ))}
-          </Section>
-        </>
-      )}
-
-      <div style={{ height: "2rem" }} />
-    </>
-  );
-};
-
 export const UnifiedLayout = () => {
   const params = useParams();
   const navigate = useNavigate();
@@ -841,6 +726,121 @@ const ProfileDropdownTrigger = React.forwardRef((props, ref) => {
     </button>
   );
 });
+
+const ServerChannels = ({ serverId }) => {
+  const { user } = useAuth();
+  const { actions, state } = useAppScope();
+
+  const server = state.selectServer(serverId);
+
+  const channels = state.selectServerChannels(serverId);
+  const channelSections = state.selectServerChannelSections(serverId);
+  const serverDmChannels = state.selectServerDmChannels(serverId);
+
+  const [sections, channelsWithoutSection] = React.useMemo(() => {
+    const sections = [];
+    for (let section of channelSections) {
+      const sectionChannels = section.channelIds.map((id) =>
+        channels.find((c) => c.id === id)
+      );
+      if (sectionChannels.some((c) => c == null))
+        console.warn("`null` channel in section data");
+      sections.push({
+        ...section,
+        channels: sectionChannels.filter(Boolean),
+      });
+    }
+    const sectionChannelIds = sections.flatMap((s) =>
+      s.channels.map((c) => c.id)
+    );
+    const channelsWithoutSection = channels.filter(
+      (c) => !sectionChannelIds.includes(c.id)
+    );
+
+    return [sections, channelsWithoutSection];
+  }, [channels, channelSections]);
+
+  const hasSections = sections.length > 0;
+
+  return (
+    <>
+      <div style={{ height: "1.5rem" }} />
+
+      {channelsWithoutSection.length > 0 && (
+        <>
+          {hasSections && <div style={{ height: "1.5rem" }} />}
+
+          <Section
+            title={hasSections ? null : "Channels"}
+            addAction={
+              server.ownerUserId === user.id
+                ? {
+                    "aria-label": "Create channel",
+                    run: () => {
+                      const name = prompt("Create channel", "My channel");
+                      if (name == null) return;
+                      actions.createServerChannel(serverId, {
+                        name,
+                      });
+                    },
+                  }
+                : undefined
+            }
+          >
+            {channelsWithoutSection.map((c) => (
+              <ServerChannelItem
+                key={c.id}
+                channelId={c.id}
+                serverId={serverId}
+                link={`/servers/${serverId}/${c.id}`}
+                name={c.name}
+                hasUnread={state.selectChannelHasUnread(c.id)}
+                mentionCount={state.selectChannelMentionCount(c.id)}
+              />
+            ))}
+          </Section>
+        </>
+      )}
+
+      {sections.map((s) => (
+        <React.Fragment key={s.id}>
+          <Section title={s.name}>
+            {s.channels.map((c) => (
+              <ServerChannelItem
+                key={c.id}
+                channelId={c.id}
+                serverId={serverId}
+                link={`/servers/${serverId}/${c.id}`}
+                name={c.name}
+                hasUnread={state.selectChannelHasUnread(c.id)}
+                mentionCount={state.selectChannelMentionCount(c.id)}
+              />
+            ))}
+          </Section>
+        </React.Fragment>
+      ))}
+
+      {serverDmChannels.length > 0 && (
+        <>
+          <Section title="Direct messages">
+            {serverDmChannels.map((c) => (
+              <ChannelItem
+                key={c.id}
+                name={c.name}
+                link={`/servers/${serverId}/${c.id}`}
+                hasUnread={state.selectChannelHasUnread(c.id)}
+                notificationCount={state.selectChannelMentionCount(c.id)}
+                memberUserIds={c.memberUserIds}
+              />
+            ))}
+          </Section>
+        </>
+      )}
+
+      <div style={{ height: "2rem" }} />
+    </>
+  );
+};
 
 const CollapsableSection = ({
   title,

@@ -1233,7 +1233,7 @@ const Channel = ({ server: serverVariant, noSideMenu }) => {
   const createMessage = useLatestCallback(
     async ({ blocks, replyToMessageId }) => {
       if (
-        channel.memberCount != null &&
+        channel.memberUserIds != null &&
         !channel.memberUserIds.includes(user.id)
       )
         await actions.joinChannel(params.channelId);
