@@ -1,5 +1,11 @@
 import React from "react";
-import { NavLink, Outlet, useParams, useMatch } from "react-router-dom";
+import {
+  NavLink,
+  Outlet,
+  useParams,
+  useMatch,
+  useNavigate,
+} from "react-router-dom";
 import { css, useTheme } from "@emotion/react";
 import { useAppScope, useAuth, arrayUtils } from "@shades/common";
 import { truncateAddress } from "../utils/ethereum";
@@ -14,168 +20,12 @@ import {
 } from "./icons";
 import Avatar from "./avatar";
 import * as DropdownMenu from "./dropdown-menu";
-import MainMenu from "./main-menu";
 import SideMenuLayout from "./side-menu-layout";
 import NotificationBadge from "./notification-badge";
 
 const { reverse, groupBy } = arrayUtils;
 
-export const HomeLayout = () => {
-  const params = useParams();
-  const { state } = useAppScope();
-
-  const starredChannels = state.selectStarredChannels();
-  const selectedChannel =
-    params.channelId == null ? null : state.selectChannel(params.channelId);
-
-  const selectedChannelIsStarred = starredChannels.some(
-    (c) => c.id === params.channelId
-  );
-
-  const channelsByKind = React.useMemo(
-    () => groupBy((c) => c.kind ?? "server", starredChannels),
-    [starredChannels]
-  );
-
-  const topicChannels = channelsByKind.topic ?? [];
-  const dmChannels = channelsByKind.dm ?? [];
-
-  const serverChannelsByServerName = React.useMemo(
-    () =>
-      groupBy(
-        (c) => state.selectServer(c.serverId).name,
-        channelsByKind.server ?? []
-      ),
-    [state, channelsByKind.server]
-  );
-
-  if (selectedChannel == null && starredChannels.length === 0)
-    return (
-      <div
-        css={(theme) =>
-          css({
-            height: "100%",
-            display: "flex",
-            background: theme.colors.backgroundSecondary,
-          })
-        }
-      >
-        <MainMenu />
-        <Outlet />
-      </div>
-    );
-
-  return (
-    <SideMenuLayout
-      filterable
-      sidebarContent={
-        <>
-          <div style={{ height: "1.5rem" }} />
-
-          {!selectedChannelIsStarred && selectedChannel != null && (
-            <>
-              {selectedChannel.kind !== "server" ? (
-                <ChannelItem
-                  name={selectedChannel.name}
-                  link={`/me/${selectedChannel.id}`}
-                  hasUnread={state.selectChannelHasUnread(selectedChannel.id)}
-                  notificationCount={state.selectChannelMentionCount(
-                    selectedChannel.id
-                  )}
-                  memberUserIds={selectedChannel.memberUserIds}
-                />
-              ) : (
-                <ServerChannelItem
-                  link={`/me/${selectedChannel.id}`}
-                  channelId={selectedChannel.id}
-                  name={selectedChannel.name}
-                  hasUnread={state.selectChannelHasUnread(selectedChannel.id)}
-                  mentionCount={state.selectChannelMentionCount(
-                    selectedChannel.id
-                  )}
-                />
-              )}
-              <div style={{ height: "1.5rem" }} />
-            </>
-          )}
-
-          {topicChannels.length !== 0 && (
-            <>
-              {topicChannels.map((c) => (
-                <ChannelItem
-                  key={c.id}
-                  name={c.name}
-                  link={`/me/${c.id}`}
-                  hasUnread={state.selectChannelHasUnread(c.id)}
-                  notificationCount={state.selectChannelMentionCount(c.id)}
-                  memberUserIds={c.memberUserIds}
-                />
-              ))}
-              <div style={{ height: "1.5rem" }} />
-            </>
-          )}
-
-          {Object.entries(serverChannelsByServerName).map(
-            ([title, channels]) => (
-              <Section key={title} title={title}>
-                {channels.map((c) => (
-                  <ServerChannelItem
-                    key={c.id}
-                    link={`/me/${c.id}`}
-                    channelId={c.id}
-                    name={c.name}
-                    hasUnread={state.selectChannelHasUnread(c.id)}
-                    mentionCount={state.selectChannelMentionCount(c.id)}
-                  />
-                ))}
-              </Section>
-            )
-          )}
-
-          {dmChannels.length !== 0 && (
-            <Section title="Direct messages">
-              {dmChannels.map((c) => (
-                <ChannelItem
-                  key={c.id}
-                  name={c.name}
-                  link={`/me/${c.id}`}
-                  hasUnread={state.selectChannelHasUnread(c.id)}
-                  notificationCount={state.selectChannelMentionCount(c.id)}
-                  memberUserIds={c.memberUserIds}
-                />
-              ))}
-            </Section>
-          )}
-
-          <div style={{ height: "2rem" }} />
-        </>
-      }
-    >
-      <Outlet />
-    </SideMenuLayout>
-  );
-};
-
-export const ServerLayout = () => {
-  const params = useParams();
-
-  const { state } = useAppScope();
-
-  const server = state.selectServer(params.serverId);
-
-  if (server == null) return null;
-
-  return (
-    <SideMenuLayout
-      title={server.name}
-      sidebarContent={<ServerChannels serverId={server.id} />}
-    >
-      <Outlet />
-    </SideMenuLayout>
-  );
-};
-
-const ServerChannels = ({ serverId, v2 }) => {
+const ServerChannels = ({ serverId }) => {
   const { user } = useAuth();
   const { actions, state } = useAppScope();
 
@@ -240,7 +90,7 @@ const ServerChannels = ({ serverId, v2 }) => {
                 key={c.id}
                 channelId={c.id}
                 serverId={serverId}
-                link={v2 ? `/v2/servers/${serverId}/${c.id}` : undefined}
+                link={`/servers/${serverId}/${c.id}`}
                 name={c.name}
                 hasUnread={state.selectChannelHasUnread(c.id)}
                 mentionCount={state.selectChannelMentionCount(c.id)}
@@ -258,7 +108,7 @@ const ServerChannels = ({ serverId, v2 }) => {
                 key={c.id}
                 channelId={c.id}
                 serverId={serverId}
-                link={v2 ? `/v2/servers/${serverId}/${c.id}` : undefined}
+                link={`/servers/${serverId}/${c.id}`}
                 name={c.name}
                 hasUnread={state.selectChannelHasUnread(c.id)}
                 mentionCount={state.selectChannelMentionCount(c.id)}
@@ -275,11 +125,7 @@ const ServerChannels = ({ serverId, v2 }) => {
               <ChannelItem
                 key={c.id}
                 name={c.name}
-                link={
-                  v2
-                    ? `/v2/servers/${serverId}/${c.id}`
-                    : `/channels/${serverId}/${c.id}`
-                }
+                link={`/servers/${serverId}/${c.id}`}
                 hasUnread={state.selectChannelHasUnread(c.id)}
                 notificationCount={state.selectChannelMentionCount(c.id)}
                 memberUserIds={c.memberUserIds}
@@ -294,48 +140,28 @@ const ServerChannels = ({ serverId, v2 }) => {
   );
 };
 
-export const ChannelLayout = () => {
-  const { state } = useAppScope();
-
-  const channels = state.selectDmAndTopicChannels();
-
-  return (
-    <SideMenuLayout
-      filterable
-      sidebarContent={
-        <>
-          <div style={{ height: "1.5rem" }} />
-          {channels.map((c) => (
-            <ChannelItem
-              key={c.id}
-              name={c.name}
-              link={`/channels/${c.id}`}
-              hasUnread={state.selectChannelHasUnread(c.id)}
-              notificationCount={state.selectChannelMentionCount(c.id)}
-              memberUserIds={c.memberUserIds}
-            />
-          ))}
-        </>
-      }
-    >
-      <Outlet />
-    </SideMenuLayout>
-  );
-};
-
 export const UnifiedLayout = () => {
   const params = useParams();
-  const { state } = useAppScope();
-  const { user } = useAuth();
+  const navigate = useNavigate();
+  const { state, actions } = useAppScope();
+  const { user: user_ } = useAuth();
+
+  const user = state.selectUser(user_?.id);
 
   const [collapsedIds, setCollapsedIds] = React.useState([]);
 
-  const starredMatch = useMatch({ path: "/v2/starred", end: false });
+  const starredMatch = useMatch({ path: "/starred", end: false });
 
   const channels = state.selectDmAndTopicChannels();
 
   const selectedChannel =
     params.channelId == null ? null : state.selectChannel(params.channelId);
+
+  const starredChannels = state.selectStarredChannels();
+  const hasUnreadStarredChannel = React.useMemo(
+    () => starredChannels.some((c) => state.selectChannelHasUnread(c.id)),
+    [state, starredChannels]
+  );
 
   const servers = state.selectServers();
 
@@ -401,11 +227,24 @@ export const UnifiedLayout = () => {
               alignOffset={0}
               css={(theme) => css({ width: theme.sidebarWidth })}
             >
-              <DropdownMenu.Item>Settings</DropdownMenu.Item>
-              <DropdownMenu.Item>Edit profile</DropdownMenu.Item>
-              <DropdownMenu.Item>Copy wallet address</DropdownMenu.Item>
+              <DropdownMenu.Item disabled>Settings</DropdownMenu.Item>
+              <DropdownMenu.Item disabled>Edit profile</DropdownMenu.Item>
+              <DropdownMenu.Item
+                onSelect={() => {
+                  navigator.clipboard.writeText(user.walletAddress);
+                }}
+              >
+                Copy wallet address
+              </DropdownMenu.Item>
               <DropdownMenu.Separator />
-              <DropdownMenu.Item>Log out</DropdownMenu.Item>
+              <DropdownMenu.Item
+                onSelect={() => {
+                  actions.logout();
+                  navigate("/");
+                }}
+              >
+                Log out
+              </DropdownMenu.Item>
             </DropdownMenu.Content>
           </DropdownMenu.Root>
         )
@@ -446,12 +285,13 @@ export const UnifiedLayout = () => {
                 </div>
               </div>
               <div style={{ height: "1rem" }} />
-              <ServerChannels serverId={params.serverId} v2 />
+              <ServerChannels serverId={params.serverId} />
             </>
           ) : (
             <>
               <div style={{ height: "1rem" }} />
               <ListItem
+                disabled
                 compact={false}
                 icon={<MagnificationGlassIcon style={{ width: "1.4rem" }} />}
                 title="Quick Find"
@@ -459,9 +299,21 @@ export const UnifiedLayout = () => {
               <ListItem
                 compact={false}
                 component={NavLink}
-                to="/v2/starred"
+                to="/starred"
                 icon={<StarIcon style={{ width: "1.4rem" }} />}
-                title="Starred"
+                title={
+                  <div
+                    css={(theme) =>
+                      css({
+                        color: hasUnreadStarredChannel
+                          ? theme.colors.textNormal
+                          : undefined,
+                      })
+                    }
+                  >
+                    Starred
+                  </div>
+                }
               />
               {/* <ListItem */}
               {/*   icon={<ClockIcon style={{ width: "1.4rem" }} />} */}
@@ -474,7 +326,7 @@ export const UnifiedLayout = () => {
                   {selectedChannel.kind !== "server" ? (
                     <ChannelItem
                       name={selectedChannel.name}
-                      link={`/v2/channels/${selectedChannel.id}`}
+                      link={`/channels/${selectedChannel.id}`}
                       hasUnread={state.selectChannelHasUnread(
                         selectedChannel.id
                       )}
@@ -485,7 +337,7 @@ export const UnifiedLayout = () => {
                     />
                   ) : (
                     <ServerChannelItem
-                      link={`/v2/channels/${selectedChannel.id}`}
+                      link={`/channels/${selectedChannel.id}`}
                       channelId={selectedChannel.id}
                       name={selectedChannel.name}
                       hasUnread={state.selectChannelHasUnread(
@@ -517,7 +369,7 @@ export const UnifiedLayout = () => {
                     <ChannelItem
                       key={c.id}
                       name={c.name}
-                      link={`/v2/channels/${c.id}`}
+                      link={`/channels/${c.id}`}
                       hasUnread={state.selectChannelHasUnread(c.id)}
                       notificationCount={state.selectChannelMentionCount(c.id)}
                       memberUserIds={c.memberUserIds}
@@ -607,7 +459,7 @@ export const UnifiedLayout = () => {
                                 <ListItem
                                   key={c.id}
                                   component={NavLink}
-                                  to={`/v2/channels/${c.id}`}
+                                  to={`/channels/${c.id}`}
                                   icon={
                                     <HashIcon style={{ width: "1.2rem" }} />
                                   }
@@ -665,7 +517,7 @@ export const UnifiedLayout = () => {
                                         <ListItem
                                           key={c.id}
                                           component={NavLink}
-                                          to={`/v2/channels/${c.id}`}
+                                          to={`/channels/${c.id}`}
                                           icon={
                                             <HashIcon
                                               style={{ width: "1.2rem" }}
@@ -722,7 +574,7 @@ const StarredNavContent = () => {
   const params = useParams();
   const { state } = useAppScope();
 
-  // const channels = state.selectDmAndTopicChannels();
+  const [collapsedIds, setCollapsedIds] = React.useState([]);
 
   const starredChannels = state.selectStarredChannels();
   const selectedChannel =
@@ -740,13 +592,9 @@ const StarredNavContent = () => {
   const topicChannels = channelsByKind.topic ?? [];
   const dmChannels = channelsByKind.dm ?? [];
 
-  const serverChannelsByServerName = React.useMemo(
-    () =>
-      groupBy(
-        (c) => state.selectServer(c.serverId).name,
-        channelsByKind.server ?? []
-      ),
-    [state, channelsByKind.server]
+  const serverChannelsByServerId = React.useMemo(
+    () => groupBy((c) => c.serverId, channelsByKind.server ?? []),
+    [channelsByKind.server]
   );
 
   return (
@@ -754,16 +602,17 @@ const StarredNavContent = () => {
       <div style={{ height: "1rem" }} />
       <ListItem
         compact={false}
-        icon={<MagnificationGlassIcon style={{ width: "1.4rem" }} />}
-        title="Quick Find"
-      />
-      <ListItem
-        compact={false}
         component={NavLink}
-        to="/v2"
+        to="/"
         icon={<HomeIcon style={{ width: "1.4rem" }} />}
         title="Home"
         end
+      />
+      <ListItem
+        disabled
+        compact={false}
+        icon={<MagnificationGlassIcon style={{ width: "1.4rem" }} />}
+        title="Quick Find"
       />
       {/* <ListItem */}
       {/*   icon={<ClockIcon style={{ width: "1.4rem" }} />} */}
@@ -776,7 +625,7 @@ const StarredNavContent = () => {
           {selectedChannel.kind !== "server" ? (
             <ChannelItem
               name={selectedChannel.name}
-              link={`/v2/starred/channels/${selectedChannel.id}`}
+              link={`/starred/channels/${selectedChannel.id}`}
               hasUnread={state.selectChannelHasUnread(selectedChannel.id)}
               notificationCount={state.selectChannelMentionCount(
                 selectedChannel.id
@@ -785,7 +634,7 @@ const StarredNavContent = () => {
             />
           ) : (
             <ServerChannelItem
-              link={`/v2/starred/channels/${selectedChannel.id}`}
+              link={`/starred/channels/${selectedChannel.id}`}
               channelId={selectedChannel.id}
               name={selectedChannel.name}
               hasUnread={state.selectChannelHasUnread(selectedChannel.id)}
@@ -803,7 +652,7 @@ const StarredNavContent = () => {
             <ChannelItem
               key={c.id}
               name={c.name}
-              link={`/v2/starred/channels/${c.id}`}
+              link={`/starred/channels/${c.id}`}
               hasUnread={state.selectChannelHasUnread(c.id)}
               notificationCount={state.selectChannelMentionCount(c.id)}
               memberUserIds={c.memberUserIds}
@@ -814,34 +663,58 @@ const StarredNavContent = () => {
       )}
 
       {dmChannels.length !== 0 && (
-        <Section title="Direct messages">
+        <CollapsableSection
+          title="Direct messages"
+          expanded={!collapsedIds.includes("dms")}
+          onToggleExpanded={() => {
+            setCollapsedIds((ids) =>
+              ids.includes("dms")
+                ? ids.filter((id) => id !== "dms")
+                : [...ids, "dms"]
+            );
+          }}
+        >
           {dmChannels.map((c) => (
             <ChannelItem
               key={c.id}
               name={c.name}
-              link={`/v2/starred/channels/${c.id}`}
+              link={`/starred/channels/${c.id}`}
               hasUnread={state.selectChannelHasUnread(c.id)}
               notificationCount={state.selectChannelMentionCount(c.id)}
               memberUserIds={c.memberUserIds}
             />
           ))}
-        </Section>
+        </CollapsableSection>
       )}
 
-      {Object.entries(serverChannelsByServerName).map(([title, channels]) => (
-        <Section key={title} title={title}>
-          {channels.map((c) => (
-            <ServerChannelItem
-              key={c.id}
-              link={`/v2/starred/channels/${c.id}`}
-              channelId={c.id}
-              name={c.name}
-              hasUnread={state.selectChannelHasUnread(c.id)}
-              mentionCount={state.selectChannelMentionCount(c.id)}
-            />
-          ))}
-        </Section>
-      ))}
+      {Object.entries(serverChannelsByServerId).map(([serverId, channels]) => {
+        const server = state.selectServer(serverId);
+        return (
+          <CollapsableSection
+            key={serverId}
+            title={server.name}
+            expanded={!collapsedIds.includes(serverId)}
+            onToggleExpanded={() => {
+              setCollapsedIds((ids) =>
+                ids.includes(serverId)
+                  ? ids.filter((id) => id !== serverId)
+                  : [...ids, serverId]
+              );
+            }}
+          >
+            {channels.map((c) => (
+              <ServerChannelItem
+                key={c.id}
+                link={`/starred/channels/${c.id}`}
+                channelId={c.id}
+                name={c.name}
+                hasUnread={state.selectChannelHasUnread(c.id)}
+                mentionCount={state.selectChannelMentionCount(c.id)}
+              />
+            ))}
+          </CollapsableSection>
+        );
+      })}
 
       <div style={{ height: "2rem" }} />
     </>
@@ -1228,6 +1101,7 @@ const ListItem = ({
   icon,
   title,
   notificationCount,
+  disabled,
   ...props
 }) => (
   <div
@@ -1248,7 +1122,9 @@ const ListItem = ({
         background: transparent;
         border-radius: ${theme.mainMenu.itemBorderRadius};
         cursor: pointer;
-        color: ${theme.mainMenu.itemTextColor};
+        color: ${disabled
+          ? theme.mainMenu.itemTextColorDisabled
+          : theme.mainMenu.itemTextColor};
         padding: 0.2rem ${theme.mainMenu.itemHorizontalPadding};
         padding-left: calc(
           ${theme.mainMenu.itemHorizontalPadding} + ${indendationLevel} * 2.2rem
@@ -1256,6 +1132,7 @@ const ListItem = ({
         text-decoration: none;
         line-height: 1.3;
         height: ${theme.mainMenu.itemHeight};
+        pointer-events: ${disabled ? "none" : "all"};
       }
       & > *.active {
         background: ${theme.colors.backgroundModifierSelected};
@@ -1326,7 +1203,9 @@ const ListItem = ({
           <div
             css={(theme) =>
               css({
-                color: theme.colors.textMuted,
+                color: disabled
+                  ? "rgb(255 255 255 / 22%)"
+                  : theme.colors.textMuted,
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",

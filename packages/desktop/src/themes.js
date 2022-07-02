@@ -99,9 +99,11 @@ export const dark = {
   },
 };
 
-const createV2 = () => {
+const createNotion = () => {
   const textNormal = "rgba(255, 255, 255, 0.81)";
+  const textMuted = "rgba(255, 255, 255, 0.443)";
   const textDimmed = "rgb(155, 155, 155)";
+  const transparentBlue = "rgba(45, 170, 219, 0.3)";
   return {
     ...dark,
     sidebarWidth: "25rem",
@@ -121,6 +123,7 @@ const createV2 = () => {
       inputHeight: "2.9rem",
       itemDistance: 0,
       itemTextColor: textDimmed,
+      itemTextColorDisabled: "rgb(255 255 255 / 28%)",
       containerHorizontalPadding: "0.4rem",
     },
     channelHeader: { breadcrumbs: true },
@@ -134,8 +137,9 @@ const createV2 = () => {
       ...dark.colors,
       textNormal,
       textDimmed,
-      textMuted: "rgba(255, 255, 255, 0.443)",
+      textMuted,
       textHighlight: "#ffd376",
+      textSelectionBackground: transparentBlue,
       backgroundPrimary: "rgb(25, 25, 25)",
       backgroundSecondary: "rgb(32, 32, 32)",
       dialogBackground: "rgb(37, 37, 37)",
@@ -171,4 +175,4 @@ const createV2 = () => {
   };
 };
 
-export const v2 = createV2();
+export const notion = createNotion();

@@ -196,7 +196,7 @@ const commands = {
       const channels = state.selectStarredChannels();
       const isStarred = channels.some((c) => c.id === channelId);
       if (!isStarred) await actions.starChannel(channelId);
-      navigate(`/me/${channelId}`);
+      navigate(`/starred/channels/${channelId}`);
       editor.clear();
     },
     exclude: () => {
@@ -214,7 +214,11 @@ const commands = {
       const indexToSelect = Math.max(0, index - 1);
       const channelsAfterUnstar = channels.filter((c) => c.id !== channelId);
       const channelToSelect = channelsAfterUnstar[indexToSelect];
-      navigate(channelToSelect == null ? "/" : `/me/${channelToSelect.id}`);
+      navigate(
+        channelToSelect == null
+          ? "/"
+          : `/starred/channels/${channelToSelect.id}`
+      );
       editor.clear();
     },
     exclude: () => {

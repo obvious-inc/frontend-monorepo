@@ -1260,7 +1260,7 @@ const Channel = ({ server: serverVariant, noSideMenu }) => {
             <>
               <Heading
                 component={NavLink}
-                to={`/v2/servers/${server.id}/${channel.id}`}
+                to={`/servers/${server.id}/${channel.id}`}
                 css={css({
                   textDecoration: "none",
                   ":hover": { textDecoration: "underline" },

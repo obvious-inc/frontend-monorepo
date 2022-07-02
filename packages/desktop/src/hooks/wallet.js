@@ -1,5 +1,11 @@
 import React from "react";
-import { chain as wagmiChain, useConnect, useAccount, useNetwork } from "wagmi";
+import {
+  chain as wagmiChain,
+  useConnect,
+  useAccount,
+  useEnsName,
+  useNetwork,
+} from "wagmi";
 import { useLatestCallback } from "@shades/common";
 
 const ETHEREUM_MAINNET_CHAIN_ID = wagmiChain.mainnet.id;
@@ -19,6 +25,7 @@ const useWallet = () => {
     // isLoading,
     // error,
   } = useAccount();
+  const { data: ensName } = useEnsName({ address: account?.address });
 
   const {
     activeChain,
@@ -45,6 +52,7 @@ const useWallet = () => {
 
   return {
     accountAddress: account?.address,
+    accountEnsName: ensName,
     chain: activeChain,
     isConnecting,
     canConnect: firstReadyConnector != null,

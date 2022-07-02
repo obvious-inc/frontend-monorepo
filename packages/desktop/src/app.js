@@ -33,25 +33,19 @@ import useWalletLogin, {
   Provider as WalletLoginProvider,
 } from "./hooks/wallet-login";
 import { generateCachedAvatar } from "./components/avatar";
-import SignInScreen from "./components/sign-in-screen";
+import LoginScreen from "./components/login-screen";
 import Channel, { Header as ChannelHeader } from "./components/channel";
 import Discover from "./components/discover";
 import JoinServer from "./components/join-server";
-import {
-  HomeLayout,
-  ServerLayout,
-  ChannelLayout,
-  UnifiedLayout,
-} from "./components/layouts";
+import { UnifiedLayout } from "./components/layouts";
 import TitleBar from "./components/title-bar";
 import * as Tooltip from "./components/tooltip";
 import {
-  Star as StarIcon,
   ChatBubbles as ChatBubblesIcon,
   Home as HomeIcon,
 } from "./components/icons";
 import useSideMenu from "./hooks/side-menu";
-import { dark as defaultTheme, v2 as v2Theme } from "./themes";
+import { notion as defaultTheme } from "./themes";
 
 const isNative = window.Native != null;
 
@@ -181,20 +175,8 @@ const App = () => {
 
   React.useEffect(() => {
     if (user == null || hasFetchedInitialData) return null;
-
-    fetchInitialData().then((data) => {
-      const server = data.servers[0];
-
-      const channel = server?.channels[0];
-
-      if (channel == null) return;
-
-      if (window.location.pathname === "/")
-        navigate(`/channels/${server.id}/${channel.id}`, {
-          replace: true,
-        });
-    });
-  }, [user, navigate, fetchInitialData, hasFetchedInitialData]);
+    fetchInitialData();
+  }, [user, fetchInitialData, hasFetchedInitialData]);
 
   React.useEffect(() => {
     if (authStatus !== "authenticated") return;
@@ -217,6 +199,9 @@ const App = () => {
             body: {
               color: theme.colors.textNormal,
               fontFamily: theme.fontStacks.default,
+              "::selection": {
+                background: theme.colors.textSelectionBackground,
+              },
             },
           })
         }
@@ -226,104 +211,49 @@ const App = () => {
 
       <Routes>
         <Route
-          path="/v2"
+          path="/"
           element={
-            <ThemeProvider theme={v2Theme}>
-              <RequireAuth>
-                <UnifiedLayout />
-              </RequireAuth>
-              <Global
-                styles={(theme) =>
-                  css({
-                    body: {
-                      color: theme.colors.textNormal,
-                      fontFamily: theme.fontStacks.default,
-                    },
-                  })
-                }
-              />
-            </ThemeProvider>
+            <RequireAuth>
+              <UnifiedLayout />
+            </RequireAuth>
           }
         >
-          <Route index element={<V2EmptyHome />} />
+          <Route index element={<EmptyHome />} />
           <Route path="starred" element={<Channel />} />
           <Route path="starred/channels/:channelId" element={<Channel />} />
-          <Route path="channels/:channelId" element={<Channel />} />
+          <Route path="/channels">
+            <Route
+              index
+              element={
+                <div
+                  css={(theme) =>
+                    css({
+                      flex: 1,
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      height: "100%",
+                      background: theme.colors.backgroundPrimary,
+                    })
+                  }
+                >
+                  <ChatBubblesIcon
+                    style={{
+                      width: "6rem",
+                      color: "rgb(255 255 255 / 5%)",
+                    }}
+                  />
+                </div>
+              }
+            />
+            <Route path=":channelId" element={<Channel />} />
+          </Route>
+          <Route path="c/:channelId" element={<Channel noSideMenu />} />
           <Route path="servers/:serverId" element={<Channel />} />
           <Route
             path="servers/:serverId/:channelId"
             element={<Channel server />}
           />
-        </Route>
-
-        <Route
-          path="/"
-          element={
-            <RequireAuth>
-              <HomeLayout />
-            </RequireAuth>
-          }
-        >
-          <Route index element={<EmptyHome />} />
-          <Route path="me/:channelId" element={<Channel />} />
-        </Route>
-
-        <Route
-          path="/c/:channelId"
-          element={
-            <RequireAuth>
-              <Channel noSideMenu />
-            </RequireAuth>
-          }
-        />
-
-        <Route
-          path="/channels"
-          element={
-            <RequireAuth>
-              <ChannelLayout />
-            </RequireAuth>
-          }
-        >
-          <Route
-            index
-            element={
-              <div
-                css={(theme) =>
-                  css({
-                    flex: 1,
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    height: "100%",
-                    background: theme.colors.backgroundPrimary,
-                  })
-                }
-              >
-                <ChatBubblesIcon
-                  style={{
-                    width: "6rem",
-                    color: "rgb(255 255 255 / 5%)",
-                  }}
-                />
-              </div>
-            }
-          />
-          <Route path="/channels/:channelId" element={<Channel />} />
-        </Route>
-
-        <Route
-          element={
-            <RequireAuth>
-              <ServerLayout />
-            </RequireAuth>
-          }
-        >
-          <Route
-            path="/channels/:serverId/:channelId"
-            element={<Channel server />}
-          />
-          {/* <Route path="/channels/:serverId" element={<Channel />} /> */}
         </Route>
 
         <Route
@@ -335,7 +265,7 @@ const App = () => {
           }
         />
         {/* Public routes below */}
-        <Route path="/join/:serverId" element={<JoinServer />} />
+        <Route path="/servers/:serverId/join" element={<JoinServer />} />
         <Route path="*" element={null} />
       </Routes>
     </>
@@ -343,66 +273,12 @@ const App = () => {
 };
 
 const EmptyHome = () => {
-  const { state } = useAppScope();
+  // const { state } = useAppScope();
   const { isFloating: isMenuTogglingEnabled } = useSideMenu();
-  const hasFetchedInitialData = state.selectHasFetchedInitialData();
-  const starredChannels = state.selectStarredChannels();
-  const hasNoStarredChannels =
-    hasFetchedInitialData && starredChannels.length === 0;
-  return (
-    <div
-      css={(theme) =>
-        css({
-          flex: 1,
-          height: "100%",
-          display: "flex",
-          flexDirection: "column",
-          background: theme.colors.backgroundPrimary,
-        })
-      }
-    >
-      {isMenuTogglingEnabled && <ChannelHeader />}
-      <div
-        css={css({
-          flex: 1,
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          height: "100%",
-        })}
-      >
-        <div
-          css={css({
-            display: "flex",
-            flexDirection: "column",
-            alignItems: "center",
-          })}
-        >
-          <StarIcon
-            style={{
-              width: "6rem",
-              color: hasNoStarredChannels
-                ? "rgb(180 130 36)"
-                : "rgb(255 255 255 / 5%)",
-            }}
-          />
-          {hasNoStarredChannels && (
-            <div
-              css={(theme) =>
-                css({ color: theme.colors.textMuted, marginTop: "2rem" })
-              }
-            >
-              Try the &quot;/star-channel&quot; command
-            </div>
-          )}
-        </div>
-      </div>
-    </div>
-  );
-};
-
-const V2EmptyHome = () => {
-  const { isFloating: isMenuTogglingEnabled } = useSideMenu();
+  // const hasFetchedInitialData = state.selectHasFetchedInitialData();
+  // const starredChannels = state.selectStarredChannels();
+  // const hasNoStarredChannels =
+  //   hasFetchedInitialData && starredChannels.length === 0;
   return (
     <div
       css={(theme) =>
@@ -447,7 +323,7 @@ const V2EmptyHome = () => {
 const RequireAuth = ({ children }) => {
   const { status: authStatus } = useAuth();
 
-  if (authStatus === "not-authenticated") return <SignInScreen />;
+  if (authStatus === "not-authenticated") return <LoginScreen />;
 
   if (authStatus !== "authenticated") return null; // Spinner
 

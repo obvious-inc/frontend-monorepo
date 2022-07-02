@@ -14,6 +14,7 @@ const SignInScreen = () => {
     cancel: cancelWalletConnectionAttempt,
     canConnect: canConnectWallet,
     accountAddress,
+    accountEnsName,
     chain,
     isConnecting,
     error: walletError,
@@ -219,7 +220,14 @@ const SignInScreen = () => {
                         })
                       }
                     >
-                      {eth.truncateAddress(accountAddress)}
+                      {accountEnsName == null ? (
+                        eth.truncateAddress(accountAddress)
+                      ) : (
+                        <>
+                          {accountEnsName} (
+                          {eth.truncateAddress(accountAddress)})
+                        </>
+                      )}
                     </a>
                   </Tooltip.Trigger>
                   <Tooltip.Content side="top" sideOffset={4}>
@@ -256,7 +264,7 @@ const Button = ({ css: cssProp, ...props }) => (
   <button
     css={css`
       color: white;
-      background: hsl(0 0% 100% / 7%);
+      background: hsl(0 0% 100% / 6%);
       border: 0;
       padding: 1.1rem 2.4rem;
       font-weight: 500;
@@ -268,7 +276,7 @@ const Button = ({ css: cssProp, ...props }) => (
         cursor: pointer;
       }
       :hover:not(:disabled) {
-        background: hsl(0 0% 100% / 9%);
+        background: hsl(0 0% 100% / 8%);
       }
       :disabled {
         opacity: 0.5;
