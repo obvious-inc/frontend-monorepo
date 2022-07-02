@@ -237,7 +237,7 @@ const entryIdsByChannelId = (state = {}, action) => {
   }
 };
 
-const systemMessageTypes = ["member-joined"];
+const systemMessageTypes = ["member-joined", "user-invited"];
 const appMessageTypes = ["webhook", "app"];
 
 const deriveMessageType = (message) => {
@@ -246,6 +246,7 @@ const deriveMessageType = (message) => {
     case 0:
       return "regular";
     case 1:
+      if (message.inviter) return "user-invited";
       return "member-joined";
     case 2:
       return "webhook";
@@ -276,16 +277,22 @@ export const selectMessage = createSelector(
   },
   (state, messageId) => {
     const message = state.messages.entriesById[messageId];
+    if (message == null || message.inviter == null) return null;
+    return selectUser(state, message.inviter);
+  },
+  (state, messageId) => {
+    const message = state.messages.entriesById[messageId];
     if (message == null || message.reply_to == null) return null;
     return selectMessage(state, message.reply_to);
   },
   (state) => state.user,
-  (message, author, repliedMessage, loggedInUser) => {
+  (message, author, inviter, repliedMessage, loggedInUser) => {
     if (message == null) return null;
     if (message.deleted) return message;
 
     const serverId = message.server;
     const authorUserId = message.author;
+    const inviterUserId = message.inviter;
 
     if (message.reply_to != null) {
       message.repliedMessage = repliedMessage;
@@ -306,6 +313,8 @@ export const selectMessage = createSelector(
       isAppMessage: appMessageTypes.includes(type),
       isOptimistic: message.isOptimistic,
       author,
+      inviterUserId,
+      inviter,
       content:
         message.blocks?.length > 0
           ? message.blocks

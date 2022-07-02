@@ -1,7 +1,5 @@
-import { createSelector } from "reselect";
 import { indexBy } from "../utils/array";
 import combineReducers from "../utils/combine-reducers";
-import { arrayShallowEquals } from "../utils/reselect";
 
 const entriesById = (state = {}, action) => {
   switch (action.type) {

@@ -1480,6 +1480,21 @@ const SystemMessage = ({ isHovering, message, reactions }) => {
   const theme = useTheme();
   const content = React.useMemo(() => {
     switch (message.type) {
+      case "user-invited":
+        return (
+          <>
+            <MemberDisplayName
+              color={theme.colors.textNormal}
+              displayName={message.author?.displayName}
+            />{" "}
+            has been invited by{" "}
+            <MemberDisplayName
+              color={theme.colors.textNormal}
+              displayName={message.inviter?.displayName}
+            />
+            . Remember to say hi!
+          </>
+        );
       case "member-joined":
         return (
           <>
