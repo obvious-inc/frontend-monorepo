@@ -265,7 +265,7 @@ export const UnifiedLayout = () => {
 
               {channels.length !== 0 && (
                 <CollapsableSection
-                  title="DMs & topics"
+                  title="Channels"
                   expanded={!collapsedIds.includes("dms-topics")}
                   onToggleExpanded={() => {
                     setCollapsedIds((ids) =>
