@@ -25,6 +25,28 @@ import NotificationBadge from "./notification-badge";
 
 const { reverse, groupBy } = arrayUtils;
 
+const useCachedState = ({ key, initialState }) => {
+  const [state, setState] = React.useState(() => {
+    try {
+      return JSON.parse(window.localStorage.getItem(key)) ?? initialState;
+    } catch (e) {
+      console.warn(e);
+      return [];
+    }
+  });
+
+  React.useEffect(() => {
+    try {
+      window.localStorage.setItem(key, JSON.stringify(state));
+    } catch (e) {
+      // Ignore
+      console.warn(e);
+    }
+  }, [key, state]);
+
+  return [state, setState];
+};
+
 export const UnifiedLayout = () => {
   const params = useParams();
   const navigate = useNavigate();
@@ -33,7 +55,10 @@ export const UnifiedLayout = () => {
 
   const user = state.selectUser(user_?.id);
 
-  const [collapsedIds, setCollapsedIds] = React.useState([]);
+  const [collapsedIds, setCollapsedIds] = useCachedState({
+    key: "main-menu:collapsed",
+    initialState: [],
+  });
 
   const starredMatch = useMatch({ path: "/starred", end: false });
 
