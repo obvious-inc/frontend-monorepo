@@ -1369,9 +1369,17 @@ const Channel = ({ server: serverVariant, noSideMenu }) => {
     return (
       <div
         css={(theme) =>
-          css({ background: theme.colors.backgroundPrimary, flex: 1 })
+          css({
+            background: theme.colors.backgroundPrimary,
+            flex: 1,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+          })
         }
-      />
+      >
+        <Spinner size="2.4rem" />
+      </div>
     );
 
   const typingChannelMembers = state.selectChannelTypingMembers(
