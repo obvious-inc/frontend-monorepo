@@ -10,7 +10,7 @@ import { InjectedConnector } from "wagmi/connectors/injected";
 import { WalletConnectConnector } from "wagmi/connectors/walletConnect";
 import React from "react";
 import { css } from "@emotion/react";
-import { Routes, Route, useNavigate } from "react-router-dom";
+import { Routes, Route, Navigate, useNavigate } from "react-router-dom";
 import { IntlProvider } from "react-intl";
 import { ThemeProvider, Global } from "@emotion/react";
 import Pusher from "pusher-js";
@@ -266,7 +266,7 @@ const App = () => {
         />
         {/* Public routes below */}
         <Route path="/servers/:serverId/join" element={<JoinServer />} />
-        <Route path="*" element={null} />
+        <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </>
   );
