@@ -43,6 +43,7 @@ import * as Tooltip from "./components/tooltip";
 import {
   ChatBubbles as ChatBubblesIcon,
   Home as HomeIcon,
+  Star as StarIcon,
 } from "./components/icons";
 import useSideMenu from "./hooks/side-menu";
 import { notion as defaultTheme } from "./themes";
@@ -219,7 +220,7 @@ const App = () => {
           }
         >
           <Route index element={<EmptyHome />} />
-          <Route path="starred" element={<Channel />} />
+          <Route path="starred" element={<StarredHome />} />
           <Route path="starred/channels/:channelId" element={<Channel />} />
           <Route path="/channels">
             <Route
@@ -309,6 +310,54 @@ const EmptyHome = () => {
           })}
         >
           <HomeIcon
+            style={{
+              width: "6rem",
+              color: "rgb(255 255 255 / 5%)",
+            }}
+          />
+        </div>
+      </div>
+    </div>
+  );
+};
+
+const StarredHome = () => {
+  // const { state } = useAppScope();
+  const { isFloating: isMenuTogglingEnabled } = useSideMenu();
+  // const hasFetchedInitialData = state.selectHasFetchedInitialData();
+  // const starredChannels = state.selectStarredChannels();
+  // const hasNoStarredChannels =
+  //   hasFetchedInitialData && starredChannels.length === 0;
+  return (
+    <div
+      css={(theme) =>
+        css({
+          flex: 1,
+          height: "100%",
+          display: "flex",
+          flexDirection: "column",
+          background: theme.colors.backgroundPrimary,
+        })
+      }
+    >
+      {isMenuTogglingEnabled && <ChannelHeader />}
+      <div
+        css={css({
+          flex: 1,
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          height: "100%",
+        })}
+      >
+        <div
+          css={css({
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+          })}
+        >
+          <StarIcon
             style={{
               width: "6rem",
               color: "rgb(255 255 255 / 5%)",
