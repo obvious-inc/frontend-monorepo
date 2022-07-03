@@ -1211,6 +1211,8 @@ const Channel = ({ server: serverVariant, noSideMenu }) => {
   const { state, actions } = useAppScope();
   const { isFloating: isSideMenuFloating } = useSideMenu();
 
+  const [notFound, setNotFound] = React.useState(false);
+
   const isMenuTogglingEnabled = !noSideMenu && isSideMenuFloating;
 
   const { fetchChannel } = actions;
@@ -1249,8 +1251,15 @@ const Channel = ({ server: serverVariant, noSideMenu }) => {
   );
 
   React.useEffect(() => {
-    if (channel == null) fetchChannel(params.channelId);
-  }, [channel, params.channelId, fetchChannel]);
+    setNotFound(false);
+    fetchChannel(params.channelId).catch((e) => {
+      if (e.code === 400) {
+        setNotFound(true);
+        return;
+      }
+      throw e;
+    });
+  }, [params.channelId, fetchChannel]);
 
   const headerContent = React.useMemo(
     () =>
@@ -1338,6 +1347,23 @@ const Channel = ({ server: serverVariant, noSideMenu }) => {
       ),
     [isMenuTogglingEnabled, server, channel, members, serverVariant]
   );
+
+  if (notFound)
+    return (
+      <div
+        css={(theme) =>
+          css({
+            background: theme.colors.backgroundPrimary,
+            flex: 1,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+          })
+        }
+      >
+        Not found
+      </div>
+    );
 
   if (channel == null)
     return (

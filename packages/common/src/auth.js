@@ -200,7 +200,11 @@ export const Provider = ({
       }
     }
 
-    if (!response.ok) return Promise.reject(new Error(response.statusText));
+    if (!response.ok) {
+      const error = new Error(response.statusText);
+      error.code = response.status;
+      return Promise.reject(error);
+    }
 
     if (response.status === 204) return undefined;
 
