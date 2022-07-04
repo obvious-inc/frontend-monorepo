@@ -27,6 +27,8 @@ import {
   HamburgerMenu as HamburgerMenuIcon,
   PlusCircle as PlusCircleIcon,
   CrossCircle as CrossCircleIcon,
+  Star as StarIcon,
+  StrokedStar as StrokedStarIcon,
 } from "./icons";
 import useSideMenu from "../hooks/side-menu";
 import useIsOnScreen from "../hooks/is-on-screen";
@@ -1218,6 +1220,7 @@ const Channel = ({ server: serverVariant, noSideMenu }) => {
   const { fetchChannel } = actions;
 
   const channel = state.selectChannel(params.channelId);
+  const isChannelStarred = state.selectIsChannelStarred(params.channelId);
 
   const server = state.selectServer(channel?.serverId);
 
@@ -1326,6 +1329,42 @@ const Channel = ({ server: serverVariant, noSideMenu }) => {
               </div>
             )}
           </div>
+          <div>
+            <button
+              onClick={() => {
+                if (isChannelStarred) {
+                  actions.unstarChannel(channel.id);
+                  return;
+                }
+
+                actions.starChannel(channel.id);
+                navigate(`/starred/channels/${channel.id}`);
+              }}
+              css={(theme) =>
+                css({
+                  cursor: "pointer",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  borderRadius: "0.3rem",
+                  width: "3.3rem",
+                  height: "2.8rem",
+                  padding: 0,
+                  transition: "background 20ms ease-in",
+                  marginRight: "0.2rem",
+                  ":hover": {
+                    background: theme.colors.backgroundModifierHover,
+                  },
+                })
+              }
+            >
+              {isChannelStarred ? (
+                <StarIcon style={{ color: "rgb(202, 152, 73)" }} />
+              ) : (
+                <StrokedStarIcon />
+              )}
+            </button>
+          </div>
           <Dialog.Root>
             <Dialog.Trigger asChild>
               <MembersDisplayButton members={members} />
@@ -1345,7 +1384,16 @@ const Channel = ({ server: serverVariant, noSideMenu }) => {
           </Dialog.Root>
         </>
       ),
-    [isMenuTogglingEnabled, server, channel, members, serverVariant]
+    [
+      navigate,
+      actions,
+      isMenuTogglingEnabled,
+      server,
+      channel,
+      members,
+      serverVariant,
+      isChannelStarred,
+    ]
   );
 
   if (notFound)
@@ -1503,16 +1551,16 @@ const MembersDisplayButton = React.forwardRef(({ onClick, members }, ref) => {
             css({
               display: "flex",
               alignItems: "center",
-              padding: "0.4rem",
+              padding: "0.4rem 0.6rem",
               borderRadius:
-                theme.avatars.borderRadius === "50%" ? "1.4rem" : "0.4rem",
+                theme.avatars.borderRadius === "50%" ? "0.3rem" : "0.4rem",
               boxShadow:
                 theme.avatars.borderRadius === "50%"
                   ? "none"
                   : "0 0 0 0.1rem hsl(0 0% 100% / 18%)",
               cursor: "pointer",
               ":hover": {
-                background: "hsl(0 0% 100% / 3%)",
+                background: theme.colors.backgroundModifierHover,
                 boxShadow:
                   theme.avatars.borderRadius === "50%"
                     ? "none"
@@ -1543,8 +1591,8 @@ const MembersDisplayButton = React.forwardRef(({ onClick, members }, ref) => {
           <div
             css={(theme) =>
               css({
-                marginLeft: "0.3rem",
-                padding: "0 0.4rem",
+                marginLeft: "0.4rem",
+                padding: "0 0.3rem",
                 fontSize: theme.fontSizes.small,
                 color: theme.colors.textHeaderSecondary,
               })

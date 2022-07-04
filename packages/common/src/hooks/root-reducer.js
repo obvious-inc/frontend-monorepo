@@ -23,6 +23,7 @@ import channels, {
   selectChannelHasUnread,
   selectChannelMentionCount,
   selectChannelStarId,
+  selectIsChannelStarred,
 } from "../reducers/channels";
 import channelSections, {
   selectServerChannelSections,
@@ -77,6 +78,7 @@ const selectors = {
   selectChannelHasUnread,
   selectChannelMentionCount,
   selectChannelStarId,
+  selectIsChannelStarred,
   selectApp,
 };
 

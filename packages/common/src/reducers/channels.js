@@ -392,6 +392,9 @@ export const selectStarredChannels = createSelector(
   { memoizeOptions: { equalityCheck: arrayShallowEquals } }
 );
 
+export const selectIsChannelStarred = (state, id) =>
+  selectChannelStarId(state, id) != null;
+
 export const selectTopicChannels = createSelector(
   (state) => {
     const channels = Object.values(state.channels.entriesById)
