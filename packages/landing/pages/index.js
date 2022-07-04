@@ -4,7 +4,7 @@ export default function Home() {
   return (
     <>
       <Head>
-        <title>NewShades DAO</title>
+        <title>NewShades</title>
         <link
           rel="icon"
           type="image/png"
@@ -21,11 +21,11 @@ export default function Home() {
 
       <div
         style={{
-          color: "white",
-          fontSize: "min(15vh, 10.5vw)",
-          fontWeight: "800",
-          lineHeight: 1.25,
-          padding: "0.6em",
+          width: "100%",
+          height: "90vh",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
         }}
       >
         {/* <NewShadesLogo */}
@@ -36,39 +36,7 @@ export default function Home() {
         {/*     margin: "0 0 0.3em", */}
         {/*   }} */}
         {/* /> */}
-        <img
-          src="logo.png"
-          style={{
-            display: "block",
-            width: "max(40px, 0.6em)",
-            margin: "0 0 0.3em",
-          }}
-          onPointerOver={(e) => {
-            e.target.src = "logo.gif";
-          }}
-          onPointerOut={(e) => {
-            e.target.src = "logo.png";
-          }}
-        />
-        <h1>NewShades DAO</h1>
-        <nav>
-          <ul>
-            {[
-              { href: "https://airtable.com/shrgbpYYVsuyEJxmW", label: "Join" },
-              { href: "https://twitter.com/newshadesDAO", label: "Twitter" },
-              {
-                href: "https://discord.com/invite/2jy5A5h63H",
-                label: "Discord",
-              },
-            ].map(({ label, href }) => (
-              <li key={href}>
-                <a href={href} target="_blank">
-                  {label}
-                </a>
-              </li>
-            ))}
-          </ul>
-        </nav>
+        <img src="logo.gif" style={{ display: "block", width: "4.8rem" }} />
       </div>
 
       <style jsx>
