@@ -123,7 +123,7 @@ const commands = {
       if (!confirm("Are you sure you want to delete this channel?")) return;
       await actions.deleteChannel(channelId);
       editor.clear();
-      navigate(`/channels/${serverId}`);
+      navigate("/");
     },
     exclude: () => {
       if (context === "dm") return true;
