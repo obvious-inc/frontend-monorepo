@@ -189,13 +189,12 @@ const commands = {
       return server?.ownerUserId !== user.id;
     },
   }),
-  "star-channel": ({ navigate, state, actions, channelId }) => ({
+  "star-channel": ({ state, actions, channelId }) => ({
     description: "Star this channel to list it on your home screen",
     execute: async ({ editor }) => {
       const channels = state.selectStarredChannels();
       const isStarred = channels.some((c) => c.id === channelId);
       if (!isStarred) await actions.starChannel(channelId);
-      navigate(`/starred/channels/${channelId}`);
       editor.clear();
     },
     exclude: () => {
@@ -204,20 +203,10 @@ const commands = {
       return isStarred;
     },
   }),
-  "unstar-channel": ({ navigate, state, actions, channelId }) => ({
+  "unstar-channel": ({ state, actions, channelId }) => ({
     description: "Unstar this channel to remove it from your home screen",
     execute: async ({ editor }) => {
-      const channels = state.selectStarredChannels();
-      const index = channels.findIndex((c) => c.id === channelId);
       await actions.unstarChannel(channelId);
-      const indexToSelect = Math.max(0, index - 1);
-      const channelsAfterUnstar = channels.filter((c) => c.id !== channelId);
-      const channelToSelect = channelsAfterUnstar[indexToSelect];
-      navigate(
-        channelToSelect == null
-          ? "/"
-          : `/starred/channels/${channelToSelect.id}`
-      );
       editor.clear();
     },
     exclude: () => {

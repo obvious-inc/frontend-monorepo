@@ -1,6 +1,6 @@
 import throttle from "lodash.throttle";
 import React from "react";
-import { useParams, useNavigate, NavLink } from "react-router-dom";
+import { useParams, useNavigate } from "react-router-dom";
 import { css } from "@emotion/react";
 import {
   useAuth,
@@ -1338,7 +1338,6 @@ const Channel = ({ server: serverVariant, noSideMenu }) => {
                 }
 
                 actions.starChannel(channel.id);
-                navigate(`/starred/channels/${channel.id}`);
               }}
               css={(theme) =>
                 css({
@@ -1385,7 +1384,6 @@ const Channel = ({ server: serverVariant, noSideMenu }) => {
         </>
       ),
     [
-      navigate,
       actions,
       isMenuTogglingEnabled,
       server,
