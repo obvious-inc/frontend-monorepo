@@ -10,7 +10,7 @@ import { InjectedConnector } from "wagmi/connectors/injected";
 import { WalletConnectConnector } from "wagmi/connectors/walletConnect";
 import React from "react";
 import { css } from "@emotion/react";
-import { Routes, Route, Navigate, useNavigate } from "react-router-dom";
+import { Routes, Route, Navigate, useNavigate, Outlet } from "react-router-dom";
 import { IntlProvider } from "react-intl";
 import { ThemeProvider, Global } from "@emotion/react";
 import Pusher from "pusher-js";
@@ -35,15 +35,14 @@ import useWalletLogin, {
 import { generateCachedAvatar } from "./components/avatar";
 import LoginScreen from "./components/login-screen";
 import Channel, { Header as ChannelHeader } from "./components/channel";
-import Discover from "./components/discover";
-import JoinServer from "./components/join-server";
+// import Discover from "./components/discover";
+// import JoinServer from "./components/join-server";
 import { UnifiedLayout } from "./components/layouts";
 import TitleBar from "./components/title-bar";
 import * as Tooltip from "./components/tooltip";
 import {
   ChatBubbles as ChatBubblesIcon,
   Home as HomeIcon,
-  Star as StarIcon,
 } from "./components/icons";
 import useSideMenu from "./hooks/side-menu";
 import { notion as defaultTheme } from "./themes";
@@ -220,8 +219,6 @@ const App = () => {
           }
         >
           <Route index element={<EmptyHome />} />
-          <Route path="starred" element={<StarredHome />} />
-          <Route path="starred/channels/:channelId" element={<Channel />} />
           <Route path="/channels">
             <Route
               index
@@ -249,24 +246,32 @@ const App = () => {
             />
             <Route path=":channelId" element={<Channel />} />
           </Route>
-          <Route path="c/:channelId" element={<Channel noSideMenu />} />
-          <Route path="servers/:serverId" element={<Channel />} />
-          <Route
-            path="servers/:serverId/:channelId"
-            element={<Channel server />}
-          />
+          {/* <Route path="servers/:serverId" element={<Channel />} /> */}
+          {/* <Route */}
+          {/*   path="servers/:serverId/:channelId" */}
+          {/*   element={<Channel server />} */}
+          {/* /> */}
         </Route>
-
         <Route
-          path="/discover"
           element={
             <RequireAuth>
-              <Discover />
+              <Outlet />
             </RequireAuth>
           }
-        />
+        >
+          <Route path="c/:channelId" element={<Channel noSideMenu />} />
+        </Route>
+
+        {/* <Route */}
+        {/*   path="/discover" */}
+        {/*   element={ */}
+        {/*     <RequireAuth> */}
+        {/*       <Discover /> */}
+        {/*     </RequireAuth> */}
+        {/*   } */}
+        {/* /> */}
         {/* Public routes below */}
-        <Route path="/servers/:serverId/join" element={<JoinServer />} />
+        {/* <Route path="/servers/:serverId/join" element={<JoinServer />} /> */}
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </>
@@ -310,54 +315,6 @@ const EmptyHome = () => {
           })}
         >
           <HomeIcon
-            style={{
-              width: "6rem",
-              color: "rgb(255 255 255 / 5%)",
-            }}
-          />
-        </div>
-      </div>
-    </div>
-  );
-};
-
-const StarredHome = () => {
-  // const { state } = useAppScope();
-  const { isFloating: isMenuTogglingEnabled } = useSideMenu();
-  // const hasFetchedInitialData = state.selectHasFetchedInitialData();
-  // const starredChannels = state.selectStarredChannels();
-  // const hasNoStarredChannels =
-  //   hasFetchedInitialData && starredChannels.length === 0;
-  return (
-    <div
-      css={(theme) =>
-        css({
-          flex: 1,
-          height: "100%",
-          display: "flex",
-          flexDirection: "column",
-          background: theme.colors.backgroundPrimary,
-        })
-      }
-    >
-      {isMenuTogglingEnabled && <ChannelHeader />}
-      <div
-        css={css({
-          flex: 1,
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          height: "100%",
-        })}
-      >
-        <div
-          css={css({
-            display: "flex",
-            flexDirection: "column",
-            alignItems: "center",
-          })}
-        >
-          <StarIcon
             style={{
               width: "6rem",
               color: "rgb(255 255 255 / 5%)",

@@ -411,7 +411,11 @@ export const Provider = ({ children }) => {
       authorizedFetch(`/channels/${channelId}/invite`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ members: [walletAddressOrUserId] }),
+        body: JSON.stringify({
+          members: Array.isArray(walletAddressOrUserId)
+            ? walletAddressOrUserId
+            : [walletAddressOrUserId],
+        }),
       }).then((res) => {
         // TODO
         fetchInitialData();
@@ -449,11 +453,11 @@ export const Provider = ({ children }) => {
     })
   );
 
-  const updateChannel = useLatestCallback((id, { name, description }) =>
+  const updateChannel = useLatestCallback((id, { name, description, avatar }) =>
     authorizedFetch(`/channels/${id}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ name, description }),
+      body: JSON.stringify({ name, description, avatar }),
     }).then((res) => {
       // TODO
       fetchInitialData();

@@ -9,12 +9,12 @@ const NotificationBadge = ({ count, ...props }) => (
         justifyContent: "center",
         background: "hsl(359, 82.6%, 59.4%)",
         color: "white",
-        height: "1.6rem",
-        minWidth: "1.6rem",
-        fontSize: "1.2rem",
+        height: "1.5rem",
+        minWidth: "1.5rem",
+        fontSize: "1rem",
         fontWeight: theme.text.weights.notificationBadge,
         lineHeight: 1,
-        borderRadius: "0.8rem",
+        borderRadius: "0.75rem",
         padding: "0 0.4rem",
       })
     }

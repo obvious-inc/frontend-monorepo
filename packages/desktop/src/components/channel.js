@@ -1256,7 +1256,7 @@ const Channel = ({ server: serverVariant, noSideMenu }) => {
   React.useEffect(() => {
     setNotFound(false);
     fetchChannel(params.channelId).catch((e) => {
-      if (e.code === 400) {
+      if (e.code === 404) {
         setNotFound(true);
         return;
       }
@@ -1271,8 +1271,8 @@ const Channel = ({ server: serverVariant, noSideMenu }) => {
           {!serverVariant && server != null && (
             <>
               <Heading
-                component={NavLink}
-                to={`/servers/${server.id}/${channel.id}`}
+                // component={NavLink}
+                // to={`/servers/${server.id}/${channel.id}`}
                 css={css({
                   textDecoration: "none",
                   ":hover": { textDecoration: "underline" },
@@ -1413,7 +1413,7 @@ const Channel = ({ server: serverVariant, noSideMenu }) => {
       </div>
     );
 
-  if (channel == null)
+  if (channel == null || user == null)
     return (
       <div
         css={(theme) =>
@@ -1423,6 +1423,7 @@ const Channel = ({ server: serverVariant, noSideMenu }) => {
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
+            height: "100%",
           })
         }
       >

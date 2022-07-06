@@ -96,13 +96,15 @@ const createParser = ({
                 sideOffset={5}
                 align="center"
               >
-                <ProfilePreview
-                  profilePicture={member.profilePicture}
-                  displayName={member.displayName}
-                  walletAddress={member.walletAddress}
-                  onlineStatus={member.onlineStatus}
-                  userId={member.id}
-                />
+                {member != null && (
+                  <ProfilePreview
+                    profilePicture={member.profilePicture}
+                    displayName={member.displayName}
+                    walletAddress={member.walletAddress}
+                    onlineStatus={member.onlineStatus}
+                    userId={member.id}
+                  />
+                )}
               </Popover.Content>
             </Popover.Root>
           );

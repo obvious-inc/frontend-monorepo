@@ -18,6 +18,7 @@ const parseChannel = (channel) => {
     id: channel.id,
     name: channel.name,
     description: channel.description,
+    avatar: channel.avatar,
     kind: channel.kind ?? "server",
     createdAt: channel.created_at,
     publicPermissions: publicPermissionGroup?.permissions ?? [],
@@ -269,6 +270,7 @@ export const selectChannel = createSelector(
     return {
       ...channel,
       name: buildName(),
+      avatar: channel.avatar === "" ? null : channel.avatar,
       isPublic: channel.publicPermissions.includes("channels.join"),
     };
   },
@@ -344,6 +346,26 @@ export const selectDmChannelFromUserIds = (state, userIds) => {
       c.memberUserIds.every((id) => userIds.includes(id))
   );
 };
+
+export const selectMemberChannels = createSelector(
+  (state) => {
+    if (state.user == null) return [];
+
+    const channels = Object.values(state.channels.entriesById)
+      .filter((channel) => channel.memberUserIds?.includes(state.user.id))
+      .map((c) => selectChannel(state, c.id));
+
+    return sort((c1, c2) => {
+      const [t1, t2] = [c1, c2].map((c) => {
+        const readState = state.channels.readStatesById[c.id];
+        return new Date(readState?.lastMessageAt ?? c.createdAt).getTime();
+      });
+      return t1 > t2 ? -1 : t1 < t2 ? 1 : 0;
+    }, channels);
+  },
+  (channels) => channels,
+  { memoizeOptions: { equalityCheck: arrayShallowEquals } }
+);
 
 export const selectServerChannels = createSelector(
   (state, serverId) =>

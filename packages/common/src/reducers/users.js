@@ -49,7 +49,9 @@ const selectAllUsers = (state) =>
 
 export const selectUser = createSelector(
   (state, userId) =>
-    state.user?.id === userId ? state.user : state.users.entriesById[userId],
+    state.user?.id === userId
+      ? { ...state.user, ...state.users.entriesById[userId] }
+      : state.users.entriesById[userId],
   (state) => state.user,
   (user, loggedInUser) => {
     if (user == null) return null;

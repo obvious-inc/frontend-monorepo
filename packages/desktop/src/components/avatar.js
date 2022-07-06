@@ -29,6 +29,7 @@ const Avatar = React.forwardRef(
     {
       url,
       walletAddress,
+      signature,
       size = "2rem",
       pixelSize = 20,
       borderRadius,
@@ -42,6 +43,37 @@ const Avatar = React.forwardRef(
       return generateCachedAvatar(walletAddress, { pixelSize });
     }, [url, walletAddress, pixelSize]);
 
+    if (url == null && signature != null)
+      return (
+        <div
+          ref={ref}
+          css={(theme) =>
+            css({
+              borderRadius: borderRadius ?? theme.avatars.borderRadius,
+              background: theme.colors.backgroundModifierHover,
+              height: size,
+              width: size,
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+            })
+          }
+          {...props}
+        >
+          <div
+            css={(theme) =>
+              css({
+                textTransform: "uppercase",
+                fontSize: "1.1rem",
+                color: theme.colors.textDimmed,
+              })
+            }
+          >
+            {signature}
+          </div>
+        </div>
+      );
+
     if (url === undefined)
       return (
         <div
@@ -49,7 +81,7 @@ const Avatar = React.forwardRef(
           css={(theme) =>
             css({
               borderRadius: borderRadius ?? theme.avatars.borderRadius,
-              background: theme.colors.backgroundSecondary,
+              background: theme.colors.backgroundModifierHover,
               height: size,
               width: size,
             })

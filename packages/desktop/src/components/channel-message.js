@@ -107,9 +107,9 @@ const ChannelMessage = React.memo(function ChannelMessage_({
     () =>
       message.reactions.map((r) => ({
         ...r,
-        authorMembers: r.users.map((userId) =>
-          members.find((m) => m.id === userId)
-        ),
+        authorMembers: r.users
+          .map((userId) => members.find((m) => m.id === userId))
+          .filter(Boolean),
       })),
     [message.reactions, members]
   );
@@ -740,7 +740,7 @@ const MessageHeader = ({ author, createdAt, authorUserId }) => (
   >
     <Popover.Root>
       <Popover.Trigger asChild>
-        <MemberDisplayName displayName={author.displayName} />
+        <MemberDisplayName displayName={author?.displayName} />
       </Popover.Trigger>
       <Popover.Content
         collisionTolerance={5}
@@ -748,13 +748,15 @@ const MessageHeader = ({ author, createdAt, authorUserId }) => (
         sideOffset={5}
         align="center"
       >
-        <ProfilePreview
-          profilePicture={author.profilePicture}
-          displayName={author.displayName}
-          walletAddress={author.walletAddress}
-          onlineStatus={author.onlineStatus}
-          userId={authorUserId}
-        />
+        {author != null && (
+          <ProfilePreview
+            profilePicture={author.profilePicture}
+            displayName={author.displayName}
+            walletAddress={author.walletAddress}
+            onlineStatus={author.onlineStatus}
+            userId={authorUserId}
+          />
+        )}
       </Popover.Content>
     </Popover.Root>
 
@@ -769,7 +771,7 @@ const MessageHeader = ({ author, createdAt, authorUserId }) => (
       />
     </TinyMutedText>
 
-    {author.onlineStatus === "online" && (
+    {author?.onlineStatus === "online" && (
       <Tooltip.Root>
         <Tooltip.Trigger asChild>
           <div css={css({ padding: "0.5rem 0.2rem" })}>
@@ -1485,14 +1487,14 @@ const SystemMessage = ({ isHovering, message, reactions }) => {
           <>
             <MemberDisplayName
               color={theme.colors.textNormal}
-              displayName={message.author?.displayName}
+              displayName={message.inviter?.displayName}
             />{" "}
-            has been invited by{" "}
+            added{" "}
             <MemberDisplayName
               color={theme.colors.textNormal}
-              displayName={message.inviter?.displayName}
-            />
-            . Remember to say hi!
+              displayName={message.author?.displayName}
+            />{" "}
+            to the channel.
           </>
         );
       case "member-joined":

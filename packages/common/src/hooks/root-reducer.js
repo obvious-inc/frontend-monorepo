@@ -10,6 +10,7 @@ import servers, {
 } from "../reducers/servers";
 import channels, {
   selectChannel,
+  selectMemberChannels,
   selectServerChannels,
   selectServerDmChannels,
   selectDmChannels,
@@ -53,6 +54,7 @@ const selectors = {
   selectServers,
   selectJoinedServers,
   selectChannel,
+  selectMemberChannels,
   selectServerChannels,
   selectDmChannels,
   selectTopicChannels,

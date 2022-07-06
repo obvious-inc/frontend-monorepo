@@ -1,35 +1,8 @@
 import { getChecksumAddress } from "../utils/ethereum";
 
 const commands = {
-  "create-channel": ({
-    context,
-    user,
-    state,
-    actions,
-    serverId,
-    navigate,
-  }) => ({
-    description: "Create a new channel",
-    arguments: ["name"],
-    execute: async ({ args, editor }) => {
-      const name = args.join(" ");
-      if (name.trim().length === 0) {
-        alert('"name" is a required argument!');
-        return;
-      }
-
-      const channel = await actions.createServerChannel(serverId, { name });
-      editor.clear();
-      navigate(`/channels/${serverId}/${channel.id}`);
-    },
-    exclude: () => {
-      if (context !== "server") return true;
-      const server = state.selectServer(serverId);
-      return server?.ownerUserId !== user.id;
-    },
-  }),
-  "create-topic-channel": ({ actions, navigate }) => ({
-    description: "Start a new topic channel",
+  "create-channel": ({ actions, navigate }) => ({
+    description: "Start a new channel",
     arguments: ["name"],
     execute: async ({ args, editor }) => {
       const name = args.join(" ");
@@ -91,6 +64,32 @@ const commands = {
       if (args.length < 1) return;
       const description = args.join(" ");
       await actions.updateChannel(channelId, { description });
+      editor.clear();
+    },
+    exclude: () => {
+      if (context === "dm") return false;
+
+      if (context === "server") return true;
+      // if (context === "server") {
+      //   const server = state.selectServer(serverId);
+      //   return server?.ownerUserId !== user.id;
+      // }
+
+      if (context === "topic") {
+        const channel = state.selectChannel(channelId);
+        return channel?.ownerUserId !== user.id;
+      }
+
+      return true;
+    },
+  }),
+  "set-channel-avatar": ({ context, user, state, actions, channelId }) => ({
+    description: "Set a new avatar for this channel",
+    arguments: ["channel-avatar-url"],
+    execute: async ({ args, editor }) => {
+      if (args.length < 1) return;
+      const avatar = args[0];
+      await actions.updateChannel(channelId, { avatar });
       editor.clear();
     },
     exclude: () => {
@@ -230,20 +229,26 @@ const commands = {
     description: "Add a member to this channel",
     arguments: ["wallet-address-or-ens"],
     execute: async ({ args, editor }) => {
-      const [walletAddressOrEns] = args;
-      if (walletAddressOrEns == null) return;
+      const walletAddressOrEnsList = args;
+      if (walletAddressOrEnsList.length === 0) return;
 
-      try {
-        const address = await ethersProvider
-          .resolveName(walletAddressOrEns)
-          .then(getChecksumAddress);
+      const addresses = [];
 
-        await actions.addChannelMember(channelId, address);
-        editor.clear();
-      } catch (e) {
-        if (e.code === "INVALID_ARGUMENT") throw new Error("Invalid address");
-        throw e;
+      for (let walletAddressOrEns of walletAddressOrEnsList) {
+        try {
+          const address = await ethersProvider
+            .resolveName(walletAddressOrEns)
+            .then(getChecksumAddress);
+          addresses.push(address);
+        } catch (e) {
+          if (e.code === "INVALID_ARGUMENT")
+            throw new Error(`Invalid address "${walletAddressOrEns}"`);
+          throw e;
+        }
       }
+
+      await actions.addChannelMember(channelId, addresses);
+      editor.clear();
     },
     exclude: () => {
       const channel = state.selectChannel(channelId);
