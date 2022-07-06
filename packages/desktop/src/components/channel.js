@@ -1293,19 +1293,28 @@ const Channel = ({ server: serverVariant, noSideMenu }) => {
               </div>
             </>
           )}
-          {!isMenuTogglingEnabled && server == null && (
-            <div
-              css={(theme) =>
-                css({ color: theme.colors.textMuted, marginRight: "0.6rem" })
-              }
-            >
-              {channel?.kind === "dm" ? (
-                <AtSignIcon style={{ width: "2.2rem" }} />
-              ) : (
-                <HashIcon style={{ width: "1.6rem" }} />
-              )}
-            </div>
-          )}
+          {!isMenuTogglingEnabled &&
+            server == null &&
+            (channel.avatar == null ? (
+              <div
+                css={(theme) =>
+                  css({ color: theme.colors.textMuted, marginRight: "0.6rem" })
+                }
+              >
+                {channel.kind === "dm" ? (
+                  <AtSignIcon style={{ width: "2.2rem" }} />
+                ) : (
+                  <HashIcon style={{ width: "1.6rem" }} />
+                )}
+              </div>
+            ) : (
+              <Avatar
+                url={channel.avatar}
+                size="2.4rem"
+                pixelSize={24}
+                css={css({ marginRight: "1.1rem" })}
+              />
+            ))}
           <Heading>{channel?.name}</Heading>
           <div style={{ flex: 1, minWidth: 0 }}>
             {channel.description != null && (
@@ -1313,8 +1322,8 @@ const Channel = ({ server: serverVariant, noSideMenu }) => {
                 css={(theme) =>
                   css({
                     color: theme.colors.textHeaderSecondary,
-                    marginLeft: "1.5rem",
-                    padding: "0 1.5rem",
+                    marginLeft: "1.1rem",
+                    padding: "0 1.1rem",
                     borderLeft: "1px solid",
                     borderColor: "hsl(0 0% 100% / 20%)",
                     whiteSpace: "nowrap",
