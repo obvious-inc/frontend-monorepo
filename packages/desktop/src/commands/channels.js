@@ -16,7 +16,7 @@ const commands = {
       navigate(`/channels/${channel.id}`);
     },
   }),
-  "rename-channel": ({
+  "set-channel-name": ({
     context,
     user,
     state,
