@@ -1308,12 +1308,14 @@ const Channel = ({ server: serverVariant, noSideMenu }) => {
                 )}
               </div>
             ) : (
-              <Avatar
-                url={channel.avatar}
-                size="2.4rem"
-                pixelSize={24}
-                css={css({ marginRight: "1.1rem" })}
-              />
+              <a href={channel.avatar} rel="noreferrer" target="_blank">
+                <Avatar
+                  url={channel.avatar}
+                  size="2.4rem"
+                  pixelSize={24}
+                  css={css({ marginRight: "1.1rem" })}
+                />
+              </a>
             ))}
           <Heading>{channel?.name}</Heading>
           <div style={{ flex: 1, minWidth: 0 }}>
