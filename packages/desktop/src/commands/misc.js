@@ -152,7 +152,7 @@ const commands = {
         response[Math.floor(Math.random() * response.length)].src;
 
       const { width, height } = await getImageDimensionsFromUrl(imageUrl);
-      await submit([
+      submit([
         {
           type: "attachments",
           children: [
