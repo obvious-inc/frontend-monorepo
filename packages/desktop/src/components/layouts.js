@@ -115,16 +115,20 @@ export const UnifiedLayout = () => {
         <>
           <div style={{ height: "1rem" }} />
           <ListItem
-            disabled
             compact={false}
             icon={<MagnificationGlassIcon style={{ width: "1.4rem" }} />}
             title="Quick Find"
+            onClick={() => {
+              alert("thoon");
+            }}
           />
           <ListItem
-            disabled
             compact={false}
             icon={<PlanetIcon style={{ width: "1.4rem" }} />}
             title="Discover"
+            onClick={() => {
+              alert("thoon");
+            }}
           />
 
           <div style={{ height: "1.5rem" }} />
