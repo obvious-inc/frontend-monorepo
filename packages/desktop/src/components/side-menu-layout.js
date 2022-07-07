@@ -58,6 +58,7 @@ const SideMenuLayout = ({
               !isFloatingMenuEnabled || isCollapsed
                 ? ""
                 : `translateX(${theme.sidebarWidth})`,
+            paddingTop: isNative ? "2.6rem" : 0,
           })
         }
       >
