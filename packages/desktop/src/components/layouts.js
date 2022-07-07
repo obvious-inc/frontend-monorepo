@@ -204,7 +204,7 @@ export const UnifiedLayout = () => {
             </CollapsableSection>
           )}
 
-          <div style={{ height: "2rem" }} />
+          <div style={{ height: "0.1rem" }} />
         </>
       }
     >

@@ -1,3 +1,4 @@
+import { useNavigate } from "react-router-dom";
 import { css } from "@emotion/react";
 import { useAppScope, useAuth } from "@shades/common";
 import useSideMenu from "../hooks/side-menu";
@@ -14,8 +15,9 @@ const SideMenuLayout = ({
   sidebarContent,
   children,
 }) => {
+  const navigate = useNavigate();
   const { user } = useAuth();
-  const { state, serverConnection } = useAppScope();
+  const { actions, state, serverConnection } = useAppScope();
   const {
     isFloating: isFloatingMenuEnabled,
     isCollapsed,
@@ -124,7 +126,6 @@ const SideMenuLayout = ({
           </div>
           <div
             css={css({
-              padding: "0 0 2rem",
               overflow: "auto",
               overscrollBehaviorY: "contain",
               flex: 1,
@@ -132,6 +133,83 @@ const SideMenuLayout = ({
           >
             {sidebarContent}
           </div>
+          <button
+            css={(theme) =>
+              css({
+                transition: "background 20ms ease-in",
+                cursor: "pointer",
+                boxShadow: "rgba(255, 255, 255, 0.094) 0 -1px 0",
+                ":hover": {
+                  background: theme.colors.backgroundModifierHover,
+                },
+              })
+            }
+            onClick={() => {
+              const name = prompt("Channel name") ?? "";
+              actions
+                .createChannel({
+                  name: name.trim() === "" ? "Untitled" : name.trim(),
+                })
+                .then((c) => {
+                  navigate(`/channels/${c.id}`);
+                });
+            }}
+          >
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                fontSize: "1.4rem",
+                width: "100%",
+                minHeight: "2.7rem",
+                padding: "0.2rem 1rem",
+                color: "rgba(255, 255, 255, 0.443)",
+                height: "4.5rem",
+              }}
+            >
+              <div
+                style={{
+                  width: "2.2rem",
+                  height: "2.2rem",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  marginRight: "0.8rem",
+                }}
+              >
+                <div
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                  }}
+                >
+                  <svg
+                    viewBox="0 0 16 16"
+                    style={{
+                      width: "1.6rem",
+                      height: "1.6rem",
+                      display: "block",
+                      fill: "rgba(255, 255, 255, 0.443)",
+                    }}
+                  >
+                    <path d="M7.977 14.963c.407 0 .747-.324.747-.723V8.72h5.362c.399 0 .74-.34.74-.747a.746.746 0 00-.74-.738H8.724V1.706c0-.398-.34-.722-.747-.722a.732.732 0 00-.739.722v5.529h-5.37a.746.746 0 00-.74.738c0 .407.341.747.74.747h5.37v5.52c0 .399.332.723.739.723z" />
+                  </svg>
+                </div>
+              </div>
+              <div
+                style={{
+                  flex: "1 1 auto",
+                  whiteSpace: "nowrap",
+                  minWidth: 0,
+                  overflow: "hidden",
+                  textOverflow: "ellipsis",
+                }}
+              >
+                New channel
+              </div>
+            </div>
+          </button>
         </div>
       </div>
       {isFloatingMenuEnabled && (
