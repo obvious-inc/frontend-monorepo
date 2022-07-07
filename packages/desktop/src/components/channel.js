@@ -1376,23 +1376,25 @@ const Channel = ({ server: serverVariant, noSideMenu }) => {
               )}
             </button>
           </div>
-          <Dialog.Root>
-            <Dialog.Trigger asChild>
-              <MembersDisplayButton members={members} />
-            </Dialog.Trigger>
-            <Dialog.Portal>
-              <Dialog.Overlay
-                css={css({
-                  padding: "2.8rem 1.5rem",
-                  "@media (min-width: 600px)": {
-                    padding: "2.8rem",
-                  },
-                })}
-              >
-                <MembersDirectoryDialog members={members} />
-              </Dialog.Overlay>
-            </Dialog.Portal>
-          </Dialog.Root>
+          {members.length !== 0 && (
+            <Dialog.Root>
+              <Dialog.Trigger asChild>
+                <MembersDisplayButton members={members} />
+              </Dialog.Trigger>
+              <Dialog.Portal>
+                <Dialog.Overlay
+                  css={css({
+                    padding: "2.8rem 1.5rem",
+                    "@media (min-width: 600px)": {
+                      padding: "2.8rem",
+                    },
+                  })}
+                >
+                  <MembersDirectoryDialog members={members} />
+                </Dialog.Overlay>
+              </Dialog.Portal>
+            </Dialog.Root>
+          )}
         </>
       ),
     [

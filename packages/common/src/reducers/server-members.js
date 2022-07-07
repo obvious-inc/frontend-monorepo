@@ -107,7 +107,7 @@ export const selectChannelMembers = createSelector(
   (state, channelId) => {
     const channel = state.channels.entriesById[channelId];
     if (channel == null) return [];
-    return selectUsers(state, channel.memberUserIds);
+    return selectUsers(state, channel.memberUserIds ?? []);
   },
   (channel, members) =>
     members.map((m) => ({ ...m, isOwner: m.id === channel?.ownerUserId }))
