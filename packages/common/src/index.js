@@ -9,5 +9,9 @@ export * as arrayUtils from "./utils/array";
 export * as objectUtils from "./utils/object";
 export * as functionUtils from "./utils/function";
 export * as messageUtils from "./utils/message";
-export { isTouchDevice, getImageFileDimensions } from "./utils/misc";
+export {
+  isTouchDevice,
+  getImageFileDimensions,
+  getImageDimensionsFromUrl,
+} from "./utils/misc";
 export { default as useLatestCallback } from "./hooks/latest-callback";

@@ -17,16 +17,22 @@ export const getImageFileDimensions = (imageFile) =>
     reader.onerror = reject;
 
     reader.onload = () => {
-      const img = new Image();
-
-      img.onerror = reject;
-
-      img.onload = function () {
-        resolve({ width: img.naturalWidth, height: img.naturalHeight });
-      };
-
-      img.src = reader.result; // is the data URL because called with readAsDataURL
+      // is the data URL because called with readAsDataURL
+      getImageDimensionsFromUrl(reader.result).then(resolve, reject);
     };
 
     reader.readAsDataURL(imageFile);
+  });
+
+export const getImageDimensionsFromUrl = (url) =>
+  new Promise((resolve, reject) => {
+    const img = new Image();
+
+    img.onerror = reject;
+
+    img.onload = () => {
+      resolve({ width: img.naturalWidth, height: img.naturalHeight });
+    };
+
+    img.src = url;
   });

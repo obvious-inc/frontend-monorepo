@@ -1,3 +1,4 @@
+import { getImageDimensionsFromUrl } from "@shades/common";
 import { getChecksumAddress } from "../utils/ethereum";
 import { send as sendNotification } from "../utils/notifications";
 
@@ -138,6 +139,34 @@ const commands = {
     execute: async () => {
       actions.logout();
       navigate("/");
+    },
+  }),
+  gif: ({ actions }) => ({
+    description: "Post a random gif",
+    arguments: ["search-query"],
+    execute: async ({ args, editor, submit }) => {
+      const query = args.join(" ");
+      const response = await actions.searchGifs(query);
+      if (response.length === 0) return;
+      const imageUrl =
+        response[Math.floor(Math.random() * response.length)].src;
+
+      const { width, height } = await getImageDimensionsFromUrl(imageUrl);
+      await submit([
+        {
+          type: "attachments",
+          children: [
+            {
+              type: "image-attachment",
+              url: imageUrl,
+              width,
+              height,
+            },
+          ],
+        },
+      ]);
+
+      editor.clear();
     },
   }),
   "enable-notifications": () => ({

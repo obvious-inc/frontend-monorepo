@@ -548,6 +548,10 @@ export const Provider = ({ children }) => {
     authorizedFetch(`/channels/${channelId}/typing`, { method: "POST" })
   );
 
+  const searchGifs = useLatestCallback((query) =>
+    authorizedFetch(`/integrations/tenor/search?q=${query}`)
+  );
+
   const actions = React.useMemo(
     () => ({
       logout,
@@ -587,6 +591,7 @@ export const Provider = ({ children }) => {
       unstarChannel,
       uploadImage,
       registerChannelTypingActivity,
+      searchGifs,
     }),
     [
       logout,
@@ -626,6 +631,7 @@ export const Provider = ({ children }) => {
       unstarChannel,
       uploadImage,
       registerChannelTypingActivity,
+      searchGifs,
     ]
   );
 

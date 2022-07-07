@@ -779,6 +779,7 @@ const NewMessageInput = React.memo(
           setPending(true);
           try {
             await executeCommand(commandName, {
+              submit,
               args,
               editor: editorRef.current,
             });
