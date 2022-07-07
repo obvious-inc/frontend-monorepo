@@ -142,7 +142,7 @@ const commands = {
     },
   }),
   gif: ({ actions }) => ({
-    description: "Post a random gif",
+    description: "!vibe",
     arguments: ["search-query"],
     execute: async ({ args, editor, submit }) => {
       const query = args.join(" ");
