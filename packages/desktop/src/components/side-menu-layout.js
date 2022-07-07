@@ -146,7 +146,8 @@ const SideMenuLayout = ({
               })
             }
             onClick={() => {
-              const name = prompt("Channel name") ?? "";
+              const name = prompt("Channel name");
+              if (name == null) return;
               actions
                 .createChannel({
                   name: name.trim() === "" ? "Untitled" : name.trim(),
