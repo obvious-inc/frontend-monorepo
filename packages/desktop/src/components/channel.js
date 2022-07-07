@@ -1520,7 +1520,9 @@ export const Header = ({ noSideMenu, children }) => {
     </div>
   );
 };
-const compareMembersByOnlineStatusAndDisplayName = (m1, m2) => {
+const compareMembersByOwnerOnlineStatusAndDisplayName = (m1, m2) => {
+  if (m1.isOwner !== m2.isOwner) return m1.isOwner ? -1 : 1;
+
   if (m1.onlineStatus !== m2.onlineStatus)
     return m1.onlineStatus === "online" ? -1 : 1;
 
@@ -1540,7 +1542,7 @@ const compareMembersByOnlineStatusAndDisplayName = (m1, m2) => {
 
 const MembersDisplayButton = React.forwardRef(({ onClick, members }, ref) => {
   const sortedMembers = React.useMemo(
-    () => sort(compareMembersByOnlineStatusAndDisplayName, members),
+    () => sort(compareMembersByOwnerOnlineStatusAndDisplayName, members),
     [members]
   );
 
@@ -1631,7 +1633,7 @@ const MembersDirectoryDialog = ({ members }) => {
 
   const filteredMembers = React.useMemo(() => {
     if (query.trim() === "")
-      return sort(compareMembersByOnlineStatusAndDisplayName, members);
+      return sort(compareMembersByOwnerOnlineStatusAndDisplayName, members);
 
     const q = query.trim().toLowerCase();
     const getSearchTokens = (m) => [m.displayName, m.walletAddress];
@@ -1791,8 +1793,25 @@ const MembersDirectoryDialog = ({ members }) => {
                     borderRadius="0.3rem"
                   />
                   <div>
-                    <div>
+                    <div css={css({ display: "flex", alignItems: "center" })}>
                       {member.displayName}
+                      {member.isOwner && (
+                        <span
+                          css={(theme) =>
+                            css({
+                              fontSize: theme.fontSizes.tiny,
+                              color: theme.colors.textMuted,
+                              background: theme.colors.backgroundModifierHover,
+                              padding: "0.1rem 0.3rem",
+                              borderRadius: "0.3rem",
+                              marginLeft: "0.7rem",
+                            })
+                          }
+                        >
+                          Channel owner
+                        </span>
+                      )}
+
                       {member.onlineStatus === "online" && (
                         <Tooltip.Root>
                           <Tooltip.Trigger asChild>
@@ -1800,9 +1819,8 @@ const MembersDirectoryDialog = ({ members }) => {
                               css={css({
                                 display: "inline-flex",
                                 padding: "0.5rem 0.2rem",
-                                marginLeft: "0.7rem",
+                                marginLeft: "0.6rem",
                                 position: "relative",
-                                top: "-1px",
                               })}
                             >
                               <div

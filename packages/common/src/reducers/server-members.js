@@ -102,22 +102,16 @@ export const selectServerChannelMembers = (state, channelId) => {
   return selectServerMembers(state, channel.serverId);
 };
 
-const selectDmChannelMembers = createSelector(
+export const selectChannelMembers = createSelector(
+  (state, channelId) => state.channels.entriesById[channelId],
   (state, channelId) => {
     const channel = state.channels.entriesById[channelId];
+    if (channel == null) return [];
     return selectUsers(state, channel.memberUserIds);
   },
-  (members) => members,
-  { memoizeOptions: { equalityCheck: arrayShallowEquals } }
+  (channel, members) =>
+    members.map((m) => ({ ...m, isOwner: m.id === channel?.ownerUserId }))
 );
-
-export const selectChannelMembers = (state, channelId) => {
-  const channel = state.channels.entriesById[channelId];
-  if (channel == null) return [];
-  return ["dm", "topic"].includes(channel.kind)
-    ? selectDmChannelMembers(state, channelId)
-    : selectServerChannelMembers(state, channelId);
-};
 
 export const selectChannelMember = createSelector(
   (state, channelId, userId) => {
