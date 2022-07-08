@@ -243,7 +243,11 @@ const SideMenuLayout = ({
           })
         }
       >
-        <OverlaySpinner show={!serverConnection.isConnected} />
+        <OverlaySpinner
+          show={
+            false // !serverConnection.isConnected
+          }
+        />
       </div>
 
       {children}

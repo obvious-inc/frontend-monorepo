@@ -3,6 +3,7 @@ import { css } from "@emotion/react";
 import * as Popover from "./popover";
 import ProfilePreview from "./profile-preview";
 
+const SINGLE_IMAGE_ATTACHMENT_MAX_WIDTH = 560;
 const SINGLE_IMAGE_ATTACHMENT_MAX_HEIGHT = 280;
 const MULTI_IMAGE_ATTACHMENT_MAX_WIDTH = 280;
 const MULTI_IMAGE_ATTACHMENT_MAX_HEIGHT = 240;
@@ -149,7 +150,10 @@ const createParser = ({
           const attachmentCount = els.length;
           const [maxWidth, maxHeight] =
             attachmentCount === 1
-              ? [null, SINGLE_IMAGE_ATTACHMENT_MAX_HEIGHT]
+              ? [
+                  SINGLE_IMAGE_ATTACHMENT_MAX_WIDTH,
+                  SINGLE_IMAGE_ATTACHMENT_MAX_HEIGHT,
+                ]
               : [
                   MULTI_IMAGE_ATTACHMENT_MAX_WIDTH,
                   MULTI_IMAGE_ATTACHMENT_MAX_HEIGHT,
