@@ -1547,10 +1547,8 @@ const SystemMessage = ({ isHovering, message, reactions }) => {
         );
 
       case "channel-updated": {
-        if (
-          Object.keys(message.updates).length == 0 ||
-          Object.keys(message.updates).length > 1
-        ) {
+        const updates = Object.entries(message.updates);
+        if (updates.length == 0 || updates.length > 1) {
           return (
             <>
               <MemberDisplayName
@@ -1563,7 +1561,7 @@ const SystemMessage = ({ isHovering, message, reactions }) => {
         }
 
         const displayAllowedFields = ["name", "description"];
-        let [field, value] = Object.entries(message.updates)[0];
+        let [field, value] = updates[0];
         return (
           <>
             <MemberDisplayName
