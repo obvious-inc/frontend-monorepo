@@ -1546,6 +1546,39 @@ const SystemMessage = ({ isHovering, message, reactions }) => {
           </>
         );
 
+      case "channel-updated": {
+        const updates = Object.entries(message.updates);
+        if (updates.length == 0 || updates.length > 1) {
+          return (
+            <>
+              <MemberDisplayName
+                color={theme.colors.textNormal}
+                displayName={message.author?.displayName}
+              />{" "}
+              updated the channel.
+            </>
+          );
+        }
+
+        const displayAllowedFields = ["name", "description"];
+        let [field, value] = updates[0];
+        return (
+          <>
+            <MemberDisplayName
+              color={theme.colors.textNormal}
+              displayName={message.author?.displayName}
+            />{" "}
+            {displayAllowedFields.includes(field) ? (
+              <>
+                set the channel {field}: {value}
+              </>
+            ) : (
+              <>updated the channel {field}.</>
+            )}
+          </>
+        );
+      }
+
       default:
         throw new Error();
     }

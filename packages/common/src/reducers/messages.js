@@ -237,7 +237,7 @@ const entryIdsByChannelId = (state = {}, action) => {
   }
 };
 
-const systemMessageTypes = ["member-joined", "user-invited"];
+const systemMessageTypes = ["member-joined", "user-invited", "channel-updated"];
 const appMessageTypes = ["webhook", "app"];
 
 const deriveMessageType = (message) => {
@@ -251,6 +251,8 @@ const deriveMessageType = (message) => {
     case 2:
     case 3:
       return "webhook";
+    case 5:
+      return "channel-updated";
     default:
       throw new Error();
   }
