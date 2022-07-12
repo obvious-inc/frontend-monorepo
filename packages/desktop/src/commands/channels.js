@@ -302,6 +302,7 @@ const commands = {
   },
   "make-public": ({ state, actions, channelId, user }) => {
     const channel = state.selectChannel(channelId);
+    const accessLevel = state.selectChannelAccessLevel(channelId);
     return {
       description: `Make "#${channel.name}" public.`,
       execute: async ({ editor }) => {
@@ -310,12 +311,13 @@ const commands = {
       },
       exclude: () =>
         channel.kind !== "topic" ||
-        channel.isPublic ||
-        channel.ownerUserId !== user.id,
+        channel.ownerUserId !== user.id ||
+        accessLevel !== "private",
     };
   },
   "make-private": ({ state, actions, channelId, user }) => {
     const channel = state.selectChannel(channelId);
+    const accessLevel = state.selectChannelAccessLevel(channelId);
     return {
       description: `Make "#${channel.name}" private.`,
       execute: async ({ editor }) => {
@@ -324,8 +326,8 @@ const commands = {
       },
       exclude: () =>
         channel.kind !== "topic" ||
-        !channel.isPublic ||
-        channel.ownerUserId !== user.id,
+        channel.ownerUserId !== user.id ||
+        accessLevel !== "public",
     };
   },
 };

@@ -7,8 +7,11 @@ import { build as buildProfilePicture } from "../utils/profile-pictures";
 
 const entriesById = (state = {}, action) => {
   switch (action.type) {
-    case "initial-data-request-successful":
-      return indexBy((u) => u.id, action.data.users);
+    case "fetch-channel-members-request-successful":
+      return { ...state, ...indexBy((m) => m.id, action.members) };
+
+    case "fetch-users-request-successful":
+      return { ...state, ...indexBy((m) => m.id, action.users) };
 
     case "server-event:user-profile-updated":
       return mapValues((user) => {
@@ -19,7 +22,7 @@ const entriesById = (state = {}, action) => {
         };
       }, state);
 
-    case "server-event:server-member-joined":
+    case "server-event:channel-member-joined":
       return {
         ...state,
         [action.data.user.id]: action.data.user,
@@ -49,10 +52,10 @@ const selectAllUsers = (state) =>
 
 export const selectUser = createSelector(
   (state, userId) =>
-    state.user?.id === userId
-      ? { ...state.user, ...state.users.entriesById[userId] }
+    state.me.user?.id === userId
+      ? { ...state.me.user, ...state.users.entriesById[userId] }
       : state.users.entriesById[userId],
-  (state) => state.user,
+  (state) => state.me.user,
   (user, loggedInUser) => {
     if (user == null) return null;
     const isLoggedInUser = user.id === loggedInUser?.id;

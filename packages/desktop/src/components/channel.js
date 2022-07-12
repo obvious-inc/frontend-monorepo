@@ -1,6 +1,6 @@
 import throttle from "lodash.throttle";
 import React from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams } from "react-router-dom";
 import { css } from "@emotion/react";
 import {
   useAuth,
@@ -13,6 +13,8 @@ import * as eth from "../utils/ethereum";
 import useGlobalMediaQueries from "../hooks/global-media-queries";
 import useWindowFocusListener from "../hooks/window-focus-listener";
 import useOnlineListener from "../hooks/window-online-listener";
+import useWallet from "../hooks/wallet";
+import useWalletLogin from "../hooks/wallet-login";
 import stringifyMessageBlocks from "../slate/stringify";
 import { createEmptyParagraph, isNodeEmpty, cleanNodes } from "../slate/utils";
 import useCommands from "../hooks/commands";
@@ -20,6 +22,7 @@ import MessageInput from "./message-input";
 import Spinner from "./spinner";
 import ChannelMessage from "./channel-message";
 import Avatar from "./avatar";
+import Button from "./button";
 import * as Tooltip from "./tooltip";
 import * as Dialog from "./dialog";
 import { Hash as HashIcon, AtSign as AtSignIcon } from "./icons";
@@ -38,6 +41,26 @@ import useMutationObserver from "../hooks/mutation-observer";
 const { sort } = arrayUtils;
 
 const isNative = window.Native != null;
+
+const useFetch = (fetcher, dependencies) => {
+  const fetcherRef = React.useRef(fetcher);
+
+  React.useEffect(() => {
+    fetcherRef.current = fetcher;
+  });
+
+  React.useEffect(() => {
+    fetcherRef.current();
+  }, dependencies); // eslint-disable-line
+
+  useWindowFocusListener(() => {
+    fetcherRef.current();
+  });
+
+  useOnlineListener(() => {
+    fetcherRef.current();
+  });
+};
 
 // This fetcher only allows for a single request (with the same query) to be
 // pending at once. Subsequent "equal" request will simply return the initial
@@ -215,6 +238,7 @@ const scrollPositionCache = {};
 
 export const ChannelBase = ({
   channel,
+  accessLevel: channelAccessLevel,
   members,
   typingMembers,
   isAdmin = false,
@@ -222,8 +246,13 @@ export const ChannelBase = ({
   headerContent,
   noSideMenu,
 }) => {
-  const { user } = useAuth();
+  const { accountAddress: walletAccountAddress } = useWallet();
+  const { login } = useWalletLogin();
+  const hasConnectedWallet = walletAccountAddress != null;
+
   const { actions, state, addBeforeDispatchListener } = useAppScope();
+
+  const user = state.selectMe();
 
   const { inputDeviceCanHover } = useGlobalMediaQueries();
   const [touchFocusedMessageId, setTouchFocusedMessageId] =
@@ -423,18 +452,26 @@ export const ChannelBase = ({
 
   useOnlineListener(() => {
     fetchMessages(channel.id, { limit: 30 });
+    if (channelHasUnread && didScrollToBottom) markChannelRead();
   });
 
-  const submitMessage = React.useCallback(
-    (blocks) => {
-      setPendingReplyMessageId(null);
-      return createMessage({
-        blocks,
-        replyToMessageId: pendingReplyMessageId,
-      });
-    },
-    [createMessage, pendingReplyMessageId]
-  );
+  const submitMessage = useLatestCallback(async (blocks) => {
+    setPendingReplyMessageId(null);
+    if (user == null) {
+      if (
+        confirm(
+          "You need to verify your account to post. Press ok and sign with your wallet to proceed."
+        )
+      )
+        await login(walletAccountAddress);
+      await actions.fetchMe();
+    }
+
+    return createMessage({
+      blocks,
+      replyToMessageId: pendingReplyMessageId,
+    });
+  });
 
   const throttledRegisterTypingActivity = React.useMemo(
     () =>
@@ -443,13 +480,11 @@ export const ChannelBase = ({
       }),
     [actions, channel.id]
   );
-  const handleInputChange = React.useCallback(
-    (blocks) => {
-      if (blocks.length > 1 || !isNodeEmpty(blocks[0]))
-        throttledRegisterTypingActivity();
-    },
-    [throttledRegisterTypingActivity]
-  );
+  const handleInputChange = useLatestCallback((blocks) => {
+    if (user == null) return;
+    if (blocks.length > 1 || !isNodeEmpty(blocks[0]))
+      throttledRegisterTypingActivity();
+  });
 
   const channelPrefix = channel.kind === "dm" ? "@" : "#";
 
@@ -540,8 +575,9 @@ export const ChannelBase = ({
                     This is the start of {channelPrefix}
                     {channel.name}. {channel.description}
                     {channel.kind === "topic" &&
-                      channel.ownerUserId === user.id &&
-                      members.length <= 1 && (
+                      channel.isAdmin &&
+                      members.length <= 1 &&
+                      channelAccessLevel !== "unknown" && (
                         <div
                           css={(theme) =>
                             css({
@@ -551,7 +587,7 @@ export const ChannelBase = ({
                             })
                           }
                         >
-                          {channel.isPublic ? (
+                          {channelAccessLevel === "public" ? (
                             <>
                               This channel is open for anyone to join. Share its
                               URL to help people find it!
@@ -625,6 +661,7 @@ export const ChannelBase = ({
       <div css={css({ padding: "0 1.6rem 2.4rem", position: "relative" })}>
         <NewMessageInput
           ref={inputRef}
+          disabled={user == null && !hasConnectedWallet}
           context={channel.kind}
           serverId={channel.serverId}
           channelId={channel.id}
@@ -716,6 +753,7 @@ const NewMessageInput = React.memo(
     {
       submit,
       uploadImage,
+      disabled,
       replyingToMessage,
       cancelReply,
       context,
@@ -925,7 +963,7 @@ const NewMessageInput = React.memo(
               onClick={() => {
                 fileInputRef.current.click();
               }}
-              disabled={isPending}
+              disabled={disabled || isPending}
               css={(theme) =>
                 css({
                   cursor: "pointer",
@@ -935,7 +973,7 @@ const NewMessageInput = React.memo(
                     width: "2.4rem",
                     height: "auto",
                   },
-                  "&[disabled]": { pointerEvents: "none" },
+                  "&[disabled]": { pointerEvents: "none", opacity: 0.5 },
                   ":hover": {
                     color: theme.colors.interactiveHover,
                   },
@@ -962,7 +1000,7 @@ const NewMessageInput = React.memo(
                 }
               }}
               commands={commands}
-              disabled={isPending}
+              disabled={disabled || isPending}
               {...props}
             />
 
@@ -1207,40 +1245,53 @@ const Heading = ({ component: Component = "div", children, ...props }) => (
   </Component>
 );
 
-const Channel = ({ server: serverVariant, noSideMenu }) => {
+const Channel = ({ noSideMenu }) => {
   const params = useParams();
-  const navigate = useNavigate();
-  const { user } = useAuth();
+  const { status: authenticationStatus } = useAuth();
   const { state, actions } = useAppScope();
   const { isFloating: isSideMenuFloating } = useSideMenu();
+
+  const user = state.selectMe();
+
+  const {
+    connect: connectWallet,
+    // cancel: cancelWalletConnectionAttempt,
+    // canConnect: canConnectWallet,
+    accountAddress,
+    accountEnsName,
+    // chain,
+    // isConnecting: isConnectingWallet,
+    // error: walletError,
+    // switchToEthereumMainnet,
+  } = useWallet();
+
+  const {
+    login,
+    // status: loginStatus,
+    // error: loginError
+  } = useWalletLogin();
 
   const [notFound, setNotFound] = React.useState(false);
 
   const isMenuTogglingEnabled = !noSideMenu && isSideMenuFloating;
 
-  const { fetchChannel } = actions;
+  const { fetchChannel, fetchChannelMembers, fetchChannelPublicPermissions } =
+    actions;
+
+  const fetchMessages = useMessageFetcher(params.channelId);
 
   const channel = state.selectChannel(params.channelId);
+  const channelAccessLevel = state.selectChannelAccessLevel(params.channelId);
   const isChannelStarred = state.selectIsChannelStarred(params.channelId);
 
-  const server = state.selectServer(channel?.serverId);
-
   const members = state.selectChannelMembers(params.channelId);
-
-  React.useEffect(() => {
-    if (server == null || params.channelId != null) return;
-    const serverChannels = state.selectServerChannels(server.id);
-    if (serverChannels.length === 0) return;
-    navigate(`/channels/${server.id}/${serverChannels[0].id}`, {
-      replace: true,
-    });
-  }, [navigate, params.channelId, state, server]);
+  const isFetchingMembers = members.some((m) => m.walletAddress == null);
 
   const createMessage = useLatestCallback(
     async ({ blocks, replyToMessageId }) => {
       if (
         channel.memberUserIds != null &&
-        !channel.memberUserIds.includes(user.id)
+        !channel.memberUserIds.includes(user?.id)
       )
         await actions.joinChannel(params.channelId);
 
@@ -1256,46 +1307,33 @@ const Channel = ({ server: serverVariant, noSideMenu }) => {
 
   React.useEffect(() => {
     setNotFound(false);
-    fetchChannel(params.channelId).catch((e) => {
-      if (e.code === 404) {
-        setNotFound(true);
-        return;
-      }
-      throw e;
-    });
+    // Timeout to prevent this stalling other requests
+    setTimeout(() => {
+      fetchChannel(params.channelId).catch((e) => {
+        if (e.code === 404) {
+          setNotFound(true);
+          return;
+        }
+        throw e;
+      });
+    }, 0);
   }, [params.channelId, fetchChannel]);
+
+  useFetch(() => fetchChannelMembers(params.channelId), [params.channelId]);
+  useFetch(
+    () => fetchChannelPublicPermissions(params.channelId),
+    [params.channelId]
+  );
+
+  React.useEffect(() => {
+    fetchMessages(params.channelId, { limit: 30 });
+  }, [params.channelId, fetchMessages]);
 
   const headerContent = React.useMemo(
     () =>
       channel == null ? null : (
         <>
-          {!serverVariant && server != null && (
-            <>
-              <Heading
-                // component={NavLink}
-                // to={`/servers/${server.id}/${channel.id}`}
-                css={css({
-                  textDecoration: "none",
-                  ":hover": { textDecoration: "underline" },
-                })}
-              >
-                {server.name}
-              </Heading>
-              <div
-                css={(theme) =>
-                  css({
-                    color: theme.colors.textMuted,
-                    fontSize: "1.8rem",
-                    padding: "0 0.7rem",
-                  })
-                }
-              >
-                /
-              </div>
-            </>
-          )}
           {!isMenuTogglingEnabled &&
-            server == null &&
             (channel.avatar == null ? (
               <div
                 css={(theme) =>
@@ -1341,7 +1379,7 @@ const Channel = ({ server: serverVariant, noSideMenu }) => {
               </div>
             )}
           </div>
-          <div>
+          {user != null && (
             <button
               onClick={() => {
                 if (isChannelStarred) {
@@ -1375,8 +1413,8 @@ const Channel = ({ server: serverVariant, noSideMenu }) => {
                 <StrokedStarIcon />
               )}
             </button>
-          </div>
-          {members.length !== 0 && (
+          )}
+          {!isFetchingMembers && members.length !== 0 && (
             <Dialog.Root>
               <Dialog.Trigger asChild>
                 <MembersDisplayButton members={members} />
@@ -1395,15 +1433,65 @@ const Channel = ({ server: serverVariant, noSideMenu }) => {
               </Dialog.Portal>
             </Dialog.Root>
           )}
+          {authenticationStatus === "not-authenticated" &&
+            (accountAddress != null ? (
+              <span
+                css={(theme) =>
+                  css({
+                    color: theme.colors.textDimmed,
+                    fontSize: theme.fontSizes.default,
+                  })
+                }
+              >
+                <span css={css({ userSelect: "text", cursor: "default" })}>
+                  Connected as{" "}
+                  <a
+                    href={`https://etherscan.io/address/${accountAddress}`}
+                    rel="noreferrer"
+                    target="_blank"
+                    css={(theme) =>
+                      css({
+                        color: theme.colors.linkColor,
+                        ":hover": { color: theme.colors.linkColorHighlight },
+                      })
+                    }
+                  >
+                    {accountEnsName}{" "}
+                    {accountEnsName == null ? (
+                      eth.truncateAddress(accountAddress)
+                    ) : (
+                      <>({eth.truncateAddress(accountAddress)})</>
+                    )}
+                  </a>
+                </span>
+                <Button
+                  onClick={() => {
+                    login(accountAddress);
+                  }}
+                  style={{ marginLeft: "1.2rem" }}
+                >
+                  Verify address
+                </Button>
+              </span>
+            ) : (
+              <Button size="default" onClick={connectWallet}>
+                Connect wallet
+              </Button>
+            ))}
         </>
       ),
     [
+      isFetchingMembers,
+      accountAddress,
+      accountEnsName,
+      login,
+      user,
+      authenticationStatus,
+      connectWallet,
       actions,
       isMenuTogglingEnabled,
-      server,
       channel,
       members,
-      serverVariant,
       isChannelStarred,
     ]
   );
@@ -1425,7 +1513,7 @@ const Channel = ({ server: serverVariant, noSideMenu }) => {
       </div>
     );
 
-  if (channel == null || user == null)
+  if (channel == null)
     return (
       <div
         css={(theme) =>
@@ -1454,7 +1542,8 @@ const Channel = ({ server: serverVariant, noSideMenu }) => {
       members={members}
       typingMembers={typingChannelMembers}
       createMessage={createMessage}
-      isAdmin={server?.isAdmin}
+      isAdmin={channel?.isAdmin}
+      accessLevel={channelAccessLevel}
       headerContent={headerContent}
     />
   );
@@ -1529,10 +1618,10 @@ const compareMembersByOwnerOnlineStatusAndDisplayName = (m1, m2) => {
   if (m1.onlineStatus !== m2.onlineStatus)
     return m1.onlineStatus === "online" ? -1 : 1;
 
-  const [name1, name2] = [m1, m2].map((m) => m.displayName.toLowerCase());
+  const [name1, name2] = [m1, m2].map((m) => m.displayName?.toLowerCase());
 
   const [name1IsAddress, name2IsAddress] = [name1, name2].map(
-    (n) => n.startsWith("0x") && n.includes("...")
+    (n) => n != null && n.startsWith("0x") && n.includes("...")
   );
 
   if (!name1IsAddress && name2IsAddress) return -1;
@@ -1587,7 +1676,7 @@ const MembersDisplayButton = React.forwardRef(({ onClick, members }, ref) => {
           {membersToDisplay.map((user, i) => (
             <Avatar
               key={user.id}
-              url={user?.profilePicture.small}
+              url={user?.profilePicture?.small}
               walletAddress={user?.walletAddress}
               size="2rem"
               pixelSize={20}
@@ -1752,7 +1841,10 @@ const MembersDirectoryDialog = ({ members }) => {
       <div css={css({ flex: 1, overflow: "auto", padding: "1.3rem 0" })}>
         <ul>
           {filteredMembers.map((member) => {
-            const truncatedAddress = eth.truncateAddress(member.walletAddress);
+            const truncatedAddress =
+              member.walletAddress == null
+                ? null
+                : eth.truncateAddress(member.walletAddress);
             return (
               <li key={member.id} css={css({ display: "block" })}>
                 <button
@@ -1789,7 +1881,7 @@ const MembersDirectoryDialog = ({ members }) => {
                   }}
                 >
                   <Avatar
-                    url={member.profilePicture.small}
+                    url={member.profilePicture?.small}
                     walletAddress={member.walletAddress}
                     size="3.6rem"
                     pixelSize={36}
@@ -1871,4 +1963,8 @@ const MembersDirectoryDialog = ({ members }) => {
   );
 };
 
-export default Channel;
+export default (props) => {
+  const { status } = useAuth();
+  if (status === "loading") return null;
+  return <Channel {...props} />;
+};

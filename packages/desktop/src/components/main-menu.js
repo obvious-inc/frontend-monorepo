@@ -7,7 +7,7 @@ import {
   Link,
 } from "react-router-dom";
 import { css } from "@emotion/react";
-import { useAppScope, useAuth, useLatestCallback } from "@shades/common";
+import { useAppScope, useLatestCallback } from "@shades/common";
 import useSideMenu from "../hooks/side-menu";
 import {
   Star as StarIcon,
@@ -27,13 +27,13 @@ const MainMenu = () => {
   const params = useParams();
   const navigate = useNavigate();
   const { state, actions } = useAppScope();
-  const { user } = useAuth();
   const location = useLocation();
   const channelsMatch = useMatch("/channels/:channelId");
 
   const { isFloating: isFloatingMenuEnabled, toggle: toggleMenu } =
     useSideMenu();
 
+  const user = state.selectMe();
   const servers = state.selectJoinedServers();
 
   const dmChannels = state.selectDmChannels();

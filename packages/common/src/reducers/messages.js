@@ -4,7 +4,7 @@ import { indexBy, groupBy, unique } from "../utils/array";
 import { omitKey, mapValues } from "../utils/object";
 import { arrayShallowEquals } from "../utils/reselect";
 import { selectUser } from "./users";
-import { selectServerMemberWithUserId } from "./server-members";
+// import { selectServerMemberWithUserId } from "./server-members";
 import { selectApp } from "./apps";
 
 const entriesById = (state = {}, action) => {
@@ -251,7 +251,7 @@ const deriveMessageType = (message) => {
     case 2:
       return "webhook";
     default:
-      throw new Error();
+      console.warn(`Unknown message type "${message.type}"`);
   }
 };
 
@@ -262,14 +262,7 @@ export const selectMessage = createSelector(
 
     if (message == null) return null;
 
-    // `server` doesn’t exist on dm messages
-    if (message.server != null) {
-      return selectServerMemberWithUserId(
-        state,
-        message.server,
-        message.author
-      );
-    } else if (message.app != null) {
+    if (message.app != null) {
       return selectApp(state, message.app);
     } else {
       return selectUser(state, message.author);
@@ -285,7 +278,7 @@ export const selectMessage = createSelector(
     if (message == null || message.reply_to == null) return null;
     return selectMessage(state, message.reply_to);
   },
-  (state) => state.user,
+  (state) => state.me.user,
   (message, author, inviter, repliedMessage, loggedInUser) => {
     if (message == null) return null;
     if (message.deleted) return message;
@@ -300,6 +293,8 @@ export const selectMessage = createSelector(
     }
 
     const type = deriveMessageType(message);
+
+    if (type == null) return null;
 
     return {
       ...message,
@@ -323,7 +318,7 @@ export const selectMessage = createSelector(
       reactions:
         message.reactions?.map((r) => ({
           ...r,
-          hasReacted: r.users.includes(loggedInUser.id),
+          hasReacted: r.users.includes(loggedInUser?.id),
         })) ?? [],
     };
   },

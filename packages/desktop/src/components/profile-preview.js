@@ -1,6 +1,6 @@
 import React from "react";
 import { css } from "@emotion/react";
-import { useAppScope, useAuth } from "@shades/common";
+import { useAppScope } from "@shades/common";
 import Button from "./button";
 import Avatar from "./avatar";
 import * as Tooltip from "./tooltip";
@@ -15,7 +15,7 @@ const ProfilePreview = React.forwardRef(
     const navigate = useNavigate();
 
     const { actions, state } = useAppScope();
-    const { user } = useAuth();
+    const user = state.selectMe();
 
     const isLoggedInUser = user.id === userId;
 

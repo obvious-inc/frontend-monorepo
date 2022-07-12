@@ -1,7 +1,7 @@
 import React from "react";
 import { NavLink, Outlet, useParams, useNavigate } from "react-router-dom";
 import { css, useTheme } from "@emotion/react";
-import { useAppScope, useAuth, arrayUtils } from "@shades/common";
+import { useAppScope, arrayUtils } from "@shades/common";
 import { truncateAddress } from "../utils/ethereum";
 import useSideMenu from "../hooks/side-menu";
 import {
@@ -45,9 +45,8 @@ export const UnifiedLayout = () => {
   const params = useParams();
   const navigate = useNavigate();
   const { state, actions } = useAppScope();
-  const { user: user_ } = useAuth();
 
-  const user = state.selectUser(user_?.id);
+  const user = state.selectMe();
 
   const [collapsedIds, setCollapsedIds] = useCachedState({
     key: "main-menu:collapsed",
@@ -131,80 +130,84 @@ export const UnifiedLayout = () => {
             }}
           />
 
-          <div style={{ height: "1.5rem" }} />
-          {selectedChannel != null && !selectedChannelIsListed && (
+          {state.selectHasFetchedMenuData() && (
             <>
-              <ChannelItem
-                name={selectedChannel.name}
-                kind={selectedChannel.kind}
-                avatar={selectedChannel.avatar}
-                link={`/channels/${selectedChannel.id}`}
-                hasUnread={state.selectChannelHasUnread(selectedChannel.id)}
-                notificationCount={state.selectChannelMentionCount(
-                  selectedChannel.id
-                )}
-                memberUserIds={selectedChannel.memberUserIds}
-              />
-
               <div style={{ height: "1.5rem" }} />
+              {selectedChannel != null && !selectedChannelIsListed && (
+                <>
+                  <ChannelItem
+                    id={selectedChannel.id}
+                    name={selectedChannel.name}
+                    kind={selectedChannel.kind}
+                    avatar={selectedChannel.avatar}
+                    link={`/channels/${selectedChannel.id}`}
+                    hasUnread={state.selectChannelHasUnread(selectedChannel.id)}
+                    notificationCount={state.selectChannelMentionCount(
+                      selectedChannel.id
+                    )}
+                  />
+
+                  <div style={{ height: "1.5rem" }} />
+                </>
+              )}
+
+              {starredChannels.length !== 0 && (
+                <CollapsableSection
+                  title="Starred"
+                  expanded={!collapsedIds.includes("starred")}
+                  onToggleExpanded={() => {
+                    setCollapsedIds((ids) =>
+                      ids.includes("starred")
+                        ? ids.filter((id) => id !== "starred")
+                        : [...ids, "starred"]
+                    );
+                  }}
+                >
+                  {starredChannels.map((c) => (
+                    <ChannelItem
+                      key={c.id}
+                      id={c.id}
+                      name={c.name}
+                      kind={c.kind}
+                      avatar={c.avatar}
+                      link={`/channels/${c.id}`}
+                      hasUnread={state.selectChannelHasUnread(c.id)}
+                      notificationCount={state.selectChannelMentionCount(c.id)}
+                    />
+                  ))}
+                </CollapsableSection>
+              )}
+
+              {channels.length !== 0 && (
+                <CollapsableSection
+                  title="Channels"
+                  expanded={!collapsedIds.includes("dms-topics")}
+                  onToggleExpanded={() => {
+                    setCollapsedIds((ids) =>
+                      ids.includes("dms-topics")
+                        ? ids.filter((id) => id !== "dms-topics")
+                        : [...ids, "dms-topics"]
+                    );
+                  }}
+                >
+                  {channels.map((c) => (
+                    <ChannelItem
+                      key={c.id}
+                      id={c.id}
+                      name={c.name}
+                      kind={c.kind}
+                      avatar={c.avatar}
+                      link={`/channels/${c.id}`}
+                      hasUnread={state.selectChannelHasUnread(c.id)}
+                      notificationCount={state.selectChannelMentionCount(c.id)}
+                    />
+                  ))}
+                </CollapsableSection>
+              )}
+
+              <div style={{ height: "0.1rem" }} />
             </>
           )}
-
-          {starredChannels.length !== 0 && (
-            <CollapsableSection
-              title="Starred"
-              expanded={!collapsedIds.includes("starred")}
-              onToggleExpanded={() => {
-                setCollapsedIds((ids) =>
-                  ids.includes("starred")
-                    ? ids.filter((id) => id !== "starred")
-                    : [...ids, "starred"]
-                );
-              }}
-            >
-              {starredChannels.map((c) => (
-                <ChannelItem
-                  key={c.id}
-                  name={c.name}
-                  kind={c.kind}
-                  avatar={c.avatar}
-                  link={`/channels/${c.id}`}
-                  hasUnread={state.selectChannelHasUnread(c.id)}
-                  notificationCount={state.selectChannelMentionCount(c.id)}
-                  memberUserIds={c.memberUserIds}
-                />
-              ))}
-            </CollapsableSection>
-          )}
-
-          {channels.length !== 0 && (
-            <CollapsableSection
-              title="Channels"
-              expanded={!collapsedIds.includes("dms-topics")}
-              onToggleExpanded={() => {
-                setCollapsedIds((ids) =>
-                  ids.includes("dms-topics")
-                    ? ids.filter((id) => id !== "dms-topics")
-                    : [...ids, "dms-topics"]
-                );
-              }}
-            >
-              {channels.map((c) => (
-                <ChannelItem
-                  key={c.id}
-                  name={c.name}
-                  kind={c.kind}
-                  avatar={c.avatar}
-                  link={`/channels/${c.id}`}
-                  hasUnread={state.selectChannelHasUnread(c.id)}
-                  notificationCount={state.selectChannelMentionCount(c.id)}
-                  memberUserIds={c.memberUserIds}
-                />
-              ))}
-            </CollapsableSection>
-          )}
-
-          <div style={{ height: "0.1rem" }} />
         </>
       }
     >
@@ -215,9 +218,9 @@ export const UnifiedLayout = () => {
 
 const ProfileDropdownTrigger = React.forwardRef((props, ref) => {
   const { state } = useAppScope();
-  const { user: user_ } = useAuth();
-  const user = state.selectUser(user_?.id);
-  const truncatedAddress = truncateAddress(user.walletAddress);
+  const user = state.selectMe();
+  const truncatedAddress =
+    user?.walletAddress == null ? null : truncateAddress(user.walletAddress);
 
   return (
     <button
@@ -304,9 +307,9 @@ const ProfileDropdownTrigger = React.forwardRef((props, ref) => {
             })
           }
         >
-          {user.displayName}
+          {user?.displayName}
         </div>
-        {truncatedAddress !== user.displayName && (
+        {truncatedAddress !== user?.displayName && (
           <div
             css={(theme) =>
               css({
@@ -392,18 +395,18 @@ const CollapsableSection = ({
 );
 
 export const ChannelItem = ({
+  id,
   link,
   name,
   avatar,
   kind,
-  memberUserIds = [],
   hasUnread,
   expandable,
   notificationCount,
 }) => {
   const { state } = useAppScope();
-  const { user } = useAuth();
   const theme = useTheme();
+  const user = state.selectMe();
 
   const { isFloating: isFloatingMenuEnabled, toggle: toggleMenu } =
     useSideMenu();
@@ -411,11 +414,21 @@ export const ChannelItem = ({
     if (isFloatingMenuEnabled) toggleMenu();
   };
 
-  const memberUsers = memberUserIds.map(state.selectUser);
-  const memberUsersExcludingMe = memberUsers.filter((u) => u.id !== user.id);
+  const memberUsers = state.selectChannelMembers(id);
+  const memberUsersExcludingMe = memberUsers.filter(
+    (u) => user == null || u.id !== user.id
+  );
+  const isFetchingMembers = memberUsers.some((m) => m.walletAddress == null);
 
   const avatarPixelSize = theme.avatars.size;
   const avatarBorderRadius = theme.avatars.borderRadius;
+
+  const avatarProps = {
+    size: `${avatarPixelSize}px`,
+    pixelSize: avatarPixelSize,
+    borderRadius: avatarBorderRadius,
+    background: theme.colors.backgroundModifierHover,
+  };
 
   return (
     <ListItem
@@ -434,22 +447,35 @@ export const ChannelItem = ({
             }
           >
             {name}
+            {/* {(name ?? "") === "" ? ( */}
+            {/*   <div */}
+            {/*     css={(theme) => */}
+            {/*       css({ */}
+            {/*         width: "100%", */}
+            {/*         height: "1.5rem", */}
+            {/*         background: theme.colors.backgroundModifierHover, */}
+            {/*         borderRadius: "0.3rem", */}
+            {/*       }) */}
+            {/*     } */}
+            {/*   /> */}
+            {/* ) : ( */}
+            {/*   name */}
+            {/* )} */}
           </div>
         </>
       }
       icon={
         <span>
           {avatar != null ? (
-            <Avatar
-              url={avatar}
-              size={`${avatarPixelSize}px`}
-              pixelSize={avatarPixelSize}
-              borderRadius={avatarBorderRadius}
-              background="hsl(0 0% 0% / 10%)"
-            />
+            <Avatar url={avatar} {...avatarProps} />
           ) : kind === "dm" ? (
             <>
-              {memberUsersExcludingMe.length <= 1 ? (
+              {isFetchingMembers ? (
+                <Avatar
+                  {...avatarProps}
+                  background={theme.colors.backgroundModifierHover}
+                />
+              ) : memberUsersExcludingMe.length <= 1 ? (
                 <Avatar
                   url={
                     (memberUsersExcludingMe[0] ?? memberUsers[0])
@@ -458,10 +484,7 @@ export const ChannelItem = ({
                   walletAddress={
                     (memberUsersExcludingMe[0] ?? memberUsers[0])?.walletAddress
                   }
-                  size={`${avatarPixelSize}px`}
-                  pixelSize={avatarPixelSize}
-                  borderRadius={avatarBorderRadius}
-                  background="hsl(0 0% 0% / 10%)"
+                  {...avatarProps}
                 />
               ) : (
                 <div
@@ -477,10 +500,7 @@ export const ChannelItem = ({
                         key={user.id}
                         url={user?.profilePicture.small}
                         walletAddress={user?.walletAddress}
-                        size={`${avatarPixelSize}px`}
-                        pixelSize={avatarPixelSize}
-                        borderRadius={avatarBorderRadius}
-                        background="hsl(0 0% 0% / 10%)"
+                        {...avatarProps}
                         css={css({
                           position: "absolute",
                           top: i === 0 ? "3px" : 0,
@@ -499,14 +519,7 @@ export const ChannelItem = ({
               )}
             </>
           ) : (
-            <Avatar
-              url={avatar}
-              signature={name[0]}
-              size={`${avatarPixelSize}px`}
-              pixelSize={avatarPixelSize}
-              borderRadius={avatarBorderRadius}
-              background="hsl(0 0% 0% / 10%)"
-            />
+            <Avatar url={avatar} signature={name[0]} {...avatarProps} />
           )}
         </span>
       }

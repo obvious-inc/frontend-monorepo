@@ -1,41 +1,33 @@
 import React from "react";
-import { arrayUtils } from "@shades/common";
 import { useAuth } from "./auth";
 import { generateDummyId } from "./utils/misc";
 import invariant from "./utils/invariant";
-import { useServerConnection } from "./server-connection";
 import useRootReducer from "./hooks/root-reducer";
 import useLatestCallback from "./hooks/latest-callback";
-
-const { unique } = arrayUtils;
 
 const Context = React.createContext({});
 
 export const useAppScope = () => React.useContext(Context);
 
 export const Provider = ({ children }) => {
-  const {
-    user,
-    authorizedFetch,
-    apiOrigin,
-    logout: clearAuthTokens,
-  } = useAuth();
-  const serverConnection = useServerConnection();
+  const { authorizedFetch, logout: clearAuthTokens } = useAuth();
   const [
     stateSelectors,
     dispatch,
     { addBeforeDispatchListener, addAfterDispatchListener },
   ] = useRootReducer();
 
+  const user = stateSelectors.selectMe();
+
   const logout = useLatestCallback(() => {
     clearAuthTokens();
     dispatch({ type: "logout" });
   });
 
-  const fetchInitialData = useLatestCallback(() =>
-    authorizedFetch("/ready").then((data) => {
-      dispatch({ type: "initial-data-request-successful", data });
-      return data;
+  const fetchMe = useLatestCallback(() =>
+    authorizedFetch("/users/me").then((user) => {
+      dispatch({ type: "fetch-me-request-successful", user });
+      return user;
     })
   );
 
@@ -46,110 +38,20 @@ export const Provider = ({ children }) => {
       {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          display_name: displayName,
-          pfp,
-        }),
+        body: JSON.stringify({ display_name: displayName, pfp }),
       }
     );
   });
 
-  const fetchServers = useLatestCallback(async () => {
-    const servers = await authorizedFetch("/servers");
-    dispatch({ type: "fetch-servers-request-successful", servers });
-    return servers;
-  });
-
-  const fetchPublicServerData = useLatestCallback(async (id) => {
-    const response = await fetch(`${apiOrigin}/servers/${id}`);
-    if (!response.ok) {
-      const error = new Error(
-        response.status === 400 ? "not-found" : response.statusText
-      );
-      return Promise.reject(error);
-    }
-
-    const server = await response.json();
-    dispatch({ type: "fetch-server-request-successful", server });
-    return server;
-  });
-
-  const joinServer = useLatestCallback((id) =>
-    authorizedFetch(`/servers/${id}/join`, { method: "POST" }).then((res) => {
-      // TODO
-      fetchInitialData();
-      return res;
-    })
-  );
-
-  const updateServer = useLatestCallback(
-    (id, { name, description, avatar, system_channel }) =>
-      authorizedFetch(`/servers/${id}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          name,
-          description,
-          avatar,
-          system_channel,
-        }),
-      }).then((res) => {
-        // TODO
-        fetchInitialData();
-        return res;
-      })
-  );
-
-  const createServerChannelSection = useLatestCallback((serverId, { name }) =>
-    authorizedFetch(`/servers/${serverId}/sections`, {
+  const fetchUsers = useLatestCallback((userIds) =>
+    authorizedFetch("/users/info", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ name }),
-    }).then((res) => {
-      // TODO
-      fetchInitialData();
-      return res;
+      body: JSON.stringify({ user_ids: userIds }),
+    }).then((users) => {
+      dispatch({ type: "fetch-users-request-successful", users });
+      return users;
     })
-  );
-
-  const updateServerChannelSections = useLatestCallback((serverId, sections) =>
-    authorizedFetch(`/servers/${serverId}/sections`, {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(
-        sections.map((s) => ({ ...s, channels: s.channelIds }))
-      ),
-    }).then((res) => {
-      // TODO
-      fetchInitialData();
-      return res;
-    })
-  );
-
-  const updateChannelSection = useLatestCallback(
-    (sectionId, { name, channelIds }) =>
-      authorizedFetch(`/sections/${sectionId}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          name,
-          channels: channelIds == null ? undefined : unique(channelIds),
-        }),
-      }).then((res) => {
-        // TODO
-        fetchInitialData();
-        return res;
-      })
-  );
-
-  const deleteChannelSection = useLatestCallback((sectionId) =>
-    authorizedFetch(`/sections/${sectionId}`, { method: "DELETE" }).then(
-      (res) => {
-        // TODO
-        fetchInitialData();
-        return res;
-      }
-    )
   );
 
   const fetchMessages = useLatestCallback(
@@ -168,48 +70,38 @@ export const Provider = ({ children }) => {
         .filter((s) => s !== "")
         .join("?");
 
-      return authorizedFetch(url).then((messages) => {
-        dispatch({
-          type: "messages-fetched",
-          channelId,
-          limit,
-          beforeMessageId,
-          afterMessageId,
-          messages,
-        });
-
-        const replies = messages.filter((m) => m.reply_to != null);
-
-        // Fetch all messages replied to async. Works for now!
-        for (let reply of replies)
-          authorizedFetch(
-            `/channels/${channelId}/messages/${reply.reply_to}`
-          ).then((message) => {
-            dispatch({
-              type: "message-fetched",
-              message: message ?? {
-                id: reply.reply_to,
-                channel: channelId,
-                deleted: true,
-              },
-            });
+      return authorizedFetch(url, { allowUnauthorized: true }).then(
+        (messages) => {
+          dispatch({
+            type: "messages-fetched",
+            channelId,
+            limit,
+            beforeMessageId,
+            afterMessageId,
+            messages,
           });
 
-        return messages;
-      });
-    }
-  );
+          const replies = messages.filter((m) => m.reply_to != null);
 
-  const createServer = useLatestCallback(({ name }) =>
-    authorizedFetch("/servers", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ name }),
-    }).then((res) => {
-      // TODO
-      fetchInitialData();
-      return res;
-    })
+          // Fetch all messages replied to async. Works for now!
+          for (let reply of replies)
+            authorizedFetch(
+              `/channels/${channelId}/messages/${reply.reply_to}`
+            ).then((message) => {
+              dispatch({
+                type: "message-fetched",
+                message: message ?? {
+                  id: reply.reply_to,
+                  channel: channelId,
+                  deleted: true,
+                },
+              });
+            });
+
+          return messages;
+        }
+      );
+    }
   );
 
   const markChannelRead = useLatestCallback((channelId, { readAt }) => {
@@ -350,9 +242,28 @@ export const Provider = ({ children }) => {
   );
 
   const fetchChannel = useLatestCallback((id) =>
-    authorizedFetch(`/channels/${id}`).then((res) => {
-      dispatch({ type: "fetch-channel-request-successful", channel: res });
-      return res;
+    authorizedFetch(`/channels/${id}`, { allowUnauthorized: true }).then(
+      (res) => {
+        dispatch({ type: "fetch-channel-request-successful", channel: res });
+        return res;
+      }
+    )
+  );
+
+  const fetchUserChannels = useLatestCallback(() =>
+    authorizedFetch("/users/me/channels").then((channels) => {
+      dispatch({ type: "fetch-user-channels-request-successful", channels });
+      return channels;
+    })
+  );
+
+  const fetchUserChannelsReadStates = useLatestCallback(() =>
+    authorizedFetch("/users/me/read_states").then((readStates) => {
+      dispatch({
+        type: "fetch-user-channels-read-states-request-successful",
+        readStates,
+      });
+      return readStates;
     })
   );
 
@@ -367,24 +278,8 @@ export const Provider = ({ children }) => {
       }),
     }).then((res) => {
       // TODO
-      fetchInitialData();
-      return res;
-    });
-  });
-
-  const createServerChannel = useLatestCallback((serverId, { name }) => {
-    invariant(serverId != null, "`serverId` is required");
-    return authorizedFetch("/channels", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        name,
-        kind: "server",
-        server: serverId,
-      }),
-    }).then((res) => {
-      // TODO
-      fetchInitialData();
+      fetchUserChannels();
+      // fetchInitialData();
       return res;
     });
   });
@@ -401,9 +296,37 @@ export const Provider = ({ children }) => {
         }),
       }).then((res) => {
         // TODO
-        fetchInitialData();
+        fetchUserChannels();
+        // fetchInitialData();
         return res;
       })
+  );
+
+  const fetchChannelMembers = useLatestCallback((id) =>
+    authorizedFetch(`/channels/${id}/members`, {
+      allowUnauthorized: true,
+    }).then((res) => {
+      dispatch({
+        type: "fetch-channel-members-request-successful",
+        channelId: id,
+        members: res,
+      });
+      return res;
+    })
+  );
+
+  const fetchChannelPublicPermissions = useLatestCallback((id) =>
+    authorizedFetch(`/channels/${id}/permissions`, {
+      unauthorized: true,
+      priority: "low",
+    }).then((res) => {
+      dispatch({
+        type: "fetch-channel-public-permissions-request-successful",
+        channelId: id,
+        permissions: res,
+      });
+      return res;
+    })
   );
 
   const addChannelMember = useLatestCallback(
@@ -418,7 +341,8 @@ export const Provider = ({ children }) => {
         }),
       }).then((res) => {
         // TODO
-        fetchInitialData();
+        fetchChannelMembers(channelId);
+        // fetchInitialData();
         return res;
       })
   );
@@ -428,7 +352,8 @@ export const Provider = ({ children }) => {
       method: "DELETE",
     }).then((res) => {
       // TODO
-      fetchInitialData();
+      fetchChannelMembers(channelId);
+      // fetchInitialData();
       return res;
     })
   );
@@ -438,7 +363,8 @@ export const Provider = ({ children }) => {
       method: "POST",
     }).then((res) => {
       // TODO
-      fetchInitialData();
+      fetchChannelMembers(channelId);
+      // fetchInitialData();
       return res;
     })
   );
@@ -448,7 +374,8 @@ export const Provider = ({ children }) => {
       method: "DELETE",
     }).then((res) => {
       // TODO
-      fetchInitialData();
+      fetchChannelMembers(channelId);
+      // fetchInitialData();
       return res;
     })
   );
@@ -460,7 +387,8 @@ export const Provider = ({ children }) => {
       body: JSON.stringify({ name, description, avatar }),
     }).then((res) => {
       // TODO
-      fetchInitialData();
+      fetchChannel(id);
+      // fetchInitialData();
       return res;
     })
   );
@@ -479,12 +407,18 @@ export const Provider = ({ children }) => {
       body: JSON.stringify([
         {
           group: "@public",
-          permissions: ["channels.join", "channels.view", "messages.list"],
+          permissions: [
+            "channels.join",
+            "channels.view",
+            "channels.members.list",
+            "messages.list",
+          ],
         },
       ]),
     }).then((res) => {
-      // TODO
-      fetchInitialData();
+      // TODO permissions?
+      fetchChannelPublicPermissions(channelId);
+      // fetchInitialData();
       return res;
     })
   );
@@ -495,14 +429,15 @@ export const Provider = ({ children }) => {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify([{ group: "@public", permissions: [] }]),
     }).then((res) => {
-      // TODO
-      fetchInitialData();
+      // TODO permissions?
+      fetchChannelPublicPermissions(channelId);
+      // fetchInitialData();
       return res;
     })
   );
 
   const fetchStarredItems = useLatestCallback(() =>
-    authorizedFetch("/stars").then((res) => {
+    authorizedFetch("/stars", { priority: "low" }).then((res) => {
       dispatch({
         type: "fetch-starred-channels-request-successful",
         stars: res.map((s) => ({ id: s.id, channelId: s.channel })),
@@ -510,6 +445,21 @@ export const Provider = ({ children }) => {
       return res;
     })
   );
+
+  const fetchClientBootData = useLatestCallback(async () => {
+    const [{ user, channels, read_states: readStates }, starredItems] =
+      await Promise.all([authorizedFetch("/ready"), fetchStarredItems()]);
+
+    dispatch({
+      type: "fetch-client-boot-data-request-successful",
+      user,
+      channels,
+      readStates,
+      // starredItems,
+    });
+
+    return { user, channels, readStates, starredItems };
+  });
 
   const starChannel = useLatestCallback((channelId) =>
     authorizedFetch("/stars", {
@@ -555,23 +505,18 @@ export const Provider = ({ children }) => {
   const actions = React.useMemo(
     () => ({
       logout,
-      fetchPublicServerData,
-      fetchInitialData,
+      fetchClientBootData,
       fetchMessage,
       updateMe,
+      fetchUsers,
       fetchMessages,
-      fetchServers,
-      createServer,
-      updateServer,
-      joinServer,
-      updateChannelSection,
-      deleteChannelSection,
-      createServerChannelSection,
-      updateServerChannelSections,
+      fetchUserChannels,
+      fetchUserChannelsReadStates,
       fetchChannel,
       createChannel,
-      createServerChannel,
       createDmChannel,
+      fetchChannelMembers,
+      fetchChannelPublicPermissions,
       addChannelMember,
       removeChannelMember,
       joinChannel,
@@ -595,25 +540,20 @@ export const Provider = ({ children }) => {
     }),
     [
       logout,
-      fetchPublicServerData,
-      fetchInitialData,
+      fetchClientBootData,
       fetchMessage,
       updateMe,
+      fetchUsers,
       fetchMessages,
-      fetchServers,
-      createServer,
-      updateServer,
-      joinServer,
-      createServerChannelSection,
-      updateServerChannelSections,
-      updateChannelSection,
-      deleteChannelSection,
+      fetchUserChannels,
+      fetchUserChannelsReadStates,
       fetchChannel,
       createChannel,
       makeChannelPublic,
       makeChannelPrivate,
-      createServerChannel,
       createDmChannel,
+      fetchChannelMembers,
+      fetchChannelPublicPermissions,
       addChannelMember,
       removeChannelMember,
       joinChannel,
@@ -635,51 +575,18 @@ export const Provider = ({ children }) => {
     ]
   );
 
-  React.useEffect(() => {
-    let typingEndedTimeoutHandles = {};
-
-    const handler = (name, data) => {
-      // Dispatch a 'user-typing-ended' action when a user+channel combo has
-      // been silent for a while
-      if (name === "user-typed") {
-        const id = [data.channel.id, data.user.id].join(":");
-
-        if (typingEndedTimeoutHandles[id]) {
-          clearTimeout(typingEndedTimeoutHandles[id]);
-          delete typingEndedTimeoutHandles[id];
-        }
-
-        typingEndedTimeoutHandles[id] = setTimeout(() => {
-          delete typingEndedTimeoutHandles[id];
-          dispatch({
-            type: "user-typing-ended",
-            channelId: data.channel.id,
-            userId: data.user.id,
-          });
-        }, 6000);
-      }
-
-      dispatch({ type: ["server-event", name].join(":"), data, user });
-    };
-
-    const removeListener = serverConnection.addListener(handler);
-    return () => {
-      removeListener();
-    };
-  }, [user, serverConnection, dispatch]);
-
   const contextValue = React.useMemo(
     () => ({
-      serverConnection,
+      dispatch,
       state: stateSelectors,
       actions,
       addBeforeDispatchListener,
       addAfterDispatchListener,
     }),
     [
+      dispatch,
       stateSelectors,
       actions,
-      serverConnection,
       addBeforeDispatchListener,
       addAfterDispatchListener,
     ]
