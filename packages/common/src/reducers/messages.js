@@ -4,7 +4,6 @@ import { indexBy, groupBy, unique } from "../utils/array";
 import { omitKey, mapValues } from "../utils/object";
 import { arrayShallowEquals } from "../utils/reselect";
 import { selectUser } from "./users";
-// import { selectServerMemberWithUserId } from "./server-members";
 import { selectApp } from "./apps";
 
 const entriesById = (state = {}, action) => {
@@ -237,7 +236,7 @@ const entryIdsByChannelId = (state = {}, action) => {
   }
 };
 
-const systemMessageTypes = ["member-joined", "user-invited"];
+const systemMessageTypes = ["member-joined", "user-invited", "channel-updated"];
 const appMessageTypes = ["webhook", "app"];
 
 const deriveMessageType = (message) => {
@@ -249,7 +248,10 @@ const deriveMessageType = (message) => {
       if (message.inviter) return "user-invited";
       return "member-joined";
     case 2:
+    case 3:
       return "webhook";
+    case 5:
+      return "channel-updated";
     default:
       console.warn(`Unknown message type "${message.type}"`);
   }
@@ -259,14 +261,8 @@ export const selectMessage = createSelector(
   (state, messageId) => state.messages.entriesById[messageId],
   (state, messageId) => {
     const message = state.messages.entriesById[messageId];
-
     if (message == null) return null;
-
-    if (message.app != null) {
-      return selectApp(state, message.app);
-    } else {
-      return selectUser(state, message.author);
-    }
+    return selectUser(state, message.author);
   },
   (state, messageId) => {
     const message = state.messages.entriesById[messageId];
@@ -279,12 +275,18 @@ export const selectMessage = createSelector(
     return selectMessage(state, message.reply_to);
   },
   (state) => state.me.user,
-  (message, author, inviter, repliedMessage, loggedInUser) => {
+  (state, messageId) => {
+    const message = state.messages.entriesById[messageId];
+    if (message == null || !message.app) return null;
+    return selectApp(state, message.app);
+  },
+  (message, author, inviter, repliedMessage, loggedInUser, app) => {
     if (message == null) return null;
     if (message.deleted) return message;
 
     const serverId = message.server;
     const authorUserId = message.author;
+    const appId = message.app;
     const inviterUserId = message.inviter;
 
     if (message.reply_to != null) {
@@ -320,6 +322,8 @@ export const selectMessage = createSelector(
           ...r,
           hasReacted: r.users.includes(loggedInUser?.id),
         })) ?? [],
+      appId,
+      app,
     };
   },
   { memoizeOptions: { maxSize: 1000 } }

@@ -329,6 +329,7 @@ const ChannelMessage = React.memo(function ChannelMessage_({
         <AppMessage
           isHovering={isHovering}
           message={message}
+          onClickInteractiveElement={onClickInteractiveElement}
           reactions={
             reactions.length === 0 ? null : (
               <Reactions
@@ -722,6 +723,42 @@ const MemberDisplayName = React.forwardRef(
     >
       {displayName}
     </button>
+  )
+);
+
+const AppDisplayName = React.forwardRef(
+  ({ displayName, color, ...props }, ref) => (
+    <div
+      ref={ref}
+      css={(theme) =>
+        css({
+          lineHeight: 1.2,
+          color: color ?? theme.colors.pink,
+          fontWeight: "500",
+          display: "flex",
+          alignItems: "center",
+        })
+      }
+      {...props}
+    >
+      {displayName}
+      <span
+        css={(theme) =>
+          css({
+            marginLeft: 5,
+            padding: "1px 3px",
+            fontSize: "1rem",
+            borderRadius: "0.3rem",
+            backgroundColor: theme.colors.textMuted,
+            color: theme.colors.textNormal,
+            fontWeight: "500",
+            textTransform: "uppercase",
+          })
+        }
+      >
+        app
+      </span>
+    </div>
   )
 );
 
@@ -1521,6 +1558,39 @@ const SystemMessage = ({ isHovering, message, reactions }) => {
           </>
         );
 
+      case "channel-updated": {
+        const updates = Object.entries(message.updates);
+        if (updates.length == 0 || updates.length > 1) {
+          return (
+            <>
+              <MemberDisplayName
+                color={theme.colors.textNormal}
+                displayName={message.author?.displayName}
+              />{" "}
+              updated the channel.
+            </>
+          );
+        }
+
+        const displayAllowedFields = ["name", "description"];
+        let [field, value] = updates[0];
+        return (
+          <>
+            <MemberDisplayName
+              color={theme.colors.textNormal}
+              displayName={message.author?.displayName}
+            />{" "}
+            {displayAllowedFields.includes(field) ? (
+              <>
+                set the channel {field}: {value}
+              </>
+            ) : (
+              <>updated the channel {field}.</>
+            )}
+          </>
+        );
+      }
+
       default:
         throw new Error();
     }
@@ -1579,21 +1649,29 @@ const SystemMessage = ({ isHovering, message, reactions }) => {
   );
 };
 
-const AppMessage = ({ isHovering, message, reactions }) => {
+const AppMessage = ({
+  isHovering,
+  message,
+  reactions,
+  onClickInteractiveElement,
+}) => {
   const content = React.useMemo(() => {
     switch (message.type) {
       case "webhook":
         return (
           <>
-            <MemberDisplayName displayName={message.author.name} />
-            <RichText blocks={message.content} />
+            <AppDisplayName displayName={message.app?.name} />
+            <RichText
+              blocks={message.content}
+              onClickInteractiveElement={onClickInteractiveElement}
+            />
           </>
         );
 
       default:
         throw new Error();
     }
-  }, [message]);
+  }, [message, onClickInteractiveElement]);
 
   return (
     <div
