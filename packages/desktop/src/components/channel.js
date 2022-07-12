@@ -62,11 +62,12 @@ const useFetch = (fetcher, dependencies) => {
   });
 };
 
+const pendingFetchMessagePromisesCache = {};
+
 // This fetcher only allows for a single request (with the same query) to be
 // pending at once. Subsequent "equal" request will simply return the initial
 // pending request promise.
 const useMessageFetcher = () => {
-  const pendingPromisesRef = React.useRef({});
   const { actions } = useAppScope();
 
   const fetchMessages = useLatestCallback(
@@ -78,7 +79,7 @@ const useMessageFetcher = () => {
         ["after-message-id", afterMessageId],
       ]).toString();
 
-      let pendingPromise = pendingPromisesRef.current[key];
+      let pendingPromise = pendingFetchMessagePromisesCache[key];
 
       if (pendingPromise == null) {
         pendingPromise = actions.fetchMessages(channelId, {
@@ -86,13 +87,13 @@ const useMessageFetcher = () => {
           beforeMessageId,
           afterMessageId,
         });
-        pendingPromisesRef.current[key] = pendingPromise;
+        pendingFetchMessagePromisesCache[key] = pendingPromise;
       }
 
       try {
         return await pendingPromise;
       } finally {
-        delete pendingPromisesRef.current[key];
+        delete pendingFetchMessagePromisesCache[key];
       }
     }
   );
