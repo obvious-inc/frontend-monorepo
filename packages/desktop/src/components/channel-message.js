@@ -5,7 +5,6 @@ import { FormattedDate, FormattedRelativeTime } from "react-intl";
 import { css, useTheme } from "@emotion/react";
 import {
   useAppScope,
-  useAuth,
   arrayUtils,
   objectUtils,
   messageUtils,
@@ -58,7 +57,6 @@ const ChannelMessage = React.memo(function ChannelMessage_({
   const editInputRef = React.useRef();
   const containerRef = React.useRef();
 
-  const { user } = useAuth();
   const { actions, state } = useAppScope();
   const navigate = useNavigate();
 
@@ -69,17 +67,19 @@ const ChannelMessage = React.memo(function ChannelMessage_({
 
   const theme = useTheme();
 
+  const user = state.selectMe();
+
   const showAsFocused =
     !isEditing &&
     (hasTouchFocus || isHovering || isDropdownOpen || isEmojiPickerOpen);
 
   const isDirectMessage = channel.kind === "dm";
-  const isOwnMessage = user.id === message.authorUserId;
+  const isOwnMessage = user?.id === message.authorUserId;
 
   const allowEdit =
     !message.isSystemMessage &&
     !message.isAppMessage &&
-    user.id === message.authorUserId;
+    user?.id === message.authorUserId;
 
   const createdAtDate = React.useMemo(
     () => new Date(message.created_at),
@@ -146,12 +146,12 @@ const ChannelMessage = React.memo(function ChannelMessage_({
     (emoji) => {
       const existingReaction = message.reactions.find((r) => r.emoji === emoji);
 
-      if (existingReaction?.users.includes(user.id)) return;
+      if (existingReaction?.users.includes(user?.id)) return;
 
       actions.addMessageReaction(message.id, { emoji });
       setEmojiPickerOpen(false);
     },
-    [message.id, message.reactions, actions, user.id]
+    [message.id, message.reactions, actions, user?.id]
   );
   const removeReaction = React.useCallback(
     (emoji) => actions.removeMessageReaction(message.id, { emoji }),
@@ -773,61 +773,66 @@ const MessageHeader = ({ author, createdAt, authorUserId }) => (
       grid-gap: 0.6rem;
       margin: 0 0 0.2rem;
       cursor: default;
+      min-height: 1.9rem;
     `}
   >
-    <Popover.Root>
-      <Popover.Trigger asChild>
-        <MemberDisplayName displayName={author?.displayName} />
-      </Popover.Trigger>
-      <Popover.Content
-        collisionTolerance={5}
-        side="right"
-        sideOffset={5}
-        align="center"
-      >
-        {author != null && (
-          <ProfilePreview
-            profilePicture={author.profilePicture}
-            displayName={author.displayName}
-            walletAddress={author.walletAddress}
-            onlineStatus={author.onlineStatus}
-            userId={authorUserId}
+    {author != null && (
+      <>
+        <Popover.Root>
+          <Popover.Trigger asChild>
+            <MemberDisplayName displayName={author?.displayName} />
+          </Popover.Trigger>
+          <Popover.Content
+            collisionTolerance={5}
+            side="right"
+            sideOffset={5}
+            align="center"
+          >
+            {author != null && (
+              <ProfilePreview
+                profilePicture={author.profilePicture}
+                displayName={author.displayName}
+                walletAddress={author.walletAddress}
+                onlineStatus={author.onlineStatus}
+                userId={authorUserId}
+              />
+            )}
+          </Popover.Content>
+        </Popover.Root>
+
+        <TinyMutedText>
+          <FormattedDateWithTooltip
+            value={createdAt}
+            hour="numeric"
+            minute="numeric"
+            day="numeric"
+            month="short"
+            tooltipContentProps={{ sideOffset: 8 }}
           />
+        </TinyMutedText>
+
+        {author?.onlineStatus === "online" && (
+          <Tooltip.Root>
+            <Tooltip.Trigger asChild>
+              <div css={css({ padding: "0.5rem 0.2rem" })}>
+                <div
+                  css={(theme) =>
+                    css({
+                      width: "0.6rem",
+                      height: "0.6rem",
+                      borderRadius: "50%",
+                      background: theme.colors.onlineIndicator,
+                    })
+                  }
+                />
+              </div>
+            </Tooltip.Trigger>
+            <Tooltip.Content side="top" align="center" sideOffset={6}>
+              User online
+            </Tooltip.Content>
+          </Tooltip.Root>
         )}
-      </Popover.Content>
-    </Popover.Root>
-
-    <TinyMutedText>
-      <FormattedDateWithTooltip
-        value={createdAt}
-        hour="numeric"
-        minute="numeric"
-        day="numeric"
-        month="short"
-        tooltipContentProps={{ sideOffset: 8 }}
-      />
-    </TinyMutedText>
-
-    {author?.onlineStatus === "online" && (
-      <Tooltip.Root>
-        <Tooltip.Trigger asChild>
-          <div css={css({ padding: "0.5rem 0.2rem" })}>
-            <div
-              css={(theme) =>
-                css({
-                  width: "0.6rem",
-                  height: "0.6rem",
-                  borderRadius: "50%",
-                  background: theme.colors.onlineIndicator,
-                })
-              }
-            />
-          </div>
-        </Tooltip.Trigger>
-        <Tooltip.Content side="top" align="center" sideOffset={6}>
-          User online
-        </Tooltip.Content>
-      </Tooltip.Root>
+      </>
     )}
   </div>
 );
@@ -1520,6 +1525,13 @@ const SystemMessage = ({ isHovering, message, reactions }) => {
   const content = React.useMemo(() => {
     switch (message.type) {
       case "user-invited":
+        if (
+          [message.inviter?.displayName, message.author?.displayName].some(
+            (n) => n == null
+          )
+        )
+          return null;
+
         return (
           <>
             <MemberDisplayName
@@ -1535,14 +1547,14 @@ const SystemMessage = ({ isHovering, message, reactions }) => {
           </>
         );
       case "member-joined":
+        if (message.author?.displayName == null) return null;
         return (
           <>
-            A wild{" "}
             <MemberDisplayName
               color={theme.colors.textNormal}
               displayName={message.author?.displayName}
             />{" "}
-            has appeared. Welcome!
+            joined the channel. Welcome!
           </>
         );
 
@@ -1623,7 +1635,11 @@ const SystemMessage = ({ isHovering, message, reactions }) => {
       )}
 
       <div>
-        <div css={(theme) => css({ color: theme.colors.channelDefault })}>
+        <div
+          css={(theme) =>
+            css({ color: theme.colors.channelDefault, height: "2.35rem" })
+          }
+        >
           {content}
         </div>
 

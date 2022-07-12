@@ -42,98 +42,98 @@ const commands = {
       }
     },
   }),
-  "set-town-name": ({ user, state, actions, serverId }) => ({
-    description: "Update town name",
-    arguments: ["town-name"],
-    execute: async ({ args, editor }) => {
-      if (args.length === 0) {
-        alert('Missing argument "town-name"');
-        return;
-      }
-      const serverName = args.join(" ");
-      await actions.updateServer(serverId, { name: serverName });
-      editor.clear();
-    },
-    exclude: () => {
-      const server = state.selectServer(serverId);
-      return server?.ownerUserId !== user.id;
-    },
-  }),
-  "set-town-description": ({ user, state, actions, serverId }) => ({
-    description: "Update town description. This is visible on your invite page",
-    arguments: ["town-description"],
-    execute: async ({ args, editor }) => {
-      if (args.length === 0) {
-        alert('Missing argument "town-description"');
-        return;
-      }
-      const serverDescription = args.join(" ");
-      await actions.updateServer(serverId, { description: serverDescription });
-      editor.clear();
-    },
-    exclude: () => {
-      const server = state.selectServer(serverId);
-      return server?.ownerUserId !== user.id;
-    },
-  }),
-  "set-system-messages-channel": ({
-    user,
-    state,
-    actions,
-    context,
-    serverId,
-  }) => ({
-    description:
-      'Configure a channel for receiving system messages, e.g. "John Doe has joined!"',
-    arguments: ["channel-name"],
-    execute: async ({ args, editor }) => {
-      if (args.length === 0) {
-        alert('Missing argument "channel-name"');
-        return;
-      }
-      const channelName = args.join(" ");
-      const channels = state
-        .selectServerChannels(serverId)
-        .filter((c) => c.name === channelName);
+  // "set-town-name": ({ user, state, actions, serverId }) => ({
+  //   description: "Update town name",
+  //   arguments: ["town-name"],
+  //   execute: async ({ args, editor }) => {
+  //     if (args.length === 0) {
+  //       alert('Missing argument "town-name"');
+  //       return;
+  //     }
+  //     const serverName = args.join(" ");
+  //     await actions.updateServer(serverId, { name: serverName });
+  //     editor.clear();
+  //   },
+  //   exclude: () => {
+  //     const server = state.selectServer(serverId);
+  //     return server?.ownerUserId !== user.id;
+  //   },
+  // }),
+  // "set-town-description": ({ user, state, actions, serverId }) => ({
+  //   description: "Update town description. This is visible on your invite page",
+  //   arguments: ["town-description"],
+  //   execute: async ({ args, editor }) => {
+  //     if (args.length === 0) {
+  //       alert('Missing argument "town-description"');
+  //       return;
+  //     }
+  //     const serverDescription = args.join(" ");
+  //     await actions.updateServer(serverId, { description: serverDescription });
+  //     editor.clear();
+  //   },
+  //   exclude: () => {
+  //     const server = state.selectServer(serverId);
+  //     return server?.ownerUserId !== user.id;
+  //   },
+  // }),
+  // "set-system-messages-channel": ({
+  //   user,
+  //   state,
+  //   actions,
+  //   context,
+  //   serverId,
+  // }) => ({
+  //   description:
+  //     'Configure a channel for receiving system messages, e.g. "John Doe has joined!"',
+  //   arguments: ["channel-name"],
+  //   execute: async ({ args, editor }) => {
+  //     if (args.length === 0) {
+  //       alert('Missing argument "channel-name"');
+  //       return;
+  //     }
+  //     const channelName = args.join(" ");
+  //     const channels = state
+  //       .selectServerChannels(serverId)
+  //       .filter((c) => c.name === channelName);
 
-      if (channels.length === 0) {
-        alert(`No channel named "${channelName}"`);
-        return;
-      }
+  //     if (channels.length === 0) {
+  //       alert(`No channel named "${channelName}"`);
+  //       return;
+  //     }
 
-      if (channels.length !== 1) {
-        alert(`You have multiple channels named "${channelName}". Stop it!`);
-        return;
-      }
+  //     if (channels.length !== 1) {
+  //       alert(`You have multiple channels named "${channelName}". Stop it!`);
+  //       return;
+  //     }
 
-      await actions.updateServer(serverId, { system_channel: channels[0].id });
-      editor.clear();
-    },
-    exclude: () => {
-      if (context !== "server") return true;
-      const server = state.selectServer(serverId);
-      return server?.ownerUserId !== user.id;
-    },
-  }),
-  "update-server": ({ user, state, actions, serverId }) => ({
-    description: "Update a server property",
-    arguments: ["propery-name", "property-value"],
-    execute: async ({ args, editor }) => {
-      if (args.length < 2) {
-        alert('Arguments #1 "property", and #2 "value", are required.');
-        return;
-      }
-      const [property, ...valueWords] = args;
-      const value = valueWords.join(" ");
-      await actions.updateServer(serverId, { [property]: value });
-      editor.clear();
-    },
-    exclude: () => {
-      if (!location.search.includes("root")) return true;
-      const server = state.selectServer(serverId);
-      return server?.ownerUserId !== user.id;
-    },
-  }),
+  //     await actions.updateServer(serverId, { system_channel: channels[0].id });
+  //     editor.clear();
+  //   },
+  //   exclude: () => {
+  //     if (context !== "server") return true;
+  //     const server = state.selectServer(serverId);
+  //     return server?.ownerUserId !== user.id;
+  //   },
+  // }),
+  // "update-server": ({ user, state, actions, serverId }) => ({
+  //   description: "Update a server property",
+  //   arguments: ["propery-name", "property-value"],
+  //   execute: async ({ args, editor }) => {
+  //     if (args.length < 2) {
+  //       alert('Arguments #1 "property", and #2 "value", are required.');
+  //       return;
+  //     }
+  //     const [property, ...valueWords] = args;
+  //     const value = valueWords.join(" ");
+  //     await actions.updateServer(serverId, { [property]: value });
+  //     editor.clear();
+  //   },
+  //   exclude: () => {
+  //     if (!location.search.includes("root")) return true;
+  //     const server = state.selectServer(serverId);
+  //     return server?.ownerUserId !== user.id;
+  //   },
+  // }),
   logout: ({ navigate, actions }) => ({
     description: "Logs you out, really fast.",
     execute: async () => {

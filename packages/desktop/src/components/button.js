@@ -1,25 +1,30 @@
 import { css } from "@emotion/react";
 
-const baseStyles = {
+const baseStyles = () => ({
+  userSelect: "none",
+  transition: "background 20ms ease-in",
   fontWeight: "400",
   lineHeight: 1.2,
   border: 0,
-  borderRadius: "4px",
+  borderRadius: "0.3rem",
   cursor: "pointer",
   textAlign: "center",
   display: "inline-flex",
   alignItems: "center",
   justifyContent: "center",
   textDecoration: "none",
+  whiteSpace: "nowrap",
   "&[disabled]": { opacity: 0.5 },
-};
+});
 
 const stylesByVariant = (theme) => ({
   default: {
     color: theme.colors.textNormal,
-    background: "rgb(255 255 255 / 7%)",
+    border: "1px solid rgba(255, 255, 255, 0.13)",
+    // background: "rgb(255 255 255 / 7%)",
     "&:hover": {
-      background: "rgb(255 255 255 / 9%)",
+      // background: "rgb(255 255 255 / 9%)",
+      background: "rgb(47 47 47)",
     },
   },
   transparent: {
@@ -41,21 +46,23 @@ const stylesByVariant = (theme) => ({
   },
 });
 
-const stylesBySize = {
+const stylesBySize = (theme) => ({
   default: {
-    fontSize: "1.4rem",
-    padding: "0.8rem 1.5rem",
-    minHeight: "3.6rem",
+    fontSize: theme.fontSizes.default,
+    padding: "0 1.2rem",
+    height: "3.2rem",
   },
   small: {
-    fontSize: "1.3rem",
-    padding: "0.8rem 1rem",
+    fontSize: theme.fontSizes.default,
+    // fontSize: "1.3rem",
+    padding: "0 1rem",
+    height: "2.8rem",
   },
   large: {
     fontSize: "1.5rem",
     padding: "1.2rem 2rem",
   },
-};
+});
 
 const defaultPropsByComponent = {
   button: {
@@ -75,8 +82,8 @@ const Button = ({
     {...defaultPropsByComponent[Component]}
     css={(theme) => [
       css({
-        ...baseStyles,
-        ...stylesBySize[size],
+        ...baseStyles(theme),
+        ...stylesBySize(theme)[size],
         ...stylesByVariant(theme)[variant],
       }),
       customStyles,

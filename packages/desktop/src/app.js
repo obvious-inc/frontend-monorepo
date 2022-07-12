@@ -10,7 +10,7 @@ import { InjectedConnector } from "wagmi/connectors/injected";
 import { WalletConnectConnector } from "wagmi/connectors/walletConnect";
 import React from "react";
 import { css } from "@emotion/react";
-import { Routes, Route, Navigate, useNavigate, Outlet } from "react-router-dom";
+import { Routes, Route, Navigate, useNavigate } from "react-router-dom";
 import { IntlProvider } from "react-intl";
 import { ThemeProvider, Global } from "@emotion/react";
 import Pusher from "pusher-js";
@@ -19,8 +19,10 @@ import {
   AuthProvider,
   useAppScope,
   useLatestCallback,
+  useServerConnection,
   AppScopeProvider,
   ServerConnectionProvider,
+  arrayUtils,
 } from "@shades/common";
 import * as eth from "./utils/ethereum";
 import { Provider as GlobalMediaQueriesProvider } from "./hooks/global-media-queries";
@@ -46,6 +48,8 @@ import {
 } from "./components/icons";
 import useSideMenu from "./hooks/side-menu";
 import { notion as defaultTheme } from "./themes";
+
+const { unique } = arrayUtils;
 
 const isNative = window.Native != null;
 
@@ -73,8 +77,9 @@ const wagmiClient = createWagmiClient({
 
 const useSystemNotifications = () => {
   const navigate = useNavigate();
-  const { user } = useAuth();
   const { state, addAfterDispatchListener } = useAppScope();
+
+  const user = state.selectMe();
 
   const afterDispatchListener = useLatestCallback((action) => {
     switch (action.type) {
@@ -98,11 +103,7 @@ const useSystemNotifications = () => {
               pixelSize: 24,
             }),
           onClick: ({ close }) => {
-            navigate(
-              channel.kind !== "server"
-                ? `/channels/${channel.id}`
-                : `/channels/${channel.serverId}/${channel.id}`
-            );
+            navigate(`/channels/${channel.id}`);
             window.focus();
             close();
           },
@@ -127,13 +128,20 @@ const useSystemNotifications = () => {
 const App = () => {
   const navigate = useNavigate();
 
-  const { user, status: authStatus } = useAuth();
-  const { state, actions } = useAppScope();
+  const serverConnection = useServerConnection();
+  const { status: authStatus } = useAuth();
+  const { state, actions, dispatch } = useAppScope();
   const { login } = useWalletLogin();
 
-  const { fetchInitialData, fetchStarredItems, fetchServers } = actions;
+  const {
+    fetchClientBootData,
+    fetchUserChannels,
+    fetchUserChannelsReadStates,
+    fetchStarredItems,
+    fetchUsers,
+  } = actions;
 
-  const hasFetchedInitialData = state.selectHasFetchedInitialData();
+  const user = state.selectMe();
 
   useSystemNotifications();
 
@@ -169,26 +177,61 @@ const App = () => {
   });
 
   React.useEffect(() => {
-    if (authStatus !== "authenticated") return;
-    fetchServers();
-  }, [authStatus, fetchServers]);
+    let typingEndedTimeoutHandles = {};
+
+    const handler = (name, data) => {
+      // Dispatch a 'user-typing-ended' action when a user+channel combo has
+      // been silent for a while
+      if (name === "user-typed") {
+        const id = [data.channel.id, data.user.id].join(":");
+
+        if (typingEndedTimeoutHandles[id]) {
+          clearTimeout(typingEndedTimeoutHandles[id]);
+          delete typingEndedTimeoutHandles[id];
+        }
+
+        typingEndedTimeoutHandles[id] = setTimeout(() => {
+          delete typingEndedTimeoutHandles[id];
+          dispatch({
+            type: "user-typing-ended",
+            channelId: data.channel.id,
+            userId: data.user.id,
+          });
+        }, 6000);
+      }
+
+      dispatch({ type: ["server-event", name].join(":"), data, user });
+    };
+
+    const removeListener = serverConnection.addListener(handler);
+    return () => {
+      removeListener();
+    };
+  }, [user, serverConnection, dispatch]);
 
   React.useEffect(() => {
-    if (user == null || hasFetchedInitialData) return null;
-    fetchInitialData();
-  }, [user, fetchInitialData, hasFetchedInitialData]);
-
-  React.useEffect(() => {
     if (authStatus !== "authenticated") return;
-    fetchStarredItems();
-  }, [authStatus, fetchStarredItems]);
+
+    fetchClientBootData().then(({ channels }) => {
+      const dmUserIds = unique(
+        channels.filter((c) => c.kind === "dm").flatMap((c) => c.members)
+      );
+      fetchUsers(dmUserIds);
+    });
+  }, [authStatus, fetchClientBootData, fetchUsers]);
 
   useWindowFocusListener(() => {
-    actions.fetchInitialData();
+    if (authStatus !== "authenticated") return;
+    fetchUserChannels();
+    fetchUserChannelsReadStates();
+    fetchStarredItems();
   });
 
   useOnlineListener(() => {
-    actions.fetchInitialData();
+    if (authStatus !== "authenticated") return;
+    fetchUserChannels();
+    fetchUserChannelsReadStates();
+    fetchStarredItems();
   });
 
   return (
@@ -252,15 +295,7 @@ const App = () => {
           {/*   element={<Channel server />} */}
           {/* /> */}
         </Route>
-        <Route
-          element={
-            <RequireAuth>
-              <Outlet />
-            </RequireAuth>
-          }
-        >
-          <Route path="c/:channelId" element={<Channel noSideMenu />} />
-        </Route>
+        <Route path="c/:channelId" element={<Channel noSideMenu />} />
 
         {/* <Route */}
         {/*   path="/discover" */}
@@ -342,11 +377,11 @@ export default function Root() {
       <WagmiConfig client={wagmiClient}>
         <IntlProvider locale="en">
           <AuthProvider apiOrigin="/api">
-            <ServerConnectionProvider
-              Pusher={Pusher}
-              pusherKey={process.env.PUSHER_KEY}
-            >
-              <AppScopeProvider>
+            <AppScopeProvider>
+              <ServerConnectionProvider
+                Pusher={Pusher}
+                pusherKey={process.env.PUSHER_KEY}
+              >
                 <WalletLoginProvider>
                   <ThemeProvider theme={defaultTheme}>
                     <Tooltip.Provider delayDuration={300}>
@@ -358,8 +393,8 @@ export default function Root() {
                     </Tooltip.Provider>
                   </ThemeProvider>
                 </WalletLoginProvider>
-              </AppScopeProvider>
-            </ServerConnectionProvider>
+              </ServerConnectionProvider>
+            </AppScopeProvider>
           </AuthProvider>
         </IntlProvider>
       </WagmiConfig>

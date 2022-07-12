@@ -1,18 +1,14 @@
 import React from "react";
 import { mapValues } from "../utils/object";
 import combineReducers from "../utils/combine-reducers";
-import { useAuth } from "../auth";
-import ui, { selectHasFetchedInitialData } from "../reducers/ui";
-import servers, {
-  selectServer,
-  selectServers,
-  selectJoinedServers,
-} from "../reducers/servers";
+import me, { selectMe } from "../reducers/me";
+import ui, {
+  selectHasFetchedInitialData,
+  selectHasFetchedMenuData,
+} from "../reducers/ui";
 import channels, {
   selectChannel,
   selectMemberChannels,
-  selectServerChannels,
-  selectServerDmChannels,
   selectDmChannels,
   selectTopicChannels,
   selectStarredChannels,
@@ -25,11 +21,9 @@ import channels, {
   selectChannelMentionCount,
   selectChannelStarId,
   selectIsChannelStarred,
+  selectChannelMembers,
+  selectChannelAccessLevel,
 } from "../reducers/channels";
-import channelSections, {
-  selectServerChannelSections,
-  selectChannelSectionWithChild,
-} from "../reducers/channel-sections";
 import messages, {
   selectMessage,
   selectChannelMessages,
@@ -38,42 +32,28 @@ import users, {
   selectUser,
   selectUserFromWalletAddress,
 } from "../reducers/users";
-import serverMembers, {
-  selectServerMembers,
-  selectServerMemberWithUserId,
-  selectChannelMember,
-  selectChannelMembers,
-} from "../reducers/server-members";
 import channelTypingStatus, {
   selectChannelTypingMembers,
 } from "../reducers/channel-typing-status";
 import apps, { selectApp } from "../reducers/apps";
 
 const selectors = {
-  selectServer,
-  selectServers,
-  selectJoinedServers,
+  selectMe,
   selectChannel,
+  selectChannelMembers,
+  selectChannelAccessLevel,
   selectMemberChannels,
-  selectServerChannels,
   selectDmChannels,
   selectTopicChannels,
   selectDmAndTopicChannels,
   selectStarredChannels,
-  selectServerDmChannels,
   selectMessage,
   selectChannelMessages,
   selectUser,
   selectUserFromWalletAddress,
-  selectServerMembers,
-  selectServerMemberWithUserId,
-  selectChannelMember,
-  selectChannelMembers,
   selectDmChannelFromUserId,
   selectDmChannelFromUserIds,
   selectHasFetchedInitialData,
-  selectServerChannelSections,
-  selectChannelSectionWithChild,
   selectChannelTypingMembers,
   selectHasAllMessages,
   selectHasFetchedMessages,
@@ -82,18 +62,17 @@ const selectors = {
   selectChannelStarId,
   selectIsChannelStarred,
   selectApp,
+  selectHasFetchedMenuData,
 };
 
 const rootReducer = combineReducers({
-  ui,
-  servers,
+  me,
   channels,
-  channelSections,
   users,
-  serverMembers,
   messages,
   channelTypingStatus,
   apps,
+  ui,
 });
 
 const initialState = rootReducer(undefined, {});
@@ -102,8 +81,6 @@ const applyStateToSelectors = (selectors, state) =>
   mapValues((selector) => selector.bind(null, state), selectors);
 
 const useRootReducer = () => {
-  const { user } = useAuth();
-
   const [state, dispatch_] = React.useReducer(rootReducer, initialState);
 
   const beforeDispatchListenersRef = React.useRef([]);
@@ -133,8 +110,8 @@ const useRootReducer = () => {
   }, []);
 
   const appliedSelectors = React.useMemo(
-    () => applyStateToSelectors(selectors, { ...state, user }),
-    [state, user]
+    () => applyStateToSelectors(selectors, state),
+    [state]
   );
 
   return [

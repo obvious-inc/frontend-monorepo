@@ -1,6 +1,6 @@
 import { useNavigate } from "react-router-dom";
 import { css } from "@emotion/react";
-import { useAppScope, useAuth } from "@shades/common";
+import { useAppScope } from "@shades/common";
 import useSideMenu from "../hooks/side-menu";
 import MainMenu from "./main-menu";
 import Spinner from "./spinner";
@@ -16,15 +16,12 @@ const SideMenuLayout = ({
   children,
 }) => {
   const navigate = useNavigate();
-  const { user } = useAuth();
-  const { actions, state, serverConnection } = useAppScope();
+  const { actions } = useAppScope();
   const {
     isFloating: isFloatingMenuEnabled,
     isCollapsed,
     toggle: toggleMenu,
   } = useSideMenu();
-
-  if (!state.selectHasFetchedInitialData() || user == null) return null;
 
   return (
     <div

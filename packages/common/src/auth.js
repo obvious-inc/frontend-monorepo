@@ -98,8 +98,6 @@ export const Provider = ({
   const [refreshTokenRef, { set: setRefreshToken, clear: clearRefreshToken }] =
     useRefreshToken({ storage: tokenStorage });
 
-  const [user, setUser] = React.useState(null);
-
   const status =
     accessToken === undefined
       ? "loading"
@@ -134,7 +132,6 @@ export const Provider = ({
   const logout = useLatestCallback(() => {
     setAccessToken(null);
     setRefreshToken(null);
-    setUser(null);
   });
 
   const refreshAccessToken = useLatestCallback(async () => {
@@ -177,10 +174,19 @@ export const Provider = ({
 
   const authorizedFetch = useLatestCallback(async (url, options) => {
     const accessToken = accessTokenRef.current;
-    if (accessToken == null) throw new Error("Missing access token");
+
+    const requireAccessToken =
+      !options?.allowUnauthorized && !options?.unauthorized;
+
+    if (requireAccessToken && accessToken == null)
+      throw new Error("Missing access token");
 
     const headers = new Headers(options?.headers);
-    if (!headers.has("Authorization"))
+    if (
+      !options?.unauthorized &&
+      accessToken != null &&
+      !headers.has("Authorization")
+    )
       headers.set("Authorization", `Bearer ${accessToken}`);
 
     const response = await fetch(`${apiOrigin}${url}`, {
@@ -188,7 +194,7 @@ export const Provider = ({
       headers,
     });
 
-    if (response.status === 401) {
+    if (accessToken != null && response.status === 401) {
       try {
         const newAccessToken = await refreshAccessToken();
         const headers = new Headers(options?.headers);
@@ -220,7 +226,6 @@ export const Provider = ({
     () => ({
       status,
       accessToken,
-      user,
       apiOrigin,
       authorizedFetch,
       login,
@@ -232,7 +237,6 @@ export const Provider = ({
     [
       status,
       accessToken,
-      user,
       apiOrigin,
       authorizedFetch,
       login,
@@ -242,14 +246,6 @@ export const Provider = ({
       refreshAccessToken,
     ]
   );
-
-  React.useEffect(() => {
-    if (status !== "authenticated") return;
-
-    authorizedFetch("/users/me").then((user) => {
-      setUser(user);
-    });
-  }, [authorizedFetch, status]);
 
   return <Context.Provider value={contextValue} {...props} />;
 };

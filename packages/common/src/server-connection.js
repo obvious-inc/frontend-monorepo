@@ -1,5 +1,6 @@
 import React from "react";
 import { useAuth } from "./auth";
+import { useAppScope } from "./app-scope";
 
 const serverEventMap = {
   MESSAGE_CREATE: "message-created",
@@ -10,8 +11,7 @@ const serverEventMap = {
   USER_PROFILE_UPDATE: "user-profile-updated",
   USER_PRESENCE_UPDATE: "user-presence-updated",
   USER_TYPING: "user-typed",
-  SERVER_USER_JOINED: "server-member-joined",
-  SERVER_PROFILE_UPDATE: "server-member-profile-updated",
+  CHANNEL_USER_JOINED: "channel-member-joined",
 };
 
 const initPusherConnection = ({ Pusher, key, accessToken, apiOrigin }) => {
@@ -34,7 +34,10 @@ const initPusherConnection = ({ Pusher, key, accessToken, apiOrigin }) => {
 const Context = React.createContext(null);
 
 export const Provider = ({ Pusher, pusherKey, debug = false, children }) => {
-  const { accessToken, user, apiOrigin } = useAuth();
+  const { state } = useAppScope();
+  const { accessToken, apiOrigin } = useAuth();
+
+  const user = state.selectMe();
 
   const pusherRef = React.useRef();
   const channelRef = React.useRef();

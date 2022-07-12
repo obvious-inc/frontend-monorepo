@@ -48,8 +48,9 @@ const App = () => {
   // TODO: Put this in the routing state instead
   const [serverId, setServerId] = React.useState(null);
 
-  const { status: authStatus, user, setAccessToken } = useAuth();
+  const { status: authStatus, setAccessToken } = useAuth();
   const { state, actions } = useAppScope();
+  const user = state.selectMe();
 
   const channels = state.selectServerChannels(serverId);
 

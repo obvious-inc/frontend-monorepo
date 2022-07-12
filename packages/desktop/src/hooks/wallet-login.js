@@ -34,11 +34,13 @@ export const Provider = ({ children }) => {
             signedAt,
             address,
             nonce,
-          }).catch(() =>
-            Promise.reject(new Error("server-login-request-error"))
-          )
+          }).catch((e) => {
+            console.log(e);
+            return Promise.reject(new Error("server-login-request-error"));
+          })
         );
     } catch (e) {
+      console.log(e);
       setError(e.message);
     } finally {
       setStatus("idle");

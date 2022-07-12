@@ -4,7 +4,6 @@ import { indexBy, groupBy, unique } from "../utils/array";
 import { omitKey, mapValues } from "../utils/object";
 import { arrayShallowEquals } from "../utils/reselect";
 import { selectUser } from "./users";
-import { selectServerMemberWithUserId } from "./server-members";
 import { selectApp } from "./apps";
 
 const entriesById = (state = {}, action) => {
@@ -254,7 +253,7 @@ const deriveMessageType = (message) => {
     case 5:
       return "channel-updated";
     default:
-      throw new Error();
+      console.warn(`Unknown message type "${message.type}"`);
   }
 };
 
@@ -262,19 +261,8 @@ export const selectMessage = createSelector(
   (state, messageId) => state.messages.entriesById[messageId],
   (state, messageId) => {
     const message = state.messages.entriesById[messageId];
-
     if (message == null) return null;
-
-    // `server` doesn’t exist on dm messages
-    if (message.server != null) {
-      return selectServerMemberWithUserId(
-        state,
-        message.server,
-        message.author
-      );
-    } else {
-      return selectUser(state, message.author);
-    }
+    return selectUser(state, message.author);
   },
   (state, messageId) => {
     const message = state.messages.entriesById[messageId];
@@ -286,7 +274,7 @@ export const selectMessage = createSelector(
     if (message == null || message.reply_to == null) return null;
     return selectMessage(state, message.reply_to);
   },
-  (state) => state.user,
+  (state) => state.me.user,
   (state, messageId) => {
     const message = state.messages.entriesById[messageId];
     if (message == null || !message.app) return null;
@@ -307,6 +295,8 @@ export const selectMessage = createSelector(
     }
 
     const type = deriveMessageType(message);
+
+    if (type == null) return null;
 
     return {
       ...message,
@@ -330,7 +320,7 @@ export const selectMessage = createSelector(
       reactions:
         message.reactions?.map((r) => ({
           ...r,
-          hasReacted: r.users.includes(loggedInUser.id),
+          hasReacted: r.users.includes(loggedInUser?.id),
         })) ?? [],
       appId,
       app,
