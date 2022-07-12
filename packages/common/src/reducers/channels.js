@@ -13,7 +13,7 @@ const parseChannel = (channel) => ({
   avatar: channel.avatar,
   kind: channel.kind,
   createdAt: channel.created_at,
-  memberUserIds: channel.members,
+  memberUserIds: channel.members ?? [],
   ownerUserId: channel.owner,
 });
 
@@ -51,6 +51,18 @@ const entriesById = (state = {}, action) => {
 
     case "delete-channel-request-successful":
       return omitKey(action.id, state);
+
+    case "server-event:channel-updated": {
+      const channelId = action.data.channel.id;
+      return {
+        ...state,
+        [channelId]: {
+          ...state[channelId],
+          id: channelId,
+          ...parseChannel(action.data.channel),
+        },
+      };
+    }
 
     case "logout":
       return {};

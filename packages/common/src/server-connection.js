@@ -11,6 +11,7 @@ const serverEventMap = {
   USER_PROFILE_UPDATE: "user-profile-updated",
   USER_PRESENCE_UPDATE: "user-presence-updated",
   USER_TYPING: "user-typed",
+  CHANNEL_UPDATE: "channel-updated",
   CHANNEL_USER_JOINED: "channel-member-joined",
 };
 
