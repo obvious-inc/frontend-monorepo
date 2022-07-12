@@ -31,17 +31,13 @@ export const Provider = ({ children }) => {
     })
   );
 
-  const updateMe = useLatestCallback(({ displayName, pfp, serverId }) => {
-    const searchParams = serverId == null ? null : `server_id=${serverId}`;
-    return authorizedFetch(
-      ["/users/me", searchParams].filter(Boolean).join("?"),
-      {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ display_name: displayName, pfp }),
-      }
-    );
-  });
+  const updateMe = useLatestCallback(({ displayName, pfp }) =>
+    authorizedFetch("/users/me", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ display_name: displayName, pfp }),
+    })
+  );
 
   const fetchUsers = useLatestCallback((userIds) =>
     authorizedFetch("/users/info", {
@@ -125,10 +121,9 @@ export const Provider = ({ children }) => {
   );
 
   const createMessage = useLatestCallback(
-    async ({ server, channel, content, blocks, replyToMessageId }) => {
+    async ({ channel, content, blocks, replyToMessageId }) => {
       // TODO: Less hacky optimistc UI
       const message = {
-        server,
         channel,
         blocks,
         content,

@@ -271,14 +271,6 @@ export const selectChannelMentionCount = createSelector(
 
 export const selectChannelHasUnread = createSelector(
   (state, channelId) => state.channels.readStatesById[channelId],
-  // (state, channelId) => state.channels.entriesById[channelId]?.kind,
-  // (state, channelId) => {
-  //   const channel = state.channels.entriesById[channelId];
-  //   if (channel == null) return null;
-  //   return state.user == null
-  //     ? null
-  //     : selectChannelMemberWithUserId(state, channel.serverId, state.user.id);
-  // },
   (channelState /* channelKind, */ /* loggedInServerMember */) => {
     if (channelState == null) return false;
 
@@ -344,15 +336,6 @@ export const selectMemberChannels = createSelector(
       return t1 > t2 ? -1 : t1 < t2 ? 1 : 0;
     }, channels);
   },
-  (channels) => channels,
-  { memoizeOptions: { equalityCheck: arrayShallowEquals } }
-);
-
-export const selectServerChannels = createSelector(
-  (state, serverId) =>
-    Object.values(state.channels.entriesById)
-      .filter((channel) => channel.serverId === serverId)
-      .map((c) => selectChannel(state, c.id)),
   (channels) => channels,
   { memoizeOptions: { equalityCheck: arrayShallowEquals } }
 );

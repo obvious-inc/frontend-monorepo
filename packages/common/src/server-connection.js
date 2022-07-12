@@ -12,8 +12,6 @@ const serverEventMap = {
   USER_PRESENCE_UPDATE: "user-presence-updated",
   USER_TYPING: "user-typed",
   CHANNEL_USER_JOINED: "channel-member-joined",
-  SERVER_USER_JOINED: "server-member-joined",
-  SERVER_PROFILE_UPDATE: "server-member-profile-updated",
 };
 
 const initPusherConnection = ({ Pusher, key, accessToken, apiOrigin }) => {

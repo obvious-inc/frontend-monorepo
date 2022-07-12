@@ -3,7 +3,6 @@ import combineReducers from "../utils/combine-reducers";
 import { unique } from "../utils/array";
 import { arrayShallowEquals } from "../utils/reselect";
 import { selectUsers } from "./users";
-// import { selectServerMemberWithUserId } from "./server-members";
 
 const typingUserIdsByChannelId = (state = {}, action) => {
   switch (action.type) {
@@ -41,22 +40,14 @@ const typingUserIdsByChannelId = (state = {}, action) => {
   }
 };
 
-const selectNonServerChannelTypingUsers = createSelector(
-  (state, channelId) => {
-    const userIds =
-      state.channelTypingStatus.typingUserIdsByChannelId[channelId] ?? [];
-    return selectUsers(state, userIds);
-  },
-  (users) => users,
-  { memoizeOptions: { equalityCheck: arrayShallowEquals } }
-);
-
 export const selectChannelTypingMembers = createSelector(
   (state, channelId) => {
     const channel = state.channels.entriesById[channelId];
     if (channel == null) return [];
 
-    const members = selectNonServerChannelTypingUsers(state, channelId);
+    const userIds =
+      state.channelTypingStatus.typingUserIdsByChannelId[channelId] ?? [];
+    const members = selectUsers(state, userIds);
 
     return members.filter(
       (m) => state.me.user == null || m.id !== state.me.user.id
