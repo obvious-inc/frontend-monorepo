@@ -505,6 +505,7 @@ export const Provider = ({ children }) => {
   const actions = React.useMemo(
     () => ({
       logout,
+      fetchMe,
       fetchClientBootData,
       fetchMessage,
       updateMe,
@@ -540,6 +541,7 @@ export const Provider = ({ children }) => {
     }),
     [
       logout,
+      fetchMe,
       fetchClientBootData,
       fetchMessage,
       updateMe,

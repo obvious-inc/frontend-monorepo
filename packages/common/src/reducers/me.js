@@ -17,6 +17,7 @@ const user = (state = null, action) => {
   }
 };
 
-export const selectMe = (state) => selectUser(state, state.me.user?.id);
+export const selectMe = (state) =>
+  state.me.user == null ? null : selectUser(state, state.me.user?.id);
 
 export default combineReducers({ user });

@@ -1380,59 +1380,62 @@ const Channel = ({ noSideMenu }) => {
             )}
           </div>
           {user != null && (
-            <button
-              onClick={() => {
-                if (isChannelStarred) {
-                  actions.unstarChannel(channel.id);
-                  return;
-                }
+            <>
+              <button
+                onClick={() => {
+                  if (isChannelStarred) {
+                    actions.unstarChannel(channel.id);
+                    return;
+                  }
 
-                actions.starChannel(channel.id);
-              }}
-              css={(theme) =>
-                css({
-                  cursor: "pointer",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  borderRadius: "0.3rem",
-                  width: "3.3rem",
-                  height: "2.8rem",
-                  padding: 0,
-                  transition: "background 20ms ease-in",
-                  marginRight: "0.2rem",
-                  ":hover": {
-                    background: theme.colors.backgroundModifierHover,
-                  },
-                })
-              }
-            >
-              {isChannelStarred ? (
-                <StarIcon style={{ color: "rgb(202, 152, 73)" }} />
-              ) : (
-                <StrokedStarIcon />
-              )}
-            </button>
-          )}
-          {!isFetchingMembers && members.length !== 0 && (
-            <Dialog.Root>
-              <Dialog.Trigger asChild>
-                <MembersDisplayButton members={members} />
-              </Dialog.Trigger>
-              <Dialog.Portal>
-                <Dialog.Overlay
-                  css={css({
-                    padding: "2.8rem 1.5rem",
-                    "@media (min-width: 600px)": {
-                      padding: "2.8rem",
+                  actions.starChannel(channel.id);
+                }}
+                css={(theme) =>
+                  css({
+                    cursor: "pointer",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    borderRadius: "0.3rem",
+                    width: "3.3rem",
+                    height: "2.8rem",
+                    padding: 0,
+                    transition: "background 20ms ease-in",
+                    marginRight: "0.2rem",
+                    ":hover": {
+                      background: theme.colors.backgroundModifierHover,
                     },
-                  })}
-                >
-                  <MembersDirectoryDialog members={members} />
-                </Dialog.Overlay>
-              </Dialog.Portal>
-            </Dialog.Root>
+                  })
+                }
+              >
+                {isChannelStarred ? (
+                  <StarIcon style={{ color: "rgb(202, 152, 73)" }} />
+                ) : (
+                  <StrokedStarIcon />
+                )}
+              </button>
+              {!isFetchingMembers && members.length !== 0 && (
+                <Dialog.Root>
+                  <Dialog.Trigger asChild>
+                    <MembersDisplayButton members={members} />
+                  </Dialog.Trigger>
+                  <Dialog.Portal>
+                    <Dialog.Overlay
+                      css={css({
+                        padding: "2.8rem 1.5rem",
+                        "@media (min-width: 600px)": {
+                          padding: "2.8rem",
+                        },
+                      })}
+                    >
+                      <MembersDirectoryDialog members={members} />
+                    </Dialog.Overlay>
+                  </Dialog.Portal>
+                </Dialog.Root>
+              )}
+            </>
           )}
+
           {authenticationStatus === "not-authenticated" &&
             (accountAddress != null ? (
               <span
@@ -1506,6 +1509,7 @@ const Channel = ({ noSideMenu }) => {
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
+            height: "100%",
           })
         }
       >
