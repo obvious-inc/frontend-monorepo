@@ -519,7 +519,7 @@ export const ChannelItem = ({
               )}
             </>
           ) : (
-            <Avatar url={avatar} signature={name[0]} {...avatarProps} />
+            <Avatar url={avatar} signature={name?.[0]} {...avatarProps} />
           )}
         </span>
       }

@@ -22,7 +22,8 @@ const entriesById = (state = {}, action) => {
         };
       }, state);
 
-    case "server-event:channel-member-joined":
+    case "server-event:channel-user-joined":
+    case "server-event:channel-user-invited":
       return {
         ...state,
         [action.data.user.id]: action.data.user,

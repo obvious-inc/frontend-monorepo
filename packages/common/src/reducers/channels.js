@@ -64,6 +64,18 @@ const entriesById = (state = {}, action) => {
       };
     }
 
+    case "server-event:channel-user-invited": {
+      const channelId = action.data.channel;
+      return {
+        ...state,
+        [channelId]: {
+          ...state[channelId],
+          id: channelId,
+          memberUserIds: [action.data.user.id],
+        },
+      };
+    }
+
     case "logout":
       return {};
 
