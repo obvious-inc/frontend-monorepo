@@ -442,7 +442,7 @@ export const Provider = ({ children }) => {
   );
 
   const fetchClientBootData = useLatestCallback(async () => {
-    const [{ user, channels, read_states: readStates }, starredItems] =
+    const [{ user, channels, read_states: readStates, apps }, starredItems] =
       await Promise.all([authorizedFetch("/ready"), fetchStarredItems()]);
 
     dispatch({
@@ -450,6 +450,7 @@ export const Provider = ({ children }) => {
       user,
       channels,
       readStates,
+      apps,
       // starredItems,
     });
 
