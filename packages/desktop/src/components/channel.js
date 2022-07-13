@@ -13,6 +13,7 @@ import * as eth from "../utils/ethereum";
 import useGlobalMediaQueries from "../hooks/global-media-queries";
 import useWindowFocusListener from "../hooks/window-focus-listener";
 import useOnlineListener from "../hooks/window-online-listener";
+import useInterval from "../hooks/interval";
 import useWallet from "../hooks/wallet";
 import useWalletLogin from "../hooks/wallet-login";
 import stringifyMessageBlocks from "../slate/stringify";
@@ -460,12 +461,19 @@ export const ChannelBase = ({
     setPendingReplyMessageId(null);
     if (user == null) {
       if (
-        confirm(
-          "You need to verify your account to post. Press ok and sign with your wallet to proceed."
+        !confirm(
+          "You need to verify your account to post. Sign in with your wallet to proceed."
         )
       )
-        await login(walletAccountAddress);
+        return;
+
+      await login(walletAccountAddress);
       await actions.fetchMe();
+
+      if (
+        !confirm("Your account has been verified. Do you still wish to post?")
+      )
+        return;
     }
 
     return createMessage({
@@ -1329,6 +1337,17 @@ const Channel = ({ noSideMenu }) => {
   React.useEffect(() => {
     fetchMessages(params.channelId, { limit: 30 });
   }, [params.channelId, fetchMessages]);
+
+  useInterval(
+    () => {
+      fetchMessages(params.channelId, { limit: 20 });
+    },
+    {
+      delay: authenticationStatus === "not-authenticated" ? 5000 : 0,
+      requireFocus: true,
+      requireOnline: true,
+    }
+  );
 
   const headerContent = React.useMemo(
     () =>
