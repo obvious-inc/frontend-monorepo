@@ -175,4 +175,22 @@ const createNotion = () => {
   };
 };
 
+const createNounsTv = () => {
+  const baseTheme = createNotion();
+  return {
+    ...baseTheme,
+    name: "nouns.tv",
+    mainHeader: {
+      ...baseTheme,
+      height: "6rem",
+    },
+    fontStacks: {
+      ...baseTheme,
+      headers:
+        '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif',
+    },
+  };
+};
+
 export const notion = createNotion();
+export const nounsTv = createNounsTv();

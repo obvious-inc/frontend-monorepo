@@ -27,12 +27,14 @@ const commands = {
     description: "Set a new name for this channel",
     arguments: ["channel-name"],
     execute: async ({ args, editor }) => {
-      if (args.length < 1) {
+      if (context !== "dm" && args.length < 1) {
         alert('Argument "channel-name" is required');
         return;
       }
       const channelName = args.join(" ");
-      await actions.updateChannel(channelId, { name: channelName });
+      await actions.updateChannel(channelId, {
+        name: channelName.trim() === "" ? null : channelName,
+      });
       editor.clear();
     },
     exclude: () => {
@@ -61,9 +63,10 @@ const commands = {
     description: "Set a new description for this channel",
     arguments: ["channel-description"],
     execute: async ({ args, editor }) => {
-      if (args.length < 1) return;
       const description = args.join(" ");
-      await actions.updateChannel(channelId, { description });
+      await actions.updateChannel(channelId, {
+        description: description.trim() === "" ? null : description,
+      });
       editor.clear();
     },
     exclude: () => {
@@ -87,9 +90,7 @@ const commands = {
     description: "Set a new avatar for this channel",
     arguments: ["channel-avatar-url"],
     execute: async ({ args, editor }) => {
-      if (args.length < 1) return;
-      const avatar = args[0];
-      await actions.updateChannel(channelId, { avatar });
+      await actions.updateChannel(channelId, { avatar: args[0] ?? null });
       editor.clear();
     },
     exclude: () => {

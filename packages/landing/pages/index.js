@@ -22,7 +22,7 @@ export default function Home() {
       <div
         style={{
           width: "100%",
-          height: "90vh",
+          height: "100%",
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
@@ -36,7 +36,7 @@ export default function Home() {
         {/*     margin: "0 0 0.3em", */}
         {/*   }} */}
         {/* /> */}
-        <img src="logo.gif" style={{ display: "block", width: "4.8rem" }} />
+        <img src="logo.gif" style={{ display: "block", width: "6.6rem" }} />
       </div>
 
       <style jsx>

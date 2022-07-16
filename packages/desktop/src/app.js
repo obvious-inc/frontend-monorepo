@@ -47,7 +47,7 @@ import {
   Home as HomeIcon,
 } from "./components/icons";
 import useSideMenu from "./hooks/side-menu";
-import { notion as defaultTheme } from "./themes";
+import { notion as defaultTheme, nounsTv as nounsTvTheme } from "./themes";
 
 const { unique } = arrayUtils;
 
@@ -371,6 +371,9 @@ const RequireAuth = ({ children }) => {
   return children;
 };
 
+const searchParams = new URLSearchParams(location.search);
+const specifiedTheme = searchParams.get("theme");
+
 export default function Root() {
   return (
     <React.StrictMode>
@@ -383,7 +386,13 @@ export default function Root() {
                 pusherKey={process.env.PUSHER_KEY}
               >
                 <WalletLoginProvider>
-                  <ThemeProvider theme={defaultTheme}>
+                  <ThemeProvider
+                    theme={
+                      specifiedTheme === "nouns-tv"
+                        ? nounsTvTheme
+                        : defaultTheme
+                    }
+                  >
                     <Tooltip.Provider delayDuration={300}>
                       <SideMenuProvider>
                         <GlobalMediaQueriesProvider>

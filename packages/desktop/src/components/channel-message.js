@@ -1572,23 +1572,51 @@ const SystemMessage = ({ isHovering, message, reactions }) => {
           );
         }
 
-        const displayAllowedFields = ["name", "description"];
         let [field, value] = updates[0];
-        return (
-          <>
-            <MemberDisplayName
-              color={theme.colors.textNormal}
-              displayName={message.author?.displayName}
-            />{" "}
-            {displayAllowedFields.includes(field) ? (
+
+        // Nested switch case baby!
+        switch (field) {
+          case "description":
+            return (
               <>
-                set the channel {field}: {value}
+                <MemberDisplayName
+                  color={theme.colors.textNormal}
+                  displayName={message.author?.displayName}
+                />{" "}
+                {(value ?? "") === "" ? (
+                  "cleared the channel topic."
+                ) : (
+                  <>set the channel topic: {value}</>
+                )}
               </>
-            ) : (
-              <>updated the channel {field}.</>
-            )}
-          </>
-        );
+            );
+          case "name":
+            return (
+              <>
+                <MemberDisplayName
+                  color={theme.colors.textNormal}
+                  displayName={message.author?.displayName}
+                />{" "}
+                {(value ?? "") === "" ? (
+                  <>cleared the channel {field}.</>
+                ) : (
+                  <>
+                    set the channel {field}: {value}
+                  </>
+                )}
+              </>
+            );
+          default:
+            return (
+              <>
+                <MemberDisplayName
+                  color={theme.colors.textNormal}
+                  displayName={message.author?.displayName}
+                />{" "}
+                updated the channel {field}.
+              </>
+            );
+        }
       }
 
       default:
