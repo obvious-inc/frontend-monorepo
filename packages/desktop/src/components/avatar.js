@@ -87,37 +87,37 @@ const Avatar = React.forwardRef(
         </div>
       );
 
-    if (url === undefined && generatedUrl == null)
+    if (url != null || generatedUrl != null)
       return (
-        <div
+        <img
           ref={ref}
+          src={url ?? generatedUrl}
+          loading="lazy"
           css={(theme) =>
             css({
               borderRadius: borderRadius ?? theme.avatars.borderRadius,
-              background: theme.colors.backgroundModifierHover,
+              background: theme.colors.backgroundSecondary,
               height: size,
               width: size,
+              objectFit: "cover",
             })
           }
+          style={{ background }}
           {...props}
         />
       );
 
     return (
-      <img
+      <div
         ref={ref}
-        src={url ?? generatedUrl}
-        loading="lazy"
         css={(theme) =>
           css({
             borderRadius: borderRadius ?? theme.avatars.borderRadius,
-            background: theme.colors.backgroundSecondary,
+            background: theme.colors.backgroundModifierHover,
             height: size,
             width: size,
-            objectFit: "cover",
           })
         }
-        style={{ background }}
         {...props}
       />
     );
