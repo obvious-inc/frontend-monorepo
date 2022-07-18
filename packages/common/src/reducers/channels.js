@@ -138,11 +138,15 @@ const readStatesById = (state = {}, action) => {
   switch (action.type) {
     case "fetch-client-boot-data-request-successful":
     case "fetch-channels-read-states-request-successful": {
+      const channelsById = indexBy((c) => c.id, action.channels);
       const mergedReadStates = action.readStates.map((s) => {
         const existingState = state[s.channel];
         return {
           ...existingState,
           lastReadAt: s.last_read_at,
+          lastMessageAt:
+            channelsById[s.channel]?.last_message_at ??
+            existingState?.lastMessageAt,
           unreadMentionMessageIds: Array(s.mention_count).fill(null),
         };
       });
