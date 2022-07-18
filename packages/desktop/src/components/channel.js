@@ -1,7 +1,7 @@
 import throttle from "lodash.throttle";
 import React from "react";
 import { useParams } from "react-router-dom";
-import { css } from "@emotion/react";
+import { css, useTheme } from "@emotion/react";
 import {
   useAuth,
   useAppScope,
@@ -1349,6 +1349,8 @@ const Channel = ({ noSideMenu }) => {
     }
   );
 
+  const theme = useTheme();
+
   const headerContent = React.useMemo(
     () =>
       channel == null ? null : (
@@ -1497,13 +1499,18 @@ const Channel = ({ noSideMenu }) => {
                 </Button>
               </span>
             ) : (
-              <Button size="default" onClick={connectWallet}>
+              <Button
+                variant={theme.name === "nouns.tv" ? "primary" : "default"}
+                size="default"
+                onClick={connectWallet}
+              >
                 Connect wallet
               </Button>
             ))}
         </>
       ),
     [
+      theme,
       isFetchingMembers,
       accountAddress,
       accountEnsName,
