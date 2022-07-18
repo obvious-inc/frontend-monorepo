@@ -519,7 +519,12 @@ export const ChannelItem = ({
               )}
             </>
           ) : (
-            <Avatar url={avatar} signature={name?.[0]} {...avatarProps} />
+            <Avatar
+              url={avatar}
+              // Emojis: https://dev.to/acanimal/how-to-slice-or-get-symbols-from-a-unicode-string-with-emojis-in-javascript-lets-learn-how-javascript-represent-strings-h3a
+              signature={[...name][0]}
+              {...avatarProps}
+            />
           )}
         </span>
       }
