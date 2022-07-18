@@ -1,27 +1,36 @@
 import React from "react";
 import { css } from "@emotion/react";
-import generateAvatar from "../utils/avatar-generator";
+// import generateAvatar from "../utils/avatar-generator";
 
 // Caching expensive avatar generation outside of react so that we can share
 // between multiple component instances
 const cache = new Map();
 
-export const generateCachedAvatar = (walletAddress, { pixelSize }) => {
-  const size = 8;
-
-  const cacheKey = [walletAddress, pixelSize, size].join("-");
+export const generateCachedAvatar = async (walletAddress) => {
+  const cacheKey = walletAddress;
 
   if (cache.has(cacheKey)) return cache.get(cacheKey);
 
-  const avatar = generateAvatar({
-    seed: walletAddress,
-    size,
-    scale: Math.ceil((pixelSize * 2) / size),
-  });
+  const [
+    { ImageData, getNounSeedFromBlockHash, getNounData },
+    { buildSVG },
+    { utils },
+  ] = await Promise.all([
+    import("@nouns/assets"),
+    import("@nouns/sdk"),
+    import("ethers"),
+  ]);
+  const seed = getNounSeedFromBlockHash(0, utils.hexZeroPad(walletAddress, 32));
+  const { parts, background } = getNounData(seed);
 
-  cache.set(cacheKey, avatar);
+  const svgBinary = buildSVG(parts, ImageData.palette, background);
+  const svgBase64 = btoa(svgBinary);
 
-  return avatar;
+  const url = `data:image/svg+xml;base64,${svgBase64}`;
+
+  cache.set(cacheKey, url);
+
+  return url;
 };
 
 const Avatar = React.forwardRef(
@@ -31,17 +40,21 @@ const Avatar = React.forwardRef(
       walletAddress,
       signature,
       size = "2rem",
-      pixelSize = 20,
+      pixelSize,
       borderRadius,
       background,
       ...props
     },
     ref
   ) => {
-    const avatarDataUrl = React.useMemo(() => {
+    const [generatedUrl, setGeneratedUrl] = React.useState(null);
+
+    React.useEffect(() => {
       if (url != null || walletAddress == null) return;
-      return generateCachedAvatar(walletAddress, { pixelSize });
-    }, [url, walletAddress, pixelSize]);
+      generateCachedAvatar(walletAddress).then((url) => {
+        setGeneratedUrl(url);
+      });
+    }, [url, walletAddress]);
 
     if (url == null && signature != null)
       return (
@@ -74,7 +87,7 @@ const Avatar = React.forwardRef(
         </div>
       );
 
-    if (url === undefined)
+    if (url === undefined && generatedUrl == null)
       return (
         <div
           ref={ref}
@@ -93,7 +106,7 @@ const Avatar = React.forwardRef(
     return (
       <img
         ref={ref}
-        src={url ?? avatarDataUrl}
+        src={url ?? generatedUrl}
         loading="lazy"
         css={(theme) =>
           css({
