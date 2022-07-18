@@ -40,7 +40,7 @@ const Avatar = React.forwardRef(
       walletAddress,
       signature,
       size = "2rem",
-      pixelSize,
+      pixelSize, // eslint-disable-line
       borderRadius,
       background,
       ...props
