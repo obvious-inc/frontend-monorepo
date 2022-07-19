@@ -246,6 +246,7 @@ export const ChannelBase = ({
   isAdmin = false,
   createMessage,
   headerContent,
+  compact,
   noSideMenu,
 }) => {
   const { accountAddress: walletAccountAddress } = useWallet();
@@ -660,6 +661,7 @@ export const ChannelBase = ({
                   giveTouchFocus={
                     inputDeviceCanHover ? undefined : setTouchFocusedMessageId
                   }
+                  compact={compact}
                 />
               ))}
               <div css={css({ height: "1.6rem" })} />
@@ -1254,7 +1256,7 @@ const Heading = ({ component: Component = "div", children, ...props }) => (
   </Component>
 );
 
-const Channel = ({ noSideMenu }) => {
+const Channel = ({ compact, noSideMenu }) => {
   const params = useParams();
   const [searchParams] = useSearchParams();
   const { status: authenticationStatus } = useAuth();
@@ -1468,87 +1470,87 @@ const Channel = ({ noSideMenu }) => {
           )}
 
           {authenticationStatus === "not-authenticated" &&
-          loginStatus === "requesting-signature" ? (
-            <div
-              css={(theme) =>
-                css({
-                  display: "flex",
-                  color: theme.colors.textDimmed,
-                })
-              }
-            >
-              Check your wallet...{" "}
-              <Spinner size="1.8rem" style={{ marginLeft: "1rem" }} />
-            </div>
-          ) : accountAddress != null ? (
-            <span
-              css={(theme) =>
-                css({
-                  display: "flex",
-                  alignItems: "center",
-                  fontSize: theme.fontSizes.default,
-                  paddingLeft: "0.5rem",
-                  overflow: "hidden",
-                })
-              }
-            >
-              <span
-                css={css({
-                  flex: 1,
-                  minWidth: 0,
-                  userSelect: "text",
-                  cursor: "default",
-                  whiteSpace: "nowrap",
-                  overflow: "auto",
-                })}
+            (loginStatus === "requesting-signature" ? (
+              <div
+                css={(theme) =>
+                  css({
+                    display: "flex",
+                    color: theme.colors.textDimmed,
+                  })
+                }
               >
-                <a
-                  href={`https://etherscan.io/address/${accountAddress}`}
-                  rel="noreferrer"
-                  target="_blank"
-                  css={(theme) =>
-                    css({
-                      display: "inline-flex",
-                      alignItems: "center",
-                      color: theme.colors.linkColor,
-                      ":hover": { color: theme.colors.linkColorHighlight },
-                      ":hover [data-avatar]": { opacity: 0.9 },
-                    })
-                  }
+                Check your wallet...{" "}
+                <Spinner size="1.8rem" style={{ marginLeft: "1rem" }} />
+              </div>
+            ) : accountAddress != null ? (
+              <span
+                css={(theme) =>
+                  css({
+                    display: "flex",
+                    alignItems: "center",
+                    fontSize: theme.fontSizes.default,
+                    paddingLeft: "0.5rem",
+                    overflow: "hidden",
+                  })
+                }
+              >
+                <span
+                  css={css({
+                    flex: 1,
+                    minWidth: 0,
+                    userSelect: "text",
+                    cursor: "default",
+                    whiteSpace: "nowrap",
+                    overflow: "auto",
+                  })}
                 >
-                  {accountEnsName}{" "}
-                  {accountEnsName == null ? (
-                    eth.truncateAddress(accountAddress)
-                  ) : (
-                    <>({eth.truncateAddress(accountAddress)})</>
-                  )}
-                  <Avatar
-                    data-avatar
-                    walletAddress={accountAddress}
-                    size="2.6rem"
-                    style={{ marginLeft: "0.5rem" }}
-                  />
-                </a>
+                  <a
+                    href={`https://etherscan.io/address/${accountAddress}`}
+                    rel="noreferrer"
+                    target="_blank"
+                    css={(theme) =>
+                      css({
+                        display: "inline-flex",
+                        alignItems: "center",
+                        color: theme.colors.linkColor,
+                        ":hover": { color: theme.colors.linkColorHighlight },
+                        ":hover [data-avatar]": { opacity: 0.9 },
+                      })
+                    }
+                  >
+                    {accountEnsName}{" "}
+                    {accountEnsName == null ? (
+                      eth.truncateAddress(accountAddress)
+                    ) : (
+                      <>({eth.truncateAddress(accountAddress)})</>
+                    )}
+                    <Avatar
+                      data-avatar
+                      walletAddress={accountAddress}
+                      size="2.6rem"
+                      style={{ marginLeft: "0.5rem" }}
+                    />
+                  </a>
+                </span>
+                <Button
+                  variant={theme.name === "nouns.tv" ? "primary" : "default"}
+                  onClick={() => {
+                    login(accountAddress);
+                  }}
+                  style={{ marginLeft: "1.2rem" }}
+                >
+                  Verify account
+                </Button>
               </span>
+            ) : (
               <Button
                 variant={theme.name === "nouns.tv" ? "primary" : "default"}
-                onClick={() => {
-                  login(accountAddress);
-                }}
-                style={{ marginLeft: "1.2rem" }}
+                size="default"
+                onClick={connectWallet}
               >
-                Verify account
+                Connect wallet
               </Button>
-            </span>
-          ) : (
-            <Button
-              variant={theme.name === "nouns.tv" ? "primary" : "default"}
-              size="default"
-              onClick={connectWallet}
-            >
-              Connect wallet
-            </Button>
-          )}
+            ))}
         </>
       ),
     [
@@ -1612,6 +1614,7 @@ const Channel = ({ noSideMenu }) => {
 
   return (
     <ChannelBase
+      compact={compact}
       noSideMenu={noSideMenu}
       channel={channel}
       members={members}
@@ -2043,5 +2046,5 @@ const MembersDirectoryDialog = ({ members }) => {
 export default (props) => {
   const { status } = useAuth();
   if (status === "loading") return null;
-  return <Channel {...props} />;
+  return <Channel {...props} compact />;
 };
