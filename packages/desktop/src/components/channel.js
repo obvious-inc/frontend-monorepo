@@ -1,6 +1,6 @@
 import throttle from "lodash.throttle";
 import React from "react";
-import { useParams } from "react-router-dom";
+import { useParams, useSearchParams } from "react-router-dom";
 import { css, useTheme } from "@emotion/react";
 import {
   useAuth,
@@ -1256,6 +1256,7 @@ const Heading = ({ component: Component = "div", children, ...props }) => (
 
 const Channel = ({ noSideMenu }) => {
   const params = useParams();
+  const [searchParams] = useSearchParams();
   const { status: authenticationStatus } = useAuth();
   const { state, actions } = useAppScope();
   const { isFloating: isSideMenuFloating } = useSideMenu();
@@ -1357,17 +1358,24 @@ const Channel = ({ noSideMenu }) => {
         <>
           {!isMenuTogglingEnabled &&
             (channel.avatar == null ? (
-              <div
-                css={(theme) =>
-                  css({ color: theme.colors.textMuted, marginRight: "0.6rem" })
-                }
-              >
-                {channel.kind === "dm" ? (
-                  <AtSignIcon style={{ width: "2.2rem" }} />
-                ) : (
-                  <HashIcon style={{ width: "1.6rem" }} />
+              <>
+                {searchParams.get("mode") !== "embedded" && (
+                  <div
+                    css={(theme) =>
+                      css({
+                        color: theme.colors.textMuted,
+                        marginRight: "0.6rem",
+                      })
+                    }
+                  >
+                    {channel.kind === "dm" ? (
+                      <AtSignIcon style={{ width: "2.2rem" }} />
+                    ) : (
+                      <HashIcon style={{ width: "1.6rem" }} />
+                    )}
+                  </div>
                 )}
-              </div>
+              </>
             ) : (
               <a href={channel.avatar} rel="noreferrer" target="_blank">
                 <Avatar
@@ -1401,6 +1409,7 @@ const Channel = ({ noSideMenu }) => {
               </div>
             )}
           </div>
+
           {user != null && (
             <>
               <button
@@ -1463,21 +1472,35 @@ const Channel = ({ noSideMenu }) => {
               <span
                 css={(theme) =>
                   css({
-                    color: theme.colors.textDimmed,
+                    display: "flex",
+                    alignItems: "center",
                     fontSize: theme.fontSizes.default,
+                    paddingLeft: "0.5rem",
+                    overflow: "hidden",
                   })
                 }
               >
-                <span css={css({ userSelect: "text", cursor: "default" })}>
-                  Connected as{" "}
+                <span
+                  css={css({
+                    flex: 1,
+                    minWidth: 0,
+                    userSelect: "text",
+                    cursor: "default",
+                    whiteSpace: "nowrap",
+                    overflow: "auto",
+                  })}
+                >
                   <a
                     href={`https://etherscan.io/address/${accountAddress}`}
                     rel="noreferrer"
                     target="_blank"
                     css={(theme) =>
                       css({
+                        display: "inline-flex",
+                        alignItems: "center",
                         color: theme.colors.linkColor,
                         ":hover": { color: theme.colors.linkColorHighlight },
+                        ":hover [data-avatar]": { opacity: 0.9 },
                       })
                     }
                   >
@@ -1487,15 +1510,22 @@ const Channel = ({ noSideMenu }) => {
                     ) : (
                       <>({eth.truncateAddress(accountAddress)})</>
                     )}
+                    <Avatar
+                      data-avatar
+                      walletAddress={accountAddress}
+                      size="2.6rem"
+                      style={{ marginLeft: "0.5rem" }}
+                    />
                   </a>
                 </span>
                 <Button
+                  variant={theme.name === "nouns.tv" ? "primary" : "default"}
                   onClick={() => {
                     login(accountAddress);
                   }}
                   style={{ marginLeft: "1.2rem" }}
                 >
-                  Verify address
+                  Verify account
                 </Button>
               </span>
             ) : (
@@ -1610,6 +1640,8 @@ export const Header = ({ noSideMenu, children }) => {
           alignItems: "center",
           boxShadow: theme.mainHeader.shadow,
           WebkitAppRegion: isNative ? "drag" : undefined,
+          minWidth: 0,
+          width: "100%",
         })
       }
     >

@@ -181,13 +181,31 @@ const createNounsTv = () => {
     ...baseTheme,
     name: "nouns.tv",
     mainHeader: {
-      ...baseTheme,
+      ...baseTheme.mainHeader,
       height: "6rem",
     },
+    fontSizes: {
+      ...baseTheme.fontSizes,
+      // small: "1.2rem",
+      // default: "1.4rem",
+      // huge: "3.2rem",
+      // headerDefault: "2rem",
+      channelMessages: "1.5rem",
+      // menus: "1.4rem",
+    },
     fontStacks: {
-      ...baseTheme,
+      ...baseTheme.fontStacks,
+      // default:
+      //   'Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif',
       headers:
         '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif',
+    },
+    text: {
+      ...baseTheme.text,
+      weights: {
+        ...baseTheme.text.weights,
+        header: "600",
+      },
     },
   };
 };
