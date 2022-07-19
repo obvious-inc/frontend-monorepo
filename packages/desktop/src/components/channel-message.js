@@ -429,9 +429,8 @@ const ChannelMessage = React.memo(function ChannelMessage_({
             <div>
               {!showSimplifiedMessage && (
                 <MessageHeader
-                  author={message.author}
+                  authorUser={message.author}
                   createdAt={createdAtDate}
-                  authorUserId={message.authorUserId}
                   isOwnMessage={isOwnMessage}
                 />
               )}
@@ -726,6 +725,38 @@ const MemberDisplayName = React.forwardRef(
   )
 );
 
+const MemberDisplayNameWithPopover = React.forwardRef(
+  ({ user, color, popoverProps, ...props }, ref) => (
+    <Popover.Root>
+      <Popover.Trigger asChild>
+        <MemberDisplayName
+          ref={ref}
+          displayName={user?.displayName}
+          color={color}
+          {...props}
+        />
+      </Popover.Trigger>
+      <Popover.Content
+        collisionTolerance={5}
+        side="right"
+        sideOffset={5}
+        align="center"
+        {...popoverProps}
+      >
+        {user != null && (
+          <ProfilePreview
+            profilePicture={user.profilePicture}
+            displayName={user.displayName}
+            walletAddress={user.walletAddress}
+            onlineStatus={user.onlineStatus}
+            userId={user.id}
+          />
+        )}
+      </Popover.Content>
+    </Popover.Root>
+  )
+);
+
 const AppDisplayName = React.forwardRef(
   ({ displayName, color, ...props }, ref) => (
     <div
@@ -762,7 +793,7 @@ const AppDisplayName = React.forwardRef(
   )
 );
 
-const MessageHeader = ({ author, createdAt, authorUserId }) => (
+const MessageHeader = ({ authorUser, createdAt }) => (
   <div
     css={css`
       display: grid;
@@ -776,29 +807,9 @@ const MessageHeader = ({ author, createdAt, authorUserId }) => (
       min-height: 1.9rem;
     `}
   >
-    {author != null && (
+    {authorUser != null && (
       <>
-        <Popover.Root>
-          <Popover.Trigger asChild>
-            <MemberDisplayName displayName={author?.displayName} />
-          </Popover.Trigger>
-          <Popover.Content
-            collisionTolerance={5}
-            side="right"
-            sideOffset={5}
-            align="center"
-          >
-            {author != null && (
-              <ProfilePreview
-                profilePicture={author.profilePicture}
-                displayName={author.displayName}
-                walletAddress={author.walletAddress}
-                onlineStatus={author.onlineStatus}
-                userId={authorUserId}
-              />
-            )}
-          </Popover.Content>
-        </Popover.Root>
+        <MemberDisplayNameWithPopover user={authorUser} />
 
         <TinyMutedText>
           <FormattedDateWithTooltip
@@ -811,7 +822,7 @@ const MessageHeader = ({ author, createdAt, authorUserId }) => (
           />
         </TinyMutedText>
 
-        {author?.onlineStatus === "online" && (
+        {authorUser?.onlineStatus === "online" && (
           <Tooltip.Root>
             <Tooltip.Trigger asChild>
               <div css={css({ padding: "0.5rem 0.2rem" })}>
@@ -1521,7 +1532,6 @@ const RepliedMessage = ({ message, getMember }) => {
 };
 
 const SystemMessage = ({ isHovering, message, reactions }) => {
-  const theme = useTheme();
   const content = React.useMemo(() => {
     switch (message.type) {
       case "user-invited":
@@ -1534,27 +1544,17 @@ const SystemMessage = ({ isHovering, message, reactions }) => {
 
         return (
           <>
-            <MemberDisplayName
-              color={theme.colors.textNormal}
-              displayName={message.inviter?.displayName}
-            />{" "}
-            added{" "}
-            <MemberDisplayName
-              color={theme.colors.textNormal}
-              displayName={message.author?.displayName}
-            />{" "}
-            to the channel.
+            <MemberDisplayNameWithPopover user={message.inviter} /> added{" "}
+            <MemberDisplayNameWithPopover user={message.author} /> to the
+            channel.
           </>
         );
       case "member-joined":
         if (message.author?.displayName == null) return null;
         return (
           <>
-            <MemberDisplayName
-              color={theme.colors.textNormal}
-              displayName={message.author?.displayName}
-            />{" "}
-            joined the channel. Welcome!
+            <MemberDisplayNameWithPopover user={message.author} /> joined the
+            channel. Welcome!
           </>
         );
 
@@ -1563,11 +1563,8 @@ const SystemMessage = ({ isHovering, message, reactions }) => {
         if (updates.length == 0 || updates.length > 1) {
           return (
             <>
-              <MemberDisplayName
-                color={theme.colors.textNormal}
-                displayName={message.author?.displayName}
-              />{" "}
-              updated the channel.
+              <MemberDisplayNameWithPopover user={message.author} /> updated the
+              channel.
             </>
           );
         }
@@ -1579,10 +1576,7 @@ const SystemMessage = ({ isHovering, message, reactions }) => {
           case "description":
             return (
               <>
-                <MemberDisplayName
-                  color={theme.colors.textNormal}
-                  displayName={message.author?.displayName}
-                />{" "}
+                <MemberDisplayNameWithPopover user={message.author} />{" "}
                 {(value ?? "") === "" ? (
                   "cleared the channel topic."
                 ) : (
@@ -1593,10 +1587,7 @@ const SystemMessage = ({ isHovering, message, reactions }) => {
           case "name":
             return (
               <>
-                <MemberDisplayName
-                  color={theme.colors.textNormal}
-                  displayName={message.author?.displayName}
-                />{" "}
+                <MemberDisplayNameWithPopover user={message.author} />{" "}
                 {(value ?? "") === "" ? (
                   <>cleared the channel {field}.</>
                 ) : (
@@ -1609,11 +1600,8 @@ const SystemMessage = ({ isHovering, message, reactions }) => {
           default:
             return (
               <>
-                <MemberDisplayName
-                  color={theme.colors.textNormal}
-                  displayName={message.author?.displayName}
-                />{" "}
-                updated the channel {field}.
+                <MemberDisplayNameWithPopover user={message.author} /> updated
+                the channel {field}.
               </>
             );
         }
@@ -1622,7 +1610,7 @@ const SystemMessage = ({ isHovering, message, reactions }) => {
       default:
         throw new Error();
     }
-  }, [message, theme]);
+  }, [message]);
 
   return (
     <div
