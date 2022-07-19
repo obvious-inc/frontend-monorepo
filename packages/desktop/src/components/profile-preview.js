@@ -17,7 +17,7 @@ const ProfilePreview = React.forwardRef(
     const { actions, state } = useAppScope();
     const user = state.selectMe();
 
-    const isLoggedInUser = user.id === userId;
+    const isLoggedInUser = user != null && user.id === userId;
 
     const isOnline = onlineStatus === "online";
 

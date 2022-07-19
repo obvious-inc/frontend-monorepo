@@ -81,6 +81,8 @@ const ChannelMessage = React.memo(function ChannelMessage_({
     !message.isAppMessage &&
     user?.id === message.authorUserId;
 
+  const allowDirectMessages = user != null;
+
   const createdAtDate = React.useMemo(
     () => new Date(message.created_at),
     [message.created_at]
@@ -185,6 +187,7 @@ const ChannelMessage = React.memo(function ChannelMessage_({
             {
               onSelect: sendDirectMessageToAuthor,
               label: "Send direct message",
+              disabled: !allowDirectMessages,
               visible:
                 !isOwnMessage && !(isDirectMessage && members.length <= 2),
             },
@@ -198,6 +201,7 @@ const ChannelMessage = React.memo(function ChannelMessage_({
           ].filter((i) => i.visible == null || i.visible),
     [
       allowEdit,
+      allowDirectMessages,
       isAdmin,
       isDirectMessage,
       isOwnMessage,
@@ -299,6 +303,7 @@ const ChannelMessage = React.memo(function ChannelMessage_({
           <MessageToolbar
             allowReplies={!isOwnMessage && !message.isSystemMessage}
             allowEdit={allowEdit}
+            allowReactions={user != null}
             initReply={initReply}
             initEdit={initEdit}
             addReaction={addReaction}
@@ -1180,6 +1185,7 @@ const MessageToolbar = React.memo(
     dropdownItems = [],
     allowReplies,
     allowEdit,
+    allowReactions,
     initReply,
     initEdit,
     addReaction,
@@ -1198,6 +1204,7 @@ const MessageToolbar = React.memo(
             <Toolbar.Button
               asChild
               aria-label="Add reaction"
+              disabled={!allowReactions}
               style={{ position: "relative" }}
             >
               <Popover.Trigger>

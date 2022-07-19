@@ -1277,7 +1277,7 @@ const Channel = ({ noSideMenu }) => {
 
   const {
     login,
-    // status: loginStatus,
+    status: loginStatus,
     // error: loginError
   } = useWalletLogin();
 
@@ -1468,78 +1468,92 @@ const Channel = ({ noSideMenu }) => {
           )}
 
           {authenticationStatus === "not-authenticated" &&
-            (accountAddress != null ? (
+          loginStatus === "requesting-signature" ? (
+            <div
+              css={(theme) =>
+                css({
+                  display: "flex",
+                  color: theme.colors.textDimmed,
+                })
+              }
+            >
+              Check your wallet...{" "}
+              <Spinner size="1.8rem" style={{ marginLeft: "1rem" }} />
+            </div>
+          ) : accountAddress != null ? (
+            <span
+              css={(theme) =>
+                css({
+                  display: "flex",
+                  alignItems: "center",
+                  fontSize: theme.fontSizes.default,
+                  paddingLeft: "0.5rem",
+                  overflow: "hidden",
+                })
+              }
+            >
               <span
-                css={(theme) =>
-                  css({
-                    display: "flex",
-                    alignItems: "center",
-                    fontSize: theme.fontSizes.default,
-                    paddingLeft: "0.5rem",
-                    overflow: "hidden",
-                  })
-                }
+                css={css({
+                  flex: 1,
+                  minWidth: 0,
+                  userSelect: "text",
+                  cursor: "default",
+                  whiteSpace: "nowrap",
+                  overflow: "auto",
+                })}
               >
-                <span
-                  css={css({
-                    flex: 1,
-                    minWidth: 0,
-                    userSelect: "text",
-                    cursor: "default",
-                    whiteSpace: "nowrap",
-                    overflow: "auto",
-                  })}
+                <a
+                  href={`https://etherscan.io/address/${accountAddress}`}
+                  rel="noreferrer"
+                  target="_blank"
+                  css={(theme) =>
+                    css({
+                      display: "inline-flex",
+                      alignItems: "center",
+                      color: theme.colors.linkColor,
+                      ":hover": { color: theme.colors.linkColorHighlight },
+                      ":hover [data-avatar]": { opacity: 0.9 },
+                    })
+                  }
                 >
-                  <a
-                    href={`https://etherscan.io/address/${accountAddress}`}
-                    rel="noreferrer"
-                    target="_blank"
-                    css={(theme) =>
-                      css({
-                        display: "inline-flex",
-                        alignItems: "center",
-                        color: theme.colors.linkColor,
-                        ":hover": { color: theme.colors.linkColorHighlight },
-                        ":hover [data-avatar]": { opacity: 0.9 },
-                      })
-                    }
-                  >
-                    {accountEnsName}{" "}
-                    {accountEnsName == null ? (
-                      eth.truncateAddress(accountAddress)
-                    ) : (
-                      <>({eth.truncateAddress(accountAddress)})</>
-                    )}
-                    <Avatar
-                      data-avatar
-                      walletAddress={accountAddress}
-                      size="2.6rem"
-                      style={{ marginLeft: "0.5rem" }}
-                    />
-                  </a>
-                </span>
-                <Button
-                  variant={theme.name === "nouns.tv" ? "primary" : "default"}
-                  onClick={() => {
-                    login(accountAddress);
-                  }}
-                  style={{ marginLeft: "1.2rem" }}
-                >
-                  Verify account
-                </Button>
+                  {accountEnsName}{" "}
+                  {accountEnsName == null ? (
+                    eth.truncateAddress(accountAddress)
+                  ) : (
+                    <>({eth.truncateAddress(accountAddress)})</>
+                  )}
+                  <Avatar
+                    data-avatar
+                    walletAddress={accountAddress}
+                    size="2.6rem"
+                    style={{ marginLeft: "0.5rem" }}
+                  />
+                </a>
               </span>
-            ) : (
               <Button
                 variant={theme.name === "nouns.tv" ? "primary" : "default"}
-                size="default"
-                onClick={connectWallet}
+                onClick={() => {
+                  login(accountAddress);
+                }}
+                style={{ marginLeft: "1.2rem" }}
               >
-                Connect wallet
+                Verify account
               </Button>
-            ))}
+            </span>
+          ) : (
+            <Button
+              variant={theme.name === "nouns.tv" ? "primary" : "default"}
+              size="default"
+              onClick={connectWallet}
+            >
+              Connect wallet
+            </Button>
+          )}
         </>
       ),
     [
+      loginStatus,
+      searchParams,
       theme,
       isFetchingMembers,
       accountAddress,
