@@ -7,6 +7,7 @@ import useWallet from "../hooks/wallet";
 import useWalletLogin from "../hooks/wallet-login";
 import * as Tooltip from "../components/tooltip";
 import Spinner from "../components/spinner";
+import Avatar from "../components/avatar";
 
 const SignInScreen = () => {
   const {
@@ -194,6 +195,11 @@ const SignInScreen = () => {
             </>
           ) : (
             <>
+              <Avatar
+                walletAddress={accountAddress}
+                size="10rem"
+                style={{ margin: "0 auto 3rem" }}
+              />
               <Button onClick={() => login(accountAddress)}>
                 Authenticate with wallet signature
               </Button>
@@ -216,7 +222,9 @@ const SignInScreen = () => {
                       css={(theme) =>
                         css({
                           color: theme.colors.linkColor,
-                          ":hover": { color: theme.colors.linkColorHighlight },
+                          ":hover": {
+                            color: theme.colors.linkColorHighlight,
+                          },
                         })
                       }
                     >
