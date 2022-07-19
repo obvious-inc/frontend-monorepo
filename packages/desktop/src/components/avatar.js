@@ -1,3 +1,4 @@
+import { useEnsAvatar } from "wagmi";
 import React from "react";
 import { css } from "@emotion/react";
 // import generateAvatar from "../utils/avatar-generator";
@@ -33,6 +34,20 @@ export const generateCachedAvatar = async (walletAddress) => {
   return url;
 };
 
+const usePlaceholderAvatar = (walletAddress, { enabled = true } = {}) => {
+  const [generatedPlaceholderAvatarUrl, setGeneratedPlaceholderAvatarUrl] =
+    React.useState(null);
+
+  React.useEffect(() => {
+    if (!enabled || walletAddress == null) return;
+    generateCachedAvatar(walletAddress).then((url) => {
+      setGeneratedPlaceholderAvatarUrl(url);
+    });
+  }, [enabled, walletAddress]);
+
+  return generatedPlaceholderAvatarUrl;
+};
+
 const Avatar = React.forwardRef(
   (
     {
@@ -47,81 +62,104 @@ const Avatar = React.forwardRef(
     },
     ref
   ) => {
-    const [generatedUrl, setGeneratedUrl] = React.useState(null);
+    const placeholderAvatarUrl = usePlaceholderAvatar(walletAddress, {
+      enabled: url == null,
+    });
 
-    React.useEffect(() => {
-      if (url != null || walletAddress == null) return;
-      generateCachedAvatar(walletAddress).then((url) => {
-        setGeneratedUrl(url);
-      });
-    }, [url, walletAddress]);
+    const { data: ensAvatarUrl, isLoading: isLoadingEnsAvatar } = useEnsAvatar({
+      addressOrName: walletAddress,
+      enabled: url == null && walletAddress != null,
+    });
 
-    if (url == null && signature != null)
-      return (
-        <div
-          ref={ref}
-          css={(theme) =>
-            css({
-              borderRadius: borderRadius ?? theme.avatars.borderRadius,
-              background: theme.colors.backgroundModifierHover,
-              height: size,
-              width: size,
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-            })
-          }
-          {...props}
-        >
+    const state =
+      url != null
+        ? "custom-avatar"
+        : signature != null
+        ? "signature"
+        : isLoadingEnsAvatar || placeholderAvatarUrl == null
+        ? "blank"
+        : ensAvatarUrl != null
+        ? "ens-avatar"
+        : "placeholder-avatar";
+
+    switch (state) {
+      case "blank":
+        return (
+          <Blank ref={ref} size={size} borderRadius={borderRadius} {...props} />
+        );
+
+      case "signature":
+        return (
           <div
+            ref={ref}
             css={(theme) =>
               css({
-                textTransform: "uppercase",
-                fontSize: "1.1rem",
-                color: theme.colors.textDimmed,
+                borderRadius: borderRadius ?? theme.avatars.borderRadius,
+                background: theme.colors.backgroundModifierHover,
+                height: size,
+                width: size,
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
               })
             }
+            {...props}
           >
-            {signature}
+            <div
+              css={(theme) =>
+                css({
+                  textTransform: "uppercase",
+                  fontSize: "1.1rem",
+                  color: theme.colors.textDimmed,
+                })
+              }
+            >
+              {signature}
+            </div>
           </div>
-        </div>
-      );
+        );
 
-    if (url != null || generatedUrl != null)
-      return (
-        <img
-          ref={ref}
-          src={url ?? generatedUrl}
-          loading="lazy"
-          css={(theme) =>
-            css({
-              borderRadius: borderRadius ?? theme.avatars.borderRadius,
-              background: theme.colors.backgroundSecondary,
-              height: size,
-              width: size,
-              objectFit: "cover",
-            })
-          }
-          style={{ background }}
-          {...props}
-        />
-      );
+      case "custom-avatar":
+      case "ens-avatar":
+      case "placeholder-avatar":
+        return (
+          <img
+            ref={ref}
+            src={url ?? ensAvatarUrl ?? placeholderAvatarUrl}
+            loading="lazy"
+            css={(theme) =>
+              css({
+                borderRadius: borderRadius ?? theme.avatars.borderRadius,
+                background: theme.colors.backgroundSecondary,
+                height: size,
+                width: size,
+                objectFit: "cover",
+              })
+            }
+            style={{ background }}
+            {...props}
+          />
+        );
 
-    return (
-      <div
-        ref={ref}
-        css={(theme) =>
-          css({
-            borderRadius: borderRadius ?? theme.avatars.borderRadius,
-            background: theme.colors.backgroundModifierHover,
-            height: size,
-            width: size,
-          })
-        }
-        {...props}
-      />
-    );
+      default:
+        throw new Error();
+    }
   }
 );
+
+const Blank = React.forwardRef(({ size, borderRadius, ...props }, ref) => (
+  <div
+    ref={ref}
+    css={(theme) =>
+      css({
+        borderRadius: borderRadius ?? theme.avatars.borderRadius,
+        background: theme.colors.backgroundModifierHover,
+        height: size,
+        width: size,
+      })
+    }
+    {...props}
+  />
+));
 
 export default Avatar;
