@@ -1686,7 +1686,7 @@ const SystemMessage = ({ isHovering, message, compact, reactions }) => {
             transition: "0.15s opacity",
           })}
         >
-          <TinyMutedText nowrap>
+          <TinyMutedText nowrap style={{ float: "right" }}>
             <FormattedDate
               value={new Date(message.created_at)}
               hour="numeric"
@@ -1708,11 +1708,7 @@ const SystemMessage = ({ isHovering, message, compact, reactions }) => {
       )}
 
       <div>
-        <div
-          css={(theme) =>
-            css({ color: theme.colors.channelDefault, height: "2.35rem" })
-          }
-        >
+        <div css={(theme) => css({ color: theme.colors.channelDefault })}>
           {content}
         </div>
 
@@ -1764,7 +1760,7 @@ const AppMessage = ({
             transition: "0.15s opacity",
           })}
         >
-          <TinyMutedText nowrap>
+          <TinyMutedText nowrap style={{ float: "right" }}>
             <FormattedDate
               value={new Date(message.created_at)}
               hour="numeric"
