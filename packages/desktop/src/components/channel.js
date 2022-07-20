@@ -2046,5 +2046,5 @@ const MembersDirectoryDialog = ({ members }) => {
 export default (props) => {
   const { status } = useAuth();
   if (status === "loading") return null;
-  return <Channel {...props} compact />;
+  return <Channel {...props} compact={location.search.includes("compact=1")} />;
 };

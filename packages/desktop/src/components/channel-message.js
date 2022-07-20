@@ -41,6 +41,7 @@ const ONE_MINUTE_IN_MILLIS = 1000 * 60;
 
 const AVATAR_SIZE = "3.8rem";
 const GUTTER_SIZE = "1.2rem";
+const COMPACT_GUTTER_SIZE = "1rem";
 
 const ChannelMessage = React.memo(function ChannelMessage_({
   message,
@@ -53,6 +54,7 @@ const ChannelMessage = React.memo(function ChannelMessage_({
   isAdmin,
   hasTouchFocus,
   giveTouchFocus,
+  compact,
 }) {
   const editInputRef = React.useRef();
   const containerRef = React.useRef();
@@ -267,9 +269,10 @@ const ChannelMessage = React.memo(function ChannelMessage_({
           : showAsFocused
           ? theme.colors.messageHoverBackground
           : undefined,
-        padding: showSimplifiedMessage
-          ? "0.5rem 1.6rem"
-          : "0.7rem 1.6rem 0.3rem",
+        padding:
+          showSimplifiedMessage || compact
+            ? "0.5rem 1.6rem"
+            : "0.7rem 1.6rem 0.3rem",
       }}
       css={(theme) =>
         css({
@@ -317,6 +320,7 @@ const ChannelMessage = React.memo(function ChannelMessage_({
 
       {message.isSystemMessage ? (
         <SystemMessage
+          compact={compact}
           isHovering={isHovering}
           message={message}
           reactions={
@@ -332,6 +336,7 @@ const ChannelMessage = React.memo(function ChannelMessage_({
         />
       ) : message.isAppMessage ? (
         <AppMessage
+          compact={compact}
           isHovering={isHovering}
           message={message}
           onClickInteractiveElement={onClickInteractiveElement}
@@ -360,20 +365,22 @@ const ChannelMessage = React.memo(function ChannelMessage_({
               display: "grid",
               gridTemplateColumns: `${AVATAR_SIZE} minmax(0, 1fr)`,
               alignItems: "flex-start",
-              gridGap: GUTTER_SIZE,
+              gridGap: compact ? COMPACT_GUTTER_SIZE : GUTTER_SIZE,
             })}
           >
-            {showSimplifiedMessage ? (
+            {showSimplifiedMessage || compact ? (
               <div
                 css={css({
                   paddingTop: "0.5rem",
-                  textAlign: "right",
                   transition: "0.15s opacity",
                   cursor: "default",
                 })}
-                style={{ opacity: isHovering ? 1 : 0 }}
+                style={{
+                  opacity:
+                    (compact && !showSimplifiedMessage) || isHovering ? 1 : 0,
+                }}
               >
-                <TinyMutedText nowrap>
+                <TinyMutedText nowrap style={{ float: "right" }}>
                   <FormattedDateWithTooltip
                     value={new Date(message.created_at)}
                     hour="numeric"
@@ -432,12 +439,56 @@ const ChannelMessage = React.memo(function ChannelMessage_({
             )}
 
             <div>
-              {!showSimplifiedMessage && (
-                <MessageHeader
-                  authorUser={message.author}
-                  createdAt={createdAtDate}
-                  isOwnMessage={isOwnMessage}
-                />
+              {compact ? (
+                <Popover.Root modal>
+                  <Popover.Trigger asChild>
+                    <div
+                      css={css({
+                        display: "inline",
+                        cursor: "pointer",
+                        ":hover [data-name]": { textDecoration: "underline" },
+                      })}
+                    >
+                      <Avatar
+                        url={message.author?.profilePicture.small}
+                        walletAddress={message.author?.walletAddress}
+                        size="2rem"
+                        style={{
+                          display: "inline",
+                          verticalAlign: "sub",
+                          marginRight: "0.6rem",
+                        }}
+                      />
+                      <MemberDisplayName
+                        data-name
+                        displayName={message.author?.displayName}
+                        style={{ marginRight: "1rem" }}
+                      />
+                    </div>
+                  </Popover.Trigger>
+                  <Popover.Content
+                    collisionTolerance={5}
+                    side="right"
+                    sideOffset={5}
+                    align="center"
+                  >
+                    <ProfilePreview
+                      profilePicture={message.author?.profilePicture}
+                      displayName={message.author?.displayName}
+                      walletAddress={message.author?.walletAddress}
+                      onlineStatus={message.author?.onlineStatus}
+                      userId={message.authorUserId}
+                    />
+                  </Popover.Content>
+                </Popover.Root>
+              ) : (
+                !showSimplifiedMessage && (
+                  <MessageHeader
+                    authorUser={message.author}
+                    createdAt={createdAtDate}
+                    isOwnMessage={isOwnMessage}
+                  />
+                )
               )}
 
               {isEditing ? (
@@ -471,6 +522,7 @@ const ChannelMessage = React.memo(function ChannelMessage_({
                 />
               ) : (
                 <RichText
+                  compact={compact}
                   blocks={message.content}
                   onClickInteractiveElement={onClickInteractiveElement}
                   getMember={getMember}
@@ -1457,8 +1509,6 @@ const RepliedMessage = ({ message, getMember }) => {
             url={authorMember?.profilePicture.small}
             walletAddress={authorMember?.walletAddress}
             size="1.4rem"
-            pixelSize={14}
-            borderRadius="0.2rem"
           />
         )}
 
@@ -1538,7 +1588,7 @@ const RepliedMessage = ({ message, getMember }) => {
   );
 };
 
-const SystemMessage = ({ isHovering, message, reactions }) => {
+const SystemMessage = ({ isHovering, message, compact, reactions }) => {
   const content = React.useMemo(() => {
     switch (message.type) {
       case "user-invited":
@@ -1625,7 +1675,7 @@ const SystemMessage = ({ isHovering, message, reactions }) => {
         display: "grid",
         gridTemplateColumns: `${AVATAR_SIZE} minmax(0, 1fr)`,
         alignItems: "flex-start",
-        gridGap: GUTTER_SIZE,
+        gridGap: compact ? COMPACT_GUTTER_SIZE : GUTTER_SIZE,
       })}
     >
       {isHovering ? (
@@ -1673,6 +1723,7 @@ const SystemMessage = ({ isHovering, message, reactions }) => {
 };
 
 const AppMessage = ({
+  compact,
   isHovering,
   message,
   reactions,
@@ -1702,7 +1753,7 @@ const AppMessage = ({
         display: "grid",
         gridTemplateColumns: `${AVATAR_SIZE} minmax(0, 1fr)`,
         alignItems: "flex-start",
-        gridGap: GUTTER_SIZE,
+        gridGap: compact ? COMPACT_GUTTER_SIZE : GUTTER_SIZE,
       })}
     >
       {isHovering ? (
@@ -1742,7 +1793,7 @@ const AppMessage = ({
   );
 };
 
-const TinyMutedText = ({ children, nowrap = false }) => (
+const TinyMutedText = ({ children, nowrap = false, style }) => (
   <div
     css={(theme) =>
       css({
@@ -1750,7 +1801,7 @@ const TinyMutedText = ({ children, nowrap = false }) => (
         fontSize: theme.fontSizes.micro,
       })
     }
-    style={{ whiteSpace: nowrap ? "nowrap" : undefined }}
+    style={{ whiteSpace: nowrap ? "nowrap" : undefined, ...style }}
   >
     {children}
   </div>

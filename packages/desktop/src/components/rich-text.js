@@ -8,12 +8,15 @@ const SINGLE_IMAGE_ATTACHMENT_MAX_HEIGHT = 280;
 const MULTI_IMAGE_ATTACHMENT_MAX_WIDTH = 280;
 const MULTI_IMAGE_ATTACHMENT_MAX_HEIGHT = 240;
 
-export const createCss = (theme, { inline = false } = {}) => ({
-  display: inline ? "inline" : "block",
+export const createCss = (theme, { inline = false, compact = false } = {}) => ({
+  display: inline || compact ? "inline" : "block",
   whiteSpace: inline ? "inherit" : "pre-wrap",
   wordBreak: "break-word",
-  p: { margin: "0", display: inline ? "inline" : undefined },
+  p: { margin: "0", display: inline || compact ? "inline" : undefined },
   "p + p": { marginTop: "1rem" },
+  "p + p:before": compact
+    ? { display: "block", content: '""', height: "1rem" }
+    : undefined,
   em: { fontStyle: "italic" },
   strong: { fontWeight: "600" },
   a: {
@@ -52,6 +55,7 @@ const parseLeaf = (l, i) => {
 
 const createParser = ({
   inline,
+  // compact,
   suffix,
   getMember,
   onClickInteractiveElement,
@@ -207,7 +211,8 @@ const createParser = ({
 };
 
 const RichText = ({
-  inline,
+  inline = false,
+  compact = false,
   blocks,
   getMember,
   onClickInteractiveElement,
@@ -218,14 +223,18 @@ const RichText = ({
     () =>
       createParser({
         inline,
+        compact,
         suffix,
         getMember,
         onClickInteractiveElement,
       }),
-    [inline, suffix, getMember, onClickInteractiveElement]
+    [inline, compact, suffix, getMember, onClickInteractiveElement]
   );
   return (
-    <div css={(theme) => css(createCss(theme, { inline }))} {...props}>
+    <div
+      css={(theme) => css(createCss(theme, { inline: inline, compact }))}
+      {...props}
+    >
       {parse(blocks)}
     </div>
   );
