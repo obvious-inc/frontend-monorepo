@@ -1,6 +1,8 @@
 import { getImageDimensionsFromUrl } from "@shades/common";
 import { getChecksumAddress } from "../utils/ethereum";
 import { send as sendNotification } from "../utils/notifications";
+import { getRandomNoun } from "../utils/nouns";
+import stringifyMessageBlocks from "../slate/stringify";
 
 const commands = {
   dm: ({ actions, state, navigate, ethersProvider }) => ({
@@ -193,6 +195,34 @@ const commands = {
           ],
         },
       ]);
+
+      editor.clear();
+    },
+  }),
+  noun: ({ actions, channelId }) => ({
+    description: "F-U-N",
+    execute: async ({ args, editor }) => {
+      const randomNounURL = await getRandomNoun();
+
+      const blocks = [
+        {
+          type: "attachments",
+          children: [
+            {
+              type: "image-attachment",
+              url: randomNounURL,
+              width: "320px",
+              height: "320px",
+            },
+          ],
+        },
+      ];
+
+      actions.createMessage({
+        channel: channelId,
+        content: stringifyMessageBlocks(blocks),
+        blocks,
+      });
 
       editor.clear();
     },
