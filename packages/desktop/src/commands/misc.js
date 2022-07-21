@@ -169,6 +169,34 @@ const commands = {
       editor.clear();
     },
   }),
+  "gif-nounish": ({ actions }) => ({
+    description: "⌐◨-◨",
+    arguments: ["search-query"],
+    execute: async ({ args, editor, submit }) => {
+      const query = args.join(" ");
+      const response = await actions.searchGifs(`nounish nouns ${query}`);
+      if (response.length === 0) return;
+
+      const imageUrl = response[0].src;
+
+      const { width, height } = await getImageDimensionsFromUrl(imageUrl);
+      submit([
+        {
+          type: "attachments",
+          children: [
+            {
+              type: "image-attachment",
+              url: imageUrl,
+              width,
+              height,
+            },
+          ],
+        },
+      ]);
+
+      editor.clear();
+    },
+  }),
   "enable-notifications": () => ({
     description:
       "Turn on system notifications. Super alpha, only for the brave or crazy.",
