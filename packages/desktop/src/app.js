@@ -24,6 +24,7 @@ import {
   ServerConnectionProvider,
   arrayUtils,
 } from "@shades/common";
+import { IFrameEthereumProvider } from "@newshades/iframe-provider";
 import * as eth from "./utils/ethereum";
 import { Provider as GlobalMediaQueriesProvider } from "./hooks/global-media-queries";
 import { send as sendNotification } from "./utils/notifications";
@@ -53,6 +54,9 @@ const { unique } = arrayUtils;
 
 const isNative = window.Native != null;
 
+const isIFrame = window.parent && window.self && window.parent !== window.self;
+if (isIFrame) window.ethereum = new IFrameEthereumProvider();
+
 const { chains, provider } = configureWagmiChains(
   [wagmiChain.mainnet],
   [
@@ -65,7 +69,10 @@ const wagmiClient = createWagmiClient({
   autoConnect: true,
   provider,
   connectors: [
-    new InjectedConnector({ chains }),
+    new InjectedConnector({
+      chains,
+      options: { isIFrame },
+    }),
     new WalletConnectConnector({
       chains,
       options: {
@@ -125,6 +132,21 @@ const useSystemNotifications = () => {
   }, [addAfterDispatchListener, afterDispatchListener]);
 };
 
+const useIFrameMessenger = () => {
+  const { addAfterDispatchListener } = useAppScope();
+
+  React.useEffect(() => {
+    if (window === window.parent) return;
+
+    const removeListener = addAfterDispatchListener((action) => {
+      window.parent.postMessage({ action }, "*");
+    });
+    return () => {
+      removeListener();
+    };
+  }, [addAfterDispatchListener]);
+};
+
 const App = () => {
   const navigate = useNavigate();
 
@@ -144,6 +166,7 @@ const App = () => {
   const user = state.selectMe();
 
   useSystemNotifications();
+  useIFrameMessenger();
 
   useWalletEvent("disconnect", () => {
     if (authStatus === "not-authenticated") return;
@@ -152,10 +175,8 @@ const App = () => {
     navigate("/");
   });
 
-  useWalletEvent("account-change", (newAddress, previousAddress) => {
+  useWalletEvent("account-change", (newAddress) => {
     if (
-      // Ignore initial connect
-      previousAddress == null ||
       // We only care about logged in users
       authStatus === "not-authenticated" ||
       user?.wallet_address.toLowerCase() === newAddress.toLowerCase()

@@ -1,20 +1,18 @@
 import React from "react";
-import { useConnect, useAccount } from "wagmi";
+import { useAccount } from "wagmi";
 import { useLatestCallback, invariant } from "@shades/common";
 
 const events = ["account-change", "disconnect"];
 
 const useWalletEvent = (event, listener) => {
-  const { activeConnector } = useConnect();
-  const { data: account } = useAccount();
+  const { address: accountAddress, connector: activeConnector } = useAccount();
 
   invariant(events.includes(event), `Unrecognized event "${event}"`);
 
   const changeHandler = useLatestCallback((data) => {
     switch (event) {
       case "account-change": {
-        if (data.account !== account?.address)
-          listener(data.account, account?.address);
+        if (data.account) listener(data.account);
         break;
       }
     }
@@ -23,7 +21,7 @@ const useWalletEvent = (event, listener) => {
   const disconnectHandler = useLatestCallback(() => {
     switch (event) {
       case "disconnect": {
-        listener(account?.address);
+        listener(accountAddress);
         break;
       }
     }

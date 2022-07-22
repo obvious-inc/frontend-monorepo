@@ -10,6 +10,39 @@ import { useLatestCallback } from "@shades/common";
 
 const ETHEREUM_MAINNET_CHAIN_ID = wagmiChain.mainnet.id;
 
+// This silently auto-connects whenever the parent provider connects
+const useIFrameAutoConnect = () => {
+  const { connectAsync: connect, connectors } = useConnect();
+  const { connector: activeConnector, isConnecting } = useAccount();
+
+  const connector = connectors.find((c) => c.ready);
+
+  const isIFrame = connector?.options?.isIFrame ?? false;
+
+  const connectHandler = useLatestCallback(() => {
+    if (activeConnector != null || isConnecting) return;
+    connect({ connector });
+  });
+
+  React.useEffect(() => {
+    if (!isIFrame || connector == null) return;
+
+    let provider;
+    let changed = false;
+
+    connector.getProvider().then((p) => {
+      if (changed) return;
+      provider = p;
+      provider.on("connect", connectHandler);
+    });
+
+    return () => {
+      changed = true;
+      if (provider) provider.off("connect", connectHandler);
+    };
+  }, [isIFrame, connectHandler, connector]);
+};
+
 const useWallet = () => {
   const [connectError, setConnectError] = React.useState(null);
   const {
@@ -17,15 +50,17 @@ const useWallet = () => {
     reset: cancelConnectionAttempt,
     connectors,
     // error,
-    isConnecting,
   } = useConnect();
   const {
-    data: account,
+    address: accountAddress,
     // Not sure when these two happen
     // isLoading,
     // error,
+    isConnecting,
   } = useAccount();
-  const { data: ensName } = useEnsName({ address: account?.address });
+  const { data: ensName } = useEnsName({ address: accountAddress });
+
+  useIFrameAutoConnect();
 
   const {
     activeChain,
@@ -38,7 +73,7 @@ const useWallet = () => {
   const connect = useLatestCallback(async () => {
     if (firstReadyConnector == null) throw new Error("No connector ready");
     try {
-      return await connectWallet(firstReadyConnector);
+      return await connectWallet({ connector: firstReadyConnector });
     } catch (e) {
       // Rejected by user
       if (e.code === 4001) return Promise.resolve();
@@ -51,7 +86,7 @@ const useWallet = () => {
     switchNetwork(ETHEREUM_MAINNET_CHAIN_ID);
 
   return {
-    accountAddress: account?.address,
+    accountAddress,
     accountEnsName: ensName,
     chain: activeChain,
     isConnecting,

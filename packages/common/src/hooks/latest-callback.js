@@ -3,7 +3,7 @@ import React from "react";
 const useLatestCallback = (callback) => {
   const callbackRef = React.useRef(callback);
 
-  React.useEffect(() => {
+  React.useLayoutEffect(() => {
     callbackRef.current = callback;
   });
 

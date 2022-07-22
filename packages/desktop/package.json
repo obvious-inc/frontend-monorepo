@@ -46,6 +46,7 @@
   "dependencies": {
     "@emotion/react": "^11.8.2",
     "@manypkg/find-root": "^1.1.0",
+    "@newshades/iframe-provider": "^0.2.0",
     "@nouns/assets": "^0.2.0",
     "@nouns/sdk": "^0.1.6",
     "@npmcli/arborist": "^5.2.1",
@@ -73,6 +74,6 @@
     "slate": "^0.75.0",
     "slate-history": "^0.66.0",
     "slate-react": "^0.75.0",
-    "wagmi": "^0.4.3"
+    "wagmi": "^0.5.11"
   }
 }

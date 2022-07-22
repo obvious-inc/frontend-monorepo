@@ -498,6 +498,8 @@ export const ChannelBase = ({
 
   const channelPrefix = channel.kind === "dm" ? "@" : "#";
 
+  const disableInput = user == null && !hasConnectedWallet;
+
   return (
     <div
       css={(theme) => css`
@@ -672,7 +674,7 @@ export const ChannelBase = ({
       <div css={css({ padding: "0 1.6rem 2.4rem", position: "relative" })}>
         <NewMessageInput
           ref={inputRef}
-          disabled={user == null && !hasConnectedWallet}
+          disabled={disableInput}
           context={channel.kind}
           serverId={channel.serverId}
           channelId={channel.id}
@@ -685,7 +687,9 @@ export const ChannelBase = ({
           uploadImage={actions.uploadImage}
           submit={submitMessage}
           placeholder={
-            channel.kind === "dm"
+            disableInput
+              ? "Connect wallet to chat"
+              : channel.kind === "dm"
               ? `Message ${channel.name}`
               : `Message #${channel.name}`
           }
@@ -1272,7 +1276,7 @@ const Channel = ({ compact, noSideMenu }) => {
     accountAddress,
     accountEnsName,
     // chain,
-    // isConnecting: isConnectingWallet,
+    isConnecting: isConnectingWallet,
     // error: walletError,
     // switchToEthereumMainnet,
   } = useWallet();
@@ -1353,6 +1357,8 @@ const Channel = ({ compact, noSideMenu }) => {
   );
 
   const theme = useTheme();
+  const isEmbedded = searchParams.get("mode") === "embedded";
+  const hideConnectButton = searchParams.get("hide-connect-button") != null;
 
   const headerContent = React.useMemo(
     () =>
@@ -1361,7 +1367,7 @@ const Channel = ({ compact, noSideMenu }) => {
           {!isMenuTogglingEnabled &&
             (channel.avatar == null ? (
               <>
-                {searchParams.get("mode") !== "embedded" && (
+                {!isEmbedded && (
                   <div
                     css={(theme) =>
                       css({
@@ -1470,7 +1476,8 @@ const Channel = ({ compact, noSideMenu }) => {
           )}
 
           {authenticationStatus === "not-authenticated" &&
-            (loginStatus === "requesting-signature" ? (
+            ((!hideConnectButton && isConnectingWallet) ||
+            loginStatus === "requesting-signature" ? (
               <div
                 css={(theme) =>
                   css({
@@ -1542,7 +1549,7 @@ const Channel = ({ compact, noSideMenu }) => {
                   Verify account
                 </Button>
               </span>
-            ) : (
+            ) : !hideConnectButton ? (
               <Button
                 variant={theme.name === "nouns.tv" ? "primary" : "default"}
                 size="default"
@@ -1550,12 +1557,13 @@ const Channel = ({ compact, noSideMenu }) => {
               >
                 Connect wallet
               </Button>
-            ))}
+            ) : null)}
         </>
       ),
     [
+      isEmbedded,
+      hideConnectButton,
       loginStatus,
-      searchParams,
       theme,
       isFetchingMembers,
       accountAddress,
@@ -1564,6 +1572,7 @@ const Channel = ({ compact, noSideMenu }) => {
       user,
       authenticationStatus,
       connectWallet,
+      isConnectingWallet,
       actions,
       isMenuTogglingEnabled,
       channel,
