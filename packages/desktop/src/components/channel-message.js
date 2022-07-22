@@ -1591,29 +1591,29 @@ const RepliedMessage = ({ message, getMember }) => {
 const SystemMessage = ({ isHovering, message, compact, reactions }) => {
   const content = React.useMemo(() => {
     switch (message.type) {
-      case "user-invited":
-        if (
-          [message.inviter?.displayName, message.author?.displayName].some(
-            (n) => n == null
-          )
-        )
-          return null;
+      case "user-invited": {
+        const isMissingData = [
+          message.inviter?.displayName,
+          message.author?.displayName,
+        ].some((n) => n == null);
 
         return (
-          <>
+          <span style={{ opacity: isMissingData ? 0 : 1 }}>
             <MemberDisplayNameWithPopover user={message.inviter} /> added{" "}
             <MemberDisplayNameWithPopover user={message.author} /> to the
             channel.
-          </>
+          </span>
         );
-      case "member-joined":
-        if (message.author?.displayName == null) return null;
+      }
+      case "member-joined": {
+        const isMissingData = message.author?.displayName == null;
         return (
-          <>
+          <span style={{ opacity: isMissingData ? 0 : 1 }}>
             <MemberDisplayNameWithPopover user={message.author} /> joined the
             channel. Welcome!
-          </>
+          </span>
         );
+      }
 
       case "channel-updated": {
         const updates = Object.entries(message.updates);
