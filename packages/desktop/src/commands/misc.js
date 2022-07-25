@@ -206,34 +206,21 @@ const commands = {
   noun: ({ actions, channelId, ethersProvider }) => ({
     description: "F-U-N",
     execute: async ({ args, editor }) => {
-      let url, parts, seed;
+      let url, parts;
       if (!args || args.length == 0) {
-        ({ url, parts, seed } = await getRandomNoun());
+        ({ url, parts } = await getRandomNoun());
       } else {
         if (args.length == 1 && Number.isInteger(Number(args[0]))) {
           const nounId = Number(args[0]);
-          ({ url, parts, seed } = await getNoun(nounId, ethersProvider));
+          ({ url, parts } = await getNoun(nounId, ethersProvider));
         } else if (args.length == 1) {
-          ({ url, parts, seed } = await getRandomNounWithSeedInput(args[0]));
+          ({ url, parts } = await getRandomNounWithSeedInput(args[0]));
         } else {
           // TODO: not sure yet what to do
           alert("Only 1 input for now.");
           return;
         }
       }
-      let strParts = parts
-        .map((part) => {
-          return [
-            { text: `${part.filename.split("-")[0]}: `, bold: true },
-            { text: part.filename.split("-").slice(1).join(" ") + "\n" },
-          ];
-        })
-        .flat();
-
-      strParts.push(
-        { text: "seed: ", bold: true },
-        { text: `(${Object.values(seed).join(", ")})` }
-      );
 
       const blocks = [
         {
@@ -249,7 +236,15 @@ const commands = {
         },
         {
           type: "paragraph",
-          children: strParts,
+          children: [
+            {
+              text: parts
+                .map((part) => {
+                  return part.filename.split("-").slice(1).join(" ");
+                })
+                .join(", "),
+            },
+          ],
         },
       ];
 
