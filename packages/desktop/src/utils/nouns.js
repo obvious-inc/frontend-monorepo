@@ -60,3 +60,38 @@ export const getNoun = async (nounId, provider) => {
   const url = `data:image/svg+xml;base64,${svgBase64}`;
   return { url, parts, background, seed };
 };
+
+export const getRandomNounWithSeedInput = async (seedInput) => {
+  const [{ ImageData, getRandomNounSeed, getNounData }, { buildSVG }] =
+    await Promise.all([import("@nouns/assets"), import("@nouns/sdk")]);
+
+  let randomSeed = getRandomNounSeed();
+
+  const imagesToParts = {
+    heads: "head",
+    accessories: "accessory",
+    glasses: "glasses",
+    bodies: "body",
+  };
+
+  for (const [image, part] of Object.entries(imagesToParts)) {
+    const matches = ImageData.images[image]
+      .map((obj) => {
+        return obj.filename.split("-").includes(seedInput) ? obj : null;
+      })
+      .filter((match) => match !== null);
+
+    const newPart = matches[Math.floor(Math.random() * matches.length)];
+    if (newPart) {
+      randomSeed[part] = ImageData.images[image].indexOf(newPart);
+      break;
+    }
+  }
+
+  const { parts, background } = getNounData(randomSeed);
+  const svgBinary = buildSVG(parts, ImageData.palette, background);
+  const svgBase64 = btoa(svgBinary);
+
+  const url = `data:image/svg+xml;base64,${svgBase64}`;
+  return { url, parts, background, seed: randomSeed };
+};

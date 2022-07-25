@@ -1,7 +1,11 @@
 import { getImageDimensionsFromUrl } from "@shades/common";
 import { getChecksumAddress } from "../utils/ethereum";
 import { send as sendNotification } from "../utils/notifications";
-import { getNoun, getRandomNoun } from "../utils/nouns";
+import {
+  getNoun,
+  getRandomNoun,
+  getRandomNounWithSeedInput,
+} from "../utils/nouns";
 import stringifyMessageBlocks from "../slate/stringify";
 
 const commands = {
@@ -209,12 +213,14 @@ const commands = {
         if (args.length == 1 && Number.isInteger(Number(args[0]))) {
           const nounId = Number(args[0]);
           ({ url, parts, seed } = await getNoun(nounId, ethersProvider));
+        } else if (args.length == 1) {
+          ({ url, parts, seed } = await getRandomNounWithSeedInput(args[0]));
         } else {
-          // TODO: add search by trait name
+          // TODO: not sure yet what to do
+          alert("Only 1 input for now.");
           return;
         }
       }
-
       let strParts = parts
         .map((part) => {
           return [
