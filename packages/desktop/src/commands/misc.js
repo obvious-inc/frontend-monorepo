@@ -201,8 +201,21 @@ const commands = {
   }),
   noun: ({ actions, channelId }) => ({
     description: "F-U-N",
-    execute: async ({ args, editor }) => {
-      const randomNounURL = await getRandomNoun();
+    execute: async ({ editor }) => {
+      const { url, parts, seed } = await getRandomNoun();
+      let strParts = parts
+        .map((part) => {
+          return [
+            { text: `${part.filename.split("-")[0]}: `, bold: true },
+            { text: part.filename.split("-").slice(1).join(" ") + "\n" },
+          ];
+        })
+        .flat();
+
+      strParts.push(
+        { text: "seed: ", bold: true },
+        { text: `(${Object.values(seed).join(", ")})` }
+      );
 
       const blocks = [
         {
@@ -210,11 +223,15 @@ const commands = {
           children: [
             {
               type: "image-attachment",
-              url: randomNounURL,
+              url: url,
               width: "320px",
               height: "320px",
             },
           ],
+        },
+        {
+          type: "paragraph",
+          children: strParts,
         },
       ];
 
