@@ -1,7 +1,7 @@
 import { getImageDimensionsFromUrl } from "@shades/common";
 import { getChecksumAddress } from "../utils/ethereum";
 import { send as sendNotification } from "../utils/notifications";
-import { getRandomNoun } from "../utils/nouns";
+import { getNoun, getRandomNoun } from "../utils/nouns";
 import stringifyMessageBlocks from "../slate/stringify";
 
 const commands = {
@@ -199,10 +199,22 @@ const commands = {
       editor.clear();
     },
   }),
-  noun: ({ actions, channelId }) => ({
+  noun: ({ actions, channelId, ethersProvider }) => ({
     description: "F-U-N",
-    execute: async ({ editor }) => {
-      const { url, parts, seed } = await getRandomNoun();
+    execute: async ({ args, editor }) => {
+      let url, parts, seed;
+      if (!args || args.length == 0) {
+        ({ url, parts, seed } = await getRandomNoun());
+      } else {
+        if (args.length == 1 && Number.isInteger(Number(args[0]))) {
+          const nounId = Number(args[0]);
+          ({ url, parts, seed } = await getNoun(nounId, ethersProvider));
+        } else {
+          // TODO: add search by trait name
+          return;
+        }
+      }
+
       let strParts = parts
         .map((part) => {
           return [
