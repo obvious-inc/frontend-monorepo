@@ -13,8 +13,8 @@ export const createCss = (theme, { inline = false, compact = false } = {}) => ({
   whiteSpace: inline ? "inherit" : "pre-wrap",
   wordBreak: "break-word",
   p: { margin: "0", display: inline || compact ? "inline" : undefined },
-  "p + p": { marginTop: "1rem" },
-  "p + p:before": compact
+  "* + p": { marginTop: "1rem" },
+  "* + p:before": compact
     ? { display: "block", content: '""', height: "1rem" }
     : undefined,
   em: { fontStyle: "italic" },
