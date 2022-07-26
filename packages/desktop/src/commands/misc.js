@@ -206,6 +206,13 @@ const commands = {
   noun: ({ actions, channelId, ethersProvider }) => ({
     description: "F-U-N",
     execute: async ({ args, editor }) => {
+      const parseParts = (parts) => {
+        const [body, accessory, head, glasses] = parts.map((p) =>
+          p.filename.split("-").slice(1).join(" ")
+        );
+        return { body, accessory, head, glasses };
+      };
+
       let url, parts;
       if (!args || args.length == 0) {
         ({ url, parts } = await getRandomNoun());
@@ -222,6 +229,8 @@ const commands = {
         }
       }
 
+      const { body, accessory, head, glasses } = parseParts(parts);
+
       const blocks = [
         {
           type: "attachments",
@@ -229,22 +238,25 @@ const commands = {
             {
               type: "image-attachment",
               url: url,
-              width: "320px",
-              height: "320px",
+              width: 320,
+              height: 320,
             },
           ],
         },
         {
           type: "paragraph",
           children: [
-            {
-              text: parts
-                .map((part) => {
-                  return part.filename.split("-").slice(1).join(" ");
-                })
-                .join(", "),
-            },
-          ],
+            ["H", head],
+            ["G", glasses],
+            ["B", body],
+            ["A", accessory],
+          ].flatMap(([char, part], i, els) => {
+            const isLast = i === els.length - 1;
+            return [
+              { text: char, bold: true },
+              { text: `: ${isLast ? part : `${part}, `}` },
+            ];
+          }),
         },
       ];
 
