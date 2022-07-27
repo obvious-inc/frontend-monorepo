@@ -833,14 +833,17 @@ const AppDisplayName = React.forwardRef(
       <span
         css={(theme) =>
           css({
-            marginLeft: 5,
-            padding: "1px 3px",
-            fontSize: "1rem",
+            marginLeft: "0.5rem",
+            padding: "0.2rem 0.3rem",
+            lineHeight: 1,
+            fontSize: theme.fontSizes.tiny,
             borderRadius: "0.3rem",
-            backgroundColor: theme.colors.textMuted,
-            color: theme.colors.textNormal,
-            fontWeight: "500",
+            background: theme.colors.backgroundModifierHover,
+            color: "rgb(255 255 255 / 56.5%)",
             textTransform: "uppercase",
+            letterSpacing: "0.03em",
+            cursor: "default",
+            fontWeight: "600",
           })
         }
       >
@@ -1755,7 +1758,7 @@ const AppMessage = ({
       {isHovering ? (
         <div
           css={css({
-            paddingTop: "0.5rem",
+            paddingTop: "0.3rem",
             textAlign: "right",
             transition: "0.15s opacity",
           })}
@@ -1794,7 +1797,7 @@ const TinyMutedText = ({ children, nowrap = false, style }) => (
     css={(theme) =>
       css({
         color: theme.colors.textMuted,
-        fontSize: theme.fontSizes.micro,
+        fontSize: theme.fontSizes.tiny,
       })
     }
     style={{ whiteSpace: nowrap ? "nowrap" : undefined, ...style }}

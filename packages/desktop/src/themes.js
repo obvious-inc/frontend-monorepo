@@ -150,7 +150,7 @@ const createNotion = () => {
       memberDisplayName: textNormal,
     },
     fontSizes: {
-      ...dark.fontSizes,
+      tiny: "1.05rem",
       small: "1.2rem",
       default: "1.4rem",
       huge: "3.2rem",
