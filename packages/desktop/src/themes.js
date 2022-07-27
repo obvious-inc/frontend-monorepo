@@ -143,6 +143,7 @@ const createNotion = () => {
       backgroundPrimary: "rgb(25, 25, 25)",
       backgroundSecondary: "rgb(32, 32, 32)",
       dialogBackground: "rgb(37, 37, 37)",
+      dialogPopoverBackground: "rgb(37, 37, 37)",
       channelInputBackground: "rgb(37, 37, 37)",
       inputBackground: "rgba(25, 25, 25)",
       backgroundModifierSelected: "rgba(255, 255, 255, 0.055)",
@@ -153,6 +154,7 @@ const createNotion = () => {
       tiny: "1.05rem",
       small: "1.2rem",
       default: "1.4rem",
+      large: "1.7rem",
       huge: "3.2rem",
       headerDefault: "2rem",
       channelMessages: "1.6rem",
@@ -171,6 +173,12 @@ const createNotion = () => {
         '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif',
       headers:
         'Londrina Solid, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif',
+    },
+    shadows: {
+      elevationLow:
+        "rgb(15 15 15 / 10%) 0px 0px 0px 1px, rgb(15 15 15 / 20%) 0px 5px 10px, rgb(15 15 15 / 40%) 0px 15px 40px",
+      elevationHigh:
+        "rgb(15 15 15 / 10%) 0px 0px 0px 1px, rgb(15 15 15 / 20%) 0px 5px 10px, rgb(15 15 15 / 40%) 0px 15px 40px",
     },
   };
 };

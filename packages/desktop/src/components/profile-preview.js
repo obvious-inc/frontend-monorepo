@@ -134,7 +134,7 @@ const ProfilePreview = React.forwardRef(
                 display: "grid",
                 gridTemplateColumns: "repeat(2, minmax(0,1fr))",
                 gridGap: "1rem",
-                marginTop: "2rem",
+                marginTop: "1rem",
               })}
             >
               <Button
