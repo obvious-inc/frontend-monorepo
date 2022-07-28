@@ -1730,16 +1730,20 @@ const AppMessage = ({
 }) => {
   const content = React.useMemo(() => {
     switch (message.type) {
-      case "webhook":
+      case "webhook": {
+        const isWaitingForApp = message.app?.name == null;
         return (
           <>
-            <AppDisplayName displayName={message.app?.name} />
+            <span style={{ opacity: isWaitingForApp ? 0 : 1 }}>
+              <AppDisplayName displayName={message.app?.name ?? "..."} />
+            </span>
             <RichText
               blocks={message.content}
               onClickInteractiveElement={onClickInteractiveElement}
             />
           </>
         );
+      }
 
       default:
         throw new Error();
@@ -1758,7 +1762,7 @@ const AppMessage = ({
       {isHovering ? (
         <div
           css={css({
-            paddingTop: "0.3rem",
+            paddingTop: "0.2rem",
             textAlign: "right",
             transition: "0.15s opacity",
           })}
