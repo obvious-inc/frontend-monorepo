@@ -853,6 +853,23 @@ const AppDisplayName = React.forwardRef(
   )
 );
 
+const InlineAppDisplayName = React.forwardRef(
+  ({ displayName, color, ...props }, ref) => (
+    <span
+      ref={ref}
+      css={(theme) =>
+        css({
+          color: color ?? theme.colors.pink,
+          fontWeight: "500",
+        })
+      }
+      {...props}
+    >
+      {displayName}
+    </span>
+  )
+);
+
 const MessageHeader = ({ authorUser, createdAt }) => (
   <div
     css={css`
@@ -1742,6 +1759,23 @@ const AppMessage = ({
               onClickInteractiveElement={onClickInteractiveElement}
             />
           </>
+        );
+      }
+
+      case "app-installed": {
+        const isMissingData = [
+          message.installer?.displayName,
+          message.app?.name,
+        ].some((n) => n == null);
+
+        return (
+          <div css={(theme) => css({ color: theme.colors.channelDefault })}>
+            <span style={{ opacity: isMissingData ? 0 : 1 }}>
+              <MemberDisplayNameWithPopover user={message.installer} />{" "}
+              installed a new app:{" "}
+              <InlineAppDisplayName displayName={message.app?.name ?? "..."} />
+            </span>
+          </div>
         );
       }
 
