@@ -49,6 +49,7 @@ import {
 } from "./components/icons";
 import useSideMenu from "./hooks/side-menu";
 import { notion as defaultTheme, nounsTv as nounsTvTheme } from "./themes";
+import AuthHome from "./components/auth";
 
 const { unique } = arrayUtils;
 
@@ -318,6 +319,14 @@ const App = () => {
         </Route>
         <Route path="c/:channelId" element={<Channel noSideMenu />} />
 
+        <Route
+          path="/oauth/authorize"
+          element={
+            <RequireAuth>
+              <AuthHome />
+            </RequireAuth>
+          }
+        />
         {/* <Route */}
         {/*   path="/discover" */}
         {/*   element={ */}
