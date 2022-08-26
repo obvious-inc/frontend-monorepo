@@ -51,15 +51,15 @@ const useFetch = (fetcher, dependencies) => {
   });
 
   React.useEffect(() => {
-    fetcherRef.current();
+    fetcherRef.current?.();
   }, dependencies); // eslint-disable-line
 
   useWindowFocusListener(() => {
-    fetcherRef.current();
+    fetcherRef.current?.();
   });
 
   useOnlineListener(() => {
-    fetcherRef.current();
+    fetcherRef.current?.();
   });
 };
 
@@ -1291,8 +1291,12 @@ const Channel = ({ compact, noSideMenu }) => {
 
   const isMenuTogglingEnabled = !noSideMenu && isSideMenuFloating;
 
-  const { fetchChannel, fetchChannelMembers, fetchChannelPublicPermissions } =
-    actions;
+  const {
+    fetchChannel,
+    fetchChannelMembers,
+    fetchChannelPublicPermissions,
+    fetchApps,
+  } = actions;
 
   const fetchMessages = useMessageFetcher(params.channelId);
 
@@ -1340,6 +1344,12 @@ const Channel = ({ compact, noSideMenu }) => {
     () => fetchChannelPublicPermissions(params.channelId),
     [params.channelId]
   );
+  useFetch(
+    authenticationStatus === "not-authenticated"
+      ? () => fetchApps(params.channelId)
+      : undefined,
+    [params.channelId]
+  );
 
   React.useEffect(() => {
     fetchMessages(params.channelId, { limit: 30 });
@@ -1350,6 +1360,7 @@ const Channel = ({ compact, noSideMenu }) => {
       fetchMessages(params.channelId, { limit: 20 });
     },
     {
+      // Only long-poll fetch when user is logged out
       delay: authenticationStatus === "not-authenticated" ? 5000 : 0,
       requireFocus: true,
       requireOnline: true,

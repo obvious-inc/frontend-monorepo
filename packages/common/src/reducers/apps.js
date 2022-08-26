@@ -3,8 +3,9 @@ import combineReducers from "../utils/combine-reducers";
 
 const entriesById = (state = {}, action) => {
   switch (action.type) {
-    case "fetch-client-boot-data-request-successful": {
-      if (!action.apps) return state;
+    case "fetch-client-boot-data-request-successful":
+    case "fetch-apps-request-successful": {
+      if (action.apps == null) return state;
       return indexBy((a) => a.id, action.apps);
     }
 

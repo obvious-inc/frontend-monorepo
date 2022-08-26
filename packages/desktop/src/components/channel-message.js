@@ -822,8 +822,8 @@ const AppDisplayName = React.forwardRef(
         css({
           lineHeight: 1.2,
           color: color ?? theme.colors.pink,
-          fontWeight: "500",
-          display: "flex",
+          fontWeight: theme.text.weights.smallHeader,
+          display: "inline-flex",
           alignItems: "center",
         })
       }
@@ -1751,10 +1751,16 @@ const AppMessage = ({
         const isWaitingForApp = message.app?.name == null;
         return (
           <>
-            <span style={{ opacity: isWaitingForApp ? 0 : 1 }}>
+            <span
+              style={{
+                opacity: isWaitingForApp ? 0 : 1,
+                marginRight: compact ? "1rem" : 0,
+              }}
+            >
               <AppDisplayName displayName={message.app?.name ?? "..."} />
             </span>
             <RichText
+              compact={compact}
               blocks={message.content}
               onClickInteractiveElement={onClickInteractiveElement}
             />
@@ -1782,7 +1788,7 @@ const AppMessage = ({
       default:
         throw new Error();
     }
-  }, [message, onClickInteractiveElement]);
+  }, [message, compact, onClickInteractiveElement]);
 
   return (
     <div
@@ -1794,13 +1800,7 @@ const AppMessage = ({
       })}
     >
       {isHovering ? (
-        <div
-          css={css({
-            paddingTop: "0.2rem",
-            textAlign: "right",
-            transition: "0.15s opacity",
-          })}
-        >
+        <div css={css({ paddingTop: "0.5rem", transition: "0.15s opacity" })}>
           <TinyMutedText nowrap style={{ float: "right" }}>
             <FormattedDate
               value={new Date(message.created_at)}

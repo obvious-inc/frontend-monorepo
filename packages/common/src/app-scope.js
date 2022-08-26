@@ -441,6 +441,15 @@ export const Provider = ({ children }) => {
     })
   );
 
+  const fetchApps = useLatestCallback(() =>
+    authorizedFetch("/apps", { allowUnauthorized: true, priority: "low" }).then(
+      (res) => {
+        dispatch({ type: "fetch-apps-request-successful", apps: res });
+        return res;
+      }
+    )
+  );
+
   const fetchClientBootData = useLatestCallback(async () => {
     const [{ user, channels, read_states: readStates, apps }, starredItems] =
       await Promise.all([authorizedFetch("/ready"), fetchStarredItems()]);
@@ -531,6 +540,7 @@ export const Provider = ({ children }) => {
       fetchStarredItems,
       starChannel,
       unstarChannel,
+      fetchApps,
       uploadImage,
       registerChannelTypingActivity,
       searchGifs,
@@ -567,6 +577,7 @@ export const Provider = ({ children }) => {
       fetchStarredItems,
       starChannel,
       unstarChannel,
+      fetchApps,
       uploadImage,
       registerChannelTypingActivity,
       searchGifs,
