@@ -1,14 +1,23 @@
 import React from "react";
 import { css } from "@emotion/react";
-import { useAuth } from "@shades/common";
+import { useAppScope, useAuth } from "@shades/common";
 import Button from "./button";
+import { parseScopes } from "@shades/common/src/utils/permissions";
 
 const AuthHome = () => {
   const { authorizedFetch } = useAuth();
+  const { state, actions } = useAppScope();
+
   const params = new URLSearchParams(location.search);
   const clientId = params.get("client_id");
+  const channelId = params.get("channel");
+  const scopes = params.get("scope")?.split(" ");
+  const redirectURI = params.get("redirect_uri");
 
-  const [something, setSomething] = React.useState(null);
+  const channel = state.selectChannel(channelId);
+
+  const [clientName, setClientName] = React.useState(null);
+  const [scopeContent, setScopeContent] = React.useState(parseScopes(scopes));
 
   const submitAuth = () => {
     authorizedFetch("/oauth/authorize?" + params, {
@@ -24,14 +33,21 @@ const AuthHome = () => {
       });
   };
 
+  const cancelAuth = () => {
+    window.location = redirectURI + "?error=access_denied";
+  };
+
   React.useEffect(() => {
     if (clientId == null) return;
     authorizedFetch(`/apps?client_id=${clientId}`).then((res) => {
-      setSomething(res[0]?.name);
+      const client = res[0];
+      setClientName(client?.name);
+
+      if (!scopes) setScopeContent(parseScopes(client.scopes));
     });
   }, [authorizedFetch, clientId]);
 
-  if (clientId == null) return null;
+  if (clientId == null || channel == null) return null;
 
   return (
     <div
@@ -62,7 +78,8 @@ const AuthHome = () => {
             })
           }
         >
-          <Em>Anvil</Em> will be able to connect to <Em>Acme corp</Em> and...
+          <Em>{clientName}</Em> will be able to connect to{" "}
+          <Em>#{channel.name}</Em> and...
         </header>
         <main
           css={(theme) =>
@@ -81,26 +98,8 @@ const AuthHome = () => {
           }
         >
           <ul>
-            {[
-              { content: "Confirm your identity on foo" },
-              { content: "Send messages as bar" },
-              {
-                content: (
-                  <>
-                    Access information about your public channels on{" "}
-                    <a
-                      href="https://google.com"
-                      target="_blank"
-                      rel="noreferrer"
-                      css={(t) => css({ color: t.colors.linkColor })}
-                    >
-                      {something}
-                    </a>
-                  </>
-                ),
-              },
-            ].map(({ content }) => (
-              <li key={content}>{content}</li>
+            {scopeContent?.map(({ key, content }) => (
+              <li key={key}>{content}</li>
             ))}
           </ul>
         </main>
@@ -119,13 +118,7 @@ const AuthHome = () => {
               gridGap: "2rem",
             })}
           >
-            <Button
-              fullWidth
-              size="large"
-              onClick={() => {
-                // TODO
-              }}
-            >
+            <Button fullWidth size="large" onClick={cancelAuth}>
               Cancel
             </Button>
             <Button
