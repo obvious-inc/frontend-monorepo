@@ -715,12 +715,12 @@ const AppDisplayName = React.forwardRef(
 
 const MessageHeader = ({
   compact,
-  simplified,
+  // simplified,
   message,
   authorUser,
   createdAt,
 }) => {
-  if (simplified || message.isSystemMessage) return null;
+  if (message.isSystemMessage) return null;
 
   if (message.isAppMessage) {
     switch (message.type) {
@@ -763,7 +763,8 @@ const MessageHeader = ({
               style={{
                 display: "inline",
                 verticalAlign: "sub",
-                marginRight: "0.6rem",
+                marginRight: "0.7rem",
+                transform: "translateY(0.1rem)",
               }}
             />
             <MemberDisplayName
@@ -1536,7 +1537,7 @@ const MessageLeftColumn = ({ isHovering, simplified, compact, message }) => {
         css={css({
           transition: "0.15s opacity",
           cursor: "default",
-          transform: "translateY(0.5rem)",
+          transform: "translateY(0.4rem)",
         })}
         style={{ opacity: isHovering ? 1 : 0 }}
       >
@@ -1557,9 +1558,9 @@ const MessageLeftColumn = ({ isHovering, simplified, compact, message }) => {
     return isHovering ? (
       <div
         css={css({
-          paddingTop: "0.5rem",
-          textAlign: "right",
           transition: "0.15s opacity",
+          cursor: "default",
+          transform: "translateY(0.4rem)",
         })}
       >
         <TinyMutedText nowrap style={{ float: "right" }}>
@@ -1591,9 +1592,9 @@ const MessageLeftColumn = ({ isHovering, simplified, compact, message }) => {
         css={css({
           transition: "0.15s opacity",
           cursor: "default",
-          transform: "translateY(0.5rem)",
+          transform: "translateY(0.4rem)",
         })}
-        style={{ opacity: isHovering ? 1 : 0 }}
+        // style={{ opacity: isHovering ? 1 : 0 }}
       >
         <TinyMutedText nowrap style={{ float: "right" }}>
           <FormattedDateWithTooltip
