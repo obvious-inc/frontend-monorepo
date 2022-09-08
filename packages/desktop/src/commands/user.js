@@ -29,10 +29,19 @@ const commands = {
   // }),
   "set-profile-picture": ({ actions }) => ({
     description:
-      "Update your global profile picture. This will be used in all channels.",
+      "Update your global profile picture. This will be used in all channels. For NFTs: use a URL from OpenSea, Rarible, or LooksRare OR copy paste the specific '<contract_address> <token_id>'.",
+    arguments: ["image-url"],
     execute: async ({ args, editor }) => {
       const pfp = args.join(" ");
       await actions.updateMe({ pfp });
+      editor.clear();
+    },
+  }),
+  "clear-profile-picture": ({ actions }) => ({
+    description:
+      "Clears your profile picture. This will give you a default avatar, or display your ENS avatar if set.",
+    execute: async ({ editor }) => {
+      await actions.updateMe({ pfp: null });
       editor.clear();
     },
   }),
