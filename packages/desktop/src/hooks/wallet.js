@@ -1,14 +1,15 @@
 import React from "react";
 import {
-  chain as wagmiChain,
   useConnect,
   useAccount,
   useEnsName,
   useNetwork,
+  useSwitchNetwork,
 } from "wagmi";
+import { mainnet as mainnetChain } from "wagmi/chains";
 import { useLatestCallback } from "@shades/common";
 
-const ETHEREUM_MAINNET_CHAIN_ID = wagmiChain.mainnet.id;
+const ETHEREUM_MAINNET_CHAIN_ID = mainnetChain.id;
 
 // This silently auto-connects whenever the parent provider connects
 const useIFrameAutoConnect = () => {
@@ -62,11 +63,8 @@ const useWallet = () => {
 
   useIFrameAutoConnect();
 
-  const {
-    activeChain,
-    switchNetworkAsync: switchNetwork,
-    // error,
-  } = useNetwork();
+  const { chain: activeChain } = useNetwork();
+  const { switchNetworkAsync: switchNetwork } = useSwitchNetwork();
 
   const firstReadyConnector = connectors.find((c) => c.ready);
 

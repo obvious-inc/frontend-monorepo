@@ -74,6 +74,6 @@
     "slate": "^0.75.0",
     "slate-history": "^0.66.0",
     "slate-react": "^0.75.0",
-    "wagmi": "^0.5.11"
+    "wagmi": "^0.6.5"
   }
 }

@@ -2,8 +2,8 @@ import {
   WagmiConfig,
   createClient as createWagmiClient,
   configureChains as configureWagmiChains,
-  chain as wagmiChain,
 } from "wagmi";
+import { mainnet as mainnetChain } from "wagmi/chains";
 import { infuraProvider } from "wagmi/providers/infura";
 import { publicProvider } from "wagmi/providers/public";
 import { InjectedConnector } from "wagmi/connectors/injected";
@@ -58,11 +58,8 @@ const isIFrame = window.parent && window.self && window.parent !== window.self;
 if (isIFrame) window.ethereum = new IFrameEthereumProvider();
 
 const { chains, provider } = configureWagmiChains(
-  [wagmiChain.mainnet],
-  [
-    infuraProvider({ infuraId: process.env.INFURA_PROJECT_ID }),
-    publicProvider(),
-  ]
+  [mainnetChain],
+  [infuraProvider({ apiKey: process.env.INFURA_PROJECT_ID }), publicProvider()]
 );
 
 const wagmiClient = createWagmiClient({
