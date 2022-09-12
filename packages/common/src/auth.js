@@ -57,10 +57,15 @@ const useAccessToken = ({ storage = asyncWebStorage } = {}) => {
   }, []);
 
   React.useEffect(() => {
-    storageRef.current.getItem(ACCESS_TOKEN_CACHE_KEY).then((maybeToken) => {
-      tokenRef.current = maybeToken ?? null;
-      setToken(maybeToken ?? null);
-    });
+    storageRef.current.getItem(ACCESS_TOKEN_CACHE_KEY).then(
+      (maybeToken) => {
+        tokenRef.current = maybeToken ?? null;
+        setToken(maybeToken ?? null);
+      },
+      () => {
+        setToken(null);
+      }
+    );
   }, []);
 
   return [token, { set, clear, ref: tokenRef }];
