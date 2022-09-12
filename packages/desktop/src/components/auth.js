@@ -6,7 +6,7 @@ import { parseScopes } from "@shades/common/src/utils/permissions";
 
 const AuthHome = () => {
   const { authorizedFetch } = useAuth();
-  const { state, actions } = useAppScope();
+  const { state } = useAppScope();
 
   const params = new URLSearchParams(location.search);
   const clientId = params.get("client_id");
