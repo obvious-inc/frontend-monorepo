@@ -1,6 +1,13 @@
 import React from "react";
 
-const useCachedState = (key, initialState, storage = window.localStorage) => {
+let defaultStorage;
+try {
+  defaultStorage = window.localStorage;
+} catch (e) {
+  console.warn(e);
+}
+
+const useCachedState = (key, initialState, storage = defaultStorage) => {
   const [cachedState, setState] = React.useState(() => {
     const initialState_ =
       typeof initialState === "function" ? initialState() : initialState;

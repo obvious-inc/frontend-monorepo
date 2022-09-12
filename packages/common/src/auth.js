@@ -4,7 +4,14 @@ import useLatestCallback from "./hooks/latest-callback";
 const ACCESS_TOKEN_CACHE_KEY = "access-token";
 const REFRESH_TOKEN_CACHE_KEY = "refresh-token";
 
-const createAsyncWebStorage = (storage = window.localStorage) => ({
+let defaultStorage;
+try {
+  defaultStorage = window.localStorage;
+} catch (e) {
+  console.warn(e);
+}
+
+const createAsyncWebStorage = (storage = defaultStorage) => ({
   async getItem(...args) {
     return storage.getItem(...args);
   },
