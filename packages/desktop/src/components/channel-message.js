@@ -102,8 +102,7 @@ const ChannelMessage = React.memo(function ChannelMessage_({
   const showSimplifiedMessage =
     !message.isReply &&
     previousMessage != null &&
-    previousMessage.authorUserId === message.authorUserId &&
-    !previousMessage.isSystemMessage &&
+    previousMessage.authorId === message.authorId &&
     createdAtDate - new Date(previousMessage.created_at) <
       5 * ONE_MINUTE_IN_MILLIS;
 
@@ -318,230 +317,91 @@ const ChannelMessage = React.memo(function ChannelMessage_({
         </div>
       )}
 
-      {message.isSystemMessage ? (
-        <SystemMessage
+      {message.isReply && (
+        <RepliedMessage
+          message={message.repliedMessage}
+          getMember={getMember}
+        />
+      )}
+
+      <div
+        css={css({
+          display: "grid",
+          gridTemplateColumns: `${AVATAR_SIZE} minmax(0, 1fr)`,
+          alignItems: "flex-start",
+          gridGap: compact ? COMPACT_GUTTER_SIZE : GUTTER_SIZE,
+        })}
+      >
+        <MessageLeftColumn
+          message={message}
+          simplified={showSimplifiedMessage}
           compact={compact}
           isHovering={isHovering}
-          message={message}
-          reactions={
-            reactions.length === 0 ? null : (
-              <Reactions
-                items={reactions}
-                addReaction={addReaction}
-                removeReaction={removeReaction}
-                showAddReactionButton={isHovering || hasTouchFocus}
-              />
-            )
-          }
         />
-      ) : message.isAppMessage ? (
-        <AppMessage
-          compact={compact}
-          isHovering={isHovering}
-          message={message}
-          onClickInteractiveElement={onClickInteractiveElement}
-          reactions={
-            reactions.length === 0 ? null : (
-              <Reactions
-                items={reactions}
-                addReaction={addReaction}
-                removeReaction={removeReaction}
-                showAddReactionButton={isHovering}
-              />
-            )
-          }
-        />
-      ) : (
-        <>
-          {message.isReply && (
-            <RepliedMessage
-              message={message.repliedMessage}
+
+        <div>
+          <MessageHeader
+            compact={compact}
+            simplified={showSimplifiedMessage}
+            message={message}
+            authorUser={message.author}
+            createdAt={createdAtDate}
+            isOwnMessage={isOwnMessage}
+          />
+
+          {message.isSystemMessage ? (
+            <SystemMessageContent
+              compact={compact}
+              simplified={showSimplifiedMessage}
+              message={message}
+            />
+          ) : isEditing ? (
+            <EditMessageInput
+              ref={editInputRef}
+              blocks={message.content}
+              onCancel={() => {
+                setEditingMessage(false);
+              }}
+              requestRemove={() =>
+                new Promise((resolve, reject) => {
+                  if (
+                    !confirm("Are you sure you want to remove this message?")
+                  ) {
+                    reject(new Error());
+                    return;
+                  }
+
+                  remove().then(resolve, reject);
+                })
+              }
+              save={(content) =>
+                save(content).then(() => {
+                  setEditingMessage(false);
+                })
+              }
+              members={members}
               getMember={getMember}
+            />
+          ) : (
+            <RichText
+              compact={compact}
+              blocks={message.content}
+              onClickInteractiveElement={onClickInteractiveElement}
+              getMember={getMember}
+              suffix={message.isEdited && editedMessageSuffix}
             />
           )}
 
-          <div
-            css={css({
-              display: "grid",
-              gridTemplateColumns: `${AVATAR_SIZE} minmax(0, 1fr)`,
-              alignItems: "flex-start",
-              gridGap: compact ? COMPACT_GUTTER_SIZE : GUTTER_SIZE,
-            })}
-          >
-            {showSimplifiedMessage || compact ? (
-              <div
-                css={css({
-                  paddingTop: "0.5rem",
-                  transition: "0.15s opacity",
-                  cursor: "default",
-                })}
-                style={{
-                  opacity:
-                    (compact && !showSimplifiedMessage) || isHovering ? 1 : 0,
-                }}
-              >
-                <TinyMutedText nowrap style={{ float: "right" }}>
-                  <FormattedDateWithTooltip
-                    value={new Date(message.created_at)}
-                    hour="numeric"
-                    minute="numeric"
-                    tooltipContentProps={{ sideOffset: 7 }}
-                    disableRelative
-                    disableTooltip={!isHovering}
-                  />
-                </TinyMutedText>
-              </div>
-            ) : (
-              <div css={css({ padding: "0.2rem 0 0" })}>
-                <Popover.Root modal>
-                  <Popover.Trigger asChild>
-                    <button
-                      css={(theme) =>
-                        css({
-                          position: "relative",
-                          borderRadius: theme.avatars.borderRadius,
-                          overflow: "hidden",
-                          cursor: "pointer",
-                          ":hover": {
-                            boxShadow: message.author?.profilePicture
-                              .isVerifiedNft
-                              ? "0 0 0 2px #4f52ff"
-                              : "0 0 0 2px rgb(255 255 255 / 10%)",
-                          },
-                          ":active": { transform: "translateY(0.1rem)" },
-                        })
-                      }
-                    >
-                      <Avatar
-                        url={message.author?.profilePicture.small}
-                        walletAddress={message.author?.walletAddress}
-                        size="3.8rem"
-                        pixelSize={38}
-                      />
-                    </button>
-                  </Popover.Trigger>
-                  <Popover.Content
-                    collisionTolerance={5}
-                    side="right"
-                    sideOffset={5}
-                    align="center"
-                  >
-                    <ProfilePreview
-                      profilePicture={message.author?.profilePicture}
-                      displayName={message.author?.displayName}
-                      walletAddress={message.author?.walletAddress}
-                      onlineStatus={message.author?.onlineStatus}
-                      userId={message.authorUserId}
-                    />
-                  </Popover.Content>
-                </Popover.Root>
-              </div>
-            )}
-
-            <div>
-              {compact ? (
-                <Popover.Root modal>
-                  <Popover.Trigger asChild>
-                    <div
-                      css={css({
-                        display: "inline",
-                        cursor: "pointer",
-                        ":hover [data-name]": { textDecoration: "underline" },
-                      })}
-                    >
-                      <Avatar
-                        url={message.author?.profilePicture.small}
-                        walletAddress={message.author?.walletAddress}
-                        size="2rem"
-                        style={{
-                          display: "inline",
-                          verticalAlign: "sub",
-                          marginRight: "0.6rem",
-                        }}
-                      />
-                      <MemberDisplayName
-                        data-name
-                        displayName={message.author?.displayName}
-                        style={{ marginRight: "1rem" }}
-                      />
-                    </div>
-                  </Popover.Trigger>
-                  <Popover.Content
-                    collisionTolerance={5}
-                    side="right"
-                    sideOffset={5}
-                    align="center"
-                  >
-                    <ProfilePreview
-                      profilePicture={message.author?.profilePicture}
-                      displayName={message.author?.displayName}
-                      walletAddress={message.author?.walletAddress}
-                      onlineStatus={message.author?.onlineStatus}
-                      userId={message.authorUserId}
-                    />
-                  </Popover.Content>
-                </Popover.Root>
-              ) : (
-                !showSimplifiedMessage && (
-                  <MessageHeader
-                    authorUser={message.author}
-                    createdAt={createdAtDate}
-                    isOwnMessage={isOwnMessage}
-                  />
-                )
-              )}
-
-              {isEditing ? (
-                <EditMessageInput
-                  ref={editInputRef}
-                  blocks={message.content}
-                  onCancel={() => {
-                    setEditingMessage(false);
-                  }}
-                  requestRemove={() =>
-                    new Promise((resolve, reject) => {
-                      if (
-                        !confirm(
-                          "Are you sure you want to remove this message?"
-                        )
-                      ) {
-                        reject(new Error());
-                        return;
-                      }
-
-                      remove().then(resolve, reject);
-                    })
-                  }
-                  save={(content) =>
-                    save(content).then(() => {
-                      setEditingMessage(false);
-                    })
-                  }
-                  members={members}
-                  getMember={getMember}
-                />
-              ) : (
-                <RichText
-                  compact={compact}
-                  blocks={message.content}
-                  onClickInteractiveElement={onClickInteractiveElement}
-                  getMember={getMember}
-                  suffix={message.isEdited && editedMessageSuffix}
-                />
-              )}
-
-              {reactions.length !== 0 && (
-                <Reactions
-                  items={reactions}
-                  addReaction={addReaction}
-                  removeReaction={removeReaction}
-                  showAddReactionButton={isHovering || hasTouchFocus}
-                />
-              )}
-            </div>
-          </div>
-        </>
-      )}
+          {reactions.length !== 0 && (
+            <Reactions
+              items={reactions}
+              addReaction={addReaction}
+              removeReaction={removeReaction}
+              showAddReactionButton={isHovering || hasTouchFocus}
+            />
+          )}
+        </div>
+      </div>
     </div>
   );
 });
@@ -870,60 +730,139 @@ const InlineAppDisplayName = React.forwardRef(
   )
 );
 
-const MessageHeader = ({ authorUser, createdAt }) => (
-  <div
-    css={css`
-      display: grid;
-      grid-auto-flow: column;
-      grid-auto-columns: minmax(0, auto);
-      justify-content: flex-start;
-      align-items: flex-end;
-      grid-gap: 0.6rem;
-      margin: 0 0 0.2rem;
-      cursor: default;
-      min-height: 1.9rem;
-    `}
-  >
-    {authorUser != null && (
-      <>
-        <MemberDisplayNameWithPopover user={authorUser} />
+const MessageHeader = ({
+  compact,
+  // simplified,
+  message,
+  authorUser,
+  createdAt,
+}) => {
+  if (message.isSystemMessage) return null;
 
-        <TinyMutedText>
-          <FormattedDateWithTooltip
-            value={createdAt}
-            hour="numeric"
-            minute="numeric"
-            day="numeric"
-            month="short"
-            tooltipContentProps={{ sideOffset: 8 }}
+  if (message.isAppMessage) {
+    switch (message.type) {
+      case "webhook": {
+        const isWaitingForApp = message.app?.name == null;
+        return (
+          <span
+            style={{
+              opacity: isWaitingForApp ? 0 : 1,
+              marginRight: compact ? "1rem" : 0,
+            }}
+          >
+            <AppDisplayName displayName={message.app?.name ?? "..."} />
+          </span>
+        );
+      }
+
+      default:
+        throw new Error();
+    }
+  }
+
+  if (compact)
+    return (
+      <Popover.Root modal>
+        <Popover.Trigger asChild>
+          <div
+            css={css({
+              display: "inline",
+              cursor: "pointer",
+              ":hover [data-name]": {
+                textDecoration: "underline",
+              },
+            })}
+          >
+            <Avatar
+              url={message.author?.profilePicture.small}
+              walletAddress={message.author?.walletAddress}
+              size="2rem"
+              style={{
+                display: "inline",
+                verticalAlign: "sub",
+                marginRight: "0.7rem",
+                transform: "translateY(0.1rem)",
+              }}
+            />
+            <MemberDisplayName
+              data-name
+              displayName={message.author?.displayName}
+              style={{ marginRight: "1rem" }}
+            />
+          </div>
+        </Popover.Trigger>
+        <Popover.Content
+          collisionTolerance={5}
+          side="right"
+          sideOffset={5}
+          align="center"
+        >
+          <ProfilePreview
+            profilePicture={message.author?.profilePicture}
+            displayName={message.author?.displayName}
+            walletAddress={message.author?.walletAddress}
+            onlineStatus={message.author?.onlineStatus}
+            userId={message.authorUserId}
           />
-        </TinyMutedText>
+        </Popover.Content>
+      </Popover.Root>
+    );
 
-        {authorUser?.onlineStatus === "online" && (
-          <Tooltip.Root>
-            <Tooltip.Trigger asChild>
-              <div css={css({ padding: "0.5rem 0.2rem" })}>
-                <div
-                  css={(theme) =>
-                    css({
-                      width: "0.6rem",
-                      height: "0.6rem",
-                      borderRadius: "50%",
-                      background: theme.colors.onlineIndicator,
-                    })
-                  }
-                />
-              </div>
-            </Tooltip.Trigger>
-            <Tooltip.Content side="top" align="center" sideOffset={6}>
-              User online
-            </Tooltip.Content>
-          </Tooltip.Root>
-        )}
-      </>
-    )}
-  </div>
-);
+  return (
+    <div
+      css={css`
+        display: grid;
+        grid-auto-flow: column;
+        grid-auto-columns: minmax(0, auto);
+        justify-content: flex-start;
+        align-items: flex-end;
+        grid-gap: 0.6rem;
+        margin: 0 0 0.2rem;
+        cursor: default;
+        min-height: 1.9rem;
+      `}
+    >
+      {authorUser != null && (
+        <>
+          <MemberDisplayNameWithPopover user={authorUser} />
+
+          <TinyMutedText>
+            <FormattedDateWithTooltip
+              value={createdAt}
+              hour="numeric"
+              minute="numeric"
+              day="numeric"
+              month="short"
+              tooltipContentProps={{ sideOffset: 8 }}
+            />
+          </TinyMutedText>
+
+          {authorUser?.onlineStatus === "online" && (
+            <Tooltip.Root>
+              <Tooltip.Trigger asChild>
+                <div css={css({ padding: "0.5rem 0.2rem" })}>
+                  <div
+                    css={(theme) =>
+                      css({
+                        width: "0.6rem",
+                        height: "0.6rem",
+                        borderRadius: "50%",
+                        background: theme.colors.onlineIndicator,
+                      })
+                    }
+                  />
+                </div>
+              </Tooltip.Trigger>
+              <Tooltip.Content side="top" align="center" sideOffset={6}>
+                User online
+              </Tooltip.Content>
+            </Tooltip.Root>
+          )}
+        </>
+      )}
+    </div>
+  );
+};
 
 // Super hacky and inaccessible
 const EmojiPicker = ({ width = "auto", height = "100%", onSelect }) => {
@@ -1608,226 +1547,226 @@ const RepliedMessage = ({ message, getMember }) => {
   );
 };
 
-const SystemMessage = ({ isHovering, message, compact, reactions }) => {
-  const content = React.useMemo(() => {
-    switch (message.type) {
-      case "user-invited": {
-        const isMissingData = [
-          message.inviter?.displayName,
-          message.author?.displayName,
-        ].some((n) => n == null);
+const MessageLeftColumn = ({ isHovering, simplified, compact, message }) => {
+  if (simplified)
+    return (
+      <div
+        css={css({
+          transition: "0.15s opacity",
+          cursor: "default",
+          transform: "translateY(0.4rem)",
+        })}
+        style={{ opacity: isHovering ? 1 : 0 }}
+      >
+        <TinyMutedText nowrap style={{ float: "right" }}>
+          <FormattedDateWithTooltip
+            value={new Date(message.created_at)}
+            hour="numeric"
+            minute="numeric"
+            tooltipContentProps={{ sideOffset: 7 }}
+            disableRelative
+            disableTooltip={!isHovering}
+          />
+        </TinyMutedText>
+      </div>
+    );
 
-        return (
-          <span style={{ opacity: isMissingData ? 0 : 1 }}>
-            <MemberDisplayNameWithPopover user={message.inviter} /> added{" "}
-            <MemberDisplayNameWithPopover user={message.author} /> to the
-            channel.
-          </span>
-        );
-      }
-      case "member-joined": {
-        const isMissingData = message.author?.displayName == null;
-        return (
-          <span style={{ opacity: isMissingData ? 0 : 1 }}>
-            <MemberDisplayNameWithPopover user={message.author} /> joined the
-            channel. Welcome!
-          </span>
-        );
-      }
+  if (message.isSystemMessage || message.isAppMessage)
+    return isHovering ? (
+      <div
+        css={css({
+          transition: "0.15s opacity",
+          cursor: "default",
+          transform: "translateY(0.4rem)",
+        })}
+      >
+        <TinyMutedText nowrap style={{ float: "right" }}>
+          <FormattedDate
+            value={new Date(message.created_at)}
+            hour="numeric"
+            minute="numeric"
+          />
+        </TinyMutedText>
+      </div>
+    ) : (
+      <div css={css({ margin: "0 auto", transform: "translateY(0.4rem)" })}>
+        <JoinArrowRightIcon
+          css={(theme) =>
+            css({
+              width: "1.5rem",
+              color: message.isAppMessage
+                ? theme.colors.pink
+                : theme.colors.onlineIndicator,
+            })
+          }
+        />
+      </div>
+    );
 
-      case "channel-updated": {
-        const updates = Object.entries(message.updates);
-        if (updates.length == 0 || updates.length > 1) {
-          return (
-            <>
-              <MemberDisplayNameWithPopover user={message.author} /> updated the
-              channel.
-            </>
-          );
-        }
-
-        let [field, value] = updates[0];
-
-        // Nested switch case baby!
-        switch (field) {
-          case "description":
-            return (
-              <>
-                <MemberDisplayNameWithPopover user={message.author} />{" "}
-                {(value ?? "") === "" ? (
-                  "cleared the channel topic."
-                ) : (
-                  <>set the channel topic: {value}</>
-                )}
-              </>
-            );
-          case "name":
-            return (
-              <>
-                <MemberDisplayNameWithPopover user={message.author} />{" "}
-                {(value ?? "") === "" ? (
-                  <>cleared the channel {field}.</>
-                ) : (
-                  <>
-                    set the channel {field}: {value}
-                  </>
-                )}
-              </>
-            );
-          default:
-            return (
-              <>
-                <MemberDisplayNameWithPopover user={message.author} /> updated
-                the channel {field}.
-              </>
-            );
-        }
-      }
-
-      default:
-        throw new Error();
-    }
-  }, [message]);
+  if (compact)
+    return (
+      <div
+        css={css({
+          transition: "0.15s opacity",
+          cursor: "default",
+          transform: "translateY(0.4rem)",
+        })}
+        // style={{ opacity: isHovering ? 1 : 0 }}
+      >
+        <TinyMutedText nowrap style={{ float: "right" }}>
+          <FormattedDateWithTooltip
+            value={new Date(message.created_at)}
+            hour="numeric"
+            minute="numeric"
+            tooltipContentProps={{ sideOffset: 7 }}
+            disableRelative
+            disableTooltip={!isHovering}
+          />
+        </TinyMutedText>
+      </div>
+    );
 
   return (
-    <div
-      css={css({
-        display: "grid",
-        gridTemplateColumns: `${AVATAR_SIZE} minmax(0, 1fr)`,
-        alignItems: "flex-start",
-        gridGap: compact ? COMPACT_GUTTER_SIZE : GUTTER_SIZE,
-      })}
-    >
-      {isHovering ? (
-        <div
-          css={css({
-            paddingTop: "0.5rem",
-            textAlign: "right",
-            transition: "0.15s opacity",
-          })}
-        >
-          <TinyMutedText nowrap style={{ float: "right" }}>
-            <FormattedDate
-              value={new Date(message.created_at)}
-              hour="numeric"
-              minute="numeric"
-            />
-          </TinyMutedText>
-        </div>
-      ) : (
-        <div css={css({ margin: "0 auto", paddingTop: "0.3rem" })}>
-          <JoinArrowRightIcon
+    <div css={css({ padding: "0.2rem 0 0" })}>
+      <Popover.Root modal>
+        <Popover.Trigger asChild>
+          <button
             css={(theme) =>
               css({
-                width: "1.5rem",
-                color: theme.colors.onlineIndicator,
+                position: "relative",
+                borderRadius: theme.avatars.borderRadius,
+                overflow: "hidden",
+                cursor: "pointer",
+                ":hover": {
+                  boxShadow: message.author?.profilePicture.isVerifiedNft
+                    ? "0 0 0 2px #4f52ff"
+                    : "0 0 0 2px rgb(255 255 255 / 10%)",
+                },
+                ":active": { transform: "translateY(0.1rem)" },
               })
             }
+          >
+            <Avatar
+              url={message.author?.profilePicture.small}
+              walletAddress={message.author?.walletAddress}
+              size="3.8rem"
+              pixelSize={38}
+            />
+          </button>
+        </Popover.Trigger>
+        <Popover.Content
+          collisionTolerance={5}
+          side="right"
+          sideOffset={5}
+          align="center"
+        >
+          <ProfilePreview
+            profilePicture={message.author?.profilePicture}
+            displayName={message.author?.displayName}
+            walletAddress={message.author?.walletAddress}
+            onlineStatus={message.author?.onlineStatus}
+            userId={message.authorUserId}
           />
-        </div>
-      )}
-
-      <div>
-        <div css={(theme) => css({ color: theme.colors.channelDefault })}>
-          {content}
-        </div>
-
-        {reactions}
-      </div>
+        </Popover.Content>
+      </Popover.Root>
     </div>
   );
 };
 
-const AppMessage = ({
-  compact,
-  isHovering,
-  message,
-  reactions,
-  onClickInteractiveElement,
-}) => {
-  const content = React.useMemo(() => {
-    switch (message.type) {
-      case "webhook": {
-        const isWaitingForApp = message.app?.name == null;
+const SystemMessageContent = ({ message }) => {
+  switch (message.type) {
+    case "user-invited": {
+      const isMissingData = [
+        message.inviter?.displayName,
+        message.author?.displayName,
+      ].some((n) => n == null);
+
+      return (
+        <span style={{ opacity: isMissingData ? 0 : 1 }}>
+          <MemberDisplayNameWithPopover user={message.inviter} /> added{" "}
+          <MemberDisplayNameWithPopover user={message.author} /> to the channel.
+        </span>
+      );
+    }
+    case "member-joined": {
+      const isMissingData = message.author?.displayName == null;
+      return (
+        <span style={{ opacity: isMissingData ? 0 : 1 }}>
+          <MemberDisplayNameWithPopover user={message.author} /> joined the
+          channel. Welcome!
+        </span>
+      );
+    }
+
+    case "channel-updated": {
+      const updates = Object.entries(message.updates);
+      if (updates.length == 0 || updates.length > 1) {
         return (
           <>
-            <span
-              style={{
-                opacity: isWaitingForApp ? 0 : 1,
-                marginRight: compact ? "1rem" : 0,
-              }}
-            >
-              <AppDisplayName displayName={message.app?.name ?? "..."} />
-            </span>
-            <RichText
-              compact={compact}
-              blocks={message.content}
-              onClickInteractiveElement={onClickInteractiveElement}
-            />
+            <MemberDisplayNameWithPopover user={message.author} /> updated the
+            channel.
           </>
         );
       }
 
-      case "app-installed": {
-        const isMissingData = [
-          message.installer?.displayName,
-          message.app?.name,
-        ].some((n) => n == null);
+      let [field, value] = updates[0];
 
-        return (
-          <div css={(theme) => css({ color: theme.colors.channelDefault })}>
-            <span style={{ opacity: isMissingData ? 0 : 1 }}>
-              <MemberDisplayNameWithPopover user={message.installer} />{" "}
-              installed a new app:{" "}
-              <InlineAppDisplayName displayName={message.app?.name ?? "..."} />
-            </span>
-          </div>
-        );
+      // Nested switch case baby!
+      switch (field) {
+        case "description":
+          return (
+            <>
+              <MemberDisplayNameWithPopover user={message.author} />{" "}
+              {(value ?? "") === "" ? (
+                "cleared the channel topic."
+              ) : (
+                <>set the channel topic: {value}</>
+              )}
+            </>
+          );
+        case "name":
+          return (
+            <>
+              <MemberDisplayNameWithPopover user={message.author} />{" "}
+              {(value ?? "") === "" ? (
+                <>cleared the channel {field}.</>
+              ) : (
+                <>
+                  set the channel {field}: {value}
+                </>
+              )}
+            </>
+          );
+        default:
+          return (
+            <>
+              <MemberDisplayNameWithPopover user={message.author} /> updated the
+              channel {field}.
+            </>
+          );
       }
-
-      default:
-        throw new Error();
     }
-  }, [message, compact, onClickInteractiveElement]);
 
-  return (
-    <div
-      css={css({
-        display: "grid",
-        gridTemplateColumns: `${AVATAR_SIZE} minmax(0, 1fr)`,
-        alignItems: "flex-start",
-        gridGap: compact ? COMPACT_GUTTER_SIZE : GUTTER_SIZE,
-      })}
-    >
-      {isHovering ? (
-        <div css={css({ paddingTop: "0.5rem", transition: "0.15s opacity" })}>
-          <TinyMutedText nowrap style={{ float: "right" }}>
-            <FormattedDate
-              value={new Date(message.created_at)}
-              hour="numeric"
-              minute="numeric"
-            />
-          </TinyMutedText>
-        </div>
-      ) : (
-        <div css={css({ margin: "0 auto", paddingTop: "0.3rem" })}>
-          <JoinArrowRightIcon
-            css={(theme) =>
-              css({
-                width: "1.5rem",
-                color: theme.colors.pink,
-              })
-            }
-          />
-        </div>
-      )}
+    case "app-installed": {
+      const isMissingData = [
+        message.installer?.displayName,
+        message.app?.name,
+      ].some((n) => n == null);
 
-      <div>
-        {content}
-        {reactions}
-      </div>
-    </div>
-  );
+      return (
+        <div css={(theme) => css({ color: theme.colors.channelDefault })}>
+          <span style={{ opacity: isMissingData ? 0 : 1 }}>
+            <MemberDisplayNameWithPopover user={message.installer} /> installed
+            a new app:{" "}
+            <InlineAppDisplayName displayName={message.app?.name ?? "..."} />
+          </span>
+        </div>
+      );
+    }
+
+    default:
+      throw new Error();
+  }
 };
 
 const TinyMutedText = ({ children, nowrap = false, style }) => (

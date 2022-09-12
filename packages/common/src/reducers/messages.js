@@ -291,20 +291,28 @@ export const selectMessage = createSelector(
     if (message == null) return null;
     if (message.deleted) return message;
 
+    const type = deriveMessageType(message);
+
+    if (type == null) return null;
+
+    const isSystemMessage = systemMessageTypes.includes(type);
+    const isAppMessage = appMessageTypes.includes(type);
+
     const serverId = message.server;
-    const authorUserId = message.author;
     const appId = message.app;
+    const authorUserId = message.author;
     const inviterUserId = message.inviter;
     const installerUserId = message.installer;
+    const authorId = isSystemMessage
+      ? "system"
+      : isAppMessage
+      ? appId
+      : authorUserId;
 
     if (message.reply_to != null) {
       message.repliedMessage = repliedMessage;
       message.isReply = true;
     }
-
-    const type = deriveMessageType(message);
-
-    if (type == null) return null;
 
     return {
       ...message,
@@ -312,10 +320,11 @@ export const selectMessage = createSelector(
       serverId,
       channelId: message.channel,
       authorUserId,
+      authorId,
       isEdited: message.edited_at != null,
       type,
-      isSystemMessage: systemMessageTypes.includes(type),
-      isAppMessage: appMessageTypes.includes(type),
+      isSystemMessage,
+      isAppMessage,
       isOptimistic: message.isOptimistic,
       author,
       inviterUserId,
