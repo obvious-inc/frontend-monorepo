@@ -31,14 +31,22 @@ const useAccessToken = ({ storage = asyncWebStorage } = {}) => {
   const set = React.useCallback((token) => {
     tokenRef.current = token;
     setToken(token);
-    if (token == null) storageRef.current.removeItem(ACCESS_TOKEN_CACHE_KEY);
-    else storageRef.current.setItem(ACCESS_TOKEN_CACHE_KEY, token);
+    try {
+      if (token == null) storageRef.current.removeItem(ACCESS_TOKEN_CACHE_KEY);
+      else storageRef.current.setItem(ACCESS_TOKEN_CACHE_KEY, token);
+    } catch (e) {
+      // Ignore
+    }
   }, []);
 
   const clear = React.useCallback(() => {
     tokenRef.current = null;
     setToken(null);
-    storageRef.current.removeItem(ACCESS_TOKEN_CACHE_KEY);
+    try {
+      storageRef.current.removeItem(ACCESS_TOKEN_CACHE_KEY);
+    } catch (e) {
+      // Ignore
+    }
   }, []);
 
   React.useEffect(() => {
@@ -63,13 +71,21 @@ const useRefreshToken = ({ storage = asyncWebStorage } = {}) => {
 
   const set = React.useCallback((token) => {
     tokenRef.current = token;
-    if (token == null) storageRef.current.removeItem(REFRESH_TOKEN_CACHE_KEY);
-    else storageRef.current.setItem(REFRESH_TOKEN_CACHE_KEY, token);
+    try {
+      if (token == null) storageRef.current.removeItem(REFRESH_TOKEN_CACHE_KEY);
+      else storageRef.current.setItem(REFRESH_TOKEN_CACHE_KEY, token);
+    } catch (e) {
+      // Ignore
+    }
   }, []);
 
   const clear = React.useCallback(() => {
     tokenRef.current = null;
-    storageRef.current.removeItem(REFRESH_TOKEN_CACHE_KEY);
+    try {
+      storageRef.current.removeItem(REFRESH_TOKEN_CACHE_KEY);
+    } catch (e) {
+      // Ignore
+    }
   }, []);
 
   React.useEffect(() => {

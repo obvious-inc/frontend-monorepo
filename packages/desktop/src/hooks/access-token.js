@@ -4,18 +4,30 @@ const CACHE_KEY = "access-token";
 
 // TODO: Use session cookie or some secure storage instead of localStorage
 const useAccessToken = () => {
-  const [token, setToken] = React.useState(() =>
-    localStorage.getItem(CACHE_KEY)
-  );
+  const [token, setToken] = React.useState(() => {
+    try {
+      return localStorage.getItem(CACHE_KEY);
+    } catch (e) {
+      return undefined;
+    }
+  });
 
   const set = React.useCallback((token) => {
     setToken(token);
-    localStorage.setItem(CACHE_KEY, token);
+    try {
+      localStorage.setItem(CACHE_KEY, token);
+    } catch (e) {
+      // Ignore
+    }
   }, []);
 
   const clear = React.useCallback(() => {
     setToken(null);
-    localStorage.removeItem(CACHE_KEY);
+    try {
+      localStorage.removeItem(CACHE_KEY);
+    } catch (e) {
+      // Ignore
+    }
   }, []);
 
   return [token, { set, clear }];
