@@ -39,13 +39,13 @@ const AuthHome = () => {
 
   React.useEffect(() => {
     if (clientId == null) return;
-    authorizedFetch(`/apps?client_id=${clientId}`).then((res) => {
+    authorizedFetch(`/apps/?client_id=${clientId}`).then((res) => {
       const client = res[0];
       setClientName(client?.name);
 
       if (!scopes) setScopeContent(parseScopes(client.scopes));
     });
-  }, [authorizedFetch, clientId]);
+  }, [authorizedFetch, clientId, scopes]);
 
   if (clientId == null || channel == null) return null;
 
