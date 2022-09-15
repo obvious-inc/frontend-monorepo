@@ -1754,13 +1754,18 @@ const SystemMessageContent = ({ message }) => {
       ].some((n) => n == null);
 
       return (
-        <div css={(theme) => css({ color: theme.colors.channelDefault })}>
-          <span style={{ opacity: isMissingData ? 0 : 1 }}>
-            <MemberDisplayNameWithPopover user={message.installer} /> installed
-            a new app:{" "}
-            <InlineAppDisplayName displayName={message.app?.name ?? "..."} />
-          </span>
-        </div>
+        <span
+          css={(theme) =>
+            css({
+              color: theme.colors.channelDefault,
+              opacity: isMissingData ? 0 : 1,
+            })
+          }
+        >
+          <MemberDisplayNameWithPopover user={message.installer} /> installed a
+          new app:{" "}
+          <InlineAppDisplayName displayName={message.app?.name ?? "..."} />
+        </span>
       );
     }
 
