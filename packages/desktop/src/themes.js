@@ -190,8 +190,7 @@ const createNounsTv = () => {
     name: "nouns.tv",
     mainHeader: {
       ...baseTheme.mainHeader,
-      height: "7rem",
-      floating: true,
+      height: "6rem",
     },
     fontSizes: {
       ...baseTheme.fontSizes,
@@ -204,14 +203,16 @@ const createNounsTv = () => {
     },
     fontStacks: {
       ...baseTheme.fontStacks,
+      // default:
+      //   'Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif',
       headers:
-        'Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif',
+        '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif',
     },
     text: {
       ...baseTheme.text,
       weights: {
         ...baseTheme.text.weights,
-        header: "700",
+        header: "600",
       },
     },
   };

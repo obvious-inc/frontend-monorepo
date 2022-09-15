@@ -1405,7 +1405,7 @@ const Channel = ({ compact, noSideMenu }) => {
                 />
               </a>
             ))}
-          {!isEmbedded && <Heading>{channel?.name}</Heading>}
+          <Heading>{channel?.name}</Heading>
           <div style={{ flex: 1, minWidth: 0 }}>
             {channel.description != null && (
               <div
@@ -1679,16 +1679,6 @@ export const Header = ({ noSideMenu, children }) => {
           WebkitAppRegion: isNative ? "drag" : undefined,
           minWidth: 0,
           width: "100%",
-          ...(theme.mainHeader.floating
-            ? {
-                position: "absolute",
-                top: 0,
-                left: 0,
-                background:
-                  "linear-gradient(180deg, #191919 0%, #191919d9 50%,  transparent 100%)",
-                zIndex: "2",
-              }
-            : {}),
         })
       }
     >
