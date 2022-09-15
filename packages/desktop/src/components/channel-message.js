@@ -741,7 +741,9 @@ const MessageHeader = ({
 
   if (message.isAppMessage) {
     switch (message.type) {
-      case "webhook": {
+      case "webhook":
+      case "app-installed":
+      case "app": {
         const isWaitingForApp = message.app?.name == null;
         return (
           <span
