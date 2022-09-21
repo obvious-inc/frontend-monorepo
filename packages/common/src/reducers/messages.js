@@ -237,7 +237,7 @@ const entryIdsByChannelId = (state = {}, action) => {
 };
 
 const systemMessageTypes = ["member-joined", "user-invited", "channel-updated"];
-const appMessageTypes = ["webhook", "app"];
+const appMessageTypes = ["webhook", "app", "app-installed"];
 
 const deriveMessageType = (message) => {
   switch (message.type) {
@@ -252,6 +252,8 @@ const deriveMessageType = (message) => {
       return "webhook";
     case 5:
       return "channel-updated";
+    case 6:
+      return "app-installed";
     default:
       console.warn(`Unknown message type "${message.type}"`);
   }
@@ -271,6 +273,11 @@ export const selectMessage = createSelector(
   },
   (state, messageId) => {
     const message = state.messages.entriesById[messageId];
+    if (message == null || message.installer == null) return null;
+    return selectUser(state, message.installer);
+  },
+  (state, messageId) => {
+    const message = state.messages.entriesById[messageId];
     if (message == null || message.reply_to == null) return null;
     return selectMessage(state, message.reply_to);
   },
@@ -280,7 +287,7 @@ export const selectMessage = createSelector(
     if (message == null || !message.app) return null;
     return selectApp(state, message.app);
   },
-  (message, author, inviter, repliedMessage, loggedInUser, app) => {
+  (message, author, inviter, installer, repliedMessage, loggedInUser, app) => {
     if (message == null) return null;
     if (message.deleted) return message;
 
@@ -295,6 +302,7 @@ export const selectMessage = createSelector(
     const appId = message.app;
     const authorUserId = message.author;
     const inviterUserId = message.inviter;
+    const installerUserId = message.installer;
     const authorId = isSystemMessage
       ? "system"
       : isAppMessage
@@ -321,6 +329,8 @@ export const selectMessage = createSelector(
       author,
       inviterUserId,
       inviter,
+      installerUserId,
+      installer,
       content:
         message.blocks?.length > 0
           ? message.blocks

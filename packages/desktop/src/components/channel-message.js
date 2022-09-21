@@ -713,6 +713,23 @@ const AppDisplayName = React.forwardRef(
   )
 );
 
+const InlineAppDisplayName = React.forwardRef(
+  ({ displayName, color, ...props }, ref) => (
+    <span
+      ref={ref}
+      css={(theme) =>
+        css({
+          color: color ?? theme.colors.pink,
+          fontWeight: "500",
+        })
+      }
+      {...props}
+    >
+      {displayName}
+    </span>
+  )
+);
+
 const MessageHeader = ({
   compact,
   // simplified,
@@ -724,7 +741,9 @@ const MessageHeader = ({
 
   if (message.isAppMessage) {
     switch (message.type) {
-      case "webhook": {
+      case "webhook":
+      case "app-installed":
+      case "app": {
         const isWaitingForApp = message.app?.name == null;
         return (
           <span
@@ -1728,6 +1747,28 @@ const SystemMessageContent = ({ message }) => {
             </>
           );
       }
+    }
+
+    case "app-installed": {
+      const isMissingData = [
+        message.installer?.displayName,
+        message.app?.name,
+      ].some((n) => n == null);
+
+      return (
+        <span
+          css={(theme) =>
+            css({
+              color: theme.colors.channelDefault,
+              opacity: isMissingData ? 0 : 1,
+            })
+          }
+        >
+          <MemberDisplayNameWithPopover user={message.installer} /> installed a
+          new app:{" "}
+          <InlineAppDisplayName displayName={message.app?.name ?? "..."} />
+        </span>
+      );
     }
 
     default:
