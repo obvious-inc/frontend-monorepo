@@ -22,6 +22,7 @@ module.exports = {
   rules: {
     "react/prop-types": "off",
     "react/display-name": "off",
+    "react/no-unknown-property": [2, { ignore: ["jsx"] }],
   },
   settings: {
     react: {
