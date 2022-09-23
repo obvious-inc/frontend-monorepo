@@ -7,7 +7,7 @@ export default {
     format: "esm",
     // sourcemap: true,
   },
-  external: ["react"],
+  external: ["react", "reselect"],
   plugins: [
     swc({
       rollup: {
