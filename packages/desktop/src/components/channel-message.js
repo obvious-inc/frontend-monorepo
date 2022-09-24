@@ -1,6 +1,6 @@
 import isDateToday from "date-fns/isToday";
 import React from "react";
-import { useNavigate } from "react-router";
+import { useNavigate } from "react-router-dom";
 import { FormattedDate, FormattedRelativeTime } from "react-intl";
 import { css, useTheme } from "@emotion/react";
 import {
