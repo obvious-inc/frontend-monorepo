@@ -89,18 +89,13 @@ const createParser = ({
         case "user": {
           const member = getMember(el.ref);
           return (
-            <Popover.Root key={i}>
+            <Popover.Root key={i} placement="right">
               <Popover.Trigger asChild>
                 <button className="mention">
                   @{member?.displayName ?? el.ref}
                 </button>
               </Popover.Trigger>
-              <Popover.Content
-                collisionTolerance={5}
-                side="right"
-                sideOffset={5}
-                align="center"
-              >
+              <Popover.Content>
                 {member != null && (
                   <ProfilePreview
                     profilePicture={member.profilePicture}

@@ -22,7 +22,7 @@ import MessageInput from "./message-input";
 import RichText from "./rich-text";
 import Button from "./button";
 import Avatar from "./avatar";
-import * as Popover from "./popover";
+import * as Popover from "../components/popover";
 import * as DropdownMenu from "./dropdown-menu";
 import * as Toolbar from "./toolbar";
 import * as Tooltip from "./tooltip";
@@ -537,12 +537,15 @@ const Reactions = ({
 
         {inputDeviceCanHover ? (
           <Popover.Root
+            placement="top"
             open={isInlineEmojiPickerOpen}
-            onOpenChange={setInlineEmojiPickerOpen}
+            onOpenChange={(s) => {
+              setInlineEmojiPickerOpen(s);
+            }}
           >
             <Popover.Trigger asChild>{addReactionButton}</Popover.Trigger>
-            <Popover.Content side="top" align="center" sideOffset={4}>
-              <Popover.Arrow />
+            <Popover.Content>
+              {/* <Popover.Arrow /> */}
               <EmojiPicker
                 width="31.6rem"
                 height="28.4rem"
@@ -644,7 +647,7 @@ const MemberDisplayName = React.forwardRef(
 
 const MemberDisplayNameWithPopover = React.forwardRef(
   ({ user, color, popoverProps, ...props }, ref) => (
-    <Popover.Root>
+    <Popover.Root placement="right" {...popoverProps}>
       <Popover.Trigger asChild>
         <MemberDisplayName
           ref={ref}
@@ -653,13 +656,7 @@ const MemberDisplayNameWithPopover = React.forwardRef(
           {...props}
         />
       </Popover.Trigger>
-      <Popover.Content
-        collisionTolerance={5}
-        side="right"
-        sideOffset={5}
-        align="center"
-        {...popoverProps}
-      >
+      <Popover.Content>
         {user != null && (
           <ProfilePreview
             profilePicture={user.profilePicture}
@@ -764,7 +761,7 @@ const MessageHeader = ({
 
   if (compact)
     return (
-      <Popover.Root modal>
+      <Popover.Root placement="right">
         <Popover.Trigger asChild>
           <div
             css={css({
@@ -793,12 +790,7 @@ const MessageHeader = ({
             />
           </div>
         </Popover.Trigger>
-        <Popover.Content
-          collisionTolerance={5}
-          side="right"
-          sideOffset={5}
-          align="center"
-        >
+        <Popover.Content>
           <ProfilePreview
             profilePicture={message.author?.profilePicture}
             displayName={message.author?.displayName}
@@ -1211,6 +1203,7 @@ const MessageToolbar = React.memo(
       <Toolbar.Root>
         {inputDeviceCanHover ? (
           <Popover.Root
+            placement="left"
             open={isEmojiPickerOpen}
             onOpenChange={onEmojiPickerOpenChange}
           >
@@ -1223,22 +1216,22 @@ const MessageToolbar = React.memo(
               <Popover.Trigger>
                 <span>
                   <AddEmojiReactionIcon style={{ width: "1.6rem" }} />
-                  <Popover.Anochor
-                    style={{
-                      width: "3.3rem",
-                      height: "3.3rem",
-                      position: "absolute",
-                      top: "50%",
-                      left: "50%",
-                      transform: "translateY(-50%) translateX(-50%)",
-                      pointerEvents: "none",
-                    }}
-                  />
+                  {/* <Popover.Anochor */}
+                  {/*   style={{ */}
+                  {/*     width: "3.3rem", */}
+                  {/*     height: "3.3rem", */}
+                  {/*     position: "absolute", */}
+                  {/*     top: "50%", */}
+                  {/*     left: "50%", */}
+                  {/*     transform: "translateY(-50%) translateX(-50%)", */}
+                  {/*     pointerEvents: "none", */}
+                  {/*   }} */}
+                  {/* /> */}
                 </span>
               </Popover.Trigger>
             </Toolbar.Button>
-            <Popover.Content side="left" align="center" sideOffset={4}>
-              <Popover.Arrow offset={13} />
+            <Popover.Content>
+              {/* <Popover.Arrow offset={13} /> */}
               <EmojiPicker
                 onSelect={addReaction}
                 width="31.6rem"
@@ -1495,7 +1488,7 @@ const RepliedMessage = ({ message, getMember }) => {
               {authorMember == null ? (
                 <span css={css({ fontWeight: "500" })}>...</span>
               ) : (
-                <Popover.Root>
+                <Popover.Root placement="right">
                   <Popover.Trigger asChild>
                     <span
                       role="button"
@@ -1509,12 +1502,7 @@ const RepliedMessage = ({ message, getMember }) => {
                       {authorMember.displayName}
                     </span>
                   </Popover.Trigger>
-                  <Popover.Content
-                    collisionTolerance={5}
-                    side="right"
-                    sideOffset={5}
-                    align="center"
-                  >
+                  <Popover.Content>
                     <ProfilePreview
                       profilePicture={message.author?.profilePicture}
                       displayName={message.author?.displayName}
@@ -1630,7 +1618,7 @@ const MessageLeftColumn = ({ isHovering, simplified, compact, message }) => {
 
   return (
     <div css={css({ padding: "0.2rem 0 0" })}>
-      <Popover.Root modal>
+      <Popover.Root placement="right">
         <Popover.Trigger asChild>
           <button
             css={(theme) =>
@@ -1656,12 +1644,7 @@ const MessageLeftColumn = ({ isHovering, simplified, compact, message }) => {
             />
           </button>
         </Popover.Trigger>
-        <Popover.Content
-          collisionTolerance={5}
-          side="right"
-          sideOffset={5}
-          align="center"
-        >
+        <Popover.Content>
           <ProfilePreview
             profilePicture={message.author?.profilePicture}
             displayName={message.author?.displayName}
