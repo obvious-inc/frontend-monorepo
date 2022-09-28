@@ -8,9 +8,11 @@ import {
   KeyboardAvoidingView,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { useAppScope } from "@shades/common";
+import { useAppScope, messageUtils } from "@shades/common";
 import * as Localization from "expo-localization";
 import FormattedDate from "../components/formatted-date";
+
+const { stringifyBlocks } = messageUtils;
 
 // Region might return `null` on Android
 const locale = ["en", Localization.region].filter(Boolean).join("-");
@@ -21,7 +23,7 @@ const useChannelMessages = ({ channelId }) => {
   const messages = state.selectChannelMessages(channelId);
 
   React.useEffect(() => {
-    actions.fetchMessages({ channelId });
+    actions.fetchMessages(channelId);
   }, [actions, channelId]);
 
   const sortedMessages = messages.sort(
@@ -32,14 +34,18 @@ const useChannelMessages = ({ channelId }) => {
 };
 
 const Channel = ({ route: { params } }) => {
-  const { serverId, channelId } = params;
+  const { channelId } = params;
   const { state, actions } = useAppScope();
+  const { fetchChannelMembers, fetchChannelPublicPermissions } = actions;
 
-  const channel = state
-    .selectServerChannels(params.serverId)
-    .find((c) => c.id === params.channelId);
+  const channel = state.selectChannel(params.channelId);
 
   const messages = useChannelMessages({ channelId });
+
+  React.useEffect(() => {
+    fetchChannelMembers(params.channelId);
+    fetchChannelPublicPermissions(params.channelId);
+  }, [channelId]);
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: "hsl(0, 0%, 8%)" }}>
@@ -50,7 +56,6 @@ const Channel = ({ route: { params } }) => {
           placeholder={`Message #${channel.name}`}
           onSubmit={(content) =>
             actions.createMessage({
-              server: serverId,
               channel: channelId,
               content,
             })
@@ -112,12 +117,12 @@ const ChannelMessagesScrollView = ({ messages }) => {
             <Text
               style={{
                 lineHeight: 14,
-                color: "#e588f8",
+                color: "white",
                 fontWeight: "500",
                 marginRight: 12,
               }}
             >
-              {m.author.display_name}
+              {m.author?.display_name}
             </Text>
             <Text
               style={{
@@ -130,7 +135,7 @@ const ChannelMessagesScrollView = ({ messages }) => {
             </Text>
           </View>
           <Text selectable style={{ color: "white", lineHeight: 22 }}>
-            {m.content}
+            {stringifyBlocks(m.content)}
           </Text>
         </View>
       ))}

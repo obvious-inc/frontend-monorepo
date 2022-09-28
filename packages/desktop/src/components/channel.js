@@ -8,6 +8,7 @@ import {
   useLatestCallback,
   getImageFileDimensions,
   arrayUtils,
+  messageUtils,
 } from "@shades/common";
 import * as eth from "../utils/ethereum";
 import useGlobalMediaQueries from "../hooks/global-media-queries";
@@ -16,7 +17,6 @@ import useOnlineListener from "../hooks/window-online-listener";
 import useInterval from "../hooks/interval";
 import useWallet from "../hooks/wallet";
 import useWalletLogin from "../hooks/wallet-login";
-import stringifyMessageBlocks from "../slate/stringify";
 import { createEmptyParagraph, isNodeEmpty, cleanNodes } from "../slate/utils";
 import useCommands from "../hooks/commands";
 import MessageInput from "./message-input";
@@ -38,6 +38,8 @@ import useSideMenu from "../hooks/side-menu";
 import useIsOnScreen from "../hooks/is-on-screen";
 import useScrollListener from "../hooks/scroll-listener";
 import useMutationObserver from "../hooks/mutation-observer";
+
+const { stringifyBlocks: stringifyMessageBlocks } = messageUtils;
 
 const { sort } = arrayUtils;
 
