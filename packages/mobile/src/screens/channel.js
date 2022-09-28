@@ -32,12 +32,10 @@ const useChannelMessages = ({ channelId }) => {
 };
 
 const Channel = ({ route: { params } }) => {
-  const { serverId, channelId } = params;
+  const { channelId } = params;
   const { state, actions } = useAppScope();
 
-  const channel = state
-    .selectServerChannels(params.serverId)
-    .find((c) => c.id === params.channelId);
+  const channel = state.selectChannel(params.channelId);
 
   const messages = useChannelMessages({ channelId });
 
@@ -50,7 +48,6 @@ const Channel = ({ route: { params } }) => {
           placeholder={`Message #${channel.name}`}
           onSubmit={(content) =>
             actions.createMessage({
-              server: serverId,
               channel: channelId,
               content,
             })
