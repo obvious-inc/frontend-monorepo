@@ -1,7 +1,5 @@
 import React from "react";
-import { useSearchParams } from "react-router-dom";
 import { css } from "@emotion/react";
-import { useAuth } from "@shades/common";
 import * as eth from "../utils/ethereum";
 import useWallet from "../hooks/wallet";
 import useWalletLogin from "../hooks/wallet-login";
@@ -25,18 +23,6 @@ const SignInScreen = () => {
   const { login, status: loginStatus, error: loginError } = useWalletLogin();
 
   const [isSwitchingToMainnet, setSwitchingToMainnet] = React.useState(false);
-
-  const [searchParams, setSearchParams] = useSearchParams();
-  const { accessToken, verifyAccessToken } = useAuth();
-
-  React.useEffect(() => {
-    if (accessToken == null || searchParams.get("redirect") == null) return;
-
-    verifyAccessToken().then(() => {
-      searchParams.set("token", encodeURIComponent(accessToken));
-      setSearchParams(searchParams);
-    });
-  }, [accessToken, verifyAccessToken, searchParams, setSearchParams]);
 
   const error = loginError ?? walletError;
 

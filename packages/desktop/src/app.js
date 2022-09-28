@@ -149,7 +149,7 @@ const App = () => {
   const navigate = useNavigate();
 
   const serverConnection = useServerConnection();
-  const { status: authStatus } = useAuth();
+  const { status: authStatus, accessToken, verifyAccessToken } = useAuth();
   const { state, actions, dispatch } = useAppScope();
   const { login } = useWalletLogin();
 
@@ -252,6 +252,14 @@ const App = () => {
     fetchUserChannelsReadStates();
     fetchStarredItems();
   });
+
+  React.useEffect(() => {
+    if (accessToken == null || window.ReactNativeWebView == null) return;
+
+    verifyAccessToken().then(() => {
+      window.ReactNativeWebView.postMessage(accessToken);
+    });
+  }, [accessToken, verifyAccessToken]);
 
   return (
     <>
