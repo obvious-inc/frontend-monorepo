@@ -14,11 +14,10 @@ import {
   useAppScope,
   AppScopeProvider,
 } from "@shades/common";
-import { parse as parseUrl } from "expo-linking";
 import Channel from "./screens/channel";
 
 const API_ENDPOINT = Constants.expoConfig.extra.apiEndpoint;
-const WEB_APP_ENDPOINT = "http://192.168.86.123:8080"; // "http://localhost:8080"; // Constants.expoConfig.extra.webAppEndpoint;
+const WEB_APP_ENDPOINT = Constants.expoConfig.extra.webAppEndpoint;
 const PUSHER_KEY = Constants.expoConfig.extra.pusherKey;
 
 const Drawer = createDrawerNavigator();
@@ -113,6 +112,7 @@ const SignInView = ({ onSuccess }) => (
     source={{ uri: WEB_APP_ENDPOINT }}
     onMessage={(e) => {
       const accessToken = e.nativeEvent.data;
+      console.log("message!", accessToken);
       if (accessToken != null) onSuccess(accessToken);
     }}
   />
