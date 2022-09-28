@@ -13,8 +13,11 @@ import {
   ServerConnectionProvider,
   useAppScope,
   AppScopeProvider,
+  arrayUtils,
 } from "@shades/common";
 import Channel from "./screens/channel";
+
+const { unique } = arrayUtils;
 
 const API_ENDPOINT = Constants.expoConfig.extra.apiEndpoint;
 const WEB_APP_ENDPOINT = Constants.expoConfig.extra.webAppEndpoint;
@@ -112,7 +115,6 @@ const SignInView = ({ onSuccess }) => (
     source={{ uri: WEB_APP_ENDPOINT }}
     onMessage={(e) => {
       const accessToken = e.nativeEvent.data;
-      console.log("message!", accessToken);
       if (accessToken != null) onSuccess(accessToken);
     }}
   />
