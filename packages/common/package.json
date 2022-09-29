@@ -6,8 +6,7 @@
   "scripts": {
     "start": "rollup -c -w",
     "build": "rollup -c",
-    "format": "prettier . --write",
-    "postinstall": "pnpm -F common build"
+    "format": "prettier . --write"
   },
   "peerDependencies": {
     "react": "17.x",
