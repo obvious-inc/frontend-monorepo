@@ -1,4 +1,4 @@
-import { getImageDimensionsFromUrl } from "@shades/common";
+import { getImageDimensionsFromUrl, messageUtils } from "@shades/common";
 import { getChecksumAddress } from "../utils/ethereum";
 import { send as sendNotification } from "../utils/notifications";
 import {
@@ -6,7 +6,8 @@ import {
   getRandomNoun,
   getRandomNounWithSeedInput,
 } from "../utils/nouns";
-import stringifyMessageBlocks from "../slate/stringify";
+
+const { stringifyBlocks: stringifyMessageBlocks } = messageUtils;
 
 const commands = {
   dm: ({ actions, state, navigate, ethersProvider }) => ({

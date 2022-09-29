@@ -1,3 +1,4 @@
+import Constants from "expo-constants";
 import React from "react";
 import { View, useWindowDimensions } from "react-native";
 import { NavigationContainer } from "@react-navigation/native";
@@ -12,9 +13,15 @@ import {
   ServerConnectionProvider,
   useAppScope,
   AppScopeProvider,
+  arrayUtils,
 } from "@shades/common";
-import { parse as parseUrl } from "expo-linking";
 import Channel from "./screens/channel";
+
+const { unique } = arrayUtils;
+
+const API_ENDPOINT = Constants.expoConfig.extra.apiEndpoint;
+const WEB_APP_ENDPOINT = Constants.expoConfig.extra.webAppEndpoint;
+const PUSHER_KEY = Constants.expoConfig.extra.pusherKey;
 
 const Drawer = createDrawerNavigator();
 
@@ -45,20 +52,30 @@ const createDrawerScreenOptions = ({ dimensions }) => ({
 const App = () => {
   const dimensions = useWindowDimensions();
 
-  // TODO: Put this in the routing state instead
-  const [serverId, setServerId] = React.useState(null);
-
   const { status: authStatus, setAccessToken } = useAuth();
   const { state, actions } = useAppScope();
-  const user = state.selectMe();
 
-  const channels = state.selectServerChannels(serverId);
+  const {
+    fetchClientBootData,
+    fetchUsers,
+    // fetchUserChannels,
+    // fetchUserChannelsReadStates,
+    // fetchStarredItems,
+  } = actions;
+
+  const user = state.selectMe();
+  const channels = state.selectMemberChannels();
 
   React.useEffect(() => {
-    actions.fetchInitialData().then((data) => {
-      setServerId(data.servers[0]?.id);
+    if (authStatus !== "authenticated") return;
+
+    fetchClientBootData().then(({ channels }) => {
+      const dmUserIds = unique(
+        channels.filter((c) => c.kind === "dm").flatMap((c) => c.members)
+      );
+      fetchUsers(dmUserIds);
     });
-  }, [actions]);
+  }, [authStatus, fetchClientBootData, fetchUsers]);
 
   if (authStatus === "not-authenticated")
     return (
@@ -83,7 +100,7 @@ const App = () => {
           key={c.id}
           name={[c.name, c.id].join(":")}
           component={Channel}
-          initialParams={{ serverId, channelId: c.id }}
+          initialParams={{ channelId: c.id }}
           options={{ title: c.name }}
         />
       ))}
@@ -94,10 +111,11 @@ const App = () => {
 const SignInView = ({ onSuccess }) => (
   // Web login for now
   <WebView
-    source={{ uri: `${process.env.WEB_APP_ENDPOINT}/login?redirect=1` }}
-    onNavigationStateChange={(state) => {
-      const { token } = parseUrl(state.url).queryParams;
-      if (token != null) onSuccess(token);
+    incognito
+    source={{ uri: WEB_APP_ENDPOINT }}
+    onMessage={(e) => {
+      const accessToken = e.nativeEvent.data;
+      if (accessToken != null) onSuccess(accessToken);
     }}
   />
 );
@@ -105,18 +123,12 @@ const SignInView = ({ onSuccess }) => (
 export default () => (
   <SafeAreaProvider>
     <NavigationContainer>
-      <AuthProvider
-        apiOrigin={process.env.API_ENDPOINT}
-        tokenStorage={AsyncStorage}
-      >
-        <ServerConnectionProvider
-          Pusher={Pusher}
-          pusherKey={process.env.PUSHER_KEY}
-        >
-          <AppScopeProvider>
+      <AuthProvider apiOrigin={API_ENDPOINT} tokenStorage={AsyncStorage}>
+        <AppScopeProvider>
+          <ServerConnectionProvider Pusher={Pusher} pusherKey={PUSHER_KEY}>
             <App />
-          </AppScopeProvider>
-        </ServerConnectionProvider>
+          </ServerConnectionProvider>
+        </AppScopeProvider>
       </AuthProvider>
     </NavigationContainer>
   </SafeAreaProvider>

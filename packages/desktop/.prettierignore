@@ -1,3 +1,4 @@
 /dist
 /out
 build-constants.json
+pnpm-lock.yaml

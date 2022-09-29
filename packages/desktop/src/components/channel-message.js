@@ -10,7 +10,6 @@ import {
   messageUtils,
 } from "@shades/common";
 import { isNodeEmpty, normalizeNodes, cleanNodes } from "../slate/utils";
-import stringifyMessageBlocks from "../slate/stringify";
 import useHover from "../hooks/hover";
 import useGlobalMediaQueries from "../hooks/global-media-queries";
 import {
@@ -35,7 +34,8 @@ import ProfilePreview from "./profile-preview";
 
 const { groupBy } = arrayUtils;
 const { mapValues } = objectUtils;
-const { withoutAttachments } = messageUtils;
+const { withoutAttachments, stringifyBlocks: stringifyMessageBlocks } =
+  messageUtils;
 
 const ONE_MINUTE_IN_MILLIS = 1000 * 60;
 
