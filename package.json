@@ -1,8 +1,8 @@
 {
   "name": "@newshades/monorepo",
   "scripts": {
-    "lint": "pnpm run lint -r --if-present",
-    "format": "pnpm run format -r --if-present",
+    "lint": "pnpm -r run --if-present lint",
+    "format": "pnpm -r run --if-present format",
     "prepare-packages": "pnpm -F common install && pnpm -F common run build"
   },
   "packageManager": "pnpm@7.12.2"
