@@ -1,11 +1,5 @@
-import React from "react";
-
-const FormattedDate = ({ value, locale }) => {
-  const dateFormatter = React.useMemo(
-    () => new Intl.DateTimeFormat(locale),
-    [locale]
-  );
-
+const FormattedDate = ({ value, locale, ...options }) => {
+  const dateFormatter = new Intl.DateTimeFormat(locale, options);
   return dateFormatter.format(value);
 };
 
