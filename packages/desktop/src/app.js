@@ -23,6 +23,7 @@ import {
   AppScopeProvider,
   ServerConnectionProvider,
   arrayUtils,
+  generatePlaceholderAvatarDataUri,
 } from "@shades/common";
 import { IFrameEthereumProvider } from "@newshades/iframe-provider";
 import * as eth from "./utils/ethereum";
@@ -35,7 +36,6 @@ import useWalletEvent from "./hooks/wallet-event";
 import useWalletLogin, {
   Provider as WalletLoginProvider,
 } from "./hooks/wallet-login";
-import { generateCachedAvatar } from "./components/avatar";
 import LoginScreen from "./components/login-screen";
 import Channel, { Header as ChannelHeader } from "./components/channel";
 // import Discover from "./components/discover";
@@ -104,7 +104,7 @@ const useSystemNotifications = () => {
           body: message.stringContent,
           icon:
             message.author.profilePicture.small ??
-            generateCachedAvatar(message.author.walletAddress, {
+            generatePlaceholderAvatarDataUri(message.author.walletAddress, {
               pixelSize: 24,
             }),
           onClick: ({ close }) => {

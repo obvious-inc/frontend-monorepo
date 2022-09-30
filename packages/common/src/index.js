@@ -10,6 +10,10 @@ export * as objectUtils from "./utils/object";
 export * as functionUtils from "./utils/function";
 export * as messageUtils from "./utils/message";
 export {
+  generatePlaceholderSvgString as generatePlaceholderAvatarSvgString,
+  generatePlaceholderDataUri as generatePlaceholderAvatarDataUri,
+} from "./utils/avatars";
+export {
   isTouchDevice,
   getImageFileDimensions,
   getImageDimensionsFromUrl,

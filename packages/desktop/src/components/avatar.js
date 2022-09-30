@@ -1,38 +1,7 @@
 import { useEnsAvatar } from "wagmi";
 import React from "react";
 import { css } from "@emotion/react";
-// import generateAvatar from "../utils/avatar-generator";
-
-// Caching expensive avatar generation outside of react so that we can share
-// between multiple component instances
-const cache = new Map();
-
-export const generateCachedAvatar = async (walletAddress) => {
-  const cacheKey = walletAddress;
-
-  if (cache.has(cacheKey)) return cache.get(cacheKey);
-
-  const [
-    { ImageData, getNounSeedFromBlockHash, getNounData },
-    { buildSVG },
-    { utils },
-  ] = await Promise.all([
-    import("@nouns/assets"),
-    import("@nouns/sdk"),
-    import("ethers"),
-  ]);
-  const seed = getNounSeedFromBlockHash(0, utils.hexZeroPad(walletAddress, 32));
-  const { parts, background } = getNounData(seed);
-
-  const svgBinary = buildSVG(parts, ImageData.palette, background);
-  const svgBase64 = btoa(svgBinary);
-
-  const url = `data:image/svg+xml;base64,${svgBase64}`;
-
-  cache.set(cacheKey, url);
-
-  return url;
-};
+import { generatePlaceholderAvatarDataUri } from "@shades/common";
 
 const usePlaceholderAvatar = (walletAddress, { enabled = true } = {}) => {
   const [generatedPlaceholderAvatarUrl, setGeneratedPlaceholderAvatarUrl] =
@@ -40,7 +9,7 @@ const usePlaceholderAvatar = (walletAddress, { enabled = true } = {}) => {
 
   React.useEffect(() => {
     if (!enabled || walletAddress == null) return;
-    generateCachedAvatar(walletAddress).then((url) => {
+    generatePlaceholderAvatarDataUri(walletAddress).then((url) => {
       setGeneratedPlaceholderAvatarUrl(url);
     });
   }, [enabled, walletAddress]);
