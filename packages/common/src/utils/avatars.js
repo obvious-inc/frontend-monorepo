@@ -1,3 +1,11 @@
+import {
+  ImageData,
+  getNounSeedFromBlockHash,
+  getNounData,
+} from "@nouns/assets";
+import { buildSVG } from "@nouns/sdk";
+import { utils } from "ethers";
+
 const cache = new Map();
 
 export const generatePlaceholderSvgString = async (walletAddress) => {
@@ -5,15 +13,6 @@ export const generatePlaceholderSvgString = async (walletAddress) => {
 
   if (cache.has(cacheKey)) return cache.get(cacheKey);
 
-  const [
-    { ImageData, getNounSeedFromBlockHash, getNounData },
-    { buildSVG },
-    { utils },
-  ] = await Promise.all([
-    import("@nouns/assets"),
-    import("@nouns/sdk"),
-    import("ethers"),
-  ]);
   const seed = getNounSeedFromBlockHash(0, utils.hexZeroPad(walletAddress, 32));
   const { parts, background } = getNounData(seed);
 

@@ -9,7 +9,7 @@ import {
 import { Slate, Editable, withReact, ReactEditor } from "slate-react";
 import { withHistory } from "slate-history";
 import isHotkey from "is-hotkey";
-import { functionUtils } from "@shades/common";
+import { function as functionUtils } from "@shades/common/utils";
 import { createCss as createRichTextCss } from "./rich-text";
 import createControlledParagraphLineBreaksPlugin from "../slate/plugins/controlled-paragraph-line-breaks";
 import createInlineLinksPlugin from "../slate/plugins/inline-links";

@@ -1,8 +1,10 @@
 import React from "react";
 import { css } from "@emotion/react";
-import { useAppScope, useAuth } from "@shades/common";
+import { useAppScope, useAuth } from "@shades/common/app";
+import { permission as permissionUtils } from "@shades/common/utils";
 import Button from "./button";
-import { parseScopes } from "@shades/common/src/utils/permissions";
+
+const { parseScopes } = permissionUtils;
 
 const AuthHome = () => {
   const { authorizedFetch } = useAuth();

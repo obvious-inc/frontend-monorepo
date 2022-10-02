@@ -1,21 +1,35 @@
 import swc from "rollup-plugin-swc";
 
-export default {
-  input: "src/index.js",
+const plugins = [
+  swc({
+    rollup: {
+      exclude: /node_modules/,
+      extensions: [".js"],
+    },
+  }),
+];
+
+const createConfig = ({ file, dependencies = [] }) => ({
+  input: `src/${file}`,
   output: {
-    file: "dist/index.js",
+    file: `dist/${file}`,
     format: "esm",
-    // sourcemap: true,
   },
-  external: ["react", "reselect"],
-  plugins: [
-    swc({
-      rollup: {
-        exclude: /node_modules/,
-        // presets: [["@babel/preset-env", { loose: true }], "@babel/preset-react"],
-        // plugins: ["babel-plugin-dev-expression"],
-        extensions: [".js"],
-      },
-    }),
-  ],
-};
+  external: dependencies,
+  plugins,
+});
+
+const entrypoints = [
+  { file: "app.js", dependencies: ["react", "reselect"] },
+  { file: "utils.js" },
+  { file: "react.js", dependencies: ["react"] },
+  { file: "nouns.js", dependencies: ["ethers", "@nouns/assets", "@nouns/sdk"] },
+];
+
+export default [
+  ...entrypoints.map(createConfig),
+  createConfig({
+    file: "index.js",
+    dependencies: [...new Set(entrypoints.flatMap((e) => e.dependencies))],
+  }),
+];

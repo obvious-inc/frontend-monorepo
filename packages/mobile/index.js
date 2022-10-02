@@ -1,5 +1,5 @@
+import "@ethersproject/shims";
 import { registerRootComponent } from "expo";
-
 import App from "./src/app";
 
 // registerRootComponent calls AppRegistry.registerComponent('main', () => App);

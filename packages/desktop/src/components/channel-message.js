@@ -3,12 +3,12 @@ import React from "react";
 import { useNavigate } from "react-router-dom";
 import { FormattedDate, FormattedRelativeTime } from "react-intl";
 import { css, useTheme } from "@emotion/react";
+import { useAppScope } from "@shades/common/app";
 import {
-  useAppScope,
-  arrayUtils,
-  objectUtils,
-  messageUtils,
-} from "@shades/common";
+  array as arrayUtils,
+  object as objectUtils,
+  message as messageUtils,
+} from "@shades/common/utils";
 import { isNodeEmpty, normalizeNodes, cleanNodes } from "../slate/utils";
 import useHover from "../hooks/hover";
 import useGlobalMediaQueries from "../hooks/global-media-queries";

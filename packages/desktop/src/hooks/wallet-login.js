@@ -1,6 +1,7 @@
 import { useSignMessage } from "wagmi";
 import React from "react";
-import { useAuth, useLatestCallback } from "@shades/common";
+import { useAuth } from "@shades/common/app";
+import { useLatestCallback } from "@shades/common/react";
 import * as eth from "../utils/ethereum";
 
 const WalletLoginContext = React.createContext({});

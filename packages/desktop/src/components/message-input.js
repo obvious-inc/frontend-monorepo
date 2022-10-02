@@ -1,6 +1,6 @@
 import React from "react";
 import { css } from "@emotion/react";
-import { arrayUtils } from "@shades/common";
+import { array as arrayUtils } from "@shades/common/utils";
 import RichTextInput from "./rich-text-input";
 
 const { sort } = arrayUtils;

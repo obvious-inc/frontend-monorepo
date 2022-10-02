@@ -8,12 +8,18 @@
     "build": "rollup -c",
     "format": "prettier . --write"
   },
+  "exports": {
+    "./app": "./dist/app.js",
+    "./utils": "./dist/utils.js",
+    "./react": "./dist/react.js",
+    "./nouns": "./dist/nouns.js"
+  },
   "peerDependencies": {
+    "ethers": "*",
     "react": "*",
     "reselect": "*",
     "@nouns/assets": "*",
-    "@nouns/sdk": "*",
-    "ethers": "*"
+    "@nouns/sdk": "*"
   },
   "devDependencies": {
     "@swc/core": "^1.3.3",
