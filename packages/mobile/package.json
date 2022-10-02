@@ -12,6 +12,7 @@
     "format": "prettier . --write"
   },
   "dependencies": {
+    "@ethersproject/shims": "^5.7.0",
     "@nouns/assets": "^0.4.0",
     "@nouns/sdk": "^0.2.0",
     "@react-native-async-storage/async-storage": "1.17.10",
@@ -20,15 +21,14 @@
     "@react-navigation/native": "^6.0.13",
     "@react-navigation/native-stack": "^6.9.0",
     "@shades/common": "*",
-    "eslint": "^8.24.0",
-    "eslint-config-prettier": "^8.5.0",
-    "eslint-plugin-react": "^7.31.8",
-    "eslint-plugin-react-hooks": "^4.6.0",
     "ethers": "^5.7.1",
     "expo": "~46.0.13",
+    "expo-application": "~4.2.2",
     "expo-constants": "~13.2.4",
+    "expo-device": "~4.3.0",
     "expo-linking": "^3.2.2",
     "expo-localization": "^13.1.0",
+    "expo-updates": "~0.14.6",
     "pusher-js": "^7.4.0",
     "react": "18.0.0",
     "react-native": "0.69.6",
@@ -43,6 +43,10 @@
     "@babel/core": "^7.19.1",
     "babel-preset-expo": "^9.2.0",
     "dotenv": "^16.0.2",
+    "eslint": "^8.24.0",
+    "eslint-config-prettier": "^8.5.0",
+    "eslint-plugin-react": "^7.31.8",
+    "eslint-plugin-react-hooks": "^4.6.0",
     "prettier": "^2.7.1"
   },
   "pnpm": {

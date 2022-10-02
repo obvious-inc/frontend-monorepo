@@ -9,15 +9,13 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import Svg, { SvgXml, G, Path } from "react-native-svg";
-import {
-  useAppScope,
-  messageUtils,
-  generatePlaceholderAvatarSvgString,
-} from "@shades/common";
+import * as Shades from "@shades/common";
 import * as Localization from "expo-localization";
 import FormattedDate from "../components/formatted-date";
 
-const { stringifyBlocks } = messageUtils;
+const { useAppScope } = Shades.app;
+const { stringifyBlocks } = Shades.utils.message;
+const { generatePlaceholderAvatarSvgString } = Shades.nouns;
 
 // Region might return `null` on Android
 const locale = ["en", Localization.region].filter(Boolean).join("-");
@@ -338,14 +336,7 @@ const SystemMessageContent = ({ message }) => {
 const ChannelMessageInput = ({ placeholder, onSubmit }) => {
   const inputRef = React.useRef();
   return (
-    <View
-      style={{
-        padding: 10,
-        // backgroundColor: "rgba(255,255,255,0.03)",
-        // borderTopWidth: StyleSheet.hairlineWidth,
-        // borderTopColor: "rgba(255,255,255,0.1)",
-      }}
-    >
+    <View style={{ padding: 10 }}>
       <TextInput
         ref={inputRef}
         placeholder={placeholder}

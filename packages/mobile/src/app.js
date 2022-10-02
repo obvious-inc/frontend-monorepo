@@ -7,17 +7,17 @@ import { WebView } from "react-native-webview";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import Pusher from "pusher-js/react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import {
+import * as Shades from "@shades/common";
+import Channel from "./screens/channel";
+
+const { unique } = Shades.utils.array;
+const {
   AuthProvider,
   useAuth,
   ServerConnectionProvider,
   useAppScope,
   AppScopeProvider,
-  arrayUtils,
-} from "@shades/common";
-import Channel from "./screens/channel";
-
-const { unique } = arrayUtils;
+} = Shades.app;
 
 const API_ENDPOINT = Constants.expoConfig.extra.apiEndpoint;
 const WEB_APP_ENDPOINT = Constants.expoConfig.extra.webAppEndpoint;
@@ -120,16 +120,52 @@ const SignInView = ({ onSuccess }) => (
   />
 );
 
+class ErrorBoundary extends React.Component {
+  constructor(props) {
+    super(props);
+    this.state = { error: null, errorInfo: null };
+  }
+
+  componentDidCatch(error, errorInfo) {
+    // Catch errors in any components below and re-render with error message
+    this.setState({
+      error: error,
+      errorInfo: errorInfo,
+    });
+    // You can also log error messages to an error reporting service here
+  }
+
+  render() {
+    if (this.state.errorInfo) {
+      // Error path
+      return (
+        <div>
+          <h2>Something went wrong.</h2>
+          <details style={{ whiteSpace: "pre-wrap" }}>
+            {this.state.error && this.state.error.toString()}
+            <br />
+            {this.state.errorInfo.componentStack}
+          </details>
+        </div>
+      );
+    }
+    // Normally, just render children
+    return this.props.children;
+  }
+}
+
 export default () => (
-  <SafeAreaProvider>
-    <NavigationContainer>
-      <AuthProvider apiOrigin={API_ENDPOINT} tokenStorage={AsyncStorage}>
-        <AppScopeProvider>
-          <ServerConnectionProvider Pusher={Pusher} pusherKey={PUSHER_KEY}>
-            <App />
-          </ServerConnectionProvider>
-        </AppScopeProvider>
-      </AuthProvider>
-    </NavigationContainer>
-  </SafeAreaProvider>
+  <ErrorBoundary>
+    <SafeAreaProvider>
+      <NavigationContainer>
+        <AuthProvider apiOrigin={API_ENDPOINT} tokenStorage={AsyncStorage}>
+          <AppScopeProvider>
+            <ServerConnectionProvider Pusher={Pusher} pusherKey={PUSHER_KEY}>
+              <App />
+            </ServerConnectionProvider>
+          </AppScopeProvider>
+        </AuthProvider>
+      </NavigationContainer>
+    </SafeAreaProvider>
+  </ErrorBoundary>
 );

@@ -1,0 +1,48 @@
+name: build-mobile
+
+on:
+  push:
+    paths-ignore:
+      - "packages/landing"
+      - "packages/desktop"
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  pnpm-v7:
+    runs-on: ${{ matrix.os }}
+
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+        cache: [with-cache, without-cache]
+
+    steps:
+      - name: 🏗 Setup repo
+        uses: actions/checkout@v3
+
+      - name: 🏗 Setup Node
+        uses: actions/setup-node@v2
+        with:
+          node-version: 16.x
+
+      - name: 🏗 Setup Expo
+        uses: expo/expo-github-action@v7
+        with:
+          expo-version: latest
+
+      - name: 🏗 Setup pnpm v7
+        uses: pnpm/action-setup@v2.2.2
+        with:
+          version: 7
+
+      - name: 📦 Install dependencies
+        run: pnpm -F common install && pnpm -F common build &&  pnpm -F mobile install
+
+      - name: 👷 Build project
+        run: pnpm -F mobile build
+
+      - name: 📱 Export bundle
+        run: cd ./packages/mobile && eas update --auto -p ios

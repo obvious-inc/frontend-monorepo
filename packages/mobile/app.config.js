@@ -14,10 +14,13 @@ module.exports = {
   },
   updates: {
     fallbackToCacheTimeout: 0,
+    url: process.env.EXPO_UPDATES_URL,
   },
   assetBundlePatterns: ["**/*"],
+  runtimeVersion: { policy: "sdkVersion" },
   ios: {
     supportsTablet: false,
+    bundleIdentifier: "dev.newshades",
   },
   android: {
     adaptiveIcon: {
@@ -32,5 +35,8 @@ module.exports = {
     apiEndpoint: process.env.API_ENDPOINT,
     webAppEndpoint: process.env.WEB_APP_ENDPOINT,
     pusherKey: process.env.PUSHER_KEY,
+    eas: {
+      projectId: process.env.EAS_PROJECT_ID,
+    },
   },
 };
