@@ -41,3 +41,6 @@ jobs:
       - name: Export bundle
         working-directory: packages/mobile
         run: eas update --auto -p ios
+        env:
+          EXPO_UPDATES_URL: ${{ secrets.EXPO_UPDATES_URL }}
+          EAS_PROJECT_ID: ${{ secrets.EAS_PROJECT_ID }}

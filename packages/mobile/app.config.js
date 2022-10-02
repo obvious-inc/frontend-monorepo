@@ -36,7 +36,7 @@ module.exports = {
     webAppEndpoint: process.env.WEB_APP_ENDPOINT,
     pusherKey: process.env.PUSHER_KEY,
     eas: {
-      projectId: "18b8d918-2cef-43c8-88fb-229f6448e34a",
+      projectId: process.env.EAS_PROJECT_ID,
     },
   },
 };
