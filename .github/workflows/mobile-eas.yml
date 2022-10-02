@@ -44,3 +44,6 @@ jobs:
         env:
           EXPO_UPDATES_URL: ${{ secrets.EXPO_UPDATES_URL }}
           EAS_PROJECT_ID: ${{ secrets.EAS_PROJECT_ID }}
+          API_ENDPOINT: ${{ secrets.PRODUCTION_API_BASE_URL }}
+          WEB_APP_ENDPOINT: ${{ secrets.PRODUCTION_WEB_APP_BASE_URL }}
+          PUSHER_KEY: ${{ secrets.PRODUCTION_PUSHER_KEY }}
