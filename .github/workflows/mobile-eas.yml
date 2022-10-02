@@ -11,33 +11,33 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: 🏗 Setup repo
+      - name: Setup repo
         uses: actions/checkout@v3
 
-      - name: 🏗 Setup pnpm v7
+      - name: Setup pnpm v7
         uses: pnpm/action-setup@v2.2.2
         with:
           version: 7
 
-      - name: 🏗 Setup Node
+      - name: Setup Node
         uses: actions/setup-node@v2
         with:
           node-version: 16.x
 
-      - name: 🏗 Setup Expo
+      - name: Setup Expo
         uses: expo/expo-github-action@v7
         with:
           expo-version: latest
+          eas-version: latest
           token: ${{ secrets.EXPO_TOKEN }}
-          # eas-version: latest
 
-      - name: 📦 Install dependencies
+      - name: Install dependencies
         run: pnpm -F common install && pnpm -F common build &&  pnpm -F mobile install
         shell: bash
 
-      - name: 👷 Build project
+      - name: Build project
         run: pnpm -F mobile build
 
-      - name: 📱 Export bundle
+      - name: Export bundle
         working-directory: packages/mobile
         run: eas update --auto -p ios
