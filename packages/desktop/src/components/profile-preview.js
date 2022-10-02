@@ -1,6 +1,6 @@
 import React from "react";
 import { css } from "@emotion/react";
-import { useAppScope } from "@shades/common";
+import { useAppScope } from "@shades/common/app";
 import Button from "./button";
 import Avatar from "./avatar";
 import * as Tooltip from "./tooltip";

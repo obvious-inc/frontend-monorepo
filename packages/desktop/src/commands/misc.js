@@ -1,4 +1,7 @@
-import { getImageDimensionsFromUrl, messageUtils } from "@shades/common";
+import {
+  getImageDimensionsFromUrl,
+  message as messageUtils,
+} from "@shades/common/utils";
 import { getChecksumAddress } from "../utils/ethereum";
 import { send as sendNotification } from "../utils/notifications";
 import {

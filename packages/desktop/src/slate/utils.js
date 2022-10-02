@@ -1,5 +1,5 @@
 import { Editor, Path, Text } from "slate";
-import { functionUtils } from "@shades/common";
+import { function as functionUtils } from "@shades/common/utils";
 
 const { compose } = functionUtils;
 

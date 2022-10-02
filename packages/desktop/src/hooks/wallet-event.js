@@ -1,6 +1,7 @@
 import React from "react";
 import { useAccount } from "wagmi";
-import { useLatestCallback, invariant } from "@shades/common";
+import { useLatestCallback } from "@shades/common/react";
+import { invariant } from "@shades/common/utils";
 
 const events = ["account-change", "disconnect"];
 

@@ -1,7 +1,6 @@
 import { useEnsAvatar } from "wagmi";
 import React from "react";
 import { css } from "@emotion/react";
-import { generatePlaceholderAvatarDataUri } from "@shades/common";
 
 const usePlaceholderAvatar = (walletAddress, { enabled = true } = {}) => {
   const [generatedPlaceholderAvatarUrl, setGeneratedPlaceholderAvatarUrl] =
@@ -9,9 +8,11 @@ const usePlaceholderAvatar = (walletAddress, { enabled = true } = {}) => {
 
   React.useEffect(() => {
     if (!enabled || walletAddress == null) return;
-    generatePlaceholderAvatarDataUri(walletAddress).then((url) => {
-      setGeneratedPlaceholderAvatarUrl(url);
-    });
+    import("@shades/common/nouns").then((module) =>
+      module.generatePlaceholderAvatarDataUri(walletAddress).then((url) => {
+        setGeneratedPlaceholderAvatarUrl(url);
+      })
+    );
   }, [enabled, walletAddress]);
 
   return generatedPlaceholderAvatarUrl;

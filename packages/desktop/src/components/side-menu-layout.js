@@ -1,6 +1,6 @@
 import { useNavigate } from "react-router-dom";
 import { css } from "@emotion/react";
-import { useAppScope } from "@shades/common";
+import { useAppScope } from "@shades/common/app";
 import useSideMenu from "../hooks/side-menu";
 import MainMenu from "./main-menu";
 import Spinner from "./spinner";

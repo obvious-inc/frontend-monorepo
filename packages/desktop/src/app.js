@@ -18,13 +18,12 @@ import {
   useAuth,
   AuthProvider,
   useAppScope,
-  useLatestCallback,
   useServerConnection,
   AppScopeProvider,
   ServerConnectionProvider,
-  arrayUtils,
-  generatePlaceholderAvatarDataUri,
-} from "@shades/common";
+} from "@shades/common/app";
+import { array as arrayUtils } from "@shades/common/utils";
+import { useLatestCallback } from "@shades/common/react";
 import { IFrameEthereumProvider } from "@newshades/iframe-provider";
 import * as eth from "./utils/ethereum";
 import { Provider as GlobalMediaQueriesProvider } from "./hooks/global-media-queries";
@@ -99,19 +98,24 @@ const useSystemNotifications = () => {
 
         const channel = state.selectChannel(message.channelId);
 
-        sendNotification({
-          title: `Message from ${message.author.displayName}`,
-          body: message.stringContent,
-          icon:
-            message.author.profilePicture.small ??
-            generatePlaceholderAvatarDataUri(message.author.walletAddress, {
-              pixelSize: 24,
-            }),
-          onClick: ({ close }) => {
-            navigate(`/channels/${channel.id}`);
-            window.focus();
-            close();
-          },
+        import("@shades/common/nouns").then((module) => {
+          sendNotification({
+            title: `Message from ${message.author.displayName}`,
+            body: message.stringContent,
+            icon:
+              message.author.profilePicture.small ??
+              module.generatePlaceholderAvatarDataUri(
+                message.author.walletAddress,
+                {
+                  pixelSize: 24,
+                }
+              ),
+            onClick: ({ close }) => {
+              navigate(`/channels/${channel.id}`);
+              window.focus();
+              close();
+            },
+          });
         });
 
         break;

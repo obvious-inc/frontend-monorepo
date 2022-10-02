@@ -1,7 +1,8 @@
 import React from "react";
 import { NavLink, Outlet, useParams, useNavigate } from "react-router-dom";
 import { css, useTheme } from "@emotion/react";
-import { useAppScope, arrayUtils } from "@shades/common";
+import { useAppScope } from "@shades/common/app";
+import { array as arrayUtils } from "@shades/common/utils";
 import { truncateAddress } from "../utils/ethereum";
 import useSideMenu from "../hooks/side-menu";
 import {

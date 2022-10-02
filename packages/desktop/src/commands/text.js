@@ -1,5 +1,5 @@
 import { Editor, Transforms } from "slate";
-import { objectUtils } from "@shades/common";
+import { object as objectUtils } from "@shades/common/utils";
 
 const { mapValues } = objectUtils;
 

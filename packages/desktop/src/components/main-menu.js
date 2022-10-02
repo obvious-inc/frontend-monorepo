@@ -7,7 +7,8 @@ import {
   Link,
 } from "react-router-dom";
 import { css } from "@emotion/react";
-import { useAppScope, useLatestCallback } from "@shades/common";
+import { useAppScope } from "@shades/common/app";
+import { useLatestCallback } from "@shades/common/react";
 import useSideMenu from "../hooks/side-menu";
 import {
   Star as StarIcon,

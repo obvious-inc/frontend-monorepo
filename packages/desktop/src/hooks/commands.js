@@ -1,7 +1,8 @@
 import React from "react";
 import { useNavigate } from "react-router-dom";
 import { useProvider as useEthersProvider } from "wagmi";
-import { useAppScope, objectUtils } from "@shades/common";
+import { useAppScope } from "@shades/common/app";
+import { object as objectUtils } from "@shades/common/utils";
 import textCommands from "../commands/text";
 import userCommands from "../commands/user";
 import channelCommands from "../commands/channels";
