@@ -12,9 +12,9 @@ import Svg, { SvgXml, G, Path } from "react-native-svg";
 import * as Shades from "@shades/common";
 import * as Localization from "expo-localization";
 import FormattedDate from "../components/formatted-date";
+import RichText from "../components/rich-text";
 
 const { useAppScope } = Shades.app;
-const { stringifyBlocks } = Shades.utils.message;
 const { generatePlaceholderAvatarSvgString } = Shades.nouns;
 
 // Region might return `null` on Android
@@ -65,7 +65,7 @@ const Channel = ({ route: { params } }) => {
   }, [channelId, fetchChannelMembers, fetchChannelPublicPermissions]);
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: "hsl(0, 0%, 8%)" }}>
+    <SafeAreaView style={{ flex: 1, backgroundColor: "rgb(25,25,25)" }}>
       <KeyboardAvoidingView behavior="padding" style={{ flex: 1 }}>
         <ChannelHeader title={channel.name} />
         <ChannelMessagesScrollView messages={messages} />
@@ -84,14 +84,7 @@ const Channel = ({ route: { params } }) => {
 };
 
 const ChannelHeader = ({ title }) => (
-  <View
-    style={{
-      paddingHorizontal: 16,
-      paddingVertical: 18,
-      borderBottomWidth: StyleSheet.hairlineWidth,
-      borderBottomColor: "rgba(0,0,0,0.8)",
-    }}
-  >
+  <View style={{ paddingHorizontal: 16, paddingVertical: 18 }}>
     <Text style={{ color: "white", fontSize: 18, fontWeight: "600" }}>
       <Text style={{ color: "rgba(255,255,255,0.3)" }}>#</Text> {title}
     </Text>
@@ -112,7 +105,7 @@ const ChannelMessagesScrollView = ({ messages }) => {
   return (
     <ScrollView
       ref={scrollViewRef}
-      style={{ flex: 1, backgroundColor: "rgba(255,255,255,0.02)" }}
+      style={{ flex: 1, backgroundColor: "rgb(25,25,25)" }}
       contentContainerStyle={{ justifyContent: "flex-end" }}
     >
       {messages.map((m) => (
@@ -180,6 +173,7 @@ const Message = ({ message: m }) => {
               flexDirection: "row",
               justifyContent: "flex-start",
               alignItems: "flex-end",
+              marginBottom: 2,
             }}
           >
             <Text
@@ -196,7 +190,7 @@ const Message = ({ message: m }) => {
             <Text
               style={{
                 fontSize: 10.5,
-                lineHeight: 16,
+                lineHeight: 18,
                 color: "rgba(255,255,255,0.443)",
               }}
             >
@@ -210,10 +204,8 @@ const Message = ({ message: m }) => {
         >
           {m.isSystemMessage ? (
             <SystemMessageContent message={m} />
-          ) : m.isAppMessage ? (
-            "App message"
           ) : (
-            stringifyBlocks(m.content)
+            <RichText blocks={m.content} getMember={(i) => i} />
           )}
         </Text>
       </View>
@@ -328,7 +320,12 @@ const SystemMessageContent = ({ message }) => {
     //     }
 
     default:
-      return null;
+      return (
+        <Text style={{ fontSize: 16, lineHeight: 24 }}>
+          System message type {`"${message.type}"`}. Might implement thoon. No
+          promises.
+        </Text>
+      );
     // throw new Error();
   }
 };

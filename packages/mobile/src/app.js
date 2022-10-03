@@ -1,6 +1,6 @@
 import Constants from "expo-constants";
 import React from "react";
-import { View, useWindowDimensions } from "react-native";
+import { View, Text, useWindowDimensions } from "react-native";
 import { NavigationContainer } from "@react-navigation/native";
 import { createDrawerNavigator } from "@react-navigation/drawer";
 import { WebView } from "react-native-webview";
@@ -31,21 +31,22 @@ const createDrawerScreenOptions = ({ dimensions }) => ({
   swipeEdgeWidth: dimensions.width,
   swipeMinDistance: Math.floor(dimensions.width / 2),
   drawerStyle: {
-    backgroundColor: "hsl(0, 0%, 8%)",
+    backgroundColor: "rgb(32,32,32)",
     width: dimensions.width - Math.floor(dimensions.width / 5),
   },
   drawerInactiveTintColor: "hsla(0, 0%, 100%, 0.5)",
   drawerActiveTintColor: "#fff",
   drawerActiveBackgroundColor: "hsla(0, 0%, 100%, 0.08)",
   drawerItemStyle: {
-    borderRadius: 6,
-    margin: 0,
+    borderRadius: 4,
+    marginVertical: 0,
+    marginHorizontal: 6,
     paddingVertical: 0,
-    paddingHorizontal: 6,
+    paddingHorizontal: 2,
   },
   drawerLabelStyle: {
     paddingVertical: 0,
-    margin: 0,
+    marginVertical: -4,
   },
 });
 
@@ -55,13 +56,7 @@ const App = () => {
   const { status: authStatus, setAccessToken } = useAuth();
   const { state, actions } = useAppScope();
 
-  const {
-    fetchClientBootData,
-    fetchUsers,
-    // fetchUserChannels,
-    // fetchUserChannelsReadStates,
-    // fetchStarredItems,
-  } = actions;
+  const { fetchClientBootData, fetchUsers } = actions;
 
   const user = state.selectMe();
   const channels = state.selectMemberChannels();
@@ -139,16 +134,14 @@ class ErrorBoundary extends React.Component {
     if (this.state.errorInfo) {
       // Error path
       return (
-        <div>
-          <h2>Something went wrong.</h2>
-          <details style={{ whiteSpace: "pre-wrap" }}>
-            {this.state.error && this.state.error.toString()}
-            <br />
-            {this.state.errorInfo.componentStack}
-          </details>
-        </div>
+        <View>
+          <Text>Something went wrong.</Text>
+          <Text>{this.state.error && this.state.error.toString()}</Text>
+          <Text>{this.state.errorInfo.componentStack}</Text>
+        </View>
       );
     }
+
     // Normally, just render children
     return this.props.children;
   }
