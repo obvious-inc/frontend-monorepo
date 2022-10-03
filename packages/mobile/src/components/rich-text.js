@@ -1,5 +1,6 @@
 import { View, Text, Image, Dimensions } from "react-native";
 import { SvgUri, SvgXml } from "react-native-svg";
+import { decode as decodeBase64 } from "base-64";
 
 const svgDataUrlPrefix = "data:image/svg+xml;base64,";
 
@@ -185,7 +186,7 @@ const createParser = ({ getMember }) => {
               >
                 {hasSvgDataUrl ? (
                   <SvgXml
-                    xml={atob(el.url.slice(svgDataUrlPrefix.length))}
+                    xml={decodeBase64(el.url.slice(svgDataUrlPrefix.length))}
                     width="100%"
                     height="100%"
                   />

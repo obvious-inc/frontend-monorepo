@@ -15,6 +15,7 @@ specifiers:
   '@react-navigation/native-stack': ^6.9.0
   '@shades/common': '*'
   babel-preset-expo: ^9.2.0
+  base-64: ^1.0.0
   dotenv: ^16.0.2
   eslint: ^8.24.0
   eslint-config-prettier: ^8.5.0
@@ -49,6 +50,7 @@ dependencies:
   '@react-navigation/native': 6.0.13_gtltrjvtlgj7ga36qzsxajwqwe
   '@react-navigation/native-stack': 6.9.0_hg7duugoxzqbcxx766hj52kwii
   '@shades/common': link:../common
+  base-64: 1.0.0
   ethers: 5.7.1
   expo: 46.0.13_@babel+core@7.19.3
   expo-application: 4.2.2_expo@46.0.13
@@ -2901,6 +2903,10 @@ packages:
 
   /balanced-match/1.0.2:
     resolution: {integrity: sha512-3oSeUO0TMV67hN1AmbXsK4yaqU7tjiHlbxRDZOpH0KW9+CeX4bRAaX0Anxt0tx2MrpRpWwQaPwIlISEJhYU5Pw==}
+
+  /base-64/1.0.0:
+    resolution: {integrity: sha512-kwDPIFCGx0NZHog36dj+tHiwP4QMzsZ3AgMViUBKI0+V5n4U0ufTCUMhnQ04diaRI8EX/QcPfql7zlhZ7j4zgg==}
+    dev: false
 
   /base/0.11.2:
     resolution: {integrity: sha512-5T6P4xPgpp0YDFvSWwEZ4NoE3aM4QBQXDzmVbraCkFj8zHM+mba8SyqB5DbZWyR7mYHo6Y7BdQo3MoA4m0TeQg==}
