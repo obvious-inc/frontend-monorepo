@@ -17,6 +17,7 @@ const {
   ServerConnectionProvider,
   useAppScope,
   AppScopeProvider,
+  useServerConnection,
 } = Shades.app;
 
 const API_ENDPOINT = Constants.expoConfig.extra.apiEndpoint;
@@ -54,7 +55,8 @@ const App = () => {
   const dimensions = useWindowDimensions();
 
   const { status: authStatus, setAccessToken } = useAuth();
-  const { state, actions } = useAppScope();
+  const { state, actions, dispatch } = useAppScope();
+  const serverConnection = useServerConnection();
 
   const { fetchClientBootData, fetchUsers } = actions;
 
@@ -71,6 +73,17 @@ const App = () => {
       fetchUsers(dmUserIds);
     });
   }, [authStatus, fetchClientBootData, fetchUsers]);
+
+  React.useEffect(() => {
+    if (authStatus !== "authenticated") return;
+
+    const removeListener = serverConnection.addListener((name, data) => {
+      dispatch({ type: ["server-event", name].join(":"), data, user });
+    });
+    return () => {
+      removeListener();
+    };
+  }, [authStatus, user, serverConnection, dispatch]);
 
   if (authStatus === "not-authenticated")
     return (
