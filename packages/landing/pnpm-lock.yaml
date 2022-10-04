@@ -139,8 +139,8 @@ packages:
       tslib: 2.4.0
     dev: false
 
-  /caniuse-lite/1.0.30001414:
-    resolution: {integrity: sha512-t55jfSaWjCdocnFdKQoO+d2ct9C59UZg4dY3OnUlSZ447r8pUtIKdp0hpAzrGFultmTC+Us+KpKi4GZl/LXlFg==}
+  /caniuse-lite/1.0.30001415:
+    resolution: {integrity: sha512-ER+PfgCJUe8BqunLGWd/1EY4g8AzQcsDAVzdtMGKVtQEmKAwaFfU6vb7EAVIqTMYsqxBorYZi2+22Iouj/y7GQ==}
     dev: false
 
   /js-tokens/4.0.0:
@@ -180,7 +180,7 @@ packages:
     dependencies:
       '@next/env': 12.3.1
       '@swc/helpers': 0.4.11
-      caniuse-lite: 1.0.30001414
+      caniuse-lite: 1.0.30001415
       postcss: 8.4.14
       react: 17.0.2
       react-dom: 17.0.2_react@17.0.2

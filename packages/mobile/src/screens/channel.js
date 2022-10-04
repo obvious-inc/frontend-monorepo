@@ -1,18 +1,25 @@
+import Constants from "expo-constants";
 import React from "react";
 import {
   Text,
   View,
-  ScrollView,
+  Image,
   TextInput,
   KeyboardAvoidingView,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import Svg, { SvgXml, G, Path } from "react-native-svg";
+import { FlashList } from "@shopify/flash-list";
+import { useEnsAvatar } from "wagmi";
 import * as Shades from "@shades/common";
 import * as Localization from "expo-localization";
 import FormattedDate from "../components/formatted-date";
 import RichText from "../components/rich-text";
 
+const CLOUDFLARE_ACCOUNT_HASH =
+  Constants.expoConfig.extra.cloudflareAccountHash;
+
+const { useLatestCallback } = Shades.react;
 const { useAppScope } = Shades.app;
 const { generatePlaceholderAvatarSvgString } = Shades.nouns;
 
@@ -52,7 +59,8 @@ const useChannelMessages = ({ channelId }) => {
 const Channel = ({ route: { params } }) => {
   const { channelId } = params;
   const { state, actions } = useAppScope();
-  const { fetchChannelMembers, fetchChannelPublicPermissions } = actions;
+  const { fetchChannelMembers, fetchChannelPublicPermissions, fetchMessages } =
+    actions;
 
   const channel = state.selectChannel(params.channelId);
 
@@ -63,11 +71,23 @@ const Channel = ({ route: { params } }) => {
     fetchChannelPublicPermissions(channelId);
   }, [channelId, fetchChannelMembers, fetchChannelPublicPermissions]);
 
+  const fetchMoreMessages = useLatestCallback(() => {
+    if (messages.length === 0) return;
+    return fetchMessages(channel.id, {
+      beforeMessageId: messages[0].id,
+      limit: 30,
+    });
+  });
+
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: "rgb(25,25,25)" }}>
       <KeyboardAvoidingView behavior="padding" style={{ flex: 1 }}>
         <ChannelHeader title={channel.name} />
-        <ChannelMessagesScrollView messages={messages} />
+        <ChannelMessagesScrollView
+          messages={messages}
+          onEndReached={fetchMoreMessages}
+          getMember={state.selectUser}
+        />
         <ChannelMessageInput
           placeholder={`Message #${channel.name}`}
           onSubmit={(content) =>
@@ -90,34 +110,71 @@ const ChannelHeader = ({ title }) => (
   </View>
 );
 
-const ChannelMessagesScrollView = ({ messages }) => {
+const ChannelMessagesScrollView = ({
+  messages: messages_,
+  onEndReached,
+  getMember,
+}) => {
   const scrollViewRef = React.useRef();
 
-  const lastMessage = messages.slice(-1)[0];
-
-  React.useEffect(() => {
-    if (lastMessage == null) return;
-    // Broken way of scrolling down when switching between channels
-    scrollViewRef.current.scrollToEnd({ animated: false });
-  }, [lastMessage]);
+  const messages = React.useMemo(() => {
+    return [...messages_].reverse();
+  }, [messages_]);
 
   return (
-    <ScrollView
+    <FlashList
       ref={scrollViewRef}
-      style={{ flex: 1, backgroundColor: "rgb(25,25,25)" }}
-      contentContainerStyle={{ justifyContent: "flex-end" }}
-    >
-      {messages.map((m) => (
-        <Message key={m.id} message={m} />
-      ))}
-    </ScrollView>
+      inverted
+      data={messages}
+      renderItem={({ item }) => (
+        <Message message={item} getMember={getMember} />
+      )}
+      estimatedItemSize={120}
+      onEndReached={onEndReached}
+      onEndReachedThreshold={1}
+    />
   );
 };
 
-const Message = ({ message: m }) => {
-  const avatarSvgString = usePlaceholderAvatarSvg(m.author?.walletAddress, {
-    enabled: m.author?.walletAddress != null,
+const useProfilePicture = (user) => {
+  const customUrl =
+    user == null
+      ? null
+      : user.profilePicture.cloudflareId == null
+      ? user.profilePicture.small
+      : `https://imagedelivery.net/${CLOUDFLARE_ACCOUNT_HASH}/${user.profilePicture.cloudflareId}/avatar`;
+
+  const { data: ensAvatarUrl, isLoading: isLoadingEnsAvatar } = useEnsAvatar({
+    addressOrName: user?.walletAddress,
+    enabled: customUrl == null && user?.walletAddress != null,
   });
+
+  const placeholderSvgString = usePlaceholderAvatarSvg(user?.walletAddress, {
+    enabled:
+      customUrl == null && !isLoadingEnsAvatar && user?.walletAddress != null,
+  });
+
+  const avatarUrl = customUrl ?? ensAvatarUrl;
+
+  const type =
+    avatarUrl != null
+      ? "url"
+      : placeholderSvgString != null
+      ? "svg-string"
+      : null;
+
+  switch (type) {
+    case "url":
+      return { type, url: avatarUrl };
+    case "svg-string":
+      return { type, string: placeholderSvgString };
+    default:
+      return null;
+  }
+};
+
+const Message = ({ message: m, getMember }) => {
+  const profilePicture = useProfilePicture(m.author);
 
   return (
     <View
@@ -158,9 +215,18 @@ const Message = ({ message: m }) => {
                 overflow: "hidden",
               }}
             >
-              {avatarSvgString != null && (
-                <SvgXml xml={avatarSvgString} width="100%" height="100%" />
-              )}
+              {profilePicture?.type === "url" ? (
+                <Image
+                  source={{ uri: profilePicture.url }}
+                  style={{ width: "100%", height: "100%" }}
+                />
+              ) : profilePicture?.type === "svg-string" ? (
+                <SvgXml
+                  xml={profilePicture.string}
+                  width="100%"
+                  height="100%"
+                />
+              ) : null}
             </View>
           </View>
         )}
@@ -193,7 +259,14 @@ const Message = ({ message: m }) => {
                 color: "rgba(255,255,255,0.443)",
               }}
             >
-              <FormattedDate value={new Date(m.created_at)} locale={locale} />
+              <FormattedDate
+                value={new Date(m.created_at)}
+                hour="numeric"
+                minute="numeric"
+                day="numeric"
+                month="short"
+                locale={locale}
+              />
             </Text>
           </View>
         )}
@@ -204,7 +277,7 @@ const Message = ({ message: m }) => {
           {m.isSystemMessage ? (
             <SystemMessageContent message={m} />
           ) : (
-            <RichText blocks={m.content} getMember={(i) => i} />
+            <RichText key={m.id} blocks={m.content} getMember={getMember} />
           )}
         </Text>
       </View>

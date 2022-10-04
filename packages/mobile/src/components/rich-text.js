@@ -4,48 +4,6 @@ import { decode as decodeBase64 } from "base-64";
 
 const svgDataUrlPrefix = "data:image/svg+xml;base64,";
 
-// const SINGLE_IMAGE_ATTACHMENT_MAX_WIDTH = 560;
-// const SINGLE_IMAGE_ATTACHMENT_MAX_HEIGHT = 280;
-// const MULTI_IMAGE_ATTACHMENT_MAX_WIDTH = 280;
-// const MULTI_IMAGE_ATTACHMENT_MAX_HEIGHT = 240;
-
-// export const createCss = (theme, { inline = false, compact = false } = {}) => ({
-//   display: inline || compact ? "inline" : "block",
-//   whiteSpace: inline ? "inherit" : "pre-wrap",
-//   wordBreak: "break-word",
-//   p: { margin: "0", display: inline || compact ? "inline" : undefined },
-//   "* + p": { marginTop: "1rem" },
-//   "* + p:before": compact
-//     ? { display: "block", content: '""', height: "1rem" }
-//     : undefined,
-//   em: { fontStyle: "italic" },
-//   strong: { fontWeight: "600" },
-//   a: {
-//     color: theme.colors.linkColor,
-//     textDecoration: "none",
-//   },
-//   "a:hover": { textDecoration: "underline" },
-//   ".mention": {
-//     border: 0,
-//     lineHeight: "inherit",
-//     borderRadius: "0.3rem",
-//     padding: "0 0.2rem",
-//     color: "hsl(236,calc(var(--saturation-factor, 1)*83.3%),92.9%)",
-//     background: "hsla(235,85.6%,64.7%,0.3)",
-//     fontWeight: "500",
-//     cursor: "pointer",
-//   },
-//   ".mention:hover": {
-//     color: "white",
-//     background: "hsl(235,85.6%,64.7%)",
-//   },
-//   ".mention[data-focused]": {
-//     position: "relative",
-//     zIndex: 1,
-//     boxShadow: `0 0 0 0.2rem ${theme.colors.mentionFocusBorder}`,
-//   },
-// });
-
 const textDefaultStyle = { fontSize: 16, lineHeight: 24, color: "white" };
 
 const parseLeaf = (l, i) => {
@@ -71,19 +29,12 @@ const createParser = ({ getMember }) => {
       const children = () => el.children.map(parseNode);
 
       switch (el.type) {
-        case "paragraph": {
+        case "paragraph":
           return (
-            <View
-              key={i}
-              style={{
-                marginTop: i !== 0 ? 10 : 0,
-              }}
-            >
-              {/* {children()} */}
+            <View key={i} style={{ marginTop: i !== 0 ? 10 : 0 }}>
               <Text>{children()}</Text>
             </View>
           );
-        }
 
         case "link":
           return (
@@ -126,49 +77,35 @@ const createParser = ({ getMember }) => {
           );
         }
 
-        case "attachments": {
-          return <View style={{ paddingTop: 5 }}>{children()}</View>;
-          // return (
-          //   <div
-          //     key={i}
-          //     css={(theme) =>
-          //       css({
-          //         paddingTop: "0.5rem",
-          //         display: "flex",
-          //         alignItems: "flex-start",
-          //         justifyContent: "flex-start",
-          //         flexWrap: "wrap",
-          //         margin: "-1rem 0 0 -1rem",
-          //         button: {
-          //           borderRadius: "0.3rem",
-          //           overflow: "hidden",
-          //           background: theme.colors.backgroundSecondary,
-          //           margin: "1rem 0 0 1rem",
-          //           cursor: "zoom-in",
-          //           transition: "0.14s all ease-out",
-          //           ":hover": {
-          //             filter: "brightness(1.05)",
-          //             transform: "scale(1.02)",
-          //           },
-          //         },
-          //         img: { display: "block" },
-          //       })
-          //     }
-          //   >
-          //     {children()}
-          //   </div>
-          // );
-        }
+        case "attachments":
+          return (
+            <View key={i} style={{ paddingTop: 5 }}>
+              {children()}
+            </View>
+          );
 
         case "image-attachment": {
-          const aspectRatio = el.width / el.height;
-          const isStanding = el.height > el.width;
+          const hasDimensions = [el.width, el.height].every(
+            (n) => typeof n === "number"
+          );
+          const aspectRatio = hasDimensions ? el.width / el.height : 1;
+
+          const calculateWidth = () => {
+            if (!hasDimensions) return "100%";
+            // A bit of a hack, required since `maxWidth` doesn’t seem to work
+            // together with `aspectRatio`
+            if (aspectRatio >= 1 && el.width > windowWidth) return "100%";
+            const maxHeight = windowWidth;
+            return maxHeight > el.height ? el.width : maxHeight * aspectRatio;
+          };
 
           const dimensionStyle = {
-            width: isStanding ? undefined : el.width,
-            height: isStanding ? Math.min(el.height, windowWidth) : undefined,
-            maxWidth: "100%",
+            width: calculateWidth(),
             aspectRatio,
+          };
+          const visualStyle = {
+            borderRadius: 3,
+            backgroundColor: "rgb(32,32,32)",
           };
 
           const hasSvgDataUrl = el.url.startsWith(svgDataUrlPrefix);
@@ -177,9 +114,10 @@ const createParser = ({ getMember }) => {
           if (isSvg) {
             return (
               <View
+                key={i}
                 style={{
                   ...dimensionStyle,
-                  borderRadius: 3,
+                  ...visualStyle,
                   overflow: "hidden",
                   marginTop: i !== 0 ? 10 : 0,
                 }}
@@ -199,11 +137,11 @@ const createParser = ({ getMember }) => {
 
           return (
             <Image
+              key={i}
               source={{ uri: el.url }}
               style={{
                 ...dimensionStyle,
-                resizeMode: "cover",
-                borderRadius: 3,
+                ...visualStyle,
                 marginTop: i !== 0 ? 10 : 0,
               }}
             />

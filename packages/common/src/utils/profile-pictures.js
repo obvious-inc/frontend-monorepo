@@ -22,5 +22,6 @@ export const build = (pfp) => {
     small: buildUrl(pfp.cf_id, "small"),
     large: buildUrl(pfp.cf_id, "large"),
     isVerifiedNft: pfp.verified,
+    cloudflareId: pfp.cf_id,
   };
 };

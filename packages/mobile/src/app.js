@@ -1,4 +1,12 @@
 import Constants from "expo-constants";
+import {
+  WagmiConfig,
+  createClient as createWagmiClient,
+  configureChains as configureWagmiChains,
+} from "wagmi";
+import { mainnet as mainnetChain } from "wagmi/chains";
+import { infuraProvider } from "wagmi/providers/infura";
+import { publicProvider } from "wagmi/providers/public";
 import React from "react";
 import { View, Text, useWindowDimensions } from "react-native";
 import { NavigationContainer } from "@react-navigation/native";
@@ -23,6 +31,18 @@ const {
 const API_ENDPOINT = Constants.expoConfig.extra.apiEndpoint;
 const WEB_APP_ENDPOINT = Constants.expoConfig.extra.webAppEndpoint;
 const PUSHER_KEY = Constants.expoConfig.extra.pusherKey;
+const INFURA_PROJECT_ID = Constants.expoConfig.extra.infuraProjectId;
+
+const { provider } = configureWagmiChains(
+  [mainnetChain],
+  [infuraProvider({ apiKey: INFURA_PROJECT_ID }), publicProvider()]
+);
+
+const wagmiClient = createWagmiClient({
+  autoConnect: true,
+  provider,
+  storage: null,
+});
 
 const Drawer = createDrawerNavigator();
 
@@ -162,16 +182,18 @@ class ErrorBoundary extends React.Component {
 
 export default () => (
   <ErrorBoundary>
-    <SafeAreaProvider>
-      <NavigationContainer>
-        <AuthProvider apiOrigin={API_ENDPOINT} tokenStorage={AsyncStorage}>
-          <AppScopeProvider>
-            <ServerConnectionProvider Pusher={Pusher} pusherKey={PUSHER_KEY}>
-              <App />
-            </ServerConnectionProvider>
-          </AppScopeProvider>
-        </AuthProvider>
-      </NavigationContainer>
-    </SafeAreaProvider>
+    <WagmiConfig client={wagmiClient}>
+      <SafeAreaProvider>
+        <NavigationContainer>
+          <AuthProvider apiOrigin={API_ENDPOINT} tokenStorage={AsyncStorage}>
+            <AppScopeProvider>
+              <ServerConnectionProvider Pusher={Pusher} pusherKey={PUSHER_KEY}>
+                <App />
+              </ServerConnectionProvider>
+            </AppScopeProvider>
+          </AuthProvider>
+        </NavigationContainer>
+      </SafeAreaProvider>
+    </WagmiConfig>
   </ErrorBoundary>
 );

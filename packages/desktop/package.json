@@ -60,7 +60,7 @@
     "@sentry/react": "^6.19.7",
     "@shades/common": "workspace:0.0.0",
     "date-fns": "^2.29.3",
-    "dotenv": "^16.0.2",
+    "dotenv": "^16.0.3",
     "electron-squirrel-startup": "^1.0.0",
     "eth-provider": "^0.10.0",
     "ethers": "^5.7.1",

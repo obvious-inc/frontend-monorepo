@@ -35,6 +35,8 @@ module.exports = {
     apiEndpoint: process.env.API_ENDPOINT,
     webAppEndpoint: process.env.WEB_APP_ENDPOINT,
     pusherKey: process.env.PUSHER_KEY,
+    infuraProjectId: process.env.INFURA_PROJECT_ID,
+    cloudflareAccountHash: process.env.CLOUDFLARE_ACCOUNT_HASH,
     eas: {
       projectId: process.env.EAS_PROJECT_ID,
     },
