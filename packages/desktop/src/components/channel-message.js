@@ -340,21 +340,19 @@ const ChannelMessage = React.memo(function ChannelMessage_({
         />
 
         <div>
-          <MessageHeader
-            compact={compact}
-            simplified={showSimplifiedMessage}
-            message={message}
-            authorUser={message.author}
-            createdAt={createdAtDate}
-            isOwnMessage={isOwnMessage}
-          />
-
-          {message.isSystemMessage ? (
-            <SystemMessageContent
+          {!showSimplifiedMessage && (
+            <MessageHeader
               compact={compact}
               simplified={showSimplifiedMessage}
               message={message}
+              authorUser={message.author}
+              createdAt={createdAtDate}
+              isOwnMessage={isOwnMessage}
             />
+          )}
+
+          {message.isSystemMessage ? (
+            <SystemMessageContent message={message} />
           ) : isEditing ? (
             <EditMessageInput
               ref={editInputRef}
