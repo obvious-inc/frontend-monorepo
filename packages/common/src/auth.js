@@ -152,8 +152,13 @@ export const Provider = ({
         return Promise.reject(new Error(response.statusText));
       });
 
-      setAccessToken(responseBody.access_token);
-      setRefreshToken(responseBody.refresh_token);
+      const { refresh_token: refreshToken, access_token: accessToken } =
+        responseBody;
+
+      setAccessToken(accessToken);
+      setRefreshToken(refreshToken);
+
+      return { accessToken, refreshToken };
     }
   );
 
@@ -246,9 +251,20 @@ export const Provider = ({
   });
 
   const verifyAccessToken = useLatestCallback(() => {
-    // This will have to do for now
-    return authorizedFetch("/users/me").then(() => null);
-  }, [authorizedFetch]);
+    const accessToken = accessTokenRef.current;
+    const refreshToken = refreshTokenRef.current;
+
+    try {
+      const tokenPayload = atob(refreshToken.split(".")[1]);
+      const expiresAt = new Date(Number(tokenPayload.exp) * 1000);
+      const isValid = expiresAt > new Date();
+      if (!isValid) return null;
+      return { accessToken, refreshToken };
+    } catch (e) {
+      console.warn(e);
+      return null;
+    }
+  }, [authorizedFetch, accessTokenRef, refreshTokenRef]);
 
   const contextValue = React.useMemo(
     () => ({
@@ -259,6 +275,7 @@ export const Provider = ({
       login,
       logout,
       setAccessToken,
+      setRefreshToken,
       verifyAccessToken,
       refreshAccessToken,
     }),
@@ -270,6 +287,7 @@ export const Provider = ({
       login,
       logout,
       setAccessToken,
+      setRefreshToken,
       verifyAccessToken,
       refreshAccessToken,
     ]

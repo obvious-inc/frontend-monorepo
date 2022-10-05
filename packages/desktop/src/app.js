@@ -53,6 +53,7 @@ import AuthHome from "./components/auth";
 const { unique } = arrayUtils;
 
 const isNative = window.Native != null;
+const isReactNativeWebView = window.ReactNativeWebView != null;
 
 const isIFrame = window.parent && window.self && window.parent !== window.self;
 if (isIFrame) window.ethereum = new IFrameEthereumProvider();
@@ -153,7 +154,7 @@ const App = () => {
   const navigate = useNavigate();
 
   const serverConnection = useServerConnection();
-  const { status: authStatus, accessToken, verifyAccessToken } = useAuth();
+  const { status: authStatus } = useAuth();
   const { state, actions, dispatch } = useAppScope();
   const { login } = useWalletLogin();
 
@@ -257,13 +258,20 @@ const App = () => {
     fetchStarredItems();
   });
 
-  React.useEffect(() => {
-    if (accessToken == null || window.ReactNativeWebView == null) return;
-
-    verifyAccessToken().then(() => {
-      window.ReactNativeWebView.postMessage(accessToken);
-    });
-  }, [accessToken, verifyAccessToken]);
+  if (isReactNativeWebView) {
+    const sendMessageToApp = (type, payload) =>
+      window.ReactNativeWebView.postMessage(JSON.stringify({ type, payload }));
+    return (
+      <LoginScreen
+        onSuccess={({ accessToken, refreshToken }) => {
+          sendMessageToApp("ns:authenticated", { accessToken, refreshToken });
+        }}
+        onError={() => {
+          sendMessageToApp("ns:error");
+        }}
+      />
+    );
+  }
 
   return (
     <>

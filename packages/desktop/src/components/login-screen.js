@@ -7,7 +7,7 @@ import * as Tooltip from "../components/tooltip";
 import Spinner from "../components/spinner";
 import Avatar from "../components/avatar";
 
-const SignInScreen = () => {
+const SignInScreen = ({ onSuccess, onError }) => {
   const {
     connect: connectWallet,
     cancel: cancelWalletConnectionAttempt,
@@ -25,6 +25,16 @@ const SignInScreen = () => {
   const [isSwitchingToMainnet, setSwitchingToMainnet] = React.useState(false);
 
   const error = loginError ?? walletError;
+
+  const handleClickLogin = () =>
+    login(accountAddress).then(
+      (response) => {
+        onSuccess?.(response);
+      },
+      (error) => {
+        onError?.(error);
+      }
+    );
 
   return (
     <div
@@ -186,7 +196,7 @@ const SignInScreen = () => {
                 size="10rem"
                 style={{ margin: "0 auto 3rem" }}
               />
-              <Button onClick={() => login(accountAddress)}>
+              <Button onClick={handleClickLogin}>
                 Authenticate with wallet signature
               </Button>
               <div

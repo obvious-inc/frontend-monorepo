@@ -74,7 +74,7 @@ const createDrawerScreenOptions = ({ dimensions }) => ({
 const App = () => {
   const dimensions = useWindowDimensions();
 
-  const { status: authStatus, setAccessToken } = useAuth();
+  const { status: authStatus, setAccessToken, setRefreshToken } = useAuth();
   const { state, actions, dispatch } = useAppScope();
   const serverConnection = useServerConnection();
 
@@ -108,8 +108,12 @@ const App = () => {
   if (authStatus === "not-authenticated")
     return (
       <SignInView
-        onSuccess={(token) => {
-          setAccessToken(token);
+        onSuccess={({ accessToken, refreshToken }) => {
+          setAccessToken(accessToken);
+          setRefreshToken(refreshToken);
+        }}
+        onError={() => {
+          // TODO
         }}
       />
     );
@@ -136,14 +140,30 @@ const App = () => {
   );
 };
 
-const SignInView = ({ onSuccess }) => (
+const SignInView = ({ onSuccess, onError }) => (
   // Web login for now
   <WebView
     incognito
     source={{ uri: WEB_APP_ENDPOINT }}
     onMessage={(e) => {
-      const accessToken = e.nativeEvent.data;
-      if (accessToken != null) onSuccess(accessToken);
+      try {
+        const message = JSON.parse(e.nativeEvent.data);
+
+        switch (message.type) {
+          case "ns:authenticated":
+            onSuccess({
+              accessToken: message.payload.accessToken,
+              refreshToken: message.payload.refreshToken,
+            });
+            break;
+          case "ns:error":
+            onError(new Error());
+            break;
+          default: // Ignore
+        }
+      } catch (e) {
+        console.warn(e);
+      }
     }}
   />
 );
