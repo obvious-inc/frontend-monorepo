@@ -1014,6 +1014,11 @@ const NewMessageInput = React.memo(
                   e.preventDefault();
                   executeMessage();
                 }
+
+                if (!e.isDefaultPrevented() && e.key === "Escape") {
+                  e.preventDefault();
+                  cancelReply();
+                }
               }}
               commands={commands}
               disabled={disabled || isPending}
