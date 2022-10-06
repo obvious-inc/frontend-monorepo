@@ -409,36 +409,38 @@ const ChannelMessageInput = ({ placeholder, onSubmit }) => {
   const inputRef = React.useRef();
   const [pendingMessage, setPendingMessage] = React.useState("");
 
-  const containerWidthValue = React.useRef(new Animated.Value(0)).current;
-  const containerWidth = containerWidthValue.interpolate({
-    inputRange: [0, 1],
-    outputRange: [0, 54],
-  });
+  // const containerWidthValue = React.useRef(new Animated.Value(0)).current;
+  // const containerWidth = containerWidthValue.interpolate({
+  //   inputRange: [0, 1],
+  //   outputRange: [0, 54],
+  // });
 
-  React.useEffect(() => {
-    if (pendingMessage.trim() === "") {
-      Animated.timing(containerWidthValue, {
-        toValue: 0,
-        duration: 120,
-        useNativeDriver: false,
-      }).start();
-      return;
-    }
+  // React.useEffect(() => {
+  //   if (pendingMessage.trim() === "") {
+  //     Animated.timing(containerWidthValue, {
+  //       toValue: 0,
+  //       duration: 120,
+  //       useNativeDriver: false,
+  //     }).start();
+  //     return;
+  //   }
 
-    Animated.timing(containerWidthValue, {
-      toValue: 1,
-      duration: 180,
-      useNativeDriver: false,
-    }).start();
-  }, [pendingMessage, containerWidthValue]);
+  //   Animated.timing(containerWidthValue, {
+  //     toValue: 1,
+  //     duration: 180,
+  //     useNativeDriver: false,
+  //   }).start();
+  // }, [pendingMessage, containerWidthValue]);
+
+  const canSubmit = pendingMessage.trim() !== "";
 
   return (
-    <InputAccessoryView>
+    <>
       <View
         style={{
           flexDirection: "row",
-          padding: 10,
-          paddingRight: 0,
+          paddingHorizontal: 10,
+          paddingVertical: 8,
         }}
       >
         <TextInput
@@ -449,42 +451,50 @@ const ChannelMessageInput = ({ placeholder, onSubmit }) => {
           onChangeText={setPendingMessage}
           placeholderTextColor="hsla(0,0%,100%,0.5)"
           keyboardAppearance="dark"
+          inputAccessoryViewID="message-input"
           style={{
             flex: 1,
             fontSize: 16,
             color: "white",
             backgroundColor: "hsla(0,0%,100%,0.05)",
             paddingHorizontal: 16,
-            paddingTop: 12,
-            paddingBottom: 12,
+            paddingTop: 11,
+            paddingBottom: 11,
             lineHeight: 20,
             borderRadius: 22,
-            marginRight: 8,
           }}
         />
-        <Animated.View
+      </View>
+      <InputAccessoryView nativeID="message-input">
+        <View
           style={{
-            width: containerWidth,
-            height: 44,
-            alignItems: "flex-start",
-            justifyContent: "center",
+            flexDirection: "row",
+            padding: 10,
+            paddingVertical: 8,
+            paddingTop: 0,
+            alignItems: "center",
+            justifyContent: "flex-end",
           }}
         >
-          <Pressable
-            onPressIn={() => {
-              inputRef.current.focus();
-            }}
-            onPress={() => {
-              onSubmit(pendingMessage);
-              setPendingMessage("");
-            }}
-          >
-            <View
+          <View style={{ flex: 1, paddingHorizontal: 10 }}>
+            <Text style={{ color: "hsl(0,0%,44%)" }}>
+              Insanely rich toolbar coming soon
+            </Text>
+          </View>
+          <View>
+            <Pressable
+              onPressIn={() => {
+                inputRef.current.focus();
+              }}
+              onPress={() => {
+                onSubmit(pendingMessage);
+                setPendingMessage("");
+              }}
               style={{
-                width: 44,
-                height: 44,
-                borderRadius: 22,
-                backgroundColor: "#007ab3", // BLUE,
+                width: 40,
+                height: 40,
+                borderRadius: 20,
+                backgroundColor: canSubmit ? "#007ab3" : "transparent", // BLUE,
                 alignItems: "center",
                 justifyContent: "center",
               }}
@@ -493,21 +503,25 @@ const ChannelMessageInput = ({ placeholder, onSubmit }) => {
                 width="20"
                 height="20"
                 viewBox="0 0 20 20"
-                style={{ position: "relative", left: 2 }}
+                style={{
+                  position: "relative",
+                  left: 2,
+                  color: canSubmit ? "white" : "hsl(0,0%,26%)",
+                }}
               >
                 <Path
-                  fill="white"
-                  stroke="white"
+                  fill="currentColor"
+                  stroke="currentColor"
                   strokeLinejoin="round"
                   strokeWidth="1.5"
                   d="M2.25 2.25 17.75 10l-15.5 7.75v-4.539a1.5 1.5 0 0 1 1.46-1.5l6.54-.171a1.54 1.54 0 0 0 0-3.08l-6.54-.172a1.5 1.5 0 0 1-1.46-1.5V2.25Z"
                 />
               </Svg>
-            </View>
-          </Pressable>
-        </Animated.View>
-      </View>
-    </InputAccessoryView>
+            </Pressable>
+          </View>
+        </View>
+      </InputAccessoryView>
+    </>
   );
 };
 
