@@ -8,15 +8,18 @@ import { mainnet as mainnetChain } from "wagmi/chains";
 import { infuraProvider } from "wagmi/providers/infura";
 import { publicProvider } from "wagmi/providers/public";
 import React from "react";
-import { View, Text, useWindowDimensions } from "react-native";
+import { View, Text } from "react-native";
 import { NavigationContainer } from "@react-navigation/native";
-import { createDrawerNavigator } from "@react-navigation/drawer";
+// import { createStackNavigator } from "@react-navigation/stack";
+// import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
+import { createMaterialTopTabNavigator } from "@react-navigation/material-top-tabs";
 import { WebView } from "react-native-webview";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import Pusher from "pusher-js/react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import * as Shades from "@shades/common";
 import Channel from "./screens/channel";
+import ChannelList from "./screens/channel-list";
 
 const { unique } = Shades.utils.array;
 const {
@@ -44,36 +47,9 @@ const wagmiClient = createWagmiClient({
   storage: null,
 });
 
-const Drawer = createDrawerNavigator();
-
-const createDrawerScreenOptions = ({ dimensions }) => ({
-  headerShown: false,
-  drawerType: "back",
-  swipeEdgeWidth: dimensions.width,
-  swipeMinDistance: Math.floor(dimensions.width / 2),
-  drawerStyle: {
-    backgroundColor: "rgb(32,32,32)",
-    width: dimensions.width - Math.floor(dimensions.width / 5),
-  },
-  drawerInactiveTintColor: "hsla(0, 0%, 100%, 0.5)",
-  drawerActiveTintColor: "#fff",
-  drawerActiveBackgroundColor: "hsla(0, 0%, 100%, 0.08)",
-  drawerItemStyle: {
-    borderRadius: 4,
-    marginVertical: 0,
-    marginHorizontal: 6,
-    paddingVertical: 0,
-    paddingHorizontal: 2,
-  },
-  drawerLabelStyle: {
-    paddingVertical: 0,
-    marginVertical: -4,
-  },
-});
+const Tab = createMaterialTopTabNavigator();
 
 const App = () => {
-  const dimensions = useWindowDimensions();
-
   const { status: authStatus, setAccessToken, setRefreshToken } = useAuth();
   const { state, actions, dispatch } = useAppScope();
   const serverConnection = useServerConnection();
@@ -123,20 +99,14 @@ const App = () => {
     return <View style={{ backgroundColor: "hsl(0,0%,8%)", flex: 1 }} />;
 
   return (
-    <Drawer.Navigator
-      initialRouteName={channels[0].name}
-      screenOptions={createDrawerScreenOptions({ dimensions })}
-    >
-      {channels.map((c) => (
-        <Drawer.Screen
-          key={c.id}
-          name={[c.name, c.id].join(":")}
-          component={Channel}
-          initialParams={{ channelId: c.id }}
-          options={{ title: c.name }}
-        />
-      ))}
-    </Drawer.Navigator>
+    <Tab.Navigator tabBar={() => null} screenOptions={{ headerShown: false }}>
+      <Tab.Screen name="Channel list" component={ChannelList} />
+      <Tab.Screen
+        name="Channel"
+        component={Channel}
+        initialParams={{ channelId: channels[0].id }}
+      />
+    </Tab.Navigator>
   );
 };
 

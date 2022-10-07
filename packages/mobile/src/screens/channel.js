@@ -1,4 +1,4 @@
-import Constants from "expo-constants";
+import * as Haptics from "expo-haptics";
 import React from "react";
 import {
   Text,
@@ -7,41 +7,28 @@ import {
   TextInput,
   KeyboardAvoidingView,
   Pressable,
-  Animated,
   InputAccessoryView,
+  Alert,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import Svg, { SvgXml, G, Path } from "react-native-svg";
 import { FlashList } from "@shopify/flash-list";
-import { useEnsAvatar } from "wagmi";
 import * as Shades from "@shades/common";
 import * as Localization from "expo-localization";
+import useProfilePicture from "../hooks/profile-picture";
 import FormattedDate from "../components/formatted-date";
 import RichText from "../components/rich-text";
 
-const CLOUDFLARE_ACCOUNT_HASH =
-  Constants.expoConfig.extra.cloudflareAccountHash;
+const handleUnimplementedPress = () => {
+  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+  Alert.alert("THOON");
+};
 
 const { useLatestCallback } = Shades.react;
 const { useAppScope } = Shades.app;
-const { generatePlaceholderAvatarSvgString } = Shades.nouns;
 
 // Region might return `null` on Android
 const locale = ["en", Localization.region].filter(Boolean).join("-");
-
-const usePlaceholderAvatarSvg = (walletAddress, { enabled = true } = {}) => {
-  const [generatedPlaceholderAvatar, setGeneratedPlaceholderAvatar] =
-    React.useState(null);
-
-  React.useEffect(() => {
-    if (!enabled || walletAddress == null) return;
-    generatePlaceholderAvatarSvgString(walletAddress).then((url) => {
-      setGeneratedPlaceholderAvatar(url);
-    });
-  }, [enabled, walletAddress]);
-
-  return generatedPlaceholderAvatar;
-};
 
 const useChannelMessages = ({ channelId }) => {
   const { actions, state } = useAppScope();
@@ -139,53 +126,20 @@ const ChannelMessagesScrollView = ({
   );
 };
 
-const useProfilePicture = (user) => {
-  const customUrl =
-    user == null
-      ? null
-      : user.profilePicture.cloudflareId == null
-      ? user.profilePicture.small
-      : `https://imagedelivery.net/${CLOUDFLARE_ACCOUNT_HASH}/${user.profilePicture.cloudflareId}/avatar`;
-
-  const { data: ensAvatarUrl, isLoading: isLoadingEnsAvatar } = useEnsAvatar({
-    addressOrName: user?.walletAddress,
-    enabled: customUrl == null && user?.walletAddress != null,
-  });
-
-  const placeholderSvgString = usePlaceholderAvatarSvg(user?.walletAddress, {
-    enabled:
-      customUrl == null && !isLoadingEnsAvatar && user?.walletAddress != null,
-  });
-
-  const avatarUrl = customUrl ?? ensAvatarUrl;
-
-  const type =
-    avatarUrl != null
-      ? "url"
-      : placeholderSvgString != null
-      ? "svg-string"
-      : null;
-
-  switch (type) {
-    case "url":
-      return { type, url: avatarUrl };
-    case "svg-string":
-      return { type, string: placeholderSvgString };
-    default:
-      return null;
-  }
-};
-
 const Message = ({ message: m, getMember }) => {
   const profilePicture = useProfilePicture(m.author);
 
   return (
-    <View
-      style={{
+    <Pressable
+      unstable_pressDelay={50}
+      delayLongPress={180}
+      onLongPress={handleUnimplementedPress}
+      style={({ pressed }) => ({
         flexDirection: "row",
         paddingHorizontal: 10,
         paddingVertical: 10,
-      }}
+        backgroundColor: pressed ? "rgba(255, 255, 255, 0.055)" : undefined,
+      })}
     >
       <View style={{ width: 38, marginRight: 12 }}>
         {m.isSystemMessage || m.isAppMessage ? (
@@ -274,7 +228,7 @@ const Message = ({ message: m, getMember }) => {
           </View>
         )}
         <Text
-          selectable
+          // selectable
           style={{ fontSize: 16, color: "white", lineHeight: 24 }}
         >
           {m.isSystemMessage ? (
@@ -284,7 +238,7 @@ const Message = ({ message: m, getMember }) => {
           )}
         </Text>
       </View>
-    </View>
+    </Pressable>
   );
 };
 
