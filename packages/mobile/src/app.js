@@ -8,7 +8,7 @@ import { mainnet as mainnetChain } from "wagmi/chains";
 import { infuraProvider } from "wagmi/providers/infura";
 import { publicProvider } from "wagmi/providers/public";
 import React from "react";
-import { View, Text } from "react-native";
+import { AppState, View, Text } from "react-native";
 import { NavigationContainer } from "@react-navigation/native";
 // import { createStackNavigator } from "@react-navigation/stack";
 // import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
@@ -54,7 +54,13 @@ const App = () => {
   const { state, actions, dispatch } = useAppScope();
   const serverConnection = useServerConnection();
 
-  const { fetchClientBootData, fetchUsers } = actions;
+  const {
+    fetchClientBootData,
+    fetchUserChannels,
+    fetchUserChannelsReadStates,
+    fetchStarredItems,
+    fetchUsers,
+  } = actions;
 
   const user = state.selectMe();
   const channels = state.selectMemberChannels();
@@ -80,6 +86,26 @@ const App = () => {
       removeListener();
     };
   }, [authStatus, user, serverConnection, dispatch]);
+
+  React.useEffect(() => {
+    if (authStatus !== "authenticated") return;
+
+    const subscription = AppState.addEventListener("change", (nextAppState) => {
+      if (nextAppState !== "active") return;
+      fetchUserChannels();
+      fetchUserChannelsReadStates();
+      fetchStarredItems();
+    });
+
+    return () => {
+      subscription.remove();
+    };
+  }, [
+    authStatus,
+    fetchUserChannels,
+    fetchUserChannelsReadStates,
+    fetchStarredItems,
+  ]);
 
   if (authStatus === "not-authenticated")
     return (
