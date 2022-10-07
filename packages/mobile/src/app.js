@@ -170,20 +170,64 @@ class ErrorBoundary extends React.Component {
   }
 }
 
-export default () => (
-  <ErrorBoundary>
-    <WagmiConfig client={wagmiClient}>
-      <SafeAreaProvider>
-        <NavigationContainer>
-          <AuthProvider apiOrigin={API_ENDPOINT} tokenStorage={AsyncStorage}>
-            <AppScopeProvider>
-              <ServerConnectionProvider Pusher={Pusher} pusherKey={PUSHER_KEY}>
-                <App />
-              </ServerConnectionProvider>
-            </AppScopeProvider>
-          </AuthProvider>
-        </NavigationContainer>
-      </SafeAreaProvider>
-    </WagmiConfig>
-  </ErrorBoundary>
-);
+const NAVIGATION_STATE_STORAGE_KEY = "NAVIGATION_STATE";
+
+export default () => {
+  const [initialState, setInitialState] = React.useState("not-set");
+
+  React.useEffect(() => {
+    if (initialState !== "not-set") return;
+
+    const restoreNavigationState = async () => {
+      try {
+        const storedState = await AsyncStorage.getItem(
+          NAVIGATION_STATE_STORAGE_KEY
+        );
+
+        if (storedState == null) {
+          setInitialState(undefined);
+          return;
+        }
+
+        setInitialState(JSON.parse(storedState));
+      } catch (e) {
+        console.error(e);
+      } finally {
+        setInitialState(undefined);
+      }
+    };
+
+    restoreNavigationState();
+  }, [initialState]);
+
+  if (initialState == "not-set") return null;
+
+  return (
+    <ErrorBoundary>
+      <WagmiConfig client={wagmiClient}>
+        <SafeAreaProvider>
+          <NavigationContainer
+            initialState={initialState}
+            onStateChange={(state) => {
+              AsyncStorage.setItem(
+                NAVIGATION_STATE_STORAGE_KEY,
+                JSON.stringify(state)
+              );
+            }}
+          >
+            <AuthProvider apiOrigin={API_ENDPOINT} tokenStorage={AsyncStorage}>
+              <AppScopeProvider>
+                <ServerConnectionProvider
+                  Pusher={Pusher}
+                  pusherKey={PUSHER_KEY}
+                >
+                  <App />
+                </ServerConnectionProvider>
+              </AppScopeProvider>
+            </AuthProvider>
+          </NavigationContainer>
+        </SafeAreaProvider>
+      </WagmiConfig>
+    </ErrorBoundary>
+  );
+};

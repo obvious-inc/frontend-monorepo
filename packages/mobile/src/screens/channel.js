@@ -11,6 +11,7 @@ import {
   Alert,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { useFocusEffect } from "@react-navigation/native";
 import Svg, { SvgXml, G, Path } from "react-native-svg";
 import { FlashList } from "@shopify/flash-list";
 import * as Shades from "@shades/common";
@@ -32,12 +33,18 @@ const locale = ["en", Localization.region].filter(Boolean).join("-");
 
 const useChannelMessages = ({ channelId }) => {
   const { actions, state } = useAppScope();
+  const { fetchMessages } = actions;
 
   const messages = state.selectChannelMessages(channelId);
 
-  React.useEffect(() => {
-    actions.fetchMessages(channelId);
-  }, [actions, channelId]);
+  // React.useEffect(() => {
+  //   actions.fetchMessages(channelId);
+  // }, [actions, channelId]);
+  useFocusEffect(
+    React.useCallback(() => {
+      fetchMessages(channelId);
+    }, [channelId, fetchMessages])
+  );
 
   const sortedMessages = messages.sort(
     (m1, m2) => new Date(m1.created_at) - new Date(m2.created_at)
@@ -56,10 +63,17 @@ const Channel = ({ route: { params } }) => {
 
   const messages = useChannelMessages({ channelId });
 
-  React.useEffect(() => {
-    fetchChannelMembers(channelId);
-    fetchChannelPublicPermissions(channelId);
-  }, [channelId, fetchChannelMembers, fetchChannelPublicPermissions]);
+  // React.useEffect(() => {
+  //   fetchChannelMembers(channelId);
+  //   fetchChannelPublicPermissions(channelId);
+  // }, [channelId, fetchChannelMembers, fetchChannelPublicPermissions]);
+
+  useFocusEffect(
+    React.useCallback(() => {
+      fetchChannelMembers(channelId);
+      fetchChannelPublicPermissions(channelId);
+    }, [channelId, fetchChannelMembers, fetchChannelPublicPermissions])
+  );
 
   const fetchMoreMessages = useLatestCallback(() => {
     if (messages.length === 0) return;
