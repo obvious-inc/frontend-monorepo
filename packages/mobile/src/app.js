@@ -8,20 +8,19 @@ import { mainnet as mainnetChain } from "wagmi/chains";
 import { infuraProvider } from "wagmi/providers/infura";
 import { publicProvider } from "wagmi/providers/public";
 import React from "react";
-import { AppState, View, Text } from "react-native";
+import { View, Text } from "react-native";
 import { NavigationContainer } from "@react-navigation/native";
-// import { createStackNavigator } from "@react-navigation/stack";
-// import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import { createMaterialTopTabNavigator } from "@react-navigation/material-top-tabs";
 import { WebView } from "react-native-webview";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import Pusher from "pusher-js/react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import * as Shades from "@shades/common";
+import useOnlineListener from "./hooks/online-listener";
+import useAppActiveListener from "./hooks/app-active-listener";
 import Channel from "./screens/channel";
 import ChannelList from "./screens/channel-list";
 
-const { unique } = Shades.utils.array;
 const {
   AuthProvider,
   useAuth,
@@ -30,6 +29,8 @@ const {
   AppScopeProvider,
   useServerConnection,
 } = Shades.app;
+const { useLatestCallback } = Shades.react;
+const { unique } = Shades.utils.array;
 
 const API_ENDPOINT = Constants.expoConfig.extra.apiEndpoint;
 const WEB_APP_ENDPOINT = Constants.expoConfig.extra.webAppEndpoint;
@@ -47,12 +48,28 @@ const wagmiClient = createWagmiClient({
   storage: null,
 });
 
-const Tab = createMaterialTopTabNavigator();
+const TabNavigator = createMaterialTopTabNavigator();
+
+const useServerEventListener = (listener_) => {
+  const serverConnection = useServerConnection();
+
+  const listener = useLatestCallback(listener_);
+
+  React.useEffect(() => {
+    const removeListener = serverConnection.addListener((...args) => {
+      listener(...args);
+    });
+
+    return () => {
+      removeListener();
+    };
+  }, [listener, serverConnection]);
+};
 
 const App = () => {
   const { status: authStatus, setAccessToken, setRefreshToken } = useAuth();
   const { state, actions, dispatch } = useAppScope();
-  const serverConnection = useServerConnection();
+  const me = state.selectMe();
 
   const {
     fetchClientBootData,
@@ -62,50 +79,44 @@ const App = () => {
     fetchUsers,
   } = actions;
 
-  const user = state.selectMe();
   const channels = state.selectMemberChannels();
 
-  React.useEffect(() => {
-    if (authStatus !== "authenticated") return;
-
+  const bootClient = useLatestCallback(() =>
     fetchClientBootData().then(({ channels }) => {
       const dmUserIds = unique(
         channels.filter((c) => c.kind === "dm").flatMap((c) => c.members)
       );
-      fetchUsers(dmUserIds);
-    });
-  }, [authStatus, fetchClientBootData, fetchUsers]);
+      return fetchUsers(dmUserIds);
+    })
+  );
+
+  const updateClient = useLatestCallback(() =>
+    Promise.all([
+      fetchUserChannels(),
+      fetchUserChannelsReadStates(),
+      fetchStarredItems(),
+    ])
+  );
 
   React.useEffect(() => {
     if (authStatus !== "authenticated") return;
+    bootClient();
+  }, [authStatus, bootClient]);
 
-    const removeListener = serverConnection.addListener((name, data) => {
-      dispatch({ type: ["server-event", name].join(":"), data, user });
-    });
-    return () => {
-      removeListener();
-    };
-  }, [authStatus, user, serverConnection, dispatch]);
-
-  React.useEffect(() => {
+  useAppActiveListener(() => {
     if (authStatus !== "authenticated") return;
+    updateClient();
+  });
 
-    const subscription = AppState.addEventListener("change", (nextAppState) => {
-      if (nextAppState !== "active") return;
-      fetchUserChannels();
-      fetchUserChannelsReadStates();
-      fetchStarredItems();
-    });
+  useOnlineListener(() => {
+    if (authStatus !== "authenticated") return;
+    updateClient();
+  });
 
-    return () => {
-      subscription.remove();
-    };
-  }, [
-    authStatus,
-    fetchUserChannels,
-    fetchUserChannelsReadStates,
-    fetchStarredItems,
-  ]);
+  useServerEventListener((name, data) => {
+    if (authStatus !== "authenticated") return;
+    dispatch({ type: ["server-event", name].join(":"), data, user: me });
+  });
 
   if (authStatus === "not-authenticated")
     return (
@@ -121,18 +132,21 @@ const App = () => {
     );
 
   // Loading screen
-  if (authStatus === "loading" || user == null || channels.length === 0)
-    return <View style={{ backgroundColor: "hsl(0,0%,8%)", flex: 1 }} />;
+  if (authStatus === "loading" || me == null || channels.length === 0)
+    return <View style={{ backgroundColor: "rgb(32,32,32)", flex: 1 }} />;
 
   return (
-    <Tab.Navigator tabBar={() => null} screenOptions={{ headerShown: false }}>
-      <Tab.Screen name="Channel list" component={ChannelList} />
-      <Tab.Screen
+    <TabNavigator.Navigator
+      tabBar={() => null}
+      screenOptions={{ headerShown: false }}
+    >
+      <TabNavigator.Screen name="Channel list" component={ChannelList} />
+      <TabNavigator.Screen
         name="Channel"
         component={Channel}
         initialParams={{ channelId: channels[0].id }}
       />
-    </Tab.Navigator>
+    </TabNavigator.Navigator>
   );
 };
 
