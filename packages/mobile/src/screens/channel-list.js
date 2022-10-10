@@ -76,8 +76,7 @@ const ChannelList = ({ navigation }) => {
               lineHeight: 18,
             }}
           >
-            Olle’s workspace
-            {/* {user?.displayName} */}
+            {user?.displayName}
           </Text>
           {truncatedAddress !== user?.displayName && (
             <Text
@@ -91,8 +90,7 @@ const ChannelList = ({ navigation }) => {
                 lineHeight: 14,
               }}
             >
-              olle.werme@gmail.com
-              {/* {truncatedAddress} */}
+              {truncatedAddress}
             </Text>
           )}
         </View>
