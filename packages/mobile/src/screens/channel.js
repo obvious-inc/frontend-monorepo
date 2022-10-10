@@ -11,7 +11,12 @@ import {
   Alert,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { useFocusEffect } from "@react-navigation/native";
+import {
+  useFocusEffect,
+  useRoute,
+  useNavigation,
+} from "@react-navigation/native";
+import { useHeaderHeight } from "@react-navigation/elements";
 import Svg, { SvgXml, G, Path } from "react-native-svg";
 import { FlashList } from "@shopify/flash-list";
 import * as Shades from "@shades/common";
@@ -27,6 +32,17 @@ const handleUnimplementedPress = () => {
 
 const { useLatestCallback } = Shades.react;
 const { useAppScope } = Shades.app;
+
+const background = "hsl(0,0%,10%)";
+
+export const options = {
+  headerShown: true,
+  headerTitle: () => "", // <Text>hi</Text>,
+  headerStyle: { backgroundColor: background },
+  headerShadowVisible: false,
+  headerLeft: () => <HeaderLeft />,
+  contentStyle: { flex: 1 },
+};
 
 // Region might return `null` on Android
 const locale = ["en", Localization.region].filter(Boolean).join("-");
@@ -53,6 +69,103 @@ const useChannelMessages = ({ channelId }) => {
   return sortedMessages;
 };
 
+const HeaderLeft = () => {
+  const { params } = useRoute();
+  const navigation = useNavigation();
+  const { state } = useAppScope();
+  const channel = state.selectChannel(params.channelId);
+  const memberCount = channel.memberUserIds.length;
+
+  return (
+    <View
+      style={{
+        flexDirection: "row",
+        alignItems: "center",
+        marginLeft: -16,
+        paddingHorizontal: 10,
+      }}
+    >
+      <View style={{ width: 38, justifyContent: "center", marginRight: 12 }}>
+        <Pressable
+          onPress={() => {
+            navigation.goBack();
+          }}
+          style={{
+            width: 32,
+            height: 32,
+            alignItems: "center",
+            justifyContent: "center",
+          }}
+        >
+          {({ pressed }) => (
+            <Svg
+              width="34"
+              height="34"
+              viewBox="0 0 15 15"
+              fill="none"
+              style={{
+                position: "relative",
+                left: 3,
+                color: pressed ? "gray" : "white", // "rgb(35, 131, 226)"
+              }}
+            >
+              <Path
+                d="M8.81809 4.18179C8.99383 4.35753 8.99383 4.64245 8.81809 4.81819L6.13629 7.49999L8.81809 10.1818C8.99383 10.3575 8.99383 10.6424 8.81809 10.8182C8.64236 10.9939 8.35743 10.9939 8.1817 10.8182L5.1817 7.81819C5.09731 7.73379 5.0499 7.61933 5.0499 7.49999C5.0499 7.38064 5.09731 7.26618 5.1817 7.18179L8.1817 4.18179C8.35743 4.00605 8.64236 4.00605 8.81809 4.18179Z"
+                fill="currentColor"
+                fillRule="evenodd"
+                clipRule="evenodd"
+              />
+            </Svg>
+          )}
+        </Pressable>
+      </View>
+      <View style={{ flexDirection: "row", alignItems: "center" }}>
+        {channel.avatar != null && (
+          <View
+            style={{
+              width: 32,
+              height: 32,
+              borderRadius: 32 / 2,
+              backgroundColor: "rgba(255, 255, 255, 0.055)",
+              overflow: "hidden",
+              alignItems: "center",
+              justifyContent: "center",
+              marginRight: 10,
+            }}
+          >
+            <Image
+              source={{ uri: channel.avatar }}
+              style={{ width: "100%", height: "100%" }}
+            />
+          </View>
+        )}
+        <View style={{ paddingBottom: 0 }}>
+          <Text
+            style={{
+              color: "white",
+              fontSize: 16,
+              fontWeight: "600",
+              lineHeight: 18,
+            }}
+          >
+            {channel.name}
+          </Text>
+          <Text
+            style={{
+              color: "gray",
+              fontSize: 11.5,
+              fontWeight: "400",
+              lineHeight: 14,
+            }}
+          >
+            {memberCount} {memberCount === 1 ? "member" : "members"}
+          </Text>
+        </View>
+      </View>
+    </View>
+  );
+};
+
 const Channel = ({ route: { params } }) => {
   const { channelId } = params;
   const { state, actions } = useAppScope();
@@ -62,11 +175,7 @@ const Channel = ({ route: { params } }) => {
   const channel = state.selectChannel(params.channelId);
 
   const messages = useChannelMessages({ channelId });
-
-  // React.useEffect(() => {
-  //   fetchChannelMembers(channelId);
-  //   fetchChannelPublicPermissions(channelId);
-  // }, [channelId, fetchChannelMembers, fetchChannelPublicPermissions]);
+  const headerHeight = useHeaderHeight();
 
   useFocusEffect(
     React.useCallback(() => {
@@ -84,9 +193,15 @@ const Channel = ({ route: { params } }) => {
   });
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: "rgb(25,25,25)" }}>
-      <KeyboardAvoidingView behavior="padding" style={{ flex: 1 }}>
-        <ChannelHeader title={channel.name} />
+    <SafeAreaView
+      edges={["left", "right", "bottom"]}
+      style={{ flex: 1, backgroundColor: background }}
+    >
+      <KeyboardAvoidingView
+        behavior="padding"
+        keyboardVerticalOffset={headerHeight}
+        style={{ flex: 1 }}
+      >
         <ChannelMessagesScrollView
           messages={messages}
           onEndReached={fetchMoreMessages}
@@ -105,14 +220,6 @@ const Channel = ({ route: { params } }) => {
     </SafeAreaView>
   );
 };
-
-const ChannelHeader = ({ title }) => (
-  <View style={{ paddingHorizontal: 16, paddingVertical: 18 }}>
-    <Text style={{ color: "white", fontSize: 18, fontWeight: "600" }}>
-      <Text style={{ color: "rgba(255,255,255,0.3)" }}>#</Text> {title}
-    </Text>
-  </View>
-);
 
 const ChannelMessagesScrollView = ({
   messages: messages_,

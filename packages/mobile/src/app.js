@@ -9,8 +9,11 @@ import { infuraProvider } from "wagmi/providers/infura";
 import { publicProvider } from "wagmi/providers/public";
 import React from "react";
 import { View, Text } from "react-native";
-import { NavigationContainer } from "@react-navigation/native";
-import { createMaterialTopTabNavigator } from "@react-navigation/material-top-tabs";
+import {
+  NavigationContainer,
+  DarkTheme as ReactNavigationDarkTheme,
+} from "@react-navigation/native";
+import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import { WebView } from "react-native-webview";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import Pusher from "pusher-js/react-native";
@@ -18,8 +21,10 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import * as Shades from "@shades/common";
 import useOnlineListener from "./hooks/online-listener";
 import useAppActiveListener from "./hooks/app-active-listener";
-import Channel from "./screens/channel";
-import ChannelList from "./screens/channel-list";
+import Channel, { options as channelScreenOptions } from "./screens/channel";
+import ChannelList, {
+  options as channelListScreenOptions,
+} from "./screens/channel-list";
 
 const {
   AuthProvider,
@@ -48,7 +53,8 @@ const wagmiClient = createWagmiClient({
   storage: null,
 });
 
-const TabNavigator = createMaterialTopTabNavigator();
+// const TabNavigator = createMaterialTopTabNavigator();
+const NativeStackNavigator = createNativeStackNavigator();
 
 const useServerEventListener = (listener_) => {
   const serverConnection = useServerConnection();
@@ -133,20 +139,25 @@ const App = () => {
 
   // Loading screen
   if (authStatus === "loading" || me == null || channels.length === 0)
-    return <View style={{ backgroundColor: "rgb(32,32,32)", flex: 1 }} />;
+    return <View style={{ backgroundColor: "hsl(0,0%,10%)", flex: 1 }} />;
 
   return (
-    <TabNavigator.Navigator
-      tabBar={() => null}
+    <NativeStackNavigator.Navigator
+      initialRouteName="Channel list"
       screenOptions={{ headerShown: false }}
     >
-      <TabNavigator.Screen name="Channel list" component={ChannelList} />
-      <TabNavigator.Screen
+      <NativeStackNavigator.Screen
+        name="Channel list"
+        component={ChannelList}
+        options={channelListScreenOptions}
+      />
+      <NativeStackNavigator.Screen
         name="Channel"
         component={Channel}
         initialParams={{ channelId: channels[0].id }}
+        options={channelScreenOptions}
       />
-    </TabNavigator.Navigator>
+    </NativeStackNavigator.Navigator>
   );
 };
 
@@ -254,6 +265,7 @@ export default () => {
                 JSON.stringify(state)
               );
             }}
+            theme={ReactNavigationDarkTheme}
           >
             <AuthProvider apiOrigin={API_ENDPOINT} tokenStorage={AsyncStorage}>
               <AppScopeProvider>
