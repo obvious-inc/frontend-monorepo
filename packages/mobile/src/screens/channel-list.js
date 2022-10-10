@@ -1,6 +1,6 @@
 import * as Haptics from "expo-haptics";
 import React from "react";
-import { View, Text, Image, Pressable, ScrollView, Alert } from "react-native";
+import { View, Text, Image, Pressable, ScrollView } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { SvgXml } from "react-native-svg";
 import * as Shades from "@shades/common";
@@ -8,11 +8,6 @@ import useProfilePicture from "../hooks/profile-picture";
 
 const { reverse } = Shades.utils.array;
 const { useAppScope } = Shades.app;
-
-const handleUnimplementedPress = () => {
-  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-  Alert.alert("THOON");
-};
 
 const truncateAddress = (address) =>
   [address.slice(0, 5), address.slice(-3)].join("...");
@@ -52,7 +47,10 @@ const ChannelList = ({ navigation }) => {
           borderBottomColor: "hsl(0,0%,14%)",
           borderBottomWidth: 1,
         })}
-        onPress={handleUnimplementedPress}
+        onPress={() => {
+          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+          navigation.navigate("Profile");
+        }}
       >
         <View
           style={{

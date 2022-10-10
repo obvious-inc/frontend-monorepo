@@ -8,11 +8,12 @@ import { mainnet as mainnetChain } from "wagmi/chains";
 import { infuraProvider } from "wagmi/providers/infura";
 import { publicProvider } from "wagmi/providers/public";
 import React from "react";
-import { View, Text } from "react-native";
+import { View, Text, Pressable } from "react-native";
 import {
   NavigationContainer,
   DarkTheme as ReactNavigationDarkTheme,
 } from "@react-navigation/native";
+import { useHeaderHeight } from "@react-navigation/elements";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import { WebView } from "react-native-webview";
 import { SafeAreaProvider } from "react-native-safe-area-context";
@@ -36,6 +37,8 @@ const {
 } = Shades.app;
 const { useLatestCallback } = Shades.react;
 const { unique } = Shades.utils.array;
+
+const textDefault = "hsl(0,0%,83%)";
 
 const API_ENDPOINT = Constants.expoConfig.extra.apiEndpoint;
 const WEB_APP_ENDPOINT = Constants.expoConfig.extra.webAppEndpoint;
@@ -157,7 +160,63 @@ const App = () => {
         initialParams={{ channelId: channels[0].id }}
         options={channelScreenOptions}
       />
+      <NativeStackNavigator.Screen
+        name="Profile"
+        component={Profile}
+        options={{
+          presentation: "modal",
+          headerTitle: () => (
+            <View style={{ alignItems: "center" }}>
+              <View
+                style={{
+                  width: 38,
+                  height: 5,
+                  borderRadius: 2.5,
+                  backgroundColor: "hsl(0,0%,32%)",
+                  position: "relative",
+                  top: -11,
+                  marginBottom: 4,
+                }}
+              />
+              <Text
+                style={{ fontSize: 16, fontWeight: "600", color: textDefault }}
+              >
+                Account
+              </Text>
+            </View>
+          ),
+          headerShown: true,
+          headerTransparent: true,
+          headerShadowVisible: false,
+        }}
+      />
     </NativeStackNavigator.Navigator>
+  );
+};
+
+const Profile = ({ navigation }) => {
+  const { actions } = useAppScope();
+  const headerHeight = useHeaderHeight();
+  return (
+    <View style={{ flex: 1, padding: 16, backgroundColor: "hsl(0,0%,10%)" }}>
+      <View style={{ height: headerHeight }} />
+      <Pressable
+        onPress={() => {
+          actions.logout();
+          navigation.popToTop();
+        }}
+        style={({ pressed }) => ({
+          paddingHorizontal: 20,
+          height: 50,
+          flexDirection: "row",
+          alignItems: "center",
+          backgroundColor: pressed ? "hsl(0,0%,15%)" : "hsl(0,0%,13%)", // hsl(0,0%,11%)
+          borderRadius: 12,
+        })}
+      >
+        <Text style={{ color: "#de554f", fontSize: 16 }}>Log out</Text>
+      </Pressable>
+    </View>
   );
 };
 
