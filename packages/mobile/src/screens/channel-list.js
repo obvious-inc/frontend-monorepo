@@ -16,6 +16,7 @@ export const options = {};
 
 const textDefault = "hsl(0,0%,83%)";
 const textDimmed = "hsl(0,0%,50%)";
+const BACKGROUND = "hsl(0,0%,10%)";
 
 const ChannelList = ({ navigation }) => {
   const { state } = useAppScope();
@@ -32,10 +33,7 @@ const ChannelList = ({ navigation }) => {
   return (
     <SafeAreaView
       edges={["top", "left", "right"]}
-      style={{
-        flex: 1,
-        backgroundColor: "hsl(0,0%,10%)",
-      }}
+      style={{ flex: 1, backgroundColor: BACKGROUND }}
     >
       <Pressable
         style={({ pressed }) => ({
@@ -61,14 +59,12 @@ const ChannelList = ({ navigation }) => {
             marginRight: 8,
           }}
         >
-          <ProfilePicture user={user} size={26} />
+          <UserProfilePicture user={user} size={26} />
         </View>
         <View style={{ flex: 1 }}>
           <Text
             style={{
               color: textDefault,
-              // fontSize: 18,
-              // fontWeight: "500",
               fontSize: 16,
               fontWeight: "500",
               lineHeight: 18,
@@ -80,9 +76,6 @@ const ChannelList = ({ navigation }) => {
             <Text
               style={{
                 color: textDimmed,
-                // fontSize: 14,
-                // fontWeight: "500",
-                // lineHeight: 18,
                 fontSize: 12,
                 fontWeight: "400",
                 lineHeight: 14,
@@ -214,7 +207,7 @@ const ChannelList = ({ navigation }) => {
           </CollapsableSection>
         )}
 
-        <View style={{ height: 40 }} />
+        <View style={{ height: 30 }} />
       </ScrollView>
     </SafeAreaView>
   );
@@ -223,21 +216,10 @@ const ChannelList = ({ navigation }) => {
 export const ChannelItem = ({
   id,
   name,
-  avatar,
-  kind,
   hasUnread,
   // notificationCount,
   onPress,
 }) => {
-  const { state } = useAppScope();
-  const user = state.selectMe();
-
-  const memberUsers = state.selectChannelMembers(id);
-  const memberUsersExcludingMe = memberUsers.filter(
-    (u) => user == null || u.id !== user.id
-  );
-  const isFetchingMembers = memberUsers.some((m) => m.walletAddress == null);
-
   return (
     <ListItem
       onPress={onPress}
@@ -245,53 +227,7 @@ export const ChannelItem = ({
       title={
         <Text style={{ color: hasUnread ? "white" : undefined }}>{name}</Text>
       }
-      icon={
-        <View>
-          {avatar != null || isFetchingMembers ? (
-            <ProfilePicture size={26} url={avatar} />
-          ) : kind === "dm" ? (
-            <>
-              {memberUsersExcludingMe.length <= 1 ? (
-                <ProfilePicture
-                  size={26}
-                  user={memberUsersExcludingMe[0] ?? memberUsers[0]}
-                />
-              ) : (
-                <View
-                  style={{
-                    width: 26,
-                    height: 26,
-                    position: "relative",
-                  }}
-                >
-                  {reverse(memberUsersExcludingMe.slice(0, 2)).map(
-                    (user, i) => (
-                      <ProfilePicture
-                        key={user.id}
-                        user={user}
-                        style={{
-                          position: "absolute",
-                          top: i === 0 ? 3 : 0,
-                          left: i === 0 ? 3 : 0,
-                          width: 23,
-                          height: 23,
-                          borderRadius: 11.5,
-                        }}
-                      />
-                    )
-                  )}
-                </View>
-              )}
-            </>
-          ) : (
-            <ProfilePicture
-              size={26}
-              // Emojis: https://dev.to/acanimal/how-to-slice-or-get-symbols-from-a-unicode-string-with-emojis-in-javascript-lets-learn-how-javascript-represent-strings-h3a
-              signature={[...name][0]}
-            />
-          )}
-        </View>
-      }
+      icon={<ChannelPicture channelId={id} size={26} />}
     />
   );
 };
@@ -408,7 +344,6 @@ const ListItem = ({
             fontSize: 18,
             fontWeight: "500",
             color: disabled ? "red" : textDimmed,
-            // color: disabled ? "rgb(255, 255, 255, 0.28)" : "gray",
             lineHeight: 26,
           }}
         >
@@ -419,7 +354,13 @@ const ListItem = ({
     </Pressable>
   </View>
 );
-const ProfilePicture = ({ size = 18, url, user, signature, style }) => {
+
+const UserProfilePicture = ({
+  size = 18,
+  background = "hsla(0,0%,100%,0.055)",
+  user,
+  style,
+}) => {
   const profilePicture = useProfilePicture(user);
   return (
     <View
@@ -427,27 +368,140 @@ const ProfilePicture = ({ size = 18, url, user, signature, style }) => {
         width: size,
         height: size,
         borderRadius: size / 2,
-        backgroundColor: "rgba(255, 255, 255, 0.055)",
+        backgroundColor: background,
         overflow: "hidden",
         alignItems: "center",
         justifyContent: "center",
         ...style,
       }}
     >
-      {url != null || profilePicture?.type === "url" ? (
+      {profilePicture?.type === "url" ? (
         <Image
-          source={{ uri: url ?? profilePicture.url }}
-          style={{ width: "100%", height: "100%" }}
+          source={{ uri: profilePicture.url }}
+          style={{ width: "100%", height: "100%", borderRadius: size / 2 }}
         />
       ) : profilePicture?.type === "svg-string" ? (
         <SvgXml xml={profilePicture.string} width="100%" height="100%" />
-      ) : signature ? (
-        <Text style={{ color: "gray", fontSize: 11 }}>
-          {signature.toUpperCase()}
-        </Text>
       ) : null}
     </View>
   );
 };
+
+export const ChannelPicture = React.memo(
+  ({ channelId, size = 18, background = "hsla(0,0%,100%,0.055)" }) => {
+    const { state } = useAppScope();
+    const channel = state.selectChannel(channelId);
+    const placeholder = () => (
+      <View
+        style={{
+          width: size,
+          height: size,
+          borderRadius: size / 2,
+          backgroundColor: background,
+          overflow: "hidden",
+        }}
+      />
+    );
+
+    if (channel == null) return placeholder();
+
+    if (channel.avatar != null)
+      return (
+        <View
+          style={{
+            width: size,
+            height: size,
+            borderRadius: size / 2,
+            backgroundColor: background,
+            overflow: "hidden",
+            alignItems: "center",
+            justifyContent: "center",
+          }}
+        >
+          <Image
+            source={{ uri: channel.avatar }}
+            style={{ width: "100%", height: "100%" }}
+          />
+        </View>
+      );
+
+    switch (channel.kind) {
+      case "dm": {
+        const user = state.selectMe();
+        const memberUsers = state.selectChannelMembers(channelId);
+        const memberUsersExcludingMe = memberUsers.filter(
+          (u) => user == null || u.id !== user.id
+        );
+        const isFetchingMembers = memberUsers.some(
+          (m) => m.walletAddress == null
+        );
+
+        if (isFetchingMembers) return placeholder();
+
+        if (memberUsersExcludingMe.length <= 1)
+          return (
+            <UserProfilePicture
+              size={size}
+              user={memberUsersExcludingMe[0] ?? memberUsers[0]}
+            />
+          );
+
+        return (
+          <View
+            style={{
+              width: size,
+              height: size,
+              position: "relative",
+            }}
+          >
+            {reverse(memberUsersExcludingMe.slice(0, 2)).map((user, i) => {
+              const borderWidth = 3;
+              const smallSize = size * (3 / 4) + borderWidth * 2;
+              const diff = size - smallSize;
+              return (
+                <UserProfilePicture
+                  key={user.id}
+                  size={smallSize}
+                  user={user}
+                  background="hsl(0,0%,16%)"
+                  style={{
+                    position: "absolute",
+                    top: i === 0 ? borderWidth * -1 : diff + borderWidth,
+                    left: i === 0 ? borderWidth + 2 : borderWidth * -1,
+                    borderWidth,
+                    borderColor: BACKGROUND,
+                  }}
+                />
+              );
+            })}
+          </View>
+        );
+      }
+
+      default: {
+        return (
+          <View
+            style={{
+              width: size,
+              height: size,
+              borderRadius: size / 2,
+              backgroundColor: background,
+              overflow: "hidden",
+              alignItems: "center",
+              justifyContent: "center",
+            }}
+          >
+            <Text style={{ color: textDimmed, fontSize: 11 }}>
+              {
+                // Emojis: https://dev.to/acanimal/how-to-slice-or-get-symbols-from-a-unicode-string-with-emojis-in-javascript-lets-learn-how-javascript-represent-strings-h3a
+                [...channel.name][0]?.toUpperCase()
+              }
+            </Text>
+          </View>
+        );
+      }
+    }
+  }
+);
 
 export default ChannelList;

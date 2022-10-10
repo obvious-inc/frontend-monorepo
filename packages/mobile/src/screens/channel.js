@@ -24,6 +24,7 @@ import * as Localization from "expo-localization";
 import useProfilePicture from "../hooks/profile-picture";
 import FormattedDate from "../components/formatted-date";
 import RichText from "../components/rich-text";
+import { ChannelPicture } from "./channel-list";
 
 const handleUnimplementedPress = () => {
   Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
@@ -120,26 +121,12 @@ const HeaderLeft = () => {
         </Pressable>
       </View>
       <View style={{ flexDirection: "row", alignItems: "center" }}>
-        {channel.avatar != null && (
-          <View
-            style={{
-              width: 32,
-              height: 32,
-              borderRadius: 32 / 2,
-              backgroundColor: "rgba(255, 255, 255, 0.055)",
-              overflow: "hidden",
-              alignItems: "center",
-              justifyContent: "center",
-              marginRight: 10,
-            }}
-          >
-            <Image
-              source={{ uri: channel.avatar }}
-              style={{ width: "100%", height: "100%" }}
-            />
+        {(channel.kind === "dm" || channel.avatar != null) && (
+          <View style={{ marginRight: 10 }}>
+            <ChannelPicture channelId={params.channelId} size={32} />
           </View>
         )}
-        <View style={{ paddingBottom: 0 }}>
+        <View>
           <Text
             style={{
               color: "white",
