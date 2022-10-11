@@ -18,14 +18,13 @@ import {
   useNavigation,
 } from "@react-navigation/native";
 import { useHeaderHeight } from "@react-navigation/elements";
-import Svg, { SvgXml, G, Path } from "react-native-svg";
+import Svg, { G, Path } from "react-native-svg";
 import { FlashList } from "@shopify/flash-list";
 import * as Shades from "@shades/common";
 import * as Localization from "expo-localization";
-import useProfilePicture from "../hooks/profile-picture";
 import FormattedDate from "../components/formatted-date";
 import RichText from "../components/rich-text";
-import { ChannelPicture } from "./channel-list";
+import { ChannelPicture, UserProfilePicture } from "./channel-list";
 
 const handleUnimplementedPress = () => {
   Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
@@ -38,6 +37,7 @@ const { useAppScope } = Shades.app;
 const ONE_MINUTE_IN_MILLIS = 1000 * 60;
 
 const background = "hsl(0,0%,10%)";
+const textDefault = "hsl(0,0%,83%)";
 
 // export const options = {
 //   headerMode: "screen",
@@ -319,7 +319,6 @@ const ChannelMessagesScrollView = ({
 };
 
 const Message = ({ message, previousMessage, getMember }) => {
-  const profilePicture = useProfilePicture(message.author);
   const m = message;
 
   const createdAtDate = React.useMemo(
@@ -340,111 +339,194 @@ const Message = ({ message, previousMessage, getMember }) => {
       delayLongPress={180}
       onLongPress={handleUnimplementedPress}
       style={({ pressed }) => ({
-        flexDirection: "row",
         paddingHorizontal: 10,
         paddingVertical: 10,
         paddingTop: showSimplifiedMessage ? 0 : undefined,
         backgroundColor: pressed ? "rgba(255, 255, 255, 0.055)" : undefined,
       })}
     >
-      <View style={{ width: 38, marginRight: 12 }}>
-        {m.isSystemMessage || m.isAppMessage ? (
-          <View style={{ alignSelf: "center", paddingTop: 4 }}>
-            <Svg
-              height={18}
-              width={18}
-              style={{
-                width: 15,
-                color: m.isSystemMessage ? "#e588f8" : "hsl(139, 47.3%, 43.9%)",
-              }}
-            >
-              <G fill="none" fillRule="evenodd">
-                <Path d="M18 0H0v18h18z" />
-                <Path
-                  d="M0 8h14.2l-3.6-3.6L12 3l6 6-6 6-1.4-1.4 3.6-3.6H0"
-                  fill="currentColor"
-                />
-              </G>
-            </Svg>
-          </View>
-        ) : showSimplifiedMessage ? null : (
-          <View style={{ paddingTop: 2 }}>
+      {message.isReply && (
+        <RepliedMessage
+          message={message.repliedMessage}
+          getMember={getMember}
+        />
+      )}
+
+      <View
+        style={{
+          flexDirection: "row",
+        }}
+      >
+        <View style={{ width: 38, marginRight: 12 }}>
+          {m.isSystemMessage || m.isAppMessage ? (
+            <View style={{ alignSelf: "center", paddingTop: 4 }}>
+              <Svg
+                height={18}
+                width={18}
+                style={{
+                  width: 15,
+                  color: m.isSystemMessage
+                    ? "#e588f8"
+                    : "hsl(139, 47.3%, 43.9%)",
+                }}
+              >
+                <G fill="none" fillRule="evenodd">
+                  <Path d="M18 0H0v18h18z" />
+                  <Path
+                    d="M0 8h14.2l-3.6-3.6L12 3l6 6-6 6-1.4-1.4 3.6-3.6H0"
+                    fill="currentColor"
+                  />
+                </G>
+              </Svg>
+            </View>
+          ) : showSimplifiedMessage ? null : (
+            <View style={{ paddingTop: 2 }}>
+              <UserProfilePicture user={message.author} size={38} />
+            </View>
+          )}
+        </View>
+        <View style={{ flex: 1 }}>
+          {m.isSystemMessage ? null : m.isAppMessage ? null : showSimplifiedMessage ? null : (
             <View
               style={{
-                width: 38,
-                height: 38,
-                borderRadius: 19,
-                backgroundColor: "rgba(255, 255, 255, 0.055)",
-                overflow: "hidden",
+                flexDirection: "row",
+                justifyContent: "flex-start",
+                alignItems: "flex-end",
+                marginBottom: 2,
               }}
             >
-              {profilePicture?.type === "url" ? (
-                <Image
-                  source={{ uri: profilePicture.url }}
-                  style={{ width: "100%", height: "100%" }}
+              <Text
+                style={{
+                  fontSize: 16,
+                  lineHeight: 20,
+                  color: textDefault,
+                  fontWeight: "600",
+                  marginRight: 7,
+                }}
+              >
+                {m.author?.display_name}
+              </Text>
+              <Text
+                style={{
+                  fontSize: 10.5,
+                  lineHeight: 18,
+                  color: "rgba(255,255,255,0.443)",
+                }}
+              >
+                <FormattedDate
+                  value={new Date(m.created_at)}
+                  hour="numeric"
+                  minute="numeric"
+                  day="numeric"
+                  month="short"
+                  locale={locale}
                 />
-              ) : profilePicture?.type === "svg-string" ? (
-                <SvgXml
-                  xml={profilePicture.string}
-                  width="100%"
-                  height="100%"
-                />
-              ) : null}
+              </Text>
             </View>
-          </View>
-        )}
-      </View>
-      <View style={{ flex: 1 }}>
-        {m.isSystemMessage ? null : m.isAppMessage ? null : showSimplifiedMessage ? null : (
-          <View
-            style={{
-              flexDirection: "row",
-              justifyContent: "flex-start",
-              alignItems: "flex-end",
-              marginBottom: 2,
-            }}
-          >
-            <Text
-              style={{
-                fontSize: 16,
-                lineHeight: 20,
-                color: "white",
-                fontWeight: "600",
-                marginRight: 7,
-              }}
-            >
-              {m.author?.display_name}
-            </Text>
-            <Text
-              style={{
-                fontSize: 10.5,
-                lineHeight: 18,
-                color: "rgba(255,255,255,0.443)",
-              }}
-            >
-              <FormattedDate
-                value={new Date(m.created_at)}
-                hour="numeric"
-                minute="numeric"
-                day="numeric"
-                month="short"
-                locale={locale}
-              />
-            </Text>
-          </View>
-        )}
-        <Text
-          // selectable
-          style={{ fontSize: 16, color: "white", lineHeight: 24 }}
-        >
-          {m.isSystemMessage ? (
-            <SystemMessageContent message={m} />
-          ) : (
-            <RichText key={m.id} blocks={m.content} getMember={getMember} />
           )}
-        </Text>
+          <Text
+            // selectable
+            style={{ fontSize: 16, color: textDefault, lineHeight: 24 }}
+          >
+            {m.isSystemMessage ? (
+              <SystemMessageContent message={m} />
+            ) : (
+              <RichText
+                key={m.id}
+                blocks={m.content}
+                getMember={getMember}
+                textStyle={{
+                  fontSize: 16,
+                  lineHeight: 24,
+                  color: textDefault,
+                }}
+              />
+            )}
+          </Text>
+        </View>
       </View>
     </Pressable>
+  );
+};
+
+const RepliedMessage = ({ message, getMember }) => {
+  const authorMember = message?.author;
+  const showAvatar =
+    (message != null || !message?.deleted) && authorMember?.profilePicture;
+
+  return (
+    <View
+      style={{
+        position: "relative",
+        paddingLeft: 50,
+        marginBottom: 3,
+      }}
+    >
+      <View
+        style={{
+          position: "absolute",
+          right: "100%",
+          top: "50%",
+          paddingRight: 3,
+          marginTop: -1,
+        }}
+      >
+        <View
+          style={{
+            width: 29,
+            height: 13,
+            borderTopWidth: 2,
+            borderLeftWidth: 2,
+            borderColor: "hsl(0,0%,20%)",
+            borderTopStartRadius: 4,
+          }}
+        />
+      </View>
+      <View style={{ flexDirection: "row", alignItems: "center" }}>
+        {showAvatar && (
+          <UserProfilePicture
+            user={authorMember}
+            size={18}
+            style={{ marginRight: 5 }}
+          />
+        )}
+        <View style={{ flex: 1 }}>
+          <Text
+            numberOfLines={1}
+            ellipsizeMode="tail"
+            style={{ fontSize: 13, color: "hsl(0,0%,50%)" }}
+          >
+            {message?.deleted ? (
+              <Text
+                style={{
+                  fontStyle: "italic",
+                  color: "rgba(255,255,255,0.3)",
+                }}
+              >
+                Message deleted
+              </Text>
+            ) : (
+              <>
+                {authorMember == null ? (
+                  <Text style={{ fontWeight: "500" }}>...</Text>
+                ) : (
+                  <Text style={{ fontWeight: "500" }}>
+                    {authorMember.displayName}
+                  </Text>
+                )}{" "}
+                <Text style={{ color: "hsl(0,0%,50%)" }}>
+                  <RichText
+                    inline
+                    blocks={message?.content ?? []}
+                    getMember={getMember}
+                  />
+                </Text>
+              </>
+            )}
+          </Text>
+        </View>
+      </View>
+    </View>
   );
 };
 
@@ -615,7 +697,7 @@ const ChannelMessageInput = ({ placeholder, onSubmit }) => {
           style={{
             flex: 1,
             fontSize: 16,
-            color: "white",
+            color: textDefault,
             backgroundColor: "hsla(0,0%,100%,0.05)",
             paddingHorizontal: 16,
             paddingTop: 11,

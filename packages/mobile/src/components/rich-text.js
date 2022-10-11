@@ -4,21 +4,19 @@ import { decode as decodeBase64 } from "base-64";
 
 const svgDataUrlPrefix = "data:image/svg+xml;base64,";
 
-const textDefaultStyle = { fontSize: 16, lineHeight: 24, color: "white" };
+const createParser = ({ inline, getMember, textStyle: textDefaultStyle }) => {
+  const parseLeaf = (l, i) => {
+    const style = { ...textDefaultStyle };
+    if (l.bold) style.fontWeight = "600";
+    if (l.italic) style.fontStyle = "italic";
+    if (l.strikethrough) style.textDecorationLine = "line-through";
+    return (
+      <Text key={i} style={style}>
+        {l.text}
+      </Text>
+    );
+  };
 
-const parseLeaf = (l, i) => {
-  const style = { ...textDefaultStyle };
-  if (l.bold) style.fontWeight = "600";
-  if (l.italic) style.fontStyle = "italic";
-  if (l.strikethrough) style.textDecorationLine = "line-through";
-  return (
-    <Text key={i} style={style}>
-      {l.text}
-    </Text>
-  );
-};
-
-const createParser = ({ getMember }) => {
   const parse = (blocks) => {
     const windowWidth = Dimensions.get("window").width;
 
@@ -30,7 +28,9 @@ const createParser = ({ getMember }) => {
 
       switch (el.type) {
         case "paragraph":
-          return (
+          return inline ? (
+            children()
+          ) : (
             <View key={i} style={{ marginTop: i !== 0 ? 10 : 0 }}>
               <Text>{children()}</Text>
             </View>
@@ -164,12 +164,20 @@ const createParser = ({ getMember }) => {
 };
 
 const RichText = ({
+  inline,
   blocks,
   getMember,
   onClickInteractiveElement,
+  textStyle,
   ...props
 }) => {
-  const parse = createParser({ getMember, onClickInteractiveElement });
+  const parse = createParser({
+    inline,
+    getMember,
+    onClickInteractiveElement,
+    textStyle,
+  });
+  if (inline) return <Text>{parse(blocks)}</Text>;
   return <View {...props}>{parse(blocks)}</View>;
 };
 

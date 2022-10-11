@@ -355,7 +355,7 @@ const ListItem = ({
   </View>
 );
 
-const UserProfilePicture = ({
+export const UserProfilePicture = ({
   size = 18,
   background = "hsla(0,0%,100%,0.055)",
   user,
