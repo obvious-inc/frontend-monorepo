@@ -9,6 +9,7 @@ import {
   Pressable,
   InputAccessoryView,
   Alert,
+  AppState,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import {
@@ -186,8 +187,12 @@ const HeaderLeft = () => {
 const Channel = ({ route: { params } }) => {
   const { channelId } = params;
   const { state, actions } = useAppScope();
-  const { fetchChannelMembers, fetchChannelPublicPermissions, fetchMessages } =
-    actions;
+  const {
+    fetchChannelMembers,
+    fetchChannelPublicPermissions,
+    fetchMessages,
+    markChannelRead,
+  } = actions;
 
   const channel = state.selectChannel(params.channelId);
 
@@ -201,6 +206,8 @@ const Channel = ({ route: { params } }) => {
     }, [channelId, fetchChannelMembers, fetchChannelPublicPermissions])
   );
 
+  const didScrollToBottomRef = React.useRef(true);
+
   const fetchMoreMessages = useLatestCallback(() => {
     if (messages.length === 0) return;
     return fetchMessages(channel.id, {
@@ -208,6 +215,39 @@ const Channel = ({ route: { params } }) => {
       limit: 30,
     });
   });
+
+  const channelHasUnread = state.selectChannelHasUnread(channel.id);
+  const hasFetchedChannelMessagesAtLeastOnce = state.selectHasFetchedMessages(
+    channel.id
+  );
+
+  // Mark channel as read when new messages arrive
+  React.useEffect(() => {
+    if (
+      // Only mark as read when the app is active
+      AppState.currentState !== "active" ||
+      // Wait until the initial message batch is fetched
+      !hasFetchedChannelMessagesAtLeastOnce ||
+      // Only mark as read when scrolled to the bottom
+      !didScrollToBottomRef.current ||
+      // Don’t bother if the channel is already marked as read
+      !channelHasUnread
+    )
+      return;
+
+    markChannelRead(channel.id);
+  }, [
+    channel.id,
+    channelHasUnread,
+    hasFetchedChannelMessagesAtLeastOnce,
+    didScrollToBottomRef,
+    markChannelRead,
+  ]);
+
+  const handleScrolledToBottom = () => {
+    if (AppState.currentState !== "active" || !channelHasUnread) return;
+    markChannelRead(channel.id);
+  };
 
   return (
     <SafeAreaView
@@ -223,6 +263,12 @@ const Channel = ({ route: { params } }) => {
           messages={messages}
           onEndReached={fetchMoreMessages}
           getMember={state.selectUser}
+          onScroll={(e) => {
+            const isAtBottom = e.nativeEvent.contentOffset.y === 0;
+            didScrollToBottomRef.current = isAtBottom;
+
+            if (isAtBottom) handleScrolledToBottom();
+          }}
         />
         <ChannelMessageInput
           placeholder={`Message #${channel.name}`}
@@ -242,6 +288,7 @@ const ChannelMessagesScrollView = ({
   messages: messages_,
   onEndReached,
   getMember,
+  onScroll,
 }) => {
   const scrollViewRef = React.useRef();
 
@@ -260,6 +307,7 @@ const ChannelMessagesScrollView = ({
       estimatedItemSize={120}
       onEndReached={onEndReached}
       onEndReachedThreshold={1}
+      onScroll={onScroll}
     />
   );
 };

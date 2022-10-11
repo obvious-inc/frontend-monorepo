@@ -425,7 +425,7 @@ export const ChannelBase = ({
     channel.id
   );
 
-  // Mark channel as read when new messages arrive
+  // Mark channel as read when new messages arrive and when switching channels
   React.useEffect(() => {
     if (
       // Only mark as read when the page has focus

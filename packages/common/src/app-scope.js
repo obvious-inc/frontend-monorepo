@@ -117,15 +117,13 @@ export const Provider = ({ children }) => {
         ? new Date()
         : new Date(lastPersistedMessage.createdAt);
 
-    console.log("mark read", readAt.toLocaleTimeString());
-
     // TODO: Undo if request fails
-    // dispatch({ type: "mark-channel-read-request-sent", channelId, readAt });
-    // return authorizedFetch(`/channels/${channelId}/ack`, {
-    //   method: "POST",
-    //   headers: { "Content-Type": "application/json" },
-    //   body: JSON.stringify({ last_read_at: readAt.toISOString() }),
-    // });
+    dispatch({ type: "mark-channel-read-request-sent", channelId, readAt });
+    return authorizedFetch(`/channels/${channelId}/ack`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ last_read_at: readAt.toISOString() }),
+    });
   });
 
   const fetchMessage = useLatestCallback((id) =>
