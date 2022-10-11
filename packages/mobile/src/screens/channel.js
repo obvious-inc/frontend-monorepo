@@ -35,6 +35,8 @@ const handleUnimplementedPress = () => {
 const { useLatestCallback } = Shades.react;
 const { useAppScope } = Shades.app;
 
+const ONE_MINUTE_IN_MILLIS = 1000 * 60;
+
 const background = "hsl(0,0%,10%)";
 
 // export const options = {
@@ -301,8 +303,12 @@ const ChannelMessagesScrollView = ({
       ref={scrollViewRef}
       inverted
       data={messages}
-      renderItem={({ item }) => (
-        <Message message={item} getMember={getMember} />
+      renderItem={({ item, index }) => (
+        <Message
+          message={item}
+          previousMessage={messages[index + 1]}
+          getMember={getMember}
+        />
       )}
       estimatedItemSize={120}
       onEndReached={onEndReached}
@@ -312,8 +318,21 @@ const ChannelMessagesScrollView = ({
   );
 };
 
-const Message = ({ message: m, getMember }) => {
-  const profilePicture = useProfilePicture(m.author);
+const Message = ({ message, previousMessage, getMember }) => {
+  const profilePicture = useProfilePicture(message.author);
+  const m = message;
+
+  const createdAtDate = React.useMemo(
+    () => new Date(message.created_at),
+    [message.created_at]
+  );
+
+  const showSimplifiedMessage =
+    !m.isReply &&
+    previousMessage != null &&
+    previousMessage.authorId === m.authorId &&
+    createdAtDate - new Date(previousMessage.created_at) <
+      5 * ONE_MINUTE_IN_MILLIS;
 
   return (
     <Pressable
@@ -324,6 +343,7 @@ const Message = ({ message: m, getMember }) => {
         flexDirection: "row",
         paddingHorizontal: 10,
         paddingVertical: 10,
+        paddingTop: showSimplifiedMessage ? 0 : undefined,
         backgroundColor: pressed ? "rgba(255, 255, 255, 0.055)" : undefined,
       })}
     >
@@ -347,7 +367,7 @@ const Message = ({ message: m, getMember }) => {
               </G>
             </Svg>
           </View>
-        ) : (
+        ) : showSimplifiedMessage ? null : (
           <View style={{ paddingTop: 2 }}>
             <View
               style={{
@@ -375,7 +395,7 @@ const Message = ({ message: m, getMember }) => {
         )}
       </View>
       <View style={{ flex: 1 }}>
-        {m.isSystemMessage ? null : m.isAppMessage ? null : (
+        {m.isSystemMessage ? null : m.isAppMessage ? null : showSimplifiedMessage ? null : (
           <View
             style={{
               flexDirection: "row",
