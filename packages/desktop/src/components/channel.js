@@ -119,8 +119,8 @@ const useMessages = (channelId) => {
   return { messages, hasAllMessages };
 };
 
-const useScroll = (scrollContainerRef, channelId) => {
-  const [didScrollToBottom, setScrolledToBottom] = React.useState(false);
+const useScroll = (scrollContainerRef, { cacheKey, onScrollToBottom }) => {
+  const didScrollToBottomRef = React.useRef(false);
 
   const scrollToBottom = React.useCallback(
     (options) => {
@@ -129,7 +129,7 @@ const useScroll = (scrollContainerRef, channelId) => {
         scrollContainerRef.current.getBoundingClientRect().height;
 
       if (!isScrollable) {
-        setScrolledToBottom(true);
+        didScrollToBottomRef.current = true;
         return;
       }
 
@@ -141,16 +141,25 @@ const useScroll = (scrollContainerRef, channelId) => {
     [scrollContainerRef]
   );
 
+  // Restore cached scroll position
   React.useEffect(() => {
-    const { scrollTop: cachedScrollTop } = scrollPositionCache[channelId] ?? {};
+    const { scrollTop: cachedScrollTop } = scrollPositionCache[cacheKey] ?? {};
 
     if (cachedScrollTop == null) {
       scrollToBottom();
       return;
     }
 
-    scrollContainerRef.current.scrollTop = cachedScrollTop;
-  }, [scrollContainerRef, channelId, scrollToBottom]);
+    const el = scrollContainerRef.current;
+
+    el.scrollTop = cachedScrollTop;
+
+    const isAtBottom =
+      Math.ceil(cachedScrollTop) + el.getBoundingClientRect().height >=
+      el.scrollHeight;
+
+    didScrollToBottomRef.current = isAtBottom;
+  }, [scrollContainerRef, cacheKey, scrollToBottom]);
 
   useScrollListener(scrollContainerRef, (e) => {
     const isAtBottom =
@@ -158,15 +167,16 @@ const useScroll = (scrollContainerRef, channelId) => {
       e.target.scrollHeight;
 
     if (isAtBottom) {
-      delete scrollPositionCache[channelId];
+      delete scrollPositionCache[cacheKey];
+      onScrollToBottom?.();
     } else {
-      scrollPositionCache[channelId] = { scrollTop: e.target.scrollTop };
+      scrollPositionCache[cacheKey] = { scrollTop: e.target.scrollTop };
     }
 
-    setScrolledToBottom(isAtBottom);
+    didScrollToBottomRef.current = isAtBottom;
   });
 
-  return { didScrollToBottom, scrollToBottom };
+  return { didScrollToBottomRef, scrollToBottom };
 };
 
 const useReverseScrollPositionMaintainer = (scrollContainerRef) => {
@@ -256,6 +266,8 @@ export const ChannelBase = ({
 
   const { actions, state, addBeforeDispatchListener } = useAppScope();
 
+  const { markChannelRead } = actions;
+
   const user = state.selectMe();
 
   const { inputDeviceCanHover } = useGlobalMediaQueries();
@@ -268,14 +280,24 @@ export const ChannelBase = ({
   const maintainScrollPositionDuringTheNextDomMutation =
     useReverseScrollPositionMaintainer(scrollContainerRef);
 
-  const { didScrollToBottom, scrollToBottom } = useScroll(
+  const { didScrollToBottomRef, scrollToBottom } = useScroll(
     scrollContainerRef,
-    channel.id
+    {
+      cacheKey: channel.id,
+      onScrollToBottom: () => {
+        if (
+          // Only mark as read when the page has focus
+          document.hasFocus() &&
+          // Wait until the initial message batch is fetched
+          hasFetchedChannelMessagesAtLeastOnce &&
+          // Don’t bother if the channel is already marked as read
+          channelHasUnread
+        ) {
+          markChannelRead(channel.id);
+        }
+      },
+    }
   );
-  const didScrollToBottomRef = React.useRef(didScrollToBottom);
-  React.useEffect(() => {
-    didScrollToBottomRef.current = didScrollToBottom;
-  });
 
   React.useEffect(() => {
     const removeListener = addBeforeDispatchListener((action) => {
@@ -403,21 +425,6 @@ export const ChannelBase = ({
     channel.id
   );
 
-  const markChannelRead = useLatestCallback(() => {
-    // Ignore the users’s own messages before we know they have been persisted
-    const lastPersistedMessage = messages
-      .filter((m) => !m.isOptimistic)
-      .slice(-1)[0];
-
-    return actions.markChannelRead(channel.id, {
-      // Use the current time in case the channel is empty
-      readAt:
-        lastPersistedMessage == null
-          ? new Date()
-          : new Date(lastPersistedMessage.createdAt),
-    });
-  });
-
   // Mark channel as read when new messages arrive
   React.useEffect(() => {
     if (
@@ -426,18 +433,18 @@ export const ChannelBase = ({
       // Wait until the initial message batch is fetched
       !hasFetchedChannelMessagesAtLeastOnce ||
       // Only mark as read when scrolled to the bottom
-      !didScrollToBottom ||
+      !didScrollToBottomRef.current ||
       // Don’t bother if the channel is already marked as read
       !channelHasUnread
     )
       return;
 
-    markChannelRead();
+    markChannelRead(channel.id);
   }, [
     channel.id,
     channelHasUnread,
     hasFetchedChannelMessagesAtLeastOnce,
-    didScrollToBottom,
+    didScrollToBottomRef,
     markChannelRead,
   ]);
 
@@ -451,12 +458,14 @@ export const ChannelBase = ({
 
   useWindowFocusListener(() => {
     fetchMessages(channel.id, { limit: 30 });
-    if (channelHasUnread && didScrollToBottom) markChannelRead();
+    if (channelHasUnread && didScrollToBottomRef.current)
+      markChannelRead(channel.id);
   });
 
   useOnlineListener(() => {
     fetchMessages(channel.id, { limit: 30 });
-    if (channelHasUnread && didScrollToBottom) markChannelRead();
+    if (channelHasUnread && didScrollToBottomRef.current)
+      markChannelRead(channel.id);
   });
 
   const submitMessage = useLatestCallback(async (blocks) => {
