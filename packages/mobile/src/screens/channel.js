@@ -36,13 +36,28 @@ const { useAppScope } = Shades.app;
 
 const background = "hsl(0,0%,10%)";
 
+// export const options = {
+//   headerMode: "screen",
+//   headerShown: true,
+//   // headerTitle: () => "", // <Text>hi</Text>,
+//   headerStyle: { backgroundColor: background },
+//   // headerShadowVisible: false,
+//   header: () => <DefaultStackHeader />,
+//   gestureResponseDistance: 800,
+//   // fullScreenGestureEnabled: true,
+//   // detachPreviousScreen: false,
+// };
 export const options = {
   headerShown: true,
   headerTitle: () => "", // <Text>hi</Text>,
   headerStyle: { backgroundColor: background },
   headerShadowVisible: false,
-  headerLeft: () => <HeaderLeft />,
-  contentStyle: { flex: 1 },
+  headerLeft: () => (
+    <View style={{ marginLeft: -16 }}>
+      <HeaderLeft />
+    </View>
+  ),
+  // fullScreenGestureEnabled: true,
 };
 
 // Region might return `null` on Android
@@ -70,6 +85,22 @@ const useChannelMessages = ({ channelId }) => {
   return sortedMessages;
 };
 
+// const DefaultStackHeader = () => {
+//   return (
+//     <SafeAreaView edges={["top"]} style={{ backgroundColor: background }}>
+//       <View
+//         style={{
+//           height: 48,
+//           flexDirection: "row",
+//           alignItems: "center",
+//         }}
+//       >
+//         <HeaderLeft />
+//       </View>
+//     </SafeAreaView>
+//   );
+// };
+
 const HeaderLeft = () => {
   const { params } = useRoute();
   const navigation = useNavigation();
@@ -82,7 +113,6 @@ const HeaderLeft = () => {
       style={{
         flexDirection: "row",
         alignItems: "center",
-        marginLeft: -16,
         paddingHorizontal: 10,
       }}
     >

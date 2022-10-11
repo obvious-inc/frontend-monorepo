@@ -47,7 +47,7 @@ const ChannelList = ({ navigation }) => {
         })}
         onPress={() => {
           Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-          navigation.navigate("Profile");
+          navigation.navigate("Account modal");
         }}
       >
         <View
