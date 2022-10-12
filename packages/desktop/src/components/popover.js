@@ -6,7 +6,6 @@ import {
   FocusScope,
   mergeProps,
   OverlayContainer,
-  OverlayProvider,
   useDialog,
   useModal,
   useOverlay,
@@ -70,12 +69,6 @@ const useOverlayTriggerState = ({ controlledIsOpen, onChange: onChange_ }) => {
 
   return { isOpen, open, close, toggle };
 };
-
-export const Provider = ({ children }) => (
-  <OverlayProvider style={{ width: "100%", height: "100%" }}>
-    {children}
-  </OverlayProvider>
-);
 
 export const Root = ({
   open,

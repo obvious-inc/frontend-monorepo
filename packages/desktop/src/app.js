@@ -9,6 +9,7 @@ import { publicProvider } from "wagmi/providers/public";
 import { InjectedConnector } from "wagmi/connectors/injected";
 import { WalletConnectConnector } from "wagmi/connectors/walletConnect";
 import React from "react";
+import { OverlayProvider } from "react-aria";
 import { css } from "@emotion/react";
 import { Routes, Route, Navigate, useNavigate } from "react-router-dom";
 import { IntlProvider } from "react-intl";
@@ -42,7 +43,6 @@ import Channel, { Header as ChannelHeader } from "./components/channel";
 import { UnifiedLayout } from "./components/layouts";
 import TitleBar from "./components/title-bar";
 import * as Tooltip from "./components/tooltip";
-import * as Popover from "./components/popover";
 import {
   ChatBubbles as ChatBubblesIcon,
   Home as HomeIcon,
@@ -441,15 +441,15 @@ export default function Root() {
                         : defaultTheme
                     }
                   >
-                    <Tooltip.Provider delayDuration={300}>
-                      <Popover.Provider>
+                    <OverlayProvider style={{ width: "100%", height: "100%" }}>
+                      <Tooltip.Provider delayDuration={300}>
                         <SideMenuProvider>
                           <GlobalMediaQueriesProvider>
                             <App />
                           </GlobalMediaQueriesProvider>
                         </SideMenuProvider>
-                      </Popover.Provider>
-                    </Tooltip.Provider>
+                      </Tooltip.Provider>
+                    </OverlayProvider>
                   </ThemeProvider>
                 </WalletLoginProvider>
               </ServerConnectionProvider>

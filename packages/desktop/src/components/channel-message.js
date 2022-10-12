@@ -25,7 +25,7 @@ import * as Popover from "./popover";
 import * as DropdownMenu from "./dropdown-menu";
 import * as Toolbar from "./toolbar";
 import * as Tooltip from "./tooltip";
-import * as Dialog from "@radix-ui/react-dialog";
+import Dialog from "./dialog-next";
 import {
   AddEmojiReaction as AddEmojiReactionIcon,
   JoinArrowRight as JoinArrowRightIcon,
@@ -416,6 +416,7 @@ const Reactions = ({
 
   const addReactionButton = (
     <button
+      onClick={() => setInlineEmojiPickerOpen(true)}
       css={css({
         color: "white",
         border: "1px solid white",
@@ -555,70 +556,70 @@ const Reactions = ({
             </Popover.Content>
           </Popover.Root>
         ) : (
-          <EmojiPickerMobileDialog
-            trigger={addReactionButton}
-            open={isInlineEmojiPickerOpen}
-            onOpenChange={setInlineEmojiPickerOpen}
-            onSelect={(...args) => {
-              setInlineEmojiPickerOpen(false);
-              return addReaction(...args);
-            }}
-          />
+          <>
+            {addReactionButton}
+            <EmojiPickerMobileDialog
+              isOpen={isInlineEmojiPickerOpen}
+              onRequestClose={() => setInlineEmojiPickerOpen(false)}
+              onSelect={(...args) => {
+                setInlineEmojiPickerOpen(false);
+                return addReaction(...args);
+              }}
+            />
+          </>
         )}
       </div>
     </>
   );
 };
 
-const EmojiPickerMobileDialog = ({ trigger, onSelect, open, onOpenChange }) => (
-  <Dialog.Root open={open} onOpenChange={onOpenChange}>
-    <Dialog.Trigger asChild>{trigger}</Dialog.Trigger>
-    <Dialog.Portal>
-      <Dialog.Overlay />
-      <Dialog.Content
-        css={css({
-          position: "fixed",
-          top: "1.5rem",
-          left: "1rem",
-          right: "1rem",
-        })}
-      >
-        <Dialog.Close
-          css={css({
-            padding: "0.8rem",
-            display: "block",
-            margin: "0 auto",
-          })}
-        >
-          <div
-            css={(theme) =>
-              css({
-                height: "0.4rem",
-                width: "4.2rem",
-                borderRadius: "0.2rem",
-                background: theme.colors.interactiveNormal,
-                boxShadow:
-                  "rgb(15 15 15 / 5%) 0px 0px 0px 1px, rgba(15, 15, 15, 0.1) 0px 3px 6px, rgba(15, 15, 15, 0.2) 0px 9px 24px",
-              })
-            }
-          />
-        </Dialog.Close>
-        <div
-          css={(theme) =>
-            css({
-              padding: "0.4rem 0.4rem 0",
-              background: theme.colors.dialogBackground,
-              borderRadius: "0.4rem",
-              boxShadow:
-                "rgb(15 15 15 / 5%) 0px 0px 0px 1px, rgba(15, 15, 15, 0.1) 0px 3px 6px, rgba(15, 15, 15, 0.2) 0px 9px 24px",
-            })
-          }
-        >
-          <EmojiPicker height="40vh" onSelect={onSelect} />
-        </div>
-      </Dialog.Content>
-    </Dialog.Portal>
-  </Dialog.Root>
+const EmojiPickerMobileDialog = ({ onSelect, isOpen, onRequestClose }) => (
+  <Dialog
+    isOpen={isOpen}
+    onRequestClose={onRequestClose}
+    css={css({ height: "auto", background: "none" })}
+    underlayProps={{
+      css: css({
+        padding: "2.8rem 1.5rem",
+        alignItems: "flex-start",
+      }),
+    }}
+  >
+    <button
+      onClick={onRequestClose}
+      css={css({
+        padding: "0.8rem",
+        display: "block",
+        margin: "0 auto",
+      })}
+    >
+      <div
+        css={(theme) =>
+          css({
+            height: "0.4rem",
+            width: "4.2rem",
+            borderRadius: "0.2rem",
+            background: theme.colors.interactiveNormal,
+            boxShadow:
+              "rgb(15 15 15 / 5%) 0px 0px 0px 1px, rgba(15, 15, 15, 0.1) 0px 3px 6px, rgba(15, 15, 15, 0.2) 0px 9px 24px",
+          })
+        }
+      />
+    </button>
+    <div
+      css={(theme) =>
+        css({
+          padding: "0.4rem 0.4rem 0",
+          background: theme.colors.dialogBackground,
+          borderRadius: "0.4rem",
+          boxShadow:
+            "rgb(15 15 15 / 10%) 0px 0px 0px 1px, rgb(15 15 15 / 20%) 0px 5px 10px, rgb(15 15 15 / 40%) 0px 15px 40px",
+        })
+      }
+    >
+      <EmojiPicker height="40vh" onSelect={onSelect} />
+    </div>
+  </Dialog>
 );
 
 const MemberDisplayName = React.forwardRef(
@@ -1238,25 +1239,29 @@ const MessageToolbar = React.memo(
             </Popover.Content>
           </Popover.Root>
         ) : (
-          <EmojiPickerMobileDialog
-            trigger={
-              <Toolbar.Button
-                asChild
-                aria-label="Add reaction"
-                style={{ position: "relative" }}
+          <>
+            <Toolbar.Button
+              asChild
+              aria-label="Add reaction"
+              style={{ position: "relative" }}
+            >
+              <button
+                onClick={() => {
+                  onEmojiPickerOpenChange(true);
+                }}
               >
-                <span>
-                  <AddEmojiReactionIcon style={{ width: "1.6rem" }} />
-                </span>
-              </Toolbar.Button>
-            }
-            open={isEmojiPickerOpen}
-            onOpenChange={onEmojiPickerOpenChange}
-            onSelect={(emoji) => {
-              onEmojiPickerOpenChange(false);
-              return addReaction(emoji);
-            }}
-          />
+                <AddEmojiReactionIcon style={{ width: "1.6rem" }} />
+              </button>
+            </Toolbar.Button>
+            <EmojiPickerMobileDialog
+              isOpen={isEmojiPickerOpen}
+              onRequestClose={() => onEmojiPickerOpenChange(false)}
+              onSelect={(emoji) => {
+                onEmojiPickerOpenChange(false);
+                return addReaction(emoji);
+              }}
+            />
+          </>
         )}
 
         {allowReplies && (
