@@ -7,7 +7,7 @@ const useLatestCallback = (callback) => {
     callbackRef.current = callback;
   });
 
-  return React.useCallback((...args) => callbackRef.current(...args), []);
+  return React.useCallback((...args) => callbackRef.current?.(...args), []);
 };
 
 export default useLatestCallback;

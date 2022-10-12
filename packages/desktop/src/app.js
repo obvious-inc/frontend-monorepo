@@ -42,6 +42,7 @@ import Channel, { Header as ChannelHeader } from "./components/channel";
 import { UnifiedLayout } from "./components/layouts";
 import TitleBar from "./components/title-bar";
 import * as Tooltip from "./components/tooltip";
+import * as Popover from "./components/popover";
 import {
   ChatBubbles as ChatBubblesIcon,
   Home as HomeIcon,
@@ -441,11 +442,13 @@ export default function Root() {
                     }
                   >
                     <Tooltip.Provider delayDuration={300}>
-                      <SideMenuProvider>
-                        <GlobalMediaQueriesProvider>
-                          <App />
-                        </GlobalMediaQueriesProvider>
-                      </SideMenuProvider>
+                      <Popover.Provider>
+                        <SideMenuProvider>
+                          <GlobalMediaQueriesProvider>
+                            <App />
+                          </GlobalMediaQueriesProvider>
+                        </SideMenuProvider>
+                      </Popover.Provider>
                     </Tooltip.Provider>
                   </ThemeProvider>
                 </WalletLoginProvider>
