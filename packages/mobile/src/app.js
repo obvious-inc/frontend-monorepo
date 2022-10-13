@@ -29,6 +29,10 @@ import ChannelList, {
 import AccountModal, {
   options as accountModalOptions,
 } from "./screens/account-modal";
+import ChannelDetailsModal, {
+  options as channelDetailsModalOptions,
+} from "./screens/channel-details-modal";
+import UserModal, { options as userModalOptions } from "./screens/user-modal";
 
 const {
   AuthProvider,
@@ -165,6 +169,16 @@ const App = () => {
         name="Account modal"
         component={AccountModal}
         options={accountModalOptions}
+      />
+      <NativeStackNavigator.Screen
+        name="Channel details modal"
+        component={ChannelDetailsModal}
+        options={channelDetailsModalOptions}
+      />
+      <NativeStackNavigator.Screen
+        name="User modal"
+        component={UserModal}
+        options={userModalOptions}
       />
     </NativeStackNavigator.Navigator>
   );

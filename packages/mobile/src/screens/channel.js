@@ -3,7 +3,6 @@ import React from "react";
 import {
   Text,
   View,
-  Image,
   TextInput,
   KeyboardAvoidingView,
   Pressable,
@@ -153,35 +152,46 @@ const HeaderLeft = () => {
           )}
         </Pressable>
       </View>
-      <View style={{ flexDirection: "row", alignItems: "center" }}>
-        {(channel.kind === "dm" || channel.avatar != null) && (
-          <View style={{ marginRight: 10 }}>
-            <ChannelPicture channelId={params.channelId} size={32} />
-          </View>
+      <Pressable
+        onPress={() => {
+          navigation.navigate("Channel details modal", {
+            channelId: params.channelId,
+          });
+        }}
+        style={{ flexDirection: "row", alignItems: "center" }}
+      >
+        {({ pressed }) => (
+          <>
+            {(channel.kind === "dm" || channel.avatar != null) && (
+              <View style={{ marginRight: 10 }}>
+                <ChannelPicture channelId={params.channelId} size={32} />
+              </View>
+            )}
+            <View>
+              <Text
+                style={{
+                  color: pressed ? "hsl(0,0%,50%)" : "white",
+                  fontSize: 16,
+                  fontWeight: "600",
+                  lineHeight: 18,
+                }}
+              >
+                {channel.name}
+              </Text>
+              <Text
+                style={{
+                  color: "gray",
+                  fontSize: 11.5,
+                  fontWeight: "400",
+                  lineHeight: 14,
+                }}
+              >
+                {memberCount} {memberCount === 1 ? "member" : "members"}
+              </Text>
+            </View>
+          </>
         )}
-        <View>
-          <Text
-            style={{
-              color: "white",
-              fontSize: 16,
-              fontWeight: "600",
-              lineHeight: 18,
-            }}
-          >
-            {channel.name}
-          </Text>
-          <Text
-            style={{
-              color: "gray",
-              fontSize: 11.5,
-              fontWeight: "400",
-              lineHeight: 14,
-            }}
-          >
-            {memberCount} {memberCount === 1 ? "member" : "members"}
-          </Text>
-        </View>
-      </View>
+      </Pressable>
     </View>
   );
 };
@@ -320,6 +330,7 @@ const ChannelMessagesScrollView = ({
 
 const Message = ({ message, previousMessage, getMember }) => {
   const m = message;
+  const navigation = useNavigation();
 
   const createdAtDate = React.useMemo(
     () => new Date(message.created_at),
@@ -381,7 +392,14 @@ const Message = ({ message, previousMessage, getMember }) => {
             </View>
           ) : showSimplifiedMessage ? null : (
             <View style={{ paddingTop: 2 }}>
-              <UserProfilePicture user={message.author} size={38} />
+              <Pressable
+                hitSlop={10}
+                onPress={() => {
+                  navigation.navigate("User modal", { userId: m.author.id });
+                }}
+              >
+                <UserProfilePicture user={message.author} size={38} />
+              </Pressable>
             </View>
           )}
         </View>
@@ -395,17 +413,24 @@ const Message = ({ message, previousMessage, getMember }) => {
                 marginBottom: 2,
               }}
             >
-              <Text
-                style={{
-                  fontSize: 16,
-                  lineHeight: 20,
-                  color: textDefault,
-                  fontWeight: "600",
-                  marginRight: 7,
+              <Pressable
+                hitSlop={10}
+                onPress={() => {
+                  navigation.navigate("User modal", { userId: m.author.id });
                 }}
               >
-                {m.author?.display_name}
-              </Text>
+                <Text
+                  style={{
+                    fontSize: 16,
+                    lineHeight: 20,
+                    color: textDefault,
+                    fontWeight: "600",
+                    marginRight: 7,
+                  }}
+                >
+                  {m.author?.display_name}
+                </Text>
+              </Pressable>
               <Text
                 style={{
                   fontSize: 10.5,
