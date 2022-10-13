@@ -25,7 +25,7 @@ import * as Popover from "./popover";
 import * as DropdownMenu from "./dropdown-menu";
 import * as Toolbar from "./toolbar";
 import * as Tooltip from "./tooltip";
-import Dialog from "./dialog-next";
+import Dialog from "./dialog";
 import {
   AddEmojiReaction as AddEmojiReactionIcon,
   JoinArrowRight as JoinArrowRightIcon,

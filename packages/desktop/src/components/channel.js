@@ -24,7 +24,7 @@ import ChannelMessage from "./channel-message";
 import Avatar from "./avatar";
 import Button from "./button";
 import * as Tooltip from "./tooltip";
-import Dialog from "./dialog-next";
+import Dialog from "./dialog";
 import { Hash as HashIcon, AtSign as AtSignIcon } from "./icons";
 import {
   HamburgerMenu as HamburgerMenuIcon,
@@ -1304,6 +1304,7 @@ const Channel = ({ compact, noSideMenu }) => {
 
   const [notFound, setNotFound] = React.useState(false);
   const [isMembersDialogOpen, setMembersDialogOpen] = React.useState(false);
+  console.log("render open", isMembersDialogOpen);
 
   const isMenuTogglingEnabled = !noSideMenu && isSideMenuFloating;
 
@@ -1492,6 +1493,7 @@ const Channel = ({ compact, noSideMenu }) => {
                   <Dialog
                     isOpen={isMembersDialogOpen}
                     onRequestClose={() => {
+                      console.log("request close");
                       setMembersDialogOpen(false);
                     }}
                     style={{ display: "flex", flexDirection: "column" }}
@@ -1619,6 +1621,7 @@ const Channel = ({ compact, noSideMenu }) => {
       channel,
       members,
       isChannelStarred,
+      isMembersDialogOpen,
     ]
   );
 
