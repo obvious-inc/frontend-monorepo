@@ -24,7 +24,7 @@ import ChannelMessage from "./channel-message";
 import Avatar from "./avatar";
 import Button from "./button";
 import * as Tooltip from "./tooltip";
-import * as Dialog from "./dialog";
+import Dialog from "./dialog";
 import { Hash as HashIcon, AtSign as AtSignIcon } from "./icons";
 import {
   HamburgerMenu as HamburgerMenuIcon,
@@ -1303,6 +1303,8 @@ const Channel = ({ compact, noSideMenu }) => {
   } = useWalletLogin();
 
   const [notFound, setNotFound] = React.useState(false);
+  const [isMembersDialogOpen, setMembersDialogOpen] = React.useState(false);
+  console.log("render open", isMembersDialogOpen);
 
   const isMenuTogglingEnabled = !noSideMenu && isSideMenuFloating;
 
@@ -1479,24 +1481,39 @@ const Channel = ({ compact, noSideMenu }) => {
                   <StrokedStarIcon />
                 )}
               </button>
+
               {!isFetchingMembers && members.length !== 0 && (
-                <Dialog.Root>
-                  <Dialog.Trigger asChild>
-                    <MembersDisplayButton members={members} />
-                  </Dialog.Trigger>
-                  <Dialog.Portal>
-                    <Dialog.Overlay
-                      css={css({
+                <>
+                  <MembersDisplayButton
+                    onClick={() => {
+                      setMembersDialogOpen(true);
+                    }}
+                    members={members}
+                  />
+                  <Dialog
+                    isOpen={isMembersDialogOpen}
+                    onRequestClose={() => {
+                      console.log("request close");
+                      setMembersDialogOpen(false);
+                    }}
+                    style={{ display: "flex", flexDirection: "column" }}
+                    underlayProps={{
+                      css: css({
                         padding: "2.8rem 1.5rem",
                         "@media (min-width: 600px)": {
                           padding: "2.8rem",
                         },
-                      })}
-                    >
-                      <MembersDirectoryDialog members={members} />
-                    </Dialog.Overlay>
-                  </Dialog.Portal>
-                </Dialog.Root>
+                      }),
+                    }}
+                  >
+                    {({ titleProps }) => (
+                      <MembersDirectoryDialog
+                        members={members}
+                        titleProps={titleProps}
+                      />
+                    )}
+                  </Dialog>
+                </>
               )}
             </>
           )}
@@ -1604,6 +1621,7 @@ const Channel = ({ compact, noSideMenu }) => {
       channel,
       members,
       isChannelStarred,
+      isMembersDialogOpen,
     ]
   );
 
@@ -1845,7 +1863,7 @@ const MembersDisplayButton = React.forwardRef(({ onClick, members }, ref) => {
   );
 });
 
-const MembersDirectoryDialog = ({ members }) => {
+const MembersDirectoryDialog = ({ members, titleProps }) => {
   const [query, setQuery] = React.useState("");
 
   const filteredMembers = React.useMemo(() => {
@@ -1882,7 +1900,7 @@ const MembersDirectoryDialog = ({ members }) => {
   ).length;
 
   return (
-    <Dialog.Content css={css({ display: "flex", flexDirection: "column" })}>
+    <>
       <div
         css={css({
           padding: "1.5rem 1.5rem 0",
@@ -1891,7 +1909,7 @@ const MembersDirectoryDialog = ({ members }) => {
           },
         })}
       >
-        <div
+        <header
           css={css({
             display: "grid",
             gridTemplateColumns: "auto auto",
@@ -1905,6 +1923,7 @@ const MembersDirectoryDialog = ({ members }) => {
             css={(theme) =>
               css({ fontSize: theme.fontSizes.large, lineHeight: "1.2" })
             }
+            {...titleProps}
           >
             Members
           </h1>
@@ -1933,7 +1952,7 @@ const MembersDirectoryDialog = ({ members }) => {
           {/* > */}
           {/*   close */}
           {/* </Dialog.Close> */}
-        </div>
+        </header>
         <input
           value={query}
           onChange={(e) => {
@@ -2084,7 +2103,7 @@ const MembersDirectoryDialog = ({ members }) => {
           })}
         </ul>
       </div>
-    </Dialog.Content>
+    </>
   );
 };
 
