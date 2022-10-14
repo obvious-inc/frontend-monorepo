@@ -3,6 +3,7 @@ import React from "react";
 import { View, Text, Image, Pressable, ScrollView } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { SvgXml } from "react-native-svg";
+import { useEnsName } from "wagmi";
 import * as Shades from "@shades/common";
 import useProfilePicture from "../hooks/profile-picture";
 
@@ -24,6 +25,9 @@ const ChannelList = ({ navigation }) => {
   const user = state.selectMe();
   const truncatedAddress =
     user?.walletAddress == null ? null : truncateAddress(user.walletAddress);
+
+  const { data: ensName } = useEnsName({ address: user.walletAddress });
+  const hasCustomDisplayName = truncatedAddress !== user?.displayName;
 
   const channels = state.selectMemberChannels();
   const starredChannels = state.selectStarredChannels();
@@ -70,9 +74,11 @@ const ChannelList = ({ navigation }) => {
               lineHeight: 18,
             }}
           >
-            {user?.displayName}
+            {hasCustomDisplayName
+              ? user?.displayName
+              : ensName ?? truncatedAddress}
           </Text>
-          {truncatedAddress !== user?.displayName && (
+          {(hasCustomDisplayName || ensName != null) && (
             <Text
               style={{
                 color: textDimmed,
@@ -81,7 +87,9 @@ const ChannelList = ({ navigation }) => {
                 lineHeight: 14,
               }}
             >
-              {truncatedAddress}
+              {ensName == null
+                ? truncatedAddress
+                : `${ensName} (${truncatedAddress})`}
             </Text>
           )}
         </View>
@@ -359,9 +367,10 @@ export const UserProfilePicture = ({
   size = 18,
   background = "hsla(0,0%,100%,0.055)",
   user,
+  large = false,
   style,
 }) => {
-  const profilePicture = useProfilePicture(user);
+  const profilePicture = useProfilePicture(user, { large });
   return (
     <View
       style={{
@@ -378,7 +387,11 @@ export const UserProfilePicture = ({
       {profilePicture?.type === "url" ? (
         <Image
           source={{ uri: profilePicture.url }}
-          style={{ width: "100%", height: "100%", borderRadius: size / 2 }}
+          style={{
+            width: "100%",
+            height: "100%",
+            borderRadius: style?.borderRadius ?? size / 2,
+          }}
         />
       ) : profilePicture?.type === "svg-string" ? (
         <SvgXml xml={profilePicture.string} width="100%" height="100%" />

@@ -1,4 +1,9 @@
-import Constants from "expo-constants";
+import {
+  API_ENDPOINT,
+  WEB_APP_ENDPOINT,
+  PUSHER_KEY,
+  INFURA_PROJECT_ID,
+} from "./config";
 import {
   WagmiConfig,
   createClient as createWagmiClient,
@@ -44,11 +49,6 @@ const {
 } = Shades.app;
 const { useLatestCallback } = Shades.react;
 const { unique } = Shades.utils.array;
-
-const API_ENDPOINT = Constants.expoConfig.extra.apiEndpoint;
-const WEB_APP_ENDPOINT = Constants.expoConfig.extra.webAppEndpoint;
-const PUSHER_KEY = Constants.expoConfig.extra.pusherKey;
-const INFURA_PROJECT_ID = Constants.expoConfig.extra.infuraProjectId;
 
 const { provider } = configureWagmiChains(
   [mainnetChain],

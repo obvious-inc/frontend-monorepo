@@ -23,13 +23,15 @@ const usePlaceholderAvatarSvg = (walletAddress, { enabled = true } = {}) => {
   return generatedPlaceholderAvatar;
 };
 
-const useProfilePicture = (user) => {
+const useProfilePicture = (user, { large } = {}) => {
   const customUrl =
     user == null
       ? null
       : user.profilePicture.cloudflareId == null
       ? user.profilePicture.small
-      : `https://imagedelivery.net/${CLOUDFLARE_ACCOUNT_HASH}/${user.profilePicture.cloudflareId}/avatar`;
+      : `https://imagedelivery.net/${CLOUDFLARE_ACCOUNT_HASH}/${
+          user.profilePicture.cloudflareId
+        }/${large ? "public" : "avatar"}`;
 
   const { data: ensAvatarUrl, isLoading: isLoadingEnsAvatar } = useEnsAvatar({
     addressOrName: user?.walletAddress,

@@ -1,7 +1,7 @@
 import React from "react";
 import { View } from "react-native";
 import * as Shades from "@shades/common";
-import { ModalActionButton } from "./account-modal";
+import { ModalActionButtonGroup } from "./account-modal";
 
 const { useAppScope } = Shades.app;
 
@@ -18,14 +18,14 @@ const MessageModal = ({ messageId, startEdit, startReply, deleteMessage }) => {
 
   const actionSections = [
     [
-      isOwnMessage && { label: "Edit message", run: startEdit },
-      { label: "Reply", run: startReply },
+      isOwnMessage && { label: "Edit message", onPress: startEdit },
+      { label: "Reply", onPress: startReply },
     ].filter(Boolean),
     [
       isOwnMessage && {
         label: "Delete message",
-        run: deleteMessage,
-        danger: true,
+        onPress: deleteMessage,
+        textColor: textDanger,
       },
     ].filter(Boolean),
   ].filter((as) => as.length > 0);
@@ -51,55 +51,12 @@ const MessageModal = ({ messageId, startEdit, startReply, deleteMessage }) => {
         }}
       />
 
-      {actionSections.map((actions, i) => {
-        const isFirstSection = i === 0;
-
-        return actions.map((a, i, as) => {
-          const isFirst = i === 0;
-          const isLast = i === as.length - 1;
-          const radius = 12;
-          return (
-            <React.Fragment key={[a.label, i].join(":")}>
-              {!isFirstSection && (
-                <View
-                  style={{
-                    height: 1,
-                    background: "hsl(0,0%,12%)",
-                    marginVertical: 10,
-                  }}
-                />
-              )}
-              <ModalActionButton
-                label={a.label}
-                onPress={a.run}
-                textColor={a.danger ? textDanger : undefined}
-                style={({ pressed }) => {
-                  const style = {
-                    backgroundColor: pressed
-                      ? "hsl(0,0%,14%)"
-                      : "hsl(0,0%,12%)",
-                    borderRadius: 0,
-                  };
-                  if (isFirst) {
-                    style.borderTopLeftRadius = radius;
-                    style.borderTopRightRadius = radius;
-                  }
-                  if (isLast) {
-                    style.borderBottomLeftRadius = radius;
-                    style.borderBottomRightRadius = radius;
-                  }
-                  if (!isLast) {
-                    style.borderColor = "hsl(0,0%,14%)";
-                    style.borderBottomWidth = 1;
-                  }
-
-                  return style;
-                }}
-              />
-            </React.Fragment>
-          );
-        });
-      })}
+      {actionSections.map((actions, i) => (
+        <React.Fragment key={i}>
+          {i !== 0 && <View style={{ height: 20 }} />}
+          <ModalActionButtonGroup actions={actions} />
+        </React.Fragment>
+      ))}
     </View>
   );
 };

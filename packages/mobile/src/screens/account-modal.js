@@ -5,6 +5,7 @@ import * as Shades from "@shades/common";
 const { useAppScope } = Shades.app;
 
 const textDefault = "hsl(0,0%,83%)";
+const textMuted = "hsl(0,0%,38%)";
 const background = "hsl(0,0%,10%)";
 const textDanger = "#de554f";
 
@@ -68,24 +69,58 @@ const AccountModal = ({ navigation }) => {
 
 export const ModalActionButton = ({
   label,
+  disabled,
   textColor = textDefault,
   style,
   ...props
 }) => (
   <Pressable
+    disabled={disabled}
     style={({ pressed }) => ({
       paddingHorizontal: 20,
       height: 50,
       flexDirection: "row",
       alignItems: "center",
-      backgroundColor: pressed ? "hsl(0,0%,15%)" : "hsl(0,0%,13%)",
+      backgroundColor: pressed ? "hsl(0,0%,14%)" : "hsl(0,0%,12%)",
       borderRadius: 12,
-      ...(style?.({ pressed }) ?? style),
+      ...(typeof style === "function" ? style({ pressed }) : style),
     })}
     {...props}
   >
-    <Text style={{ color: textColor, fontSize: 16 }}>{label}</Text>
+    <Text style={{ color: disabled ? textMuted : textColor, fontSize: 16 }}>
+      {label}
+    </Text>
   </Pressable>
 );
+
+export const ModalActionButtonGroup = ({ actions }) =>
+  actions.map(({ key, style: customStyle, ...a }, i, as) => {
+    const isFirst = i === 0;
+    const isLast = i === as.length - 1;
+    const radius = 12;
+
+    const style = { borderRadius: 0 };
+
+    if (isFirst) {
+      style.borderTopLeftRadius = radius;
+      style.borderTopRightRadius = radius;
+    }
+    if (isLast) {
+      style.borderBottomLeftRadius = radius;
+      style.borderBottomRightRadius = radius;
+    }
+    if (!isLast) {
+      style.borderColor = "hsl(0,0%,14%)";
+      style.borderBottomWidth = 1;
+    }
+
+    return (
+      <ModalActionButton
+        key={key}
+        {...a}
+        style={{ ...style, ...customStyle }}
+      />
+    );
+  });
 
 export default AccountModal;
