@@ -6,6 +6,7 @@ const { useAppScope } = Shades.app;
 
 const textDefault = "hsl(0,0%,83%)";
 const background = "hsl(0,0%,10%)";
+const textDanger = "#de554f";
 
 // export const options = {
 //   presentation: "modal",
@@ -53,24 +54,38 @@ const AccountModal = ({ navigation }) => {
   const { actions } = useAppScope();
   return (
     <View style={{ flex: 1, padding: 16, backgroundColor: "hsl(0,0%,10%)" }}>
-      <Pressable
+      <ModalActionButton
         onPress={() => {
           actions.logout();
           navigation.popToTop();
         }}
-        style={({ pressed }) => ({
-          paddingHorizontal: 20,
-          height: 50,
-          flexDirection: "row",
-          alignItems: "center",
-          backgroundColor: pressed ? "hsl(0,0%,15%)" : "hsl(0,0%,13%)", // hsl(0,0%,11%)
-          borderRadius: 12,
-        })}
-      >
-        <Text style={{ color: "#de554f", fontSize: 16 }}>Log out</Text>
-      </Pressable>
+        textColor={textDanger}
+        label="Log out"
+      />
     </View>
   );
 };
+
+export const ModalActionButton = ({
+  label,
+  textColor = textDefault,
+  style,
+  ...props
+}) => (
+  <Pressable
+    style={({ pressed }) => ({
+      paddingHorizontal: 20,
+      height: 50,
+      flexDirection: "row",
+      alignItems: "center",
+      backgroundColor: pressed ? "hsl(0,0%,15%)" : "hsl(0,0%,13%)",
+      borderRadius: 12,
+      ...(style?.({ pressed }) ?? style),
+    })}
+    {...props}
+  >
+    <Text style={{ color: textColor, fontSize: 16 }}>{label}</Text>
+  </Pressable>
+);
 
 export default AccountModal;

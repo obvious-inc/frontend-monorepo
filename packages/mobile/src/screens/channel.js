@@ -7,8 +7,9 @@ import {
   KeyboardAvoidingView,
   Pressable,
   InputAccessoryView,
-  Alert,
+  Modal,
   AppState,
+  Alert,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import {
@@ -24,14 +25,11 @@ import * as Localization from "expo-localization";
 import FormattedDate from "../components/formatted-date";
 import RichText from "../components/rich-text";
 import { ChannelPicture, UserProfilePicture } from "./channel-list";
-
-const handleUnimplementedPress = () => {
-  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-  Alert.alert("THOON");
-};
+import MessageModalContent from "./message-modal";
 
 const { useLatestCallback } = Shades.react;
 const { useAppScope } = Shades.app;
+const { message: messageUtils } = Shades.utils;
 
 const ONE_MINUTE_IN_MILLIS = 1000 * 60;
 
@@ -196,7 +194,13 @@ const HeaderLeft = () => {
   );
 };
 
-const Channel = ({ route: { params } }) => {
+const Channel = ({ navigation, route: { params } }) => {
+  const [pendingMessage, setPendingMessage] = React.useState("");
+
+  const [selectedMessageId, setSelectedMessageId] = React.useState(null);
+  const [editingMessageId, setEditingMessageId] = React.useState(null);
+  const [replyTargetMessageId, setReplyTargetMessageId] = React.useState(null);
+
   const { channelId } = params;
   const { state, actions } = useAppScope();
   const {
@@ -210,6 +214,9 @@ const Channel = ({ route: { params } }) => {
 
   const messages = useChannelMessages({ channelId });
   const headerHeight = useHeaderHeight();
+
+  const inputRef = React.useRef();
+  const scrollViewRef = React.useRef();
 
   useFocusEffect(
     React.useCallback(() => {
@@ -261,76 +268,244 @@ const Channel = ({ route: { params } }) => {
     markChannelRead(channel.id);
   };
 
-  return (
-    <SafeAreaView
-      edges={["left", "right", "bottom"]}
-      style={{ flex: 1, backgroundColor: background }}
-    >
-      <KeyboardAvoidingView
-        behavior="padding"
-        keyboardVerticalOffset={headerHeight}
-        style={{ flex: 1 }}
-      >
-        <ChannelMessagesScrollView
-          messages={messages}
-          onEndReached={fetchMoreMessages}
-          getMember={state.selectUser}
-          onScroll={(e) => {
-            const isAtBottom = e.nativeEvent.contentOffset.y === 0;
-            didScrollToBottomRef.current = isAtBottom;
+  React.useEffect(() => {
+    if (editingMessageId == null && replyTargetMessageId == null) return;
+    inputRef.current.focus();
+  }, [editingMessageId, replyTargetMessageId]);
 
-            if (isAtBottom) handleScrolledToBottom();
+  const replyTargetMessage = state.selectMessage(replyTargetMessageId);
+
+  return (
+    <>
+      <SafeAreaView
+        edges={["left", "right", "bottom"]}
+        style={{ flex: 1, backgroundColor: background }}
+      >
+        <KeyboardAvoidingView
+          behavior="padding"
+          keyboardVerticalOffset={headerHeight}
+          style={{ flex: 1 }}
+        >
+          <ChannelMessagesScrollView
+            ref={scrollViewRef}
+            messages={messages}
+            onEndReached={fetchMoreMessages}
+            getMember={state.selectUser}
+            onScroll={(e) => {
+              const isAtBottom = e.nativeEvent.contentOffset.y === 0;
+              didScrollToBottomRef.current = isAtBottom;
+
+              if (isAtBottom) handleScrolledToBottom();
+            }}
+            focusedMessageId={editingMessageId ?? replyTargetMessageId}
+            selectMessage={(id) => {
+              setSelectedMessageId(id);
+            }}
+            selectUser={(id) => {
+              navigation.navigate("User modal", { userId: id });
+            }}
+          />
+          {editingMessageId != null && (
+            <InputHeader
+              message="Editing message"
+              onCancel={() => {
+                setEditingMessageId(null);
+                setPendingMessage("");
+                inputRef.current.blur();
+              }}
+            />
+          )}
+          {replyTargetMessageId != null && (
+            <InputHeader
+              message={
+                <>
+                  Replying to{" "}
+                  <Text style={{ color: textDefault, fontWeight: "600" }}>
+                    {replyTargetMessage?.author?.displayName ?? "..."}
+                  </Text>
+                </>
+              }
+              onCancel={() => {
+                setReplyTargetMessageId(null);
+                inputRef.current.blur();
+              }}
+            />
+          )}
+          <ChannelMessageInput
+            ref={inputRef}
+            placeholder={`Message #${channel.name}`}
+            pendingMessage={pendingMessage}
+            setPendingMessage={setPendingMessage}
+            onSubmit={(content) => {
+              if (editingMessageId != null) {
+                setEditingMessageId(null);
+                inputRef.current.blur();
+                return actions.updateMessage(editingMessageId, { content });
+              }
+
+              if (replyTargetMessageId != null) {
+                setReplyTargetMessageId(null);
+                scrollViewRef.current.scrollToIndex({
+                  index: 0,
+                  animated: true,
+                });
+                return actions.createMessage({
+                  channel: channelId,
+                  replyToMessageId: replyTargetMessageId,
+                  content,
+                });
+              }
+
+              return actions.createMessage({
+                channel: channelId,
+                content,
+              });
+            }}
+          />
+        </KeyboardAvoidingView>
+      </SafeAreaView>
+
+      <Modal
+        visible={selectedMessageId != null}
+        onRequestClose={() => {
+          setSelectedMessageId(null);
+        }}
+        animationType="slide"
+        presentationStyle="pageSheet"
+      >
+        <MessageModalContent
+          messageId={selectedMessageId}
+          startEdit={() => {
+            setReplyTargetMessageId(null);
+            setEditingMessageId(selectedMessageId);
+            const message = state.selectMessage(selectedMessageId);
+            setSelectedMessageId(null);
+            setPendingMessage(messageUtils.stringifyBlocks(message.content));
+          }}
+          startReply={() => {
+            setEditingMessageId(null);
+            setReplyTargetMessageId(selectedMessageId);
+            setSelectedMessageId(null);
+          }}
+          deleteMessage={() => {
+            Alert.alert(
+              "Delete message",
+              "Are you sure you want to delete this message?",
+              [
+                { text: "Cancel", style: "cancel" },
+                {
+                  text: "Delete",
+                  style: "destructive",
+                  onPress: () => {
+                    actions.removeMessage(selectedMessageId);
+                    setSelectedMessageId(null);
+                  },
+                },
+              ]
+            );
           }}
         />
-        <ChannelMessageInput
-          placeholder={`Message #${channel.name}`}
-          onSubmit={(content) =>
-            actions.createMessage({
-              channel: channelId,
-              content,
-            })
-          }
-        />
-      </KeyboardAvoidingView>
-    </SafeAreaView>
+      </Modal>
+    </>
   );
 };
 
-const ChannelMessagesScrollView = ({
-  messages: messages_,
-  onEndReached,
+const InputHeader = ({ message, onCancel }) => (
+  <View
+    style={{
+      paddingVertical: 10,
+      paddingHorizontal: 16,
+      backgroundColor: "hsl(0,0%,12%)",
+      flexDirection: "row",
+      alignItems: "center",
+    }}
+  >
+    {onCancel != null && (
+      <Pressable onPress={onCancel}>
+        <Svg
+          width="18"
+          height="18"
+          viewBox="0 0 14 14"
+          style={{ color: "hsl(0,0%,50%)", marginRight: 10 }}
+        >
+          <Path
+            fill="currentColor"
+            d="M7.02799 0.333252C3.346 0.333252 0.361328 3.31792 0.361328 6.99992C0.361328 10.6819 3.346 13.6666 7.02799 13.6666C10.71 13.6666 13.6947 10.6819 13.6947 6.99992C13.6947 3.31792 10.7093 0.333252 7.02799 0.333252ZM10.166 9.19525L9.22333 10.1379L7.02799 7.94325L4.83266 10.1379L3.89 9.19525L6.08466 6.99992L3.88933 4.80459L4.832 3.86259L7.02733 6.05792L9.22266 3.86259L10.1653 4.80459L7.97066 6.99992L10.166 9.19525Z"
+          />
+        </Svg>
+      </Pressable>
+    )}
+    <Text style={{ color: "hsl(0,0%,50%)" }}>{message}</Text>
+  </View>
+);
+
+const ChannelMessagesScrollView = React.forwardRef(
+  (
+    {
+      messages: messages_,
+      onEndReached,
+      getMember,
+      onScroll,
+      selectMessage,
+      selectUser,
+      focusedMessageId,
+    },
+    scrollViewRef
+  ) => {
+    const messages = React.useMemo(() => {
+      const ms = messages_.map((m) => ({
+        ...m,
+        highlighted: focusedMessageId === m.id,
+      }));
+      return [...ms].reverse();
+    }, [messages_, focusedMessageId]);
+
+    const focusedMessageIndex = React.useMemo(() => {
+      if (focusedMessageId == null) return -1;
+      return messages.findIndex((m) => m.id === focusedMessageId);
+    }, [focusedMessageId, messages]);
+
+    React.useEffect(() => {
+      if (focusedMessageIndex === -1) return;
+      scrollViewRef.current.scrollToIndex({
+        index: focusedMessageIndex,
+        animated: true,
+      });
+    }, [focusedMessageIndex, scrollViewRef]);
+
+    return (
+      <FlashList
+        ref={scrollViewRef}
+        inverted
+        data={messages}
+        renderItem={({ item, index }) => (
+          <Message
+            message={item}
+            previousMessage={messages[index + 1]}
+            getMember={getMember}
+            selectMessage={selectMessage}
+            selectUser={selectUser}
+            highlight={item.highlighted}
+          />
+        )}
+        estimatedItemSize={120}
+        onEndReached={onEndReached}
+        onEndReachedThreshold={1}
+        onScroll={onScroll}
+      />
+    );
+  }
+);
+
+const Message = ({
+  message,
+  previousMessage,
   getMember,
-  onScroll,
+  selectMessage,
+  selectUser,
+  highlight,
 }) => {
-  const scrollViewRef = React.useRef();
-
-  const messages = React.useMemo(() => {
-    return [...messages_].reverse();
-  }, [messages_]);
-
-  return (
-    <FlashList
-      ref={scrollViewRef}
-      inverted
-      data={messages}
-      renderItem={({ item, index }) => (
-        <Message
-          message={item}
-          previousMessage={messages[index + 1]}
-          getMember={getMember}
-        />
-      )}
-      estimatedItemSize={120}
-      onEndReached={onEndReached}
-      onEndReachedThreshold={1}
-      onScroll={onScroll}
-    />
-  );
-};
-
-const Message = ({ message, previousMessage, getMember }) => {
   const m = message;
-  const navigation = useNavigation();
 
   const createdAtDate = React.useMemo(
     () => new Date(message.created_at),
@@ -344,20 +519,41 @@ const Message = ({ message, previousMessage, getMember }) => {
     createdAtDate - new Date(previousMessage.created_at) <
       5 * ONE_MINUTE_IN_MILLIS;
 
+  const handlePressInteractiveMessageElement = (el) => {
+    switch (el.type) {
+      case "image-attachment":
+        // TODO
+        break;
+      case "user":
+        selectUser(el.ref);
+        break;
+      default:
+        throw new Error();
+    }
+  };
+
   return (
     <Pressable
       unstable_pressDelay={50}
       delayLongPress={180}
-      onLongPress={handleUnimplementedPress}
+      onLongPress={() => {
+        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+        selectMessage(m.id);
+      }}
       style={({ pressed }) => ({
         paddingHorizontal: 10,
-        paddingVertical: 10,
-        paddingTop: showSimplifiedMessage ? 0 : undefined,
-        backgroundColor: pressed ? "rgba(255, 255, 255, 0.055)" : undefined,
+        paddingTop: showSimplifiedMessage ? 0 : 12,
+        paddingBottom: 8,
+        backgroundColor: highlight
+          ? "rgba(63,137,234,0.17)"
+          : pressed
+          ? "rgba(255, 255, 255, 0.055)"
+          : undefined,
       })}
     >
       {message.isReply && (
         <RepliedMessage
+          key={m.id}
           message={message.repliedMessage}
           getMember={getMember}
         />
@@ -395,7 +591,7 @@ const Message = ({ message, previousMessage, getMember }) => {
               <Pressable
                 hitSlop={10}
                 onPress={() => {
-                  navigation.navigate("User modal", { userId: m.author.id });
+                  selectUser(m.author.id);
                 }}
               >
                 <UserProfilePicture user={message.author} size={38} />
@@ -416,7 +612,7 @@ const Message = ({ message, previousMessage, getMember }) => {
               <Pressable
                 hitSlop={10}
                 onPress={() => {
-                  navigation.navigate("User modal", { userId: m.author.id });
+                  selectUser(m.author.id);
                 }}
               >
                 <Text
@@ -460,6 +656,7 @@ const Message = ({ message, previousMessage, getMember }) => {
                 key={m.id}
                 blocks={m.content}
                 getMember={getMember}
+                onPressInteractiveElement={handlePressInteractiveMessageElement}
                 textStyle={{
                   fontSize: 16,
                   lineHeight: 24,
@@ -672,124 +869,123 @@ const SystemMessageContent = ({ message }) => {
   }
 };
 
-const ChannelMessageInput = ({ placeholder, onSubmit }) => {
-  const inputRef = React.useRef();
-  const [pendingMessage, setPendingMessage] = React.useState("");
+const ChannelMessageInput = React.forwardRef(
+  ({ pendingMessage, setPendingMessage, placeholder, onSubmit }, inputRef) => {
+    // const containerWidthValue = React.useRef(new Animated.Value(0)).current;
+    // const containerWidth = containerWidthValue.interpolate({
+    //   inputRange: [0, 1],
+    //   outputRange: [0, 54],
+    // });
 
-  // const containerWidthValue = React.useRef(new Animated.Value(0)).current;
-  // const containerWidth = containerWidthValue.interpolate({
-  //   inputRange: [0, 1],
-  //   outputRange: [0, 54],
-  // });
+    // React.useEffect(() => {
+    //   if (pendingMessage.trim() === "") {
+    //     Animated.timing(containerWidthValue, {
+    //       toValue: 0,
+    //       duration: 120,
+    //       useNativeDriver: false,
+    //     }).start();
+    //     return;
+    //   }
 
-  // React.useEffect(() => {
-  //   if (pendingMessage.trim() === "") {
-  //     Animated.timing(containerWidthValue, {
-  //       toValue: 0,
-  //       duration: 120,
-  //       useNativeDriver: false,
-  //     }).start();
-  //     return;
-  //   }
+    //   Animated.timing(containerWidthValue, {
+    //     toValue: 1,
+    //     duration: 180,
+    //     useNativeDriver: false,
+    //   }).start();
+    // }, [pendingMessage, containerWidthValue]);
 
-  //   Animated.timing(containerWidthValue, {
-  //     toValue: 1,
-  //     duration: 180,
-  //     useNativeDriver: false,
-  //   }).start();
-  // }, [pendingMessage, containerWidthValue]);
+    const canSubmit = pendingMessage.trim() !== "";
 
-  const canSubmit = pendingMessage.trim() !== "";
-
-  return (
-    <>
-      <View
-        style={{
-          flexDirection: "row",
-          paddingHorizontal: 10,
-          paddingVertical: 8,
-        }}
-      >
-        <TextInput
-          ref={inputRef}
-          value={pendingMessage}
-          placeholder={placeholder}
-          multiline
-          onChangeText={setPendingMessage}
-          placeholderTextColor="hsla(0,0%,100%,0.5)"
-          keyboardAppearance="dark"
-          inputAccessoryViewID="message-input"
-          style={{
-            flex: 1,
-            fontSize: 16,
-            color: textDefault,
-            backgroundColor: "hsla(0,0%,100%,0.05)",
-            paddingHorizontal: 16,
-            paddingTop: 11,
-            paddingBottom: 11,
-            lineHeight: 20,
-            borderRadius: 22,
-          }}
-        />
-      </View>
-      <InputAccessoryView nativeID="message-input">
+    return (
+      <>
         <View
           style={{
             flexDirection: "row",
-            padding: 10,
+            paddingHorizontal: 10,
             paddingVertical: 8,
-            paddingTop: 0,
-            alignItems: "center",
-            justifyContent: "flex-end",
           }}
         >
-          <View style={{ flex: 1, paddingHorizontal: 10 }}>
-            <Text style={{ color: "hsl(0,0%,44%)" }}>
-              Insanely rich toolbar coming soon
-            </Text>
-          </View>
-          <View>
-            <Pressable
-              onPressIn={() => {
-                inputRef.current.focus();
-              }}
-              onPress={() => {
-                onSubmit(pendingMessage);
-                setPendingMessage("");
-              }}
-              style={{
-                width: 40,
-                height: 40,
-                borderRadius: 20,
-                backgroundColor: canSubmit ? "#007ab3" : "transparent", // BLUE,
-                alignItems: "center",
-                justifyContent: "center",
-              }}
-            >
-              <Svg
-                width="20"
-                height="20"
-                viewBox="0 0 20 20"
+          <TextInput
+            ref={inputRef}
+            value={pendingMessage}
+            placeholder={placeholder}
+            multiline
+            onChangeText={setPendingMessage}
+            placeholderTextColor="hsla(0,0%,100%,0.5)"
+            keyboardAppearance="dark"
+            inputAccessoryViewID="message-input"
+            style={{
+              flex: 1,
+              fontSize: 16,
+              color: textDefault,
+              backgroundColor: "hsla(0,0%,100%,0.05)",
+              paddingHorizontal: 16,
+              paddingTop: 11,
+              paddingBottom: 11,
+              lineHeight: 20,
+              borderRadius: 22,
+            }}
+          />
+        </View>
+        <InputAccessoryView nativeID="message-input">
+          <View
+            style={{
+              flexDirection: "row",
+              padding: 10,
+              paddingVertical: 8,
+              paddingTop: 0,
+              alignItems: "center",
+              justifyContent: "flex-end",
+            }}
+          >
+            <View style={{ flex: 1, paddingHorizontal: 10 }}>
+              <Text style={{ color: "hsl(0,0%,44%)" }}>
+                Insanely rich toolbar coming soon
+              </Text>
+            </View>
+            <View>
+              <Pressable
+                onPressIn={() => {
+                  inputRef.current.focus();
+                }}
+                onPress={() => {
+                  onSubmit(pendingMessage);
+                  setPendingMessage("");
+                }}
                 style={{
-                  position: "relative",
-                  left: 2,
-                  color: canSubmit ? "white" : "hsl(0,0%,26%)",
+                  width: 40,
+                  height: 40,
+                  borderRadius: 20,
+                  backgroundColor: canSubmit ? "#007ab3" : "transparent", // BLUE,
+                  alignItems: "center",
+                  justifyContent: "center",
                 }}
               >
-                <Path
-                  fill="currentColor"
-                  stroke="currentColor"
-                  strokeLinejoin="round"
-                  strokeWidth="1.5"
-                  d="M2.25 2.25 17.75 10l-15.5 7.75v-4.539a1.5 1.5 0 0 1 1.46-1.5l6.54-.171a1.54 1.54 0 0 0 0-3.08l-6.54-.172a1.5 1.5 0 0 1-1.46-1.5V2.25Z"
-                />
-              </Svg>
-            </Pressable>
+                <Svg
+                  width="20"
+                  height="20"
+                  viewBox="0 0 20 20"
+                  style={{
+                    position: "relative",
+                    left: 2,
+                    color: canSubmit ? "white" : "hsl(0,0%,26%)",
+                  }}
+                >
+                  <Path
+                    fill="currentColor"
+                    stroke="currentColor"
+                    strokeLinejoin="round"
+                    strokeWidth="1.5"
+                    d="M2.25 2.25 17.75 10l-15.5 7.75v-4.539a1.5 1.5 0 0 1 1.46-1.5l6.54-.171a1.54 1.54 0 0 0 0-3.08l-6.54-.172a1.5 1.5 0 0 1-1.46-1.5V2.25Z"
+                  />
+                </Svg>
+              </Pressable>
+            </View>
           </View>
-        </View>
-      </InputAccessoryView>
-    </>
-  );
-};
+        </InputAccessoryView>
+      </>
+    );
+  }
+);
 
 export default Channel;

@@ -1,10 +1,15 @@
-import { View, Text, Image, Dimensions } from "react-native";
+import { View, Text, Image, Dimensions, Pressable } from "react-native";
 import { SvgUri, SvgXml } from "react-native-svg";
 import { decode as decodeBase64 } from "base-64";
 
 const svgDataUrlPrefix = "data:image/svg+xml;base64,";
 
-const createParser = ({ inline, getMember, textStyle: textDefaultStyle }) => {
+const createParser = ({
+  inline,
+  getMember,
+  onPressInteractiveElement,
+  textStyle: textDefaultStyle,
+}) => {
   const parseLeaf = (l, i) => {
     const style = { ...textDefaultStyle };
     if (l.bold) style.fontWeight = "600";
@@ -50,30 +55,37 @@ const createParser = ({ inline, getMember, textStyle: textDefaultStyle }) => {
         case "user": {
           const member = getMember(el.ref);
           return (
-            <View
+            <Pressable
               key={i}
+              onPress={() => {
+                onPressInteractiveElement(el);
+              }}
               style={{ flexDirection: "row", alignItems: "flex-end" }}
             >
-              <View
-                style={{
-                  position: "relative",
-                  top: 1,
-                  borderRadius: 3,
-                  backgroundColor: "hsla(235,85.6%,64.7%,0.3)",
-                }}
-              >
-                <Text
+              {({ pressed }) => (
+                <View
                   style={{
-                    ...textDefaultStyle,
-                    lineHeight: 20,
-                    color: "hsl(236,83.3%,92.9%)",
-                    fontWeight: "500",
+                    position: "relative",
+                    top: 1,
+                    borderRadius: 3,
+                    backgroundColor: pressed
+                      ? "rgb(0, 90, 132)"
+                      : "rgba(0, 110, 162, 0.29)",
                   }}
                 >
-                  @{member?.displayName ?? el.ref}
-                </Text>
-              </View>
-            </View>
+                  <Text
+                    style={{
+                      ...textDefaultStyle,
+                      lineHeight: 20,
+                      color: pressed ? "white" : "#e0f5ff",
+                      fontWeight: "500",
+                    }}
+                  >
+                    @{member?.displayName ?? el.ref}
+                  </Text>
+                </View>
+              )}
+            </Pressable>
           );
         }
 
@@ -167,14 +179,14 @@ const RichText = ({
   inline,
   blocks,
   getMember,
-  onClickInteractiveElement,
+  onPressInteractiveElement,
   textStyle,
   ...props
 }) => {
   const parse = createParser({
     inline,
     getMember,
-    onClickInteractiveElement,
+    onPressInteractiveElement,
     textStyle,
   });
   if (inline) return <Text>{parse(blocks)}</Text>;

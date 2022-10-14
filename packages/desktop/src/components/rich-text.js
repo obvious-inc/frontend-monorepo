@@ -29,14 +29,14 @@ export const createCss = (theme, { inline = false, compact = false } = {}) => ({
     lineHeight: "inherit",
     borderRadius: "0.3rem",
     padding: "0 0.2rem",
-    color: "hsl(236,calc(var(--saturation-factor, 1)*83.3%),92.9%)",
-    background: "hsla(235,85.6%,64.7%,0.3)",
+    color: "#e0f5ff",
+    background: "rgb(0 110 162 / 29%)",
     fontWeight: "500",
     cursor: "pointer",
   },
   ".mention:hover": {
     color: "white",
-    background: "hsl(235,85.6%,64.7%)",
+    background: "rgb(0 90 132)",
   },
   ".mention[data-focused]": {
     position: "relative",
