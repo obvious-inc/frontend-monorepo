@@ -2,12 +2,15 @@ import React from "react";
 import { css } from "@emotion/react";
 import { useNavigate, useParams } from "react-router";
 import { Link } from "react-router-dom";
-import { useAppScope, useAuth, useLatestCallback } from "@shades/common";
-import * as eth from "../utils/ethereum";
+import { useAppScope, useAuth } from "@shades/common/app";
+import { useLatestCallback } from "@shades/common/react";
+import { ethereum as ethereumUtils } from "@shades/common/utils";
 import useWallet from "../hooks/wallet";
 import useWalletLogin from "../hooks/wallet-login";
 import Button from "./button";
 import * as Tooltip from "./tooltip";
+
+const { truncateAddress } = ethereumUtils;
 
 const ViewportCenter = (props) => (
   <div
@@ -137,7 +140,7 @@ const Content = ({
   status,
   accountAddress,
 }) => {
-  const truncatedAccountAddress = eth.truncateAddress(accountAddress);
+  const truncatedAccountAddress = truncateAddress(accountAddress);
   return (
     <div
       css={(theme) =>

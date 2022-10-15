@@ -8,10 +8,8 @@ import * as Shades from "@shades/common";
 import useProfilePicture from "../hooks/profile-picture";
 
 const { reverse } = Shades.utils.array;
+const { truncateAddress } = Shades.utils.ethereum;
 const { useAppScope } = Shades.app;
-
-const truncateAddress = (address) =>
-  [address.slice(0, 5), address.slice(-3)].join("...");
 
 export const options = {};
 

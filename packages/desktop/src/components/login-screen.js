@@ -1,11 +1,13 @@
+import { ethereum as ethereumUtils } from "@shades/common/utils";
 import React from "react";
 import { css } from "@emotion/react";
-import * as eth from "../utils/ethereum";
 import useWallet from "../hooks/wallet";
 import useWalletLogin from "../hooks/wallet-login";
 import * as Tooltip from "../components/tooltip";
 import Spinner from "../components/spinner";
 import Avatar from "../components/avatar";
+
+const { truncateAddress } = ethereumUtils;
 
 const SignInScreen = ({ onSuccess, onError }) => {
   const {
@@ -123,7 +125,7 @@ const SignInScreen = ({ onSuccess, onError }) => {
             style={{ margin: "0 auto 2rem" }}
           />
           <div style={{ marginBottom: "1rem" }}>
-            Requesting signature from {eth.truncateAddress(accountAddress)}
+            Requesting signature from {truncateAddress(accountAddress)}
             ...
           </div>
           <Small>Check your wallet</Small>
@@ -225,11 +227,10 @@ const SignInScreen = ({ onSuccess, onError }) => {
                       }
                     >
                       {accountEnsName == null ? (
-                        eth.truncateAddress(accountAddress)
+                        truncateAddress(accountAddress)
                       ) : (
                         <>
-                          {accountEnsName} (
-                          {eth.truncateAddress(accountAddress)})
+                          {accountEnsName} ({truncateAddress(accountAddress)})
                         </>
                       )}
                     </a>

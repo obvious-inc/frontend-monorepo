@@ -2,8 +2,10 @@ import React from "react";
 import { NavLink, Outlet, useParams, useNavigate } from "react-router-dom";
 import { css, useTheme } from "@emotion/react";
 import { useAppScope } from "@shades/common/app";
-import { array as arrayUtils } from "@shades/common/utils";
-import { truncateAddress } from "../utils/ethereum";
+import {
+  array as arrayUtils,
+  ethereum as ethereumUtils,
+} from "@shades/common/utils";
 import useSideMenu from "../hooks/side-menu";
 import {
   // Hash as HashIcon,
@@ -19,6 +21,7 @@ import SideMenuLayout from "./side-menu-layout";
 import NotificationBadge from "./notification-badge";
 
 const { reverse } = arrayUtils;
+const { truncateAddress } = ethereumUtils;
 
 const useCachedState = ({ key, initialState }) => {
   const [state, setState] = React.useState(() => {

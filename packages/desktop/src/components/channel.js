@@ -7,9 +7,9 @@ import {
   getImageFileDimensions,
   array as arrayUtils,
   message as messageUtils,
+  ethereum as ethereumUtils,
 } from "@shades/common/utils";
 import { useLatestCallback } from "@shades/common/react";
-import * as eth from "../utils/ethereum";
 import useGlobalMediaQueries from "../hooks/global-media-queries";
 import useWindowFocusListener from "../hooks/window-focus-listener";
 import useOnlineListener from "../hooks/window-online-listener";
@@ -41,6 +41,7 @@ import useMutationObserver from "../hooks/mutation-observer";
 const { stringifyBlocks: stringifyMessageBlocks } = messageUtils;
 
 const { sort } = arrayUtils;
+const { truncateAddress } = ethereumUtils;
 
 const isNative = window.Native != null;
 
@@ -1570,9 +1571,9 @@ const Channel = ({ compact, noSideMenu }) => {
                   >
                     {accountEnsName}{" "}
                     {accountEnsName == null ? (
-                      eth.truncateAddress(accountAddress)
+                      truncateAddress(accountAddress)
                     ) : (
-                      <>({eth.truncateAddress(accountAddress)})</>
+                      <>({truncateAddress(accountAddress)})</>
                     )}
                     <Avatar
                       data-avatar
@@ -1988,7 +1989,7 @@ const MembersDirectoryDialog = ({ members, titleProps }) => {
             const truncatedAddress =
               member.walletAddress == null
                 ? null
-                : eth.truncateAddress(member.walletAddress);
+                : truncateAddress(member.walletAddress);
             return (
               <li key={member.id} css={css({ display: "block" })}>
                 <button

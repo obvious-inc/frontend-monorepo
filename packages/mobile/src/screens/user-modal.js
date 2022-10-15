@@ -7,15 +7,13 @@ import { ModalActionButtonGroup } from "./account-modal";
 import { UserProfilePicture } from "./channel-list";
 
 const { useAppScope } = Shades.app;
+const { truncateAddress } = Shades.utils.ethereum;
 
 const screen = Dimensions.get("screen");
 
 const textDimmed = "hsl(0,0%,50%)";
 
 export const options = { presentation: "modal" };
-
-const truncateAddress = (address) =>
-  [address.slice(0, 5), address.slice(-3)].join("...");
 
 const UserModal = ({ route }) => {
   const { state } = useAppScope();

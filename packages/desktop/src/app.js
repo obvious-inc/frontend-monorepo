@@ -23,10 +23,12 @@ import {
   AppScopeProvider,
   ServerConnectionProvider,
 } from "@shades/common/app";
-import { array as arrayUtils } from "@shades/common/utils";
+import {
+  array as arrayUtils,
+  ethereum as ethereumUtils,
+} from "@shades/common/utils";
 import { useLatestCallback } from "@shades/common/react";
 import { IFrameEthereumProvider } from "@newshades/iframe-provider";
-import * as eth from "./utils/ethereum";
 import { Provider as GlobalMediaQueriesProvider } from "./hooks/global-media-queries";
 import { send as sendNotification } from "./utils/notifications";
 import useWindowFocusListener from "./hooks/window-focus-listener";
@@ -52,6 +54,7 @@ import { notion as defaultTheme, nounsTv as nounsTvTheme } from "./themes";
 import AuthHome from "./components/auth";
 
 const { unique } = arrayUtils;
+const { truncateAddress } = ethereumUtils;
 
 const isNative = window.Native != null;
 const isReactNativeWebView = window.ReactNativeWebView != null;
@@ -190,7 +193,7 @@ const App = () => {
     // Suggest login with new account
     if (
       !confirm(
-        `Do you wish to login as ${eth.truncateAddress(newAddress)} instead?`
+        `Do you wish to login as ${truncateAddress(newAddress)} instead?`
       )
     )
       return;
