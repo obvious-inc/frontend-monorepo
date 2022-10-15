@@ -96,15 +96,7 @@ const createParser = ({
                 </button>
               </Popover.Trigger>
               <Popover.Content>
-                {member != null && (
-                  <ProfilePreview
-                    profilePicture={member.profilePicture}
-                    displayName={member.displayName}
-                    walletAddress={member.walletAddress}
-                    onlineStatus={member.onlineStatus}
-                    userId={member.id}
-                  />
-                )}
+                {member != null && <ProfilePreview userId={member.id} />}
               </Popover.Content>
             </Popover.Root>
           );

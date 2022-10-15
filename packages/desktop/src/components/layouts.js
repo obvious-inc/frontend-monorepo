@@ -1,3 +1,4 @@
+import { useEnsName } from "wagmi";
 import React from "react";
 import { NavLink, Outlet, useParams, useNavigate } from "react-router-dom";
 import { css, useTheme } from "@emotion/react";
@@ -223,8 +224,17 @@ export const UnifiedLayout = () => {
 const ProfileDropdownTrigger = React.forwardRef((props, ref) => {
   const { state } = useAppScope();
   const user = state.selectMe();
+  const { data: userEnsName } = useEnsName({ address: user.walletAddress });
+
   const truncatedAddress =
     user?.walletAddress == null ? null : truncateAddress(user.walletAddress);
+
+  const userDisplayName =
+    user == null
+      ? null
+      : user.hasCustomDisplayName
+      ? user.displayName
+      : userEnsName ?? truncatedAddress;
 
   return (
     <button
@@ -308,12 +318,13 @@ const ProfileDropdownTrigger = React.forwardRef((props, ref) => {
               color: theme.colors.textNormal,
               fontSize: theme.fontSizes.default,
               fontWeight: theme.text.weights.header,
+              lineHeight: "2rem",
             })
           }
         >
-          {user?.displayName}
+          {userDisplayName}
         </div>
-        {truncatedAddress !== user?.displayName && (
+        {userDisplayName !== truncatedAddress && (
           <div
             css={(theme) =>
               css({
@@ -324,7 +335,9 @@ const ProfileDropdownTrigger = React.forwardRef((props, ref) => {
               })
             }
           >
-            {truncatedAddress}
+            {userEnsName == null
+              ? truncatedAddress
+              : `${userEnsName} (${truncatedAddress})`}
           </div>
         )}
       </div>

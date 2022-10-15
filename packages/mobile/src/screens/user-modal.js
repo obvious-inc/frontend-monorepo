@@ -39,6 +39,9 @@ const UserModal = ({ route }) => {
     },
   ];
   const truncatedAddress = truncateAddress(user.walletAddress);
+  const userDisplayName = user.hasCustomDisplayName
+    ? user.displayName
+    : ensName ?? truncatedAddress;
 
   return (
     <View
@@ -68,20 +71,22 @@ const UserModal = ({ route }) => {
             lineHeight: 22,
           }}
         >
-          {user.displayName}
+          {userDisplayName}
         </Text>
-        <Text
-          style={{
-            color: textDimmed,
-            fontSize: 14,
-            fontWeight: "400",
-            lineHeight: 18,
-          }}
-        >
-          {ensName == null
-            ? truncatedAddress
-            : `${ensName} (${truncatedAddress})`}
-        </Text>
+        {userDisplayName !== truncatedAddress && (
+          <Text
+            style={{
+              color: textDimmed,
+              fontSize: 14,
+              fontWeight: "400",
+              lineHeight: 18,
+            }}
+          >
+            {ensName == null
+              ? truncatedAddress
+              : `${ensName} (${truncatedAddress})`}
+          </Text>
+        )}
 
         <View style={{ height: 20 }} />
 

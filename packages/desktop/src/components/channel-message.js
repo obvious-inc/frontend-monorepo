@@ -656,15 +656,7 @@ const MemberDisplayNameWithPopover = React.forwardRef(
         />
       </Popover.Trigger>
       <Popover.Content>
-        {user != null && (
-          <ProfilePreview
-            profilePicture={user.profilePicture}
-            displayName={user.displayName}
-            walletAddress={user.walletAddress}
-            onlineStatus={user.onlineStatus}
-            userId={user.id}
-          />
-        )}
+        {user != null && <ProfilePreview userId={user.id} />}
       </Popover.Content>
     </Popover.Root>
   )
@@ -790,13 +782,7 @@ const MessageHeader = ({
           </div>
         </Popover.Trigger>
         <Popover.Content>
-          <ProfilePreview
-            profilePicture={message.author?.profilePicture}
-            displayName={message.author?.displayName}
-            walletAddress={message.author?.walletAddress}
-            onlineStatus={message.author?.onlineStatus}
-            userId={message.authorUserId}
-          />
+          <ProfilePreview userId={message.authorUserId} />
         </Popover.Content>
       </Popover.Root>
     );
@@ -1506,13 +1492,7 @@ const RepliedMessage = ({ message, getMember }) => {
                     </span>
                   </Popover.Trigger>
                   <Popover.Content>
-                    <ProfilePreview
-                      profilePicture={message.author?.profilePicture}
-                      displayName={message.author?.displayName}
-                      walletAddress={message.author?.walletAddress}
-                      onlineStatus={message.author?.onlineStatus}
-                      userId={message.authorUserId}
-                    />
+                    <ProfilePreview userId={message.authorUserId} />
                   </Popover.Content>
                 </Popover.Root>
               )}{" "}
@@ -1648,13 +1628,7 @@ const MessageLeftColumn = ({ isHovering, simplified, compact, message }) => {
           </button>
         </Popover.Trigger>
         <Popover.Content>
-          <ProfilePreview
-            profilePicture={message.author?.profilePicture}
-            displayName={message.author?.displayName}
-            walletAddress={message.author?.walletAddress}
-            onlineStatus={message.author?.onlineStatus}
-            userId={message.authorUserId}
-          />
+          <ProfilePreview userId={message.authorUserId} />
         </Popover.Content>
       </Popover.Root>
     </div>

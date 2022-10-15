@@ -25,12 +25,15 @@ const ChannelList = ({ navigation }) => {
     user?.walletAddress == null ? null : truncateAddress(user.walletAddress);
 
   const { data: ensName } = useEnsName({ address: user.walletAddress });
-  const hasCustomDisplayName = truncatedAddress !== user?.displayName;
 
   const channels = state.selectMemberChannels();
   const starredChannels = state.selectStarredChannels();
 
   const [collapsedIds, setCollapsedIds] = React.useState([]);
+
+  const userDisplayName = user.hasCustomDisplayName
+    ? user.displayName
+    : ensName ?? truncatedAddress;
 
   return (
     <SafeAreaView
@@ -72,11 +75,9 @@ const ChannelList = ({ navigation }) => {
               lineHeight: 18,
             }}
           >
-            {hasCustomDisplayName
-              ? user?.displayName
-              : ensName ?? truncatedAddress}
+            {userDisplayName}
           </Text>
-          {(hasCustomDisplayName || ensName != null) && (
+          {userDisplayName !== truncatedAddress && (
             <Text
               style={{
                 color: textDimmed,
