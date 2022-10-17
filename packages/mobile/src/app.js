@@ -13,7 +13,7 @@ import { mainnet as mainnetChain } from "wagmi/chains";
 import { infuraProvider } from "wagmi/providers/infura";
 import { publicProvider } from "wagmi/providers/public";
 import React from "react";
-import { View, Text } from "react-native";
+import { View, Text, Pressable } from "react-native";
 import {
   NavigationContainer,
   DarkTheme as ReactNavigationDarkTheme,
@@ -38,6 +38,12 @@ import ChannelDetailsModal, {
   options as channelDetailsModalOptions,
 } from "./screens/channel-details-modal";
 import UserModal, { options as userModalOptions } from "./screens/user-modal";
+import NewPrivateScreen, {
+  options as newPrivateScreenOptions,
+} from "./screens/new-private-channel";
+
+const textDimmed = "hsl(0,0%,50%)";
+const textBlue = "hsl(199, 100%, 46%)";
 
 const {
   AuthProvider,
@@ -180,9 +186,122 @@ const App = () => {
         component={UserModal}
         options={userModalOptions}
       />
+      <NativeStackNavigator.Screen
+        name="Create channel"
+        component={CreateChannelModalStack}
+        options={{ presentation: "modal" }}
+      />
     </NativeStackNavigator.Navigator>
   );
 };
+
+const CreateChannelModalStack = () => (
+  <NativeStackNavigator.Navigator
+    initialRouteName="New Channel"
+    screenOptions={{
+      headerShadowVisible: false,
+      headerBackTitleVisible: false,
+      headerTintColor: textBlue,
+      headerTitleStyle: { color: "white" },
+      headerStyle: { backgroundColor: "hsl(0,0%,10%)" },
+      contentStyle: { backgroundColor: "hsl(0,0%,10%)" },
+    }}
+  >
+    <NativeStackNavigator.Screen
+      name="New Channel"
+      component={NewChannel}
+      options={{
+        headerShadowVisible: true,
+        headerStyle: { backgroundColor: "hsl(0,0%,12%)" },
+        headerLeft: () => (
+          <View>
+            <Text style={{ color: textBlue, fontSize: 16 }}>Cancel</Text>
+          </View>
+        ),
+      }}
+    />
+    <NativeStackNavigator.Screen name="New Open" component={NewOpen} />
+    <NativeStackNavigator.Screen name="New Closed" component={NewClosed} />
+    <NativeStackNavigator.Screen
+      name="New Private"
+      component={NewPrivateScreen}
+      options={newPrivateScreenOptions}
+    />
+  </NativeStackNavigator.Navigator>
+);
+
+const NewChannel = ({ navigation }) => (
+  <View
+    style={{
+      flex: 1,
+      backgroundColor: "hsl(0,0%,10%)",
+    }}
+  >
+    {[
+      { label: "Open", description: "Anyone can see and join" },
+      { label: "Closed", description: "Anyone can see but not join" },
+      {
+        label: "Private",
+        description: "Only members can see",
+        link: "New Private",
+      },
+    ].map((item, i, items) => (
+      <Pressable
+        key={i}
+        disabled={item.link == null}
+        onPress={() => {
+          navigation.navigate(item.link);
+        }}
+        style={({ pressed }) => ({
+          height: 64,
+          flexDirection: "row",
+          alignItems: "stretch",
+          backgroundColor: pressed ? "hsl(0,0%,16%)" : "hsl(0,0%,12%)",
+          borderColor: "hsl(0,0%,14%)",
+          borderBottomWidth: i === items.length - 1 ? 1 : 0,
+        })}
+      >
+        <View
+          style={{ width: 64, alignItems: "center", justifyContent: "center" }}
+        >
+          <View
+            style={{
+              width: 28,
+              height: 28,
+              borderRadius: 14,
+              backgroundColor: "hsl(0,0%,18%)",
+            }}
+          />
+        </View>
+        <View
+          style={{
+            flex: 1,
+            borderTopWidth: i === 0 ? 0 : 1,
+            borderColor: "hsl(0,0%,14%)",
+            justifyContent: "center",
+          }}
+        >
+          <Text
+            style={{
+              color: "white",
+              fontSize: 16,
+              lineHeight: 22,
+              fontWeight: "500",
+            }}
+          >
+            {item.label}
+          </Text>
+          <Text style={{ color: textDimmed, fontSize: 12, lineHeight: 15 }}>
+            {item.description}
+          </Text>
+        </View>
+      </Pressable>
+    ))}
+  </View>
+);
+
+const NewOpen = () => <View />;
+const NewClosed = () => <View />;
 
 const SignInView = ({ onSuccess, onError }) => (
   // Web login for now

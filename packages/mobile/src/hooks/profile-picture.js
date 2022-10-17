@@ -27,10 +27,10 @@ const useProfilePicture = (user, { large } = {}) => {
   const customUrl =
     user == null
       ? null
-      : user.profilePicture.cloudflareId == null
-      ? user.profilePicture.small
+      : user.profilePicture?.cloudflareId == null
+      ? user.profilePicture?.small
       : `https://imagedelivery.net/${CLOUDFLARE_ACCOUNT_HASH}/${
-          user.profilePicture.cloudflareId
+          user.profilePicture?.cloudflareId
         }/${large ? "public" : "avatar"}`;
 
   const { data: ensAvatarUrl, isLoading: isLoadingEnsAvatar } = useEnsAvatar({
