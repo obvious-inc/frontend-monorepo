@@ -25,6 +25,7 @@ specifiers:
   ethers: ^5.7.1
   expo: ~46.0.14
   expo-application: ~4.2.2
+  expo-clipboard: ~3.1.0
   expo-constants: ~13.2.4
   expo-device: ~4.3.0
   expo-haptics: ~11.3.0
@@ -61,6 +62,7 @@ dependencies:
   ethers: 5.7.1
   expo: 46.0.14_@babel+core@7.19.3
   expo-application: 4.2.2_expo@46.0.14
+  expo-clipboard: 3.1.0_expo@46.0.14
   expo-constants: 13.2.4_expo@46.0.14
   expo-device: 4.3.0_expo@46.0.14
   expo-haptics: 11.3.0_expo@46.0.14
@@ -4868,6 +4870,14 @@ packages:
     transitivePeerDependencies:
       - expo
       - supports-color
+    dev: false
+
+  /expo-clipboard/3.1.0_expo@46.0.14:
+    resolution: {integrity: sha512-0cnmySP43VnpSWONn+1yIvPT0dwJWzCaPZcOZVxuH5mLhNi4p3UDLJFZt94tu4+bnyvDKjWxCK2/LoCM0XdwwQ==}
+    peerDependencies:
+      expo: '*'
+    dependencies:
+      expo: 46.0.14_@babel+core@7.19.3
     dev: false
 
   /expo-constants/13.2.4_expo@46.0.14:
