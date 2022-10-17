@@ -137,7 +137,7 @@ export const UnifiedLayout = () => {
 
           {state.selectHasFetchedMenuData() && (
             <>
-              <div style={{ height: "1.5rem" }} />
+              <div style={{ marginBottom: "1.5rem" }} />
               {selectedChannel != null && !selectedChannelIsListed && (
                 <>
                   <ChannelItem
@@ -152,7 +152,7 @@ export const UnifiedLayout = () => {
                     )}
                   />
 
-                  <div style={{ height: "1.5rem" }} />
+                  <div style={{ marginBottom: "1.5rem" }} />
                 </>
               )}
 
@@ -360,18 +360,18 @@ const CollapsableSection = ({
   onToggleExpanded,
   children,
 }) => (
-  <section>
+  <section style={{ marginBottom: expanded ? "1.8rem" : 0 }}>
     <div
       css={(theme) => css`
-        font-size: 1.15rem;
+        font-size: 1.2rem;
         font-weight: 600;
-        letter-spacing: 0.03em;
+        margin: 0.6rem 0 0.2rem;
         padding: 0 0.8rem 0
           calc(
             ${theme.mainMenu.itemHorizontalPadding} +
               ${theme.mainMenu.containerHorizontalPadding}
           );
-        height: 2.4rem;
+        min-height: 2.4rem;
         display: grid;
         align-items: center;
         grid-template-columns: minmax(0, 1fr) auto;
@@ -382,7 +382,6 @@ const CollapsableSection = ({
         onClick={onToggleExpanded}
         css={(theme) =>
           css({
-            textTransform: "uppercase",
             lineHeight: 1,
             padding: "0.2rem 0.4rem",
             marginLeft: "-0.4rem",
@@ -402,12 +401,7 @@ const CollapsableSection = ({
       </button>
     </div>
 
-    {expanded && (
-      <>
-        {children}
-        <div style={{ height: "2rem" }} />
-      </>
-    )}
+    {expanded && children}
   </section>
 );
 
@@ -590,6 +584,7 @@ const ListItem = ({
         text-decoration: none;
         line-height: 1.3;
         height: ${theme.mainMenu.itemHeight};
+        margin: 0.1rem 0;
         pointer-events: ${disabled ? "none" : "all"};
       }
       & > *.active {

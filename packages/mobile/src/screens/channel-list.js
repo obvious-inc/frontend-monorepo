@@ -93,7 +93,11 @@ const ChannelList = ({ navigation }) => {
           )}
         </View>
         <View>
-          <View
+          <Pressable
+            hitSlop={10}
+            onPress={() => {
+              navigation.navigate("Create channel");
+            }}
             style={{
               width: 20,
               height: 20,
@@ -246,7 +250,7 @@ const CollapsableSection = ({
   children,
 }) => (
   <>
-    <View style={{ height: 5 }} />
+    <View style={{ marginTop: 5 }} />
     <View
       style={{
         paddingRight: 8,
@@ -262,6 +266,7 @@ const CollapsableSection = ({
           paddingVertical: 2,
           paddingHorizontal: 5,
           marginLeft: -4,
+          marginBottom: 2,
           borderRadius: 3,
           backgroundColor: pressed ? "hsl(0,0%,16%)" : undefined,
         })}
@@ -272,8 +277,6 @@ const CollapsableSection = ({
               fontSize: 15,
               fontWeight: "600",
               lineHeight: 17,
-              letterSpacing: 0.5,
-              textTransform: "uppercase",
               color: pressed
                 ? "rgba(255, 255, 255, 0.565)"
                 : "rgba(255, 255, 255, 0.282)",
@@ -288,7 +291,7 @@ const CollapsableSection = ({
     {expanded && (
       <>
         {children}
-        <View style={{ height: 16 }} />
+        <View style={{ marginBottom: 18 }} />
       </>
     )}
   </>
