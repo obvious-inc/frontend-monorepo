@@ -337,6 +337,12 @@ export const selectChannelHasUnread = createSelector(
 
 export const selectDmChannelFromUserId = (state, userId) => {
   const dmChannels = selectDmChannels(state);
+
+  if (userId === state.me.user.id)
+    return dmChannels.find(
+      (c) => c.memberUserIds.length === 1 && c.memberUserIds[0] === userId
+    );
+
   const userDmChannels = dmChannels.filter(
     (c) => c.memberUserIds.length <= 2 && c.memberUserIds.includes(userId)
   );

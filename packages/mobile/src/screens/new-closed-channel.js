@@ -6,6 +6,6 @@ export const options = {
   headerTintColor: textDefault,
 };
 
-const NewPrivate = () => <View />;
+const NewClosed = () => <View />;
 
-export default NewPrivate;
+export default NewClosed;

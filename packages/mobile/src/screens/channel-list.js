@@ -94,7 +94,7 @@ const ChannelList = ({ navigation }) => {
         </View>
         <View>
           <Pressable
-            hitSlop={10}
+            hitSlop={20}
             onPress={() => {
               navigation.navigate("Create channel");
             }}
@@ -370,9 +370,10 @@ export const UserProfilePicture = ({
   background = "hsla(0,0%,100%,0.055)",
   user,
   large = false,
+  transparent = false,
   style,
 }) => {
-  const profilePicture = useProfilePicture(user, { large });
+  const profilePicture = useProfilePicture(user, { large, transparent });
   return (
     <View
       style={{

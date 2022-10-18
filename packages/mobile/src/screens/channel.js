@@ -282,6 +282,7 @@ const Channel = ({ navigation, route: { params } }) => {
         style={{ flex: 1, backgroundColor: background }}
       >
         <KeyboardAvoidingView
+          key="channel-avoid"
           behavior="padding"
           keyboardVerticalOffset={headerHeight}
           style={{ flex: 1 }}

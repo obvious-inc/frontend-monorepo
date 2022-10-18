@@ -38,12 +38,24 @@ import ChannelDetailsModal, {
   options as channelDetailsModalOptions,
 } from "./screens/channel-details-modal";
 import UserModal, { options as userModalOptions } from "./screens/user-modal";
-import NewPrivateScreen, {
-  options as newPrivateScreenOptions,
+import NewChatScreen, {
+  options as newChatScreenOptions,
+} from "./screens/new-chat";
+import NewGroupScreen, {
+  options as newGroupScreenOptions,
+} from "./screens/new-group";
+import NewPrivateChannelScreen, {
+  options as newPrivateChannelScreenOptions,
 } from "./screens/new-private-channel";
+import NewClosedChannelScreen, {
+  options as newClosedChannelScreenOptions,
+} from "./screens/new-closed-channel";
+import NewOpenChannelScreen, {
+  options as newOpenChannelScreenOptions,
+} from "./screens/new-open-channel";
 
-const textDimmed = "hsl(0,0%,50%)";
 const textBlue = "hsl(199, 100%, 46%)";
+const background = "hsl(0, 0%, 10%)";
 
 const {
   AuthProvider,
@@ -153,7 +165,7 @@ const App = () => {
 
   // Loading screen
   if (authStatus === "loading" || me == null || channels.length === 0)
-    return <View style={{ backgroundColor: "hsl(0,0%,10%)", flex: 1 }} />;
+    return <View style={{ backgroundColor: background, flex: 1 }} />;
 
   return (
     <NativeStackNavigator.Navigator
@@ -197,111 +209,43 @@ const App = () => {
 
 const CreateChannelModalStack = () => (
   <NativeStackNavigator.Navigator
-    initialRouteName="New Channel"
+    initialRouteName="New Chat"
     screenOptions={{
       headerShadowVisible: false,
       headerBackTitleVisible: false,
       headerTintColor: textBlue,
       headerTitleStyle: { color: "white" },
-      headerStyle: { backgroundColor: "hsl(0,0%,10%)" },
-      contentStyle: { backgroundColor: "hsl(0,0%,10%)" },
+      headerStyle: { backgroundColor: background },
+      contentStyle: { backgroundColor: background },
     }}
   >
     <NativeStackNavigator.Screen
-      name="New Channel"
-      component={NewChannel}
-      options={{
-        headerShadowVisible: true,
-        headerStyle: { backgroundColor: "hsl(0,0%,12%)" },
-        headerLeft: () => (
-          <View>
-            <Text style={{ color: textBlue, fontSize: 16 }}>Cancel</Text>
-          </View>
-        ),
-      }}
+      name="New Chat"
+      component={NewChatScreen}
+      options={newChatScreenOptions}
     />
-    <NativeStackNavigator.Screen name="New Open" component={NewOpen} />
-    <NativeStackNavigator.Screen name="New Closed" component={NewClosed} />
+    <NativeStackNavigator.Screen
+      name="New Group"
+      component={NewGroupScreen}
+      options={newGroupScreenOptions}
+    />
+    <NativeStackNavigator.Screen
+      name="New Open"
+      component={NewOpenChannelScreen}
+      options={newOpenChannelScreenOptions}
+    />
+    <NativeStackNavigator.Screen
+      name="New Closed"
+      component={NewClosedChannelScreen}
+      options={newClosedChannelScreenOptions}
+    />
     <NativeStackNavigator.Screen
       name="New Private"
-      component={NewPrivateScreen}
-      options={newPrivateScreenOptions}
+      component={NewPrivateChannelScreen}
+      options={newPrivateChannelScreenOptions}
     />
   </NativeStackNavigator.Navigator>
 );
-
-const NewChannel = ({ navigation }) => (
-  <View
-    style={{
-      flex: 1,
-      backgroundColor: "hsl(0,0%,10%)",
-    }}
-  >
-    {[
-      { label: "Open", description: "Anyone can see and join" },
-      { label: "Closed", description: "Anyone can see but not join" },
-      {
-        label: "Private",
-        description: "Only members can see",
-        link: "New Private",
-      },
-    ].map((item, i, items) => (
-      <Pressable
-        key={i}
-        disabled={item.link == null}
-        onPress={() => {
-          navigation.navigate(item.link);
-        }}
-        style={({ pressed }) => ({
-          height: 64,
-          flexDirection: "row",
-          alignItems: "stretch",
-          backgroundColor: pressed ? "hsl(0,0%,16%)" : "hsl(0,0%,12%)",
-          borderColor: "hsl(0,0%,14%)",
-          borderBottomWidth: i === items.length - 1 ? 1 : 0,
-        })}
-      >
-        <View
-          style={{ width: 64, alignItems: "center", justifyContent: "center" }}
-        >
-          <View
-            style={{
-              width: 28,
-              height: 28,
-              borderRadius: 14,
-              backgroundColor: "hsl(0,0%,18%)",
-            }}
-          />
-        </View>
-        <View
-          style={{
-            flex: 1,
-            borderTopWidth: i === 0 ? 0 : 1,
-            borderColor: "hsl(0,0%,14%)",
-            justifyContent: "center",
-          }}
-        >
-          <Text
-            style={{
-              color: "white",
-              fontSize: 16,
-              lineHeight: 22,
-              fontWeight: "500",
-            }}
-          >
-            {item.label}
-          </Text>
-          <Text style={{ color: textDimmed, fontSize: 12, lineHeight: 15 }}>
-            {item.description}
-          </Text>
-        </View>
-      </Pressable>
-    ))}
-  </View>
-);
-
-const NewOpen = () => <View />;
-const NewClosed = () => <View />;
 
 const SignInView = ({ onSuccess, onError }) => (
   // Web login for now
