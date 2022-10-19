@@ -10,6 +10,7 @@ specifiers:
   '@nouns/sdk': ^0.2.0
   '@react-native-async-storage/async-storage': 1.17.10
   '@react-native-community/netinfo': 9.3.0
+  '@react-navigation/bottom-tabs': ^6.4.0
   '@react-navigation/native': ^6.0.13
   '@react-navigation/native-stack': ^6.9.0
   '@react-navigation/stack': ^6.3.2
@@ -53,6 +54,7 @@ dependencies:
   '@nouns/sdk': 0.2.0_ethers@5.7.1
   '@react-native-async-storage/async-storage': 1.17.10_react-native@0.69.6
   '@react-native-community/netinfo': 9.3.0_react-native@0.69.6
+  '@react-navigation/bottom-tabs': 6.4.0_hg7duugoxzqbcxx766hj52kwii
   '@react-navigation/native': 6.0.13_gtltrjvtlgj7ga36qzsxajwqwe
   '@react-navigation/native-stack': 6.9.0_hg7duugoxzqbcxx766hj52kwii
   '@react-navigation/stack': 6.3.2_bzmyymgi6ffis2tjftmiym3n2m
@@ -2450,6 +2452,25 @@ packages:
 
   /@react-native/polyfills/2.0.0:
     resolution: {integrity: sha512-K0aGNn1TjalKj+65D7ycc1//H9roAQ51GJVk5ZJQFb2teECGmzd86bYDC0aYdbRf7gtovescq4Zt6FR0tgXiHQ==}
+    dev: false
+
+  /@react-navigation/bottom-tabs/6.4.0_hg7duugoxzqbcxx766hj52kwii:
+    resolution: {integrity: sha512-90CapiXjiWudbCiki9e6fOr/CECQRguIxv5OD7IBfbAMGX5GGiJpX8aqiHAz2DxpAz31v4JZcUr945+lFhXBfA==}
+    peerDependencies:
+      '@react-navigation/native': ^6.0.0
+      react: '*'
+      react-native: '*'
+      react-native-safe-area-context: '>= 3.0.0'
+      react-native-screens: '>= 3.0.0'
+    dependencies:
+      '@react-navigation/elements': 1.3.6_h7qdmd6ougow5usxax4cdqrojm
+      '@react-navigation/native': 6.0.13_gtltrjvtlgj7ga36qzsxajwqwe
+      color: 4.2.3
+      react: 18.0.0
+      react-native: 0.69.6_qwcebhcz7kt2t6qvska3nnpfdm
+      react-native-safe-area-context: 4.3.1_gtltrjvtlgj7ga36qzsxajwqwe
+      react-native-screens: 3.15.0_gtltrjvtlgj7ga36qzsxajwqwe
+      warn-once: 0.1.1
     dev: false
 
   /@react-navigation/core/6.4.0_react@18.0.0:

@@ -9,21 +9,26 @@ const { generatePlaceholderAvatarSvgString } = Shades.nouns;
 const CLOUDFLARE_ACCOUNT_HASH =
   Constants.expoConfig.extra.cloudflareAccountHash;
 
-const usePlaceholderAvatarSvg = (walletAddress, { enabled = true } = {}) => {
+const usePlaceholderAvatarSvg = (
+  walletAddress,
+  { enabled = true, transparent = false } = {}
+) => {
   const [generatedPlaceholderAvatar, setGeneratedPlaceholderAvatar] =
     React.useState(null);
 
   React.useEffect(() => {
     if (!enabled || walletAddress == null) return;
-    generatePlaceholderAvatarSvgString(walletAddress).then((url) => {
-      setGeneratedPlaceholderAvatar(url);
-    });
-  }, [enabled, walletAddress]);
+    generatePlaceholderAvatarSvgString(walletAddress, { transparent }).then(
+      (url) => {
+        setGeneratedPlaceholderAvatar(url);
+      }
+    );
+  }, [enabled, walletAddress, transparent]);
 
   return generatedPlaceholderAvatar;
 };
 
-const useProfilePicture = (user, { large } = {}) => {
+const useProfilePicture = (user, { large, transparent = false } = {}) => {
   const customUrl =
     user == null
       ? null
@@ -41,6 +46,7 @@ const useProfilePicture = (user, { large } = {}) => {
   const placeholderSvgString = usePlaceholderAvatarSvg(user?.walletAddress, {
     enabled:
       customUrl == null && !isLoadingEnsAvatar && user?.walletAddress != null,
+    transparent,
   });
 
   const avatarUrl = customUrl ?? ensAvatarUrl;

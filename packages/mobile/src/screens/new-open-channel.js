@@ -25,7 +25,7 @@ const textBlue = "hsl(199, 100%, 46%)";
 
 export const options = {
   headerTintColor: textDefault,
-  title: "New Private Chat",
+  title: "New Open Chat",
   headerRight: (props) => (
     <HeaderRight {...props} button={{ label: "Next", disabled: true }} />
   ),
@@ -41,7 +41,7 @@ const HeaderRight = ({ button: { label, disabled, onPress } }) => (
   </View>
 );
 
-const NewPrivate = ({ navigation }) => {
+const NewOpen = ({ navigation }) => {
   const { actions, state } = useAppScope();
 
   const membersScrollViewRef = React.useRef();
@@ -151,7 +151,7 @@ const NewPrivate = ({ navigation }) => {
             label: "Next",
             disabled: !hasMembers,
             onPress: () =>
-              navigation.navigate("Create group", { members, type: "private" }),
+              navigation.navigate("Create Group", { members, type: "closed" }),
           }}
         />
       ),
@@ -169,19 +169,15 @@ const NewPrivate = ({ navigation }) => {
             contentContainerStyle={{ paddingBottom: 11, paddingHorizontal: 8 }}
             style={{ width: "100%" }}
           >
-            {members.map((address) => {
-              const user = state.selectUserFromWalletAddress(address);
-              return (
-                <HorizontalUserListItem
-                  key={address}
-                  address={address}
-                  displayName={user?.displayName}
-                  onPress={() => {
-                    removeMember(address);
-                  }}
-                />
-              );
-            })}
+            {members.map((address) => (
+              <HorizontalUserListItem
+                key={address}
+                address={address}
+                onPress={() => {
+                  removeMember(address);
+                }}
+              />
+            ))}
           </ScrollView>
         </View>
       )}
@@ -346,4 +342,4 @@ const HorizontalUserListItem = ({ address, onPress }) => {
   );
 };
 
-export default NewPrivate;
+export default NewOpen;

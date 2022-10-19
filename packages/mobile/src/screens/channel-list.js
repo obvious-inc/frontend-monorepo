@@ -1,11 +1,18 @@
-import * as Haptics from "expo-haptics";
 import React from "react";
-import { View, Text, Image, Pressable, ScrollView } from "react-native";
+import {
+  View,
+  Text,
+  Image,
+  Pressable,
+  ScrollView,
+  LayoutAnimation,
+} from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { SvgXml } from "react-native-svg";
+import Svg, { Path, SvgXml } from "react-native-svg";
 import { useEnsName } from "wagmi";
 import * as Shades from "@shades/common";
 import useProfilePicture from "../hooks/profile-picture";
+import { Input } from "./new-chat";
 
 const { reverse } = Shades.utils.array;
 const { truncateAddress } = Shades.utils.ethereum;
@@ -41,17 +48,13 @@ const ChannelList = ({ navigation }) => {
       style={{ flex: 1, backgroundColor: BACKGROUND }}
     >
       <Pressable
-        style={({ pressed }) => ({
+        style={{
           flexDirection: "row",
           alignItems: "center",
-          height: 67,
+          height: 60,
           paddingHorizontal: 20,
-          backgroundColor: pressed ? "rgba(255, 255, 255, 0.055)" : undefined,
-          borderBottomColor: "hsl(0,0%,14%)",
-          borderBottomWidth: 1,
-        })}
+        }}
         onPress={() => {
-          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
           navigation.navigate("Account modal");
         }}
       >
@@ -70,9 +73,9 @@ const ChannelList = ({ navigation }) => {
           <Text
             style={{
               color: textDefault,
-              fontSize: 16,
+              fontSize: 18,
               fontWeight: "500",
-              lineHeight: 18,
+              lineHeight: 20,
             }}
           >
             {userDisplayName}
@@ -94,22 +97,38 @@ const ChannelList = ({ navigation }) => {
         </View>
         <View>
           <Pressable
-            hitSlop={10}
+            hitSlop={20}
             onPress={() => {
               navigation.navigate("Create channel");
             }}
-            style={{
+            style={({ pressed }) => ({
               width: 20,
               height: 20,
-              borderRadius: 10,
+              alignItems: "center",
+              justifyContent: "center",
+              // backgroundColor: pressed ? "hsl(0,0%,16%)" : "hsl(0,0%,14%)",
+              borderRadius: 6,
               borderWidth: 2,
               borderColor: textDefault,
-            }}
-          />
+            })}
+          >
+            <Svg width="14" height="14" viewBox="0 0 14 14" fill={textDefault}>
+              <Path d="M2 7.16357C2 7.59692 2.36011 7.95093 2.78735 7.95093H6.37622V11.5398C6.37622 11.9731 6.73022 12.3271 7.16357 12.3271C7.59692 12.3271 7.95093 11.9731 7.95093 11.5398V7.95093H11.5398C11.9731 7.95093 12.3271 7.59692 12.3271 7.16357C12.3271 6.73022 11.9731 6.37622 11.5398 6.37622H7.95093V2.78735C7.95093 2.36011 7.59692 2 7.16357 2C6.73022 2 6.37622 2.36011 6.37622 2.78735V6.37622H2.78735C2.36011 6.37622 2 6.73022 2 7.16357Z" />
+            </Svg>
+          </Pressable>
         </View>
       </Pressable>
 
-      <ScrollView showsVerticalScrollIndicator={false}>
+      <ScrollView
+        showsVerticalScrollIndicator={false}
+        keyboardShouldPersistTaps="handled"
+        keyboardDismissMode="on-drag"
+        contentContainerStyle={{ paddingTop: 5 }}
+      >
+        <View style={{ paddingHorizontal: 16 }}>
+          <Input placeholder="Search" />
+        </View>
+
         {/* <ListItem */}
         {/*   icon={ */}
         {/*     <View style={{ width: 16 }}> */}
@@ -165,6 +184,9 @@ const ChannelList = ({ navigation }) => {
             title="Starred"
             expanded={!collapsedIds.includes("starred")}
             onToggleExpanded={() => {
+              LayoutAnimation.configureNext(
+                LayoutAnimation.Presets.easeInEaseOut
+              );
               setCollapsedIds((ids) =>
                 ids.includes("starred")
                   ? ids.filter((id) => id !== "starred")
@@ -194,6 +216,9 @@ const ChannelList = ({ navigation }) => {
             title="Channels"
             expanded={!collapsedIds.includes("channels")}
             onToggleExpanded={() => {
+              LayoutAnimation.configureNext(
+                LayoutAnimation.Presets.easeInEaseOut
+              );
               setCollapsedIds((ids) =>
                 ids.includes("channels")
                   ? ids.filter((id) => id !== "channels")
@@ -367,12 +392,13 @@ const ListItem = ({
 
 export const UserProfilePicture = ({
   size = 18,
-  background = "hsla(0,0%,100%,0.055)",
+  background = "hsl(0,0%,14%)",
   user,
   large = false,
+  transparent = false,
   style,
 }) => {
-  const profilePicture = useProfilePicture(user, { large });
+  const profilePicture = useProfilePicture(user, { large, transparent });
   return (
     <View
       style={{

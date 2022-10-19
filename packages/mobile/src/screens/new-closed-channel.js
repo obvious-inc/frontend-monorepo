@@ -25,7 +25,7 @@ const textBlue = "hsl(199, 100%, 46%)";
 
 export const options = {
   headerTintColor: textDefault,
-  title: "New Private Chat",
+  title: "New Closed Chat",
   headerRight: (props) => (
     <HeaderRight {...props} button={{ label: "Next", disabled: true }} />
   ),
@@ -41,7 +41,7 @@ const HeaderRight = ({ button: { label, disabled, onPress } }) => (
   </View>
 );
 
-const NewPrivate = ({ navigation }) => {
+const NewClosed = ({ navigation }) => {
   const { actions, state } = useAppScope();
 
   const membersScrollViewRef = React.useRef();
@@ -151,7 +151,7 @@ const NewPrivate = ({ navigation }) => {
             label: "Next",
             disabled: !hasMembers,
             onPress: () =>
-              navigation.navigate("Create group", { members, type: "private" }),
+              navigation.navigate("Create group", { members, type: "closed" }),
           }}
         />
       ),
@@ -286,7 +286,7 @@ const NewPrivate = ({ navigation }) => {
   );
 };
 
-const HorizontalUserListItem = ({ address, onPress }) => {
+const HorizontalUserListItem = ({ address, displayName, onPress }) => {
   const { data: ensName } = useEnsName({ address });
   return (
     <Pressable
@@ -340,10 +340,12 @@ const HorizontalUserListItem = ({ address, onPress }) => {
           marginTop: 4,
         }}
       >
-        {ensName ?? [address.slice(0, 4), address.slice(-2)].join("...")}
+        {displayName ??
+          ensName ??
+          [address.slice(0, 4), address.slice(-2)].join("...")}
       </Text>
     </Pressable>
   );
 };
 
-export default NewPrivate;
+export default NewClosed;

@@ -30,6 +30,7 @@ import messages, {
 } from "../reducers/messages";
 import users, {
   selectUser,
+  selectUsers,
   selectUserFromWalletAddress,
 } from "../reducers/users";
 import channelTypingStatus, {
@@ -50,6 +51,7 @@ const selectors = {
   selectMessage,
   selectChannelMessages,
   selectUser,
+  selectUsers,
   selectUserFromWalletAddress,
   selectDmChannelFromUserId,
   selectDmChannelFromUserIds,

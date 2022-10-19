@@ -918,12 +918,12 @@ const ChannelMessageInput = React.forwardRef(
               flex: 1,
               fontSize: 16,
               color: textDefault,
-              backgroundColor: "hsla(0,0%,100%,0.05)",
+              backgroundColor: "hsl(0,0%,14%)",
               paddingHorizontal: 16,
               paddingTop: 11,
               paddingBottom: 11,
               lineHeight: 20,
-              borderRadius: 22,
+              borderRadius: 12,
             }}
           />
         </View>
