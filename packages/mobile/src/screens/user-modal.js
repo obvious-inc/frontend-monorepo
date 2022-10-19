@@ -1,6 +1,7 @@
 import * as Clipboard from "expo-clipboard";
+import * as Linking from "expo-linking";
 import React from "react";
-import { View, Text, Dimensions, Linking } from "react-native";
+import { View, Text, Dimensions } from "react-native";
 import { useEnsName } from "wagmi";
 import * as Shades from "@shades/common";
 import { ModalActionButtonGroup } from "./account-modal";
