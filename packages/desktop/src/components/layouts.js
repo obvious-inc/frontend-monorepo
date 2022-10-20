@@ -279,38 +279,14 @@ const ProfileDropdownTrigger = React.forwardRef((props, ref) => {
             marginTop: "1px",
           }}
         >
-          <div
-            css={(theme) =>
-              css({
-                borderRadius: "0.3rem",
-                width: "1.8rem",
-                height: "1.8rem",
-                background: theme.colors.backgroundModifierHover,
-                color: theme.colors.textDimmed,
-                textTransform: "uppercase",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                fontSize: "1.2rem",
-              })
-            }
-          >
-            <Avatar
-              url={user?.profilePicture.small}
-              walletAddress={user?.walletAddress}
-              size="1.8rem"
-              pixelSize={18}
-              // borderRadius="0.3rem"
-            />
-          </div>
+          <Avatar
+            url={user?.profilePicture.small}
+            walletAddress={user?.walletAddress}
+            size="1.8rem"
+            pixelSize={18}
+          />
         </div>
       </div>
-      {/* <Avatar */}
-      {/*   url={user?.profilePicture.small} */}
-      {/*   walletAddress={user?.walletAddress} */}
-      {/*   size="3rem" */}
-      {/*   pixelSize={30} */}
-      {/* /> */}
       <div>
         <div
           css={(theme) =>
