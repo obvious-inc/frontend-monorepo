@@ -2,6 +2,7 @@ export * as array from "./utils/array";
 export * as object from "./utils/object";
 export * as function from "./utils/function";
 export * as message from "./utils/message";
+export * as channel from "./utils/channel";
 export * as permission from "./utils/permissions";
 export * as ethereum from "./utils/ethereum";
 export {

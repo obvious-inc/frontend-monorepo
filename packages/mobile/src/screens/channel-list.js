@@ -15,6 +15,7 @@ import useProfilePicture from "../hooks/profile-picture";
 import { Input } from "./new-chat";
 
 const { reverse } = Shades.utils.array;
+const { search: searchChannels } = Shades.utils.channel;
 const { truncateAddress } = Shades.utils.ethereum;
 const { useAppScope } = Shades.app;
 
@@ -35,6 +36,20 @@ const ChannelList = ({ navigation }) => {
 
   const channels = state.selectMemberChannels();
   const starredChannels = state.selectStarredChannels();
+
+  const [searchQuery, setSearchQuery] = React.useState("");
+
+  const filteredChannels = React.useMemo(
+    () =>
+      searchChannels(
+        searchQuery,
+        channels.map((c) => ({
+          ...c,
+          members: state.selectChannelMembers(c.id),
+        }))
+      ),
+    [channels, searchQuery, state]
+  );
 
   const [collapsedIds, setCollapsedIds] = React.useState([]);
 
@@ -101,16 +116,15 @@ const ChannelList = ({ navigation }) => {
             onPress={() => {
               navigation.navigate("Create channel");
             }}
-            style={({ pressed }) => ({
+            style={{
               width: 20,
               height: 20,
               alignItems: "center",
               justifyContent: "center",
-              // backgroundColor: pressed ? "hsl(0,0%,16%)" : "hsl(0,0%,14%)",
               borderRadius: 6,
               borderWidth: 2,
               borderColor: textDefault,
-            })}
+            }}
           >
             <Svg width="14" height="14" viewBox="0 0 14 14" fill={textDefault}>
               <Path d="M2 7.16357C2 7.59692 2.36011 7.95093 2.78735 7.95093H6.37622V11.5398C6.37622 11.9731 6.73022 12.3271 7.16357 12.3271C7.59692 12.3271 7.95093 11.9731 7.95093 11.5398V7.95093H11.5398C11.9731 7.95093 12.3271 7.59692 12.3271 7.16357C12.3271 6.73022 11.9731 6.37622 11.5398 6.37622H7.95093V2.78735C7.95093 2.36011 7.59692 2 7.16357 2C6.73022 2 6.37622 2.36011 6.37622 2.78735V6.37622H2.78735C2.36011 6.37622 2 6.73022 2 7.16357Z" />
@@ -123,78 +137,32 @@ const ChannelList = ({ navigation }) => {
         showsVerticalScrollIndicator={false}
         keyboardShouldPersistTaps="handled"
         keyboardDismissMode="on-drag"
-        contentContainerStyle={{ paddingTop: 5 }}
+        contentContainerStyle={{ paddingBottom: 20 }}
+        stickyHeaderIndices={[0]}
+        stickyHeaderHiddenOnScroll
       >
-        <View style={{ paddingHorizontal: 16 }}>
-          <Input placeholder="Search" />
+        <View
+          style={{
+            paddingHorizontal: 16,
+            position: "absolute",
+            top: 0,
+            left: 0,
+            width: "100%",
+            paddingVertical: 5,
+            backgroundColor: BACKGROUND,
+            marginBottom: 5,
+          }}
+        >
+          <Input
+            placeholder="Search"
+            value={searchQuery}
+            onChangeText={setSearchQuery}
+          />
         </View>
 
-        {/* <ListItem */}
-        {/*   icon={ */}
-        {/*     <View style={{ width: 16 }}> */}
-        {/*       <Svg width="100%" height="100%" viewBox="0 0 14 14" fill="gray"> */}
-        {/*         <Path d="M5.92239093,0.540000021 C2.94055203,0.540000021 0.5,2.98052217 0.5,5.96238099 C0.5,8.9442199 2.94055203,11.384762 5.92239093,11.384762 C7.02329179,11.384762 8.05258749,11.0564678 8.91032559,10.4866744 L12.1460745,13.6802311 C12.5695899,14.1037465 13.2589477,14.1037465 13.6823635,13.6802311 C14.1058788,13.2567158 14.1058788,12.5730353 13.6823635,12.1495199 L10.4410368,8.95033558 C11.0107904,8.09259747 11.3447619,7.06329182 11.3447619,5.96238099 C11.3447619,2.98052217 8.90420992,0.540000021 5.92239093,0.540000021 Z M5.92239093,2.70895241 C7.7320027,2.70895241 9.17580956,4.15272939 9.17580956,5.96238099 C9.17580956,7.77201268 7.7320027,9.21581954 5.92239093,9.21581954 C4.11275925,9.21581954 2.66895239,7.77201268 2.66895239,5.96238099 C2.66895239,4.15272939 4.11275925,2.70895241 5.92239093,2.70895241 Z" /> */}
-        {/*       </Svg> */}
-        {/*     </View> */}
-        {/*   } */}
-        {/*   title="Quick Find" */}
-        {/*   onPress={handleUnimplementedPress} */}
-        {/* /> */}
-        {/* <ListItem */}
-        {/*   title="Discover" */}
-        {/*   onPress={handleUnimplementedPress} */}
-        {/*   icon={ */}
-        {/*     <View style={{ width: 16 }}> */}
-        {/*       <Svg viewBox="0 0 16 16" fill="gray"> */}
-        {/*         <Path d="M8,0C3.582,0,0,3.582,0,8s3.582,8,8,8s8-3.582,8-8S12.418,0,8,0z M8,7L7.938,8h-1L7,7H5v2h1l1,1c0.313-0.333,1.021-1,2-1h1 l1,0.229C11.86,9.437,12.513,9.75,13,10v1l-0.938,1.407C10.993,13.393,9.569,14,8,14v-1l-1-1v-1l-2-1C4.018,9.547,3.25,8.938,3,8 L2.785,6c0-0.187,0.435-0.867,0.55-1L3.278,4.307C4.18,3.154,5.494,2.343,7,2.09V3.5L8,4c0.3,0,0.609-0.045,1-0.417 C9.382,3.22,9.719,3,10,3c0.698,0,1,0.208,1,1l-0.5,1h-0.311C9.612,5.279,9.261,5.506,9,6C8.749,6.475,8.475,6.773,8,7z M13,8 c-0.417-0.25-0.771-0.583-1-1V6l0.797-1.593C13.549,5.409,14,6.65,14,8c0,0.165-0.012,0.326-0.025,0.488L13,8z" /> */}
-        {/*       </Svg> */}
-        {/*     </View> */}
-        {/*   } */}
-        {/* /> */}
-
-        {/* <View style={{ height: 24 }} /> */}
-
-        {/* <View style={{ height: 14.5 }} /> */}
-
-        {/* <View */}
-        {/*   style={{ */}
-        {/*     paddingHorizontal: 20, */}
-        {/*     paddingBottom: 19.5, */}
-        {/*     // marginBottom: 9, */}
-        {/*   }} */}
-        {/* > */}
-        {/*   <View */}
-        {/*     style={{ */}
-        {/*       borderColor: "hsla(0, 0%, 100%, 0.13)", */}
-        {/*       borderWidth: 1, */}
-        {/*       borderRadius: 5, */}
-        {/*       paddingHorizontal: 12, */}
-        {/*       height: 39, */}
-        {/*       justifyContent: "center", */}
-        {/*     }} */}
-        {/*   > */}
-        {/*     <Text style={{ color: "gray", fontSize: 16 }}>Jump to...</Text> */}
-        {/*   </View> */}
-        {/* </View> */}
-
-        <View style={{ height: 10 }} />
-
-        {starredChannels.length !== 0 && (
-          <CollapsableSection
-            title="Starred"
-            expanded={!collapsedIds.includes("starred")}
-            onToggleExpanded={() => {
-              LayoutAnimation.configureNext(
-                LayoutAnimation.Presets.easeInEaseOut
-              );
-              setCollapsedIds((ids) =>
-                ids.includes("starred")
-                  ? ids.filter((id) => id !== "starred")
-                  : [...ids, "starred"]
-              );
-            }}
-          >
-            {starredChannels.map((c) => (
+        {searchQuery.trim().length >= 2 ? (
+          <>
+            {filteredChannels.map((c) => (
               <ChannelItem
                 key={c.id}
                 id={c.id}
@@ -208,42 +176,74 @@ const ChannelList = ({ navigation }) => {
                 }}
               />
             ))}
-          </CollapsableSection>
-        )}
-
-        {channels.length !== 0 && (
-          <CollapsableSection
-            title="Channels"
-            expanded={!collapsedIds.includes("channels")}
-            onToggleExpanded={() => {
-              LayoutAnimation.configureNext(
-                LayoutAnimation.Presets.easeInEaseOut
-              );
-              setCollapsedIds((ids) =>
-                ids.includes("channels")
-                  ? ids.filter((id) => id !== "channels")
-                  : [...ids, "channels"]
-              );
-            }}
-          >
-            {channels.map((c) => (
-              <ChannelItem
-                key={c.id}
-                id={c.id}
-                name={c.name}
-                kind={c.kind}
-                avatar={c.avatar}
-                hasUnread={state.selectChannelHasUnread(c.id)}
-                notificationCount={state.selectChannelMentionCount(c.id)}
-                onPress={() => {
-                  navigation.navigate("Channel", { channelId: c.id });
+          </>
+        ) : (
+          <>
+            {starredChannels.length !== 0 && (
+              <CollapsableSection
+                title="Starred"
+                expanded={!collapsedIds.includes("starred")}
+                onToggleExpanded={() => {
+                  LayoutAnimation.configureNext(
+                    LayoutAnimation.Presets.easeInEaseOut
+                  );
+                  setCollapsedIds((ids) =>
+                    ids.includes("starred")
+                      ? ids.filter((id) => id !== "starred")
+                      : [...ids, "starred"]
+                  );
                 }}
-              />
-            ))}
-          </CollapsableSection>
-        )}
+              >
+                {starredChannels.map((c) => (
+                  <ChannelItem
+                    key={c.id}
+                    id={c.id}
+                    name={c.name}
+                    kind={c.kind}
+                    avatar={c.avatar}
+                    hasUnread={state.selectChannelHasUnread(c.id)}
+                    notificationCount={state.selectChannelMentionCount(c.id)}
+                    onPress={() => {
+                      navigation.navigate("Channel", { channelId: c.id });
+                    }}
+                  />
+                ))}
+              </CollapsableSection>
+            )}
 
-        <View style={{ height: 30 }} />
+            {channels.length !== 0 && (
+              <CollapsableSection
+                title="Channels"
+                expanded={!collapsedIds.includes("channels")}
+                onToggleExpanded={() => {
+                  LayoutAnimation.configureNext(
+                    LayoutAnimation.Presets.easeInEaseOut
+                  );
+                  setCollapsedIds((ids) =>
+                    ids.includes("channels")
+                      ? ids.filter((id) => id !== "channels")
+                      : [...ids, "channels"]
+                  );
+                }}
+              >
+                {channels.map((c) => (
+                  <ChannelItem
+                    key={c.id}
+                    id={c.id}
+                    name={c.name}
+                    kind={c.kind}
+                    avatar={c.avatar}
+                    hasUnread={state.selectChannelHasUnread(c.id)}
+                    notificationCount={state.selectChannelMentionCount(c.id)}
+                    onPress={() => {
+                      navigation.navigate("Channel", { channelId: c.id });
+                    }}
+                  />
+                ))}
+              </CollapsableSection>
+            )}
+          </>
+        )}
       </ScrollView>
     </SafeAreaView>
   );
