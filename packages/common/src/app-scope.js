@@ -1,6 +1,7 @@
 import React from "react";
 import { useAuth } from "./auth";
 import { generateDummyId } from "./utils/misc";
+import { pickKeys } from "./utils/object";
 import invariant from "./utils/invariant";
 import useRootReducer from "./hooks/root-reducer";
 import useLatestCallback from "./hooks/latest-callback";
@@ -533,8 +534,8 @@ export const Provider = ({ children }) => {
   const fetchStarredItems = useLatestCallback(() =>
     authorizedFetch("/stars", { priority: "low" }).then((res) => {
       dispatch({
-        type: "fetch-starred-channels-request-successful",
-        stars: res.map((s) => ({ id: s.id, channelId: s.reference })),
+        type: "fetch-starred-items-request-successful",
+        stars: res.map((s) => pickKeys(["id", "type", "reference"], s)),
       });
       return res;
     })
@@ -565,15 +566,24 @@ export const Provider = ({ children }) => {
     return { user, channels, readStates, starredItems };
   });
 
-  const starChannel = useLatestCallback((channelId) =>
+  const starItem = useLatestCallback(({ type, reference }) =>
     authorizedFetch("/stars", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ type: "channel", reference: channelId }),
-    }).then((res) => {
+      body: JSON.stringify({ type, reference }),
+    })
+  );
+
+  const unstarItem = useLatestCallback((starId) =>
+    authorizedFetch(`/stars/${starId}`, { method: "DELETE" })
+  );
+
+  const starChannel = useLatestCallback((channelId) =>
+    starItem({ type: "channel", reference: channelId }).then((res) => {
       dispatch({
         type: "star-channel-request-successful",
-        star: { id: res.id, channelId },
+        channelId,
+        star: { id: res.id },
       });
       return res;
     })
@@ -581,12 +591,29 @@ export const Provider = ({ children }) => {
 
   const unstarChannel = useLatestCallback((channelId) => {
     const starId = stateSelectors.selectChannelStarId(channelId);
-    return authorizedFetch(`/stars/${starId}`, { method: "DELETE" }).then(
-      (res) => {
-        dispatch({ type: "unstar-channel-request-successful", channelId });
-        return res;
-      }
-    );
+    return unstarItem(starId).then((res) => {
+      dispatch({ type: "unstar-channel-request-successful", channelId });
+      return res;
+    });
+  });
+
+  const starUser = useLatestCallback((userId) =>
+    starItem({ type: "user", reference: userId }).then((res) => {
+      dispatch({
+        type: "star-user-request-successful",
+        userId,
+        star: { id: res.id },
+      });
+      return res;
+    })
+  );
+
+  const unstarUser = useLatestCallback((userId) => {
+    const starId = stateSelectors.selectUserStarId(userId);
+    return unstarItem(starId).then((res) => {
+      dispatch({ type: "unstar-user-request-successful", userId });
+      return res;
+    });
   });
 
   const uploadImage = useLatestCallback(({ files }) => {
@@ -642,6 +669,8 @@ export const Provider = ({ children }) => {
       fetchStarredItems,
       starChannel,
       unstarChannel,
+      starUser,
+      unstarUser,
       fetchApps,
       uploadImage,
       registerChannelTypingActivity,
@@ -682,6 +711,8 @@ export const Provider = ({ children }) => {
       fetchStarredItems,
       starChannel,
       unstarChannel,
+      starUser,
+      unstarUser,
       fetchApps,
       uploadImage,
       registerChannelTypingActivity,

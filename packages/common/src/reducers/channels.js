@@ -117,11 +117,13 @@ const metaById = (state = {}, action) => {
 
 const starsByChannelId = (state = [], action) => {
   switch (action.type) {
-    case "fetch-starred-channels-request-successful":
-      return indexBy((s) => s.channelId, action.stars);
+    case "fetch-starred-items-request-successful": {
+      const channelStars = action.stars.filter((s) => s.type === "channel");
+      return indexBy((s) => s.reference, channelStars);
+    }
 
     case "star-channel-request-successful":
-      return { ...state, [action.star.channelId]: action.star };
+      return { ...state, [action.channelId]: action.star };
 
     case "unstar-channel-request-successful":
       return omitKey(action.channelId, state);

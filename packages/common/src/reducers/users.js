@@ -1,5 +1,5 @@
 import { createSelector } from "reselect";
-import { mapValues, omitKeys } from "../utils/object";
+import { mapValues, omitKey } from "../utils/object";
 import { indexBy } from "../utils/array";
 import combineReducers from "../utils/combine-reducers";
 import { arrayShallowEquals } from "../utils/reselect";
@@ -19,7 +19,7 @@ const entriesById = (state = {}, action) => {
         if (user.id !== action.data.user) return user;
         return {
           ...user,
-          ...omitKeys(["user"], action.data),
+          ...omitKey("user", action.data),
         };
       }, state);
 
@@ -41,6 +41,27 @@ const entriesById = (state = {}, action) => {
 
     case "logout":
       return {};
+
+    default:
+      return state;
+  }
+};
+
+const starsByUserId = (state = [], action) => {
+  switch (action.type) {
+    case "fetch-starred-items-request-successful": {
+      const userStars = action.stars.filter((s) => s.type === "user");
+      return indexBy((s) => s.reference, userStars);
+    }
+
+    case "star-user-request-successful":
+      return { ...state, [action.userId]: action.star };
+
+    case "unstar-user-request-successful":
+      return omitKey(action.userId, state);
+
+    case "logout":
+      return [];
 
     default:
       return state;
@@ -90,4 +111,19 @@ export const selectUserFromWalletAddress = (state, address) =>
     (u) => u.walletAddress.toLowerCase() === address.toLowerCase()
   );
 
-export default combineReducers({ entriesById });
+export const selectStarredUsers = createSelector(
+  (state) =>
+    Object.keys(state.users.starsByUserId)
+      .map((id) => selectUser(state, id))
+      .filter(Boolean),
+  (users) => users,
+  { memoizeOptions: { equalityCheck: arrayShallowEquals } }
+);
+
+export const selectIsUserStarred = (state, id) =>
+  selectUserStarId(state, id) != null;
+
+export const selectUserStarId = (state, userId) =>
+  state.users.starsByUserId[userId]?.id;
+
+export default combineReducers({ entriesById, starsByUserId });
