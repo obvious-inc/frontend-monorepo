@@ -451,7 +451,7 @@ export const Provider = ({ children }) => {
     authorizedFetch("/stars", { priority: "low" }).then((res) => {
       dispatch({
         type: "fetch-starred-channels-request-successful",
-        stars: res.map((s) => ({ id: s.id, channelId: s.channel })),
+        stars: res.map((s) => ({ id: s.id, channelId: s.reference })),
       });
       return res;
     })
@@ -486,7 +486,7 @@ export const Provider = ({ children }) => {
     authorizedFetch("/stars", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ channel: channelId }),
+      body: JSON.stringify({ type: "channel", reference: channelId }),
     }).then((res) => {
       dispatch({
         type: "star-channel-request-successful",
