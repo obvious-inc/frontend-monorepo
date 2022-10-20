@@ -11,7 +11,7 @@ const commands = {
         return;
       }
 
-      const channel = await actions.createChannel({ name });
+      const channel = await actions.createPrivateChannel({ name });
       editor.clear();
       navigate(`/channels/${channel.id}`);
     },

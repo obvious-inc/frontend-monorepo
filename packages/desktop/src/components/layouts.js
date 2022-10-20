@@ -71,7 +71,6 @@ export const UnifiedLayout = () => {
 
   return (
     <SideMenuLayout
-      hideMainMenu
       header={
         user == null ? null : (
           <DropdownMenu.Root>

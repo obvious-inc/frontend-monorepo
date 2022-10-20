@@ -2,7 +2,6 @@ import { useNavigate } from "react-router-dom";
 import { css } from "@emotion/react";
 import { useAppScope } from "@shades/common/app";
 import useSideMenu from "../hooks/side-menu";
-import MainMenu from "./main-menu";
 import Spinner from "./spinner";
 
 const isNative = window.Native != null;
@@ -10,7 +9,6 @@ const isNative = window.Native != null;
 const SideMenuLayout = ({
   title,
   header,
-  hideMainMenu,
   filterable,
   sidebarContent,
   children,
@@ -59,7 +57,6 @@ const SideMenuLayout = ({
           })
         }
       >
-        {!hideMainMenu && <MainMenu />}
         <div
           css={css({
             flex: 1,
@@ -146,7 +143,7 @@ const SideMenuLayout = ({
               const name = prompt("Channel name");
               if (name == null) return;
               actions
-                .createChannel({
+                .createPrivateChannel({
                   name: name.trim() === "" ? "Untitled" : name.trim(),
                 })
                 .then((c) => {

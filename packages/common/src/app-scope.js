@@ -280,7 +280,13 @@ export const Provider = ({ children }) => {
   );
 
   const createChannel = useLatestCallback(
-    ({ name, description, memberUserIds, memberWalletAddresses }) => {
+    ({
+      name,
+      description,
+      memberUserIds,
+      memberWalletAddresses,
+      permissionOverwrites,
+    }) => {
       return authorizedFetch("/channels", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -289,6 +295,7 @@ export const Provider = ({ children }) => {
           name,
           description,
           members: memberWalletAddresses ?? memberUserIds,
+          permission_overwrites: permissionOverwrites,
         }),
       }).then((res) => {
         // TODO
@@ -318,57 +325,40 @@ export const Provider = ({ children }) => {
   );
 
   const createOpenChannel = useLatestCallback(({ name, description }) =>
-    createChannel({ name, description }).then((channel) => {
-      const publicPermissions = [
-        "channels.view",
-        "channels.members.list",
-        "messages.list",
-        "channels.join",
-      ];
-      const membersPermissions = [...publicPermissions, "messages.create"];
-      const ownersPermission = [
-        ...membersPermissions,
-        "channels.delete",
-        "apps.manage",
-      ];
-      return updateChannelPermissions(channel.id, [
-        { group: "@owners", permissions: ownersPermission },
-        { group: "@members", permissions: membersPermissions },
-        { group: "@public", permissions: publicPermissions },
-      ]).then(() => {
-        fetchUserChannels();
-        return channel;
-      });
+    createChannel({
+      name,
+      description,
+      permissionOverwrites: [
+        {
+          group: "@public",
+          permissions: [
+            "channels.view",
+            "channels.members.list",
+            "messages.list",
+            "channels.join",
+          ],
+        },
+      ],
     })
   );
 
   const createClosedChannel = useLatestCallback(
-    ({ name, description, memberUserIds, memberWalletAddresses }) =>
+    ({ name, description, memberWalletAddresses, memberUserIds }) =>
       createChannel({
         name,
         description,
         memberWalletAddresses,
         memberUserIds,
-      }).then((channel) => {
-        const publicPermissions = [
-          "channels.view",
-          "channels.members.list",
-          "messages.list",
-        ];
-        const membersPermissions = [...publicPermissions, "messages.create"];
-        const ownersPermission = [
-          ...membersPermissions,
-          "channels.delete",
-          "apps.manage",
-        ];
-        return updateChannelPermissions(channel.id, [
-          { group: "@owners", permissions: ownersPermission },
-          { group: "@members", permissions: membersPermissions },
-          { group: "@public", permissions: publicPermissions },
-        ]).then(() => {
-          fetchUserChannels();
-          return channel;
-        });
+        permissionOverwrites: [
+          {
+            group: "@public",
+            permissions: [
+              "channels.view",
+              "channels.members.list",
+              "messages.list",
+            ],
+          },
+        ],
       })
   );
 
@@ -379,26 +369,6 @@ export const Provider = ({ children }) => {
         description,
         memberWalletAddresses,
         memberUserIds,
-      }).then((channel) => {
-        const memberPermissions = [
-          "messages.create",
-          "messages.list",
-          "channels.view",
-          "channels.members.list",
-        ];
-        const ownersPermissions = [
-          ...memberPermissions,
-          "channels.delete",
-          "apps.manage",
-        ];
-        return updateChannelPermissions(channel.id, [
-          { group: "@owners", permissions: ownersPermissions },
-          { group: "@members", permissions: memberPermissions },
-          { group: "@public", permissions: [] },
-        ]).then(() => {
-          fetchUserChannels();
-          return channel;
-        });
       })
   );
 
@@ -645,7 +615,6 @@ export const Provider = ({ children }) => {
       fetchUserChannels,
       fetchUserChannelsReadStates,
       fetchChannel,
-      createChannel,
       createDmChannel,
       createOpenChannel,
       createClosedChannel,
@@ -687,7 +656,6 @@ export const Provider = ({ children }) => {
       fetchUserChannels,
       fetchUserChannelsReadStates,
       fetchChannel,
-      createChannel,
       createDmChannel,
       createOpenChannel,
       createClosedChannel,
