@@ -1305,7 +1305,6 @@ const Channel = ({ compact, noSideMenu }) => {
 
   const [notFound, setNotFound] = React.useState(false);
   const [isMembersDialogOpen, setMembersDialogOpen] = React.useState(false);
-  console.log("render open", isMembersDialogOpen);
 
   const isMenuTogglingEnabled = !noSideMenu && isSideMenuFloating;
 
@@ -1494,7 +1493,6 @@ const Channel = ({ compact, noSideMenu }) => {
                   <Dialog
                     isOpen={isMembersDialogOpen}
                     onRequestClose={() => {
-                      console.log("request close");
                       setMembersDialogOpen(false);
                     }}
                     style={{ display: "flex", flexDirection: "column" }}

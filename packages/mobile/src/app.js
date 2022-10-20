@@ -261,11 +261,6 @@ const CreateChannelModalStack = () => (
       options={newChatScreenOptions}
     />
     <NativeStackNavigator.Screen
-      name="New Group"
-      component={NewGroupScreen}
-      options={newGroupScreenOptions}
-    />
-    <NativeStackNavigator.Screen
       name="New Open"
       component={NewOpenChannelScreen}
       options={newOpenChannelScreenOptions}
@@ -281,14 +276,12 @@ const CreateChannelModalStack = () => (
       options={newPrivateChannelScreenOptions}
     />
     <NativeStackNavigator.Screen
-      name="Create group"
-      component={CreateChannelScreen}
-      options={{ title: "...", headerTintColor: textDefault }}
+      name="New Group"
+      component={NewGroupScreen}
+      options={newGroupScreenOptions}
     />
   </NativeStackNavigator.Navigator>
 );
-
-const CreateChannelScreen = () => <View />;
 
 const SignInView = ({ onSuccess, onError }) => (
   // Web login for now

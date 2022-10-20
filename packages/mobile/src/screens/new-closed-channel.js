@@ -151,7 +151,7 @@ const NewClosed = ({ navigation }) => {
             label: "Next",
             disabled: !hasMembers,
             onPress: () =>
-              navigation.navigate("Create group", { members, type: "closed" }),
+              navigation.navigate("New Group", { members, type: "closed" }),
           }}
         />
       ),
@@ -193,6 +193,7 @@ const NewClosed = ({ navigation }) => {
           value={pendingInput}
           placeholder="ENS or wallet address"
           onChangeText={setPendingInput}
+          keyboardType="web-search"
         />
         {/* <Text style={{ marginTop: 16, color: "hsl(0,0%,50%)", fontSize: 14 }}> */}
         {/*   Find groups Add members by their ENS name or wallet address. */}
@@ -286,11 +287,13 @@ const NewClosed = ({ navigation }) => {
   );
 };
 
-const HorizontalUserListItem = ({ address, displayName, onPress }) => {
+export const HorizontalUserListItem = ({ address, displayName, onPress }) => {
   const { data: ensName } = useEnsName({ address });
+  const isPressable = typeof onPress === "function";
   return (
     <Pressable
       onPress={onPress}
+      disabled={!isPressable}
       style={{
         width: 62,
         alignItems: "center",
@@ -299,35 +302,38 @@ const HorizontalUserListItem = ({ address, displayName, onPress }) => {
         paddingVertical: 5,
       }}
     >
-      <View
-        style={{
-          position: "relative",
-        }}
-      >
+      <View style={{ position: "relative" }}>
         <UserProfilePicture
           transparent
           size={38}
           user={{ walletAddress: address }}
         />
-        <View
-          style={{
-            position: "absolute",
-            top: -7,
-            right: -7,
-            width: 20,
-            height: 20,
-            borderRadius: 10,
-            backgroundColor: "hsl(0,0%,14%)",
-            borderWidth: 2,
-            borderColor: "hsl(0,0%,10%)",
-            alignItems: "center",
-            justifyContent: "center",
-          }}
-        >
-          <Svg width="10" height="10" viewBox="0 0 16 16" fill="hsl(0,0%,83%)">
-            <Path d="M3.732 11.052c-.303.308-.32.877.011 1.202.33.33.894.32 1.203.011L8 9.21l3.05 3.05c.32.325.872.32 1.197-.011a.857.857 0 00.01-1.197L9.21 8.002l3.05-3.056a.857.857 0 00-.01-1.197.857.857 0 00-1.198-.01L8 6.788 4.946 3.732c-.31-.303-.878-.32-1.203.01-.325.331-.314.895-.01 1.203l3.055 3.056-3.056 3.05z" />
-          </Svg>
-        </View>
+        {isPressable && (
+          <View
+            style={{
+              position: "absolute",
+              top: -7,
+              right: -7,
+              width: 20,
+              height: 20,
+              borderRadius: 10,
+              backgroundColor: "hsl(0,0%,14%)",
+              borderWidth: 2,
+              borderColor: "hsl(0,0%,10%)",
+              alignItems: "center",
+              justifyContent: "center",
+            }}
+          >
+            <Svg
+              width="10"
+              height="10"
+              viewBox="0 0 16 16"
+              fill="hsl(0,0%,83%)"
+            >
+              <Path d="M3.732 11.052c-.303.308-.32.877.011 1.202.33.33.894.32 1.203.011L8 9.21l3.05 3.05c.32.325.872.32 1.197-.011a.857.857 0 00.01-1.197L9.21 8.002l3.05-3.056a.857.857 0 00-.01-1.197.857.857 0 00-1.198-.01L8 6.788 4.946 3.732c-.31-.303-.878-.32-1.203.01-.325.331-.314.895-.01 1.203l3.055 3.056-3.056 3.05z" />
+            </Svg>
+          </View>
+        )}
       </View>
       <Text
         numberOfLines={1}

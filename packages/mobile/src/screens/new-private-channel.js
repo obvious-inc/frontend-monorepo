@@ -1,5 +1,4 @@
 import { useEnsAddress } from "wagmi";
-import { useEnsName } from "wagmi";
 import { utils as ethersUtils } from "ethers";
 import React from "react";
 import {
@@ -13,7 +12,7 @@ import {
 import Svg, { Path } from "react-native-svg";
 import * as Shades from "@shades/common";
 import { Input, UserListItem } from "./new-chat";
-import { UserProfilePicture } from "./channel-list";
+import { HorizontalUserListItem } from "./new-closed-channel";
 
 const { useAppScope } = Shades.app;
 const { useLatestCallback } = Shades.react;
@@ -151,7 +150,7 @@ const NewPrivate = ({ navigation }) => {
             label: "Next",
             disabled: !hasMembers,
             onPress: () =>
-              navigation.navigate("Create group", { members, type: "private" }),
+              navigation.navigate("New Group", { members, type: "private" }),
           }}
         />
       ),
@@ -193,6 +192,7 @@ const NewPrivate = ({ navigation }) => {
           value={pendingInput}
           placeholder="ENS or wallet address"
           onChangeText={setPendingInput}
+          keyboardType="web-search"
         />
         {/* <Text style={{ marginTop: 16, color: "hsl(0,0%,50%)", fontSize: 14 }}> */}
         {/*   Find groups Add members by their ENS name or wallet address. */}
@@ -283,66 +283,6 @@ const NewPrivate = ({ navigation }) => {
         contentContainerStyle={{ paddingTop: 5, paddingBottom: 20 }}
       />
     </View>
-  );
-};
-
-const HorizontalUserListItem = ({ address, onPress }) => {
-  const { data: ensName } = useEnsName({ address });
-  return (
-    <Pressable
-      onPress={onPress}
-      style={{
-        width: 62,
-        alignItems: "center",
-        justifyContent: "center",
-        paddingHorizontal: 2,
-        paddingVertical: 5,
-      }}
-    >
-      <View
-        style={{
-          position: "relative",
-        }}
-      >
-        <UserProfilePicture
-          transparent
-          size={38}
-          user={{ walletAddress: address }}
-        />
-        <View
-          style={{
-            position: "absolute",
-            top: -7,
-            right: -7,
-            width: 20,
-            height: 20,
-            borderRadius: 10,
-            backgroundColor: "hsl(0,0%,14%)",
-            borderWidth: 2,
-            borderColor: "hsl(0,0%,10%)",
-            alignItems: "center",
-            justifyContent: "center",
-          }}
-        >
-          <Svg width="10" height="10" viewBox="0 0 16 16" fill="hsl(0,0%,83%)">
-            <Path d="M3.732 11.052c-.303.308-.32.877.011 1.202.33.33.894.32 1.203.011L8 9.21l3.05 3.05c.32.325.872.32 1.197-.011a.857.857 0 00.01-1.197L9.21 8.002l3.05-3.056a.857.857 0 00-.01-1.197.857.857 0 00-1.198-.01L8 6.788 4.946 3.732c-.31-.303-.878-.32-1.203.01-.325.331-.314.895-.01 1.203l3.055 3.056-3.056 3.05z" />
-          </Svg>
-        </View>
-      </View>
-      <Text
-        numberOfLines={1}
-        ellipsizeMode="tail"
-        style={{
-          color: textDimmed,
-          fontSize: 11,
-          fontWeight: "400",
-          lineHeight: 17,
-          marginTop: 4,
-        }}
-      >
-        {ensName ?? [address.slice(0, 4), address.slice(-2)].join("...")}
-      </Text>
-    </Pressable>
   );
 };
 

@@ -151,6 +151,7 @@ const SideMenuLayout = ({
                 })
                 .then((c) => {
                   navigate(`/channels/${c.id}`);
+                  toggleMenu();
                 });
             }}
           >

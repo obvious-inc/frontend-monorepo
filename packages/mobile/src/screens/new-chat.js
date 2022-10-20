@@ -10,9 +10,7 @@ import {
   FlatList,
 } from "react-native";
 import Svg, { Path } from "react-native-svg";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useNavigation } from "@react-navigation/native";
-import { useHeaderHeight } from "@react-navigation/elements";
 import * as Shades from "@shades/common";
 import { UserProfilePicture } from "./channel-list";
 
@@ -49,8 +47,7 @@ const groupTypeOptions = [
   {
     label: "Open",
     description: "Anyone can see and join",
-    // link: "New Open",
-    link: "Create group",
+    link: "New Group",
     icon: (
       <Svg
         width="24"
@@ -145,11 +142,32 @@ const useKeyboardStatus = () => {
   return status;
 };
 
+export const useAsyncDismissKeyboard = () => {
+  const keyboardStatus = useKeyboardStatus();
+
+  const dismiss = useLatestCallback(
+    () =>
+      new Promise((resolve) => {
+        if (keyboardStatus === "did-hide") {
+          resolve();
+          return;
+        }
+
+        const listener = Keyboard.addListener("keyboardDidHide", () => {
+          resolve();
+          listener.remove();
+        });
+
+        Keyboard.dismiss();
+      })
+  );
+
+  return dismiss;
+};
+
 const NewChat = ({ navigation }) => {
-  const headerHeight = useHeaderHeight();
   const { actions, state } = useAppScope();
 
-  const me = state.selectMe();
   const memberChannels = state.selectMemberChannels();
   const channelMemberUserIds = unique(
     memberChannels.flatMap((c) => c.memberUserIds)
@@ -204,8 +222,6 @@ const NewChat = ({ navigation }) => {
       ? null
       : state.selectUserFromWalletAddress(queryAddress);
 
-  const insets = useSafeAreaInsets();
-
   const fetchStarredUsers = useLatestCallback(() =>
     actions.fetchUsers(channelMemberUserIds)
   );
@@ -216,31 +232,22 @@ const NewChat = ({ navigation }) => {
 
   const [hasPendingSubmit, setPendingSubmit] = React.useState(false);
 
-  const keyboardStatus = useKeyboardStatus();
-
-  const navigateToChannel = useLatestCallback((channelId) => {
-    const navigate = () => {
-      navigation.replace("Channel", { channelId });
-    };
-
-    if (keyboardStatus === "did-hide") {
-      navigate();
-      return;
-    }
-
-    const listener = Keyboard.addListener("keyboardDidHide", () => {
-      navigate();
-      listener.remove();
-    });
-
-    Keyboard.dismiss();
-  });
+  const dismissKeyboard = useAsyncDismissKeyboard();
 
   const dmAddress = (address) => {
-    const createDm = () =>
-      actions
+    const navigateToChannel = (channelId) =>
+      navigation.replace("Channel", { channelId });
+
+    const createDm = () => {
+      dismissKeyboard();
+      return actions
         .createDmChannel({ memberWalletAddresses: [address] })
-        .then((channel) => navigateToChannel(channel.id));
+        .then((channel) =>
+          dismissKeyboard().then(() =>
+            navigation.replace("Channel", { channelId: channel.id })
+          )
+        );
+    };
 
     setPendingSubmit(true);
 
@@ -253,7 +260,7 @@ const NewChat = ({ navigation }) => {
       return;
     }
 
-    navigateToChannel(dmChannel.id);
+    dismissKeyboard().then(() => navigateToChannel(dmChannel.id));
   };
 
   React.useEffect(() => {}, [hasPendingSubmit]);
@@ -268,6 +275,7 @@ const NewChat = ({ navigation }) => {
           placeholder="ENS or wallet address"
           onChangeText={setPendingInput}
           disabled={hasPendingSubmit}
+          keyboardType="web-search"
         />
         {/* <Text style={{ marginTop: 16, color: "hsl(0,0%,50%)", fontSize: 14 }}> */}
         {/*   Find groups Add members by their ENS name or wallet address. */}
@@ -505,23 +513,22 @@ const ListItem = ({
   );
 };
 
-export const Input = React.forwardRef((props, ref) => (
+export const Input = React.forwardRef(({ style, ...props }, ref) => (
   <View
     style={{
-      justifyContent: "center",
       paddingLeft: 16,
       paddingRight: 5,
       paddingVertical: 8,
       backgroundColor: "hsl(0,0%,14%)",
       borderRadius: 12,
       width: "100%",
+      ...style,
     }}
   >
     <TextInput
       ref={ref}
       placeholderTextColor={textDimmed}
       keyboardAppearance="dark"
-      keyboardType="web-search"
       clearButtonMode="always"
       autoCapitalize="none"
       returnKeyType="done"
@@ -531,7 +538,9 @@ export const Input = React.forwardRef((props, ref) => (
         color: textDefault,
         fontSize: 16,
         lineHeight: 20,
-        paddingVertical: 2,
+        // Need to split the vertial padding to have it work for multiline
+        paddingTop: 2,
+        paddingBottom: 2,
       }}
       {...props}
     />

@@ -50,7 +50,7 @@ const entriesById = (state = {}, action) => {
     }
 
     case "delete-channel-request-successful":
-      return omitKey(action.id, state);
+      return { ...state, [action.id]: { deleted: true } };
 
     case "server-event:channel-updated": {
       const channelId = action.data.channel.id;
@@ -270,7 +270,7 @@ export const selectChannel = createSelector(
     return channel.memberUserIds.map((userId) => selectUser(state, userId));
   },
   (channel, loggedInUser, channelMemberUsers) => {
-    if (channel == null) return null;
+    if (channel == null || channel.deleted) return null;
 
     const buildName = () => {
       if (channel.kind !== "dm" || channel.name != null) return channel.name;
@@ -366,7 +366,11 @@ export const selectMemberChannels = createSelector(
     if (state.me.user == null) return [];
 
     const channels = Object.entries(state.channels.entriesById)
-      .filter((entry) => entry[1].memberUserIds?.includes(state.me.user.id))
+      .filter(
+        (entry) =>
+          !entry[1].deleted &&
+          entry[1].memberUserIds?.includes(state.me.user.id)
+      )
       .map(([id]) => selectChannel(state, id));
 
     return sort((c1, c2) => {
@@ -384,7 +388,7 @@ export const selectMemberChannels = createSelector(
 export const selectDmChannels = createSelector(
   (state) => {
     const channels = Object.entries(state.channels.entriesById)
-      .filter((entry) => entry[1].kind === "dm")
+      .filter((entry) => !entry[1].delete && entry[1].kind === "dm")
       .map(([id]) => selectChannel(state, id));
 
     return sort((c1, c2) => {
@@ -451,8 +455,8 @@ export const selectDmAndTopicChannels = createSelector(
 export const selectChannelMembers = createSelector(
   (state, channelId) => {
     const channel = state.channels.entriesById[channelId];
-    if (channel == null) return [];
-    return channel.memberUserIds.map((id) => {
+    if (channel == null || channel.deleted) return [];
+    return channel.memberUserIds?.map((id) => {
       const user = selectUser(state, id);
       return { ...user, id, isOwner: id === channel.ownerUserId };
     });

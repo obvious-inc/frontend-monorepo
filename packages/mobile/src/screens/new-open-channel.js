@@ -151,7 +151,7 @@ const NewOpen = ({ navigation }) => {
             label: "Next",
             disabled: !hasMembers,
             onPress: () =>
-              navigation.navigate("Create Group", { members, type: "closed" }),
+              navigation.navigate("New Group", { members, type: "closed" }),
           }}
         />
       ),
