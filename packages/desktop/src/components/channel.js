@@ -344,13 +344,12 @@ export const ChannelBase = ({
 
   const isMember = user != null && channel.memberUserIds.includes(user.id);
 
-  const hasWriteAccess =
-    isMember || ["open", "private"].includes(channelAccessLevel);
+  const canPost =
+    channelAccessLevel === "open"
+      ? authenticationStatus === "authenticated"
+      : isMember;
 
-  // const mightHaveWriteAccess =
-  //   hasWriteAccess || (channelAccessLevel === "closed" && user == null);
-
-  const disableInput = (user == null && !hasConnectedWallet) || !hasWriteAccess; // !mightHaveWriteAccess;
+  const disableInput = !canPost;
 
   React.useEffect(() => {
     if (!inputDeviceCanHover || disableInput) return;
@@ -523,7 +522,6 @@ export const ChannelBase = ({
 
   const inputPlaceholder = (() => {
     if (channel.kind === "dm") return `Message ${channel.name}`;
-    if (isMember) return `Message #${channel.name}`;
 
     const isAuthenticated = authenticationStatus === "authenticated";
 
@@ -541,8 +539,8 @@ export const ChannelBase = ({
 
         const walletAddressIsMember = members.some(
           (m) =>
-            m.walletAddres != null &&
-            m.walletAddress.toLowerCase() === walletAccountAddress
+            m.walletAddress != null &&
+            m.walletAddress.toLowerCase() === walletAccountAddress.toLowerCase()
         );
 
         return walletAddressIsMember
@@ -558,7 +556,7 @@ export const ChannelBase = ({
       }
 
       default:
-        return "";
+        return isMember ? `Message #${channel.name}` : "";
     }
   })();
 
