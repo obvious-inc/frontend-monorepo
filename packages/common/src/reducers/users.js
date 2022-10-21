@@ -111,9 +111,15 @@ export const selectUserFromWalletAddress = (state, address) =>
     (u) => u.walletAddress.toLowerCase() === address.toLowerCase()
   );
 
+export const selectStarredUserIds = createSelector(
+  (state) => Object.keys(state.users.starsByUserId),
+  (userIds) => userIds,
+  { memoizeOptions: { equalityCheck: arrayShallowEquals } }
+);
+
 export const selectStarredUsers = createSelector(
   (state) =>
-    Object.keys(state.users.starsByUserId)
+    selectStarredUserIds(state)
       .map((id) => selectUser(state, id))
       .filter(Boolean),
   (users) => users,

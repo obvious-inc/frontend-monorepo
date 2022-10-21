@@ -17,14 +17,33 @@ const textDimmed = "hsl(0,0%,50%)";
 export const options = { presentation: "modal" };
 
 const UserModal = ({ route }) => {
-  const { state } = useAppScope();
-  const user = state.selectUser(route.params.userId);
+  const { userId } = route.params;
+  const { state, actions } = useAppScope();
+  const me = state.selectMe();
+  const isMe = me.id === userId;
+  const user = state.selectUser(userId);
   const { data: ensName } = useEnsName({ address: user.walletAddress });
   const [didRecentlyCopyAddress, setDidRecentlyCopyAddress] =
     React.useState(false);
+  const [hasPendingStarRequest, setPendingStarRequest] = React.useState(false);
+  const isStarred = state.selectIsUserStarred(userId);
 
-  const actions = [
+  const actionItems = [
     { label: "Send message", disabled: true, onPress: () => {} },
+    {
+      label: isStarred ? "Remove from favorites" : "Add to favorites",
+      disabled: hasPendingStarRequest,
+      onPress: () => {
+        setPendingStarRequest(true);
+        const promise = isStarred
+          ? actions.unstarUser(userId)
+          : actions.starUser(userId);
+        promise.finally(() => {
+          setPendingStarRequest(false);
+        });
+      },
+      isHidden: isMe,
+    },
     {
       label: didRecentlyCopyAddress
         ? "Wallet address copied to clipboard"
@@ -38,7 +57,8 @@ const UserModal = ({ route }) => {
         });
       },
     },
-  ];
+  ].filter((i) => !i.isHidden);
+
   const truncatedAddress = truncateAddress(user.walletAddress);
   const userDisplayName = user.hasCustomDisplayName
     ? user.displayName
@@ -52,6 +72,7 @@ const UserModal = ({ route }) => {
       }}
     >
       <UserProfilePicture
+        transparent
         user={user}
         size={screen.width}
         large
@@ -91,7 +112,7 @@ const UserModal = ({ route }) => {
 
         <View style={{ height: 20 }} />
 
-        <ModalActionButtonGroup actions={actions} />
+        <ModalActionButtonGroup actions={actionItems} />
         <View style={{ height: 20 }} />
         <ModalActionButtonGroup
           actions={[

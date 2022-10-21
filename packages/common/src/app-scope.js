@@ -3,6 +3,11 @@ import { useAuth } from "./auth";
 import { generateDummyId } from "./utils/misc";
 import { pickKeys } from "./utils/object";
 import invariant from "./utils/invariant";
+import {
+  openChannelPermissionOverrides,
+  closedChannelPermissionOverrides,
+  privateChannelPermissionOverrides,
+} from "./utils/permissions";
 import useRootReducer from "./hooks/root-reducer";
 import useLatestCallback from "./hooks/latest-callback";
 
@@ -328,17 +333,7 @@ export const Provider = ({ children }) => {
     createChannel({
       name,
       description,
-      permissionOverwrites: [
-        {
-          group: "@public",
-          permissions: [
-            "channels.view",
-            "channels.members.list",
-            "messages.list",
-            "channels.join",
-          ],
-        },
-      ],
+      permissionOverwrites: openChannelPermissionOverrides,
     })
   );
 
@@ -349,16 +344,7 @@ export const Provider = ({ children }) => {
         description,
         memberWalletAddresses,
         memberUserIds,
-        permissionOverwrites: [
-          {
-            group: "@public",
-            permissions: [
-              "channels.view",
-              "channels.members.list",
-              "messages.list",
-            ],
-          },
-        ],
+        permissionOverwrites: closedChannelPermissionOverrides,
       })
   );
 
@@ -369,6 +355,7 @@ export const Provider = ({ children }) => {
         description,
         memberWalletAddresses,
         memberUserIds,
+        permissionOverwrites: privateChannelPermissionOverrides,
       })
   );
 
@@ -483,22 +470,15 @@ export const Provider = ({ children }) => {
     })
   );
 
-  const makeChannelPublic = useLatestCallback((channelId) =>
-    updateChannelPermissions(channelId, [
-      {
-        group: "@public",
-        permissions: [
-          "channels.join",
-          "channels.view",
-          "channels.members.list",
-          "messages.list",
-        ],
-      },
-    ])
+  const makeChannelOpen = useLatestCallback((channelId) =>
+    updateChannelPermissions(channelId, openChannelPermissionOverrides)
   );
 
+  const makeChannelClosed = useLatestCallback((channelId) =>
+    updateChannelPermissions(channelId, closedChannelPermissionOverrides)
+  );
   const makeChannelPrivate = useLatestCallback((channelId) =>
-    updateChannelPermissions(channelId, [{ group: "@public", permissions: [] }])
+    updateChannelPermissions(channelId, privateChannelPermissionOverrides)
   );
 
   const fetchStarredItems = useLatestCallback(() =>
@@ -523,6 +503,12 @@ export const Provider = ({ children }) => {
   const fetchClientBootData = useLatestCallback(async () => {
     const [{ user, channels, read_states: readStates, apps }, starredItems] =
       await Promise.all([authorizedFetch("/ready"), fetchStarredItems()]);
+
+    // TODO: Change this
+    const missingChannelStars = starredItems.filter(
+      (i) => i.type === "channel" && i.reference
+    );
+    for (const star of missingChannelStars) fetchChannel(star.reference);
 
     dispatch({
       type: "fetch-client-boot-data-request-successful",
@@ -627,7 +613,8 @@ export const Provider = ({ children }) => {
       leaveChannel,
       updateChannel,
       deleteChannel,
-      makeChannelPublic,
+      makeChannelOpen,
+      makeChannelClosed,
       makeChannelPrivate,
       createMessage,
       updateMessage,
@@ -660,7 +647,8 @@ export const Provider = ({ children }) => {
       createOpenChannel,
       createClosedChannel,
       createPrivateChannel,
-      makeChannelPublic,
+      makeChannelOpen,
+      makeChannelClosed,
       makeChannelPrivate,
       fetchChannelMembers,
       fetchChannelPublicPermissions,

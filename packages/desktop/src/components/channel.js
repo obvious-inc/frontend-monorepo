@@ -509,7 +509,19 @@ export const ChannelBase = ({
 
   const channelPrefix = channel.kind === "dm" ? "@" : "#";
 
-  const disableInput = user == null && !hasConnectedWallet;
+  // TODO: Move to selector logic
+  const hasAccess =
+    channel.kind === "dm"
+      ? true
+      : channelAccessLevel == null
+      ? null
+      : ["open", "private"].includes(channelAccessLevel) ||
+        (channelAccessLevel === "closed" &&
+          user != null &&
+          members.some((m) => m.id === user.id));
+
+  const disableInput =
+    (user == null && !hasConnectedWallet) || (hasAccess != null && !hasAccess);
 
   return (
     <div
@@ -600,7 +612,7 @@ export const ChannelBase = ({
                     {channel.kind === "topic" &&
                       channel.isAdmin &&
                       members.length <= 1 &&
-                      channelAccessLevel !== "unknown" && (
+                      channelAccessLevel != null && (
                         <div
                           css={(theme) =>
                             css({
@@ -610,7 +622,7 @@ export const ChannelBase = ({
                             })
                           }
                         >
-                          {channelAccessLevel === "public" ? (
+                          {channelAccessLevel === "open" ? (
                             <>
                               This channel is open for anyone to join. Share its
                               URL to help people find it!
@@ -698,8 +710,14 @@ export const ChannelBase = ({
           uploadImage={actions.uploadImage}
           submit={submitMessage}
           placeholder={
-            disableInput
+            hasAccess == null
+              ? `Message #${channel.name}` // Best guess
+              : !hasConnectedWallet
               ? "Connect wallet to chat"
+              : !hasAccess
+              ? user == null
+                ? "Verify account to chat"
+                : `Only members can post in #${channel.name}`
               : channel.kind === "dm"
               ? `Message ${channel.name}`
               : `Message #${channel.name}`
@@ -1323,6 +1341,7 @@ const Channel = ({ compact, noSideMenu }) => {
 
   const members = state.selectChannelMembers(params.channelId);
   const isFetchingMembers = members.some((m) => m.walletAddress == null);
+  const isMember = user != null && members.some((m) => m.id === user.id);
 
   const createMessage = useLatestCallback(
     async ({ blocks, replyToMessageId }) => {
@@ -1377,8 +1396,12 @@ const Channel = ({ compact, noSideMenu }) => {
       fetchMessages(params.channelId, { limit: 20 });
     },
     {
-      // Only long-poll fetch when user is logged out
-      delay: authenticationStatus === "not-authenticated" ? 5000 : 0,
+      // Only long-poll fetch when user is logged out, or when not a member
+      delay:
+        authenticationStatus === "not-authenticated" ||
+        (user != null && !isMember)
+          ? 5000
+          : 0,
       requireFocus: true,
       requireOnline: true,
     }

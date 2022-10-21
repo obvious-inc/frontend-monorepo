@@ -162,7 +162,11 @@ const HeaderLeft = () => {
           <>
             {(channel.kind === "dm" || channel.avatar != null) && (
               <View style={{ marginRight: 10 }}>
-                <ChannelPicture channelId={params.channelId} size={32} />
+                <ChannelPicture
+                  transparent
+                  channelId={params.channelId}
+                  size={32}
+                />
               </View>
             )}
             <View>
@@ -594,7 +598,11 @@ const Message = ({
                   selectUser(m.author.id);
                 }}
               >
-                <UserProfilePicture user={message.author} size={38} />
+                <UserProfilePicture
+                  transparent
+                  user={message.author}
+                  size={38}
+                />
               </Pressable>
             </View>
           )}

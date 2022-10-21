@@ -12,7 +12,7 @@ import {
 import Svg, { Path } from "react-native-svg";
 import * as Shades from "@shades/common";
 import { Input, UserListItem } from "./new-chat";
-import { HorizontalUserListItem } from "./new-closed-channel";
+import { useFilteredUsers, HorizontalUserListItem } from "./new-closed-channel";
 
 const { useAppScope } = Shades.app;
 const { useLatestCallback } = Shades.react;
@@ -41,20 +41,11 @@ const HeaderRight = ({ button: { label, disabled, onPress } }) => (
 );
 
 const NewPrivate = ({ navigation }) => {
-  const { actions, state } = useAppScope();
+  const { state } = useAppScope();
 
   const membersScrollViewRef = React.useRef();
 
   const me = state.selectMe();
-  const memberChannels = state.selectMemberChannels();
-  const channelMemberUserIds = unique(
-    memberChannels.flatMap((c) => c.memberUserIds)
-  );
-  const users = state
-    .selectUsers(channelMemberUserIds)
-    .filter(
-      (u) => u.walletAddress.toLowerCase() !== me.walletAddress.toLowerCase()
-    );
 
   const inputRef = React.useRef();
 
@@ -62,52 +53,10 @@ const NewPrivate = ({ navigation }) => {
   const hasMembers = members.length !== 0;
 
   const [pendingInput, setPendingInput] = React.useState("");
-  const trimmedInput = pendingInput.trim();
 
-  const suffix = trimmedInput.split(".").slice(-1)[0];
-  const bareEnsNameQuery = trimmedInput.split(".").slice(0, -1).join(".");
-  const hasIncompleteEnsSuffix = "eth".startsWith(suffix);
-  const ensNameQuery = trimmedInput.endsWith(".eth")
-    ? trimmedInput
-    : `${hasIncompleteEnsSuffix ? bareEnsNameQuery : trimmedInput}.eth`;
-
-  const { data: ensAddress, isLoading: isLoadingEns } = useEnsAddress({
-    name: ensNameQuery,
-    enabled: trimmedInput.length >= 2,
+  const { users: filteredUsers, isLoading: isLoadingUsers } = useFilteredUsers({
+    query: pendingInput,
   });
-
-  const showEnsLoading = isLoadingEns && !ensNameQuery.startsWith("0x");
-
-  const queryAddress =
-    ensAddress ?? (ethersUtils.isAddress(trimmedInput) ? trimmedInput : null);
-
-  const filteredUsers = React.useMemo(() => {
-    if (trimmedInput.length < 3) return users;
-
-    const queryWords = trimmedInput
-      .toLowerCase()
-      .split(" ")
-      .map((s) => s.trim());
-
-    const match = (user, query) =>
-      user.displayName.toLowerCase().includes(query);
-
-    return users.filter(
-      (u) =>
-        queryWords.some((q) => match(u, q)) &&
-        (queryAddress == null ||
-          u.walletAddress.toLowerCase() !== queryAddress.toLowerCase())
-    );
-  }, [users, trimmedInput, queryAddress]);
-
-  const maybeUser =
-    queryAddress == null
-      ? null
-      : state.selectUserFromWalletAddress(queryAddress);
-
-  const fetchStarredUsers = useLatestCallback(() =>
-    actions.fetchUsers(channelMemberUserIds)
-  );
 
   const toggleMember = useLatestCallback((address) => {
     if (members.length === 0)
@@ -136,10 +85,6 @@ const NewPrivate = ({ navigation }) => {
 
     return setMembers((ms) => ms.filter((a) => a !== address));
   });
-
-  React.useEffect(() => {
-    fetchStarredUsers();
-  }, [fetchStarredUsers]);
 
   React.useLayoutEffect(() => {
     const hasMembers = members.length !== 0;
@@ -201,26 +146,15 @@ const NewPrivate = ({ navigation }) => {
 
       <FlatList
         data={[
-          showEnsLoading && { type: "loader" },
-          ...[
-            queryAddress != null && {
-              id: queryAddress,
-              walletAddress: queryAddress,
-              displayName: maybeUser?.displayName,
-              ensName: ensAddress == null ? null : ensNameQuery,
-            },
-            ...filteredUsers,
-          ]
-            .filter(Boolean)
-            .map((u) => {
-              const isMe =
-                me.walletAddress.toLowerCase() ===
-                u.walletAddress.toLowerCase();
-              const isSelected =
-                isMe || members.includes(u.walletAddress.toLowerCase());
+          isLoadingUsers && { type: "loader" },
+          ...filteredUsers.map((u) => {
+            const isMe =
+              me.walletAddress.toLowerCase() === u.walletAddress.toLowerCase();
+            const isSelected =
+              isMe || members.includes(u.walletAddress.toLowerCase());
 
-              return { ...u, isSelected, isMe };
-            }),
+            return { ...u, isSelected, isMe };
+          }),
         ].filter(Boolean)}
         keyExtractor={(item) => (item.type === "loader" ? "loader" : item.id)}
         renderItem={({ item }) => {

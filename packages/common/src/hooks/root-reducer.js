@@ -31,7 +31,11 @@ import messages, {
 import users, {
   selectUser,
   selectUsers,
+  selectStarredUserIds,
+  selectStarredUsers,
   selectUserFromWalletAddress,
+  selectIsUserStarred,
+  selectUserStarId,
 } from "../reducers/users";
 import channelTypingStatus, {
   selectChannelTypingMembers,
@@ -52,6 +56,8 @@ const selectors = {
   selectChannelMessages,
   selectUser,
   selectUsers,
+  selectStarredUserIds,
+  selectStarredUsers,
   selectUserFromWalletAddress,
   selectDmChannelFromUserId,
   selectDmChannelFromUserIds,
@@ -62,7 +68,9 @@ const selectors = {
   selectChannelHasUnread,
   selectChannelMentionCount,
   selectChannelStarId,
+  selectUserStarId,
   selectIsChannelStarred,
+  selectIsUserStarred,
   selectApp,
   selectHasFetchedMenuData,
 };

@@ -478,10 +478,11 @@ export const selectHasAllMessages = (state, channelId) =>
 
 export const selectChannelAccessLevel = (state, channelId) => {
   const meta = state.channels.metaById[channelId];
-  if (meta == null || meta.publicPermissions == null) return "unknown";
-  return meta.publicPermissions.includes("channels.join")
-    ? "public"
-    : "private";
+  if (meta == null || meta.publicPermissions == null) return null;
+  if (meta.publicPermissions.includes("channels.join")) return "open";
+  if (meta.publicPermissions.includes("channels.view")) return "closed";
+  if (meta.publicPermissions.length === 0) return "private";
+  return "custom";
 };
 
 export default combineReducers({

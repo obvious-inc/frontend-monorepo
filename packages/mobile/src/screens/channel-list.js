@@ -82,7 +82,7 @@ const ChannelList = ({ navigation }) => {
             marginRight: 8,
           }}
         >
-          <UserProfilePicture user={user} size={26} />
+          <UserProfilePicture transparent user={user} size={26} />
         </View>
         <View style={{ flex: 1 }}>
           <Text
@@ -263,7 +263,7 @@ export const ChannelItem = ({
       title={
         <Text style={{ color: hasUnread ? "white" : undefined }}>{name}</Text>
       }
-      icon={<ChannelPicture channelId={id} size={26} />}
+      icon={<ChannelPicture transparent channelId={id} size={26} />}
     />
   );
 };
@@ -392,7 +392,7 @@ const ListItem = ({
 
 export const UserProfilePicture = ({
   size = 18,
-  background = "hsl(0,0%,14%)",
+  background = "hsl(0,0%,16%)",
   user,
   large = false,
   transparent = false,
@@ -429,7 +429,7 @@ export const UserProfilePicture = ({
 };
 
 export const ChannelPicture = React.memo(
-  ({ channelId, size = 18, background = "hsla(0,0%,100%,0.055)" }) => {
+  ({ channelId, size = 18, background = "hsl(0,0%,16%)", transparent }) => {
     const { state } = useAppScope();
     const channel = state.selectChannel(channelId);
     const placeholder = () => (
@@ -482,6 +482,7 @@ export const ChannelPicture = React.memo(
         if (memberUsersExcludingMe.length <= 1)
           return (
             <UserProfilePicture
+              transparent={transparent}
               size={size}
               user={memberUsersExcludingMe[0] ?? memberUsers[0]}
             />
@@ -504,7 +505,8 @@ export const ChannelPicture = React.memo(
                   key={user.id}
                   size={smallSize}
                   user={user}
-                  background="hsl(0,0%,16%)"
+                  background={background}
+                  transparent={transparent}
                   style={{
                     position: "absolute",
                     top: i === 0 ? borderWidth * -1 : diff + borderWidth,

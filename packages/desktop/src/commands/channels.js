@@ -301,26 +301,43 @@ const commands = {
       },
     };
   },
-  "make-public": ({ state, actions, channelId, user }) => {
+  "make-open": ({ state, actions, channelId, user }) => {
     const channel = state.selectChannel(channelId);
     const accessLevel = state.selectChannelAccessLevel(channelId);
     return {
-      description: `Make "#${channel.name}" public.`,
+      description: `Make "#${channel.name}" an open channel that anyone can see and join.`,
       execute: async ({ editor }) => {
-        await actions.makeChannelPublic(channelId);
+        await actions.makeChannelOpen(channelId);
         editor.clear();
       },
       exclude: () =>
+        accessLevel === "open" ||
         channel.kind !== "topic" ||
         channel.ownerUserId !== user.id ||
-        accessLevel !== "private",
+        (accessLevel === "private" && channel.memberUserIds.length > 1),
+    };
+  },
+  "make-closed": ({ state, actions, channelId, user }) => {
+    const channel = state.selectChannel(channelId);
+    const accessLevel = state.selectChannelAccessLevel(channelId);
+    return {
+      description: `Make "#${channel.name}" a closed channel that anyone can see, but not join.`,
+      execute: async ({ editor }) => {
+        await actions.makeChannelClosed(channelId);
+        editor.clear();
+      },
+      exclude: () =>
+        accessLevel === "closed" ||
+        channel.kind !== "topic" ||
+        channel.ownerUserId !== user.id ||
+        (accessLevel === "private" && channel.memberUserIds.length > 1),
     };
   },
   "make-private": ({ state, actions, channelId, user }) => {
     const channel = state.selectChannel(channelId);
     const accessLevel = state.selectChannelAccessLevel(channelId);
     return {
-      description: `Make "#${channel.name}" private.`,
+      description: `Make "#${channel.name}" a private channel that only members can see`,
       execute: async ({ editor }) => {
         await actions.makeChannelPrivate(channelId);
         editor.clear();
@@ -328,7 +345,7 @@ const commands = {
       exclude: () =>
         channel.kind !== "topic" ||
         channel.ownerUserId !== user.id ||
-        accessLevel !== "public",
+        accessLevel === "private",
     };
   },
 };
