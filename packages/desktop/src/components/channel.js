@@ -263,6 +263,7 @@ export const ChannelBase = ({
 }) => {
   const { accountAddress: walletAccountAddress } = useWallet();
   const { login } = useWalletLogin();
+  const { status: authenticationStatus } = useAuth();
   const hasConnectedWallet = walletAccountAddress != null;
 
   const { actions, state, addBeforeDispatchListener } = useAppScope();
@@ -341,9 +342,20 @@ export const ChannelBase = ({
 
   const inputRef = React.useRef();
 
+  const isMember = user != null && channel.memberUserIds.includes(user.id);
+
+  const hasWriteAccess =
+    isMember || ["open", "private"].includes(channelAccessLevel);
+
+  // const mightHaveWriteAccess =
+  //   hasWriteAccess || (channelAccessLevel === "closed" && user == null);
+
+  const disableInput = (user == null && !hasConnectedWallet) || !hasWriteAccess; // !mightHaveWriteAccess;
+
   React.useEffect(() => {
-    if (inputDeviceCanHover) inputRef.current.focus();
-  }, [inputRef, inputDeviceCanHover, channel.id]);
+    if (!inputDeviceCanHover || disableInput) return;
+    inputRef.current.focus();
+  }, [inputRef, inputDeviceCanHover, disableInput, channel.id]);
 
   const [pendingReplyMessageId, setPendingReplyMessageId] =
     React.useState(null);
@@ -509,19 +521,46 @@ export const ChannelBase = ({
 
   const channelPrefix = channel.kind === "dm" ? "@" : "#";
 
-  // TODO: Move to selector logic
-  const hasAccess =
-    channel.kind === "dm"
-      ? true
-      : channelAccessLevel == null
-      ? null
-      : ["open", "private"].includes(channelAccessLevel) ||
-        (channelAccessLevel === "closed" &&
-          user != null &&
-          members.some((m) => m.id === user.id));
+  const inputPlaceholder = (() => {
+    if (channel.kind === "dm") return `Message ${channel.name}`;
+    if (isMember) return `Message #${channel.name}`;
 
-  const disableInput =
-    (user == null && !hasConnectedWallet) || (hasAccess != null && !hasAccess);
+    const isAuthenticated = authenticationStatus === "authenticated";
+
+    switch (channelAccessLevel) {
+      case "private":
+        return `Message #${channel.name}`;
+
+      case "closed": {
+        if (isAuthenticated)
+          return isMember
+            ? `Message #${channel.name}`
+            : `Only members can post in #${channel.name}`;
+
+        if (!hasConnectedWallet) return "Connect wallet to chat";
+
+        const walletAddressIsMember = members.some(
+          (m) =>
+            m.walletAddres != null &&
+            m.walletAddress.toLowerCase() === walletAccountAddress
+        );
+
+        return walletAddressIsMember
+          ? "Verify account to chat"
+          : `Only members can post in #${channel.name}`;
+      }
+
+      case "open": {
+        if (isAuthenticated) return `Message #${channel.name}`;
+        return hasConnectedWallet
+          ? "Verify account to chat"
+          : "Connect wallet to chat";
+      }
+
+      default:
+        return "";
+    }
+  })();
 
   return (
     <div
@@ -709,19 +748,7 @@ export const ChannelBase = ({
           cancelReply={cancelReply}
           uploadImage={actions.uploadImage}
           submit={submitMessage}
-          placeholder={
-            hasAccess == null
-              ? `Message #${channel.name}` // Best guess
-              : !hasConnectedWallet
-              ? "Connect wallet to chat"
-              : !hasAccess
-              ? user == null
-                ? "Verify account to chat"
-                : `Only members can post in #${channel.name}`
-              : channel.kind === "dm"
-              ? `Message ${channel.name}`
-              : `Message #${channel.name}`
-          }
+          placeholder={inputPlaceholder}
           members={members}
           getMember={getMember}
           onInputChange={handleInputChange}

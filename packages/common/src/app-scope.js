@@ -506,9 +506,13 @@ export const Provider = ({ children }) => {
 
     // TODO: Change this
     const missingChannelStars = starredItems.filter(
-      (i) => i.type === "channel" && i.reference
+      (i) => i.type === "channel" && channels.every((c) => c.id !== i.reference)
     );
-    for (const star of missingChannelStars) fetchChannel(star.reference);
+
+    if (missingChannelStars.length !== 0)
+      await Promise.all(
+        missingChannelStars.map((s) => fetchChannel(s.reference))
+      );
 
     dispatch({
       type: "fetch-client-boot-data-request-successful",
