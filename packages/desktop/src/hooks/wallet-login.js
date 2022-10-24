@@ -43,6 +43,7 @@ export const Provider = ({ children }) => {
     } catch (e) {
       console.log(e);
       setError(e.message);
+      return Promise.reject(e);
     } finally {
       setStatus("idle");
     }

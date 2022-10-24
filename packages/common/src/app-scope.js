@@ -274,6 +274,18 @@ export const Provider = ({ children }) => {
     })
   );
 
+  const fetchPubliclyReadableChannels = useLatestCallback(() =>
+    authorizedFetch("/channels/@public", { allowUnauthorized: true }).then(
+      (channels) => {
+        dispatch({
+          type: "fetch-publicly-readable-channels-request-successful",
+          channels,
+        });
+        return channels;
+      }
+    )
+  );
+
   const fetchUserChannelsReadStates = useLatestCallback(() =>
     authorizedFetch("/users/me/read_states").then((readStates) => {
       dispatch({
@@ -605,6 +617,7 @@ export const Provider = ({ children }) => {
       fetchUserChannels,
       fetchUserChannelsReadStates,
       fetchChannel,
+      fetchPubliclyReadableChannels,
       createDmChannel,
       createOpenChannel,
       createClosedChannel,
@@ -647,6 +660,7 @@ export const Provider = ({ children }) => {
       fetchUserChannels,
       fetchUserChannelsReadStates,
       fetchChannel,
+      fetchPubliclyReadableChannels,
       createDmChannel,
       createOpenChannel,
       createClosedChannel,

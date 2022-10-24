@@ -1591,44 +1591,46 @@ const Channel = ({ compact, noSideMenu }) => {
                   })
                 }
               >
-                <span
-                  css={css({
-                    flex: 1,
-                    minWidth: 0,
-                    userSelect: "text",
-                    cursor: "default",
-                    whiteSpace: "nowrap",
-                    overflow: "auto",
-                  })}
-                >
-                  <a
-                    href={`https://etherscan.io/address/${accountAddress}`}
-                    rel="noreferrer"
-                    target="_blank"
-                    css={(theme) =>
-                      css({
-                        display: "inline-flex",
-                        alignItems: "center",
-                        color: theme.colors.linkColor,
-                        ":hover": { color: theme.colors.linkColorHighlight },
-                        ":hover [data-avatar]": { opacity: 0.9 },
-                      })
-                    }
+                {isEmbedded && (
+                  <span
+                    css={css({
+                      flex: 1,
+                      minWidth: 0,
+                      userSelect: "text",
+                      cursor: "default",
+                      whiteSpace: "nowrap",
+                      overflow: "auto",
+                    })}
                   >
-                    {accountEnsName}{" "}
-                    {accountEnsName == null ? (
-                      truncateAddress(accountAddress)
-                    ) : (
-                      <>({truncateAddress(accountAddress)})</>
-                    )}
-                    <Avatar
-                      data-avatar
-                      walletAddress={accountAddress}
-                      size="2.6rem"
-                      style={{ marginLeft: "0.5rem" }}
-                    />
-                  </a>
-                </span>
+                    <a
+                      href={`https://etherscan.io/address/${accountAddress}`}
+                      rel="noreferrer"
+                      target="_blank"
+                      css={(theme) =>
+                        css({
+                          display: "inline-flex",
+                          alignItems: "center",
+                          color: theme.colors.linkColor,
+                          ":hover": { color: theme.colors.linkColorHighlight },
+                          ":hover [data-avatar]": { opacity: 0.9 },
+                        })
+                      }
+                    >
+                      {accountEnsName}{" "}
+                      {accountEnsName == null ? (
+                        truncateAddress(accountAddress)
+                      ) : (
+                        <>({truncateAddress(accountAddress)})</>
+                      )}
+                      <Avatar
+                        data-avatar
+                        walletAddress={accountAddress}
+                        size="2.6rem"
+                        style={{ marginLeft: "0.5rem" }}
+                      />
+                    </a>
+                  </span>
+                )}
                 <Button
                   variant={theme.name === "nouns.tv" ? "primary" : "default"}
                   onClick={() => {

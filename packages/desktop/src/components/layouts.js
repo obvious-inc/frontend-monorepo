@@ -2,18 +2,17 @@ import { useEnsName } from "wagmi";
 import React from "react";
 import { NavLink, Outlet, useParams, useNavigate } from "react-router-dom";
 import { css, useTheme } from "@emotion/react";
-import { useAppScope } from "@shades/common/app";
+import { useAppScope, useAuth } from "@shades/common/app";
 import {
   array as arrayUtils,
   ethereum as ethereumUtils,
 } from "@shades/common/utils";
 import useSideMenu from "../hooks/side-menu";
+import useWallet from "../hooks/wallet";
+import useWalletLogin from "../hooks/wallet-login";
 import {
-  // Hash as HashIcon,
   MagnificationGlass as MagnificationGlassIcon,
-  // Clock as ClockIcon,
   Planet as PlanetIcon,
-  // Star as StarIcon,
   Triangle as TriangleIcon,
 } from "./icons";
 import Avatar from "./avatar";
@@ -49,6 +48,9 @@ const useCachedState = ({ key, initialState }) => {
 export const UnifiedLayout = () => {
   const params = useParams();
   const navigate = useNavigate();
+  const { status: authenticationStatus } = useAuth();
+  const { accountAddress: walletAccountAddress } = useWallet();
+  const { login } = useWalletLogin();
   const { state, actions } = useAppScope();
 
   const user = state.selectMe();
@@ -58,24 +60,44 @@ export const UnifiedLayout = () => {
     initialState: [],
   });
 
-  const channels = state.selectMemberChannels();
+  const memberChannels = state.selectMemberChannels();
+
+  const starredChannels = state.selectStarredChannels();
+
+  const publicChannels = state.selectPublicChannels();
+
+  const listedChannels =
+    authenticationStatus === "authenticated"
+      ? [...memberChannels, ...starredChannels]
+      : publicChannels;
 
   const selectedChannel =
     params.channelId == null ? null : state.selectChannel(params.channelId);
 
-  const starredChannels = state.selectStarredChannels();
-
-  const selectedChannelIsListed = [...channels, ...starredChannels].some(
+  const selectedChannelIsListed = listedChannels.some(
     (c) => c.id === params.channelId
   );
+
+  const isLoadingUser =
+    authenticationStatus === "authenticated" && user == null;
 
   return (
     <SideMenuLayout
       header={
-        user == null ? null : (
+        authenticationStatus === "not-authenticated" &&
+        walletAccountAddress == null ? null : isLoadingUser ? (
+          <div />
+        ) : (
           <DropdownMenu.Root>
             <DropdownMenu.Trigger asChild>
-              <ProfileDropdownTrigger />
+              <ProfileDropdownTrigger
+                user={user ?? { walletAddress: walletAccountAddress }}
+                subtitle={
+                  authenticationStatus === "not-authenticated"
+                    ? "Unverified account"
+                    : null
+                }
+              />
             </DropdownMenu.Trigger>
             <DropdownMenu.Content
               side="bottom"
@@ -101,118 +123,265 @@ export const UnifiedLayout = () => {
               >
                 Switch to another account
               </DropdownMenu.Item>
-              <DropdownMenu.Separator />
-              <DropdownMenu.Item
-                onSelect={() => {
-                  actions.logout();
-                  navigate("/");
-                }}
-              >
-                Log out
-              </DropdownMenu.Item>
+              {user != null && (
+                <>
+                  <DropdownMenu.Separator />
+                  <DropdownMenu.Item
+                    onSelect={() => {
+                      actions.logout();
+                      navigate("/");
+                    }}
+                  >
+                    Log out
+                  </DropdownMenu.Item>
+                </>
+              )}
             </DropdownMenu.Content>
           </DropdownMenu.Root>
         )
       }
+      sidebarBottomContent={({ toggleMenu }) => (
+        <button
+          css={(theme) =>
+            css({
+              transition: "background 20ms ease-in",
+              cursor: "pointer",
+              boxShadow: "rgba(255, 255, 255, 0.094) 0 -1px 0",
+              ":hover": {
+                background: theme.colors.backgroundModifierHover,
+              },
+            })
+          }
+          onClick={() => {
+            const createChannel = async () => {
+              if (authenticationStatus !== "authenticated") {
+                if (walletAccountAddress == null) {
+                  alert(
+                    "You need to connect and verify your account to create channels."
+                  );
+                  return;
+                }
+                if (
+                  !confirm(
+                    `You need to verify your account to create channels. Press ok to verify "${truncateAddress(
+                      walletAccountAddress
+                    )}" with wallet signature.`
+                  )
+                )
+                  return;
+                await login(walletAccountAddress);
+              }
+
+              const name = (prompt("Channel name") ?? "").trim();
+
+              if (name === "") return;
+
+              const channel = await actions.createPrivateChannel({ name });
+              navigate(`/channels/${channel.id}`);
+              toggleMenu();
+            };
+
+            createChannel();
+          }}
+        >
+          <div
+            css={css({
+              display: "flex",
+              alignItems: "center",
+              width: "100%",
+              padding: "0.2rem 1rem",
+              height: "4.5rem",
+            })}
+          >
+            <div
+              css={css({
+                width: "2.2rem",
+                height: "2.2rem",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                marginRight: "0.8rem",
+              })}
+            >
+              <svg
+                viewBox="0 0 16 16"
+                css={(theme) =>
+                  css({
+                    width: "1.6rem",
+                    height: "1.6rem",
+                    display: "block",
+                    fill: theme.colors.textDimmed,
+                  })
+                }
+              >
+                <path d="M7.977 14.963c.407 0 .747-.324.747-.723V8.72h5.362c.399 0 .74-.34.74-.747a.746.746 0 00-.74-.738H8.724V1.706c0-.398-.34-.722-.747-.722a.732.732 0 00-.739.722v5.529h-5.37a.746.746 0 00-.74.738c0 .407.341.747.74.747h5.37v5.52c0 .399.332.723.739.723z" />
+              </svg>
+            </div>
+            <div
+              css={(theme) =>
+                css({
+                  flex: "1 1 auto",
+                  whiteSpace: "nowrap",
+                  minWidth: 0,
+                  overflow: "hidden",
+                  textOverflow: "ellipsis",
+                  color: theme.colors.textDimmed,
+                  fontSize: "1.4rem",
+                  fontWeight: "500",
+                })
+              }
+            >
+              New channel
+            </div>
+          </div>
+        </button>
+      )}
       sidebarContent={
-        <>
-          <div style={{ height: "1rem" }} />
-          <ListItem
-            compact={false}
-            icon={<MagnificationGlassIcon style={{ width: "1.4rem" }} />}
-            title="Quick Find"
-            onClick={() => {
-              alert("thoon");
-            }}
-          />
-          <ListItem
-            compact={false}
-            icon={<PlanetIcon style={{ width: "1.4rem" }} />}
-            title="Discover"
-            onClick={() => {
-              alert("thoon");
-            }}
-          />
+        isLoadingUser ? null : (
+          <>
+            <div
+              style={{
+                height:
+                  authenticationStatus === "not-authenticated" &&
+                  walletAccountAddress == null
+                    ? "2rem"
+                    : "1rem",
+              }}
+            />
+            <ListItem
+              compact={false}
+              icon={<MagnificationGlassIcon style={{ width: "1.4rem" }} />}
+              title="Quick Find"
+              onClick={() => {
+                alert("thoon");
+              }}
+            />
+            <ListItem
+              compact={false}
+              icon={<PlanetIcon style={{ width: "1.4rem" }} />}
+              title="Discover"
+              onClick={() => {
+                alert("thoon");
+              }}
+            />
 
-          {state.selectHasFetchedMenuData() && (
-            <>
-              <div style={{ marginBottom: "1.5rem" }} />
-              {selectedChannel != null && !selectedChannelIsListed && (
-                <>
-                  <ChannelItem
-                    id={selectedChannel.id}
-                    name={selectedChannel.name}
-                    kind={selectedChannel.kind}
-                    avatar={selectedChannel.avatar}
-                    link={`/channels/${selectedChannel.id}`}
-                    hasUnread={state.selectChannelHasUnread(selectedChannel.id)}
-                    notificationCount={state.selectChannelMentionCount(
-                      selectedChannel.id
-                    )}
-                  />
-
-                  <div style={{ marginBottom: "1.5rem" }} />
-                </>
-              )}
-
-              {starredChannels.length !== 0 && (
-                <CollapsableSection
-                  title="Starred"
-                  expanded={!collapsedIds.includes("starred")}
-                  onToggleExpanded={() => {
-                    setCollapsedIds((ids) =>
-                      ids.includes("starred")
-                        ? ids.filter((id) => id !== "starred")
-                        : [...ids, "starred"]
-                    );
-                  }}
-                >
-                  {starredChannels.map((c) => (
+            {(authenticationStatus === "not-authenticated" ||
+              state.selectHasFetchedMenuData()) && (
+              <>
+                <div style={{ marginBottom: "1.5rem" }} />
+                {selectedChannel != null && !selectedChannelIsListed && (
+                  <>
                     <ChannelItem
-                      key={c.id}
-                      id={c.id}
-                      name={c.name}
-                      kind={c.kind}
-                      avatar={c.avatar}
-                      link={`/channels/${c.id}`}
-                      hasUnread={state.selectChannelHasUnread(c.id)}
-                      notificationCount={state.selectChannelMentionCount(c.id)}
+                      id={selectedChannel.id}
+                      name={selectedChannel.name}
+                      kind={selectedChannel.kind}
+                      avatar={selectedChannel.avatar}
+                      link={`/channels/${selectedChannel.id}`}
+                      hasUnread={state.selectChannelHasUnread(
+                        selectedChannel.id
+                      )}
+                      notificationCount={state.selectChannelMentionCount(
+                        selectedChannel.id
+                      )}
                     />
-                  ))}
-                </CollapsableSection>
-              )}
 
-              {channels.length !== 0 && (
-                <CollapsableSection
-                  title="Channels"
-                  expanded={!collapsedIds.includes("dms-topics")}
-                  onToggleExpanded={() => {
-                    setCollapsedIds((ids) =>
-                      ids.includes("dms-topics")
-                        ? ids.filter((id) => id !== "dms-topics")
-                        : [...ids, "dms-topics"]
-                    );
-                  }}
-                >
-                  {channels.map((c) => (
-                    <ChannelItem
-                      key={c.id}
-                      id={c.id}
-                      name={c.name}
-                      kind={c.kind}
-                      avatar={c.avatar}
-                      link={`/channels/${c.id}`}
-                      hasUnread={state.selectChannelHasUnread(c.id)}
-                      notificationCount={state.selectChannelMentionCount(c.id)}
-                    />
-                  ))}
-                </CollapsableSection>
-              )}
+                    <div style={{ marginBottom: "1.5rem" }} />
+                  </>
+                )}
 
-              <div style={{ height: "0.1rem" }} />
-            </>
-          )}
-        </>
+                {starredChannels.length !== 0 && (
+                  <CollapsableSection
+                    title="Starred"
+                    expanded={!collapsedIds.includes("starred")}
+                    onToggleExpanded={() => {
+                      setCollapsedIds((ids) =>
+                        ids.includes("starred")
+                          ? ids.filter((id) => id !== "starred")
+                          : [...ids, "starred"]
+                      );
+                    }}
+                  >
+                    {starredChannels.map((c) => (
+                      <ChannelItem
+                        key={c.id}
+                        id={c.id}
+                        name={c.name}
+                        kind={c.kind}
+                        avatar={c.avatar}
+                        link={`/channels/${c.id}`}
+                        hasUnread={state.selectChannelHasUnread(c.id)}
+                        notificationCount={state.selectChannelMentionCount(
+                          c.id
+                        )}
+                      />
+                    ))}
+                  </CollapsableSection>
+                )}
+
+                {memberChannels.length !== 0 && (
+                  <CollapsableSection
+                    title="Channels"
+                    expanded={!collapsedIds.includes("dms-topics")}
+                    onToggleExpanded={() => {
+                      setCollapsedIds((ids) =>
+                        ids.includes("dms-topics")
+                          ? ids.filter((id) => id !== "dms-topics")
+                          : [...ids, "dms-topics"]
+                      );
+                    }}
+                  >
+                    {memberChannels.map((c) => (
+                      <ChannelItem
+                        key={c.id}
+                        id={c.id}
+                        name={c.name}
+                        kind={c.kind}
+                        avatar={c.avatar}
+                        link={`/channels/${c.id}`}
+                        hasUnread={state.selectChannelHasUnread(c.id)}
+                        notificationCount={state.selectChannelMentionCount(
+                          c.id
+                        )}
+                      />
+                    ))}
+                  </CollapsableSection>
+                )}
+
+                {authenticationStatus === "not-authenticated" &&
+                  publicChannels.length !== 0 && (
+                    <CollapsableSection
+                      title="Public channels"
+                      expanded={!collapsedIds.includes("public")}
+                      onToggleExpanded={() => {
+                        setCollapsedIds((ids) =>
+                          ids.includes("public")
+                            ? ids.filter((id) => id !== "public")
+                            : [...ids, "public"]
+                        );
+                      }}
+                    >
+                      {publicChannels.map((c) => (
+                        <ChannelItem
+                          key={c.id}
+                          id={c.id}
+                          name={c.name}
+                          kind={c.kind}
+                          avatar={c.avatar}
+                          link={`/channels/${c.id}`}
+                          hasUnread={state.selectChannelHasUnread(c.id)}
+                          notificationCount={state.selectChannelMentionCount(
+                            c.id
+                          )}
+                        />
+                      ))}
+                    </CollapsableSection>
+                  )}
+
+                <div style={{ height: "0.1rem" }} />
+              </>
+            )}
+          </>
+        )
       }
     >
       <Outlet />
@@ -220,114 +389,138 @@ export const UnifiedLayout = () => {
   );
 };
 
-const ProfileDropdownTrigger = React.forwardRef((props, ref) => {
-  const { state } = useAppScope();
-  const user = state.selectMe();
-  const { data: userEnsName } = useEnsName({ address: user.walletAddress });
+const ProfileDropdownTrigger = React.forwardRef(
+  ({ user, subtitle, ...props }, ref) => {
+    const { data: userEnsName } = useEnsName({ address: user.walletAddress });
 
-  const truncatedAddress =
-    user?.walletAddress == null ? null : truncateAddress(user.walletAddress);
+    const truncatedAddress =
+      user?.walletAddress == null ? null : truncateAddress(user.walletAddress);
 
-  const userDisplayName =
-    user == null
-      ? null
-      : user.hasCustomDisplayName
-      ? user.displayName
-      : userEnsName ?? truncatedAddress;
+    const userDisplayName =
+      user == null
+        ? null
+        : user.hasCustomDisplayName
+        ? user.displayName
+        : userEnsName ?? truncatedAddress;
 
-  return (
-    <button
-      ref={ref}
-      css={(theme) =>
-        css({
-          width: "100%",
-          display: "grid",
-          gridTemplateColumns: "auto minmax(0,1fr) auto",
-          gridGap: "0.8rem",
-          alignItems: "center",
-          padding: "0.2rem 1.4rem",
-          height: "100%",
-          cursor: "pointer",
-          transition: "20ms ease-in",
-          outline: "none",
-          ":hover": {
-            background: theme.colors.backgroundModifierHover,
-          },
-        })
-      }
-      {...props}
-    >
-      <div
-        css={css({
-          width: "2.2rem",
-          height: "2.2rem",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          marginTop: "1px",
-        })}
+    const showAccountDescription = userDisplayName !== truncatedAddress;
+    const accountDescription =
+      userEnsName == null || userEnsName === userDisplayName
+        ? truncatedAddress
+        : `${userEnsName} (${truncatedAddress})`;
+
+    return (
+      <button
+        ref={ref}
+        css={(theme) =>
+          css({
+            width: "100%",
+            display: "grid",
+            gridTemplateColumns: "auto minmax(0,1fr) auto",
+            gridGap: "0.8rem",
+            alignItems: "center",
+            padding: "0.2rem 1.4rem",
+            height: "100%",
+            cursor: "pointer",
+            transition: "20ms ease-in",
+            outline: "none",
+            ":hover": {
+              background: theme.colors.backgroundModifierHover,
+            },
+          })
+        }
+        {...props}
       >
         <div
-          style={{
-            userSelect: "none",
+          css={css({
+            width: "2.2rem",
+            height: "2.2rem",
             display: "flex",
-            alignCtems: "center",
+            alignItems: "center",
             justifyContent: "center",
-            height: "2rem",
-            width: "2rem",
             marginTop: "1px",
-          }}
+          })}
         >
-          <Avatar
-            url={user?.profilePicture.small}
-            walletAddress={user?.walletAddress}
-            size="1.8rem"
-            pixelSize={18}
-          />
+          <div
+            style={{
+              userSelect: "none",
+              display: "flex",
+              alignCtems: "center",
+              justifyContent: "center",
+              height: "2rem",
+              width: "2rem",
+              marginTop: "1px",
+            }}
+          >
+            <Avatar
+              url={user?.profilePicture?.small}
+              walletAddress={user?.walletAddress}
+              size="1.8rem"
+              pixelSize={18}
+            />
+          </div>
         </div>
-      </div>
-      <div>
-        <div
-          css={(theme) =>
-            css({
-              color: theme.colors.textNormal,
-              fontSize: theme.fontSizes.default,
-              fontWeight: theme.text.weights.header,
-              lineHeight: "2rem",
-            })
-          }
-        >
-          {userDisplayName}
-        </div>
-        {userDisplayName !== truncatedAddress && (
+        <div>
           <div
             css={(theme) =>
               css({
-                color: theme.colors.textMuted,
-                fontSize: theme.fontSizes.small,
-                fontWeight: "400",
-                lineHeight: "1.2rem",
+                color: theme.colors.textNormal,
+                fontSize: theme.fontSizes.default,
+                fontWeight: theme.text.weights.header,
+                lineHeight: "2rem",
+                whiteSpace: "nowrap",
+                overflow: "hidden",
+                textOverflow: "ellipsis",
               })
             }
           >
-            {userEnsName == null
-              ? truncatedAddress
-              : `${userEnsName} (${truncatedAddress})`}
+            {userDisplayName}
+            {showAccountDescription && subtitle != null && (
+              <>
+                {" "}
+                <span
+                  css={(theme) =>
+                    css({
+                      color: theme.colors.textMuted,
+                      fontSize: theme.fontSizes.small,
+                      fontWeight: "400",
+                      lineHeight: "1.2rem",
+                    })
+                  }
+                >
+                  ({truncatedAddress})
+                </span>
+              </>
+            )}
           </div>
-        )}
-      </div>
-      <div css={css({ width: "1.2rem", height: "1.2rem" })}>
-        <svg
-          viewBox="-1 -1 9 11"
-          style={{ width: "100%", height: "100%" }}
-          css={(theme) => css({ fill: theme.colors.textMuted })}
-        >
-          <path d="M 3.5 0L 3.98809 -0.569442L 3.5 -0.987808L 3.01191 -0.569442L 3.5 0ZM 3.5 9L 3.01191 9.56944L 3.5 9.98781L 3.98809 9.56944L 3.5 9ZM 0.488094 3.56944L 3.98809 0.569442L 3.01191 -0.569442L -0.488094 2.43056L 0.488094 3.56944ZM 3.01191 0.569442L 6.51191 3.56944L 7.48809 2.43056L 3.98809 -0.569442L 3.01191 0.569442ZM -0.488094 6.56944L 3.01191 9.56944L 3.98809 8.43056L 0.488094 5.43056L -0.488094 6.56944ZM 3.98809 9.56944L 7.48809 6.56944L 6.51191 5.43056L 3.01191 8.43056L 3.98809 9.56944Z" />
-        </svg>
-      </div>
-    </button>
-  );
-});
+          {(subtitle != null || showAccountDescription) && (
+            <div
+              css={(theme) =>
+                css({
+                  color: theme.colors.textMuted,
+                  fontSize: theme.fontSizes.small,
+                  fontWeight: "400",
+                  lineHeight: "1.2rem",
+                })
+              }
+            >
+              {subtitle ?? accountDescription}
+            </div>
+          )}
+        </div>
+        <div css={css({ width: "1.2rem", height: "1.2rem" })}>
+          <svg
+            viewBox="-1 -1 9 11"
+            style={{ width: "100%", height: "100%" }}
+            css={(theme) => css({ fill: theme.colors.textMuted })}
+          >
+            <path d="M 3.5 0L 3.98809 -0.569442L 3.5 -0.987808L 3.01191 -0.569442L 3.5 0ZM 3.5 9L 3.01191 9.56944L 3.5 9.98781L 3.98809 9.56944L 3.5 9ZM 0.488094 3.56944L 3.98809 0.569442L 3.01191 -0.569442L -0.488094 2.43056L 0.488094 3.56944ZM 3.01191 0.569442L 6.51191 3.56944L 7.48809 2.43056L 3.98809 -0.569442L 3.01191 0.569442ZM -0.488094 6.56944L 3.01191 9.56944L 3.98809 8.43056L 0.488094 5.43056L -0.488094 6.56944ZM 3.98809 9.56944L 7.48809 6.56944L 6.51191 5.43056L 3.01191 8.43056L 3.98809 9.56944Z" />
+          </svg>
+        </div>
+      </button>
+    );
+  }
+);
 
 const CollapsableSection = ({
   title,
@@ -508,7 +701,7 @@ export const ChannelItem = ({
             <Avatar
               url={avatar}
               // Emojis: https://dev.to/acanimal/how-to-slice-or-get-symbols-from-a-unicode-string-with-emojis-in-javascript-lets-learn-how-javascript-represent-strings-h3a
-              signature={[...name][0]}
+              signature={name == null ? null : [...name][0]}
               {...avatarProps}
             />
           )}

@@ -6,6 +6,7 @@ import useWalletLogin from "../hooks/wallet-login";
 import * as Tooltip from "../components/tooltip";
 import Spinner from "../components/spinner";
 import Avatar from "../components/avatar";
+import Button from "../components/button";
 
 const { truncateAddress } = ethereumUtils;
 
@@ -66,6 +67,7 @@ const SignInScreen = ({ onSuccess, onError }) => {
           </div>
           <Small>Check your wallet</Small>
           <Button
+            size="large"
             onClick={cancelWalletConnectionAttempt}
             style={{ marginTop: "2rem" }}
           >
@@ -85,6 +87,7 @@ const SignInScreen = ({ onSuccess, onError }) => {
           <Small>Check your wallet</Small>
 
           <Button
+            size="large"
             onClick={() => {
               setSwitchingToMainnet(false);
             }}
@@ -99,6 +102,7 @@ const SignInScreen = ({ onSuccess, onError }) => {
             Network not supported
           </div>
           <Button
+            size="large"
             onClick={() => {
               setSwitchingToMainnet(true);
               switchToEthereumMainnet().then(
@@ -157,6 +161,7 @@ const SignInScreen = ({ onSuccess, onError }) => {
           {accountAddress == null ? (
             <>
               <Button
+                size="large"
                 disabled={!canConnectWallet}
                 onClick={() => {
                   connectWallet();
@@ -173,7 +178,7 @@ const SignInScreen = ({ onSuccess, onError }) => {
                 }}
               >
                 Make sure to enable any browser extension wallets before you try
-                to connect. If you use a mobile wallet, no action is requred.
+                to connect. If you use a mobile wallet, no action is required.
               </Small>
               <Small style={{ marginTop: "1.2rem" }}>
                 <a
@@ -195,11 +200,11 @@ const SignInScreen = ({ onSuccess, onError }) => {
             <>
               <Avatar
                 walletAddress={accountAddress}
-                size="10rem"
+                size="8rem"
                 style={{ margin: "0 auto 3rem" }}
               />
-              <Button onClick={handleClickLogin}>
-                Authenticate with wallet signature
+              <Button size="large" onClick={handleClickLogin}>
+                Verify with wallet signature
               </Button>
               <div
                 css={(theme) =>
@@ -265,32 +270,32 @@ const SignInScreen = ({ onSuccess, onError }) => {
   );
 };
 
-const Button = ({ css: cssProp, ...props }) => (
-  <button
-    css={css`
-      color: white;
-      background: hsl(0 0% 100% / 6%);
-      border: 0;
-      padding: 1.1rem 2.4rem;
-      font-weight: 500;
-      font-size: 1.5rem;
-      border-radius: 0.3rem;
-      transition: 0.15s ease-out background;
-      text-align: center;
-      :not(:disabled) {
-        cursor: pointer;
-      }
-      :hover:not(:disabled) {
-        background: hsl(0 0% 100% / 8%);
-      }
-      :disabled {
-        opacity: 0.5;
-      }
-      ${cssProp}
-    `}
-    {...props}
-  />
-);
+// const Button = ({ css: cssProp, ...props }) => (
+//   <button
+//     css={css`
+//       color: white;
+//       background: hsl(0 0% 100% / 6%);
+//       border: 0;
+//       padding: 1.1rem 2.4rem;
+//       font-weight: 500;
+//       font-size: 1.5rem;
+//       border-radius: 0.3rem;
+//       transition: 0.15s ease-out background;
+//       text-align: center;
+//       :not(:disabled) {
+//         cursor: pointer;
+//       }
+//       :hover:not(:disabled) {
+//         background: hsl(0 0% 100% / 8%);
+//       }
+//       :disabled {
+//         opacity: 0.5;
+//       }
+//       ${cssProp}
+//     `}
+//     {...props}
+//   />
+// );
 
 const Small = (props) => (
   <div

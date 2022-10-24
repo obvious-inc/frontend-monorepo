@@ -7,6 +7,7 @@ import {
   useSwitchNetwork,
 } from "wagmi";
 import { mainnet as mainnetChain } from "wagmi/chains";
+import { useConnectModal as useRainbowKitConnectModal } from "@rainbow-me/rainbowkit";
 import { useLatestCallback } from "@shades/common/react";
 
 const ETHEREUM_MAINNET_CHAIN_ID = mainnetChain.id;
@@ -45,13 +46,15 @@ const useIFrameAutoConnect = () => {
 };
 
 const useWallet = () => {
-  const [connectError, setConnectError] = React.useState(null);
+  // const [connectError, setConnectError] = React.useState(null);
   const {
-    connectAsync: connectWallet,
+    // connectAsync: connectWallet,
     reset: cancelConnectionAttempt,
     connectors,
     // error,
   } = useConnect();
+  const { openConnectModal: openRainbowKitConnectModal } =
+    useRainbowKitConnectModal();
   const {
     address: accountAddress,
     // Not sure when these two happen
@@ -69,15 +72,16 @@ const useWallet = () => {
   const firstReadyConnector = connectors.find((c) => c.ready);
 
   const connect = useLatestCallback(async () => {
-    if (firstReadyConnector == null) throw new Error("No connector ready");
-    try {
-      return await connectWallet({ connector: firstReadyConnector });
-    } catch (e) {
-      // Rejected by user
-      if (e.code === 4001) return Promise.resolve();
-      setConnectError(e);
-      return Promise.reject(e);
-    }
+    openRainbowKitConnectModal();
+    // if (firstReadyConnector == null) throw new Error("No connector ready");
+    // try {
+    //   return await connectWallet({ connector: firstReadyConnector });
+    // } catch (e) {
+    //   // Rejected by user
+    //   if (e.code === 4001) return Promise.resolve();
+    //   setConnectError(e);
+    //   return Promise.reject(e);
+    // }
   });
 
   const switchToEthereumMainnet = () =>
@@ -89,7 +93,7 @@ const useWallet = () => {
     chain: activeChain,
     isConnecting,
     canConnect: firstReadyConnector != null,
-    error: connectError,
+    // error: connectError,
     connect,
     cancel: cancelConnectionAttempt,
     switchToEthereumMainnet,

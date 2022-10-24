@@ -54,6 +54,7 @@
     "@radix-ui/react-dropdown-menu": "^0.1.6",
     "@radix-ui/react-toolbar": "^0.1.5",
     "@radix-ui/react-tooltip": "^0.1.7",
+    "@rainbow-me/rainbowkit": "^0.7.3",
     "@sentry/react": "^6.19.7",
     "@shades/common": "workspace:0.0.0",
     "date-fns": "^2.29.3",
