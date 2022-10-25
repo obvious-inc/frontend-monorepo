@@ -52,6 +52,8 @@ const NewGroup = ({ navigation, route }) => {
   const [name, setName] = React.useState("");
   const [description, setDescription] = React.useState("");
 
+  const [hasPendingSubmit, setPendingSubmit] = React.useState(false);
+
   const dismissKeyboard = useAsyncDismissKeyboard();
 
   const submit = useLatestCallback(() => {
@@ -75,11 +77,17 @@ const NewGroup = ({ navigation, route }) => {
       }
     };
 
-    create().then((c) => {
-      dismissKeyboard().then(() => {
-        navigation.replace("Channel", { channelId: c.id });
-      });
-    });
+    setPendingSubmit(true);
+    create().then(
+      (c) => {
+        dismissKeyboard().then(() => {
+          navigation.replace("Channel", { channelId: c.id });
+        });
+      },
+      () => {
+        setPendingSubmit(false);
+      }
+    );
   });
 
   React.useLayoutEffect(() => {
@@ -93,13 +101,13 @@ const NewGroup = ({ navigation, route }) => {
         <HeaderRight
           button={{
             label: "Create",
-            disabled: !hasValidParameters,
+            disabled: !hasValidParameters || hasPendingSubmit,
             onPress: () => submit(),
           }}
         />
       ),
     });
-  }, [navigation, name, channelType, submit]);
+  }, [navigation, name, channelType, submit, hasPendingSubmit]);
 
   const hasMembers = members.length > 0;
 

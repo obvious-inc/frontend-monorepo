@@ -83,13 +83,15 @@ export const selectUser = createSelector(
     if (user == null) return null;
     const isLoggedInUser = user.id === loggedInUser?.id;
 
-    const displayName = user.display_name;
+    const displayName =
+      user.display_name.trim() === "" ? null : user.display_name;
     const walletAddress = user.wallet_address;
     const hasCustomDisplayName = truncateAddress(walletAddress) !== displayName;
 
     return {
       ...user,
-      displayName,
+      displayName: displayName ?? truncateAddress(walletAddress),
+      customDisplayName: hasCustomDisplayName ? displayName : null,
       hasCustomDisplayName,
       walletAddress,
       onlineStatus: isLoggedInUser ? "online" : user.status,

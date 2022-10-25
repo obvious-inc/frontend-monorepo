@@ -1,5 +1,3 @@
-import { useEnsAddress } from "wagmi";
-import { utils as ethersUtils } from "ethers";
 import React from "react";
 import {
   View,
@@ -16,7 +14,6 @@ import { useFilteredUsers, HorizontalUserListItem } from "./new-closed-channel";
 
 const { useAppScope } = Shades.app;
 const { useLatestCallback } = Shades.react;
-const { unique } = Shades.utils.array;
 
 const textDefault = "hsl(0,0%,83%)";
 const textDimmed = "hsl(0,0%,50%)";

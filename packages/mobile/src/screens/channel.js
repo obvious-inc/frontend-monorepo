@@ -106,7 +106,7 @@ const HeaderLeft = () => {
   const navigation = useNavigation();
   const { state } = useAppScope();
   const channel = state.selectChannel(params.channelId);
-  const memberCount = channel.memberUserIds.length;
+  const memberCount = channel?.memberUserIds.length;
 
   return (
     <View
@@ -150,50 +150,52 @@ const HeaderLeft = () => {
           )}
         </Pressable>
       </View>
-      <Pressable
-        onPress={() => {
-          navigation.navigate("Channel details modal", {
-            channelId: params.channelId,
-          });
-        }}
-        style={{ flexDirection: "row", alignItems: "center" }}
-      >
-        {({ pressed }) => (
-          <>
-            {(channel.kind === "dm" || channel.avatar != null) && (
-              <View style={{ marginRight: 10 }}>
-                <ChannelPicture
-                  transparent
-                  channelId={params.channelId}
-                  size={32}
-                />
+      {channel != null && (
+        <Pressable
+          onPress={() => {
+            navigation.navigate("Channel details modal", {
+              channelId: params.channelId,
+            });
+          }}
+          style={{ flexDirection: "row", alignItems: "center" }}
+        >
+          {({ pressed }) => (
+            <>
+              {(channel.kind === "dm" || channel.avatar != null) && (
+                <View style={{ marginRight: 10 }}>
+                  <ChannelPicture
+                    transparent
+                    channelId={params.channelId}
+                    size={32}
+                  />
+                </View>
+              )}
+              <View>
+                <Text
+                  style={{
+                    color: pressed ? "hsl(0,0%,50%)" : "white",
+                    fontSize: 16,
+                    fontWeight: "600",
+                    lineHeight: 18,
+                  }}
+                >
+                  {channel.name}
+                </Text>
+                <Text
+                  style={{
+                    color: "gray",
+                    fontSize: 11.5,
+                    fontWeight: "400",
+                    lineHeight: 14,
+                  }}
+                >
+                  {memberCount} {memberCount === 1 ? "member" : "members"}
+                </Text>
               </View>
-            )}
-            <View>
-              <Text
-                style={{
-                  color: pressed ? "hsl(0,0%,50%)" : "white",
-                  fontSize: 16,
-                  fontWeight: "600",
-                  lineHeight: 18,
-                }}
-              >
-                {channel.name}
-              </Text>
-              <Text
-                style={{
-                  color: "gray",
-                  fontSize: 11.5,
-                  fontWeight: "400",
-                  lineHeight: 14,
-                }}
-              >
-                {memberCount} {memberCount === 1 ? "member" : "members"}
-              </Text>
-            </View>
-          </>
-        )}
-      </Pressable>
+            </>
+          )}
+        </Pressable>
+      )}
     </View>
   );
 };
@@ -214,7 +216,7 @@ const Channel = ({ navigation, route: { params } }) => {
     markChannelRead,
   } = actions;
 
-  const channel = state.selectChannel(params.channelId);
+  const channel = state.selectChannel(channelId);
 
   const messages = useChannelMessages({ channelId });
   const headerHeight = useHeaderHeight();
@@ -233,16 +235,15 @@ const Channel = ({ navigation, route: { params } }) => {
 
   const fetchMoreMessages = useLatestCallback(() => {
     if (messages.length === 0) return;
-    return fetchMessages(channel.id, {
+    return fetchMessages(channelId, {
       beforeMessageId: messages[0].id,
       limit: 30,
     });
   });
 
-  const channelHasUnread = state.selectChannelHasUnread(channel.id);
-  const hasFetchedChannelMessagesAtLeastOnce = state.selectHasFetchedMessages(
-    channel.id
-  );
+  const channelHasUnread = state.selectChannelHasUnread(channelId);
+  const hasFetchedChannelMessagesAtLeastOnce =
+    state.selectHasFetchedMessages(channelId);
 
   // Mark channel as read when new messages arrive
   React.useEffect(() => {
@@ -258,9 +259,9 @@ const Channel = ({ navigation, route: { params } }) => {
     )
       return;
 
-    markChannelRead(channel.id);
+    markChannelRead(channelId);
   }, [
-    channel.id,
+    channelId,
     channelHasUnread,
     hasFetchedChannelMessagesAtLeastOnce,
     didScrollToBottomRef,
@@ -269,7 +270,7 @@ const Channel = ({ navigation, route: { params } }) => {
 
   const handleScrolledToBottom = () => {
     if (AppState.currentState !== "active" || !channelHasUnread) return;
-    markChannelRead(channel.id);
+    markChannelRead(channelId);
   };
 
   React.useEffect(() => {
@@ -337,7 +338,7 @@ const Channel = ({ navigation, route: { params } }) => {
           )}
           <ChannelMessageInput
             ref={inputRef}
-            placeholder={`Message #${channel.name}`}
+            placeholder={channel == null ? "" : `Message #${channel.name}`}
             pendingMessage={pendingMessage}
             setPendingMessage={setPendingMessage}
             onSubmit={(content) => {

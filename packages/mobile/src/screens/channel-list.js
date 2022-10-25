@@ -104,7 +104,7 @@ const ChannelList = ({ navigation }) => {
                 lineHeight: 14,
               }}
             >
-              {ensName == null
+              {ensName == null || ensName === userDisplayName
                 ? truncatedAddress
                 : `${ensName} (${truncatedAddress})`}
             </Text>

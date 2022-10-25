@@ -162,7 +162,7 @@ export const useFilteredUsers = ({ query }) => {
     fetchUsers(channelMemberUserIds);
   }, [fetchUsers, channelMemberUserIds]);
 
-  return { users: filteredUsers, isLoading: showEnsLoading };
+  return { users: filteredUsers, starredUsers, isLoading: showEnsLoading };
 };
 
 const NewClosed = ({ navigation }) => {
@@ -263,9 +263,6 @@ const NewClosed = ({ navigation }) => {
           onChangeText={setPendingInput}
           keyboardType="web-search"
         />
-        {/* <Text style={{ marginTop: 16, color: "hsl(0,0%,50%)", fontSize: 14 }}> */}
-        {/*   Find groups Add members by their ENS name or wallet address. */}
-        {/* </Text> */}
       </View>
 
       <FlatList

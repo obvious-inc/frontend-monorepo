@@ -1,5 +1,3 @@
-import { useEnsAddress } from "wagmi";
-import { utils as ethersUtils } from "ethers";
 import React from "react";
 import {
   View,
@@ -13,11 +11,11 @@ import Svg, { Path } from "react-native-svg";
 import { useNavigation } from "@react-navigation/native";
 import * as Shades from "@shades/common";
 import { UserProfilePicture } from "./channel-list";
+import { useFilteredUsers } from "./new-closed-channel";
 
 const { useAppScope } = Shades.app;
 const { useLatestCallback } = Shades.react;
 const { truncateAddress } = Shades.utils.ethereum;
-const { unique } = Shades.utils.array;
 
 const textDefault = "hsl(0,0%,83%)";
 const textDimmed = "hsl(0,0%,50%)";
@@ -168,67 +166,13 @@ export const useAsyncDismissKeyboard = () => {
 const NewChat = ({ navigation }) => {
   const { actions, state } = useAppScope();
 
-  const memberChannels = state.selectMemberChannels();
-  const channelMemberUserIds = unique(
-    memberChannels.flatMap((c) => c.memberUserIds)
-  );
-  const users = state.selectUsers(channelMemberUserIds);
-
   const inputRef = React.useRef();
 
   const [pendingInput, setPendingInput] = React.useState("");
-  const trimmedInput = pendingInput.trim();
 
-  const suffix = trimmedInput.split(".").slice(-1)[0];
-  const bareEnsNameQuery = trimmedInput.split(".").slice(0, -1).join(".");
-  const hasIncompleteEnsSuffix = "eth".startsWith(suffix);
-  const ensNameQuery = trimmedInput.endsWith(".eth")
-    ? trimmedInput
-    : `${hasIncompleteEnsSuffix ? bareEnsNameQuery : trimmedInput}.eth`;
-
-  const { data: ensAddress, isLoading: isLoadingEns } = useEnsAddress({
-    name: ensNameQuery,
-    enabled: trimmedInput.length >= 2,
+  const { users: filteredUsers, isLoading: isLoadingUsers } = useFilteredUsers({
+    query: pendingInput,
   });
-
-  const showEnsLoading = isLoadingEns && !ensNameQuery.startsWith("0x");
-
-  const queryAddress =
-    ensAddress ?? (ethersUtils.isAddress(trimmedInput) ? trimmedInput : null);
-
-  const filteredUsers = React.useMemo(() => {
-    if (trimmedInput.length <= 1) return [];
-
-    const queryWords = trimmedInput
-      .toLowerCase()
-      .split(" ")
-      .map((s) => s.trim());
-
-    const match = (user, query) =>
-      user.displayName.toLowerCase().includes(query);
-
-    return users.filter(
-      (u) =>
-        queryWords.some((q) => match(u, q)) &&
-        (queryAddress == null ||
-          u.walletAddress.toLowerCase() !== queryAddress.toLowerCase())
-    );
-  }, [users, trimmedInput, queryAddress]);
-
-  const hasSearchResults = filteredUsers.length > 0 || queryAddress != null;
-
-  const maybeUser =
-    queryAddress == null
-      ? null
-      : state.selectUserFromWalletAddress(queryAddress);
-
-  const fetchStarredUsers = useLatestCallback(() =>
-    actions.fetchUsers(channelMemberUserIds)
-  );
-
-  React.useEffect(() => {
-    fetchStarredUsers();
-  }, [fetchStarredUsers]);
 
   const [hasPendingSubmit, setPendingSubmit] = React.useState(false);
 
@@ -277,24 +221,23 @@ const NewChat = ({ navigation }) => {
           disabled={hasPendingSubmit}
           keyboardType="web-search"
         />
-        {/* <Text style={{ marginTop: 16, color: "hsl(0,0%,50%)", fontSize: 14 }}> */}
-        {/*   Find groups Add members by their ENS name or wallet address. */}
-        {/* </Text> */}
       </View>
 
       <FlatList
         data={[
-          queryAddress != null && {
-            id: queryAddress,
-            walletAddress: queryAddress,
-            displayName: maybeUser?.displayName,
-            ensName: ensAddress == null ? null : ensNameQuery,
-          },
-          showEnsLoading && { type: "loader" },
-          ...filteredUsers,
-          ...(hasSearchResults || showEnsLoading
+          isLoadingUsers && { type: "loader" },
+          ...(pendingInput.trim().length > 0 || isLoadingUsers
             ? []
-            : groupTypeOptions.map((o) => ({ ...o, type: "group-option" }))),
+            : [
+                { type: "section-title", title: "Create group" },
+                ...groupTypeOptions.map((o, i, os) => ({
+                  ...o,
+                  type: "group-option",
+                  separete: i === os.length - 1 && filteredUsers.length !== 0,
+                })),
+                { type: "section-title", title: "Message directly" },
+              ]),
+          ...filteredUsers,
         ].filter(Boolean)}
         keyExtractor={(item) => {
           switch (item.type) {
@@ -302,11 +245,13 @@ const NewChat = ({ navigation }) => {
               return item.label;
             case "loader":
               return "loader";
+            case "section-title":
+              return item.title;
             default:
               return item.id;
           }
         }}
-        renderItem={({ item }) => {
+        renderItem={({ item, index }) => {
           switch (item.type) {
             case "loader":
               return (
@@ -318,6 +263,27 @@ const NewChat = ({ navigation }) => {
                   }}
                 >
                   <Text style={{ color: textDimmed }}>Loading...</Text>
+                </View>
+              );
+            case "section-title":
+              return (
+                <View
+                  style={{
+                    height: index === 0 ? 40 : 60,
+                    justifyContent: "flex-end",
+                  }}
+                >
+                  <Text
+                    style={{
+                      paddingHorizontal: 16,
+                      paddingBottom: 5,
+                      fontSize: 14,
+                      fontWeight: "600",
+                      color: "hsl(0,0%,40%)",
+                    }}
+                  >
+                    {item.title}
+                  </Text>
                 </View>
               );
             case "group-option":
@@ -419,6 +385,7 @@ const ListItem = ({
   rightColumn,
   truncateSubtitle,
   arrowRight,
+  borderColor = "hsl(0,0%,14%)",
   ...props
 }) => {
   return (
@@ -449,7 +416,7 @@ const ListItem = ({
           flex: 1,
           flexDirection: "row",
           alignItems: "center",
-          borderColor: "hsl(0,0%,14%)",
+          borderColor,
           borderBottomWidth: 1,
         }}
       >
