@@ -6,6 +6,15 @@ import { getMentions } from "../utils/message";
 import { arrayShallowEquals } from "../utils/reselect";
 import { selectUser } from "./users";
 
+const sortChannelsByActivity = (channels, state) =>
+  sort((c1, c2) => {
+    const [t1, t2] = [c1, c2].map((c) => {
+      const readState = state.channels.readStatesById[c.id];
+      return new Date(readState?.lastMessageAt ?? c.createdAt).getTime();
+    });
+    return t1 > t2 ? -1 : t1 < t2 ? 1 : 0;
+  }, channels);
+
 const parseChannel = (channel) => ({
   id: channel.id,
   name: channel.name,
@@ -20,7 +29,8 @@ const parseChannel = (channel) => ({
 const entriesById = (state = {}, action) => {
   switch (action.type) {
     case "fetch-client-boot-data-request-successful":
-    case "fetch-user-channels-request-successful": {
+    case "fetch-user-channels-request-successful":
+    case "fetch-publicly-readable-channels-request-successful": {
       const parsedChannels = action.channels.map(parseChannel);
       const entriesById = indexBy((c) => c.id, parsedChannels);
       return { ...state, ...entriesById };
@@ -115,7 +125,7 @@ const metaById = (state = {}, action) => {
   }
 };
 
-const starsByChannelId = (state = [], action) => {
+const starsByChannelId = (state = {}, action) => {
   switch (action.type) {
     case "fetch-starred-items-request-successful": {
       const channelStars = action.stars.filter((s) => s.type === "channel");
@@ -127,6 +137,19 @@ const starsByChannelId = (state = [], action) => {
 
     case "unstar-channel-request-successful":
       return omitKey(action.channelId, state);
+
+    case "logout":
+      return {};
+
+    default:
+      return state;
+  }
+};
+
+const publicChannelIds = (state = [], action) => {
+  switch (action.type) {
+    case "fetch-publicly-readable-channels-request-successful":
+      return action.channels.map((c) => c.id);
 
     case "logout":
       return [];
@@ -375,13 +398,7 @@ export const selectMemberChannels = createSelector(
       )
       .map(([id]) => selectChannel(state, id));
 
-    return sort((c1, c2) => {
-      const [t1, t2] = [c1, c2].map((c) => {
-        const readState = state.channels.readStatesById[c.id];
-        return new Date(readState?.lastMessageAt ?? c.createdAt).getTime();
-      });
-      return t1 > t2 ? -1 : t1 < t2 ? 1 : 0;
-    }, channels);
+    return sortChannelsByActivity(channels, state);
   },
   (channels) => channels,
   { memoizeOptions: { equalityCheck: arrayShallowEquals } }
@@ -393,23 +410,32 @@ export const selectDmChannels = createSelector(
       .filter((entry) => !entry[1].delete && entry[1].kind === "dm")
       .map(([id]) => selectChannel(state, id));
 
-    return sort((c1, c2) => {
-      const [t1, t2] = [c1, c2].map((c) => {
-        const readState = state.channels.readStatesById[c.id];
-        return new Date(readState?.lastMessageAt ?? c.createdAt).getTime();
-      });
-      return t1 > t2 ? -1 : t1 < t2 ? 1 : 0;
-    }, channels);
+    return sortChannelsByActivity(channels, state);
   },
+  (channels) => channels,
+  { memoizeOptions: { equalityCheck: arrayShallowEquals } }
+);
+
+export const selectPublicChannels = createSelector(
+  (state) =>
+    sortChannelsByActivity(
+      state.channels.publicChannelIds
+        .map((id) => selectChannel(state, id))
+        .filter(Boolean),
+      state
+    ),
   (channels) => channels,
   { memoizeOptions: { equalityCheck: arrayShallowEquals } }
 );
 
 export const selectStarredChannels = createSelector(
   (state) =>
-    Object.keys(state.channels.starsByChannelId)
-      .map((id) => selectChannel(state, id))
-      .filter(Boolean),
+    sortChannelsByActivity(
+      Object.keys(state.channels.starsByChannelId)
+        .map((id) => selectChannel(state, id))
+        .filter(Boolean),
+      state
+    ),
   (channels) => channels,
   { memoizeOptions: { equalityCheck: arrayShallowEquals } }
 );
@@ -423,13 +449,7 @@ export const selectTopicChannels = createSelector(
       .filter((channel) => channel.kind === "topic")
       .map((c) => selectChannel(state, c.id));
 
-    return sort((c1, c2) => {
-      const [t1, t2] = [c1, c2].map((c) => {
-        const readState = state.channels.readStatesById[c.id];
-        return new Date(readState?.lastMessageAt ?? c.createdAt).getTime();
-      });
-      return t1 > t2 ? -1 : t1 < t2 ? 1 : 0;
-    }, channels);
+    return sortChannelsByActivity(channels, state);
   },
   (channels) => channels,
   { memoizeOptions: { equalityCheck: arrayShallowEquals } }
@@ -442,13 +462,7 @@ export const selectDmAndTopicChannels = createSelector(
       ...selectTopicChannels(state),
     ];
 
-    return sort((c1, c2) => {
-      const [t1, t2] = [c1, c2].map((c) => {
-        const readState = state.channels.readStatesById[c.id];
-        return new Date(readState?.lastMessageAt ?? c.createdAt).getTime();
-      });
-      return t1 > t2 ? -1 : t1 < t2 ? 1 : 0;
-    }, channels);
+    return sortChannelsByActivity(channels, state);
   },
   (channels) => channels,
   { memoizeOptions: { equalityCheck: arrayShallowEquals } }
@@ -490,4 +504,5 @@ export default combineReducers({
   metaById,
   readStatesById,
   starsByChannelId,
+  publicChannelIds,
 });

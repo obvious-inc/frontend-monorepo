@@ -1332,7 +1332,7 @@ const Channel = ({ compact, noSideMenu }) => {
     connect: connectWallet,
     // cancel: cancelWalletConnectionAttempt,
     // canConnect: canConnectWallet,
-    accountAddress,
+    accountAddress: walletAccountAddress,
     accountEnsName,
     // chain,
     isConnecting: isConnectingWallet,
@@ -1400,10 +1400,13 @@ const Channel = ({ compact, noSideMenu }) => {
     }, 0);
   }, [params.channelId, fetchChannel]);
 
-  useFetch(() => fetchChannelMembers(params.channelId), [params.channelId]);
+  useFetch(
+    () => fetchChannelMembers(params.channelId),
+    [params.channelId, fetchChannelMembers]
+  );
   useFetch(
     () => fetchChannelPublicPermissions(params.channelId),
-    [params.channelId]
+    [params.channelId, fetchChannelPublicPermissions]
   );
   useFetch(
     authenticationStatus === "not-authenticated"
@@ -1434,243 +1437,291 @@ const Channel = ({ compact, noSideMenu }) => {
 
   const theme = useTheme();
   const isEmbedded = searchParams.get("mode") === "embedded";
-  const hideConnectButton = searchParams.get("hide-connect-button") != null;
+  const hasPendingWalletAction =
+    isConnectingWallet || loginStatus === "requesting-signature";
 
-  const headerContent = React.useMemo(
-    () =>
-      channel == null ? null : (
-        <>
-          {!isMenuTogglingEnabled &&
-            (channel.avatar == null ? (
-              <>
-                {!isEmbedded && (
-                  <div
-                    css={(theme) =>
-                      css({
-                        color: theme.colors.textMuted,
-                        marginRight: "0.6rem",
-                      })
-                    }
-                  >
-                    {channel.kind === "dm" ? (
-                      <AtSignIcon style={{ width: "2.2rem" }} />
-                    ) : (
-                      <HashIcon style={{ width: "1.6rem" }} />
-                    )}
-                  </div>
-                )}
-              </>
-            ) : (
-              <a href={channel.avatar} rel="noreferrer" target="_blank">
-                <Avatar
-                  url={channel.avatar}
-                  size="2.4rem"
-                  pixelSize={24}
-                  css={css({ marginRight: "1.1rem" })}
-                />
-              </a>
-            ))}
-          {!isEmbedded && <Heading>{channel?.name}</Heading>}
-          <div style={{ flex: 1, minWidth: 0 }}>
-            {channel.description != null && (
-              <div
-                css={(theme) =>
-                  css({
-                    color: theme.colors.textHeaderSecondary,
-                    marginLeft: "1.1rem",
-                    padding: "0 1.1rem",
-                    borderLeft: "1px solid",
-                    borderColor: "hsl(0 0% 100% / 20%)",
-                    whiteSpace: "nowrap",
-                    overflow: "hidden",
-                    textOverflow: "ellipsis",
-                    userSelect: "text",
-                    cursor: "default",
-                  })
-                }
-              >
-                {channel.description}
-              </div>
-            )}
+  const headerContent = React.useMemo(() => {
+    if (channel == null) return null;
+
+    const renderRightColumn = () => {
+      if (
+        authenticationStatus === "not-authenticated" &&
+        hasPendingWalletAction
+      )
+        return (
+          <div
+            css={(theme) =>
+              css({
+                display: "flex",
+                color: theme.colors.textDimmed,
+                paddingLeft: "0.5rem",
+              })
+            }
+          >
+            Check your wallet...
+            <Spinner size="1.8rem" style={{ marginLeft: "1rem" }} />
           </div>
+        );
 
-          {user != null && (
-            <>
-              <button
-                onClick={() => {
-                  if (isChannelStarred) {
-                    actions.unstarChannel(channel.id);
+      return (
+        <>
+          <button
+            onClick={() => {
+              const tryStarChannel = async () => {
+                if (authenticationStatus !== "authenticated") {
+                  if (walletAccountAddress == null) {
+                    alert(
+                      "You need to connect and verify your account to star channels."
+                    );
                     return;
                   }
 
-                  actions.starChannel(channel.id);
-                }}
-                css={(theme) =>
-                  css({
-                    cursor: "pointer",
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    borderRadius: "0.3rem",
-                    width: "3.3rem",
-                    height: "2.8rem",
-                    padding: 0,
-                    transition: "background 20ms ease-in",
-                    marginRight: "0.2rem",
-                    ":hover": {
-                      background: theme.colors.backgroundModifierHover,
-                    },
-                  })
+                  if (
+                    !confirm(
+                      `You need to verify your account to star channels. Press ok to verify "${truncateAddress(
+                        walletAccountAddress
+                      )}" with wallet signature.`
+                    )
+                  )
+                    return;
+                  await login(walletAccountAddress);
                 }
-              >
-                {isChannelStarred ? (
-                  <StarIcon style={{ color: "rgb(202, 152, 73)" }} />
-                ) : (
-                  <StrokedStarIcon />
-                )}
-              </button>
 
-              {!isFetchingMembers && members.length !== 0 && (
-                <>
-                  <MembersDisplayButton
-                    onClick={() => {
-                      setMembersDialogOpen(true);
-                    }}
+                if (isChannelStarred) {
+                  actions.unstarChannel(channel.id);
+                  return;
+                }
+
+                await actions.starChannel(channel.id);
+
+                if (isEmbedded)
+                  window.open(
+                    `${window.location.origin}/channels/${channel.id}`,
+                    "_blank"
+                  );
+              };
+
+              tryStarChannel();
+            }}
+            css={(theme) =>
+              css({
+                cursor: "pointer",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                borderRadius: "0.3rem",
+                width: "3.3rem",
+                height: "2.8rem",
+                padding: 0,
+                transition: "background 20ms ease-in",
+                marginRight: "0.2rem",
+                ":hover": {
+                  background: theme.colors.backgroundModifierHover,
+                },
+              })
+            }
+          >
+            {isChannelStarred ? (
+              <StarIcon style={{ color: "rgb(202, 152, 73)" }} />
+            ) : (
+              <StrokedStarIcon />
+            )}
+          </button>
+
+          {!isFetchingMembers && members.length !== 0 && (
+            <>
+              <MembersDisplayButton
+                onClick={() => {
+                  setMembersDialogOpen(true);
+                }}
+                members={members}
+              />
+              <Dialog
+                isOpen={isMembersDialogOpen}
+                onRequestClose={() => {
+                  setMembersDialogOpen(false);
+                }}
+                style={{ display: "flex", flexDirection: "column" }}
+                underlayProps={{
+                  css: css({
+                    padding: "2.8rem 1.5rem",
+                    "@media (min-width: 600px)": {
+                      padding: "2.8rem",
+                    },
+                  }),
+                }}
+              >
+                {({ titleProps }) => (
+                  <MembersDirectoryDialog
                     members={members}
+                    titleProps={titleProps}
                   />
-                  <Dialog
-                    isOpen={isMembersDialogOpen}
-                    onRequestClose={() => {
-                      setMembersDialogOpen(false);
-                    }}
-                    style={{ display: "flex", flexDirection: "column" }}
-                    underlayProps={{
-                      css: css({
-                        padding: "2.8rem 1.5rem",
-                        "@media (min-width: 600px)": {
-                          padding: "2.8rem",
-                        },
-                      }),
-                    }}
-                  >
-                    {({ titleProps }) => (
-                      <MembersDirectoryDialog
-                        members={members}
-                        titleProps={titleProps}
-                      />
-                    )}
-                  </Dialog>
-                </>
-              )}
+                )}
+              </Dialog>
             </>
           )}
 
-          {authenticationStatus === "not-authenticated" &&
-            ((!hideConnectButton && isConnectingWallet) ||
-            loginStatus === "requesting-signature" ? (
-              <div
-                css={(theme) =>
-                  css({
-                    display: "flex",
-                    color: theme.colors.textDimmed,
-                  })
-                }
-              >
-                Check your wallet...{" "}
-                <Spinner size="1.8rem" style={{ marginLeft: "1rem" }} />
-              </div>
-            ) : accountAddress != null ? (
-              <span
-                css={(theme) =>
-                  css({
-                    display: "flex",
-                    alignItems: "center",
-                    fontSize: theme.fontSizes.default,
-                    paddingLeft: "0.5rem",
-                    overflow: "hidden",
-                  })
-                }
-              >
-                <span
-                  css={css({
-                    flex: 1,
-                    minWidth: 0,
-                    userSelect: "text",
-                    cursor: "default",
-                    whiteSpace: "nowrap",
-                    overflow: "auto",
-                  })}
-                >
-                  <a
-                    href={`https://etherscan.io/address/${accountAddress}`}
-                    rel="noreferrer"
-                    target="_blank"
-                    css={(theme) =>
-                      css({
-                        display: "inline-flex",
-                        alignItems: "center",
-                        color: theme.colors.linkColor,
-                        ":hover": { color: theme.colors.linkColorHighlight },
-                        ":hover [data-avatar]": { opacity: 0.9 },
-                      })
-                    }
-                  >
-                    {accountEnsName}{" "}
-                    {accountEnsName == null ? (
-                      truncateAddress(accountAddress)
-                    ) : (
-                      <>({truncateAddress(accountAddress)})</>
-                    )}
-                    <Avatar
-                      data-avatar
-                      walletAddress={accountAddress}
-                      size="2.6rem"
-                      style={{ marginLeft: "0.5rem" }}
-                    />
-                  </a>
-                </span>
+          {authenticationStatus === "not-authenticated" && (
+            <span
+              css={(theme) =>
+                css({
+                  display: "flex",
+                  alignItems: "center",
+                  fontSize: theme.fontSizes.default,
+                  paddingLeft: "0.5rem",
+                  overflow: "hidden",
+                })
+              }
+            >
+              {walletAccountAddress == null ? (
                 <Button
+                  size="small"
                   variant={theme.name === "nouns.tv" ? "primary" : "default"}
-                  onClick={() => {
-                    login(accountAddress);
-                  }}
-                  style={{ marginLeft: "1.2rem" }}
+                  onClick={connectWallet}
                 >
-                  Verify account
+                  Connect wallet
                 </Button>
-              </span>
-            ) : !hideConnectButton ? (
-              <Button
-                variant={theme.name === "nouns.tv" ? "primary" : "default"}
-                size="default"
-                onClick={connectWallet}
-              >
-                Connect wallet
-              </Button>
-            ) : null)}
+              ) : (
+                <>
+                  {isEmbedded && (
+                    <span
+                      css={css({
+                        flex: 1,
+                        minWidth: 0,
+                        userSelect: "text",
+                        cursor: "default",
+                        whiteSpace: "nowrap",
+                        overflow: "auto",
+                        marginRight: "1.2rem",
+                      })}
+                    >
+                      <a
+                        href={`https://etherscan.io/address/${walletAccountAddress}`}
+                        rel="noreferrer"
+                        target="_blank"
+                        css={(theme) =>
+                          css({
+                            display: "inline-flex",
+                            alignItems: "center",
+                            color: theme.colors.linkColor,
+                            ":hover": {
+                              color: theme.colors.linkColorHighlight,
+                            },
+                            ":hover [data-avatar]": { opacity: 0.9 },
+                          })
+                        }
+                      >
+                        {accountEnsName}{" "}
+                        {accountEnsName == null ? (
+                          truncateAddress(walletAccountAddress)
+                        ) : (
+                          <>({truncateAddress(walletAccountAddress)})</>
+                        )}
+                        <Avatar
+                          data-avatar
+                          walletAddress={walletAccountAddress}
+                          size="2.6rem"
+                          style={{ marginLeft: "0.5rem" }}
+                        />
+                      </a>
+                    </span>
+                  )}
+
+                  <Button
+                    size="small"
+                    variant={theme.name === "nouns.tv" ? "primary" : "default"}
+                    onClick={() => {
+                      login(walletAccountAddress);
+                    }}
+                  >
+                    Verify account
+                  </Button>
+                </>
+              )}
+            </span>
+          )}
         </>
-      ),
-    [
-      isEmbedded,
-      hideConnectButton,
-      loginStatus,
-      theme,
-      isFetchingMembers,
-      accountAddress,
-      accountEnsName,
-      login,
-      user,
-      authenticationStatus,
-      connectWallet,
-      isConnectingWallet,
-      actions,
-      isMenuTogglingEnabled,
-      channel,
-      members,
-      isChannelStarred,
-      isMembersDialogOpen,
-    ]
-  );
+      );
+    };
+
+    return (
+      <>
+        {!isMenuTogglingEnabled &&
+          (channel.avatar == null ? (
+            <>
+              {!isEmbedded && (
+                <div
+                  css={(theme) =>
+                    css({
+                      color: theme.colors.textMuted,
+                      marginRight: "0.6rem",
+                    })
+                  }
+                >
+                  {channel.kind === "dm" ? (
+                    <AtSignIcon style={{ width: "2.2rem" }} />
+                  ) : (
+                    <HashIcon style={{ width: "1.6rem" }} />
+                  )}
+                </div>
+              )}
+            </>
+          ) : (
+            <a href={channel.avatar} rel="noreferrer" target="_blank">
+              <Avatar
+                url={channel.avatar}
+                size="2.4rem"
+                pixelSize={24}
+                css={css({ marginRight: "1.1rem" })}
+              />
+            </a>
+          ))}
+
+        {!isEmbedded && <Heading>{channel?.name}</Heading>}
+
+        <div style={{ flex: 1, minWidth: 0 }}>
+          {channel.description != null && (
+            <div
+              css={(theme) =>
+                css({
+                  color: theme.colors.textHeaderSecondary,
+                  marginLeft: "1.1rem",
+                  padding: "0 1.1rem",
+                  borderLeft: "1px solid",
+                  borderColor: "hsl(0 0% 100% / 20%)",
+                  whiteSpace: "nowrap",
+                  overflow: "hidden",
+                  textOverflow: "ellipsis",
+                  userSelect: "text",
+                  cursor: "default",
+                })
+              }
+            >
+              {channel.description}
+            </div>
+          )}
+        </div>
+
+        {renderRightColumn()}
+      </>
+    );
+  }, [
+    isEmbedded,
+    hasPendingWalletAction,
+    theme,
+    isFetchingMembers,
+    walletAccountAddress,
+    accountEnsName,
+    login,
+    authenticationStatus,
+    connectWallet,
+    actions,
+    isMenuTogglingEnabled,
+    channel,
+    members,
+    isChannelStarred,
+    isMembersDialogOpen,
+  ]);
 
   if (notFound)
     return (

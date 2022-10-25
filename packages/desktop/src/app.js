@@ -45,11 +45,7 @@ import Channel, { Header as ChannelHeader } from "./components/channel";
 import { UnifiedLayout } from "./components/layouts";
 import TitleBar from "./components/title-bar";
 import * as Tooltip from "./components/tooltip";
-import {
-  ChatBubbles as ChatBubblesIcon,
-  Home as HomeIcon,
-} from "./components/icons";
-import useSideMenu from "./hooks/side-menu";
+import { Home as HomeIcon } from "./components/icons";
 import { notion as defaultTheme, nounsTv as nounsTvTheme } from "./themes";
 import AuthHome from "./components/auth";
 
@@ -77,9 +73,7 @@ const wagmiClient = createWagmiClient({
     }),
     new WalletConnectConnector({
       chains,
-      options: {
-        qrcode: true,
-      },
+      options: { qrcode: true },
     }),
   ],
 });
@@ -168,6 +162,7 @@ const App = () => {
     fetchUserChannelsReadStates,
     fetchStarredItems,
     fetchUsers,
+    fetchPubliclyReadableChannels,
   } = actions;
 
   const user = state.selectMe();
@@ -248,6 +243,10 @@ const App = () => {
     });
   }, [authStatus, fetchClientBootData, fetchUsers]);
 
+  React.useEffect(() => {
+    if (authStatus === "not-authenticated") fetchPubliclyReadableChannels();
+  }, [authStatus, fetchPubliclyReadableChannels]);
+
   useWindowFocusListener(() => {
     if (authStatus !== "authenticated") return;
     fetchUserChannels();
@@ -296,47 +295,9 @@ const App = () => {
       {isNative && <TitleBar />}
 
       <Routes>
-        <Route
-          path="/"
-          element={
-            <RequireAuth>
-              <UnifiedLayout />
-            </RequireAuth>
-          }
-        >
+        <Route path="/" element={<UnifiedLayout />}>
           <Route index element={<EmptyHome />} />
-          <Route path="/channels">
-            <Route
-              index
-              element={
-                <div
-                  css={(theme) =>
-                    css({
-                      flex: 1,
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      height: "100%",
-                      background: theme.colors.backgroundPrimary,
-                    })
-                  }
-                >
-                  <ChatBubblesIcon
-                    style={{
-                      width: "6rem",
-                      color: "rgb(255 255 255 / 5%)",
-                    }}
-                  />
-                </div>
-              }
-            />
-            <Route path=":channelId" element={<Channel />} />
-          </Route>
-          {/* <Route path="servers/:serverId" element={<Channel />} /> */}
-          {/* <Route */}
-          {/*   path="servers/:serverId/:channelId" */}
-          {/*   element={<Channel server />} */}
-          {/* /> */}
+          <Route path="/channels/:channelId" element={<Channel />} />
         </Route>
         <Route path="c/:channelId" element={<Channel noSideMenu />} />
 
@@ -348,16 +309,6 @@ const App = () => {
             </RequireAuth>
           }
         />
-        {/* <Route */}
-        {/*   path="/discover" */}
-        {/*   element={ */}
-        {/*     <RequireAuth> */}
-        {/*       <Discover /> */}
-        {/*     </RequireAuth> */}
-        {/*   } */}
-        {/* /> */}
-        {/* Public routes below */}
-        {/* <Route path="/servers/:serverId/join" element={<JoinServer />} /> */}
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </>
@@ -365,17 +316,14 @@ const App = () => {
 };
 
 const EmptyHome = () => {
-  // const { state } = useAppScope();
-  const { isFloating: isMenuTogglingEnabled } = useSideMenu();
-  // const hasFetchedInitialData = state.selectHasFetchedInitialData();
-  // const starredChannels = state.selectStarredChannels();
-  // const hasNoStarredChannels =
-  //   hasFetchedInitialData && starredChannels.length === 0;
+  const { status: authStatus } = useAuth();
+
   return (
     <div
       css={(theme) =>
         css({
           flex: 1,
+          minWidth: 0,
           height: "100%",
           display: "flex",
           flexDirection: "column",
@@ -383,31 +331,35 @@ const EmptyHome = () => {
         })
       }
     >
-      {isMenuTogglingEnabled && <ChannelHeader />}
-      <div
-        css={css({
-          flex: 1,
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          height: "100%",
-        })}
-      >
+      <ChannelHeader />
+      {authStatus === "not-authenticated" ? (
+        <LoginScreen withMenu />
+      ) : (
         <div
           css={css({
+            flex: 1,
             display: "flex",
-            flexDirection: "column",
             alignItems: "center",
+            justifyContent: "center",
+            height: "100%",
           })}
         >
-          <HomeIcon
-            style={{
-              width: "6rem",
-              color: "rgb(255 255 255 / 5%)",
-            }}
-          />
+          <div
+            css={css({
+              display: "flex",
+              flexDirection: "column",
+              alignItems: "center",
+            })}
+          >
+            <HomeIcon
+              style={{
+                width: "6rem",
+                color: "rgb(255 255 255 / 5%)",
+              }}
+            />
+          </div>
         </div>
-      </div>
+      )}
     </div>
   );
 };
@@ -424,6 +376,7 @@ const RequireAuth = ({ children }) => {
 
 const searchParams = new URLSearchParams(location.search);
 const specifiedTheme = searchParams.get("theme");
+const theme = specifiedTheme === "nouns-tv" ? nounsTvTheme : defaultTheme;
 
 export default function Root() {
   return (
@@ -437,13 +390,7 @@ export default function Root() {
                 pusherKey={process.env.PUSHER_KEY}
               >
                 <WalletLoginProvider>
-                  <ThemeProvider
-                    theme={
-                      specifiedTheme === "nouns-tv"
-                        ? nounsTvTheme
-                        : defaultTheme
-                    }
-                  >
+                  <ThemeProvider theme={theme}>
                     <OverlayProvider style={{ width: "100%", height: "100%" }}>
                       <Tooltip.Provider delayDuration={300}>
                         <SideMenuProvider>
