@@ -56,9 +56,9 @@ importers:
       prettier: ^2.7.1
       process: ^0.11.10
       pusher-js: ^7.4.0
-      react: ^18.2.0
+      react: ^18.0.0
       react-aria: ^3.20.0
-      react-dom: ^18.2.0
+      react-dom: ^18.0.0
       react-intl: ^5.25.1
       react-router-dom: ^6.4.2
       reselect: ^4.1.6
@@ -5805,7 +5805,7 @@ packages:
       '@tanstack/react-query': 4.13.0
     dependencies:
       '@tanstack/query-persist-client-core': 4.13.0
-      '@tanstack/react-query': 4.13.0_gtltrjvtlgj7ga36qzsxajwqwe
+      '@tanstack/react-query': 4.13.0_biqbaboplfbrettd7655fr4n2y
     transitivePeerDependencies:
       - '@tanstack/query-core'
     dev: false
