@@ -1,4 +1,3 @@
-
 name: Mobile | CI EAS build
 
 on:
@@ -35,9 +34,6 @@ jobs:
       - name: Install dependencies
         run: pnpm -F common install && pnpm -F common build &&  pnpm -F mobile install
         shell: bash
-
-      - name: Build project
-        run: pnpm -F mobile build
 
       - name: EAS build
         working-directory: packages/mobile
