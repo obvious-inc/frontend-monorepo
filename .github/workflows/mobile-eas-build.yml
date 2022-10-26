@@ -39,7 +39,7 @@ jobs:
       - name: Build project
         run: pnpm -F mobile build
 
-      - name: Export bundle
+      - name: EAS build
         working-directory: packages/mobile
         run: eas build --non-interactive --wait --platform=ios --profile=production
         env:
