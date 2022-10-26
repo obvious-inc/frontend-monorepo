@@ -1,4 +1,4 @@
-require("dotenv").config();
+if (!process.env.CI) require("dotenv").config();
 
 module.exports = {
   name: "newshades-mobile",
