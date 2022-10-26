@@ -69,5 +69,6 @@
     "overrides": {
       "@nouns/assets>fs": "workspace:*"
     }
-  }
+  },
+  "packageManager": "pnpm@7.12.2"
 }
