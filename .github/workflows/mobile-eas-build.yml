@@ -1,5 +1,5 @@
 
-name: Mobile | CI EAS update
+name: Mobile | CI EAS build
 
 on:
   push:
@@ -41,7 +41,7 @@ jobs:
 
       - name: Export bundle
         working-directory: packages/mobile
-        run: eas update --auto -p ios
+        run: eas build --non-interactive --wait --platform=ios --profile=production
         env:
           EXPO_UPDATES_URL: ${{ secrets.EXPO_UPDATES_URL }}
           EAS_PROJECT_ID: ${{ secrets.EAS_PROJECT_ID }}
