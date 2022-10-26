@@ -1,5 +1,5 @@
 import "./polyfills";
-import { render } from "react-dom";
+import { createRoot } from "react-dom/client";
 import { BrowserRouter } from "react-router-dom";
 import * as Sentry from "@sentry/react";
 import App from "./app";
@@ -9,9 +9,8 @@ import "./index.css";
 if (process.env.NODE_ENV === "production")
   Sentry.init({ dsn: process.env.SENTRY_DSN });
 
-render(
+createRoot(document.getElementById("app-mount")).render(
   <BrowserRouter>
-    <App />
-  </BrowserRouter>,
-  document.getElementById("app-mount")
+    <App tab="home" />
+  </BrowserRouter>
 );
