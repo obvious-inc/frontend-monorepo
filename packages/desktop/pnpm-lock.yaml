@@ -70,7 +70,7 @@ dependencies:
   '@radix-ui/react-toolbar': 0.1.5_react@18.0.0
   '@radix-ui/react-tooltip': 0.1.7_zpnidt7m3osuk7shl3s4oenomq
   '@sentry/react': 6.19.7_react@18.0.0
-  '@shades/common': file:../common_sebcqyki2fe7mojcgm5q7n2bea
+  '@shades/common': link:../common
   date-fns: 2.29.3
   dotenv: 16.0.3
   electron-squirrel-startup: 1.0.0
@@ -10792,25 +10792,6 @@ packages:
     dependencies:
       react: 18.0.0
       use-sync-external-store: 1.2.0_react@18.0.0
-    dev: false
-
-  file:../common_sebcqyki2fe7mojcgm5q7n2bea:
-    resolution: {directory: ../common, type: directory}
-    id: file:../common
-    name: '@shades/common'
-    version: 0.0.0
-    peerDependencies:
-      '@nouns/assets': '*'
-      '@nouns/sdk': '*'
-      ethers: '*'
-      react: '*'
-      reselect: '*'
-    dependencies:
-      '@nouns/assets': 0.4.0
-      '@nouns/sdk': 0.2.0_ethers@5.7.2
-      ethers: 5.7.2
-      react: 18.0.0
-      reselect: 4.1.6
     dev: false
 
   github.com/ethereumjs/ethereumjs-abi/ee3994657fa7a427238e6ba92a84d0b529bbcde0:
