@@ -6,5 +6,5 @@
     "prepare-packages": "pnpm -F common install && pnpm -F common run build",
     "build-desktop": "pnpm -F desktop build-web"
   },
-  "packageManager": "pnpm@7.6.0"
+  "packageManager": "pnpm@7.14.0"
 }
