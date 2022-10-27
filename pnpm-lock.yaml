@@ -87,7 +87,7 @@ importers:
       '@radix-ui/react-toolbar': 0.1.5_react@18.0.0
       '@radix-ui/react-tooltip': 0.1.7_zpnidt7m3osuk7shl3s4oenomq
       '@sentry/react': 6.19.7_react@18.0.0
-      '@shades/common': file:packages/common_sebcqyki2fe7mojcgm5q7n2bea
+      '@shades/common': link:../common
       date-fns: 2.29.3
       dotenv: 16.0.3
       electron-squirrel-startup: 1.0.0
@@ -133,9 +133,6 @@ importers:
       webpack: 5.74.0_povibhb7cctselr6hkpwkojvwu
       webpack-cli: 4.10.0_vnmgq7jx5zjkzolvtfp7mdf5ri
       webpack-dev-server: 4.11.1_5v66e2inugklgvlh4huuavolfq
-    dependenciesMeta:
-      '@shades/common':
-        injected: true
 
   packages/fs:
     specifiers: {}
@@ -16401,25 +16398,6 @@ packages:
     dependencies:
       react: 18.0.0
       use-sync-external-store: 1.2.0_react@18.0.0
-    dev: false
-
-  file:packages/common_sebcqyki2fe7mojcgm5q7n2bea:
-    resolution: {directory: packages/common, type: directory}
-    id: file:packages/common
-    name: '@shades/common'
-    version: 0.0.0
-    peerDependencies:
-      '@nouns/assets': '*'
-      '@nouns/sdk': '*'
-      ethers: '*'
-      react: '*'
-      reselect: '*'
-    dependencies:
-      '@nouns/assets': 0.4.0
-      '@nouns/sdk': 0.2.0_ethers@5.7.2
-      ethers: 5.7.2
-      react: 18.0.0
-      reselect: 4.1.6
     dev: false
 
   github.com/ethereumjs/ethereumjs-abi/ee3994657fa7a427238e6ba92a84d0b529bbcde0:
