@@ -8,11 +8,11 @@ import {
   LayoutAnimation,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import Svg, { Path, SvgXml } from "react-native-svg";
+import Svg, { Path } from "react-native-svg";
 import { useEnsName } from "wagmi";
 import * as Shades from "@shades/common";
-import useProfilePicture from "../hooks/profile-picture";
-import { Input } from "./new-chat";
+import UserProfilePicture from "../components/user-profile-picture";
+import Input from "../components/input";
 
 const { reverse } = Shades.utils.array;
 const { search: searchChannels } = Shades.utils.channel;
@@ -389,44 +389,6 @@ const ListItem = ({
     </Pressable>
   </View>
 );
-
-export const UserProfilePicture = ({
-  size = 18,
-  background = "hsl(0,0%,16%)",
-  user,
-  large = false,
-  transparent = false,
-  style,
-}) => {
-  const profilePicture = useProfilePicture(user, { large, transparent });
-  return (
-    <View
-      style={{
-        width: size,
-        height: size,
-        borderRadius: size / 2,
-        backgroundColor: background,
-        overflow: "hidden",
-        alignItems: "center",
-        justifyContent: "center",
-        ...style,
-      }}
-    >
-      {profilePicture?.type === "url" ? (
-        <Image
-          source={{ uri: profilePicture.url }}
-          style={{
-            width: "100%",
-            height: "100%",
-            borderRadius: style?.borderRadius ?? size / 2,
-          }}
-        />
-      ) : profilePicture?.type === "svg-string" ? (
-        <SvgXml xml={profilePicture.string} width="100%" height="100%" />
-      ) : null}
-    </View>
-  );
-};
 
 export const ChannelPicture = React.memo(
   ({ channelId, size = 18, background = "hsl(0,0%,16%)", transparent }) => {
