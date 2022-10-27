@@ -9,7 +9,8 @@
     "ios": "expo start --ios",
     "web": "expo start --web",
     "eject": "expo eject",
-    "format": "prettier . --write"
+    "format": "prettier . --write",
+    "eas-build-post-install": "pnpm -F common build"
   },
   "dependencies": {
     "@ethersproject/shims": "^5.7.0",
