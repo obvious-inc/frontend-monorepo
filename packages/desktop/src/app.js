@@ -40,8 +40,6 @@ import useWalletLogin, {
 } from "./hooks/wallet-login";
 import LoginScreen from "./components/login-screen";
 import Channel, { Header as ChannelHeader } from "./components/channel";
-// import Discover from "./components/discover";
-// import JoinServer from "./components/join-server";
 import { UnifiedLayout } from "./components/layouts";
 import TitleBar from "./components/title-bar";
 import * as Tooltip from "./components/tooltip";
