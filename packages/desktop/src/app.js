@@ -378,31 +378,33 @@ const theme = specifiedTheme === "nouns-tv" ? nounsTvTheme : defaultTheme;
 
 export default function Root() {
   return (
-    <WagmiConfig client={wagmiClient}>
-      <IntlProvider locale="en">
-        <AuthProvider apiOrigin="/api">
-          <AppScopeProvider>
-            <ServerConnectionProvider
-              Pusher={Pusher}
-              pusherKey={process.env.PUSHER_KEY}
-            >
-              <WalletLoginProvider>
-                <ThemeProvider theme={theme}>
-                  <OverlayProvider style={{ width: "100%", height: "100%" }}>
-                    <Tooltip.Provider delayDuration={300}>
-                      <SideMenuProvider>
-                        <GlobalMediaQueriesProvider>
-                          <App />
-                        </GlobalMediaQueriesProvider>
-                      </SideMenuProvider>
-                    </Tooltip.Provider>
-                  </OverlayProvider>
-                </ThemeProvider>
-              </WalletLoginProvider>
-            </ServerConnectionProvider>
-          </AppScopeProvider>
-        </AuthProvider>
-      </IntlProvider>
-    </WagmiConfig>
+    <React.StrictMode>
+      <WagmiConfig client={wagmiClient}>
+        <IntlProvider locale="en">
+          <AuthProvider apiOrigin="/api">
+            <AppScopeProvider>
+              <ServerConnectionProvider
+                Pusher={Pusher}
+                pusherKey={process.env.PUSHER_KEY}
+              >
+                <WalletLoginProvider>
+                  <ThemeProvider theme={theme}>
+                    <OverlayProvider style={{ width: "100%", height: "100%" }}>
+                      <Tooltip.Provider delayDuration={300}>
+                        <SideMenuProvider>
+                          <GlobalMediaQueriesProvider>
+                            <App />
+                          </GlobalMediaQueriesProvider>
+                        </SideMenuProvider>
+                      </Tooltip.Provider>
+                    </OverlayProvider>
+                  </ThemeProvider>
+                </WalletLoginProvider>
+              </ServerConnectionProvider>
+            </AppScopeProvider>
+          </AuthProvider>
+        </IntlProvider>
+      </WagmiConfig>
+    </React.StrictMode>
   );
 }
