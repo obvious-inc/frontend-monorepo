@@ -4,6 +4,8 @@ import {
   PUSHER_KEY,
   INFURA_PROJECT_ID,
 } from "./config";
+import * as Device from "expo-device";
+import * as Notifications from "expo-notifications";
 import {
   WagmiConfig,
   createClient as createWagmiClient,
@@ -81,7 +83,14 @@ const wagmiClient = createWagmiClient({
   storage: null,
 });
 
-// const NativeStackNavigator = createStackNavigator();
+Notifications.setNotificationHandler({
+  handleNotification: async () => ({
+    shouldShowAlert: false,
+    shouldPlaySound: false,
+    shouldSetBadge: false,
+  }),
+});
+
 const NativeStackNavigator = createNativeStackNavigator();
 
 const useServerEventListener = (listener_) => {
@@ -111,6 +120,7 @@ const App = () => {
     fetchUserChannelsReadStates,
     fetchStarredItems,
     fetchUsers,
+    registerDevicePushToken,
   } = actions;
 
   const channels = state.selectMemberChannels();
@@ -151,6 +161,45 @@ const App = () => {
     if (authStatus !== "authenticated") return;
     dispatch({ type: ["server-event", name].join(":"), data, user: me });
   });
+
+  React.useEffect(() => {
+    if (authStatus !== "authenticated") return;
+    if (!Device.isDevice) return;
+
+    const registerForPushNotifications = async () => {
+      const { status: permissionStatus, canAskAgain } =
+        await Notifications.getPermissionsAsync();
+
+      if (permissionStatus !== "granted") {
+        if (!canAskAgain) return;
+        const { status: statusAfterRequest } =
+          await Notifications.requestPermissionsAsync();
+        if (statusAfterRequest !== "granted") return;
+      }
+
+      const { data: token } = await Notifications.getExpoPushTokenAsync();
+
+      registerDevicePushToken(token);
+    };
+
+    const notificationListener = Notifications.addNotificationReceivedListener(
+      (notification) => {
+        console.log("Received notification", notification);
+      }
+    );
+
+    const responseListener =
+      Notifications.addNotificationResponseReceivedListener((response) => {
+        console.log("Received notification response", response);
+      });
+
+    registerForPushNotifications();
+
+    return () => {
+      Notifications.removeNotificationSubscription(notificationListener);
+      Notifications.removeNotificationSubscription(responseListener);
+    };
+  }, [authStatus, registerDevicePushToken]);
 
   if (authStatus === "not-authenticated")
     return (

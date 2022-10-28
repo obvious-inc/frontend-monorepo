@@ -11,6 +11,8 @@ import {
 import useRootReducer from "./hooks/root-reducer";
 import useLatestCallback from "./hooks/latest-callback";
 
+const parseUser = (u) => ({ ...u, pushTokens: u.push_tokens ?? [] });
+
 const Context = React.createContext({});
 
 export const useAppScope = () => React.useContext(Context);
@@ -23,7 +25,7 @@ export const Provider = ({ children }) => {
     { addBeforeDispatchListener, addAfterDispatchListener },
   ] = useRootReducer();
 
-  const user = stateSelectors.selectMe();
+  const me = stateSelectors.selectMe();
 
   const logout = useLatestCallback(() => {
     clearAuthTokens();
@@ -31,19 +33,32 @@ export const Provider = ({ children }) => {
   });
 
   const fetchMe = useLatestCallback(() =>
-    authorizedFetch("/users/me").then((user) => {
+    authorizedFetch("/users/me").then((me) => {
+      const user = parseUser(me);
       dispatch({ type: "fetch-me-request-successful", user });
       return user;
     })
   );
 
-  const updateMe = useLatestCallback(({ displayName, pfp }) =>
-    authorizedFetch("/users/me", {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ display_name: displayName, pfp }),
-    })
+  const updateMe = useLatestCallback(
+    ({ displayName, profilePicture, pushTokens }) =>
+      authorizedFetch("/users/me", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          display_name: displayName,
+          pfp: profilePicture,
+          push_tokens: pushTokens,
+        }),
+      })
   );
+
+  const registerDevicePushToken = useLatestCallback((token) => {
+    console.log(me);
+    if (me.pushTokens?.includes(token)) return;
+
+    return updateMe({ pushTokens: [...me.pushTokens, token] });
+  });
 
   const fetchUsers = useLatestCallback((userIds) =>
     authorizedFetch("/users/info", {
@@ -159,7 +174,7 @@ export const Provider = ({ children }) => {
           ...message,
           id: dummyId,
           created_at: new Date().toISOString(),
-          author: user.id,
+          author: me.id,
         },
       });
 
@@ -231,7 +246,7 @@ export const Provider = ({ children }) => {
       type: "add-message-reaction:request-sent",
       messageId,
       emoji,
-      userId: user.id,
+      userId: me.id,
     });
 
     // TODO: Undo the optimistic update if the request fails
@@ -247,7 +262,7 @@ export const Provider = ({ children }) => {
         type: "remove-message-reaction:request-sent",
         messageId,
         emoji,
-        userId: user.id,
+        userId: me.id,
       });
 
       // TODO: Undo the optimistic update if the request fails
@@ -513,8 +528,10 @@ export const Provider = ({ children }) => {
   );
 
   const fetchClientBootData = useLatestCallback(async () => {
-    const [{ user, channels, read_states: readStates, apps }, starredItems] =
-      await Promise.all([authorizedFetch("/ready"), fetchStarredItems()]);
+    const [
+      { user: rawMe, channels, read_states: readStates, apps },
+      starredItems,
+    ] = await Promise.all([authorizedFetch("/ready"), fetchStarredItems()]);
 
     // TODO: Change this
     const missingChannelStars = starredItems.filter(
@@ -526,16 +543,18 @@ export const Provider = ({ children }) => {
         missingChannelStars.map((s) => fetchChannel(s.reference))
       );
 
+    const me = parseUser(rawMe);
+
     dispatch({
       type: "fetch-client-boot-data-request-successful",
-      user,
+      user: me,
       channels,
       readStates,
       apps,
       // starredItems,
     });
 
-    return { user, channels, readStates, starredItems };
+    return { user: me, channels, readStates, starredItems };
   });
 
   const starItem = useLatestCallback(({ type, reference }) =>
@@ -612,6 +631,7 @@ export const Provider = ({ children }) => {
       fetchClientBootData,
       fetchMessage,
       updateMe,
+      registerDevicePushToken,
       fetchUsers,
       fetchMessages,
       fetchUserChannels,
@@ -655,6 +675,7 @@ export const Provider = ({ children }) => {
       fetchClientBootData,
       fetchMessage,
       updateMe,
+      registerDevicePushToken,
       fetchUsers,
       fetchMessages,
       fetchUserChannels,
