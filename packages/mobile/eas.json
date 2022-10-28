@@ -1,10 +1,12 @@
 {
   "cli": {
-    "version": ">= 2.1.0"
+    "version": ">= 2.1.0",
+    "appVersionSource": "remote"
   },
   "build": {
     "production": {
-      "channel": "main"
+      "channel": "main",
+      "autoIncrement": true
     }
   },
   "submit": {

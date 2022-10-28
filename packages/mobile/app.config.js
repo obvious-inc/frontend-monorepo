@@ -1,10 +1,10 @@
 if (!process.env.CI) require("dotenv").config();
 
 module.exports = {
-  name: "newshades-mobile",
+  name: "NewShades",
   slug: "newshades",
   owner: "newshades",
-  version: "1.0.0",
+  version: "0.1.0",
   orientation: "portrait",
   icon: "./assets/icon.png",
   splash: {
@@ -20,16 +20,7 @@ module.exports = {
   runtimeVersion: { policy: "sdkVersion" },
   ios: {
     supportsTablet: false,
-    bundleIdentifier: "dev.newshades",
-  },
-  android: {
-    adaptiveIcon: {
-      foregroundImage: "./assets/adaptive-icon.png",
-      backgroundColor: "#FFFFFF",
-    },
-  },
-  web: {
-    favicon: "./assets/favicon.png",
+    bundleIdentifier: "xyz.newshades.newshades",
   },
   extra: {
     apiEndpoint: process.env.API_ENDPOINT,
