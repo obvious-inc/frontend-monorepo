@@ -14,7 +14,7 @@ module.exports = {
   },
   updates: {
     fallbackToCacheTimeout: 0,
-    url: process.env.EXPO_UPDATES_URL,
+    url: `https://u.expo.dev/${process.env.EAS_PROJECT_ID}`,
   },
   assetBundlePatterns: ["**/*"],
   runtimeVersion: { policy: "sdkVersion" },
