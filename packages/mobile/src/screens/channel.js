@@ -24,7 +24,8 @@ import * as Shades from "@shades/common";
 import * as Localization from "expo-localization";
 import FormattedDate from "../components/formatted-date";
 import RichText from "../components/rich-text";
-import { ChannelPicture, UserProfilePicture } from "./channel-list";
+import UserProfilePicture from "../components/user-profile-picture";
+import { ChannelPicture } from "./channel-list";
 import MessageModalContent from "./message-modal";
 
 const { useLatestCallback } = Shades.react;

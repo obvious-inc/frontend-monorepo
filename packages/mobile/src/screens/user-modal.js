@@ -4,8 +4,8 @@ import React from "react";
 import { View, Text, Dimensions } from "react-native";
 import { useEnsName } from "wagmi";
 import * as Shades from "@shades/common";
+import UserProfilePicture from "../components/user-profile-picture";
 import { ModalActionButtonGroup } from "./account-modal";
-import { UserProfilePicture } from "./channel-list";
 
 const { useAppScope } = Shades.app;
 const { truncateAddress } = Shades.utils.ethereum;
