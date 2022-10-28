@@ -1,4 +1,5 @@
 import * as Clipboard from "expo-clipboard";
+import React from "react";
 import { View, Text } from "react-native";
 import * as Shades from "@shades/common";
 import { WEB_APP_ENDPOINT } from "../config";
@@ -12,11 +13,15 @@ const textDimmed = "hsl(0,0%,50%)";
 export const options = { presentation: "modal" };
 
 const ChannelDetailsModal = ({ navigation, route }) => {
-  const { state } = useAppScope();
-  const channel = state.selectChannel(route.params.channelId);
+  const { state, actions } = useAppScope();
+  const { channelId } = route.params;
+  const channel = state.selectChannel(channelId);
+  const isStarredChannel = state.selectIsChannelStarred(channelId);
   const memberCount = channel.memberUserIds.length;
 
-  const actions = [
+  const [hasPendingStarRequest, setPendingStarRequest] = React.useState(false);
+
+  const buttonActions = [
     {
       label: "Copy link",
       onPress: () => {
@@ -27,7 +32,19 @@ const ChannelDetailsModal = ({ navigation, route }) => {
         });
       },
     },
-    { label: "Star", disabled: true, onPress: () => {} },
+    {
+      label: isStarredChannel ? "Unstar" : "Star",
+      disabled: hasPendingStarRequest,
+      onPress: () => {
+        setPendingStarRequest(true);
+        const promise = isStarredChannel
+          ? actions.unstarChannel(channelId)
+          : actions.starChannel(channelId);
+        promise.finally(() => {
+          setPendingStarRequest(false);
+        });
+      },
+    },
     { label: "Members", disabled: true, onPress: () => {} },
   ];
 
@@ -104,7 +121,7 @@ const ChannelDetailsModal = ({ navigation, route }) => {
         </Text>
       </View>
 
-      <ModalActionButtonGroup actions={actions} />
+      <ModalActionButtonGroup actions={buttonActions} />
     </View>
   );
 };

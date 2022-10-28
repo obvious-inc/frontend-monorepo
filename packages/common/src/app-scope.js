@@ -54,9 +54,7 @@ export const Provider = ({ children }) => {
   );
 
   const registerDevicePushToken = useLatestCallback((token) => {
-    console.log(me);
     if (me.pushTokens?.includes(token)) return;
-
     return updateMe({ pushTokens: [...me.pushTokens, token] });
   });
 
