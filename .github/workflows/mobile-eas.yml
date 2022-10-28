@@ -2,6 +2,8 @@ name: Mobile | CI EAS update
 
 on:
   push:
+    branches:
+      - main
     paths-ignore:
       - "packages/landing"
       - "packages/desktop"

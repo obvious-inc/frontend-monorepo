@@ -16,15 +16,15 @@
     "forge": "./forge.config.js"
   },
   "devDependencies": {
-    "@electron-forge/cli": "^6.0.0-beta.67",
-    "@electron-forge/maker-zip": "^6.0.0-beta.67",
-    "@electron-forge/publisher-github": "^6.0.0-beta.67",
+    "@electron-forge/cli": "^6.0.0-beta.68",
+    "@electron-forge/maker-zip": "^6.0.0-beta.68",
+    "@electron-forge/publisher-github": "^6.0.0-beta.68",
     "@swc/core": "1.2.130",
     "assert": "^2.0.0",
     "copy-webpack-plugin": "^10.2.4",
     "css-loader": "^6.7.1",
     "electron": "17.1.2",
-    "eslint": "^8.25.0",
+    "eslint": "^8.26.0",
     "eslint-config-prettier": "^8.5.0",
     "eslint-plugin-react": "^7.31.10",
     "eslint-plugin-react-hooks": "^4.6.0",
@@ -64,9 +64,9 @@
     "is-hotkey": "^0.2.0",
     "lodash.throttle": "^4.1.1",
     "pusher-js": "^7.4.0",
-    "react": "^17.0.2",
+    "react": "18.0.0",
     "react-aria": "^3.20.0",
-    "react-dom": "^17.0.2",
+    "react-dom": "18.0.0",
     "react-intl": "^5.25.1",
     "react-router-dom": "^6.4.2",
     "reselect": "^4.1.6",
@@ -74,10 +74,5 @@
     "slate-history": "^0.66.0",
     "slate-react": "^0.75.0",
     "wagmi": "^0.6.8"
-  },
-  "dependenciesMeta": {
-    "@shades/common": {
-      "injected": true
-    }
   }
 }

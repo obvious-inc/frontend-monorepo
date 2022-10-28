@@ -3,7 +3,8 @@
   "scripts": {
     "lint": "pnpm -r run --if-present lint",
     "format": "pnpm -r run --if-present format",
-    "prepare-packages": "pnpm -F common install && pnpm -F common run build"
+    "prepare-packages": "pnpm -F common install && pnpm -F common run build",
+    "build-desktop": "pnpm -F desktop build-web"
   },
-  "packageManager": "pnpm@7.12.2"
+  "packageManager": "pnpm@7.14.0"
 }

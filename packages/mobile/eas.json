@@ -3,15 +3,9 @@
     "version": ">= 2.1.0"
   },
   "build": {
-    "development": {
-      "developmentClient": true,
-      "distribution": "internal",
-      "channel": "preview"
-    },
-    "preview": {
-      "distribution": "internal"
-    },
-    "production": {}
+    "production": {
+      "channel": "main"
+    }
   },
   "submit": {
     "production": {}

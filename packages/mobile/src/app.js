@@ -56,7 +56,6 @@ import NewOpenChannelScreen, {
 
 const TabNavigator = createBottomTabNavigator();
 
-const textDefault = "hsl(0,0%,83%)";
 const textBlue = "hsl(199, 100%, 46%)";
 const background = "hsl(0, 0%, 10%)";
 
@@ -382,6 +381,11 @@ export default () => {
           <NavigationContainer
             initialState={initialState}
             onStateChange={(state) => {
+              if (state == null) {
+                AsyncStorage.removeItem(NAVIGATION_STATE_STORAGE_KEY);
+                return;
+              }
+
               AsyncStorage.setItem(
                 NAVIGATION_STATE_STORAGE_KEY,
                 JSON.stringify(state)

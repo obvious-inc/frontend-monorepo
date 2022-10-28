@@ -1,6 +1,4 @@
-import { useEnsAddress } from "wagmi";
 import { useEnsName } from "wagmi";
-import { utils as ethersUtils } from "ethers";
 import React from "react";
 import {
   View,
@@ -12,12 +10,12 @@ import {
 } from "react-native";
 import Svg, { Path } from "react-native-svg";
 import * as Shades from "@shades/common";
-import { Input, UserListItem } from "./new-chat";
-import { UserProfilePicture } from "./channel-list";
+import UserProfilePicture from "../components/user-profile-picture";
+import Input from "../components/input";
+import { UserListItem, useFilteredUsers } from "./new-chat";
 
 const { useAppScope } = Shades.app;
 const { useLatestCallback } = Shades.react;
-const { unique, sort } = Shades.utils.array;
 
 const textDefault = "hsl(0,0%,83%)";
 const textDimmed = "hsl(0,0%,50%)";
@@ -40,130 +38,6 @@ const HeaderRight = ({ button: { label, disabled, onPress } }) => (
     </Pressable>
   </View>
 );
-
-export const useFilteredUsers = ({ query }) => {
-  const { actions, state } = useAppScope();
-  const { selectUsers, selectUserFromWalletAddress } = state;
-  const { fetchUsers } = actions;
-
-  const me = state.selectMe();
-  const memberChannels = state.selectMemberChannels();
-  const channelMemberUserIds = React.useMemo(
-    () =>
-      unique(
-        memberChannels
-          .flatMap((c) => c.memberUserIds)
-          .filter((id) => id !== me.id)
-      ),
-    [memberChannels, me.id]
-  );
-  const starredUserIds = state.selectStarredUserIds();
-  const starredUsers = state.selectStarredUsers();
-
-  const trimmedQuery = query.trim();
-  const suffix = trimmedQuery.split(".").slice(-1)[0];
-  const bareEnsNameQuery = trimmedQuery.split(".").slice(0, -1).join(".");
-  const hasIncompleteEnsSuffix = "eth".startsWith(suffix);
-  const ensNameQuery = trimmedQuery.endsWith(".eth")
-    ? trimmedQuery
-    : `${hasIncompleteEnsSuffix ? bareEnsNameQuery : trimmedQuery}.eth`;
-
-  const { data: ensAddress, isLoading: isLoadingEns } = useEnsAddress({
-    name: ensNameQuery,
-    enabled: trimmedQuery.length >= 2,
-  });
-
-  const showEnsLoading = isLoadingEns && !ensNameQuery.startsWith("0x");
-
-  const filteredUsers = React.useMemo(() => {
-    if (trimmedQuery.length < 3) return starredUsers;
-
-    const userIds = unique([...starredUserIds, ...channelMemberUserIds]);
-    const users = selectUsers(userIds);
-
-    const queryWords = trimmedQuery
-      .toLowerCase()
-      .split(" ")
-      .map((s) => s.trim());
-
-    const match = (user) =>
-      queryWords.some((w) => user.displayName.toLowerCase().includes(w));
-
-    const queryAddress =
-      ensAddress ?? (ethersUtils.isAddress(trimmedQuery) ? trimmedQuery : null);
-
-    const sortResults = (us) =>
-      sort((u1, u2) => {
-        const [s1, s2] = [u1, u2].map((u) => starredUserIds.includes(u.id));
-
-        // Starred users on top
-        if (s1 && !s2) return -1;
-        if (!s1 && s2) return 1;
-
-        // Earliest displayName match for the rest
-        const [i1, i2] = [u1, u2].map((u) =>
-          u.displayName?.toLowerCase().indexOf(trimmedQuery.toLowerCase())
-        );
-
-        // None match
-        if (i1 === -1 && i2 === -1) return 0;
-
-        // Single match
-        if (i1 === -1) return 1;
-        if (i2 === -1) return -1;
-
-        // If both match, pick the first
-        if (i1 < i2) return -1;
-        if (i1 > i2) return 1;
-
-        // Given the same index, pick the shortest string
-        const [l1, l2] = [u1, u2].map((u) => u.displayName?.length ?? Infinity);
-        if (l1 < l2) return -1;
-        if (l1 > l2) return 1;
-
-        return 0;
-      }, us);
-
-    if (queryAddress == null) return sortResults(users.filter(match));
-
-    const maybeUser = selectUserFromWalletAddress(queryAddress);
-
-    return [
-      {
-        id: queryAddress,
-        walletAddress: queryAddress,
-        displayName: maybeUser?.displayName,
-        ensName: ensAddress == null ? null : ensNameQuery,
-      },
-      ...sortResults(
-        users.filter(
-          (u) =>
-            match(u) &&
-            u.walletAddress.toLowerCase() !== queryAddress.toLowerCase()
-        )
-      ),
-    ];
-  }, [
-    starredUsers,
-    channelMemberUserIds,
-    starredUserIds,
-    trimmedQuery,
-    ensAddress,
-    ensNameQuery,
-    selectUsers,
-    selectUserFromWalletAddress,
-  ]);
-
-  React.useEffect(() => {
-    fetchUsers(starredUserIds);
-  }, [fetchUsers, starredUserIds]);
-
-  React.useEffect(() => {
-    fetchUsers(channelMemberUserIds);
-  }, [fetchUsers, channelMemberUserIds]);
-
-  return { users: filteredUsers, starredUsers, isLoading: showEnsLoading };
-};
 
 const NewClosed = ({ navigation }) => {
   const { state } = useAppScope();
