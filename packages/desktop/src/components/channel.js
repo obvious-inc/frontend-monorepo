@@ -25,6 +25,7 @@ import Avatar from "./avatar";
 import Button from "./button";
 import * as Tooltip from "./tooltip";
 import Dialog from "./dialog";
+import Input from "./input";
 import { Hash as HashIcon, AtSign as AtSignIcon } from "./icons";
 import {
   HamburgerMenu as HamburgerMenuIcon,
@@ -617,7 +618,7 @@ export const ChannelBase = ({
                   css={(theme) =>
                     css({
                       borderBottom: "0.1rem solid",
-                      borderColor: theme.colors.backgroundModifierAccent,
+                      borderColor: theme.colors.borderLight,
                       padding: "0 0 1.5rem",
                     })
                   }
@@ -1088,7 +1089,7 @@ const NewMessageInput = React.memo(
                   ":hover": { filter: "brightness(1.1) saturate(1.1)" },
                   ":disabled": {
                     pointerEvents: "none",
-                    color: theme.colors.disabledMessageSubmitButton,
+                    color: theme.colors.textMuted,
                   },
                 })
               }
@@ -2051,33 +2052,12 @@ const MembersDirectoryDialog = ({ members, titleProps }) => {
           {/*   close */}
           {/* </Dialog.Close> */}
         </header>
-        <input
+        <Input
           value={query}
           onChange={(e) => {
             setQuery(e.target.value);
           }}
           placeholder="Find members"
-          css={(theme) =>
-            css({
-              position: "relative",
-              color: "white",
-              background: theme.colors.backgroundSecondary,
-              fontSize: "1.5rem",
-              fontWeight: "400",
-              borderRadius: "0.3rem",
-              padding: "0.5rem 0.7rem",
-              width: "100%",
-              outline: "none",
-              border: 0,
-              "&:focus": {
-                boxShadow: `0 0 0 0.2rem ${theme.colors.primary}`,
-              },
-              // Prevents iOS zooming in on input fields
-              "@supports (-webkit-touch-callout: none)": {
-                fontSize: "1.6rem",
-              },
-            })
-          }
         />
       </div>
       <div css={css({ flex: 1, overflow: "auto", padding: "1.3rem 0" })}>

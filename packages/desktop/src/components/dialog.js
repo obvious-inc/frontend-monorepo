@@ -101,7 +101,7 @@ const StyledDialog = ({ width = "62rem", children, ...props }) => {
         maxWidth: width,
         height: "min(calc(100% - 3rem), 82rem)",
         maxHeight: "min(calc(100% - 3rem), 82rem)",
-        borderRadius: "0.4rem",
+        borderRadius: "0.6rem",
         color: theme.colors.textNormal,
         background: theme.colors.backgroundPrimary,
         boxShadow:

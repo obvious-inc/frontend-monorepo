@@ -629,7 +629,7 @@ const MemberDisplayName = React.forwardRef(
       css={(theme) =>
         css({
           lineHeight: 1.2,
-          color: color ?? theme.colors.memberDisplayName,
+          color: color ?? theme.colors.textNormal,
           fontWeight: theme.text.weights.smallHeader,
           cursor: "pointer",
           ":hover": {
@@ -1716,14 +1716,7 @@ const SystemMessageContent = ({ message }) => {
       ].some((n) => n == null);
 
       return (
-        <span
-          css={(theme) =>
-            css({
-              color: theme.colors.channelDefault,
-              opacity: isMissingData ? 0 : 1,
-            })
-          }
-        >
+        <span style={{ opacity: isMissingData ? 0 : undefined }}>
           <MemberDisplayNameWithPopover user={message.installer} /> installed a
           new app:{" "}
           <InlineAppDisplayName displayName={message.app?.name ?? "..."} />

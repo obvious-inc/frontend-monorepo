@@ -107,7 +107,7 @@ const ProfilePreview = React.forwardRef(({ userId }, ref) => {
               fontSize: theme.fontSizes.small,
               overflow: "hidden",
               textOverflow: "ellipsis",
-              color: theme.colors.textHeaderSecondary,
+              color: theme.colors.textDimmed,
             })
           }
         >

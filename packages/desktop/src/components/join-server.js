@@ -174,7 +174,7 @@ const Content = ({
             },
             ".description, .member-count": {
               fontSize: theme.fontSizes.tiny,
-              color: theme.colors.textHeaderSecondary,
+              color: theme.colors.textDimmed,
               lineHeight: 1.3,
             },
             ".description": {

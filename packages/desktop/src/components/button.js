@@ -1,6 +1,6 @@
-import { css } from "@emotion/react";
+import { css, keyframes } from "@emotion/react";
 
-const baseStyles = () => ({
+const baseStyles = (t) => ({
   userSelect: "none",
   transition: "background 20ms ease-in",
   fontWeight: "400",
@@ -14,21 +14,21 @@ const baseStyles = () => ({
   justifyContent: "center",
   textDecoration: "none",
   whiteSpace: "nowrap",
-  "&[disabled]": { opacity: 0.5 },
+  outline: "none",
+  "&[disabled]": { opacity: 0.5, cursor: "not-allowed" },
+  "&:focus": { boxShadow: `0 0 0 0.2rem ${t.colors.primary}` },
 });
 
-const stylesByVariant = (theme) => ({
+const stylesByVariant = (t) => ({
   default: {
-    color: theme.colors.textNormal,
+    color: t.colors.textNormal,
     border: "1px solid rgba(255, 255, 255, 0.13)",
-    // background: "rgb(255 255 255 / 7%)",
     "&:hover": {
-      // background: "rgb(255 255 255 / 9%)",
       background: "rgb(47 47 47)",
     },
   },
   transparent: {
-    color: theme.colors.textNormal,
+    color: t.colors.textNormal,
     border: "0.1rem solid",
     borderColor: "rgb(255 255 255 / 20%)",
     background: "none",
@@ -39,7 +39,8 @@ const stylesByVariant = (theme) => ({
   },
   primary: {
     color: "white",
-    background: theme.colors.primary,
+    background: t.colors.primary,
+    "&:focus": { boxShadow: `0 0 0 0.2rem ${t.colors.primaryTransparent}` },
     "&:hover": {
       filter: "brightness(1.1)",
     },
@@ -54,9 +55,13 @@ const stylesBySize = (theme) => ({
   },
   small: {
     fontSize: theme.fontSizes.default,
-    // fontSize: "1.3rem",
     padding: "0 1rem",
     height: "2.8rem",
+  },
+  medium: {
+    fontSize: "1.5rem",
+    padding: "0 1.7rem",
+    height: "3.6rem",
   },
   large: {
     fontSize: "1.5rem",
@@ -70,12 +75,17 @@ const defaultPropsByComponent = {
   },
 };
 
+const loadingDotSize = "0.4rem";
+const loadingDotCount = 3;
+
 const Button = ({
   size = "small",
   variant = "default",
   fullWidth = false,
+  isLoading = false,
   css: customStyles,
   component: Component = "button",
+  children,
   ...props
 }) => (
   <Component
@@ -88,9 +98,54 @@ const Button = ({
       }),
       customStyles,
     ]}
-    style={{ width: fullWidth ? "100%" : undefined }}
+    style={{
+      pointerEvents: isLoading ? "none" : undefined,
+      width: fullWidth ? "100%" : undefined,
+    }}
     {...props}
-  />
+  >
+    <div style={{ visibility: isLoading ? "hidden" : undefined }}>
+      {children}
+    </div>
+    {isLoading && (
+      <div
+        style={{
+          position: "absolute",
+          display: "flex",
+          visibility: isLoading ? undefined : "hidden",
+        }}
+      >
+        {Array.from({ length: loadingDotCount }).map((_, i) => (
+          <div
+            key={i}
+            css={css({
+              animation: dotsAnimation,
+              animationDelay: `${i / 5}s`,
+              animationDuration: "1.4s",
+              animationIterationCount: "infinite",
+              width: loadingDotSize,
+              height: loadingDotSize,
+              borderRadius: "50%",
+              background: "currentColor",
+              margin: "0 0.1rem",
+            })}
+          />
+        ))}
+      </div>
+    )}
+  </Component>
 );
+
+const dotsAnimation = keyframes({
+  "0%": {
+    opacity: 0.2,
+  },
+  "20%": {
+    opacity: 1,
+  },
+  to: {
+    opacity: 0.2,
+  },
+});
 
 export default Button;

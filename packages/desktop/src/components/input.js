@@ -1,0 +1,78 @@
+import React from "react";
+import { css } from "@emotion/react";
+
+let id = 0;
+const genId = () => {
+  return ++id;
+};
+
+const Input = ({
+  size,
+  multiline = false,
+  label,
+  containerProps,
+  labelProps,
+  ...props
+}) => {
+  const [id] = React.useState(() => genId());
+
+  const Component = multiline ? "textarea" : "input";
+
+  const renderInput = (extraProps) => (
+    <Component
+      autoComplete="off"
+      css={(theme) =>
+        css({
+          display: "block",
+          color: theme.colors.textNormal,
+          background: theme.colors.backgroundSecondary,
+          fontSize: "1.5rem",
+          fontWeight: "400",
+          borderRadius: "0.3rem",
+          padding: size === "large" ? "0.7rem 0.9rem" : "0.5rem 0.7rem",
+          width: "100%",
+          outline: "none",
+          border: 0,
+          "&:disabled": {
+            color: theme.colors.textMuted,
+          },
+          "&:focus": {
+            boxShadow: `0 0 0 0.2rem ${theme.colors.primary}`,
+          },
+          // Prevents iOS zooming in on input fields
+          "@supports (-webkit-touch-callout: none)": {
+            fontSize: "1.6rem",
+          },
+        })
+      }
+      {...props}
+      {...extraProps}
+    />
+  );
+
+  if (label == null) return renderInput();
+
+  return (
+    <div {...containerProps}>
+      <label
+        htmlFor={id}
+        css={(t) =>
+          css({
+            display: "inline-block",
+            color: t.colors.textDimmed,
+            // color: t.colors.textNormal,
+            fontSize: t.fontSizes.default,
+            lineHeight: 1.2,
+            margin: "0 0 0.8rem",
+          })
+        }
+        {...labelProps}
+      >
+        {label}
+      </label>
+      {renderInput({ id })}
+    </div>
+  );
+};
+
+export default Input;
