@@ -1321,8 +1321,7 @@ const Heading = ({ component: Component = "div", children, ...props }) => (
   </Component>
 );
 
-const Channel = ({ compact, noSideMenu }) => {
-  const params = useParams();
+const Channel = ({ channelId, compact, noSideMenu }) => {
   const [searchParams] = useSearchParams();
   const { status: authenticationStatus } = useAuth();
   const { state, actions } = useAppScope();
@@ -1360,13 +1359,13 @@ const Channel = ({ compact, noSideMenu }) => {
     fetchApps,
   } = actions;
 
-  const fetchMessages = useMessageFetcher(params.channelId);
+  const fetchMessages = useMessageFetcher(channelId);
 
-  const channel = state.selectChannel(params.channelId);
-  const channelAccessLevel = state.selectChannelAccessLevel(params.channelId);
-  const isChannelStarred = state.selectIsChannelStarred(params.channelId);
+  const channel = state.selectChannel(channelId);
+  const channelAccessLevel = state.selectChannelAccessLevel(channelId);
+  const isChannelStarred = state.selectIsChannelStarred(channelId);
 
-  const members = state.selectChannelMembers(params.channelId);
+  const members = state.selectChannelMembers(channelId);
   const isFetchingMembers = members.some((m) => m.walletAddress == null);
   const isMember = user != null && members.some((m) => m.id === user.id);
 
@@ -1376,11 +1375,11 @@ const Channel = ({ compact, noSideMenu }) => {
         channel.memberUserIds != null &&
         !channel.memberUserIds.includes(user?.id)
       )
-        await actions.joinChannel(params.channelId);
+        await actions.joinChannel(channelId);
 
       return actions.createMessage({
         server: channel.kind === "server" ? channel.serverId : undefined,
-        channel: params.channelId,
+        channel: channelId,
         content: stringifyMessageBlocks(blocks),
         blocks,
         replyToMessageId,
@@ -1392,7 +1391,7 @@ const Channel = ({ compact, noSideMenu }) => {
     setNotFound(false);
     // Timeout to prevent this stalling other requests
     setTimeout(() => {
-      fetchChannel(params.channelId).catch((e) => {
+      fetchChannel(channelId).catch((e) => {
         if (e.code === 404) {
           setNotFound(true);
           return;
@@ -1400,30 +1399,30 @@ const Channel = ({ compact, noSideMenu }) => {
         throw e;
       });
     }, 0);
-  }, [params.channelId, fetchChannel]);
+  }, [channelId, fetchChannel]);
 
   useFetch(
-    () => fetchChannelMembers(params.channelId),
-    [params.channelId, fetchChannelMembers]
+    () => fetchChannelMembers(channelId),
+    [channelId, fetchChannelMembers]
   );
   useFetch(
-    () => fetchChannelPublicPermissions(params.channelId),
-    [params.channelId, fetchChannelPublicPermissions]
+    () => fetchChannelPublicPermissions(channelId),
+    [channelId, fetchChannelPublicPermissions]
   );
   useFetch(
     authenticationStatus === "not-authenticated"
-      ? () => fetchApps(params.channelId)
+      ? () => fetchApps(channelId)
       : undefined,
-    [params.channelId]
+    [channelId]
   );
 
   React.useEffect(() => {
-    fetchMessages(params.channelId, { limit: 30 });
-  }, [params.channelId, fetchMessages]);
+    fetchMessages(channelId, { limit: 30 });
+  }, [channelId, fetchMessages]);
 
   useInterval(
     () => {
-      fetchMessages(params.channelId, { limit: 20 });
+      fetchMessages(channelId, { limit: 20 });
     },
     {
       // Only long-poll fetch when user is logged out, or when not a member
@@ -1774,9 +1773,7 @@ const Channel = ({ compact, noSideMenu }) => {
       </div>
     );
 
-  const typingChannelMembers = state.selectChannelTypingMembers(
-    params.channelId
-  );
+  const typingChannelMembers = state.selectChannelTypingMembers(channelId);
 
   return (
     <ChannelBase
@@ -2194,7 +2191,14 @@ const MembersDirectoryDialog = ({ members, titleProps }) => {
 };
 
 export default (props) => {
+  const params = useParams();
   const { status } = useAuth();
   if (status === "loading") return null;
-  return <Channel {...props} compact={location.search.includes("compact=1")} />;
+  return (
+    <Channel
+      channelId={params.channelId}
+      {...props}
+      compact={location.search.includes("compact=1")}
+    />
+  );
 };

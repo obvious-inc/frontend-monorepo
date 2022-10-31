@@ -1,7 +1,9 @@
+import { utils as ethersUtils } from "ethers";
 import {
   WagmiConfig,
   createClient as createWagmiClient,
   configureChains as configureWagmiChains,
+  useEnsAddress,
 } from "wagmi";
 import { mainnet as mainnetChain } from "wagmi/chains";
 import { infuraProvider } from "wagmi/providers/infura";
@@ -11,7 +13,13 @@ import { WalletConnectConnector } from "wagmi/connectors/walletConnect";
 import React from "react";
 import { OverlayProvider } from "react-aria";
 import { css } from "@emotion/react";
-import { Routes, Route, Navigate, useNavigate } from "react-router-dom";
+import {
+  Routes,
+  Route,
+  Navigate,
+  useNavigate,
+  useParams,
+} from "react-router-dom";
 import { IntlProvider } from "react-intl";
 import { ThemeProvider, Global } from "@emotion/react";
 import Pusher from "pusher-js";
@@ -296,6 +304,7 @@ const App = () => {
         <Route path="/" element={<UnifiedLayout />}>
           <Route index element={<EmptyHome />} />
           <Route path="/channels/:channelId" element={<Channel />} />
+          <Route path="/dm/:addressOrEnsName" element={<DmChannel />} />
         </Route>
         <Route path="c/:channelId" element={<Channel noSideMenu />} />
 
@@ -311,6 +320,33 @@ const App = () => {
       </Routes>
     </>
   );
+};
+
+const DmChannel = () => {
+  const params = useParams();
+  const isAddress = ethersUtils.isAddress(params.addressOrEnsName);
+  const { data: ensAddress, error } = useEnsAddress({
+    name: params.addressOrEnsName,
+    enabled: !isAddress,
+  });
+
+  const address = isAddress ? params.addressOrEnsName : ensAddress;
+
+  const { state } = useAppScope();
+
+  if (address == null) return null;
+
+  const user = state.selectUserFromWalletAddress(address);
+
+  if (user == null) return;
+
+  const dmChannel = state.selectDmChannelFromUserId(user.id);
+
+  if (dmChannel != null) return <Channel channelId={dmChannel.id} />;
+
+  if (error != null) return <div>{error}</div>;
+
+  return null;
 };
 
 const EmptyHome = () => {

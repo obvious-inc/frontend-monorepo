@@ -16,7 +16,9 @@ module.exports = (_, argv) => {
       clean: true,
     },
     devServer: {
-      historyApiFallback: true,
+      historyApiFallback: {
+        disableDotRule: true,
+      },
       proxy: {
         "/api": {
           target: process.env.API_ENDPOINT ?? "http://localhost:5001",
