@@ -489,7 +489,9 @@ export const UnifiedLayout = () => {
         )
       }
     >
-      <Outlet />
+      <React.Suspense fallback={null}>
+        <Outlet />
+      </React.Suspense>
     </SideMenuLayout>
   );
 };

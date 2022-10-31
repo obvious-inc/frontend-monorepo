@@ -2,6 +2,7 @@ const path = require("path");
 const webpack = require("webpack");
 const HtmlWebpackPlugin = require("html-webpack-plugin");
 const CopyPlugin = require("copy-webpack-plugin");
+const MiniCssExtractPlugin = require("mini-css-extract-plugin");
 
 require("dotenv").config();
 
@@ -31,7 +32,10 @@ module.exports = (_, argv) => {
       rules: [
         {
           test: /\.css$/,
-          use: [{ loader: "style-loader" }, { loader: "css-loader" }],
+          use: [
+            isProduction ? MiniCssExtractPlugin.loader : "style-loader",
+            "css-loader",
+          ],
         },
         {
           test: /\.js$/,
@@ -80,6 +84,7 @@ module.exports = (_, argv) => {
     ...config,
     plugins: [
       ...config.plugins,
+      new MiniCssExtractPlugin(),
       new CopyPlugin({
         patterns: [
           {

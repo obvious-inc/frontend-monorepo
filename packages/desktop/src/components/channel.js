@@ -21,6 +21,7 @@ import useCommands from "../hooks/commands";
 import MessageInput from "./message-input";
 import Spinner from "./spinner";
 import ChannelMessage from "./channel-message";
+import ChannelHeader from "./channel-header";
 import Avatar from "./avatar";
 import Button from "./button";
 import * as Tooltip from "./tooltip";
@@ -28,7 +29,6 @@ import Dialog from "./dialog";
 import Input from "./input";
 import { Hash as HashIcon, AtSign as AtSignIcon } from "./icons";
 import {
-  HamburgerMenu as HamburgerMenuIcon,
   PlusCircle as PlusCircleIcon,
   CrossCircle as CrossCircleIcon,
   Star as StarIcon,
@@ -43,8 +43,6 @@ const { stringifyBlocks: stringifyMessageBlocks } = messageUtils;
 
 const { sort } = arrayUtils;
 const { truncateAddress } = ethereumUtils;
-
-const isNative = window.Native != null;
 
 const useFetch = (fetcher, dependencies) => {
   const fetcherRef = React.useRef(fetcher);
@@ -574,7 +572,7 @@ export const ChannelBase = ({
         height: 100%;
       `}
     >
-      <Header noSideMenu={noSideMenu}>{headerContent}</Header>
+      <ChannelHeader noSideMenu={noSideMenu}>{headerContent}</ChannelHeader>
 
       <div
         css={css({
@@ -1807,64 +1805,6 @@ const OnScreenTrigger = ({ callback }) => {
   return <div ref={ref} />;
 };
 
-export const Header = ({ noSideMenu, children }) => {
-  const { isFloating: isSideMenuFloating, toggle: toggleMenu } = useSideMenu();
-  const isMenuTogglingEnabled = !noSideMenu && isSideMenuFloating;
-  return (
-    <div
-      css={(theme) =>
-        css({
-          height: theme.mainHeader.height,
-          padding: "0 1.6rem",
-          display: "flex",
-          alignItems: "center",
-          boxShadow: theme.mainHeader.shadow,
-          WebkitAppRegion: isNative ? "drag" : undefined,
-          minWidth: 0,
-          width: "100%",
-          ...(theme.mainHeader.floating
-            ? {
-                position: "absolute",
-                top: 0,
-                left: 0,
-                background:
-                  "linear-gradient(180deg, #191919 0%, #191919d9 50%,  transparent 100%)",
-                zIndex: "2",
-              }
-            : {}),
-        })
-      }
-    >
-      {isMenuTogglingEnabled && (
-        <button
-          onClick={() => {
-            toggleMenu();
-          }}
-          css={css({
-            background: "none",
-            border: 0,
-            color: "white",
-            cursor: "pointer",
-            padding: "0.8rem 0.6rem",
-            marginLeft: "-0.6rem",
-            marginRight: "calc(-0.6rem + 1.6rem)",
-          })}
-        >
-          <HamburgerMenuIcon
-            css={(theme) =>
-              css({
-                fill: theme.colors.interactiveNormal,
-                width: "1.5rem",
-                ":hover": { fill: theme.colors.interactiveHover },
-              })
-            }
-          />
-        </button>
-      )}
-      {children}
-    </div>
-  );
-};
 const compareMembersByOwnerOnlineStatusAndDisplayName = (m1, m2) => {
   if (m1.isOwner !== m2.isOwner) return m1.isOwner ? -1 : 1;
 
