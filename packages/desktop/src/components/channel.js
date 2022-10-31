@@ -701,6 +701,7 @@ export const ChannelBase = ({
             )}
             <div
               ref={messagesContainerRef}
+              role="list"
               css={(theme) =>
                 css({
                   minHeight: 0,

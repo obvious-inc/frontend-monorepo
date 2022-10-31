@@ -263,6 +263,7 @@ const ChannelMessage = React.memo(function ChannelMessage_({
   return (
     <div
       ref={containerRef}
+      role="listitem"
       style={{
         background: hasPendingReply
           ? "#3f42ea2b"
