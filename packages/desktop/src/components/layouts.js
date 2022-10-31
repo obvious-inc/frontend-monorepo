@@ -1056,6 +1056,7 @@ const CreateChannelDialog = ({ titleProps, close, createChannel }) => {
               label="Name"
               value={name}
               onChange={(e) => setName(e.target.value)}
+              autoFocus
               disabled={hasPendingRequest}
               placeholder="e.g. Bacon life"
               containerProps={{ style: { margin: "0 0 2rem" } }}
