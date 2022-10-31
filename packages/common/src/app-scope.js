@@ -510,7 +510,7 @@ export const Provider = ({ children }) => {
   const fetchStarredItems = useLatestCallback(() =>
     authorizedFetch("/stars", { priority: "low" }).then((res) => {
       dispatch({
-        type: "fetch-starred-items-request-successful",
+        type: "fetch-starred-items:request-successful",
         stars: res.map((s) => pickKeys(["id", "type", "reference"], s)),
       });
       return res;
@@ -568,21 +568,27 @@ export const Provider = ({ children }) => {
     authorizedFetch(`/stars/${starId}`, { method: "DELETE" })
   );
 
-  const starChannel = useLatestCallback((channelId) =>
-    starItem({ type: "channel", reference: channelId }).then((res) => {
+  const starChannel = useLatestCallback((channelId) => {
+    dispatch({
+      type: "star-channel:request-sent",
+      channelId,
+      star: { id: generateDummyId() },
+    });
+    return starItem({ type: "channel", reference: channelId }).then((res) => {
       dispatch({
-        type: "star-channel-request-successful",
+        type: "star-channel:request-successful",
         channelId,
         star: { id: res.id },
       });
       return res;
-    })
-  );
+    });
+  });
 
   const unstarChannel = useLatestCallback((channelId) => {
     const starId = stateSelectors.selectChannelStarId(channelId);
+    dispatch({ type: "unstar-channel:request-sent", channelId });
     return unstarItem(starId).then((res) => {
-      dispatch({ type: "unstar-channel-request-successful", channelId });
+      dispatch({ type: "unstar-channel:request-successful", channelId });
       return res;
     });
   });
@@ -590,7 +596,7 @@ export const Provider = ({ children }) => {
   const starUser = useLatestCallback((userId) =>
     starItem({ type: "user", reference: userId }).then((res) => {
       dispatch({
-        type: "star-user-request-successful",
+        type: "star-user:request-successful",
         userId,
         star: { id: res.id },
       });
@@ -601,7 +607,7 @@ export const Provider = ({ children }) => {
   const unstarUser = useLatestCallback((userId) => {
     const starId = stateSelectors.selectUserStarId(userId);
     return unstarItem(starId).then((res) => {
-      dispatch({ type: "unstar-user-request-successful", userId });
+      dispatch({ type: "unstar-user:request-successful", userId });
       return res;
     });
   });

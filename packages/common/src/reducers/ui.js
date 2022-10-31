@@ -17,7 +17,7 @@ const reducer = (state = initialState, action) => {
         hasFetchedUserChannels: true,
       };
 
-    case "fetch-starred-items-request-successful":
+    case "fetch-starred-items:request-successful":
       return {
         ...state,
         hasFetchedStarredChannels: true,

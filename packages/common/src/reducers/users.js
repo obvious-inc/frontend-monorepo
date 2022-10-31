@@ -49,15 +49,15 @@ const entriesById = (state = {}, action) => {
 
 const starsByUserId = (state = [], action) => {
   switch (action.type) {
-    case "fetch-starred-items-request-successful": {
+    case "fetch-starred-items:request-successful": {
       const userStars = action.stars.filter((s) => s.type === "user");
       return indexBy((s) => s.reference, userStars);
     }
 
-    case "star-user-request-successful":
+    case "star-user:request-successful":
       return { ...state, [action.userId]: action.star };
 
-    case "unstar-user-request-successful":
+    case "unstar-user:request-successful":
       return omitKey(action.userId, state);
 
     case "logout":
