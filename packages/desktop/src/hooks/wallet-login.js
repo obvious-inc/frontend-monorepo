@@ -1,3 +1,4 @@
+import { Wallet } from "ethers";
 import { useSignMessage } from "wagmi";
 import React from "react";
 import { useAuth } from "@shades/common/app";
@@ -49,9 +50,32 @@ export const Provider = ({ children }) => {
     }
   });
 
+  const loginWithThrowawayWallet = useLatestCallback(async () => {
+    const wallet = Wallet.createRandom();
+
+    const { message, signedAt, nonce } = eth.prepareLoginMessage(
+      wallet.address
+    );
+
+    const signature = await wallet.signMessage(message);
+
+    return await login({
+      address: wallet.address,
+      message,
+      signature,
+      signedAt,
+      nonce,
+    });
+  });
+
   const contextValue = React.useMemo(
-    () => ({ login: loginWithWalletSignature, status, error }),
-    [loginWithWalletSignature, status, error]
+    () => ({
+      login: loginWithWalletSignature,
+      loginWithThrowawayWallet,
+      status,
+      error,
+    }),
+    [loginWithWalletSignature, loginWithThrowawayWallet, status, error]
   );
 
   return (

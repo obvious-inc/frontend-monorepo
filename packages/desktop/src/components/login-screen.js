@@ -23,9 +23,16 @@ const SignInScreen = ({ onSuccess, onError }) => {
     switchToEthereumMainnet,
   } = useWallet();
 
-  const { login, status: loginStatus, error: loginError } = useWalletLogin();
+  const {
+    login,
+    loginWithThrowawayWallet,
+    status: loginStatus,
+    error: loginError,
+  } = useWalletLogin();
 
   const [isSwitchingToMainnet, setSwitchingToMainnet] = React.useState(false);
+  const [isAuthenticatingWithThrowawayWallet, setThrowawayAuth] =
+    React.useState(false);
 
   const error = loginError ?? walletError;
 
@@ -55,7 +62,18 @@ const SignInScreen = ({ onSuccess, onError }) => {
       `}
       style={{ height: "100%" }}
     >
-      {accountAddress == null && isConnecting ? (
+      {isAuthenticatingWithThrowawayWallet ? (
+        <div>
+          <Spinner
+            color="rgb(255 255 255 / 15%)"
+            size="2.4rem"
+            style={{ margin: "0 auto 2rem" }}
+          />
+          <div style={{ marginBottom: "1rem" }}>
+            Authenticating with throwaway wallet...
+          </div>
+        </div>
+      ) : accountAddress == null && isConnecting ? (
         <div>
           <Spinner
             color="rgb(255 255 255 / 15%)"
@@ -195,6 +213,17 @@ const SignInScreen = ({ onSuccess, onError }) => {
                   What is a wallet?
                 </a>
               </Small>
+              {location.search.includes("throwaway") && (
+                <Button
+                  onClick={() => {
+                    setThrowawayAuth(true);
+                    loginWithThrowawayWallet();
+                  }}
+                  css={css({ marginTop: "4rem" })}
+                >
+                  Use a throwaway wallet
+                </Button>
+              )}
             </>
           ) : (
             <>
