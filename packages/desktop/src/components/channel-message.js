@@ -20,6 +20,7 @@ import {
 import MessageInput from "./message-input";
 import RichText from "./rich-text";
 import Button from "./button";
+import Input from "./input";
 import Avatar from "./avatar";
 import * as Popover from "./popover";
 import * as DropdownMenu from "./dropdown-menu";
@@ -395,7 +396,7 @@ const ChannelMessage = React.memo(function ChannelMessage_({
               items={reactions}
               addReaction={addReaction}
               removeReaction={removeReaction}
-              showAddReactionButton={isHovering || hasTouchFocus}
+              hideAddReactionButton={!isHovering && !hasTouchFocus}
             />
           )}
         </div>
@@ -408,7 +409,7 @@ const Reactions = ({
   items = [],
   addReaction,
   removeReaction,
-  showAddReactionButton,
+  hideAddReactionButton,
 }) => {
   const { inputDeviceCanHover } = useGlobalMediaQueries();
   const [isInlineEmojiPickerOpen, setInlineEmojiPickerOpen] =
@@ -416,14 +417,16 @@ const Reactions = ({
 
   const addReactionButton = (
     <button
+      data-fader
       onClick={() => setInlineEmojiPickerOpen(true)}
-      css={css({
-        color: "white",
-        border: "1px solid white",
-        transition: "0.1s opacity ease-out",
-        svg: { width: "1.6rem", height: "auto" },
-      })}
-      style={{ opacity: showAddReactionButton ? 1 : 0 }}
+      css={(t) =>
+        css({
+          color: t.textNormal,
+          transition: "0.1s opacity ease-out",
+          outline: "none",
+          svg: { width: "1.6rem", height: "auto" },
+        })
+      }
     >
       <AddEmojiReactionIcon />
     </button>
@@ -438,6 +441,9 @@ const Reactions = ({
           gridGap: "0.4rem",
           justifyContent: "flex-start",
           margin: "0.5rem -1px 0",
+          ":not(:focus-within) [data-fader]": {
+            opacity: hideAddReactionButton ? 0 : 1,
+          },
           button: {
             display: "flex",
             alignItems: "center",
@@ -450,11 +456,13 @@ const Reactions = ({
             userSelect: "none",
             border: "1px solid transparent",
             cursor: "pointer",
+            outline: "none",
+            ":focus-visible, &.active:focus-visible": {
+              borderColor: "white",
+            },
             "&.active": {
               background: "#007ab333",
               borderColor: "#007ab3a8",
-              // background: "#3f42ea45",
-              // borderColor: "#4c4ffe96",
             },
             "&:not(.active):hover": {
               borderColor: "rgb(255 255 255 / 20%)",
@@ -626,15 +634,14 @@ const MemberDisplayName = React.forwardRef(
   ({ displayName, color, ...props }, ref) => (
     <button
       ref={ref}
-      css={(theme) =>
+      css={(t) =>
         css({
           lineHeight: 1.2,
-          color: color ?? theme.colors.textNormal,
-          fontWeight: theme.text.weights.smallHeader,
+          color: color ?? t.colors.textNormal,
+          fontWeight: t.text.weights.smallHeader,
           cursor: "pointer",
-          ":hover": {
-            textDecoration: "underline",
-          },
+          outline: "none",
+          ":hover, :focus-visible": { textDecoration: "underline" },
         })
       }
       {...props}
@@ -1020,7 +1027,7 @@ const EmojiPicker = ({ width = "auto", height = "100%", onSelect }) => {
       style={{ height, width }}
     >
       <div css={css({ padding: "0.7rem 0.7rem 0.3rem" })}>
-        <input
+        <Input
           ref={inputRef}
           value={query}
           onChange={(e) => {
@@ -1033,26 +1040,6 @@ const EmojiPicker = ({ width = "auto", height = "100%", onSelect }) => {
               ? "Search"
               : highlightedEmojiItem.description ?? "Search"
             // : `:${highlightedEmojiItem.aliases?.[0]}:` ?? "Search"
-          }
-          css={(theme) =>
-            css({
-              color: "white",
-              background: theme.colors.backgroundSecondary,
-              fontSize: "1.5rem",
-              fontWeight: "400",
-              borderRadius: "0.3rem",
-              padding: "0.5rem 0.7rem",
-              width: "100%",
-              outline: "none",
-              border: 0,
-              "&:focus": {
-                boxShadow: `0 0 0 0.2rem ${theme.colors.primary}`,
-              },
-              // Prevents iOS zooming in on input fields
-              "@supports (-webkit-touch-callout: none)": {
-                fontSize: "1.6rem",
-              },
-            })
           }
         />
       </div>
@@ -1604,16 +1591,20 @@ const MessageLeftColumn = ({ isHovering, simplified, compact, message }) => {
       <Popover.Root placement="right">
         <Popover.Trigger asChild>
           <button
-            css={(theme) =>
+            css={(t) =>
               css({
                 position: "relative",
-                borderRadius: theme.avatars.borderRadius,
+                borderRadius: t.avatars.borderRadius,
                 overflow: "hidden",
                 cursor: "pointer",
+                outline: "none",
+                ":focus-visible": {
+                  boxShadow: `0 0 0 0.2rem ${t.colors.primary}`,
+                },
                 ":hover": {
                   boxShadow: message.author?.profilePicture.isVerifiedNft
-                    ? "0 0 0 2px #4f52ff"
-                    : "0 0 0 2px rgb(255 255 255 / 10%)",
+                    ? `0 0 0 0.2rem ${t.colors.primary}`
+                    : `0 0 0 0.2rem ${t.colors.borderLight}`,
                 },
                 ":active": { transform: "translateY(0.1rem)" },
               })

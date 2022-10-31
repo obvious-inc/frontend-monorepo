@@ -189,8 +189,12 @@ export const UnifiedLayout = () => {
                 transition: "background 20ms ease-in",
                 cursor: "pointer",
                 boxShadow: "rgba(255, 255, 255, 0.094) 0 -1px 0",
+                outline: "none",
                 ":hover": {
                   background: theme.colors.backgroundModifierHover,
+                },
+                ":focus-visible": {
+                  boxShadow: `0 0 0 0.2rem ${theme.colors.primary} inset`,
                 },
               })
             }

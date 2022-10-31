@@ -16,7 +16,7 @@ const baseStyles = (t) => ({
   whiteSpace: "nowrap",
   outline: "none",
   "&[disabled]": { opacity: 0.5, cursor: "not-allowed" },
-  "&:focus": { boxShadow: `0 0 0 0.2rem ${t.colors.primary}` },
+  "&:focus-visible": { boxShadow: `0 0 0 0.2rem ${t.colors.primary}` },
 });
 
 const stylesByVariant = (t) => ({
@@ -40,7 +40,9 @@ const stylesByVariant = (t) => ({
   primary: {
     color: "white",
     background: t.colors.primary,
-    "&:focus": { boxShadow: `0 0 0 0.2rem ${t.colors.primaryTransparent}` },
+    "&:focus-visible": {
+      boxShadow: `0 0 0 0.2rem ${t.colors.primaryTransparent}`,
+    },
     "&:hover": {
       filter: "brightness(1.1)",
     },
