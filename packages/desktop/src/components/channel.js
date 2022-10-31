@@ -1504,7 +1504,7 @@ const Channel = ({ compact, noSideMenu }) => {
 
               tryStarChannel();
             }}
-            css={(theme) =>
+            css={(t) =>
               css({
                 cursor: "pointer",
                 display: "flex",
@@ -1515,12 +1515,16 @@ const Channel = ({ compact, noSideMenu }) => {
                 height: "2.8rem",
                 padding: 0,
                 transition: "background 20ms ease-in",
-                marginRight: "0.2rem",
+                outline: "none",
                 ":hover": {
-                  background: theme.colors.backgroundModifierHover,
+                  background: t.colors.backgroundModifierHover,
+                },
+                ":focus-visible": {
+                  boxShadow: `0 0 0 0.2rem ${t.colors.primary}`,
                 },
               })
             }
+            style={{ marginRight: "0.4rem" }}
           >
             {isChannelStarred ? (
               <StarIcon style={{ color: "rgb(202, 152, 73)" }} />
@@ -1668,13 +1672,22 @@ const Channel = ({ compact, noSideMenu }) => {
               )}
             </>
           ) : (
-            <a href={channel.avatar} rel="noreferrer" target="_blank">
-              <Avatar
-                url={channel.avatar}
-                size="2.4rem"
-                pixelSize={24}
-                css={css({ marginRight: "1.1rem" })}
-              />
+            <a
+              href={channel.avatar}
+              rel="noreferrer"
+              target="_blank"
+              css={(t) =>
+                css({
+                  borderRadius: "50%",
+                  outline: "none",
+                  ":focus-visible": {
+                    boxShadow: `0 0 0 0.2rem ${t.colors.primary}`,
+                  },
+                })
+              }
+              style={{ marginRight: "1.1rem" }}
+            >
+              <Avatar url={channel.avatar} size="2.4rem" pixelSize={24} />
             </a>
           ))}
 
@@ -1893,25 +1906,19 @@ const MembersDisplayButton = React.forwardRef(({ onClick, members }, ref) => {
         <button
           ref={ref}
           onClick={onClick}
-          css={(theme) =>
+          css={(t) =>
             css({
               display: "flex",
               alignItems: "center",
-              padding: "0.4rem 0.6rem",
-              borderRadius:
-                theme.avatars.borderRadius === "50%" ? "0.3rem" : "0.4rem",
-              boxShadow:
-                theme.avatars.borderRadius === "50%"
-                  ? "none"
-                  : "0 0 0 0.1rem hsl(0 0% 100% / 18%)",
+              padding: "0.2rem 0.6rem",
+              height: "2.8rem",
+              borderRadius: "0.3rem",
+              outline: "none",
               cursor: "pointer",
-              ":hover": {
-                background: theme.colors.backgroundModifierHover,
-                boxShadow:
-                  theme.avatars.borderRadius === "50%"
-                    ? "none"
-                    : "0 0 0 0.1rem hsl(0 0% 100% / 25%)",
+              ":focus-visible": {
+                boxShadow: `0 0 0 0.2rem ${t.colors.primary}`,
               },
+              ":hover": { background: t.colors.backgroundModifierHover },
             })
           }
         >
