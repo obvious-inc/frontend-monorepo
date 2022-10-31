@@ -12,8 +12,9 @@ import {
 } from "react-native";
 import Svg, { Path } from "react-native-svg";
 import * as Shades from "@shades/common";
-import { Input, UserListItem } from "./new-chat";
-import { UserProfilePicture } from "./channel-list";
+import { UserListItem } from "./new-chat";
+import Input from "../components/input";
+import UserProfilePicture from "../components/user-profile-picture";
 
 const { useAppScope } = Shades.app;
 const { useLatestCallback } = Shades.react;

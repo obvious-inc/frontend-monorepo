@@ -9,8 +9,9 @@ import {
 } from "react-native";
 import Svg, { Path } from "react-native-svg";
 import * as Shades from "@shades/common";
-import { Input, UserListItem } from "./new-chat";
-import { useFilteredUsers, HorizontalUserListItem } from "./new-closed-channel";
+import { UserListItem, useFilteredUsers } from "./new-chat";
+import Input from "../components/input";
+import { HorizontalUserListItem } from "./new-closed-channel";
 
 const { useAppScope } = Shades.app;
 const { useLatestCallback } = Shades.react;
