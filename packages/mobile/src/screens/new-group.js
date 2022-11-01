@@ -1,7 +1,7 @@
 import React from "react";
-import { View, Text, Pressable, ScrollView, Keyboard } from "react-native";
+import { View, Text, Pressable, ScrollView } from "react-native";
 import * as Shades from "@shades/common";
-import Input from "./input";
+import Input from "../components/input";
 import { useAsyncDismissKeyboard } from "./new-chat";
 import { HorizontalUserListItem } from "./new-closed-channel";
 
