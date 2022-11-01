@@ -1,7 +1,8 @@
 import React from "react";
 import { View, Text, Pressable, ScrollView, Keyboard } from "react-native";
 import * as Shades from "@shades/common";
-import { Input, useAsyncDismissKeyboard } from "./new-chat";
+import Input from "./input";
+import { useAsyncDismissKeyboard } from "./new-chat";
 import { HorizontalUserListItem } from "./new-closed-channel";
 
 const { useLatestCallback } = Shades.react;
@@ -12,7 +13,6 @@ const textDimmed = "hsl(0,0%,50%)";
 const textBlue = "hsl(199, 100%, 46%)";
 
 export const options = {
-  // headerShadowVisible: true,
   headerTintColor: textDefault,
   headerRight: (props) => (
     <HeaderRight {...props} button={{ label: "Create", disabled: true }} />
