@@ -199,6 +199,14 @@ const App = () => {
     };
   }, [authStatus, registerDevicePushToken]);
 
+  const badgeCount =
+    authStatus === "authenticated" ? state.selectTotalMentionCount() : null;
+
+  React.useEffect(() => {
+    if (badgeCount == null) return;
+    Notifications.setBadgeCountAsync(badgeCount);
+  }, [badgeCount]);
+
   if (authStatus === "not-authenticated")
     return (
       <SignInView

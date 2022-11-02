@@ -331,6 +331,18 @@ export const selectChannelMentionCount = createSelector(
   { memoizeOptions: { maxSize: 1000 } }
 );
 
+export const selectTotalMentionCount = createSelector(
+  (state) => {
+    const channelIds = Object.keys(state.channels.entriesById);
+    const channelMentionCounts = channelIds.map((id) =>
+      selectChannelMentionCount(state, id)
+    );
+    return channelMentionCounts;
+  },
+  (mentionCounts) => mentionCounts.reduce((sum, count) => sum + count, 0),
+  { memoizeOptions: { maxSize: 1000 } }
+);
+
 export const selectChannelHasUnread = createSelector(
   (state, channelId) => state.channels.readStatesById[channelId],
   (channelState /* channelKind, */ /* loggedInServerMember */) => {
