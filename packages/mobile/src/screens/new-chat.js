@@ -120,7 +120,7 @@ export const useFilteredUsers = ({ query }) => {
   const starredUserIds = state.selectStarredUserIds();
   const starredUsers = state.selectStarredUsers();
 
-  const trimmedQuery = query.trim();
+  const trimmedQuery = React.useDeferredValue(query.trim());
   const suffix = trimmedQuery.split(".").slice(-1)[0];
   const bareEnsNameQuery = trimmedQuery.split(".").slice(0, -1).join(".");
   const hasIncompleteEnsSuffix = "eth".startsWith(suffix);
