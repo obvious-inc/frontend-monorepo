@@ -10,7 +10,7 @@ import Button from "../components/button";
 
 const { truncateAddress } = ethereumUtils;
 
-const SignInScreen = ({ onSuccess, onError }) => {
+const LoginScreen = ({ showThrowawayWalletOption, onSuccess, onError }) => {
   const {
     connect: connectWallet,
     cancel: cancelWalletConnectionAttempt,
@@ -178,15 +178,44 @@ const SignInScreen = ({ onSuccess, onError }) => {
           )}
           {accountAddress == null ? (
             <>
-              <Button
-                size="large"
-                disabled={!canConnectWallet}
-                onClick={() => {
-                  connectWallet();
+              <div
+                css={css({
+                  display: "grid",
+                  gridAutoFlow: "row",
+                  gridAutoColumns: "auto",
+                  gridGap: "2rem",
+                  justifyContent: "center",
+                  "@media (min-width: 480px)": {
+                    gridAutoFlow: "column",
+                    gridAutoColumns: "minmax(0,1fr)",
+                  },
+                })}
+                style={{
+                  display: showThrowawayWalletOption ? undefined : "block",
                 }}
               >
-                Connect wallet
-              </Button>
+                <Button
+                  variant={showThrowawayWalletOption ? "primary" : "default"}
+                  size="large"
+                  disabled={!canConnectWallet}
+                  onClick={() => {
+                    connectWallet();
+                  }}
+                >
+                  Connect wallet
+                </Button>
+                {showThrowawayWalletOption && (
+                  <Button
+                    size="large"
+                    onClick={() => {
+                      setThrowawayAuth(true);
+                      loginWithThrowawayWallet();
+                    }}
+                  >
+                    Use throwaway wallet
+                  </Button>
+                )}
+              </div>
               <Small
                 style={{
                   width: "42rem",
@@ -213,17 +242,6 @@ const SignInScreen = ({ onSuccess, onError }) => {
                   What is a wallet?
                 </a>
               </Small>
-              {location.search.includes("throwaway") && (
-                <Button
-                  onClick={() => {
-                    setThrowawayAuth(true);
-                    loginWithThrowawayWallet();
-                  }}
-                  css={css({ marginTop: "4rem" })}
-                >
-                  Use a throwaway wallet
-                </Button>
-              )}
             </>
           ) : (
             <>
@@ -331,11 +349,11 @@ const Small = (props) => (
     css={(theme) =>
       css({
         fontSize: theme.fontSizes.small,
-        color: theme.colors.textMuted,
+        color: theme.colors.textDimmed,
       })
     }
     {...props}
   />
 );
 
-export default SignInScreen;
+export default LoginScreen;

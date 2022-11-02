@@ -24,7 +24,11 @@ const EmptyHome = () => {
     >
       <ChannelHeader />
       {authStatus === "not-authenticated" ? (
-        <LoginScreen withMenu />
+        <LoginScreen
+          showThrowawayWalletOption={window.location.search.includes(
+            "throwaway"
+          )}
+        />
       ) : (
         <div
           css={css({

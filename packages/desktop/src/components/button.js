@@ -13,7 +13,10 @@ const baseStyles = (t) => ({
   alignItems: "center",
   justifyContent: "center",
   textDecoration: "none",
+  maxWidth: "100%",
   whiteSpace: "nowrap",
+  overflow: "hidden",
+  textOverflow: "ellipsis",
   outline: "none",
   "&[disabled]": { opacity: 0.5, cursor: "not-allowed" },
   "&:focus-visible": { boxShadow: `0 0 0 0.2rem ${t.colors.primary}` },
@@ -106,7 +109,13 @@ const Button = ({
     }}
     {...props}
   >
-    <div style={{ visibility: isLoading ? "hidden" : undefined }}>
+    <div
+      style={{
+        visibility: isLoading ? "hidden" : undefined,
+        overflow: "hidden",
+        textOverflow: "ellipsis",
+      }}
+    >
       {children}
     </div>
     {isLoading && (
