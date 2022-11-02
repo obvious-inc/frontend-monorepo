@@ -182,13 +182,13 @@ const App = () => {
       registerDevicePushToken(token);
     };
 
-    const notificationListener = Notifications.addNotificationReceivedListener(
+    const receivedSubscription = Notifications.addNotificationReceivedListener(
       (notification) => {
         console.log("Received notification", notification);
       }
     );
 
-    const responseListener =
+    const responseSubscription =
       Notifications.addNotificationResponseReceivedListener((response) => {
         console.log("Received notification response", response);
       });
@@ -196,8 +196,8 @@ const App = () => {
     registerForPushNotifications();
 
     return () => {
-      Notifications.removeNotificationSubscription(notificationListener);
-      Notifications.removeNotificationSubscription(responseListener);
+      receivedSubscription.remove();
+      responseSubscription.remove();
     };
   }, [me, registerDevicePushToken]);
 
