@@ -253,13 +253,13 @@ export const ChannelItem = ({
   id,
   name,
   hasUnread,
-  // notificationCount,
+  notificationCount,
   onPress,
 }) => {
   return (
     <ListItem
       onPress={onPress}
-      // notificationCount={notificationCount}
+      notificationCount={notificationCount}
       title={
         <Text style={{ color: hasUnread ? "white" : undefined }}>{name}</Text>
       }
@@ -322,13 +322,7 @@ const CollapsableSection = ({
   </>
 );
 
-const ListItem = ({
-  icon,
-  title,
-  // notificationCount,
-  disabled,
-  ...props
-}) => (
+const ListItem = ({ icon, title, notificationCount, disabled, ...props }) => (
   <View
     style={{ paddingHorizontal: 4 }}
     //   & > *.active {
@@ -385,8 +379,34 @@ const ListItem = ({
           {title}
         </Text>
       </View>
-      {/* {notificationCount > 0 && <NotificationBadge count={notificationCount} />} */}
+      {notificationCount > 0 && <NotificationBadge count={notificationCount} />}
     </Pressable>
+  </View>
+);
+
+const NotificationBadge = ({ count }) => (
+  <View
+    style={{
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "center",
+      backgroundColor: "hsl(359, 82.6%, 59.4%)",
+      height: 20,
+      minWidth: 20,
+      borderRadius: 10,
+      paddingHorizontal: 6,
+    }}
+  >
+    <Text
+      style={{
+        color: "white",
+        fontSize: 12,
+        lineHeight: 13.5,
+        fontWeight: "600",
+      }}
+    >
+      {count}
+    </Text>
   </View>
 );
 
