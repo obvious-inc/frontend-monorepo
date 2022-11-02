@@ -23,6 +23,7 @@ const ChannelDetailsModal = ({ navigation, route }) => {
 
   const buttonActions = [
     {
+      key: "copy-link",
       label: "Copy link",
       onPress: () => {
         Clipboard.setStringAsync(
@@ -33,6 +34,7 @@ const ChannelDetailsModal = ({ navigation, route }) => {
       },
     },
     {
+      key: "star-channel",
       label: isStarredChannel ? "Unstar" : "Star",
       disabled: hasPendingStarRequest,
       onPress: () => {
@@ -45,7 +47,7 @@ const ChannelDetailsModal = ({ navigation, route }) => {
         });
       },
     },
-    { label: "Members", disabled: true, onPress: () => {} },
+    { key: "members", label: "Members", disabled: true, onPress: () => {} },
   ];
 
   return (

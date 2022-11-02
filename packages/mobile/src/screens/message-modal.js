@@ -18,11 +18,16 @@ const MessageModal = ({ messageId, startEdit, startReply, deleteMessage }) => {
 
   const actionSections = [
     [
-      isOwnMessage && { label: "Edit message", onPress: startEdit },
-      { label: "Reply", onPress: startReply },
+      isOwnMessage && {
+        key: "edit-message",
+        label: "Edit message",
+        onPress: startEdit,
+      },
+      { key: "reply", label: "Reply", onPress: startReply },
     ].filter(Boolean),
     [
       isOwnMessage && {
+        key: "delete-message",
         label: "Delete message",
         onPress: deleteMessage,
         textColor: textDanger,
