@@ -32,11 +32,6 @@ export const mergePlugins = (plugins) => {
   return { middleware, elements, handlers };
 };
 
-export const createEmptyParagraph = () => ({
-  type: "paragraph",
-  children: [{ text: "" }],
-});
-
 export const isNodeEmpty = (el) => {
   if (el.type === "user") return false;
   if (el.type === "attachments") return false;

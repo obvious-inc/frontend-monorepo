@@ -172,11 +172,7 @@ const commands = {
         },
       ];
 
-      actions.createMessage({
-        channel: channelId,
-        content: stringifyMessageBlocks(blocks),
-        blocks,
-      });
+      actions.createMessage({ channel: channelId, blocks });
 
       editor.clear();
     },

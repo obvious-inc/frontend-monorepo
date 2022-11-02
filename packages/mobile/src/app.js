@@ -161,7 +161,7 @@ const App = () => {
   });
 
   React.useEffect(() => {
-    if (authStatus !== "authenticated") return;
+    if (me == null) return;
     if (!Device.isDevice) return;
 
     const registerForPushNotifications = async () => {
@@ -176,6 +176,8 @@ const App = () => {
       }
 
       const { data: token } = await Notifications.getExpoPushTokenAsync();
+
+      if (me.pushTokens.includes(token)) return;
 
       registerDevicePushToken(token);
     };
@@ -197,7 +199,7 @@ const App = () => {
       Notifications.removeNotificationSubscription(notificationListener);
       Notifications.removeNotificationSubscription(responseListener);
     };
-  }, [authStatus, registerDevicePushToken]);
+  }, [me, registerDevicePushToken]);
 
   const badgeCount =
     authStatus === "authenticated" ? state.selectTotalMentionCount() : null;

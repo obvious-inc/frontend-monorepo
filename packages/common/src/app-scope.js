@@ -1,8 +1,10 @@
 import React from "react";
 import { useAuth } from "./auth";
 import { generateDummyId } from "./utils/misc";
+import { unique } from "./utils/array";
 import { pickKeys } from "./utils/object";
 import invariant from "./utils/invariant";
+import { stringifyBlocks as stringifyMessageBlocks } from "./utils/message";
 import {
   openChannelPermissionOverrides,
   closedChannelPermissionOverrides,
@@ -53,10 +55,9 @@ export const Provider = ({ children }) => {
       })
   );
 
-  const registerDevicePushToken = useLatestCallback((token) => {
-    if (me.pushTokens?.includes(token)) return;
-    return updateMe({ pushTokens: [...me.pushTokens, token] });
-  });
+  const registerDevicePushToken = useLatestCallback((token) =>
+    updateMe({ pushTokens: unique([...me.pushTokens, token]) })
+  );
 
   const fetchUsers = useLatestCallback((userIds) =>
     authorizedFetch("/users/info", {
@@ -157,12 +158,12 @@ export const Provider = ({ children }) => {
   );
 
   const createMessage = useLatestCallback(
-    async ({ channel, content, blocks, replyToMessageId }) => {
+    async ({ channel, blocks, replyToMessageId }) => {
       // TODO: Less hacky optimistc UI
       const message = {
         channel,
         blocks,
-        content,
+        content: stringifyMessageBlocks(blocks),
         reply_to: replyToMessageId,
       };
       const dummyId = generateDummyId();
@@ -206,21 +207,19 @@ export const Provider = ({ children }) => {
     }
   );
 
-  const updateMessage = useLatestCallback(
-    async (messageId, { blocks, content }) => {
-      return authorizedFetch(`/messages/${messageId}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ blocks, content }),
-      }).then((message) => {
-        dispatch({
-          type: "message-update-request-successful",
-          message,
-        });
-        return message;
+  const updateMessage = useLatestCallback(async (messageId, { blocks }) => {
+    return authorizedFetch(`/messages/${messageId}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ blocks, content: stringifyMessageBlocks(blocks) }),
+    }).then((message) => {
+      dispatch({
+        type: "message-update-request-successful",
+        message,
       });
-    }
-  );
+      return message;
+    });
+  });
 
   const removeMessage = useLatestCallback(async (messageId) => {
     return authorizedFetch(`/messages/${messageId}`, {

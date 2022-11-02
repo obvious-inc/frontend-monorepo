@@ -80,3 +80,10 @@ export const stringifyBlocks = (blockElements) =>
     .join("")
     // Gets rid of the the outer paragraph line breaks, I dunno
     .replace(/^[\n]|[\n]$/g, "");
+
+export const createParagraphElement = (content = "") => ({
+  type: "paragraph",
+  children: typeof content === "string" ? [{ text: content }] : content,
+});
+
+export const createEmptyParagraphElement = () => createParagraphElement();

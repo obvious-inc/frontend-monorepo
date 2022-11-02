@@ -6,8 +6,8 @@ import { useAuth, useAppScope } from "@shades/common/app";
 import {
   getImageFileDimensions,
   array as arrayUtils,
-  message as messageUtils,
   ethereum as ethereumUtils,
+  message as messageUtils,
 } from "@shades/common/utils";
 import { useLatestCallback } from "@shades/common/react";
 import useGlobalMediaQueries from "../hooks/global-media-queries";
@@ -16,7 +16,7 @@ import useOnlineListener from "../hooks/window-online-listener";
 import useInterval from "../hooks/interval";
 import useWallet from "../hooks/wallet";
 import useWalletLogin from "../hooks/wallet-login";
-import { createEmptyParagraph, isNodeEmpty, cleanNodes } from "../slate/utils";
+import { isNodeEmpty, cleanNodes } from "../slate/utils";
 import useCommands from "../hooks/commands";
 import MessageInput from "./message-input";
 import Spinner from "./spinner";
@@ -39,10 +39,9 @@ import useIsOnScreen from "../hooks/is-on-screen";
 import useScrollListener from "../hooks/scroll-listener";
 import useMutationObserver from "../hooks/mutation-observer";
 
-const { stringifyBlocks: stringifyMessageBlocks } = messageUtils;
-
 const { sort } = arrayUtils;
 const { truncateAddress } = ethereumUtils;
+const { createEmptyParagraphElement } = messageUtils;
 
 const useFetch = (fetcher, dependencies) => {
   const fetcherRef = React.useRef(fetcher);
@@ -834,7 +833,7 @@ const NewMessageInput = React.memo(
     editorRef
   ) {
     const [pendingMessage, setPendingMessage] = React.useState(() => [
-      createEmptyParagraph(),
+      createEmptyParagraphElement(),
     ]);
 
     const [isPending, setPending] = React.useState(false);
@@ -1378,7 +1377,6 @@ const Channel = ({ channelId, compact, noSideMenu }) => {
       return actions.createMessage({
         server: channel.kind === "server" ? channel.serverId : undefined,
         channel: channelId,
-        content: stringifyMessageBlocks(blocks),
         blocks,
         replyToMessageId,
       });

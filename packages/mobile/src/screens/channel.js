@@ -1,4 +1,5 @@
 import * as Haptics from "expo-haptics";
+import * as Linking from "expo-linking";
 import React from "react";
 import {
   Text,
@@ -30,7 +31,7 @@ import MessageModalContent from "./message-modal";
 
 const { useLatestCallback } = Shades.react;
 const { useAppScope } = Shades.app;
-const { message: messageUtils } = Shades.utils;
+const { message: messageUtils, url: urlUtils } = Shades.utils;
 
 const ONE_MINUTE_IN_MILLIS = 1000 * 60;
 
@@ -343,10 +344,33 @@ const Channel = ({ navigation, route: { params } }) => {
             pendingMessage={pendingMessage}
             setPendingMessage={setPendingMessage}
             onSubmit={(content) => {
+              const paragraphContentElements = content
+                .split(" ")
+                .reduce((els, word) => {
+                  const prev = els[els.length - 1];
+
+                  if (urlUtils.validate(word)) {
+                    if (prev != null) prev.text = `${prev.text} `;
+                    const url = new URL(word);
+                    return [...els, { type: "link", url: url.href }];
+                  }
+
+                  if (prev == null || prev.type === "link")
+                    return [...els, { text: prev == null ? word : ` ${word}` }];
+
+                  prev.text = `${prev.text} ${word}`;
+
+                  return els;
+                }, []);
+
+              const blocks = [
+                messageUtils.createParagraphElement(paragraphContentElements),
+              ];
+
               if (editingMessageId != null) {
                 setEditingMessageId(null);
                 inputRef.current.blur();
-                return actions.updateMessage(editingMessageId, { content });
+                return actions.updateMessage(editingMessageId, { blocks });
               }
 
               if (replyTargetMessageId != null) {
@@ -358,14 +382,11 @@ const Channel = ({ navigation, route: { params } }) => {
                 return actions.createMessage({
                   channel: channelId,
                   replyToMessageId: replyTargetMessageId,
-                  content,
+                  blocks,
                 });
               }
 
-              return actions.createMessage({
-                channel: channelId,
-                content,
-              });
+              return actions.createMessage({ channel: channelId, blocks });
             }}
           />
         </KeyboardAvoidingView>
@@ -532,6 +553,9 @@ const Message = ({
         break;
       case "user":
         selectUser(el.ref);
+        break;
+      case "link":
+        Linking.openURL(el.url);
         break;
       default:
         throw new Error();

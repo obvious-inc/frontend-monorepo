@@ -35,8 +35,7 @@ import ProfilePreview from "./profile-preview";
 
 const { groupBy } = arrayUtils;
 const { mapValues } = objectUtils;
-const { withoutAttachments, stringifyBlocks: stringifyMessageBlocks } =
-  messageUtils;
+const { withoutAttachments } = messageUtils;
 
 const ONE_MINUTE_IN_MILLIS = 1000 * 60;
 
@@ -119,11 +118,7 @@ const ChannelMessage = React.memo(function ChannelMessage_({
   );
 
   const save = React.useCallback(
-    (blocks) =>
-      actions.updateMessage(message.id, {
-        blocks,
-        content: stringifyMessageBlocks(blocks),
-      }),
+    (blocks) => actions.updateMessage(message.id, { blocks }),
     [actions, message.id]
   );
 

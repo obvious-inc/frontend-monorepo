@@ -1,17 +1,5 @@
+import { url as urlUtils } from "@shades/common/utils";
 import { Editor, Transforms, Point, Text } from "slate";
-//
-// TODO saner validator
-const defaultUrlValidator = (string) => {
-  if (string.match(/\s/)) return false;
-  if (!string.split("www.").slice(-1)[0].includes(".")) return false;
-
-  try {
-    const url = new URL(string);
-    return ["http:", "https:"].some((p) => url.protocol === p);
-  } catch (_) {
-    return false;
-  }
-};
 
 const wrapLink = (editor, url, { at } = {}) => {
   const parsedUrl = new URL(url);
@@ -143,7 +131,7 @@ const LinkComponent = ({ attributes, children, element }) => (
   </a>
 );
 
-export default ({ isUrl = defaultUrlValidator } = {}) => ({
+export default ({ isUrl = urlUtils.validate } = {}) => ({
   middleware: createMiddleware({ isUrl }),
   elements: { link: LinkComponent },
 });

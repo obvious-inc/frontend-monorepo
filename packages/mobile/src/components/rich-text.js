@@ -45,9 +45,13 @@ const createParser = ({
         case "link":
           return (
             <Text
-              key={i}
-              // href={el.url}
-              style={{ ...textDefaultStyle, color: "hsl(199, 100%, 46%)" }}
+              onPress={() => {
+                onPressInteractiveElement(el);
+              }}
+              style={{
+                ...textDefaultStyle,
+                color: "hsl(199, 100%, 46%)",
+              }}
             >
               {el.url}
             </Text>
@@ -57,34 +61,29 @@ const createParser = ({
           const member = getMember(el.ref);
           const pressable = (
             <Pressable
-              key={i}
               onPress={() => {
                 onPressInteractiveElement(el);
               }}
+              style={({ pressed }) => ({
+                position: "relative",
+                top: 2,
+                borderRadius: 3,
+                backgroundColor: pressed
+                  ? "rgb(0, 90, 132)"
+                  : "rgba(0, 110, 162, 0.29)",
+              })}
             >
               {({ pressed }) => (
-                <View
+                <Text
                   style={{
-                    alignSelf: "flex-end",
-                    position: "relative",
-                    top: 2,
-                    borderRadius: 3,
-                    backgroundColor: pressed
-                      ? "rgb(0, 90, 132)"
-                      : "rgba(0, 110, 162, 0.29)",
+                    ...textDefaultStyle,
+                    lineHeight: 22,
+                    color: pressed ? "white" : "#e0f5ff",
+                    fontWeight: "500",
                   }}
                 >
-                  <Text
-                    style={{
-                      ...textDefaultStyle,
-                      lineHeight: 22,
-                      color: pressed ? "white" : "#e0f5ff",
-                      fontWeight: "500",
-                    }}
-                  >
-                    @{member?.displayName ?? el.ref}g
-                  </Text>
-                </View>
+                  @{member?.displayName ?? el.ref}
+                </Text>
               )}
             </Pressable>
           );
@@ -93,10 +92,10 @@ const createParser = ({
           return i === 0 ? (
             <React.Fragment key={i}>
               <Text style={textDefaultStyle}>{"\u200B"}</Text>
-              {pressable}
+              <View>{pressable}</View>
             </React.Fragment>
           ) : (
-            pressable
+            <View key={i}>{pressable}</View>
           );
         }
 
