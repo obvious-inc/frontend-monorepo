@@ -7,6 +7,7 @@ module.exports = {
   version: "0.1.0",
   orientation: "portrait",
   icon: "./assets/icon.png",
+  scheme: "newshades",
   splash: {
     image: "./assets/splash.png",
     resizeMode: "contain",
