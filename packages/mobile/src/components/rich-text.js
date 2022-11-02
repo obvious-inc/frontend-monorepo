@@ -1,3 +1,4 @@
+import React from "react";
 import { View, Text, Image, Dimensions, Pressable } from "react-native";
 import { SvgUri, SvgXml } from "react-native-svg";
 import { decode as decodeBase64 } from "base-64";
@@ -54,19 +55,19 @@ const createParser = ({
 
         case "user": {
           const member = getMember(el.ref);
-          return (
+          const pressable = (
             <Pressable
               key={i}
               onPress={() => {
                 onPressInteractiveElement(el);
               }}
-              style={{ flexDirection: "row", alignItems: "flex-end" }}
             >
               {({ pressed }) => (
                 <View
                   style={{
+                    alignSelf: "flex-end",
                     position: "relative",
-                    top: 1,
+                    top: 2,
                     borderRadius: 3,
                     backgroundColor: pressed
                       ? "rgb(0, 90, 132)"
@@ -76,16 +77,26 @@ const createParser = ({
                   <Text
                     style={{
                       ...textDefaultStyle,
-                      lineHeight: 20,
+                      lineHeight: 22,
                       color: pressed ? "white" : "#e0f5ff",
                       fontWeight: "500",
                     }}
                   >
-                    @{member?.displayName ?? el.ref}
+                    @{member?.displayName ?? el.ref}g
                   </Text>
                 </View>
               )}
             </Pressable>
+          );
+
+          // React Native messes up the wrapping element’s height without this, no idea why
+          return i === 0 ? (
+            <React.Fragment key={i}>
+              <Text style={textDefaultStyle}>{"\u200B"}</Text>
+              {pressable}
+            </React.Fragment>
+          ) : (
+            pressable
           );
         }
 
