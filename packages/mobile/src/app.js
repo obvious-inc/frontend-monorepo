@@ -5,6 +5,7 @@ import {
   INFURA_PROJECT_ID,
 } from "./config";
 import * as Device from "expo-device";
+import * as Linking from "expo-linking";
 import * as Notifications from "expo-notifications";
 import {
   WagmiConfig,
@@ -52,9 +53,6 @@ import NewPrivateChannelScreen, {
 import NewClosedChannelScreen, {
   options as newClosedChannelScreenOptions,
 } from "./screens/new-closed-channel";
-import NewOpenChannelScreen, {
-  options as newOpenChannelScreenOptions,
-} from "./screens/new-open-channel";
 
 const TabNavigator = createBottomTabNavigator();
 
@@ -309,11 +307,6 @@ const CreateChannelModalStack = () => (
       options={newChatScreenOptions}
     />
     <NativeStackNavigator.Screen
-      name="New Open"
-      component={NewOpenChannelScreen}
-      options={newOpenChannelScreenOptions}
-    />
-    <NativeStackNavigator.Screen
       name="New Closed"
       component={NewClosedChannelScreen}
       options={newClosedChannelScreenOptions}
@@ -441,6 +434,54 @@ export default () => {
               );
             }}
             theme={ReactNavigationDarkTheme}
+            linking={{
+              config: {
+                initialRouteName: "Channel list",
+                screens: {
+                  Channel: "channels/:channelId",
+                },
+              },
+              async getInitialURL() {
+                // First, you may want to do the default deep link handling
+                // Check if app was opened from a deep link
+                const url = await Linking.getInitialURL();
+
+                if (url != null) return url;
+
+                // Handle URL from expo push notifications
+                const response =
+                  await Notifications.getLastNotificationResponseAsync();
+
+                return response?.notification.request.content.data.url;
+              },
+              subscribe(listener) {
+                // Listen to incoming links from deep linking
+                const removeUrlListener = Linking.addEventListener(
+                  "url",
+                  ({ url }) => listener(url)
+                );
+
+                // Listen to expo push notifications
+                const subscription =
+                  Notifications.addNotificationResponseReceivedListener(
+                    (response) => {
+                      const url =
+                        response.notification.request.content.data.url;
+
+                      // Any custom logic to see whether the URL needs to be handled
+
+                      // Let React Navigation handle the URL
+                      listener(url);
+                    }
+                  );
+
+                return () => {
+                  // Clean up the event listeners
+                  removeUrlListener();
+                  subscription.remove();
+                };
+              },
+            }}
           >
             <AuthProvider apiOrigin={API_ENDPOINT} tokenStorage={AsyncStorage}>
               <AppScopeProvider>
