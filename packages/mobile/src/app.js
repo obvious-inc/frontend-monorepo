@@ -59,6 +59,9 @@ const TabNavigator = createBottomTabNavigator();
 const textBlue = "hsl(199, 100%, 46%)";
 const background = "hsl(0, 0%, 10%)";
 
+const prefix = Linking.createURL("/");
+console.log(prefix);
+
 const {
   AuthProvider,
   useAuth,
@@ -83,7 +86,7 @@ const wagmiClient = createWagmiClient({
 
 Notifications.setNotificationHandler({
   handleNotification: async () => ({
-    shouldShowAlert: false,
+    shouldShowAlert: true,
     shouldPlaySound: false,
     shouldSetBadge: false,
   }),
@@ -424,7 +427,7 @@ export default () => {
     restoreNavigationState();
   }, [initialState]);
 
-  if (initialState == "not-set") return null;
+  if (initialState === "not-set") return null;
 
   return (
     <ErrorBoundary>
@@ -445,6 +448,7 @@ export default () => {
             }}
             theme={ReactNavigationDarkTheme}
             linking={{
+              prefixes: [prefix],
               config: {
                 initialRouteName: "Channel list",
                 screens: {
@@ -481,7 +485,7 @@ export default () => {
                       // Any custom logic to see whether the URL needs to be handled
 
                       // Let React Navigation handle the URL
-                      listener(url);
+                      listener(prefix + url);
                     }
                   );
 
