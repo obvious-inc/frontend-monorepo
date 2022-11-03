@@ -976,7 +976,12 @@ const NewMessageInput = React.memo(
                 css({
                   color: theme.colors.interactiveNormal,
                   cursor: "pointer",
+                  outline: "none",
+                  borderRadius: "50%",
                   ":hover": { color: theme.colors.interactiveHover },
+                  ":focus-visible": {
+                    boxShadow: `0 0 0 0.2rem ${theme.colors.primary}`,
+                  },
                 })
               }
             >
@@ -1036,14 +1041,17 @@ const NewMessageInput = React.memo(
                 css({
                   cursor: "pointer",
                   color: theme.colors.interactiveNormal,
+                  borderRadius: "50%",
+                  outline: "none",
                   svg: {
                     display: "block",
                     width: "2.4rem",
                     height: "auto",
                   },
                   "&[disabled]": { pointerEvents: "none", opacity: 0.5 },
-                  ":hover": {
-                    color: theme.colors.interactiveHover,
+                  ":hover": { color: theme.colors.interactiveHover },
+                  ":focus-visible": {
+                    boxShadow: `0 0 0 0.2rem ${theme.colors.primary}`,
                   },
                 })
               }
@@ -1084,10 +1092,15 @@ const NewMessageInput = React.memo(
                   color: theme.colors.primary,
                   padding: "0.2rem",
                   cursor: "pointer",
+                  outline: "none",
+                  borderRadius: "0.3rem",
                   ":hover": { color: theme.colors.primaryModifierHover },
                   ":disabled": {
                     pointerEvents: "none",
                     color: theme.colors.textMuted,
+                  },
+                  ":focus-visible": {
+                    boxShadow: `0 0 0 0.1rem ${theme.colors.textDimmed}`,
                   },
                 })
               }

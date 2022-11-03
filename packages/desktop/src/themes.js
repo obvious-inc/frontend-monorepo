@@ -8,9 +8,9 @@ const createPrimary = ({
 
 const createNotion = () => {
   const primary = createPrimary();
-  const primaryTintDarker = createPrimary({ saturation: 1, lightness: 0.71 });
-  const primaryTintLighter = createPrimary({ saturation: 1, lightness: 0.59 });
-  const primaryTransparent = createPrimary({ opacity: 0.5 });
+  const primaryTintDarker = createPrimary({ saturation: 1, lightness: 0.43 });
+  const primaryTintLighter = createPrimary({ saturation: 1, lightness: 0.6 });
+  const primaryTransparent = createPrimary({ opacity: 0.4 });
   const textNormal = "hsl(0 0% 83%)";
   const textMuted = "hsl(0 0% 40%)";
   const textDimmed = "hsl(0 0% 60%)";

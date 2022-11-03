@@ -534,6 +534,9 @@ const ProfileDropdownTrigger = React.forwardRef(
             ":hover": {
               background: theme.colors.backgroundModifierHover,
             },
+            ":focus-visible": {
+              boxShadow: `0 0 0 0.2rem ${theme.colors.primary} inset`,
+            },
           })
         }
         {...props}
@@ -665,9 +668,14 @@ const CollapsableSection = ({
             borderRadius: "0.3rem",
             cursor: "pointer",
             justifySelf: "flex-start",
+            outline: "none",
             ":hover": {
               color: "rgb(255 255 255 / 56.5%)",
               background: theme.colors.backgroundModifierHover,
+            },
+            ":focus-visible": {
+              color: "rgb(255 255 255 / 56.5%)",
+              boxShadow: `0 0 0 0.2rem ${theme.colors.primary} inset`,
             },
           })
         }
@@ -849,6 +857,7 @@ const ListItem = ({
         background: transparent;
         border-radius: ${theme.mainMenu.itemBorderRadius};
         cursor: pointer;
+        outline: none;
         color: ${disabled
           ? theme.mainMenu.itemTextColorDisabled
           : theme.mainMenu.itemTextColor};
@@ -870,6 +879,9 @@ const ListItem = ({
       }
       & > *.active {
         color: ${theme.colors.textNormal};
+      }
+      & > *:focus-visible {
+        box-shadow: 0 0 0 0.2rem ${theme.colors.primary};
       }
     `}
   >

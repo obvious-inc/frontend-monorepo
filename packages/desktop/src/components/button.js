@@ -4,7 +4,7 @@ const baseStyles = (t) => ({
   userSelect: "none",
   transition: "background 20ms ease-in",
   fontWeight: "400",
-  lineHeight: 1.2,
+  lineHeight: 1,
   border: 0,
   borderRadius: "0.3rem",
   cursor: "pointer",

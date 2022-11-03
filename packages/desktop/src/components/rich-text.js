@@ -22,8 +22,9 @@ export const createCss = (theme, { inline = false, compact = false } = {}) => ({
   a: {
     color: theme.colors.link,
     textDecoration: "none",
+    outline: "none",
   },
-  "a:hover": {
+  "a:hover, a:focus-visible": {
     textDecoration: "underline",
     color: theme.colors.linkModifierHover,
   },
