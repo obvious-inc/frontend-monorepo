@@ -60,7 +60,6 @@ const textBlue = "hsl(199, 100%, 46%)";
 const background = "hsl(0, 0%, 10%)";
 
 const prefix = Linking.createURL("/");
-console.log(prefix);
 
 const {
   AuthProvider,
@@ -466,7 +465,9 @@ export default () => {
                 const response =
                   await Notifications.getLastNotificationResponseAsync();
 
-                return response?.notification.request.content.data.url;
+                const expoUrl = response?.notification.request.content.data.url;
+
+                if (expoUrl != null) return prefix + expoUrl;
               },
               subscribe(listener) {
                 // Listen to incoming links from deep linking
