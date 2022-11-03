@@ -1,10 +1,11 @@
 import { View, Image } from "react-native";
 import { SvgXml } from "react-native-svg";
+import theme from "../theme";
 import useProfilePicture from "../hooks/profile-picture";
 
 const UserProfilePicture = ({
   size = 18,
-  background = "hsl(0,0%,16%)",
+  background = theme.colors.backgroundLighter,
   user,
   large = false,
   transparent = false,

@@ -9,6 +9,7 @@ import {
 } from "react-native";
 import Svg, { Path } from "react-native-svg";
 import * as Shades from "@shades/common";
+import theme from "../theme";
 import { UserListItem, useFilteredUsers } from "./new-chat";
 import Input from "../components/input";
 import { HorizontalUserListItem } from "./new-closed-channel";
@@ -16,12 +17,8 @@ import { HorizontalUserListItem } from "./new-closed-channel";
 const { useAppScope } = Shades.app;
 const { useLatestCallback } = Shades.react;
 
-const textDefault = "hsl(0,0%,83%)";
-const textDimmed = "hsl(0,0%,50%)";
-const textBlue = "hsl(199, 100%, 46%)";
-
 export const options = {
-  headerTintColor: textDefault,
+  headerTintColor: theme.colors.textDefault,
   title: "New Private Chat",
   headerRight: (props) => (
     <HeaderRight {...props} button={{ label: "Next", disabled: true }} />
@@ -31,7 +28,12 @@ export const options = {
 const HeaderRight = ({ button: { label, disabled, onPress } }) => (
   <View>
     <Pressable disabled={disabled} onPress={onPress}>
-      <Text style={{ color: disabled ? textDimmed : textBlue, fontSize: 16 }}>
+      <Text
+        style={{
+          color: disabled ? theme.colors.textDimmed : theme.colors.textBlue,
+          fontSize: 16,
+        }}
+      >
         {label}
       </Text>
     </Pressable>
@@ -166,7 +168,9 @@ const NewPrivate = ({ navigation }) => {
                     alignItems: "center",
                   }}
                 >
-                  <Text style={{ color: textDimmed }}>Loading...</Text>
+                  <Text style={{ color: theme.colors.textDimmed }}>
+                    Loading...
+                  </Text>
                 </View>
               );
             default:
@@ -187,9 +191,11 @@ const NewPrivate = ({ navigation }) => {
                         borderRadius: 10,
                         borderWidth: 2,
                         borderColor: item.isSelected
-                          ? textBlue
+                          ? theme.colors.textBlue
                           : "hsl(0,0%,20%)",
-                        backgroundColor: item.isSelected ? textBlue : undefined,
+                        backgroundColor: item.isSelected
+                          ? theme.colors.textBlue
+                          : undefined,
                         alignItems: "center",
                         justifyContent: "center",
                       }}

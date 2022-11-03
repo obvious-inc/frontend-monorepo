@@ -11,6 +11,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import Svg, { Path } from "react-native-svg";
 import { useEnsName } from "wagmi";
 import * as Shades from "@shades/common";
+import theme from "../theme";
 import UserProfilePicture from "../components/user-profile-picture";
 import Input from "../components/input";
 
@@ -19,11 +20,9 @@ const { search: searchChannels } = Shades.utils.channel;
 const { truncateAddress } = Shades.utils.ethereum;
 const { useAppScope } = Shades.app;
 
-export const options = {};
+const { textDefault, textDimmed } = theme.colors;
 
-const textDefault = "hsl(0,0%,83%)";
-const textDimmed = "hsl(0,0%,50%)";
-const BACKGROUND = "hsl(0,0%,10%)";
+export const options = {};
 
 const ChannelList = ({ navigation }) => {
   const { state } = useAppScope();
@@ -60,7 +59,7 @@ const ChannelList = ({ navigation }) => {
   return (
     <SafeAreaView
       edges={["top", "left", "right"]}
-      style={{ flex: 1, backgroundColor: BACKGROUND }}
+      style={{ flex: 1, backgroundColor: theme.colors.background }}
     >
       <Pressable
         style={{
@@ -149,7 +148,7 @@ const ChannelList = ({ navigation }) => {
             left: 0,
             width: "100%",
             paddingVertical: 5,
-            backgroundColor: BACKGROUND,
+            backgroundColor: theme.colors.background,
             marginBottom: 5,
           }}
         >
@@ -323,17 +322,7 @@ const CollapsableSection = ({
 );
 
 const ListItem = ({ icon, title, notificationCount, disabled, ...props }) => (
-  <View
-    style={{ paddingHorizontal: 4 }}
-    //   & > *.active {
-    //     background: ${theme.colors.backgroundModifierSelected};
-    //   }
-    //   & > *:not(.active):hover {
-    //     background: ${theme.colors.backgroundModifierHover};
-    //   }
-    //   & > *.active {
-    //     color: ${theme.colors.textNormal};
-  >
+  <View style={{ paddingHorizontal: 4 }}>
     <Pressable
       {...props}
       style={({ pressed }) => ({
@@ -390,7 +379,7 @@ const NotificationBadge = ({ count }) => (
       display: "flex",
       alignItems: "center",
       justifyContent: "center",
-      backgroundColor: "hsl(359, 82.6%, 59.4%)",
+      backgroundColor: theme.colors.NotificationRed,
       height: 20,
       minWidth: 20,
       borderRadius: 10,
@@ -411,7 +400,12 @@ const NotificationBadge = ({ count }) => (
 );
 
 export const ChannelPicture = React.memo(
-  ({ channelId, size = 18, background = "hsl(0,0%,16%)", transparent }) => {
+  ({
+    channelId,
+    size = 18,
+    background = theme.colors.avatarBackground,
+    transparent,
+  }) => {
     const { state } = useAppScope();
     const channel = state.selectChannel(channelId);
     const placeholder = () => (
@@ -494,7 +488,7 @@ export const ChannelPicture = React.memo(
                     top: i === 0 ? borderWidth * -1 : diff + borderWidth,
                     left: i === 0 ? borderWidth + 2 : borderWidth * -1,
                     borderWidth,
-                    borderColor: BACKGROUND,
+                    borderColor: theme.colors.background,
                   }}
                 />
               );

@@ -23,6 +23,7 @@ import Svg, { G, Path } from "react-native-svg";
 import { FlashList } from "@shopify/flash-list";
 import * as Shades from "@shades/common";
 import * as Localization from "expo-localization";
+import theme from "../theme";
 import FormattedDate from "../components/formatted-date";
 import RichText from "../components/rich-text";
 import UserProfilePicture from "../components/user-profile-picture";
@@ -35,8 +36,7 @@ const { message: messageUtils, url: urlUtils } = Shades.utils;
 
 const ONE_MINUTE_IN_MILLIS = 1000 * 60;
 
-const background = "hsl(0,0%,10%)";
-const textDefault = "hsl(0,0%,83%)";
+const { textDefault, background } = theme.colors;
 
 // export const options = {
 //   headerMode: "screen",

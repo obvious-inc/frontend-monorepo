@@ -2,13 +2,12 @@ import * as Clipboard from "expo-clipboard";
 import React from "react";
 import { View, Text } from "react-native";
 import * as Shades from "@shades/common";
+import theme from "../theme";
 import { WEB_APP_ENDPOINT } from "../config";
 import { ModalActionButtonGroup } from "./account-modal";
 import { ChannelPicture } from "./channel-list";
 
 const { useAppScope } = Shades.app;
-
-const textDimmed = "hsl(0,0%,50%)";
 
 export const options = { presentation: "modal" };
 
@@ -96,7 +95,7 @@ const ChannelDetailsModal = ({ navigation, route }) => {
           {(channel.description?.trim() ?? "") !== "" && (
             <Text
               style={{
-                color: textDimmed,
+                color: theme.colors.textDimmed,
                 fontSize: 12,
                 fontWeight: "400",
                 lineHeight: 17,
@@ -112,7 +111,7 @@ const ChannelDetailsModal = ({ navigation, route }) => {
       <View>
         <Text
           style={{
-            color: textDimmed,
+            color: theme.colors.textDimmed,
             fontSize: 14,
             fontWeight: "400",
             lineHeight: 18,

@@ -4,6 +4,7 @@ import React from "react";
 import { View, Text, Dimensions } from "react-native";
 import { useEnsName } from "wagmi";
 import * as Shades from "@shades/common";
+import theme from "../theme";
 import UserProfilePicture from "../components/user-profile-picture";
 import { ModalActionButtonGroup } from "./account-modal";
 
@@ -11,8 +12,6 @@ const { useAppScope } = Shades.app;
 const { truncateAddress } = Shades.utils.ethereum;
 
 const screen = Dimensions.get("screen");
-
-const textDimmed = "hsl(0,0%,50%)";
 
 export const options = { presentation: "modal" };
 
@@ -98,7 +97,7 @@ const UserModal = ({ route }) => {
         {userDisplayName !== truncatedAddress && (
           <Text
             style={{
-              color: textDimmed,
+              color: theme.colors.textDimmed,
               fontSize: 14,
               fontWeight: "400",
               lineHeight: 18,

@@ -28,6 +28,7 @@ import { SafeAreaProvider } from "react-native-safe-area-context";
 import Pusher from "pusher-js/react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import * as Shades from "@shades/common";
+import theme from "./theme";
 import useOnlineListener from "./hooks/online-listener";
 import useAppActiveListener from "./hooks/app-active-listener";
 import Channel, { options as channelScreenOptions } from "./screens/channel";
@@ -56,8 +57,7 @@ import NewClosedChannelScreen, {
 
 const TabNavigator = createBottomTabNavigator();
 
-const textBlue = "hsl(199, 100%, 46%)";
-const background = "hsl(0, 0%, 10%)";
+const { textBlue, background } = theme.colors;
 
 const prefix = Linking.createURL("/");
 

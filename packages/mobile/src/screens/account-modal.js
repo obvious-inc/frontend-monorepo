@@ -1,24 +1,9 @@
-import { View, Text, Pressable } from "react-native";
-// import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import * as Shades from "@shades/common";
+import { View, Text, Pressable } from "react-native";
+import theme from "../theme";
 
 const { useAppScope } = Shades.app;
 
-const textDefault = "hsl(0,0%,83%)";
-const textMuted = "hsl(0,0%,38%)";
-const background = "hsl(0,0%,10%)";
-const textDanger = "#de554f";
-
-// export const options = {
-//   presentation: "modal",
-//   headerShown: true,
-//   header: () => (
-//     <View style={{ height: 56, backgroundColor: background }}>
-//       <Header />
-//     </View>
-//   ),
-//   gestureResponseDistance: 2000,
-// };
 export const options = {
   presentation: "modal",
   headerTitle: () => (
@@ -26,7 +11,7 @@ export const options = {
       <Header />
     </View>
   ),
-  headerStyle: { backgroundColor: background },
+  headerStyle: { backgroundColor: theme.colors.background },
   headerShown: true,
   headerShadowVisible: false,
 };
@@ -44,7 +29,13 @@ const Header = () => {
           marginBottom: 14,
         }}
       />
-      <Text style={{ fontSize: 16, fontWeight: "600", color: textDefault }}>
+      <Text
+        style={{
+          fontSize: 16,
+          fontWeight: "600",
+          color: theme.colors.textDefault,
+        }}
+      >
         Account
       </Text>
     </View>
@@ -60,7 +51,7 @@ const AccountModal = ({ navigation }) => {
           actions.logout();
           navigation.popToTop();
         }}
-        textColor={textDanger}
+        textColor={theme.colors.textDanger}
         label="Log out"
       />
     </View>
@@ -70,7 +61,7 @@ const AccountModal = ({ navigation }) => {
 export const ModalActionButton = ({
   label,
   disabled,
-  textColor = textDefault,
+  textColor = theme.colors.textDefault,
   style,
   ...props
 }) => (
@@ -87,7 +78,12 @@ export const ModalActionButton = ({
     })}
     {...props}
   >
-    <Text style={{ color: disabled ? textMuted : textColor, fontSize: 16 }}>
+    <Text
+      style={{
+        color: disabled ? theme.colors.textMuted : textColor,
+        fontSize: 16,
+      }}
+    >
       {label}
     </Text>
   </Pressable>

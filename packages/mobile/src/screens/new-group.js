@@ -1,6 +1,7 @@
 import React from "react";
 import { View, Text, Pressable, ScrollView } from "react-native";
 import * as Shades from "@shades/common";
+import theme from "../theme";
 import Input from "../components/input";
 import { useAsyncDismissKeyboard } from "./new-chat";
 import { HorizontalUserListItem } from "./new-closed-channel";
@@ -8,12 +9,8 @@ import { HorizontalUserListItem } from "./new-closed-channel";
 const { useLatestCallback } = Shades.react;
 const { useAppScope } = Shades.app;
 
-const textDefault = "hsl(0,0%,83%)";
-const textDimmed = "hsl(0,0%,50%)";
-const textBlue = "hsl(199, 100%, 46%)";
-
 export const options = {
-  headerTintColor: textDefault,
+  headerTintColor: theme.colors.textDefault,
   headerRight: (props) => (
     <HeaderRight {...props} button={{ label: "Create", disabled: true }} />
   ),
@@ -25,7 +22,7 @@ const HeaderRight = ({ button: { label, disabled, onPress } }) => (
       {({ pressed }) => (
         <Text
           style={{
-            color: disabled ? textDimmed : textBlue,
+            color: disabled ? theme.colors.textDimmed : theme.colors.textBlue,
             fontSize: 16,
             opacity: pressed ? 0.5 : 1,
           }}
