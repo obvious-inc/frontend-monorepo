@@ -47,7 +47,7 @@ const stylesByVariant = (t) => ({
       boxShadow: `0 0 0 0.2rem ${t.colors.primaryTransparent}`,
     },
     "&:hover": {
-      filter: "brightness(1.1)",
+      background: t.colors.primaryModifierHover,
     },
   },
 });

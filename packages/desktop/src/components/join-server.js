@@ -248,8 +248,8 @@ const Content = ({
                     target="_blank"
                     css={(theme) =>
                       css({
-                        color: theme.colors.linkColor,
-                        ":hover": { color: theme.colors.linkColorHighlight },
+                        color: theme.colors.link,
+                        ":hover": { color: theme.colors.linkModifierHover },
                       })
                     }
                   >
@@ -262,7 +262,7 @@ const Content = ({
                     <span
                       css={(theme) =>
                         css({
-                          color: theme.colors.linkColor,
+                          color: theme.colors.link,
                           marginBottom: "0.3rem",
                         })
                       }

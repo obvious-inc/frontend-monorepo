@@ -131,7 +131,7 @@ const ProfilePreview = React.forwardRef(({ userId }, ref) => {
             <Tooltip.Content dark side="top" align="start" sideOffset={4}>
               <div>
                 Click to see address on{" "}
-                <span css={(theme) => css({ color: theme.colors.linkColor })}>
+                <span css={(theme) => css({ color: theme.colors.link })}>
                   etherscan.io
                 </span>
               </div>

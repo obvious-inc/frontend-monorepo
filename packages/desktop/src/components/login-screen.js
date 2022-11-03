@@ -234,8 +234,8 @@ const LoginScreen = ({ showThrowawayWalletOption, onSuccess, onError }) => {
                   target="_blank"
                   css={(theme) =>
                     css({
-                      color: theme.colors.linkColor,
-                      ":hover": { color: theme.colors.linkColorHighlight },
+                      color: theme.colors.link,
+                      ":hover": { color: theme.colors.linkModifierHover },
                     })
                   }
                 >
@@ -257,7 +257,7 @@ const LoginScreen = ({ showThrowawayWalletOption, onSuccess, onError }) => {
                 css={(theme) =>
                   css({
                     fontSize: theme.fontSizes.small,
-                    color: theme.colors.textMuted,
+                    color: theme.colors.textDimmed,
                     marginTop: "2rem",
                   })
                 }
@@ -271,9 +271,9 @@ const LoginScreen = ({ showThrowawayWalletOption, onSuccess, onError }) => {
                       target="_blank"
                       css={(theme) =>
                         css({
-                          color: theme.colors.linkColor,
+                          color: theme.colors.link,
                           ":hover": {
-                            color: theme.colors.linkColorHighlight,
+                            color: theme.colors.linkModifierHover,
                           },
                         })
                       }
@@ -293,7 +293,7 @@ const LoginScreen = ({ showThrowawayWalletOption, onSuccess, onError }) => {
                       <span
                         css={(theme) =>
                           css({
-                            color: theme.colors.linkColor,
+                            color: theme.colors.link,
                             marginBottom: "0.3rem",
                           })
                         }
@@ -302,7 +302,7 @@ const LoginScreen = ({ showThrowawayWalletOption, onSuccess, onError }) => {
                       </span>
                     </div>
                     <div
-                      css={(theme) => css({ color: theme.colors.textMuted })}
+                      css={(theme) => css({ color: theme.colors.textDimmed })}
                     >
                       {accountAddress}
                     </div>

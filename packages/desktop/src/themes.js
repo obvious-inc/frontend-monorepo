@@ -1,10 +1,22 @@
+const createPrimary = ({
+  hue = 210,
+  saturation = 0.77,
+  lightness = 0.51,
+  opacity = 1,
+} = {}) =>
+  `hsl(${hue} ${saturation * 100}% ${lightness * 100}% / ${opacity * 100}%)`;
+
 const createNotion = () => {
+  const primary = createPrimary();
+  const primaryTintDarker = createPrimary({ saturation: 1, lightness: 0.71 });
+  const primaryTintLighter = createPrimary({ saturation: 1, lightness: 0.59 });
+  const primaryTransparent = createPrimary({ opacity: 0.5 });
   const textNormal = "hsl(0 0% 83%)";
   const textMuted = "hsl(0 0% 40%)";
   const textDimmed = "hsl(0 0% 60%)";
-  const transparentBlue = "rgba(45, 170, 219, 0.3)";
   const backgroundNormal = "hsl(0 0% 13%)";
   const backgroundDark = "hsl(0 0% 10%)";
+  const backgroundDarkTintLighter = "hsl(0 0% 11%)";
   const backgroundLight = "hsl(0 0% 15%)";
 
   return {
@@ -37,18 +49,18 @@ const createNotion = () => {
     },
     colors: {
       pink: "#e588f8",
-      primary: "#007ab3", // Blue,
-      primaryLight: "#2399d0",
-      primaryTransparent: "#007ab366",
+      primary,
+      primaryModifierHover: primaryTintDarker,
+      primaryTransparent,
       textNormal,
       textDimmed,
       textMuted,
       textHeader: "white",
       textHeaderSecondary: "hsl(0 0% 72%)",
       textHighlight: "#ffd376", // Light yellow
-      textSelectionBackground: transparentBlue,
-      linkColor: "hsl(199deg 100% 46%)",
-      linkColorHighlight: "hsl(199deg 100% 55%)",
+      textSelectionBackground: createPrimary({ saturation: 1, lightness: 0 }),
+      link: primaryTintLighter,
+      linkModifierHover: createPrimary({ saturation: 1, lightness: 0.62 }),
       borderLight: "hsl(0 0% 20%)",
       backgroundPrimary: backgroundDark,
       backgroundSecondary: backgroundNormal,
@@ -60,9 +72,17 @@ const createNotion = () => {
       backgroundModifierHover: "rgba(255, 255, 255, 0.055)",
       interactiveNormal: "#b9bbbe",
       interactiveHover: "#dcddde",
-      messageHoverBackground: "rgb(4 4 5 / 7%)",
+      messageBackgroundModifierFocus: backgroundDarkTintLighter,
+      messageBackgroundModifierHighlight: createPrimary({
+        lightness: 0.4,
+        opacity: 0.15,
+      }),
       onlineIndicator: "hsl(139 47.3%  43.9%)",
-      mentionFocusBorder: "#7375ffb8",
+      mentionText: createPrimary({ saturation: 1, lightness: 0.95 }),
+      mentionTextModifierHover: "white",
+      mentionBackground: createPrimary({ opacity: 0.3 }),
+      mentionBackgroundModifierHover: createPrimary({ opacity: 0.5 }),
+      mentionFocusBorder: primary,
     },
     fontSizes: {
       tiny: "1.05rem",

@@ -261,9 +261,9 @@ const ChannelMessage = React.memo(function ChannelMessage_({
       role="listitem"
       style={{
         background: hasPendingReply
-          ? "#3f42ea2b"
+          ? theme.colors.messageBackgroundModifierHighlight
           : showAsFocused
-          ? theme.colors.messageHoverBackground
+          ? theme.colors.messageBackgroundModifierFocus
           : undefined,
         padding:
           showSimplifiedMessage || compact

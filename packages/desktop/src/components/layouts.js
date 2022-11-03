@@ -125,7 +125,7 @@ export const UnifiedLayout = () => {
                     onSelect={() => {
                       login(walletAccountAddress);
                     }}
-                    css={(t) => css({ color: t.colors.linkColor })}
+                    css={(t) => css({ color: t.colors.link })}
                   >
                     Verify account
                   </DropdownMenu.Item>

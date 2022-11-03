@@ -1081,10 +1081,10 @@ const NewMessageInput = React.memo(
               disabled={isEmptyMessage || isPending}
               css={(theme) =>
                 css({
-                  color: theme.colors.primaryLight,
+                  color: theme.colors.primary,
                   padding: "0.2rem",
                   cursor: "pointer",
-                  ":hover": { filter: "brightness(1.1) saturate(1.1)" },
+                  ":hover": { color: theme.colors.primaryModifierHover },
                   ":disabled": {
                     pointerEvents: "none",
                     color: theme.colors.textMuted,
@@ -1604,9 +1604,9 @@ const Channel = ({ channelId, compact, noSideMenu }) => {
                           css({
                             display: "inline-flex",
                             alignItems: "center",
-                            color: theme.colors.linkColor,
+                            color: theme.colors.link,
                             ":hover": {
-                              color: theme.colors.linkColorHighlight,
+                              color: theme.colors.linkModifiedHover,
                             },
                             ":hover [data-avatar]": { opacity: 0.9 },
                           })
@@ -2022,11 +2022,15 @@ const MembersDirectoryDialog = ({ members, titleProps }) => {
                       alignItems: "center",
                       lineHeight: "1.4",
                       padding: "0.5rem 1.5rem",
+                      outline: "none",
                       ":not(:first-of-type)": {
                         marginTop: "0.1rem",
                       },
                       ":hover": {
                         background: theme.colors.backgroundModifierSelected,
+                      },
+                      ":focus-visible": {
+                        boxShadow: `0 0 0 0.2rem ${theme.colors.primary} inset`,
                       },
                       cursor: "pointer",
                       "@media (min-width: 600px)": {

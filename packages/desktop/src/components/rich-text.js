@@ -20,25 +20,29 @@ export const createCss = (theme, { inline = false, compact = false } = {}) => ({
   em: { fontStyle: "italic" },
   strong: { fontWeight: "600" },
   a: {
-    color: theme.colors.linkColor,
+    color: theme.colors.link,
     textDecoration: "none",
   },
-  "a:hover": { textDecoration: "underline" },
+  "a:hover": {
+    textDecoration: "underline",
+    color: theme.colors.linkModifierHover,
+  },
   ".mention": {
     border: 0,
     lineHeight: "inherit",
     borderRadius: "0.3rem",
     padding: "0 0.2rem",
-    color: "#e0f5ff",
-    background: "rgb(0 110 162 / 29%)",
+    color: theme.colors.mentionText,
+    background: theme.colors.mentionBackground,
     fontWeight: "500",
     cursor: "pointer",
+    outline: "none",
   },
   ".mention:hover": {
-    color: "white",
-    background: "rgb(0 90 132)",
+    color: theme.colors.mentionTextModifierHover,
+    background: theme.colors.mentionBackgroundModifierHover,
   },
-  ".mention[data-focused]": {
+  ".mention[data-focused], .mention:focus-visible": {
     position: "relative",
     zIndex: 1,
     boxShadow: `0 0 0 0.2rem ${theme.colors.mentionFocusBorder}`,
