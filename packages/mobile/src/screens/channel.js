@@ -431,6 +431,9 @@ const Channel = ({ navigation, route: { params } }) => {
               ]
             );
           }}
+          dismiss={() => {
+            setSelectedMessageId(null);
+          }}
         />
       </Modal>
     </>

@@ -1,12 +1,20 @@
+import * as Clipboard from "expo-clipboard";
 import { View } from "react-native";
 import * as Shades from "@shades/common";
 import { SectionedActionList } from "./account-modal";
 
 const { useAppScope } = Shades.app;
+const { message: messageUtils } = Shades.utils;
 
 const textDanger = "#de554f";
 
-const MessageModal = ({ messageId, startEdit, startReply, deleteMessage }) => {
+const MessageModal = ({
+  dismiss,
+  messageId,
+  startEdit,
+  startReply,
+  deleteMessage,
+}) => {
   const { state } = useAppScope();
   const me = state.selectMe();
   const message = state.selectMessage(messageId);
@@ -24,6 +32,16 @@ const MessageModal = ({ messageId, startEdit, startReply, deleteMessage }) => {
           onPress: startEdit,
         },
         { key: "reply", label: "Reply", onPress: startReply },
+        {
+          key: "copy-text",
+          label: "Copy text",
+          onPress: async () => {
+            await Clipboard.setStringAsync(
+              messageUtils.stringifyBlocks(message.blocks)
+            );
+            dismiss();
+          },
+        },
       ].filter(Boolean),
     },
     {
