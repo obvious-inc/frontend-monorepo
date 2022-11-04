@@ -26,7 +26,7 @@ const stylesByVariant = (t) => ({
   default: {
     color: t.colors.textNormal,
     border: "1px solid rgba(255, 255, 255, 0.13)",
-    "&:hover": {
+    "&:not([disabled]):hover": {
       background: "rgb(47 47 47)",
     },
   },
@@ -35,7 +35,7 @@ const stylesByVariant = (t) => ({
     border: "0.1rem solid",
     borderColor: "rgb(255 255 255 / 20%)",
     background: "none",
-    "&:hover": {
+    "&:not([disabled]):hover": {
       color: "white",
       borderColor: "rgb(255 255 255 / 25%)",
     },
@@ -46,7 +46,7 @@ const stylesByVariant = (t) => ({
     "&:focus-visible": {
       boxShadow: `0 0 0 0.2rem ${t.colors.primaryTransparent}`,
     },
-    "&:hover": {
+    "&:not([disabled]):hover": {
       background: t.colors.primaryModifierHover,
     },
   },

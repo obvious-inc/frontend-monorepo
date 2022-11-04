@@ -58,7 +58,6 @@ const Input = React.forwardRef(
             css({
               display: "inline-block",
               color: t.colors.textDimmed,
-              // color: t.colors.textNormal,
               fontSize: t.fontSizes.default,
               lineHeight: 1.2,
               margin: "0 0 0.8rem",

@@ -1,4 +1,6 @@
 import throttle from "lodash.throttle";
+import { utils as ethersUtils } from "ethers";
+import { useProvider as useEthersProvider } from "wagmi";
 import React from "react";
 import { useParams, useSearchParams } from "react-router-dom";
 import { css, useTheme } from "@emotion/react";
@@ -27,7 +29,11 @@ import Button from "./button";
 import * as Tooltip from "./tooltip";
 import Dialog from "./dialog";
 import Input from "./input";
-import { Hash as HashIcon, AtSign as AtSignIcon } from "./icons";
+import {
+  Hash as HashIcon,
+  AtSign as AtSignIcon,
+  Cross as CrossIcon,
+} from "./icons";
 import {
   PlusCircle as PlusCircleIcon,
   CrossCircle as CrossCircleIcon,
@@ -1359,6 +1365,7 @@ const Channel = ({ channelId, compact, noSideMenu }) => {
 
   const [notFound, setNotFound] = React.useState(false);
   const [isMembersDialogOpen, setMembersDialogOpen] = React.useState(false);
+  const [isAddMemberDialogOpen, setAddMemberDialogOpen] = React.useState(false);
 
   const isMenuTogglingEnabled = !noSideMenu && isSideMenuFloating;
 
@@ -1450,7 +1457,7 @@ const Channel = ({ channelId, compact, noSideMenu }) => {
   const hasPendingWalletAction =
     isConnectingWallet || loginStatus === "requesting-signature";
 
-  const headerContent = React.useMemo(() => {
+  const headerContent = (() => {
     if (channel == null) return null;
 
     const renderRightColumn = () => {
@@ -1569,11 +1576,46 @@ const Channel = ({ channelId, compact, noSideMenu }) => {
                   <MembersDirectoryDialog
                     members={members}
                     titleProps={titleProps}
+                    showAddMemberDialog={() => {
+                      setAddMemberDialogOpen(true);
+                    }}
+                    dismiss={() => {
+                      setMembersDialogOpen(false);
+                    }}
                   />
                 )}
               </Dialog>
             </>
           )}
+
+          <Dialog
+            isOpen={isAddMemberDialogOpen}
+            onRequestClose={() => {
+              setAddMemberDialogOpen(false);
+            }}
+            width="40rem"
+            style={{ height: "auto" }}
+            underlayProps={{
+              css: css({
+                padding: "2.8rem 1.5rem",
+                alignItems: "flex-start",
+                "@media (min-width: 600px)": {
+                  alignItems: "center",
+                  padding: "2.8rem 2.8rem 15vh",
+                },
+              }),
+            }}
+          >
+            {({ titleProps }) => (
+              <AddMemberDialog
+                channelId={channelId}
+                dismiss={() => {
+                  setAddMemberDialogOpen(false);
+                }}
+                titleProps={titleProps}
+              />
+            )}
+          </Dialog>
 
           {authenticationStatus === "not-authenticated" && (
             <span
@@ -1728,23 +1770,7 @@ const Channel = ({ channelId, compact, noSideMenu }) => {
         {renderRightColumn()}
       </>
     );
-  }, [
-    isEmbedded,
-    hasPendingWalletAction,
-    theme,
-    isFetchingMembers,
-    walletAccountAddress,
-    accountEnsName,
-    login,
-    authenticationStatus,
-    connectWallet,
-    actions,
-    isMenuTogglingEnabled,
-    channel,
-    members,
-    isChannelStarred,
-    isMembersDialogOpen,
-  ]);
+  })();
 
   if (notFound)
     return (
@@ -1918,7 +1944,14 @@ const MembersDisplayButton = React.forwardRef(({ onClick, members }, ref) => {
   );
 });
 
-const MembersDirectoryDialog = ({ members, titleProps }) => {
+const MembersDirectoryDialog = ({
+  dismiss,
+  members,
+  titleProps,
+  showAddMemberDialog,
+}) => {
+  const inputRef = React.useRef();
+
   const [query, setQuery] = React.useState("");
 
   const filteredMembers = React.useMemo(() => {
@@ -1949,10 +1982,14 @@ const MembersDirectoryDialog = ({ members, titleProps }) => {
     return orderedFilteredMembers;
   }, [members, query]);
 
-  const memberCount = members.length;
-  const onlineMemberCount = members.filter(
-    (m) => m.onlineStatus === "online"
-  ).length;
+  React.useEffect(() => {
+    inputRef.current.focus();
+  }, []);
+
+  // const memberCount = members.length;
+  // const onlineMemberCount = members.filter(
+  //   (m) => m.onlineStatus === "online"
+  // ).length;
 
   return (
     <>
@@ -1967,48 +2004,68 @@ const MembersDirectoryDialog = ({ members, titleProps }) => {
         <header
           css={css({
             display: "grid",
-            gridTemplateColumns: "auto auto",
+            gridTemplateColumns: "minmax(0,1fr) auto",
             gridGap: "1rem",
             alignItems: "flex-end",
             justifyContent: "flex-start",
-            margin: "0 0 1.5rem",
+            margin: "0 0 2rem",
           })}
         >
           <h1
             css={(theme) =>
-              css({ fontSize: theme.fontSizes.large, lineHeight: "1.2" })
+              css({
+                fontSize: theme.fontSizes.header,
+                lineHeight: 1.2,
+              })
             }
             {...titleProps}
           >
             Members
           </h1>
           <div
-            css={(theme) =>
-              css({
-                color: theme.colors.textMuted,
-                fontSize: theme.fontSizes.small,
-              })
-            }
+            css={css({
+              display: "grid",
+              gridAutoColumns: "auto",
+              gridAutoFlow: "column",
+              gridGap: "1rem",
+            })}
           >
-            {onlineMemberCount === 0 ? (
-              memberCount
-            ) : (
-              <>
-                {onlineMemberCount} of {memberCount} online
-              </>
-            )}
+            {/* <div */}
+            {/*   css={(theme) => */}
+            {/*     css({ */}
+            {/*       color: theme.colors.textMuted, */}
+            {/*       fontSize: theme.fontSizes.small, */}
+            {/*     }) */}
+            {/*   } */}
+            {/* > */}
+            {/*   {onlineMemberCount === 0 ? ( */}
+            {/*     memberCount */}
+            {/*   ) : ( */}
+            {/*     <> */}
+            {/*       {onlineMemberCount} of {memberCount} online */}
+            {/*     </> */}
+            {/*   )} */}
+            {/* </div> */}
+            <Button
+              size="small"
+              variant="default"
+              onClick={showAddMemberDialog}
+            >
+              Add member
+            </Button>
+            <Button
+              size="small"
+              variant="default"
+              onClick={dismiss}
+              css={css({ width: "2.8rem", padding: 0 })}
+            >
+              <CrossIcon />
+            </Button>
           </div>
-          {/* <Dialog.Close */}
-          {/*   css={css({ */}
-          {/*     padding: "0.8rem", */}
-          {/*     display: "block", */}
-          {/*     margin: "0 auto", */}
-          {/*   })} */}
-          {/* > */}
-          {/*   close */}
-          {/* </Dialog.Close> */}
         </header>
         <Input
+          ref={inputRef}
+          size="large"
           value={query}
           onChange={(e) => {
             setQuery(e.target.value);
@@ -2142,6 +2199,138 @@ const MembersDirectoryDialog = ({ members, titleProps }) => {
         </ul>
       </div>
     </>
+  );
+};
+const AddMemberDialog = ({ channelId, dismiss, titleProps }) => {
+  const ethersProvider = useEthersProvider();
+  const { actions } = useAppScope();
+
+  const inputRef = React.useRef();
+
+  const [query, setQuery] = React.useState("");
+  const [hasPendingRequest, setPendingRequest] = React.useState(false);
+
+  const trimmedQuery = query.trim();
+
+  const hasRequiredInput = trimmedQuery.split(" ").some((s) => {
+    const query = s.trim();
+    return query.endsWith(".eth") || ethersUtils.isAddress(query);
+  });
+
+  const submit = async () => {
+    const walletAddressOrEnsList = trimmedQuery.split(" ").map((s) => s.trim());
+    const addresses = [];
+
+    setPendingRequest(true);
+    try {
+      for (let walletAddressOrEns of walletAddressOrEnsList) {
+        try {
+          const address = await ethersProvider.resolveName(walletAddressOrEns);
+          addresses.push(address);
+        } catch (e) {
+          if (e.code === "INVALID_ARGUMENT")
+            throw new Error(`Invalid address "${walletAddressOrEns}"`);
+          throw e;
+        }
+      }
+
+      await actions.addChannelMember(channelId, addresses);
+      dismiss();
+    } catch (e) {
+      console.error(e);
+      // TODO
+    } finally {
+      setPendingRequest(false);
+    }
+  };
+
+  React.useEffect(() => {
+    inputRef.current.focus();
+  }, []);
+
+  return (
+    <div
+      css={css({
+        padding: "1.5rem",
+        "@media (min-width: 600px)": {
+          padding: "2rem",
+        },
+      })}
+    >
+      <header
+        css={css({
+          display: "grid",
+          gridTemplateColumns: "minmax(0,1fr) auto",
+          alignItems: "flex-end",
+          margin: "0 0 1.5rem",
+          "@media (min-width: 600px)": {
+            margin: "0 0 2rem",
+          },
+        })}
+      >
+        <h1
+          css={(t) =>
+            css({
+              fontSize: t.fontSizes.header,
+              lineHeight: 1.2,
+            })
+          }
+          {...titleProps}
+        >
+          Add member
+        </h1>
+        <Button
+          onClick={() => {
+            dismiss();
+          }}
+          css={css({ width: "2.8rem", padding: 0 })}
+        >
+          <CrossIcon style={{ width: "1.5rem", height: "auto" }} />
+        </Button>
+      </header>
+      <main>
+        <form
+          id="add-member-form"
+          onSubmit={(e) => {
+            e.preventDefault();
+            submit();
+          }}
+        >
+          <Input
+            ref={inputRef}
+            size="large"
+            value={query}
+            disabled={hasPendingRequest}
+            onChange={(e) => {
+              setQuery(e.target.value);
+            }}
+            placeholder="ENS name or wallet address"
+          />
+        </form>
+      </main>
+      <footer
+        css={css({
+          display: "flex",
+          justifyContent: "flex-end",
+          paddingTop: "1.5rem",
+          "@media (min-width: 600px)": {
+            paddingTop: "2rem",
+          },
+        })}
+      >
+        <Button
+          type="submit"
+          form="add-member-form"
+          size="medium"
+          variant="primary"
+          isLoading={hasPendingRequest}
+          disabled={!hasRequiredInput || hasPendingRequest}
+          style={{ width: "8rem" }}
+        >
+          Add
+        </Button>
+      </footer>
+    </div>
   );
 };
 

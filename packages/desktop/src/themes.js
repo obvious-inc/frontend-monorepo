@@ -89,6 +89,7 @@ const createNotion = () => {
       small: "1.2rem",
       default: "1.4rem",
       large: "1.7rem",
+      header: "2rem",
       huge: "3.2rem",
       headerDefault: "2rem",
       channelMessages: "1.6rem",
