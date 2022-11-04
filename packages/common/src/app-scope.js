@@ -629,6 +629,13 @@ export const Provider = ({ children }) => {
     authorizedFetch(`/integrations/tenor/search?q=${query}`)
   );
 
+  const promptDalle = useLatestCallback((prompt) =>
+    authorizedFetch(
+      `/integrations/dalle/generate?prompt=${encodeURIComponent(prompt)}`,
+      { method: "POST" }
+    )
+  );
+
   const actions = React.useMemo(
     () => ({
       logout,
@@ -673,6 +680,7 @@ export const Provider = ({ children }) => {
       uploadImage,
       registerChannelTypingActivity,
       searchGifs,
+      promptDalle,
     }),
     [
       logout,
@@ -717,6 +725,7 @@ export const Provider = ({ children }) => {
       uploadImage,
       registerChannelTypingActivity,
       searchGifs,
+      promptDalle,
     ]
   );
 

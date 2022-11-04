@@ -10,8 +10,6 @@ import {
   getRandomNounWithSeedInput,
 } from "../utils/nouns";
 
-const { stringifyBlocks: stringifyMessageBlocks } = messageUtils;
-
 const commands = {
   dm: ({ actions, state, navigate, ethersProvider }) => ({
     description:
@@ -57,6 +55,44 @@ const commands = {
     execute: async () => {
       actions.logout();
       window.location.reload();
+    },
+  }),
+  "dall-e": ({ actions }) => ({
+    arguments: ["prompt"],
+    description: "Have patience, DALL·E is in no hurry.",
+    execute: async ({ args, editor, submit }) => {
+      const prompt = args.join(" ");
+      try {
+        const response = await actions.promptDalle(prompt);
+
+        const { width, height } = await getImageDimensionsFromUrl(response.url);
+        submit([
+          {
+            type: "paragraph",
+            children: [
+              {
+                text: `${prompt.slice(0, 1).toUpperCase()}${prompt.slice(1)}`,
+                italic: true,
+              },
+            ],
+          },
+          {
+            type: "attachments",
+            children: [
+              {
+                type: "image-attachment",
+                url: response.url,
+                width,
+                height,
+              },
+            ],
+          },
+        ]);
+
+        editor.clear();
+      } catch (e) {
+        throw new Error("DALL·E hates your prompt");
+      }
     },
   }),
   gif: ({ actions }) => ({
