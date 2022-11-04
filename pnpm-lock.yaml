@@ -176,11 +176,11 @@ importers:
       expo-clipboard: ~4.0.1
       expo-constants: ~14.0.2
       expo-device: ~5.0.0
-      expo-haptics: ~12.0.0
+      expo-haptics: ~12.0.1
       expo-linking: ~3.2.3
       expo-localization: ~14.0.0
       expo-notifications: ~0.17.0
-      expo-updates: ~0.15.3
+      expo-updates: ~0.15.4
       prettier: ^2.7.1
       pusher-js: ^7.4.0
       react: 18.1.0
@@ -214,11 +214,11 @@ importers:
       expo-clipboard: 4.0.1_expo@47.0.0-beta.8
       expo-constants: 14.0.2_expo@47.0.0-beta.8
       expo-device: 5.0.0_expo@47.0.0-beta.8
-      expo-haptics: 12.0.0_expo@47.0.0-beta.8
+      expo-haptics: 12.0.1_expo@47.0.0-beta.8
       expo-linking: 3.2.3_expo@47.0.0-beta.8
       expo-localization: 14.0.0_expo@47.0.0-beta.8
       expo-notifications: 0.17.0_expo@47.0.0-beta.8
-      expo-updates: 0.15.3_expo@47.0.0-beta.8
+      expo-updates: 0.15.4_expo@47.0.0-beta.8
       pusher-js: 7.4.0
       react: 18.1.0
       react-native: 0.70.4_mfskofihvdy3w3obj2se3olr7i
@@ -5803,7 +5803,7 @@ packages:
       '@tanstack/react-query': 4.13.0
     dependencies:
       '@tanstack/query-persist-client-core': 4.13.0
-      '@tanstack/react-query': 4.13.0_ef5jwxihqo6n7gxfmzogljlgcm
+      '@tanstack/react-query': 4.13.0_kyj2qbmf4qosm56jtallnwp6xq
     transitivePeerDependencies:
       - '@tanstack/query-core'
     dev: false
@@ -6153,7 +6153,7 @@ packages:
       '@walletconnect/ethereum-provider':
         optional: true
     dependencies:
-      '@coinbase/wallet-sdk': 3.5.3
+      '@coinbase/wallet-sdk': 3.5.3_atq3pxwl2vgronp4cy5kf52qjm
       '@walletconnect/ethereum-provider': 1.8.0
       ethers: 5.7.2
       eventemitter3: 4.0.7
@@ -9223,8 +9223,8 @@ packages:
       fontfaceobserver: 2.3.0
     dev: false
 
-  /expo-haptics/12.0.0_expo@47.0.0-beta.8:
-    resolution: {integrity: sha512-06yyyMl3IaFgzpqp3SswPH4cFuuNUXHgCImW5gTPgHNKaBnsXQ7Ht1MSKKvarvqtYAuMrDn0RAfYev4Hivck3A==}
+  /expo-haptics/12.0.1_expo@47.0.0-beta.8:
+    resolution: {integrity: sha512-YubK3P3WTdjp5mFZcaF3ienqXHoDqzPpe61yTEIR5y+CVWqk+If9cC3ZYxn6lSp8KiNUmz7zC0GvUAVEqn8t6Q==}
     peerDependencies:
       expo: '*'
     dependencies:
@@ -9321,8 +9321,8 @@ packages:
       expo: 47.0.0-beta.8_@babel+core@7.19.6
     dev: false
 
-  /expo-updates/0.15.3_expo@47.0.0-beta.8:
-    resolution: {integrity: sha512-dISyvTS7Kilk+hGnG4qXtygfP2fbhkrx9wcjJoESNfR/3J9Pl6P1UwHaOhjB6RjVw+VLCCcGE+NmZLDazb+JKg==}
+  /expo-updates/0.15.4_expo@47.0.0-beta.8:
+    resolution: {integrity: sha512-ZMQ9R0igA9lMFRe5WU9Uo1YBKPChsTgv+QYthWVcd0kG9pRQmdRF/kCXknScRfOOaoyh8HkMPlnzKdPdBfVHJQ==}
     hasBin: true
     peerDependencies:
       expo: '*'
