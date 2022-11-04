@@ -1460,6 +1460,9 @@ const Channel = ({ channelId, compact, noSideMenu }) => {
   const headerContent = (() => {
     if (channel == null) return null;
 
+    const isChannelOwner =
+      channel.kind === "topic" && channel.ownerUserId !== user.id;
+
     const renderRightColumn = () => {
       if (
         authenticationStatus === "not-authenticated" &&
@@ -1576,9 +1579,13 @@ const Channel = ({ channelId, compact, noSideMenu }) => {
                   <MembersDirectoryDialog
                     members={members}
                     titleProps={titleProps}
-                    showAddMemberDialog={() => {
-                      setAddMemberDialogOpen(true);
-                    }}
+                    showAddMemberDialog={
+                      isChannelOwner
+                        ? () => {
+                            setAddMemberDialogOpen(true);
+                          }
+                        : null
+                    }
                     dismiss={() => {
                       setMembersDialogOpen(false);
                     }}
@@ -2046,13 +2053,15 @@ const MembersDirectoryDialog = ({
             {/*     </> */}
             {/*   )} */}
             {/* </div> */}
-            <Button
-              size="small"
-              variant="default"
-              onClick={showAddMemberDialog}
-            >
-              Add member
-            </Button>
+            {typeof showAddMemberDialog === "function" && (
+              <Button
+                size="small"
+                variant="default"
+                onClick={showAddMemberDialog}
+              >
+                Add member
+              </Button>
+            )}
             <Button
               size="small"
               variant="default"
