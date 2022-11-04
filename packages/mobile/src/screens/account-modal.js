@@ -1,3 +1,4 @@
+import React from "react";
 import * as Shades from "@shades/common";
 import { View, Text, Pressable } from "react-native";
 import theme from "../theme";
@@ -46,21 +47,27 @@ const AccountModal = ({ navigation }) => {
   const { actions } = useAppScope();
   return (
     <View style={{ flex: 1, padding: 16, backgroundColor: "hsl(0,0%,10%)" }}>
-      <ModalActionButton
-        onPress={() => {
-          actions.logout();
-          navigation.popToTop();
-        }}
-        textColor={theme.colors.textDanger}
-        label="Log out"
+      <SectionedActionList
+        items={[
+          {
+            key: "log-out",
+            label: "Log out",
+            danger: true,
+            onPress: () => {
+              actions.logout();
+              navigation.popToTop();
+            },
+          },
+        ]}
       />
     </View>
   );
 };
 
-export const ModalActionButton = ({
+const ModalActionButton = ({
   label,
   disabled,
+  danger,
   textColor = theme.colors.textDefault,
   style,
   ...props
@@ -80,7 +87,11 @@ export const ModalActionButton = ({
   >
     <Text
       style={{
-        color: disabled ? theme.colors.textMuted : textColor,
+        color: disabled
+          ? theme.colors.textMuted
+          : danger
+          ? theme.colors.textDanger
+          : textColor,
         fontSize: 16,
       }}
     >
@@ -89,7 +100,7 @@ export const ModalActionButton = ({
   </Pressable>
 );
 
-export const ModalActionButtonGroup = ({ actions }) =>
+const ModalActionButtonGroup = ({ actions }) =>
   actions.map(({ key, style: customStyle, ...a }, i, as) => {
     const isFirst = i === 0;
     const isLast = i === as.length - 1;
@@ -118,5 +129,13 @@ export const ModalActionButtonGroup = ({ actions }) =>
       />
     );
   });
+
+export const SectionedActionList = ({ items }) =>
+  items.map((section, i) => (
+    <React.Fragment key={i}>
+      {i !== 0 && <View style={{ height: 20 }} />}
+      <ModalActionButtonGroup actions={section.items} />
+    </React.Fragment>
+  ));
 
 export default AccountModal;

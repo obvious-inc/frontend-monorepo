@@ -1,7 +1,6 @@
-import React from "react";
 import { View } from "react-native";
 import * as Shades from "@shades/common";
-import { ModalActionButtonGroup } from "./account-modal";
+import { SectionedActionList } from "./account-modal";
 
 const { useAppScope } = Shades.app;
 
@@ -17,23 +16,27 @@ const MessageModal = ({ messageId, startEdit, startReply, deleteMessage }) => {
   const isOwnMessage = me.id === message.authorId;
 
   const actionSections = [
-    [
-      isOwnMessage && {
-        key: "edit-message",
-        label: "Edit message",
-        onPress: startEdit,
-      },
-      { key: "reply", label: "Reply", onPress: startReply },
-    ].filter(Boolean),
-    [
-      isOwnMessage && {
-        key: "delete-message",
-        label: "Delete message",
-        onPress: deleteMessage,
-        textColor: textDanger,
-      },
-    ].filter(Boolean),
-  ].filter((as) => as.length > 0);
+    {
+      items: [
+        isOwnMessage && {
+          key: "edit-message",
+          label: "Edit message",
+          onPress: startEdit,
+        },
+        { key: "reply", label: "Reply", onPress: startReply },
+      ].filter(Boolean),
+    },
+    {
+      items: [
+        isOwnMessage && {
+          key: "delete-message",
+          label: "Delete message",
+          onPress: deleteMessage,
+          textColor: textDanger,
+        },
+      ].filter(Boolean),
+    },
+  ].filter((s) => s.items.length > 0);
 
   return (
     <View
@@ -56,12 +59,7 @@ const MessageModal = ({ messageId, startEdit, startReply, deleteMessage }) => {
         }}
       />
 
-      {actionSections.map((actions, i) => (
-        <React.Fragment key={i}>
-          {i !== 0 && <View style={{ height: 20 }} />}
-          <ModalActionButtonGroup actions={actions} />
-        </React.Fragment>
-      ))}
+      <SectionedActionList items={actionSections} />
     </View>
   );
 };

@@ -1,10 +1,10 @@
 import * as Clipboard from "expo-clipboard";
 import React from "react";
-import { View, Text } from "react-native";
+import { View, Text, Alert } from "react-native";
 import * as Shades from "@shades/common";
 import theme from "../theme";
 import { WEB_APP_ENDPOINT } from "../config";
-import { ModalActionButtonGroup } from "./account-modal";
+import { SectionedActionList } from "./account-modal";
 import { ChannelPicture } from "./channel-list";
 
 const { useAppScope } = Shades.app;
@@ -14,39 +14,82 @@ export const options = { presentation: "modal" };
 const ChannelDetailsModal = ({ navigation, route }) => {
   const { state, actions } = useAppScope();
   const { channelId } = route.params;
+
+  const me = state.selectMe();
   const channel = state.selectChannel(channelId);
   const isStarredChannel = state.selectIsChannelStarred(channelId);
   const memberCount = channel.memberUserIds.length;
 
   const [hasPendingStarRequest, setPendingStarRequest] = React.useState(false);
 
-  const buttonActions = [
+  const actionList = [
     {
-      key: "copy-link",
-      label: "Copy link",
-      onPress: () => {
-        Clipboard.setStringAsync(
-          `${WEB_APP_ENDPOINT}/channels/${route.params.channelId}`
-        ).then(() => {
-          navigation.goBack();
-        });
-      },
+      items: [
+        {
+          key: "copy-link",
+          label: "Copy link",
+          onPress: () => {
+            Clipboard.setStringAsync(
+              `${WEB_APP_ENDPOINT}/channels/${route.params.channelId}`
+            ).then(() => {
+              navigation.goBack();
+            });
+          },
+        },
+        {
+          key: "star-channel",
+          label: isStarredChannel ? "Unstar" : "Star",
+          disabled: hasPendingStarRequest,
+          onPress: () => {
+            setPendingStarRequest(true);
+            const promise = isStarredChannel
+              ? actions.unstarChannel(channelId)
+              : actions.starChannel(channelId);
+            promise.finally(() => {
+              setPendingStarRequest(false);
+            });
+          },
+        },
+        {
+          key: "members",
+          label: "Members",
+          disabled: true,
+          onPress: () => {
+            //
+          },
+        },
+      ],
     },
     {
-      key: "star-channel",
-      label: isStarredChannel ? "Unstar" : "Star",
-      disabled: hasPendingStarRequest,
-      onPress: () => {
-        setPendingStarRequest(true);
-        const promise = isStarredChannel
-          ? actions.unstarChannel(channelId)
-          : actions.starChannel(channelId);
-        promise.finally(() => {
-          setPendingStarRequest(false);
-        });
-      },
+      items: [
+        channel != null &&
+          channel.kind === "topic" &&
+          channel.ownerUserId !== me.id && {
+            key: "leave-channel",
+            label: "Leave channel",
+            danger: true,
+            onPress: () => {
+              const leaveChannel = () => {
+                actions.leaveChannel(channelId);
+                navigation.popToTop();
+              };
+
+              Alert.alert(
+                "Leave channel",
+                "Are you sure you want to leave this channel?",
+                [
+                  { text: "Cancel", style: "cancel" },
+                  {
+                    text: "Leave channel",
+                    style: "destructive",
+                    onPress: leaveChannel,
+                  },
+                ]
+              );
+            },
+          },
+      ].filter(Boolean),
     },
-    { key: "members", label: "Members", disabled: true, onPress: () => {} },
   ];
 
   return (
@@ -122,7 +165,7 @@ const ChannelDetailsModal = ({ navigation, route }) => {
         </Text>
       </View>
 
-      <ModalActionButtonGroup actions={buttonActions} />
+      <SectionedActionList items={actionList} />
     </View>
   );
 };

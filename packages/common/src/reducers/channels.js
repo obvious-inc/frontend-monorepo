@@ -62,6 +62,19 @@ const entriesById = (state = {}, action) => {
     case "delete-channel-request-successful":
       return { ...state, [action.id]: { deleted: true } };
 
+    case "leave-channel:request-sent": {
+      const existingChannelData = state[action.channelId];
+      return {
+        ...state,
+        [action.channelId]: {
+          ...existingChannelData,
+          memberUserIds: existingChannelData.memberUserIds.filter(
+            (id) => id !== action.userId
+          ),
+        },
+      };
+    }
+
     case "server-event:channel-updated": {
       const channelId = action.data.channel.id;
       return {

@@ -379,7 +379,7 @@ const NotificationBadge = ({ count }) => (
       display: "flex",
       alignItems: "center",
       justifyContent: "center",
-      backgroundColor: theme.colors.NotificationRed,
+      backgroundColor: theme.colors.notificationRed,
       height: 20,
       minWidth: 20,
       borderRadius: 10,
@@ -403,7 +403,7 @@ export const ChannelPicture = React.memo(
   ({
     channelId,
     size = 18,
-    background = theme.colors.avatarBackground,
+    background = theme.colors.backgroundLighter,
     transparent,
   }) => {
     const { state } = useAppScope();

@@ -6,7 +6,7 @@ import { useEnsName } from "wagmi";
 import * as Shades from "@shades/common";
 import theme from "../theme";
 import UserProfilePicture from "../components/user-profile-picture";
-import { ModalActionButtonGroup } from "./account-modal";
+import { SectionedActionList, ModalActionButtonGroup } from "./account-modal";
 
 const { useAppScope } = Shades.app;
 const { truncateAddress } = Shades.utils.ethereum;
@@ -57,6 +57,53 @@ const UserModal = ({ route }) => {
       },
     },
   ].filter((i) => !i.isHidden);
+
+  const actionSections = [
+    {
+      items: [
+        { label: "Send message", disabled: true, onPress: () => {} },
+        {
+          label: isStarred ? "Remove from favorites" : "Add to favorites",
+          disabled: hasPendingStarRequest,
+          onPress: () => {
+            setPendingStarRequest(true);
+            const promise = isStarred
+              ? actions.unstarUser(userId)
+              : actions.starUser(userId);
+            promise.finally(() => {
+              setPendingStarRequest(false);
+            });
+          },
+          isHidden: isMe,
+        },
+        {
+          label: didRecentlyCopyAddress
+            ? "Address copied to clipboard"
+            : "Copy wallet address",
+          onPress: () => {
+            Clipboard.setStringAsync(user.walletAddress).then(() => {
+              setDidRecentlyCopyAddress(true);
+              setTimeout(() => {
+                setDidRecentlyCopyAddress(false);
+              }, 2800);
+            });
+          },
+        },
+      ].filter((i) => !i.isHidden),
+    },
+    {
+      items: [
+        {
+          label: "Etherscan",
+          onPress: () => {
+            Linking.openURL(
+              `https://etherscan.io/address/${user.walletAddress}`
+            );
+          },
+        },
+      ],
+    },
+  ];
 
   const truncatedAddress = truncateAddress(user.walletAddress);
   const userDisplayName = user.hasCustomDisplayName
@@ -111,20 +158,7 @@ const UserModal = ({ route }) => {
 
         <View style={{ height: 20 }} />
 
-        <ModalActionButtonGroup actions={actionItems} />
-        <View style={{ height: 20 }} />
-        <ModalActionButtonGroup
-          actions={[
-            {
-              label: "Etherscan",
-              onPress: () => {
-                Linking.openURL(
-                  `https://etherscan.io/address/${user.walletAddress}`
-                );
-              },
-            },
-          ]}
-        />
+        <SectionedActionList items={actionSections} />
       </View>
     </View>
   );

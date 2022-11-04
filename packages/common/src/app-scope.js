@@ -451,16 +451,17 @@ export const Provider = ({ children }) => {
     })
   );
 
-  const leaveChannel = useLatestCallback((channelId) =>
-    authorizedFetch(`/channels/${channelId}/members/me`, {
+  const leaveChannel = useLatestCallback((channelId) => {
+    dispatch({ type: "leave-channel:request-sent", channelId, userId: me.id });
+    return authorizedFetch(`/channels/${channelId}/members/me`, {
       method: "DELETE",
     }).then((res) => {
       // TODO
       fetchChannelMembers(channelId);
       // fetchInitialData();
       return res;
-    })
-  );
+    });
+  });
 
   const updateChannel = useLatestCallback((id, { name, description, avatar }) =>
     authorizedFetch(`/channels/${id}`, {
