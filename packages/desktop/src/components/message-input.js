@@ -1,7 +1,11 @@
 import React from "react";
 import { css } from "@emotion/react";
-import { array as arrayUtils } from "@shades/common/utils";
+import {
+  array as arrayUtils,
+  ethereum as ethereumUtils,
+} from "@shades/common/utils";
 import RichTextInput from "./rich-text-input";
+import Avatar from "./avatar";
 
 const { sort } = arrayUtils;
 
@@ -67,7 +71,7 @@ const MessageInput = React.forwardRef(
       const unorderedFilteredServerMembers = members.filter(
         (member) =>
           lowerCaseQuery != null &&
-          member.displayName.toLowerCase().includes(lowerCaseQuery)
+          member.displayName?.toLowerCase().includes(lowerCaseQuery)
       );
 
       const orderedFilteredServerMembers = sort((o1, o2) => {
@@ -80,9 +84,23 @@ const MessageInput = React.forwardRef(
         return 0;
       }, unorderedFilteredServerMembers);
 
-      return orderedFilteredServerMembers
-        .slice(0, 10)
-        .map((m) => ({ value: m.id, label: m.displayName }));
+      return orderedFilteredServerMembers.slice(0, 10).map((m) => {
+        const label = m.displayName;
+        const truncatedAddress = ethereumUtils.truncateAddress(m.walletAddress);
+        const hasCustomDisplayName = label !== truncatedAddress;
+        return {
+          value: m.id,
+          label,
+          description: hasCustomDisplayName ? truncatedAddress : undefined,
+          image: (
+            <Avatar
+              url={m.profilePicture?.small}
+              walletAddress={m.walletAddress}
+              size="3.2rem"
+            />
+          ),
+        };
+      });
     }, [autoCompleteMode, mentionQuery, members]);
 
     const filteredEmojiOptions = React.useMemo(() => {
@@ -381,20 +399,26 @@ const AutoCompleteListbox = ({
           boxShadow:
             "rgb(15 15 15 / 5%) 0px 0px 0px 1px, rgba(15, 15, 15, 0.1) 0px 3px 6px, rgba(15, 15, 15, 0.2) 0px 9px 24px",
           "[role=option]": {
-            display: "block",
+            display: "flex",
+            alignItems: "center",
             width: "100%",
             padding: "0.8rem 1.2rem 0.6rem",
             lineHeight: 1.3,
             fontWeight: "400",
             cursor: "pointer",
-            '&:hover, &:focus, &[data-selected="true"]': {
-              outline: "none",
-            },
+            outline: "none",
             "&:hover": {
               background: theme.colors.backgroundModifierHover,
             },
             '&:focus, &[data-selected="true"]': {
               background: theme.colors.backgroundModifierSelected,
+            },
+            ".image": {
+              width: "3.2rem",
+              height: "3.2rem",
+              borderRadius: "50%",
+              overflow: "hidden",
+              marginRight: "1rem",
             },
             ".label": {
               display: "inline-flex",
@@ -404,7 +428,7 @@ const AutoCompleteListbox = ({
               color: theme.colors.textNormal,
             },
             ".description": {
-              color: theme.colors.textMuted,
+              color: theme.colors.textDimmed,
               fontSize: "1.2rem",
               whiteSpace: "pre-line",
             },
@@ -423,10 +447,13 @@ const AutoCompleteListbox = ({
             onItemClick(item, i);
           }}
         >
-          <div className="label">{item.label}</div>
-          {item.description && (
-            <div className="description">{item.description}</div>
-          )}
+          {item.image && <div className="image">{item.image}</div>}
+          <div>
+            <div className="label">{item.label}</div>
+            {item.description && (
+              <div className="description">{item.description}</div>
+            )}
+          </div>
         </li>
       ))}
     </ul>

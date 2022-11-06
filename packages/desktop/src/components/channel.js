@@ -1460,8 +1460,7 @@ const Channel = ({ channelId, compact, noSideMenu }) => {
   const headerContent = (() => {
     if (channel == null) return null;
 
-    const isChannelOwner =
-      channel.kind === "topic" && channel.ownerUserId !== user.id;
+    const isChannelOwner = user != null && channel.ownerUserId === user?.id;
 
     const renderRightColumn = () => {
       if (
@@ -1580,7 +1579,7 @@ const Channel = ({ channelId, compact, noSideMenu }) => {
                     members={members}
                     titleProps={titleProps}
                     showAddMemberDialog={
-                      isChannelOwner
+                      channel.type === "topic" && isChannelOwner
                         ? () => {
                             setAddMemberDialogOpen(true);
                           }
