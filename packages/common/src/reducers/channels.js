@@ -173,7 +173,7 @@ const readStatesById = (state = {}, action) => {
 
       const mergedReadStates = action.channels.map((c) => {
         const existingState = { channelId: c.id, ...state[c.id] };
-        const lastMessageAt = c.last_message_at;
+        const lastMessageAt = c.lastMessageAt;
         const readStates = readStatesByChannelId[c.id];
 
         if (readStates == null) return { ...existingState, lastMessageAt };

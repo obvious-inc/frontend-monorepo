@@ -114,7 +114,7 @@ const App = () => {
   const bootClient = useLatestCallback(() =>
     fetchClientBootData().then(({ channels }) => {
       const dmUserIds = unique(
-        channels.filter((c) => c.kind === "dm").flatMap((c) => c.members)
+        channels.filter((c) => c.kind === "dm").flatMap((c) => c.memberUserIds)
       );
       return fetchUsers(dmUserIds);
     })

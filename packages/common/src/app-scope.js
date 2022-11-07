@@ -22,6 +22,7 @@ const parseChannel = (rawChannel) => {
     description: rawChannel.description,
     kind: rawChannel.kind,
     createdAt: rawChannel.created_at,
+    lastMessageAt: rawChannel.last_message_at,
     memberUserIds: rawChannel.members ?? [],
     ownerUserId: rawChannel.owner,
   };
