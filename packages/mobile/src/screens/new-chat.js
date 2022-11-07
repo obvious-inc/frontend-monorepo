@@ -508,6 +508,7 @@ const ListItem = ({
         flexDirection: "row",
         alignItems: "center",
         paddingHorizontal: 16,
+        opacity: props.disabled ? 0.5 : 1,
       })}
       {...props}
     >

@@ -9,7 +9,7 @@ import { ChannelPicture } from "./channel-list";
 
 const { useAppScope } = Shades.app;
 
-export const options = { presentation: "modal" };
+export const options = { headerShown: false };
 
 const ChannelDetailsModal = ({ navigation, route }) => {
   const { state, actions } = useAppScope();
@@ -21,6 +21,9 @@ const ChannelDetailsModal = ({ navigation, route }) => {
   const memberCount = channel.memberUserIds.length;
 
   const [hasPendingStarRequest, setPendingStarRequest] = React.useState(false);
+
+  const isChannelOwner =
+    channel.kind === "topic" && channel.ownerUserId === me.id;
 
   const actionList = [
     {
@@ -50,15 +53,19 @@ const ChannelDetailsModal = ({ navigation, route }) => {
             });
           },
         },
+        isChannelOwner && {
+          key: "add-members",
+          label: "Add members",
+          onPress: () => {
+            navigation.navigate("Add members", { channelId });
+          },
+        },
         {
           key: "members",
           label: "Members",
           disabled: true,
-          onPress: () => {
-            //
-          },
         },
-      ],
+      ].filter(Boolean),
     },
     {
       items: [

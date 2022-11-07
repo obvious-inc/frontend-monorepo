@@ -38,9 +38,12 @@ import ChannelList, {
 import AccountModal, {
   options as accountModalOptions,
 } from "./screens/account-modal";
-import ChannelDetailsModal, {
-  options as channelDetailsModalOptions,
+import ChannelDetails, {
+  options as channelDetailsScreenOptions,
 } from "./screens/channel-details-modal";
+import ChannelDetailsAddMembers, {
+  options as channelDetailsAddMembersScreenOptions,
+} from "./screens/channel-details-add-members";
 import UserModal, { options as userModalOptions } from "./screens/user-modal";
 import NewChatScreen, {
   options as newChatScreenOptions,
@@ -228,8 +231,8 @@ const App = () => {
       />
       <NativeStackNavigator.Screen
         name="Channel details modal"
-        component={ChannelDetailsModal}
-        options={channelDetailsModalOptions}
+        component={ChannelDetailsModalStack}
+        options={{ presentation: "modal" }}
       />
       <NativeStackNavigator.Screen
         name="User modal"
@@ -277,6 +280,31 @@ const ChannelListTabs = () => (
       options={channelListScreenOptions}
     />
   </TabNavigator.Navigator>
+);
+
+const ChannelDetailsModalStack = () => (
+  <NativeStackNavigator.Navigator
+    initialRouteName="Root"
+    screenOptions={{
+      headerShadowVisible: false,
+      headerBackTitleVisible: false,
+      headerTintColor: textBlue,
+      headerTitleStyle: { color: "white" },
+      headerStyle: { backgroundColor: background },
+      contentStyle: { backgroundColor: background },
+    }}
+  >
+    <NativeStackNavigator.Screen
+      name="Root"
+      component={ChannelDetails}
+      options={channelDetailsScreenOptions}
+    />
+    <NativeStackNavigator.Screen
+      name="Add members"
+      component={ChannelDetailsAddMembers}
+      options={channelDetailsAddMembersScreenOptions}
+    />
+  </NativeStackNavigator.Navigator>
 );
 
 const CreateChannelModalStack = () => (

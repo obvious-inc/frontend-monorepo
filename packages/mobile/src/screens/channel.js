@@ -156,7 +156,10 @@ const HeaderLeft = () => {
         <Pressable
           onPress={() => {
             navigation.navigate("Channel details modal", {
-              channelId: params.channelId,
+              screen: "Root",
+              params: {
+                channelId: params.channelId,
+              },
             });
           }}
           style={{ flexDirection: "row", alignItems: "center" }}
