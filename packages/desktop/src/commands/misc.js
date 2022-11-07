@@ -1,7 +1,4 @@
-import {
-  getImageDimensionsFromUrl,
-  message as messageUtils,
-} from "@shades/common/utils";
+import { getImageDimensionsFromUrl } from "@shades/common/utils";
 import { getChecksumAddress } from "../utils/ethereum";
 import { send as sendNotification } from "../utils/notifications";
 import {
@@ -12,8 +9,8 @@ import {
 
 const commands = {
   dm: ({ actions, state, navigate, ethersProvider }) => ({
-    description:
-      'Direct message. Usage: "/dm <wallet-address> [...<wallet-address>]"',
+    arguments: ["wallet-address-or-ens-name"],
+    description: "Start a one-to-one conversation with a wallet",
     execute: async ({ args, editor }) => {
       let addresses = args;
       if (addresses[0] == null) {

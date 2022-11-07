@@ -202,15 +202,21 @@ const RichTextInput = React.forwardRef(
 
                 if (trigger.match == null || trigger.match(wordString))
                   trigger.handler(wordString, wordRange);
+
                 break;
               }
               case "command": {
+                if (
+                  editor.selection == null ||
+                  !Range.isCollapsed(editor.selection)
+                )
+                  continue;
+
                 const string = Editor.string(editor, []);
 
-                const isCommand =
-                  editor.selection != null &&
-                  Range.isCollapsed(editor.selection) &&
-                  string.split(" ")[0].match(/^\/([a-z][a-z-]*)?$/);
+                const isCommand = string
+                  .split(" ")[0]
+                  .match(/^\/([a-z][a-z-]*)?$/);
 
                 if (!isCommand) {
                   trigger.handler(null);
@@ -223,6 +229,7 @@ const RichTextInput = React.forwardRef(
                   command,
                   args.map((a) => a.trim()).filter(Boolean)
                 );
+
                 break;
               }
 

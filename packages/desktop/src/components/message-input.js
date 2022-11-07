@@ -4,6 +4,7 @@ import {
   array as arrayUtils,
   ethereum as ethereumUtils,
 } from "@shades/common/utils";
+import { useLatestCallback } from "@shades/common/react";
 import RichTextInput from "./rich-text-input";
 import Avatar from "./avatar";
 
@@ -35,6 +36,7 @@ const MessageInput = React.forwardRef(
       onKeyDown,
       disabled,
       commands,
+      executeCommand: executeCommand_,
       disableCommands = false,
       members,
       getMember,
@@ -47,19 +49,19 @@ const MessageInput = React.forwardRef(
     const mentionQueryRangeRef = React.useRef();
 
     const [mentionQuery, setMentionQuery] = React.useState(null);
-    const [commandQuery, setCommandQuery] = React.useState(null);
     const [emojiQuery, setEmojiQuery] = React.useState(null);
+    const [commandQuery, setCommandQuery] = React.useState(null);
+    const [commandArgumentsQuery, setCommandArgumentsQuery] =
+      React.useState(null);
     const [selectedAutoCompleteIndex, setSelectedAutoCompleteIndex] =
       React.useState(-1);
 
-    const autoCompleteMode =
-      mentionQuery != null
-        ? "mentions"
-        : commandQuery != null
-        ? "commands"
-        : emojiQuery != null
-        ? "emojis"
-        : null;
+    const autoCompleteMode = (() => {
+      if (commandQuery != null) return "commands";
+      if (mentionQuery != null) return "mentions";
+      if (emojiQuery != null) return "emojis";
+      return null;
+    })();
 
     const isAutoCompleteMenuOpen = autoCompleteMode != null;
 
@@ -176,7 +178,7 @@ const MessageInput = React.forwardRef(
               {command.arguments != null && (
                 <>
                   {" "}
-                  <span css={(theme) => css({ color: theme.colors.textMuted })}>
+                  <span css={(t) => css({ color: t.colors.textMuted })}>
                     {command.arguments.map((a) => `<${a}>`).join(" ")}
                   </span>
                 </>
@@ -189,10 +191,12 @@ const MessageInput = React.forwardRef(
     }, [commands, autoCompleteMode, commandQuery]);
 
     const autoCompleteOptions = {
-      mentions: filteredMentionOptions,
       commands: filteredCommandOptions,
+      mentions: filteredMentionOptions,
       emojis: filteredEmojiOptions,
     }[autoCompleteMode];
+
+    const executeCommand = useLatestCallback(executeCommand_);
 
     const selectAutoCompleteOption = React.useCallback(
       (option) => {
@@ -212,12 +216,20 @@ const MessageInput = React.forwardRef(
 
           case "commands": {
             if (commandQuery === option.value) {
+              // if (commandArgumentsQuery == null) {
+              //   editorRef.current.replaceAll(`/${option.value} `);
+              //   break;
+              // }
+
+              executeCommand(
+                commandQuery,
+                commandArgumentsQuery?.split(" ") ?? []
+              );
               setCommandQuery(null);
               break;
             }
 
             editorRef.current.replaceFirstWord(`/${option.value} `);
-            setCommandQuery(null);
             break;
           }
 
@@ -225,7 +237,14 @@ const MessageInput = React.forwardRef(
             throw new Error();
         }
       },
-      [autoCompleteMode, editorRef, mentionQueryRangeRef, commandQuery]
+      [
+        autoCompleteMode,
+        editorRef,
+        mentionQueryRangeRef,
+        commandQuery,
+        commandArgumentsQuery,
+        executeCommand,
+      ]
     );
 
     const autoCompleteInputKeyDownHandler = React.useCallback(
@@ -324,17 +343,15 @@ const MessageInput = React.forwardRef(
             !disableCommands && {
               type: "command",
               handler: (command, args) => {
-                if (command == null || args.length !== 0) {
-                  setCommandQuery(null);
-                  return;
-                }
-
-                if (command && editorRef.current.string().endsWith(" ")) {
+                if (command == null) {
                   setCommandQuery(null);
                   return;
                 }
 
                 setCommandQuery(command);
+                setCommandArgumentsQuery(
+                  args.length === 0 ? null : args.join(" ")
+                );
                 setSelectedAutoCompleteIndex(0);
               },
             },

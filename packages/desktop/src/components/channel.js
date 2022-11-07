@@ -861,10 +861,25 @@ const NewMessageInput = React.memo(
     }, [pendingMessage, onInputChange]);
 
     const {
-      execute: executeCommand,
+      execute: executeCommand_,
       isCommand,
       commands,
     } = useCommands({ context, serverId, channelId });
+
+    const executeCommand = async (commandName, args) => {
+      setPending(true);
+      try {
+        return await executeCommand_(commandName, {
+          submit,
+          args,
+          editor: editorRef.current,
+        });
+      } catch (e) {
+        alert(e.message);
+      } finally {
+        setPending(false);
+      }
+    };
 
     const executeMessage = async () => {
       const blocks = cleanNodes(pendingMessage);
@@ -888,17 +903,7 @@ const NewMessageInput = React.memo(
           .filter(Boolean);
 
         if (isCommand(commandName)) {
-          setPending(true);
-          try {
-            await executeCommand(commandName, {
-              submit,
-              args,
-              editor: editorRef.current,
-            });
-          } catch (e) {
-            alert(e.message);
-          }
-          setPending(false);
+          await executeCommand(commandName, args);
           return;
         }
       }
@@ -1086,6 +1091,7 @@ const NewMessageInput = React.memo(
                   cancelReply();
                 }
               }}
+              executeCommand={executeCommand}
               commands={commands}
               disabled={disabled || isPending}
               {...props}
@@ -1579,7 +1585,7 @@ const Channel = ({ channelId, compact, noSideMenu }) => {
                     members={members}
                     titleProps={titleProps}
                     showAddMemberDialog={
-                      channel.type === "topic" && isChannelOwner
+                      channel.kind === "topic" && isChannelOwner
                         ? () => {
                             setAddMemberDialogOpen(true);
                           }
