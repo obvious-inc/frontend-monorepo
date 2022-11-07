@@ -59,7 +59,7 @@ export const options = {
       <HeaderLeft />
     </View>
   ),
-  // fullScreenGestureEnabled: true,
+  lazy: false,
 };
 
 // Region might return `null` on Android
