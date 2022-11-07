@@ -163,7 +163,7 @@ const HeaderLeft = () => {
         >
           {({ pressed }) => (
             <>
-              {(channel.kind === "dm" || channel.avatar != null) && (
+              {(channel.kind === "dm" || channel.image != null) && (
                 <View style={{ marginRight: 10 }}>
                   <ChannelPicture
                     transparent

@@ -67,7 +67,6 @@ const {
   ServerConnectionProvider,
   useAppScope,
   AppScopeProvider,
-  useServerConnection,
 } = Shades.app;
 const { useLatestCallback } = Shades.react;
 const { unique } = Shades.utils.array;
@@ -93,25 +92,9 @@ Notifications.setNotificationHandler({
 
 const NativeStackNavigator = createNativeStackNavigator();
 
-const useServerEventListener = (listener_) => {
-  const serverConnection = useServerConnection();
-
-  const listener = useLatestCallback(listener_);
-
-  React.useEffect(() => {
-    const removeListener = serverConnection.addListener((...args) => {
-      listener(...args);
-    });
-
-    return () => {
-      removeListener();
-    };
-  }, [listener, serverConnection]);
-};
-
 const App = () => {
   const { status: authStatus, setAccessToken, setRefreshToken } = useAuth();
-  const { state, actions, dispatch } = useAppScope();
+  const { state, actions } = useAppScope();
   const me = state.selectMe();
 
   const {
@@ -155,11 +138,6 @@ const App = () => {
   useOnlineListener(() => {
     if (authStatus !== "authenticated") return;
     updateClient();
-  });
-
-  useServerEventListener((name, data) => {
-    if (authStatus !== "authenticated") return;
-    dispatch({ type: ["server-event", name].join(":"), data, user: me });
   });
 
   React.useEffect(() => {

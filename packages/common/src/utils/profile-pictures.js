@@ -3,7 +3,7 @@ const variantNameBySizeName = {
   large: "public",
 };
 
-const buildUrl = (cloudflareId, size) => {
+export const buildUrl = (cloudflareId, size) => {
   const variant = variantNameBySizeName[size];
   if (variant == null) throw new Error();
   return `https://imagedelivery.net/${process.env.CLOUDFLARE_ACCT_HASH}/${cloudflareId}/${variant}`;

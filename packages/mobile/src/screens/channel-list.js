@@ -166,8 +166,6 @@ const ChannelList = ({ navigation }) => {
                 key={c.id}
                 id={c.id}
                 name={c.name}
-                kind={c.kind}
-                avatar={c.avatar}
                 hasUnread={state.selectChannelHasUnread(c.id)}
                 notificationCount={state.selectChannelMentionCount(c.id)}
                 onPress={() => {
@@ -198,8 +196,6 @@ const ChannelList = ({ navigation }) => {
                     key={c.id}
                     id={c.id}
                     name={c.name}
-                    kind={c.kind}
-                    avatar={c.avatar}
                     hasUnread={state.selectChannelHasUnread(c.id)}
                     notificationCount={state.selectChannelMentionCount(c.id)}
                     onPress={() => {
@@ -230,8 +226,6 @@ const ChannelList = ({ navigation }) => {
                     key={c.id}
                     id={c.id}
                     name={c.name}
-                    kind={c.kind}
-                    avatar={c.avatar}
                     hasUnread={state.selectChannelHasUnread(c.id)}
                     notificationCount={state.selectChannelMentionCount(c.id)}
                     onPress={() => {
@@ -422,7 +416,7 @@ export const ChannelPicture = React.memo(
 
     if (channel == null) return placeholder();
 
-    if (channel.avatar != null)
+    if (channel.image != null)
       return (
         <View
           style={{
@@ -436,7 +430,7 @@ export const ChannelPicture = React.memo(
           }}
         >
           <Image
-            source={{ uri: channel.avatar }}
+            source={{ uri: channel.image }}
             style={{ width: "100%", height: "100%" }}
           />
         </View>

@@ -1715,7 +1715,7 @@ const Channel = ({ channelId, compact, noSideMenu }) => {
     return (
       <>
         {!isMenuTogglingEnabled &&
-          (channel.avatar == null ? (
+          (channel.image == null ? (
             <>
               {!isEmbedded && (
                 <div
@@ -1736,7 +1736,7 @@ const Channel = ({ channelId, compact, noSideMenu }) => {
             </>
           ) : (
             <a
-              href={channel.avatar}
+              href={channel.image}
               rel="noreferrer"
               target="_blank"
               css={(t) =>
@@ -1750,7 +1750,7 @@ const Channel = ({ channelId, compact, noSideMenu }) => {
               }
               style={{ marginRight: "1.1rem" }}
             >
-              <Avatar url={channel.avatar} size="2.4rem" pixelSize={24} />
+              <Avatar url={channel.image} size="2.4rem" pixelSize={24} />
             </a>
           ))}
 

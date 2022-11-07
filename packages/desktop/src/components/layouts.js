@@ -370,7 +370,7 @@ export const UnifiedLayout = () => {
                       id={selectedChannel.id}
                       name={selectedChannel.name}
                       kind={selectedChannel.kind}
-                      avatar={selectedChannel.avatar}
+                      image={selectedChannel.image}
                       link={`/channels/${selectedChannel.id}`}
                       hasUnread={state.selectChannelHasUnread(
                         selectedChannel.id
@@ -402,7 +402,7 @@ export const UnifiedLayout = () => {
                         id={c.id}
                         name={c.name}
                         kind={c.kind}
-                        avatar={c.avatar}
+                        image={c.image}
                         link={`/channels/${c.id}`}
                         hasUnread={state.selectChannelHasUnread(c.id)}
                         notificationCount={state.selectChannelMentionCount(
@@ -431,7 +431,7 @@ export const UnifiedLayout = () => {
                         id={c.id}
                         name={c.name}
                         kind={c.kind}
-                        avatar={c.avatar}
+                        image={c.image}
                         link={`/channels/${c.id}`}
                         hasUnread={state.selectChannelHasUnread(c.id)}
                         notificationCount={state.selectChannelMentionCount(
@@ -472,7 +472,7 @@ export const UnifiedLayout = () => {
                           id={c.id}
                           name={c.name}
                           kind={c.kind}
-                          avatar={c.avatar}
+                          image={c.image}
                           link={`/channels/${c.id}`}
                           hasUnread={state.selectChannelHasUnread(c.id)}
                           notificationCount={state.selectChannelMentionCount(
@@ -689,11 +689,11 @@ const CollapsableSection = ({
   </section>
 );
 
-export const ChannelItem = ({
+const ChannelItem = ({
   id,
   link,
   name,
-  avatar,
+  image,
   kind,
   hasUnread,
   expandable,
@@ -761,8 +761,8 @@ export const ChannelItem = ({
       }
       icon={
         <span>
-          {avatar != null ? (
-            <Avatar url={avatar} {...avatarProps} />
+          {image != null ? (
+            <Avatar url={image} {...avatarProps} />
           ) : kind === "dm" ? (
             <>
               {isFetchingMembers ? (
@@ -815,7 +815,7 @@ export const ChannelItem = ({
             </>
           ) : (
             <Avatar
-              url={avatar}
+              url={image}
               // Emojis: https://dev.to/acanimal/how-to-slice-or-get-symbols-from-a-unicode-string-with-emojis-in-javascript-lets-learn-how-javascript-represent-strings-h3a
               signature={name == null ? null : [...name][0]}
               {...avatarProps}

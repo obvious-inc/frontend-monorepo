@@ -5,6 +5,7 @@ import { unique } from "./utils/array";
 import { pickKeys } from "./utils/object";
 import invariant from "./utils/invariant";
 import { stringifyBlocks as stringifyMessageBlocks } from "./utils/message";
+import { buildUrl as buildClouflareImageUrl } from "./utils/profile-pictures";
 import {
   openChannelPermissionOverrides,
   closedChannelPermissionOverrides,
@@ -14,6 +15,31 @@ import useRootReducer from "./hooks/root-reducer";
 import useLatestCallback from "./hooks/latest-callback";
 
 const parseUser = (u) => ({ ...u, pushTokens: u.push_tokens ?? [] });
+const parseChannel = (rawChannel) => {
+  const channel = {
+    id: rawChannel.id,
+    name: rawChannel.name,
+    description: rawChannel.description,
+    kind: rawChannel.kind,
+    createdAt: rawChannel.created_at,
+    memberUserIds: rawChannel.members ?? [],
+    ownerUserId: rawChannel.owner,
+  };
+
+  if ((rawChannel.avatar ?? "") === "") return channel;
+
+  if (rawChannel.avatar.match(/^https?:\/\//))
+    return {
+      ...channel,
+      image: rawChannel.avatar,
+      imageLarge: rawChannel.avatar,
+    };
+
+  const image = buildClouflareImageUrl(rawChannel.avatar, "small");
+  const imageLarge = buildClouflareImageUrl(rawChannel.avatar, "large");
+
+  return { ...channel, image, imageLarge };
+};
 
 const Context = React.createContext({});
 
@@ -273,15 +299,17 @@ export const Provider = ({ children }) => {
 
   const fetchChannel = useLatestCallback((id) =>
     authorizedFetch(`/channels/${id}`, { allowUnauthorized: true }).then(
-      (res) => {
-        dispatch({ type: "fetch-channel-request-successful", channel: res });
-        return res;
+      (rawChannel) => {
+        const channel = parseChannel(rawChannel);
+        dispatch({ type: "fetch-channel-request-successful", channel });
+        return channel;
       }
     )
   );
 
   const fetchUserChannels = useLatestCallback(() =>
-    authorizedFetch("/users/me/channels").then((channels) => {
+    authorizedFetch("/users/me/channels").then((rawChannels) => {
+      const channels = rawChannels.map(parseChannel);
       dispatch({ type: "fetch-user-channels-request-successful", channels });
       return channels;
     })
@@ -289,7 +317,8 @@ export const Provider = ({ children }) => {
 
   const fetchPubliclyReadableChannels = useLatestCallback(() =>
     authorizedFetch("/channels/@public", { allowUnauthorized: true }).then(
-      (channels) => {
+      (rawChannels) => {
+        const channels = rawChannels.map(parseChannel);
         dispatch({
           type: "fetch-publicly-readable-channels-request-successful",
           channels,
@@ -528,13 +557,14 @@ export const Provider = ({ children }) => {
 
   const fetchClientBootData = useLatestCallback(async () => {
     const [
-      { user: rawMe, channels, read_states: readStates, apps },
+      { user: rawMe, channels: rawChannels, read_states: readStates, apps },
       starredItems,
     ] = await Promise.all([authorizedFetch("/ready"), fetchStarredItems()]);
 
     // TODO: Change this
     const missingChannelStars = starredItems.filter(
-      (i) => i.type === "channel" && channels.every((c) => c.id !== i.reference)
+      (i) =>
+        i.type === "channel" && rawChannels.every((c) => c.id !== i.reference)
     );
 
     if (missingChannelStars.length !== 0)
@@ -543,6 +573,7 @@ export const Provider = ({ children }) => {
       );
 
     const me = parseUser(rawMe);
+    const channels = rawChannels.map(parseChannel);
 
     dispatch({
       type: "fetch-client-boot-data-request-successful",
@@ -635,6 +666,46 @@ export const Provider = ({ children }) => {
       { method: "POST" }
     )
   );
+
+  const dispatchServerEvent = useLatestCallback((name, data) => {
+    let typingEndedTimeoutHandles = {};
+
+    // Dispatch a 'user-typing-ended' action when a user+channel combo has
+    // been silent for a while
+    if (name === "user-typed") {
+      const id = [data.channel.id, data.user.id].join(":");
+
+      if (typingEndedTimeoutHandles[id]) {
+        clearTimeout(typingEndedTimeoutHandles[id]);
+        delete typingEndedTimeoutHandles[id];
+      }
+
+      typingEndedTimeoutHandles[id] = setTimeout(() => {
+        delete typingEndedTimeoutHandles[id];
+        dispatch({
+          type: "user-typing-ended",
+          channelId: data.channel.id,
+          userId: data.user.id,
+        });
+      }, 6000);
+    }
+
+    const dispatchEvent = (customData) =>
+      dispatch({
+        type: ["server-event", name].join(":"),
+        data: { ...data, ...customData },
+        user: me,
+      });
+
+    switch (name) {
+      case "channel-updated":
+        dispatchEvent({ channel: parseChannel(data.channel) });
+        break;
+
+      default:
+        dispatchEvent();
+    }
+  });
 
   const actions = React.useMemo(
     () => ({
@@ -731,14 +802,14 @@ export const Provider = ({ children }) => {
 
   const contextValue = React.useMemo(
     () => ({
-      dispatch,
+      dispatchServerEvent,
       state: stateSelectors,
       actions,
       addBeforeDispatchListener,
       addAfterDispatchListener,
     }),
     [
-      dispatch,
+      dispatchServerEvent,
       stateSelectors,
       actions,
       addBeforeDispatchListener,

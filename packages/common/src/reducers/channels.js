@@ -15,24 +15,12 @@ const sortChannelsByActivity = (channels, state) =>
     return t1 > t2 ? -1 : t1 < t2 ? 1 : 0;
   }, channels);
 
-const parseChannel = (channel) => ({
-  id: channel.id,
-  name: channel.name,
-  description: channel.description,
-  avatar: channel.avatar,
-  kind: channel.kind,
-  createdAt: channel.created_at,
-  memberUserIds: channel.members ?? [],
-  ownerUserId: channel.owner,
-});
-
 const entriesById = (state = {}, action) => {
   switch (action.type) {
     case "fetch-client-boot-data-request-successful":
     case "fetch-user-channels-request-successful":
     case "fetch-publicly-readable-channels-request-successful": {
-      const parsedChannels = action.channels.map(parseChannel);
-      const entriesById = indexBy((c) => c.id, parsedChannels);
+      const entriesById = indexBy((c) => c.id, action.channels);
       return { ...state, ...entriesById };
     }
 
@@ -42,7 +30,7 @@ const entriesById = (state = {}, action) => {
         ...state,
         [action.channel.id]: {
           ...existingChannelData,
-          ...parseChannel(action.channel),
+          ...action.channel,
         },
       };
     }
@@ -82,7 +70,7 @@ const entriesById = (state = {}, action) => {
         [channelId]: {
           ...state[channelId],
           id: channelId,
-          ...parseChannel(action.data.channel),
+          ...action.data.channel,
         },
       };
     }
@@ -327,7 +315,6 @@ export const selectChannel = createSelector(
     return {
       ...channel,
       name: buildName(),
-      avatar: channel.avatar === "" ? null : channel.avatar,
       isAdmin: loggedInUser != null && loggedInUser.id === channel.ownerUserId,
     };
   },

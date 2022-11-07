@@ -1,6 +1,7 @@
 import React from "react";
 import { useAuth } from "./auth";
 import { useAppScope } from "./app-scope";
+import { useLatestCallback } from "./react";
 
 const serverEventMap = {
   MESSAGE_CREATE: "message-created",
@@ -36,7 +37,7 @@ const initPusherConnection = ({ Pusher, key, accessToken, apiOrigin }) => {
 const Context = React.createContext(null);
 
 export const Provider = ({ Pusher, pusherKey, debug = false, children }) => {
-  const { state } = useAppScope();
+  const { state, dispatchServerEvent } = useAppScope();
   const { accessToken, apiOrigin } = useAuth();
 
   const user = state.selectMe();
@@ -90,6 +91,16 @@ export const Provider = ({ Pusher, pusherKey, debug = false, children }) => {
     connect();
   }, [Pusher, apiOrigin, pusherKey, debug, user?.id, accessToken]);
 
+  React.useEffect(() => {
+    const removeListener = addListener((...args) => {
+      dispatchServerEvent(...args);
+    });
+
+    return () => {
+      removeListener();
+    };
+  }, [addListener]);
+
   const serverConnection = React.useMemo(
     () => ({ addListener, isConnected: pusherState === "connected" }),
     [addListener, pusherState]
@@ -100,4 +111,23 @@ export const Provider = ({ Pusher, pusherKey, debug = false, children }) => {
   );
 };
 
-export const useServerConnection = () => React.useContext(Context);
+export const useServerEventListener = (listener_) => {
+  const serverConnection = React.useContext(Context);
+
+  const listener = useLatestCallback(listener_);
+
+  React.useEffect(() => {
+    const removeListener = serverConnection.addListener((...args) => {
+      listener(...args);
+    });
+
+    return () => {
+      removeListener();
+    };
+  }, [listener, serverConnection]);
+};
+
+export const useServerConnectionState = () => {
+  const { isConnected } = React.useContext(Context);
+  return { isConnected };
+};

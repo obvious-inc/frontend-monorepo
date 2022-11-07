@@ -27,7 +27,6 @@ import Pusher from "pusher-js";
 import {
   useAuth,
   useAppScope,
-  useServerConnection,
   ServerConnectionProvider,
 } from "@shades/common/app";
 import { ethereum as ethereumUtils } from "@shades/common/utils";
@@ -84,7 +83,7 @@ const useSystemNotifications = () => {
 
   const user = state.selectMe();
 
-  const afterDispatchListener = useLatestCallback((action) => {
+  const afterDispatchHandler = useLatestCallback((action) => {
     switch (action.type) {
       case "server-event:message-created": {
         const message = state.selectMessage(action.data.message.id);
@@ -126,19 +125,18 @@ const useSystemNotifications = () => {
 
   React.useEffect(() => {
     if (window.Notification?.permission !== "granted") return;
-    const removeListener = addAfterDispatchListener(afterDispatchListener);
+    const removeListener = addAfterDispatchListener(afterDispatchHandler);
     return () => {
       removeListener();
     };
-  }, [addAfterDispatchListener, afterDispatchListener]);
+  }, [addAfterDispatchListener, afterDispatchHandler]);
 };
 
 const App = () => {
   const navigate = useNavigate();
 
-  const serverConnection = useServerConnection();
   const { status: authStatus } = useAuth();
-  const { state, actions, dispatch } = useAppScope();
+  const { state, actions } = useAppScope();
   const { login } = useWalletLogin();
 
   const user = state.selectMe();
@@ -173,39 +171,6 @@ const App = () => {
       navigate("/");
     });
   });
-
-  React.useEffect(() => {
-    let typingEndedTimeoutHandles = {};
-
-    const handler = (name, data) => {
-      // Dispatch a 'user-typing-ended' action when a user+channel combo has
-      // been silent for a while
-      if (name === "user-typed") {
-        const id = [data.channel.id, data.user.id].join(":");
-
-        if (typingEndedTimeoutHandles[id]) {
-          clearTimeout(typingEndedTimeoutHandles[id]);
-          delete typingEndedTimeoutHandles[id];
-        }
-
-        typingEndedTimeoutHandles[id] = setTimeout(() => {
-          delete typingEndedTimeoutHandles[id];
-          dispatch({
-            type: "user-typing-ended",
-            channelId: data.channel.id,
-            userId: data.user.id,
-          });
-        }, 6000);
-      }
-
-      dispatch({ type: ["server-event", name].join(":"), data, user });
-    };
-
-    const removeListener = serverConnection.addListener(handler);
-    return () => {
-      removeListener();
-    };
-  }, [user, serverConnection, dispatch]);
 
   if (isReactNativeWebView) {
     const sendMessageToApp = (type, payload) =>

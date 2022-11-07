@@ -7,6 +7,7 @@ const user = (state = null, action) => {
       return action.user;
 
     case "fetch-client-boot-data-request-successful":
+      console.log("boot", action);
       return action.user;
 
     case "logout":
