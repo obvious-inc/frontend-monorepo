@@ -119,19 +119,13 @@ export const useFilteredUsers = ({ query }) => {
   const starredUsers = state.selectStarredUsers();
 
   const trimmedQuery = React.useDeferredValue(query.trim());
-  const suffix = trimmedQuery.split(".").slice(-1)[0];
-  const bareEnsNameQuery = trimmedQuery.split(".").slice(0, -1).join(".");
-  const hasIncompleteEnsSuffix = "eth".startsWith(suffix);
-  const ensNameQuery = trimmedQuery.endsWith(".eth")
-    ? trimmedQuery
-    : `${hasIncompleteEnsSuffix ? bareEnsNameQuery : trimmedQuery}.eth`;
 
   const { data: ensAddress, isLoading: isLoadingEns } = useEnsAddress({
-    name: ensNameQuery,
-    enabled: trimmedQuery.length >= 2,
+    name: trimmedQuery,
+    enabled: trimmedQuery.endsWith(".eth"),
   });
 
-  const showEnsLoading = isLoadingEns && !ensNameQuery.startsWith("0x");
+  const showEnsLoading = isLoadingEns && !trimmedQuery.startsWith("0x");
 
   const filteredUsers = React.useMemo(() => {
     if (trimmedQuery.length < 3) return starredUsers;
@@ -191,7 +185,7 @@ export const useFilteredUsers = ({ query }) => {
         id: queryAddress,
         walletAddress: queryAddress,
         displayName: maybeUser?.displayName,
-        ensName: ensAddress == null ? null : ensNameQuery,
+        ensName: ensAddress == null ? null : trimmedQuery,
       },
       ...sortResults(
         users.filter(
@@ -207,7 +201,6 @@ export const useFilteredUsers = ({ query }) => {
     starredUserIds,
     trimmedQuery,
     ensAddress,
-    ensNameQuery,
     selectUsers,
     selectUserFromWalletAddress,
   ]);
