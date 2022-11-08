@@ -4,6 +4,7 @@ import {
   createClient as createWagmiClient,
   configureChains as configureWagmiChains,
   useEnsAddress,
+  useProvider as useEthersProvider,
 } from "wagmi";
 import { mainnet as mainnetChain } from "wagmi/chains";
 import { infuraProvider } from "wagmi/providers/infura";
@@ -132,6 +133,48 @@ const useSystemNotifications = () => {
   }, [addAfterDispatchListener, afterDispatchHandler]);
 };
 
+const useUserEnsNames = () => {
+  const provider = useEthersProvider();
+  const { actions, addAfterDispatchListener } = useAppScope();
+
+  const { registerEnsNames } = actions;
+
+  React.useEffect(() => {
+    const removeListener = addAfterDispatchListener((action) => {
+      switch (action.type) {
+        case "fetch-users-request-successful":
+          // Waterfall for performance reasons.
+          // TODO switch to ensjs when stable
+          action.users
+            .reduce(
+              (prevPromise, user) =>
+                prevPromise.then((ensNamesByAddress) =>
+                  provider
+                    .lookupAddress(user.walletAddress)
+                    .then((maybeEnsName) => {
+                      if (maybeEnsName == null) return ensNamesByAddress;
+                      return {
+                        ...ensNamesByAddress,
+                        [user.walletAddress.toLowerCase()]: maybeEnsName,
+                      };
+                    })
+                ),
+              Promise.resolve({})
+            )
+            .then((ensNamesByAddress) => {
+              registerEnsNames(ensNamesByAddress);
+            });
+          break;
+
+        default: // Ignore
+      }
+    });
+    return () => {
+      removeListener();
+    };
+  }, [addAfterDispatchListener, registerEnsNames]);
+};
+
 const App = () => {
   const navigate = useNavigate();
 
@@ -142,6 +185,7 @@ const App = () => {
   const user = state.selectMe();
 
   useSystemNotifications();
+  useUserEnsNames();
 
   useWalletEvent("disconnect", () => {
     if (authStatus === "not-authenticated") return;

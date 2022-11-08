@@ -9,10 +9,21 @@ import { build as buildProfilePicture } from "../utils/profile-pictures";
 const entriesById = (state = {}, action) => {
   switch (action.type) {
     case "fetch-channel-members-request-successful":
-      return { ...state, ...indexBy((m) => m.id, action.members) };
+    case "fetch-users-request-successful": {
+      const users = action.members ?? action.users;
+      const mergedUsers = users.map((u) => {
+        const existingUser = state[u.id];
+        return { ...existingUser, ...u };
+      });
+      const usersById = indexBy((m) => m.id, mergedUsers);
+      return { ...state, ...usersById };
+    }
 
-    case "fetch-users-request-successful":
-      return { ...state, ...indexBy((m) => m.id, action.users) };
+    case "fetch-me-request-successful":
+    case "fetch-client-boot-data-request-successful": {
+      const exisingUser = state[action.user.id];
+      return { ...state, [action.user.id]: { ...exisingUser, ...action.user } };
+    }
 
     case "server-event:user-profile-updated":
       return mapValues((user) => {
@@ -74,12 +85,14 @@ const selectAllUsers = (state) =>
   );
 
 export const selectUser = createSelector(
-  (state, userId) =>
-    state.me.user?.id === userId
-      ? { ...state.me.user, ...state.users.entriesById[userId] }
-      : state.users.entriesById[userId],
+  (state, userId) => state.users.entriesById[userId],
+  (state, userId) => {
+    const user = state.users.entriesById[userId];
+    if (user == null) return null;
+    return state.ens.namesByAddress[user.walletAddress.toLowerCase()];
+  },
   (state) => state.me.user,
-  (user, loggedInUser) => {
+  (user, ensName, loggedInUser) => {
     if (user == null) return null;
     const isLoggedInUser = user.id === loggedInUser?.id;
 
@@ -90,6 +103,7 @@ export const selectUser = createSelector(
 
     return {
       ...user,
+      ensName,
       displayName: displayName ?? truncateAddress(walletAddress),
       customDisplayName: hasCustomDisplayName ? displayName : null,
       hasCustomDisplayName,

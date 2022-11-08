@@ -14,7 +14,17 @@ import {
 import useRootReducer from "./hooks/root-reducer";
 import useLatestCallback from "./hooks/latest-callback";
 
-const parseUser = (u) => ({ ...u, pushTokens: u.push_tokens ?? [] });
+const parseUser = (u) => {
+  const parsedData = {
+    ...u,
+    walletAddress: u.wallet_address,
+  };
+
+  if (u.push_tokens != null) parsedData.pushTokens = u.push_tokens;
+
+  return parsedData;
+};
+
 const parseChannel = (rawChannel) => {
   const channel = {
     id: rawChannel.id,
@@ -91,7 +101,8 @@ export const Provider = ({ children }) => {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ user_ids: userIds }),
-    }).then((users) => {
+    }).then((rawUsers) => {
+      const users = rawUsers.map(parseUser);
       dispatch({ type: "fetch-users-request-successful", users });
       return users;
     })
@@ -417,13 +428,14 @@ export const Provider = ({ children }) => {
   const fetchChannelMembers = useLatestCallback((id) =>
     authorizedFetch(`/channels/${id}/members`, {
       allowUnauthorized: true,
-    }).then((res) => {
+    }).then((rawMembers) => {
+      const members = rawMembers.map(parseUser);
       dispatch({
         type: "fetch-channel-members-request-successful",
         channelId: id,
-        members: res,
+        members,
       });
-      return res;
+      return members;
     })
   );
 
@@ -668,6 +680,13 @@ export const Provider = ({ children }) => {
     )
   );
 
+  const registerEnsNames = useLatestCallback((namesByAddress) => {
+    dispatch({
+      type: "resolve-ens-names:request-successful",
+      namesByAddress,
+    });
+  });
+
   const dispatchServerEvent = useLatestCallback((name, data) => {
     let typingEndedTimeoutHandles = {};
 
@@ -753,6 +772,7 @@ export const Provider = ({ children }) => {
       registerChannelTypingActivity,
       searchGifs,
       promptDalle,
+      registerEnsNames,
     }),
     [
       logout,
@@ -798,6 +818,7 @@ export const Provider = ({ children }) => {
       registerChannelTypingActivity,
       searchGifs,
       promptDalle,
+      registerEnsNames,
     ]
   );
 

@@ -4,10 +4,8 @@ import { selectUser } from "./users";
 const user = (state = null, action) => {
   switch (action.type) {
     case "fetch-me-request-successful":
-      return action.user;
-
     case "fetch-client-boot-data-request-successful":
-      return action.user;
+      return { id: action.user.id };
 
     case "logout":
       return null;

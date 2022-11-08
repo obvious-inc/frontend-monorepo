@@ -1971,7 +1971,8 @@ const MembersDirectoryDialog = ({
       return sort(compareMembersByOwnerOnlineStatusAndDisplayName, members);
 
     const q = query.trim().toLowerCase();
-    const getSearchTokens = (m) => [m.displayName, m.walletAddress];
+    const getSearchTokens = (m) =>
+      [m.displayName, m.ensName, m.walletAddress].filter(Boolean);
 
     const unorderedFilteredMembers = members.filter((member) =>
       getSearchTokens(member).some((t) => t.toLowerCase().includes(q))
@@ -2094,6 +2095,9 @@ const MembersDirectoryDialog = ({
               member.walletAddress == null
                 ? null
                 : truncateAddress(member.walletAddress);
+
+            const hasSubtitle =
+              member.ensName != null || member.displayName !== truncatedAddress;
             return (
               <li key={member.id} css={css({ display: "block" })}>
                 <button
@@ -2193,16 +2197,18 @@ const MembersDirectoryDialog = ({
                         </Tooltip.Root>
                       )}
                     </div>
-                    {member.displayName !== truncatedAddress && (
+                    {hasSubtitle && (
                       <div
                         css={(theme) =>
                           css({
                             fontSize: theme.fontSizes.small,
-                            color: theme.colors.textMuted,
+                            color: theme.colors.textDimmed,
                           })
                         }
                       >
-                        {truncatedAddress}
+                        {member.ensName == null
+                          ? truncatedAddress
+                          : `${member.ensName} (${truncatedAddress})`}
                       </div>
                     )}
                   </div>
