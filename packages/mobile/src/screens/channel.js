@@ -992,6 +992,7 @@ const ChannelMessageInput = React.forwardRef(
                   onSubmit(pendingMessage);
                   setPendingMessage("");
                 }}
+                disabled={!canSubmit}
                 style={{
                   width: 40,
                   height: 40,
