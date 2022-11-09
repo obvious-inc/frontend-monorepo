@@ -60,9 +60,13 @@ const commands = {
     execute: async ({ args, editor, submit }) => {
       const prompt = args.join(" ");
       try {
-        const response = await actions.promptDalle(prompt);
+        const { url } = await actions.promptDalle(prompt);
 
-        const { width, height } = await getImageDimensionsFromUrl(response.url);
+        const [{ width, height }, uploadedImage] = await Promise.all([
+          getImageDimensionsFromUrl(url),
+          actions.uploadImageWithUrl(url),
+        ]);
+
         submit([
           {
             type: "paragraph",
@@ -78,7 +82,7 @@ const commands = {
             children: [
               {
                 type: "image-attachment",
-                url: response.url,
+                url: uploadedImage.url,
                 width,
                 height,
               },

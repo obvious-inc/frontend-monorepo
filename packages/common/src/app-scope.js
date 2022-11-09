@@ -5,7 +5,7 @@ import { unique } from "./utils/array";
 import { pickKeys } from "./utils/object";
 import invariant from "./utils/invariant";
 import { stringifyBlocks as stringifyMessageBlocks } from "./utils/message";
-import { buildUrl as buildClouflareImageUrl } from "./utils/profile-pictures";
+import { buildUrl as buildCloudflareImageUrl } from "./utils/profile-pictures";
 import {
   openChannelPermissionOverrides,
   closedChannelPermissionOverrides,
@@ -46,8 +46,8 @@ const parseChannel = (rawChannel) => {
       imageLarge: rawChannel.avatar,
     };
 
-  const image = buildClouflareImageUrl(rawChannel.avatar, "small");
-  const imageLarge = buildClouflareImageUrl(rawChannel.avatar, "large");
+  const image = buildCloudflareImageUrl(rawChannel.avatar, "small");
+  const imageLarge = buildCloudflareImageUrl(rawChannel.avatar, "large");
 
   return { ...channel, image, imageLarge };
 };
@@ -665,6 +665,14 @@ export const Provider = ({ children }) => {
     });
   });
 
+  const uploadImageWithUrl = useLatestCallback((url) =>
+    authorizedFetch("/media/url", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ url }),
+    }).then(({ id }) => ({ url: buildCloudflareImageUrl(id, "large") }))
+  );
+
   const registerChannelTypingActivity = useLatestCallback((channelId) =>
     authorizedFetch(`/channels/${channelId}/typing`, { method: "POST" })
   );
@@ -769,6 +777,7 @@ export const Provider = ({ children }) => {
       unstarUser,
       fetchApps,
       uploadImage,
+      uploadImageWithUrl,
       registerChannelTypingActivity,
       searchGifs,
       promptDalle,
@@ -815,6 +824,7 @@ export const Provider = ({ children }) => {
       unstarUser,
       fetchApps,
       uploadImage,
+      uploadImageWithUrl,
       registerChannelTypingActivity,
       searchGifs,
       promptDalle,
