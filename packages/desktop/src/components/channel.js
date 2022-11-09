@@ -35,8 +35,6 @@ import {
   Hash as HashIcon,
   AtSign as AtSignIcon,
   Cross as CrossIcon,
-} from "./icons";
-import {
   PlusCircle as PlusCircleIcon,
   CrossCircle as CrossCircleIcon,
   Star as StarIcon,

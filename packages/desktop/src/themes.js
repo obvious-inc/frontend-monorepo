@@ -66,6 +66,7 @@ const createNotion = () => {
       borderLight: "hsl(0 0% 20%)",
       backgroundPrimary: backgroundDark,
       backgroundSecondary: backgroundNormal,
+      backgroundTertiary: backgroundLight,
       dialogBackground: backgroundLight,
       dialogPopoverBackground: backgroundLight,
       channelInputBackground: backgroundLight,

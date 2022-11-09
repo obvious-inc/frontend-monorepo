@@ -87,6 +87,7 @@ const Button = ({
   size = "small",
   variant = "default",
   fullWidth = false,
+  icon,
   isLoading = false,
   css: customStyles,
   component: Component = "button",
@@ -109,6 +110,11 @@ const Button = ({
     }}
     {...props}
   >
+    {icon != null && (
+      <div css={css({ marginRight: "0.6rem", marginLeft: "-0.2rem" })}>
+        {icon}
+      </div>
+    )}
     <div
       style={{
         visibility: isLoading ? "hidden" : undefined,

@@ -13,7 +13,13 @@ import Input from "./input";
 import Avatar from "./avatar";
 import Dialog from "./dialog";
 import * as Tooltip from "./tooltip";
-import { Cross as CrossIcon } from "./icons";
+import {
+  Cross as CrossIcon,
+  Star as StarIcon,
+  StrokedStar as StrokedStarIcon,
+  Bell as BellIcon,
+  AddUser as AddUserIcon,
+} from "./icons";
 
 const { sort } = arrayUtils;
 const { truncateAddress } = ethereumUtils;
@@ -119,8 +125,11 @@ const ChannelInfoDialog = ({
   dismiss,
   showAddMemberDialog,
 }) => {
-  const { state } = useAppScope();
+  const { state, actions } = useAppScope();
   const channel = state.selectChannel(channelId);
+  const isChannelStarred = state.selectIsChannelStarred(channelId);
+
+  const memberCount = channel.memberUserIds.length;
 
   return (
     <>
@@ -131,10 +140,9 @@ const ChannelInfoDialog = ({
           gridGap: "1rem",
           alignItems: "flex-end",
           justifyContent: "flex-start",
-          margin: "0 0 2rem",
-          padding: "1.5rem 1.5rem 0",
+          padding: "1.5rem",
           "@media (min-width: 600px)": {
-            padding: "2rem 2rem 0",
+            padding: "2rem",
           },
         })}
       >
@@ -142,6 +150,7 @@ const ChannelInfoDialog = ({
           css={(theme) =>
             css({
               fontSize: theme.fontSizes.header,
+              color: theme.colors.textHeader,
               lineHeight: 1.2,
             })
           }
@@ -157,31 +166,6 @@ const ChannelInfoDialog = ({
             gridGap: "1rem",
           })}
         >
-          {/* <div */}
-          {/*   css={(theme) => */}
-          {/*     css({ */}
-          {/*       color: theme.colors.textMuted, */}
-          {/*       fontSize: theme.fontSizes.small, */}
-          {/*     }) */}
-          {/*   } */}
-          {/* > */}
-          {/*   {onlineMemberCount === 0 ? ( */}
-          {/*     memberCount */}
-          {/*   ) : ( */}
-          {/*     <> */}
-          {/*       {onlineMemberCount} of {memberCount} online */}
-          {/*     </> */}
-          {/*   )} */}
-          {/* </div> */}
-          {typeof showAddMemberDialog === "function" && (
-            <Button
-              size="small"
-              variant="default"
-              onClick={showAddMemberDialog}
-            >
-              Add member
-            </Button>
-          )}
           <Button
             size="small"
             variant="default"
@@ -190,6 +174,76 @@ const ChannelInfoDialog = ({
           >
             <CrossIcon />
           </Button>
+        </div>
+
+        <div
+          css={css({
+            display: "flex",
+            justifyContent: "flex-start",
+            paddingTop: "0.5rem",
+          })}
+        >
+          <div
+            css={css({
+              display: "grid",
+              gridAutoColumns: "auto",
+              gridAutoFlow: "column",
+              gridGap: "1rem",
+            })}
+          >
+            {/* <div */}
+            {/*   css={(theme) => */}
+            {/*     css({ */}
+            {/*       color: theme.colors.textMuted, */}
+            {/*       fontSize: theme.fontSizes.small, */}
+            {/*     }) */}
+            {/*   } */}
+            {/* > */}
+            {/*   {onlineMemberCount === 0 ? ( */}
+            {/*     memberCount */}
+            {/*   ) : ( */}
+            {/*     <> */}
+            {/*       {onlineMemberCount} of {memberCount} online */}
+            {/*     </> */}
+            {/*   )} */}
+            {/* </div> */}
+            <Button
+              size="small"
+              variant="default"
+              icon={
+                isChannelStarred ? (
+                  <StarIcon style={{ color: "rgb(202, 152, 73)" }} />
+                ) : (
+                  <StrokedStarIcon />
+                )
+              }
+              onClick={() => {
+                if (isChannelStarred) {
+                  actions.unstarChannel(channelId);
+                  return;
+                }
+
+                actions.starChannel(channelId);
+              }}
+              css={css({ svg: { width: "1.6rem", height: "auto" } })}
+            >
+              {isChannelStarred ? "Unstar" : "Star"}
+            </Button>
+            <Button
+              size="small"
+              variant="default"
+              disabled
+              icon={
+                <BellIcon
+                  css={(t) =>
+                    css({ width: "1.6rem", color: t.colors.textNormal })
+                  }
+                />
+              }
+            >
+              Notify for all messages
+            </Button>
+          </div>
         </div>
       </header>
       <Tabs
@@ -200,8 +254,28 @@ const ChannelInfoDialog = ({
         <Item key="about" title="About">
           <AboutTab channelId={channelId} />
         </Item>
-        <Item key="members" title="Members">
-          <MembersDirectoryTab channelId={channelId} />
+        <Item
+          key="members"
+          title={
+            <>
+              Members{" "}
+              <span
+                css={(t) =>
+                  css({
+                    fontSize: t.fontSizes.small,
+                    fontWeight: "400",
+                  })
+                }
+              >
+                ({memberCount})
+              </span>
+            </>
+          }
+        >
+          <MembersDirectoryTab
+            channelId={channelId}
+            addMember={showAddMemberDialog}
+          />
         </Item>
       </Tabs>
     </>
@@ -383,7 +457,7 @@ const ProperyButton = ({ name, value, ...props }) => (
   </button>
 );
 
-const MembersDirectoryTab = ({ channelId }) => {
+const MembersDirectoryTab = ({ channelId, addMember }) => {
   const inputRef = React.useRef();
 
   const [query, setQuery] = React.useState("");
@@ -424,6 +498,8 @@ const MembersDirectoryTab = ({ channelId }) => {
     inputRef.current.focus();
   }, []);
 
+  const showAddMemberItem = addMember != null && query.trim() === "";
+
   return (
     <div style={{ height: "100%", display: "flex", flexDirection: "column" }}>
       <div
@@ -445,7 +521,80 @@ const MembersDirectoryTab = ({ channelId }) => {
         />
       </div>
       <div css={css({ flex: 1, overflow: "auto", padding: "1.3rem 0" })}>
-        <ul>
+        <ul
+          css={(t) =>
+            css({
+              "li > button": {
+                width: "100%",
+                display: "grid",
+                gridTemplateColumns: "auto minmax(0,1fr)",
+                gridGap: "1rem",
+                alignItems: "center",
+                lineHeight: "1.4",
+                padding: "0.5rem 1.5rem",
+                outline: "none",
+                ":not(:first-of-type)": {
+                  marginTop: "0.1rem",
+                },
+                ":hover": {
+                  background: t.colors.backgroundModifierSelected,
+                },
+                ":focus-visible": {
+                  boxShadow: `0 0 0 0.2rem ${t.colors.primary} inset`,
+                },
+                cursor: "pointer",
+                "@media (min-width: 600px)": {
+                  gridGap: "1.5rem",
+                  padding: "0.7rem 2rem",
+                },
+              },
+            })
+          }
+        >
+          {showAddMemberItem && (
+            <li key="add-member">
+              <button
+                onClick={() => {
+                  addMember();
+                }}
+                css={(t) =>
+                  css({
+                    ":hover [data-icon]": {
+                      borderColor: t.colors.textMuted,
+                    },
+                  })
+                }
+              >
+                <div
+                  data-icon
+                  css={(t) =>
+                    css({
+                      width: "3.6rem",
+                      height: "3.6rem",
+                      borderRadius: "50%",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      color: t.colors.textNormal,
+                      border: "0.1rem solid",
+                      borderColor: t.colors.borderLight,
+                    })
+                  }
+                >
+                  <AddUserIcon
+                    style={{
+                      width: "2rem",
+                      height: "auto",
+                      position: "relative",
+                      left: "0.1rem",
+                    }}
+                  />
+                </div>
+                <div>Add member</div>
+              </button>
+            </li>
+          )}
+
           {filteredMembers.map((member) => {
             const truncatedAddress =
               member.walletAddress == null
@@ -457,32 +606,6 @@ const MembersDirectoryTab = ({ channelId }) => {
             return (
               <li key={member.id} css={css({ display: "block" })}>
                 <button
-                  css={(theme) =>
-                    css({
-                      width: "100%",
-                      display: "grid",
-                      gridTemplateColumns: "auto minmax(0,1fr)",
-                      gridGap: "1rem",
-                      alignItems: "center",
-                      lineHeight: "1.4",
-                      padding: "0.5rem 1.5rem",
-                      outline: "none",
-                      ":not(:first-of-type)": {
-                        marginTop: "0.1rem",
-                      },
-                      ":hover": {
-                        background: theme.colors.backgroundModifierSelected,
-                      },
-                      ":focus-visible": {
-                        boxShadow: `0 0 0 0.2rem ${theme.colors.primary} inset`,
-                      },
-                      cursor: "pointer",
-                      "@media (min-width: 600px)": {
-                        gridGap: "1.5rem",
-                        padding: "0.7rem 2rem",
-                      },
-                    })
-                  }
                   onClick={() => {
                     navigator.clipboard
                       .writeText(member.walletAddress)
@@ -642,6 +765,7 @@ const FormDialog = ({
           css={(t) =>
             css({
               fontSize: t.fontSizes.header,
+              color: t.colors.textHeader,
               lineHeight: 1.2,
             })
           }
