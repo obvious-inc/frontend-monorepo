@@ -4,6 +4,7 @@ export * as function from "./utils/function";
 export * as url from "./utils/url";
 export * as message from "./utils/message";
 export * as channel from "./utils/channel";
+export * as user from "./utils/user";
 export * as permission from "./utils/permissions";
 export * as ethereum from "./utils/ethereum";
 export {

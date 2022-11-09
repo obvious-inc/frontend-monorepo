@@ -62,6 +62,7 @@ importers:
       react-dom: 18.1.0
       react-intl: ^5.25.1
       react-router-dom: ^6.4.2
+      react-stately: ^3.18.0
       reselect: ^4.1.6
       slate: ^0.75.0
       slate-history: ^0.66.0
@@ -103,6 +104,7 @@ importers:
       react-dom: 18.1.0_react@18.1.0
       react-intl: 5.25.1_react@18.1.0
       react-router-dom: 6.4.2_ef5jwxihqo6n7gxfmzogljlgcm
+      react-stately: 3.18.0_react@18.1.0
       reselect: 4.1.6
       slate: 0.75.0
       slate-history: 0.66.0_slate@0.75.0
@@ -4797,6 +4799,16 @@ packages:
       react: 18.1.0
     dev: false
 
+  /@react-stately/data/3.7.0_react@18.1.0:
+    resolution: {integrity: sha512-+u5rKjraR7R6aMMXSDwH61jRRELnGGWr6xMFlk6G9fr8uAmil+AWrv8Dh8nZlJfy5I2hT1d8lbS9j5TRp/QFKg==}
+    peerDependencies:
+      react: ^16.8.0 || ^17.0.0-rc.1 || ^18.0.0
+    dependencies:
+      '@babel/runtime': 7.19.4
+      '@react-types/shared': 3.15.0_react@18.1.0
+      react: 18.1.0
+    dev: false
+
   /@react-stately/datepicker/3.1.0_react@18.1.0:
     resolution: {integrity: sha512-v4tTHw65kOFu1jnj9JWqTLvf8pSABP6K94+bAtg60028AuwPCvJ9MGMU8LDGYGmPBcl1F0qFVo/x5pwKCv3jZQ==}
     peerDependencies:
@@ -5803,7 +5815,7 @@ packages:
       '@tanstack/react-query': 4.13.0
     dependencies:
       '@tanstack/query-persist-client-core': 4.13.0
-      '@tanstack/react-query': 4.13.0_kyj2qbmf4qosm56jtallnwp6xq
+      '@tanstack/react-query': 4.13.0_ef5jwxihqo6n7gxfmzogljlgcm
     transitivePeerDependencies:
       - '@tanstack/query-core'
     dev: false
@@ -6153,7 +6165,7 @@ packages:
       '@walletconnect/ethereum-provider':
         optional: true
     dependencies:
-      '@coinbase/wallet-sdk': 3.5.3_atq3pxwl2vgronp4cy5kf52qjm
+      '@coinbase/wallet-sdk': 3.5.3
       '@walletconnect/ethereum-provider': 1.8.0
       ethers: 5.7.2
       eventemitter3: 4.0.7
@@ -13793,6 +13805,35 @@ packages:
       object-assign: 4.1.1
       react: 18.1.0
       react-is: 18.2.0
+    dev: false
+
+  /react-stately/3.18.0_react@18.1.0:
+    resolution: {integrity: sha512-oNh/GzmCU5hVxDsaOeBCzrtvIp+48vCuGqeUd/eYux+ehpZmGVxrMxUqyDfVg7rp+s51b5MMUFZRFTURsyFDSg==}
+    peerDependencies:
+      react: ^16.8.0 || ^17.0.0-rc.1 || ^18.0.0
+    dependencies:
+      '@react-stately/calendar': 3.0.3_react@18.1.0
+      '@react-stately/checkbox': 3.3.0_react@18.1.0
+      '@react-stately/collections': 3.4.4_react@18.1.0
+      '@react-stately/combobox': 3.2.2_react@18.1.0
+      '@react-stately/data': 3.7.0_react@18.1.0
+      '@react-stately/datepicker': 3.1.0_react@18.1.0
+      '@react-stately/list': 3.5.4_react@18.1.0
+      '@react-stately/menu': 3.4.2_react@18.1.0
+      '@react-stately/numberfield': 3.2.2_react@18.1.0
+      '@react-stately/overlays': 3.4.2_react@18.1.0
+      '@react-stately/radio': 3.6.0_react@18.1.0
+      '@react-stately/searchfield': 3.3.2_react@18.1.0
+      '@react-stately/select': 3.3.2_react@18.1.0
+      '@react-stately/selection': 3.11.0_react@18.1.0
+      '@react-stately/slider': 3.2.2_react@18.1.0
+      '@react-stately/table': 3.5.0_react@18.1.0
+      '@react-stately/tabs': 3.2.2_react@18.1.0
+      '@react-stately/toggle': 3.4.2_react@18.1.0
+      '@react-stately/tooltip': 3.2.2_react@18.1.0
+      '@react-stately/tree': 3.3.4_react@18.1.0
+      '@react-types/shared': 3.15.0_react@18.1.0
+      react: 18.1.0
     dev: false
 
   /react-style-singleton/2.2.1_react@18.1.0:

@@ -10,6 +10,7 @@ import {
   array as arrayUtils,
   ethereum as ethereumUtils,
   message as messageUtils,
+  user as userUtils,
 } from "@shades/common/utils";
 import { useLatestCallback } from "@shades/common/react";
 import useGlobalMediaQueries from "../hooks/global-media-queries";
@@ -29,6 +30,7 @@ import Button from "./button";
 import * as Tooltip from "./tooltip";
 import Dialog from "./dialog";
 import Input from "./input";
+import ChannelInfoDialog from "./channel-info-dialog";
 import {
   Hash as HashIcon,
   AtSign as AtSignIcon,
@@ -1370,8 +1372,10 @@ const Channel = ({ channelId, compact, noSideMenu }) => {
   } = useWalletLogin();
 
   const [notFound, setNotFound] = React.useState(false);
-  const [isMembersDialogOpen, setMembersDialogOpen] = React.useState(false);
+  const [channelDialogMode, setChannelDialogMode] = React.useState(null);
   const [isAddMemberDialogOpen, setAddMemberDialogOpen] = React.useState(false);
+
+  const isChannelDialogOpen = channelDialogMode != null;
 
   const isMenuTogglingEnabled = !noSideMenu && isSideMenuFloating;
 
@@ -1561,14 +1565,14 @@ const Channel = ({ channelId, compact, noSideMenu }) => {
             <>
               <MembersDisplayButton
                 onClick={() => {
-                  setMembersDialogOpen(true);
+                  setChannelDialogMode("members");
                 }}
                 members={members}
               />
               <Dialog
-                isOpen={isMembersDialogOpen}
+                isOpen={isChannelDialogOpen}
                 onRequestClose={() => {
-                  setMembersDialogOpen(false);
+                  setChannelDialogMode(null);
                 }}
                 style={{ display: "flex", flexDirection: "column" }}
                 underlayProps={{
@@ -1581,7 +1585,9 @@ const Channel = ({ channelId, compact, noSideMenu }) => {
                 }}
               >
                 {({ titleProps }) => (
-                  <MembersDirectoryDialog
+                  <ChannelInfoDialog
+                    channelId={channelId}
+                    initialTab={channelDialogMode}
                     members={members}
                     titleProps={titleProps}
                     showAddMemberDialog={
@@ -1592,7 +1598,7 @@ const Channel = ({ channelId, compact, noSideMenu }) => {
                         : null
                     }
                     dismiss={() => {
-                      setMembersDialogOpen(false);
+                      setChannelDialogMode(null);
                     }}
                   />
                 )}
@@ -1754,14 +1760,32 @@ const Channel = ({ channelId, compact, noSideMenu }) => {
             </a>
           ))}
 
-        {!isEmbedded && <Heading>{channel?.name}</Heading>}
+        {!isEmbedded && (
+          <Heading
+            component="button"
+            onClick={() => {
+              setChannelDialogMode("about");
+            }}
+            css={(t) =>
+              css({
+                cursor: "pointer",
+                ":hover": { color: t.colors.textNormal },
+              })
+            }
+          >
+            {channel?.name}
+          </Heading>
+        )}
 
         <div style={{ flex: 1, minWidth: 0 }}>
           {channel.description != null && (
-            <div
-              css={(theme) =>
+            <button
+              onClick={() => {
+                setChannelDialogMode("about");
+              }}
+              css={(t) =>
                 css({
-                  color: theme.colors.textHeaderSecondary,
+                  color: t.colors.textHeaderSecondary,
                   marginLeft: "1.1rem",
                   padding: "0 1.1rem",
                   borderLeft: "1px solid",
@@ -1770,12 +1794,14 @@ const Channel = ({ channelId, compact, noSideMenu }) => {
                   overflow: "hidden",
                   textOverflow: "ellipsis",
                   userSelect: "text",
-                  cursor: "default",
+                  cursor: "pointer",
+                  maxWidth: "100%",
+                  ":hover": { color: t.colors.textDimmedModifierHover },
                 })
               }
             >
               {channel.description}
-            </div>
+            </button>
           )}
         </div>
 
@@ -1854,29 +1880,9 @@ const OnScreenTrigger = ({ callback }) => {
   return <div ref={ref} />;
 };
 
-const compareMembersByOwnerOnlineStatusAndDisplayName = (m1, m2) => {
-  if (m1.isOwner !== m2.isOwner) return m1.isOwner ? -1 : 1;
-
-  if (m1.onlineStatus !== m2.onlineStatus)
-    return m1.onlineStatus === "online" ? -1 : 1;
-
-  const [name1, name2] = [m1, m2].map((m) => m.displayName?.toLowerCase());
-
-  const [name1IsAddress, name2IsAddress] = [name1, name2].map(
-    (n) => n != null && n.startsWith("0x") && n.includes("...")
-  );
-
-  if (!name1IsAddress && name2IsAddress) return -1;
-  if (name1IsAddress && !name2IsAddress) return 1;
-
-  if (name1 < name2) return -1;
-  if (name1 > name2) return 1;
-  return 0;
-};
-
 const MembersDisplayButton = React.forwardRef(({ onClick, members }, ref) => {
   const sortedMembers = React.useMemo(
-    () => sort(compareMembersByOwnerOnlineStatusAndDisplayName, members),
+    () => sort(userUtils.compareByOwnerOnlineStatusAndDisplayName, members),
     [members]
   );
 
@@ -1956,271 +1962,6 @@ const MembersDisplayButton = React.forwardRef(({ onClick, members }, ref) => {
   );
 });
 
-const MembersDirectoryDialog = ({
-  dismiss,
-  members,
-  titleProps,
-  showAddMemberDialog,
-}) => {
-  const inputRef = React.useRef();
-
-  const [query, setQuery] = React.useState("");
-
-  const filteredMembers = React.useMemo(() => {
-    if (query.trim() === "")
-      return sort(compareMembersByOwnerOnlineStatusAndDisplayName, members);
-
-    const q = query.trim().toLowerCase();
-    const getSearchTokens = (m) =>
-      [m.displayName, m.ensName, m.walletAddress].filter(Boolean);
-
-    const unorderedFilteredMembers = members.filter((member) =>
-      getSearchTokens(member).some((t) => t.toLowerCase().includes(q))
-    );
-
-    const orderedFilteredMembers = sort((m1, m2) => {
-      const [i1, i2] = [m1, m2].map((m) =>
-        Math.min(
-          ...getSearchTokens(m)
-            .map((t) => t.indexOf(q))
-            .filter((index) => index !== -1)
-        )
-      );
-
-      if (i1 < i2) return -1;
-      if (i1 > i2) return 1;
-      return 0;
-    }, unorderedFilteredMembers);
-
-    return orderedFilteredMembers;
-  }, [members, query]);
-
-  React.useEffect(() => {
-    inputRef.current.focus();
-  }, []);
-
-  // const memberCount = members.length;
-  // const onlineMemberCount = members.filter(
-  //   (m) => m.onlineStatus === "online"
-  // ).length;
-
-  return (
-    <>
-      <div
-        css={css({
-          padding: "1.5rem 1.5rem 0",
-          "@media (min-width: 600px)": {
-            padding: "2rem 2rem 0",
-          },
-        })}
-      >
-        <header
-          css={css({
-            display: "grid",
-            gridTemplateColumns: "minmax(0,1fr) auto",
-            gridGap: "1rem",
-            alignItems: "flex-end",
-            justifyContent: "flex-start",
-            margin: "0 0 2rem",
-          })}
-        >
-          <h1
-            css={(theme) =>
-              css({
-                fontSize: theme.fontSizes.header,
-                lineHeight: 1.2,
-              })
-            }
-            {...titleProps}
-          >
-            Members
-          </h1>
-          <div
-            css={css({
-              display: "grid",
-              gridAutoColumns: "auto",
-              gridAutoFlow: "column",
-              gridGap: "1rem",
-            })}
-          >
-            {/* <div */}
-            {/*   css={(theme) => */}
-            {/*     css({ */}
-            {/*       color: theme.colors.textMuted, */}
-            {/*       fontSize: theme.fontSizes.small, */}
-            {/*     }) */}
-            {/*   } */}
-            {/* > */}
-            {/*   {onlineMemberCount === 0 ? ( */}
-            {/*     memberCount */}
-            {/*   ) : ( */}
-            {/*     <> */}
-            {/*       {onlineMemberCount} of {memberCount} online */}
-            {/*     </> */}
-            {/*   )} */}
-            {/* </div> */}
-            {typeof showAddMemberDialog === "function" && (
-              <Button
-                size="small"
-                variant="default"
-                onClick={showAddMemberDialog}
-              >
-                Add member
-              </Button>
-            )}
-            <Button
-              size="small"
-              variant="default"
-              onClick={dismiss}
-              css={css({ width: "2.8rem", padding: 0 })}
-            >
-              <CrossIcon />
-            </Button>
-          </div>
-        </header>
-        <Input
-          ref={inputRef}
-          size="large"
-          value={query}
-          onChange={(e) => {
-            setQuery(e.target.value);
-          }}
-          placeholder="Find members"
-        />
-      </div>
-      <div css={css({ flex: 1, overflow: "auto", padding: "1.3rem 0" })}>
-        <ul>
-          {filteredMembers.map((member) => {
-            const truncatedAddress =
-              member.walletAddress == null
-                ? null
-                : truncateAddress(member.walletAddress);
-
-            const hasSubtitle =
-              member.ensName != null || member.displayName !== truncatedAddress;
-            return (
-              <li key={member.id} css={css({ display: "block" })}>
-                <button
-                  css={(theme) =>
-                    css({
-                      width: "100%",
-                      display: "grid",
-                      gridTemplateColumns: "auto minmax(0,1fr)",
-                      gridGap: "1rem",
-                      alignItems: "center",
-                      lineHeight: "1.4",
-                      padding: "0.5rem 1.5rem",
-                      outline: "none",
-                      ":not(:first-of-type)": {
-                        marginTop: "0.1rem",
-                      },
-                      ":hover": {
-                        background: theme.colors.backgroundModifierSelected,
-                      },
-                      ":focus-visible": {
-                        boxShadow: `0 0 0 0.2rem ${theme.colors.primary} inset`,
-                      },
-                      cursor: "pointer",
-                      "@media (min-width: 600px)": {
-                        gridGap: "1.5rem",
-                        padding: "0.7rem 2rem",
-                      },
-                    })
-                  }
-                  onClick={() => {
-                    navigator.clipboard
-                      .writeText(member.walletAddress)
-                      .then(() => {
-                        alert(
-                          "Close your eyes and imagine a beautiful profile dialog/popover appearing"
-                        );
-                      });
-                  }}
-                >
-                  <Avatar
-                    url={member.profilePicture?.small}
-                    walletAddress={member.walletAddress}
-                    size="3.6rem"
-                    pixelSize={36}
-                    borderRadius="0.3rem"
-                  />
-                  <div>
-                    <div css={css({ display: "flex", alignItems: "center" })}>
-                      {member.displayName}
-                      {member.isOwner && (
-                        <span
-                          css={(theme) =>
-                            css({
-                              fontSize: theme.fontSizes.tiny,
-                              color: theme.colors.textMuted,
-                              background: theme.colors.backgroundModifierHover,
-                              padding: "0.1rem 0.3rem",
-                              borderRadius: "0.3rem",
-                              marginLeft: "0.7rem",
-                            })
-                          }
-                        >
-                          Channel owner
-                        </span>
-                      )}
-
-                      {member.onlineStatus === "online" && (
-                        <Tooltip.Root>
-                          <Tooltip.Trigger asChild>
-                            <div
-                              css={css({
-                                display: "inline-flex",
-                                padding: "0.5rem 0.2rem",
-                                marginLeft: "0.6rem",
-                                position: "relative",
-                              })}
-                            >
-                              <div
-                                css={(theme) =>
-                                  css({
-                                    width: "0.7rem",
-                                    height: "0.7rem",
-                                    borderRadius: "50%",
-                                    background: theme.colors.onlineIndicator,
-                                  })
-                                }
-                              />
-                            </div>
-                          </Tooltip.Trigger>
-                          <Tooltip.Content
-                            side="top"
-                            align="center"
-                            sideOffset={6}
-                          >
-                            User online
-                          </Tooltip.Content>
-                        </Tooltip.Root>
-                      )}
-                    </div>
-                    {hasSubtitle && (
-                      <div
-                        css={(theme) =>
-                          css({
-                            fontSize: theme.fontSizes.small,
-                            color: theme.colors.textDimmed,
-                          })
-                        }
-                      >
-                        {member.ensName == null
-                          ? truncatedAddress
-                          : `${member.ensName} (${truncatedAddress})`}
-                      </div>
-                    )}
-                  </div>
-                </button>
-              </li>
-            );
-          })}
-        </ul>
-      </div>
-    </>
-  );
-};
 const AddMemberDialog = ({ channelId, dismiss, titleProps }) => {
   const ethersProvider = useEthersProvider();
   const { actions } = useAppScope();

@@ -14,6 +14,7 @@ const createNotion = () => {
   const textNormal = "hsl(0 0% 83%)";
   const textMuted = "hsl(0 0% 40%)";
   const textDimmed = "hsl(0 0% 60%)";
+  const textDimmedModifierHover = "hsl(0 0% 58%)";
   const backgroundNormal = "hsl(0 0% 13%)";
   const backgroundDark = "hsl(0 0% 10%)";
   const backgroundDarkTintLighter = "hsl(0 0% 11%)";
@@ -54,6 +55,7 @@ const createNotion = () => {
       primaryTransparent,
       textNormal,
       textDimmed,
+      textDimmedModifierHover,
       textMuted,
       textHeader: "white",
       textHeaderSecondary: "hsl(0 0% 72%)",
@@ -88,7 +90,7 @@ const createNotion = () => {
       tiny: "1.05rem",
       small: "1.2rem",
       default: "1.4rem",
-      large: "1.7rem",
+      large: "1.6rem",
       header: "2rem",
       huge: "3.2rem",
       headerDefault: "2rem",

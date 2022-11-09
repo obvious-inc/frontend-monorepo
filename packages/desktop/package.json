@@ -70,6 +70,7 @@
     "react-dom": "18.1.0",
     "react-intl": "^5.25.1",
     "react-router-dom": "^6.4.2",
+    "react-stately": "^3.18.0",
     "reselect": "^4.1.6",
     "slate": "^0.75.0",
     "slate-history": "^0.66.0",
