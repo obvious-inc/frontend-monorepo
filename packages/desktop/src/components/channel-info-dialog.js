@@ -11,6 +11,7 @@ import {
 import Button from "./button";
 import Input from "./input";
 import Avatar from "./avatar";
+import Dialog from "./dialog";
 import * as Tooltip from "./tooltip";
 import { Cross as CrossIcon } from "./icons";
 
@@ -207,72 +208,159 @@ const ChannelInfoDialog = ({
   );
 };
 const AboutTab = ({ channelId }) => {
-  const { state } = useAppScope();
+  const { state, actions } = useAppScope();
   const me = state.selectMe();
   const channel = state.selectChannel(channelId);
   const isAdmin = me != null && me.id === channel.ownerUserId;
 
+  const [editDialogMode, setEditDialogMode] = React.useState(null);
+
   return (
-    <div
-      css={css({
-        padding: "1.5rem 1.5rem 0",
-        "@media (min-width: 600px)": {
-          padding: "2rem 2rem 0",
-        },
-      })}
-    >
-      {isAdmin ? (
-        <ul
-          css={css({
-            li: { listStyle: "none" },
-            "li + li": { marginTop: "1rem" },
-          })}
-        >
-          <li>
-            <ProperyButton name="Name" value={channel.name} />
-          </li>
-          <li>
-            <ProperyButton name="Description" value={channel.description} />
-          </li>
-        </ul>
-      ) : (
-        <dl
-          css={(t) =>
-            css({
-              dt: {
-                color: t.colors.textDimmed,
-                fontSize: t.fontSizes.default,
-              },
-              dd: {
-                color: t.colors.textNormal,
-                fontSize: t.fontSizes.large,
-              },
-              "dd + dt": { marginTop: "1.5rem" },
-            })
-          }
-        >
-          <dt>Name</dt>
-          <dd>{channel.name}</dd>
-          <dt>Description</dt>
-          <dd>{channel.description}</dd>
-        </dl>
-      )}
-    </div>
+    <>
+      <div
+        css={css({
+          height: "100%",
+          overflow: "auto",
+          padding: "1.5rem",
+          "@media (min-width: 600px)": {
+            padding: "2rem",
+          },
+        })}
+      >
+        {isAdmin ? (
+          <ul
+            css={css({
+              li: { listStyle: "none" },
+              "li + li": { marginTop: "1rem" },
+            })}
+          >
+            <li>
+              <ProperyButton
+                name="Name"
+                value={channel.name}
+                onClick={() => {
+                  setEditDialogMode("name");
+                }}
+              />
+            </li>
+            <li>
+              <ProperyButton
+                name="Description"
+                value={channel.description ?? "-"}
+                onClick={() => {
+                  setEditDialogMode("description");
+                }}
+              />
+            </li>
+          </ul>
+        ) : (
+          <dl
+            css={(t) =>
+              css({
+                dt: {
+                  color: t.colors.textDimmed,
+                  fontSize: t.fontSizes.default,
+                },
+                dd: {
+                  color: t.colors.textNormal,
+                  fontSize: t.fontSizes.large,
+                },
+                "dd + dt": { marginTop: "1.5rem" },
+              })
+            }
+          >
+            <dt>Name</dt>
+            <dd>{channel.name}</dd>
+            <dt>Description</dt>
+            <dd>{channel.description ?? "-"}</dd>
+          </dl>
+        )}
+      </div>
+
+      <Dialog
+        isOpen={editDialogMode != null}
+        onRequestClose={() => {
+          setEditDialogMode(null);
+        }}
+        width="42rem"
+      >
+        {({ titleProps }) => {
+          const editingPropery = editDialogMode;
+
+          const title = {
+            name: "Edit channel name",
+            description: "Edit channel description",
+          }[editingPropery];
+          const placeholder = {
+            name: "Add a clever title",
+            description: "Add a fun description",
+          }[editingPropery];
+          const hint = {
+            description: "Make sure to include a couple of emojis 🌸 🌈",
+          }[editingPropery];
+
+          const dismiss = () => setEditDialogMode(null);
+
+          return (
+            <FormDialog
+              titleProps={titleProps}
+              dismiss={dismiss}
+              title={title}
+              controls={[
+                {
+                  key: editingPropery,
+                  initialValue: channel[editingPropery],
+                  type:
+                    editingPropery === "description"
+                      ? "multiline-text"
+                      : "text",
+                  placeholder,
+                  hint,
+                  required: editingPropery === "name",
+                  validate: (value) => {
+                    switch (editingPropery) {
+                      case "name":
+                        return value.trim().length !== 0;
+                      default:
+                        throw new Error();
+                    }
+                  },
+                },
+              ]}
+              submitLabel="Save"
+              submit={async (data) => {
+                const payload = { ...data };
+                // Clear description if empty
+                if (payload.description === "") payload.description = null;
+                await actions.updateChannel(channelId, payload);
+                dismiss();
+              }}
+            />
+          );
+        }}
+      </Dialog>
+    </>
   );
 };
 
-const ProperyButton = ({ name, value }) => (
+const ProperyButton = ({ name, value, ...props }) => (
   <button
     css={(t) =>
       css({
         width: "100%",
         borderRadius: "0.5rem",
-        padding: "1.5rem 2rem",
         background: t.colors.backgroundSecondary,
         cursor: "pointer",
+        outline: "none",
         ":hover": { background: t.colors.dialogBackground },
+        ":focus-visible": { boxShadow: `0 0 0 0.2rem ${t.colors.primary}` },
+        padding: "1rem 1.5rem",
+        "@media (min-width: 600px)": {
+          padding: "1.5rem 2rem",
+        },
       })
     }
+    {...props}
   >
     <div
       css={(t) =>
@@ -283,7 +371,11 @@ const ProperyButton = ({ name, value }) => (
     </div>
     <div
       css={(t) =>
-        css({ color: t.colors.textNormal, fontSize: t.fontSizes.large })
+        css({
+          color: t.colors.textNormal,
+          fontSize: t.fontSizes.large,
+          whiteSpace: "pre-line",
+        })
       }
     >
       {value}
@@ -331,11 +423,6 @@ const MembersDirectoryTab = ({ channelId }) => {
   React.useEffect(() => {
     inputRef.current.focus();
   }, []);
-
-  // const memberCount = members.length;
-  // const onlineMemberCount = members.filter(
-  //   (m) => m.onlineStatus === "online"
-  // ).length;
 
   return (
     <div style={{ height: "100%", display: "flex", flexDirection: "column" }}>
@@ -486,6 +573,144 @@ const MembersDirectoryTab = ({ channelId }) => {
           })}
         </ul>
       </div>
+    </div>
+  );
+};
+
+const FormDialog = ({
+  title,
+  titleProps,
+  dismiss,
+  controls,
+  submit,
+  submitLabel,
+}) => {
+  const firstInputRef = React.useRef();
+
+  const [hasPendingSubmit, setPendingSubmit] = React.useState(false);
+
+  const [state, setState] = React.useState(() =>
+    controls.reduce((acc, c) => {
+      return { ...acc, [c.key]: c.initialValue ?? "" };
+    }, {})
+  );
+
+  const hasRequiredInput = controls.every((c) => {
+    if (!c.required) return true;
+    return c.validate(state[c.key]);
+  });
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+
+    setPendingSubmit(true);
+    try {
+      await submit(state);
+    } catch (e) {
+      console.error(e);
+      // TODO
+    } finally {
+      setPendingSubmit(false);
+    }
+  };
+
+  React.useEffect(() => {
+    firstInputRef.current.focus();
+  }, []);
+
+  return (
+    <div
+      css={css({
+        padding: "1.5rem",
+        "@media (min-width: 600px)": {
+          padding: "2rem",
+        },
+      })}
+    >
+      <header
+        css={css({
+          display: "grid",
+          gridTemplateColumns: "minmax(0,1fr) auto",
+          alignItems: "flex-end",
+          margin: "0 0 1.5rem",
+          "@media (min-width: 600px)": {
+            margin: "0 0 2rem",
+          },
+        })}
+      >
+        <h1
+          css={(t) =>
+            css({
+              fontSize: t.fontSizes.header,
+              lineHeight: 1.2,
+            })
+          }
+          {...titleProps}
+        >
+          {title}
+        </h1>
+        <Button
+          onClick={() => {
+            dismiss();
+          }}
+          css={css({ width: "2.8rem", padding: 0 })}
+        >
+          <CrossIcon style={{ width: "1.5rem", height: "auto" }} />
+        </Button>
+      </header>
+      <main>
+        <form id="dialog-form" onSubmit={handleSubmit}>
+          {controls.map((c, i) => (
+            <Input
+              key={c.key}
+              ref={i === 0 ? firstInputRef : undefined}
+              size="large"
+              multiline={c.type === "multiline-text"}
+              value={state[c.key]}
+              disabled={hasPendingSubmit}
+              onChange={(e) => {
+                setState((s) => ({ ...s, [c.key]: e.target.value }));
+              }}
+              placeholder={c.placeholder}
+              hint={c.hint}
+            />
+          ))}
+        </form>
+      </main>
+      <footer
+        css={css({
+          display: "flex",
+          justifyContent: "flex-end",
+          paddingTop: "2.5rem",
+          "@media (min-width: 600px)": {
+            paddingTop: "3rem",
+          },
+        })}
+      >
+        <div
+          css={css({
+            display: "grid",
+            gridAutoFlow: "column",
+            gridAutoColumns: "minmax(0,1fr)",
+            gridGap: "1rem",
+          })}
+        >
+          <Button size="medium" variant="transparent" onClick={dismiss}>
+            Cancel
+          </Button>
+          <Button
+            type="submit"
+            form="dialog-form"
+            size="medium"
+            variant="primary"
+            isLoading={hasPendingSubmit}
+            disabled={!hasRequiredInput || hasPendingSubmit}
+            style={{ minWidth: "8rem" }}
+          >
+            {submitLabel}
+          </Button>
+        </div>
+      </footer>
     </div>
   );
 };

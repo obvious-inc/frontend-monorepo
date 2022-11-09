@@ -10,7 +10,6 @@ import {
 } from "react-aria";
 
 const Dialog = ({
-  transparent,
   underlayProps: customUnderlayProps,
   dialogElementProps,
   ...props
@@ -31,27 +30,7 @@ const Dialog = ({
   const { dialogProps, titleProps } = useDialog(props, ref);
 
   return (
-    <div
-      {...customUnderlayProps}
-      css={css(
-        {
-          position: "fixed",
-          zIndex: 10,
-          top: 0,
-          left: 0,
-          width: "100%",
-          height: "100%",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          overflow: "auto",
-          padding: "2.8rem",
-          background: transparent ? "none" : "hsl(0 0% 0% / 40%)",
-        },
-        customUnderlayProps?.css
-      )}
-      {...underlayProps}
-    >
+    <div {...customUnderlayProps} {...underlayProps}>
       <FocusScope contain restoreFocus autoFocus>
         <div
           ref={ref}
@@ -71,7 +50,6 @@ const DialogWrapper = ({
   isOpen,
   onRequestClose,
   children,
-  transparent,
   underlayProps,
   ...props
 }) => {
@@ -82,7 +60,6 @@ const DialogWrapper = ({
         isOpen
         onClose={onRequestClose}
         isDismissable
-        transparent={transparent}
         underlayProps={underlayProps}
         dialogElementProps={props}
       >
@@ -92,21 +69,59 @@ const DialogWrapper = ({
   );
 };
 
-const StyledDialog = ({ width = "62rem", children, ...props }) => {
+const StyledDialog = ({
+  width = "62rem",
+  height,
+  transparent,
+  underlayProps,
+  children,
+  ...props
+}) => {
   const theme = useTheme();
   return (
     <DialogWrapper
       css={css({
         width: "100%",
         maxWidth: width,
-        height: "min(calc(100% - 3rem), 82rem)",
-        maxHeight: "min(calc(100% - 3rem), 82rem)",
-        borderRadius: "0.6rem",
         color: theme.colors.textNormal,
         background: theme.colors.backgroundPrimary,
+        borderTopLeftRadius: "0.6rem",
+        borderTopRightRadius: "0.6rem",
+        display: "flex",
+        flexDirection: "column",
         boxShadow:
           "rgb(15 15 15 / 10%) 0px 0px 0px 1px, rgb(15 15 15 / 20%) 0px 5px 10px, rgb(15 15 15 / 40%) 0px 15px 40px",
+        height: "100%",
+        "@media (min-width: 600px)": {
+          borderRadius: "0.6rem",
+          height: height ?? "auto",
+          maxHeight: height ?? "min(calc(100% - 3rem), 82rem)",
+        },
       })}
+      underlayProps={{
+        ...underlayProps,
+        css: css(
+          {
+            position: "fixed",
+            zIndex: 10,
+            top: 0,
+            left: 0,
+            width: "100%",
+            height: "100%",
+            display: "flex",
+            alignItems: "flex-start",
+            justifyContent: "center",
+            overflow: "auto",
+            background: transparent ? "none" : "hsl(0 0% 0% / 40%)",
+            padding: "2.8rem 1.5rem 0",
+            "@media (min-width: 600px)": {
+              padding: "2.8rem",
+              alignItems: "center",
+            },
+          },
+          underlayProps?.css
+        ),
+      }}
       {...props}
     >
       {children}

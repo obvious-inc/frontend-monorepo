@@ -8,7 +8,15 @@ const genId = () => {
 
 const Input = React.forwardRef(
   (
-    { size, multiline = false, label, containerProps, labelProps, ...props },
+    {
+      size,
+      multiline = false,
+      label,
+      hint,
+      containerProps,
+      labelProps,
+      ...props
+    },
     ref
   ) => {
     const [id] = React.useState(() => genId());
@@ -29,6 +37,7 @@ const Input = React.forwardRef(
             borderRadius: "0.3rem",
             padding: size === "large" ? "0.7rem 0.9rem" : "0.5rem 0.7rem",
             width: "100%",
+            maxWidth: "100%",
             outline: "none",
             border: 0,
             "&:disabled": {
@@ -48,26 +57,41 @@ const Input = React.forwardRef(
       />
     );
 
-    if (label == null) return renderInput();
+    if (label == null && hint == null) return renderInput();
 
     return (
       <div {...containerProps}>
-        <label
-          htmlFor={id}
-          css={(t) =>
-            css({
-              display: "inline-block",
-              color: t.colors.textDimmed,
-              fontSize: t.fontSizes.default,
-              lineHeight: 1.2,
-              margin: "0 0 0.8rem",
-            })
-          }
-          {...labelProps}
-        >
-          {label}
-        </label>
+        {label != null && (
+          <label
+            htmlFor={id}
+            css={(t) =>
+              css({
+                display: "inline-block",
+                color: t.colors.textDimmed,
+                fontSize: t.fontSizes.default,
+                lineHeight: 1.2,
+                margin: "0 0 0.8rem",
+              })
+            }
+            {...labelProps}
+          >
+            {label}
+          </label>
+        )}
         {renderInput({ id })}
+        {hint != null && (
+          <div
+            css={(t) =>
+              css({
+                fontSize: t.fontSizes.small,
+                color: t.colors.textDimmed,
+                marginTop: "0.7rem",
+              })
+            }
+          >
+            {hint}
+          </div>
+        )}
       </div>
     );
   }

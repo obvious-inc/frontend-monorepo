@@ -581,13 +581,7 @@ const EmojiPickerMobileDialog = ({ onSelect, isOpen, onRequestClose }) => (
   <Dialog
     isOpen={isOpen}
     onRequestClose={onRequestClose}
-    css={css({ height: "auto", background: "none" })}
-    underlayProps={{
-      css: css({
-        padding: "2.8rem 1.5rem",
-        alignItems: "flex-start",
-      }),
-    }}
+    css={css({ background: "none" })}
   >
     <button
       onClick={onRequestClose}
@@ -613,15 +607,18 @@ const EmojiPickerMobileDialog = ({ onSelect, isOpen, onRequestClose }) => (
     <div
       css={(theme) =>
         css({
+          flex: 1,
+          minHeight: 0,
           padding: "0.4rem 0.4rem 0",
           background: theme.colors.dialogBackground,
-          borderRadius: "0.4rem",
+          borderTopLeftRadius: "0.6rem",
+          borderTopRightRadius: "0.6rem",
           boxShadow:
             "rgb(15 15 15 / 10%) 0px 0px 0px 1px, rgb(15 15 15 / 20%) 0px 5px 10px, rgb(15 15 15 / 40%) 0px 15px 40px",
         })
       }
     >
-      <EmojiPicker height="40vh" onSelect={onSelect} />
+      <EmojiPicker height="100%" onSelect={onSelect} />
     </div>
   </Dialog>
 );

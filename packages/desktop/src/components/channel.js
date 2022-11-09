@@ -1574,15 +1574,7 @@ const Channel = ({ channelId, compact, noSideMenu }) => {
                 onRequestClose={() => {
                   setChannelDialogMode(null);
                 }}
-                style={{ display: "flex", flexDirection: "column" }}
-                underlayProps={{
-                  css: css({
-                    padding: "2.8rem 1.5rem",
-                    "@media (min-width: 600px)": {
-                      padding: "2.8rem",
-                    },
-                  }),
-                }}
+                height="min(calc(100% - 3rem), 82rem)"
               >
                 {({ titleProps }) => (
                   <ChannelInfoDialog
@@ -1612,17 +1604,6 @@ const Channel = ({ channelId, compact, noSideMenu }) => {
               setAddMemberDialogOpen(false);
             }}
             width="40rem"
-            style={{ height: "auto" }}
-            underlayProps={{
-              css: css({
-                padding: "2.8rem 1.5rem",
-                alignItems: "flex-start",
-                "@media (min-width: 600px)": {
-                  alignItems: "center",
-                  padding: "2.8rem 2.8rem 15vh",
-                },
-              }),
-            }}
           >
             {({ titleProps }) => (
               <AddMemberDialog
