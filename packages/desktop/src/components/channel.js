@@ -2026,7 +2026,9 @@ const AddMemberDialog = ({ channelId, dismiss, titleProps }) => {
           }}
           css={css({ width: "2.8rem", padding: 0 })}
         >
-          <CrossIcon style={{ width: "1.5rem", height: "auto" }} />
+          <CrossIcon
+            style={{ width: "1.5rem", height: "auto", margin: "auto" }}
+          />
         </Button>
       </header>
       <main>
