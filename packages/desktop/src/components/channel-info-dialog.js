@@ -19,6 +19,7 @@ import {
   Star as StarIcon,
   StrokedStar as StrokedStarIcon,
   Bell as BellIcon,
+  BellOff as BellOffIcon,
   AddUser as AddUserIcon,
 } from "./icons";
 
@@ -238,11 +239,11 @@ const ChannelInfoDialog = ({
               size="small"
               variant="default"
               icon={
-                <BellIcon
-                  css={(t) =>
-                    css({ width: "1.6rem", color: t.colors.textNormal })
-                  }
-                />
+                notificationSetting === "off" ? (
+                  <BellOffIcon css={css({ width: "1.6rem" })} />
+                ) : (
+                  <BellIcon css={css({ width: "1.6rem" })} />
+                )
               }
               value={notificationSetting}
               onChange={(setting) => {
