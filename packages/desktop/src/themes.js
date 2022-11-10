@@ -41,12 +41,15 @@ const createNotion = () => {
       itemTextColorDisabled: "rgb(255 255 255 / 28%)",
       containerHorizontalPadding: "0.4rem",
     },
-    channelHeader: { breadcrumbs: true },
     dropdownMenus: {
-      horizontalPadding: "0.4rem",
-      verticalPadding: "0.4rem",
+      width: "22rem",
+      minWidth: "18rem",
+      maxWidth: "calc(100vw - 2rem)",
+      padding: "0.4rem",
       borderRadius: "0.4rem",
       itemHeight: "2.8rem",
+      boxShadow:
+        "rgb(15 15 15 / 5%) 0px 0px 0px 1px, rgba(15, 15, 15, 0.1) 0px 3px 6px, rgba(15, 15, 15, 0.2) 0px 9px 24px",
     },
     colors: {
       pink: "#e588f8",
@@ -114,8 +117,6 @@ const createNotion = () => {
         "Menlo, Consolas, Monaco, Liberation Mono, Lucida Console, monospace",
     },
     shadows: {
-      elevationLow:
-        "rgb(15 15 15 / 10%) 0px 0px 0px 1px, rgb(15 15 15 / 20%) 0px 5px 10px, rgb(15 15 15 / 40%) 0px 15px 40px",
       elevationHigh:
         "rgb(15 15 15 / 10%) 0px 0px 0px 1px, rgb(15 15 15 / 20%) 0px 5px 10px, rgb(15 15 15 / 40%) 0px 15px 40px",
     },

@@ -1,6 +1,8 @@
+import React from "react";
+import { useButton } from "react-aria";
 import { css, keyframes } from "@emotion/react";
 
-const baseStyles = (t) => ({
+const baseStyles = (t, { align }) => ({
   userSelect: "none",
   transition: "background 20ms ease-in",
   fontWeight: "400",
@@ -8,10 +10,10 @@ const baseStyles = (t) => ({
   border: 0,
   borderRadius: "0.3rem",
   cursor: "pointer",
-  textAlign: "center",
+  textAlign: align === "left" ? "left" : "center",
   display: "inline-flex",
   alignItems: "center",
-  justifyContent: "center",
+  justifyContent: align === "left" ? "stretch" : "center",
   textDecoration: "none",
   maxWidth: "100%",
   whiteSpace: "nowrap",
@@ -52,27 +54,33 @@ const stylesByVariant = (t) => ({
   },
 });
 
-const stylesBySize = (theme) => ({
-  default: {
-    fontSize: theme.fontSizes.default,
-    padding: "0 1.2rem",
-    height: "3.2rem",
-  },
-  small: {
-    fontSize: theme.fontSizes.default,
-    padding: "0 1rem",
-    height: "2.8rem",
-  },
-  medium: {
-    fontSize: "1.5rem",
-    padding: "0 1.7rem",
-    height: "3.6rem",
-  },
-  large: {
-    fontSize: "1.5rem",
-    padding: "1.2rem 2rem",
-  },
-});
+const stylesBySize = (theme, { multiline, align }) => {
+  const heightProp = multiline ? "minHeight" : "height";
+  return {
+    default: {
+      fontSize: theme.fontSizes.default,
+      padding: "0 1.2rem",
+      [heightProp]: "3.2rem",
+    },
+    small: {
+      fontSize: theme.fontSizes.default,
+      padding: "0 1rem",
+      [heightProp]: "2.8rem",
+    },
+    medium: {
+      fontSize: "1.5rem",
+      padding: [
+        multiline ? "0.7rem" : 0,
+        align === "left" ? "0.9rem" : "1.7rem",
+      ].join(" "),
+      [heightProp]: "3.6rem",
+    },
+    large: {
+      fontSize: "1.5rem",
+      padding: "1.2rem 2rem",
+    },
+  };
+};
 
 const defaultPropsByComponent = {
   button: {
@@ -83,74 +91,126 @@ const defaultPropsByComponent = {
 const loadingDotSize = "0.4rem";
 const loadingDotCount = 3;
 
-const Button = ({
-  size = "small",
-  variant = "default",
-  fullWidth = false,
-  icon,
-  isLoading = false,
-  css: customStyles,
-  component: Component = "button",
-  children,
-  ...props
-}) => (
-  <Component
-    {...defaultPropsByComponent[Component]}
-    css={(theme) => [
-      css({
-        ...baseStyles(theme),
-        ...stylesBySize(theme)[size],
-        ...stylesByVariant(theme)[variant],
-      }),
-      customStyles,
-    ]}
-    style={{
-      pointerEvents: isLoading ? "none" : undefined,
-      width: fullWidth ? "100%" : undefined,
-    }}
-    {...props}
-  >
-    {icon != null && (
-      <div css={css({ marginRight: "0.6rem", marginLeft: "-0.2rem" })}>
-        {icon}
-      </div>
-    )}
-    <div
-      style={{
-        visibility: isLoading ? "hidden" : undefined,
-        overflow: "hidden",
-        textOverflow: "ellipsis",
-      }}
-    >
-      {children}
-    </div>
-    {isLoading && (
-      <div
+const Button = React.forwardRef(
+  (
+    {
+      size = "medium",
+      variant = "default",
+      fullWidth = false,
+      multiline,
+      align = "center",
+      icon,
+      iconRight,
+      isLoading = false,
+      isDisabled = false,
+      onClick,
+      onPress,
+      onPressStart,
+      component: Component = "button",
+      children,
+      ...props
+    },
+    ref
+  ) => {
+    const { buttonProps } = useButton({
+      ...props,
+      children,
+      isDisabled: isDisabled ?? props.disabled,
+      elementType: Component,
+      onPress: onPress ?? onClick,
+      onPressStart,
+    });
+
+    const iconSize =
+      size === "medium" ? "2rem" : size === "small" ? "1.5rem" : "auto";
+
+    return (
+      <Component
+        ref={ref}
+        {...defaultPropsByComponent[Component]}
+        css={(theme) =>
+          css({
+            ...baseStyles(theme, { align }),
+            ...stylesBySize(theme, { multiline, align })[size],
+            ...stylesByVariant(theme)[variant],
+          })
+        }
         style={{
-          position: "absolute",
-          display: "flex",
-          visibility: isLoading ? undefined : "hidden",
+          pointerEvents: isLoading ? "none" : undefined,
+          width: fullWidth ? "100%" : undefined,
         }}
+        {...props}
+        {...buttonProps}
       >
-        {Array.from({ length: loadingDotCount }).map((_, i) => (
+        {icon != null && (
           <div
-            key={i}
+            aria-hidden="true"
             css={css({
-              animation: dotsAnimation,
-              animationDelay: `${i / 5}s`,
-              animationDuration: "1.4s",
-              animationIterationCount: "infinite",
-              width: loadingDotSize,
-              height: loadingDotSize,
-              borderRadius: "50%",
-              background: "currentColor",
-              margin: "0 0.1rem",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              width: iconSize,
+              marginRight: "0.6rem",
+              marginLeft: "-0.2rem",
             })}
-          />
-        ))}
-      </div>
-    )}
-  </Component>
+          >
+            {icon}
+          </div>
+        )}
+        <div
+          style={{
+            visibility: isLoading ? "hidden" : undefined,
+            overflow: "hidden",
+            textOverflow: "ellipsis",
+            flex: 1,
+          }}
+        >
+          {children}
+        </div>
+        {iconRight != null && (
+          <div
+            aria-hidden="true"
+            css={css({
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              width: iconSize,
+              marginLeft: "0.6rem",
+              marginRight: "-0.2rem",
+            })}
+          >
+            {iconRight}
+          </div>
+        )}
+        {isLoading && (
+          <div
+            style={{
+              position: "absolute",
+              display: "flex",
+              visibility: isLoading ? undefined : "hidden",
+            }}
+          >
+            {Array.from({ length: loadingDotCount }).map((_, i) => (
+              <div
+                key={i}
+                css={css({
+                  animation: dotsAnimation,
+                  animationDelay: `${i / 5}s`,
+                  animationDuration: "1.4s",
+                  animationIterationCount: "infinite",
+                  width: loadingDotSize,
+                  height: loadingDotSize,
+                  borderRadius: "50%",
+                  background: "currentColor",
+                  margin: "0 0.1rem",
+                })}
+              />
+            ))}
+          </div>
+        )}
+      </Component>
+    );
+  }
 );
 
 const dotsAnimation = keyframes({

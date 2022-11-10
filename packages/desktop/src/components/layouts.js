@@ -118,7 +118,9 @@ export const UnifiedLayout = () => {
               align="center"
               sideOffset={0}
               alignOffset={0}
-              css={(theme) => css({ width: theme.sidebarWidth })}
+              css={(theme) =>
+                css({ width: `calc(${theme.sidebarWidth} - 2rem)` })
+              }
             >
               {authenticationStatus === "not-authenticated" ? (
                 <>
@@ -1030,12 +1032,15 @@ const CreateChannelDialog = ({ titleProps, close, createChannel }) => {
           css={css({ position: "absolute", top: "2.5rem", right: "2.5rem" })}
         >
           <Button
+            size="small"
             onClick={() => {
               close();
             }}
             css={css({ width: "2.8rem", padding: 0 })}
           >
-            <CrossIcon style={{ width: "1.5rem", height: "auto" }} />
+            <CrossIcon
+              style={{ width: "1.5rem", height: "auto", margin: "auto" }}
+            />
           </Button>
         </div>
       </header>
@@ -1081,47 +1086,33 @@ const CreateChannelDialog = ({ titleProps, close, createChannel }) => {
             containerProps={{ style: { margin: "0 0 2rem" } }}
           />
 
-          <label>
-            <div
-              css={(t) =>
-                css({
-                  color: t.colors.textDimmed,
-                  fontSize: t.fontSizes.default,
-                  lineHeight: 1.2,
-                  margin: "0 0 0.8rem",
-                })
-              }
-            >
-              Permissions
-            </div>
-            <Select
-              value={selectedType}
-              onChange={(e) => {
-                setSelectedType(e.target.value);
-              }}
-              options={[
-                {
-                  label: "Open",
-                  description: "Anyone can see and join",
-                  value: "open",
-                },
-                {
-                  label: "Private",
-                  description: "Anyone can see but not join",
-                  value: "private",
-                },
-                {
-                  label: "Closed",
-                  description: "Only members can see",
-                  value: "closed",
-                },
-              ].map(({ value, label, description }) => ({
-                value,
-                label: `${label} — ${description}`,
-              }))}
-              disabled={hasPendingRequest}
-            />
-          </label>
+          <Select
+            label="Permissions"
+            value={selectedType}
+            variant="transparent"
+            size="medium"
+            onChange={(value) => {
+              setSelectedType(value);
+            }}
+            options={[
+              {
+                label: "Open",
+                description: "Anyone can see and join",
+                value: "open",
+              },
+              {
+                label: "Closed",
+                description: "Anyone can see but not join",
+                value: "closed",
+              },
+              {
+                label: "Private",
+                description: "Only members can see",
+                value: "private",
+              },
+            ]}
+            disabled={hasPendingRequest}
+          />
         </form>
       </main>
       <footer

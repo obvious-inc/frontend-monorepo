@@ -2020,6 +2020,7 @@ const AddMemberDialog = ({ channelId, dismiss, titleProps }) => {
           Add member
         </h1>
         <Button
+          size="small"
           onClick={() => {
             dismiss();
           }}

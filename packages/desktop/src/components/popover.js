@@ -135,80 +135,82 @@ export const Trigger = React.forwardRef(
   }
 );
 
-const ContentInner = React.forwardRef(({ asChild, children }, forwardedRef) => {
-  const { state, overlayProps: props, overlayRef } = React.useContext(Context);
+const ContentInner = React.forwardRef(
+  ({ width = "auto", widthFollowTrigger, asChild, children }, forwardedRef) => {
+    const {
+      state,
+      overlayProps: props,
+      overlayRef,
+      triggerRef,
+    } = React.useContext(Context);
 
-  const ref = useComposedRefs(overlayRef, forwardedRef);
+    const ref = useComposedRefs(overlayRef, forwardedRef);
 
-  // Handle interacting outside the dialog and pressing
-  // the Escape key to close the modal.
-  const { overlayProps } = useOverlay(
-    {
-      onClose: state.close,
-      isOpen: state.isOpen,
-      isDismissable: true,
-    },
-    overlayRef
-  );
+    // Handle interacting outside the dialog and pressing
+    // the Escape key to close the modal.
+    const { overlayProps } = useOverlay(
+      {
+        onClose: state.close,
+        isOpen: state.isOpen,
+        isDismissable: true,
+      },
+      overlayRef
+    );
 
-  // Hide content outside the modal from screen readers.
-  const { modalProps } = useModal();
+    // Hide content outside the modal from screen readers.
+    const { modalProps } = useModal();
 
-  // Get props for the dialog and its title
-  const { dialogProps, titleProps } = useDialog({}, overlayRef);
+    // Get props for the dialog and its title
+    const { dialogProps, titleProps } = useDialog({}, overlayRef);
 
-  const containerProps = mergeProps(
-    overlayProps,
-    dialogProps,
-    props,
-    modalProps
-  );
+    const containerProps = mergeProps(
+      overlayProps,
+      dialogProps,
+      props,
+      modalProps
+    );
 
-  const dismissButtonElement = <DismissButton onDismiss={state.close} />;
+    const dismissButtonElement = <DismissButton onDismiss={state.close} />;
 
-  // console.log("content", {
-  //   overlayProps,
-  //   modalProps,
-  //   dialogProps,
-  //   titleProps,
-  // });
-
-  return (
-    <FocusScope restoreFocus>
-      {typeof children === "function" ? (
-        children({
-          isOpen: state.isOpen,
-          containerProps,
-          titleProps,
-          dismissButtonElement,
-          ref,
-        })
-      ) : asChild ? (
-        React.cloneElement(children, { ...containerProps, ref })
-      ) : (
-        <div
-          ref={ref}
-          css={(theme) =>
-            css({
-              minWidth: "min-content",
-              width: "auto",
-              maxWidth: "calc(100vw - 2rem)",
-              background: theme.colors.dialogBackground,
-              borderRadius: "0.4rem",
-              boxShadow:
-                "rgb(15 15 15 / 5%) 0px 0px 0px 1px, rgba(15, 15, 15, 0.1) 0px 3px 6px, rgba(15, 15, 15, 0.2) 0px 9px 24px",
-              outline: "none", // TODO
-            })
-          }
-          {...containerProps}
-        >
-          {children}
-          {dismissButtonElement}
-        </div>
-      )}
-    </FocusScope>
-  );
-});
+    return (
+      <FocusScope restoreFocus>
+        {typeof children === "function" ? (
+          children({
+            isOpen: state.isOpen,
+            containerProps,
+            titleProps,
+            dismissButtonElement,
+            ref,
+          })
+        ) : asChild ? (
+          React.cloneElement(children, { ...containerProps, ref })
+        ) : (
+          <div
+            ref={ref}
+            css={(theme) =>
+              css({
+                minWidth: "min-content",
+                width: widthFollowTrigger
+                  ? triggerRef.current?.offsetWidth ?? "auto"
+                  : width,
+                maxWidth: "calc(100vw - 2rem)",
+                background: theme.colors.dialogBackground,
+                borderRadius: "0.4rem",
+                boxShadow:
+                  "rgb(15 15 15 / 5%) 0px 0px 0px 1px, rgba(15, 15, 15, 0.1) 0px 3px 6px, rgba(15, 15, 15, 0.2) 0px 9px 24px",
+                outline: "none", // TODO
+              })
+            }
+            {...containerProps}
+          >
+            {children}
+            {dismissButtonElement}
+          </div>
+        )}
+      </FocusScope>
+    );
+  }
+);
 
 export const Content = React.forwardRef((props, forwardRef) => {
   const { state } = React.useContext(Context);

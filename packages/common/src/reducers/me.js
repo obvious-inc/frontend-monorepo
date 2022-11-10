@@ -15,7 +15,21 @@ const user = (state = null, action) => {
   }
 };
 
+const notificationSettingsByChannelId = (state = {}, action) => {
+  switch (action.type) {
+    case "fetch-preferences:request-successful":
+      return action.notificationSettingsByChannelId;
+    case "set-channel-notification-setting:request-sent":
+      return { ...state, [action.channelId]: action.setting };
+    default:
+      return state;
+  }
+};
+
 export const selectMe = (state) =>
   state.me.user == null ? null : selectUser(state, state.me.user?.id);
 
-export default combineReducers({ user });
+export const selectChannelNotificationSetting = (state, channelId) =>
+  state.me.notificationSettingsByChannelId[channelId] ?? "all";
+
+export default combineReducers({ user, notificationSettingsByChannelId });

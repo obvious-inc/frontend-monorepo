@@ -54,14 +54,13 @@ export const Content = React.forwardRef((props, ref) => (
     alignOffset={-4}
     css={(theme) =>
       css({
-        width: "22rem",
-        minWidth: "18rem",
-        maxWidth: "calc(100% - 2rem)",
-        padding: `${theme.dropdownMenus.verticalPadding} ${theme.dropdownMenus.horizontalPadding}`,
+        width: theme.dropdownMenus.width,
+        minWidth: theme.dropdownMenus.minWidth,
+        maxWidth: theme.dropdownMenus.maxWidth,
+        padding: theme.dropdownMenus.padding,
         background: theme.colors.dialogBackground,
         borderRadius: theme.dropdownMenus.borderRadius,
-        boxShadow:
-          "rgb(15 15 15 / 5%) 0px 0px 0px 1px, rgba(15, 15, 15, 0.1) 0px 3px 6px, rgba(15, 15, 15, 0.2) 0px 9px 24px",
+        boxShadow: theme.dropdownMenus.boxShadow,
       })
     }
     {...props}

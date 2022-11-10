@@ -2,7 +2,7 @@ import React from "react";
 import { useAuth } from "./auth";
 import { generateDummyId } from "./utils/misc";
 import { unique } from "./utils/array";
-import { pickKeys } from "./utils/object";
+import { pickKeys, mapValues } from "./utils/object";
 import invariant from "./utils/invariant";
 import { stringifyBlocks as stringifyMessageBlocks } from "./utils/message";
 import { buildUrl as buildCloudflareImageUrl } from "./utils/profile-pictures";
@@ -90,6 +90,51 @@ export const Provider = ({ children }) => {
           push_tokens: pushTokens,
         }),
       })
+  );
+
+  const fetchPreferences = useLatestCallback(() =>
+    authorizedFetch("/users/me/preferences", { priority: "low" }).then(
+      (preferences) => {
+        const notificationSettingsByChannelId = mapValues(
+          (s) => (s.muted ? "off" : s.mentions ? "mentions" : "all"),
+          preferences.channels
+        );
+        dispatch({
+          type: "fetch-preferences:request-successful",
+          notificationSettingsByChannelId,
+        });
+
+        return preferences;
+      }
+    )
+  );
+
+  const setChannelNotificationSetting = useLatestCallback(
+    async (channelId, setting) => {
+      dispatch({
+        type: "set-channel-notification-setting:request-sent",
+        channelId,
+        setting,
+      });
+
+      const preferences = await authorizedFetch("/users/me/preferences");
+
+      return authorizedFetch("/users/me/preferences", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          channels: {
+            ...preferences.channels,
+            [channelId]:
+              setting === "off"
+                ? { muted: true }
+                : setting === "mentions"
+                ? { mentions: true }
+                : {},
+          },
+        }),
+      });
+    }
   );
 
   const registerDevicePushToken = useLatestCallback((token) =>
@@ -585,6 +630,8 @@ export const Provider = ({ children }) => {
         missingChannelStars.map((s) => fetchChannel(s.reference))
       );
 
+    fetchPreferences();
+
     const me = parseUser(rawMe);
     const channels = rawChannels.map(parseChannel);
 
@@ -739,9 +786,11 @@ export const Provider = ({ children }) => {
     () => ({
       logout,
       fetchMe,
+      fetchPreferences,
       fetchClientBootData,
       fetchMessage,
       updateMe,
+      setChannelNotificationSetting,
       registerDevicePushToken,
       fetchUsers,
       fetchMessages,
@@ -786,9 +835,11 @@ export const Provider = ({ children }) => {
     [
       logout,
       fetchMe,
+      fetchPreferences,
       fetchClientBootData,
       fetchMessage,
       updateMe,
+      setChannelNotificationSetting,
       registerDevicePushToken,
       fetchUsers,
       fetchMessages,

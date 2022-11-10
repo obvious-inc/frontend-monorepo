@@ -12,6 +12,7 @@ import Button from "./button";
 import Input from "./input";
 import Avatar from "./avatar";
 import Dialog from "./dialog";
+import Select from "./select";
 import * as Tooltip from "./tooltip";
 import {
   Cross as CrossIcon,
@@ -24,7 +25,7 @@ import {
 const { sort } = arrayUtils;
 const { truncateAddress } = ethereumUtils;
 
-const Tabs = ({ ...props }) => {
+const Tabs = (props) => {
   const state = useTabListState(props);
   const ref = React.useRef();
   const { tabListProps } = useTabList(props, state, ref);
@@ -126,8 +127,11 @@ const ChannelInfoDialog = ({
   showAddMemberDialog,
 }) => {
   const { state, actions } = useAppScope();
+  const me = state.selectMe();
   const channel = state.selectChannel(channelId);
+  const isMember = me != null && channel.memberUserIds.includes(me.id);
   const isChannelStarred = state.selectIsChannelStarred(channelId);
+  const notificationSetting = state.selectChannelNotificationSetting(channelId);
 
   const memberCount = channel.memberUserIds.length;
 
@@ -172,7 +176,7 @@ const ChannelInfoDialog = ({
             onClick={dismiss}
             css={css({ width: "2.8rem", padding: 0 })}
           >
-            <CrossIcon />
+            <CrossIcon style={{ margin: "auto" }} />
           </Button>
         </div>
 
@@ -229,10 +233,10 @@ const ChannelInfoDialog = ({
             >
               {isChannelStarred ? "Unstar" : "Star"}
             </Button>
-            <Button
+            <Select
+              aria-label="Channel notification settings"
               size="small"
               variant="default"
-              disabled
               icon={
                 <BellIcon
                   css={(t) =>
@@ -240,9 +244,42 @@ const ChannelInfoDialog = ({
                   }
                 />
               }
-            >
-              Notify for all messages
-            </Button>
+              value={notificationSetting}
+              onChange={(setting) => {
+                actions.setChannelNotificationSetting(channelId, setting);
+              }}
+              disabled={!isMember}
+              width="max-content"
+              renderTriggerContent={(selectedValue) => {
+                switch (selectedValue) {
+                  case "all":
+                    return "Get notifications for all messages";
+                  case "mentions":
+                    return "Only get notifications for @ mentions";
+                  case "off":
+                    return "Notifications off";
+                  default:
+                    throw new Error();
+                }
+              }}
+              options={[
+                {
+                  value: "all",
+                  label: "All messages",
+                  description: "Get notifications for all messages",
+                },
+                {
+                  value: "mentions",
+                  label: "@ mentions",
+                  description: "Only get notifications for @ mentions",
+                },
+                {
+                  value: "off",
+                  label: "Off",
+                  description: "Don’t get any notifications from this channel",
+                },
+              ]}
+            />
           </div>
         </div>
       </header>
@@ -774,12 +811,15 @@ const FormDialog = ({
           {title}
         </h1>
         <Button
+          size="small"
           onClick={() => {
             dismiss();
           }}
           css={css({ width: "2.8rem", padding: 0 })}
         >
-          <CrossIcon style={{ width: "1.5rem", height: "auto" }} />
+          <CrossIcon
+            style={{ width: "1.5rem", height: "auto", margin: "auto" }}
+          />
         </Button>
       </header>
       <main>

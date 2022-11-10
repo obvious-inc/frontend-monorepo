@@ -1,7 +1,7 @@
 import React from "react";
 import { mapValues } from "../utils/object";
 import combineReducers from "../utils/combine-reducers";
-import me, { selectMe } from "../reducers/me";
+import me, { selectMe, selectChannelNotificationSetting } from "../reducers/me";
 import ui, {
   selectHasFetchedInitialData,
   selectHasFetchedMenuData,
@@ -47,6 +47,7 @@ import ens, { selectEnsName } from "../reducers/ens";
 
 const selectors = {
   selectMe,
+  selectChannelNotificationSetting,
   selectChannel,
   selectChannelMembers,
   selectChannelAccessLevel,
