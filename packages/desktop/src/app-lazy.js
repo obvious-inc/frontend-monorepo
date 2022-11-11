@@ -42,7 +42,7 @@ import useWalletLogin, {
 } from "./hooks/wallet-login";
 import LoginScreen from "./components/login-screen";
 import EmptyHome from "./components/empty-home";
-import { UnifiedLayout } from "./components/layouts";
+import Layout from "./components/layouts";
 import TitleBar from "./components/title-bar";
 import * as Tooltip from "./components/tooltip";
 import { notion as defaultTheme, nounsTv as nounsTvTheme } from "./themes";
@@ -251,7 +251,7 @@ const App = () => {
       {isNative && <TitleBar />}
 
       <Routes>
-        <Route path="/" element={<UnifiedLayout />}>
+        <Route path="/" element={<Layout />}>
           <Route index element={<EmptyHome />} />
           <Route path="/channels/:channelId" element={<Channel />} />
           <Route path="/dm/:addressOrEnsName" element={<DmChannel />} />

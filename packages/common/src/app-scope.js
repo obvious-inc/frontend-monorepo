@@ -26,10 +26,15 @@ const parseUser = (u) => {
 };
 
 const parseChannel = (rawChannel) => {
+  const normalizeString = (s) => {
+    if (s == null) return null;
+    return s.trim() === "" ? null : s;
+  };
+
   const channel = {
     id: rawChannel.id,
-    name: rawChannel.name,
-    description: rawChannel.description,
+    name: normalizeString(rawChannel.name),
+    description: normalizeString(rawChannel.description),
     kind: rawChannel.kind,
     createdAt: rawChannel.created_at,
     lastMessageAt: rawChannel.last_message_at,
@@ -37,14 +42,12 @@ const parseChannel = (rawChannel) => {
     ownerUserId: rawChannel.owner,
   };
 
-  if ((rawChannel.avatar ?? "") === "") return channel;
+  if (normalizeString(rawChannel.avatar) == null) return channel;
 
-  if (rawChannel.avatar.match(/^https?:\/\//))
-    return {
-      ...channel,
-      image: rawChannel.avatar,
-      imageLarge: rawChannel.avatar,
-    };
+  if (rawChannel.avatar.match(/^https?:\/\//)) {
+    const url = rawChannel.avatar;
+    return { ...channel, image: url, imageLarge: url };
+  }
 
   const image = buildCloudflareImageUrl(rawChannel.avatar, "small");
   const imageLarge = buildCloudflareImageUrl(rawChannel.avatar, "large");

@@ -2,11 +2,11 @@ import React from "react";
 import { useButton } from "react-aria";
 import { css, keyframes } from "@emotion/react";
 
-const baseStyles = (t, { align }) => ({
+const baseStyles = (t, { multiline, align }) => ({
   userSelect: "none",
   transition: "background 20ms ease-in",
   fontWeight: "400",
-  lineHeight: 1,
+  lineHeight: multiline ? 1.25 : 1,
   border: 0,
   borderRadius: "0.3rem",
   cursor: "pointer",
@@ -65,6 +65,10 @@ const stylesBySize = (theme, { multiline, align }) => {
     small: {
       fontSize: theme.fontSizes.default,
       padding: "0 1rem",
+      padding: [
+        multiline ? "0.5rem" : 0,
+        align === "left" ? "0.7rem" : "1rem",
+      ].join(" "),
       [heightProp]: "2.8rem",
     },
     medium: {
@@ -77,7 +81,7 @@ const stylesBySize = (theme, { multiline, align }) => {
     },
     large: {
       fontSize: "1.5rem",
-      padding: "1.2rem 2rem",
+      padding: ["1.2rem", align === "left" ? "1.2rem" : "2rem"].join(" "),
     },
   };
 };
@@ -102,7 +106,7 @@ const Button = React.forwardRef(
       icon,
       iconRight,
       isLoading = false,
-      isDisabled = false,
+      isDisabled,
       onClick,
       onPress,
       onPressStart,
@@ -121,8 +125,11 @@ const Button = React.forwardRef(
       onPressStart,
     });
 
-    const iconSize =
-      size === "medium" ? "2rem" : size === "small" ? "1.5rem" : "auto";
+    const iconLayout = {
+      small: { size: "2.8rem", gutter: "0.6rem" },
+      medium: { size: "3rem", gutter: "0.8rem" },
+      large: { size: "3.2rem", gutter: "1rem" },
+    }[size];
 
     return (
       <Component
@@ -130,7 +137,7 @@ const Button = React.forwardRef(
         {...defaultPropsByComponent[Component]}
         css={(theme) =>
           css({
-            ...baseStyles(theme, { align }),
+            ...baseStyles(theme, { multiline, align }),
             ...stylesBySize(theme, { multiline, align })[size],
             ...stylesByVariant(theme)[variant],
           })
@@ -149,9 +156,9 @@ const Button = React.forwardRef(
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
-              width: iconSize,
-              marginRight: "0.6rem",
-              marginLeft: "-0.2rem",
+              minWidth: "1.5rem",
+              maxWidth: iconLayout.size,
+              marginRight: iconLayout.gutter,
             })}
           >
             {icon}
@@ -174,9 +181,9 @@ const Button = React.forwardRef(
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
-              width: iconSize,
-              marginLeft: "0.6rem",
-              marginRight: "-0.2rem",
+              minWidth: "1.5rem",
+              maxWidth: iconLayout.size,
+              marginLeft: iconLayout.gutter,
             })}
           >
             {iconRight}

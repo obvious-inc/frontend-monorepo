@@ -1,6 +1,6 @@
 import { useEnsName } from "wagmi";
 import React from "react";
-import { NavLink, Outlet, useParams, useNavigate } from "react-router-dom";
+import { NavLink, Outlet, useParams } from "react-router-dom";
 import { css, useTheme } from "@emotion/react";
 import { useAppScope, useAuth } from "@shades/common/app";
 import {
@@ -14,16 +14,12 @@ import {
   MagnificationGlass as MagnificationGlassIcon,
   Planet as PlanetIcon,
   Triangle as TriangleIcon,
-  Cross as CrossIcon,
 } from "./icons";
 import Avatar from "./avatar";
 import * as DropdownMenu from "./dropdown-menu";
 import SideMenuLayout from "./side-menu-layout";
+import CreateChannelDialog from "./create-channel-dialog";
 import NotificationBadge from "./notification-badge";
-import Dialog from "./dialog";
-import Button from "./button";
-import Input from "./input";
-import Select from "./select";
 
 const { reverse, sort, comparator } = arrayUtils;
 const { truncateAddress } = ethereumUtils;
@@ -50,9 +46,9 @@ const useCachedState = ({ key, initialState }) => {
   return [state, setState];
 };
 
-export const UnifiedLayout = () => {
+const Layout = () => {
   const params = useParams();
-  const navigate = useNavigate();
+
   const { status: authenticationStatus } = useAuth();
   const { accountAddress: walletAccountAddress } = useWallet();
   const { login } = useWalletLogin();
@@ -257,67 +253,16 @@ export const UnifiedLayout = () => {
               </div>
             </div>
           </button>
-          <Dialog
-            width="46rem"
+
+          <CreateChannelDialog
             isOpen={isCreateChannelDialogOpen}
-            onRequestClose={() => {
+            close={() => {
               setCreateChannelDialogOpen(false);
             }}
-          >
-            {({ titleProps }) => (
-              <CreateChannelDialog
-                titleProps={titleProps}
-                close={() => {
-                  setCreateChannelDialogOpen(false);
-                }}
-                createChannel={async ({
-                  name,
-                  description,
-                  permissionType,
-                }) => {
-                  if (authenticationStatus !== "authenticated") {
-                    if (walletAccountAddress == null) {
-                      alert(
-                        "You need to connect and verify your account to create channels."
-                      );
-                      return;
-                    }
-                    if (
-                      !confirm(
-                        `You need to verify your account to create channels. Press ok to verify "${truncateAddress(
-                          walletAccountAddress
-                        )}" with wallet signature.`
-                      )
-                    )
-                      return;
-                    await login(walletAccountAddress);
-                  }
-
-                  const params = { name, description };
-
-                  const create = () => {
-                    switch (permissionType) {
-                      case "open":
-                        return actions.createOpenChannel(params);
-                      case "closed":
-                        return actions.createClosedChannel(params);
-                      case "private":
-                        return actions.createPrivateChannel(params);
-                      default:
-                        throw new Error(
-                          `Unrecognized channel type "${permissionType}"`
-                        );
-                    }
-                  };
-
-                  const channel = await create();
-
-                  navigate(`/channels/${channel.id}`);
-                  toggleMenu();
-                }}
-              />
-            )}
-          </Dialog>
+            onChannelCreated={() => {
+              toggleMenu();
+            }}
+          />
         </>
       )}
       sidebarContent={
@@ -954,204 +899,4 @@ const ListItem = ({
   </div>
 );
 
-const CreateChannelDialog = ({ titleProps, close, createChannel }) => {
-  const [selectedType, setSelectedType] = React.useState("open");
-  const [name, setName] = React.useState("");
-  const [description, setDescription] = React.useState("");
-
-  const [hasPendingRequest, setPendingRequest] = React.useState(false);
-
-  const hasRequiredInput = name.trim().length !== 0;
-
-  const submit = () => {
-    setPendingRequest(true);
-    createChannel({ name, description, permissionType: selectedType })
-      .then(
-        () => {
-          close();
-        },
-        (e) => {
-          alert("Ops, looks like something went wrong!");
-          throw e;
-        }
-      )
-      .finally(() => {
-        setPendingRequest(true);
-      });
-  };
-
-  return (
-    <div
-      css={css({
-        flex: 1,
-        overflow: "auto",
-        position: "relative",
-        padding: "1.5rem",
-        "@media (min-width: 600px)": {
-          padding: "4rem 2.5rem 2.5rem",
-        },
-      })}
-    >
-      <header
-        css={css({
-          textAlign: "center",
-          margin: "0 0 1.5rem",
-          "@media (min-width: 600px)": {
-            margin: "0 0 2.5rem",
-          },
-        })}
-      >
-        <h1
-          css={(t) =>
-            css({
-              fontSize: t.fontSizes.header,
-              lineHeight: "1.2",
-              margin: "0 0 1rem",
-              color: t.colors.textHeader,
-            })
-          }
-          {...titleProps}
-        >
-          Create a channel
-        </h1>
-        <div
-          css={(t) =>
-            css({
-              color: t.colors.textDimmed,
-              fontSize: t.fontSizes.default,
-              lineHeight: 1.4,
-              width: "28rem",
-              maxWidth: "100%",
-              margin: "0 auto",
-            })
-          }
-        >
-          Use channels to organize conversation topics and access
-        </div>
-        <div
-          css={css({ position: "absolute", top: "2.5rem", right: "2.5rem" })}
-        >
-          <Button
-            size="small"
-            onClick={() => {
-              close();
-            }}
-            css={css({ width: "2.8rem", padding: 0 })}
-          >
-            <CrossIcon
-              style={{ width: "1.5rem", height: "auto", margin: "auto" }}
-            />
-          </Button>
-        </div>
-      </header>
-      <main>
-        <form
-          id="create-channel-form"
-          onSubmit={(e) => {
-            e.preventDefault();
-            submit();
-          }}
-        >
-          <Input
-            size="large"
-            label="Name"
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            autoFocus
-            disabled={hasPendingRequest}
-            placeholder="e.g. Bacon life"
-            containerProps={{ style: { margin: "0 0 2rem" } }}
-          />
-          <Input
-            size="large"
-            multiline
-            value={description}
-            onChange={(e) => setDescription(e.target.value)}
-            disabled={hasPendingRequest}
-            label={
-              <>
-                Description{" "}
-                <span
-                  css={(t) =>
-                    css({
-                      fontSize: t.fontSizes.small,
-                      color: t.colors.textMuted,
-                    })
-                  }
-                >
-                  (optional)
-                </span>
-              </>
-            }
-            containerProps={{ style: { margin: "0 0 2rem" } }}
-          />
-
-          <Select
-            label="Permissions"
-            value={selectedType}
-            variant="transparent"
-            size="medium"
-            onChange={(value) => {
-              setSelectedType(value);
-            }}
-            options={[
-              {
-                label: "Open",
-                description: "Anyone can see and join",
-                value: "open",
-              },
-              {
-                label: "Closed",
-                description: "Anyone can see but not join",
-                value: "closed",
-              },
-              {
-                label: "Private",
-                description: "Only members can see",
-                value: "private",
-              },
-            ]}
-            disabled={hasPendingRequest}
-          />
-        </form>
-      </main>
-      <footer
-        css={css({
-          display: "flex",
-          justifyContent: "flex-end",
-          paddingTop: "1.5rem",
-          "@media (min-width: 600px)": {
-            paddingTop: "2.5rem",
-          },
-        })}
-      >
-        <Button
-          type="submit"
-          form="create-channel-form"
-          size="medium"
-          variant="primary"
-          isLoading={hasPendingRequest}
-          disabled={!hasRequiredInput || hasPendingRequest}
-        >
-          Create
-        </Button>
-      </footer>
-    </div>
-  );
-};
-
-// const Plus = ({ width = "auto", height = "auto" }) => (
-//   <svg
-//     aria-hidden="true"
-//     width="18"
-//     height="18"
-//     viewBox="0 0 18 18"
-//     style={{ display: "block", width, height }}
-//   >
-//     <polygon
-//       fillRule="nonzero"
-//       fill="currentColor"
-//       points="15 10 10 10 10 15 8 15 8 10 3 10 3 8 8 8 8 3 10 3 10 8 15 8"
-//     />
-//   </svg>
-// );
+export default Layout;

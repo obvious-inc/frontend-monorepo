@@ -88,10 +88,10 @@ const Select = ({
             multiline
             size={size}
             variant={variant}
-            icon={icon}
+            icon={icon ?? state.selectedItem?.value.icon}
             align="left"
             iconRight={
-              <div>
+              <div css={css({ padding: "0 0.2rem" })}>
                 <CaretDownIcon style={{ width: "1.1rem" }} />
               </div>
             }
@@ -102,19 +102,21 @@ const Select = ({
               ) : state.selectedItem == null ? (
                 placeholder
               ) : (
-                <div css={css({ lineHeight: 1.25 })}>
+                <>
                   <div>{state.selectedItem.value.label}</div>
-                  <div
-                    css={(t) =>
-                      css({
-                        color: t.colors.textDimmed,
-                        fontSize: t.fontSizes.small,
-                      })
-                    }
-                  >
-                    {state.selectedItem.value.description}
-                  </div>
-                </div>
+                  {state.selectedItem.value.description != null && (
+                    <div
+                      css={(t) =>
+                        css({
+                          color: t.colors.textDimmed,
+                          fontSize: t.fontSizes.small,
+                        })
+                      }
+                    >
+                      {state.selectedItem.value.description}
+                    </div>
+                  )}
+                </>
               )}
             </span>
           </Button>
@@ -190,6 +192,19 @@ const Option = ({ item, state }) => {
       //   background: isFocusVisible ? "rgb(255 255 255 / 5%)" : undefined,
       // }}
     >
+      {item.value.icon != null && (
+        <div
+          css={css({
+            width: "3rem",
+            marginRight: "1rem",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+          })}
+        >
+          {item.value.icon}
+        </div>
+      )}
       <div css={css({ flex: 1 })}>
         <div {...labelProps}>{item.value.label}</div>
         <div

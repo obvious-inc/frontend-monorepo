@@ -238,6 +238,7 @@ const ChannelInfoDialog = ({
               aria-label="Channel notification settings"
               size="small"
               variant="default"
+              align="left"
               icon={
                 notificationSetting === "off" ? (
                   <BellOffIcon css={css({ width: "1.6rem" })} />
