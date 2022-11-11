@@ -127,7 +127,7 @@ export const Provider = ({ children }) => {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           channels: {
-            ...preferences.channels,
+            ...preferences?.channels,
             [channelId]:
               setting === "off"
                 ? { muted: true }
