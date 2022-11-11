@@ -24,12 +24,13 @@ const baseStyles = (t, { multiline, align }) => ({
   "&:focus-visible": { boxShadow: `0 0 0 0.2rem ${t.colors.primary}` },
 });
 
-const stylesByVariant = (t) => ({
+const stylesByVariant = (t, { danger }) => ({
   default: {
-    color: t.colors.textNormal,
-    border: "1px solid rgba(255, 255, 255, 0.13)",
+    color: danger ? t.colors.textDanger : t.colors.textNormal,
+    border: "1px solid",
+    borderColor: danger ? t.colors.borderDanger : "rgb(255 255 255 / 13%)",
     "&:not([disabled]):hover": {
-      background: "rgb(47 47 47)",
+      background: danger ? "rgb(235 87 87 / 10%)" : "rgb(47 47 47)",
     },
   },
   transparent: {
@@ -100,6 +101,7 @@ const Button = React.forwardRef(
     {
       size = "medium",
       variant = "default",
+      danger = false,
       fullWidth = false,
       multiline,
       align = "center",
@@ -139,7 +141,7 @@ const Button = React.forwardRef(
           css({
             ...baseStyles(theme, { multiline, align }),
             ...stylesBySize(theme, { multiline, align })[size],
-            ...stylesByVariant(theme)[variant],
+            ...stylesByVariant(theme, { danger })[variant],
           })
         }
         style={{

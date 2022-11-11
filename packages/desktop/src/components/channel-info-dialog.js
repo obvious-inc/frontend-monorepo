@@ -1,5 +1,6 @@
 import React from "react";
 import { useTab, useTabList, useTabPanel } from "react-aria";
+import { useNavigate } from "react-router-dom";
 import { Item, useTabListState } from "react-stately";
 import { css } from "@emotion/react";
 import { useAppScope } from "@shades/common/app";
@@ -21,6 +22,10 @@ import {
   Bell as BellIcon,
   BellOff as BellOffIcon,
   AddUser as AddUserIcon,
+  Globe as GlobeIcon,
+  Lock as LockIcon,
+  EyeOff as EyeOffIcon,
+  AtSign as AtSignIcon,
 } from "./icons";
 
 const { sort } = arrayUtils;
@@ -132,6 +137,7 @@ const ChannelInfoDialog = ({
   const channel = state.selectChannel(channelId);
   const isMember = me != null && channel.memberUserIds.includes(me.id);
   const isChannelStarred = state.selectIsChannelStarred(channelId);
+  const channelPermissionType = state.selectChannelAccessLevel(channelId);
   const notificationSetting = state.selectChannelNotificationSetting(channelId);
 
   const memberCount = channel.memberUserIds.length;
@@ -151,18 +157,116 @@ const ChannelInfoDialog = ({
           },
         })}
       >
-        <h1
-          css={(theme) =>
-            css({
-              fontSize: theme.fontSizes.header,
-              color: theme.colors.textHeader,
-              lineHeight: 1.2,
-            })
-          }
-          {...titleProps}
-        >
-          {channel.name}
-        </h1>
+        <div css={css({ display: "flex", alignItems: "center" })}>
+          {channel.image != null && (
+            <a
+              href={channel.image}
+              rel="noreferrer"
+              target="_blank"
+              css={(t) =>
+                css({
+                  borderRadius: "50%",
+                  outline: "none",
+                  ":focus-visible": {
+                    boxShadow: `0 0 0 0.2rem ${t.colors.primary}`,
+                  },
+                })
+              }
+              style={{ marginRight: "1.1rem" }}
+            >
+              <Avatar url={channel.image} size="2.4rem" pixelSize={24} />
+            </a>
+          )}
+          <h1
+            css={(theme) =>
+              css({
+                fontSize: theme.fontSizes.header,
+                color: theme.colors.textHeader,
+                lineHeight: 1.2,
+              })
+            }
+            {...titleProps}
+          >
+            {channel.name}
+            <Tooltip.Root>
+              <Tooltip.Trigger
+                css={(t) =>
+                  css({
+                    color: t.colors.textDimmed,
+                    fontSize: t.fontSizes.tiny,
+                    fontWeight: "400",
+                    marginLeft: "1rem",
+                    background: t.colors.backgroundModifierHover,
+                    borderRadius: "0.2rem",
+                    padding: "0.2rem 0.4rem",
+                    position: "relative",
+                    bottom: "0.2rem",
+                    ":focus-visible": {
+                      boxShadow: `0 0 0 0.2rem ${t.colors.primary}`,
+                    },
+                  })
+                }
+              >
+                <span
+                  style={{
+                    display: "inline-flex",
+                    position: "relative",
+                    top: "0.2rem",
+                    marginRight: "0.4rem",
+                  }}
+                >
+                  {channel.kind === "dm" ? (
+                    <AtSignIcon style={{ width: "1.2rem" }} />
+                  ) : channelPermissionType === "private" ? (
+                    <EyeOffIcon style={{ width: "1.2rem" }} />
+                  ) : channelPermissionType === "closed" ? (
+                    <LockIcon style={{ width: "1.2rem" }} />
+                  ) : channelPermissionType === "open" ? (
+                    <GlobeIcon style={{ width: "1.2rem" }} />
+                  ) : null}
+                </span>
+
+                {channel.kind === "dm" ? (
+                  "DM channel"
+                ) : (
+                  <>
+                    {channelPermissionType.slice(0, 1).toUpperCase()}
+                    {channelPermissionType.slice(1)} channel
+                  </>
+                )}
+              </Tooltip.Trigger>
+              <Tooltip.Content side="top" align="center" sideOffset={6}>
+                {channel.kind === "dm" ? (
+                  <>
+                    DMs are reserved for private 1-to-1
+                    <br />
+                    messaging, and cannot be deleted.
+                  </>
+                ) : channelPermissionType === "open" ? (
+                  <>
+                    Open channels can be seen
+                    <br />
+                    and joined by anyone.
+                  </>
+                ) : channelPermissionType === "closed" ? (
+                  <>
+                    Closed channels have open read access,
+                    <br />
+                    but requires an invite to join.
+                  </>
+                ) : channelPermissionType === "private" ? (
+                  <>
+                    Private channels are only
+                    <br />
+                    visible to members.
+                  </>
+                ) : (
+                  "👋"
+                )}
+              </Tooltip.Content>
+            </Tooltip.Root>
+          </h1>
+        </div>
         <div
           css={css({
             display: "grid",
@@ -234,54 +338,69 @@ const ChannelInfoDialog = ({
             >
               {isChannelStarred ? "Unstar" : "Star"}
             </Button>
-            <Select
-              aria-label="Channel notification settings"
-              size="small"
-              variant="default"
-              align="left"
-              icon={
-                notificationSetting === "off" ? (
-                  <BellOffIcon css={css({ width: "1.6rem" })} />
-                ) : (
-                  <BellIcon css={css({ width: "1.6rem" })} />
-                )
-              }
-              value={notificationSetting}
-              onChange={(setting) => {
-                actions.setChannelNotificationSetting(channelId, setting);
-              }}
-              disabled={!isMember}
-              width="max-content"
-              renderTriggerContent={(selectedValue) => {
-                switch (selectedValue) {
-                  case "all":
-                    return "Get notifications for all messages";
-                  case "mentions":
-                    return "Only get notifications for @ mentions";
-                  case "off":
-                    return "Notifications off";
-                  default:
-                    throw new Error();
+            {isMember ? (
+              <Select
+                aria-label="Channel notification settings"
+                size="small"
+                variant="default"
+                align="left"
+                icon={
+                  notificationSetting === "off" ? (
+                    <BellOffIcon css={css({ width: "1.6rem" })} />
+                  ) : (
+                    <BellIcon css={css({ width: "1.6rem" })} />
+                  )
                 }
-              }}
-              options={[
-                {
-                  value: "all",
-                  label: "All messages",
-                  description: "Get notifications for all messages",
-                },
-                {
-                  value: "mentions",
-                  label: "@ mentions",
-                  description: "Only get notifications for @ mentions",
-                },
-                {
-                  value: "off",
-                  label: "Off",
-                  description: "Don’t get any notifications from this channel",
-                },
-              ]}
-            />
+                value={notificationSetting}
+                onChange={(setting) => {
+                  actions.setChannelNotificationSetting(channelId, setting);
+                }}
+                disabled={!isMember}
+                width="max-content"
+                renderTriggerContent={(selectedValue) => {
+                  switch (selectedValue) {
+                    case "all":
+                      return "Get notifications for all messages";
+                    case "mentions":
+                      return "Only get notifications for @ mentions";
+                    case "off":
+                      return "Notifications off";
+                    default:
+                      throw new Error();
+                  }
+                }}
+                options={[
+                  {
+                    value: "all",
+                    label: "All messages",
+                    description: "Get notifications for all messages",
+                  },
+                  {
+                    value: "mentions",
+                    label: "@ mentions",
+                    description: "Only get notifications for @ mentions",
+                  },
+                  {
+                    value: "off",
+                    label: "Off",
+                    description:
+                      "Don’t get any notifications from this channel",
+                  },
+                ]}
+              />
+            ) : (
+              <Button
+                size="small"
+                variant="default"
+                onClick={() => {
+                  actions.joinChannel(channelId);
+                  dismiss();
+                }}
+                disabled={channelPermissionType !== "open"}
+              >
+                Join channel
+              </Button>
+            )}
           </div>
         </div>
       </header>
@@ -291,7 +410,7 @@ const ChannelInfoDialog = ({
         css={css({ flex: 1 })}
       >
         <Item key="about" title="About">
-          <AboutTab channelId={channelId} />
+          <AboutTab channelId={channelId} dismiss={dismiss} />
         </Item>
         <Item
           key="members"
@@ -320,11 +439,15 @@ const ChannelInfoDialog = ({
     </>
   );
 };
-const AboutTab = ({ channelId }) => {
+const AboutTab = ({ channelId, dismiss }) => {
+  const navigate = useNavigate();
   const { state, actions } = useAppScope();
   const me = state.selectMe();
   const channel = state.selectChannel(channelId);
-  const isAdmin = me != null && me.id === channel.ownerUserId;
+  const channelPermissionType = state.selectChannelAccessLevel(channelId);
+  const isMember = me != null && channel.memberUserIds.includes(me.id);
+  const isOwner = me != null && me.id === channel.ownerUserId;
+  const isAdmin = isOwner;
 
   const [editDialogMode, setEditDialogMode] = React.useState(null);
 
@@ -387,6 +510,96 @@ const AboutTab = ({ channelId }) => {
             <dt>Description</dt>
             <dd>{channel.description ?? "-"}</dd>
           </dl>
+        )}
+
+        {isMember && channel.kind === "topic" && (
+          <>
+            <div
+              css={(t) =>
+                css({
+                  background: t.colors.borderLight,
+                  height: "1px",
+                  margin: "2rem 0",
+                })
+              }
+            />
+
+            <h3
+              css={(t) =>
+                css({
+                  fontSize: t.fontSizes.default,
+                  fontWeight: "400",
+                  margin: "0 0 0.2rem",
+                })
+              }
+            >
+              Danger zone
+            </h3>
+            <div
+              css={(t) =>
+                css({
+                  fontSize: t.fontSizes.small,
+                  color: t.colors.textDimmed,
+                  margin: "0 0 2rem",
+                })
+              }
+            >
+              {channelPermissionType === "open" ? (
+                <>
+                  Open channel are safe to leave, you can join again at any
+                  time.
+                </>
+              ) : (
+                <>
+                  Note that after leaving a {channelPermissionType} channel, an
+                  invite is required to join it again.
+                </>
+              )}
+            </div>
+
+            <div css={css({ display: "flex", justifyContent: "flex-start" })}>
+              <div
+                css={css({
+                  display: "grid",
+                  gridAutoFlow: "column",
+                  gridAutoColumns: "minmax(0,1fr)",
+                  gridGap: "1.5rem",
+                })}
+              >
+                <Button
+                  variant="default"
+                  size="default"
+                  disabled={isOwner || !isMember}
+                  onClick={() => {
+                    if (
+                      !confirm("Are you sure you want to leave this channel?")
+                    )
+                      return;
+                    actions.leaveChannel(channelId);
+                    dismiss();
+                  }}
+                >
+                  Leave channel
+                </Button>
+                <Button
+                  variant="default"
+                  danger
+                  size="default"
+                  disabled={!isAdmin}
+                  onClick={() => {
+                    if (
+                      !confirm("Are you sure you want to delete this channel?")
+                    )
+                      return;
+                    actions.deleteChannel(channelId);
+                    navigate("/");
+                  }}
+                >
+                  Delete channel
+                </Button>
+              </div>
+            </div>
+          </>
         )}
       </div>
 

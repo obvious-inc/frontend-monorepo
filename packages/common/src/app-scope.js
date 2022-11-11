@@ -535,6 +535,7 @@ export const Provider = ({ children }) => {
       method: "POST",
     }).then((res) => {
       // TODO
+      fetchChannel(channelId);
       fetchChannelMembers(channelId);
       // fetchInitialData();
       return res;

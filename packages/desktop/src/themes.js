@@ -15,6 +15,7 @@ const createNotion = () => {
   const textMuted = "hsl(0 0% 40%)";
   const textDimmed = "hsl(0 0% 60%)";
   const textDimmedModifierHover = "hsl(0 0% 58%)";
+  const textDanger = "rgb(235, 87, 87)";
   const backgroundNormal = "hsl(0 0% 13%)";
   const backgroundDark = "hsl(0 0% 10%)";
   const backgroundDarkTintLighter = "hsl(0 0% 11%)";
@@ -64,9 +65,11 @@ const createNotion = () => {
       textHeaderSecondary: "hsl(0 0% 72%)",
       textHighlight: "#ffd376", // Light yellow
       textSelectionBackground: createPrimary({ saturation: 1, lightness: 0 }),
+      textDanger,
       link: primaryTintLighter,
       linkModifierHover: createPrimary({ saturation: 1, lightness: 0.62 }),
       borderLight: "hsl(0 0% 20%)",
+      borderDanger: "rgb(110, 54, 48)",
       backgroundPrimary: backgroundDark,
       backgroundSecondary: backgroundNormal,
       backgroundTertiary: backgroundLight,
@@ -97,14 +100,14 @@ const createNotion = () => {
       large: "1.6rem",
       header: "2rem",
       huge: "3.2rem",
-      headerDefault: "2rem",
+      headerDefault: "1.6rem",
       channelMessages: "1.6rem",
       menus: "1.4rem",
     },
     text: {
       weights: {
         smallHeader: "600",
-        header: "500",
+        header: "700",
         notificationBadge: "500",
       },
     },
@@ -112,7 +115,9 @@ const createNotion = () => {
       default:
         '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif',
       headers:
-        'Londrina Solid, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif',
+        '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif',
+      // headers:
+      //   'Londrina Solid, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif',
       monospace:
         "Menlo, Consolas, Monaco, Liberation Mono, Lucida Console, monospace",
     },
