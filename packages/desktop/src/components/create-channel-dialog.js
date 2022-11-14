@@ -2,6 +2,7 @@ import React from "react";
 import { useNavigate } from "react-router-dom";
 import { css } from "@emotion/react";
 import { useAppScope, useAuth } from "@shades/common/app";
+import useWallet from "../hooks/wallet";
 import Dialog from "./dialog";
 import Button from "./button";
 import Input from "./input";
@@ -219,6 +220,7 @@ const CreateChannelDialog = ({ isOpen, close, onChannelCreated }) => {
   const { actions } = useAppScope();
   const { status: authenticationStatus } = useAuth();
   const navigate = useNavigate();
+  const { accountAddress: walletAccountAddress } = useWallet();
 
   return (
     <Dialog width="46rem" isOpen={isOpen} onRequestClose={close}>

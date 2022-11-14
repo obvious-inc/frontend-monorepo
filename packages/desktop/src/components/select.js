@@ -180,7 +180,6 @@ const Option = ({ item, state }) => {
           lineHeight: 1.4,
           fontSize: t.fontSizes.menus,
           fontWeight: "400",
-          cursor: "pointer",
           color: isDisabled ? t.colors.textMuted : t.colors.textNormal,
           borderRadius: "0.3rem",
           outline: "none",
