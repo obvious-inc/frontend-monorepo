@@ -132,6 +132,7 @@ const ChannelInfoDialog = ({
   dismiss,
   showAddMemberDialog,
 }) => {
+  const dismissButtonRef = React.useRef();
   const { state, actions } = useAppScope();
   const me = state.selectMe();
   const channel = state.selectChannel(channelId);
@@ -142,147 +143,163 @@ const ChannelInfoDialog = ({
 
   const memberCount = channel.memberUserIds.length;
 
+  React.useEffect(() => {
+    dismissButtonRef.current.focus();
+  }, []);
+
   return (
     <>
       <header
         css={css({
-          display: "grid",
-          gridTemplateColumns: "minmax(0,1fr) auto",
-          gridGap: "1rem",
-          alignItems: "flex-end",
-          justifyContent: "flex-start",
           padding: "1.5rem",
           "@media (min-width: 600px)": {
             padding: "2rem",
           },
         })}
       >
-        <div css={css({ display: "flex", alignItems: "center" })}>
-          {channel.image != null && (
-            <a
-              href={channel.image}
-              rel="noreferrer"
-              target="_blank"
-              css={(t) =>
-                css({
-                  borderRadius: "50%",
-                  outline: "none",
-                  ":focus-visible": {
-                    boxShadow: `0 0 0 0.2rem ${t.colors.primary}`,
-                  },
-                })
-              }
-              style={{ marginRight: "1.1rem" }}
-            >
-              <Avatar url={channel.image} size="2.4rem" pixelSize={24} />
-            </a>
-          )}
-          <h1
-            css={(theme) =>
-              css({
-                fontSize: theme.fontSizes.header,
-                color: theme.colors.textHeader,
-                lineHeight: 1.2,
-              })
-            }
-            {...titleProps}
-          >
-            {channel.name}
-            <Tooltip.Root>
-              <Tooltip.Trigger
+        <div
+          css={css({
+            display: "grid",
+            gridTemplateColumns: "minmax(0,1fr) auto",
+            gridGap: "1rem",
+            alignItems: "flex-end",
+            justifyContent: "flex-start",
+            margin: "0 0 1rem",
+          })}
+        >
+          <div css={css({ display: "flex", alignItems: "center" })}>
+            {channel.image != null && (
+              <a
+                href={channel.image}
+                rel="noreferrer"
+                target="_blank"
                 css={(t) =>
                   css({
-                    color: t.colors.textDimmed,
-                    fontSize: t.fontSizes.tiny,
-                    fontWeight: "400",
-                    marginLeft: "1rem",
-                    background: t.colors.backgroundModifierHover,
-                    borderRadius: "0.2rem",
-                    padding: "0.2rem 0.4rem",
-                    position: "relative",
-                    bottom: "0.2rem",
+                    borderRadius: "50%",
+                    outline: "none",
                     ":focus-visible": {
                       boxShadow: `0 0 0 0.2rem ${t.colors.primary}`,
                     },
                   })
                 }
+                style={{ marginRight: "1.1rem" }}
               >
-                <span
-                  style={{
-                    display: "inline-flex",
-                    position: "relative",
-                    top: "0.2rem",
-                    marginRight: "0.4rem",
-                  }}
+                <Avatar url={channel.image} size="2.4rem" pixelSize={24} />
+              </a>
+            )}
+            <h1
+              css={(theme) =>
+                css({
+                  flex: 1,
+                  minWidth: 0,
+                  fontSize: theme.fontSizes.header,
+                  color: theme.colors.textHeader,
+                  lineHeight: 1.2,
+                  whiteSpace: "nowrap",
+                  overflow: "hidden",
+                  textOverflow: "ellipsis",
+                })
+              }
+              {...titleProps}
+            >
+              {channel.name}
+              <Tooltip.Root>
+                <Tooltip.Trigger
+                  css={(t) =>
+                    css({
+                      color: t.colors.textDimmed,
+                      fontSize: t.fontSizes.tiny,
+                      fontWeight: "400",
+                      marginLeft: "1rem",
+                      background: t.colors.backgroundModifierHover,
+                      borderRadius: "0.2rem",
+                      padding: "0.2rem 0.4rem",
+                      position: "relative",
+                      bottom: "0.2rem",
+                      ":focus-visible": {
+                        boxShadow: `0 0 0 0.2rem ${t.colors.primary}`,
+                      },
+                    })
+                  }
                 >
-                  {channel.kind === "dm" ? (
-                    <AtSignIcon style={{ width: "1.2rem" }} />
-                  ) : channelPermissionType === "private" ? (
-                    <EyeOffIcon style={{ width: "1.2rem" }} />
-                  ) : channelPermissionType === "closed" ? (
-                    <LockIcon style={{ width: "1.2rem" }} />
-                  ) : channelPermissionType === "open" ? (
-                    <GlobeIcon style={{ width: "1.2rem" }} />
-                  ) : null}
-                </span>
+                  <span
+                    style={{
+                      display: "inline-flex",
+                      position: "relative",
+                      top: "0.2rem",
+                      marginRight: "0.4rem",
+                    }}
+                  >
+                    {channel.kind === "dm" ? (
+                      <AtSignIcon style={{ width: "1.2rem" }} />
+                    ) : channelPermissionType === "private" ? (
+                      <EyeOffIcon style={{ width: "1.2rem" }} />
+                    ) : channelPermissionType === "closed" ? (
+                      <LockIcon style={{ width: "1.2rem" }} />
+                    ) : channelPermissionType === "open" ? (
+                      <GlobeIcon style={{ width: "1.2rem" }} />
+                    ) : null}
+                  </span>
 
-                {channel.kind === "dm"
-                  ? "DM channel"
-                  : channelPermissionType != null && (
-                      <>
-                        {channelPermissionType.slice(0, 1).toUpperCase()}
-                        {channelPermissionType.slice(1)} channel
-                      </>
-                    )}
-              </Tooltip.Trigger>
-              <Tooltip.Content side="top" align="center" sideOffset={6}>
-                {channel.kind === "dm" ? (
-                  <>
-                    DMs are reserved for private 1-to-1
-                    <br />
-                    messaging, and cannot be deleted.
-                  </>
-                ) : channelPermissionType === "open" ? (
-                  <>
-                    Open channels can be seen
-                    <br />
-                    and joined by anyone.
-                  </>
-                ) : channelPermissionType === "closed" ? (
-                  <>
-                    Closed channels have open read access,
-                    <br />
-                    but requires an invite to join.
-                  </>
-                ) : channelPermissionType === "private" ? (
-                  <>
-                    Private channels are only
-                    <br />
-                    visible to members.
-                  </>
-                ) : (
-                  "👋"
-                )}
-              </Tooltip.Content>
-            </Tooltip.Root>
-          </h1>
-        </div>
-        <div
-          css={css({
-            display: "grid",
-            gridAutoColumns: "auto",
-            gridAutoFlow: "column",
-            gridGap: "1rem",
-          })}
-        >
-          <Button
-            size="small"
-            variant="default"
-            onClick={dismiss}
-            css={css({ width: "2.8rem", padding: 0 })}
+                  {channel.kind === "dm"
+                    ? "DM channel"
+                    : channelPermissionType != null && (
+                        <>
+                          {channelPermissionType.slice(0, 1).toUpperCase()}
+                          {channelPermissionType.slice(1)} channel
+                        </>
+                      )}
+                </Tooltip.Trigger>
+                <Tooltip.Content side="top" align="center" sideOffset={6}>
+                  {channel.kind === "dm" ? (
+                    <>
+                      DMs are reserved for private 1-to-1
+                      <br />
+                      messaging, and cannot be deleted.
+                    </>
+                  ) : channelPermissionType === "open" ? (
+                    <>
+                      Open channels can be seen
+                      <br />
+                      and joined by anyone.
+                    </>
+                  ) : channelPermissionType === "closed" ? (
+                    <>
+                      Closed channels have open read access,
+                      <br />
+                      but requires an invite to join.
+                    </>
+                  ) : channelPermissionType === "private" ? (
+                    <>
+                      Private channels are only
+                      <br />
+                      visible to members.
+                    </>
+                  ) : (
+                    "👋"
+                  )}
+                </Tooltip.Content>
+              </Tooltip.Root>
+            </h1>
+          </div>
+          <div
+            css={css({
+              display: "grid",
+              gridAutoColumns: "auto",
+              gridAutoFlow: "column",
+              gridGap: "1rem",
+            })}
           >
-            <CrossIcon style={{ margin: "auto" }} />
-          </Button>
+            <Button
+              ref={dismissButtonRef}
+              size="small"
+              variant="default"
+              onClick={dismiss}
+              css={css({ width: "2.8rem", padding: 0 })}
+            >
+              <CrossIcon style={{ margin: "auto" }} />
+            </Button>
+          </div>
         </div>
 
         <div
