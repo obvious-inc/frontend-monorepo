@@ -172,7 +172,7 @@ const useUserEnsNames = () => {
     return () => {
       removeListener();
     };
-  }, [addAfterDispatchListener, registerEnsNames]);
+  }, [addAfterDispatchListener, registerEnsNames, provider]);
 };
 
 const App = () => {

@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - main
+      - test
     paths-ignore:
       - "packages/landing"
       - "packages/desktop"

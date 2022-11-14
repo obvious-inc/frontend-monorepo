@@ -1,8 +1,10 @@
 import React from "react";
 import { useNavigate } from "react-router-dom";
 import { css } from "@emotion/react";
+import { ethereum as ethereumUtils } from "@shades/common/utils";
 import { useAppScope, useAuth } from "@shades/common/app";
 import useWallet from "../hooks/wallet";
+import useWalletLogin from "../hooks/wallet-login";
 import Dialog from "./dialog";
 import Button from "./button";
 import Input from "./input";
@@ -13,6 +15,8 @@ import {
   Lock as LockIcon,
   EyeOff as EyeOffIcon,
 } from "./icons";
+
+const { truncateAddress } = ethereumUtils;
 
 const CreateChannelDialogContent = ({ titleProps, close, createChannel }) => {
   const [selectedType, setSelectedType] = React.useState("open");
@@ -221,6 +225,7 @@ const CreateChannelDialog = ({ isOpen, close, onChannelCreated }) => {
   const { status: authenticationStatus } = useAuth();
   const navigate = useNavigate();
   const { accountAddress: walletAccountAddress } = useWallet();
+  const { login } = useWalletLogin();
 
   return (
     <Dialog width="46rem" isOpen={isOpen} onRequestClose={close}>
