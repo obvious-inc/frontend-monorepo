@@ -24,6 +24,8 @@ import { FlashList } from "@shopify/flash-list";
 import * as Shades from "@shades/common";
 import * as Localization from "expo-localization";
 import theme from "../theme";
+import useAppActiveListener from "../hooks/app-active-listener";
+import useOnlineListener from "../hooks/online-listener";
 import FormattedDate from "../components/formatted-date";
 import RichText from "../components/rich-text";
 import UserProfilePicture from "../components/user-profile-picture";
@@ -65,20 +67,32 @@ export const options = {
 // Region might return `null` on Android
 const locale = ["en", Localization.region].filter(Boolean).join("-");
 
+const useFetch = (fetcher_, deps) => {
+  const fetcher = useLatestCallback(fetcher_);
+
+  useFocusEffect(
+    React.useCallback(() => {
+      fetcher();
+      // eslint-disable-next-line
+    }, deps)
+  );
+
+  useAppActiveListener(() => {
+    fetcher();
+  });
+
+  useOnlineListener(() => {
+    fetcher();
+  });
+};
+
 const useChannelMessages = ({ channelId }) => {
   const { actions, state } = useAppScope();
   const { fetchMessages } = actions;
 
   const messages = state.selectChannelMessages(channelId);
 
-  // React.useEffect(() => {
-  //   actions.fetchMessages(channelId);
-  // }, [actions, channelId]);
-  useFocusEffect(
-    React.useCallback(() => {
-      fetchMessages(channelId);
-    }, [channelId, fetchMessages])
-  );
+  useFetch(() => fetchMessages(channelId), [channelId, fetchMessages]);
 
   const sortedMessages = messages.sort(
     (m1, m2) => new Date(m1.created_at) - new Date(m2.created_at)
@@ -86,22 +100,6 @@ const useChannelMessages = ({ channelId }) => {
 
   return sortedMessages;
 };
-
-// const DefaultStackHeader = () => {
-//   return (
-//     <SafeAreaView edges={["top"]} style={{ backgroundColor: background }}>
-//       <View
-//         style={{
-//           height: 48,
-//           flexDirection: "row",
-//           alignItems: "center",
-//         }}
-//       >
-//         <HeaderLeft />
-//       </View>
-//     </SafeAreaView>
-//   );
-// };
 
 const HeaderLeft = () => {
   const { params } = useRoute();
@@ -229,11 +227,14 @@ const Channel = ({ navigation, route: { params } }) => {
   const inputRef = React.useRef();
   const scrollViewRef = React.useRef();
 
-  useFocusEffect(
-    React.useCallback(() => {
-      fetchChannelMembers(channelId);
-      fetchChannelPublicPermissions(channelId);
-    }, [channelId, fetchChannelMembers, fetchChannelPublicPermissions])
+  useFetch(
+    () => fetchChannelMembers(channelId),
+    [channelId, fetchChannelMembers]
+  );
+
+  useFetch(
+    () => fetchChannelPublicPermissions(channelId),
+    [channelId, fetchChannelPublicPermissions]
   );
 
   const didScrollToBottomRef = React.useRef(true);
