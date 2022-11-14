@@ -29,6 +29,7 @@ module.exports = {
     pusherKey: process.env.PUSHER_KEY,
     infuraProjectId: process.env.INFURA_PROJECT_ID,
     cloudflareAccountHash: process.env.CLOUDFLARE_ACCOUNT_HASH,
+    gitCommitSha: process.env.GITHUB_SHA,
     eas: {
       projectId: process.env.EAS_PROJECT_ID,
     },

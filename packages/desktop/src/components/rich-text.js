@@ -208,7 +208,7 @@ const Image = (props) => {
   const [error, setError] = React.useState(null);
 
   React.useEffect(() => {
-    if (error != null) setError(null);
+    setError(null);
     ref.current.onerror = (error) => {
       setError(error);
     };

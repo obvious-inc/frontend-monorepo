@@ -1,7 +1,9 @@
 import React from "react";
 import * as Shades from "@shades/common";
 import { View, Text, Pressable } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 import theme from "../theme";
+import { VERSION } from "../config";
 
 const { useAppScope } = Shades.app;
 
@@ -46,9 +48,12 @@ const Header = () => {
 const AccountModal = ({ navigation }) => {
   const { actions } = useAppScope();
   return (
-    <View style={{ flex: 1, padding: 16, backgroundColor: "hsl(0,0%,10%)" }}>
-      <SectionedActionList
-        items={[
+    <SafeAreaView
+      edges={["left", "right", "bottom"]}
+      style={{ flex: 1, padding: 16, backgroundColor: "hsl(0,0%,10%)" }}
+    >
+      <ModalActionButtonGroup
+        actions={[
           {
             key: "log-out",
             label: "Log out",
@@ -60,7 +65,17 @@ const AccountModal = ({ navigation }) => {
           },
         ]}
       />
-    </View>
+      <View style={{ marginTop: 20 }}>
+        <Text
+          style={{
+            fontSize: 12,
+            color: "hsl(0,0%,28%)",
+          }}
+        >
+          Version {VERSION}
+        </Text>
+      </View>
+    </SafeAreaView>
   );
 };
 
