@@ -25,6 +25,7 @@ import channels, {
   selectIsChannelStarred,
   selectChannelMembers,
   selectChannelAccessLevel,
+  selectChannelHasOpenReadAccess,
 } from "../reducers/channels";
 import messages, {
   selectMessage,
@@ -80,6 +81,7 @@ const selectors = {
   selectApp,
   selectEnsName,
   selectHasFetchedMenuData,
+  selectChannelHasOpenReadAccess,
 };
 
 const rootReducer = combineReducers({

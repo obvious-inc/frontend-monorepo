@@ -1,7 +1,7 @@
-const CHANNEL_READ_INFO = "channels.view";
-const CHANNEL_READ_MEMBER_LIST = "channels.members.list";
-const CHANNEL_READ_MESSAGES = "messages.list";
-const CHANNEL_JOIN = "channels.join";
+export const CHANNEL_READ_INFO = "channels.view";
+export const CHANNEL_READ_MEMBER_LIST = "channels.members.list";
+export const CHANNEL_READ_MESSAGES = "messages.list";
+export const CHANNEL_JOIN = "channels.join";
 
 const Permissions = Object.freeze({
   "messages.create": "Send new messages",

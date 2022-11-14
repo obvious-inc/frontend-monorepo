@@ -4,6 +4,7 @@ import { indexBy, unique, sort } from "../utils/array";
 import { omitKey } from "../utils/object";
 import { getMentions } from "../utils/message";
 import { arrayShallowEquals } from "../utils/reselect";
+import * as Permissions from "../utils/permissions";
 import { selectUser } from "./users";
 
 const sortChannelsByActivity = (channels, state) =>
@@ -507,10 +508,17 @@ export const selectHasAllMessages = (state, channelId) =>
 export const selectChannelAccessLevel = (state, channelId) => {
   const meta = state.channels.metaById[channelId];
   if (meta == null || meta.publicPermissions == null) return null;
-  if (meta.publicPermissions.includes("channels.join")) return "open";
-  if (meta.publicPermissions.includes("channels.view")) return "closed";
+  if (meta.publicPermissions.includes(Permissions.CHANNEL_JOIN)) return "open";
+  if (meta.publicPermissions.includes(Permissions.CHANNEL_READ_MESSAGES))
+    return "closed";
   if (meta.publicPermissions.length === 0) return "private";
   return "custom";
+};
+
+export const selectChannelHasOpenReadAccess = (state, channelId) => {
+  const meta = state.channels.metaById[channelId];
+  if (meta == null || meta.publicPermissions == null) return null;
+  return meta.publicPermissions.includes(Permissions.CHANNEL_READ_MESSAGES);
 };
 
 export default combineReducers({

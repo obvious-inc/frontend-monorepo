@@ -39,6 +39,7 @@ import {
   CrossCircle as CrossCircleIcon,
   Star as StarIcon,
   StrokedStar as StrokedStarIcon,
+  Globe as GlobeIcon,
 } from "./icons";
 import useSideMenu from "../hooks/side-menu";
 import useIsOnScreen from "../hooks/is-on-screen";
@@ -1469,6 +1470,7 @@ const Channel = ({ channelId, compact, noSideMenu }) => {
     if (channel == null) return null;
 
     const isChannelOwner = user != null && channel.ownerUserId === user?.id;
+    const hasOpenReadAccess = state.selectChannelHasOpenReadAccess(channelId);
 
     const renderRightColumn = () => {
       if (
@@ -1491,7 +1493,15 @@ const Channel = ({ channelId, compact, noSideMenu }) => {
         );
 
       return (
-        <>
+        <div
+          css={css({
+            display: "grid",
+            gridAutoFlow: "column",
+            gridAutoColumns: "auto",
+            gridGap: "0.4rem",
+            alignItems: "center",
+          })}
+        >
           <button
             onClick={() => {
               const tryStarChannel = async () => {
@@ -1550,7 +1560,6 @@ const Channel = ({ channelId, compact, noSideMenu }) => {
                 },
               })
             }
-            style={{ marginRight: "0.4rem" }}
           >
             {isChannelStarred ? (
               <StarIcon style={{ color: "rgb(202, 152, 73)" }} />
@@ -1594,6 +1603,27 @@ const Channel = ({ channelId, compact, noSideMenu }) => {
                 )}
               </Dialog>
             </>
+          )}
+
+          {hasOpenReadAccess && (
+            <Tooltip.Root>
+              <Tooltip.Trigger>
+                <span>
+                  <GlobeIcon
+                    css={(t) =>
+                      css({ width: "2rem", color: t.colors.textNormal })
+                    }
+                  />
+                </span>
+              </Tooltip.Trigger>
+              <Tooltip.Content sideOffset={5}>
+                Open read access
+                <br />
+                <span css={(t) => css({ color: t.colors.textDimmed })}>
+                  Messages can be read by anyone
+                </span>
+              </Tooltip.Content>
+            </Tooltip.Root>
           )}
 
           <Dialog
@@ -1693,7 +1723,7 @@ const Channel = ({ channelId, compact, noSideMenu }) => {
               )}
             </span>
           )}
-        </>
+        </div>
       );
     };
 
@@ -1929,7 +1959,7 @@ const MembersDisplayButton = React.forwardRef(({ onClick, members }, ref) => {
       </Tooltip.Trigger>
       <Tooltip.Content sideOffset={5}>
         View all members of this channel
-        <div css={(theme) => css({ color: theme.colors.textMuted })}>
+        <div css={(t) => css({ color: t.colors.textDimmed })}>
           {onlineMemberCount === memberCount
             ? "All members online"
             : `${onlineMemberCount} ${
