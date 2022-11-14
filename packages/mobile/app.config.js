@@ -1,5 +1,7 @@
 if (!process.env.CI) require("dotenv").config();
 
+console.log(process.env)
+
 module.exports = {
   name: "NewShades",
   slug: "newshades",
