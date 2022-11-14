@@ -1,14 +1,25 @@
 import Constants from "expo-constants";
 import * as Application from "expo-application";
 
-const version = [
-  Application.nativeBuildVersion,
-  Constants.expoConfig.extra.gitCommitSha,
-]
-  .filter(Boolean)
-  .join("-");
+const buildVersionString = () => {
+  if (process.env.NODE_ENV !== "production")
+    return Application.nativeBuildVersion;
 
-export const VERSION = version;
+  const appVersion = [
+    Application.nativeApplicationVersion,
+    Application.nativeBuildVersion,
+  ].join(".");
+
+  const sha = Constants.expoConfig.extra.gitCommitSha;
+
+  if (sha == null) return appVersion;
+
+  const truncatedSha = [sha.slice(0, 3), "...", sha.slice(-3)].join("");
+
+  return [appVersion, truncatedSha].join("-");
+};
+
+export const VERSION = buildVersionString();
 
 export const API_ENDPOINT = Constants.expoConfig.extra.apiEndpoint;
 export const WEB_APP_ENDPOINT = Constants.expoConfig.extra.webAppEndpoint;
