@@ -378,13 +378,17 @@ const ChannelMessage = React.memo(function ChannelMessage_({
               getMember={getMember}
             />
           ) : (
-            <RichText
-              compact={compact}
-              blocks={message.content}
-              onClickInteractiveElement={onClickInteractiveElement}
-              getMember={getMember}
-              suffix={message.isEdited && editedMessageSuffix}
-            />
+            <>
+              <RichText
+                compact={compact}
+                blocks={message.content}
+                onClickInteractiveElement={onClickInteractiveElement}
+                getMember={getMember}
+                suffix={message.isEdited && editedMessageSuffix}
+              />
+
+              {message.embeds?.length > 0 && <Embeds messageId={message.id} />}
+            </>
           )}
 
           {reactions.length !== 0 && (
@@ -400,6 +404,96 @@ const ChannelMessage = React.memo(function ChannelMessage_({
     </div>
   );
 });
+
+const Embeds = ({ messageId }) => {
+  const { state } = useAppScope();
+  const message = state.selectMessage(messageId);
+
+  return (
+    <ul
+      css={css({
+        marginTop: "0.5rem",
+        maxWidth: "60rem",
+        "li + li": { marginTop: "1rem" },
+      })}
+    >
+      {message.embeds.map((embed) => (
+        <Embed key={embed.url} {...embed} />
+      ))}
+    </ul>
+  );
+};
+
+const Embed = ({ title, url, favicon, metatags }) => {
+  const hostname = React.useMemo(() => new URL(url).hostname, [url]);
+  const description = metatags["og:description"];
+  const image = metatags["og:image"];
+
+  return (
+    <li css={css({ display: "flex", alignItems: "stretch" })}>
+      <div
+        css={(t) =>
+          css({
+            width: "0.4rem",
+            background: t.colors.borderLight,
+            borderRadius: "0.2rem",
+          })
+        }
+      />
+      <div css={css({ flex: 1, padding: "0 1.2rem" })}>
+        <div
+          css={css({
+            img: {
+              display: "inline-block",
+              width: "1.6rem",
+              height: "1.6rem",
+              borderRadius: "0.2rem",
+              marginRight: "0.8rem",
+              verticalAlign: "middle",
+              marginBottom: "0.3rem",
+            },
+          })}
+        >
+          {favicon != null && <img src={favicon} loading="lazy" />}
+          {hostname}
+        </div>
+        <div css={css({ display: "flex" })}>
+          <div css={css({ flex: 1 })}>
+            <a
+              href={url}
+              rel="noreferrer"
+              target="_blank"
+              css={(t) =>
+                css({
+                  color: t.colors.link,
+                  textDecoration: "none",
+                  ":hover": {
+                    color: t.colors.linkModifierHover,
+                    textDecoration: "underline",
+                  },
+                })
+              }
+            >
+              {title}
+            </a>
+            {description != null && <div>{description}</div>}
+          </div>
+          {image != null && (
+            <div
+              css={css({
+                marginLeft: "1rem",
+                paddingTop: "1rem",
+                img: { width: "8rem", height: "auto", borderRadius: "0.3rem" },
+              })}
+            >
+              <img src={image} loading="lazy" />
+            </div>
+          )}
+        </div>
+      </div>
+    </li>
+  );
+};
 
 const Reactions = ({
   items = [],
