@@ -491,14 +491,19 @@ export const Provider = ({ children }) => {
     authorizedFetch(`/channels/${id}/permissions`, {
       unauthorized: true,
       priority: "low",
-    }).then((res) => {
-      dispatch({
-        type: "fetch-channel-public-permissions-request-successful",
-        channelId: id,
-        permissions: res,
-      });
-      return res;
     })
+      .catch((e) => {
+        if (e.code === 404) return [];
+        throw e;
+      })
+      .then((res) => {
+        dispatch({
+          type: "fetch-channel-public-permissions-request-successful",
+          channelId: id,
+          permissions: res,
+        });
+        return res;
+      })
   );
 
   const addChannelMember = useLatestCallback(
