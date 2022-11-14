@@ -4,7 +4,6 @@ on:
   push:
     branches:
       - main
-      - test
     paths-ignore:
       - "packages/landing"
       - "packages/desktop"
@@ -41,7 +40,7 @@ jobs:
       - name: Build project
         run: pnpm -F mobile build
 
-      - name: Export bundle
+      - name: Run update
         working-directory: packages/mobile
         run: eas update --auto -p ios
         env:

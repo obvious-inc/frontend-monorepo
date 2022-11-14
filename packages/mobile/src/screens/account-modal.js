@@ -2,6 +2,7 @@ import React from "react";
 import * as Shades from "@shades/common";
 import { View, Text, Pressable } from "react-native";
 import theme from "../theme";
+import { VERSION } from "../config";
 
 const { useAppScope } = Shades.app;
 
@@ -47,19 +48,31 @@ const AccountModal = ({ navigation }) => {
   const { actions } = useAppScope();
   return (
     <View style={{ flex: 1, padding: 16, backgroundColor: "hsl(0,0%,10%)" }}>
-      <SectionedActionList
-        items={[
-          {
-            key: "log-out",
-            label: "Log out",
-            danger: true,
-            onPress: () => {
-              actions.logout();
-              navigation.popToTop();
+      <View style={{ flex: 1 }}>
+        <SectionedActionList
+          items={[
+            {
+              key: "log-out",
+              label: "Log out",
+              danger: true,
+              onPress: () => {
+                actions.logout();
+                navigation.popToTop();
+              },
             },
-          },
-        ]}
-      />
+          ]}
+        />
+      </View>
+      <View style={{ paddingHorizontal: 16 }}>
+        <Text
+          style={{
+            fontSize: 16,
+            color: theme.colors.textMuted,
+          }}
+        >
+          {VERSION}
+        </Text>
+      </View>
     </View>
   );
 };

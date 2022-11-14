@@ -6,7 +6,9 @@ const buildVersionString = () => {
     .filter(Boolean)
     .join(".");
 
-  return nativeVersion;
+  return [nativeVersion, Constants.expoConfig.extra.gitCommitSha]
+    .filter(Boolean)
+    .join("-");
 };
 
 export const API_ENDPOINT = Constants.expoConfig.extra.apiEndpoint;
