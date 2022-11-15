@@ -424,10 +424,14 @@ const Embeds = ({ messageId }) => {
   );
 };
 
-const Embed = ({ title, url, favicon, metatags }) => {
-  const hostname = React.useMemo(() => new URL(url).hostname, [url]);
-  const description = metatags["og:description"];
+const Embed = ({ title: title_, url, favicon, metatags }) => {
+  const title = metatags["og:title"] ?? title_;
+  const description =
+    title === metatags["og:description"] ? null : metatags["og:description"];
+  const sub = (description ?? title) === metatags.meta ? null : metatags.meta;
   const image = metatags["og:image"];
+  const hostname = React.useMemo(() => new URL(url).hostname, [url]);
+  const siteName = metatags["og:site_name"] ?? hostname;
 
   return (
     <li css={css({ display: "flex", alignItems: "stretch" })}>
@@ -440,7 +444,7 @@ const Embed = ({ title, url, favicon, metatags }) => {
           })
         }
       />
-      <div css={css({ flex: 1, padding: "0 1.2rem" })}>
+      <div css={css({ flex: 1, minWidth: 0, padding: "0 1.2rem" })}>
         <div
           css={css({
             img: {
@@ -455,10 +459,10 @@ const Embed = ({ title, url, favicon, metatags }) => {
           })}
         >
           {favicon != null && <img src={favicon} loading="lazy" />}
-          {hostname}
+          {siteName}
         </div>
         <div css={css({ display: "flex" })}>
-          <div css={css({ flex: 1 })}>
+          <div css={css({ flex: 1, minWidth: 0 })}>
             <a
               href={url}
               rel="noreferrer"
@@ -466,7 +470,13 @@ const Embed = ({ title, url, favicon, metatags }) => {
               css={(t) =>
                 css({
                   color: t.colors.link,
+                  display: "inline-block",
+                  verticalAlign: "middle",
+                  maxWidth: "100%",
                   textDecoration: "none",
+                  whiteSpace: "nowrap",
+                  overflow: "hidden",
+                  textOverflow: "ellipsis",
                   ":hover": {
                     color: t.colors.linkModifierHover,
                     textDecoration: "underline",
@@ -477,6 +487,22 @@ const Embed = ({ title, url, favicon, metatags }) => {
               {title}
             </a>
             {description != null && <div>{description}</div>}
+            {sub != null && (
+              <div
+                css={(t) =>
+                  css({
+                    marginTop: "0.2rem",
+                    fontSize: t.fontSizes.small,
+                    color: t.colors.textDimmed,
+                    whiteSpace: "nowrap",
+                    overflow: "hidden",
+                    textOverflow: "ellipsis",
+                  })
+                }
+              >
+                {sub}
+              </div>
+            )}
           </div>
           {image != null && (
             <div
