@@ -325,7 +325,6 @@ const NewChat = ({ navigation }) => {
       <View style={{ paddingHorizontal: 16, paddingBottom: 5 }}>
         <Input
           ref={inputRef}
-          autoFocus
           value={pendingInput}
           placeholder="ENS or wallet address"
           onChangeText={setPendingInput}
