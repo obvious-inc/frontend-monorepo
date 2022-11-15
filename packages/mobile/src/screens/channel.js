@@ -691,7 +691,7 @@ const Message = ({
             style={{ fontSize: 16, color: textDefault, lineHeight: 24 }}
           >
             {m.isSystemMessage ? (
-              <SystemMessageContent message={m} />
+              <SystemMessageContent message={m} selectUser={selectUser} />
             ) : (
               <RichText
                 key={m.id}
@@ -793,111 +793,145 @@ const RepliedMessage = ({ message, getMember }) => {
   );
 };
 
-const SystemMessageContent = ({ message }) => {
+const MemberDisplayName = ({ userId, selectUser }) => {
+  const { state } = useAppScope();
+  const user = state.selectUser(userId);
+  return (
+    <Text
+      onPress={() => {
+        selectUser(userId);
+      }}
+      style={{ color: textDefault, fontWeight: "600" }}
+    >
+      {user?.displayName}
+    </Text>
+  );
+};
+
+const SystemMessageContent = ({ message, selectUser }) => {
+  const textStyles = {
+    fontSize: 16,
+    lineHeight: 24,
+  };
+
   switch (message.type) {
-    // case "user-invited": {
-    //   const isMissingData = [
-    //     message.inviter?.displayName,
-    //     message.author?.displayName,
-    //   ].some((n) => n == null);
+    case "user-invited": {
+      const isMissingData = [
+        message.inviter?.displayName,
+        message.author?.displayName,
+      ].some((n) => n == null);
 
-    //   return (
-    //     <Text style={{ opacity: isMissingData ? 0 : 1 }}>
-    //       <MemberDisplayNameWithPopover user={message.inviter} /> added{" "}
-    //       <MemberDisplayNameWithPopover user={message.author} /> to the channel.
-    //     </Text>
-    //   );
-    // }
-
-    case "member-joined": {
-      const isMissingData = message.author?.displayName == null;
       return (
-        <Text
-          style={{
-            fontSize: 16,
-            lineHeight: 24,
-            opacity: isMissingData ? 0 : 1,
-          }}
-        >
-          {/* <MemberDisplayNameWithPopover user={message.author} /> */}
-          <Text style={{ fontWeight: "600" }}>
-            {message.author?.displayName}
-          </Text>{" "}
-          joined the channel. Welcome!
+        <Text style={{ ...textStyles, opacity: isMissingData ? 0 : 1 }}>
+          <MemberDisplayName
+            userId={message.inviterUserId}
+            selectUser={selectUser}
+          />{" "}
+          added{" "}
+          <MemberDisplayName
+            userId={message.authorUserId}
+            selectUser={selectUser}
+          />{" "}
+          to the channel.
         </Text>
       );
     }
 
-    //     case "channel-updated": {
-    //       const updates = Object.entries(message.updates);
-    //       if (updates.length == 0 || updates.length > 1) {
-    //         return (
-    //           <>
-    //             <MemberDisplayNameWithPopover user={message.author} /> updated the
-    //             channel.
-    //           </>
-    //         );
+    case "member-joined": {
+      const isMissingData = message.author?.displayName == null;
+      return (
+        <Text style={{ ...textStyles, opacity: isMissingData ? 0 : 1 }}>
+          <MemberDisplayName userId={message.authorUserId} /> joined the
+          channel. Welcome!
+        </Text>
+      );
+    }
+
+    case "channel-updated": {
+      const updates = Object.entries(message.updates);
+      if (updates.length == 0 || updates.length > 1) {
+        return (
+          <>
+            <MemberDisplayNameWithPopover user={message.author} /> updated the
+            channel.
+          </>
+        );
+      }
+
+      let [field, value] = updates[0];
+
+      // Nested switch case baby!
+      switch (field) {
+        case "description": {
+          const newDescription = (value ?? "") === "" ? null : value;
+          return (
+            <>
+              <MemberDisplayName
+                userId={message.authorUserId}
+                selectUser={selectUser}
+              />{" "}
+              {newDescription == null ? (
+                "cleared the channel topic."
+              ) : (
+                <>set the channel topic: {newDescription}</>
+              )}
+            </>
+          );
+        }
+
+        case "name": {
+          const newName = (value ?? "") === "" ? null : value;
+          return (
+            <>
+              <MemberDisplayName
+                userId={message.authorUserId}
+                selectUser={selectUser}
+              />{" "}
+              {newName == null ? (
+                <>cleared the channel {field}.</>
+              ) : (
+                <>
+                  set the channel {field}: {newName}
+                </>
+              )}
+            </>
+          );
+        }
+
+        default:
+          return (
+            <>
+              <MemberDisplayName
+                userId={message.authorUserId}
+                selectUser={selectUser}
+              />{" "}
+              updated the channel {field}.
+            </>
+          );
+      }
+    }
+
+    // case "app-installed": {
+    //   const isMissingData = [
+    //     message.installer?.displayName,
+    //     message.app?.name,
+    //   ].some((n) => n == null);
+
+    //   return (
+    //     <span
+    //       css={(theme) =>
+    //         css({
+    //           color: theme.colors.channelDefault,
+    //           opacity: isMissingData ? 0 : 1,
+    //         })
     //       }
-
-    //       let [field, value] = updates[0];
-
-    //       // Nested switch case baby!
-    //       switch (field) {
-    //         case "description":
-    //           return (
-    //             <>
-    //               <MemberDisplayNameWithPopover user={message.author} />{" "}
-    //               {(value ?? "") === "" ? (
-    //                 "cleared the channel topic."
-    //               ) : (
-    //                 <>set the channel topic: {value}</>
-    //               )}
-    //             </>
-    //           );
-    //         case "name":
-    //           return (
-    //             <>
-    //               <MemberDisplayNameWithPopover user={message.author} />{" "}
-    //               {(value ?? "") === "" ? (
-    //                 <>cleared the channel {field}.</>
-    //               ) : (
-    //                 <>
-    //                   set the channel {field}: {value}
-    //                 </>
-    //               )}
-    //             </>
-    //           );
-    //         default:
-    //           return (
-    //             <>
-    //               <MemberDisplayNameWithPopover user={message.author} /> updated the
-    //               channel {field}.
-    //             </>
-    //           );
-    //       }
-    //     }
-
-    //     case "app-installed": {
-    //       const isMissingData = [
-    //         message.installer?.displayName,
-    //         message.app?.name,
-    //       ].some((n) => n == null);
-
-    //       return (
-    //         <span
-    //           css={(theme) =>
-    //             css({
-    //               color: theme.colors.channelDefault,
-    //               opacity: isMissingData ? 0 : 1,
-    //             })
-    //           }
-    //         >
-    //           <MemberDisplayNameWithPopover user={message.installer} /> installed a
-    //           new app:{" "}
-    //           <InlineAppDisplayName displayName={message.app?.name ?? "..."} />
-    //         </span>
-    //       );
-    //     }
+    //     >
+    //       <MemberDisplayNameWithPopover user={message.installer} /> installed a
+    //       new app:{" "}
+    //       <InlineAppDisplayName displayName={message.app?.name ?? "..."} />
+    //     </span>
+    //   );
+    // }
 
     default:
       return (

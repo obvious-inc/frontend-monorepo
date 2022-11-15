@@ -30,8 +30,14 @@ const UserModal = ({ route }) => {
   const actionSections = [
     {
       items: [
-        { label: "Send message", disabled: true, onPress: () => { } },
         {
+          key: "send-message",
+          label: "Send message",
+          disabled: true,
+          onPress: () => {},
+        },
+        {
+          key: "toggle-star",
           label: isStarred ? "Remove from favorites" : "Add to favorites",
           disabled: hasPendingStarRequest,
           onPress: () => {
@@ -46,6 +52,7 @@ const UserModal = ({ route }) => {
           isHidden: isMe,
         },
         {
+          key: "copy-wallet-address",
           label: didRecentlyCopyAddress
             ? "Address copied to clipboard"
             : "Copy wallet address",
@@ -63,6 +70,7 @@ const UserModal = ({ route }) => {
     {
       items: [
         {
+          key: "etherscan",
           label: "Etherscan",
           onPress: () => {
             Linking.openURL(

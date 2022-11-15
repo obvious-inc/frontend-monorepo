@@ -32,6 +32,8 @@ const createApiParsers = ({ buildCloudflareImageUrl }) => ({
     const parsedData = { ...u };
 
     if (u.wallet_address != null) parsedData.walletAddress = u.wallet_address;
+    if (u.display_name != null && u.display_name.trim() !== "")
+      parsedData.displayName = u.display_name;
     if (u.push_tokens != null) parsedData.pushTokens = u.push_tokens;
     if (u.pfp != null) parsedData.profilePicture = createProfilePicture();
 
@@ -161,8 +163,8 @@ export const Provider = ({ cloudflareAccountHash, children }) => {
               setting === "off"
                 ? { muted: true }
                 : setting === "mentions"
-                ? { mentions: true }
-                : {},
+                  ? { mentions: true }
+                  : {},
           },
         }),
       });

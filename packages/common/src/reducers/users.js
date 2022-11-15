@@ -95,18 +95,15 @@ export const selectUser = createSelector(
     if (user == null) return null;
     const isLoggedInUser = user.id === loggedInUser?.id;
 
-    const displayName =
-      user.display_name.trim() === "" ? null : user.display_name;
-    const walletAddress = user.wallet_address;
-    const hasCustomDisplayName = truncateAddress(walletAddress) !== displayName;
+    const hasCustomDisplayName =
+      truncateAddress(user.walletAddress) !== user.displayName;
 
     return {
       ...user,
       ensName,
-      displayName: displayName ?? truncateAddress(walletAddress),
-      customDisplayName: hasCustomDisplayName ? displayName : null,
+      displayName: user.displayName ?? truncateAddress(user.walletAddress),
+      customDisplayName: hasCustomDisplayName ? user.displayName : null,
       hasCustomDisplayName,
-      walletAddress,
       onlineStatus: isLoggedInUser ? "online" : user.status,
       profilePicture: user.profilePicture ?? { large: null, small: null },
     };
