@@ -1,13 +1,9 @@
-import Constants from "expo-constants";
 import { decode as decodeBase64 } from "base-64";
 import React from "react";
 import { useEnsAvatar } from "wagmi";
 import * as Shades from "@shades/common";
 
 const { generatePlaceholderAvatarSvgString } = Shades.nouns;
-
-const CLOUDFLARE_ACCOUNT_HASH =
-  Constants.expoConfig.extra.cloudflareAccountHash;
 
 const usePlaceholderAvatarSvg = (
   walletAddress,
@@ -30,13 +26,11 @@ const usePlaceholderAvatarSvg = (
 
 const useProfilePicture = (user, { large, transparent = false } = {}) => {
   const customUrl =
-    user == null
+    user == null || user.profilePicture == null
       ? null
-      : user.profilePicture?.cloudflareId == null
-      ? user.profilePicture?.small
-      : `https://imagedelivery.net/${CLOUDFLARE_ACCOUNT_HASH}/${
-          user.profilePicture?.cloudflareId
-        }/${large ? "public" : "avatar"}`;
+      : large
+        ? user.profilePicture.large
+        : user.profilePicture.small;
 
   const { data: ensAvatarUrl, isLoading: isLoadingEnsAvatar } = useEnsAvatar({
     addressOrName: user?.walletAddress,
@@ -64,8 +58,8 @@ const useProfilePicture = (user, { large, transparent = false } = {}) => {
     avatarUrl != null
       ? "url"
       : placeholderSvgString != null
-      ? "svg-string"
-      : null;
+        ? "svg-string"
+        : null;
 
   switch (type) {
     case "url":

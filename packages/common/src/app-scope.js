@@ -5,7 +5,6 @@ import { unique } from "./utils/array";
 import { pickKeys, mapValues } from "./utils/object";
 import invariant from "./utils/invariant";
 import { stringifyBlocks as stringifyMessageBlocks } from "./utils/message";
-import { buildUrl as buildCloudflareImageUrl } from "./utils/profile-pictures";
 import {
   openChannelPermissionOverrides,
   closedChannelPermissionOverrides,
@@ -14,58 +13,88 @@ import {
 import useRootReducer from "./hooks/root-reducer";
 import useLatestCallback from "./hooks/latest-callback";
 
-const parseUser = (u) => {
-  const parsedData = {
-    ...u,
-    walletAddress: u.wallet_address,
-  };
+const createApiParsers = ({ buildCloudflareImageUrl }) => ({
+  parseUser(u) {
+    const createProfilePicture = () => {
+      if (u.pfp.cf_id == null)
+        return {
+          small: u.pfp.input_image_url,
+          large: u.pfp.input_image_url,
+        };
 
-  if (u.push_tokens != null) parsedData.pushTokens = u.push_tokens;
+      return {
+        small: buildCloudflareImageUrl(u.pfp.cf_id, { size: "small" }),
+        large: buildCloudflareImageUrl(u.pfp.cf_id, { size: "large" }),
+        isVerifiedNft: u.pfp.verified,
+      };
+    };
 
-  return parsedData;
-};
+    const parsedData = { ...u };
 
-const parseChannel = (rawChannel) => {
-  const normalizeString = (s) => {
-    if (s == null) return null;
-    return s.trim() === "" ? null : s;
-  };
+    if (u.wallet_address != null) parsedData.walletAddress = u.wallet_address;
+    if (u.push_tokens != null) parsedData.pushTokens = u.push_tokens;
+    if (u.pfp != null) parsedData.profilePicture = createProfilePicture();
 
-  const channel = {
-    id: rawChannel.id,
-    name: normalizeString(rawChannel.name),
-    description: normalizeString(rawChannel.description),
-    kind: rawChannel.kind,
-    createdAt: rawChannel.created_at,
-    lastMessageAt: rawChannel.last_message_at,
-    memberUserIds: rawChannel.members ?? [],
-    ownerUserId: rawChannel.owner,
-  };
+    return parsedData;
+  },
+  parseChannel(rawChannel) {
+    const normalizeString = (s) => {
+      if (s == null) return null;
+      return s.trim() === "" ? null : s;
+    };
 
-  if (normalizeString(rawChannel.avatar) == null) return channel;
+    const channel = {
+      id: rawChannel.id,
+      name: normalizeString(rawChannel.name),
+      description: normalizeString(rawChannel.description),
+      kind: rawChannel.kind,
+      createdAt: rawChannel.created_at,
+      lastMessageAt: rawChannel.last_message_at,
+      memberUserIds: rawChannel.members ?? [],
+      ownerUserId: rawChannel.owner,
+    };
 
-  if (rawChannel.avatar.match(/^https?:\/\//)) {
-    const url = rawChannel.avatar;
-    return { ...channel, image: url, imageLarge: url };
-  }
+    if (normalizeString(rawChannel.avatar) == null) return channel;
 
-  const image = buildCloudflareImageUrl(rawChannel.avatar, "small");
-  const imageLarge = buildCloudflareImageUrl(rawChannel.avatar, "large");
+    if (rawChannel.avatar.match(/^https?:\/\//)) {
+      const url = rawChannel.avatar;
+      return { ...channel, image: url, imageLarge: url };
+    }
 
-  return { ...channel, image, imageLarge };
-};
+    const image = buildCloudflareImageUrl(rawChannel.avatar, { size: "small" });
+    const imageLarge = buildCloudflareImageUrl(rawChannel.avatar, {
+      size: "large",
+    });
+
+    return { ...channel, image, imageLarge };
+  },
+});
 
 const Context = React.createContext({});
 
 export const useAppScope = () => React.useContext(Context);
 
-export const Provider = ({ children }) => {
+export const Provider = ({ cloudflareAccountHash, children }) => {
   const { authorizedFetch, logout: clearAuthTokens } = useAuth();
   const [
     stateSelectors,
     dispatch,
     { addBeforeDispatchListener, addAfterDispatchListener },
   ] = useRootReducer();
+
+  const buildCloudflareImageUrl = React.useCallback(
+    (cloudflareId, { size } = {}) => {
+      const variantNameBySizeName = { small: "avatar", large: "public" };
+      const variant = variantNameBySizeName[size];
+      if (variant == null) throw new Error();
+      return `https://imagedelivery.net/${cloudflareAccountHash}/${cloudflareId}/${variant}`;
+    },
+    [cloudflareAccountHash]
+  );
+
+  const { parseUser, parseChannel } = createApiParsers({
+    buildCloudflareImageUrl,
+  });
 
   const me = stateSelectors.selectMe();
 

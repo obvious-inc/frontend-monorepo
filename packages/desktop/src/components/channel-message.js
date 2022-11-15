@@ -104,7 +104,7 @@ const ChannelMessage = React.memo(function ChannelMessage_({
     previousMessage != null &&
     previousMessage.authorId === message.authorId &&
     createdAtDate - new Date(previousMessage.created_at) <
-      5 * ONE_MINUTE_IN_MILLIS;
+    5 * ONE_MINUTE_IN_MILLIS;
 
   const reactions = React.useMemo(
     () =>
@@ -162,40 +162,40 @@ const ChannelMessage = React.memo(function ChannelMessage_({
       message.isSystemMessage || message.isAppMessage
         ? []
         : [
-            { onSelect: initReply, label: "Reply" },
-            { disabled: true, label: "Mark unread" },
-            {
-              onSelect: () => {
-                setEditingMessage(true);
-              },
-              label: "Edit message",
-              visible: allowEdit,
+          { onSelect: initReply, label: "Reply" },
+          { disabled: true, label: "Mark unread" },
+          {
+            onSelect: () => {
+              setEditingMessage(true);
             },
-            {
-              onSelect: () => {
-                if (confirm("Are you sure you want to remove this message?"))
-                  remove();
-              },
-              label: allowEdit ? "Delete message" : "Admin delete",
-              visible: allowEdit || isAdmin,
-              style: { color: "#ff5968" },
+            label: "Edit message",
+            visible: allowEdit,
+          },
+          {
+            onSelect: () => {
+              if (confirm("Are you sure you want to remove this message?"))
+                remove();
             },
-            { type: "separator" },
-            {
-              onSelect: sendDirectMessageToAuthor,
-              label: "Send direct message",
-              disabled: !allowDirectMessages,
-              visible:
-                !isOwnMessage && !(isDirectMessage && members.length <= 2),
+            label: allowEdit ? "Delete message" : "Admin delete",
+            visible: allowEdit || isAdmin,
+            style: { color: "#ff5968" },
+          },
+          { type: "separator" },
+          {
+            onSelect: sendDirectMessageToAuthor,
+            label: "Send direct message",
+            disabled: !allowDirectMessages,
+            visible:
+              !isOwnMessage && !(isDirectMessage && members.length <= 2),
+          },
+          {
+            onSelect: () => {
+              navigator.clipboard.writeText(message.author.walletAddress);
             },
-            {
-              onSelect: () => {
-                navigator.clipboard.writeText(message.author.walletAddress);
-              },
-              label: "Copy user wallet address",
-              visible: message.author?.walletAddress != null,
-            },
-          ].filter((i) => i.visible == null || i.visible),
+            label: "Copy user wallet address",
+            visible: message.author?.walletAddress != null,
+          },
+        ].filter((i) => i.visible == null || i.visible),
     [
       allowEdit,
       allowDirectMessages,
@@ -263,8 +263,8 @@ const ChannelMessage = React.memo(function ChannelMessage_({
         background: hasPendingReply
           ? theme.colors.messageBackgroundModifierHighlight
           : showAsFocused
-          ? theme.colors.messageBackgroundModifierFocus
-          : undefined,
+            ? theme.colors.messageBackgroundModifierFocus
+            : undefined,
         padding:
           showSimplifiedMessage || compact
             ? "0.5rem 1.6rem"
@@ -283,10 +283,10 @@ const ChannelMessage = React.memo(function ChannelMessage_({
       {...(giveTouchFocus == null
         ? hoverHandlers
         : {
-            onClick: () => {
-              giveTouchFocus(message.id);
-            },
-          })}
+          onClick: () => {
+            giveTouchFocus(message.id);
+          },
+        })}
     >
       {!message.isOptimistic && (
         <div
@@ -460,7 +460,7 @@ const Embed = ({ title: title_, url, favicon, metatags }) => {
           })}
         >
           {favicon != null && <img src={favicon} loading="lazy" />}
-          {siteName}
+          {title === siteName ? hostname : siteName}
         </div>
         <div css={css({ display: "flex" })}>
           <div css={css({ flex: 1, minWidth: 0 })}>
@@ -508,7 +508,6 @@ const Embed = ({ title: title_, url, favicon, metatags }) => {
               <video
                 controls
                 playsInline
-                autoPictureInPicture
                 src={video}
                 poster={image}
                 width={metatags["og:videoWidth"]}
@@ -1018,8 +1017,8 @@ const EmojiPicker = ({ width = "auto", height = "100%", onSelect }) => {
     highlightedEntry == null
       ? null
       : filteredEmojisByCategoryEntries[highlightedEntry[0]][1][
-          highlightedEntry[1]
-        ];
+      highlightedEntry[1]
+      ];
 
   const ROW_LENGTH = 9;
 
@@ -1214,9 +1213,9 @@ const EmojiPicker = ({ width = "auto", height = "100%", onSelect }) => {
                 // gridAutoFlow: "column",
                 gridTemplateColumns: "repeat(auto-fill, minmax(3.4rem, 1fr))",
               })}
-              // style={{
-              //   gridTemplateColumns: `repeat(${ROW_LENGTH}, max-content)`,
-              // }}
+            // style={{
+            //   gridTemplateColumns: `repeat(${ROW_LENGTH}, max-content)`,
+            // }}
             >
               {emojis.map(({ emoji }, i) => {
                 const isHighlighted =
@@ -1704,7 +1703,7 @@ const MessageLeftColumn = ({ isHovering, simplified, compact, message }) => {
           cursor: "default",
           transform: "translateY(0.4rem)",
         })}
-        // style={{ opacity: isHovering ? 1 : 0 }}
+      // style={{ opacity: isHovering ? 1 : 0 }}
       >
         <TinyMutedText nowrap style={{ float: "right" }}>
           <FormattedDateWithTooltip

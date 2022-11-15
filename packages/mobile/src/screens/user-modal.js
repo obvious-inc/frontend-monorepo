@@ -6,7 +6,7 @@ import { useEnsName } from "wagmi";
 import * as Shades from "@shades/common";
 import theme from "../theme";
 import UserProfilePicture from "../components/user-profile-picture";
-import { SectionedActionList, ModalActionButtonGroup } from "./account-modal";
+import { SectionedActionList } from "./account-modal";
 
 const { useAppScope } = Shades.app;
 const { truncateAddress } = Shades.utils.ethereum;
@@ -27,41 +27,10 @@ const UserModal = ({ route }) => {
   const [hasPendingStarRequest, setPendingStarRequest] = React.useState(false);
   const isStarred = state.selectIsUserStarred(userId);
 
-  const actionItems = [
-    { label: "Send message", disabled: true, onPress: () => {} },
-    {
-      label: isStarred ? "Remove from favorites" : "Add to favorites",
-      disabled: hasPendingStarRequest,
-      onPress: () => {
-        setPendingStarRequest(true);
-        const promise = isStarred
-          ? actions.unstarUser(userId)
-          : actions.starUser(userId);
-        promise.finally(() => {
-          setPendingStarRequest(false);
-        });
-      },
-      isHidden: isMe,
-    },
-    {
-      label: didRecentlyCopyAddress
-        ? "Wallet address copied to clipboard"
-        : "Copy wallet address",
-      onPress: () => {
-        Clipboard.setStringAsync(user.walletAddress).then(() => {
-          setDidRecentlyCopyAddress(true);
-          setTimeout(() => {
-            setDidRecentlyCopyAddress(false);
-          }, 2800);
-        });
-      },
-    },
-  ].filter((i) => !i.isHidden);
-
   const actionSections = [
     {
       items: [
-        { label: "Send message", disabled: true, onPress: () => {} },
+        { label: "Send message", disabled: true, onPress: () => { } },
         {
           label: isStarred ? "Remove from favorites" : "Add to favorites",
           disabled: hasPendingStarRequest,

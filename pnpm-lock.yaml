@@ -182,7 +182,7 @@ importers:
       expo-linking: ~3.2.3
       expo-localization: ~14.0.0
       expo-notifications: ~0.17.0
-      expo-updates: ~0.15.4
+      expo-updates: ~0.15.5
       prettier: ^2.7.1
       pusher-js: ^7.4.0
       react: 18.1.0
@@ -220,7 +220,7 @@ importers:
       expo-linking: 3.2.3_expo@47.0.0-beta.8
       expo-localization: 14.0.0_expo@47.0.0-beta.8
       expo-notifications: 0.17.0_expo@47.0.0-beta.8
-      expo-updates: 0.15.4_expo@47.0.0-beta.8
+      expo-updates: 0.15.5_expo@47.0.0-beta.8
       pusher-js: 7.4.0
       react: 18.1.0
       react-native: 0.70.5_mfskofihvdy3w3obj2se3olr7i
@@ -9329,8 +9329,8 @@ packages:
       expo: 47.0.0-beta.8_@babel+core@7.19.6
     dev: false
 
-  /expo-updates/0.15.4_expo@47.0.0-beta.8:
-    resolution: {integrity: sha512-ZMQ9R0igA9lMFRe5WU9Uo1YBKPChsTgv+QYthWVcd0kG9pRQmdRF/kCXknScRfOOaoyh8HkMPlnzKdPdBfVHJQ==}
+  /expo-updates/0.15.5_expo@47.0.0-beta.8:
+    resolution: {integrity: sha512-FTWT0u2ila2Oxsa3Ls1qix2YCK3F1I5VnG2O5pAAHqQ0k6FsZKO0/yvf/5O2X1K8Iqj4CiD/2MOLmpFaCsoQqg==}
     hasBin: true
     peerDependencies:
       expo: '*'

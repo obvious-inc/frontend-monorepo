@@ -697,9 +697,8 @@ export const ChannelBase = ({
             {pendingMessagesBeforeCount > 0 && (
               <div
                 css={css({
-                  height: `${
-                    pendingMessagesBeforeCount * averageMessageListItemHeight
-                  }px`,
+                  height: `${pendingMessagesBeforeCount * averageMessageListItemHeight
+                    }px`,
                 })}
               />
             )}
@@ -1453,7 +1452,7 @@ const Channel = ({ channelId, compact, noSideMenu }) => {
       // Only long-poll fetch when user is logged out, or when not a member
       delay:
         authenticationStatus === "not-authenticated" ||
-        (user != null && !isMember)
+          (user != null && !isMember)
           ? 5000
           : 0,
       requireFocus: true,
@@ -1592,8 +1591,8 @@ const Channel = ({ channelId, compact, noSideMenu }) => {
                     showAddMemberDialog={
                       channel.kind === "topic" && isChannelOwner
                         ? () => {
-                            setAddMemberDialogOpen(true);
-                          }
+                          setAddMemberDialogOpen(true);
+                        }
                         : null
                     }
                     dismiss={() => {
@@ -1751,7 +1750,7 @@ const Channel = ({ channelId, compact, noSideMenu }) => {
             </>
           ) : (
             <a
-              href={channel.image}
+              href={channel.imageLarge}
               rel="noreferrer"
               target="_blank"
               css={(t) =>
@@ -1962,9 +1961,8 @@ const MembersDisplayButton = React.forwardRef(({ onClick, members }, ref) => {
         <div css={(t) => css({ color: t.colors.textDimmed })}>
           {onlineMemberCount === memberCount
             ? "All members online"
-            : `${onlineMemberCount} ${
-                onlineMemberCount === 1 ? "member" : "members"
-              } online`}
+            : `${onlineMemberCount} ${onlineMemberCount === 1 ? "member" : "members"
+            } online`}
         </div>
       </Tooltip.Content>
     </Tooltip.Root>

@@ -18,6 +18,7 @@ import Input from "../components/input";
 const { reverse } = Shades.utils.array;
 const { search: searchChannels } = Shades.utils.channel;
 const { truncateAddress } = Shades.utils.ethereum;
+                
 const { useAppScope } = Shades.app;
 
 const { textDefault, textDimmed } = theme.colors;
@@ -415,6 +416,8 @@ export const ChannelPicture = React.memo(
     );
 
     if (channel == null) return placeholder();
+
+    console.log(channel)
 
     if (channel.image != null)
       return (

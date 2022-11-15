@@ -4,7 +4,6 @@ import { indexBy } from "../utils/array";
 import combineReducers from "../utils/combine-reducers";
 import { arrayShallowEquals } from "../utils/reselect";
 import { truncateAddress } from "../utils/ethereum";
-import { build as buildProfilePicture } from "../utils/profile-pictures";
 
 const entriesById = (state = {}, action) => {
   switch (action.type) {
@@ -109,7 +108,7 @@ export const selectUser = createSelector(
       hasCustomDisplayName,
       walletAddress,
       onlineStatus: isLoggedInUser ? "online" : user.status,
-      profilePicture: buildProfilePicture(user.pfp),
+      profilePicture: user.profilePicture ?? { large: null, small: null },
     };
   },
   { memoizeOptions: { maxSize: 1000 } }

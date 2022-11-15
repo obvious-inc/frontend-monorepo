@@ -3,6 +3,7 @@ import {
   WEB_APP_ENDPOINT,
   PUSHER_KEY,
   INFURA_PROJECT_ID,
+  CLOUDFLARE_ACCOUNT_HASH,
 } from "./config";
 import * as Device from "expo-device";
 import * as Linking from "expo-linking";
@@ -505,7 +506,7 @@ export default () => {
             }}
           >
             <AuthProvider apiOrigin={API_ENDPOINT} tokenStorage={AsyncStorage}>
-              <AppScopeProvider>
+              <AppScopeProvider cloudflareAccountHash={CLOUDFLARE_ACCOUNT_HASH}>
                 <ServerConnectionProvider
                   Pusher={Pusher}
                   pusherKey={PUSHER_KEY}

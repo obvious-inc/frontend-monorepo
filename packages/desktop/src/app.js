@@ -83,7 +83,9 @@ export default function Root() {
   return (
     <React.StrictMode>
       <AuthProvider apiOrigin="/api">
-        <AppScopeProvider>
+        <AppScopeProvider
+          cloudflareAccountHash={process.env.CLOUDFLARE_ACCT_HASH}
+        >
           <App />
         </AppScopeProvider>
       </AuthProvider>
