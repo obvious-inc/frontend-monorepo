@@ -785,6 +785,12 @@ export const Provider = ({ children }) => {
       case "channel-updated":
         dispatchEvent({ channel: parseChannel(data.channel) });
         break;
+      case "user-profile-updated":
+      case "user-presence-updated":
+      case "channel-user-joined":
+      case "channel-user-invited":
+        dispatchEvent({ user: parseUser(data.user) });
+        break;
 
       default:
         dispatchEvent();
