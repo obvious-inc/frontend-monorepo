@@ -430,6 +430,7 @@ const Embed = ({ title: title_, url, favicon, metatags }) => {
     title === metatags["og:description"] ? null : metatags["og:description"];
   const sub = (description ?? title) === metatags.meta ? null : metatags.meta;
   const image = metatags["og:image"];
+  const video = metatags["og:video"];
   const hostname = React.useMemo(() => new URL(url).hostname, [url]);
   const siteName = metatags["og:site_name"] ?? hostname;
 
@@ -503,8 +504,27 @@ const Embed = ({ title: title_, url, favicon, metatags }) => {
                 {sub}
               </div>
             )}
+            {video != null && (
+              <video
+                controls
+                playsInline
+                autoPictureInPicture
+                src={video}
+                poster={image}
+                width={metatags["og:videoWidth"]}
+                height={metatags["og:videoHeight"]}
+                css={css({
+                  marginTop: "0.8rem",
+                  borderRadius: "0.3rem",
+                  maxWidth: "100%",
+                  maxHeight: "50vh",
+                  width: "auto",
+                  height: "auto",
+                })}
+              />
+            )}
           </div>
-          {image != null && (
+          {video == null && image != null && (
             <div
               css={css({
                 marginLeft: "1rem",
