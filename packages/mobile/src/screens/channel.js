@@ -106,6 +106,7 @@ const HeaderLeft = () => {
   const navigation = useNavigation();
   const { state } = useAppScope();
   const channel = state.selectChannel(params.channelId);
+  const channelName = state.selectChannelName(params.channelId);
   const memberCount = channel?.memberUserIds.length;
 
   return (
@@ -182,7 +183,7 @@ const HeaderLeft = () => {
                     lineHeight: 18,
                   }}
                 >
-                  {channel.name}
+                  {channelName}
                 </Text>
                 <Text
                   style={{
@@ -220,6 +221,7 @@ const Channel = ({ navigation, route: { params } }) => {
   } = actions;
 
   const channel = state.selectChannel(channelId);
+  const channelName = state.selectChannelName(channelId);
 
   const messages = useChannelMessages({ channelId });
   const headerHeight = useHeaderHeight();
@@ -344,7 +346,7 @@ const Channel = ({ navigation, route: { params } }) => {
           )}
           <ChannelMessageInput
             ref={inputRef}
-            placeholder={channel == null ? "" : `Message #${channel.name}`}
+            placeholder={channel == null ? "" : `Message #${channelName}`}
             pendingMessage={pendingMessage}
             setPendingMessage={setPendingMessage}
             onSubmit={(content) => {

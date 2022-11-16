@@ -8,7 +8,7 @@ export const search = (rawQuery, channels) => {
   const queryWords = query.split(" ").map((s) => s.trim());
 
   const match = (channel, query) => {
-    if (channel.name.toLowerCase().includes(query)) return true;
+    if (channel.name?.toLowerCase().includes(query)) return true;
     return channel.members?.some((m) => m.displayName?.includes(query));
   };
 
@@ -18,7 +18,7 @@ export const search = (rawQuery, channels) => {
 
   const compareStringGivenQuery = (query) => (s1, s2) => {
     const [i1, i2] = [s1, s2].map((s) =>
-      s.toLowerCase().indexOf(query.toLowerCase())
+      s?.toLowerCase().indexOf(query.toLowerCase())
     );
 
     // None match

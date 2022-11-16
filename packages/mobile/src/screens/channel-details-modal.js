@@ -17,6 +17,7 @@ const ChannelDetailsModal = ({ navigation, route }) => {
 
   const me = state.selectMe();
   const channel = state.selectChannel(channelId);
+  const channelName = state.selectChannelName(channelId);
   const isStarredChannel = state.selectIsChannelStarred(channelId);
   const memberCount = channel.memberUserIds.length;
 
@@ -140,7 +141,7 @@ const ChannelDetailsModal = ({ navigation, route }) => {
               paddingTop: 2,
             }}
           >
-            {channel.name}
+            {channelName}
           </Text>
           {(channel.description?.trim() ?? "") !== "" && (
             <Text

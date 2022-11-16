@@ -260,7 +260,6 @@ export const ChannelBase = ({
   accessLevel: channelAccessLevel,
   members,
   typingMembers,
-  isAdmin = false,
   createMessage,
   headerContent,
   compact,
@@ -276,6 +275,8 @@ export const ChannelBase = ({
   const { markChannelRead } = actions;
 
   const user = state.selectMe();
+  const channelName = state.selectChannelName(channel.id);
+  const isAdmin = user != null && user.id === channel.ownerUserId;
 
   const { inputDeviceCanHover } = useGlobalMediaQueries();
   const [touchFocusedMessageId, setTouchFocusedMessageId] =
@@ -526,19 +527,19 @@ export const ChannelBase = ({
   const channelPrefix = channel.kind === "dm" ? "@" : "#";
 
   const inputPlaceholder = (() => {
-    if (channel.kind === "dm") return `Message ${channel.name}`;
+    if (channel.kind === "dm") return `Message ${channelName}`;
 
     const isAuthenticated = authenticationStatus === "authenticated";
 
     switch (channelAccessLevel) {
       case "private":
-        return `Message #${channel.name}`;
+        return `Message #${channelName}`;
 
       case "closed": {
         if (isAuthenticated)
           return isMember
-            ? `Message #${channel.name}`
-            : `Only members can post in #${channel.name}`;
+            ? `Message #${channelName}`
+            : `Only members can post in #${channelName}`;
 
         if (!hasConnectedWallet) return "Connect wallet to chat";
 
@@ -550,18 +551,18 @@ export const ChannelBase = ({
 
         return walletAddressIsMember
           ? "Verify account to chat"
-          : `Only members can post in #${channel.name}`;
+          : `Only members can post in #${channelName}`;
       }
 
       case "open": {
-        if (isAuthenticated) return `Message #${channel.name}`;
+        if (isAuthenticated) return `Message #${channelName}`;
         return hasConnectedWallet
           ? "Verify account to chat"
           : "Connect wallet to chat";
       }
 
       default:
-        return isMember ? `Message #${channel.name}` : "";
+        return isMember ? `Message #${channelName}` : "";
     }
   })();
 
@@ -639,7 +640,7 @@ export const ChannelBase = ({
                     }
                   >
                     Welcome to {channelPrefix}
-                    {channel.name}!
+                    {channelName}!
                   </div>
                   <div
                     css={(theme) =>
@@ -650,9 +651,9 @@ export const ChannelBase = ({
                     }
                   >
                     This is the start of {channelPrefix}
-                    {channel.name}. {channel.description}
+                    {channelName}. {channel.description}
                     {channel.kind === "topic" &&
-                      channel.isAdmin &&
+                      isAdmin &&
                       members.length <= 1 &&
                       channelAccessLevel != null && (
                         <div
@@ -1470,6 +1471,7 @@ const Channel = ({ channelId, compact, noSideMenu }) => {
 
     const isChannelOwner = user != null && channel.ownerUserId === user?.id;
     const hasOpenReadAccess = state.selectChannelHasOpenReadAccess(channelId);
+    const channelName = state.selectChannelName(channelId);
 
     const renderRightColumn = () => {
       if (
@@ -1781,7 +1783,7 @@ const Channel = ({ channelId, compact, noSideMenu }) => {
               })
             }
           >
-            {channel?.name}
+            {channelName}
           </Heading>
         )}
 
@@ -1864,7 +1866,6 @@ const Channel = ({ channelId, compact, noSideMenu }) => {
       members={members}
       typingMembers={typingChannelMembers}
       createMessage={createMessage}
-      isAdmin={channel?.isAdmin}
       accessLevel={channelAccessLevel}
       headerContent={headerContent}
     />

@@ -478,9 +478,12 @@ export default () => {
               },
               subscribe(listener) {
                 // Listen to incoming links from deep linking
-                const removeUrlListener = Linking.addEventListener(
+                const urlSubscription = Linking.addEventListener(
                   "url",
-                  ({ url }) => listener(url)
+                  ({ url }) => {
+                    console.log("url listener", url);
+                    listener(url);
+                  }
                 );
 
                 // Listen to expo push notifications
@@ -499,7 +502,7 @@ export default () => {
 
                 return () => {
                   // Clean up the event listeners
-                  removeUrlListener();
+                  urlSubscription.remove();
                   subscription.remove();
                 };
               },

@@ -17,6 +17,7 @@ const AuthHome = () => {
   const redirectURI = params.get("redirect_uri");
 
   const channel = state.selectChannel(channelId);
+  const channelName = state.selectChannelName(channelId);
 
   const [clientName, setClientName] = React.useState(null);
   const [scopeContent, setScopeContent] = React.useState(parseScopes(scopes));
@@ -81,7 +82,7 @@ const AuthHome = () => {
           }
         >
           <Em>{clientName}</Em> will be able to connect to{" "}
-          <Em>#{channel.name}</Em> and...
+          <Em>#{channelName}</Em> and...
         </header>
         <main
           css={(theme) =>

@@ -18,7 +18,7 @@ import Input from "../components/input";
 const { reverse } = Shades.utils.array;
 const { search: searchChannels } = Shades.utils.channel;
 const { truncateAddress } = Shades.utils.ethereum;
-                
+
 const { useAppScope } = Shades.app;
 
 const { textDefault, textDimmed } = theme.colors;
@@ -166,9 +166,6 @@ const ChannelList = ({ navigation }) => {
               <ChannelItem
                 key={c.id}
                 id={c.id}
-                name={c.name}
-                hasUnread={state.selectChannelHasUnread(c.id)}
-                notificationCount={state.selectChannelMentionCount(c.id)}
                 onPress={() => {
                   navigation.navigate("Channel", { channelId: c.id });
                 }}
@@ -196,9 +193,6 @@ const ChannelList = ({ navigation }) => {
                   <ChannelItem
                     key={c.id}
                     id={c.id}
-                    name={c.name}
-                    hasUnread={state.selectChannelHasUnread(c.id)}
-                    notificationCount={state.selectChannelMentionCount(c.id)}
                     onPress={() => {
                       navigation.navigate("Channel", { channelId: c.id });
                     }}
@@ -226,9 +220,6 @@ const ChannelList = ({ navigation }) => {
                   <ChannelItem
                     key={c.id}
                     id={c.id}
-                    name={c.name}
-                    hasUnread={state.selectChannelHasUnread(c.id)}
-                    notificationCount={state.selectChannelMentionCount(c.id)}
                     onPress={() => {
                       navigation.navigate("Channel", { channelId: c.id });
                     }}
@@ -243,13 +234,12 @@ const ChannelList = ({ navigation }) => {
   );
 };
 
-export const ChannelItem = ({
-  id,
-  name,
-  hasUnread,
-  notificationCount,
-  onPress,
-}) => {
+export const ChannelItem = ({ id, onPress }) => {
+  const { state } = useAppScope();
+  const name = state.selectChannelName(id);
+  const hasUnread = state.selectChannelHasUnread(id);
+  const notificationCount = state.selectChannelMentionCount(id);
+
   return (
     <ListItem
       onPress={onPress}
@@ -403,6 +393,7 @@ export const ChannelPicture = React.memo(
   }) => {
     const { state } = useAppScope();
     const channel = state.selectChannel(channelId);
+    const channelName = state.selectChannelName(channelId);
     const placeholder = () => (
       <View
         style={{
@@ -416,8 +407,6 @@ export const ChannelPicture = React.memo(
     );
 
     if (channel == null) return placeholder();
-
-    console.log(channel)
 
     if (channel.image != null)
       return (
@@ -510,7 +499,7 @@ export const ChannelPicture = React.memo(
             <Text style={{ color: textDimmed, fontSize: 11 }}>
               {
                 // Emojis: https://dev.to/acanimal/how-to-slice-or-get-symbols-from-a-unicode-string-with-emojis-in-javascript-lets-learn-how-javascript-represent-strings-h3a
-                [...channel.name][0]?.toUpperCase()
+                [...channelName][0]?.toUpperCase()
               }
             </Text>
           </View>

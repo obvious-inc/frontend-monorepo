@@ -7,10 +7,10 @@ import { arrayShallowEquals } from "../utils/reselect";
 import * as Permissions from "../utils/permissions";
 import { selectUser } from "./users";
 
-const sortChannelsByActivity = (channels, state) =>
+const sortChannelsByActivity = (channels, readStatesByChannelId) =>
   sort((c1, c2) => {
     const [t1, t2] = [c1, c2].map((c) => {
-      const readState = state.channels.readStatesById[c.id];
+      const readState = readStatesByChannelId[c.id];
       return new Date(readState?.lastMessageAt ?? c.createdAt).getTime();
     });
     return t1 > t2 ? -1 : t1 < t2 ? 1 : 0;
@@ -290,47 +290,49 @@ const readStatesById = (state = {}, action) => {
   }
 };
 
-export const selectChannel = createSelector(
+export const selectChannelName = createSelector(
   (state, channelId) => state.channels.entriesById[channelId],
   (state) => state.me.user,
   (state, channelId) => {
     const channel = state.channels.entriesById[channelId];
-    if (channel == null || channel.kind !== "dm") return null;
+
+    if (
+      channel == null ||
+      channel.kind !== "dm" ||
+      channel.memberUserIds.length <= 1
+    )
+      return null;
+
     return channel.memberUserIds.map((userId) => selectUser(state, userId));
   },
   (channel, loggedInUser, channelMemberUsers) => {
     if (channel == null || channel.deleted) return null;
 
-    const buildName = () => {
-      if (channel.kind !== "dm" || channel.name != null) return channel.name;
+    if (channel.name != null || channel.kind !== "dm") return channel.name;
 
-      if (channel.memberUserIds.length === 1) return "Me";
+    if (channel.memberUserIds.length === 1) return "Me";
 
-      return channelMemberUsers
-        .filter((u) => u?.id !== loggedInUser?.id)
-        .map((u) => u?.displayName)
-        .filter(Boolean)
-        .join(", ");
-    };
-
-    return {
-      ...channel,
-      name: buildName(),
-      isAdmin: loggedInUser != null && loggedInUser.id === channel.ownerUserId,
-    };
+    return channelMemberUsers
+      .filter((u) => u?.id !== loggedInUser?.id)
+      .map((u) => u?.displayName)
+      .filter(Boolean)
+      .join(", ");
   },
-  { memoizeOptions: { maxSize: 1000 } }
+  { memoizeOptions: { maxSize: 1000, equalityCheck: arrayShallowEquals } }
 );
 
-export const selectChannelMentionCount = createSelector(
-  (state, channelId) => state.channels.readStatesById[channelId],
-  (channelState) => {
-    if (channelState == null || channelState.unreadMentionMessageIds == null)
-      return 0;
-    return channelState.unreadMentionMessageIds.length;
-  },
-  { memoizeOptions: { maxSize: 1000 } }
-);
+export const selectChannel = (state, channelId) => {
+  const channel = state.channels.entriesById[channelId];
+  if (channel == null || channel.deleted) return null;
+  return channel;
+};
+
+export const selectChannelMentionCount = (state, channelId) => {
+  const channelState = state.channels.readStatesById[channelId];
+  if (channelState == null || channelState.unreadMentionMessageIds == null)
+    return 0;
+  return channelState.unreadMentionMessageIds.length;
+};
 
 export const selectTotalMentionCount = createSelector(
   (state) => {
@@ -346,25 +348,13 @@ export const selectTotalMentionCount = createSelector(
 
 export const selectChannelHasUnread = createSelector(
   (state, channelId) => state.channels.readStatesById[channelId],
-  (channelState /* channelKind, */ /* loggedInServerMember */) => {
+  (channelState) => {
     if (channelState == null) return false;
 
-    const getLastReadTimestamp = () => {
-      return channelState.lastReadAt == null
+    const lastReadTimestamp =
+      channelState.lastReadAt == null
         ? new Date().getTime()
         : new Date(channelState.lastReadAt).getTime();
-
-      // const channelJoinTimestamp =
-      //   loggedInServerMember == null
-      //     ? null
-      //     : new Date(loggedInServerMember.joinedAt).getTime();
-
-      // return channelState.lastReadAt == null
-      //   ? null // channelJoinTimestamp
-      //   : new Date(channelState.lastReadAt).getTime();
-    };
-
-    const lastReadTimestamp = getLastReadTimestamp();
 
     if (lastReadTimestamp == null) return false;
 
@@ -413,9 +403,10 @@ export const selectMemberChannels = createSelector(
       )
       .map(([id]) => selectChannel(state, id));
 
-    return sortChannelsByActivity(channels, state);
+    return channels;
   },
-  (channels) => channels,
+  (state) => state.channels.readStatesById,
+  sortChannelsByActivity,
   { memoizeOptions: { equalityCheck: arrayShallowEquals } }
 );
 
@@ -425,63 +416,35 @@ export const selectDmChannels = createSelector(
       .filter((entry) => !entry[1].delete && entry[1].kind === "dm")
       .map(([id]) => selectChannel(state, id));
 
-    return sortChannelsByActivity(channels, state);
+    return channels;
   },
-  (channels) => channels,
+  (state) => state.channels.readStatesById,
+  sortChannelsByActivity,
   { memoizeOptions: { equalityCheck: arrayShallowEquals } }
 );
 
 export const selectPublicChannels = createSelector(
   (state) =>
-    sortChannelsByActivity(
-      state.channels.publicChannelIds
-        .map((id) => selectChannel(state, id))
-        .filter(Boolean),
-      state
-    ),
-  (channels) => channels,
+    state.channels.publicChannelIds
+      .map((id) => selectChannel(state, id))
+      .filter(Boolean),
+  (state) => state.channels.readStatesById,
+  sortChannelsByActivity,
   { memoizeOptions: { equalityCheck: arrayShallowEquals } }
 );
 
 export const selectStarredChannels = createSelector(
   (state) =>
-    sortChannelsByActivity(
-      Object.keys(state.channels.starsByChannelId)
-        .map((id) => selectChannel(state, id))
-        .filter(Boolean),
-      state
-    ),
-  (channels) => channels,
+    Object.keys(state.channels.starsByChannelId)
+      .map((id) => selectChannel(state, id))
+      .filter(Boolean),
+  (state) => state.channels.readStatesById,
+  sortChannelsByActivity,
   { memoizeOptions: { equalityCheck: arrayShallowEquals } }
 );
 
 export const selectIsChannelStarred = (state, id) =>
   selectChannelStarId(state, id) != null;
-
-export const selectTopicChannels = createSelector(
-  (state) => {
-    const channels = Object.values(state.channels.entriesById)
-      .filter((channel) => channel.kind === "topic")
-      .map((c) => selectChannel(state, c.id));
-
-    return sortChannelsByActivity(channels, state);
-  },
-  (channels) => channels,
-  { memoizeOptions: { equalityCheck: arrayShallowEquals } }
-);
-
-export const selectDmAndTopicChannels = createSelector(
-  (state) => {
-    const channels = [
-      ...selectDmChannels(state),
-      ...selectTopicChannels(state),
-    ];
-
-    return sortChannelsByActivity(channels, state);
-  },
-  (channels) => channels,
-  { memoizeOptions: { equalityCheck: arrayShallowEquals } }
-);
 
 export const selectChannelMembers = createSelector(
   (state, channelId) => {

@@ -75,10 +75,10 @@ const Layout = () => {
   const listedChannels =
     authenticationStatus === "authenticated"
       ? [
-          ...memberChannels,
-          ...starredChannels,
-          ...(memberChannels.length === 0 ? popularPublicChannels : []),
-        ]
+        ...memberChannels,
+        ...starredChannels,
+        ...(memberChannels.length === 0 ? popularPublicChannels : []),
+      ]
       : popularPublicChannels;
 
   const selectedChannel =
@@ -95,9 +95,9 @@ const Layout = () => {
     <SideMenuLayout
       header={
         authenticationStatus === "not-authenticated" &&
-        walletAccountAddress == null ? null : isLoadingUser ? (
-          <div />
-        ) : (
+          walletAccountAddress == null ? null : isLoadingUser ? (
+            <div />
+          ) : (
           <DropdownMenu.Root>
             <DropdownMenu.Trigger asChild>
               <ProfileDropdownTrigger
@@ -272,7 +272,7 @@ const Layout = () => {
               style={{
                 height:
                   authenticationStatus === "not-authenticated" &&
-                  walletAccountAddress == null
+                    walletAccountAddress == null
                     ? "2rem"
                     : "1rem",
               }}
@@ -296,130 +296,83 @@ const Layout = () => {
 
             {(authenticationStatus === "not-authenticated" ||
               state.selectHasFetchedMenuData()) && (
-              <>
-                <div style={{ marginBottom: "1.5rem" }} />
-                {selectedChannel != null && !selectedChannelIsListed && (
-                  <>
-                    <ChannelItem
-                      id={selectedChannel.id}
-                      name={selectedChannel.name}
-                      kind={selectedChannel.kind}
-                      image={selectedChannel.image}
-                      link={`/channels/${selectedChannel.id}`}
-                      hasUnread={state.selectChannelHasUnread(
-                        selectedChannel.id
-                      )}
-                      notificationCount={state.selectChannelMentionCount(
-                        selectedChannel.id
-                      )}
-                    />
+                <>
+                  <div style={{ marginBottom: "1.5rem" }} />
+                  {selectedChannel != null && !selectedChannelIsListed && (
+                    <>
+                      <ChannelItem id={selectedChannel.id} />
 
-                    <div style={{ marginBottom: "1.5rem" }} />
-                  </>
-                )}
+                      <div style={{ marginBottom: "1.5rem" }} />
+                    </>
+                  )}
 
-                {starredChannels.length !== 0 && (
-                  <CollapsableSection
-                    title="Starred"
-                    expanded={!collapsedIds.includes("starred")}
-                    onToggleExpanded={() => {
-                      setCollapsedIds((ids) =>
-                        ids.includes("starred")
-                          ? ids.filter((id) => id !== "starred")
-                          : [...ids, "starred"]
-                      );
-                    }}
-                  >
-                    {starredChannels.map((c) => (
-                      <ChannelItem
-                        key={c.id}
-                        id={c.id}
-                        name={c.name}
-                        kind={c.kind}
-                        image={c.image}
-                        link={`/channels/${c.id}`}
-                        hasUnread={state.selectChannelHasUnread(c.id)}
-                        notificationCount={state.selectChannelMentionCount(
-                          c.id
-                        )}
-                      />
-                    ))}
-                  </CollapsableSection>
-                )}
-
-                {memberChannels.length !== 0 && (
-                  <CollapsableSection
-                    title="Channels"
-                    expanded={!collapsedIds.includes("dms-topics")}
-                    onToggleExpanded={() => {
-                      setCollapsedIds((ids) =>
-                        ids.includes("dms-topics")
-                          ? ids.filter((id) => id !== "dms-topics")
-                          : [...ids, "dms-topics"]
-                      );
-                    }}
-                  >
-                    {memberChannels.map((c) => (
-                      <ChannelItem
-                        key={c.id}
-                        id={c.id}
-                        name={c.name}
-                        kind={c.kind}
-                        image={c.image}
-                        link={`/channels/${c.id}`}
-                        hasUnread={state.selectChannelHasUnread(c.id)}
-                        notificationCount={state.selectChannelMentionCount(
-                          c.id
-                        )}
-                      />
-                    ))}
-                  </CollapsableSection>
-                )}
-
-                {memberChannels.length === 0 &&
-                  popularPublicChannels.length !== 0 && (
+                  {starredChannels.length !== 0 && (
                     <CollapsableSection
-                      title="Popular channels"
-                      expanded={!collapsedIds.includes("public")}
+                      title="Starred"
+                      expanded={!collapsedIds.includes("starred")}
                       onToggleExpanded={() => {
                         setCollapsedIds((ids) =>
-                          ids.includes("public")
-                            ? ids.filter((id) => id !== "public")
-                            : [...ids, "public"]
+                          ids.includes("starred")
+                            ? ids.filter((id) => id !== "starred")
+                            : [...ids, "starred"]
                         );
                       }}
                     >
-                      {sort(
-                        comparator(
-                          {
-                            value: (c) => c.memberUserIds.length,
-                            order: "desc",
-                          },
-                          {
-                            value: (c) => c.name.toLowerCase(),
-                          }
-                        ),
-                        popularPublicChannels
-                      ).map((c) => (
-                        <ChannelItem
-                          key={c.id}
-                          id={c.id}
-                          name={c.name}
-                          kind={c.kind}
-                          image={c.image}
-                          link={`/channels/${c.id}`}
-                          hasUnread={state.selectChannelHasUnread(c.id)}
-                          notificationCount={state.selectChannelMentionCount(
-                            c.id
-                          )}
-                        />
+                      {starredChannels.map((c) => (
+                        <ChannelItem key={c.id} id={c.id} />
                       ))}
                     </CollapsableSection>
                   )}
 
-                <div style={{ height: "0.1rem" }} />
-              </>
-            )}
+                  {memberChannels.length !== 0 && (
+                    <CollapsableSection
+                      title="Channels"
+                      expanded={!collapsedIds.includes("dms-topics")}
+                      onToggleExpanded={() => {
+                        setCollapsedIds((ids) =>
+                          ids.includes("dms-topics")
+                            ? ids.filter((id) => id !== "dms-topics")
+                            : [...ids, "dms-topics"]
+                        );
+                      }}
+                    >
+                      {memberChannels.map((c) => (
+                        <ChannelItem key={c.id} id={c.id} />
+                      ))}
+                    </CollapsableSection>
+                  )}
+
+                  {memberChannels.length === 0 &&
+                    popularPublicChannels.length !== 0 && (
+                      <CollapsableSection
+                        title="Popular channels"
+                        expanded={!collapsedIds.includes("public")}
+                        onToggleExpanded={() => {
+                          setCollapsedIds((ids) =>
+                            ids.includes("public")
+                              ? ids.filter((id) => id !== "public")
+                              : [...ids, "public"]
+                          );
+                        }}
+                      >
+                        {sort(
+                          comparator(
+                            {
+                              value: (c) => c.memberUserIds.length,
+                              order: "desc",
+                            },
+                            { value: (c) => c.name.toLowerCase() }
+                          ),
+                          popularPublicChannels
+                        ).map((c) => (
+                          <ChannelItem key={c.id} id={c.id} />
+                        ))}
+                      </CollapsableSection>
+                    )}
+
+                  <div style={{ height: "0.1rem" }} />
+                </>
+              )}
           </>
         )
       }
@@ -442,8 +395,8 @@ const ProfileDropdownTrigger = React.forwardRef(
       user == null
         ? null
         : user.hasCustomDisplayName
-        ? user.displayName
-        : userEnsName ?? truncatedAddress;
+          ? user.displayName
+          : userEnsName ?? truncatedAddress;
 
     const showAccountDescription = userDisplayName !== truncatedAddress;
     const accountDescription =
@@ -623,22 +576,19 @@ const CollapsableSection = ({
   </section>
 );
 
-const ChannelItem = ({
-  id,
-  link,
-  name,
-  image,
-  kind,
-  hasUnread,
-  expandable,
-  notificationCount,
-}) => {
+const ChannelItem = ({ id, expandable }) => {
   const { state } = useAppScope();
   const theme = useTheme();
   const user = state.selectMe();
+  const name = state.selectChannelName(id);
+  const { kind, image } = state.selectChannel(id);
+  const link = `/channels/${id}`;
+  const hasUnread = state.selectChannelHasUnread(id);
+  const notificationCount = state.selectChannelMentionCount(id);
 
   const { isFloating: isFloatingMenuEnabled, toggle: toggleMenu } =
     useSideMenu();
+
   const closeMenu = () => {
     if (isFloatingMenuEnabled) toggleMenu();
   };
@@ -794,8 +744,8 @@ const ListItem = ({
         cursor: pointer;
         outline: none;
         color: ${disabled
-          ? theme.mainMenu.itemTextColorDisabled
-          : theme.mainMenu.itemTextColor};
+        ? theme.mainMenu.itemTextColorDisabled
+        : theme.mainMenu.itemTextColor};
         padding: 0.2rem ${theme.mainMenu.itemHorizontalPadding};
         padding-left: calc(
           ${theme.mainMenu.itemHorizontalPadding} + ${indendationLevel} * 2.2rem

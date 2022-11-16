@@ -278,8 +278,9 @@ const commands = {
   }),
   "join-channel": ({ state, actions, channelId, user }) => {
     const channel = state.selectChannel(channelId);
+    const channelName = state.selectChannelName(channelId);
     return {
-      description: `Join "#${channel.name}".`,
+      description: `Join "#${channelName}".`,
       execute: async ({ editor }) => {
         await actions.joinChannel(channelId);
         editor.clear();
@@ -290,8 +291,9 @@ const commands = {
   },
   "leave-channel": ({ state, actions, channelId, user }) => {
     const channel = state.selectChannel(channelId);
+    const channelName = state.selectChannelName(channelId);
     return {
-      description: `Leave "#${channel.name}".`,
+      description: `Leave "#${channelName}".`,
       execute: async ({ editor }) => {
         await actions.leaveChannel(channelId);
         editor.clear();
@@ -303,9 +305,10 @@ const commands = {
   },
   "make-open": ({ state, actions, channelId, user }) => {
     const channel = state.selectChannel(channelId);
+    const channelName = state.selectChannelName(channelId);
     const accessLevel = state.selectChannelAccessLevel(channelId);
     return {
-      description: `Make "#${channel.name}" an open channel that anyone can see and join.`,
+      description: `Make "#${channelName}" an open channel that anyone can see and join.`,
       execute: async ({ editor }) => {
         await actions.makeChannelOpen(channelId);
         editor.clear();
@@ -319,9 +322,10 @@ const commands = {
   },
   "make-closed": ({ state, actions, channelId, user }) => {
     const channel = state.selectChannel(channelId);
+    const channelName = state.selectChannelName(channelId);
     const accessLevel = state.selectChannelAccessLevel(channelId);
     return {
-      description: `Make "#${channel.name}" a closed channel that anyone can see, but not join.`,
+      description: `Make "#${channelName}" a closed channel that anyone can see, but not join.`,
       execute: async ({ editor }) => {
         await actions.makeChannelClosed(channelId);
         editor.clear();
@@ -335,9 +339,10 @@ const commands = {
   },
   "make-private": ({ state, actions, channelId, user }) => {
     const channel = state.selectChannel(channelId);
+    const channelName = state.selectChannelName(channelId);
     const accessLevel = state.selectChannelAccessLevel(channelId);
     return {
-      description: `Make "#${channel.name}" a private channel that only members can see`,
+      description: `Make "#${channelName}" a private channel that only members can see`,
       execute: async ({ editor }) => {
         await actions.makeChannelPrivate(channelId);
         editor.clear();

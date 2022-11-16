@@ -35,7 +35,7 @@ const createParser = ({
       switch (el.type) {
         case "paragraph":
           return inline ? (
-            children()
+            <React.Fragment key={i}>{children()}</React.Fragment>
           ) : (
             <View key={i} style={{ marginTop: i !== 0 ? 10 : 0 }}>
               <Text>{children()}</Text>
@@ -45,6 +45,7 @@ const createParser = ({
         case "link":
           return (
             <Text
+              key={i}
               onPress={() => {
                 onPressInteractiveElement(el);
               }}
@@ -61,6 +62,7 @@ const createParser = ({
           const member = getMember(el.ref);
           const pressable = (
             <Pressable
+              key={i}
               onPress={() => {
                 onPressInteractiveElement(el);
               }}

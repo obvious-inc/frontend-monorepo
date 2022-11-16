@@ -136,6 +136,7 @@ const ChannelInfoDialog = ({
   const { state, actions } = useAppScope();
   const me = state.selectMe();
   const channel = state.selectChannel(channelId);
+  const channelName = state.selectChannelName(channelId);
   const isMember = me != null && channel.memberUserIds.includes(me.id);
   const isChannelStarred = state.selectIsChannelStarred(channelId);
   const channelPermissionType = state.selectChannelAccessLevel(channelId);
@@ -202,7 +203,7 @@ const ChannelInfoDialog = ({
               }
               {...titleProps}
             >
-              {channel.name}
+              {channelName}
               <Tooltip.Root>
                 <Tooltip.Trigger
                   css={(t) =>
@@ -461,6 +462,7 @@ const AboutTab = ({ channelId, dismiss }) => {
   const { state, actions } = useAppScope();
   const me = state.selectMe();
   const channel = state.selectChannel(channelId);
+  const channelName = state.selectChannelName(channelId);
   const channelPermissionType = state.selectChannelAccessLevel(channelId);
   const isMember = me != null && channel.memberUserIds.includes(me.id);
   const isOwner = me != null && me.id === channel.ownerUserId;
@@ -490,7 +492,7 @@ const AboutTab = ({ channelId, dismiss }) => {
             <li>
               <ProperyButton
                 name="Name"
-                value={channel.name}
+                value={channelName}
                 onClick={() => {
                   setEditDialogMode("name");
                 }}
@@ -523,7 +525,7 @@ const AboutTab = ({ channelId, dismiss }) => {
             }
           >
             <dt>Name</dt>
-            <dd>{channel.name}</dd>
+            <dd>{channelName}</dd>
             <dt>Description</dt>
             <dd>{channel.description ?? "-"}</dd>
           </dl>
