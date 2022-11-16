@@ -14,6 +14,11 @@ import * as Shades from "@shades/common";
 import theme from "../theme";
 import UserProfilePicture from "../components/user-profile-picture";
 import Input from "../components/input";
+import {
+  Globe as GlobeIcon,
+  Lock as LockIcon,
+  EyeOff as EyeOffIcon,
+} from "../components/icons";
 
 const { reverse } = Shades.utils.array;
 const { search: searchChannels } = Shades.utils.channel;
@@ -508,5 +513,22 @@ export const ChannelPicture = React.memo(
     }
   }
 );
+
+export const ChannelPermissionIcon = ({ channelId, ...props }) => {
+  const { state } = useAppScope();
+  const permissionType = state.selectChannelAccessLevel(channelId);
+
+  const componentByPermissionType = {
+    open: GlobeIcon,
+    closed: LockIcon,
+    private: EyeOffIcon,
+  };
+
+  const Component = componentByPermissionType[permissionType];
+
+  if (Component == null) throw new Error();
+
+  return <Component {...props} />;
+};
 
 export default ChannelList;

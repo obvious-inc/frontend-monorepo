@@ -81,39 +81,82 @@ const AccountModal = ({ navigation }) => {
 
 const ModalActionButton = ({
   label,
+  description,
+  icon,
   disabled,
+  bordered,
   danger,
   textColor = theme.colors.textDefault,
   style,
+  pressable = true,
   ...props
-}) => (
-  <Pressable
-    disabled={disabled}
-    style={({ pressed }) => ({
-      paddingHorizontal: 20,
-      height: 50,
-      flexDirection: "row",
-      alignItems: "center",
-      backgroundColor: pressed ? "hsl(0,0%,14%)" : "hsl(0,0%,12%)",
-      borderRadius: 12,
-      ...(typeof style === "function" ? style({ pressed }) : style),
-    })}
-    {...props}
-  >
-    <Text
-      style={{
-        color: disabled
-          ? theme.colors.textMuted
-          : danger
-          ? theme.colors.textDanger
-          : textColor,
-        fontSize: 16,
-      }}
-    >
-      {label}
-    </Text>
-  </Pressable>
-);
+}) => {
+  const Component = pressable ? Pressable : View;
+  const getStyles = ({ pressed }) => ({
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    minHeight: 50,
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: pressed
+      ? "hsl(0,0%,14%)"
+      : bordered
+      ? undefined
+      : "hsl(0,0%,12%)",
+    borderWidth: bordered ? 1 : 0,
+    borderColor: bordered ? theme.colors.backgroundLight : undefined,
+    borderRadius: 12,
+    ...(typeof style === "function" ? style({ pressed }) : style),
+  });
+
+  const styles = pressable ? getStyles : getStyles({ pressed: false });
+
+  return (
+    <Component disabled={disabled} style={styles} {...props}>
+      {icon != null && (
+        <View
+          style={{
+            width: 24,
+            height: 24,
+            alignItems: "center",
+            justifyContent: "center",
+            marginRight: 12,
+          }}
+        >
+          {icon}
+        </View>
+      )}
+      <View style={{ flex: 1 }}>
+        <Text
+          style={{
+            color: disabled
+              ? theme.colors.textMuted
+              : danger
+              ? theme.colors.textDanger
+              : textColor,
+            fontSize: 16,
+            lineHeight: 18,
+          }}
+        >
+          {label}
+        </Text>
+        {description != null && (
+          <Text
+            style={{
+              color: disabled
+                ? theme.colors.textMuted
+                : theme.colors.textDimmed,
+              fontSize: 12,
+              lineHeight: 14,
+            }}
+          >
+            {description}
+          </Text>
+        )}
+      </View>
+    </Component>
+  );
+};
 
 const ModalActionButtonGroup = ({ actions }) =>
   actions.map(({ key, style: customStyle, ...a }, i, as) => {
@@ -149,6 +192,18 @@ export const SectionedActionList = ({ items }) =>
   items.map((section, i) => (
     <React.Fragment key={i}>
       {i !== 0 && <View style={{ height: 20 }} />}
+      {section.title != null && (
+        <Text
+          style={{
+            color: theme.colors.textMuted,
+            height: 30,
+            fontWeight: "600",
+            paddingBottom: 10,
+          }}
+        >
+          {section.title}
+        </Text>
+      )}
       <ModalActionButtonGroup actions={section.items} />
     </React.Fragment>
   ));

@@ -1,11 +1,12 @@
 import * as Clipboard from "expo-clipboard";
 import React from "react";
-import { View, Text, Alert } from "react-native";
+import { View, Text, Alert, ScrollView } from "react-native";
 import * as Shades from "@shades/common";
 import theme from "../theme";
 import { WEB_APP_ENDPOINT } from "../config";
 import { SectionedActionList } from "./account-modal";
 import { ChannelPicture } from "./channel-list";
+import { Globe as GlobeIcon } from "../components/icons";
 
 const { useAppScope } = Shades.app;
 
@@ -18,18 +19,91 @@ const ChannelDetailsModal = ({ navigation, route }) => {
   const me = state.selectMe();
   const channel = state.selectChannel(channelId);
   const channelName = state.selectChannelName(channelId);
+  const hasOpenReadAccess = state.selectChannelHasOpenReadAccess(channelId);
+  const canAddMembers = state.selectCanAddChannelMember(channelId);
+  const canManageInfo = state.selectCanManageChannelInfo(channelId);
   const isStarredChannel = state.selectIsChannelStarred(channelId);
   const memberCount = channel.memberUserIds.length;
 
+  const isOwner = me.id === channel.ownerUserId;
+
   const [hasPendingStarRequest, setPendingStarRequest] = React.useState(false);
 
-  const isChannelOwner =
-    channel.kind === "topic" && channel.ownerUserId === me.id;
+  const manageItems = [
+    canAddMembers && {
+      key: "add-members",
+      label: "Add members",
+      onPress: () => {
+        navigation.navigate("Add members", { channelId });
+      },
+    },
+    canManageInfo && {
+      key: "edit-name",
+      label: "Edit name",
+      onPress: () => {
+        Alert.prompt(
+          "Edit channel name",
+          undefined,
+          [
+            { text: "Cancel", style: "cancel" },
+            {
+              text: "Save",
+              onPress: (name) => {
+                if (channel.kind === "topic" && name.trim() === "") return;
+                actions.updateChannel(channelId, { name: name.trim() });
+              },
+            },
+          ],
+          "plain-text",
+          channel.name
+        );
+      },
+    },
+    canManageInfo && {
+      key: "edit-description",
+      label: "Edit description",
+      onPress: () => {
+        Alert.prompt(
+          "Edit channel description",
+          undefined,
+          [
+            { text: "Cancel", style: "cancel" },
+            {
+              text: "Save",
+              onPress: (description) => {
+                actions.updateChannel(channelId, {
+                  description: description.trim(),
+                });
+              },
+            },
+          ],
+          "plain-text",
+          channel.description
+        );
+      },
+    },
+    // canManageInfo && {
+    //   key: "edit-image",
+    //   label: "Edit image",
+    // },
+  ].filter(Boolean);
 
   const actionList = [
-    {
+    hasOpenReadAccess && {
       items: [
         {
+          key: "read-access",
+          label: "Open read access",
+          icon: <GlobeIcon style={{ color: theme.colors.textDefault }} />,
+          description: "Messages can be read by anyone",
+          bordered: true,
+          pressable: false,
+        },
+      ],
+    },
+    {
+      items: [
+        memberCount > 1 && {
           key: "copy-link",
           label: "Copy link",
           onPress: () => {
@@ -54,43 +128,64 @@ const ChannelDetailsModal = ({ navigation, route }) => {
             });
           },
         },
-        isChannelOwner && {
-          key: "add-members",
-          label: "Add members",
-          onPress: () => {
-            navigation.navigate("Add members", { channelId });
-          },
-        },
-        {
+        memberCount > 1 && {
           key: "members",
           label: "Members",
           disabled: true,
         },
       ].filter(Boolean),
     },
+    manageItems.length > 0 && {
+      title: "Manage channel",
+      items: manageItems,
+    },
     {
       items: [
-        channel != null &&
-          channel.kind === "topic" &&
-          channel.ownerUserId !== me.id && {
-            key: "leave-channel",
-            label: "Leave channel",
+        channel.kind === "topic" && {
+          key: "leave-channel",
+          label: "Leave channel",
+          danger: true,
+          disabled: isOwner,
+          onPress: () => {
+            const leaveChannel = () => {
+              actions.leaveChannel(channelId);
+              navigation.popToTop();
+            };
+
+            Alert.alert(
+              "Leave channel",
+              "Are you sure you want to leave this channel?",
+              [
+                { text: "Cancel", style: "cancel" },
+                {
+                  text: "Leave channel",
+                  style: "destructive",
+                  onPress: leaveChannel,
+                },
+              ]
+            );
+          },
+        },
+        channel.kind === "topic" &&
+          isOwner && {
+            key: "delete-channel",
+            label: "Delete channel",
             danger: true,
             onPress: () => {
-              const leaveChannel = () => {
-                actions.leaveChannel(channelId);
+              const deleteChannel = () => {
+                actions.deleteChannel(channelId);
                 navigation.popToTop();
               };
 
               Alert.alert(
-                "Leave channel",
-                "Are you sure you want to leave this channel?",
+                "Delete channel",
+                "Are you sure you want to delete this channel?",
                 [
                   { text: "Cancel", style: "cancel" },
                   {
-                    text: "Leave channel",
+                    text: "Delete channel",
                     style: "destructive",
-                    onPress: leaveChannel,
+                    onPress: deleteChannel,
                   },
                 ]
               );
@@ -98,7 +193,7 @@ const ChannelDetailsModal = ({ navigation, route }) => {
           },
       ].filter(Boolean),
     },
-  ];
+  ].filter(Boolean);
 
   return (
     <View
@@ -143,7 +238,7 @@ const ChannelDetailsModal = ({ navigation, route }) => {
           >
             {channelName}
           </Text>
-          {(channel.description?.trim() ?? "") !== "" && (
+          {memberCount > 1 && (
             <Text
               style={{
                 color: theme.colors.textDimmed,
@@ -153,27 +248,31 @@ const ChannelDetailsModal = ({ navigation, route }) => {
                 marginTop: 1,
               }}
             >
-              {channel.description}
+              {memberCount} {memberCount === 1 ? "member" : "members"}
             </Text>
           )}
         </View>
       </View>
 
-      <View>
-        <Text
-          style={{
-            color: theme.colors.textDimmed,
-            fontSize: 14,
-            fontWeight: "400",
-            lineHeight: 18,
-            marginBottom: 20,
-          }}
-        >
-          {memberCount} {memberCount === 1 ? "member" : "members"}
-        </Text>
-      </View>
+      <ScrollView>
+        {channel.description != null && (
+          <View>
+            <Text
+              style={{
+                color: theme.colors.textDimmed,
+                fontSize: 14,
+                fontWeight: "400",
+                lineHeight: 18,
+                marginBottom: 20,
+              }}
+            >
+              {channel.description}
+            </Text>
+          </View>
+        )}
 
-      <SectionedActionList items={actionList} />
+        <SectionedActionList items={actionList} />
+      </ScrollView>
     </View>
   );
 };

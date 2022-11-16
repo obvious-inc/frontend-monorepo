@@ -106,6 +106,14 @@ const metaById = (state = {}, action) => {
       };
     }
 
+    case "fetch-channel-permissions:request-successful": {
+      const meta = state[action.channelId];
+      return {
+        ...state,
+        [action.channelId]: { ...meta, permissions: action.permissions },
+      };
+    }
+
     case "messages-fetched": {
       const config = state[action.channelId];
       const hasAllMessages = action.messages.length < action.limit;
@@ -483,6 +491,18 @@ export const selectChannelHasOpenReadAccess = (state, channelId) => {
   const meta = state.channels.metaById[channelId];
   if (meta == null || meta.publicPermissions == null) return null;
   return meta.publicPermissions.includes(Permissions.CHANNEL_READ_MESSAGES);
+};
+
+export const selectCanAddChannelMember = (state, channelId) => {
+  const meta = state.channels.metaById[channelId];
+  if (meta == null || meta.permissions == null) return false;
+  return meta.permissions.includes(Permissions.CHANNEL_ADD_MEMBER);
+};
+
+export const selectCanManageChannelInfo = (state, channelId) => {
+  const channel = state.channels.entriesById[channelId];
+  if (channel == null || state.me.user == null) return false;
+  return channel.ownerUserId === state.me.user.id;
 };
 
 export default combineReducers({

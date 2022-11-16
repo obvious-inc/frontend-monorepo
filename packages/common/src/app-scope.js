@@ -13,6 +13,11 @@ import {
 import useRootReducer from "./hooks/root-reducer";
 import useLatestCallback from "./hooks/latest-callback";
 
+const cleanString = (s) => {
+  if (typeof s !== "string") return s;
+  return s.trim() === "" ? null : s.trim();
+};
+
 const createApiParsers = ({ buildCloudflareImageUrl }) => ({
   parseUser(u) {
     const createProfilePicture = () => {
@@ -518,6 +523,19 @@ export const Provider = ({ cloudflareAccountHash, children }) => {
     })
   );
 
+  const fetchChannelPermissions = useLatestCallback((id) =>
+    authorizedFetch(`/channels/${id}/permissions`, { priority: "low" }).then(
+      (res) => {
+        dispatch({
+          type: "fetch-channel-permissions:request-successful",
+          channelId: id,
+          permissions: res,
+        });
+        return res;
+      }
+    )
+  );
+
   const fetchChannelPublicPermissions = useLatestCallback((id) =>
     authorizedFetch(`/channels/${id}/permissions`, {
       unauthorized: true,
@@ -594,7 +612,11 @@ export const Provider = ({ cloudflareAccountHash, children }) => {
     authorizedFetch(`/channels/${id}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ name, description, avatar }),
+      body: JSON.stringify({
+        name: cleanString(name),
+        description: cleanString(description),
+        avatar: cleanString(avatar),
+      }),
     }).then((res) => {
       // TODO
       fetchChannel(id);
@@ -617,6 +639,7 @@ export const Provider = ({ cloudflareAccountHash, children }) => {
       body: JSON.stringify(permissions),
     }).then((res) => {
       // TODO permissions?
+      fetchChannelPermissions(channelId);
       fetchChannelPublicPermissions(channelId);
       // fetchInitialData();
       return res;
@@ -849,6 +872,7 @@ export const Provider = ({ cloudflareAccountHash, children }) => {
       createClosedChannel,
       createPrivateChannel,
       fetchChannelMembers,
+      fetchChannelPermissions,
       fetchChannelPublicPermissions,
       addChannelMember,
       removeChannelMember,
@@ -901,6 +925,7 @@ export const Provider = ({ cloudflareAccountHash, children }) => {
       makeChannelClosed,
       makeChannelPrivate,
       fetchChannelMembers,
+      fetchChannelPermissions,
       fetchChannelPublicPermissions,
       addChannelMember,
       removeChannelMember,

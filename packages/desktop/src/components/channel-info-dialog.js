@@ -31,6 +31,24 @@ import {
 const { sort } = arrayUtils;
 const { truncateAddress } = ethereumUtils;
 
+const ChannelPermissionIcon = ({ channelId, ...props }) => {
+  const { state } = useAppScope();
+
+  const channel = state.selectChannel(channelId);
+  const permissionType = state.selectChannelAccessLevel(channelId);
+
+  const deriveComponent = () => {
+    if (channel.kind === "dm") return AtSignIcon;
+    return { open: GlobeIcon, closed: LockIcon, private: EyeOffIcon }[
+      permissionType
+    ];
+  };
+
+  const Component = deriveComponent();
+
+  return <Component {...props} />;
+};
+
 const Tabs = (props) => {
   const state = useTabListState(props);
   const ref = React.useRef();
@@ -148,6 +166,10 @@ const ChannelInfoDialog = ({
     dismissButtonRef.current.focus();
   }, []);
 
+  const showPermissionTypeBadge =
+    channel.kind === "dm" ||
+    (channelPermissionType != null && channelPermissionType !== "custom");
+
   return (
     <>
       <header
@@ -204,83 +226,78 @@ const ChannelInfoDialog = ({
               {...titleProps}
             >
               {channelName}
-              <Tooltip.Root>
-                <Tooltip.Trigger
-                  css={(t) =>
-                    css({
-                      color: t.colors.textDimmed,
-                      fontSize: t.fontSizes.tiny,
-                      fontWeight: "400",
-                      marginLeft: "1rem",
-                      background: t.colors.backgroundModifierHover,
-                      borderRadius: "0.2rem",
-                      padding: "0.2rem 0.4rem",
-                      position: "relative",
-                      bottom: "0.2rem",
-                      ":focus-visible": {
-                        boxShadow: `0 0 0 0.2rem ${t.colors.primary}`,
-                      },
-                    })
-                  }
-                >
-                  <span
-                    style={{
-                      display: "inline-flex",
-                      position: "relative",
-                      top: "0.2rem",
-                      marginRight: "0.4rem",
-                    }}
+              {showPermissionTypeBadge && (
+                <Tooltip.Root>
+                  <Tooltip.Trigger
+                    css={(t) =>
+                      css({
+                        color: t.colors.textDimmed,
+                        fontSize: t.fontSizes.tiny,
+                        fontWeight: "400",
+                        marginLeft: "1rem",
+                        background: t.colors.backgroundModifierHover,
+                        borderRadius: "0.2rem",
+                        padding: "0.2rem 0.4rem",
+                        position: "relative",
+                        bottom: "0.2rem",
+                        ":focus-visible": {
+                          boxShadow: `0 0 0 0.2rem ${t.colors.primary}`,
+                        },
+                      })
+                    }
                   >
-                    {channel.kind === "dm" ? (
-                      <AtSignIcon style={{ width: "1.2rem" }} />
-                    ) : channelPermissionType === "private" ? (
-                      <EyeOffIcon style={{ width: "1.2rem" }} />
-                    ) : channelPermissionType === "closed" ? (
-                      <LockIcon style={{ width: "1.2rem" }} />
-                    ) : channelPermissionType === "open" ? (
-                      <GlobeIcon style={{ width: "1.2rem" }} />
-                    ) : null}
-                  </span>
+                    <span
+                      style={{
+                        display: "inline-flex",
+                        position: "relative",
+                        top: "0.2rem",
+                        marginRight: "0.4rem",
+                      }}
+                    >
+                      <ChannelPermissionIcon
+                        channelId={channelId}
+                        style={{ width: "1.2rem" }}
+                      />
+                    </span>
 
-                  {channel.kind === "dm"
-                    ? "DM channel"
-                    : channelPermissionType != null && (
+                    {channel.kind === "dm"
+                      ? "DM channel"
+                      : channelPermissionType != null && (
+                        <>
+                          {channelPermissionType.slice(0, 1).toUpperCase()}
+                          {channelPermissionType.slice(1)} channel
+                        </>
+                      )}
+                  </Tooltip.Trigger>
+                  <Tooltip.Content side="top" align="center" sideOffset={6}>
+                    {channel.kind === "dm" ? (
                       <>
-                        {channelPermissionType.slice(0, 1).toUpperCase()}
-                        {channelPermissionType.slice(1)} channel
+                        DMs are reserved for private 1-to-1
+                        <br />
+                        messaging, and cannot be deleted.
                       </>
-                    )}
-                </Tooltip.Trigger>
-                <Tooltip.Content side="top" align="center" sideOffset={6}>
-                  {channel.kind === "dm" ? (
-                    <>
-                      DMs are reserved for private 1-to-1
-                      <br />
-                      messaging, and cannot be deleted.
-                    </>
-                  ) : channelPermissionType === "open" ? (
-                    <>
-                      Open channels can be seen
-                      <br />
-                      and joined by anyone.
-                    </>
-                  ) : channelPermissionType === "closed" ? (
-                    <>
-                      Closed channels have open read access,
-                      <br />
-                      but requires an invite to join.
-                    </>
-                  ) : channelPermissionType === "private" ? (
-                    <>
-                      Private channels are only
-                      <br />
-                      visible to members.
-                    </>
-                  ) : (
-                    "👋"
-                  )}
-                </Tooltip.Content>
-              </Tooltip.Root>
+                    ) : channelPermissionType === "open" ? (
+                      <>
+                        Open channels can be seen
+                        <br />
+                        and joined by anyone.
+                      </>
+                    ) : channelPermissionType === "closed" ? (
+                      <>
+                        Closed channels have open read access,
+                        <br />
+                        but requires an invite to join.
+                      </>
+                    ) : channelPermissionType === "private" ? (
+                      <>
+                        Private channels are only
+                        <br />
+                        visible to members.
+                      </>
+                    ) : null}
+                  </Tooltip.Content>
+                </Tooltip.Root>
+              )}
             </h1>
           </div>
           <div

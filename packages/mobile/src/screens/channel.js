@@ -29,8 +29,9 @@ import useOnlineListener from "../hooks/online-listener";
 import FormattedDate from "../components/formatted-date";
 import RichText from "../components/rich-text";
 import UserProfilePicture from "../components/user-profile-picture";
-import { ChannelPicture } from "./channel-list";
 import MessageModalContent from "./message-modal";
+import { ChannelPicture } from "./channel-list";
+import { Globe as GlobeIcon } from "../components/icons";
 
 const { useLatestCallback } = Shades.react;
 const { useAppScope } = Shades.app;
@@ -61,6 +62,7 @@ export const options = {
       <HeaderLeft />
     </View>
   ),
+  headerRight: () => <HeaderRight />,
   lazy: false,
 };
 
@@ -185,18 +187,58 @@ const HeaderLeft = () => {
                 >
                   {channelName}
                 </Text>
-                <Text
-                  style={{
-                    color: "gray",
-                    fontSize: 11.5,
-                    fontWeight: "400",
-                    lineHeight: 14,
-                  }}
-                >
-                  {memberCount} {memberCount === 1 ? "member" : "members"}
-                </Text>
+                {memberCount > 1 && (
+                  <Text
+                    style={{
+                      color: "gray",
+                      fontSize: 11.5,
+                      fontWeight: "400",
+                      lineHeight: 14,
+                    }}
+                  >
+                    {memberCount} {memberCount === 1 ? "member" : "members"}
+                  </Text>
+                )}
               </View>
             </>
+          )}
+        </Pressable>
+      )}
+    </View>
+  );
+};
+
+const HeaderRight = () => {
+  const { params } = useRoute();
+  const navigation = useNavigation();
+  const { state } = useAppScope();
+
+  const hasOpenReadAccess = state.selectChannelHasOpenReadAccess(
+    params.channelId
+  );
+
+  return (
+    <View>
+      {hasOpenReadAccess && (
+        <Pressable
+          onPress={() => {
+            navigation.navigate("Channel details modal", {
+              screen: "Root",
+              params: {
+                channelId: params.channelId,
+              },
+            });
+          }}
+          style={{ padding: 4 }}
+        >
+          {({ pressed }) => (
+            <GlobeIcon
+              style={{
+                color: pressed
+                  ? theme.colors.textMuted
+                  : theme.colors.textDimmed,
+              }}
+            />
           )}
         </Pressable>
       )}
@@ -215,6 +257,7 @@ const Channel = ({ navigation, route: { params } }) => {
   const { state, actions } = useAppScope();
   const {
     fetchChannelMembers,
+    fetchChannelPermissions,
     fetchChannelPublicPermissions,
     fetchMessages,
     markChannelRead,
@@ -237,6 +280,11 @@ const Channel = ({ navigation, route: { params } }) => {
   useFetch(
     () => fetchChannelPublicPermissions(channelId),
     [channelId, fetchChannelPublicPermissions]
+  );
+
+  useFetch(
+    () => fetchChannelPermissions(channelId),
+    [channelId, fetchChannelPermissions]
   );
 
   const didScrollToBottomRef = React.useRef(true);
