@@ -2,6 +2,7 @@ import * as Clipboard from "expo-clipboard";
 import * as Linking from "expo-linking";
 import React from "react";
 import { View, Text, Dimensions } from "react-native";
+import { useNavigation } from "@react-navigation/native";
 import { useEnsName } from "wagmi";
 import * as Shades from "@shades/common";
 import theme from "../theme";
@@ -16,6 +17,7 @@ const screen = Dimensions.get("screen");
 export const options = { presentation: "modal" };
 
 const UserModal = ({ route }) => {
+  const navigation = useNavigation();
   const { userId } = route.params;
   const { state, actions } = useAppScope();
   const me = state.selectMe();
@@ -33,8 +35,18 @@ const UserModal = ({ route }) => {
         {
           key: "send-message",
           label: "Send message",
-          disabled: true,
-          onPress: () => {},
+          onPress: () => {
+            const dmChannel = state.selectDmChannelFromUserId(user.id);
+
+            if (dmChannel != null) {
+              navigation.navigate("Channel", { channelId: dmChannel.id });
+              return;
+            }
+
+            navigation.navigate("Channel", {
+              walletAddress: user.walletAddress,
+            });
+          },
         },
         {
           key: "toggle-star",

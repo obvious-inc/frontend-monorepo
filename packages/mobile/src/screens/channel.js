@@ -1,6 +1,7 @@
 import * as Haptics from "expo-haptics";
 import * as Linking from "expo-linking";
 import React from "react";
+import { useEnsName } from "wagmi";
 import {
   Text,
   View,
@@ -35,6 +36,7 @@ import { Globe as GlobeIcon } from "../components/icons";
 
 const { useLatestCallback } = Shades.react;
 const { useAppScope } = Shades.app;
+const { ethereum: ethereumUtils } = Shades.utils;
 const { message: messageUtils, url: urlUtils } = Shades.utils;
 
 const ONE_MINUTE_IN_MILLIS = 1000 * 60;
@@ -94,7 +96,10 @@ const useChannelMessages = ({ channelId }) => {
 
   const messages = state.selectChannelMessages(channelId);
 
-  useFetch(() => fetchMessages(channelId), [channelId, fetchMessages]);
+  useFetch(() => {
+    if (channelId == null) return;
+    return fetchMessages(channelId);
+  }, [channelId, fetchMessages]);
 
   const sortedMessages = messages.sort(
     (m1, m2) => new Date(m1.created_at) - new Date(m2.created_at)
@@ -103,13 +108,33 @@ const useChannelMessages = ({ channelId }) => {
   return sortedMessages;
 };
 
+const useChannelName = () => {
+  const { params } = useRoute();
+  const { state } = useAppScope();
+
+  const { channelId, walletAddress } = params;
+
+  const { data: ensName } = useEnsName({
+    address: walletAddress,
+    enabled: walletAddress != null,
+  });
+
+  if (channelId == null)
+    return ensName ?? ethereumUtils.truncateAddress(walletAddress);
+
+  return state.selectChannelName(channelId);
+};
+
 const HeaderLeft = () => {
   const { params } = useRoute();
   const navigation = useNavigation();
   const { state } = useAppScope();
-  const channel = state.selectChannel(params.channelId);
-  const channelName = state.selectChannelName(params.channelId);
-  const memberCount = channel?.memberUserIds.length;
+
+  const { channelId } = params;
+
+  const channel = state.selectChannel(channelId);
+  const channelName = useChannelName();
+  const memberCount = channel?.memberUserIds.length ?? 0;
 
   return (
     <View
@@ -153,13 +178,13 @@ const HeaderLeft = () => {
           )}
         </Pressable>
       </View>
-      {channel != null && (
+      {(channel != null || channelId == null) && (
         <Pressable
           onPress={() => {
             navigation.navigate("Channel details modal", {
               screen: "Root",
               params: {
-                channelId: params.channelId,
+                channelId,
               },
             });
           }}
@@ -167,7 +192,7 @@ const HeaderLeft = () => {
         >
           {({ pressed }) => (
             <>
-              {(channel.kind === "dm" || channel.image != null) && (
+              {(channel?.kind === "dm" || channel?.image != null) && (
                 <View style={{ marginRight: 10 }}>
                   <ChannelPicture
                     transparent
@@ -253,7 +278,7 @@ const Channel = ({ navigation, route: { params } }) => {
   const [editingMessageId, setEditingMessageId] = React.useState(null);
   const [replyTargetMessageId, setReplyTargetMessageId] = React.useState(null);
 
-  const { channelId } = params;
+  const { channelId, walletAddress: dmUserWalletAddress } = params;
   const { state, actions } = useAppScope();
   const {
     fetchChannelMembers,
@@ -263,8 +288,7 @@ const Channel = ({ navigation, route: { params } }) => {
     markChannelRead,
   } = actions;
 
-  const channel = state.selectChannel(channelId);
-  const channelName = state.selectChannelName(channelId);
+  const channelName = useChannelName();
 
   const messages = useChannelMessages({ channelId });
   const headerHeight = useHeaderHeight();
@@ -272,24 +296,25 @@ const Channel = ({ navigation, route: { params } }) => {
   const inputRef = React.useRef();
   const scrollViewRef = React.useRef();
 
-  useFetch(
-    () => fetchChannelMembers(channelId),
-    [channelId, fetchChannelMembers]
-  );
+  useFetch(() => {
+    if (channelId == null) return;
+    return fetchChannelMembers(channelId);
+  }, [channelId, fetchChannelMembers]);
 
-  useFetch(
-    () => fetchChannelPublicPermissions(channelId),
-    [channelId, fetchChannelPublicPermissions]
-  );
+  useFetch(() => {
+    if (channelId == null) return;
+    return fetchChannelPublicPermissions(channelId);
+  }, [channelId, fetchChannelPublicPermissions]);
 
-  useFetch(
-    () => fetchChannelPermissions(channelId),
-    [channelId, fetchChannelPermissions]
-  );
+  useFetch(() => {
+    if (channelId == null) return;
+    return fetchChannelPermissions(channelId);
+  }, [channelId, fetchChannelPermissions]);
 
   const didScrollToBottomRef = React.useRef(true);
 
   const fetchMoreMessages = useLatestCallback(() => {
+    if (channelId == null) return;
     if (messages.length === 0) return;
     return fetchMessages(channelId, {
       beforeMessageId: messages[0].id,
@@ -303,6 +328,8 @@ const Channel = ({ navigation, route: { params } }) => {
 
   // Mark channel as read when new messages arrive
   React.useEffect(() => {
+    if (channelId == null) return;
+
     if (
       // Only mark as read when the app is active
       AppState.currentState !== "active" ||
@@ -325,6 +352,7 @@ const Channel = ({ navigation, route: { params } }) => {
   ]);
 
   const handleScrolledToBottom = () => {
+    if (channelId == null) return;
     if (AppState.currentState !== "active" || !channelHasUnread) return;
     markChannelRead(channelId);
   };
@@ -394,7 +422,7 @@ const Channel = ({ navigation, route: { params } }) => {
           )}
           <ChannelMessageInput
             ref={inputRef}
-            placeholder={channel == null ? "" : `Message #${channelName}`}
+            placeholder={channelName == null ? "..." : `Message ${channelName}`}
             pendingMessage={pendingMessage}
             setPendingMessage={setPendingMessage}
             onSubmit={(content) => {
@@ -440,7 +468,20 @@ const Channel = ({ navigation, route: { params } }) => {
                 });
               }
 
-              return actions.createMessage({ channel: channelId, blocks });
+              if (channelId != null)
+                return actions.createMessage({ channel: channelId, blocks });
+
+              return actions
+                .createDmChannel({
+                  memberWalletAddresses: [dmUserWalletAddress],
+                })
+                .then((c) => {
+                  navigation.setParams({
+                    channelId: c.id,
+                    walletAddress: undefined,
+                  });
+                  return actions.createMessage({ channel: c.id, blocks });
+                });
             }}
           />
         </KeyboardAvoidingView>
@@ -1039,6 +1080,9 @@ const ChannelMessageInput = React.forwardRef(
             placeholderTextColor="hsla(0,0%,100%,0.5)"
             keyboardAppearance="dark"
             inputAccessoryViewID="message-input"
+            onBlur={() => {
+              console.log("blur");
+            }}
             style={{
               flex: 1,
               fontSize: 16,

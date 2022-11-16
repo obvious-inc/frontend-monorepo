@@ -237,7 +237,7 @@ export const useAsyncDismissKeyboard = () => {
 };
 
 const NewChat = ({ navigation }) => {
-  const { actions, state } = useAppScope();
+  const { state } = useAppScope();
 
   const inputRef = React.useRef();
 
@@ -252,35 +252,21 @@ const NewChat = ({ navigation }) => {
   const dismissKeyboard = useAsyncDismissKeyboard();
 
   const dmAddress = (address) => {
-    const navigateToChannel = (channelId) =>
-      navigation.replace("Channel", { channelId });
-
-    const createDm = () => {
-      dismissKeyboard();
-      return actions
-        .createDmChannel({ memberWalletAddresses: [address] })
-        .then((channel) =>
-          dismissKeyboard().then(() =>
-            navigation.replace("Channel", { channelId: channel.id })
-          )
-        );
-    };
-
     setPendingSubmit(true);
 
-    const user = state.selectUserFromWalletAddress(address);
-    const dmChannel =
-      user == null ? null : state.selectDmChannelFromUserId(user.id);
+    dismissKeyboard().then(() => {
+      const user = state.selectUserFromWalletAddress(address);
+      const dmChannel =
+        user == null ? null : state.selectDmChannelFromUserId(user.id);
 
-    if (dmChannel == null) {
-      createDm();
-      return;
-    }
+      if (dmChannel != null) {
+        navigation.replace("Channel", { channelId: dmChannel.id });
+        return;
+      }
 
-    dismissKeyboard().then(() => navigateToChannel(dmChannel.id));
+      navigation.replace("Channel", { walletAddress: address });
+    });
   };
-
-  React.useEffect(() => {}, [hasPendingSubmit]);
 
   return (
     <View style={{ flex: 1 }}>
