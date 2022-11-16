@@ -225,7 +225,8 @@ const readStatesById = (state = {}, action) => {
       };
 
     case "server-event:message-created": {
-      const isOwnMessage = action.data.message.author === action.user.id;
+      const isOwnMessage =
+        action.user != null && action.data.message.author === action.user.id;
       const channelState = state[action.data.message.channel];
 
       const userMentions = getMentions(action.data.message.blocks).filter(

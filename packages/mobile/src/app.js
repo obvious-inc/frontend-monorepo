@@ -8,6 +8,7 @@ import {
 import * as Device from "expo-device";
 import * as Linking from "expo-linking";
 import * as Notifications from "expo-notifications";
+import * as Updates from "expo-updates";
 import {
   WagmiConfig,
   createClient as createWagmiClient,
@@ -17,7 +18,7 @@ import { mainnet as mainnetChain } from "wagmi/chains";
 import { infuraProvider } from "wagmi/providers/infura";
 import { publicProvider } from "wagmi/providers/public";
 import React from "react";
-import { View, Text } from "react-native";
+import { View, Text, Pressable, ScrollView } from "react-native";
 import {
   NavigationContainer,
   DarkTheme as ReactNavigationDarkTheme,
@@ -25,7 +26,7 @@ import {
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import { WebView } from "react-native-webview";
-import { SafeAreaProvider } from "react-native-safe-area-context";
+import { SafeAreaProvider, SafeAreaView } from "react-native-safe-area-context";
 import Pusher from "pusher-js/react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import * as Shades from "@shades/common";
@@ -387,21 +388,108 @@ class ErrorBoundary extends React.Component {
   }
 
   render() {
-    if (this.state.errorInfo) {
-      // Error path
+    if (this.state.errorInfo)
       return (
-        <View>
-          <Text>Something went wrong.</Text>
-          <Text>{this.state.error && this.state.error.toString()}</Text>
-          <Text>{this.state.errorInfo.componentStack}</Text>
-        </View>
+        <ErrorView
+          message={
+            this.state.error == null ? null : this.state.error.toString()
+          }
+          stack={this.state.errorInfo.componentStack}
+        />
       );
-    }
 
     // Normally, just render children
     return this.props.children;
   }
 }
+
+const ErrorView = ({ message, stack }) => {
+  const [isReloading, setReloading] = React.useState(false);
+  return (
+    <SafeAreaView
+      edges={["top", "left", "right"]}
+      style={{ flex: 1, backgroundColor: theme.colors.background }}
+    >
+      <View
+        style={{
+          flexDirection: "row",
+          alignItems: "center",
+          paddingVertical: 10,
+          paddingHorizontal: 20,
+        }}
+      >
+        <View style={{ flex: 1 }}>
+          <Text
+            style={{
+              color: theme.colors.textDanger,
+              fontSize: 16,
+              fontWeight: "600",
+            }}
+          >
+            Error
+          </Text>
+        </View>
+        <Pressable
+          onPress={async () => {
+            setReloading(true);
+            await Updates.reloadAsync();
+          }}
+          disabled={isReloading}
+          style={({ pressed }) => ({
+            backgroundColor: pressed
+              ? theme.colors.backgroundLighter
+              : theme.colors.backgroundLight,
+            paddingVertical: 8,
+            paddingHorizontal: 12,
+            alignSelf: "flex-start",
+            borderRadius: 3,
+          })}
+        >
+          <Text
+            style={{
+              fontSize: 14,
+              fontWeight: "600",
+              color: isReloading
+                ? theme.colors.textMuted
+                : theme.colors.textDefault,
+            }}
+          >
+            Dismiss
+          </Text>
+        </Pressable>
+      </View>
+
+      <ScrollView
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={{
+          paddingHorizontal: 20,
+          paddingTop: 10,
+          paddingBottom: 50,
+        }}
+      >
+        <Text
+          style={{
+            color: theme.colors.textDefault,
+            fontSize: 14,
+            fontFamily: "Menlo-Regular",
+          }}
+        >
+          {message}
+        </Text>
+        <Text
+          style={{
+            color: theme.colors.textDefault,
+            lineHeight: 14,
+            fontSize: 10,
+            fontFamily: "Menlo-Regular",
+          }}
+        >
+          {stack}
+        </Text>
+      </ScrollView>
+    </SafeAreaView>
+  );
+};
 
 const NAVIGATION_STATE_STORAGE_KEY = "NAVIGATION_STATE";
 
@@ -436,9 +524,9 @@ export default () => {
   if (initialState === "not-set") return null;
 
   return (
-    <ErrorBoundary>
-      <WagmiConfig client={wagmiClient}>
-        <SafeAreaProvider>
+    <SafeAreaProvider>
+      <ErrorBoundary>
+        <WagmiConfig client={wagmiClient}>
           <NavigationContainer
             initialState={initialState}
             onStateChange={(state) => {
@@ -519,8 +607,8 @@ export default () => {
               </AppScopeProvider>
             </AuthProvider>
           </NavigationContainer>
-        </SafeAreaProvider>
-      </WagmiConfig>
-    </ErrorBoundary>
+        </WagmiConfig>
+      </ErrorBoundary>
+    </SafeAreaProvider>
   );
 };
