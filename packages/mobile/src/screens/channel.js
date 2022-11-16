@@ -5,6 +5,7 @@ import { useEnsName } from "wagmi";
 import {
   Text,
   View,
+  Image,
   TextInput,
   KeyboardAvoidingView,
   Pressable,
@@ -37,7 +38,11 @@ import { Globe as GlobeIcon } from "../components/icons";
 const { useLatestCallback } = Shades.react;
 const { useAppScope } = Shades.app;
 const { ethereum: ethereumUtils } = Shades.utils;
-const { message: messageUtils, url: urlUtils } = Shades.utils;
+const {
+  message: messageUtils,
+  url: urlUtils,
+  getImageDimensionsFromUrl,
+} = Shades.utils;
 
 const ONE_MINUTE_IN_MILLIS = 1000 * 60;
 
@@ -426,28 +431,36 @@ const Channel = ({ navigation, route: { params } }) => {
             pendingMessage={pendingMessage}
             setPendingMessage={setPendingMessage}
             onSubmit={(content) => {
-              const paragraphContentElements = content
-                .split(" ")
-                .reduce((els, word) => {
-                  const prev = els[els.length - 1];
+              const createBlocks = (content) => {
+                const paragraphContentElements = content
+                  .split(" ")
+                  .reduce((els, word) => {
+                    const prev = els[els.length - 1];
 
-                  if (urlUtils.validate(word)) {
-                    if (prev != null) prev.text = `${prev.text} `;
-                    const url = new URL(word);
-                    return [...els, { type: "link", url: url.href }];
-                  }
+                    if (urlUtils.validate(word)) {
+                      if (prev != null) prev.text = `${prev.text} `;
+                      const url = new URL(word);
+                      return [...els, { type: "link", url: url.href }];
+                    }
 
-                  if (prev == null || prev.type === "link")
-                    return [...els, { text: prev == null ? word : ` ${word}` }];
+                    if (prev == null || prev.type === "link")
+                      return [
+                        ...els,
+                        { text: prev == null ? word : ` ${word}` },
+                      ];
 
-                  prev.text = `${prev.text} ${word}`;
+                    prev.text = `${prev.text} ${word}`;
 
-                  return els;
-                }, []);
+                    return els;
+                  }, []);
 
-              const blocks = [
-                messageUtils.createParagraphElement(paragraphContentElements),
-              ];
+                return [
+                  messageUtils.createParagraphElement(paragraphContentElements),
+                ];
+              };
+
+              const blocks =
+                typeof content === "string" ? createBlocks(content) : content;
 
               if (editingMessageId != null) {
                 setEditingMessageId(null);
@@ -617,6 +630,7 @@ const ChannelMessagesScrollView = React.forwardRef(
         onEndReached={onEndReached}
         onEndReachedThreshold={1}
         onScroll={onScroll}
+        contentContainerStyle={{ paddingVertical: 10 }}
       />
     );
   }
@@ -932,8 +946,11 @@ const SystemMessageContent = ({ message, selectUser }) => {
       const isMissingData = message.author?.displayName == null;
       return (
         <Text style={{ ...textStyles, opacity: isMissingData ? 0 : 1 }}>
-          <MemberDisplayName userId={message.authorUserId} /> joined the
-          channel. Welcome!
+          <MemberDisplayName
+            userId={message.authorUserId}
+            selectUser={selectUser}
+          />{" "}
+          joined the channel. Welcome!
         </Text>
       );
     }
@@ -943,8 +960,11 @@ const SystemMessageContent = ({ message, selectUser }) => {
       if (updates.length == 0 || updates.length > 1) {
         return (
           <>
-            <MemberDisplayNameWithPopover user={message.author} /> updated the
-            channel.
+            <MemberDisplayName
+              userId={message.authorUserId}
+              selectUser={selectUser}
+            />{" "}
+            updated the channel.
           </>
         );
       }
@@ -1037,6 +1057,7 @@ const SystemMessageContent = ({ message, selectUser }) => {
 
 const ChannelMessageInput = React.forwardRef(
   ({ pendingMessage, setPendingMessage, placeholder, onSubmit }, inputRef) => {
+    const { actions } = useAppScope();
     // const containerWidthValue = React.useRef(new Animated.Value(0)).current;
     // const containerWidth = containerWidthValue.interpolate({
     //   inputRange: [0, 1],
@@ -1067,8 +1088,17 @@ const ChannelMessageInput = React.forwardRef(
         <View
           style={{
             flexDirection: "row",
-            paddingHorizontal: 10,
-            paddingVertical: 8,
+            paddingHorizontal: 15,
+            paddingVertical: 5,
+            paddingBottom: 0,
+            borderTopLeftRadius: 12,
+            borderTopRightRadius: 12,
+            borderTopWidth: 1,
+            borderLeftWidth: 1,
+            borderRightWidth: 1,
+            borderColor: theme.colors.backgroundLighter,
+            marginLeft: -1,
+            marginRight: -1,
           }}
         >
           <TextInput
@@ -1087,8 +1117,9 @@ const ChannelMessageInput = React.forwardRef(
               flex: 1,
               fontSize: 16,
               color: textDefault,
-              backgroundColor: "hsl(0,0%,14%)",
-              paddingHorizontal: 16,
+              // backgroundColor: "hsl(0,0%,14%)",
+              // paddingHorizontal: 16,
+              // paddingHorizontal: 5,
               paddingTop: 11,
               paddingBottom: 11,
               lineHeight: 20,
@@ -1107,10 +1138,55 @@ const ChannelMessageInput = React.forwardRef(
               justifyContent: "flex-end",
             }}
           >
-            <View style={{ flex: 1, paddingHorizontal: 10 }}>
-              <Text style={{ color: "hsl(0,0%,44%)" }}>
-                Insanely rich toolbar coming soon
-              </Text>
+            <View
+              style={{
+                flex: 1,
+                paddingHorizontal: 5,
+                alignItems: "flex-start",
+              }}
+            >
+              <Pressable
+                style={({ pressed }) => ({
+                  backgroundColor: pressed
+                    ? theme.colors.backgroundLight
+                    : theme.colors.backgroundLighter,
+                  paddingVertical: 6,
+                  paddingHorizontal: 8,
+                  borderRadius: 6,
+                })}
+                onPress={async () => {
+                  const response = await actions.searchGifs(pendingMessage);
+                  const imageUrl =
+                    response[Math.floor(Math.random() * response.length)].src;
+
+                  Image.getSize(imageUrl, (width, height) => {
+                    onSubmit([
+                      {
+                        type: "attachments",
+                        children: [
+                          {
+                            type: "image-attachment",
+                            url: imageUrl,
+                            width,
+                            height,
+                          },
+                        ],
+                      },
+                    ]);
+                  });
+                }}
+              >
+                <Text
+                  style={{
+                    color: theme.colors.textDefault,
+                    fontSize: 12,
+                    fontWeight: "500",
+                    letterSpacing: 0.5,
+                  }}
+                >
+                  GIF
+                </Text>
+              </Pressable>
             </View>
             <View>
               <Pressable
