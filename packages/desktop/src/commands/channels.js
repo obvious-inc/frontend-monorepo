@@ -90,17 +90,19 @@ const commands = {
     description: "Set a new avatar for this channel",
     arguments: ["channel-avatar-url"],
     execute: async ({ args, editor }) => {
-      await actions.updateChannel(channelId, { avatar: args[0] ?? null });
+      const arg = args[0]?.trim() === "" ? null : args[0];
+      const isUrlOrEmpty = arg == null || arg.match(/^https?:\/\//);
+
+      if (!isUrlOrEmpty) {
+        alert(`"${arg}" is not a url!`);
+        return;
+      }
+
+      await actions.updateChannel(channelId, { avatar: arg ?? null });
       editor.clear();
     },
     exclude: () => {
       if (context === "dm") return false;
-
-      if (context === "server") return true;
-      // if (context === "server") {
-      //   const server = state.selectServer(serverId);
-      //   return server?.ownerUserId !== user.id;
-      // }
 
       if (context === "topic") {
         const channel = state.selectChannel(channelId);

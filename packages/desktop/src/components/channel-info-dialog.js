@@ -184,8 +184,8 @@ const ChannelInfoDialog = ({
           css={css({
             display: "grid",
             gridTemplateColumns: "minmax(0,1fr) auto",
-            gridGap: "1rem",
-            alignItems: "flex-end",
+            gridGap: "1.5rem",
+            alignItems: "flex-start",
             justifyContent: "flex-start",
             margin: "0 0 1rem",
           })}
@@ -215,17 +215,31 @@ const ChannelInfoDialog = ({
                 css({
                   flex: 1,
                   minWidth: 0,
+                  display: "flex",
+                  alignItems: "flex-end",
+                  flexWrap: "wrap",
                   fontSize: theme.fontSizes.header,
                   color: theme.colors.textHeader,
                   lineHeight: 1.2,
                   whiteSpace: "nowrap",
                   overflow: "hidden",
                   textOverflow: "ellipsis",
+                  "@media (min-width: 600px)": {
+                    flexWrap: "nowrap",
+                  },
                 })
               }
               {...titleProps}
             >
-              {channelName}
+              <span
+                css={css({
+                  marginRight: "1rem",
+                  overflow: "hidden",
+                  textOverflow: "ellipsis",
+                })}
+              >
+                {channelName}
+              </span>
               {showPermissionTypeBadge && (
                 <Tooltip.Root>
                   <Tooltip.Trigger
@@ -234,7 +248,7 @@ const ChannelInfoDialog = ({
                         color: t.colors.textDimmed,
                         fontSize: t.fontSizes.tiny,
                         fontWeight: "400",
-                        marginLeft: "1rem",
+                        marginTop: "0.5rem",
                         background: t.colors.backgroundModifierHover,
                         borderRadius: "0.2rem",
                         padding: "0.2rem 0.4rem",
@@ -263,11 +277,11 @@ const ChannelInfoDialog = ({
                     {channel.kind === "dm"
                       ? "DM channel"
                       : channelPermissionType != null && (
-                        <>
-                          {channelPermissionType.slice(0, 1).toUpperCase()}
-                          {channelPermissionType.slice(1)} channel
-                        </>
-                      )}
+                          <>
+                            {channelPermissionType.slice(0, 1).toUpperCase()}
+                            {channelPermissionType.slice(1)} channel
+                          </>
+                        )}
                   </Tooltip.Trigger>
                   <Tooltip.Content side="top" align="center" sideOffset={6}>
                     {channel.kind === "dm" ? (
