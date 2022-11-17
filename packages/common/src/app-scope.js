@@ -168,8 +168,8 @@ export const Provider = ({ cloudflareAccountHash, children }) => {
               setting === "off"
                 ? { muted: true }
                 : setting === "mentions"
-                  ? { mentions: true }
-                  : {},
+                ? { mentions: true }
+                : {},
           },
         }),
       });
@@ -690,7 +690,12 @@ export const Provider = ({ cloudflareAccountHash, children }) => {
 
     if (missingChannelStars.length !== 0)
       await Promise.all(
-        missingChannelStars.map((s) => fetchChannel(s.reference))
+        missingChannelStars.map((s) =>
+          fetchChannel(s.reference).catch((e) => {
+            // 403 may happen if you have starred a channel you no longer have access to
+            if (e.code !== 403) throw e;
+          })
+        )
       );
 
     fetchPreferences();
