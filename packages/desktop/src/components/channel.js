@@ -1732,26 +1732,7 @@ const Channel = ({ channelId, compact, noSideMenu }) => {
     return (
       <>
         {!isMenuTogglingEnabled &&
-          (channel.image == null ? (
-            <>
-              {!isEmbedded && (
-                <div
-                  css={(theme) =>
-                    css({
-                      color: theme.colors.textMuted,
-                      marginRight: "0.6rem",
-                    })
-                  }
-                >
-                  {channel.kind === "dm" ? (
-                    <AtSignIcon style={{ width: "2.2rem" }} />
-                  ) : (
-                    <HashIcon style={{ width: "1.6rem" }} />
-                  )}
-                </div>
-              )}
-            </>
-          ) : (
+          (channel.image != null ? (
             <a
               href={channel.imageLarge}
               rel="noreferrer"
@@ -1769,7 +1750,18 @@ const Channel = ({ channelId, compact, noSideMenu }) => {
             >
               <Avatar url={channel.image} size="2.4rem" pixelSize={24} />
             </a>
-          ))}
+          ) : channel.kind === "dm" ? (
+            <div
+              css={(theme) =>
+                css({
+                  color: theme.colors.textMuted,
+                  marginRight: "0.6rem",
+                })
+              }
+            >
+              <AtSignIcon style={{ width: "2.2rem" }} />
+            </div>
+          ) : null)}
 
         {!isEmbedded && (
           <Heading
