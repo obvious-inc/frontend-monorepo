@@ -36,7 +36,7 @@ import { ChannelPicture } from "./channel-list";
 import { Globe as GlobeIcon } from "../components/icons";
 
 const { useLatestCallback } = Shades.react;
-const { useAppScope } = Shades.app;
+const { useAppScope, useMessageEmbeds } = Shades.app;
 const { ethereum: ethereumUtils } = Shades.utils;
 const {
   message: messageUtils,
@@ -656,7 +656,7 @@ const Message = ({
     previousMessage != null &&
     previousMessage.authorId === m.authorId &&
     createdAtDate - new Date(previousMessage.created_at) <
-      5 * ONE_MINUTE_IN_MILLIS;
+    5 * ONE_MINUTE_IN_MILLIS;
 
   const handlePressInteractiveMessageElement = (el) => {
     switch (el.type) {
@@ -689,8 +689,8 @@ const Message = ({
         backgroundColor: highlight
           ? "rgba(63,137,234,0.17)"
           : pressed
-          ? "rgba(255, 255, 255, 0.055)"
-          : undefined,
+            ? "rgba(255, 255, 255, 0.055)"
+            : undefined,
       })}
     >
       {message.isReply && (
@@ -698,6 +698,9 @@ const Message = ({
           key={m.id}
           message={message.repliedMessage}
           getMember={getMember}
+          onPressInteractiveMessageElement={
+            handlePressInteractiveMessageElement
+          }
         />
       )}
 
@@ -791,36 +794,165 @@ const Message = ({
               </Text>
             </View>
           )}
-          <Text
-            // selectable
-            style={{ fontSize: 16, color: textDefault, lineHeight: 24 }}
-          >
-            {m.isSystemMessage ? (
+          {m.isSystemMessage ? (
+            <Text
+              // selectable
+              style={{ fontSize: 16, color: textDefault, lineHeight: 24 }}
+            >
               <SystemMessageContent message={m} selectUser={selectUser} />
-            ) : (
-              <RichText
-                key={m.id}
-                blocks={m.content}
-                getMember={getMember}
-                onPressInteractiveElement={handlePressInteractiveMessageElement}
-                textStyle={{
-                  fontSize: 16,
-                  lineHeight: 24,
-                  color: textDefault,
-                }}
-              />
-            )}
-          </Text>
+            </Text>
+          ) : (
+            <>
+              <Text
+                // selectable
+                style={{ fontSize: 16, color: textDefault, lineHeight: 24 }}
+              >
+                <RichText
+                  key={m.id}
+                  blocks={m.content}
+                  getMember={getMember}
+                  onPressInteractiveElement={
+                    handlePressInteractiveMessageElement
+                  }
+                  textStyle={{
+                    fontSize: 16,
+                    lineHeight: 24,
+                    color: textDefault,
+                  }}
+                />
+              </Text>
+
+              {m.embeds?.length > 0 && <Embeds messageId={m.id} />}
+            </>
+          )}
         </View>
       </View>
     </Pressable>
   );
 };
 
-const RepliedMessage = ({ message, getMember }) => {
+const Embeds = React.memo(({ messageId }) => {
+  const embeds = useMessageEmbeds(messageId);
+  console.log(embeds);
+
+  return (
+    <View style={{ marginTop: 5 }}>
+      {embeds.map((embed, i) => (
+        <Embed key={embed.url} index={i} {...embed} />
+      ))}
+    </View>
+  );
+});
+
+const Embed = ({
+  title,
+  description,
+  sub,
+  image,
+  url,
+  favicon,
+  hostname,
+  siteName,
+  // video,
+  // metatags,
+  index,
+}) => {
+  const textStyles = { fontSize: 16, lineHeight: 24, color: textDefault };
+  return (
+    <View
+      style={{
+        flexDirection: "row",
+        alignItems: "stretch",
+        marginTop: index === 0 ? 0 : 10,
+      }}
+    >
+      <View
+        style={{
+          width: 4,
+          backgroundColor: theme.colors.backgroundLighter,
+          borderRadius: 2,
+        }}
+      />
+      <View style={{ flex: 1, minWidth: 0, paddingHorizontal: 12 }}>
+        <View style={{ flexDirection: "row", alignItems: "center" }}>
+          {favicon != null && (
+            <Image
+              source={{ uri: favicon }}
+              style={{
+                width: 16,
+                height: 16,
+                borderRadius: 2,
+                marginRight: 8,
+              }}
+            />
+          )}
+          <Text style={textStyles} numberOfLines={1}>
+            {title === siteName ? hostname : siteName}
+          </Text>
+        </View>
+        <View style={{ flexDirection: "row" }}>
+          <View style={{ flex: 1, minWidth: 0 }}>
+            <Text
+              onPress={() => {
+                Linking.openURL(url);
+              }}
+              numberOfLines={1}
+              style={{ ...textStyles, color: theme.colors.textBlue }}
+            >
+              {title}
+            </Text>
+            {description != null && (
+              <Text numberOfLines={5} style={textStyles}>
+                {description}
+              </Text>
+            )}
+            {sub != null && (
+              <Text
+                numberOfLines={1}
+                style={{
+                  ...textStyles,
+                  marginTop: 2,
+                  fontSize: 10,
+                  lineHeight: 16,
+                  color: theme.colors.textDimmed,
+                }}
+              >
+                {sub}
+              </Text>
+            )}
+          </View>
+          {image != null && (
+            <View style={{ marginLeft: 10, paddingTop: 5 }}>
+              <Image
+                source={{ uri: image }}
+                style={{
+                  width: 50,
+                  aspectRatio: 1,
+                  borderRadius: 3,
+                }}
+              />
+            </View>
+          )}
+        </View>
+      </View>
+    </View>
+  );
+};
+
+const RepliedMessage = ({
+  message,
+  getMember,
+  onPressInteractiveMessageElement,
+}) => {
   const authorMember = message?.author;
   const showAvatar =
     (message != null || !message?.deleted) && authorMember?.profilePicture;
+
+  const textStyles = {
+    fontSize: 13,
+    lineHeight: 20,
+    color: theme.colors.textDimmed,
+  };
 
   return (
     <View
@@ -859,11 +991,7 @@ const RepliedMessage = ({ message, getMember }) => {
           />
         )}
         <View style={{ flex: 1 }}>
-          <Text
-            numberOfLines={1}
-            ellipsizeMode="tail"
-            style={{ fontSize: 13, color: "hsl(0,0%,50%)" }}
-          >
+          <Text numberOfLines={1} ellipsizeMode="tail" style={textStyles}>
             {message?.deleted ? (
               <Text
                 style={{
@@ -875,20 +1003,16 @@ const RepliedMessage = ({ message, getMember }) => {
               </Text>
             ) : (
               <>
-                {authorMember == null ? (
-                  <Text style={{ fontWeight: "500" }}>...</Text>
-                ) : (
-                  <Text style={{ fontWeight: "500" }}>
-                    {authorMember.displayName}
-                  </Text>
-                )}{" "}
-                <Text style={{ color: "hsl(0,0%,50%)" }}>
-                  <RichText
-                    inline
-                    blocks={message?.content ?? []}
-                    getMember={getMember}
-                  />
-                </Text>
+                <Text style={{ fontWeight: "500" }}>
+                  {authorMember == null ? "..." : authorMember.displayName}
+                </Text>{" "}
+                <RichText
+                  inline
+                  blocks={message?.content ?? []}
+                  getMember={getMember}
+                  onPressInteractiveElement={onPressInteractiveMessageElement}
+                  textStyle={textStyles}
+                />
               </>
             )}
           </Text>

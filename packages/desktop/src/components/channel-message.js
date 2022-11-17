@@ -3,7 +3,7 @@ import React from "react";
 import { useNavigate } from "react-router-dom";
 import { FormattedDate, FormattedRelativeTime } from "react-intl";
 import { css, useTheme } from "@emotion/react";
-import { useAppScope } from "@shades/common/app";
+import { useAppScope, useMessageEmbeds } from "@shades/common/app";
 import {
   array as arrayUtils,
   object as objectUtils,
@@ -405,9 +405,8 @@ const ChannelMessage = React.memo(function ChannelMessage_({
   );
 });
 
-const Embeds = ({ messageId }) => {
-  const { state } = useAppScope();
-  const message = state.selectMessage(messageId);
+const Embeds = React.memo(({ messageId }) => {
+  const embeds = useMessageEmbeds(messageId);
 
   return (
     <ul
@@ -417,132 +416,131 @@ const Embeds = ({ messageId }) => {
         "li + li": { marginTop: "1rem" },
       })}
     >
-      {message.embeds.map((embed) => (
+      {embeds.map((embed) => (
         <Embed key={embed.url} {...embed} />
       ))}
     </ul>
   );
-};
+});
 
-const Embed = ({ title: title_, url, favicon: favicon_, metatags }) => {
-  const title = metatags["og:title"] ?? title_;
-  const description =
-    title === metatags["og:description"] ? null : metatags["og:description"];
-  const sub = (description ?? title) === metatags.meta ? null : metatags.meta;
-  const image = metatags["og:image"];
-  const video = metatags["og:video"];
-  const hostname = React.useMemo(() => new URL(url).hostname, [url]);
-  const siteName = metatags["og:site_name"] ?? hostname;
-  const favicon = favicon_.trim() === "" ? null : favicon_;
-
-  return (
-    <li css={css({ display: "flex", alignItems: "stretch" })}>
+const Embed = ({
+  title,
+  description,
+  sub,
+  image,
+  video,
+  url,
+  favicon,
+  hostname,
+  siteName,
+  metatags,
+}) => (
+  <li css={css({ display: "flex", alignItems: "stretch" })}>
+    <div
+      css={(t) =>
+        css({
+          width: "0.4rem",
+          background: t.colors.borderLight,
+          borderRadius: "0.2rem",
+        })
+      }
+    />
+    <div css={css({ flex: 1, minWidth: 0, padding: "0 1.2rem" })}>
       <div
-        css={(t) =>
-          css({
-            width: "0.4rem",
-            background: t.colors.borderLight,
+        css={css({
+          whiteSpace: "nowrap",
+          overflow: "hidden",
+          textOverflow: "ellipsis",
+          img: {
+            display: "inline-block",
+            width: "1.6rem",
+            height: "1.6rem",
             borderRadius: "0.2rem",
-          })
-        }
-      />
-      <div css={css({ flex: 1, minWidth: 0, padding: "0 1.2rem" })}>
-        <div
-          css={css({
-            whiteSpace: "nowrap",
-            overflow: "hidden",
-            textOverflow: "ellipsis",
-            img: {
-              display: "inline-block",
-              width: "1.6rem",
-              height: "1.6rem",
-              borderRadius: "0.2rem",
-              marginRight: "0.8rem",
-              verticalAlign: "middle",
-              marginBottom: "0.3rem",
-            },
-          })}
-        >
-          {favicon != null && <img src={favicon} loading="lazy" />}
-          {title === siteName ? hostname : siteName}
-        </div>
-        <div css={css({ display: "flex" })}>
-          <div css={css({ flex: 1, minWidth: 0 })}>
-            <a
-              href={url}
-              rel="noreferrer"
-              target="_blank"
+            marginRight: "0.8rem",
+            verticalAlign: "middle",
+            marginBottom: "0.3rem",
+          },
+        })}
+      >
+        {favicon != null && <img src={favicon} loading="lazy" />}
+        {title === siteName ? hostname : siteName}
+      </div>
+      <div css={css({ display: "flex" })}>
+        <div css={css({ flex: 1, minWidth: 0 })}>
+          <a
+            href={url}
+            rel="noreferrer"
+            target="_blank"
+            css={(t) =>
+              css({
+                color: t.colors.link,
+                display: "inline-block",
+                verticalAlign: "middle",
+                maxWidth: "100%",
+                textDecoration: "none",
+                whiteSpace: "nowrap",
+                overflow: "hidden",
+                textOverflow: "ellipsis",
+                ":hover": {
+                  color: t.colors.linkModifierHover,
+                  textDecoration: "underline",
+                },
+              })
+            }
+          >
+            {title}
+          </a>
+          {description != null && <div>{description}</div>}
+          {sub != null && (
+            <div
               css={(t) =>
                 css({
-                  color: t.colors.link,
-                  display: "inline-block",
-                  verticalAlign: "middle",
-                  maxWidth: "100%",
-                  textDecoration: "none",
+                  marginTop: "0.2rem",
+                  fontSize: t.fontSizes.small,
+                  color: t.colors.textDimmed,
                   whiteSpace: "nowrap",
                   overflow: "hidden",
                   textOverflow: "ellipsis",
-                  ":hover": {
-                    color: t.colors.linkModifierHover,
-                    textDecoration: "underline",
-                  },
                 })
               }
             >
-              {title}
-            </a>
-            {description != null && <div>{description}</div>}
-            {sub != null && (
-              <div
-                css={(t) =>
-                  css({
-                    marginTop: "0.2rem",
-                    fontSize: t.fontSizes.small,
-                    color: t.colors.textDimmed,
-                    whiteSpace: "nowrap",
-                    overflow: "hidden",
-                    textOverflow: "ellipsis",
-                  })
-                }
-              >
-                {sub}
-              </div>
-            )}
-            {video != null && (
-              <video
-                controls
-                playsInline
-                src={video}
-                poster={image}
-                width={metatags["og:videoWidth"]}
-                height={metatags["og:videoHeight"]}
-                css={css({
-                  marginTop: "0.8rem",
-                  borderRadius: "0.3rem",
-                  maxWidth: "100%",
-                  maxHeight: "50vh",
-                  width: "auto",
-                  height: "auto",
-                })}
-              />
-            )}
-          </div>
-          {video == null && image != null && (
-            <div
-              css={css({
-                marginLeft: "1rem",
-                paddingTop: "1rem",
-                img: { width: "8rem", height: "auto", borderRadius: "0.3rem" },
-              })}
-            >
-              <img src={image} loading="lazy" />
+              {sub}
             </div>
           )}
+          {video != null && (
+            <video
+              controls
+              playsInline
+              src={video}
+              poster={image}
+              width={metatags["og:videoWidth"]}
+              height={metatags["og:videoHeight"]}
+              css={css({
+                marginTop: "0.8rem",
+                borderRadius: "0.3rem",
+                maxWidth: "100%",
+                maxHeight: "50vh",
+                width: "auto",
+                height: "auto",
+              })}
+            />
+          )}
         </div>
+        {video == null && image != null && (
+          <div
+            css={css({
+              marginLeft: "1rem",
+              paddingTop: "1rem",
+              img: { width: "8rem", height: "auto", borderRadius: "0.3rem" },
+            })}
+          >
+            <img src={image} loading="lazy" />
+          </div>
+        )}
       </div>
-    </li>
-  );
-};
+    </div>
+  </li>
+);
 
 const Reactions = ({
   items = [],

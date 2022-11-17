@@ -5,3 +5,4 @@ export {
   Provider as ServerConnectionProvider,
 } from "./server-connection";
 export { useAppScope, Provider as AppScopeProvider } from "./app-scope";
+export { default as useMessageEmbeds } from "./hooks/message-embeds";
