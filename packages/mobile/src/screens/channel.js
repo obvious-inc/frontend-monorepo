@@ -34,7 +34,7 @@ import RichText from "../components/rich-text";
 import UserProfilePicture from "../components/user-profile-picture";
 import MessageModalContent from "./message-modal";
 import { ChannelPicture } from "./channel-list";
-import { Globe as GlobeIcon } from "../components/icons";
+import { Globe as GlobeIcon, Emoji as EmojiIcon } from "../components/icons";
 
 const { useLatestCallback } = Shades.react;
 const { useAppScope, useMessageEmbeds } = Shades.app;
@@ -1267,18 +1267,35 @@ const ChannelMessageInput = React.forwardRef(
             <View
               style={{
                 flex: 1,
+                flexDirection: "row",
                 paddingHorizontal: 5,
-                alignItems: "flex-start",
+                alignItems: "center",
+                justifyContent: "flex-start",
               }}
             >
+              <Pressable
+                hitSlop={5}
+                style={{ marginRight: 15 }}
+                onPress={() => {
+                  setPendingMessage((m) => m + "🥓");
+                }}
+              >
+                <EmojiIcon
+                  width="22"
+                  height="22"
+                  style={{ color: theme.colors.textDefault }}
+                />
+              </Pressable>
               <Pressable
                 style={({ pressed }) => ({
                   backgroundColor: pressed
                     ? theme.colors.backgroundLight
-                    : theme.colors.backgroundLighter,
-                  paddingVertical: 6,
-                  paddingHorizontal: 8,
-                  borderRadius: 6,
+                    : undefined,
+                  borderColor: theme.colors.textMuted,
+                  borderWidth: 1.5,
+                  paddingVertical: 3,
+                  paddingHorizontal: 4.5,
+                  borderRadius: 5,
                 })}
                 onPress={async () => {
                   const response = await actions.searchGifs(pendingMessage);
@@ -1306,8 +1323,9 @@ const ChannelMessageInput = React.forwardRef(
                   style={{
                     color: theme.colors.textDefault,
                     fontSize: 12,
-                    fontWeight: "500",
+                    fontWeight: "700",
                     letterSpacing: 0.5,
+                    lineHeight: 17,
                   }}
                 >
                   GIF
