@@ -13,6 +13,7 @@ import {
   Modal,
   AppState,
   Alert,
+  Dimensions,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import {
@@ -38,11 +39,7 @@ import { Globe as GlobeIcon } from "../components/icons";
 const { useLatestCallback } = Shades.react;
 const { useAppScope, useMessageEmbeds } = Shades.app;
 const { ethereum: ethereumUtils } = Shades.utils;
-const {
-  message: messageUtils,
-  url: urlUtils,
-  getImageDimensionsFromUrl,
-} = Shades.utils;
+const { message: messageUtils, url: urlUtils } = Shades.utils;
 
 const ONE_MINUTE_IN_MILLIS = 1000 * 60;
 
@@ -141,6 +138,8 @@ const HeaderLeft = () => {
   const channelName = useChannelName();
   const memberCount = channel?.memberUserIds.length ?? 0;
 
+  const windowWidth = Dimensions.get("window").width;
+
   return (
     <View
       style={{
@@ -206,8 +205,9 @@ const HeaderLeft = () => {
                   />
                 </View>
               )}
-              <View>
+              <View style={{ maxWidth: windowWidth - 150 }}>
                 <Text
+                  numberOfLines={1}
                   style={{
                     color: pressed ? "hsl(0,0%,50%)" : "white",
                     fontSize: 16,
@@ -656,7 +656,7 @@ const Message = ({
     previousMessage != null &&
     previousMessage.authorId === m.authorId &&
     createdAtDate - new Date(previousMessage.created_at) <
-    5 * ONE_MINUTE_IN_MILLIS;
+      5 * ONE_MINUTE_IN_MILLIS;
 
   const handlePressInteractiveMessageElement = (el) => {
     switch (el.type) {
@@ -689,8 +689,8 @@ const Message = ({
         backgroundColor: highlight
           ? "rgba(63,137,234,0.17)"
           : pressed
-            ? "rgba(255, 255, 255, 0.055)"
-            : undefined,
+          ? "rgba(255, 255, 255, 0.055)"
+          : undefined,
       })}
     >
       {message.isReply && (
@@ -1248,6 +1248,8 @@ const ChannelMessageInput = React.forwardRef(
               paddingBottom: 11,
               lineHeight: 20,
               borderRadius: 12,
+              // Prevent placeholder controling input height
+              maxHeight: pendingMessage.trim() === "" ? 42 : undefined,
             }}
           />
         </View>

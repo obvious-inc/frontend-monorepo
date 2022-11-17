@@ -348,6 +348,7 @@ const ListItem = ({ icon, title, notificationCount, disabled, ...props }) => (
       )}
       <View style={{ flex: 1, minWidth: 0 }}>
         <Text
+          numberOfLines={1}
           style={{
             fontSize: 18,
             fontWeight: "500",

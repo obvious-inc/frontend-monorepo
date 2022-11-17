@@ -232,7 +232,7 @@ const ChannelDetailsModal = ({ navigation, route }) => {
               color: "white",
               fontSize: 16,
               fontWeight: "600",
-              lineHeight: 18,
+              lineHeight: 22,
               paddingTop: 2,
             }}
           >
