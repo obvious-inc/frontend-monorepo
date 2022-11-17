@@ -49,7 +49,7 @@ const entriesById = (state = {}, action) => {
     }
 
     case "delete-channel-request-successful":
-      return { ...state, [action.id]: { deleted: true } };
+      return { ...state, [action.id]: { isDeleted: true } };
 
     case "leave-channel:request-sent": {
       const existingChannelData = state[action.channelId];
@@ -310,7 +310,7 @@ export const selectChannelName = createSelector(
     return channel.memberUserIds.map((userId) => selectUser(state, userId));
   },
   (channel, loggedInUserId, channelMemberUsers) => {
-    if (channel == null || channel.deleted) return null;
+    if (channel == null || channel.isDeleted) return null;
 
     if (channel.name != null || channel.kind !== "dm") return channel.name;
 
@@ -330,7 +330,7 @@ export const selectChannelName = createSelector(
 
 export const selectChannel = (state, channelId) => {
   const channel = state.channels.entriesById[channelId];
-  if (channel == null || channel.deleted) return null;
+  if (channel == null || channel.isDeleted) return null;
   return channel;
 };
 
@@ -405,7 +405,7 @@ export const selectMemberChannels = createSelector(
     const channels = Object.entries(state.channels.entriesById)
       .filter(
         (entry) =>
-          !entry[1].deleted &&
+          !entry[1].isDeleted &&
           entry[1].memberUserIds?.includes(state.me.user.id)
       )
       .map(([id]) => selectChannel(state, id));
@@ -456,7 +456,7 @@ export const selectIsChannelStarred = (state, id) =>
 export const selectChannelMembers = createSelector(
   (state, channelId) => {
     const channel = state.channels.entriesById[channelId];
-    if (channel == null || channel.deleted) return [];
+    if (channel == null || channel.isDeleted) return [];
     return channel.memberUserIds?.map((id) => {
       const user = selectUser(state, id);
       return { ...user, id, isOwner: id === channel.ownerUserId };

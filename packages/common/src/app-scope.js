@@ -59,6 +59,7 @@ const createApiParsers = ({ buildCloudflareImageUrl }) => ({
       lastMessageAt: rawChannel.last_message_at,
       memberUserIds: rawChannel.members ?? [],
       ownerUserId: rawChannel.owner,
+      isDeleted: rawChannel.deleted,
     };
 
     if (normalizeString(rawChannel.avatar) == null) return channel;
