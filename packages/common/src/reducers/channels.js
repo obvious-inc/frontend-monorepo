@@ -301,28 +301,26 @@ const readStatesById = (state = {}, action) => {
 
 export const selectChannelName = createSelector(
   (state, channelId) => state.channels.entriesById[channelId],
-  (state) => state.me.user,
+  (state) => state.me.user?.id,
   (state, channelId) => {
     const channel = state.channels.entriesById[channelId];
 
-    if (
-      channel == null ||
-      channel.kind !== "dm" ||
-      channel.memberUserIds.length <= 1
-    )
-      return null;
+    if (channel == null || channel.kind !== "dm") return null;
 
     return channel.memberUserIds.map((userId) => selectUser(state, userId));
   },
-  (channel, loggedInUser, channelMemberUsers) => {
+  (channel, loggedInUserId, channelMemberUsers) => {
     if (channel == null || channel.deleted) return null;
 
     if (channel.name != null || channel.kind !== "dm") return channel.name;
 
-    if (channel.memberUserIds.length === 1) return "Me";
+    if (channel.memberUserIds.length === 1)
+      return channelMemberUsers[0] == null
+        ? null
+        : `${channelMemberUsers[0].displayName} (you)`;
 
     return channelMemberUsers
-      .filter((u) => u?.id !== loggedInUser?.id)
+      .filter((u) => u?.id !== loggedInUserId)
       .map((u) => u?.displayName)
       .filter(Boolean)
       .join(", ");
