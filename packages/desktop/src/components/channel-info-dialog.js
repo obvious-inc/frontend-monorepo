@@ -277,11 +277,11 @@ const ChannelInfoDialog = ({
                     {channel.kind === "dm"
                       ? "DM channel"
                       : channelPermissionType != null && (
-                          <>
-                            {channelPermissionType.slice(0, 1).toUpperCase()}
-                            {channelPermissionType.slice(1)} channel
-                          </>
-                        )}
+                        <>
+                          {channelPermissionType.slice(0, 1).toUpperCase()}
+                          {channelPermissionType.slice(1)} channel
+                        </>
+                      )}
                   </Tooltip.Trigger>
                   <Tooltip.Content side="top" align="center" sideOffset={6}>
                     {channel.kind === "dm" ? (
@@ -531,7 +531,7 @@ const AboutTab = ({ channelId, dismiss }) => {
             </li>
             <li>
               <ProperyButton
-                name="Description"
+                name="Topic"
                 value={channel.description ?? "-"}
                 onClick={() => {
                   setEditDialogMode("description");
@@ -665,11 +665,11 @@ const AboutTab = ({ channelId, dismiss }) => {
 
           const title = {
             name: "Edit channel name",
-            description: "Edit channel description",
+            description: "Edit channel topic",
           }[editingPropery];
           const placeholder = {
             name: "Add a clever title",
-            description: "Add a fun description",
+            description: "Add a fun topic",
           }[editingPropery];
           const hint = {
             description: "Make sure to include a couple of emojis 🌸 🌈",

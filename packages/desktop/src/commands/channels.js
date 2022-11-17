@@ -53,15 +53,9 @@ const commands = {
       return true;
     },
   }),
-  "set-channel-description": ({
-    context,
-    user,
-    state,
-    actions,
-    channelId,
-  }) => ({
-    description: "Set a new description for this channel",
-    arguments: ["channel-description"],
+  "set-channel-topic": ({ context, user, state, actions, channelId }) => ({
+    description: "Set a new topic for this channel",
+    arguments: ["channel-topic"],
     execute: async ({ args, editor }) => {
       const description = args.join(" ");
       await actions.updateChannel(channelId, {

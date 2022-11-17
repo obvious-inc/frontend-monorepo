@@ -134,7 +134,7 @@ const CreateChannelDialogContent = ({ titleProps, close, createChannel }) => {
             disabled={hasPendingRequest}
             label={
               <>
-                Description{" "}
+                Topic{" "}
                 <span
                   css={(t) =>
                     css({

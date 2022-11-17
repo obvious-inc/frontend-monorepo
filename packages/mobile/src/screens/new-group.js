@@ -140,12 +140,12 @@ const NewGroup = ({ navigation, route }) => {
       <View style={{ paddingHorizontal: 16 }}>
         <Input
           autoFocus
-          placeholder="Title (required)"
+          placeholder="Name (required)"
           value={name}
           onChangeText={setName}
         />
         <Input
-          placeholder="Description"
+          placeholder="Topic"
           multiline
           value={description}
           onChangeText={setDescription}

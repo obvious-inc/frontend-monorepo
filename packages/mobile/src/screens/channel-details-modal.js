@@ -61,10 +61,10 @@ const ChannelDetailsModal = ({ navigation, route }) => {
     },
     canManageInfo && {
       key: "edit-description",
-      label: "Edit description",
+      label: "Edit topic",
       onPress: () => {
         Alert.prompt(
-          "Edit channel description",
+          "Edit channel topic",
           undefined,
           [
             { text: "Cancel", style: "cancel" },
