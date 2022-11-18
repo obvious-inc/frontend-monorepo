@@ -111,8 +111,6 @@ const App = () => {
     registerDevicePushToken,
   } = actions;
 
-  const channels = state.selectMemberChannels();
-
   const bootClient = useLatestCallback(() =>
     fetchClientBootData().then(({ channels }) => {
       const dmUserIds = unique(
@@ -167,23 +165,7 @@ const App = () => {
       registerDevicePushToken(token);
     };
 
-    const receivedSubscription = Notifications.addNotificationReceivedListener(
-      (notification) => {
-        console.log("Received notification", notification);
-      }
-    );
-
-    const responseSubscription =
-      Notifications.addNotificationResponseReceivedListener((response) => {
-        console.log("Received notification response", response);
-      });
-
     registerForPushNotifications();
-
-    return () => {
-      receivedSubscription.remove();
-      responseSubscription.remove();
-    };
   }, [me, registerDevicePushToken]);
 
   const badgeCount =
@@ -208,7 +190,7 @@ const App = () => {
     );
 
   // Loading screen
-  if (authStatus === "loading" || me == null || channels.length === 0)
+  if (authStatus === "loading" || me == null)
     return <View style={{ backgroundColor: background, flex: 1 }} />;
 
   return (
@@ -569,7 +551,6 @@ export default () => {
                 const urlSubscription = Linking.addEventListener(
                   "url",
                   ({ url }) => {
-                    console.log("url listener", url);
                     listener(url);
                   }
                 );

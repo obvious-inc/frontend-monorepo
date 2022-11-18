@@ -179,6 +179,7 @@ importers:
       expo-constants: ~14.0.2
       expo-device: ~5.0.0
       expo-haptics: ~12.0.1
+      expo-image-picker: ~14.0.1
       expo-linking: ~3.2.3
       expo-localization: ~14.0.0
       expo-notifications: ~0.17.0
@@ -217,6 +218,7 @@ importers:
       expo-constants: 14.0.2_expo@47.0.0-beta.8
       expo-device: 5.0.0_expo@47.0.0-beta.8
       expo-haptics: 12.0.1_expo@47.0.0-beta.8
+      expo-image-picker: 14.0.1_expo@47.0.0-beta.8
       expo-linking: 3.2.3_expo@47.0.0-beta.8
       expo-localization: 14.0.0_expo@47.0.0-beta.8
       expo-notifications: 0.17.0_expo@47.0.0-beta.8
@@ -9239,6 +9241,24 @@ packages:
       expo: 47.0.0-beta.8_@babel+core@7.19.6
     dev: false
 
+  /expo-image-loader/4.0.0_expo@47.0.0-beta.8:
+    resolution: {integrity: sha512-hVMhXagsO1cSng5s70IEjuJAuHy2hX/inu5MM3T0ecJMf7L/7detKf22molQBRymerbk6Tzu+20h11eU0n/3jQ==}
+    peerDependencies:
+      expo: '*'
+    dependencies:
+      expo: 47.0.0-beta.8_@babel+core@7.19.6
+    dev: false
+
+  /expo-image-picker/14.0.1_expo@47.0.0-beta.8:
+    resolution: {integrity: sha512-Qx7Vt00nEZvLwRUC6vknm0dbvYWwnEzqbg3rIRImGxfZ7ki3rWJ3HlWebGpxCyYRpJV6A7rUAgm/Mc0eY4eYzA==}
+    peerDependencies:
+      expo: '*'
+    dependencies:
+      expo: 47.0.0-beta.8_@babel+core@7.19.6
+      expo-image-loader: 4.0.0_expo@47.0.0-beta.8
+      uuid: 7.0.2
+    dev: false
+
   /expo-json-utils/0.4.0:
     resolution: {integrity: sha512-lK6gjea72XTYafpKNNJaMrBK5dYAX8LFLXrp/M1MKJU4Zy7EHd2rKrLwop3GZts8VdwLHeVcMko79SAbhe3i5Q==}
     dev: false
@@ -15667,6 +15687,11 @@ packages:
   /uuid/3.4.0:
     resolution: {integrity: sha512-HjSDRw6gZE5JMggctHBcjVak08+KEVhSIiDzFnT9S9aegmp85S/bReBVTb4QTFaRNptJ9kuYaNhnbNEOkbKb/A==}
     deprecated: Please upgrade  to version 7 or higher.  Older versions may use Math.random() in certain circumstances, which is known to be problematic.  See https://v8.dev/blog/math-random for details.
+    hasBin: true
+    dev: false
+
+  /uuid/7.0.2:
+    resolution: {integrity: sha512-vy9V/+pKG+5ZTYKf+VcphF5Oc6EFiu3W8Nv3P3zIh0EqVI80ZxOzuPfe9EHjkFNvf8+xuTHVeei4Drydlx4zjw==}
     hasBin: true
     dev: false
 

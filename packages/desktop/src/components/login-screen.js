@@ -36,15 +36,24 @@ const LoginScreen = ({ showThrowawayWalletOption, onSuccess, onError }) => {
 
   const error = loginError ?? walletError;
 
-  const handleClickLogin = () =>
-    login(accountAddress).then(
-      (response) => {
-        onSuccess?.(response);
-      },
-      (error) => {
-        onError?.(error);
-      }
-    );
+  const handleClickLogin = (type) => {
+    if (type === "throwaway") setThrowawayAuth(true);
+
+    const promise =
+      type === "throwaway" ? loginWithThrowawayWallet() : login(accountAddress);
+    promise
+      .then(
+        (response) => {
+          onSuccess?.(response);
+        },
+        (error) => {
+          onError?.(error);
+        }
+      )
+      .finally(() => {
+        setThrowawayAuth(false);
+      });
+  };
 
   return (
     <div
@@ -168,12 +177,12 @@ const LoginScreen = ({ showThrowawayWalletOption, onSuccess, onError }) => {
               {walletError != null
                 ? "Could not connect to wallet"
                 : loginError === "signature-rejected"
-                ? "Signature rejected by user"
-                : loginError === "signature-rejected-or-failed"
-                ? "Signature rejected or failed"
-                : loginError === "server-login-request-error"
-                ? "Could not log in address. Check console for hints if you’re into that kind of thing."
-                : "A wild error has appeard! Check you Internet connection or go grab a snack."}
+                  ? "Signature rejected by user"
+                  : loginError === "signature-rejected-or-failed"
+                    ? "Signature rejected or failed"
+                    : loginError === "server-login-request-error"
+                      ? "Could not log in address. Check console for hints if you’re into that kind of thing."
+                      : "A wild error has appeard! Check you Internet connection or go grab a snack."}
             </div>
           )}
           {accountAddress == null ? (
@@ -208,8 +217,7 @@ const LoginScreen = ({ showThrowawayWalletOption, onSuccess, onError }) => {
                   <Button
                     size="large"
                     onClick={() => {
-                      setThrowawayAuth(true);
-                      loginWithThrowawayWallet();
+                      handleClickLogin("throwaway");
                     }}
                   >
                     Use throwaway wallet

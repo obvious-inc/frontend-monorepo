@@ -34,4 +34,14 @@ module.exports = {
       projectId: process.env.EAS_PROJECT_ID,
     },
   },
+  plugins: [
+    [
+      "expo-image-picker",
+      {
+        photosPermission:
+          "The app accesses your photos to let you share them with your friends.",
+        // cameraPermission: "",
+      },
+    ],
+  ],
 };

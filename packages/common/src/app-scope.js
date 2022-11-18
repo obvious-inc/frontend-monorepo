@@ -137,7 +137,7 @@ export const Provider = ({ cloudflareAccountHash, children }) => {
       (preferences) => {
         const notificationSettingsByChannelId = mapValues(
           (s) => (s.muted ? "off" : s.mentions ? "mentions" : "all"),
-          preferences.channels
+          preferences?.channels ?? {}
         );
         dispatch({
           type: "fetch-preferences:request-successful",
@@ -169,8 +169,8 @@ export const Provider = ({ cloudflareAccountHash, children }) => {
               setting === "off"
                 ? { muted: true }
                 : setting === "mentions"
-                ? { mentions: true }
-                : {},
+                  ? { mentions: true }
+                  : {},
           },
         }),
       });
@@ -778,7 +778,15 @@ export const Provider = ({ cloudflareAccountHash, children }) => {
     return authorizedFetch("/media/images", {
       method: "POST",
       body: formData,
-    });
+    }).then((files) =>
+      files.map((f) => ({
+        ...f,
+        urls: {
+          small: buildCloudflareImageUrl(f.id, { size: "small" }),
+          large: buildCloudflareImageUrl(f.id, { size: "large" }),
+        },
+      }))
+    );
   });
 
   const uploadImageWithUrl = useLatestCallback((url) =>
@@ -786,7 +794,9 @@ export const Provider = ({ cloudflareAccountHash, children }) => {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ url }),
-    }).then(({ id }) => ({ url: buildCloudflareImageUrl(id, "large") }))
+    }).then(({ id }) => ({
+      url: buildCloudflareImageUrl(id, { size: "large" }),
+    }))
   );
 
   const registerChannelTypingActivity = useLatestCallback((channelId) =>

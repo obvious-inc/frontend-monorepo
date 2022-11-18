@@ -130,8 +130,8 @@ export const Provider = ({
     accessToken === undefined
       ? "loading"
       : accessToken == null
-      ? "not-authenticated"
-      : "authenticated";
+        ? "not-authenticated"
+        : "authenticated";
 
   const login = useLatestCallback(
     async ({ message, signature, address, signedAt, nonce }) => {

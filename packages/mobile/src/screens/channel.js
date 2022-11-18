@@ -1,5 +1,6 @@
 import * as Haptics from "expo-haptics";
 import * as Linking from "expo-linking";
+import * as ImagePicker from "expo-image-picker";
 import React from "react";
 import { useEnsName } from "wagmi";
 import {
@@ -14,6 +15,7 @@ import {
   AppState,
   Alert,
   Dimensions,
+  ScrollView,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import {
@@ -34,12 +36,19 @@ import RichText from "../components/rich-text";
 import UserProfilePicture from "../components/user-profile-picture";
 import MessageModalContent from "./message-modal";
 import { ChannelPicture } from "./channel-list";
-import { Globe as GlobeIcon, Emoji as EmojiIcon } from "../components/icons";
+import {
+  Globe as GlobeIcon,
+  Emoji as EmojiIcon,
+  CrossCircle as CrossCircleIcon,
+} from "../components/icons";
 
 const { useLatestCallback } = Shades.react;
 const { useAppScope, useMessageEmbeds } = Shades.app;
-const { ethereum: ethereumUtils } = Shades.utils;
-const { message: messageUtils, url: urlUtils } = Shades.utils;
+const {
+  message: messageUtils,
+  url: urlUtils,
+  ethereum: ethereumUtils,
+} = Shades.utils;
 
 const ONE_MINUTE_IN_MILLIS = 1000 * 60;
 
@@ -430,8 +439,10 @@ const Channel = ({ navigation, route: { params } }) => {
             placeholder={channelName == null ? "..." : `Message ${channelName}`}
             pendingMessage={pendingMessage}
             setPendingMessage={setPendingMessage}
-            onSubmit={(content) => {
+            onSubmit={(content, { images } = {}) => {
               const createBlocks = (content) => {
+                if (content == null || content.trim() === "") return [];
+
                 const paragraphContentElements = content
                   .split(" ")
                   .reduce((els, word) => {
@@ -459,8 +470,20 @@ const Channel = ({ navigation, route: { params } }) => {
                 ];
               };
 
-              const blocks =
-                typeof content === "string" ? createBlocks(content) : content;
+              const blocks = createBlocks(content);
+
+              if (images != null && images.length > 0)
+                blocks.push({
+                  type: "attachments",
+                  children: images.map(({ url, width, height }) => ({
+                    type: "image-attachment",
+                    url,
+                    width,
+                    height,
+                  })),
+                });
+
+              if (blocks.length === 0) throw new Error();
 
               if (editingMessageId != null) {
                 setEditingMessageId(null);
@@ -515,6 +538,7 @@ const Channel = ({ navigation, route: { params } }) => {
             setEditingMessageId(selectedMessageId);
             const message = state.selectMessage(selectedMessageId);
             setSelectedMessageId(null);
+            keyboardShouldPersistTaps = "always";
             setPendingMessage(messageUtils.stringifyBlocks(message.content));
           }}
           startReply={() => {
@@ -833,7 +857,6 @@ const Message = ({
 
 const Embeds = React.memo(({ messageId }) => {
   const embeds = useMessageEmbeds(messageId);
-  console.log(embeds);
 
   return (
     <View style={{ marginTop: 5 }}>
@@ -1205,7 +1228,64 @@ const ChannelMessageInput = React.forwardRef(
     //   }).start();
     // }, [pendingMessage, containerWidthValue]);
 
-    const canSubmit = pendingMessage.trim() !== "";
+    const [images, setImages] = React.useState([]);
+
+    const pickImage = async () => {
+      // No permissions request is necessary for launching the image library
+      const result = await ImagePicker.launchImageLibraryAsync({
+        allowsMultipleSelection: true,
+        quality: 0.01,
+        // mediaTypes: ImagePicker.MediaTypeOptions.All,
+        // allowsEditing: true,
+        // aspect: [4, 3],
+      });
+
+      if (result.canceled) return;
+
+      console.log(result);
+
+      const newImages = [
+        ...images,
+        ...result.assets
+          // Remove duplicates
+          .filter((a) => !images.some((i) => i.assetUrl === a.uri))
+          .map((a) => ({
+            assetUrl: a.uri,
+            fileName: [a.assetId, a.fileName].join("."),
+            width: a.width,
+            height: a.height,
+          })),
+      ];
+
+      setImages(newImages);
+
+      const files = await Promise.all(
+        newImages.map(async (i) => {
+          const blob = await fetch(i.assetUrl).then((r) => r.blob());
+          return { uri: i.assetUrl, type: blob.type, name: i.fileName };
+        })
+      );
+
+      const uploadedFiles = await actions.uploadImage({ files });
+
+      setImages((images) =>
+        images.map((i) => {
+          const uploadedFile = uploadedFiles.find((u) =>
+            decodeURIComponent(u.filename).endsWith(i.fileName)
+          );
+
+          if (uploadedFile == null) return i;
+
+          return { ...i, url: uploadedFile.urls.large };
+        })
+      );
+    };
+
+    const hasPendingImages = images.some((i) => i.url == null);
+    const hasUploadedImages = images.length > 0 && !hasPendingImages;
+    const hasPostableContent =
+      pendingMessage.trim() !== "" || hasUploadedImages;
+    const canSubmit = !hasPendingImages && hasPostableContent;
 
     return (
       <>
@@ -1234,16 +1314,10 @@ const ChannelMessageInput = React.forwardRef(
             placeholderTextColor="hsla(0,0%,100%,0.5)"
             keyboardAppearance="dark"
             inputAccessoryViewID="message-input"
-            onBlur={() => {
-              console.log("blur");
-            }}
             style={{
               flex: 1,
               fontSize: 16,
               color: textDefault,
-              // backgroundColor: "hsl(0,0%,14%)",
-              // paddingHorizontal: 16,
-              // paddingHorizontal: 5,
               paddingTop: 11,
               paddingBottom: 11,
               lineHeight: 20,
@@ -1254,6 +1328,57 @@ const ChannelMessageInput = React.forwardRef(
           />
         </View>
         <InputAccessoryView nativeID="message-input">
+          {images.length !== 0 && (
+            <ScrollView
+              horizontal
+              keyboardShouldPersistTaps="always"
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={{ flexDirection: "row", padding: 10 }}
+            >
+              {images.map((image, i) => (
+                <View
+                  key={image.fileName}
+                  style={{ position: "relative", marginLeft: i === 0 ? 0 : 10 }}
+                >
+                  <Image
+                    source={{ uri: image.assetUrl }}
+                    style={{
+                      width: 70,
+                      height: 70,
+                      borderRadius: 10,
+                      borderWidth: 1,
+                      borderColor: theme.colors.backgroundLighter,
+                      opacity: image.url == null ? 0.5 : 1,
+                    }}
+                  />
+                  <Pressable
+                    hitSlop={10}
+                    onPress={() => {
+                      setImages((is) =>
+                        is.filter((i) => i.assetUrl !== image.assetUrl)
+                      );
+                    }}
+                    style={{
+                      position: "absolute",
+                      right: -11,
+                      top: -11,
+                      backgroundColor: theme.colors.background,
+                      padding: 2,
+                      borderRadius: 11,
+                    }}
+                  >
+                    <CrossCircleIcon
+                      width="20"
+                      height="20"
+                      style={{
+                        color: theme.colors.textDefault,
+                      }}
+                    />
+                  </Pressable>
+                </View>
+              ))}
+            </ScrollView>
+          )}
           <View
             style={{
               flexDirection: "row",
@@ -1277,7 +1402,8 @@ const ChannelMessageInput = React.forwardRef(
                 hitSlop={5}
                 style={{ marginRight: 15 }}
                 onPress={() => {
-                  setPendingMessage((m) => m + "🥓");
+                  // setPendingMessage((m) => m + "🥓");
+                  pickImage();
                 }}
               >
                 <EmojiIcon
@@ -1303,19 +1429,9 @@ const ChannelMessageInput = React.forwardRef(
                     response[Math.floor(Math.random() * response.length)].src;
 
                   Image.getSize(imageUrl, (width, height) => {
-                    onSubmit([
-                      {
-                        type: "attachments",
-                        children: [
-                          {
-                            type: "image-attachment",
-                            url: imageUrl,
-                            width,
-                            height,
-                          },
-                        ],
-                      },
-                    ]);
+                    onSubmit(null, {
+                      images: [{ url: imageUrl, width, height }],
+                    });
                   });
                 }}
               >
@@ -1338,8 +1454,9 @@ const ChannelMessageInput = React.forwardRef(
                   inputRef.current.focus();
                 }}
                 onPress={() => {
-                  onSubmit(pendingMessage);
+                  onSubmit(pendingMessage, { images });
                   setPendingMessage("");
+                  setImages([]);
                 }}
                 disabled={!canSubmit}
                 style={{
