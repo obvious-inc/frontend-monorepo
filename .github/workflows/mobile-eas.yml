@@ -49,3 +49,4 @@ jobs:
           API_ENDPOINT: ${{ secrets.PRODUCTION_API_BASE_URL }}
           WEB_APP_ENDPOINT: ${{ secrets.PRODUCTION_WEB_APP_BASE_URL }}
           PUSHER_KEY: ${{ secrets.PRODUCTION_PUSHER_KEY }}
+          CLOUDFLARE_ACCOUNT_HASH: ${{ secrets.CLOUDFLARE_ACCOUNT_HASH }}
