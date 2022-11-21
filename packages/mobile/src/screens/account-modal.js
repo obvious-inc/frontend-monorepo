@@ -3,7 +3,14 @@ import * as Shades from "@shades/common";
 import { View, Text, Pressable } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import theme from "../theme";
-import { VERSION } from "../config";
+import {
+  VERSION,
+  API_ENDPOINT,
+  WEB_APP_ENDPOINT,
+  PUSHER_KEY,
+  INFURA_PROJECT_ID,
+  CLOUDFLARE_ACCOUNT_HASH,
+} from "../config";
 
 const { useAppScope } = Shades.app;
 
@@ -66,14 +73,23 @@ const AccountModal = ({ navigation }) => {
         ]}
       />
       <View style={{ marginTop: 20 }}>
-        <Text
-          style={{
-            fontSize: 12,
-            color: "hsl(0,0%,28%)",
-          }}
-        >
+        <Text style={{ fontSize: 12, color: "hsl(0,0%,28%)" }}>
           Version {VERSION}
         </Text>
+      </View>
+
+      <View style={{ marginTop: 20 }}>
+        {[
+          API_ENDPOINT,
+          WEB_APP_ENDPOINT,
+          PUSHER_KEY,
+          INFURA_PROJECT_ID,
+          CLOUDFLARE_ACCOUNT_HASH,
+        ].map((c) => (
+          <Text key={c} style={{ fontSize: 12, color: "hsl(0,0%,28%)" }}>
+            {c}
+          </Text>
+        ))}
       </View>
     </SafeAreaView>
   );
@@ -101,8 +117,8 @@ const ModalActionButton = ({
     backgroundColor: pressed
       ? "hsl(0,0%,14%)"
       : bordered
-      ? undefined
-      : "hsl(0,0%,12%)",
+        ? undefined
+        : "hsl(0,0%,12%)",
     borderWidth: bordered ? 1 : 0,
     borderColor: bordered ? theme.colors.backgroundLight : undefined,
     borderRadius: 12,
@@ -132,8 +148,8 @@ const ModalActionButton = ({
             color: disabled
               ? theme.colors.textMuted
               : danger
-              ? theme.colors.textDanger
-              : textColor,
+                ? theme.colors.textDanger
+                : textColor,
             fontSize: 16,
             lineHeight: 18,
           }}
