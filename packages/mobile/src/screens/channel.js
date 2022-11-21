@@ -16,6 +16,7 @@ import {
   Alert,
   Dimensions,
   ScrollView,
+  ActivityIndicator,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import {
@@ -1348,9 +1349,25 @@ const ChannelMessageInput = React.forwardRef(
                       borderRadius: 10,
                       borderWidth: 1,
                       borderColor: theme.colors.backgroundLighter,
-                      opacity: image.url == null ? 0.5 : 1,
                     }}
                   />
+                  {image.url == null && (
+                    <View
+                      style={{
+                        position: "absolute",
+                        left: 0,
+                        top: 0,
+                        width: "100%",
+                        height: "100%",
+                        borderRadius: 10,
+                        alignItems: "center",
+                        justifyContent: "center",
+                        backgroundColor: "hsla(0,0%,0%,0.2)",
+                      }}
+                    >
+                      <ActivityIndicator color="white" />
+                    </View>
+                  )}
                   <Pressable
                     hitSlop={10}
                     onPress={() => {
