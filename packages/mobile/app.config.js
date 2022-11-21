@@ -19,6 +19,7 @@ module.exports = {
   },
   assetBundlePatterns: ["**/*"],
   runtimeVersion: { policy: "sdkVersion" },
+  userInterfaceStyle: "dark",
   ios: {
     supportsTablet: false,
     bundleIdentifier: "xyz.newshades.newshades",
