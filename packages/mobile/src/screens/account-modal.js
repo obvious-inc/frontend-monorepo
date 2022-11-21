@@ -53,7 +53,11 @@ const Header = () => {
 };
 
 const AccountModal = ({ navigation }) => {
-  const { actions } = useAppScope();
+  const { state, actions } = useAppScope();
+  const [showDebugInfo, setShowDebugInfo] = React.useState(false);
+
+  const me = state.selectMe();
+
   return (
     <SafeAreaView
       edges={["left", "right", "bottom"]}
@@ -72,25 +76,34 @@ const AccountModal = ({ navigation }) => {
           },
         ]}
       />
-      <View style={{ marginTop: 20 }}>
+      <Pressable
+        onLongPress={() => {
+          setShowDebugInfo((s) => !s);
+        }}
+        style={{ marginTop: 20 }}
+      >
         <Text style={{ fontSize: 12, color: "hsl(0,0%,28%)" }}>
           Version {VERSION}
         </Text>
-      </View>
+      </Pressable>
 
-      <View style={{ marginTop: 20 }}>
-        {[
-          API_ENDPOINT,
-          WEB_APP_ENDPOINT,
-          PUSHER_KEY,
-          INFURA_PROJECT_ID,
-          CLOUDFLARE_ACCOUNT_HASH,
-        ].map((c) => (
-          <Text key={c} style={{ fontSize: 12, color: "hsl(0,0%,28%)" }}>
-            {c}
-          </Text>
-        ))}
-      </View>
+      {showDebugInfo && (
+        <View style={{ marginTop: 20 }}>
+          {[
+            ["api", API_ENDPOINT],
+            ["web", WEB_APP_ENDPOINT],
+            ["pusher", PUSHER_KEY],
+            ["infura", INFURA_PROJECT_ID],
+            ["cloudflare", CLOUDFLARE_ACCOUNT_HASH],
+            ["wallet", me.walletAddress],
+            ["picture", me.profilePicture.large],
+          ].map(([name, value]) => (
+            <Text key={name} style={{ fontSize: 12, color: "hsl(0,0%,28%)" }}>
+              {name} {value}
+            </Text>
+          ))}
+        </View>
+      )}
     </SafeAreaView>
   );
 };
@@ -117,8 +130,8 @@ const ModalActionButton = ({
     backgroundColor: pressed
       ? "hsl(0,0%,14%)"
       : bordered
-        ? undefined
-        : "hsl(0,0%,12%)",
+      ? undefined
+      : "hsl(0,0%,12%)",
     borderWidth: bordered ? 1 : 0,
     borderColor: bordered ? theme.colors.backgroundLight : undefined,
     borderRadius: 12,
@@ -148,8 +161,8 @@ const ModalActionButton = ({
             color: disabled
               ? theme.colors.textMuted
               : danger
-                ? theme.colors.textDanger
-                : textColor,
+              ? theme.colors.textDanger
+              : textColor,
             fontSize: 16,
             lineHeight: 18,
           }}
