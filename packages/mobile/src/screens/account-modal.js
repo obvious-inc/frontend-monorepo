@@ -1,16 +1,10 @@
+import Constants from "expo-constants";
 import React from "react";
 import * as Shades from "@shades/common";
 import { View, Text, Pressable } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import theme from "../theme";
-import {
-  VERSION,
-  API_ENDPOINT,
-  WEB_APP_ENDPOINT,
-  PUSHER_KEY,
-  INFURA_PROJECT_ID,
-  CLOUDFLARE_ACCOUNT_HASH,
-} from "../config";
+import { VERSION } from "../config";
 
 const { useAppScope } = Shades.app;
 
@@ -53,10 +47,8 @@ const Header = () => {
 };
 
 const AccountModal = ({ navigation }) => {
-  const { state, actions } = useAppScope();
+  const { actions } = useAppScope();
   const [showDebugInfo, setShowDebugInfo] = React.useState(false);
-
-  const me = state.selectMe();
 
   return (
     <SafeAreaView
@@ -89,17 +81,13 @@ const AccountModal = ({ navigation }) => {
 
       {showDebugInfo && (
         <View style={{ marginTop: 20 }}>
-          {[
-            ["api", API_ENDPOINT],
-            ["web", WEB_APP_ENDPOINT],
-            ["pusher", PUSHER_KEY],
-            ["infura", INFURA_PROJECT_ID],
-            ["cloudflare", CLOUDFLARE_ACCOUNT_HASH],
-            ["wallet", me.walletAddress],
-            ["picture", me.profilePicture.large],
-          ].map(([name, value]) => (
-            <Text key={name} style={{ fontSize: 12, color: "hsl(0,0%,28%)" }}>
-              {name} {value}
+          {Object.entries(Constants.expoConfig.extra).map(([key, value]) => (
+            <Text
+              key={key}
+              selectable
+              style={{ fontSize: 12, color: "hsl(0,0%,28%)" }}
+            >
+              {key} {JSON.stringify(value)}
             </Text>
           ))}
         </View>
