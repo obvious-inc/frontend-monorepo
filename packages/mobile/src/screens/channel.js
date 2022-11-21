@@ -41,6 +41,8 @@ import {
   Globe as GlobeIcon,
   Emoji as EmojiIcon,
   CrossCircle as CrossCircleIcon,
+  Photo as PhotoIcon,
+  Camera as CameraIcon,
 } from "../components/icons";
 
 const { useLatestCallback } = Shades.react;
@@ -1229,30 +1231,22 @@ const ChannelMessageInput = React.forwardRef(
     //   }).start();
     // }, [pendingMessage, containerWidthValue]);
 
+    const [cameraPermissionStatus] = ImagePicker.useCameraPermissions();
+
     const [images, setImages] = React.useState([]);
 
-    const pickImage = async () => {
-      // No permissions request is necessary for launching the image library
-      const result = await ImagePicker.launchImageLibraryAsync({
-        allowsMultipleSelection: true,
-        quality: 0.01,
-        // mediaTypes: ImagePicker.MediaTypeOptions.All,
-        // allowsEditing: true,
-        // aspect: [4, 3],
-      });
-
-      if (result.canceled) return;
-
-      console.log(result);
-
+    const uploadImages = async (assets) => {
       const newImages = [
         ...images,
-        ...result.assets
+        ...assets
           // Remove duplicates
           .filter((a) => !images.some((i) => i.assetUrl === a.uri))
           .map((a) => ({
             assetUrl: a.uri,
-            fileName: [a.assetId, a.fileName].join("."),
+            fileName:
+              a.fileName == null
+                ? a.uri.split("/").slice(-1)[0]
+                : [a.assetId, a.fileName].join("."),
             width: a.width,
             height: a.height,
           })),
@@ -1280,6 +1274,53 @@ const ChannelMessageInput = React.forwardRef(
           return { ...i, url: uploadedFile.urls.large };
         })
       );
+    };
+
+    const launchImageLibrary = async () => {
+      // No permissions request is necessary for launching the image library
+      const result = await ImagePicker.launchImageLibraryAsync({
+        allowsMultipleSelection: true,
+        quality: 0.01,
+        // mediaTypes: ImagePicker.MediaTypeOptions.All,
+        // allowsEditing: true,
+        // aspect: [4, 3],
+      });
+
+      if (result.canceled) return;
+
+      uploadImages(result.assets);
+    };
+
+    const launchCamera = async () => {
+      const result = await ImagePicker.launchCameraAsync({
+        allowsMultipleSelection: true,
+        quality: 0.01,
+      });
+
+      if (!result.canceled) uploadImages(result.assets);
+
+      inputRef.current.focus();
+    };
+
+    const tryLaunchingCamera = async () => {
+      if (cameraPermissionStatus.granted) {
+        launchCamera();
+        return;
+      }
+
+      if (!cameraPermissionStatus.canAskAgain) {
+        Alert.alert(
+          "Permission required",
+          "Allow camera permission in system preferences to use camera"
+        );
+        return;
+      }
+
+      const response = await ImagePicker.requestCameraPermissionsAsync();
+
+      if (!response.granted) return;
+
+      await launchCamera();
     };
 
     const hasPendingImages = images.some((i) => i.url == null);
@@ -1417,53 +1458,64 @@ const ChannelMessageInput = React.forwardRef(
             >
               <Pressable
                 hitSlop={5}
-                style={{ marginRight: 15 }}
+                style={{ marginRight: 20 }}
                 onPress={() => {
-                  // setPendingMessage((m) => m + "🥓");
-                  pickImage();
+                  launchImageLibrary();
                 }}
               >
-                <EmojiIcon
-                  width="22"
-                  height="22"
-                  style={{ color: theme.colors.textDefault }}
+                <PhotoIcon
+                  width="27"
+                  height="27"
+                  style={{ color: theme.colors.textDimmed }}
                 />
               </Pressable>
               <Pressable
-                style={({ pressed }) => ({
-                  backgroundColor: pressed
-                    ? theme.colors.backgroundLight
-                    : undefined,
-                  borderColor: theme.colors.textMuted,
-                  borderWidth: 1.5,
-                  paddingVertical: 3,
-                  paddingHorizontal: 4.5,
-                  borderRadius: 5,
-                })}
-                onPress={async () => {
-                  const response = await actions.searchGifs(pendingMessage);
-                  const imageUrl =
-                    response[Math.floor(Math.random() * response.length)].src;
-
-                  Image.getSize(imageUrl, (width, height) => {
-                    onSubmit(null, {
-                      images: [{ url: imageUrl, width, height }],
-                    });
-                  });
+                hitSlop={5}
+                onPress={() => {
+                  tryLaunchingCamera();
                 }}
               >
-                <Text
-                  style={{
-                    color: theme.colors.textDefault,
-                    fontSize: 12,
-                    fontWeight: "700",
-                    letterSpacing: 0.5,
-                    lineHeight: 17,
-                  }}
-                >
-                  GIF
-                </Text>
+                <CameraIcon
+                  width="22"
+                  height="22"
+                  style={{ color: theme.colors.textDimmed }}
+                />
               </Pressable>
+              {/* <Pressable */}
+              {/*   style={({ pressed }) => ({ */}
+              {/*     backgroundColor: pressed */}
+              {/*       ? theme.colors.backgroundLight */}
+              {/*       : undefined, */}
+              {/*     borderColor: theme.colors.textMuted, */}
+              {/*     borderWidth: 1.5, */}
+              {/*     paddingVertical: 3, */}
+              {/*     paddingHorizontal: 4.5, */}
+              {/*     borderRadius: 5, */}
+              {/*   })} */}
+              {/*   onPress={async () => { */}
+              {/*     const response = await actions.searchGifs(pendingMessage); */}
+              {/*     const imageUrl = */}
+              {/*       response[Math.floor(Math.random() * response.length)].src; */}
+
+              {/*     Image.getSize(imageUrl, (width, height) => { */}
+              {/*       onSubmit(null, { */}
+              {/*         images: [{ url: imageUrl, width, height }], */}
+              {/*       }); */}
+              {/*     }); */}
+              {/*   }} */}
+              {/* > */}
+              {/*   <Text */}
+              {/*     style={{ */}
+              {/*       color: theme.colors.textDefault, */}
+              {/*       fontSize: 12, */}
+              {/*       fontWeight: "700", */}
+              {/*       letterSpacing: 0.5, */}
+              {/*       lineHeight: 17, */}
+              {/*     }} */}
+              {/*   > */}
+              {/*     GIF */}
+              {/*   </Text> */}
+              {/* </Pressable> */}
             </View>
             <View>
               <Pressable

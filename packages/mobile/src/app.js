@@ -160,7 +160,7 @@ const App = () => {
 
       const { data: token } = await Notifications.getExpoPushTokenAsync();
 
-      if (me.pushTokens.includes(token)) return;
+      if (me.pushTokens?.includes(token)) return;
 
       registerDevicePushToken(token);
     };
