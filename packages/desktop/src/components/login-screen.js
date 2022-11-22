@@ -10,7 +10,7 @@ import Button from "../components/button";
 
 const { truncateAddress } = ethereumUtils;
 
-const LoginScreen = ({ showThrowawayWalletOption, onSuccess, onError }) => {
+const LoginScreen = ({ mobileAppLogin, onSuccess, onError }) => {
   const {
     connect: connectWallet,
     cancel: cancelWalletConnectionAttempt,
@@ -35,6 +35,8 @@ const LoginScreen = ({ showThrowawayWalletOption, onSuccess, onError }) => {
     React.useState(false);
 
   const error = loginError ?? walletError;
+
+  const showThrowawayWalletOption = mobileAppLogin;
 
   const handleClickLogin = (type) => {
     if (type === "throwaway") setThrowawayAuth(true);
@@ -220,36 +222,40 @@ const LoginScreen = ({ showThrowawayWalletOption, onSuccess, onError }) => {
                       handleClickLogin("throwaway");
                     }}
                   >
-                    Use throwaway wallet
+                    Create throwaway wallet
                   </Button>
                 )}
               </div>
-              <Small
-                style={{
-                  width: "42rem",
-                  maxWidth: "100%",
-                  marginTop: "2rem",
-                  lineHeight: 1.3,
-                }}
-              >
-                Make sure to enable any browser extension wallets before you try
-                to connect. If you use a mobile wallet, no action is required.
-              </Small>
-              <Small style={{ marginTop: "1.2rem" }}>
-                <a
-                  href="https://learn.rainbow.me/what-is-a-cryptoweb3-wallet-actually"
-                  rel="noreferrer"
-                  target="_blank"
-                  css={(theme) =>
-                    css({
-                      color: theme.colors.link,
-                      ":hover": { color: theme.colors.linkModifierHover },
-                    })
-                  }
-                >
-                  What is a wallet?
-                </a>
-              </Small>
+              <div style={{ marginTop: "2rem" }}>
+                {!mobileAppLogin && (
+                  <Small
+                    style={{
+                      width: "42rem",
+                      maxWidth: "100%",
+                      lineHeight: 1.3,
+                    }}
+                  >
+                    Make sure to enable any browser extension wallets before you
+                    try to connect. If you use a mobile wallet, no action is
+                    required.
+                  </Small>
+                )}
+                <Small style={{ marginTop: "1.2rem" }}>
+                  <a
+                    href="https://learn.rainbow.me/what-is-a-cryptoweb3-wallet-actually"
+                    rel="noreferrer"
+                    target="_blank"
+                    css={(theme) =>
+                      css({
+                        color: theme.colors.link,
+                        ":hover": { color: theme.colors.linkModifierHover },
+                      })
+                    }
+                  >
+                    What is a wallet?
+                  </a>
+                </Small>
+              </div>
             </>
           ) : (
             <>

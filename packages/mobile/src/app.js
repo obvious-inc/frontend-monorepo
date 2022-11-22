@@ -331,6 +331,14 @@ const SignInView = ({ onSuccess, onError }) => (
   <WebView
     incognito
     source={{ uri: WEB_APP_ENDPOINT }}
+    onShouldStartLoadWithRequest={(event) => {
+      if (!event.url.startsWith(WEB_APP_ENDPOINT)) {
+        Linking.openURL(event.url);
+        return false;
+      }
+
+      return true;
+    }}
     onMessage={(e) => {
       try {
         const message = JSON.parse(e.nativeEvent.data);

@@ -221,7 +221,7 @@ const App = () => {
       window.ReactNativeWebView.postMessage(JSON.stringify({ type, payload }));
     return (
       <LoginScreen
-        showThrowawayWalletOption
+        mobileAppLogin
         onSuccess={({ accessToken, refreshToken }) => {
           sendMessageToApp("ns:authenticated", { accessToken, refreshToken });
         }}
