@@ -3,10 +3,12 @@ import { utils as ethersUtils } from "ethers";
 import { useProvider as useEthersProvider } from "wagmi";
 import React from "react";
 import { useParams, useSearchParams } from "react-router-dom";
+import { Helmet as ReactHelmet } from "react-helmet";
 import { css, useTheme } from "@emotion/react";
 import { useAuth, useAppScope } from "@shades/common/app";
 import {
   getImageFileDimensions,
+  getImageDimensionsFromUrl,
   array as arrayUtils,
   ethereum as ethereumUtils,
   message as messageUtils,
@@ -32,7 +34,6 @@ import Dialog from "./dialog";
 import Input from "./input";
 import ChannelInfoDialog from "./channel-info-dialog";
 import {
-  Hash as HashIcon,
   AtSign as AtSignIcon,
   Cross as CrossIcon,
   PlusCircle as PlusCircleIcon,
@@ -698,9 +699,8 @@ export const ChannelBase = ({
             {pendingMessagesBeforeCount > 0 && (
               <div
                 css={css({
-                  height: `${
-                    pendingMessagesBeforeCount * averageMessageListItemHeight
-                  }px`,
+                  height: `${pendingMessagesBeforeCount * averageMessageListItemHeight
+                    }px`,
                 })}
               />
             )}
@@ -1454,7 +1454,7 @@ const Channel = ({ channelId, compact, noSideMenu }) => {
       // Only long-poll fetch when user is logged out, or when not a member
       delay:
         authenticationStatus === "not-authenticated" ||
-        (user != null && !isMember)
+          (user != null && !isMember)
           ? 5000
           : 0,
       requireFocus: true,
@@ -1594,8 +1594,8 @@ const Channel = ({ channelId, compact, noSideMenu }) => {
                     showAddMemberDialog={
                       channel.kind === "topic" && isChannelOwner
                         ? () => {
-                            setAddMemberDialogOpen(true);
-                          }
+                          setAddMemberDialogOpen(true);
+                        }
                         : null
                     }
                     dismiss={() => {
@@ -1958,9 +1958,8 @@ const MembersDisplayButton = React.forwardRef(({ onClick, members }, ref) => {
         <div css={(t) => css({ color: t.colors.textDimmed })}>
           {onlineMemberCount === memberCount
             ? "All members online"
-            : `${onlineMemberCount} ${
-                onlineMemberCount === 1 ? "member" : "members"
-              } online`}
+            : `${onlineMemberCount} ${onlineMemberCount === 1 ? "member" : "members"
+            } online`}
         </div>
       </Tooltip.Content>
     </Tooltip.Root>
@@ -2103,15 +2102,65 @@ const AddMemberDialog = ({ channelId, dismiss, titleProps }) => {
   );
 };
 
+const MetaTags = ({ channelId }) => {
+  const { state } = useAppScope();
+  const channel = state.selectChannel(channelId);
+  const name = state.selectChannelName(channelId);
+
+  const [imageDimensions, setImageDimensions] = React.useState(null);
+
+  React.useEffect(() => {
+    if (channel?.image == null) {
+      setImageDimensions(null);
+      return;
+    }
+
+    getImageDimensionsFromUrl(channel.image).then((dimensions) => {
+      setImageDimensions(dimensions);
+    });
+  }, [channel.image]);
+
+  if (channel == null) return null;
+
+  return (
+    <ReactHelmet>
+      <link
+        rel="canonical"
+        href={`https://app.newshades.xyz/channels/${channelId}`}
+      />
+
+      <title>{name} - NewShades</title>
+      <description>{channel.description}</description>
+
+      <meta property="og:title" content={name} />
+      <meta property="og:description" content={channel.description} />
+
+      {channel.image != null && (
+        <meta property="og:image" content={channel.image} />
+      )}
+
+      {imageDimensions != null && (
+        <meta property="og:image:width" content={imageDimensions.width} />
+      )}
+      {imageDimensions != null && (
+        <meta property="og:image:height" content={imageDimensions.height} />
+      )}
+    </ReactHelmet>
+  );
+};
+
 export default (props) => {
   const params = useParams();
   const { status } = useAuth();
   if (status === "loading") return null;
   return (
-    <Channel
-      channelId={params.channelId}
-      {...props}
-      compact={location.search.includes("compact=1")}
-    />
+    <>
+      <MetaTags channelId={params.channelId} />
+      <Channel
+        channelId={params.channelId}
+        {...props}
+        compact={location.search.includes("compact=1")}
+      />
+    </>
   );
 };

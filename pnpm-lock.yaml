@@ -60,6 +60,7 @@ importers:
       react: 18.1.0
       react-aria: ^3.20.0
       react-dom: 18.1.0
+      react-helmet: ^6.1.0
       react-intl: ^5.25.1
       react-router-dom: ^6.4.2
       react-stately: ^3.18.0
@@ -102,6 +103,7 @@ importers:
       react: 18.1.0
       react-aria: 3.20.0_ef5jwxihqo6n7gxfmzogljlgcm
       react-dom: 18.1.0_react@18.1.0
+      react-helmet: 6.1.0_react@18.1.0
       react-intl: 5.25.1_react@18.1.0
       react-router-dom: 6.4.2_ef5jwxihqo6n7gxfmzogljlgcm
       react-stately: 3.18.0_react@18.1.0
@@ -5817,7 +5819,7 @@ packages:
       '@tanstack/react-query': 4.13.0
     dependencies:
       '@tanstack/query-persist-client-core': 4.13.0
-      '@tanstack/react-query': 4.13.0_tj3nonr5gneraukzjkxpsiy7yu
+      '@tanstack/react-query': 4.13.0_ef5jwxihqo6n7gxfmzogljlgcm
     transitivePeerDependencies:
       - '@tanstack/query-core'
     dev: false
@@ -6163,7 +6165,7 @@ packages:
       '@walletconnect/ethereum-provider':
         optional: true
     dependencies:
-      '@coinbase/wallet-sdk': 3.5.3_iq6gdjgmptryfixzlwpc2jqgni
+      '@coinbase/wallet-sdk': 3.5.3
       '@walletconnect/ethereum-provider': 1.8.0
       ethers: 5.7.2
       eventemitter3: 4.0.7
@@ -13524,6 +13526,10 @@ packages:
       scheduler: 0.22.0
     dev: false
 
+  /react-fast-compare/3.2.0:
+    resolution: {integrity: sha512-rtGImPZ0YyLrscKI9xTpV8psd6I8VAtjKCzQDlzyDvqJA8XOW78TXYQwNRNd8g8JZnDu8q9Fu/1v4HPAVwVdHA==}
+    dev: false
+
   /react-freeze/1.0.3_react@18.1.0:
     resolution: {integrity: sha512-ZnXwLQnGzrDpHBHiC56TXFXvmolPeMjTn1UOm610M4EXGzbEDR7oOIyS2ZiItgbs6eZc4oU/a0hpk8PrcKvv5g==}
     engines: {node: '>=10'}
@@ -13531,6 +13537,18 @@ packages:
       react: '>=17.0.0'
     dependencies:
       react: 18.1.0
+    dev: false
+
+  /react-helmet/6.1.0_react@18.1.0:
+    resolution: {integrity: sha512-4uMzEY9nlDlgxr61NL3XbKRy1hEkXmKNXhjbAIOVw5vcFrsdYbH2FEwcNyWvWinl103nXgzYNlns9ca+8kFiWw==}
+    peerDependencies:
+      react: '>=16.3.0'
+    dependencies:
+      object-assign: 4.1.1
+      prop-types: 15.8.1
+      react: 18.1.0
+      react-fast-compare: 3.2.0
+      react-side-effect: 2.1.2_react@18.1.0
     dev: false
 
   /react-intl/5.25.1_react@18.1.0:
@@ -13821,6 +13839,14 @@ packages:
       object-assign: 4.1.1
       react: 18.1.0
       react-is: 18.2.0
+    dev: false
+
+  /react-side-effect/2.1.2_react@18.1.0:
+    resolution: {integrity: sha512-PVjOcvVOyIILrYoyGEpDN3vmYNLdy1CajSFNt4TDsVQC5KpTijDvWVoR+/7Rz2xT978D8/ZtFceXxzsPwZEDvw==}
+    peerDependencies:
+      react: ^16.3.0 || ^17.0.0 || ^18.0.0
+    dependencies:
+      react: 18.1.0
     dev: false
 
   /react-stately/3.18.0_react@18.1.0:
