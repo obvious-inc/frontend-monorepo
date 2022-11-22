@@ -39,7 +39,6 @@ import MessageModalContent from "./message-modal";
 import { ChannelPicture } from "./channel-list";
 import {
   Globe as GlobeIcon,
-  Emoji as EmojiIcon,
   CrossCircle as CrossCircleIcon,
   Photo as PhotoIcon,
   Camera as CameraIcon,

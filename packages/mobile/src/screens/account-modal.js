@@ -123,7 +123,15 @@ const AccountModal = ({ navigation }) => {
                       profilePicture: uploadedFiles[0].urls.large,
                     });
                   } catch (e) {
-                    Alert.alert("Error", e.message);
+                    const alert = (message) => Alert.alert("Error", message);
+
+                    if (e.response == null) {
+                      alert(e.message);
+                      return;
+                    }
+
+                    const textResponse = await e.response.text();
+                    alert(textResponse);
                   } finally {
                     setUpdatingProfilePicture(false);
                   }
