@@ -2132,7 +2132,7 @@ const MetaTags = ({ channelId }) => {
       />
 
       <title>{name} - NewShades</title>
-      <description>{channel.description}</description>
+      <meta name="description" content={channel.description} />
 
       <meta property="og:title" content={name} />
       <meta property="og:description" content={channel.description} />
