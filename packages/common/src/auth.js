@@ -241,6 +241,7 @@ export const Provider = ({
 
     if (!response.ok) {
       const error = new Error(response.statusText);
+      error.response = response;
       error.code = response.status;
       return Promise.reject(error);
     }
