@@ -114,7 +114,8 @@ const AccountModal = ({ navigation }) => {
                         {
                           uri: asset.uri,
                           type: blob.type,
-                          name: asset.fileName,
+                          name:
+                            asset.fileName ?? asset.uri.split("/").slice(-1)[0],
                         },
                       ],
                     });
