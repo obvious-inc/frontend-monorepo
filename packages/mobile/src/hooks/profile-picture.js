@@ -29,8 +29,8 @@ const useProfilePicture = (user, { large, transparent = false } = {}) => {
     user == null || user.profilePicture == null
       ? null
       : large
-        ? user.profilePicture.large
-        : user.profilePicture.small;
+      ? user.profilePicture.large
+      : user.profilePicture.small;
 
   const { data: ensAvatarUrl, isLoading: isLoadingEnsAvatar } = useEnsAvatar({
     addressOrName: user?.walletAddress,
@@ -58,8 +58,8 @@ const useProfilePicture = (user, { large, transparent = false } = {}) => {
     avatarUrl != null
       ? "url"
       : placeholderSvgString != null
-        ? "svg-string"
-        : null;
+      ? "svg-string"
+      : null;
 
   switch (type) {
     case "url":

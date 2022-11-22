@@ -177,12 +177,12 @@ const LoginScreen = ({ showThrowawayWalletOption, onSuccess, onError }) => {
               {walletError != null
                 ? "Could not connect to wallet"
                 : loginError === "signature-rejected"
-                  ? "Signature rejected by user"
-                  : loginError === "signature-rejected-or-failed"
-                    ? "Signature rejected or failed"
-                    : loginError === "server-login-request-error"
-                      ? "Could not log in address. Check console for hints if you’re into that kind of thing."
-                      : "A wild error has appeard! Check you Internet connection or go grab a snack."}
+                ? "Signature rejected by user"
+                : loginError === "signature-rejected-or-failed"
+                ? "Signature rejected or failed"
+                : loginError === "server-login-request-error"
+                ? "Could not log in address. Check console for hints if you’re into that kind of thing."
+                : "A wild error has appeard! Check you Internet connection or go grab a snack."}
             </div>
           )}
           {accountAddress == null ? (

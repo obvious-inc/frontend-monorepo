@@ -53,7 +53,7 @@ export const openChannelPermissionOverrides = [
 ];
 
 export const parseScopes = (scopes) => {
-  return scopes?.map(function(scope) {
+  return scopes?.map(function (scope) {
     return { key: scope, content: Permissions[scope] };
   });
 };
