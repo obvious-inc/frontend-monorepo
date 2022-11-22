@@ -2120,7 +2120,7 @@ const MetaTags = ({ channelId }) => {
     getImageDimensionsFromUrl(channel.image).then((dimensions) => {
       setImageDimensions(dimensions);
     });
-  }, [channel.image]);
+  }, [channel?.image]);
 
   if (channel == null) return null;
 
