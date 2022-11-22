@@ -120,6 +120,8 @@ const ChannelDetailsModal = ({ navigation, route }) => {
           actions.updateChannel(channelId, {
             avatar: uploadedFiles[0].urls.large,
           });
+        } catch (e) {
+          Alert.alert("Error", e.message);
         } finally {
           setUpdatingPicture(false);
         }

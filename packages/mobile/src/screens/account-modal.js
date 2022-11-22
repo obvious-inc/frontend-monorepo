@@ -122,6 +122,8 @@ const AccountModal = ({ navigation }) => {
                     await actions.updateMe({
                       profilePicture: uploadedFiles[0].urls.large,
                     });
+                  } catch (e) {
+                    Alert.alert("Error", e.message);
                   } finally {
                     setUpdatingProfilePicture(false);
                   }
