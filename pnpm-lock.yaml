@@ -181,11 +181,11 @@ importers:
       expo-constants: ~14.0.2
       expo-device: ~5.0.0
       expo-haptics: ~12.0.1
-      expo-image-picker: ~14.0.1
+      expo-image-picker: ~14.0.2
       expo-linking: ~3.2.3
       expo-localization: ~14.0.0
       expo-notifications: ~0.17.0
-      expo-updates: ~0.15.5
+      expo-updates: ~0.15.6
       prettier: ^2.7.1
       pusher-js: ^7.4.0
       react: 18.1.0
@@ -220,11 +220,11 @@ importers:
       expo-constants: 14.0.2_expo@47.0.0-beta.8
       expo-device: 5.0.0_expo@47.0.0-beta.8
       expo-haptics: 12.0.1_expo@47.0.0-beta.8
-      expo-image-picker: 14.0.1_expo@47.0.0-beta.8
+      expo-image-picker: 14.0.2_expo@47.0.0-beta.8
       expo-linking: 3.2.3_expo@47.0.0-beta.8
       expo-localization: 14.0.0_expo@47.0.0-beta.8
       expo-notifications: 0.17.0_expo@47.0.0-beta.8
-      expo-updates: 0.15.5_expo@47.0.0-beta.8
+      expo-updates: 0.15.6_expo@47.0.0-beta.8
       pusher-js: 7.4.0
       react: 18.1.0
       react-native: 0.70.5_mfskofihvdy3w3obj2se3olr7i
@@ -2405,6 +2405,13 @@ packages:
 
   /@expo/code-signing-certificates/0.0.2:
     resolution: {integrity: sha512-vnPHFjwOqxQ1VLztktY+fYCfwvLzjqpzKn09rchcQE7Sdf0wtW5fFtIZBEFOOY5wasp8tXSnp627zrAwazPHzg==}
+    dependencies:
+      node-forge: 1.3.1
+      nullthrows: 1.1.1
+    dev: false
+
+  /@expo/code-signing-certificates/0.0.5:
+    resolution: {integrity: sha512-BNhXkY1bblxKZpltzAx98G2Egj9g1Q+JRcvR7E99DOj862FTCX+ZPsAUtPTr7aHxwtrL7+fL3r0JSmM9kBm+Bw==}
     dependencies:
       node-forge: 1.3.1
       nullthrows: 1.1.1
@@ -5819,7 +5826,7 @@ packages:
       '@tanstack/react-query': 4.13.0
     dependencies:
       '@tanstack/query-persist-client-core': 4.13.0
-      '@tanstack/react-query': 4.13.0_ef5jwxihqo6n7gxfmzogljlgcm
+      '@tanstack/react-query': 4.13.0_tj3nonr5gneraukzjkxpsiy7yu
     transitivePeerDependencies:
       - '@tanstack/query-core'
     dev: false
@@ -6165,7 +6172,7 @@ packages:
       '@walletconnect/ethereum-provider':
         optional: true
     dependencies:
-      '@coinbase/wallet-sdk': 3.5.3
+      '@coinbase/wallet-sdk': 3.5.3_iq6gdjgmptryfixzlwpc2jqgni
       '@walletconnect/ethereum-provider': 1.8.0
       ethers: 5.7.2
       eventemitter3: 4.0.7
@@ -9251,8 +9258,8 @@ packages:
       expo: 47.0.0-beta.8_@babel+core@7.19.6
     dev: false
 
-  /expo-image-picker/14.0.1_expo@47.0.0-beta.8:
-    resolution: {integrity: sha512-Qx7Vt00nEZvLwRUC6vknm0dbvYWwnEzqbg3rIRImGxfZ7ki3rWJ3HlWebGpxCyYRpJV6A7rUAgm/Mc0eY4eYzA==}
+  /expo-image-picker/14.0.2_expo@47.0.0-beta.8:
+    resolution: {integrity: sha512-dC0efykReusbjOtcvXYagABrVuwuOFwTfEx87VNjCZejig5aIPPj14UsViSV7xEQ+wkHvVnxyirox5xIbD196w==}
     peerDependencies:
       expo: '*'
     dependencies:
@@ -9351,13 +9358,13 @@ packages:
       expo: 47.0.0-beta.8_@babel+core@7.19.6
     dev: false
 
-  /expo-updates/0.15.5_expo@47.0.0-beta.8:
-    resolution: {integrity: sha512-FTWT0u2ila2Oxsa3Ls1qix2YCK3F1I5VnG2O5pAAHqQ0k6FsZKO0/yvf/5O2X1K8Iqj4CiD/2MOLmpFaCsoQqg==}
+  /expo-updates/0.15.6_expo@47.0.0-beta.8:
+    resolution: {integrity: sha512-g5BuCmWdyiLqFaVkVz+m7r6U7MHJrLKvqybs04H6ArMNpTEf6FhUwSzmnCyOkSSP35KFNkC/I0dYlgW3Vcf1sw==}
     hasBin: true
     peerDependencies:
       expo: '*'
     dependencies:
-      '@expo/code-signing-certificates': 0.0.2
+      '@expo/code-signing-certificates': 0.0.5
       '@expo/config': 7.0.3
       '@expo/config-plugins': 5.0.4
       '@expo/metro-config': 0.5.1

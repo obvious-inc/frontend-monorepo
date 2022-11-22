@@ -1,4 +1,5 @@
 import * as Clipboard from "expo-clipboard";
+import * as ImagePicker from "expo-image-picker";
 import React from "react";
 import { View, Text, Alert, ScrollView } from "react-native";
 import * as Shades from "@shades/common";
@@ -28,6 +29,7 @@ const ChannelDetailsModal = ({ navigation, route }) => {
   const isOwner = me.id === channel.ownerUserId;
 
   const [hasPendingStarRequest, setPendingStarRequest] = React.useState(false);
+  const [isUpdatingPicture, setUpdatingPicture] = React.useState(false);
 
   const manageItems = [
     canAddMembers && {
@@ -82,10 +84,47 @@ const ChannelDetailsModal = ({ navigation, route }) => {
         );
       },
     },
-    // canManageInfo && {
-    //   key: "edit-image",
-    //   label: "Edit image",
-    // },
+    canManageInfo && {
+      key: "edit-profile-picture",
+      label: "Edit profile picture",
+      isLoading: isUpdatingPicture,
+      onPress: async () => {
+        setUpdatingPicture(true);
+
+        const result = await ImagePicker.launchImageLibraryAsync({
+          quality: 1,
+          allowsEditing: true,
+          aspect: [1, 1],
+        });
+
+        if (result.canceled) {
+          setUpdatingPicture(false);
+          return;
+        }
+
+        const asset = result.assets[0];
+
+        try {
+          const blob = await fetch(asset.uri).then((r) => r.blob());
+
+          const uploadedFiles = await actions.uploadImage({
+            files: [
+              {
+                uri: asset.uri,
+                type: blob.type,
+                name: asset.fileName,
+              },
+            ],
+          });
+
+          actions.updateChannel(channelId, {
+            avatar: uploadedFiles[0].urls.large,
+          });
+        } finally {
+          setUpdatingPicture(false);
+        }
+      },
+    },
   ].filter(Boolean);
 
   const actionList = [

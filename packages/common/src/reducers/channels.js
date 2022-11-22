@@ -21,7 +21,11 @@ const entriesById = (state = {}, action) => {
     case "fetch-client-boot-data-request-successful":
     case "fetch-user-channels-request-successful":
     case "fetch-publicly-readable-channels-request-successful": {
-      const entriesById = indexBy((c) => c.id, action.channels);
+      const mergedChannels = action.channels.map((c) => {
+        const existingChannelData = state[c.id];
+        return { ...existingChannelData, ...c };
+      });
+      const entriesById = indexBy((c) => c.id, mergedChannels);
       return { ...state, ...entriesById };
     }
 

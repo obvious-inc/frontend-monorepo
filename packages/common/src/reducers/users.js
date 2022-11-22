@@ -26,11 +26,8 @@ const entriesById = (state = {}, action) => {
 
     case "server-event:user-profile-updated":
       return mapValues((user) => {
-        if (user.id !== action.data.user) return user;
-        return {
-          ...user,
-          ...omitKey("user", action.data),
-        };
+        if (user.id !== action.data.user.id) return user;
+        return { ...user, ...action.data.user };
       }, state);
 
     case "server-event:channel-user-joined":

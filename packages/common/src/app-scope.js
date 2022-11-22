@@ -21,7 +21,7 @@ const cleanString = (s) => {
 const createApiParsers = ({ buildCloudflareImageUrl }) => ({
   parseUser(u) {
     const createProfilePicture = () => {
-      if (u.pfp.cf_id == null)
+      if ((u.pfp.cf_id ?? "") == "")
         return {
           small: u.pfp.input_image_url,
           large: u.pfp.input_image_url,

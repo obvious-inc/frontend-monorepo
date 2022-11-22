@@ -1,7 +1,8 @@
 import Constants from "expo-constants";
+import * as ImagePicker from "expo-image-picker";
 import React from "react";
 import * as Shades from "@shades/common";
-import { View, Text, Pressable } from "react-native";
+import { View, Text, Pressable, Alert, ActivityIndicator } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import theme from "../theme";
 import { VERSION } from "../config";
@@ -47,27 +48,103 @@ const Header = () => {
 };
 
 const AccountModal = ({ navigation }) => {
-  const { actions } = useAppScope();
+  const { state, actions } = useAppScope();
   const [showDebugInfo, setShowDebugInfo] = React.useState(false);
+
+  const [isUpdatingProfilePicture, setUpdatingProfilePicture] =
+    React.useState(false);
+
+  const me = state.selectMe();
 
   return (
     <SafeAreaView
       edges={["left", "right", "bottom"]}
       style={{ flex: 1, padding: 16, backgroundColor: "hsl(0,0%,10%)" }}
     >
-      <ModalActionButtonGroup
-        actions={[
+      <SectionedActionList
+        items={[
           {
-            key: "log-out",
-            label: "Log out",
-            danger: true,
-            onPress: () => {
-              actions.logout();
-              navigation.popToTop();
-            },
+            items: [
+              {
+                key: "edit-name",
+                label: "Edit display name",
+                onPress: () => {
+                  Alert.prompt(
+                    "Edit display name",
+                    undefined,
+                    [
+                      { text: "Cancel", style: "cancel" },
+                      {
+                        text: "Save",
+                        onPress: (name) => {
+                          actions.updateMe({ displayName: name.trim() });
+                        },
+                      },
+                    ],
+                    "plain-text",
+                    me.displayName
+                  );
+                },
+              },
+              {
+                key: "edit-profile-picture",
+                label: "Edit profile picture",
+                isLoading: isUpdatingProfilePicture,
+                onPress: async () => {
+                  setUpdatingProfilePicture(true);
+
+                  const result = await ImagePicker.launchImageLibraryAsync({
+                    quality: 1,
+                    allowsEditing: true,
+                    aspect: [1, 1],
+                  });
+
+                  if (result.canceled) {
+                    setUpdatingProfilePicture(false);
+                    return;
+                  }
+
+                  const asset = result.assets[0];
+
+                  try {
+                    const blob = await fetch(asset.uri).then((r) => r.blob());
+
+                    const uploadedFiles = await actions.uploadImage({
+                      files: [
+                        {
+                          uri: asset.uri,
+                          type: blob.type,
+                          name: asset.fileName,
+                        },
+                      ],
+                    });
+
+                    await actions.updateMe({
+                      profilePicture: uploadedFiles[0].urls.large,
+                    });
+                  } finally {
+                    setUpdatingProfilePicture(false);
+                  }
+                },
+              },
+            ],
+          },
+          {
+            items: [
+              {
+                key: "log-out",
+                label: "Log out",
+                danger: true,
+                onPress: () => {
+                  actions.logout();
+                  navigation.popToTop();
+                },
+              },
+            ],
           },
         ]}
       />
+
       <Pressable
         onLongPress={() => {
           setShowDebugInfo((s) => !s);
@@ -100,12 +177,13 @@ const ModalActionButton = ({
   label,
   description,
   icon,
-  disabled,
+  disabled: disabled_,
   bordered,
   danger,
   textColor = theme.colors.textDefault,
   style,
   pressable = true,
+  isLoading = false,
   ...props
 }) => {
   const Component = pressable ? Pressable : View;
@@ -127,6 +205,8 @@ const ModalActionButton = ({
   });
 
   const styles = pressable ? getStyles : getStyles({ pressed: false });
+
+  const disabled = disabled_ || isLoading;
 
   return (
     <Component disabled={disabled} style={styles} {...props}>
@@ -171,6 +251,11 @@ const ModalActionButton = ({
           </Text>
         )}
       </View>
+      {isLoading && (
+        <View style={{ alignItems: "center", justifyContent: "center" }}>
+          <ActivityIndicator color={theme.colors.textDimmed} />
+        </View>
+      )}
     </Component>
   );
 };
