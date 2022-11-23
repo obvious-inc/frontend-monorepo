@@ -5,7 +5,7 @@ import * as Shades from "@shades/common";
 const { useLatestCallback } = Shades.react;
 
 const useAppActiveListener = (listener_) => {
-  const prevStateRef = React.useRef(null);
+  const prevStateRef = React.useRef(AppState.currentState);
   const listener = useLatestCallback(listener_);
 
   React.useEffect(() => {
