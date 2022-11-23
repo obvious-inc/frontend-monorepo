@@ -50,6 +50,7 @@ const ChannelList = ({ navigation }) => {
         searchQuery,
         channels.map((c) => ({
           ...c,
+          name: state.selectChannelName(c.id),
           members: state.selectChannelMembers(c.id),
         }))
       ),
