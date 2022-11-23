@@ -446,7 +446,8 @@ const Channel = ({ navigation, route: { params } }) => {
                 if (content == null || content.trim() === "") return [];
 
                 const paragraphContentElements = content
-                  .split(" ")
+                  .trim()
+                  .split(/\s+/)
                   .reduce((els, word) => {
                     const prev = els[els.length - 1];
 
