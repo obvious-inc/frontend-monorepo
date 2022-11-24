@@ -26,7 +26,7 @@ const createParser = ({
   const parse = (blocks) => {
     const windowWidth = Dimensions.get("window").width;
 
-    const parseElement = (el, i) => {
+    const parseElement = (el, i, els, { root } = {}) => {
       const parseNode = (n, i, ns) =>
         n.text == null ? parseElement(n, i, ns) : parseLeaf(n, i, ns);
 
@@ -102,6 +102,11 @@ const createParser = ({
         }
 
         case "attachments":
+          if (inline) {
+            if (root && i === 0)
+              return parseNode({ text: "Image attachment", italic: true });
+            return null;
+          }
           return (
             <View key={i} style={{ paddingTop: 5 }}>
               {children()}
@@ -181,7 +186,7 @@ const createParser = ({
       }
     };
 
-    return blocks.map(parseElement);
+    return blocks.map((b, i, bs) => parseElement(b, i, bs, { root: true }));
   };
 
   return parse;
