@@ -44,18 +44,20 @@ const ChannelList = ({ navigation }) => {
 
   const [searchQuery, setSearchQuery] = React.useState("");
 
-  const filteredChannels = React.useMemo(
-    () =>
-      searchChannels(
-        searchQuery,
-        channels.map((c) => ({
-          ...c,
-          name: state.selectChannelName(c.id),
-          members: state.selectChannelMembers(c.id),
-        }))
-      ),
-    [channels, searchQuery, state]
-  );
+  const filteredChannels = React.useMemo(() => {
+    const query = searchQuery.trim().toLowerCase();
+
+    if (query.length <= 1) return [];
+
+    return searchChannels(
+      channels.map((c) => ({
+        ...c,
+        name: state.selectChannelName(c.id),
+        members: state.selectChannelMembers(c.id),
+      })),
+      query
+    );
+  }, [channels, searchQuery, state]);
 
   const [collapsedIds, setCollapsedIds] = React.useState([]);
 

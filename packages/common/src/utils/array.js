@@ -27,11 +27,6 @@ const indexComparator = (e1, e2) => {
   if (e1 < e2) return -1;
   if (e1 > e2) return 1;
 
-  // Given the same index, pick the shortest string
-  const [l1, l2] = [e1, e2].map((s) => s.length);
-  if (l1 < l2) return -1;
-  if (l1 > l2) return 1;
-
   return 0;
 };
 
@@ -62,6 +57,12 @@ export const comparator = (...sortValueExtractors) => {
         const result = indexComparator(v1, v2);
         if (result === 0) continue;
         return desc ? invert(result) : result;
+      }
+
+      if (typeof v1 === "boolean") {
+        if (v1 === v2) continue;
+        if (v1 && !v2) return desc ? 1 : -1;
+        if (!v1 && v2) return desc ? -1 : 1;
       }
 
       if (v1 < v2) return desc ? 1 : -1;

@@ -46,6 +46,9 @@ import ChannelDetails, {
 import ChannelDetailsAddMembers, {
   options as channelDetailsAddMembersScreenOptions,
 } from "./screens/channel-details-add-members";
+import ChannelDetailsMembers, {
+  options as channelDetailsMembersScreenOptions,
+} from "./screens/channel-details-members";
 import UserModal, { options as userModalOptions } from "./screens/user-modal";
 import NewChatScreen, {
   options as newChatScreenOptions,
@@ -282,6 +285,11 @@ const ChannelDetailsModalStack = () => (
       name="Root"
       component={ChannelDetails}
       options={channelDetailsScreenOptions}
+    />
+    <NativeStackNavigator.Screen
+      name="Members"
+      component={ChannelDetailsMembers}
+      options={channelDetailsMembersScreenOptions}
     />
     <NativeStackNavigator.Screen
       name="Add members"

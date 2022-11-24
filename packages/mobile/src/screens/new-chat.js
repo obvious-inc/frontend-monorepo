@@ -90,55 +90,20 @@ export const useFilteredUsers = ({ query }) => {
   const showEnsLoading = isLoadingEns && !trimmedQuery.startsWith("0x");
 
   const filteredUsers = React.useMemo(() => {
-    if (trimmedQuery.length < 3) return starredUsers;
+    if (trimmedQuery.length <= 1) return starredUsers;
 
     const userIds = unique([...starredUserIds, ...channelMemberUserIds]);
-    const users = selectUsers(userIds);
+    const users = selectUsers(userIds).map((u) => {
+      if (!starredUserIds.includes(u.id)) return u;
+      return { ...u, isStarred: true };
+    });
 
-    const queryWords = trimmedQuery
-      .toLowerCase()
-      .split(" ")
-      .map((s) => s.trim());
-
-    const match = (user) =>
-      queryWords.some((w) => user.displayName.toLowerCase().includes(w));
+    const filteredUsers = searchUsers(users, trimmedQuery);
 
     const queryAddress =
       ensAddress ?? (ethersUtils.isAddress(trimmedQuery) ? trimmedQuery : null);
 
-    const sortResults = (us) =>
-      sort((u1, u2) => {
-        const [s1, s2] = [u1, u2].map((u) => starredUserIds.includes(u.id));
-
-        // Starred users on top
-        if (s1 && !s2) return -1;
-        if (!s1 && s2) return 1;
-
-        // Earliest displayName match for the rest
-        const [i1, i2] = [u1, u2].map((u) =>
-          u.displayName?.toLowerCase().indexOf(trimmedQuery.toLowerCase())
-        );
-
-        // None match
-        if (i1 === -1 && i2 === -1) return 0;
-
-        // Single match
-        if (i1 === -1) return 1;
-        if (i2 === -1) return -1;
-
-        // If both match, pick the first
-        if (i1 < i2) return -1;
-        if (i1 > i2) return 1;
-
-        // Given the same index, pick the shortest string
-        const [l1, l2] = [u1, u2].map((u) => u.displayName?.length ?? Infinity);
-        if (l1 < l2) return -1;
-        if (l1 > l2) return 1;
-
-        return 0;
-      }, us);
-
-    if (queryAddress == null) return sortResults(users.filter(match));
+    if (queryAddress == null) return filteredUsers;
 
     const maybeUser = selectUserFromWalletAddress(queryAddress);
 
@@ -149,12 +114,8 @@ export const useFilteredUsers = ({ query }) => {
         displayName: maybeUser?.displayName,
         ensName: ensAddress == null ? null : trimmedQuery,
       },
-      ...sortResults(
-        users.filter(
-          (u) =>
-            match(u) &&
-            u.walletAddress.toLowerCase() !== queryAddress.toLowerCase()
-        )
+      ...filteredUsers.filter(
+        (u) => u.walletAddress.toLowerCase() !== queryAddress.toLowerCase()
       ),
     ];
   }, [
@@ -287,14 +248,14 @@ const NewChat = ({ navigation }) => {
           ...(pendingInput.trim().length > 0 || isLoadingUsers
             ? []
             : [
-                { type: "section-title", title: "Create group" },
-                ...groupTypeOptions.map((o, i, os) => ({
-                  ...o,
-                  type: "group-option",
-                  separete: i === os.length - 1 && filteredUsers.length !== 0,
-                })),
-                { type: "section-title", title: "Message directly" },
-              ]),
+              { type: "section-title", title: "Create group" },
+              ...groupTypeOptions.map((o, i, os) => ({
+                ...o,
+                type: "group-option",
+                separete: i === os.length - 1 && filteredUsers.length !== 0,
+              })),
+              { type: "section-title", title: "Message directly" },
+            ]),
           ...filteredUsers,
         ].filter(Boolean)}
         keyExtractor={(item) => {
@@ -377,6 +338,7 @@ const NewChat = ({ navigation }) => {
                   address={item.walletAddress}
                   displayName={item.displayName}
                   ensName={item.ensName}
+                  profilePicture={item.profilePicture}
                   onSelect={() => {
                     dmAddress(item.walletAddress);
                   }}
@@ -397,6 +359,8 @@ export const UserListItem = ({
   displayName,
   ensName: specifiedEnsName,
   address,
+  status,
+  profilePicture,
   disabled,
   onSelect,
   arrowRight,
@@ -415,8 +379,8 @@ export const UserListItem = ({
     title === truncatedAddress
       ? null
       : ensName == null || title === ensName
-      ? truncateAddress(address)
-      : `${ensName} (${truncateAddress(address)})`;
+        ? truncateAddress(address)
+        : `${ensName} (${truncateAddress(address)})`;
 
   return (
     <ListItem
@@ -425,11 +389,28 @@ export const UserListItem = ({
       truncateSubtitle
       subtitle={subtitle}
       icon={
-        <UserProfilePicture
-          transparent
-          user={{ walletAddress: address }}
-          size={38}
-        />
+        <View style={{ position: "relative" }}>
+          <UserProfilePicture
+            transparent
+            user={{ walletAddress: address, profilePicture }}
+            size={38}
+          />
+          {status === "online" && (
+            <View
+              style={{
+                width: 14,
+                height: 14,
+                borderRadius: 7,
+                backgroundColor: "hsl(139, 47.3%, 43.9%)",
+                position: "absolute",
+                right: -1,
+                bottom: -1,
+                borderWidth: 3,
+                borderColor: theme.colors.background,
+              }}
+            />
+          )}
+        </View>
       }
       disabled={disabled}
       arrowRight={arrowRight}

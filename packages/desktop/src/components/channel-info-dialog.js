@@ -6,7 +6,6 @@ import { css } from "@emotion/react";
 import { useAppScope } from "@shades/common/app";
 import {
   array as arrayUtils,
-  user as userUtils,
   ethereum as ethereumUtils,
 } from "@shades/common/utils";
 import Button from "./button";
@@ -28,7 +27,7 @@ import {
   AtSign as AtSignIcon,
 } from "./icons";
 
-const { sort } = arrayUtils;
+const { sort, comparator } = arrayUtils;
 const { truncateAddress } = ethereumUtils;
 
 const ChannelPermissionIcon = ({ channelId, ...props }) => {
@@ -277,11 +276,11 @@ const ChannelInfoDialog = ({
                     {channel.kind === "dm"
                       ? "DM channel"
                       : channelPermissionType != null && (
-                          <>
-                            {channelPermissionType.slice(0, 1).toUpperCase()}
-                            {channelPermissionType.slice(1)} channel
-                          </>
-                        )}
+                        <>
+                          {channelPermissionType.slice(0, 1).toUpperCase()}
+                          {channelPermissionType.slice(1)} channel
+                        </>
+                      )}
                   </Tooltip.Trigger>
                   <Tooltip.Content side="top" align="center" sideOffset={6}>
                     {channel.kind === "dm" ? (
@@ -769,7 +768,20 @@ const MembersDirectoryTab = ({ channelId, addMember }) => {
 
   const filteredMembers = React.useMemo(() => {
     if (query.trim() === "")
-      return sort(userUtils.compareByOwnerOnlineStatusAndDisplayName, members);
+      return sort(
+        comparator(
+          "isOwner",
+          (u) => u.onlineStatus === "online",
+          (u) => {
+            const n = u.displayName;
+            if (n == null) return false;
+            const isAddress = n.startsWith("0x") && n.includes("...");
+            return isAddress;
+          },
+          (u) => u.displayName?.toLowerCase()
+        ),
+        members
+      );
 
     const q = query.trim().toLowerCase();
     const getSearchTokens = (m) =>

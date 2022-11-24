@@ -289,7 +289,9 @@ const readStatesById = (state = {}, action) => {
           ...channel,
           unreadMentionMessageIds:
             userMentions.length === 0
-              ? channel.unreadMentionMessageIds.filter((id) => id !== messageId)
+              ? channel.unreadMentionMessageIds?.filter(
+                  (id) => id !== messageId
+                ) ?? []
               : unique([...channel.unreadMentionMessageIds, messageId]),
         },
       };

@@ -1,19 +1,48 @@
-export const compareByOwnerOnlineStatusAndDisplayName = (m1, m2) => {
-  if (m1.isOwner !== m2.isOwner) return m1.isOwner ? -1 : 1;
+import { sort, comparator } from "./array.js";
+import {
+  match as matchString,
+  getWordMatchCount as getStringWordMatchCount,
+} from "./string.js";
 
-  if (m1.onlineStatus !== m2.onlineStatus)
-    return m1.onlineStatus === "online" ? -1 : 1;
+export const search = (users, rawQuery) => {
+  const query = rawQuery.trim().toLowerCase();
 
-  const [name1, name2] = [m1, m2].map((m) => m.displayName?.toLowerCase());
+  const matchUser = (user) => {
+    const name = user.customDisplayName ?? user.displayName;
+    const address = user.walletAddress;
+    const ensName = user.ensName;
 
-  const [name1IsAddress, name2IsAddress] = [name1, name2].map(
-    (n) => n != null && n.startsWith("0x") && n.includes("...")
+    return [name, address, ensName]
+      .filter((p) => (p ?? "").trim() !== "")
+      .some((s) => matchString(s, query));
+  };
+
+  const unorderedUsers = users.filter(matchUser);
+
+  const orderedUsers = sort(
+    comparator(
+      (u) => u.isStarred,
+      {
+        value: (u) =>
+          getStringWordMatchCount(u.displayName ?? "", query, { exact: true }),
+        order: "desc",
+      },
+      {
+        value: (u) => getStringWordMatchCount(u.displayName ?? "", query),
+        order: "desc",
+      },
+      {
+        value: (u) => u.displayName?.toLowerCase().indexOf(query.toLowerCase()),
+        type: "index",
+      },
+      (u) => {
+        if (!matchString(u.displayName ?? "", query)) return Infinity;
+        return u.displayName.length;
+      },
+      (u) => u.displayName?.toLowerCase()
+    ),
+    unorderedUsers
   );
 
-  if (!name1IsAddress && name2IsAddress) return -1;
-  if (name1IsAddress && !name2IsAddress) return 1;
-
-  if (name1 < name2) return -1;
-  if (name1 > name2) return 1;
-  return 0;
+  return orderedUsers;
 };

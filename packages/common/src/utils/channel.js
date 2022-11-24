@@ -1,28 +1,44 @@
-import { sort, comparator } from "./array";
+import { sort, comparator } from "./array.js";
+import {
+  match as matchString,
+  getWordMatchCount as getStringWordMatchCount,
+} from "./string.js";
 
-export const search = (rawQuery, channels) => {
+export const search = (channels, rawQuery) => {
   const query = rawQuery.trim().toLowerCase();
 
-  if (query.length <= 1) return [];
+  const matchChannel = (channel) => {
+    if (channel.name == null)
+      return channel.members?.some(
+        (m) => m.displayName != null && matchString(m.displayName, query)
+      );
 
-  const queryWords = query.split(" ").map((s) => s.trim());
-
-  const match = (channel, query) => {
-    if (channel.name?.toLowerCase().includes(query)) return true;
-    return channel.members?.some((m) => m.displayName?.includes(query));
+    return matchString(channel.name, query);
   };
 
-  const unorderedChannels = channels.filter((c) =>
-    queryWords.some((q) => match(c, q))
-  );
+  const unorderedChannels = channels.filter(matchChannel);
 
   const orderedChannels = sort(
     comparator(
       {
+        value: (c) =>
+          getStringWordMatchCount(c.name ?? "", query, { exact: true }),
+        order: "desc",
+      },
+      {
+        value: (c) => getStringWordMatchCount(c.name ?? "", query),
+        order: "desc",
+      },
+      {
         value: (c) => c.name?.toLowerCase().indexOf(query.toLowerCase()),
         type: "index",
       },
-      { value: (c) => c.memberUserIds.length ?? Infinity }
+      (c) => {
+        if (!matchString(c.name ?? "", query)) return Infinity;
+        return c.name.length;
+      },
+      (c) => c.memberUserIds.length ?? Infinity,
+      (c) => c.name?.toLowerCase()
     ),
     unorderedChannels
   );
