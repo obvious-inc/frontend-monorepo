@@ -178,27 +178,42 @@ const publicChannelIds = (state = [], action) => {
 const readStatesById = (state = {}, action) => {
   switch (action.type) {
     case "fetch-client-boot-data-request-successful":
-    case "fetch-channels-read-states-request-successful": {
-      const readStatesByChannelId = indexBy(
-        (s) => s.channel,
-        action.readStates
+    case "fetch-user-channels-request-successful":
+    case "fetch-user-channels-read-states-request-successful": {
+      const readStates = action.readStates ?? [];
+      const channels = action.channels ?? [];
+
+      const channelsById = indexBy((c) => c.id, channels);
+      const readStatesByChannelId = indexBy((s) => s.channel, readStates);
+
+      const channelIds = unique([
+        ...Object.keys(channelsById),
+        Object.keys(readStatesByChannelId),
+      ]);
+
+      const entriesByChannelId = indexBy(
+        (s) => s.channelId,
+        channelIds.map((channelId) => {
+          const channel = channelsById[channelId];
+          const readState = readStatesByChannelId[channelId];
+
+          const nextState = { channelId, ...state[channelId] };
+
+          if (channel?.lastMessageAt != null)
+            nextState.lastMessageAt = channel.lastMessageAt;
+
+          if (readState?.last_read_at != null)
+            nextState.lastReadAt = readState.last_read_at;
+
+          if (readState?.mention_count != null)
+            nextState.unreadMentionMessageIds = Array(
+              readState.mention_count
+            ).fill();
+
+          return nextState;
+        })
       );
 
-      const mergedReadStates = action.channels.map((c) => {
-        const existingState = { channelId: c.id, ...state[c.id] };
-        const lastMessageAt = c.lastMessageAt;
-        const readStates = readStatesByChannelId[c.id];
-
-        if (readStates == null) return { ...existingState, lastMessageAt };
-
-        return {
-          ...existingState,
-          lastMessageAt,
-          lastReadAt: readStates.last_read_at,
-          unreadMentionMessageIds: Array(readStates.mention_count).fill(null),
-        };
-      });
-      const entriesByChannelId = indexBy((s) => s.channelId, mergedReadStates);
       return { ...state, ...entriesByChannelId };
     }
 

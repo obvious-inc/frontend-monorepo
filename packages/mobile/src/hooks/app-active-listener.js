@@ -10,8 +10,7 @@ const useAppActiveListener = (listener_) => {
 
   React.useEffect(() => {
     const subscription = AppState.addEventListener("change", (state) => {
-      // if (prevStateRef.current !== "active" && state === "active") listener();
-      if (state === "active") listener();
+      if (prevStateRef.current !== "active" && state === "active") listener();
       prevStateRef.current = state;
     });
 
