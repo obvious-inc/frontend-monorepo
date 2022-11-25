@@ -276,11 +276,11 @@ const ChannelInfoDialog = ({
                     {channel.kind === "dm"
                       ? "DM channel"
                       : channelPermissionType != null && (
-                        <>
-                          {channelPermissionType.slice(0, 1).toUpperCase()}
-                          {channelPermissionType.slice(1)} channel
-                        </>
-                      )}
+                          <>
+                            {channelPermissionType.slice(0, 1).toUpperCase()}
+                            {channelPermissionType.slice(1)} channel
+                          </>
+                        )}
                   </Tooltip.Trigger>
                   <Tooltip.Content side="top" align="center" sideOffset={6}>
                     {channel.kind === "dm" ? (

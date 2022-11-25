@@ -43,18 +43,17 @@ const LoginScreen = ({ mobileAppLogin, onSuccess, onError }) => {
 
     const promise =
       type === "throwaway" ? loginWithThrowawayWallet() : login(accountAddress);
-    promise
-      .then(
-        (response) => {
-          onSuccess?.(response);
-        },
-        (error) => {
-          onError?.(error);
-        }
-      )
-      .finally(() => {
+    promise.then(
+      (response) => {
+        onSuccess?.(response);
+        // Stay in the loading state for mobile login to avoid flashing the login buttons
+        if (!mobileAppLogin) setThrowawayAuth(false);
+      },
+      (error) => {
+        onError?.(error);
         setThrowawayAuth(false);
-      });
+      }
+    );
   };
 
   return (

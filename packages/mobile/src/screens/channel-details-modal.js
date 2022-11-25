@@ -210,30 +210,30 @@ const ChannelDetailsModal = ({ navigation, route }) => {
           },
         },
         channel.kind === "topic" &&
-        isOwner && {
-          key: "delete-channel",
-          label: "Delete channel",
-          danger: true,
-          onPress: () => {
-            const deleteChannel = () => {
-              actions.deleteChannel(channelId);
-              navigation.popToTop();
-            };
+          isOwner && {
+            key: "delete-channel",
+            label: "Delete channel",
+            danger: true,
+            onPress: () => {
+              const deleteChannel = () => {
+                actions.deleteChannel(channelId);
+                navigation.popToTop();
+              };
 
-            Alert.alert(
-              "Delete channel",
-              "Are you sure you want to delete this channel?",
-              [
-                { text: "Cancel", style: "cancel" },
-                {
-                  text: "Delete channel",
-                  style: "destructive",
-                  onPress: deleteChannel,
-                },
-              ]
-            );
+              Alert.alert(
+                "Delete channel",
+                "Are you sure you want to delete this channel?",
+                [
+                  { text: "Cancel", style: "cancel" },
+                  {
+                    text: "Delete channel",
+                    style: "destructive",
+                    onPress: deleteChannel,
+                  },
+                ]
+              );
+            },
           },
-        },
       ].filter(Boolean),
     },
   ].filter(Boolean);

@@ -248,14 +248,14 @@ const NewChat = ({ navigation }) => {
           ...(pendingInput.trim().length > 0 || isLoadingUsers
             ? []
             : [
-              { type: "section-title", title: "Create group" },
-              ...groupTypeOptions.map((o, i, os) => ({
-                ...o,
-                type: "group-option",
-                separete: i === os.length - 1 && filteredUsers.length !== 0,
-              })),
-              { type: "section-title", title: "Message directly" },
-            ]),
+                { type: "section-title", title: "Create group" },
+                ...groupTypeOptions.map((o, i, os) => ({
+                  ...o,
+                  type: "group-option",
+                  separete: i === os.length - 1 && filteredUsers.length !== 0,
+                })),
+                { type: "section-title", title: "Message directly" },
+              ]),
           ...filteredUsers,
         ].filter(Boolean)}
         keyExtractor={(item) => {
@@ -379,8 +379,8 @@ export const UserListItem = ({
     title === truncatedAddress
       ? null
       : ensName == null || title === ensName
-        ? truncateAddress(address)
-        : `${ensName} (${truncateAddress(address)})`;
+      ? truncateAddress(address)
+      : `${ensName} (${truncateAddress(address)})`;
 
   return (
     <ListItem

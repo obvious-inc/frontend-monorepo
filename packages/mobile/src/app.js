@@ -18,7 +18,13 @@ import { mainnet as mainnetChain } from "wagmi/chains";
 import { infuraProvider } from "wagmi/providers/infura";
 import { publicProvider } from "wagmi/providers/public";
 import React from "react";
-import { View, Text, Pressable, ScrollView } from "react-native";
+import {
+  View,
+  Text,
+  Pressable,
+  ScrollView,
+  ActivityIndicator,
+} from "react-native";
 import {
   NavigationContainer,
   DarkTheme as ReactNavigationDarkTheme,
@@ -334,41 +340,58 @@ const CreateChannelModalStack = () => (
   </NativeStackNavigator.Navigator>
 );
 
-const SignInView = ({ onSuccess, onError }) => (
-  // Web login for now
-  <WebView
-    incognito
-    source={{ uri: WEB_APP_ENDPOINT }}
-    onShouldStartLoadWithRequest={(event) => {
-      if (!event.url.startsWith(WEB_APP_ENDPOINT)) {
-        Linking.openURL(event.url);
-        return false;
-      }
+const SignInView = ({ onSuccess, onError }) => {
+  const [didLoad, setLoaded] = React.useState(false);
 
-      return true;
-    }}
-    onMessage={(e) => {
-      try {
-        const message = JSON.parse(e.nativeEvent.data);
-
-        switch (message.type) {
-          case "ns:authenticated":
-            onSuccess({
-              accessToken: message.payload.accessToken,
-              refreshToken: message.payload.refreshToken,
-            });
-            break;
-          case "ns:error":
-            onError(new Error());
-            break;
-          default: // Ignore
+  return (
+    // Web login for now
+    <WebView
+      incognito
+      source={{ uri: WEB_APP_ENDPOINT }}
+      startInLoadingState={true}
+      renderLoading={() => (
+        <View style={{ flex: 1, backgroundColor: theme.colors.background }}>
+          <ActivityIndicator color={theme.colors.textMuted} />
+        </View>
+      )}
+      style={{
+        display: didLoad ? "flex" : "none",
+        backgroundColor: theme.colors.background,
+      }}
+      onLoad={() => {
+        setLoaded(true);
+      }}
+      onShouldStartLoadWithRequest={(event) => {
+        if (!event.url.startsWith(WEB_APP_ENDPOINT)) {
+          Linking.openURL(event.url);
+          return false;
         }
-      } catch (e) {
-        console.warn(e);
-      }
-    }}
-  />
-);
+
+        return true;
+      }}
+      onMessage={(e) => {
+        try {
+          const message = JSON.parse(e.nativeEvent.data);
+
+          switch (message.type) {
+            case "ns:authenticated":
+              onSuccess({
+                accessToken: message.payload.accessToken,
+                refreshToken: message.payload.refreshToken,
+              });
+              break;
+            case "ns:error":
+              onError(new Error());
+              break;
+            default: // Ignore
+          }
+        } catch (e) {
+          console.warn(e);
+        }
+      }}
+    />
+  );
+};
 
 class ErrorBoundary extends React.Component {
   constructor(props) {
