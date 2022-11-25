@@ -359,13 +359,7 @@ const Channel = ({ navigation, route: { params } }) => {
       return;
 
     markChannelRead(channelId);
-  }, [
-    channelId,
-    channelHasUnread,
-    hasFetchedChannelMessagesAtLeastOnce,
-    didScrollToBottomRef,
-    markChannelRead,
-  ]);
+  });
 
   const handleScrolledToBottom = () => {
     if (channelId == null) return;
