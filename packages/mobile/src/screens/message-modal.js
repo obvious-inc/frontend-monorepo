@@ -30,7 +30,7 @@ const MessageModal = ({
           onPress: startEdit,
         },
         { key: "reply", label: "Reply", onPress: startReply },
-        {
+        !message.isSystemMessage && {
           key: "copy-text",
           label: "Copy text",
           onPress: async () => {

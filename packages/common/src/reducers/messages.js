@@ -18,7 +18,7 @@ const entriesById = (state = {}, action) => {
       return { ...state, [action.message.id]: action.message };
 
     case "server-event:message-created":
-      if (action.data.message.author === action.user.id) {
+      if (action.data.message.author === action.user?.id) {
         const optimisticEntries = Object.values(state).filter(
           (m) => m.isOptimistic
         );
@@ -303,13 +303,14 @@ export const selectMessage = createSelector(
   ) => {
     if (message == null) return null;
 
-    const isBlocked = blockedUserIds.includes(message.author);
-
-    if (message.deleted) return { ...message, isBlocked };
-
     const type = deriveMessageType(message);
 
     if (type == null) return null;
+
+    const isBlocked =
+      type === "regular" && blockedUserIds.includes(message.author);
+
+    if (message.deleted) return { ...message, isBlocked };
 
     const isSystemMessage = systemMessageTypes.includes(type);
     const isAppMessage = appMessageTypes.includes(type);

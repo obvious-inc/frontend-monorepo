@@ -429,12 +429,22 @@ export const selectMemberChannels = createSelector(
   (state) => {
     if (state.me.user == null) return [];
 
+    const blockedUserIds = state.users.blockedUserIds;
+
     const channels = Object.entries(state.channels.entriesById)
-      .filter(
-        (entry) =>
-          !entry[1].isDeleted &&
-          entry[1].memberUserIds?.includes(state.me.user.id)
-      )
+      .filter((entry) => {
+        const c = entry[1];
+        const me = state.me.user;
+
+        if (c.isDeleted) return false;
+
+        if (c.kind === "dm" && c.memberUserIds?.length === 2) {
+          const memberId = c.memberUserIds.filter((id) => id !== me.id)[0];
+          return !blockedUserIds.includes(memberId);
+        }
+
+        return c.memberUserIds?.includes(me.id);
+      })
       .map(([id]) => selectChannel(state, id));
 
     return channels;
