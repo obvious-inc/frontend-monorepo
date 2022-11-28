@@ -225,8 +225,8 @@ const LoginScreen = ({ mobileAppLogin, onSuccess, onError }) => {
                   </Button>
                 )}
               </div>
-              <div style={{ marginTop: "2rem" }}>
-                {!mobileAppLogin && (
+              {!mobileAppLogin && (
+                <div style={{ marginTop: "2rem" }}>
                   <Small
                     style={{
                       width: "42rem",
@@ -238,23 +238,23 @@ const LoginScreen = ({ mobileAppLogin, onSuccess, onError }) => {
                     try to connect. If you use a mobile wallet, no action is
                     required.
                   </Small>
-                )}
-                <Small style={{ marginTop: "1.2rem" }}>
-                  <a
-                    href="https://learn.rainbow.me/what-is-a-cryptoweb3-wallet-actually"
-                    rel="noreferrer"
-                    target="_blank"
-                    css={(theme) =>
-                      css({
-                        color: theme.colors.link,
-                        ":hover": { color: theme.colors.linkModifierHover },
-                      })
-                    }
-                  >
-                    What is a wallet?
-                  </a>
-                </Small>
-              </div>
+                  <Small style={{ marginTop: "1.2rem" }}>
+                    <a
+                      href="https://learn.rainbow.me/what-is-a-cryptoweb3-wallet-actually"
+                      rel="noreferrer"
+                      target="_blank"
+                      css={(theme) =>
+                        css({
+                          color: theme.colors.link,
+                          ":hover": { color: theme.colors.linkModifierHover },
+                        })
+                      }
+                    >
+                      What is a wallet?
+                    </a>
+                  </Small>
+                </div>
+              )}
             </>
           ) : (
             <>
