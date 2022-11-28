@@ -169,7 +169,7 @@ const ChannelDetailsModal = ({ navigation, route }) => {
             });
           },
         },
-        memberCount > 1 && {
+        (channel.kind !== "dm" || memberCount > 1) && {
           key: "members",
           label: "Members",
           onPress: () => {
