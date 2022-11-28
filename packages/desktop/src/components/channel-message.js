@@ -507,24 +507,42 @@ const Embed = ({
               {sub}
             </div>
           )}
-          {video != null && (
-            <video
-              controls
-              playsInline
-              src={video}
-              poster={image}
-              width={metatags["og:videoWidth"]}
-              height={metatags["og:videoHeight"]}
-              css={css({
-                marginTop: "0.8rem",
-                borderRadius: "0.3rem",
-                maxWidth: "100%",
-                maxHeight: "50vh",
-                width: "auto",
-                height: "auto",
-              })}
-            />
-          )}
+          {video != null &&
+            (() => {
+              const actualWidth = metatags["og:videoWidth"];
+              const actualHeight = metatags["og:videoHeight"];
+              const hasKnownDimensons =
+                actualWidth != null && actualHeight != null;
+              const maxHeight = 400;
+              const aspectRatio = actualWidth / actualHeight;
+              console.log(actualHeight, actualWidth, aspectRatio);
+              const calculatedWidth =
+                actualHeight < maxHeight
+                  ? actualWidth
+                  : maxHeight * aspectRatio;
+
+              return (
+                <video
+                  controls
+                  playsInline
+                  src={video}
+                  poster={image}
+                  width={hasKnownDimensons ? calculatedWidth : undefined}
+                  css={css({
+                    display: "block",
+                    marginTop: "0.8rem",
+                    borderRadius: "0.3rem",
+                    objectFit: "cover",
+                    maxWidth: "100%",
+                    height: hasKnownDimensons ? "auto" : 260,
+                    width: hasKnownDimensons ? calculatedWidth : "auto",
+                    aspectRatio: hasKnownDimensons
+                      ? `${actualWidth} / ${actualHeight}`
+                      : undefined,
+                  })}
+                />
+              );
+            })()}
         </div>
         {video == null && image != null && (
           <div
