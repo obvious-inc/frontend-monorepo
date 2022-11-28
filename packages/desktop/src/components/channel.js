@@ -2131,7 +2131,7 @@ const MetaTags = ({ channelId }) => {
         href={`https://app.newshades.xyz/channels/${channelId}`}
       />
 
-      <title>{name} - NewShades</title>
+      <title>{`${name} - NewShades`}</title>
       <meta name="description" content={channel.description} />
 
       <meta property="og:title" content={name} />
