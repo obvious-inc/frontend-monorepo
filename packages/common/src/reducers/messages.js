@@ -50,7 +50,10 @@ const entriesById = (state = {}, action) => {
       return { ...state, [action.message.id]: action.message };
 
     case "message-delete-request-successful":
-      return omitKey(action.messageId, state);
+      return {
+        ...state,
+        [action.messageId]: { ...state[action.messageId], deleted: true },
+      };
 
     case "message-create-request-sent":
       return {
@@ -287,9 +290,22 @@ export const selectMessage = createSelector(
     if (message == null || !message.app) return null;
     return selectApp(state, message.app);
   },
-  (message, author, inviter, installer, repliedMessage, loggedInUser, app) => {
+  (state) => state.users.blockedUserIds,
+  (
+    message,
+    author,
+    inviter,
+    installer,
+    repliedMessage,
+    loggedInUser,
+    app,
+    blockedUserIds
+  ) => {
     if (message == null) return null;
-    if (message.deleted) return message;
+
+    const isBlocked = blockedUserIds.includes(message.author);
+
+    if (message.deleted) return { ...message, isBlocked };
 
     const type = deriveMessageType(message);
 
@@ -298,7 +314,6 @@ export const selectMessage = createSelector(
     const isSystemMessage = systemMessageTypes.includes(type);
     const isAppMessage = appMessageTypes.includes(type);
 
-    const serverId = message.server;
     const appId = message.app;
     const authorUserId = message.author;
     const inviterUserId = message.inviter;
@@ -317,11 +332,11 @@ export const selectMessage = createSelector(
     return {
       ...message,
       createdAt: message.created_at,
-      serverId,
       channelId: message.channel,
       authorUserId,
       authorId,
       isEdited: message.edited_at != null,
+      isBlocked,
       type,
       isSystemMessage,
       isAppMessage,

@@ -1,12 +1,10 @@
 import * as Clipboard from "expo-clipboard";
-import { View } from "react-native";
+import { View, Alert } from "react-native";
 import * as Shades from "@shades/common";
 import { SectionedActionList } from "./account-modal";
 
 const { useAppScope } = Shades.app;
 const { message: messageUtils } = Shades.utils;
-
-const textDanger = "#de554f";
 
 const MessageModal = ({
   dismiss,
@@ -15,7 +13,7 @@ const MessageModal = ({
   startReply,
   deleteMessage,
 }) => {
-  const { state } = useAppScope();
+  const { state, actions } = useAppScope();
   const me = state.selectMe();
   const message = state.selectMessage(messageId);
 
@@ -46,12 +44,45 @@ const MessageModal = ({
     },
     {
       items: [
-        isOwnMessage && {
-          key: "delete-message",
-          label: "Delete message",
-          onPress: deleteMessage,
-          textColor: textDanger,
-        },
+        isOwnMessage
+          ? {
+              key: "delete-message",
+              label: "Delete message",
+              onPress: deleteMessage,
+              danger: true,
+            }
+          : {
+              key: "report-message",
+              label: "Report message",
+              danger: true,
+              onPress: () => {
+                Alert.prompt(
+                  "Report message",
+                  "(Optional comment)",
+                  [
+                    { text: "Cancel", style: "cancel" },
+                    {
+                      text: "Report",
+                      style: "destructive",
+                      onPress: async (comment) => {
+                        try {
+                          await actions.reportMessage(messageId, { comment });
+                          dismiss();
+                        } catch (e) {
+                          e.response?.json().then((json) => {
+                            Alert.alert(
+                              "Error",
+                              json?.detail ?? "Something went wrong"
+                            );
+                          });
+                        }
+                      },
+                    },
+                  ],
+                  "plain-text"
+                );
+              },
+            },
       ].filter(Boolean),
     },
   ].filter((s) => s.items.length > 0);

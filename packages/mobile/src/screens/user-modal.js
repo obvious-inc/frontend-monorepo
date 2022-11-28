@@ -1,7 +1,7 @@
 import * as Clipboard from "expo-clipboard";
 import * as Linking from "expo-linking";
 import React from "react";
-import { View, Text, Dimensions } from "react-native";
+import { View, Text, Dimensions, ScrollView, Alert } from "react-native";
 import { useNavigation } from "@react-navigation/native";
 import { useEnsName } from "wagmi";
 import * as Shades from "@shades/common";
@@ -28,6 +28,7 @@ const UserModal = ({ route }) => {
     React.useState(false);
   const [hasPendingStarRequest, setPendingStarRequest] = React.useState(false);
   const isStarred = state.selectIsUserStarred(userId);
+  const isBlocked = state.selectIsUserBlocked(userId);
 
   const actionSections = [
     {
@@ -36,7 +37,7 @@ const UserModal = ({ route }) => {
           key: "send-message",
           label: "Send message",
           onPress: () => {
-            const dmChannel = state.selectDmChannelFromUserId(user.id);
+            const dmChannel = state.selectDmChannelFromUserId(userId);
 
             if (dmChannel != null) {
               navigation.navigate("Channel", { channelId: dmChannel.id });
@@ -92,7 +93,59 @@ const UserModal = ({ route }) => {
         },
       ],
     },
-  ];
+    userId !== me.id && {
+      items: [
+        {
+          key: "report",
+          label: "Report user",
+          danger: true,
+          onPress: () => {
+            Alert.prompt(
+              `Report ${user.displayName ?? "user"}`,
+              "(Optional comment)",
+              [
+                { text: "Cancel", style: "cancel" },
+                {
+                  text: "Report",
+                  style: "destructive",
+                  onPress: async (comment) => {
+                    try {
+                      await actions.reportUser(userId, { comment });
+                      navigation.goBack();
+                    } catch (e) {
+                      e.response?.json().then((json) => {
+                        Alert.alert(
+                          "Error",
+                          json?.detail ?? "Something went wrong"
+                        );
+                      });
+                    }
+                  },
+                },
+              ],
+              "plain-text"
+            );
+          },
+        },
+        {
+          key: "block",
+          label: isBlocked ? "Unblock user" : "Block user",
+          danger: true,
+          onPress: async () => {
+            try {
+              if (isBlocked) await actions.unblockUser(userId);
+              else await actions.blockUser(userId);
+              navigation.goBack();
+            } catch (e) {
+              e.response?.json().then((json) => {
+                Alert.alert("Error", json?.detail ?? "Something went wrong");
+              });
+            }
+          },
+        },
+      ],
+    },
+  ].filter(Boolean);
 
   const truncatedAddress = truncateAddress(user.walletAddress);
   const userDisplayName = user.hasCustomDisplayName
@@ -116,8 +169,9 @@ const UserModal = ({ route }) => {
 
       <View
         style={{
+          flex: 1,
           paddingHorizontal: 16,
-          paddingVertical: 20,
+          paddingTop: 20,
         }}
       >
         <Text
@@ -145,9 +199,13 @@ const UserModal = ({ route }) => {
           </Text>
         )}
 
-        <View style={{ height: 20 }} />
-
-        <SectionedActionList items={actionSections} />
+        <View style={{ height: 10 }} />
+        <ScrollView
+          showsVerticalScrollIndicator={false}
+          contentContainerStyle={{ paddingTop: 10, paddingBottom: 50 }}
+        >
+          <SectionedActionList items={actionSections} />
+        </ScrollView>
       </View>
     </View>
   );

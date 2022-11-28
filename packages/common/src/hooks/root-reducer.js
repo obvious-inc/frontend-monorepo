@@ -27,6 +27,7 @@ import channels, {
   selectChannelHasOpenReadAccess,
   selectCanAddChannelMember,
   selectCanManageChannelInfo,
+  selectChannelLastMessageAt,
 } from "../reducers/channels";
 import messages, {
   selectMessage,
@@ -40,6 +41,7 @@ import users, {
   selectUserFromWalletAddress,
   selectIsUserStarred,
   selectUserStarId,
+  selectIsUserBlocked,
 } from "../reducers/users";
 import channelTypingStatus, {
   selectChannelTypingMembers,
@@ -84,6 +86,8 @@ const selectors = {
   selectChannelHasOpenReadAccess,
   selectCanAddChannelMember,
   selectCanManageChannelInfo,
+  selectIsUserBlocked,
+  selectChannelLastMessageAt,
 };
 
 const rootReducer = combineReducers({

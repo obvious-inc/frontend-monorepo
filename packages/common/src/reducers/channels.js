@@ -230,7 +230,7 @@ const readStatesById = (state = {}, action) => {
     //   return { ...state, ...entriesByChannelId };
     // }
 
-    case "mark-channel-read-request-sent":
+    case "mark-channel-read:request-sent":
       return {
         ...state,
         [action.channelId]: {
@@ -392,6 +392,12 @@ export const selectChannelHasUnread = createSelector(
   },
   { memoizeOptions: { maxSize: 1000 } }
 );
+
+export const selectChannelLastMessageAt = (state, channelId) => {
+  const readState = state.channels.readStatesById[channelId];
+  if (readState.lastMessageAt == null) return null;
+  return new Date(readState.lastMessageAt);
+};
 
 export const selectDmChannelFromUserId = (state, userId) => {
   const dmChannels = selectDmChannels(state);

@@ -362,6 +362,7 @@ export const UserListItem = ({
   status,
   profilePicture,
   disabled,
+  blocked,
   onSelect,
   arrowRight,
   rightColumn,
@@ -385,7 +386,7 @@ export const UserListItem = ({
   return (
     <ListItem
       onPress={onSelect}
-      title={title}
+      title={[title, blocked && "(blocked)"].filter(Boolean).join(" ")}
       truncateSubtitle
       subtitle={subtitle}
       icon={
@@ -413,6 +414,7 @@ export const UserListItem = ({
         </View>
       }
       disabled={disabled}
+      dimmed={blocked}
       arrowRight={arrowRight}
       rightColumn={rightColumn}
     />
@@ -427,6 +429,7 @@ const ListItem = ({
   truncateSubtitle,
   arrowRight,
   borderColor = theme.colors.backgroundLight,
+  dimmed,
   ...props
 }) => {
   return (
@@ -436,7 +439,7 @@ const ListItem = ({
         flexDirection: "row",
         alignItems: "center",
         paddingHorizontal: 16,
-        opacity: props.disabled ? 0.5 : 1,
+        opacity: props.disabled || dimmed ? 0.5 : 1,
       })}
       {...props}
     >

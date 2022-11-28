@@ -54,7 +54,20 @@ const entriesById = (state = {}, action) => {
   }
 };
 
-const starsByUserId = (state = [], action) => {
+const blockedUserIds = (state = [], action) => {
+  switch (action.type) {
+    case "fetch-blocked-users:request-successful":
+      return action.userIds;
+
+    case "logout":
+      return [];
+
+    default:
+      return state;
+  }
+};
+
+const starsByUserId = (state = {}, action) => {
   switch (action.type) {
     case "fetch-starred-items:request-successful": {
       const userStars = action.stars.filter((s) => s.type === "user");
@@ -68,7 +81,7 @@ const starsByUserId = (state = [], action) => {
       return omitKey(action.userId, state);
 
     case "logout":
-      return [];
+      return {};
 
     default:
       return state;
@@ -141,4 +154,7 @@ export const selectIsUserStarred = (state, id) =>
 export const selectUserStarId = (state, userId) =>
   state.users.starsByUserId[userId]?.id;
 
-export default combineReducers({ entriesById, starsByUserId });
+export const selectIsUserBlocked = (state, userId) =>
+  state.users.blockedUserIds.includes(userId);
+
+export default combineReducers({ entriesById, starsByUserId, blockedUserIds });

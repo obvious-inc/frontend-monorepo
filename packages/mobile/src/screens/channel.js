@@ -306,11 +306,11 @@ const Channel = ({ navigation, route: { params } }) => {
 
   const channelName = useChannelName();
 
-  const messages = useChannelMessages({ channelId });
-  const headerHeight = useHeaderHeight();
-
   const inputRef = React.useRef();
   const scrollViewRef = React.useRef();
+
+  const messages = useChannelMessages({ channelId });
+  const headerHeight = useHeaderHeight();
 
   useFetch(() => {
     if (channelId == null) return;
@@ -343,7 +343,7 @@ const Channel = ({ navigation, route: { params } }) => {
     state.selectHasFetchedMessages(channelId);
 
   // Mark channel as read when new messages arrive
-  React.useEffect(() => {
+  useFocusEffect(() => {
     if (channelId == null) return;
 
     if (
@@ -534,7 +534,6 @@ const Channel = ({ navigation, route: { params } }) => {
             setEditingMessageId(selectedMessageId);
             const message = state.selectMessage(selectedMessageId);
             setSelectedMessageId(null);
-            keyboardShouldPersistTaps = "always";
             setPendingMessage(messageUtils.stringifyBlocks(message.content));
           }}
           startReply={() => {
@@ -636,16 +635,50 @@ const ChannelMessagesScrollView = React.forwardRef(
         ref={scrollViewRef}
         inverted
         data={messages}
-        renderItem={({ item, index }) => (
-          <Message
-            message={item}
-            previousMessage={messages[index + 1]}
-            getMember={getMember}
-            selectMessage={selectMessage}
-            selectUser={selectUser}
-            highlight={item.highlighted}
-          />
-        )}
+        renderItem={({ item, index }) => {
+          const previousMessage = messages[index + 1];
+
+          if (!item.isBlocked)
+            return (
+              <Message
+                message={item}
+                previousMessage={previousMessage}
+                getMember={getMember}
+                selectMessage={selectMessage}
+                selectUser={selectUser}
+                highlight={item.highlighted}
+              />
+            );
+
+          if (previousMessage?.isBlocked) return null;
+
+          const blockedMessageCount = (() => {
+            let count = 1;
+            let i = index;
+            while (i--) {
+              if (messages[i] == null || !messages[i].isBlocked) break;
+              count++;
+            }
+
+            return count;
+          })();
+
+          return (
+            <View style={{ paddingHorizontal: 10, paddingLeft: 10 + 38 + 12 }}>
+              <Text
+                style={{
+                  fontSize: 13,
+                  lineHeight: 20,
+                  fontStyle: "italic",
+                  color: theme.colors.textMuted,
+                }}
+              >
+                {blockedMessageCount} blocked{" "}
+                {blockedMessageCount === 1 ? "message" : "messages"}
+              </Text>
+            </View>
+          );
+        }}
         estimatedItemSize={120}
         onEndReached={onEndReached}
         onEndReachedThreshold={1}
@@ -965,7 +998,9 @@ const RepliedMessage = ({
 }) => {
   const authorMember = message?.author;
   const showAvatar =
-    (message != null || !message?.deleted) && authorMember?.profilePicture;
+    !message?.deleted &&
+    !message?.isBlocked &&
+    authorMember?.profilePicture != null;
 
   const textStyles = {
     fontSize: 13,
@@ -1019,6 +1054,15 @@ const RepliedMessage = ({
                 }}
               >
                 Message deleted
+              </Text>
+            ) : message?.isBlocked ? (
+              <Text
+                style={{
+                  fontStyle: "italic",
+                  color: theme.colors.textMuted,
+                }}
+              >
+                Blocked message
               </Text>
             ) : (
               <>

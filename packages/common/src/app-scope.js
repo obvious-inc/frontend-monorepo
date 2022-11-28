@@ -132,6 +132,13 @@ export const Provider = ({ cloudflareAccountHash, children }) => {
       })
   );
 
+  const fetchBlockedUsers = useLatestCallback(async () => {
+    const blocks = await authorizedFetch("/users/me/blocks");
+    const userIds = blocks.map((b) => b.user);
+    dispatch({ type: "fetch-blocked-users:request-successful", userIds });
+    return userIds;
+  });
+
   const fetchPreferences = useLatestCallback(() =>
     authorizedFetch("/users/me/preferences", { priority: "low" }).then(
       (preferences) => {
@@ -245,24 +252,14 @@ export const Provider = ({ cloudflareAccountHash, children }) => {
   );
 
   const markChannelRead = useLatestCallback((channelId) => {
-    const unsortedMessages = stateSelectors.selectChannelMessages(channelId);
-    const messages = [...unsortedMessages].sort(
-      (m1, m2) => new Date(m1.created_at) - new Date(m2.created_at)
-    );
-
-    // Ignore the users’s own messages before we know they have been persisted
-    const lastPersistedMessage = messages
-      .filter((m) => !m.isOptimistic)
-      .slice(-1)[0];
+    const lastMessageAt = stateSelectors.selectChannelLastMessageAt(channelId);
 
     // Use the current time in case the channel is empty
-    const readAt =
-      lastPersistedMessage == null
-        ? new Date()
-        : new Date(lastPersistedMessage.createdAt);
+    const readAt = lastMessageAt == null ? new Date() : lastMessageAt;
 
     // TODO: Undo if request fails
-    dispatch({ type: "mark-channel-read-request-sent", channelId, readAt });
+    dispatch({ type: "mark-channel-read:request-sent", channelId, readAt });
+
     return authorizedFetch(`/channels/${channelId}/ack`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -353,6 +350,14 @@ export const Provider = ({ cloudflareAccountHash, children }) => {
         messageId,
       });
       return message;
+    });
+  });
+
+  const reportMessage = useLatestCallback(async (messageId, { comment }) => {
+    return authorizedFetch(`/messages/${messageId}/report`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ comment, reason: "other" }),
     });
   });
 
@@ -681,7 +686,11 @@ export const Provider = ({ cloudflareAccountHash, children }) => {
     const [
       { user: rawMe, channels: rawChannels, read_states: readStates, apps },
       starredItems,
-    ] = await Promise.all([authorizedFetch("/ready"), fetchStarredItems()]);
+    ] = await Promise.all([
+      authorizedFetch("/ready"),
+      fetchStarredItems(),
+      fetchBlockedUsers(),
+    ]);
 
     // TODO: Change this
     const missingChannelStars = starredItems.filter(
@@ -770,6 +779,28 @@ export const Provider = ({ cloudflareAccountHash, children }) => {
       dispatch({ type: "unstar-user:request-successful", userId });
       return res;
     });
+  });
+
+  const reportUser = useLatestCallback((userId, { comment }) =>
+    authorizedFetch("/users/me/reports", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ user: userId, reason: "other", comment }),
+    })
+  );
+
+  const blockUser = useLatestCallback(async (userId) => {
+    await authorizedFetch("/users/me/blocks", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ user: userId }),
+    });
+    await fetchBlockedUsers();
+  });
+
+  const unblockUser = useLatestCallback(async (userId) => {
+    await authorizedFetch(`/users/me/blocks/${userId}`, { method: "DELETE" });
+    await fetchBlockedUsers();
   });
 
   const uploadImage = useLatestCallback(({ files }) => {
@@ -872,6 +903,11 @@ export const Provider = ({ cloudflareAccountHash, children }) => {
       logout,
       fetchMe,
       fetchPreferences,
+      fetchBlockedUsers,
+      blockUser,
+      unblockUser,
+      reportUser,
+      reportMessage,
       fetchClientBootData,
       fetchMessage,
       updateMe,
@@ -922,6 +958,11 @@ export const Provider = ({ cloudflareAccountHash, children }) => {
       logout,
       fetchMe,
       fetchPreferences,
+      fetchBlockedUsers,
+      blockUser,
+      unblockUser,
+      reportUser,
+      reportMessage,
       fetchClientBootData,
       fetchMessage,
       updateMe,

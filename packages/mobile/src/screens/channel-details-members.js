@@ -1,7 +1,6 @@
 import React from "react";
 import { View, Text, Pressable, FlatList } from "react-native";
 import { useNavigation } from "@react-navigation/native";
-import Svg, { Path } from "react-native-svg";
 import * as Shades from "@shades/common";
 import theme from "../theme";
 import { UserListItem } from "./new-chat";
@@ -37,6 +36,7 @@ const HeaderLeft = ({ tintColor, canGoBack }) => {
 const MembersScreen = ({ navigation, route }) => {
   const { channelId } = route.params;
   const { state } = useAppScope();
+  const { selectIsUserBlocked } = state;
 
   const inputRef = React.useRef();
 
@@ -53,6 +53,7 @@ const MembersScreen = ({ navigation, route }) => {
       if (m.id === me.id)
         return { ...m, displayName: `${m.displayName} (you)` };
 
+      if (selectIsUserBlocked(m.id)) return { ...m, isBlocked: true };
       if (starredUserIds.includes(m.id)) return { ...m, isStarred: true };
 
       return m;
@@ -61,6 +62,7 @@ const MembersScreen = ({ navigation, route }) => {
     if (query.length <= 1)
       return sort(
         comparator(
+          (u) => !u.isBlocked,
           (u) => u.id !== me.id && u.onlineStatus === "online",
           (u) => u.isStarred ?? false,
           (u) => {
@@ -74,7 +76,7 @@ const MembersScreen = ({ navigation, route }) => {
       );
 
     return searchUsers(unfilteredMembers, query);
-  }, [pendingInput, members, me, starredUserIds]);
+  }, [pendingInput, members, me, starredUserIds, selectIsUserBlocked]);
 
   return (
     <View style={{ flex: 1 }}>
@@ -99,6 +101,7 @@ const MembersScreen = ({ navigation, route }) => {
             ensName={item.ensName}
             profilePicture={item.profilePicture}
             status={item.onlineStatus}
+            blocked={item.isBlocked}
             onSelect={() => {
               navigation.navigate("User modal", { userId: item.id });
             }}
