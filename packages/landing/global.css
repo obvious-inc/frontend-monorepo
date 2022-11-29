@@ -10,13 +10,6 @@ body {
   -webkit-user-select: none;
   background: black;
   color: white;
-  overflow: hidden;
   text-rendering: optimizeLegibility;
 }
 
-html,
-body,
-[data-reactroot] {
-  height: 100%;
-  width: 100%;
-}
