@@ -416,8 +416,8 @@ const Embeds = React.memo(({ messageId }) => {
         "li + li": { marginTop: "1rem" },
       })}
     >
-      {embeds.map((embed) => (
-        <Embed key={embed.url} {...embed} />
+      {embeds.map((embed, i) => (
+        <Embed key={`${embed.url}-${i}`} {...embed} />
       ))}
     </ul>
   );
