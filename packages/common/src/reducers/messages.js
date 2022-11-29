@@ -366,11 +366,19 @@ export const selectMessage = createSelector(
 
 export const selectChannelMessages = createSelector(
   (state, channelId) => {
+    const channel = state.channels.entriesById[channelId];
+
     const channelMessageIds =
       state.messages.entryIdsByChannelId[channelId] ?? [];
     return channelMessageIds
       .map((messageId) => selectMessage(state, messageId))
-      .filter((m) => m != null && !m.deleted);
+      .filter((m) => {
+        // TODO show these somehow
+        if (m?.isSystemMessage)
+          return channel.memberUserIds.includes(m.authorUserId);
+
+        return m != null && !m.deleted;
+      });
   },
   (messages) => messages,
   { memoizeOptions: { equalityCheck: arrayShallowEquals } }
