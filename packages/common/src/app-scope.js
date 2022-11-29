@@ -885,13 +885,20 @@ export const Provider = ({ cloudflareAccountHash, children }) => {
 
     switch (name) {
       case "channel-updated":
+      case "channel-user":
         dispatchEvent({ channel: parseChannel(data.channel) });
         break;
       case "user-profile-updated":
       case "user-presence-updated":
       case "channel-user-joined":
-      case "channel-user-invited":
         dispatchEvent({ user: parseUser(data.user) });
+        break;
+
+      case "channel-user-invited":
+        dispatchEvent({
+          user: parseUser(data.user),
+          channel: parseChannel(data.channel),
+        });
         break;
 
       default:

@@ -26,7 +26,7 @@ const createParser = ({
   const parse = (blocks) => {
     const windowWidth = Dimensions.get("window").width;
 
-    const parseElement = (el, i, els, { root } = {}) => {
+    const parseElement = (el, i, _, { root } = {}) => {
       const parseNode = (n, i, ns) =>
         n.text == null ? parseElement(n, i, ns) : parseLeaf(n, i, ns);
 

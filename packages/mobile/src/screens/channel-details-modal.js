@@ -21,13 +21,16 @@ const ChannelDetailsModal = ({ navigation, route }) => {
   const channel = state.selectChannel(channelId);
   const channelName = state.selectChannelName(channelId);
   const hasOpenReadAccess = state.selectChannelHasOpenReadAccess(channelId);
+  const channelPermissionType = state.selectChannelAccessLevel(channelId);
   const canAddMembers = state.selectCanAddChannelMember(channelId);
   const canManageInfo = state.selectCanManageChannelInfo(channelId);
   const isStarredChannel = state.selectIsChannelStarred(channelId);
   const memberCount = channel.memberUserIds.length;
 
   const isOwner = me.id === channel.ownerUserId;
+  const isMember = channel.memberUserIds.includes(me.id);
 
+  const [hasPendingJoinRequest, setPendingJoinRequest] = React.useState(false);
   const [hasPendingStarRequest, setPendingStarRequest] = React.useState(false);
   const [isUpdatingPicture, setUpdatingPicture] = React.useState(false);
 
@@ -158,7 +161,7 @@ const ChannelDetailsModal = ({ navigation, route }) => {
         {
           key: "star-channel",
           label: isStarredChannel ? "Unstar" : "Star",
-          disabled: hasPendingStarRequest,
+          isLoading: hasPendingStarRequest,
           onPress: () => {
             setPendingStarRequest(true);
             const promise = isStarredChannel
@@ -178,37 +181,59 @@ const ChannelDetailsModal = ({ navigation, route }) => {
         },
       ].filter(Boolean),
     },
+    !isMember && {
+      items: [
+        {
+          key: "join",
+          label: "Join channel",
+          disabled: channelPermissionType !== "open",
+          isLoading: hasPendingJoinRequest,
+          onPress: () => {
+            setPendingJoinRequest(true);
+            actions
+              .joinChannel(channelId)
+              .then(() => {
+                navigation.goBack();
+              })
+              .finally(() => {
+                setPendingJoinRequest(false);
+              });
+          },
+        },
+      ],
+    },
     manageItems.length > 0 && {
       title: "Manage channel",
       items: manageItems,
     },
     {
       items: [
-        channel.kind === "topic" && {
-          key: "leave-channel",
-          label: "Leave channel",
-          danger: true,
-          disabled: isOwner,
-          onPress: () => {
-            const leaveChannel = () => {
-              actions.leaveChannel(channelId);
-              navigation.popToTop();
-            };
+        channel.kind === "topic" &&
+          isMember && {
+            key: "leave-channel",
+            label: "Leave channel",
+            danger: true,
+            disabled: isOwner,
+            onPress: () => {
+              const leaveChannel = () => {
+                actions.leaveChannel(channelId);
+                navigation.popToTop();
+              };
 
-            Alert.alert(
-              "Leave channel",
-              "Are you sure you want to leave this channel?",
-              [
-                { text: "Cancel", style: "cancel" },
-                {
-                  text: "Leave channel",
-                  style: "destructive",
-                  onPress: leaveChannel,
-                },
-              ]
-            );
+              Alert.alert(
+                "Leave channel",
+                "Are you sure you want to leave this channel?",
+                [
+                  { text: "Cancel", style: "cancel" },
+                  {
+                    text: "Leave channel",
+                    style: "destructive",
+                    onPress: leaveChannel,
+                  },
+                ]
+              );
+            },
           },
-        },
         channel.kind === "topic" &&
           isOwner && {
             key: "delete-channel",

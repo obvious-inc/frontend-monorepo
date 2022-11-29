@@ -509,7 +509,7 @@ export const ChannelPicture = React.memo(
             <Text style={{ color: textDimmed, fontSize: 11 }}>
               {
                 // Emojis: https://dev.to/acanimal/how-to-slice-or-get-symbols-from-a-unicode-string-with-emojis-in-javascript-lets-learn-how-javascript-represent-strings-h3a
-                [...channelName][0]?.toUpperCase()
+                [...(channelName ?? "")][0]?.toUpperCase()
               }
             </Text>
           </View>
