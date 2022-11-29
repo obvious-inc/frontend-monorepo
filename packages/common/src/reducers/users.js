@@ -97,12 +97,14 @@ export const selectUser = createSelector(
   (state, userId) => state.users.entriesById[userId],
   (state, userId) => {
     const user = state.users.entriesById[userId];
-    if (user == null) return null;
+    if (user == null || user.deleted) return null;
     return state.ens.namesByAddress[user.walletAddress.toLowerCase()];
   },
   (state) => state.me.user?.id,
   (user, ensName, loggedInUserId) => {
     if (user == null) return null;
+    if (user.deleted) return user;
+
     const isLoggedInUser = user.id === loggedInUserId;
 
     const hasCustomDisplayName =

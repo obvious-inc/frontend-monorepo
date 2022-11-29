@@ -84,7 +84,11 @@ const Context = React.createContext({});
 export const useAppScope = () => React.useContext(Context);
 
 export const Provider = ({ cloudflareAccountHash, children }) => {
-  const { authorizedFetch, logout: clearAuthTokens } = useAuth();
+  const {
+    status: authStatus,
+    authorizedFetch,
+    logout: clearAuthTokens,
+  } = useAuth();
   const [
     stateSelectors,
     dispatch,
@@ -199,7 +203,12 @@ export const Provider = ({ cloudflareAccountHash, children }) => {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ user_ids: userIds }),
     }).then((rawUsers) => {
-      const users = rawUsers.map(parseUser);
+      const users = userIds.map((id) => {
+        const rawUser = rawUsers.find((u) => u.id === id);
+        if (rawUser == null) return { id, deleted: true };
+        return parseUser(rawUser);
+      });
+
       dispatch({ type: "fetch-users-request-successful", users });
       return users;
     })
@@ -248,6 +257,15 @@ export const Provider = ({ cloudflareAccountHash, children }) => {
                   deleted: true,
                 },
               });
+            });
+
+          // Beautifuly fetch non-member users
+          if (authStatus === "authenticated")
+            fetchChannel(channelId).then((c) => {
+              const userIds = messages
+                .filter((m) => !c.memberUserIds.includes(m.author))
+                .map((m) => m.author);
+              fetchUsers(userIds);
             });
 
           return messages;

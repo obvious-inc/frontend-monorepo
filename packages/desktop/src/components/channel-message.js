@@ -515,7 +515,6 @@ const Embed = ({
                 actualWidth != null && actualHeight != null;
               const maxHeight = 400;
               const aspectRatio = actualWidth / actualHeight;
-              console.log(actualHeight, actualWidth, aspectRatio);
               const calculatedWidth =
                 actualHeight < maxHeight
                   ? actualWidth
@@ -783,22 +782,25 @@ const EmojiPickerMobileDialog = ({ onSelect, isOpen, onRequestClose }) => (
 );
 
 const MemberDisplayName = React.forwardRef(
-  ({ displayName, color, ...props }, ref) => (
+  ({ displayName, color, deleted, ...props }, ref) => (
     <button
       ref={ref}
+      disabled={deleted}
       css={(t) =>
         css({
           lineHeight: 1.2,
-          color: color ?? t.colors.textNormal,
+          color: color ?? (deleted ? t.colors.textMuted : t.colors.textNormal),
           fontWeight: t.text.weights.smallHeader,
-          cursor: "pointer",
           outline: "none",
-          ":hover, :focus-visible": { textDecoration: "underline" },
+          ":not([disabled])": {
+            cursor: "pointer",
+            ":hover, :focus-visible": { textDecoration: "underline" },
+          },
         })
       }
       {...props}
     >
-      {displayName}
+      {deleted ? "Deleted user" : displayName}
     </button>
   )
 );
@@ -806,9 +808,10 @@ const MemberDisplayName = React.forwardRef(
 const MemberDisplayNameWithPopover = React.forwardRef(
   ({ user, color, popoverProps, ...props }, ref) => (
     <Popover.Root placement="right" {...popoverProps}>
-      <Popover.Trigger asChild disabled={user == null}>
+      <Popover.Trigger asChild disabled={user == null || user.deleted}>
         <MemberDisplayName
           ref={ref}
+          deleted={user?.deleted}
           displayName={user?.displayName}
           color={color}
           {...props}
@@ -877,13 +880,7 @@ const InlineAppDisplayName = React.forwardRef(
   )
 );
 
-const MessageHeader = ({
-  compact,
-  // simplified,
-  message,
-  authorUser,
-  createdAt,
-}) => {
+const MessageHeader = ({ compact, message, authorUser, createdAt }) => {
   if (message.isSystemMessage) return null;
 
   if (message.isAppMessage) {
@@ -912,7 +909,10 @@ const MessageHeader = ({
   if (compact)
     return (
       <Popover.Root placement="right">
-        <Popover.Trigger asChild disabled={message.author == null}>
+        <Popover.Trigger
+          asChild
+          disabled={message.author == null || message.author.deleted}
+        >
           <div
             css={css({
               display: "inline",
@@ -923,7 +923,7 @@ const MessageHeader = ({
             })}
           >
             <Avatar
-              url={message.author?.profilePicture.small}
+              url={message.author?.profilePicture?.small}
               walletAddress={message.author?.walletAddress}
               size="2rem"
               style={{
@@ -935,6 +935,7 @@ const MessageHeader = ({
             />
             <MemberDisplayName
               data-name
+              deleted={message.author?.deleted}
               displayName={message.author?.displayName}
               style={{ marginRight: "1rem" }}
             />
@@ -1609,7 +1610,7 @@ const RepliedMessage = ({ message, getMember }) => {
                 css({ fontStyle: "italic", color: theme.colors.textMuted })
               }
             >
-              Message deleted
+              Deleted message
             </span>
           ) : (
             <>
@@ -1617,17 +1618,28 @@ const RepliedMessage = ({ message, getMember }) => {
                 <span css={css({ fontWeight: "500" })}>...</span>
               ) : (
                 <Popover.Root placement="right">
-                  <Popover.Trigger asChild>
+                  <Popover.Trigger asChild disabled={authorMember.deleted}>
                     <span
                       role="button"
                       tabIndex={0}
-                      css={css({
-                        cursor: "pointer",
-                        fontWeight: "500",
-                        ":hover": { textDecoration: "underline" },
-                      })}
+                      css={(t) =>
+                        css({
+                          color: authorMember.deleted
+                            ? t.colors.textMuted
+                            : undefined,
+                          fontWeight: "500",
+                          ":not([disabled])": {
+                            cursor: "pointer",
+                            ":hover": {
+                              textDecoration: "underline",
+                            },
+                          },
+                        })
+                      }
                     >
-                      {authorMember.displayName}
+                      {authorMember.deleted
+                        ? "Deleted user"
+                        : authorMember.displayName}
                     </span>
                   </Popover.Trigger>
                   <Popover.Content>
@@ -1741,29 +1753,36 @@ const MessageLeftColumn = ({ isHovering, simplified, compact, message }) => {
   return (
     <div css={css({ padding: "0.2rem 0 0" })}>
       <Popover.Root placement="right">
-        <Popover.Trigger asChild disabled={message.author == null}>
+        <Popover.Trigger
+          asChild
+          disabled={message.author == null || message.author.deleted}
+        >
           <button
             css={(t) =>
               css({
                 position: "relative",
                 borderRadius: t.avatars.borderRadius,
                 overflow: "hidden",
-                cursor: "pointer",
                 outline: "none",
                 ":focus-visible": {
                   boxShadow: `0 0 0 0.2rem ${t.colors.primary}`,
                 },
-                ":not([disabled]):hover": {
-                  boxShadow: message.author?.profilePicture.isVerifiedNft
-                    ? `0 0 0 0.2rem ${t.colors.primary}`
-                    : `0 0 0 0.2rem ${t.colors.borderLight}`,
+                ":not([disabled])": {
+                  cursor: "pointer",
+                  ":hover": {
+                    boxShadow: message.author?.profilePicture?.isVerifiedNft
+                      ? `0 0 0 0.2rem ${t.colors.primary}`
+                      : `0 0 0 0.2rem ${t.colors.borderLight}`,
+                  },
+                  ":active": {
+                    transform: "translateY(0.1rem)",
+                  },
                 },
-                ":not([disabled]):active": { transform: "translateY(0.1rem)" },
               })
             }
           >
             <Avatar
-              url={message.author?.profilePicture.small}
+              url={message.author?.profilePicture?.small}
               walletAddress={message.author?.walletAddress}
               size="3.8rem"
               pixelSize={38}
@@ -1794,7 +1813,8 @@ const SystemMessageContent = ({ message }) => {
       );
     }
     case "member-joined": {
-      const isMissingData = message.author?.displayName == null;
+      const isMissingData =
+        !message.author?.deleted && message.author?.displayName == null;
       return (
         <span style={{ opacity: isMissingData ? 0 : 1 }}>
           <MemberDisplayNameWithPopover user={message.author} /> joined the

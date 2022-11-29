@@ -980,8 +980,19 @@ const NewMessageInput = React.memo(
           >
             <div css={css({ flex: 1, paddingTop: "0.2rem" })}>
               Replying to{" "}
-              <span css={css({ fontWeight: "500" })}>
-                {replyingToMessage.author?.displayName}
+              <span
+                css={(t) =>
+                  css({
+                    fontWeight: "500",
+                    color: replyingToMessage.author?.deleted
+                      ? t.colors.textMuted
+                      : undefined,
+                  })
+                }
+              >
+                {replyingToMessage.author?.deleted
+                  ? "Deleted user"
+                  : replyingToMessage.author?.displayName}
               </span>
             </div>
             <button
