@@ -1,11 +1,12 @@
 import Constants from "expo-constants";
+import * as Linking from "expo-linking";
 import * as ImagePicker from "expo-image-picker";
 import React from "react";
 import * as Shades from "@shades/common";
 import { View, Text, Pressable, Alert, ActivityIndicator } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import theme from "../theme";
-import { VERSION } from "../config";
+import { VERSION, CONTACT_EMAIL_ADDRESS } from "../config";
 
 const { useAppScope } = Shades.app;
 
@@ -145,6 +146,17 @@ const AccountModal = ({ navigation }) => {
           {
             items: [
               {
+                key: "contact",
+                label: "Contact us",
+                onPress: () => {
+                  Linking.openURL(`mailto:${CONTACT_EMAIL_ADDRESS}`);
+                },
+              },
+            ],
+          },
+          {
+            items: [
+              {
                 key: "log-out",
                 label: "Log out",
                 danger: true,
@@ -153,10 +165,6 @@ const AccountModal = ({ navigation }) => {
                   navigation.popToTop();
                 },
               },
-            ],
-          },
-          {
-            items: [
               {
                 key: "delete-account",
                 label: "Delete account",
@@ -260,8 +268,8 @@ const ModalActionButton = ({
     backgroundColor: pressed
       ? "hsl(0,0%,14%)"
       : bordered
-      ? undefined
-      : "hsl(0,0%,12%)",
+        ? undefined
+        : "hsl(0,0%,12%)",
     borderWidth: bordered ? 1 : 0,
     borderColor: bordered ? theme.colors.backgroundLight : undefined,
     borderRadius: 12,
@@ -293,8 +301,8 @@ const ModalActionButton = ({
             color: disabled
               ? theme.colors.textMuted
               : danger
-              ? theme.colors.textDanger
-              : textColor,
+                ? theme.colors.textDanger
+                : textColor,
             fontSize: 16,
             lineHeight: 18,
           }}

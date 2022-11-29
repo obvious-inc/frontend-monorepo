@@ -27,3 +27,5 @@ export const PUSHER_KEY = Constants.expoConfig.extra.pusherKey;
 export const INFURA_PROJECT_ID = Constants.expoConfig.extra.infuraProjectId;
 export const CLOUDFLARE_ACCOUNT_HASH =
   Constants.expoConfig.extra.cloudflareAccountHash;
+
+export const CONTACT_EMAIL_ADDRESS = "contact@newshades.xyz";
