@@ -119,9 +119,12 @@ export const Root = ({
 };
 
 export const Trigger = React.forwardRef(
-  ({ asChild, children, ...props }, forwardedRef) => {
+  ({ asChild, children, disabled, ...props }, forwardedRef) => {
     const { state, triggerProps, triggerRef } = React.useContext(Context);
-    const { buttonProps } = useButton(triggerProps);
+    const { buttonProps } = useButton({
+      ...triggerProps,
+      isDisabled: disabled,
+    });
     const ref = useComposedRefs(triggerRef, forwardedRef);
     return typeof children === "function" ? (
       children({ isOpen: state.isOpen, props, ref })

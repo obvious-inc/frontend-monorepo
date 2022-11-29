@@ -806,7 +806,7 @@ const MemberDisplayName = React.forwardRef(
 const MemberDisplayNameWithPopover = React.forwardRef(
   ({ user, color, popoverProps, ...props }, ref) => (
     <Popover.Root placement="right" {...popoverProps}>
-      <Popover.Trigger asChild>
+      <Popover.Trigger asChild disabled={user == null}>
         <MemberDisplayName
           ref={ref}
           displayName={user?.displayName}
@@ -912,7 +912,7 @@ const MessageHeader = ({
   if (compact)
     return (
       <Popover.Root placement="right">
-        <Popover.Trigger asChild>
+        <Popover.Trigger asChild disabled={message.author == null}>
           <div
             css={css({
               display: "inline",
@@ -974,29 +974,29 @@ const MessageHeader = ({
               tooltipContentProps={{ sideOffset: 8 }}
             />
           </TinyMutedText>
-
-          {authorUser?.onlineStatus === "online" && (
-            <Tooltip.Root>
-              <Tooltip.Trigger asChild>
-                <div css={css({ padding: "0.5rem 0.2rem" })}>
-                  <div
-                    css={(theme) =>
-                      css({
-                        width: "0.6rem",
-                        height: "0.6rem",
-                        borderRadius: "50%",
-                        background: theme.colors.onlineIndicator,
-                      })
-                    }
-                  />
-                </div>
-              </Tooltip.Trigger>
-              <Tooltip.Content side="top" align="center" sideOffset={6}>
-                User online
-              </Tooltip.Content>
-            </Tooltip.Root>
-          )}
         </>
+      )}
+
+      {authorUser?.onlineStatus === "online" && (
+        <Tooltip.Root>
+          <Tooltip.Trigger asChild>
+            <div css={css({ padding: "0.5rem 0.2rem" })}>
+              <div
+                css={(theme) =>
+                  css({
+                    width: "0.6rem",
+                    height: "0.6rem",
+                    borderRadius: "50%",
+                    background: theme.colors.onlineIndicator,
+                  })
+                }
+              />
+            </div>
+          </Tooltip.Trigger>
+          <Tooltip.Content side="top" align="center" sideOffset={6}>
+            User online
+          </Tooltip.Content>
+        </Tooltip.Root>
       )}
     </div>
   );
@@ -1741,7 +1741,7 @@ const MessageLeftColumn = ({ isHovering, simplified, compact, message }) => {
   return (
     <div css={css({ padding: "0.2rem 0 0" })}>
       <Popover.Root placement="right">
-        <Popover.Trigger asChild>
+        <Popover.Trigger asChild disabled={message.author == null}>
           <button
             css={(t) =>
               css({
@@ -1753,12 +1753,12 @@ const MessageLeftColumn = ({ isHovering, simplified, compact, message }) => {
                 ":focus-visible": {
                   boxShadow: `0 0 0 0.2rem ${t.colors.primary}`,
                 },
-                ":hover": {
+                ":not([disabled]):hover": {
                   boxShadow: message.author?.profilePicture.isVerifiedNft
                     ? `0 0 0 0.2rem ${t.colors.primary}`
                     : `0 0 0 0.2rem ${t.colors.borderLight}`,
                 },
-                ":active": { transform: "translateY(0.1rem)" },
+                ":not([disabled]):active": { transform: "translateY(0.1rem)" },
               })
             }
           >
