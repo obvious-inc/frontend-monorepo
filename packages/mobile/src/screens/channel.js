@@ -376,7 +376,7 @@ const Channel = ({ navigation, route: { params } }) => {
 
   const replyTargetMessage = state.selectMessage(replyTargetMessageId);
 
-  const isMember = me != null && channel.memberUserIds?.includes(me.id);
+  const isMember = me != null && channel?.memberUserIds?.includes(me.id);
   const canPost = isMember;
 
   return (

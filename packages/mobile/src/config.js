@@ -29,3 +29,6 @@ export const CLOUDFLARE_ACCOUNT_HASH =
   Constants.expoConfig.extra.cloudflareAccountHash;
 
 export const CONTACT_EMAIL_ADDRESS = "contact@newshades.xyz";
+
+export const CHANNEL_NAME_MAX_LENGTH = 100;
+export const CHANNEL_DESCRIPTION_MAX_LENGTH = 1000;

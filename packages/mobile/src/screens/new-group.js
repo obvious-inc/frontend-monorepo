@@ -1,7 +1,19 @@
 import React from "react";
-import { View, Text, Pressable, ScrollView } from "react-native";
+import {
+  View,
+  Text,
+  Pressable,
+  ScrollView,
+  KeyboardAvoidingView,
+} from "react-native";
+import { useHeaderHeight } from "@react-navigation/elements";
+import { SafeAreaView } from "react-native-safe-area-context";
 import * as Shades from "@shades/common";
 import theme from "../theme";
+import {
+  CHANNEL_NAME_MAX_LENGTH,
+  CHANNEL_DESCRIPTION_MAX_LENGTH,
+} from "../config";
 import Input from "../components/input";
 import { useAsyncDismissKeyboard } from "./new-chat";
 import { HorizontalUserListItem } from "./new-closed-channel";
@@ -43,6 +55,8 @@ const titleByChannelType = {
 const NewGroup = ({ navigation, route }) => {
   const channelType = route.params?.type ?? "open";
   const members = route.params?.members ?? [];
+
+  const headerHeight = useHeaderHeight();
 
   const { state, actions } = useAppScope();
 
@@ -109,51 +123,77 @@ const NewGroup = ({ navigation, route }) => {
   const hasMembers = members.length > 0;
 
   return (
-    <View
-      style={{
-        flex: 1,
-        paddingTop: hasMembers ? 0 : 10,
-        paddingBottom: 20,
-      }}
-    >
-      {hasMembers && (
-        <View>
-          <ScrollView
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            contentContainerStyle={{ paddingBottom: 11, paddingHorizontal: 8 }}
-            style={{ width: "100%" }}
-          >
-            {members.map((address) => {
-              const user = state.selectUserFromWalletAddress(address);
-              return (
-                <HorizontalUserListItem
-                  key={address}
-                  address={address}
-                  displayName={user?.displayName}
-                />
-              );
-            })}
-          </ScrollView>
-        </View>
-      )}
-      <View style={{ paddingHorizontal: 16 }}>
-        <Input
-          autoFocus
-          placeholder="Name (required)"
-          value={name}
-          onChangeText={setName}
-        />
-        <Input
-          placeholder="Topic"
-          multiline
-          value={description}
-          onChangeText={setDescription}
-          returnKeyType="default"
-          style={{ minHeight: 60, marginTop: 16 }}
-        />
-      </View>
-    </View>
+    <SafeAreaView edges={["left", "right", "bottom"]} style={{ flex: 1 }}>
+      <KeyboardAvoidingView
+        behavior="padding"
+        keyboardVerticalOffset={headerHeight}
+        style={{ flex: 1 }}
+      >
+        {hasMembers && (
+          <View style={{ paddingTop: 10 }}>
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={{
+                paddingBottom: 11,
+                paddingHorizontal: 8,
+              }}
+              style={{ width: "100%" }}
+            >
+              {members.map((address) => {
+                const user = state.selectUserFromWalletAddress(address);
+                return (
+                  <HorizontalUserListItem
+                    key={address}
+                    address={address}
+                    displayName={user?.displayName}
+                  />
+                );
+              })}
+            </ScrollView>
+          </View>
+        )}
+
+        <ScrollView
+          showsVerticalScrollIndicator={false}
+          contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 40 }}
+        >
+          <Input
+            autoFocus
+            placeholder="Name (required)"
+            value={name}
+            onChangeText={setName}
+            maxLength={CHANNEL_NAME_MAX_LENGTH}
+          />
+          {name.length > parseInt(CHANNEL_NAME_MAX_LENGTH * 0.75) && (
+            <Text
+              style={{
+                marginTop: 10,
+                color: theme.colors.textDimmed,
+              }}
+            >
+              {name.length} of {CHANNEL_NAME_MAX_LENGTH} characters
+            </Text>
+          )}
+          <Input
+            placeholder="Topic"
+            multiline
+            value={description}
+            onChangeText={setDescription}
+            returnKeyType="default"
+            maxLength={CHANNEL_DESCRIPTION_MAX_LENGTH}
+            style={{ minHeight: 60, marginTop: 16 }}
+          />
+          {description.length >
+            parseInt(CHANNEL_DESCRIPTION_MAX_LENGTH * 0.75) && (
+            <Text style={{ marginTop: 10, color: theme.colors.textDimmed }}>
+              {description.length} of {CHANNEL_DESCRIPTION_MAX_LENGTH}{" "}
+              characters
+            </Text>
+          )}
+        </ScrollView>
+      </KeyboardAvoidingView>
+    </SafeAreaView>
   );
 };
 

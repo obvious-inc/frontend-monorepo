@@ -268,8 +268,8 @@ const ModalActionButton = ({
     backgroundColor: pressed
       ? "hsl(0,0%,14%)"
       : bordered
-        ? undefined
-        : "hsl(0,0%,12%)",
+      ? undefined
+      : "hsl(0,0%,12%)",
     borderWidth: bordered ? 1 : 0,
     borderColor: bordered ? theme.colors.backgroundLight : undefined,
     borderRadius: 12,
@@ -301,8 +301,8 @@ const ModalActionButton = ({
             color: disabled
               ? theme.colors.textMuted
               : danger
-                ? theme.colors.textDanger
-                : textColor,
+              ? theme.colors.textDanger
+              : textColor,
             fontSize: 16,
             lineHeight: 18,
           }}
