@@ -41,6 +41,7 @@ const createApiParsers = ({ buildCloudflareImageUrl }) => ({
       parsedData.displayName = u.display_name;
     if (u.push_tokens != null) parsedData.pushTokens = u.push_tokens;
     if (u.pfp != null) parsedData.profilePicture = createProfilePicture();
+    if (u.created_at != null) parsedData.createdAt = u.created_at;
 
     return parsedData;
   },

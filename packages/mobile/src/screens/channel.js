@@ -698,6 +698,7 @@ const Message = ({
   highlight,
 }) => {
   const m = message;
+  console.log(m.author);
 
   const createdAtDate = React.useMemo(
     () => new Date(message.created_at),
@@ -826,7 +827,7 @@ const Message = ({
                     marginRight: 7,
                   }}
                 >
-                  {m.author?.display_name}
+                  {m.author?.displayName}
                 </Text>
               </Pressable>
               <Text
@@ -837,7 +838,7 @@ const Message = ({
                 }}
               >
                 <FormattedDate
-                  value={new Date(m.created_at)}
+                  value={new Date(m.createdAt)}
                   hour="numeric"
                   minute="numeric"
                   day="numeric"

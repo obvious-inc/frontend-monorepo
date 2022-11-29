@@ -100,12 +100,13 @@ export const selectUser = createSelector(
     if (user == null) return null;
     return state.ens.namesByAddress[user.walletAddress.toLowerCase()];
   },
-  (state) => state.me.user,
-  (user, ensName, loggedInUser) => {
+  (state) => state.me.user?.id,
+  (user, ensName, loggedInUserId) => {
     if (user == null) return null;
-    const isLoggedInUser = user.id === loggedInUser?.id;
+    const isLoggedInUser = user.id === loggedInUserId;
 
     const hasCustomDisplayName =
+      (user.displayName ?? "") !== "" &&
       truncateAddress(user.walletAddress) !== user.displayName;
 
     return {

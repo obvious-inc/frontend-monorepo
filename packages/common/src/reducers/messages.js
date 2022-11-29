@@ -284,7 +284,7 @@ export const selectMessage = createSelector(
     if (message == null || message.reply_to == null) return null;
     return selectMessage(state, message.reply_to);
   },
-  (state) => state.me.user,
+  (state) => state.me.user?.id,
   (state, messageId) => {
     const message = state.messages.entriesById[messageId];
     if (message == null || !message.app) return null;
@@ -297,7 +297,7 @@ export const selectMessage = createSelector(
     inviter,
     installer,
     repliedMessage,
-    loggedInUser,
+    loggedInUserId,
     app,
     blockedUserIds
   ) => {
@@ -355,7 +355,7 @@ export const selectMessage = createSelector(
       reactions:
         message.reactions?.map((r) => ({
           ...r,
-          hasReacted: r.users.includes(loggedInUser?.id),
+          hasReacted: r.users.includes(loggedInUserId),
         })) ?? [],
       appId,
       app,
