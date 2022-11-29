@@ -16,8 +16,9 @@ import {
 
 const { useAppScope } = Shades.app;
 const { useLatestCallback } = Shades.react;
-const { unique, sort } = Shades.utils.array;
+const { unique } = Shades.utils.array;
 const { truncateAddress } = Shades.utils.ethereum;
+const { search: searchUsers } = Shades.utils.user;
 
 export const options = {
   headerLeft: (props) => <HeaderLeft {...props} />,
@@ -254,8 +255,11 @@ const NewChat = ({ navigation }) => {
                   type: "group-option",
                   separete: i === os.length - 1 && filteredUsers.length !== 0,
                 })),
-                { type: "section-title", title: "Message directly" },
-              ]),
+                filteredUsers.length > 0 && {
+                  type: "section-title",
+                  title: "Message directly",
+                },
+              ].filter(Boolean)),
           ...filteredUsers,
         ].filter(Boolean)}
         keyExtractor={(item) => {
