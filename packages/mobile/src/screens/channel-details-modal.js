@@ -31,6 +31,8 @@ const ChannelDetailsModal = ({ navigation, route }) => {
   const isMember = channel.memberUserIds.includes(me.id);
 
   const [hasPendingJoinRequest, setPendingJoinRequest] = React.useState(false);
+  const [hasPendingLeaveRequest, setPendingLeaveRequest] =
+    React.useState(false);
   const [hasPendingStarRequest, setPendingStarRequest] = React.useState(false);
   const [isUpdatingPicture, setUpdatingPicture] = React.useState(false);
 
@@ -214,10 +216,25 @@ const ChannelDetailsModal = ({ navigation, route }) => {
             label: "Leave channel",
             danger: true,
             disabled: isOwner,
-            onPress: () => {
-              const leaveChannel = () => {
-                actions.leaveChannel(channelId);
-                navigation.popToTop();
+            isLoading: hasPendingLeaveRequest,
+            onPress: async () => {
+              const leaveChannel = async () => {
+                setPendingLeaveRequest(true);
+
+                try {
+                  if (hasOpenReadAccess) {
+                    await actions.leaveChannel(channelId);
+                    navigation.goBack();
+                    return;
+                  }
+
+                  if (isStarredChannel) await actions.unstarChannel(channelId);
+
+                  await actions.leaveChannel(channelId);
+                  navigation.popToTop();
+                } finally {
+                  setPendingLeaveRequest(false);
+                }
               };
 
               Alert.alert(
