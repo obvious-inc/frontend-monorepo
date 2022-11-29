@@ -309,6 +309,8 @@ const Channel = ({ navigation, route: { params } }) => {
   const inputRef = React.useRef();
   const scrollViewRef = React.useRef();
 
+  const me = state.selectMe();
+  const channel = state.selectChannel(channelId);
   const messages = useChannelMessages({ channelId });
   const headerHeight = useHeaderHeight();
 
@@ -374,6 +376,9 @@ const Channel = ({ navigation, route: { params } }) => {
 
   const replyTargetMessage = state.selectMessage(replyTargetMessageId);
 
+  const isMember = me != null && channel.memberUserIds?.includes(me.id);
+  const canPost = isMember;
+
   return (
     <>
       <SafeAreaView
@@ -432,9 +437,24 @@ const Channel = ({ navigation, route: { params } }) => {
           )}
           <ChannelMessageInput
             ref={inputRef}
-            placeholder={channelName == null ? "..." : `Message ${channelName}`}
+            placeholder={
+              canPost
+                ? channelName == null
+                  ? "..."
+                  : `Message ${channelName}`
+                : "Only members can post"
+            }
+            disabled={!canPost}
             pendingMessage={pendingMessage}
             setPendingMessage={setPendingMessage}
+            onPressDisabledInput={() => {
+              navigation.navigate("Channel details modal", {
+                screen: "Root",
+                params: {
+                  channelId,
+                },
+              });
+            }}
             onSubmit={(content, { images } = {}) => {
               const createBlocks = (content) => {
                 if (content == null || content.trim() === "") return [];
@@ -1244,7 +1264,17 @@ const SystemMessageContent = ({ message, selectUser }) => {
 };
 
 const ChannelMessageInput = React.forwardRef(
-  ({ pendingMessage, setPendingMessage, placeholder, onSubmit }, inputRef) => {
+  (
+    {
+      pendingMessage,
+      disabled,
+      setPendingMessage,
+      placeholder,
+      onSubmit,
+      onPressDisabledInput,
+    },
+    inputRef
+  ) => {
     const { actions } = useAppScope();
     // const containerWidthValue = React.useRef(new Animated.Value(0)).current;
     // const containerWidth = containerWidthValue.interpolate({
@@ -1385,27 +1415,48 @@ const ChannelMessageInput = React.forwardRef(
             marginRight: -1,
           }}
         >
-          <TextInput
-            ref={inputRef}
-            value={pendingMessage}
-            placeholder={placeholder}
-            multiline
-            onChangeText={setPendingMessage}
-            placeholderTextColor="hsla(0,0%,100%,0.5)"
-            keyboardAppearance="dark"
-            inputAccessoryViewID="message-input"
-            style={{
-              flex: 1,
-              fontSize: 16,
-              color: textDefault,
-              paddingTop: 11,
-              paddingBottom: 11,
-              lineHeight: 20,
-              borderRadius: 12,
-              // Prevent placeholder controling input height
-              maxHeight: pendingMessage.trim() === "" ? 42 : undefined,
-            }}
-          />
+          {disabled ? (
+            <Pressable
+              onPress={onPressDisabledInput}
+              style={{ paddingVertical: 11 }}
+            >
+              {({ pressed }) => (
+                <Text
+                  style={{
+                    color: pressed
+                      ? theme.colors.textMuted
+                      : theme.colors.textDimmed,
+                    lineHeight: 20,
+                    fontSize: 16,
+                  }}
+                >
+                  {placeholder}
+                </Text>
+              )}
+            </Pressable>
+          ) : (
+            <TextInput
+              ref={inputRef}
+              value={pendingMessage}
+              placeholder={placeholder}
+              multiline
+              onChangeText={setPendingMessage}
+              placeholderTextColor="hsla(0,0%,100%,0.5)"
+              keyboardAppearance="dark"
+              inputAccessoryViewID="message-input"
+              style={{
+                flex: 1,
+                fontSize: 16,
+                color: textDefault,
+                paddingTop: 11,
+                paddingBottom: 11,
+                lineHeight: 20,
+                borderRadius: 12,
+                // Prevent placeholder controling input height
+                maxHeight: pendingMessage.trim() === "" ? 42 : undefined,
+              }}
+            />
+          )}
         </View>
         <InputAccessoryView nativeID="message-input">
           {images.length !== 0 && (

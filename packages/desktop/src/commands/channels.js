@@ -16,14 +16,7 @@ const commands = {
       navigate(`/channels/${channel.id}`);
     },
   }),
-  "set-channel-name": ({
-    context,
-    user,
-    state,
-    actions,
-    serverId,
-    channelId,
-  }) => ({
+  "set-channel-name": ({ context, user, state, actions, channelId }) => ({
     description: "Set a new name for this channel",
     arguments: ["channel-name"],
     execute: async ({ args, editor }) => {
@@ -39,11 +32,6 @@ const commands = {
     },
     exclude: () => {
       if (context === "dm") return false;
-
-      if (context === "server") {
-        const server = state.selectServer(serverId);
-        return server?.ownerUserId !== user.id;
-      }
 
       if (context === "topic") {
         const channel = state.selectChannel(channelId);
@@ -65,12 +53,6 @@ const commands = {
     },
     exclude: () => {
       if (context === "dm") return false;
-
-      if (context === "server") return true;
-      // if (context === "server") {
-      //   const server = state.selectServer(serverId);
-      //   return server?.ownerUserId !== user.id;
-      // }
 
       if (context === "topic") {
         const channel = state.selectChannel(channelId);
@@ -112,7 +94,6 @@ const commands = {
     state,
     actions,
     navigate,
-    serverId,
     channelId,
   }) => ({
     description: "Delete the current channel",
@@ -125,65 +106,12 @@ const commands = {
     exclude: () => {
       if (context === "dm") return true;
 
-      if (context === "server") {
-        const server = state.selectServer(serverId);
-        return server?.ownerUserId !== user.id;
-      }
-
       if (context === "topic") {
         const channel = state.selectChannel(channelId);
         return user.id !== channel.ownerUserId;
       }
 
       return true;
-    },
-  }),
-  "move-channel": ({ context, user, state, actions, serverId, channelId }) => ({
-    description: `Move the current channel one step in the given direction ("up" or "down")`,
-    arguments: ["direction"],
-    execute: async ({ args, editor }) => {
-      const [direction] = args;
-      if (!["up", "down"].includes(direction)) {
-        alert(`"${direction}" is not a valid direction!`);
-        return;
-      }
-
-      const serverChannelSections = state.selectServerChannelSections(serverId);
-      const currentSection = serverChannelSections.find((s) =>
-        s.channelIds.includes(channelId)
-      );
-
-      if (currentSection == null) {
-        alert(
-          "Currently not possible to sort channels without a parent section, sorry!"
-        );
-        return;
-      }
-
-      const currentChannelIndex = currentSection.channelIds.indexOf(channelId);
-
-      const nextIndex = Math.max(
-        0,
-        Math.min(
-          currentSection.channelIds.length - 1,
-          direction === "up" ? currentChannelIndex - 1 : currentChannelIndex + 1
-        )
-      );
-
-      const reorderedChannelIds = [...currentSection.channelIds];
-      const temp = reorderedChannelIds[nextIndex];
-      reorderedChannelIds[nextIndex] = channelId;
-      reorderedChannelIds[currentChannelIndex] = temp;
-
-      await actions.updateChannelSection(currentSection.id, {
-        channelIds: reorderedChannelIds,
-      });
-      editor.clear();
-    },
-    exclude: () => {
-      if (context !== "server") return true;
-      const server = state.selectServer(serverId);
-      return server?.ownerUserId !== user.id;
     },
   }),
   "star-channel": ({ state, actions, channelId }) => ({

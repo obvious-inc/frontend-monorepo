@@ -19,6 +19,7 @@ import {
   Lock as LockIcon,
   EyeOff as EyeOffIcon,
 } from "../components/icons";
+import { useAsyncDismissKeyboard } from "./new-chat";
 
 const { reverse } = Shades.utils.array;
 const { search: searchChannels } = Shades.utils.channel;
@@ -44,6 +45,8 @@ const ChannelList = ({ navigation }) => {
   const allChannels = state.selectAllChannels();
 
   const [searchQuery, setSearchQuery] = React.useState("");
+
+  const dismissKeyboard = useAsyncDismissKeyboard();
 
   const filteredChannels = React.useMemo(() => {
     const query = searchQuery.trim().toLowerCase();
@@ -176,7 +179,9 @@ const ChannelList = ({ navigation }) => {
                 key={c.id}
                 id={c.id}
                 onPress={() => {
-                  navigation.navigate("Channel", { channelId: c.id });
+                  dismissKeyboard().then(() => {
+                    navigation.navigate("Channel", { channelId: c.id });
+                  });
                 }}
               />
             ))}
@@ -203,7 +208,9 @@ const ChannelList = ({ navigation }) => {
                     key={c.id}
                     id={c.id}
                     onPress={() => {
-                      navigation.navigate("Channel", { channelId: c.id });
+                      dismissKeyboard().then(() => {
+                        navigation.navigate("Channel", { channelId: c.id });
+                      });
                     }}
                   />
                 ))}
@@ -230,7 +237,9 @@ const ChannelList = ({ navigation }) => {
                     key={c.id}
                     id={c.id}
                     onPress={() => {
-                      navigation.navigate("Channel", { channelId: c.id });
+                      dismissKeyboard().then(() => {
+                        navigation.navigate("Channel", { channelId: c.id });
+                      });
                     }}
                   />
                 ))}
