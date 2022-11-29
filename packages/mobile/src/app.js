@@ -106,6 +106,23 @@ Notifications.setNotificationHandler({
 
 const NativeStackNavigator = createNativeStackNavigator();
 
+const useFetch = (fetcher_, deps = []) => {
+  const fetcher = useLatestCallback(fetcher_);
+
+  React.useEffect(() => {
+    fetcher();
+    // eslint-disable-next-line
+  }, deps);
+
+  useAppActiveListener(() => {
+    fetcher();
+  });
+
+  useOnlineListener(() => {
+    fetcher();
+  });
+};
+
 const App = () => {
   const { status: authStatus, setAccessToken, setRefreshToken } = useAuth();
   const { state, actions } = useAppScope();
@@ -117,6 +134,7 @@ const App = () => {
     fetchUserChannelsReadStates,
     fetchStarredItems,
     fetchUsers,
+    fetchPubliclyReadableChannels,
     registerDevicePushToken,
   } = actions;
 
@@ -136,6 +154,10 @@ const App = () => {
       fetchStarredItems(),
     ])
   );
+
+  useFetch(() => {
+    fetchPubliclyReadableChannels();
+  }, [fetchPubliclyReadableChannels]);
 
   React.useEffect(() => {
     if (authStatus !== "authenticated") return;

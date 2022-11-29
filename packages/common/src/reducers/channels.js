@@ -425,6 +425,15 @@ export const selectDmChannelFromUserIds = (state, userIds) => {
   );
 };
 
+export const selectAllChannels = createSelector(
+  (state) =>
+    Object.keys(state.channels.entriesById).map((id) =>
+      selectChannel(state, id)
+    ),
+  (channels) => channels,
+  { memoizeOptions: { equalityCheck: arrayShallowEquals } }
+);
+
 export const selectMemberChannels = createSelector(
   (state) => {
     if (state.me.user == null) return [];
@@ -449,8 +458,7 @@ export const selectMemberChannels = createSelector(
 
     return channels;
   },
-  (state) => state.channels.readStatesById,
-  sortChannelsByActivity,
+  (channels) => channels,
   { memoizeOptions: { equalityCheck: arrayShallowEquals } }
 );
 

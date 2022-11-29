@@ -28,6 +28,7 @@ import channels, {
   selectCanAddChannelMember,
   selectCanManageChannelInfo,
   selectChannelLastMessageAt,
+  selectAllChannels,
 } from "../reducers/channels";
 import messages, {
   selectMessage,
@@ -88,6 +89,7 @@ const selectors = {
   selectCanManageChannelInfo,
   selectIsUserBlocked,
   selectChannelLastMessageAt,
+  selectAllChannels,
 };
 
 const rootReducer = combineReducers({

@@ -39,8 +39,9 @@ const ChannelList = ({ navigation }) => {
 
   const { data: ensName } = useEnsName({ address: user.walletAddress });
 
-  const channels = state.selectMemberChannels();
+  const memberChannels = state.selectMemberChannels();
   const starredChannels = state.selectStarredChannels();
+  const allChannels = state.selectAllChannels();
 
   const [searchQuery, setSearchQuery] = React.useState("");
 
@@ -50,14 +51,14 @@ const ChannelList = ({ navigation }) => {
     if (query.length <= 1) return [];
 
     return searchChannels(
-      channels.map((c) => ({
+      allChannels.map((c) => ({
         ...c,
         name: state.selectChannelName(c.id),
         members: state.selectChannelMembers(c.id),
       })),
       query
     );
-  }, [channels, searchQuery, state]);
+  }, [allChannels, searchQuery, state]);
 
   const [collapsedIds, setCollapsedIds] = React.useState([]);
 
@@ -209,7 +210,7 @@ const ChannelList = ({ navigation }) => {
               </CollapsableSection>
             )}
 
-            {channels.length !== 0 && (
+            {memberChannels.length !== 0 && (
               <CollapsableSection
                 title="Channels"
                 expanded={!collapsedIds.includes("channels")}
@@ -224,7 +225,7 @@ const ChannelList = ({ navigation }) => {
                   );
                 }}
               >
-                {channels.map((c) => (
+                {memberChannels.map((c) => (
                   <ChannelItem
                     key={c.id}
                     id={c.id}
