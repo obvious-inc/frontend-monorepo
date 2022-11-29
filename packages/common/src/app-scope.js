@@ -133,6 +133,10 @@ export const Provider = ({ cloudflareAccountHash, children }) => {
       })
   );
 
+  const deleteMe = useLatestCallback(() =>
+    authorizedFetch("/users/me", { method: "DELETE" })
+  );
+
   const fetchBlockedUsers = useLatestCallback(async () => {
     const blocks = await authorizedFetch("/users/me/blocks");
     const userIds = blocks.map((b) => b.user);
@@ -919,6 +923,7 @@ export const Provider = ({ cloudflareAccountHash, children }) => {
       fetchClientBootData,
       fetchMessage,
       updateMe,
+      deleteMe,
       setChannelNotificationSetting,
       registerDevicePushToken,
       fetchUsers,
@@ -974,6 +979,7 @@ export const Provider = ({ cloudflareAccountHash, children }) => {
       fetchClientBootData,
       fetchMessage,
       updateMe,
+      deleteMe,
       setChannelNotificationSetting,
       registerDevicePushToken,
       fetchUsers,

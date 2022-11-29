@@ -53,6 +53,8 @@ const AccountModal = ({ navigation }) => {
 
   const [isUpdatingProfilePicture, setUpdatingProfilePicture] =
     React.useState(false);
+  const [hasPendingDeleteAccountRequest, setPendingDeleteAccountRequest] =
+    React.useState(false);
 
   const me = state.selectMe();
 
@@ -149,6 +151,57 @@ const AccountModal = ({ navigation }) => {
                 onPress: () => {
                   actions.logout();
                   navigation.popToTop();
+                },
+              },
+            ],
+          },
+          {
+            items: [
+              {
+                key: "delete-account",
+                label: "Delete account",
+                danger: true,
+                isLoading: hasPendingDeleteAccountRequest,
+                onPress: async () => {
+                  Alert.alert(
+                    "Delete account",
+                    "Are you sure you want to delete your account?",
+                    [
+                      { text: "Cancel", style: "cancel" },
+                      {
+                        text: "Delete account",
+                        style: "destructive",
+                        onPress: () => {
+                          setPendingDeleteAccountRequest(true);
+                          actions
+                            .deleteMe()
+                            .then(() => {
+                              actions.logout();
+                              navigation.popToTop();
+                            })
+                            .catch((e) => {
+                              const alertError = (message) =>
+                                Alert.alert(
+                                  "Error",
+                                  message ?? "Something went wrong"
+                                );
+
+                              if (e.response == null) {
+                                alertError();
+                                return;
+                              }
+
+                              e.response.json().then((json) => {
+                                alertError(json?.detail);
+                              });
+                            })
+                            .finally(() => {
+                              setPendingDeleteAccountRequest(false);
+                            });
+                        },
+                      },
+                    ]
+                  );
                 },
               },
             ],
