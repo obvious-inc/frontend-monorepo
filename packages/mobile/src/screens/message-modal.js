@@ -51,7 +51,7 @@ const MessageModal = ({
               onPress: deleteMessage,
               danger: true,
             }
-          : {
+          : message.type === "regular" && {
               key: "report-message",
               label: "Report message",
               danger: true,
