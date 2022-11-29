@@ -718,7 +718,6 @@ const Message = ({
   highlight,
 }) => {
   const m = message;
-  console.log(m.author);
 
   const createdAtDate = React.useMemo(
     () => new Date(message.created_at),
@@ -772,6 +771,7 @@ const Message = ({
           key={m.id}
           message={message.repliedMessage}
           getMember={getMember}
+          selectUser={selectUser}
           onPressInteractiveMessageElement={
             handlePressInteractiveMessageElement
           }
@@ -1014,6 +1014,7 @@ const Embed = ({
 
 const RepliedMessage = ({
   message,
+  selectUser,
   getMember,
   onPressInteractiveMessageElement,
 }) => {
@@ -1021,6 +1022,7 @@ const RepliedMessage = ({
   const showAvatar =
     !message?.deleted &&
     !message?.isBlocked &&
+    !message?.isSystemMessage &&
     authorMember?.profilePicture != null;
 
   const textStyles = {
@@ -1069,22 +1071,22 @@ const RepliedMessage = ({
           <Text numberOfLines={1} ellipsizeMode="tail" style={textStyles}>
             {message?.deleted ? (
               <Text
-                style={{
-                  fontStyle: "italic",
-                  color: "rgba(255,255,255,0.3)",
-                }}
+                style={{ fontStyle: "italic", color: theme.colors.textMuted }}
               >
-                Message deleted
+                Deleted message
               </Text>
             ) : message?.isBlocked ? (
               <Text
-                style={{
-                  fontStyle: "italic",
-                  color: theme.colors.textMuted,
-                }}
+                style={{ fontStyle: "italic", color: theme.colors.textMuted }}
               >
                 Blocked message
               </Text>
+            ) : message?.isSystemMessage ? (
+              <SystemMessageContent
+                message={message}
+                selectUser={selectUser}
+                textStyles={textStyles}
+              />
             ) : (
               <>
                 <Text style={{ fontWeight: "500" }}>
@@ -1121,8 +1123,12 @@ const MemberDisplayName = ({ userId, selectUser }) => {
   );
 };
 
-const SystemMessageContent = ({ message, selectUser }) => {
-  const textStyles = {
+const SystemMessageContent = ({
+  message,
+  selectUser,
+  textStyles: textStyles_,
+}) => {
+  const textStyles = textStyles_ ?? {
     fontSize: 16,
     lineHeight: 24,
   };
