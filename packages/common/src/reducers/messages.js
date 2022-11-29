@@ -90,20 +90,20 @@ const entriesById = (state = {}, action) => {
           reactions:
             existingReaction == null
               ? // Add a new reaction
-                [
-                  ...message.reactions,
-                  { emoji: action.emoji, count: 1, users: [action.userId] },
-                ]
+              [
+                ...message.reactions,
+                { emoji: action.emoji, count: 1, users: [action.userId] },
+              ]
               : // Update the existing one
-                message.reactions.map((r) =>
-                  r.emoji === action.emoji
-                    ? {
-                        ...r,
-                        count: r.count + 1,
-                        users: [...r.users, action.userId],
-                      }
-                    : r
-                ),
+              message.reactions.map((r) =>
+                r.emoji === action.emoji
+                  ? {
+                    ...r,
+                    count: r.count + 1,
+                    users: [...r.users, action.userId],
+                  }
+                  : r
+              ),
         },
       };
     }
@@ -118,19 +118,19 @@ const entriesById = (state = {}, action) => {
           reactions:
             reaction.count === 1
               ? // Remove the reaction
-                message.reactions.filter((r) => r.emoji !== action.emoji)
+              message.reactions.filter((r) => r.emoji !== action.emoji)
               : // Update the existing one
-                message.reactions.map((r) =>
-                  r.emoji === action.emoji
-                    ? {
-                        ...r,
-                        count: r.count - 1,
-                        users: r.users.filter(
-                          (userId) => userId !== action.userId
-                        ),
-                      }
-                    : r
-                ),
+              message.reactions.map((r) =>
+                r.emoji === action.emoji
+                  ? {
+                    ...r,
+                    count: r.count - 1,
+                    users: r.users.filter(
+                      (userId) => userId !== action.userId
+                    ),
+                  }
+                  : r
+              ),
         },
       };
     }
@@ -322,8 +322,8 @@ export const selectMessage = createSelector(
     const authorId = isSystemMessage
       ? "system"
       : isAppMessage
-      ? appId
-      : authorUserId;
+        ? appId
+        : authorUserId;
 
     if (message.reply_to != null) {
       message.repliedMessage = repliedMessage;
@@ -375,7 +375,7 @@ export const selectChannelMessages = createSelector(
       .filter((m) => {
         // TODO show these somehow
         if (m?.isSystemMessage)
-          return channel.memberUserIds.includes(m.authorUserId);
+          return channel?.memberUserIds.includes(m.authorUserId);
 
         return m != null && !m.deleted;
       });
