@@ -664,7 +664,7 @@ const ChannelItem = ({ id, expandable }) => {
                 <Avatar
                   url={
                     (memberUsersExcludingMe[0] ?? memberUsers[0])
-                      ?.profilePicture.small
+                      ?.profilePicture?.small
                   }
                   walletAddress={
                     (memberUsersExcludingMe[0] ?? memberUsers[0])?.walletAddress
@@ -683,7 +683,7 @@ const ChannelItem = ({ id, expandable }) => {
                     (user, i) => (
                       <Avatar
                         key={user.id}
-                        url={user?.profilePicture.small}
+                        url={user?.profilePicture?.small}
                         walletAddress={user?.walletAddress}
                         {...avatarProps}
                         css={css({
