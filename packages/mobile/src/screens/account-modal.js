@@ -110,6 +110,27 @@ const AccountModal = ({ navigation }) => {
 
                   if (result.canceled) {
                     setUpdatingProfilePicture(false);
+
+                    if (me.profilePicture == null) return;
+
+                    Alert.alert(
+                      "No image selected",
+                      "Do you wish to clear your profile picture?",
+                      [
+                        { text: "Cancel", style: "cancel" },
+                        {
+                          text: "Clear profile picture",
+                          onPress: () => {
+                            setUpdatingProfilePicture(true);
+                            actions
+                              .updateMe({ profilePicture: null })
+                              .finally(() => {
+                                setUpdatingProfilePicture(false);
+                              });
+                          },
+                        },
+                      ]
+                    );
                     return;
                   }
 

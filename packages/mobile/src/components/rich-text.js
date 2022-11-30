@@ -61,45 +61,46 @@ const createParser = ({
 
         case "user": {
           const member = getMember(el.ref);
-          const pressable = (
-            <Pressable
-              key={i}
-              onPress={() => {
-                onPressInteractiveElement(el);
-              }}
-              disabled={member == null || member?.deleted}
-              style={({ pressed }) => ({
-                position: "relative",
-                top: 2,
-                borderRadius: 3,
-                backgroundColor: member?.deleted
-                  ? theme.colors.backgroundLighter
-                  : pressed
-                  ? "rgb(0, 90, 132)"
-                  : "rgba(0, 110, 162, 0.29)",
-              })}
-            >
-              {({ pressed }) => (
-                <Text
-                  style={{
-                    ...textDefaultStyle,
-                    lineHeight: 22,
-                    color: member?.deleted
-                      ? theme.colors.textDimmed
-                      : pressed
-                      ? "white"
-                      : "#e0f5ff",
-                    fontWeight: "500",
-                  }}
-                >
-                  @
-                  {member?.deleted
-                    ? "Deleted user"
-                    : member?.displayName ?? "..."}
-                </Text>
-              )}
-            </Pressable>
-          );
+          const pressable =
+            member == null ? null : (
+              <Pressable
+                key={i}
+                onPress={() => {
+                  onPressInteractiveElement(el);
+                }}
+                disabled={member == null || member?.deleted}
+                style={({ pressed }) => ({
+                  position: "relative",
+                  top: 2,
+                  borderRadius: 3,
+                  backgroundColor: member?.deleted
+                    ? theme.colors.backgroundLighter
+                    : pressed
+                    ? "rgb(0, 90, 132)"
+                    : "rgba(0, 110, 162, 0.29)",
+                })}
+              >
+                {({ pressed }) => (
+                  <Text
+                    style={{
+                      ...textDefaultStyle,
+                      lineHeight: 22,
+                      color: member?.deleted
+                        ? theme.colors.textDimmed
+                        : pressed
+                        ? "white"
+                        : "#e0f5ff",
+                      fontWeight: "500",
+                    }}
+                  >
+                    @
+                    {member?.deleted
+                      ? "Deleted user"
+                      : member?.displayName ?? "..."}
+                  </Text>
+                )}
+              </Pressable>
+            );
 
           // React Native messes up the wrapping element’s height without this, no idea why
           return i === 0 ? (

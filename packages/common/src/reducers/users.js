@@ -120,7 +120,7 @@ export const selectUser = createSelector(
       customDisplayName: hasCustomDisplayName ? user.displayName : null,
       hasCustomDisplayName,
       onlineStatus: isLoggedInUser ? "online" : user.status,
-      profilePicture: user.profilePicture ?? { large: null, small: null },
+      profilePicture: user.profilePicture,
     };
   },
   { memoizeOptions: { maxSize: 1000 } }

@@ -1770,7 +1770,7 @@ const MessageLeftColumn = ({ isHovering, simplified, compact, message }) => {
                 ":not([disabled])": {
                   cursor: "pointer",
                   ":hover": {
-                    boxShadow: message.author?.profilePicture?.isVerifiedNft
+                    boxShadow: message.author?.profilePicture?.isVerified
                       ? `0 0 0 0.2rem ${t.colors.primary}`
                       : `0 0 0 0.2rem ${t.colors.borderLight}`,
                   },

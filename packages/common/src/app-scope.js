@@ -23,8 +23,15 @@ const cleanString = (s) => {
 
 const createApiParsers = ({ buildCloudflareImageUrl }) => ({
   parseUser(u) {
+    const normalizeString = (maybeString) => {
+      if (maybeString == null || maybeString.trim() === "") return null;
+      return maybeString.trim();
+    };
+
     const createProfilePicture = () => {
-      if ((u.pfp.cf_id ?? "") == "")
+      if (u.pfp == null) return null;
+
+      if (normalizeString(u.pfp.cf_id) == null)
         return {
           small: u.pfp.input_image_url,
           large: u.pfp.input_image_url,
@@ -33,21 +40,26 @@ const createApiParsers = ({ buildCloudflareImageUrl }) => ({
       return {
         small: buildCloudflareImageUrl(u.pfp.cf_id, { size: "small" }),
         large: buildCloudflareImageUrl(u.pfp.cf_id, { size: "large" }),
-        isVerifiedNft: u.pfp.verified,
+        isVerified: u.pfp.verified,
       };
     };
 
     const parsedData = { id: u.id };
 
+    // Static ish
     if (u.wallet_address != null) parsedData.walletAddress = u.wallet_address;
-    if (u.display_name != null && u.display_name.trim() !== "")
-      parsedData.displayName = u.display_name;
-    if (u.description != null && u.description.trim() !== "")
-      parsedData.description = u.description;
     if (u.push_tokens != null) parsedData.pushTokens = u.push_tokens;
-    if (u.pfp != null) parsedData.profilePicture = createProfilePicture();
     if (u.created_at != null) parsedData.createdAt = u.created_at;
-    if (u.status != null) parsedData.status = u.status;
+
+    if (u.display_name !== undefined)
+      parsedData.displayName = normalizeString(u.display_name);
+
+    if (u.description !== undefined)
+      parsedData.description = normalizeString(u.description);
+
+    if (u.status !== null) parsedData.status = normalizeString(u.status);
+
+    if (u.pfp !== undefined) parsedData.profilePicture = createProfilePicture();
 
     return parsedData;
   },
@@ -196,8 +208,8 @@ export const Provider = ({ cloudflareAccountHash, children }) => {
               setting === "off"
                 ? { muted: true }
                 : setting === "mentions"
-                ? { mentions: true }
-                : {},
+                  ? { mentions: true }
+                  : {},
           },
         }),
       });
