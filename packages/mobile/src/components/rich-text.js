@@ -2,6 +2,7 @@ import React from "react";
 import { View, Text, Image, Dimensions, Pressable } from "react-native";
 import { SvgUri, SvgXml } from "react-native-svg";
 import { decode as decodeBase64 } from "base-64";
+import theme from "../theme";
 
 const svgDataUrlPrefix = "data:image/svg+xml;base64,";
 
@@ -66,11 +67,14 @@ const createParser = ({
               onPress={() => {
                 onPressInteractiveElement(el);
               }}
+              disabled={member == null || member?.deleted}
               style={({ pressed }) => ({
                 position: "relative",
                 top: 2,
                 borderRadius: 3,
-                backgroundColor: pressed
+                backgroundColor: member?.deleted
+                  ? theme.colors.backgroundLighter
+                  : pressed
                   ? "rgb(0, 90, 132)"
                   : "rgba(0, 110, 162, 0.29)",
               })}
@@ -80,11 +84,18 @@ const createParser = ({
                   style={{
                     ...textDefaultStyle,
                     lineHeight: 22,
-                    color: pressed ? "white" : "#e0f5ff",
+                    color: member?.deleted
+                      ? theme.colors.textDimmed
+                      : pressed
+                      ? "white"
+                      : "#e0f5ff",
                     fontWeight: "500",
                   }}
                 >
-                  @{member?.displayName ?? el.ref}
+                  @
+                  {member?.deleted
+                    ? "Deleted user"
+                    : member?.displayName ?? "..."}
                 </Text>
               )}
             </Pressable>

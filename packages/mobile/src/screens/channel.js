@@ -424,9 +424,9 @@ const Channel = ({ navigation, route: { params } }) => {
               message={
                 <>
                   Replying to{" "}
-                  <Text style={{ color: textDefault, fontWeight: "600" }}>
-                    {replyTargetMessage?.author?.displayName ?? "..."}
-                  </Text>
+                  <MemberDisplayName
+                    userId={replyTargetMessage?.authorUserId}
+                  />
                 </>
               }
               onCancel={() => {
@@ -778,11 +778,7 @@ const Message = ({
         />
       )}
 
-      <View
-        style={{
-          flexDirection: "row",
-        }}
-      >
+      <View style={{ flexDirection: "row" }}>
         <View style={{ width: 38, marginRight: 12 }}>
           {m.isSystemMessage || m.isAppMessage ? (
             <View style={{ alignSelf: "center", paddingTop: 4 }}>
@@ -812,6 +808,7 @@ const Message = ({
                 onPress={() => {
                   selectUser(m.author.id);
                 }}
+                disabled={m.author == null || m.author?.deleted}
               >
                 <UserProfilePicture
                   transparent
@@ -837,17 +834,10 @@ const Message = ({
                 onPress={() => {
                   selectUser(m.author.id);
                 }}
+                disabled={m.author == null || m.author?.deleted}
               >
-                <Text
-                  style={{
-                    fontSize: 16,
-                    lineHeight: 20,
-                    color: textDefault,
-                    fontWeight: "600",
-                    marginRight: 7,
-                  }}
-                >
-                  {m.author?.displayName}
+                <Text style={{ fontSize: 16, lineHeight: 20, marginRight: 7 }}>
+                  <MemberDisplayName userId={m.authorUserId} />
                 </Text>
               </Pressable>
               <Text
@@ -1090,7 +1080,11 @@ const RepliedMessage = ({
             ) : (
               <>
                 <Text style={{ fontWeight: "500" }}>
-                  {authorMember == null ? "..." : authorMember.displayName}
+                  {authorMember == null
+                    ? "..."
+                    : authorMember.deleted
+                    ? "Deleted user"
+                    : authorMember.displayName}
                 </Text>{" "}
                 <RichText
                   inline
@@ -1116,9 +1110,15 @@ const MemberDisplayName = ({ userId, selectUser }) => {
       onPress={() => {
         selectUser(userId);
       }}
-      style={{ color: textDefault, fontWeight: "600" }}
+      disabled={user?.deleted}
+      style={{
+        color: user?.deleted
+          ? theme.colors.textDimmed
+          : theme.colors.textDefault,
+        fontWeight: "600",
+      }}
     >
-      {user?.displayName}
+      {user?.deleted ? "Deleted user" : user?.displayName}
     </Text>
   );
 };
@@ -1135,10 +1135,9 @@ const SystemMessageContent = ({
 
   switch (message.type) {
     case "user-invited": {
-      const isMissingData = [
-        message.inviter?.displayName,
-        message.author?.displayName,
-      ].some((n) => n == null);
+      const isMissingData = [message.inviter, message.author].some(
+        (n) => n == null
+      );
 
       return (
         <Text style={{ ...textStyles, opacity: isMissingData ? 0 : 1 }}>
@@ -1157,7 +1156,7 @@ const SystemMessageContent = ({
     }
 
     case "member-joined": {
-      const isMissingData = message.author?.displayName == null;
+      const isMissingData = message.author == null;
       return (
         <Text style={{ ...textStyles, opacity: isMissingData ? 0 : 1 }}>
           <MemberDisplayName

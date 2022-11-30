@@ -789,7 +789,7 @@ const MemberDisplayName = React.forwardRef(
       css={(t) =>
         css({
           lineHeight: 1.2,
-          color: color ?? (deleted ? t.colors.textMuted : t.colors.textNormal),
+          color: color ?? (deleted ? t.colors.textDimmed : t.colors.textNormal),
           fontWeight: t.text.weights.smallHeader,
           outline: "none",
           ":not([disabled])": {
@@ -1625,7 +1625,7 @@ const RepliedMessage = ({ message, getMember }) => {
                       css={(t) =>
                         css({
                           color: authorMember.deleted
-                            ? t.colors.textMuted
+                            ? t.colors.textDimmed
                             : undefined,
                           fontWeight: "500",
                           ":not([disabled])": {

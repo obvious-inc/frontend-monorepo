@@ -342,10 +342,7 @@ export const ChannelBase = ({
 
   const { messages, hasAllMessages } = useMessages(channel.id);
 
-  const getMember = React.useCallback(
-    (ref) => members.find((m) => m.id === ref),
-    [members]
-  );
+  const getMember = useLatestCallback((id) => state.selectUser(id));
 
   const inputRef = React.useRef();
 
@@ -985,7 +982,7 @@ const NewMessageInput = React.memo(
                   css({
                     fontWeight: "500",
                     color: replyingToMessage.author?.deleted
-                      ? t.colors.textMuted
+                      ? t.colors.textDimmed
                       : undefined,
                   })
                 }

@@ -33,20 +33,24 @@ export const createCss = (theme, { inline = false, compact = false } = {}) => ({
     lineHeight: "inherit",
     borderRadius: "0.3rem",
     padding: "0 0.2rem",
-    color: theme.colors.mentionText,
-    background: theme.colors.mentionBackground,
     fontWeight: "500",
-    cursor: "pointer",
     outline: "none",
-  },
-  ".mention:hover": {
-    color: theme.colors.mentionTextModifierHover,
-    background: theme.colors.mentionBackgroundModifierHover,
-  },
-  ".mention[data-focused], .mention:focus-visible": {
-    position: "relative",
-    zIndex: 1,
-    boxShadow: `0 0 0 0.2rem ${theme.colors.mentionFocusBorder}`,
+    color: theme.colors.textDimmed,
+    background: theme.colors.backgroundTertiary,
+    "&:not([disabled])": {
+      cursor: "pointer",
+      color: theme.colors.mentionText,
+      background: theme.colors.mentionBackground,
+      "&:hover": {
+        color: theme.colors.mentionTextModifierHover,
+        background: theme.colors.mentionBackgroundModifierHover,
+      },
+      "&[data-focused], &:focus-visible": {
+        position: "relative",
+        zIndex: 1,
+        boxShadow: `0 0 0 0.2rem ${theme.colors.mentionFocusBorder}`,
+      },
+    },
   },
 });
 
@@ -95,9 +99,12 @@ const createParser = ({
           const member = getMember(el.ref);
           return (
             <Popover.Root key={i} placement="right">
-              <Popover.Trigger asChild>
+              <Popover.Trigger asChild disabled={member?.deleted}>
                 <button className="mention">
-                  @{member?.displayName ?? el.ref}
+                  @
+                  {member?.deleted
+                    ? "Deleted user"
+                    : member?.displayName ?? "..."}
                 </button>
               </Popover.Trigger>
               <Popover.Content>

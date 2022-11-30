@@ -4,7 +4,10 @@ import { generateDummyId } from "./utils/misc";
 import { unique } from "./utils/array";
 import { pickKeys, mapValues } from "./utils/object";
 import invariant from "./utils/invariant";
-import { stringifyBlocks as stringifyMessageBlocks } from "./utils/message";
+import {
+  stringifyBlocks as stringifyMessageBlocks,
+  getMentions,
+} from "./utils/message";
 import {
   openChannelPermissionOverrides,
   closedChannelPermissionOverrides,
@@ -262,10 +265,17 @@ export const Provider = ({ cloudflareAccountHash, children }) => {
           // Beautifuly fetch non-member users
           if (authStatus === "authenticated")
             fetchChannel(channelId).then((c) => {
-              const userIds = messages
-                .filter((m) => !c.memberUserIds.includes(m.author))
-                .map((m) => m.author);
-              fetchUsers(userIds);
+              const allUserIds = [
+                ...messages.map((m) => m.author),
+                ...messages
+                  .flatMap((m) => getMentions(m.blocks))
+                  .map((m) => m.ref),
+              ];
+              const filteredUserIds = unique(allUserIds).filter(
+                (id) => !c.memberUserIds.includes(id)
+              );
+
+              fetchUsers(filteredUserIds);
             });
 
           return messages;
