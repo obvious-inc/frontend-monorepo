@@ -128,8 +128,8 @@ export const Provider = ({ cloudflareAccountHash, children }) => {
   );
 
   const updateMe = useLatestCallback(
-    ({ displayName, profilePicture, pushTokens }) =>
-      authorizedFetch("/users/me", {
+    async ({ displayName, profilePicture, pushTokens }) => {
+      const rawUser = await authorizedFetch("/users/me", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -137,7 +137,11 @@ export const Provider = ({ cloudflareAccountHash, children }) => {
           pfp: profilePicture,
           push_tokens: pushTokens,
         }),
-      })
+      });
+      const user = parseUser(rawUser);
+      dispatch({ type: "update-me:request-successful", user });
+      return user;
+    }
   );
 
   const deleteMe = useLatestCallback(() =>

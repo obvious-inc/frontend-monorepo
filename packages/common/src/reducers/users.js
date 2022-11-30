@@ -19,6 +19,7 @@ const entriesById = (state = {}, action) => {
     }
 
     case "fetch-me-request-successful":
+    case "update-me:request-successful":
     case "fetch-client-boot-data-request-successful": {
       const exisingUser = state[action.user.id];
       return { ...state, [action.user.id]: { ...exisingUser, ...action.user } };
