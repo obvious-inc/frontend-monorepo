@@ -198,7 +198,7 @@ const App = () => {
     if (
       // We only care about logged in users
       authStatus === "not-authenticated" ||
-      user?.wallet_address.toLowerCase() === newAddress.toLowerCase()
+      user?.walletAddress.toLowerCase() === newAddress.toLowerCase()
     )
       return;
 
