@@ -37,14 +37,17 @@ const createApiParsers = ({ buildCloudflareImageUrl }) => ({
       };
     };
 
-    const parsedData = { ...u };
+    const parsedData = { id: u.id };
 
     if (u.wallet_address != null) parsedData.walletAddress = u.wallet_address;
     if (u.display_name != null && u.display_name.trim() !== "")
       parsedData.displayName = u.display_name;
+    if (u.description != null && u.description.trim() !== "")
+      parsedData.description = u.description;
     if (u.push_tokens != null) parsedData.pushTokens = u.push_tokens;
     if (u.pfp != null) parsedData.profilePicture = createProfilePicture();
     if (u.created_at != null) parsedData.createdAt = u.created_at;
+    if (u.status != null) parsedData.status = u.status;
 
     return parsedData;
   },
@@ -128,12 +131,13 @@ export const Provider = ({ cloudflareAccountHash, children }) => {
   );
 
   const updateMe = useLatestCallback(
-    async ({ displayName, profilePicture, pushTokens }) => {
+    async ({ displayName, description, profilePicture, pushTokens }) => {
       const rawUser = await authorizedFetch("/users/me", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           display_name: displayName,
+          description,
           pfp: profilePicture,
           push_tokens: pushTokens,
         }),

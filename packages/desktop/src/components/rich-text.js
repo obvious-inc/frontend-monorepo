@@ -159,13 +159,13 @@ const createParser = ({
           const [maxWidth, maxHeight] =
             attachmentCount === 1
               ? [
-                SINGLE_IMAGE_ATTACHMENT_MAX_WIDTH,
-                SINGLE_IMAGE_ATTACHMENT_MAX_HEIGHT,
-              ]
+                  SINGLE_IMAGE_ATTACHMENT_MAX_WIDTH,
+                  SINGLE_IMAGE_ATTACHMENT_MAX_HEIGHT,
+                ]
               : [
-                MULTI_IMAGE_ATTACHMENT_MAX_WIDTH,
-                MULTI_IMAGE_ATTACHMENT_MAX_HEIGHT,
-              ];
+                  MULTI_IMAGE_ATTACHMENT_MAX_WIDTH,
+                  MULTI_IMAGE_ATTACHMENT_MAX_HEIGHT,
+                ];
 
           const calculateWidth = () => {
             const aspectRatio = el.width / el.height;

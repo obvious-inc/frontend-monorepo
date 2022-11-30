@@ -70,7 +70,10 @@ const AccountModal = ({ navigation }) => {
             items: [
               {
                 key: "edit-name",
-                label: "Edit display name",
+                label:
+                  me.displayName == null
+                    ? "Set display name"
+                    : "Edit display name",
                 onPress: () => {
                   Alert.prompt(
                     "Edit display name",
@@ -91,7 +94,10 @@ const AccountModal = ({ navigation }) => {
               },
               {
                 key: "edit-profile-picture",
-                label: "Edit profile picture",
+                label:
+                  me.profilePicture == null
+                    ? "Set profile picture"
+                    : "Edit profile picture",
                 isLoading: isUpdatingProfilePicture,
                 onPress: async () => {
                   setUpdatingProfilePicture(true);
@@ -139,6 +145,27 @@ const AccountModal = ({ navigation }) => {
                   } finally {
                     setUpdatingProfilePicture(false);
                   }
+                },
+              },
+              {
+                key: "edit-description",
+                label: me.description == null ? "Set status" : "Edit status",
+                onPress: () => {
+                  Alert.prompt(
+                    "Edit status",
+                    undefined,
+                    [
+                      { text: "Cancel", style: "cancel" },
+                      {
+                        text: "Save",
+                        onPress: (s) => {
+                          actions.updateMe({ description: s.trim() });
+                        },
+                      },
+                    ],
+                    "plain-text",
+                    me.description
+                  );
                 },
               },
             ],

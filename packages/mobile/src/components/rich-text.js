@@ -115,7 +115,11 @@ const createParser = ({
         case "attachments":
           if (inline) {
             if (root && i === 0)
-              return parseNode({ text: "Image attachment", italic: true });
+              return (
+                <React.Fragment key={i}>
+                  {parseNode({ text: "Image attachment", italic: true })}
+                </React.Fragment>
+              );
             return null;
           }
           return (

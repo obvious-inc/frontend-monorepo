@@ -153,11 +153,10 @@ const UserModal = ({ route }) => {
     : ensName ?? truncatedAddress;
 
   return (
-    <View
-      style={{
-        backgroundColor: "hsl(0,0%,10%)",
-        flex: 1,
-      }}
+    <ScrollView
+      showsVerticalScrollIndicator={false}
+      contentContainerStyle={{ paddingBottom: 50 }}
+      style={{ backgroundColor: "hsl(0,0%,10%)" }}
     >
       <UserProfilePicture
         transparent
@@ -184,6 +183,7 @@ const UserModal = ({ route }) => {
         >
           {userDisplayName}
         </Text>
+
         {userDisplayName !== truncatedAddress && (
           <Text
             style={{
@@ -199,15 +199,25 @@ const UserModal = ({ route }) => {
           </Text>
         )}
 
-        <View style={{ height: 10 }} />
-        <ScrollView
-          showsVerticalScrollIndicator={false}
-          contentContainerStyle={{ paddingTop: 10, paddingBottom: 50 }}
-        >
-          <SectionedActionList items={actionSections} />
-        </ScrollView>
+        {user?.description != null && (
+          <Text
+            style={{
+              color: theme.colors.textDimmed,
+              fontSize: 14,
+              fontWeight: "400",
+              lineHeight: 18,
+              marginTop: 12,
+            }}
+          >
+            {user.description}
+          </Text>
+        )}
+
+        <View style={{ height: 20 }} />
+
+        <SectionedActionList items={actionSections} />
       </View>
-    </View>
+    </ScrollView>
   );
 };
 

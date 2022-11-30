@@ -116,6 +116,7 @@ export const selectUser = createSelector(
       ...user,
       ensName,
       displayName: user.displayName ?? truncateAddress(user.walletAddress),
+      description: user.description,
       customDisplayName: hasCustomDisplayName ? user.displayName : null,
       hasCustomDisplayName,
       onlineStatus: isLoggedInUser ? "online" : user.status,
