@@ -1,6 +1,7 @@
 import * as Haptics from "expo-haptics";
 import * as Linking from "expo-linking";
 import * as ImagePicker from "expo-image-picker";
+import * as Notifications from "expo-notifications";
 import React from "react";
 import { useEnsName } from "wagmi";
 import {
@@ -362,6 +363,22 @@ const Channel = ({ navigation, route: { params } }) => {
 
     markChannelRead(channelId);
   });
+
+  useFocusEffect(
+    React.useCallback(() => {
+      Notifications.setNotificationHandler({
+        handleNotification: async (n) => {
+          const url = n.request.content.data.url;
+          const isCurrentChannel = url === `channels/${channelId}`;
+          return {
+            shouldShowAlert: !isCurrentChannel,
+            shouldPlaySound: false,
+            shouldSetBadge: false,
+          };
+        },
+      });
+    }, [channelId])
+  );
 
   const handleScrolledToBottom = () => {
     if (channelId == null) return;
