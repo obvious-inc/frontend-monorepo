@@ -451,6 +451,7 @@ const ProfileDropdownTrigger = React.forwardRef(
             }}
           >
             <Avatar
+              transparent
               url={user?.profilePicture?.small}
               walletAddress={user?.walletAddress}
               size="1.8rem"
@@ -603,6 +604,7 @@ const ChannelItem = ({ id, expandable }) => {
   const avatarBorderRadius = theme.avatars.borderRadius;
 
   const avatarProps = {
+    transparent: true,
     size: `${avatarPixelSize}px`,
     pixelSize: avatarPixelSize,
     borderRadius: avatarBorderRadius,

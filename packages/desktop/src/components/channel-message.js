@@ -923,6 +923,7 @@ const MessageHeader = ({ compact, message, authorUser, createdAt }) => {
             })}
           >
             <Avatar
+              transparent
               url={message.author?.profilePicture?.small}
               walletAddress={message.author?.walletAddress}
               size="2rem"
@@ -1589,6 +1590,7 @@ const RepliedMessage = ({ message, getMember }) => {
       >
         {showAvatar && (
           <Avatar
+            transparent
             url={authorMember?.profilePicture.small}
             walletAddress={authorMember?.walletAddress}
             size="1.4rem"
@@ -1782,6 +1784,7 @@ const MessageLeftColumn = ({ isHovering, simplified, compact, message }) => {
             }
           >
             <Avatar
+              transparent
               url={message.author?.profilePicture?.small}
               walletAddress={message.author?.walletAddress}
               size="3.8rem"

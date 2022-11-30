@@ -208,8 +208,8 @@ export const Provider = ({ cloudflareAccountHash, children }) => {
               setting === "off"
                 ? { muted: true }
                 : setting === "mentions"
-                  ? { mentions: true }
-                  : {},
+                ? { mentions: true }
+                : {},
           },
         }),
       });

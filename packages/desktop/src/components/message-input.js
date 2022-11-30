@@ -96,6 +96,7 @@ const MessageInput = React.forwardRef(
           description: hasCustomDisplayName ? truncatedAddress : undefined,
           image: (
             <Avatar
+              transparent
               url={m.profilePicture?.small}
               walletAddress={m.walletAddress}
               size="3.2rem"

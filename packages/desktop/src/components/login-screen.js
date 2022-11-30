@@ -259,6 +259,7 @@ const LoginScreen = ({ mobileAppLogin, onSuccess, onError }) => {
           ) : (
             <>
               <Avatar
+                transparent
                 walletAddress={accountAddress}
                 size="8rem"
                 style={{ margin: "0 auto 3rem" }}

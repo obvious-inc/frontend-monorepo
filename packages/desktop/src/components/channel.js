@@ -1713,6 +1713,7 @@ const Channel = ({ channelId, compact, noSideMenu }) => {
                         )}
                         <Avatar
                           data-avatar
+                          transparent
                           walletAddress={walletAccountAddress}
                           size="2.6rem"
                           style={{ marginLeft: "0.5rem" }}
@@ -1757,7 +1758,12 @@ const Channel = ({ channelId, compact, noSideMenu }) => {
               }
               style={{ marginRight: "1.1rem" }}
             >
-              <Avatar url={channel.image} size="2.4rem" pixelSize={24} />
+              <Avatar
+                transparent
+                url={channel.image}
+                size="2.4rem"
+                pixelSize={24}
+              />
             </a>
           ) : channel.kind === "dm" ? (
             <div
@@ -1932,6 +1938,7 @@ const MembersDisplayButton = React.forwardRef(({ onClick, members }, ref) => {
           {membersToDisplay.map((user, i) => (
             <Avatar
               key={user.id}
+              transparent
               url={user?.profilePicture?.small}
               walletAddress={user?.walletAddress}
               size="2rem"

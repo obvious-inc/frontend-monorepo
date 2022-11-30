@@ -2,18 +2,23 @@ import { useEnsAvatar } from "wagmi";
 import React from "react";
 import { css } from "@emotion/react";
 
-const usePlaceholderAvatar = (walletAddress, { enabled = true } = {}) => {
+const usePlaceholderAvatar = (
+  walletAddress,
+  { enabled = true, transparent = false } = {}
+) => {
   const [generatedPlaceholderAvatarUrl, setGeneratedPlaceholderAvatarUrl] =
     React.useState(null);
 
   React.useEffect(() => {
     if (!enabled || walletAddress == null) return;
     import("@shades/common/nouns").then((module) =>
-      module.generatePlaceholderAvatarDataUri(walletAddress).then((url) => {
-        setGeneratedPlaceholderAvatarUrl(url);
-      })
+      module
+        .generatePlaceholderAvatarDataUri(walletAddress, { transparent })
+        .then((url) => {
+          setGeneratedPlaceholderAvatarUrl(url);
+        })
     );
-  }, [enabled, walletAddress]);
+  }, [enabled, transparent, walletAddress]);
 
   return generatedPlaceholderAvatarUrl;
 };
@@ -28,12 +33,14 @@ const Avatar = React.forwardRef(
       pixelSize, // eslint-disable-line
       borderRadius,
       background,
+      transparent = false,
       ...props
     },
     ref
   ) => {
     const placeholderAvatarUrl = usePlaceholderAvatar(walletAddress, {
       enabled: url == null,
+      transparent,
     });
 
     const { data: ensAvatarUrl, isLoading: isLoadingEnsAvatar } = useEnsAvatar({
@@ -65,7 +72,7 @@ const Avatar = React.forwardRef(
             css={(theme) =>
               css({
                 borderRadius: borderRadius ?? theme.avatars.borderRadius,
-                background: theme.colors.backgroundModifierHover,
+                background: theme.colors.backgroundTertiary,
                 height: size,
                 width: size,
                 display: "flex",
@@ -100,7 +107,7 @@ const Avatar = React.forwardRef(
             css={(theme) =>
               css({
                 borderRadius: borderRadius ?? theme.avatars.borderRadius,
-                background: theme.colors.backgroundSecondary,
+                background: theme.colors.backgroundTertiary,
                 height: size,
                 width: size,
                 objectFit: "cover",
@@ -123,7 +130,7 @@ const Blank = React.forwardRef(({ size, borderRadius, ...props }, ref) => (
     css={(theme) =>
       css({
         borderRadius: borderRadius ?? theme.avatars.borderRadius,
-        background: theme.colors.backgroundModifierHover,
+        background: theme.colors.backgroundTertiary,
         height: size,
         width: size,
       })

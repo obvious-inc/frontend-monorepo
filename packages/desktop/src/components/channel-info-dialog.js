@@ -206,7 +206,12 @@ const ChannelInfoDialog = ({
                 }
                 style={{ marginRight: "1.1rem" }}
               >
-                <Avatar url={channel.image} size="2.4rem" pixelSize={24} />
+                <Avatar
+                  transparent
+                  url={channel.image}
+                  size="2.4rem"
+                  pixelSize={24}
+                />
               </a>
             )}
             <h1
@@ -931,6 +936,7 @@ const MembersDirectoryTab = ({ channelId, addMember }) => {
                   }}
                 >
                   <Avatar
+                    transparent
                     url={member.profilePicture?.small}
                     walletAddress={member.walletAddress}
                     size="3.6rem"
