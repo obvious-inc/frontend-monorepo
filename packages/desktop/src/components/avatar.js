@@ -72,7 +72,7 @@ const Avatar = React.forwardRef(
             css={(theme) =>
               css({
                 borderRadius: borderRadius ?? theme.avatars.borderRadius,
-                background: theme.colors.backgroundTertiary,
+                background: theme.colors.backgroundModifierHover,
                 height: size,
                 width: size,
                 display: "flex",
@@ -107,7 +107,7 @@ const Avatar = React.forwardRef(
             css={(theme) =>
               css({
                 borderRadius: borderRadius ?? theme.avatars.borderRadius,
-                background: theme.colors.backgroundTertiary,
+                background: theme.colors.backgroundModifierHover,
                 height: size,
                 width: size,
                 objectFit: "cover",
@@ -130,7 +130,7 @@ const Blank = React.forwardRef(({ size, borderRadius, ...props }, ref) => (
     css={(theme) =>
       css({
         borderRadius: borderRadius ?? theme.avatars.borderRadius,
-        background: theme.colors.backgroundTertiary,
+        background: theme.colors.backgroundModifierHover,
         height: size,
         width: size,
       })
