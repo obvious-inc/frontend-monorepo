@@ -59,6 +59,7 @@ const LoginScreen = ({ mobileAppLogin, onSuccess, onError }) => {
   return (
     <div
       css={css`
+        flex: 1;
         display: flex;
         align-items: center;
         justify-content: center;
@@ -70,7 +71,6 @@ const LoginScreen = ({ mobileAppLogin, onSuccess, onError }) => {
           min-width: 0;
         }
       `}
-      style={{ height: "100%" }}
     >
       {isAuthenticatingWithThrowawayWallet ? (
         <div>

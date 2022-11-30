@@ -5,7 +5,11 @@ import { HamburgerMenu as HamburgerMenuIcon } from "./icons";
 const isNative = window.Native != null;
 
 const ChannelHeader = ({ noSideMenu, children }) => {
-  const { isFloating: isSideMenuFloating, toggle: toggleMenu } = useSideMenu();
+  const {
+    isFloating: isSideMenuFloating,
+    isCollapsed: isSideMenuCollapsed,
+    toggle: toggleMenu,
+  } = useSideMenu();
   const isMenuTogglingEnabled = !noSideMenu && isSideMenuFloating;
 
   return (
@@ -46,6 +50,7 @@ const ChannelHeader = ({ noSideMenu, children }) => {
             padding: "0.8rem 0.6rem",
             marginLeft: "-0.6rem",
             marginRight: "calc(-0.6rem + 1.6rem)",
+            paddingLeft: isNative && isSideMenuCollapsed ? "7.5rem" : undefined,
           })}
         >
           <HamburgerMenuIcon

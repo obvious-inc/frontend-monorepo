@@ -33,7 +33,8 @@ const createWindow = () => {
     width: 800,
     height: 600,
     titleBarStyle: "hidden",
-    backgroundColor: "#000000",
+    backgroundColor: "#1a1a1a",
+    trafficLightPosition: { x: 14.5, y: 14.5 },
     webPreferences: {
       preload: path.join(__dirname, "electron-main-renderer-preload.js"),
     },
