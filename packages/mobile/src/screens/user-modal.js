@@ -80,19 +80,19 @@ const UserModal = ({ route }) => {
         },
       ].filter((i) => !i.isHidden),
     },
-    {
-      items: [
-        {
-          key: "etherscan",
-          label: "Etherscan",
-          onPress: () => {
-            Linking.openURL(
-              `https://etherscan.io/address/${user.walletAddress}`
-            );
-          },
-        },
-      ],
-    },
+    // {
+    //   items: [
+    //     {
+    //       key: "etherscan",
+    //       label: "Etherscan",
+    //       onPress: () => {
+    //         Linking.openURL(
+    //           `https://etherscan.io/address/${user.walletAddress}`
+    //         );
+    //       },
+    //     },
+    //   ],
+    // },
     userId !== me.id && {
       items: [
         {

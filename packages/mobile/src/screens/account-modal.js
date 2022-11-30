@@ -217,16 +217,24 @@ const AccountModal = ({ navigation }) => {
         ]}
       />
 
-      <Pressable
-        onLongPress={() => {
-          setShowDebugInfo((s) => !s);
-        }}
-        style={{ marginTop: 20 }}
-      >
-        <Text style={{ fontSize: 12, color: "hsl(0,0%,28%)" }}>
-          Version {VERSION}
+      <View style={{ alignItems: "flex-start", marginTop: 20 }}>
+        <Text
+          selectable
+          style={{ fontSize: 12, color: "hsl(0,0%,28%)", marginBottom: 5 }}
+        >
+          {CONTACT_EMAIL_ADDRESS}
         </Text>
-      </Pressable>
+        <Pressable
+          onLongPress={() => {
+            setShowDebugInfo((s) => !s);
+          }}
+          delayLongPress={5000}
+        >
+          <Text style={{ fontSize: 12, color: "hsl(0,0%,28%)" }}>
+            Version {VERSION}
+          </Text>
+        </Pressable>
+      </View>
 
       {showDebugInfo && (
         <View style={{ marginTop: 20 }}>
