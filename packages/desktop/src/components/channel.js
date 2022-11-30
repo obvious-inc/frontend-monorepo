@@ -16,7 +16,7 @@ import {
 } from "@shades/common/utils";
 import { useLatestCallback } from "@shades/common/react";
 import useGlobalMediaQueries from "../hooks/global-media-queries";
-import useWindowFocusListener from "../hooks/window-focus-listener";
+import useWindowFocusOrDocumentVisibleListener from "../hooks/window-focus-or-document-visible-listener";
 import useOnlineListener from "../hooks/window-online-listener";
 import useInterval from "../hooks/interval";
 import useWallet from "../hooks/wallet";
@@ -62,7 +62,7 @@ const useFetch = (fetcher, dependencies) => {
     fetcherRef.current?.();
   }, dependencies); // eslint-disable-line
 
-  useWindowFocusListener(() => {
+  useWindowFocusOrDocumentVisibleListener(() => {
     fetcherRef.current?.();
   });
 
@@ -472,7 +472,7 @@ export const ChannelBase = ({
     scrollToBottom();
   }, [lastMessage, scrollToBottom, didScrollToBottomRef]);
 
-  useWindowFocusListener(() => {
+  useWindowFocusOrDocumentVisibleListener(() => {
     fetchMessages(channel.id, { limit: 30 });
     if (channelHasUnread && didScrollToBottomRef.current)
       markChannelRead(channel.id);

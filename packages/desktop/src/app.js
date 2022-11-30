@@ -6,7 +6,7 @@ import {
   AppScopeProvider,
 } from "@shades/common/app";
 import { array as arrayUtils } from "@shades/common/utils";
-import useWindowFocusListener from "./hooks/window-focus-listener";
+import useWindowFocusOrDocumentVisibleListener from "./hooks/window-focus-or-document-visible-listener";
 import useOnlineListener from "./hooks/window-online-listener";
 
 const { unique } = arrayUtils;
@@ -58,7 +58,7 @@ const App = () => {
     if (authStatus === "not-authenticated") fetchPubliclyReadableChannels();
   }, [authStatus, fetchPubliclyReadableChannels]);
 
-  useWindowFocusListener(() => {
+  useWindowFocusOrDocumentVisibleListener(() => {
     if (authStatus !== "authenticated") return;
     fetchUserChannels();
     fetchUserChannelsReadStates();
