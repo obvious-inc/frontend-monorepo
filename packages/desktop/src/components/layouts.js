@@ -2,7 +2,11 @@ import { useEnsName } from "wagmi";
 import React from "react";
 import { NavLink, Outlet, useParams } from "react-router-dom";
 import { css, useTheme } from "@emotion/react";
-import { useAppScope, useAuth } from "@shades/common/app";
+import {
+  useAppScope,
+  useAuth,
+  useServerConnectionState,
+} from "@shades/common/app";
 import {
   array as arrayUtils,
   ethereum as ethereumUtils,
@@ -20,6 +24,7 @@ import * as DropdownMenu from "./dropdown-menu";
 import SideMenuLayout from "./side-menu-layout";
 import CreateChannelDialog from "./create-channel-dialog";
 import NotificationBadge from "./notification-badge";
+import Spinner from "./spinner";
 
 const { reverse, sort, comparator } = arrayUtils;
 const { truncateAddress } = ethereumUtils;
@@ -48,6 +53,8 @@ const useCachedState = ({ key, initialState }) => {
 
 const Layout = () => {
   const params = useParams();
+
+  const serverConnectionState = useServerConnectionState();
 
   const { status: authenticationStatus } = useAuth();
   const { accountAddress: walletAccountAddress } = useWallet();
@@ -101,6 +108,10 @@ const Layout = () => {
           <DropdownMenu.Root>
             <DropdownMenu.Trigger asChild>
               <ProfileDropdownTrigger
+                isConnecting={
+                  authenticationStatus === "authenticated" &&
+                  !serverConnectionState.isConnected
+                }
                 user={user ?? { walletAddress: walletAccountAddress }}
                 subtitle={
                   authenticationStatus === "not-authenticated"
@@ -385,8 +396,10 @@ const Layout = () => {
 };
 
 const ProfileDropdownTrigger = React.forwardRef(
-  ({ user, subtitle, ...props }, ref) => {
+  ({ isConnecting, user, subtitle, ...props }, ref) => {
     const { data: userEnsName } = useEnsName({ address: user.walletAddress });
+
+    const theme = useTheme();
 
     const truncatedAddress =
       user?.walletAddress == null ? null : truncateAddress(user.walletAddress);
@@ -450,13 +463,17 @@ const ProfileDropdownTrigger = React.forwardRef(
               marginTop: "1px",
             }}
           >
-            <Avatar
-              transparent
-              url={user?.profilePicture?.small}
-              walletAddress={user?.walletAddress}
-              size="1.8rem"
-              pixelSize={18}
-            />
+            {isConnecting ? (
+              <Spinner size="1.8rem" color={theme.colors.textMuted} />
+            ) : (
+              <Avatar
+                transparent
+                url={user?.profilePicture?.small}
+                walletAddress={user?.walletAddress}
+                size="1.8rem"
+                pixelSize={18}
+              />
+            )}
           </div>
         </div>
         <div>
