@@ -1615,37 +1615,42 @@ const RepliedMessage = ({ message, getMember }) => {
             </span>
           ) : (
             <>
-              {authorMember == null ? null : (
-                <Popover.Root placement="right">
-                  <Popover.Trigger asChild disabled={authorMember.deleted}>
-                    <span
-                      role="button"
-                      tabIndex={0}
-                      css={(t) =>
-                        css({
-                          color: authorMember.deleted
-                            ? t.colors.textDimmed
-                            : undefined,
-                          fontWeight: "500",
-                          ":not([disabled])": {
-                            cursor: "pointer",
-                            ":hover": {
-                              textDecoration: "underline",
-                            },
+              <Popover.Root placement="right">
+                <Popover.Trigger
+                  asChild
+                  disabled={authorMember == null || authorMember.deleted}
+                >
+                  <span
+                    role="button"
+                    tabIndex={0}
+                    css={(t) =>
+                      css({
+                        color: authorMember?.deleted
+                          ? t.colors.textDimmed
+                          : undefined,
+                        fontWeight: "500",
+                        ":not([disabled])": {
+                          cursor: "pointer",
+                          ":hover": {
+                            textDecoration: "underline",
                           },
-                        })
-                      }
-                    >
-                      {authorMember.deleted
-                        ? "Deleted user"
-                        : authorMember.displayName}
-                    </span>
-                  </Popover.Trigger>
-                  <Popover.Content>
-                    <ProfilePreview userId={message.authorUserId} />
-                  </Popover.Content>
-                </Popover.Root>
-              )}{" "}
+                        },
+                      })
+                    }
+                  >
+                    {authorMember == null ? (
+                      <wbr />
+                    ) : authorMember.deleted ? (
+                      "Deleted user"
+                    ) : (
+                      authorMember.displayName
+                    )}
+                  </span>
+                </Popover.Trigger>
+                <Popover.Content>
+                  <ProfilePreview userId={message?.authorUserId} />
+                </Popover.Content>
+              </Popover.Root>{" "}
               <span
                 role="button"
                 tabIndex={0}
