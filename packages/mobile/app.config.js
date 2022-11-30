@@ -4,7 +4,7 @@ module.exports = {
   name: "NewShades",
   slug: "newshades",
   owner: "newshades",
-  version: "0.1.0",
+  version: "1.0.0",
   orientation: "portrait",
   icon: "./assets/icon.png",
   scheme: "newshades",
