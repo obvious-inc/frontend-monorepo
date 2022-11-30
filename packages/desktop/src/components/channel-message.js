@@ -1556,8 +1556,7 @@ const EditMessageInput = React.forwardRef(
 
 const RepliedMessage = ({ message, getMember }) => {
   const authorMember = message?.author;
-  const showAvatar =
-    (message != null || !message?.deleted) && authorMember?.profilePicture;
+  const showAvatar = authorMember != null && !authorMember?.deleted;
 
   return (
     <div
@@ -1591,7 +1590,7 @@ const RepliedMessage = ({ message, getMember }) => {
         {showAvatar && (
           <Avatar
             transparent
-            url={authorMember?.profilePicture.small}
+            url={authorMember?.profilePicture?.small}
             walletAddress={authorMember?.walletAddress}
             size="1.4rem"
           />
@@ -1616,9 +1615,7 @@ const RepliedMessage = ({ message, getMember }) => {
             </span>
           ) : (
             <>
-              {authorMember == null ? (
-                <span css={css({ fontWeight: "500" })}>...</span>
-              ) : (
+              {authorMember == null ? null : (
                 <Popover.Root placement="right">
                   <Popover.Trigger asChild disabled={authorMember.deleted}>
                     <span
