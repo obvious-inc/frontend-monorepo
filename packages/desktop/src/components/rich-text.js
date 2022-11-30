@@ -70,7 +70,7 @@ const createParser = ({
   onClickInteractiveElement,
 }) => {
   const parse = (blocks) => {
-    const parseElement = (el, i, els) => {
+    const parseElement = (el, i, els, { root = false } = {}) => {
       const parseNode = (n, i, ns) =>
         n.text == null ? parseElement(n, i, ns) : parseLeaf(n, i, ns);
 
@@ -115,7 +115,12 @@ const createParser = ({
         }
 
         case "attachments": {
-          if (inline) return null;
+          if (inline) {
+            if (root && i === 0)
+              return parseNode({ text: "Image attachment", italic: true });
+            return null;
+          }
+
           return (
             <div
               key={i}
@@ -154,13 +159,13 @@ const createParser = ({
           const [maxWidth, maxHeight] =
             attachmentCount === 1
               ? [
-                  SINGLE_IMAGE_ATTACHMENT_MAX_WIDTH,
-                  SINGLE_IMAGE_ATTACHMENT_MAX_HEIGHT,
-                ]
+                SINGLE_IMAGE_ATTACHMENT_MAX_WIDTH,
+                SINGLE_IMAGE_ATTACHMENT_MAX_HEIGHT,
+              ]
               : [
-                  MULTI_IMAGE_ATTACHMENT_MAX_WIDTH,
-                  MULTI_IMAGE_ATTACHMENT_MAX_HEIGHT,
-                ];
+                MULTI_IMAGE_ATTACHMENT_MAX_WIDTH,
+                MULTI_IMAGE_ATTACHMENT_MAX_HEIGHT,
+              ];
 
           const calculateWidth = () => {
             const aspectRatio = el.width / el.height;
@@ -203,7 +208,7 @@ const createParser = ({
       }
     };
 
-    return blocks.map(parseElement);
+    return blocks.map((b, i, bs) => parseElement(b, i, bs, { root: true }));
   };
 
   return parse;
