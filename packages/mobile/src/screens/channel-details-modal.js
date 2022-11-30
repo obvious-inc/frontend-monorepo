@@ -25,10 +25,10 @@ const ChannelDetailsModal = ({ navigation, route }) => {
   const canAddMembers = state.selectCanAddChannelMember(channelId);
   const canManageInfo = state.selectCanManageChannelInfo(channelId);
   const isStarredChannel = state.selectIsChannelStarred(channelId);
-  const memberCount = channel.memberUserIds.length;
+  const memberCount = channel?.memberUserIds.length;
 
-  const isOwner = me.id === channel.ownerUserId;
-  const isMember = channel.memberUserIds.includes(me.id);
+  const isOwner = me.id === channel?.ownerUserId;
+  const isMember = channel?.memberUserIds.includes(me.id);
 
   const [hasPendingJoinRequest, setPendingJoinRequest] = React.useState(false);
   const [hasPendingLeaveRequest, setPendingLeaveRequest] =
@@ -174,13 +174,14 @@ const ChannelDetailsModal = ({ navigation, route }) => {
             });
           },
         },
-        (channel.kind !== "dm" || memberCount > 1) && {
-          key: "members",
-          label: "Members",
-          onPress: () => {
-            navigation.navigate("Members", { channelId });
+        memberCount > 0 &&
+          (channel?.kind !== "dm" || memberCount > 1) && {
+            key: "members",
+            label: "Members",
+            onPress: () => {
+              navigation.navigate("Members", { channelId });
+            },
           },
-        },
       ].filter(Boolean),
     },
     !isMember && {
@@ -210,7 +211,7 @@ const ChannelDetailsModal = ({ navigation, route }) => {
     },
     {
       items: [
-        channel.kind === "topic" &&
+        channel?.kind === "topic" &&
           isMember && {
             key: "leave-channel",
             label: "Leave channel",
@@ -251,7 +252,7 @@ const ChannelDetailsModal = ({ navigation, route }) => {
               );
             },
           },
-        channel.kind === "topic" &&
+        channel?.kind === "topic" &&
           isOwner && {
             key: "delete-channel",
             label: "Delete channel",
@@ -340,7 +341,7 @@ const ChannelDetailsModal = ({ navigation, route }) => {
       </View>
 
       <ScrollView>
-        {channel.description != null && (
+        {channel?.description != null && (
           <View>
             <Text
               style={{

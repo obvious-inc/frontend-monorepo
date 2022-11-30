@@ -196,6 +196,7 @@ const HeaderLeft = () => {
       </View>
       {(channel != null || channelId == null) && (
         <Pressable
+          disabled={channelId == null}
           onPress={() => {
             navigation.navigate("Channel details modal", {
               screen: "Root",
@@ -263,6 +264,7 @@ const HeaderRight = () => {
     <View>
       {hasOpenReadAccess && (
         <Pressable
+          disabled={params.channelId == null}
           onPress={() => {
             navigation.navigate("Channel details modal", {
               screen: "Root",
@@ -394,7 +396,7 @@ const Channel = ({ navigation, route: { params } }) => {
   const replyTargetMessage = state.selectMessage(replyTargetMessageId);
 
   const isMember = me != null && channel?.memberUserIds?.includes(me.id);
-  const canPost = isMember;
+  const canPost = channelId == null || isMember;
 
   return (
     <>
