@@ -188,7 +188,7 @@ const readStatesById = (state = {}, action) => {
 
       const channelIds = unique([
         ...Object.keys(channelsById),
-        Object.keys(readStatesByChannelId),
+        ...Object.keys(readStatesByChannelId),
       ]);
 
       const entriesByChannelId = indexBy(
