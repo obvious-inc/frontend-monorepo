@@ -102,7 +102,7 @@ const useSystemNotifications = () => {
             title: `Message from ${message.author.displayName}`,
             body: message.stringContent,
             icon:
-              message.author.profilePicture.small ??
+              message.author.profilePicture?.small ??
               module.generatePlaceholderAvatarDataUri(
                 message.author.walletAddress,
                 {
