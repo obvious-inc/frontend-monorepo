@@ -71,6 +71,7 @@ const LoginScreen = ({ mobileAppLogin, onSuccess, onError }) => {
           min-width: 0;
         }
       `}
+      style={{ height: mobileAppLogin ? "100%" : undefined }}
     >
       {isAuthenticatingWithThrowawayWallet ? (
         <div>
