@@ -458,7 +458,8 @@ export const selectMemberChannels = createSelector(
 
     return channels;
   },
-  (channels) => channels,
+  (state) => state.channels.readStatesById,
+  sortChannelsByActivity,
   { memoizeOptions: { equalityCheck: arrayShallowEquals } }
 );
 
