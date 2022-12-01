@@ -18,6 +18,7 @@ import {
   MagnificationGlass as MagnificationGlassIcon,
   Planet as PlanetIcon,
   Triangle as TriangleIcon,
+  DoubleChevronLeft as DoubleChevronLeftIcon,
 } from "./icons";
 import Avatar from "./avatar";
 import * as DropdownMenu from "./dropdown-menu";
@@ -100,7 +101,7 @@ const Layout = () => {
 
   return (
     <SideMenuLayout
-      header={
+      header={({ toggleMenu }) =>
         authenticationStatus === "not-authenticated" &&
         walletAccountAddress == null ? null : isLoadingUser ? (
           <div />
@@ -118,6 +119,7 @@ const Layout = () => {
                     ? "Unverified account"
                     : null
                 }
+                toggleMenu={toggleMenu}
               />
             </DropdownMenu.Trigger>
             <DropdownMenu.Content
@@ -396,7 +398,7 @@ const Layout = () => {
 };
 
 const ProfileDropdownTrigger = React.forwardRef(
-  ({ isConnecting, user, subtitle, ...props }, ref) => {
+  ({ isConnecting, user, subtitle, toggleMenu, ...props }, ref) => {
     const { data: userEnsName } = useEnsName({ address: user.walletAddress });
 
     const theme = useTheme();
@@ -517,6 +519,9 @@ const ProfileDropdownTrigger = React.forwardRef(
                   fontSize: theme.fontSizes.small,
                   fontWeight: "400",
                   lineHeight: "1.2rem",
+                  whiteSpace: "nowrap",
+                  overflow: "hidden",
+                  textOverflow: "ellipsis",
                 })
               }
             >
@@ -524,14 +529,53 @@ const ProfileDropdownTrigger = React.forwardRef(
             </div>
           )}
         </div>
-        <div css={css({ width: "1.2rem", height: "1.2rem" })}>
-          <svg
-            viewBox="-1 -1 9 11"
-            style={{ width: "100%", height: "100%" }}
-            css={(theme) => css({ fill: theme.colors.textMuted })}
-          >
-            <path d="M 3.5 0L 3.98809 -0.569442L 3.5 -0.987808L 3.01191 -0.569442L 3.5 0ZM 3.5 9L 3.01191 9.56944L 3.5 9.98781L 3.98809 9.56944L 3.5 9ZM 0.488094 3.56944L 3.98809 0.569442L 3.01191 -0.569442L -0.488094 2.43056L 0.488094 3.56944ZM 3.01191 0.569442L 6.51191 3.56944L 7.48809 2.43056L 3.98809 -0.569442L 3.01191 0.569442ZM -0.488094 6.56944L 3.01191 9.56944L 3.98809 8.43056L 0.488094 5.43056L -0.488094 6.56944ZM 3.98809 9.56944L 7.48809 6.56944L 6.51191 5.43056L 3.01191 8.43056L 3.98809 9.56944Z" />
-          </svg>
+        <div css={css({ display: "flex", alignItems: "center" })}>
+          <div css={css({ width: "1.2rem", height: "1.2rem" })}>
+            <svg
+              viewBox="-1 -1 9 11"
+              style={{ width: "100%", height: "100%" }}
+              css={(theme) => css({ fill: theme.colors.textMuted })}
+            >
+              <path d="M 3.5 0L 3.98809 -0.569442L 3.5 -0.987808L 3.01191 -0.569442L 3.5 0ZM 3.5 9L 3.01191 9.56944L 3.5 9.98781L 3.98809 9.56944L 3.5 9ZM 0.488094 3.56944L 3.98809 0.569442L 3.01191 -0.569442L -0.488094 2.43056L 0.488094 3.56944ZM 3.01191 0.569442L 6.51191 3.56944L 7.48809 2.43056L 3.98809 -0.569442L 3.01191 0.569442ZM -0.488094 6.56944L 3.01191 9.56944L 3.98809 8.43056L 0.488094 5.43056L -0.488094 6.56944ZM 3.98809 9.56944L 7.48809 6.56944L 6.51191 5.43056L 3.01191 8.43056L 3.98809 9.56944Z" />
+            </svg>
+          </div>
+          {toggleMenu != null && (
+            <div
+              role="button"
+              tabIndex={0}
+              onPointerDown={(e) => {
+                e.preventDefault();
+                toggleMenu();
+              }}
+              css={(t) =>
+                css({
+                  width: "2.4rem",
+                  height: "2.4rem",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  marginLeft: "0.7rem",
+                  marginRight: "-0.4rem",
+                  borderRadius: "0.3rem",
+                  ":hover": {
+                    background: t.colors.backgroundModifierHover,
+                  },
+                })
+              }
+            >
+              <DoubleChevronLeftIcon
+                css={(t) =>
+                  css({
+                    position: "relative",
+                    right: "1px",
+                    color: t.colors.textMuted,
+                    width: "1.6rem",
+                    height: "1.6rem",
+                  })
+                }
+              />
+            </div>
+          )}
         </div>
       </button>
     );

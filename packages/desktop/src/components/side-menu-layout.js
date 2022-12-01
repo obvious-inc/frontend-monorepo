@@ -46,8 +46,8 @@ const SideMenuLayout = ({
             transition: "200ms transform ease-out",
             transform:
               !isFloatingMenuEnabled || isCollapsed
-                ? ""
-                : `translateX(${theme.sidebarWidth})`,
+                ? undefined
+                : "translateX(100%)",
             paddingTop: isNative ? "2.6rem" : 0,
           })
         }
@@ -77,7 +77,9 @@ const SideMenuLayout = ({
                 })
               }
             >
-              {header}
+              {header({
+                toggleMenu: isFloatingMenuEnabled ? toggleMenu : undefined,
+              })}
             </div>
           )}
           <div
