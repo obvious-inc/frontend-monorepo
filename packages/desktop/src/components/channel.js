@@ -1353,7 +1353,7 @@ const Heading = ({ component: Component = "div", children, ...props }) => (
   </Component>
 );
 
-const Channel = ({ channelId, compact, noSideMenu }) => {
+export const Channel = ({ channelId, compact, noSideMenu }) => {
   const [searchParams] = useSearchParams();
   const { status: authenticationStatus } = useAuth();
   const { state, actions } = useAppScope();

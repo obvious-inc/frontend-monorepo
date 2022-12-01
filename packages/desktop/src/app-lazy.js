@@ -49,6 +49,7 @@ import { notion as defaultTheme, nounsTv as nounsTvTheme } from "./themes";
 import AuthHome from "./components/auth";
 
 const Channel = React.lazy(() => import("./components/channel"));
+const ChannelBase = React.lazy(() => import("./components/channel-base"));
 
 const { truncateAddress } = ethereumUtils;
 
@@ -257,7 +258,12 @@ const App = () => {
           <Route path="/dm/:addressOrEnsName" element={<DmChannel />} />
         </Route>
         <Route path="c/:channelId" element={<Channel noSideMenu />} />
-
+        <Route
+          path="/support"
+          element={
+            <ChannelBase noSideMenu channelId="638880b142d6c362cc0b7224" />
+          }
+        />
         <Route
           path="/oauth/authorize"
           element={
