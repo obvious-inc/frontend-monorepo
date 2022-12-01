@@ -16,6 +16,10 @@ const SideMenuLayout = ({
     toggle: toggleMenu,
   } = useSideMenu();
 
+  const headerContent = header({
+    toggleMenu: isFloatingMenuEnabled ? toggleMenu : undefined,
+  });
+
   return (
     <div
       css={(theme) =>
@@ -60,7 +64,7 @@ const SideMenuLayout = ({
             flexDirection: "column",
           })}
         >
-          {header != null && (
+          {headerContent != null && (
             <div
               css={(theme) =>
                 css({
@@ -77,9 +81,7 @@ const SideMenuLayout = ({
                 })
               }
             >
-              {header({
-                toggleMenu: isFloatingMenuEnabled ? toggleMenu : undefined,
-              })}
+              {headerContent}
             </div>
           )}
           <div
