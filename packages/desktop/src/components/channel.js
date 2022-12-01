@@ -34,7 +34,6 @@ import Dialog from "./dialog";
 import Input from "./input";
 import ChannelInfoDialog from "./channel-info-dialog";
 import {
-  AtSign as AtSignIcon,
   Cross as CrossIcon,
   PlusCircle as PlusCircleIcon,
   CrossCircle as CrossCircleIcon,
@@ -1741,42 +1740,30 @@ const Channel = ({ channelId, compact, noSideMenu }) => {
 
     return (
       <>
-        {!isMenuTogglingEnabled &&
-          (channel.image != null ? (
-            <a
-              href={channel.imageLarge}
-              rel="noreferrer"
-              target="_blank"
-              css={(t) =>
-                css({
-                  borderRadius: "50%",
-                  outline: "none",
-                  ":focus-visible": {
-                    boxShadow: `0 0 0 0.2rem ${t.colors.primary}`,
-                  },
-                })
-              }
-              style={{ marginRight: "1.1rem" }}
-            >
-              <Avatar
-                transparent
-                url={channel.image}
-                size="2.4rem"
-                pixelSize={24}
-              />
-            </a>
-          ) : channel.kind === "dm" ? (
-            <div
-              css={(theme) =>
-                css({
-                  color: theme.colors.textMuted,
-                  marginRight: "0.6rem",
-                })
-              }
-            >
-              <AtSignIcon style={{ width: "2.2rem" }} />
-            </div>
-          ) : null)}
+        {channel.image != null && (
+          <a
+            href={channel.imageLarge}
+            rel="noreferrer"
+            target="_blank"
+            css={(t) =>
+              css({
+                borderRadius: "50%",
+                outline: "none",
+                ":focus-visible": {
+                  boxShadow: `0 0 0 0.2rem ${t.colors.primary}`,
+                },
+              })
+            }
+            style={{ marginRight: "1.1rem" }}
+          >
+            <Avatar
+              transparent
+              url={channel.image}
+              size="2.4rem"
+              pixelSize={24}
+            />
+          </a>
+        )}
 
         {!isEmbedded && (
           <Heading
