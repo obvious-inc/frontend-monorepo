@@ -62,7 +62,7 @@ const ProfilePreview = React.forwardRef(({ userId }, ref) => {
     >
       <Avatar
         transparent
-        url={user?.profilePicture.large}
+        url={user?.profilePicture?.large}
         walletAddress={user?.walletAddress}
         size="30rem"
         pixelSize={64}
