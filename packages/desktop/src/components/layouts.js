@@ -557,22 +557,21 @@ const ProfileDropdownTrigger = React.forwardRef(
                   marginLeft: "0.7rem",
                   marginRight: "-0.4rem",
                   borderRadius: "0.3rem",
+                  color: t.colors.textMuted,
                   ":hover": {
+                    color: t.colors.textNormal,
                     background: t.colors.backgroundModifierHover,
                   },
                 })
               }
             >
               <DoubleChevronLeftIcon
-                css={(t) =>
-                  css({
-                    position: "relative",
-                    right: "1px",
-                    color: t.colors.textMuted,
-                    width: "1.6rem",
-                    height: "1.6rem",
-                  })
-                }
+                css={css({
+                  position: "relative",
+                  right: "1px",
+                  width: "1.6rem",
+                  height: "1.6rem",
+                })}
               />
             </div>
           )}

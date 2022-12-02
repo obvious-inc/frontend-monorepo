@@ -1765,27 +1765,35 @@ export const Channel = ({ channelId, compact, noSideMenu }) => {
           </a>
         )}
 
-        {!isEmbedded && (
-          <Heading
-            component="button"
-            onClick={() => {
-              setChannelDialogMode("about");
-            }}
-            css={(t) =>
-              css({
-                minWidth: 0,
-                overflow: "hidden",
-                textOverflow: "ellipsis",
-                cursor: "pointer",
-                ":hover": { color: t.colors.textNormal },
-              })
-            }
-          >
-            {channelName}
-          </Heading>
-        )}
+        <div
+          style={{
+            flex: 1,
+            minWidth: 0,
+            overflow: "hidden",
+            display: "flex",
+            alignItems: "center",
+          }}
+        >
+          {!isEmbedded && (
+            <Heading
+              component="button"
+              onClick={() => {
+                setChannelDialogMode("about");
+              }}
+              css={(t) =>
+                css({
+                  minWidth: 0,
+                  overflow: "hidden",
+                  textOverflow: "ellipsis",
+                  cursor: "pointer",
+                  ":hover": { color: t.colors.textNormal },
+                })
+              }
+            >
+              {channelName}
+            </Heading>
+          )}
 
-        <div style={{ flex: 1, minWidth: 0, overflow: "hidden" }}>
           {channel.description != null && (
             <button
               onClick={() => {
@@ -1793,6 +1801,8 @@ export const Channel = ({ channelId, compact, noSideMenu }) => {
               }}
               css={(t) =>
                 css({
+                  flex: 1,
+                  minWidth: 0,
                   color: t.colors.textHeaderSecondary,
                   marginLeft: "1.1rem",
                   padding: "0 1.1rem",

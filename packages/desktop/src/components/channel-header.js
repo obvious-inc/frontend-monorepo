@@ -21,6 +21,7 @@ const ChannelHeader = ({ noSideMenu, children }) => {
         css({
           height: theme.mainHeader.height,
           padding: "0 1.6rem",
+          paddingLeft: isMenuTogglingEnabled ? 0 : undefined,
           display: "flex",
           alignItems: "center",
           boxShadow: theme.mainHeader.shadow,
@@ -42,11 +43,14 @@ const ChannelHeader = ({ noSideMenu, children }) => {
     >
       {isMenuTogglingEnabled && (
         <div
-          style={{
-            paddingLeft: isNative && isSideMenuCollapsed ? "7rem" : undefined,
-            marginLeft: "-0.6rem",
-            marginRight: "calc(-0.6rem + 1.8rem)",
-          }}
+          css={(t) =>
+            css({
+              width: t.mainHeader.height,
+              display: "flex",
+              justifyContent: "center",
+              paddingLeft: isNative && isSideMenuCollapsed ? "7rem" : undefined,
+            })
+          }
         >
           <button
             onClick={() => {
