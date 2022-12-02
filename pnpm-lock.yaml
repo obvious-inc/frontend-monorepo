@@ -185,6 +185,8 @@ importers:
       expo-linking: ~3.2.3
       expo-localization: ~14.0.0
       expo-notifications: ~0.17.0
+      expo-status-bar: ~1.4.2
+      expo-system-ui: ~2.0.1
       expo-updates: ~0.15.6
       prettier: ^2.7.1
       pusher-js: ^7.4.0
@@ -224,6 +226,8 @@ importers:
       expo-linking: 3.2.3_expo@47.0.0-beta.8
       expo-localization: 14.0.0_expo@47.0.0-beta.8
       expo-notifications: 0.17.0_expo@47.0.0-beta.8
+      expo-status-bar: 1.4.2
+      expo-system-ui: 2.0.1_expo@47.0.0-beta.8
       expo-updates: 0.15.6_expo@47.0.0-beta.8
       pusher-js: 7.4.0
       react: 18.1.0
@@ -9346,8 +9350,24 @@ packages:
       - supports-color
     dev: false
 
+  /expo-status-bar/1.4.2:
+    resolution: {integrity: sha512-ZWjO6D4ARGYfAd3SWDD3STNudHDhyBZDZjhhseqoEmsf7bS9ykny8KKOhlzJW24qIQNPhkgdvHhaw9fQwMJy3Q==}
+    dev: false
+
   /expo-structured-headers/3.0.1:
     resolution: {integrity: sha512-x6hkzuQL5HJoyB+xQyBf9M04ZUmrjFWqEW7gzIYWN/6LA+dgyaV4fF6U9++Re+GgGjF03vHJFqR1xYaosKKZYQ==}
+    dev: false
+
+  /expo-system-ui/2.0.1_expo@47.0.0-beta.8:
+    resolution: {integrity: sha512-lspSKU71G2+6y3kI/p/sZUFSBvzd5HdnKuSX0J6b4yqOEAhMIA4JtmkU/0as1FY1Fnz+48fLs2ZL9gzbr7+njA==}
+    peerDependencies:
+      expo: '*'
+    dependencies:
+      '@react-native/normalize-color': 2.0.0
+      debug: 4.3.4
+      expo: 47.0.0-beta.8_@babel+core@7.19.6
+    transitivePeerDependencies:
+      - supports-color
     dev: false
 
   /expo-updates-interface/0.8.1_expo@47.0.0-beta.8:

@@ -9,6 +9,7 @@ import * as Device from "expo-device";
 import * as Linking from "expo-linking";
 import * as Notifications from "expo-notifications";
 import * as Updates from "expo-updates";
+import { StatusBar } from "expo-status-bar";
 import {
   WagmiConfig,
   createClient as createWagmiClient,
@@ -129,6 +130,7 @@ const App = () => {
   const me = state.selectMe();
 
   const {
+    fetchMe,
     fetchClientBootData,
     fetchUserChannels,
     fetchUserChannelsReadStates,
@@ -149,6 +151,7 @@ const App = () => {
 
   const updateClient = useLatestCallback(() =>
     Promise.all([
+      fetchMe(),
       fetchUserChannels(),
       fetchUserChannelsReadStates(),
       fetchStarredItems(),
@@ -567,90 +570,99 @@ export default () => {
   if (initialState === "not-set") return null;
 
   return (
-    <SafeAreaProvider>
-      <ErrorBoundary>
-        <WagmiConfig client={wagmiClient}>
-          <NavigationContainer
-            initialState={initialState}
-            onStateChange={(state) => {
-              if (state == null) {
-                AsyncStorage.removeItem(NAVIGATION_STATE_STORAGE_KEY);
-                return;
-              }
+    <>
+      <SafeAreaProvider>
+        <ErrorBoundary>
+          <WagmiConfig client={wagmiClient}>
+            <NavigationContainer
+              initialState={initialState}
+              onStateChange={(state) => {
+                if (state == null) {
+                  AsyncStorage.removeItem(NAVIGATION_STATE_STORAGE_KEY);
+                  return;
+                }
 
-              AsyncStorage.setItem(
-                NAVIGATION_STATE_STORAGE_KEY,
-                JSON.stringify(state)
-              );
-            }}
-            theme={ReactNavigationDarkTheme}
-            linking={{
-              prefixes: [prefix],
-              config: {
-                initialRouteName: "Channel list",
-                screens: {
-                  Channel: "channels/:channelId",
-                },
-              },
-              async getInitialURL() {
-                // First, you may want to do the default deep link handling
-                // Check if app was opened from a deep link
-                const url = await Linking.getInitialURL();
-
-                if (url != null) return url;
-
-                // Handle URL from expo push notifications
-                const response =
-                  await Notifications.getLastNotificationResponseAsync();
-
-                const expoUrl = response?.notification.request.content.data.url;
-
-                if (expoUrl != null) return prefix + expoUrl;
-              },
-              subscribe(listener) {
-                // Listen to incoming links from deep linking
-                const urlSubscription = Linking.addEventListener(
-                  "url",
-                  ({ url }) => {
-                    listener(url);
-                  }
+                AsyncStorage.setItem(
+                  NAVIGATION_STATE_STORAGE_KEY,
+                  JSON.stringify(state)
                 );
+              }}
+              theme={ReactNavigationDarkTheme}
+              linking={{
+                prefixes: [prefix],
+                config: {
+                  initialRouteName: "Channel list",
+                  screens: {
+                    Channel: "channels/:channelId",
+                  },
+                },
+                async getInitialURL() {
+                  // First, you may want to do the default deep link handling
+                  // Check if app was opened from a deep link
+                  const url = await Linking.getInitialURL();
 
-                // Listen to expo push notifications
-                const subscription =
-                  Notifications.addNotificationResponseReceivedListener(
-                    (response) => {
-                      const url =
-                        response.notification.request.content.data.url;
+                  if (url != null) return url;
 
-                      // Any custom logic to see whether the URL needs to be handled
+                  // Handle URL from expo push notifications
+                  const response =
+                    await Notifications.getLastNotificationResponseAsync();
 
-                      // Let React Navigation handle the URL
-                      listener(prefix + url);
+                  const expoUrl =
+                    response?.notification.request.content.data.url;
+
+                  if (expoUrl != null) return prefix + expoUrl;
+                },
+                subscribe(listener) {
+                  // Listen to incoming links from deep linking
+                  const urlSubscription = Linking.addEventListener(
+                    "url",
+                    ({ url }) => {
+                      listener(url);
                     }
                   );
 
-                return () => {
-                  // Clean up the event listeners
-                  urlSubscription.remove();
-                  subscription.remove();
-                };
-              },
-            }}
-          >
-            <AuthProvider apiOrigin={API_ENDPOINT} tokenStorage={AsyncStorage}>
-              <AppScopeProvider cloudflareAccountHash={CLOUDFLARE_ACCOUNT_HASH}>
-                <ServerConnectionProvider
-                  Pusher={Pusher}
-                  pusherKey={PUSHER_KEY}
+                  // Listen to expo push notifications
+                  const subscription =
+                    Notifications.addNotificationResponseReceivedListener(
+                      (response) => {
+                        const url =
+                          response.notification.request.content.data.url;
+
+                        // Any custom logic to see whether the URL needs to be handled
+
+                        // Let React Navigation handle the URL
+                        listener(prefix + url);
+                      }
+                    );
+
+                  return () => {
+                    // Clean up the event listeners
+                    urlSubscription.remove();
+                    subscription.remove();
+                  };
+                },
+              }}
+            >
+              <AuthProvider
+                apiOrigin={API_ENDPOINT}
+                tokenStorage={AsyncStorage}
+              >
+                <AppScopeProvider
+                  cloudflareAccountHash={CLOUDFLARE_ACCOUNT_HASH}
                 >
-                  <App />
-                </ServerConnectionProvider>
-              </AppScopeProvider>
-            </AuthProvider>
-          </NavigationContainer>
-        </WagmiConfig>
-      </ErrorBoundary>
-    </SafeAreaProvider>
+                  <ServerConnectionProvider
+                    Pusher={Pusher}
+                    pusherKey={PUSHER_KEY}
+                  >
+                    <App />
+                  </ServerConnectionProvider>
+                </AppScopeProvider>
+              </AuthProvider>
+            </NavigationContainer>
+          </WagmiConfig>
+        </ErrorBoundary>
+      </SafeAreaProvider>
+      <StatusBar />
+    </>
   );
 };
