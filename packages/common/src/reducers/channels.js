@@ -251,6 +251,15 @@ const readStatesById = (state = {}, action) => {
         },
       };
 
+    case "server-event:channel-read":
+      return {
+        ...state,
+        [action.data.channel]: {
+          ...state[action.data.channel],
+          lastReadAt: action.data.read_at,
+        },
+      };
+
     case "server-event:message-created": {
       const isOwnMessage =
         action.user != null && action.data.message.author === action.user.id;
