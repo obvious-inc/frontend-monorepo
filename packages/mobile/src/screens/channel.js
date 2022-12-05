@@ -46,7 +46,7 @@ import {
 } from "../components/icons";
 
 const { useLatestCallback } = Shades.react;
-const { useAppScope, useMessageEmbeds } = Shades.app;
+const { useAppScope, useMessageEmbeds, useMessageReactions } = Shades.app;
 const {
   message: messageUtils,
   url: urlUtils,
@@ -906,6 +906,8 @@ const Message = ({
               </Text>
 
               {m.embeds?.length > 0 && <Embeds messageId={m.id} />}
+
+              {m.reactions?.length > 0 && <Reactions messageId={m.id} />}
             </>
           )}
         </View>
@@ -913,6 +915,83 @@ const Message = ({
     </Pressable>
   );
 };
+
+const Reactions = React.memo(({ messageId }) => {
+  const { actions } = useAppScope();
+  const items = useMessageReactions(messageId);
+
+  const addReaction = (emoji) =>
+    actions.addMessageReaction(messageId, { emoji });
+
+  const removeReaction = (emoji) =>
+    actions.removeMessageReaction(messageId, { emoji });
+
+  return (
+    <View style={{ marginTop: 5 }}>
+      <View
+        style={{
+          display: "flex",
+          flexDirection: "row",
+          flexWrap: "wrap",
+          marginTop: -5,
+          marginLeft: -1,
+          marginRight: -5,
+        }}
+      >
+        {items.map((r) => {
+          return (
+            <Pressable
+              key={r.emoji}
+              onPress={() => {
+                if (r.hasReacted) {
+                  removeReaction(r.emoji);
+                  return;
+                }
+
+                addReaction(r.emoji);
+              }}
+              style={{
+                display: "flex",
+                flexDirection: "row",
+                alignItems: "center",
+                height: 29,
+                backgroundColor: r.hasReacted
+                  ? "#007ab333"
+                  : theme.colors.backgroundLight,
+                borderColor: r.hasReacted ? "#007ab3a8" : "transparent",
+                borderWidth: 1,
+                borderRadius: 7,
+                paddingHorizontal: 7,
+                marginTop: 5,
+                marginRight: 5,
+              }}
+            >
+              <Text
+                style={{
+                  fontSize: 14,
+                  lineHeight: 18,
+                }}
+              >
+                {r.emoji}
+              </Text>
+              <Text
+                style={{
+                  fontSize: 11,
+                  lineHeight: 16,
+                  fontWeight: "400",
+                  color: theme.colors.textDefault,
+                  marginLeft: 5,
+                }}
+              >
+                {r.count}
+              </Text>
+            </Pressable>
+          );
+        })}
+      </View>
+    </View>
+  );
+});
 
 const Embeds = React.memo(({ messageId }) => {
   const embeds = useMessageEmbeds(messageId);
