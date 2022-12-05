@@ -2,7 +2,7 @@
   "rewrites": [
     {
       "source": "/api/:path*",
-      "destination": "https://ns-api.fly.dev/:path*"
+      "destination": "https://api.newshades.xyz/:path*"
     },
     {
       "source": "/(.*)",
