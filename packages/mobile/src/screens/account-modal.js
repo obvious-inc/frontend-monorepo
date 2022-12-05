@@ -1,4 +1,5 @@
 import Constants from "expo-constants";
+import * as Updates from "expo-updates";
 import * as Linking from "expo-linking";
 import * as ImagePicker from "expo-image-picker";
 import React from "react";
@@ -51,6 +52,8 @@ const Header = () => {
 const AccountModal = ({ navigation }) => {
   const { state, actions } = useAppScope();
   const [showDebugInfo, setShowDebugInfo] = React.useState(false);
+  const [isUpdateAvailable, setUpdateAvailable] = React.useState(null);
+  const [isFetchingUpdate, setFetchingUpdate] = React.useState(false);
 
   const [isUpdatingProfilePicture, setUpdatingProfilePicture] =
     React.useState(false);
@@ -58,6 +61,23 @@ const AccountModal = ({ navigation }) => {
     React.useState(false);
 
   const me = state.selectMe();
+
+  React.useEffect(() => {
+    if (!showDebugInfo) return;
+
+    Updates.checkForUpdateAsync().then(({ isAvailable }) => {
+      setUpdateAvailable(isAvailable);
+      if (!isAvailable) return;
+      setFetchingUpdate(true);
+      Updates.fetchUpdateAsync()
+        .then(() => {
+          Updates.reloadAsync();
+        })
+        .finally(() => {
+          setFetchingUpdate(false);
+        });
+    });
+  }, [showDebugInfo]);
 
   return (
     <SafeAreaView
@@ -295,6 +315,18 @@ const AccountModal = ({ navigation }) => {
               {key} {JSON.stringify(value)}
             </Text>
           ))}
+
+          {isUpdateAvailable != null && (
+            <View style={{ marginTop: 20 }}>
+              <Text style={{ fontSize: 12, color: "hsl(0,0%,28%)" }}>
+                {isFetchingUpdate
+                  ? "Fetching update..."
+                  : isUpdateAvailable
+                  ? "New update available"
+                  : "No update available"}
+              </Text>
+            </View>
+          )}
         </View>
       )}
     </SafeAreaView>
