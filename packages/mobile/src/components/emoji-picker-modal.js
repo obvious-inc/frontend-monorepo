@@ -13,6 +13,7 @@ import theme from "../theme";
 
 const { useCachedState } = Shades.app;
 const { groupBy, indexBy } = Shades.utils.array;
+const { search: searchEmoji } = Shades.utils.emoji;
 
 const supportedEmojis = Shades.emoji.filter(
   (e) => parseFloat(e.unicode_version) < 13
@@ -35,43 +36,35 @@ const EmojiPickerModal = ({ onSelect }) => {
   const trimmedQuery = React.useDeferredValue(query.trim());
 
   const data = React.useMemo(() => {
-    const prepare = (entries) =>
+    const prepareEntries = (entries) =>
       entries.reduce(
         (acc, [c, es]) => [
           ...acc,
           { id: c, title: c },
-          { id: `${c}-items`, category: c, items: es },
+          { id: `${c}-items`, items: es },
         ],
         []
       );
 
-    const emojiEntries =
-      recentEmoji?.length > 0
-        ? [
-            [
-              "Recently used",
-              recentEmoji
-                .slice(0, emojiColumnCount * 4) // 4 rows seems like a good max
-                .map((e) => emojiByEmoji[e]),
-            ],
-            ...emojiByCategoryEntries,
-          ]
-        : emojiByCategoryEntries;
+    if (trimmedQuery.length <= 1) {
+      if (recentEmoji == null || recentEmoji.length === 0)
+        return prepareEntries(emojiByCategoryEntries);
 
-    if (trimmedQuery === "") return prepare(emojiEntries);
+      return prepareEntries([
+        [
+          "Recently used",
+          recentEmoji
+            .slice(0, emojiColumnCount * 4) // 4 rows seems like a good max
+            .map((e) => emojiByEmoji[e]),
+        ],
+        ...emojiByCategoryEntries,
+      ]);
+    }
 
-    const match = (e) =>
-      [e.emoji, e.description.toLowerCase(), ...e.aliases, ...e.tags].some(
-        (prop) => prop.includes(trimmedQuery)
-      );
+    const allItems = emojiByCategoryEntries.flatMap((entry) => entry[1]);
+    const filteredItems = searchEmoji(allItems, trimmedQuery);
 
-    const filteredEntries = emojiEntries.reduce((acc, [category, emoji]) => {
-      const filteredEmoji = emoji.filter(match);
-      if (filteredEmoji.length === 0) return acc;
-      return [...acc, [category, filteredEmoji]];
-    }, []);
-
-    return prepare(filteredEntries);
+    return [{ id: "filtered", items: filteredItems }];
   }, [trimmedQuery, recentEmoji]);
 
   return (

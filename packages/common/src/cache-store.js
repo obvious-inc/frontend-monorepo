@@ -13,7 +13,7 @@ export const Provider = ({ storage, asyncStorage, children }) => {
 };
 
 export const useStore = () => {
-  const { syncStorage, asyncStorage } = React.useContext(Context);
+  const { syncStorage, asyncStorage } = React.useContext(Context) ?? {};
   const storage = asyncStorage ?? syncStorage;
 
   if (storage == null) return null;

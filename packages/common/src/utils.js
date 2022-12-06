@@ -6,6 +6,7 @@ export * as message from "./utils/message";
 export * as channel from "./utils/channel";
 export * as user from "./utils/user";
 export * as permission from "./utils/permissions";
+export * as emoji from "./utils/emoji";
 export * as ethereum from "./utils/ethereum";
 export {
   isTouchDevice,
