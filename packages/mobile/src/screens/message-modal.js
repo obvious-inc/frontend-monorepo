@@ -1,21 +1,47 @@
+import * as Haptics from "expo-haptics";
 import * as Clipboard from "expo-clipboard";
-import { View, Alert } from "react-native";
+import { View, Alert, Pressable, Text, Dimensions } from "react-native";
 import * as Shades from "@shades/common";
 import { SectionedActionList } from "./account-modal";
+import { AddEmojiReaction as AddEmojiReactionIcon } from "../components/icons";
+import theme from "../theme";
 
-const { useAppScope } = Shades.app;
+const { useAppScope, useCachedState } = Shades.app;
 const { message: messageUtils } = Shades.utils;
+const { unique } = Shades.utils.array;
+
+const hapticImpactLight = () =>
+  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+
+const defaultEmoji = ["😍", "👍", "🔥", "✨", "🙏", "👀", "✅", "😎"];
+
+const windowWidth = Dimensions.get("window").width;
+
+const emojiColumnCount = 6;
+const emojiColumnGutter = 7;
+const emojiSize = (windowWidth - 32) / emojiColumnCount - emojiColumnGutter;
 
 const MessageModal = ({
   dismiss,
   messageId,
   startEdit,
   startReply,
+  showEmojiPicker,
   deleteMessage,
 }) => {
   const { state, actions } = useAppScope();
   const me = state.selectMe();
   const message = state.selectMessage(messageId);
+
+  const [mostRecentEmoji_] = useCachedState("recent-emoji", []);
+
+  const mostRecentEmoji =
+    mostRecentEmoji_ == null
+      ? null
+      : unique([...mostRecentEmoji_, ...defaultEmoji]);
+
+  const addReaction = (emoji) =>
+    actions.addMessageReaction(messageId, { emoji });
 
   if (message == null) return null;
 
@@ -107,6 +133,61 @@ const MessageModal = ({
           marginBottom: 14,
         }}
       />
+
+      <View
+        style={{
+          flexDirection: "row",
+          justifyContent: "space-between",
+          marginBottom: 20,
+        }}
+      >
+        {mostRecentEmoji?.slice(0, emojiColumnCount - 1).map((emoji) => (
+          <Pressable
+            key={emoji}
+            onPress={() => {
+              hapticImpactLight();
+              addReaction(emoji);
+              dismiss();
+            }}
+            style={({ pressed }) => ({
+              width: emojiSize,
+              height: emojiSize,
+              borderRadius: emojiSize / 2,
+              alignItems: "center",
+              justifyContent: "center",
+              backgroundColor: pressed
+                ? theme.colors.backgroundLighter
+                : theme.colors.backgroundLight,
+            })}
+          >
+            <Text style={{ fontSize: 25, lineHeight: 30 }}>{emoji}</Text>
+          </Pressable>
+        ))}
+
+        <Pressable
+          onPress={() => {
+            dismiss();
+            hapticImpactLight();
+            showEmojiPicker();
+          }}
+          style={({ pressed }) => ({
+            width: emojiSize,
+            height: emojiSize,
+            borderRadius: emojiSize / 2,
+            alignItems: "center",
+            justifyContent: "center",
+            backgroundColor: pressed
+              ? theme.colors.backgroundLighter
+              : theme.colors.backgroundLight,
+          })}
+        >
+          <AddEmojiReactionIcon
+            width="24"
+            height="24"
+            style={{ color: theme.colors.textDefault }}
+          />
+        </Pressable>
+      </View>
 
       <SectionedActionList items={actionSections} />
     </View>

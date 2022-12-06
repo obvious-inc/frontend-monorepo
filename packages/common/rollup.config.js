@@ -24,6 +24,7 @@ const entrypoints = [
   { file: "utils.js" },
   { file: "react.js", dependencies: ["react"] },
   { file: "nouns.js", dependencies: ["ethers", "@nouns/assets", "@nouns/sdk"] },
+  { file: "emoji.js" },
 ];
 
 export default [

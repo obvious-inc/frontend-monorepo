@@ -14,7 +14,7 @@ let emojiModulePromise = null;
 
 const fetchEmojis = () => {
   if (emojiModulePromise) return emojiModulePromise;
-  emojiModulePromise = import("../emojis.js").then(
+  emojiModulePromise = import("@shades/common/emoji").then(
     (module) => {
       emojiModulePromise = null;
       return module.default;
@@ -302,7 +302,10 @@ const MessageInput = React.forwardRef(
     React.useEffect(() => {
       if (autoCompleteMode !== "emojis" || emojis.length !== 0) return;
       fetchEmojis().then((es) => {
-        setEmojis(es);
+        const filteredEmoji = es.filter(
+          (e) => parseFloat(e.unicode_version) < 13
+        );
+        setEmojis(filteredEmoji);
       });
     }, [autoCompleteMode, emojis]);
 

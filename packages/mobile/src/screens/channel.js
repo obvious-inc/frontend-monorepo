@@ -37,12 +37,14 @@ import FormattedDate from "../components/formatted-date";
 import RichText from "../components/rich-text";
 import UserProfilePicture from "../components/user-profile-picture";
 import MessageModalContent from "./message-modal";
+import EmojiPickerModalContent from "../components/emoji-picker-modal";
 import { ChannelPicture } from "./channel-list";
 import {
   Globe as GlobeIcon,
   CrossCircle as CrossCircleIcon,
   Photo as PhotoIcon,
   Camera as CameraIcon,
+  AddEmojiReaction as AddEmojiReactionIcon,
 } from "../components/icons";
 
 const { useLatestCallback } = Shades.react;
@@ -56,6 +58,11 @@ const {
 const ONE_MINUTE_IN_MILLIS = 1000 * 60;
 
 const { textDefault, background } = theme.colors;
+
+const hapticImpactLight = () =>
+  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+const hapticImpactMedium = () =>
+  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
 
 // export const options = {
 //   headerMode: "screen",
@@ -296,6 +303,8 @@ const Channel = ({ navigation, route: { params } }) => {
   const [selectedMessageId, setSelectedMessageId] = React.useState(null);
   const [editingMessageId, setEditingMessageId] = React.useState(null);
   const [replyTargetMessageId, setReplyTargetMessageId] = React.useState(null);
+  const [pendingReactionMessageId, setPendingReactionMessageId] =
+    React.useState(null);
 
   const { channelId, walletAddress: dmUserWalletAddress } = params;
   const { state, actions } = useAppScope();
@@ -306,6 +315,8 @@ const Channel = ({ navigation, route: { params } }) => {
     fetchMessages,
     markChannelRead,
   } = actions;
+
+  const modalHapticRef = React.useRef(false);
 
   const channelName = useChannelName();
 
@@ -341,6 +352,10 @@ const Channel = ({ navigation, route: { params } }) => {
       beforeMessageId: messages[0].id,
       limit: 30,
     });
+  });
+
+  const showEmojiPicker = useLatestCallback((messageId) => {
+    setPendingReactionMessageId(messageId ?? selectedMessageId);
   });
 
   const channelHasUnread = state.selectChannelHasUnread(channelId);
@@ -427,6 +442,7 @@ const Channel = ({ navigation, route: { params } }) => {
             selectUser={(id) => {
               navigation.navigate("User modal", { userId: id });
             }}
+            showEmojiPicker={showEmojiPicker}
           />
           {editingMessageId != null && (
             <InputHeader
@@ -597,8 +613,37 @@ const Channel = ({ navigation, route: { params } }) => {
               ]
             );
           }}
+          showEmojiPicker={() => {
+            modalHapticRef.current = true;
+            showEmojiPicker(selectedMessageId);
+          }}
           dismiss={() => {
             setSelectedMessageId(null);
+          }}
+        />
+      </Modal>
+
+      <Modal
+        visible={pendingReactionMessageId != null}
+        onRequestClose={() => {
+          setPendingReactionMessageId(null);
+        }}
+        onShow={() => {
+          if (modalHapticRef.current) {
+            hapticImpactLight();
+            modalHapticRef.current = false;
+          }
+        }}
+        animationType="slide"
+        presentationStyle="pageSheet"
+      >
+        <EmojiPickerModalContent
+          onSelect={({ emoji }) => {
+            actions.addMessageReaction(pendingReactionMessageId, { emoji });
+            setPendingReactionMessageId(null);
+          }}
+          dismiss={() => {
+            setPendingReactionMessageId(null);
           }}
         />
       </Modal>
@@ -645,6 +690,7 @@ const ChannelMessagesScrollView = React.forwardRef(
       selectMessage,
       selectUser,
       focusedMessageId,
+      showEmojiPicker,
     },
     scrollViewRef
   ) => {
@@ -686,6 +732,7 @@ const ChannelMessagesScrollView = React.forwardRef(
                 selectMessage={selectMessage}
                 selectUser={selectUser}
                 highlight={item.highlighted}
+                showEmojiPicker={showEmojiPicker}
               />
             );
 
@@ -735,6 +782,7 @@ const Message = ({
   selectMessage,
   selectUser,
   highlight,
+  showEmojiPicker,
 }) => {
   const m = message;
 
@@ -771,7 +819,7 @@ const Message = ({
       unstable_pressDelay={50}
       delayLongPress={180}
       onLongPress={() => {
-        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+        hapticImpactLight();
         selectMessage(m.id);
       }}
       style={({ pressed }) => ({
@@ -907,7 +955,14 @@ const Message = ({
 
               {m.embeds?.length > 0 && <Embeds messageId={m.id} />}
 
-              {m.reactions?.length > 0 && <Reactions messageId={m.id} />}
+              {m.reactions?.length > 0 && (
+                <Reactions
+                  messageId={m.id}
+                  showEmojiPicker={() => {
+                    showEmojiPicker(m.id);
+                  }}
+                />
+              )}
             </>
           )}
         </View>
@@ -916,12 +971,14 @@ const Message = ({
   );
 };
 
-const Reactions = React.memo(({ messageId }) => {
+const Reactions = React.memo(({ messageId, showEmojiPicker }) => {
   const { actions } = useAppScope();
   const items = useMessageReactions(messageId);
 
-  const addReaction = (emoji) =>
-    actions.addMessageReaction(messageId, { emoji });
+  const addReaction = (emoji) => {
+    hapticImpactLight();
+    return actions.addMessageReaction(messageId, { emoji });
+  };
 
   const removeReaction = (emoji) =>
     actions.removeMessageReaction(messageId, { emoji });
@@ -988,6 +1045,30 @@ const Reactions = React.memo(({ messageId }) => {
             </Pressable>
           );
         })}
+
+        <Pressable
+          key="add-reaction"
+          onPress={() => {
+            hapticImpactLight();
+            showEmojiPicker();
+          }}
+          style={{
+            display: "flex",
+            flexDirection: "row",
+            alignItems: "center",
+            height: 29,
+            backgroundColor: theme.colors.backgroundLight,
+            borderRadius: 7,
+            paddingHorizontal: 10,
+            marginTop: 5,
+          }}
+        >
+          <AddEmojiReactionIcon
+            width="20"
+            height="20"
+            style={{ color: theme.colors.textDefault }}
+          />
+        </Pressable>
       </View>
     </View>
   );

@@ -1,5 +1,6 @@
 import React from "react";
 import { useAuth } from "./auth";
+import { useStore as useCacheStore } from "./cache-store";
 import { generateDummyId } from "./utils/misc";
 import { unique } from "./utils/array";
 import { pickKeys, mapValues } from "./utils/object";
@@ -112,6 +113,8 @@ export const Provider = ({ cloudflareAccountHash, children }) => {
     dispatch,
     { addBeforeDispatchListener, addAfterDispatchListener },
   ] = useRootReducer();
+
+  const cacheStore = useCacheStore();
 
   const buildCloudflareImageUrl = React.useCallback(
     (cloudflareId, { size } = {}) => {
@@ -427,6 +430,17 @@ export const Provider = ({ cloudflareAccountHash, children }) => {
       emoji,
       userId: me.id,
     });
+
+    if (cacheStore != null) {
+      cacheStore.readAsync("recent-emoji").then((cachedEmoji) => {
+        cacheStore.write(
+          "recent-emoji",
+          cachedEmoji == null
+            ? [emoji]
+            : [emoji, ...cachedEmoji.filter((e) => e !== emoji)].slice(0, 100)
+        );
+      });
+    }
 
     // TODO: Undo the optimistic update if the request fails
     return authorizedFetch(

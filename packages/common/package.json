@@ -12,7 +12,8 @@
     "./app": "./dist/app.js",
     "./utils": "./dist/utils.js",
     "./react": "./dist/react.js",
-    "./nouns": "./dist/nouns.js"
+    "./nouns": "./dist/nouns.js",
+    "./emoji": "./dist/emoji.js"
   },
   "peerDependencies": {
     "@nouns/assets": "*",

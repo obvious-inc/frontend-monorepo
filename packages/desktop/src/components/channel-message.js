@@ -1170,7 +1170,7 @@ const EmojiPicker = ({ width = "auto", height = "100%", onSelect }) => {
   }, []);
 
   React.useEffect(() => {
-    import("../emojis").then(({ default: emojis }) => {
+    import("@shades/common/emoji").then(({ default: emojis }) => {
       setEmojiData(emojis);
     });
   });
