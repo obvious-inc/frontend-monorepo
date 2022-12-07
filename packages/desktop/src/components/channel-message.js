@@ -8,6 +8,7 @@ import {
   array as arrayUtils,
   object as objectUtils,
   message as messageUtils,
+  emoji as emojiUtils,
 } from "@shades/common/utils";
 import { isNodeEmpty, normalizeNodes, cleanNodes } from "../slate/utils";
 import useHover from "../hooks/hover";
@@ -36,6 +37,7 @@ import ProfilePreview from "./profile-preview";
 const { groupBy } = arrayUtils;
 const { mapValues } = objectUtils;
 const { withoutAttachments } = messageUtils;
+const { search: searchEmoji } = emojiUtils;
 
 const ONE_MINUTE_IN_MILLIS = 1000 * 60;
 
@@ -1004,36 +1006,39 @@ const MessageHeader = ({ compact, message, authorUser, createdAt }) => {
   );
 };
 
+const useEmoji = () => {
+  const [data, setData] = React.useState([]);
+
+  React.useEffect(() => {
+    import("@shades/common/emoji").then(({ default: emoji }) => {
+      setData(emoji.filter((e) => parseFloat(e.unicode_version) < 13));
+    });
+  }, []);
+
+  return data;
+};
+
 // Super hacky and inaccessible
 const EmojiPicker = ({ width = "auto", height = "100%", onSelect }) => {
   const inputRef = React.useRef();
 
-  const [emojiData, setEmojiData] = React.useState([]);
+  const emoji = useEmoji();
 
-  const emojis = React.useMemo(
-    () =>
-      groupBy(
-        (e) => e.category,
-        emojiData.filter((e) => parseFloat(e.unicode_version) < 13)
-      ),
-    [emojiData]
+  const emojiByCategoryEntries = React.useMemo(
+    () => Object.entries(groupBy((e) => e.category, emoji)),
+    [emoji]
   );
 
   const [highlightedEntry, setHighlightedEntry] = React.useState(null);
 
   const [query, setQuery] = React.useState("");
-  const trimmedQuery = query.trim().toLowerCase();
+  const trimmedQuery = React.useDeferredValue(query.trim().toLowerCase());
 
   const filteredEmojisByCategoryEntries = React.useMemo(() => {
-    const match = (e) =>
-      [e.description.toLowerCase(), ...e.aliases, ...e.tags].some((prop) =>
-        prop.includes(trimmedQuery)
-      );
-
-    return Object.entries(mapValues((es) => es.filter(match), emojis)).filter(
-      (entry) => entry[1].length !== 0
-    );
-  }, [emojis, trimmedQuery]);
+    if (trimmedQuery.length === 0) return emojiByCategoryEntries;
+    const emoji = emojiByCategoryEntries.flatMap((entry) => entry[1]);
+    return [[undefined, searchEmoji(emoji, trimmedQuery)]];
+  }, [emojiByCategoryEntries, trimmedQuery]);
 
   const highlightedEmojiItem =
     highlightedEntry == null
@@ -1169,12 +1174,6 @@ const EmojiPicker = ({ width = "auto", height = "100%", onSelect }) => {
     inputRef.current.focus();
   }, []);
 
-  React.useEffect(() => {
-    import("@shades/common/emoji").then(({ default: emojis }) => {
-      setEmojiData(emojis);
-    });
-  });
-
   return (
     <div
       css={css({ display: "flex", flexDirection: "column" })}
@@ -1193,7 +1192,6 @@ const EmojiPicker = ({ width = "auto", height = "100%", onSelect }) => {
             highlightedEmojiItem == null
               ? "Search"
               : highlightedEmojiItem.description ?? "Search"
-            // : `:${highlightedEmojiItem.aliases?.[0]}:` ?? "Search"
           }
         />
       </div>
@@ -1208,25 +1206,28 @@ const EmojiPicker = ({ width = "auto", height = "100%", onSelect }) => {
         })}
       >
         {filteredEmojisByCategoryEntries.map(([category, emojis], ci) => (
-          <div key={category}>
-            <div
-              css={(theme) =>
-                css({
-                  position: "sticky",
-                  top: 0,
-                  zIndex: 1,
-                  background: `linear-gradient(-180deg, ${theme.colors.dialogBackground} 50%, transparent)`,
-                  padding: "0.6rem 0.9rem",
-                  fontSize: "1.2rem",
-                  fontWeight: "500",
-                  color: "rgb(255 255 255 / 40%)",
-                  textTransform: "uppercase",
-                  pointerEvents: "none",
-                })
-              }
-            >
-              {category}
-            </div>
+          <div key={category ?? "no-category"}>
+            {category != null && (
+              <div
+                css={(theme) =>
+                  css({
+                    position: "sticky",
+                    top: 0,
+                    zIndex: 1,
+                    background: `linear-gradient(-180deg, ${theme.colors.dialogBackground} 50%, transparent)`,
+                    padding: "0.6rem 0.9rem",
+                    fontSize: "1.2rem",
+                    fontWeight: "500",
+                    color: "rgb(255 255 255 / 40%)",
+                    textTransform: "uppercase",
+                    pointerEvents: "none",
+                  })
+                }
+              >
+                {category}
+              </div>
+            )}
+
             <div
               css={css({
                 display: "grid",
@@ -1234,6 +1235,7 @@ const EmojiPicker = ({ width = "auto", height = "100%", onSelect }) => {
                 padding: "0 0.5rem",
                 gridTemplateColumns: "repeat(auto-fill, minmax(3.4rem, 1fr))",
               })}
+              style={{ paddingTop: category == null ? "0.8rem" : undefined }}
             >
               {emojis.map(({ emoji }, i) => {
                 const isHighlighted =
