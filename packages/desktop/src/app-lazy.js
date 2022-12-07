@@ -4,7 +4,6 @@ import {
   createClient as createWagmiClient,
   configureChains as configureWagmiChains,
   useEnsAddress,
-  useProvider as useEthersProvider,
 } from "wagmi";
 import { mainnet as mainnetChain } from "wagmi/chains";
 import { infuraProvider } from "wagmi/providers/infura";
@@ -143,9 +142,9 @@ const useSystemNotifications = () => {
 };
 
 const useUserEnsNames = () => {
-  const provider = useEthersProvider();
-  const { actions, addAfterDispatchListener } = useAppScope();
+  const { state, actions, addAfterDispatchListener } = useAppScope();
 
+  const { selectEnsName } = state;
   const { registerEnsNames } = actions;
 
   React.useEffect(() => {
@@ -154,9 +153,15 @@ const useUserEnsNames = () => {
         case "fetch-users-request-successful":
         case "fetch-channel-members-request-successful":
           {
-            const users = action.users ?? action.members;
+            const usersWithUnknownEnsName = (
+              action.users ?? action.members
+            ).filter((u) => selectEnsName(u.walletAddress) === undefined);
 
-            const promiseCreators = partition(20, users).map(
+            if (usersWithUnknownEnsName.length === 0) break;
+
+            // Waterfall in chunks for performance reasons.
+            // TODO switch to ensjs when stable
+            const promiseCreators = partition(20, usersWithUnknownEnsName).map(
               (users) => () =>
                 Promise.all(
                   users.map(({ walletAddress: a }) =>
@@ -167,14 +172,9 @@ const useUserEnsNames = () => {
                 )
             );
 
-            // Waterfall in chunks for performance reasons.
-            // TODO switch to ensjs when stable
             waterfall(promiseCreators).then((chunks) => {
               const ensNamesByAddress = Object.fromEntries(
-                chunks
-                  .flat()
-                  .filter((r) => r.name != null)
-                  .map((r) => [r.address, r.name])
+                chunks.flat().map((r) => [r.address.toLowerCase(), r.name])
               );
               registerEnsNames(ensNamesByAddress);
             });
@@ -187,7 +187,7 @@ const useUserEnsNames = () => {
     return () => {
       removeListener();
     };
-  }, [addAfterDispatchListener, registerEnsNames, provider]);
+  }, [addAfterDispatchListener, registerEnsNames, selectEnsName]);
 };
 
 const App = () => {

@@ -4,6 +4,7 @@ import { indexBy } from "../utils/array";
 import combineReducers from "../utils/combine-reducers";
 import { arrayShallowEquals } from "../utils/reselect";
 import { truncateAddress } from "../utils/ethereum";
+import { selectEnsName } from "./ens";
 
 const entriesById = (state = {}, action) => {
   switch (action.type) {
@@ -98,8 +99,9 @@ export const selectUser = createSelector(
   (state, userId) => state.users.entriesById[userId],
   (state, userId) => {
     const user = state.users.entriesById[userId];
-    if (user == null || user.deleted) return null;
-    return state.ens.namesByAddress[user.walletAddress.toLowerCase()];
+    if (user == null || user.deleted || user.walletAddress == null)
+      return undefined;
+    return selectEnsName(state, user.walletAddress);
   },
   (state) => state.me.user?.id,
   (user, ensName, loggedInUserId) => {

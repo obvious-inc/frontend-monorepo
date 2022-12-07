@@ -8,14 +8,16 @@ export const compose =
 export const waterfall = (promiseCreators) => {
   const responses = [];
   return promiseCreators
-    .reduce((previousPromise, createPromise) => {
-      if (previousPromise == null) return createPromise();
-      return previousPromise
-        .then((res) => {
-          responses.push(res);
-        })
-        .catch()
-        .then(() => createPromise());
-    }, null)
+    .reduce(
+      (previousPromise, createPromise) =>
+        previousPromise.then(() =>
+          createPromise()
+            .then((res) => {
+              responses.push(res);
+            })
+            .catch()
+        ),
+      Promise.resolve()
+    )
     .then(() => responses);
 };

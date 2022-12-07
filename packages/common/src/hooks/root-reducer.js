@@ -118,7 +118,8 @@ const useRootReducer = () => {
     beforeDispatchListenersRef.current.push(fn);
 
     return () => {
-      beforeDispatchListenersRef.current.filter((fn_) => fn_ !== fn);
+      beforeDispatchListenersRef.current =
+        beforeDispatchListenersRef.current.filter((fn_) => fn_ !== fn);
     };
   }, []);
 
@@ -126,7 +127,8 @@ const useRootReducer = () => {
     afterDispatchListenersRef.current.push(fn);
 
     return () => {
-      afterDispatchListenersRef.current.filter((fn_) => fn_ !== fn);
+      afterDispatchListenersRef.current =
+        afterDispatchListenersRef.current.filter((fn_) => fn_ !== fn);
     };
   }, []);
 
