@@ -43,68 +43,76 @@ const ChannelHeader = ({ noSideMenu, children }) => {
     >
       {isMenuTogglingEnabled && (
         <div
-          css={(t) =>
-            css({
-              width: t.mainHeader.height,
-              display: "flex",
-              justifyContent: "center",
-              paddingLeft: isNative && isSideMenuCollapsed ? "7rem" : undefined,
-            })
-          }
+          style={{
+            paddingLeft: isNative && isSideMenuCollapsed ? "7rem" : undefined,
+          }}
         >
-          <button
-            onClick={() => {
-              toggleMenu();
-            }}
+          <div
             css={(t) =>
               css({
-                position: "relative",
-                width: "2.4rem",
-                height: "2.4rem",
+                width: t.mainHeader.height,
                 display: "flex",
-                alignItems: "center",
                 justifyContent: "center",
-                borderRadius: "0.3rem",
-                background: "none",
-                border: 0,
-                cursor: "pointer",
-                color: t.colors.textNormal,
-                ".chevron": { opacity: 0, transition: "0.2s opacity ease-out" },
-                ":hover": {
-                  background: t.colors.backgroundModifierHover,
-                  ".chevron": { opacity: 1 },
-                  ".hamburger": { display: "none" },
-                },
               })
             }
           >
-            <DoubleChevronRightIcon
-              className="chevron"
-              style={{
-                position: "relative",
-                left: "1px",
-                width: "1.6rem",
-                height: "1.6rem",
+            <button
+              onClick={() => {
+                toggleMenu();
               }}
-            />
-            <div
-              style={{
-                position: "absolute",
-                top: 0,
-                left: 0,
-                width: "100%",
-                height: "100%",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-              }}
+              css={(t) =>
+                css({
+                  position: "relative",
+                  width: "2.4rem",
+                  height: "2.4rem",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  borderRadius: "0.3rem",
+                  background: "none",
+                  border: 0,
+                  cursor: "pointer",
+                  color: t.colors.textNormal,
+                  ".chevron": {
+                    opacity: 0,
+                    transition: "0.2s opacity ease-out",
+                  },
+                  ":hover": {
+                    background: t.colors.backgroundModifierHover,
+                    ".chevron": { opacity: 1 },
+                    ".hamburger": { display: "none" },
+                  },
+                })
+              }
             >
-              <HamburgerMenuIcon
-                className="hamburger"
-                style={{ width: "1.6rem", height: "1.6rem" }}
+              <DoubleChevronRightIcon
+                className="chevron"
+                style={{
+                  position: "relative",
+                  left: "1px",
+                  width: "1.6rem",
+                  height: "1.6rem",
+                }}
               />
-            </div>
-          </button>
+              <div
+                style={{
+                  position: "absolute",
+                  top: 0,
+                  left: 0,
+                  width: "100%",
+                  height: "100%",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                }}
+              >
+                <HamburgerMenuIcon
+                  className="hamburger"
+                  style={{ width: "1.6rem", height: "1.6rem" }}
+                />
+              </div>
+            </button>
+          </div>
         </div>
       )}
       {children}
