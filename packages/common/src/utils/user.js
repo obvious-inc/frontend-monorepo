@@ -46,3 +46,17 @@ export const search = (users, rawQuery) => {
 
   return orderedUsers;
 };
+
+export const createDefaultComparator = () =>
+  comparator(
+    "isOwner",
+    (u) => !u.isBlocked,
+    (u) => u.onlineStatus === "online",
+    (u) => u.isStarred ?? false,
+    (u) => {
+      const hasAddressDisplayName =
+        u.displayName?.startsWith("0x") && u.displayName?.includes("...");
+      return !hasAddressDisplayName;
+    },
+    (u) => u.displayName?.toLowerCase()
+  );

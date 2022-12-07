@@ -8,8 +8,11 @@ import Input from "../components/input";
 import { Star as StarIcon } from "../components/icons";
 
 const { useAppScope } = Shades.app;
-const { sort, comparator } = Shades.utils.array;
-const { search: searchUsers } = Shades.utils.user;
+const { sort } = Shades.utils.array;
+const {
+  search: searchUsers,
+  createDefaultComparator: createUserDefaultComparator,
+} = Shades.utils.user;
 
 export const options = {
   title: "Members",
@@ -41,13 +44,14 @@ const MembersScreen = ({ navigation, route }) => {
   const inputRef = React.useRef();
 
   const [pendingInput, setPendingInput] = React.useState("");
+  const deferredPendingInput = React.useDeferredValue(pendingInput);
 
   const me = state.selectMe();
   const members = state.selectChannelMembers(channelId);
   const starredUserIds = state.selectStarredUserIds();
 
   const filteredMembers = React.useMemo(() => {
-    const query = pendingInput.trim();
+    const query = deferredPendingInput.trim();
 
     const unfilteredMembers = members.map((m) => {
       if (m.id === me.id)
@@ -60,23 +64,10 @@ const MembersScreen = ({ navigation, route }) => {
     });
 
     if (query.length <= 1)
-      return sort(
-        comparator(
-          (u) => !u.isBlocked,
-          (u) => u.id !== me.id && u.onlineStatus === "online",
-          (u) => u.isStarred ?? false,
-          (u) => {
-            const hasAddressDisplayName =
-              u.displayName?.startsWith("0x") && u.displayName?.includes("...");
-            return !hasAddressDisplayName;
-          },
-          (u) => u.displayName?.toLowerCase()
-        ),
-        unfilteredMembers
-      );
+      return sort(createUserDefaultComparator(), unfilteredMembers);
 
     return searchUsers(unfilteredMembers, query);
-  }, [pendingInput, members, me, starredUserIds, selectIsUserBlocked]);
+  }, [deferredPendingInput, members, me, starredUserIds, selectIsUserBlocked]);
 
   return (
     <View style={{ flex: 1 }}>

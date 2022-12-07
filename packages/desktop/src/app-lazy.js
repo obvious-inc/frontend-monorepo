@@ -30,7 +30,11 @@ import {
   useAppScope,
   ServerConnectionProvider,
 } from "@shades/common/app";
-import { ethereum as ethereumUtils } from "@shades/common/utils";
+import {
+  ethereum as ethereumUtils,
+  array as arrayUtils,
+  function as functionUtils,
+} from "@shades/common/utils";
 import { useLatestCallback } from "@shades/common/react";
 import { IFrameEthereumProvider } from "@newshades/iframe-provider";
 import { Provider as GlobalMediaQueriesProvider } from "./hooks/global-media-queries";
@@ -51,6 +55,8 @@ import AuthHome from "./components/auth";
 const Channel = React.lazy(() => import("./components/channel"));
 const ChannelBase = React.lazy(() => import("./components/channel-base"));
 
+const { partition } = arrayUtils;
+const { waterfall } = functionUtils;
 const { truncateAddress } = ethereumUtils;
 
 const isNative = window.Native != null;
@@ -146,27 +152,33 @@ const useUserEnsNames = () => {
     const removeListener = addAfterDispatchListener((action) => {
       switch (action.type) {
         case "fetch-users-request-successful":
-          // Waterfall for performance reasons.
-          // TODO switch to ensjs when stable
-          action.users
-            .reduce(
-              (prevPromise, user) =>
-                prevPromise.then((ensNamesByAddress) =>
-                  provider
-                    .lookupAddress(user.walletAddress)
-                    .then((maybeEnsName) => {
-                      if (maybeEnsName == null) return ensNamesByAddress;
-                      return {
-                        ...ensNamesByAddress,
-                        [user.walletAddress.toLowerCase()]: maybeEnsName,
-                      };
-                    })
-                ),
-              Promise.resolve({})
-            )
-            .then((ensNamesByAddress) => {
+        case "fetch-channel-members-request-successful":
+          {
+            const users = action.users ?? action.members;
+
+            const promiseCreators = partition(20, users).map(
+              (users) => () =>
+                Promise.all(
+                  users.map(({ walletAddress: a }) =>
+                    fetch(
+                      `https://api.ensideas.com/ens/resolve/${a.toLowerCase()}`
+                    ).then((r) => r.json())
+                  )
+                )
+            );
+
+            // Waterfall in chunks for performance reasons.
+            // TODO switch to ensjs when stable
+            waterfall(promiseCreators).then((chunks) => {
+              const ensNamesByAddress = Object.fromEntries(
+                chunks
+                  .flat()
+                  .filter((r) => r.name != null)
+                  .map((r) => [r.address, r.name])
+              );
               registerEnsNames(ensNamesByAddress);
             });
+          }
           break;
 
         default: // Ignore

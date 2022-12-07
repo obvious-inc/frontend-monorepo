@@ -7,6 +7,7 @@ import { useAppScope } from "@shades/common/app";
 import {
   array as arrayUtils,
   ethereum as ethereumUtils,
+  user as userUtils,
 } from "@shades/common/utils";
 import Button from "./button";
 import Input from "./input";
@@ -27,7 +28,11 @@ import {
   AtSign as AtSignIcon,
 } from "./icons";
 
-const { sort, comparator } = arrayUtils;
+const { sort } = arrayUtils;
+const {
+  search: searchUsers,
+  createDefaultComparator: createUserDefaultComparator,
+} = userUtils;
 const { truncateAddress } = ethereumUtils;
 
 const ChannelPermissionIcon = ({ channelId, ...props }) => {
@@ -767,51 +772,32 @@ const MembersDirectoryTab = ({ channelId, addMember }) => {
   const inputRef = React.useRef();
 
   const [query, setQuery] = React.useState("");
+  const deferredQuery = React.useDeferredValue(query);
 
   const { state } = useAppScope();
+  const { selectIsUserBlocked } = state;
+  const starredUserIds = state.selectStarredUserIds();
   const members = state.selectChannelMembers(channelId);
+  const me = state.selectMe();
+
+  const unfilteredMembers = React.useMemo(() => {
+    return members.map((m) => {
+      if (m.id === me.id)
+        return { ...m, displayName: `${m.displayName} (you)` };
+
+      if (selectIsUserBlocked(m.id)) return { ...m, isBlocked: true };
+      if (starredUserIds.includes(m.id)) return { ...m, isStarred: true };
+
+      return m;
+    });
+  }, [me, members, selectIsUserBlocked, starredUserIds]);
 
   const filteredMembers = React.useMemo(() => {
-    if (query.trim() === "")
-      return sort(
-        comparator(
-          "isOwner",
-          (u) => u.onlineStatus === "online",
-          (u) => {
-            const n = u.displayName;
-            if (n == null) return false;
-            const isAddress = n.startsWith("0x") && n.includes("...");
-            return isAddress;
-          },
-          (u) => u.displayName?.toLowerCase()
-        ),
-        members
-      );
+    if (deferredQuery.trim().length <= 1)
+      return sort(createUserDefaultComparator(), unfilteredMembers);
 
-    const q = query.trim().toLowerCase();
-    const getSearchTokens = (m) =>
-      [m.displayName, m.ensName, m.walletAddress].filter(Boolean);
-
-    const unorderedFilteredMembers = members.filter((member) =>
-      getSearchTokens(member).some((t) => t.toLowerCase().includes(q))
-    );
-
-    const orderedFilteredMembers = sort((m1, m2) => {
-      const [i1, i2] = [m1, m2].map((m) =>
-        Math.min(
-          ...getSearchTokens(m)
-            .map((t) => t.indexOf(q))
-            .filter((index) => index !== -1)
-        )
-      );
-
-      if (i1 < i2) return -1;
-      if (i1 > i2) return 1;
-      return 0;
-    }, unorderedFilteredMembers);
-
-    return orderedFilteredMembers;
-  }, [members, query]);
+    return searchUsers(unfilteredMembers, deferredQuery);
+  }, [deferredQuery, unfilteredMembers]);
 
   React.useEffect(() => {
     inputRef.current.focus();

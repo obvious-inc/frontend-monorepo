@@ -79,3 +79,10 @@ export const sortBy = (...args) => {
   const list = args.slice(-1)[0];
   return sort(comparator(sortValueExtractors), list);
 };
+
+export const partition = (size, list) => {
+  const resultList = [];
+  for (let i = 0; i < list.length; i += size)
+    resultList.push(list.slice(i, i + size));
+  return resultList;
+};
