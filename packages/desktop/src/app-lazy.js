@@ -100,16 +100,18 @@ const useSystemNotifications = () => {
 
         import("@shades/common/nouns").then((module) => {
           sendNotification({
-            title: `Message from ${message.author.displayName}`,
+            title: `Message from ${
+              message.author?.displayName ?? message.authorUserId
+            }`,
             body: message.stringContent,
             icon:
-              message.author.profilePicture?.small ??
-              module.generatePlaceholderAvatarDataUri(
-                message.author.walletAddress,
-                {
-                  pixelSize: 24,
-                }
-              ),
+              message.author == null
+                ? undefined
+                : message.author.profilePicture?.small ??
+                  module.generatePlaceholderAvatarDataUri(
+                    message.author.walletAddress,
+                    { pixelSize: 24 }
+                  ),
             onClick: ({ close }) => {
               navigate(`/channels/${channel.id}`);
               window.focus();
