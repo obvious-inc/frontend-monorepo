@@ -2,6 +2,7 @@ import React from "react";
 import { css } from "@emotion/react";
 import {
   array as arrayUtils,
+  emoji as emojiUtils,
   ethereum as ethereumUtils,
 } from "@shades/common/utils";
 import { useLatestCallback } from "@shades/common/react";
@@ -109,25 +110,10 @@ const MessageInput = React.forwardRef(
     const filteredEmojiOptions = React.useMemo(() => {
       if (autoCompleteMode !== "emojis") return [];
 
-      const lowerCaseQuery = emojiQuery?.toLowerCase().trim() ?? null;
+      const query = emojiQuery ?? null;
 
-      const unorderedFilteredEmojis = emojis.filter(
-        (e) =>
-          lowerCaseQuery != null &&
-          [e.description.toLowerCase(), ...e.aliases, ...e.tags].some((prop) =>
-            prop.includes(lowerCaseQuery)
-          )
-      );
-
-      const orderedFilteredEmojis = sort((o1, o2) => {
-        const [i1, i2] = [o1, o2].map((o) =>
-          o.aliases[0].indexOf(lowerCaseQuery)
-        );
-
-        if (i1 < i2) return -1;
-        if (i1 > i2) return 1;
-        return 0;
-      }, unorderedFilteredEmojis);
+      const orderedFilteredEmojis =
+        query == null ? emojis : emojiUtils.search(emojis, query);
 
       return orderedFilteredEmojis.slice(0, 10).map((e) => ({
         value: e.emoji,

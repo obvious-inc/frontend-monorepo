@@ -1289,7 +1289,7 @@ const MemberDisplayName = ({ userId, selectUser }) => {
       onPress={() => {
         selectUser(userId);
       }}
-      disabled={user?.deleted}
+      disabled={user?.deleted || selectUser == null}
       style={{
         color: user?.deleted
           ? theme.colors.textDimmed

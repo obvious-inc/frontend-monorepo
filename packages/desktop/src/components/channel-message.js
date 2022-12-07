@@ -1232,12 +1232,8 @@ const EmojiPicker = ({ width = "auto", height = "100%", onSelect }) => {
                 display: "grid",
                 justifyContent: "space-between",
                 padding: "0 0.5rem",
-                // gridAutoFlow: "column",
                 gridTemplateColumns: "repeat(auto-fill, minmax(3.4rem, 1fr))",
               })}
-              // style={{
-              //   gridTemplateColumns: `repeat(${ROW_LENGTH}, max-content)`,
-              // }}
             >
               {emojis.map(({ emoji }, i) => {
                 const isHighlighted =
