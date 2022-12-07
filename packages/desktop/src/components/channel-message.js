@@ -1030,6 +1030,7 @@ const EmojiPicker = ({ width = "auto", height = "100%", onSelect }) => {
   );
 
   const [highlightedEntry, setHighlightedEntry] = React.useState(null);
+  const deferredHighlightedEntry = React.useDeferredValue(highlightedEntry);
 
   const [query, setQuery] = React.useState("");
   const trimmedQuery = React.useDeferredValue(query.trim().toLowerCase());
@@ -1040,12 +1041,15 @@ const EmojiPicker = ({ width = "auto", height = "100%", onSelect }) => {
     return [[undefined, searchEmoji(emoji, trimmedQuery)]];
   }, [emojiByCategoryEntries, trimmedQuery]);
 
-  const highlightedEmojiItem =
-    highlightedEntry == null
-      ? null
-      : filteredEmojisByCategoryEntries[highlightedEntry[0]][1][
-          highlightedEntry[1]
-        ];
+  const highlightedEmojiItem = React.useMemo(
+    () =>
+      deferredHighlightedEntry == null
+        ? null
+        : filteredEmojisByCategoryEntries[deferredHighlightedEntry[0]][1][
+            deferredHighlightedEntry[1]
+          ],
+    [deferredHighlightedEntry, filteredEmojisByCategoryEntries]
+  );
 
   const ROW_LENGTH = 9;
 
