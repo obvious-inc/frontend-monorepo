@@ -4,10 +4,10 @@ const Context = React.createContext(null);
 
 const buildKey = (key) => `ns:${key}`;
 
-export const Provider = ({ storage, asyncStorage, children }) => {
+export const Provider = ({ syncStorage, asyncStorage, children }) => {
   const contextValue = React.useMemo(
-    () => ({ storage, asyncStorage }),
-    [storage, asyncStorage]
+    () => ({ syncStorage, asyncStorage }),
+    [syncStorage, asyncStorage]
   );
   return <Context.Provider value={contextValue}>{children}</Context.Provider>;
 };
@@ -63,7 +63,7 @@ export const useStore = () => {
 };
 
 export const useCachedState = (key, initialState) => {
-  const { syncStorage, asyncStorage } = React.useContext(Context);
+  const { syncStorage, asyncStorage } = React.useContext(Context) ?? {};
   const store = useStore();
 
   const [cachedState, setCachedState] = React.useState(() => {
@@ -71,7 +71,7 @@ export const useCachedState = (key, initialState) => {
 
     const cachedValue = store.read(key);
 
-    if (cachedState == null)
+    if (cachedValue == null)
       return typeof initialState === "function" ? initialState() : initialState;
 
     return cachedValue;

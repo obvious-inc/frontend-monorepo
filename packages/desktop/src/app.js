@@ -4,6 +4,7 @@ import {
   AuthProvider,
   useAppScope,
   AppScopeProvider,
+  CacheStoreProvider,
 } from "@shades/common/app";
 import { array as arrayUtils } from "@shades/common/utils";
 import useWindowFocusOrDocumentVisibleListener from "./hooks/window-focus-or-document-visible-listener";
@@ -83,11 +84,13 @@ export default function Root() {
   return (
     <React.StrictMode>
       <AuthProvider apiOrigin="/api">
-        <AppScopeProvider
-          cloudflareAccountHash={process.env.CLOUDFLARE_ACCT_HASH}
-        >
-          <App />
-        </AppScopeProvider>
+        <CacheStoreProvider syncStorage={localStorage}>
+          <AppScopeProvider
+            cloudflareAccountHash={process.env.CLOUDFLARE_ACCT_HASH}
+          >
+            <App />
+          </AppScopeProvider>
+        </CacheStoreProvider>
       </AuthProvider>
     </React.StrictMode>
   );

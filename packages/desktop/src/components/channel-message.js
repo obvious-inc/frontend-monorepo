@@ -3,10 +3,13 @@ import React from "react";
 import { useNavigate } from "react-router-dom";
 import { FormattedDate, FormattedRelativeTime } from "react-intl";
 import { css, useTheme } from "@emotion/react";
-import { useAppScope, useMessageEmbeds } from "@shades/common/app";
+import {
+  useAppScope,
+  useMessageEmbeds,
+  useCachedState,
+} from "@shades/common/app";
 import {
   array as arrayUtils,
-  object as objectUtils,
   message as messageUtils,
   emoji as emojiUtils,
 } from "@shades/common/utils";
@@ -34,8 +37,7 @@ import {
 } from "./icons";
 import ProfilePreview from "./profile-preview";
 
-const { groupBy } = arrayUtils;
-const { mapValues } = objectUtils;
+const { groupBy, indexBy } = arrayUtils;
 const { withoutAttachments } = messageUtils;
 const { search: searchEmoji } = emojiUtils;
 
@@ -1023,10 +1025,21 @@ const EmojiPicker = ({ width = "auto", height = "100%", onSelect }) => {
   const inputRef = React.useRef();
 
   const emoji = useEmoji();
+  const emojiByEmoji = React.useMemo(
+    () => indexBy((e) => e.emoji, emoji),
+    [emoji]
+  );
+
+  const [recentEmoji] = useCachedState("recent-emoji", []);
 
   const emojiByCategoryEntries = React.useMemo(
     () => Object.entries(groupBy((e) => e.category, emoji)),
     [emoji]
+  );
+
+  const recentEmojiData = React.useMemo(
+    () => recentEmoji?.map((e) => emojiByEmoji[e]).filter(Boolean),
+    [emojiByEmoji, recentEmoji]
   );
 
   const [highlightedEntry, setHighlightedEntry] = React.useState(null);
@@ -1036,10 +1049,17 @@ const EmojiPicker = ({ width = "auto", height = "100%", onSelect }) => {
   const trimmedQuery = React.useDeferredValue(query.trim().toLowerCase());
 
   const filteredEmojisByCategoryEntries = React.useMemo(() => {
-    if (trimmedQuery.length === 0) return emojiByCategoryEntries;
+    if (trimmedQuery.length === 0) {
+      if (recentEmojiData.length === 0) return emojiByCategoryEntries;
+      return [
+        ["Recently used", recentEmojiData.slice(0, 4 * 9)],
+        ...emojiByCategoryEntries,
+      ];
+    }
+
     const emoji = emojiByCategoryEntries.flatMap((entry) => entry[1]);
     return [[undefined, searchEmoji(emoji, trimmedQuery)]];
-  }, [emojiByCategoryEntries, trimmedQuery]);
+  }, [emojiByCategoryEntries, recentEmojiData, trimmedQuery]);
 
   const highlightedEmojiItem = React.useMemo(
     () =>
