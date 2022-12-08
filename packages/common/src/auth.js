@@ -75,14 +75,20 @@ let pendingRefreshAccessTokenPromise;
 
 const useRefreshToken = ({ storage = asyncWebStorage } = {}) => {
   const storageRef = React.useRef(storage);
-  const tokenRef = React.useRef();
 
   React.useEffect(() => {
     storageRef.current = storage;
   });
 
+  const get = React.useCallback(() => {
+    try {
+      return storageRef.current.getItem(REFRESH_TOKEN_CACHE_KEY);
+    } catch (e) {
+      return null;
+    }
+  }, []);
+
   const set = React.useCallback((token) => {
-    tokenRef.current = token;
     try {
       if (token == null) storageRef.current.removeItem(REFRESH_TOKEN_CACHE_KEY);
       else storageRef.current.setItem(REFRESH_TOKEN_CACHE_KEY, token);
@@ -92,7 +98,6 @@ const useRefreshToken = ({ storage = asyncWebStorage } = {}) => {
   }, []);
 
   const clear = React.useCallback(() => {
-    tokenRef.current = null;
     try {
       storageRef.current.removeItem(REFRESH_TOKEN_CACHE_KEY);
     } catch (e) {
@@ -100,13 +105,7 @@ const useRefreshToken = ({ storage = asyncWebStorage } = {}) => {
     }
   }, []);
 
-  React.useEffect(() => {
-    storageRef.current.getItem(REFRESH_TOKEN_CACHE_KEY).then((maybeToken) => {
-      tokenRef.current = maybeToken ?? null;
-    });
-  }, []);
-
-  return [tokenRef, { set, clear }];
+  return [{ get, set, clear }];
 };
 
 const Context = React.createContext({});
@@ -123,8 +122,9 @@ export const Provider = ({
     { set: setAccessToken, clear: clearAccessToken, ref: accessTokenRef },
   ] = useAccessToken({ storage: tokenStorage });
 
-  const [refreshTokenRef, { set: setRefreshToken, clear: clearRefreshToken }] =
-    useRefreshToken({ storage: tokenStorage });
+  const [
+    { get: getRefreshToken, set: setRefreshToken, clear: clearRefreshToken },
+  ] = useRefreshToken({ storage: tokenStorage });
 
   const status =
     accessToken === undefined
@@ -171,7 +171,7 @@ export const Provider = ({
     if (pendingRefreshAccessTokenPromise != null)
       return pendingRefreshAccessTokenPromise;
 
-    const refreshToken = refreshTokenRef.current;
+    const refreshToken = await getRefreshToken();
     if (refreshToken == null) throw new Error("Missing refresh token");
 
     const run = async () => {
@@ -260,9 +260,9 @@ export const Provider = ({
     return response.json();
   });
 
-  const verifyAccessToken = useLatestCallback(() => {
+  const verifyAccessToken = useLatestCallback(async () => {
     const accessToken = accessTokenRef.current;
-    const refreshToken = refreshTokenRef.current;
+    const refreshToken = await getRefreshToken();
 
     try {
       const tokenPayload = atob(refreshToken.split(".")[1]);
@@ -274,7 +274,7 @@ export const Provider = ({
       console.warn(e);
       return null;
     }
-  }, [authorizedFetch, accessTokenRef, refreshTokenRef]);
+  });
 
   const contextValue = React.useMemo(
     () => ({
