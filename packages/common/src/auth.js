@@ -199,10 +199,19 @@ export const Provider = ({
     const promise = run();
 
     pendingRefreshAccessTokenPromise = promise;
-    const accessToken = await promise;
-    pendingRefreshAccessTokenPromise = null;
 
-    return accessToken;
+    try {
+      const accessToken = await promise;
+      pendingRefreshAccessTokenPromise = null;
+      return accessToken;
+    } catch (e) {
+      // Retry after 3 seconds
+      pendingRefreshAccessTokenPromise = new Promise((resolve, reject) => {
+        setTimeout(() => {
+          run().then(resolve, reject);
+        }, 3000);
+      });
+    }
   });
 
   const authorizedFetch = useLatestCallback(async (url, options) => {
