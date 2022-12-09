@@ -48,7 +48,7 @@ import channelTypingStatus, {
   selectChannelTypingMembers,
 } from "../reducers/channel-typing-status";
 import apps, { selectApp } from "../reducers/apps";
-import ens, { selectEnsName } from "../reducers/ens";
+import ens, { selectEnsName, selectEnsAvatar } from "../reducers/ens";
 
 const selectors = {
   selectMe,
@@ -83,6 +83,7 @@ const selectors = {
   selectIsUserStarred,
   selectApp,
   selectEnsName,
+  selectEnsAvatar,
   selectHasFetchedMenuData,
   selectChannelHasOpenReadAccess,
   selectCanAddChannelMember,

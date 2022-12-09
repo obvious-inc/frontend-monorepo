@@ -145,7 +145,7 @@ const useUserEnsNames = () => {
   const { state, actions, addAfterDispatchListener } = useAppScope();
 
   const { selectEnsName } = state;
-  const { registerEnsNames } = actions;
+  const { registerEnsEntries } = actions;
 
   React.useEffect(() => {
     const removeListener = addAfterDispatchListener((action) => {
@@ -153,9 +153,10 @@ const useUserEnsNames = () => {
         case "fetch-users-request-successful":
         case "fetch-channel-members-request-successful":
           {
-            const usersWithUnknownEnsName = (
-              action.users ?? action.members
-            ).filter((u) => selectEnsName(u.walletAddress) === undefined);
+            const users = action.users ?? action.members;
+            const usersWithUnknownEnsName = users.filter(
+              (u) => selectEnsName(u.walletAddress) === undefined
+            );
 
             if (usersWithUnknownEnsName.length === 0) break;
 
@@ -173,10 +174,15 @@ const useUserEnsNames = () => {
             );
 
             waterfall(promiseCreators).then((chunks) => {
-              const ensNamesByAddress = Object.fromEntries(
-                chunks.flat().map((r) => [r.address.toLowerCase(), r.name])
+              const ensEntriesByAddress = Object.fromEntries(
+                chunks
+                  .flat()
+                  .map((r) => [
+                    r.address.toLowerCase(),
+                    { address: r.address, name: r.name, avatar: r.avatar },
+                  ])
               );
-              registerEnsNames(ensNamesByAddress);
+              registerEnsEntries(ensEntriesByAddress);
             });
           }
           break;
@@ -187,7 +193,7 @@ const useUserEnsNames = () => {
     return () => {
       removeListener();
     };
-  }, [addAfterDispatchListener, registerEnsNames, selectEnsName]);
+  }, [addAfterDispatchListener, registerEnsEntries, selectEnsName]);
 };
 
 const App = () => {

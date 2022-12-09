@@ -1,3 +1,4 @@
+import { useAppScope } from "@shades/common/app";
 import { useEnsAvatar } from "wagmi";
 import React from "react";
 import { css } from "@emotion/react";
@@ -38,22 +39,35 @@ const Avatar = React.forwardRef(
     },
     ref
   ) => {
+    const {
+      state: { selectEnsAvatar },
+    } = useAppScope();
+    const cachedEnsAvatarUrl = selectEnsAvatar(walletAddress);
+
+    const { data: fetchedEnsAvatarUrl, isLoading: isLoadingEnsAvatar } =
+      useEnsAvatar({
+        addressOrName: walletAddress,
+        enabled:
+          url == null && cachedEnsAvatarUrl == null && walletAddress != null,
+      });
+
+    const ensAvatarUrl = fetchedEnsAvatarUrl ?? cachedEnsAvatarUrl;
+    const enablePlaceholder = url == null && ensAvatarUrl == null;
+
     const placeholderAvatarUrl = usePlaceholderAvatar(walletAddress, {
-      enabled: url == null,
+      enabled: enablePlaceholder,
       transparent,
     });
 
-    const { data: ensAvatarUrl, isLoading: isLoadingEnsAvatar } = useEnsAvatar({
-      addressOrName: walletAddress,
-      enabled: url == null && walletAddress != null,
-    });
+    const isLoadingPlaceholder =
+      enablePlaceholder && placeholderAvatarUrl == null;
 
     const state =
       url != null
         ? "custom-avatar"
         : signature != null
         ? "signature"
-        : isLoadingEnsAvatar || placeholderAvatarUrl == null
+        : isLoadingEnsAvatar || isLoadingPlaceholder
         ? "blank"
         : ensAvatarUrl != null
         ? "ens-avatar"

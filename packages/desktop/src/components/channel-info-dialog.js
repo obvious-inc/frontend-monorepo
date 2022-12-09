@@ -992,6 +992,8 @@ const MembersDirectoryTab = ({ channelId, addMember }) => {
                       >
                         {member.ensName == null
                           ? truncatedAddress
+                          : member.displayName === truncatedAddress
+                          ? member.ensName
                           : `${member.ensName} (${truncatedAddress})`}
                       </div>
                     )}

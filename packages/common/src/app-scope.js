@@ -912,10 +912,10 @@ export const Provider = ({ cloudflareAccountHash, children }) => {
     )
   );
 
-  const registerEnsNames = useLatestCallback((namesByAddress) => {
+  const registerEnsEntries = useLatestCallback((entriesByAddress) => {
     dispatch({
-      type: "resolve-ens-names:request-successful",
-      namesByAddress,
+      type: "fetch-ens-entries:request-successful",
+      entriesByAddress,
     });
   });
 
@@ -1027,7 +1027,7 @@ export const Provider = ({ cloudflareAccountHash, children }) => {
       registerChannelTypingActivity,
       searchGifs,
       promptDalle,
-      registerEnsNames,
+      registerEnsEntries,
     }),
     [
       logout,
@@ -1083,7 +1083,7 @@ export const Provider = ({ cloudflareAccountHash, children }) => {
       registerChannelTypingActivity,
       searchGifs,
       promptDalle,
-      registerEnsNames,
+      registerEnsEntries,
     ]
   );
 

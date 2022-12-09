@@ -1,9 +1,9 @@
 import combineReducers from "../utils/combine-reducers";
 
-const namesByAddress = (state = {}, action) => {
+const entriesByAddress = (state = {}, action) => {
   switch (action.type) {
-    case "resolve-ens-names:request-successful":
-      return { ...state, ...action.namesByAddress };
+    case "fetch-ens-entries:request-successful":
+      return { ...state, ...action.entriesByAddress };
 
     default:
       return state;
@@ -11,6 +11,9 @@ const namesByAddress = (state = {}, action) => {
 };
 
 export const selectEnsName = (state, walletAddress) =>
-  state.ens.namesByAddress[walletAddress.toLowerCase()];
+  state.ens.entriesByAddress[walletAddress?.toLowerCase()]?.name;
 
-export default combineReducers({ namesByAddress });
+export const selectEnsAvatar = (state, walletAddress) =>
+  state.ens.entriesByAddress[walletAddress?.toLowerCase()]?.avatar;
+
+export default combineReducers({ entriesByAddress });
