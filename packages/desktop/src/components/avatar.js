@@ -62,7 +62,13 @@ const Avatar = React.forwardRef(
     switch (state) {
       case "blank":
         return (
-          <Blank ref={ref} size={size} borderRadius={borderRadius} {...props} />
+          <Blank
+            ref={ref}
+            size={size}
+            background={background}
+            borderRadius={borderRadius}
+            {...props}
+          />
         );
 
       case "signature":
@@ -72,7 +78,7 @@ const Avatar = React.forwardRef(
             css={(theme) =>
               css({
                 borderRadius: borderRadius ?? theme.avatars.borderRadius,
-                background: theme.colors.backgroundModifierHover,
+                background: background ?? theme.colors.backgroundModifierHover,
                 height: size,
                 width: size,
                 display: "flex",
@@ -107,13 +113,12 @@ const Avatar = React.forwardRef(
             css={(theme) =>
               css({
                 borderRadius: borderRadius ?? theme.avatars.borderRadius,
-                background: theme.colors.backgroundModifierHover,
+                background: background ?? theme.colors.backgroundModifierHover,
                 height: size,
                 width: size,
                 objectFit: "cover",
               })
             }
-            style={{ background }}
             {...props}
           />
         );
@@ -124,19 +129,21 @@ const Avatar = React.forwardRef(
   }
 );
 
-const Blank = React.forwardRef(({ size, borderRadius, ...props }, ref) => (
-  <div
-    ref={ref}
-    css={(theme) =>
-      css({
-        borderRadius: borderRadius ?? theme.avatars.borderRadius,
-        background: theme.colors.backgroundModifierHover,
-        height: size,
-        width: size,
-      })
-    }
-    {...props}
-  />
-));
+const Blank = React.forwardRef(
+  ({ size, background, borderRadius, ...props }, ref) => (
+    <div
+      ref={ref}
+      css={(theme) =>
+        css({
+          borderRadius: borderRadius ?? theme.avatars.borderRadius,
+          background: background ?? theme.colors.backgroundModifierHover,
+          height: size,
+          width: size,
+        })
+      }
+      {...props}
+    />
+  )
+);
 
 export default Avatar;

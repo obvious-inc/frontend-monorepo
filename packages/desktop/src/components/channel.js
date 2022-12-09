@@ -1898,6 +1898,7 @@ const OnScreenTrigger = ({ callback }) => {
 };
 
 const MembersDisplayButton = React.forwardRef(({ onClick, members }, ref) => {
+  const theme = useTheme();
   const sortedMembers = React.useMemo(
     () => sort(userUtils.compareByOwnerOnlineStatusAndDisplayName, members),
     [members]
@@ -1936,6 +1937,7 @@ const MembersDisplayButton = React.forwardRef(({ onClick, members }, ref) => {
             <Avatar
               key={user.id}
               transparent
+              background={theme.colors.backgroundTertiary}
               url={user?.profilePicture?.small}
               walletAddress={user?.walletAddress}
               size="2rem"

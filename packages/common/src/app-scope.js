@@ -289,7 +289,7 @@ export const Provider = ({ cloudflareAccountHash, children }) => {
           if (authStatus === "authenticated")
             fetchChannel(channelId).then((c) => {
               const allUserIds = [
-                ...messages.map((m) => m.author),
+                ...messages.filter((m) => m.type === 0).map((m) => m.author),
                 ...messages
                   .flatMap((m) => getMentions(m.blocks))
                   .map((m) => m.ref),
