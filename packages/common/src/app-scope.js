@@ -912,6 +912,13 @@ export const Provider = ({ cloudflareAccountHash, children }) => {
     )
   );
 
+  const promptChatGPT = useLatestCallback((prompt) =>
+    authorizedFetch(
+      `/integrations/chatgpt?message=${encodeURIComponent(prompt)}`,
+      { method: "POST" }
+    )
+  );
+
   const registerEnsEntries = useLatestCallback((entriesByAddress) => {
     dispatch({
       type: "fetch-ens-entries:request-successful",
@@ -1027,6 +1034,7 @@ export const Provider = ({ cloudflareAccountHash, children }) => {
       registerChannelTypingActivity,
       searchGifs,
       promptDalle,
+      promptChatGPT,
       registerEnsEntries,
     }),
     [
@@ -1083,6 +1091,7 @@ export const Provider = ({ cloudflareAccountHash, children }) => {
       registerChannelTypingActivity,
       searchGifs,
       promptDalle,
+      promptChatGPT,
       registerEnsEntries,
     ]
   );

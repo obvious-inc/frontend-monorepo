@@ -96,6 +96,48 @@ const commands = {
       }
     },
   }),
+  "chat-gpt": ({ actions }) => ({
+    arguments: ["prompt"],
+    description: "Have patience, ChatGPT takes its sweet time.",
+    execute: async ({ args, editor, submit }) => {
+      const prompt = args.join(" ");
+      if (!prompt) {
+        throw new Error("Ask ChatGPT anything!");
+      }
+      try {
+        const { message } = await actions.promptChatGPT(prompt);
+
+        submit([
+          {
+            type: "paragraph",
+            children: [
+              {
+                text: `> ${prompt.slice(0, 1).toUpperCase()}${prompt.slice(1)}`,
+              },
+            ],
+          },
+          {
+            type: "paragraph",
+            children: [
+              {
+                text: "ChatGPT: ",
+                bold: true,
+                italic: true,
+              },
+              {
+                text: message,
+                italic: true,
+              },
+            ],
+          },
+        ]);
+
+        editor.clear();
+      } catch (e) {
+        throw new Error("Zzzzzzz... ChatGPT is sleeping, try later!");
+      }
+    },
+  }),
   gif: ({ actions }) => ({
     description: "!vibe",
     arguments: ["search-query"],
