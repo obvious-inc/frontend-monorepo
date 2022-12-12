@@ -1429,26 +1429,26 @@ export const Channel = ({ channelId, compact, noSideMenu }) => {
         throw e;
       });
     }, 0);
-  }, [channelId, fetchChannel]);
+  }, [channelId, fetchChannel, authenticationStatus]);
 
   useFetch(
     () => fetchChannelMembers(channelId),
-    [channelId, fetchChannelMembers]
+    [channelId, fetchChannelMembers, authenticationStatus]
   );
   useFetch(
     () => fetchChannelPublicPermissions(channelId),
-    [channelId, fetchChannelPublicPermissions]
+    [channelId, fetchChannelPublicPermissions, authenticationStatus]
   );
   useFetch(
     authenticationStatus === "not-authenticated"
       ? () => fetchApps(channelId)
       : undefined,
-    [channelId]
+    [channelId, authenticationStatus]
   );
 
   React.useEffect(() => {
     fetchMessages(channelId, { limit: 30 });
-  }, [channelId, fetchMessages]);
+  }, [channelId, fetchMessages, authenticationStatus]);
 
   useInterval(
     () => {
