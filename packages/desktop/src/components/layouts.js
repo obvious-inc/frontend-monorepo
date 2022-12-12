@@ -3,9 +3,20 @@ import React from "react";
 import { NavLink, Outlet, useParams } from "react-router-dom";
 import { css, useTheme } from "@emotion/react";
 import {
-  useAppScope,
+  useActions,
   useAuth,
+  useCachedState,
   useServerConnectionState,
+  useMe,
+  useChannel,
+  useChannelMembers,
+  useChannelName,
+  useMemberChannels,
+  usePublicChannels,
+  useStarredChannels,
+  useChannelHasUnread,
+  useChannelMentionCount,
+  useHasFetchedMenuData,
 } from "@shades/common/app";
 import {
   array as arrayUtils,
@@ -30,28 +41,6 @@ import Spinner from "./spinner";
 const { reverse, sort, comparator } = arrayUtils;
 const { truncateAddress } = ethereumUtils;
 
-const useCachedState = ({ key, initialState }) => {
-  const [state, setState] = React.useState(() => {
-    try {
-      return JSON.parse(window.localStorage.getItem(key)) ?? initialState;
-    } catch (e) {
-      console.warn(e);
-      return [];
-    }
-  });
-
-  React.useEffect(() => {
-    try {
-      window.localStorage.setItem(key, JSON.stringify(state));
-    } catch (e) {
-      // Ignore
-      console.warn(e);
-    }
-  }, [key, state]);
-
-  return [state, setState];
-};
-
 const Layout = () => {
   const params = useParams();
 
@@ -60,25 +49,30 @@ const Layout = () => {
   const { status: authenticationStatus } = useAuth();
   const { accountAddress: walletAccountAddress } = useWallet();
   const { login } = useWalletLogin();
-  const { state, actions } = useAppScope();
+  const actions = useActions();
 
-  const user = state.selectMe();
+  const user = useMe();
 
-  const [collapsedIds, setCollapsedIds] = useCachedState({
-    key: "main-menu:collapsed",
-    initialState: [],
-  });
+  const [collapsedIds, setCollapsedIds] = useCachedState(
+    "main-menu:collapsed",
+    []
+  );
 
   const [isCreateChannelDialogOpen, setCreateChannelDialogOpen] =
     React.useState(false);
 
-  const memberChannels = state.selectMemberChannels();
+  // const memberChannels = state.selectMemberChannels();
+  const memberChannels = useMemberChannels();
 
-  const starredChannels = state.selectStarredChannels();
+  // const starredChannels = state.selectStarredChannels();
+  const starredChannels = useStarredChannels();
 
-  const popularPublicChannels = state
-    .selectPublicChannels()
-    .filter((c) => c.memberUserIds.length >= 3);
+  // const popularPublicChannels = state
+  //   .selectPublicChannels()
+  //   .filter((c) => c.memberUserIds.length >= 3);
+  const popularPublicChannels = usePublicChannels().filter(
+    (c) => c.memberUserIds.length >= 3
+  );
 
   const listedChannels =
     authenticationStatus === "authenticated"
@@ -89,8 +83,9 @@ const Layout = () => {
         ]
       : popularPublicChannels;
 
-  const selectedChannel =
-    params.channelId == null ? null : state.selectChannel(params.channelId);
+  const selectedChannel = useChannel(params.channelId);
+  // const selectedChannel =
+  //   params.channelId == null ? null : state.selectChannel(params.channelId);
 
   const selectedChannelIsListed = listedChannels.some(
     (c) => c.id === params.channelId
@@ -98,6 +93,8 @@ const Layout = () => {
 
   const isLoadingUser =
     authenticationStatus === "authenticated" && user == null;
+
+  const hasFetchedMenuData = useHasFetchedMenuData();
 
   return (
     <SideMenuLayout
@@ -308,7 +305,7 @@ const Layout = () => {
             />
 
             {(authenticationStatus === "not-authenticated" ||
-              state.selectHasFetchedMenuData()) && (
+              hasFetchedMenuData) && (
               <>
                 <div style={{ marginBottom: "1.5rem" }} />
                 {selectedChannel != null && !selectedChannelIsListed && (
@@ -638,14 +635,13 @@ const CollapsableSection = ({
 );
 
 const ChannelItem = ({ id, expandable }) => {
-  const { state } = useAppScope();
   const theme = useTheme();
-  const user = state.selectMe();
-  const name = state.selectChannelName(id);
-  const { kind, image } = state.selectChannel(id);
+  const user = useMe();
+  const name = useChannelName(id);
+  const { kind, image } = useChannel(id);
   const link = `/channels/${id}`;
-  const hasUnread = state.selectChannelHasUnread(id);
-  const notificationCount = state.selectChannelMentionCount(id);
+  const hasUnread = useChannelHasUnread(id);
+  const notificationCount = useChannelMentionCount(id);
 
   const { isFloating: isFloatingMenuEnabled, toggle: toggleMenu } =
     useSideMenu();
@@ -654,7 +650,7 @@ const ChannelItem = ({ id, expandable }) => {
     if (isFloatingMenuEnabled) toggleMenu();
   };
 
-  const memberUsers = state.selectChannelMembers(id);
+  const memberUsers = useChannelMembers(id);
   const memberUsersExcludingMe = memberUsers.filter(
     (u) => user == null || u.id !== user.id
   );

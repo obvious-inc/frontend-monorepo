@@ -1,6 +1,6 @@
 import React from "react";
 import { css } from "@emotion/react";
-import { useAppScope, useAuth } from "@shades/common/app";
+import { useAuth, useChannel, useChannelName } from "@shades/common/app";
 import { permission as permissionUtils } from "@shades/common/utils";
 import Button from "./button";
 
@@ -8,7 +8,6 @@ const { parseScopes } = permissionUtils;
 
 const AuthHome = () => {
   const { authorizedFetch } = useAuth();
-  const { state } = useAppScope();
 
   const params = new URLSearchParams(location.search);
   const clientId = params.get("client_id");
@@ -16,8 +15,8 @@ const AuthHome = () => {
   const scopes = params.get("scope")?.split(" ");
   const redirectURI = params.get("redirect_uri");
 
-  const channel = state.selectChannel(channelId);
-  const channelName = state.selectChannelName(channelId);
+  const channel = useChannel(channelId);
+  const channelName = useChannelName(channelId);
 
   const [clientName, setClientName] = React.useState(null);
   const [scopeContent, setScopeContent] = React.useState(parseScopes(scopes));

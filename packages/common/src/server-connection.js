@@ -1,7 +1,8 @@
 import React from "react";
 import { useAuth } from "./auth";
-import { useAppScope } from "./app-scope";
+import { useServerMessageHandler } from "./store";
 import { useLatestCallback } from "./react";
+import { useMe } from "./hooks/me";
 
 const serverEventMap = {
   MESSAGE_CREATE: "message-created",
@@ -38,10 +39,10 @@ const initPusherConnection = ({ Pusher, key, accessToken, apiOrigin }) => {
 const Context = React.createContext(null);
 
 export const Provider = ({ Pusher, pusherKey, debug = false, children }) => {
-  const { state, dispatchServerEvent } = useAppScope();
+  const handleServerMessage = useServerMessageHandler();
   const { accessToken, apiOrigin } = useAuth();
 
-  const user = state.selectMe();
+  const user = useMe();
 
   const pusherRef = React.useRef();
   const channelRef = React.useRef();
@@ -93,10 +94,7 @@ export const Provider = ({ Pusher, pusherKey, debug = false, children }) => {
   }, [Pusher, apiOrigin, pusherKey, debug, user?.id, accessToken]);
 
   React.useEffect(() => {
-    const removeListener = addListener((...args) => {
-      dispatchServerEvent(...args);
-    });
-
+    const removeListener = addListener(handleServerMessage);
     return () => {
       removeListener();
     };
@@ -118,10 +116,7 @@ export const useServerEventListener = (listener_) => {
   const listener = useLatestCallback(listener_);
 
   React.useEffect(() => {
-    const removeListener = serverConnection.addListener((...args) => {
-      listener(...args);
-    });
-
+    const removeListener = serverConnection.addListener(listener);
     return () => {
       removeListener();
     };

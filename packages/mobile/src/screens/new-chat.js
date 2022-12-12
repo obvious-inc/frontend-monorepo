@@ -14,7 +14,16 @@ import {
   EyeOff as EyeOffIcon,
 } from "../components/icons";
 
-const { useAppScope } = Shades.app;
+const {
+  useSelectors,
+  useActions,
+  useMe,
+  useUsers,
+  useMemberChannels,
+  useStarredUsers,
+  useStarredUserIds,
+  useUserWithWalletAddress,
+} = Shades.app;
 const { useLatestCallback } = Shades.react;
 const { unique } = Shades.utils.array;
 const { truncateAddress } = Shades.utils.ethereum;
@@ -63,12 +72,11 @@ const groupTypeOptions = [
 ];
 
 export const useFilteredUsers = ({ query }) => {
-  const { actions, state } = useAppScope();
-  const { selectUsers, selectUserFromWalletAddress } = state;
+  const actions = useActions();
   const { fetchUsers } = actions;
 
-  const me = state.selectMe();
-  const memberChannels = state.selectMemberChannels();
+  const me = useMe();
+  const memberChannels = useMemberChannels();
   const channelMemberUserIds = React.useMemo(
     () =>
       unique(
@@ -78,8 +86,22 @@ export const useFilteredUsers = ({ query }) => {
       ),
     [memberChannels, me.id]
   );
-  const starredUserIds = state.selectStarredUserIds();
-  const starredUsers = state.selectStarredUsers();
+  const starredUserIds = useStarredUserIds();
+  const starredUsers = useStarredUsers();
+
+  const userIds = React.useMemo(
+    () => unique([...starredUserIds, ...channelMemberUserIds]),
+    [starredUserIds, channelMemberUserIds]
+  );
+  const usersWithoutStarredInfo = useUsers(userIds);
+  const users = React.useMemo(
+    () =>
+      usersWithoutStarredInfo.map((u) => {
+        if (!starredUserIds.includes(u.id)) return u;
+        return { ...u, isStarred: true };
+      }),
+    [usersWithoutStarredInfo, starredUserIds]
+  );
 
   const trimmedQuery = React.useDeferredValue(query.trim());
 
@@ -90,29 +112,23 @@ export const useFilteredUsers = ({ query }) => {
 
   const showEnsLoading = isLoadingEns && !trimmedQuery.startsWith("0x");
 
+  const queryAddress =
+    ensAddress ?? (ethersUtils.isAddress(trimmedQuery) ? trimmedQuery : null);
+
+  const queryAddressUser = useUserWithWalletAddress(queryAddress);
+
   const filteredUsers = React.useMemo(() => {
     if (trimmedQuery.length <= 1) return starredUsers;
 
-    const userIds = unique([...starredUserIds, ...channelMemberUserIds]);
-    const users = selectUsers(userIds).map((u) => {
-      if (!starredUserIds.includes(u.id)) return u;
-      return { ...u, isStarred: true };
-    });
-
     const filteredUsers = searchUsers(users, trimmedQuery);
 
-    const queryAddress =
-      ensAddress ?? (ethersUtils.isAddress(trimmedQuery) ? trimmedQuery : null);
-
     if (queryAddress == null) return filteredUsers;
-
-    const maybeUser = selectUserFromWalletAddress(queryAddress);
 
     return [
       {
         id: queryAddress,
         walletAddress: queryAddress,
-        displayName: maybeUser?.displayName,
+        displayName: queryAddressUser?.displayName,
         ensName: ensAddress == null ? null : trimmedQuery,
       },
       ...filteredUsers.filter(
@@ -120,13 +136,12 @@ export const useFilteredUsers = ({ query }) => {
       ),
     ];
   }, [
+    users,
+    queryAddressUser,
     starredUsers,
-    channelMemberUserIds,
-    starredUserIds,
     trimmedQuery,
     ensAddress,
-    selectUsers,
-    selectUserFromWalletAddress,
+    queryAddress,
   ]);
 
   React.useEffect(() => {
@@ -199,7 +214,7 @@ export const useAsyncDismissKeyboard = () => {
 };
 
 const NewChat = ({ navigation }) => {
-  const { state } = useAppScope();
+  const selectors = useSelectors();
 
   const inputRef = React.useRef();
 
@@ -217,9 +232,9 @@ const NewChat = ({ navigation }) => {
     setPendingSubmit(true);
 
     dismissKeyboard().then(() => {
-      const user = state.selectUserFromWalletAddress(address);
+      const user = selectors.selectUserFromWalletAddress(address);
       const dmChannel =
-        user == null ? null : state.selectDmChannelFromUserId(user.id);
+        user == null ? null : selectors.selectDmChannelFromUserId(user.id);
 
       if (dmChannel != null) {
         navigation.replace("Channel", { channelId: dmChannel.id });

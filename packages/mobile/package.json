@@ -10,6 +10,7 @@
     "web": "expo start --web",
     "eject": "expo eject",
     "format": "prettier . --write",
+    "lint": "eslint . && prettier . --check",
     "eas-build-post-install": "pnpm -F common build"
   },
   "dependencies": {

@@ -25,43 +25,45 @@ const { reverse } = Shades.utils.array;
 const { search: searchChannels } = Shades.utils.channel;
 const { truncateAddress } = Shades.utils.ethereum;
 
-const { useAppScope } = Shades.app;
+const {
+  useMe,
+  useAllChannels,
+  useMemberChannels,
+  useStarredChannels,
+  useChannel,
+  useChannelName,
+  useChannelHasUnread,
+  useChannelMentionCount,
+  useChannelAccessLevel,
+  useChannelMembers,
+} = Shades.app;
 
 const { textDefault, textDimmed } = theme.colors;
 
 export const options = {};
 
 const ChannelList = ({ navigation }) => {
-  const { state } = useAppScope();
-
-  const user = state.selectMe();
+  const user = useMe();
   const truncatedAddress =
     user?.walletAddress == null ? null : truncateAddress(user.walletAddress);
 
   const { data: ensName } = useEnsName({ address: user.walletAddress });
 
-  const memberChannels = state.selectMemberChannels();
-  const starredChannels = state.selectStarredChannels();
-  const allChannels = state.selectAllChannels();
+  const memberChannels = useMemberChannels();
+  const starredChannels = useStarredChannels();
+  const allChannelsWithMembers = useAllChannels({ members: true });
 
   const [searchQuery, setSearchQuery] = React.useState("");
+  const deferredSearchQuery = React.useDeferredValue(
+    searchQuery.trim().toLowerCase()
+  );
 
   const dismissKeyboard = useAsyncDismissKeyboard();
 
   const filteredChannels = React.useMemo(() => {
-    const query = searchQuery.trim().toLowerCase();
-
-    if (query.length <= 1) return [];
-
-    return searchChannels(
-      allChannels.map((c) => ({
-        ...c,
-        name: state.selectChannelName(c.id),
-        members: state.selectChannelMembers(c.id),
-      })),
-      query
-    );
-  }, [allChannels, searchQuery, state]);
+    if (deferredSearchQuery.length <= 1) return [];
+    return searchChannels(allChannelsWithMembers, deferredSearchQuery);
+  }, [allChannelsWithMembers, deferredSearchQuery]);
 
   const [collapsedIds, setCollapsedIds] = React.useState([]);
 
@@ -253,10 +255,9 @@ const ChannelList = ({ navigation }) => {
 };
 
 export const ChannelItem = ({ id, onPress }) => {
-  const { state } = useAppScope();
-  const name = state.selectChannelName(id);
-  const hasUnread = state.selectChannelHasUnread(id);
-  const notificationCount = state.selectChannelMentionCount(id);
+  const name = useChannelName(id);
+  const hasUnread = useChannelHasUnread(id);
+  const notificationCount = useChannelMentionCount(id);
 
   return (
     <ListItem
@@ -410,9 +411,11 @@ export const ChannelPicture = React.memo(
     background = theme.colors.backgroundLighter,
     transparent,
   }) => {
-    const { state } = useAppScope();
-    const channel = state.selectChannel(channelId);
-    const channelName = state.selectChannelName(channelId);
+    const user = useMe();
+    const channel = useChannel(channelId);
+    const channelName = useChannelName(channelId);
+    const memberUsers = useChannelMembers(channelId);
+
     const placeholder = () => (
       <View
         style={{
@@ -449,8 +452,6 @@ export const ChannelPicture = React.memo(
 
     switch (channel.kind) {
       case "dm": {
-        const user = state.selectMe();
-        const memberUsers = state.selectChannelMembers(channelId);
         const memberUsersExcludingMe = memberUsers.filter(
           (u) => user == null || u.id !== user.id
         );
@@ -529,8 +530,7 @@ export const ChannelPicture = React.memo(
 );
 
 export const ChannelPermissionIcon = ({ channelId, ...props }) => {
-  const { state } = useAppScope();
-  const permissionType = state.selectChannelAccessLevel(channelId);
+  const permissionType = useChannelAccessLevel(channelId);
 
   const componentByPermissionType = {
     open: GlobeIcon,

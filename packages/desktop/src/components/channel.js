@@ -5,7 +5,24 @@ import React from "react";
 import { useParams, useSearchParams } from "react-router-dom";
 import { Helmet as ReactHelmet } from "react-helmet";
 import { css, useTheme } from "@emotion/react";
-import { useAuth, useAppScope } from "@shades/common/app";
+import {
+  useAuth,
+  useSelectors,
+  useActions,
+  useBeforeActionListener,
+  useMe,
+  useChannel,
+  useChannelName,
+  useChannelMembers,
+  useChannelAccessLevel,
+  useIsChannelStarred,
+  useChannelHasUnread,
+  useChannelHasOpenReadAccess,
+  useChannelTypingMembers,
+  useChannelMessages,
+  useHasAllChannelMessages,
+  useHasFetchedChannelMessages,
+} from "@shades/common/app";
 import {
   getImageFileDimensions,
   getImageDimensionsFromUrl,
@@ -41,7 +58,6 @@ import {
   StrokedStar as StrokedStarIcon,
   Globe as GlobeIcon,
 } from "./icons";
-import useSideMenu from "../hooks/side-menu";
 import useIsOnScreen from "../hooks/is-on-screen";
 import useScrollListener from "../hooks/scroll-listener";
 import useMutationObserver from "../hooks/mutation-observer";
@@ -76,7 +92,7 @@ const pendingFetchMessagePromisesCache = {};
 // pending at once. Subsequent "equal" request will simply return the initial
 // pending request promise.
 const useMessageFetcher = () => {
-  const { actions } = useAppScope();
+  const actions = useActions();
 
   const fetchMessages = useLatestCallback(
     async (channelId, { limit, beforeMessageId, afterMessageId } = {}) => {
@@ -110,9 +126,8 @@ const useMessageFetcher = () => {
 };
 
 const useMessages = (channelId) => {
-  const { state } = useAppScope();
-  const unsortedMessages = state.selectChannelMessages(channelId);
-  const hasAllMessages = state.selectHasAllMessages(channelId);
+  const unsortedMessages = useChannelMessages(channelId);
+  const hasAllMessages = useHasAllChannelMessages(channelId);
 
   const messages = React.useMemo(
     () =>
@@ -270,12 +285,13 @@ export const ChannelBase = ({
   const { status: authenticationStatus } = useAuth();
   const hasConnectedWallet = walletAccountAddress != null;
 
-  const { actions, state, addBeforeDispatchListener } = useAppScope();
+  const selectors = useSelectors();
+  const actions = useActions();
 
   const { markChannelRead } = actions;
 
-  const user = state.selectMe();
-  const channelName = state.selectChannelName(channel.id);
+  const user = useMe();
+  const channelName = useChannelName(channel.id);
   const isAdmin = user != null && user.id === channel.ownerUserId;
 
   const { inputDeviceCanHover } = useGlobalMediaQueries();
@@ -307,20 +323,11 @@ export const ChannelBase = ({
     }
   );
 
-  React.useEffect(() => {
-    const removeListener = addBeforeDispatchListener((action) => {
-      // Maintain scroll position when new messages arrive
-      if (action.type === "messages-fetched" && action.channelId === channel.id)
-        maintainScrollPositionDuringTheNextDomMutation();
-    });
-    return () => {
-      removeListener();
-    };
-  }, [
-    channel.id,
-    addBeforeDispatchListener,
-    maintainScrollPositionDuringTheNextDomMutation,
-  ]);
+  useBeforeActionListener((action) => {
+    // Maintain scroll position when new messages arrive
+    if (action.type === "messages-fetched" && action.channelId === channel.id)
+      maintainScrollPositionDuringTheNextDomMutation();
+  });
 
   const fetchMessages_ = useMessageFetcher();
   const fetchMessages = useLatestCallback((channelId, query) => {
@@ -341,7 +348,7 @@ export const ChannelBase = ({
 
   const { messages, hasAllMessages } = useMessages(channel.id);
 
-  const getMember = useLatestCallback((id) => state.selectUser(id));
+  const getMember = useLatestCallback((id) => selectors.selectUser(id));
 
   const inputRef = React.useRef();
 
@@ -380,7 +387,7 @@ export const ChannelBase = ({
     fetchMessages(channel.id, { limit: 30 });
   }, [fetchMessages, channel.id, messages.length]);
 
-  const channelHasUnread = state.selectChannelHasUnread(channel.id);
+  const channelHasUnread = useChannelHasUnread(channel.id);
 
   const [pendingMessagesBeforeCount, setPendingMessagesBeforeCount] =
     React.useState(0);
@@ -436,7 +443,7 @@ export const ChannelBase = ({
     [channel.id]
   );
 
-  const hasFetchedChannelMessagesAtLeastOnce = state.selectHasFetchedMessages(
+  const hasFetchedChannelMessagesAtLeastOnce = useHasFetchedChannelMessages(
     channel.id
   );
 
@@ -745,7 +752,7 @@ export const ChannelBase = ({
           replyingToMessage={
             pendingReplyMessageId == null
               ? null
-              : state.selectMessage(pendingReplyMessageId)
+              : selectors.selectMessage(pendingReplyMessageId)
           }
           cancelReply={cancelReply}
           uploadImage={actions.uploadImage}
@@ -1356,10 +1363,9 @@ const Heading = ({ component: Component = "div", children, ...props }) => (
 export const Channel = ({ channelId, compact, noSideMenu }) => {
   const [searchParams] = useSearchParams();
   const { status: authenticationStatus } = useAuth();
-  const { state, actions } = useAppScope();
-  const { isFloating: isSideMenuFloating } = useSideMenu();
+  const actions = useActions();
 
-  const user = state.selectMe();
+  const user = useMe();
 
   const {
     connect: connectWallet,
@@ -1385,8 +1391,6 @@ export const Channel = ({ channelId, compact, noSideMenu }) => {
 
   const isChannelDialogOpen = channelDialogMode != null;
 
-  const isMenuTogglingEnabled = !noSideMenu && isSideMenuFloating;
-
   const {
     fetchChannel,
     fetchChannelMembers,
@@ -1396,11 +1400,11 @@ export const Channel = ({ channelId, compact, noSideMenu }) => {
 
   const fetchMessages = useMessageFetcher(channelId);
 
-  const channel = state.selectChannel(channelId);
-  const channelAccessLevel = state.selectChannelAccessLevel(channelId);
-  const isChannelStarred = state.selectIsChannelStarred(channelId);
+  const channel = useChannel(channelId);
+  const channelAccessLevel = useChannelAccessLevel(channelId);
+  const isChannelStarred = useIsChannelStarred(channelId);
 
-  const members = state.selectChannelMembers(channelId);
+  const members = useChannelMembers(channelId);
   const isFetchingMembers = members.some((m) => m.walletAddress == null);
   const isMember = user != null && members.some((m) => m.id === user.id);
 
@@ -1475,12 +1479,14 @@ export const Channel = ({ channelId, compact, noSideMenu }) => {
   const hasPendingWalletAction =
     isConnectingWallet || loginStatus === "requesting-signature";
 
+  const channelName = useChannelName(channelId);
+  const hasOpenReadAccess = useChannelHasOpenReadAccess(channelId);
+  const typingChannelMembers = useChannelTypingMembers(channelId);
+
   const headerContent = (() => {
     if (channel == null) return null;
 
     const isChannelOwner = user != null && channel.ownerUserId === user?.id;
-    const hasOpenReadAccess = state.selectChannelHasOpenReadAccess(channelId);
-    const channelName = state.selectChannelName(channelId);
 
     const renderRightColumn = () => {
       if (
@@ -1864,8 +1870,6 @@ export const Channel = ({ channelId, compact, noSideMenu }) => {
       </div>
     );
 
-  const typingChannelMembers = state.selectChannelTypingMembers(channelId);
-
   return (
     <ChannelBase
       compact={compact}
@@ -1900,7 +1904,7 @@ const OnScreenTrigger = ({ callback }) => {
 const MembersDisplayButton = React.forwardRef(({ onClick, members }, ref) => {
   const theme = useTheme();
   const sortedMembers = React.useMemo(
-    () => sort(userUtils.compareByOwnerOnlineStatusAndDisplayName, members),
+    () => sort(userUtils.createDefaultComparator(), members),
     [members]
   );
 
@@ -1984,7 +1988,7 @@ const MembersDisplayButton = React.forwardRef(({ onClick, members }, ref) => {
 
 const AddMemberDialog = ({ channelId, dismiss, titleProps }) => {
   const ethersProvider = useEthersProvider();
-  const { actions } = useAppScope();
+  const actions = useActions();
 
   const inputRef = React.useRef();
 
@@ -2119,9 +2123,8 @@ const AddMemberDialog = ({ channelId, dismiss, titleProps }) => {
 };
 
 const MetaTags = ({ channelId }) => {
-  const { state } = useAppScope();
-  const channel = state.selectChannel(channelId);
-  const name = state.selectChannelName(channelId);
+  const channel = useChannel(channelId);
+  const name = useChannelName(channelId);
 
   const [imageDimensions, setImageDimensions] = React.useState(null);
 

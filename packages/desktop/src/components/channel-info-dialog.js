@@ -3,7 +3,18 @@ import { useTab, useTabList, useTabPanel } from "react-aria";
 import { useNavigate } from "react-router-dom";
 import { Item, useTabListState } from "react-stately";
 import { css } from "@emotion/react";
-import { useAppScope } from "@shades/common/app";
+import {
+  useActions,
+  useSelectors,
+  useMe,
+  useChannel,
+  useChannelName,
+  useChannelMembers,
+  useIsChannelStarred,
+  useChannelAccessLevel,
+  useChannelNotificationSetting,
+  useStarredUserIds,
+} from "@shades/common/app";
 import {
   array as arrayUtils,
   ethereum as ethereumUtils,
@@ -36,10 +47,8 @@ const {
 const { truncateAddress } = ethereumUtils;
 
 const ChannelPermissionIcon = ({ channelId, ...props }) => {
-  const { state } = useAppScope();
-
-  const channel = state.selectChannel(channelId);
-  const permissionType = state.selectChannelAccessLevel(channelId);
+  const channel = useChannel(channelId);
+  const permissionType = useChannelAccessLevel(channelId);
 
   const deriveComponent = () => {
     if (channel.kind === "dm") return AtSignIcon;
@@ -155,14 +164,14 @@ const ChannelInfoDialog = ({
   showAddMemberDialog,
 }) => {
   const dismissButtonRef = React.useRef();
-  const { state, actions } = useAppScope();
-  const me = state.selectMe();
-  const channel = state.selectChannel(channelId);
-  const channelName = state.selectChannelName(channelId);
+  const actions = useActions();
+  const me = useMe();
+  const channel = useChannel(channelId);
+  const channelName = useChannelName(channelId);
   const isMember = me != null && channel.memberUserIds.includes(me.id);
-  const isChannelStarred = state.selectIsChannelStarred(channelId);
-  const channelPermissionType = state.selectChannelAccessLevel(channelId);
-  const notificationSetting = state.selectChannelNotificationSetting(channelId);
+  const isChannelStarred = useIsChannelStarred(channelId);
+  const channelPermissionType = useChannelAccessLevel(channelId);
+  const notificationSetting = useChannelNotificationSetting(channelId);
 
   const memberCount = channel.memberUserIds.length;
 
@@ -499,11 +508,11 @@ const ChannelInfoDialog = ({
 };
 const AboutTab = ({ channelId, dismiss }) => {
   const navigate = useNavigate();
-  const { state, actions } = useAppScope();
-  const me = state.selectMe();
-  const channel = state.selectChannel(channelId);
-  const channelName = state.selectChannelName(channelId);
-  const channelPermissionType = state.selectChannelAccessLevel(channelId);
+  const actions = useActions();
+  const me = useMe();
+  const channel = useChannel(channelId);
+  const channelName = useChannelName(channelId);
+  const channelPermissionType = useChannelAccessLevel(channelId);
   const isMember = me != null && channel.memberUserIds.includes(me.id);
   const isOwner = me != null && me.id === channel.ownerUserId;
   const isAdmin = isOwner;
@@ -774,11 +783,11 @@ const MembersDirectoryTab = ({ channelId, addMember }) => {
   const [query, setQuery] = React.useState("");
   const deferredQuery = React.useDeferredValue(query);
 
-  const { state } = useAppScope();
-  const { selectIsUserBlocked } = state;
-  const starredUserIds = state.selectStarredUserIds();
-  const members = state.selectChannelMembers(channelId);
-  const me = state.selectMe();
+  const selectors = useSelectors();
+  const { selectIsUserBlocked } = selectors;
+  const me = useMe();
+  const starredUserIds = useStarredUserIds();
+  const members = useChannelMembers(channelId);
 
   const unfilteredMembers = React.useMemo(() => {
     return members.map((m) => {

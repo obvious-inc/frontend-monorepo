@@ -9,22 +9,31 @@ import { SectionedActionList } from "./account-modal";
 import { ChannelPicture } from "./channel-list";
 import { Globe as GlobeIcon } from "../components/icons";
 
-const { useAppScope } = Shades.app;
+const {
+  useActions,
+  useMe,
+  useChannel,
+  useChannelName,
+  useChannelAccessLevel,
+  useChannelHasOpenReadAccess,
+  useIsChannelStarred,
+  useChannelPermissions,
+} = Shades.app;
 
 export const options = { headerShown: false };
 
 const ChannelDetailsModal = ({ navigation, route }) => {
-  const { state, actions } = useAppScope();
+  const actions = useActions();
   const { channelId } = route.params;
 
-  const me = state.selectMe();
-  const channel = state.selectChannel(channelId);
-  const channelName = state.selectChannelName(channelId);
-  const hasOpenReadAccess = state.selectChannelHasOpenReadAccess(channelId);
-  const channelPermissionType = state.selectChannelAccessLevel(channelId);
-  const canAddMembers = state.selectCanAddChannelMember(channelId);
-  const canManageInfo = state.selectCanManageChannelInfo(channelId);
-  const isStarredChannel = state.selectIsChannelStarred(channelId);
+  const me = useMe();
+  const channel = useChannel(channelId);
+  const channelName = useChannelName(channelId);
+  const hasOpenReadAccess = useChannelHasOpenReadAccess(channelId);
+  const channelPermissionType = useChannelAccessLevel(channelId);
+  const isStarredChannel = useIsChannelStarred(channelId);
+  const { canEditName, canEditDescription, canEditPicture, canAddMembers } =
+    useChannelPermissions(channelId);
   const memberCount = channel?.memberUserIds.length;
 
   const isOwner = me.id === channel?.ownerUserId;
@@ -44,7 +53,7 @@ const ChannelDetailsModal = ({ navigation, route }) => {
         navigation.navigate("Add members", { channelId });
       },
     },
-    canManageInfo && {
+    canEditName && {
       key: "edit-name",
       label: "Edit name",
       onPress: () => {
@@ -66,7 +75,7 @@ const ChannelDetailsModal = ({ navigation, route }) => {
         );
       },
     },
-    canManageInfo && {
+    canEditDescription && {
       key: "edit-description",
       label: "Edit topic",
       onPress: () => {
@@ -89,9 +98,9 @@ const ChannelDetailsModal = ({ navigation, route }) => {
         );
       },
     },
-    canManageInfo && {
-      key: "edit-profile-picture",
-      label: "Edit profile picture",
+    canEditPicture && {
+      key: "edit-picture",
+      label: "Edit picture",
       isLoading: isUpdatingPicture,
       onPress: async () => {
         setUpdatingPicture(true);

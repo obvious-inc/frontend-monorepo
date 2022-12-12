@@ -40,7 +40,13 @@ export const useStore = () => {
 
   const write = (key_, value) => {
     const key = buildKey(key_);
+    if (value == null) return storage.removeItem(key);
     return storage.setItem(key, JSON.stringify(value));
+  };
+
+  const clear = (key_) => {
+    const key = buildKey(key_);
+    return storage.removeItem(key);
   };
 
   const readAsync = (key) => {
@@ -59,7 +65,7 @@ export const useStore = () => {
     });
   };
 
-  return { read, write, readAsync, writeAsync, isAsync };
+  return { read, write, readAsync, writeAsync, clear, isAsync };
 };
 
 export const useCachedState = (key, initialState) => {

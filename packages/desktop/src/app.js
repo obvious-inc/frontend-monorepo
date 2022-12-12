@@ -1,10 +1,11 @@
 import React from "react";
 import {
-  useAuth,
   AuthProvider,
-  useAppScope,
-  AppScopeProvider,
+  AppStoreProvider,
   CacheStoreProvider,
+  useAuth,
+  useActions,
+  useAfterActionListener,
 } from "@shades/common/app";
 import { array as arrayUtils } from "@shades/common/utils";
 import useWindowFocusOrDocumentVisibleListener from "./hooks/window-focus-or-document-visible-listener";
@@ -15,23 +16,18 @@ const { unique } = arrayUtils;
 const LazyApp = React.lazy(() => import("./app-lazy"));
 
 const useIFrameMessenger = () => {
-  const { addAfterDispatchListener } = useAppScope();
-
-  React.useEffect(() => {
-    if (window === window.parent) return;
-
-    const removeListener = addAfterDispatchListener((action) => {
-      window.parent.postMessage({ action }, "*");
-    });
-    return () => {
-      removeListener();
-    };
-  }, [addAfterDispatchListener]);
+  useAfterActionListener(
+    window === window.parent
+      ? null
+      : (action) => {
+          window.parent.postMessage({ action }, "*");
+        }
+  );
 };
 
 const App = () => {
   const { status: authStatus } = useAuth();
-  const { actions } = useAppScope();
+  const actions = useActions();
 
   const {
     fetchClientBootData,
@@ -80,18 +76,26 @@ const App = () => {
   );
 };
 
+let cacheStoreStorage;
+try {
+  // This might throw in contexts where storage access isn’t allowed
+  cacheStoreStorage = window.localStorage;
+} catch (e) {
+  console.warn(e);
+}
+
 export default function Root() {
   return (
     <React.StrictMode>
-      <AuthProvider apiOrigin="/api">
-        <CacheStoreProvider syncStorage={localStorage}>
-          <AppScopeProvider
+      <CacheStoreProvider syncStorage={cacheStoreStorage}>
+        <AuthProvider apiOrigin="/api">
+          <AppStoreProvider
             cloudflareAccountHash={process.env.CLOUDFLARE_ACCT_HASH}
           >
             <App />
-          </AppScopeProvider>
-        </CacheStoreProvider>
-      </AuthProvider>
+          </AppStoreProvider>
+        </AuthProvider>
+      </CacheStoreProvider>
     </React.StrictMode>
   );
 }

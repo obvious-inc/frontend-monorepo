@@ -78,6 +78,7 @@ importers:
       webpack: ^5.74.0
       webpack-cli: ^4.10.0
       webpack-dev-server: ^4.11.1
+      zustand: ^4.1.5
     dependencies:
       '@emotion/react': 11.10.4_react@18.1.0
       '@manypkg/find-root': 1.1.0
@@ -112,6 +113,7 @@ importers:
       slate-history: 0.66.0_slate@0.75.0
       slate-react: 0.75.0_q5rzi7lxng4kpyna4dtdyfrhei
       wagmi: 0.6.8_djy3m2fp6xlalq6qwq5sqrcfgu
+      zustand: 4.1.5_react@18.1.0
     devDependencies:
       '@electron-forge/cli': 6.0.0-beta.68
       '@electron-forge/maker-zip': 6.0.0-beta.68
@@ -5830,7 +5832,7 @@ packages:
       '@tanstack/react-query': 4.13.0
     dependencies:
       '@tanstack/query-persist-client-core': 4.13.0
-      '@tanstack/react-query': 4.13.0_tj3nonr5gneraukzjkxpsiy7yu
+      '@tanstack/react-query': 4.13.0_ef5jwxihqo6n7gxfmzogljlgcm
     transitivePeerDependencies:
       - '@tanstack/query-core'
     dev: false
@@ -6176,11 +6178,11 @@ packages:
       '@walletconnect/ethereum-provider':
         optional: true
     dependencies:
-      '@coinbase/wallet-sdk': 3.5.3_iq6gdjgmptryfixzlwpc2jqgni
+      '@coinbase/wallet-sdk': 3.5.3
       '@walletconnect/ethereum-provider': 1.8.0
       ethers: 5.7.2
       eventemitter3: 4.0.7
-      zustand: 4.1.3_react@18.1.0
+      zustand: 4.1.5_react@18.1.0
     transitivePeerDependencies:
       - immer
       - react
@@ -16396,8 +16398,8 @@ packages:
     resolution: {integrity: sha512-rVksvsnNCdJ/ohGc6xgPwyN8eheCxsiLM8mxuE/t/mOVqJewPuO1miLpTHQiRgTKCLexL4MeAFVagts7HmNZ2Q==}
     engines: {node: '>=10'}
 
-  /zustand/4.1.3_react@18.1.0:
-    resolution: {integrity: sha512-AdFyr6+4sVD6xlyc/ArQaOrleqzxJEBbAXglufZ5lgvisoz8GUN3icOrKOnX1uRSxmpmdVUQPen9hhymWIzhBg==}
+  /zustand/4.1.5_react@18.1.0:
+    resolution: {integrity: sha512-PsdRT8Bvq22Yyh1tvpgdHNE7OAeFKqJXUxtJvj1Ixw2B9O2YZ1M34ImQ+xyZah4wZrR4lENMoDUutKPpyXCQ/Q==}
     engines: {node: '>=12.7.0'}
     peerDependencies:
       immer: '>=9.0'

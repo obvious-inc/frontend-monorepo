@@ -1,5 +1,5 @@
-import { useAppScope } from "@shades/common/app";
-import { useEnsAvatar } from "wagmi";
+import { useEnsAvatar } from "@shades/common/app";
+import { useEnsAvatar as useWagmiEnsAvatar } from "wagmi";
 import React from "react";
 import { css } from "@emotion/react";
 
@@ -39,13 +39,10 @@ const Avatar = React.forwardRef(
     },
     ref
   ) => {
-    const {
-      state: { selectEnsAvatar },
-    } = useAppScope();
-    const cachedEnsAvatarUrl = selectEnsAvatar(walletAddress);
+    const cachedEnsAvatarUrl = useEnsAvatar(walletAddress);
 
     const { data: fetchedEnsAvatarUrl, isLoading: isLoadingEnsAvatar } =
-      useEnsAvatar({
+      useWagmiEnsAvatar({
         addressOrName: walletAddress,
         enabled:
           url == null && cachedEnsAvatarUrl == null && walletAddress != null,

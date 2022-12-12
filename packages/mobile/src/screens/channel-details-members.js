@@ -7,7 +7,8 @@ import { UserListItem } from "./new-chat";
 import Input from "../components/input";
 import { Star as StarIcon } from "../components/icons";
 
-const { useAppScope } = Shades.app;
+const { useMe, useChannelMembers, useStarredUserIds, useBlockedUserIds } =
+  Shades.app;
 const { sort } = Shades.utils.array;
 const {
   search: searchUsers,
@@ -38,17 +39,16 @@ const HeaderLeft = ({ tintColor, canGoBack }) => {
 
 const MembersScreen = ({ navigation, route }) => {
   const { channelId } = route.params;
-  const { state } = useAppScope();
-  const { selectIsUserBlocked } = state;
 
   const inputRef = React.useRef();
 
   const [pendingInput, setPendingInput] = React.useState("");
   const deferredPendingInput = React.useDeferredValue(pendingInput);
 
-  const me = state.selectMe();
-  const members = state.selectChannelMembers(channelId);
-  const starredUserIds = state.selectStarredUserIds();
+  const me = useMe();
+  const members = useChannelMembers(channelId);
+  const starredUserIds = useStarredUserIds();
+  const blockedUserIds = useBlockedUserIds();
 
   const filteredMembers = React.useMemo(() => {
     const query = deferredPendingInput.trim();
@@ -57,7 +57,7 @@ const MembersScreen = ({ navigation, route }) => {
       if (m.id === me.id)
         return { ...m, displayName: `${m.displayName} (you)` };
 
-      if (selectIsUserBlocked(m.id)) return { ...m, isBlocked: true };
+      if (blockedUserIds.includes(m.id)) return { ...m, isBlocked: true };
       if (starredUserIds.includes(m.id)) return { ...m, isStarred: true };
 
       return m;
@@ -67,7 +67,7 @@ const MembersScreen = ({ navigation, route }) => {
       return sort(createUserDefaultComparator(), unfilteredMembers);
 
     return searchUsers(unfilteredMembers, query);
-  }, [deferredPendingInput, members, me, starredUserIds, selectIsUserBlocked]);
+  }, [deferredPendingInput, members, me, starredUserIds, blockedUserIds]);
 
   return (
     <View style={{ flex: 1 }}>

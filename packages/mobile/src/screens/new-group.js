@@ -18,8 +18,8 @@ import Input from "../components/input";
 import { useAsyncDismissKeyboard } from "./new-chat";
 import { HorizontalUserListItem } from "./new-closed-channel";
 
+const { useActions } = Shades.app;
 const { useLatestCallback } = Shades.react;
-const { useAppScope } = Shades.app;
 
 export const options = {
   headerTintColor: theme.colors.textDefault,
@@ -58,7 +58,7 @@ const NewGroup = ({ navigation, route }) => {
 
   const headerHeight = useHeaderHeight();
 
-  const { state, actions } = useAppScope();
+  const actions = useActions();
 
   const [name, setName] = React.useState("");
   const [description, setDescription] = React.useState("");
@@ -140,16 +140,9 @@ const NewGroup = ({ navigation, route }) => {
               }}
               style={{ width: "100%" }}
             >
-              {members.map((address) => {
-                const user = state.selectUserFromWalletAddress(address);
-                return (
-                  <HorizontalUserListItem
-                    key={address}
-                    address={address}
-                    displayName={user?.displayName}
-                  />
-                );
-              })}
+              {members.map((address) => (
+                <HorizontalUserListItem key={address} address={address} />
+              ))}
             </ScrollView>
           </View>
         )}

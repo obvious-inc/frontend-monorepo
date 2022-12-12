@@ -9,7 +9,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import theme from "../theme";
 import { VERSION, CONTACT_EMAIL_ADDRESS } from "../config";
 
-const { useAppScope } = Shades.app;
+const { useActions, useMe } = Shades.app;
 
 export const options = {
   presentation: "modal",
@@ -50,7 +50,7 @@ const Header = () => {
 };
 
 const AccountModal = ({ navigation }) => {
-  const { state, actions } = useAppScope();
+  const actions = useActions();
   const [showDebugInfo, setShowDebugInfo] = React.useState(false);
   const [isUpdateAvailable, setUpdateAvailable] = React.useState(null);
   const [isFetchingUpdate, setFetchingUpdate] = React.useState(false);
@@ -60,7 +60,7 @@ const AccountModal = ({ navigation }) => {
   const [hasPendingDeleteAccountRequest, setPendingDeleteAccountRequest] =
     React.useState(false);
 
-  const me = state.selectMe();
+  const me = useMe();
 
   React.useEffect(() => {
     if (!showDebugInfo) return;

@@ -6,7 +6,8 @@
   "scripts": {
     "start": "rollup -c -w",
     "build": "rollup -c",
-    "format": "prettier . --write"
+    "format": "prettier . --write",
+    "lint": "eslint . && prettier . --check"
   },
   "exports": {
     "./app": "./dist/app.js",

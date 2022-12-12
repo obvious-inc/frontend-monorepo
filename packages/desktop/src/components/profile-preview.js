@@ -1,7 +1,7 @@
 import React from "react";
 import { useEnsName } from "wagmi";
 import { css } from "@emotion/react";
-import { useAppScope } from "@shades/common/app";
+import { useActions, useSelectors, useMe, useUser } from "@shades/common/app";
 import { ethereum as ethereumUtils } from "@shades/common/utils";
 import Button from "./button";
 import Avatar from "./avatar";
@@ -12,9 +12,10 @@ const ProfilePreview = React.forwardRef(({ userId }, ref) => {
   const [textCopied, setTextCopied] = React.useState(false);
   const navigate = useNavigate();
 
-  const { actions, state } = useAppScope();
-  const me = state.selectMe();
-  const user = state.selectUser(userId);
+  const actions = useActions();
+  const selectors = useSelectors();
+  const me = useMe();
+  const user = useUser(userId);
 
   const { data: userEnsName } = useEnsName({
     address: user?.walletAddress,
@@ -27,7 +28,7 @@ const ProfilePreview = React.forwardRef(({ userId }, ref) => {
 
   const sendMessage = () => {
     const redirect = (c) => navigate(`/channels/${c.id}`);
-    const dmChannel = state.selectDmChannelFromUserId(userId);
+    const dmChannel = selectors.selectDmChannelFromUserId(userId);
 
     if (dmChannel != null) {
       redirect(dmChannel);

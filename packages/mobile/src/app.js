@@ -78,11 +78,13 @@ const prefix = Linking.createURL("/");
 
 const {
   AuthProvider,
-  useAuth,
   ServerConnectionProvider,
-  useAppScope,
-  AppScopeProvider,
+  AppStoreProvider,
   CacheStoreProvider,
+  useAuth,
+  useActions,
+  useMe,
+  useTotalMentionCount,
 } = Shades.app;
 const { useLatestCallback } = Shades.react;
 const { unique } = Shades.utils.array;
@@ -127,8 +129,8 @@ const useFetch = (fetcher_, deps = []) => {
 
 const App = () => {
   const { status: authStatus, setAccessToken, setRefreshToken } = useAuth();
-  const { state, actions } = useAppScope();
-  const me = state.selectMe();
+  const actions = useActions();
+  const me = useMe();
 
   const {
     fetchMe,
@@ -179,7 +181,6 @@ const App = () => {
   });
 
   React.useEffect(() => {
-    if (me == null) return;
     if (!Device.isDevice) return;
 
     const registerForPushNotifications = async () => {
@@ -195,16 +196,14 @@ const App = () => {
 
       const { data: token } = await Notifications.getExpoPushTokenAsync();
 
-      if (me.pushTokens?.includes(token)) return;
-
       registerDevicePushToken(token);
     };
 
     registerForPushNotifications();
-  }, [me, registerDevicePushToken]);
+  }, [registerDevicePushToken]);
 
-  const badgeCount =
-    authStatus === "authenticated" ? state.selectTotalMentionCount() : null;
+  const totalMentionCount = useTotalMentionCount();
+  const badgeCount = authStatus === "authenticated" ? totalMentionCount : null;
 
   React.useEffect(() => {
     if (badgeCount == null) return;
@@ -649,7 +648,7 @@ export default () => {
                   apiOrigin={API_ENDPOINT}
                   tokenStorage={AsyncStorage}
                 >
-                  <AppScopeProvider
+                  <AppStoreProvider
                     cloudflareAccountHash={CLOUDFLARE_ACCOUNT_HASH}
                   >
                     <ServerConnectionProvider
@@ -658,7 +657,7 @@ export default () => {
                     >
                       <App />
                     </ServerConnectionProvider>
-                  </AppScopeProvider>
+                  </AppStoreProvider>
                 </AuthProvider>
               </NavigationContainer>
             </WagmiConfig>

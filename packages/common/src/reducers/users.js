@@ -158,6 +158,8 @@ export const selectStarredUsers = createSelector(
 export const selectIsUserStarred = (state, id) =>
   selectUserStarId(state, id) != null;
 
+export const selectBlockedUserIds = (state) => state.users.blockedUserIds;
+
 export const selectUserStarId = (state, userId) =>
   state.users.starsByUserId[userId]?.id;
 

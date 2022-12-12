@@ -4,15 +4,18 @@ import { useNavigate } from "react-router-dom";
 import { FormattedDate, FormattedRelativeTime } from "react-intl";
 import { css, useTheme } from "@emotion/react";
 import {
-  useAppScope,
+  useActions,
+  useSelectors,
   useMessageEmbeds,
   useCachedState,
+  useMe,
 } from "@shades/common/app";
 import {
   array as arrayUtils,
   message as messageUtils,
   emoji as emojiUtils,
 } from "@shades/common/utils";
+import { useLatestCallback } from "@shades/common/react";
 import { isNodeEmpty, normalizeNodes, cleanNodes } from "../slate/utils";
 import useHover from "../hooks/hover";
 import useGlobalMediaQueries from "../hooks/global-media-queries";
@@ -63,7 +66,9 @@ const ChannelMessage = React.memo(function ChannelMessage_({
   const editInputRef = React.useRef();
   const containerRef = React.useRef();
 
-  const { actions, state } = useAppScope();
+  const actions = useActions();
+  const selectors = useSelectors();
+
   const navigate = useNavigate();
 
   const [isHovering, hoverHandlers] = useHover();
@@ -73,7 +78,7 @@ const ChannelMessage = React.memo(function ChannelMessage_({
 
   const theme = useTheme();
 
-  const user = state.selectMe();
+  const user = useMe();
 
   const showAsFocused =
     !isEditing &&
@@ -126,10 +131,11 @@ const ChannelMessage = React.memo(function ChannelMessage_({
     [actions, message.id]
   );
 
-  const sendDirectMessageToAuthor = React.useCallback(() => {
+  const sendDirectMessageToAuthor = useLatestCallback(() => {
     const redirect = (c) => navigate(`/channels/${c.id}`);
 
-    const dmChannel = state.selectDmChannelFromUserId(message.authorUserId);
+    const dmChannel = selectors.selectDmChannelFromUserId(message.authorUserId);
+
     if (dmChannel != null) {
       redirect(dmChannel);
       return;
@@ -138,7 +144,7 @@ const ChannelMessage = React.memo(function ChannelMessage_({
     actions
       .createDmChannel({ memberUserIds: [message.authorUserId] })
       .then(redirect);
-  }, [actions, navigate, state, message.authorUserId]);
+  });
 
   const remove = React.useCallback(
     () => actions.removeMessage(message.id),

@@ -1,9 +1,8 @@
 import React from "react";
-import { useAppScope } from "../app-scope.js";
+import { useMessage } from "./channel.js";
 
 const useMessageEmbeds = (messageId) => {
-  const { state } = useAppScope();
-  const message = state.selectMessage(messageId);
+  const message = useMessage(messageId);
 
   const embeds = React.useMemo(() => {
     if (message?.embeds == null || message.embeds.length === 0) return [];

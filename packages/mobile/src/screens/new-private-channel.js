@@ -14,7 +14,7 @@ import { UserListItem, useFilteredUsers } from "./new-chat";
 import Input from "../components/input";
 import { HorizontalUserListItem } from "./new-closed-channel";
 
-const { useAppScope } = Shades.app;
+const { useMe } = Shades.app;
 const { useLatestCallback } = Shades.react;
 
 export const options = {
@@ -41,11 +41,9 @@ const HeaderRight = ({ button: { label, disabled, onPress } }) => (
 );
 
 const NewPrivate = ({ navigation }) => {
-  const { state } = useAppScope();
-
   const membersScrollViewRef = React.useRef();
 
-  const me = state.selectMe();
+  const me = useMe();
 
   const inputRef = React.useRef();
 
@@ -113,19 +111,15 @@ const NewPrivate = ({ navigation }) => {
             contentContainerStyle={{ paddingBottom: 11, paddingHorizontal: 8 }}
             style={{ width: "100%" }}
           >
-            {members.map((address) => {
-              const user = state.selectUserFromWalletAddress(address);
-              return (
-                <HorizontalUserListItem
-                  key={address}
-                  address={address}
-                  displayName={user?.displayName}
-                  onPress={() => {
-                    removeMember(address);
-                  }}
-                />
-              );
-            })}
+            {members.map((address) => (
+              <HorizontalUserListItem
+                key={address}
+                address={address}
+                onPress={() => {
+                  removeMember(address);
+                }}
+              />
+            ))}
           </ScrollView>
         </View>
       )}

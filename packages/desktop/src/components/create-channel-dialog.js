@@ -2,7 +2,7 @@ import React from "react";
 import { useNavigate } from "react-router-dom";
 import { css } from "@emotion/react";
 import { ethereum as ethereumUtils } from "@shades/common/utils";
-import { useAppScope, useAuth } from "@shades/common/app";
+import { useActions, useAuth } from "@shades/common/app";
 import useWallet from "../hooks/wallet";
 import useWalletLogin from "../hooks/wallet-login";
 import Dialog from "./dialog";
@@ -221,7 +221,7 @@ const CreateChannelDialogContent = ({ titleProps, close, createChannel }) => {
 };
 
 const CreateChannelDialog = ({ isOpen, close, onChannelCreated }) => {
-  const { actions } = useAppScope();
+  const actions = useActions();
   const { status: authenticationStatus } = useAuth();
   const navigate = useNavigate();
   const { accountAddress: walletAccountAddress } = useWallet();

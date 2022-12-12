@@ -48,7 +48,21 @@ import {
 } from "../components/icons";
 
 const { useLatestCallback } = Shades.react;
-const { useAppScope, useMessageEmbeds, useMessageReactions } = Shades.app;
+const {
+  useActions,
+  useSelectors,
+  useMe,
+  useUser,
+  useMessage,
+  useChannel,
+  useChannelMessages,
+  useMessageEmbeds,
+  useMessageReactions,
+  useChannelName,
+  useChannelHasOpenReadAccess,
+  useHasFetchedChannelMessages,
+  useChannelHasUnread,
+} = Shades.app;
 const {
   message: messageUtils,
   url: urlUtils,
@@ -61,8 +75,6 @@ const { textDefault, background } = theme.colors;
 
 const hapticImpactLight = () =>
   Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-const hapticImpactMedium = () =>
-  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
 
 // export const options = {
 //   headerMode: "screen",
@@ -111,11 +123,11 @@ const useFetch = (fetcher_, deps) => {
   });
 };
 
-const useChannelMessages = ({ channelId }) => {
-  const { actions, state } = useAppScope();
+const useSortedChannelMessages = ({ channelId }) => {
+  const actions = useActions();
   const { fetchMessages } = actions;
 
-  const messages = state.selectChannelMessages(channelId);
+  const messages = useChannelMessages(channelId);
 
   useFetch(() => {
     if (channelId == null) return;
@@ -129,12 +141,12 @@ const useChannelMessages = ({ channelId }) => {
   return sortedMessages;
 };
 
-const useChannelName = () => {
+const useChannelNameWithFallback = () => {
   const { params } = useRoute();
-  const { state } = useAppScope();
 
   const { channelId, walletAddress } = params;
 
+  const channelName = useChannelName(channelId);
   const { data: ensName } = useEnsName({
     address: walletAddress,
     enabled: walletAddress != null,
@@ -143,18 +155,17 @@ const useChannelName = () => {
   if (channelId == null)
     return ensName ?? ethereumUtils.truncateAddress(walletAddress);
 
-  return state.selectChannelName(channelId);
+  return channelName;
 };
 
 const HeaderLeft = () => {
   const { params } = useRoute();
   const navigation = useNavigation();
-  const { state } = useAppScope();
 
   const { channelId } = params;
 
-  const channel = state.selectChannel(channelId);
-  const channelName = useChannelName();
+  const channel = useChannel(channelId);
+  const channelName = useChannelNameWithFallback();
   const memberCount = channel?.memberUserIds.length ?? 0;
 
   const windowWidth = Dimensions.get("window").width;
@@ -261,11 +272,8 @@ const HeaderLeft = () => {
 const HeaderRight = () => {
   const { params } = useRoute();
   const navigation = useNavigation();
-  const { state } = useAppScope();
 
-  const hasOpenReadAccess = state.selectChannelHasOpenReadAccess(
-    params.channelId
-  );
+  const hasOpenReadAccess = useChannelHasOpenReadAccess(params.channelId);
 
   return (
     <View>
@@ -307,7 +315,8 @@ const Channel = ({ navigation, route: { params } }) => {
     React.useState(null);
 
   const { channelId, walletAddress: dmUserWalletAddress } = params;
-  const { state, actions } = useAppScope();
+  const selectors = useSelectors();
+  const actions = useActions();
   const {
     fetchChannelMembers,
     fetchChannelPermissions,
@@ -318,14 +327,14 @@ const Channel = ({ navigation, route: { params } }) => {
 
   const modalHapticRef = React.useRef(false);
 
-  const channelName = useChannelName();
+  const channelName = useChannelName(channelId);
 
   const inputRef = React.useRef();
   const scrollViewRef = React.useRef();
 
-  const me = state.selectMe();
-  const channel = state.selectChannel(channelId);
-  const messages = useChannelMessages({ channelId });
+  const me = useMe();
+  const channel = useChannel(channelId);
+  const messages = useSortedChannelMessages({ channelId });
   const headerHeight = useHeaderHeight();
 
   useFetch(() => {
@@ -358,9 +367,9 @@ const Channel = ({ navigation, route: { params } }) => {
     setPendingReactionMessageId(messageId ?? selectedMessageId);
   });
 
-  const channelHasUnread = state.selectChannelHasUnread(channelId);
+  const channelHasUnread = useChannelHasUnread(channelId);
   const hasFetchedChannelMessagesAtLeastOnce =
-    state.selectHasFetchedMessages(channelId);
+    useHasFetchedChannelMessages(channelId);
 
   // Mark channel as read when new messages arrive
   useFocusEffect(() => {
@@ -408,7 +417,7 @@ const Channel = ({ navigation, route: { params } }) => {
     inputRef.current.focus();
   }, [editingMessageId, replyTargetMessageId]);
 
-  const replyTargetMessage = state.selectMessage(replyTargetMessageId);
+  const replyTargetMessage = useMessage(replyTargetMessageId);
 
   const isMember = me != null && channel?.memberUserIds?.includes(me.id);
   const canPost = channelId == null || isMember;
@@ -428,7 +437,6 @@ const Channel = ({ navigation, route: { params } }) => {
             ref={scrollViewRef}
             messages={messages}
             onEndReached={fetchMoreMessages}
-            getMember={state.selectUser}
             onScroll={(e) => {
               const isAtBottom = e.nativeEvent.contentOffset.y === 0;
               didScrollToBottomRef.current = isAtBottom;
@@ -587,7 +595,7 @@ const Channel = ({ navigation, route: { params } }) => {
           startEdit={() => {
             setReplyTargetMessageId(null);
             setEditingMessageId(selectedMessageId);
-            const message = state.selectMessage(selectedMessageId);
+            const message = selectors.selectMessage(selectedMessageId);
             setSelectedMessageId(null);
             setPendingMessage(messageUtils.stringifyBlocks(message.content));
           }}
@@ -685,7 +693,6 @@ const ChannelMessagesScrollView = React.forwardRef(
     {
       messages: messages_,
       onEndReached,
-      getMember,
       onScroll,
       selectMessage,
       selectUser,
@@ -728,7 +735,6 @@ const ChannelMessagesScrollView = React.forwardRef(
               <Message
                 message={item}
                 previousMessage={previousMessage}
-                getMember={getMember}
                 selectMessage={selectMessage}
                 selectUser={selectUser}
                 highlight={item.highlighted}
@@ -778,7 +784,6 @@ const ChannelMessagesScrollView = React.forwardRef(
 const Message = ({
   message,
   previousMessage,
-  getMember,
   selectMessage,
   selectUser,
   highlight,
@@ -837,7 +842,6 @@ const Message = ({
         <RepliedMessage
           key={m.id}
           message={message.repliedMessage}
-          getMember={getMember}
           selectUser={selectUser}
           onPressInteractiveMessageElement={
             handlePressInteractiveMessageElement
@@ -941,7 +945,6 @@ const Message = ({
                 <RichText
                   key={m.id}
                   blocks={m.content}
-                  getMember={getMember}
                   onPressInteractiveElement={
                     handlePressInteractiveMessageElement
                   }
@@ -972,7 +975,7 @@ const Message = ({
 };
 
 const Reactions = React.memo(({ messageId, showEmojiPicker }) => {
-  const { actions } = useAppScope();
+  const actions = useActions();
   const items = useMessageReactions(messageId);
 
   const addReaction = (emoji) => {
@@ -1184,7 +1187,6 @@ const Embed = ({
 const RepliedMessage = ({
   message,
   selectUser,
-  getMember,
   onPressInteractiveMessageElement,
 }) => {
   const authorMember = message?.author;
@@ -1268,7 +1270,6 @@ const RepliedMessage = ({
                 <RichText
                   inline
                   blocks={message?.content ?? []}
-                  getMember={getMember}
                   onPressInteractiveElement={onPressInteractiveMessageElement}
                   textStyle={textStyles}
                 />
@@ -1282,8 +1283,7 @@ const RepliedMessage = ({
 };
 
 const MemberDisplayName = ({ userId, selectUser }) => {
-  const { state } = useAppScope();
-  const user = state.selectUser(userId);
+  const user = useUser(userId);
   return (
     <Text
       onPress={() => {
@@ -1459,7 +1459,7 @@ const ChannelMessageInput = React.forwardRef(
     },
     inputRef
   ) => {
-    const { actions } = useAppScope();
+    const actions = useActions();
     // const containerWidthValue = React.useRef(new Animated.Value(0)).current;
     // const containerWidth = containerWidthValue.interpolate({
     //   inputRange: [0, 1],

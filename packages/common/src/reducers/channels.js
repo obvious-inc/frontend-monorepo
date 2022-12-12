@@ -358,11 +358,22 @@ export const selectChannelName = createSelector(
   { memoizeOptions: { maxSize: 1000, equalityCheck: arrayShallowEquals } }
 );
 
-export const selectChannel = (state, channelId) => {
-  const channel = state.channels.entriesById[channelId];
-  if (channel == null || channel.isDeleted) return null;
-  return channel;
-};
+export const selectChannel = createSelector(
+  (state, channelId, { members = false } = {}) => {
+    if (!members) return null;
+    return selectChannelMembers(state, channelId);
+  },
+  (state, channelId) => {
+    const channel = state.channels.entriesById[channelId];
+    if (channel == null || channel.isDeleted) return null;
+    return channel;
+  },
+  (members, channel) => {
+    if (channel == null) return null;
+    if (members == null) return channel;
+    return { ...channel, members };
+  }
+);
 
 export const selectChannelMentionCount = (state, channelId) => {
   const channelState = state.channels.readStatesById[channelId];
@@ -435,9 +446,9 @@ export const selectDmChannelFromUserIds = (state, userIds) => {
 };
 
 export const selectAllChannels = createSelector(
-  (state) =>
+  (state, { members = false } = {}) =>
     Object.keys(state.channels.entriesById).map((id) =>
-      selectChannel(state, id)
+      selectChannel(state, id, { members })
     ),
   (channels) => channels,
   { memoizeOptions: { equalityCheck: arrayShallowEquals } }
@@ -546,16 +557,21 @@ export const selectChannelHasOpenReadAccess = (state, channelId) => {
   return meta.publicPermissions.includes(Permissions.CHANNEL_READ_MESSAGES);
 };
 
-export const selectCanAddChannelMember = (state, channelId) => {
-  const meta = state.channels.metaById[channelId];
-  if (meta == null || meta.permissions == null) return false;
-  return meta.permissions.includes(Permissions.CHANNEL_ADD_MEMBER);
-};
-
-export const selectCanManageChannelInfo = (state, channelId) => {
+export const selectPermissions = (state, channelId) => {
   const channel = state.channels.entriesById[channelId];
-  if (channel == null || state.me.user == null) return false;
-  return channel.ownerUserId === state.me.user.id;
+  const meta = state.channels.metaById[channelId];
+
+  const isOwner =
+    channel?.ownerUserId != null && channel.ownerUserId === state.me.user?.id;
+
+  const canEditName = isOwner;
+  const canEditDescription = isOwner;
+  const canEditPicture = isOwner;
+
+  const canAddMember =
+    meta?.permissions?.includes(Permissions.CHANNEL_ADD_MEMBER) ?? false;
+
+  return { canEditName, canEditDescription, canEditPicture, canAddMember };
 };
 
 export default combineReducers({

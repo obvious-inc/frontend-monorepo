@@ -1,130 +1,31 @@
 import React from "react";
+import { useStore as useCacheStore, useCachedState } from "./cache-store";
 import useLatestCallback from "./hooks/latest-callback";
 
 const ACCESS_TOKEN_CACHE_KEY = "access-token";
 const REFRESH_TOKEN_CACHE_KEY = "refresh-token";
 
-let defaultStorage;
-try {
-  defaultStorage = window.localStorage;
-} catch (e) {
-  console.warn(e);
-}
-
-const createAsyncWebStorage = (storage = defaultStorage) => ({
-  async getItem(...args) {
-    return storage.getItem(...args);
-  },
-  async setItem(...args) {
-    return storage.setItem(...args);
-  },
-  async removeItem(...args) {
-    return storage.removeItem(...args);
-  },
-});
-
-const asyncWebStorage = createAsyncWebStorage();
-
-const useAccessToken = ({ storage = asyncWebStorage } = {}) => {
-  const storageRef = React.useRef(storage);
-
-  const [token, setToken] = React.useState(undefined);
-  const tokenRef = React.useRef();
-
-  React.useEffect(() => {
-    storageRef.current = storage;
-  });
-
-  const set = React.useCallback((token) => {
-    tokenRef.current = token;
-    setToken(token);
-    try {
-      if (token == null) storageRef.current.removeItem(ACCESS_TOKEN_CACHE_KEY);
-      else storageRef.current.setItem(ACCESS_TOKEN_CACHE_KEY, token);
-    } catch (e) {
-      // Ignore
-    }
-  }, []);
-
-  const clear = React.useCallback(() => {
-    tokenRef.current = null;
-    setToken(null);
-    try {
-      storageRef.current.removeItem(ACCESS_TOKEN_CACHE_KEY);
-    } catch (e) {
-      // Ignore
-    }
-  }, []);
-
-  React.useEffect(() => {
-    storageRef.current.getItem(ACCESS_TOKEN_CACHE_KEY).then(
-      (maybeToken) => {
-        tokenRef.current = maybeToken ?? null;
-        setToken(maybeToken ?? null);
-      },
-      () => {
-        setToken(null);
-      }
-    );
-  }, []);
-
-  return [token, { set, clear, ref: tokenRef }];
-};
-
 let pendingRefreshAccessTokenPromise;
 
-const useRefreshToken = ({ storage = asyncWebStorage } = {}) => {
-  const storageRef = React.useRef(storage);
-
-  React.useEffect(() => {
-    storageRef.current = storage;
-  });
-
-  const get = React.useCallback(() => {
-    try {
-      return storageRef.current.getItem(REFRESH_TOKEN_CACHE_KEY);
-    } catch (e) {
-      return null;
-    }
-  }, []);
-
-  const set = React.useCallback((token) => {
-    try {
-      if (token == null) storageRef.current.removeItem(REFRESH_TOKEN_CACHE_KEY);
-      else storageRef.current.setItem(REFRESH_TOKEN_CACHE_KEY, token);
-    } catch (e) {
-      // Ignore
-    }
-  }, []);
-
-  const clear = React.useCallback(() => {
-    try {
-      storageRef.current.removeItem(REFRESH_TOKEN_CACHE_KEY);
-    } catch (e) {
-      // Ignore
-    }
-  }, []);
-
-  return [{ get, set, clear }];
+const useCachedRefreshToken = () => {
+  const cacheStore = useCacheStore();
+  return {
+    get: () => cacheStore.readAsync(REFRESH_TOKEN_CACHE_KEY),
+    set: (token) => cacheStore.writeAsync(REFRESH_TOKEN_CACHE_KEY, token),
+  };
 };
 
 const Context = React.createContext({});
 
 export const useAuth = () => React.useContext(Context);
 
-export const Provider = ({
-  apiOrigin,
-  tokenStorage = asyncWebStorage,
-  ...props
-}) => {
-  const [
-    accessToken,
-    { set: setAccessToken, clear: clearAccessToken, ref: accessTokenRef },
-  ] = useAccessToken({ storage: tokenStorage });
-
-  const [
-    { get: getRefreshToken, set: setRefreshToken, clear: clearRefreshToken },
-  ] = useRefreshToken({ storage: tokenStorage });
+export const Provider = ({ apiOrigin, ...props }) => {
+  const [accessToken, setAccessToken] = useCachedState(
+    ACCESS_TOKEN_CACHE_KEY,
+    null
+  );
+  const { get: getRefreshToken, set: setRefreshToken } =
+    useCachedRefreshToken();
 
   const status =
     accessToken === undefined
@@ -184,8 +85,9 @@ export const Provider = ({
       }).then((response) => {
         if (response.ok) return response.json();
 
-        clearAccessToken();
-        clearRefreshToken();
+        setAccessToken(null);
+
+        // clearRefreshToken();
 
         return Promise.reject(new Error(response.statusText));
       });
@@ -215,8 +117,6 @@ export const Provider = ({
   });
 
   const authorizedFetch = useLatestCallback(async (url, options) => {
-    const accessToken = accessTokenRef.current;
-
     const requireAccessToken =
       !options?.allowUnauthorized && !options?.unauthorized;
 
@@ -261,7 +161,6 @@ export const Provider = ({
   });
 
   const verifyAccessToken = useLatestCallback(async () => {
-    const accessToken = accessTokenRef.current;
     const refreshToken = await getRefreshToken();
 
     try {

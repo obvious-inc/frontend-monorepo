@@ -1,9 +1,7 @@
-import { utils as ethersUtils } from "ethers";
 import {
   WagmiConfig,
   createClient as createWagmiClient,
   configureChains as configureWagmiChains,
-  useEnsAddress,
 } from "wagmi";
 import { mainnet as mainnetChain } from "wagmi/chains";
 import { infuraProvider } from "wagmi/providers/infura";
@@ -19,22 +17,22 @@ import {
   Route,
   Navigate,
   useNavigate,
-  useParams,
 } from "react-router-dom";
 import { IntlProvider } from "react-intl";
 import { ThemeProvider, Global } from "@emotion/react";
 import Pusher from "pusher-js";
 import {
-  useAuth,
-  useAppScope,
   ServerConnectionProvider,
+  useAuth,
+  useSelectors,
+  useActions,
+  useAfterActionListener,
 } from "@shades/common/app";
 import {
   ethereum as ethereumUtils,
   array as arrayUtils,
   function as functionUtils,
 } from "@shades/common/utils";
-import { useLatestCallback } from "@shades/common/react";
 import { IFrameEthereumProvider } from "@newshades/iframe-provider";
 import { Provider as GlobalMediaQueriesProvider } from "./hooks/global-media-queries";
 import { send as sendNotification } from "./utils/notifications";
@@ -86,124 +84,119 @@ const wagmiClient = createWagmiClient({
 
 const useSystemNotifications = () => {
   const navigate = useNavigate();
-  const { state, addAfterDispatchListener } = useAppScope();
+  const selectors = useSelectors();
 
-  const user = state.selectMe();
+  const hasGrantedPushNotificationPermission =
+    window.Notification?.permission === "granted";
 
-  const afterDispatchHandler = useLatestCallback((action) => {
+  useAfterActionListener(
+    !hasGrantedPushNotificationPermission
+      ? null
+      : (action) => {
+          switch (action.type) {
+            case "server-event:message-created": {
+              const me = selectors.selectMe();
+              const message = selectors.selectMessage(action.data.message.id);
+
+              if (message.authorUserId === me.id) break;
+
+              const hasUnread = selectors.selectChannelHasUnread(
+                message.channelId
+              );
+
+              if (!hasUnread) break;
+
+              const channel = selectors.selectChannel(message.channelId);
+
+              import("@shades/common/nouns").then((module) => {
+                sendNotification({
+                  title: `Message from ${
+                    message.author?.displayName ?? message.authorUserId
+                  }`,
+                  body: message.stringContent,
+                  icon:
+                    message.author == null
+                      ? undefined
+                      : message.author.profilePicture?.small ??
+                        module.generatePlaceholderAvatarDataUri(
+                          message.author.walletAddress,
+                          { pixelSize: 24 }
+                        ),
+                  onClick: ({ close }) => {
+                    navigate(`/channels/${channel.id}`);
+                    window.focus();
+                    close();
+                  },
+                });
+              });
+
+              break;
+            }
+
+            default: // Ignore
+          }
+        }
+  );
+};
+
+const useUserEnsNames = () => {
+  const actions = useActions();
+  const selectors = useSelectors();
+
+  const { registerEnsEntries } = actions;
+  const { selectEnsName } = selectors;
+
+  useAfterActionListener((action) => {
     switch (action.type) {
-      case "server-event:message-created": {
-        const message = state.selectMessage(action.data.message.id);
+      case "fetch-users-request-successful":
+      case "fetch-channel-members-request-successful":
+        {
+          const users = action.users ?? action.members;
+          const usersWithUnknownEnsName = users.filter(
+            (u) => selectEnsName(u.walletAddress) === undefined
+          );
 
-        if (message.authorUserId === user.id) break;
+          if (usersWithUnknownEnsName.length === 0) break;
 
-        const hasUnread = state.selectChannelHasUnread(message.channelId);
+          // Waterfall in chunks for performance reasons.
+          // TODO switch to ensjs when stable
+          const promiseCreators = partition(20, usersWithUnknownEnsName).map(
+            (users) => () =>
+              Promise.all(
+                users.map(({ walletAddress: a }) =>
+                  fetch(
+                    `https://api.ensideas.com/ens/resolve/${a.toLowerCase()}`
+                  ).then((r) => r.json())
+                )
+              )
+          );
 
-        if (!hasUnread) break;
-
-        const channel = state.selectChannel(message.channelId);
-
-        import("@shades/common/nouns").then((module) => {
-          sendNotification({
-            title: `Message from ${
-              message.author?.displayName ?? message.authorUserId
-            }`,
-            body: message.stringContent,
-            icon:
-              message.author == null
-                ? undefined
-                : message.author.profilePicture?.small ??
-                  module.generatePlaceholderAvatarDataUri(
-                    message.author.walletAddress,
-                    { pixelSize: 24 }
-                  ),
-            onClick: ({ close }) => {
-              navigate(`/channels/${channel.id}`);
-              window.focus();
-              close();
-            },
+          waterfall(promiseCreators).then((chunks) => {
+            const ensEntriesByAddress = Object.fromEntries(
+              chunks
+                .flat()
+                .map((r) => [
+                  r.address.toLowerCase(),
+                  { address: r.address, name: r.name, avatar: r.avatar },
+                ])
+            );
+            registerEnsEntries(ensEntriesByAddress);
           });
-        });
-
+        }
         break;
-      }
 
       default: // Ignore
     }
   });
-
-  React.useEffect(() => {
-    if (window.Notification?.permission !== "granted") return;
-    const removeListener = addAfterDispatchListener(afterDispatchHandler);
-    return () => {
-      removeListener();
-    };
-  }, [addAfterDispatchListener, afterDispatchHandler]);
-};
-
-const useUserEnsNames = () => {
-  const { state, actions, addAfterDispatchListener } = useAppScope();
-
-  const { selectEnsName } = state;
-  const { registerEnsEntries } = actions;
-
-  React.useEffect(() => {
-    const removeListener = addAfterDispatchListener((action) => {
-      switch (action.type) {
-        case "fetch-users-request-successful":
-        case "fetch-channel-members-request-successful":
-          {
-            const users = action.users ?? action.members;
-            const usersWithUnknownEnsName = users.filter(
-              (u) => selectEnsName(u.walletAddress) === undefined
-            );
-
-            if (usersWithUnknownEnsName.length === 0) break;
-
-            // Waterfall in chunks for performance reasons.
-            // TODO switch to ensjs when stable
-            const promiseCreators = partition(20, usersWithUnknownEnsName).map(
-              (users) => () =>
-                Promise.all(
-                  users.map(({ walletAddress: a }) =>
-                    fetch(
-                      `https://api.ensideas.com/ens/resolve/${a.toLowerCase()}`
-                    ).then((r) => r.json())
-                  )
-                )
-            );
-
-            waterfall(promiseCreators).then((chunks) => {
-              const ensEntriesByAddress = Object.fromEntries(
-                chunks
-                  .flat()
-                  .map((r) => [
-                    r.address.toLowerCase(),
-                    { address: r.address, name: r.name, avatar: r.avatar },
-                  ])
-              );
-              registerEnsEntries(ensEntriesByAddress);
-            });
-          }
-          break;
-
-        default: // Ignore
-      }
-    });
-    return () => {
-      removeListener();
-    };
-  }, [addAfterDispatchListener, registerEnsEntries, selectEnsName]);
 };
 
 const App = () => {
   const navigate = useNavigate();
 
   const { status: authStatus } = useAuth();
-  const { state, actions } = useAppScope();
+  const selectors = useSelectors();
+  const actions = useActions();
   const { login } = useWalletLogin();
-
-  const user = state.selectMe();
 
   useSystemNotifications();
   useUserEnsNames();
@@ -216,10 +209,11 @@ const App = () => {
   });
 
   useWalletEvent("account-change", (newAddress) => {
+    const me = selectors.selectMe();
     if (
       // We only care about logged in users
       authStatus === "not-authenticated" ||
-      user?.walletAddress.toLowerCase() === newAddress.toLowerCase()
+      me?.walletAddress.toLowerCase() === newAddress.toLowerCase()
     )
       return;
 
@@ -275,7 +269,6 @@ const App = () => {
         <Route path="/" element={<Layout />}>
           <Route index element={<EmptyHome />} />
           <Route path="/channels/:channelId" element={<Channel />} />
-          <Route path="/dm/:addressOrEnsName" element={<DmChannel />} />
         </Route>
         <Route path="c/:channelId" element={<Channel noSideMenu />} />
         <Route
@@ -296,33 +289,6 @@ const App = () => {
       </Routes>
     </>
   );
-};
-
-const DmChannel = () => {
-  const params = useParams();
-  const isAddress = ethersUtils.isAddress(params.addressOrEnsName);
-  const { data: ensAddress, error } = useEnsAddress({
-    name: params.addressOrEnsName,
-    enabled: !isAddress,
-  });
-
-  const address = isAddress ? params.addressOrEnsName : ensAddress;
-
-  const { state } = useAppScope();
-
-  if (address == null) return null;
-
-  const user = state.selectUserFromWalletAddress(address);
-
-  if (user == null) return;
-
-  const dmChannel = state.selectDmChannelFromUserId(user.id);
-
-  if (dmChannel != null) return <Channel channelId={dmChannel.id} />;
-
-  if (error != null) return <div>{error}</div>;
-
-  return null;
 };
 
 const RequireAuth = ({ children }) => {

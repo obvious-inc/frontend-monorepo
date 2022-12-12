@@ -1,5 +1,5 @@
 import * as Clipboard from "expo-clipboard";
-import * as Linking from "expo-linking";
+// import * as Linking from "expo-linking";
 import React from "react";
 import { View, Text, Dimensions, ScrollView, Alert } from "react-native";
 import { useNavigation } from "@react-navigation/native";
@@ -9,7 +9,14 @@ import theme from "../theme";
 import UserProfilePicture from "../components/user-profile-picture";
 import { SectionedActionList } from "./account-modal";
 
-const { useAppScope } = Shades.app;
+const {
+  useSelectors,
+  useActions,
+  useMe,
+  useUser,
+  useIsUserStarred,
+  useIsUserBlocked,
+} = Shades.app;
 const { truncateAddress } = Shades.utils.ethereum;
 
 const screen = Dimensions.get("screen");
@@ -19,16 +26,17 @@ export const options = { presentation: "modal" };
 const UserModal = ({ route }) => {
   const navigation = useNavigation();
   const { userId } = route.params;
-  const { state, actions } = useAppScope();
-  const me = state.selectMe();
+  const selectors = useSelectors();
+  const actions = useActions();
+  const me = useMe();
   const isMe = me.id === userId;
-  const user = state.selectUser(userId);
+  const user = useUser(userId);
   const { data: ensName } = useEnsName({ address: user.walletAddress });
   const [didRecentlyCopyAddress, setDidRecentlyCopyAddress] =
     React.useState(false);
   const [hasPendingStarRequest, setPendingStarRequest] = React.useState(false);
-  const isStarred = state.selectIsUserStarred(userId);
-  const isBlocked = state.selectIsUserBlocked(userId);
+  const isStarred = useIsUserStarred(userId);
+  const isBlocked = useIsUserBlocked(userId);
 
   const actionSections = [
     {
@@ -37,7 +45,7 @@ const UserModal = ({ route }) => {
           key: "send-message",
           label: "Send message",
           onPress: () => {
-            const dmChannel = state.selectDmChannelFromUserId(userId);
+            const dmChannel = selectors.selectDmChannelFromUserId(userId);
 
             if (dmChannel != null) {
               navigation.navigate("Channel", { channelId: dmChannel.id });

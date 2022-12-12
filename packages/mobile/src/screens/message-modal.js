@@ -6,7 +6,7 @@ import { SectionedActionList } from "./account-modal";
 import { AddEmojiReaction as AddEmojiReactionIcon } from "../components/icons";
 import theme from "../theme";
 
-const { useAppScope, useCachedState } = Shades.app;
+const { useActions, useMe, useMessage, useCachedState } = Shades.app;
 const { message: messageUtils } = Shades.utils;
 const { unique } = Shades.utils.array;
 
@@ -29,9 +29,9 @@ const MessageModal = ({
   showEmojiPicker,
   deleteMessage,
 }) => {
-  const { state, actions } = useAppScope();
-  const me = state.selectMe();
-  const message = state.selectMessage(messageId);
+  const actions = useActions();
+  const me = useMe();
+  const message = useMessage(messageId);
 
   const [mostRecentEmoji_] = useCachedState("recent-emoji", []);
 

@@ -15,7 +15,7 @@ import UserProfilePicture from "../components/user-profile-picture";
 import Input from "../components/input";
 import { UserListItem, useFilteredUsers } from "./new-chat";
 
-const { useAppScope } = Shades.app;
+const { useMe, useUserWithWalletAddress } = Shades.app;
 const { useLatestCallback } = Shades.react;
 
 export const options = {
@@ -42,9 +42,7 @@ const HeaderRight = ({ button: { label, disabled, onPress } }) => (
 );
 
 const NewClosed = ({ navigation }) => {
-  const { state } = useAppScope();
-
-  const me = state.selectMe();
+  const me = useMe();
 
   const membersScrollViewRef = React.useRef();
   const inputRef = React.useRef();
@@ -113,19 +111,15 @@ const NewClosed = ({ navigation }) => {
             contentContainerStyle={{ paddingBottom: 11, paddingHorizontal: 8 }}
             style={{ width: "100%" }}
           >
-            {members.map((address) => {
-              const user = state.selectUserFromWalletAddress(address);
-              return (
-                <HorizontalUserListItem
-                  key={address}
-                  address={address}
-                  displayName={user?.displayName}
-                  onPress={() => {
-                    removeMember(address);
-                  }}
-                />
-              );
-            })}
+            {members.map((address) => (
+              <HorizontalUserListItem
+                key={address}
+                address={address}
+                onPress={() => {
+                  removeMember(address);
+                }}
+              />
+            ))}
           </ScrollView>
         </View>
       )}
@@ -221,7 +215,9 @@ const NewClosed = ({ navigation }) => {
   );
 };
 
-export const HorizontalUserListItem = ({ address, displayName, onPress }) => {
+export const HorizontalUserListItem = ({ address, onPress }) => {
+  const user = useUserWithWalletAddress(address);
+  const displayName = user?.displayName;
   const { data: ensName } = useEnsName({ address });
   const isPressable = typeof onPress === "function";
   return (

@@ -262,6 +262,11 @@ const deriveMessageType = (message) => {
   }
 };
 
+export const isSystemMessage = (message) => {
+  const messageType = deriveMessageType(message);
+  return systemMessageTypes.includes(messageType);
+};
+
 export const selectMessage = createSelector(
   (state, messageId) => state.messages.entriesById[messageId],
   (state, messageId) => {

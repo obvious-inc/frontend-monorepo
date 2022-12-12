@@ -7,7 +7,7 @@ import theme from "../theme";
 import { useFilteredUsers, UserListItem } from "./new-chat";
 import Input from "../components/input";
 
-const { useAppScope } = Shades.app;
+const { useActions, useChannelMembers } = Shades.app;
 const { useLatestCallback } = Shades.react;
 
 export const options = {
@@ -52,14 +52,14 @@ const HeaderRight = ({ button: { label, disabled, onPress } }) => (
 
 const AddMembersScreen = ({ navigation, route }) => {
   const { channelId } = route.params;
-  const { state, actions } = useAppScope();
+  const actions = useActions();
   const { addChannelMember } = actions;
 
   const inputRef = React.useRef();
 
   const [pendingInput, setPendingInput] = React.useState("");
 
-  const members = state.selectChannelMembers(channelId);
+  const members = useChannelMembers(channelId);
 
   const { users: filteredUsers, isLoading: isLoadingUsers } = useFilteredUsers({
     query: pendingInput,
