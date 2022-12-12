@@ -58,7 +58,7 @@ export const useStore = () => {
     if (isAsync) return write(key, value);
     return new Promise((resolve, reject) => {
       try {
-        resolve(read(key));
+        resolve(write(key, value));
       } catch (e) {
         reject(e);
       }
