@@ -1,6 +1,6 @@
 import { createSelector } from "reselect";
 import combineReducers from "../utils/combine-reducers";
-import { indexBy, groupBy, unique } from "../utils/array";
+import { indexBy, groupBy, unique, sort } from "../utils/array";
 import { omitKey, mapValues } from "../utils/object";
 import { arrayShallowEquals } from "../utils/reselect";
 import { selectUser } from "./users";
@@ -367,6 +367,39 @@ export const selectMessage = createSelector(
     };
   },
   { memoizeOptions: { maxSize: 1000 } }
+);
+
+export const selectHasReacted = (state, messageId, emoji) => {
+  const meId = state.me.user?.id;
+  const message = state.messages.entriesById[messageId];
+
+  if (meId == null || message == null || message.reactions == null)
+    return false;
+
+  const reaction = message.reactions.find((r) => r.emoji === emoji);
+
+  return reaction != null && reaction.users.some((userId) => userId === meId);
+};
+
+export const selectSortedChannelMessageIds = createSelector(
+  (state, channelId) => {
+    const messageIds = state.messages.entryIdsByChannelId[channelId];
+
+    if (messageIds == null) return [];
+
+    const messages = messageIds
+      .map((messageId) => selectMessage(state, messageId))
+      .filter((m) => m != null && !m.deleted);
+
+    const sortedMessages = sort(
+      (m1, m2) => new Date(m1.createdAt) - new Date(m2.createdAt),
+      messages
+    );
+
+    return sortedMessages.map((m) => m.id);
+  },
+  (messages) => messages,
+  { memoizeOptions: { maxSize: 100, equalityCheck: arrayShallowEquals } }
 );
 
 export const selectChannelMessages = createSelector(

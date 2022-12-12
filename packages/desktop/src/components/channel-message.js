@@ -9,6 +9,11 @@ import {
   useMessageEmbeds,
   useCachedState,
   useMe,
+  useUsers,
+  useMessage,
+  useChannel,
+  useChannelMembers,
+  useHasReactedWithEmoji,
 } from "@shades/common/app";
 import {
   array as arrayUtils,
@@ -51,12 +56,11 @@ const GUTTER_SIZE = "1.2rem";
 const COMPACT_GUTTER_SIZE = "1rem";
 
 const ChannelMessage = React.memo(function ChannelMessage_({
-  message,
-  channel,
-  previousMessage,
+  messageId,
+  channelId,
+  previousMessageId,
   hasPendingReply,
   initReply: initReply_,
-  members,
   getMember,
   isAdmin,
   hasTouchFocus,
@@ -69,7 +73,14 @@ const ChannelMessage = React.memo(function ChannelMessage_({
   const actions = useActions();
   const selectors = useSelectors();
 
+  const { addMessageReaction } = actions;
+
   const navigate = useNavigate();
+
+  const channel = useChannel(channelId);
+  const message = useMessage(messageId);
+  const previousMessage = useMessage(previousMessageId);
+  const members = useChannelMembers(channelId);
 
   const [isHovering, hoverHandlers] = useHover();
   const [isDropdownOpen, setDropdownOpen] = React.useState(false);
@@ -95,13 +106,13 @@ const ChannelMessage = React.memo(function ChannelMessage_({
   const allowDirectMessages = user != null;
 
   const createdAtDate = React.useMemo(
-    () => new Date(message.created_at),
-    [message.created_at]
+    () => new Date(message.createdAt),
+    [message.createdAt]
   );
 
   const initReply = React.useCallback(
-    () => initReply_(message.id),
-    [message.id, initReply_]
+    () => initReply_(messageId),
+    [messageId, initReply_]
   );
 
   const initEdit = React.useCallback(() => {
@@ -115,20 +126,11 @@ const ChannelMessage = React.memo(function ChannelMessage_({
     createdAtDate - new Date(previousMessage.created_at) <
       5 * ONE_MINUTE_IN_MILLIS;
 
-  const reactions = React.useMemo(
-    () =>
-      message.reactions.map((r) => ({
-        ...r,
-        authorMembers: r.users
-          .map((userId) => members.find((m) => m.id === userId))
-          .filter(Boolean),
-      })),
-    [message.reactions, members]
-  );
+  const reactions = message.reactions;
 
   const save = React.useCallback(
-    (blocks) => actions.updateMessage(message.id, { blocks }),
-    [actions, message.id]
+    (blocks) => actions.updateMessage(messageId, { blocks }),
+    [actions, messageId]
   );
 
   const sendDirectMessageToAuthor = useLatestCallback(() => {
@@ -147,24 +149,20 @@ const ChannelMessage = React.memo(function ChannelMessage_({
   });
 
   const remove = React.useCallback(
-    () => actions.removeMessage(message.id),
-    [actions, message.id]
+    () => actions.removeMessage(messageId),
+    [actions, messageId]
   );
 
   const addReaction = React.useCallback(
     (emoji) => {
-      const existingReaction = message.reactions.find((r) => r.emoji === emoji);
+      const existingReaction = reactions.find((r) => r.emoji === emoji);
 
-      if (existingReaction?.users.includes(user?.id)) return;
+      if (!existingReaction?.users.includes(user?.id))
+        addMessageReaction(messageId, { emoji });
 
-      actions.addMessageReaction(message.id, { emoji });
       setEmojiPickerOpen(false);
     },
-    [message.id, message.reactions, actions, user?.id]
-  );
-  const removeReaction = React.useCallback(
-    (emoji) => actions.removeMessageReaction(message.id, { emoji }),
-    [actions, message.id]
+    [messageId, reactions, addMessageReaction, user?.id]
   );
 
   const toolbarDropdownItems = React.useMemo(
@@ -196,7 +194,8 @@ const ChannelMessage = React.memo(function ChannelMessage_({
               label: "Send direct message",
               disabled: !allowDirectMessages,
               visible:
-                !isOwnMessage && !(isDirectMessage && members.length <= 2),
+                !isOwnMessage &&
+                !(isDirectMessage && channel.memberUserIds.length <= 2),
             },
             {
               onSelect: () => {
@@ -212,7 +211,7 @@ const ChannelMessage = React.memo(function ChannelMessage_({
       isAdmin,
       isDirectMessage,
       isOwnMessage,
-      members.length,
+      channel.memberUserIds.length,
       initReply,
       message.author?.walletAddress,
       message.isSystemMessage,
@@ -403,10 +402,10 @@ const ChannelMessage = React.memo(function ChannelMessage_({
 
           {reactions.length !== 0 && (
             <Reactions
+              messageId={messageId}
               items={reactions}
               addReaction={addReaction}
-              removeReaction={removeReaction}
-              hideAddReactionButton={!isHovering && !hasTouchFocus}
+              hideAddButton={!isHovering && !hasTouchFocus}
             />
           )}
         </div>
@@ -569,12 +568,7 @@ const Embed = ({
   </li>
 );
 
-const Reactions = ({
-  items = [],
-  addReaction,
-  removeReaction,
-  hideAddReactionButton,
-}) => {
+const Reactions = ({ messageId, items = [], addReaction, hideAddButton }) => {
   const { inputDeviceCanHover } = useGlobalMediaQueries();
   const [isInlineEmojiPickerOpen, setInlineEmojiPickerOpen] =
     React.useState(false);
@@ -606,7 +600,7 @@ const Reactions = ({
           justifyContent: "flex-start",
           margin: "0.5rem -1px 0",
           ":not(:focus-within) [data-fader]": {
-            opacity: hideAddReactionButton ? 0 : 1,
+            opacity: hideAddButton ? 0 : 1,
           },
           button: {
             display: "flex",
@@ -640,71 +634,9 @@ const Reactions = ({
           },
         })}
       >
-        {items.map((r) => {
-          const authorDisplayNames = r.authorMembers.map((m) => m.displayName);
-          return (
-            <Tooltip.Root key={r.emoji}>
-              <Tooltip.Trigger asChild>
-                <button
-                  onClick={() => {
-                    if (r.hasReacted) {
-                      removeReaction(r.emoji);
-                      return;
-                    }
-
-                    addReaction(r.emoji);
-                  }}
-                  className={r.hasReacted ? "active" : undefined}
-                >
-                  <span>{r.emoji}</span>
-                  <span className="count">{r.count}</span>
-                </button>
-              </Tooltip.Trigger>
-              <Tooltip.Content
-                side="top"
-                sideOffset={4}
-                style={{ borderRadius: "0.5rem" }}
-              >
-                <div
-                  css={css({
-                    display: "grid",
-                    gridTemplateColumns: "auto minmax(0,auto)",
-                    gridGap: "0.8rem",
-                    alignItems: "center",
-                    padding: "0 0.4rem 0 0.2rem",
-                    lineHeight: 1.4,
-                    maxWidth: "24rem",
-                  })}
-                >
-                  <div
-                    css={css({
-                      fontSize: "2.8rem",
-                      lineHeight: "1.1",
-                      padding: "0.1rem 0 0",
-                    })}
-                  >
-                    {r.emoji}
-                  </div>
-                  <div
-                    css={css({
-                      hyphens: "auto",
-                      wordBreak: "break-word",
-                      padding: "0.2rem 0",
-                    })}
-                  >
-                    {[
-                      authorDisplayNames.slice(0, -1).join(", "),
-                      authorDisplayNames.slice(-1)[0],
-                    ]
-                      .filter(Boolean)
-                      .join(" and ")}{" "}
-                    reacted
-                  </div>
-                </div>
-              </Tooltip.Content>
-            </Tooltip.Root>
-          );
-        })}
+        {items.map((r) => (
+          <Reaction key={r.emoji} messageId={messageId} {...r} />
+        ))}
 
         {inputDeviceCanHover ? (
           <Popover.Root
@@ -742,6 +674,77 @@ const Reactions = ({
         )}
       </div>
     </>
+  );
+};
+
+const Reaction = ({ messageId, emoji, count, users: userIds }) => {
+  const { addMessageReaction, removeMessageReaction } = useActions();
+
+  const hasReacted = useHasReactedWithEmoji(messageId, emoji);
+  const users = useUsers(userIds);
+  const authorDisplayNames = users.map((m) => m.displayName);
+
+  return (
+    <Tooltip.Root>
+      <Tooltip.Trigger asChild>
+        <button
+          onClick={() => {
+            if (hasReacted) {
+              removeMessageReaction(messageId, { emoji });
+              return;
+            }
+
+            addMessageReaction(messageId, { emoji });
+          }}
+          className={hasReacted ? "active" : undefined}
+        >
+          <span>{emoji}</span>
+          <span className="count">{count}</span>
+        </button>
+      </Tooltip.Trigger>
+      <Tooltip.Content
+        side="top"
+        sideOffset={4}
+        style={{ borderRadius: "0.5rem" }}
+      >
+        <div
+          css={css({
+            display: "grid",
+            gridTemplateColumns: "auto minmax(0,auto)",
+            gridGap: "0.8rem",
+            alignItems: "center",
+            padding: "0 0.4rem 0 0.2rem",
+            lineHeight: 1.4,
+            maxWidth: "24rem",
+          })}
+        >
+          <div
+            css={css({
+              fontSize: "2.8rem",
+              lineHeight: "1.1",
+              padding: "0.1rem 0 0",
+            })}
+          >
+            {emoji}
+          </div>
+          <div
+            css={css({
+              hyphens: "auto",
+              wordBreak: "break-word",
+              padding: "0.2rem 0",
+            })}
+          >
+            {[
+              authorDisplayNames.slice(0, -1).join(", "),
+              authorDisplayNames.slice(-1)[0],
+            ]
+              .filter(Boolean)
+              .join(" and ")}{" "}
+            reacted
+          </div>
+        </div>
+      </Tooltip.Content>
+    </Tooltip.Root>
   );
 };
 

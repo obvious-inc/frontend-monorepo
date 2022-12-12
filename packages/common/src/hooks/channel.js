@@ -19,7 +19,12 @@ import {
   selectPermissions as selectChannelPermissions,
 } from "../reducers/channels.js";
 import { selectChannelTypingMembers } from "../reducers/channel-typing-status.js";
-import { selectChannelMessages, selectMessage } from "../reducers/messages.js";
+import {
+  selectChannelMessages,
+  selectSortedChannelMessageIds,
+  selectMessage,
+  selectHasReacted,
+} from "../reducers/messages.js";
 
 export const useChannel = (channelId, { members = false } = {}) => {
   return useStore(
@@ -35,6 +40,14 @@ export const useChannelMessages = (channelId) =>
   useStore(
     React.useCallback(
       (state) => selectChannelMessages(state, channelId),
+      [channelId]
+    )
+  );
+
+export const useSortedChannelMessageIds = (channelId) =>
+  useStore(
+    React.useCallback(
+      (state) => selectSortedChannelMessageIds(state, channelId),
       [channelId]
     )
   );
@@ -149,5 +162,13 @@ export const useMessage = (messageId) =>
     React.useCallback(
       (state) => (messageId == null ? null : selectMessage(state, messageId)),
       [messageId]
+    )
+  );
+
+export const useHasReactedWithEmoji = (messageId, emoji) =>
+  useStore(
+    React.useCallback(
+      (state) => selectHasReacted(state, messageId, emoji),
+      [messageId, emoji]
     )
   );

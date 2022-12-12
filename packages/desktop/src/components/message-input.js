@@ -71,13 +71,13 @@ const MessageInput = React.forwardRef(
 
       const lowerCaseQuery = mentionQuery?.toLowerCase() ?? null;
 
-      const unorderedFilteredServerMembers = members.filter(
+      const unorderedFilteredMembers = members.filter(
         (member) =>
           lowerCaseQuery != null &&
           member.displayName?.toLowerCase().includes(lowerCaseQuery)
       );
 
-      const orderedFilteredServerMembers = sort((o1, o2) => {
+      const orderedFilteredMembers = sort((o1, o2) => {
         const [i1, i2] = [o1, o2].map((o) =>
           o.displayName.toLowerCase().indexOf(lowerCaseQuery)
         );
@@ -85,9 +85,9 @@ const MessageInput = React.forwardRef(
         if (i1 < i2) return -1;
         if (i1 > i2) return 1;
         return 0;
-      }, unorderedFilteredServerMembers);
+      }, unorderedFilteredMembers);
 
-      return orderedFilteredServerMembers.slice(0, 10).map((m) => {
+      return orderedFilteredMembers.slice(0, 10).map((m) => {
         const label = m.displayName;
         const truncatedAddress = ethereumUtils.truncateAddress(m.walletAddress);
         const hasCustomDisplayName = label !== truncatedAddress;

@@ -19,7 +19,7 @@ import {
   useChannelHasUnread,
   useChannelHasOpenReadAccess,
   useChannelTypingMembers,
-  useChannelMessages,
+  useSortedChannelMessageIds,
   useHasAllChannelMessages,
   useHasFetchedChannelMessages,
 } from "@shades/common/app";
@@ -126,18 +126,10 @@ const useMessageFetcher = () => {
 };
 
 const useMessages = (channelId) => {
-  const unsortedMessages = useChannelMessages(channelId);
+  const messageIds = useSortedChannelMessageIds(channelId);
   const hasAllMessages = useHasAllChannelMessages(channelId);
 
-  const messages = React.useMemo(
-    () =>
-      unsortedMessages.sort(
-        (m1, m2) => new Date(m1.created_at) - new Date(m2.created_at)
-      ),
-    [unsortedMessages]
-  );
-
-  return { messages, hasAllMessages };
+  return { messageIds, hasAllMessages };
 };
 
 const useScroll = (scrollContainerRef, { cacheKey, onScrollToBottom }) => {
@@ -271,9 +263,8 @@ const useReverseScrollPositionMaintainer = (scrollContainerRef) => {
 const scrollPositionCache = {};
 
 export const ChannelBase = ({
-  channel,
+  channelId,
   accessLevel: channelAccessLevel,
-  members,
   typingMembers,
   createMessage,
   headerContent,
@@ -291,8 +282,10 @@ export const ChannelBase = ({
   const { markChannelRead } = actions;
 
   const user = useMe();
-  const channelName = useChannelName(channel.id);
+  const channel = useChannel(channelId);
+  const channelName = useChannelName(channelId);
   const isAdmin = user != null && user.id === channel.ownerUserId;
+  const members = useChannelMembers(channelId);
 
   const { inputDeviceCanHover } = useGlobalMediaQueries();
   const [touchFocusedMessageId, setTouchFocusedMessageId] =
@@ -346,7 +339,7 @@ export const ChannelBase = ({
     });
   });
 
-  const { messages, hasAllMessages } = useMessages(channel.id);
+  const { messageIds, hasAllMessages } = useMessages(channel.id);
 
   const getMember = useLatestCallback((id) => selectors.selectUser(id));
 
@@ -380,12 +373,12 @@ export const ChannelBase = ({
   }, []);
 
   React.useEffect(() => {
-    if (messages.length !== 0) return;
+    if (messageIds.length !== 0) return;
 
     // This should be called after the first render, and when navigating to
     // emply channels
     fetchMessages(channel.id, { limit: 30 });
-  }, [fetchMessages, channel.id, messages.length]);
+  }, [fetchMessages, channel.id, messageIds.length]);
 
   const channelHasUnread = useChannelHasUnread(channel.id);
 
@@ -396,13 +389,13 @@ export const ChannelBase = ({
     React.useState(0);
 
   React.useEffect(() => {
-    if (messages.length === 0) return;
+    if (messageIds.length === 0) return;
     // Keep track of the average message height, so that we can make educated
     // guesses at what the placeholder height should be when fetching messages
     setAverageMessageListItemHeight(
-      messagesContainerRef.current.scrollHeight / messages.length
+      messagesContainerRef.current.scrollHeight / messageIds.length
     );
-  }, [messages.length]);
+  }, [messageIds.length]);
 
   useScrollListener(scrollContainerRef, () => {
     // Bounce back when scrolling to the top of the "loading" placeholder. Makes
@@ -421,7 +414,7 @@ export const ChannelBase = ({
         // We only care about upward scroll
         direction !== "up" ||
         // Wait until we have fetched the initial batch of messages
-        messages.length === 0 ||
+        messageIds.length === 0 ||
         // No need to react if we’ve already fetched the full message history
         hasAllMessages ||
         // Wait for any pending fetch requests to finish before we fetch again
@@ -436,7 +429,7 @@ export const ChannelBase = ({
       if (!isCloseToTop) return;
 
       fetchMessages(channel.id, {
-        beforeMessageId: messages[0].id,
+        beforeMessageId: messageIds[0],
         limit: 30,
       });
     },
@@ -470,13 +463,13 @@ export const ChannelBase = ({
     markChannelRead,
   ]);
 
-  const lastMessage = messages.slice(-1)[0];
+  const lastMessageId = messageIds.slice(-1)[0];
 
   // Keep scroll at bottom when new messages arrive
   React.useEffect(() => {
-    if (lastMessage == null || !didScrollToBottomRef.current) return;
+    if (lastMessageId == null || !didScrollToBottomRef.current) return;
     scrollToBottom();
-  }, [lastMessage, scrollToBottom, didScrollToBottomRef]);
+  }, [lastMessageId, scrollToBottom, didScrollToBottomRef]);
 
   useWindowFocusOrDocumentVisibleListener(() => {
     fetchMessages(channel.id, { limit: 30 });
@@ -621,7 +614,7 @@ export const ChannelBase = ({
             {hasAllMessages && (
               <div
                 css={css({ padding: "6rem 1.6rem 0" })}
-                style={{ paddingBottom: messages.length !== 0 ? "1rem" : 0 }}
+                style={{ paddingBottom: messageIds.length !== 0 ? "1rem" : 0 }}
               >
                 <div
                   css={(theme) =>
@@ -686,14 +679,14 @@ export const ChannelBase = ({
                 </div>
               </div>
             )}
-            {!hasAllMessages && messages.length > 0 && (
+            {!hasAllMessages && messageIds.length > 0 && (
               <OnScreenTrigger
                 callback={() => {
                   // This should only happen on huge viewports where all messages from the
                   // initial fetch fit in view without a scrollbar. All other cases should be
                   // covered by the scroll listener
                   fetchMessages(channel.id, {
-                    beforeMessageId: messages[0].id,
+                    beforeMessageId: messageIds[0],
                     limit: 30,
                   });
                 }}
@@ -719,18 +712,17 @@ export const ChannelBase = ({
                 })
               }
             >
-              {messages.map((m, i, ms) => (
+              {messageIds.map((messageId, i, messageIds) => (
                 <ChannelMessage
-                  key={m.id}
-                  channel={channel}
-                  message={m}
-                  previousMessage={ms[i - 1]}
-                  hasPendingReply={pendingReplyMessageId === m.id}
+                  key={messageId}
+                  channelId={channel.id}
+                  messageId={messageId}
+                  previousMessageId={messageIds[i - 1]}
+                  hasPendingReply={pendingReplyMessageId === messageId}
                   initReply={initReply}
-                  members={members}
                   getMember={getMember}
                   isAdmin={isAdmin}
-                  hasTouchFocus={touchFocusedMessageId === m.id}
+                  hasTouchFocus={touchFocusedMessageId === messageId}
                   giveTouchFocus={
                     inputDeviceCanHover ? undefined : setTouchFocusedMessageId
                   }
@@ -1874,8 +1866,7 @@ export const Channel = ({ channelId, compact, noSideMenu }) => {
     <ChannelBase
       compact={compact}
       noSideMenu={noSideMenu}
-      channel={channel}
-      members={members}
+      channelId={channelId}
       typingMembers={typingChannelMembers}
       createMessage={createMessage}
       accessLevel={channelAccessLevel}
