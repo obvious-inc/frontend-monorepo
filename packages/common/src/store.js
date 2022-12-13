@@ -1,6 +1,6 @@
 import React from "react";
 import createZustandStoreHook from "zustand";
-import { useAuth } from "./auth.js";
+import { useAuth, useAuthListener } from "./auth.js";
 import { useStore as useCacheStore } from "./cache-store.js";
 import rootReducer from "./root-reducer.js";
 import createActions from "./actions.js";
@@ -214,6 +214,10 @@ export const Provider = ({ cloudflareAccountHash, children }) => {
       clearAuthTokens,
     })
   );
+
+  useAuthListener((eventName) => {
+    if (eventName === "access-token-expired") actions.logout();
+  });
 
   const serverMessageHandler = useLatestCallback((name, data) => {
     const me = selectMe(getStoreState());

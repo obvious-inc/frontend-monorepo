@@ -179,7 +179,6 @@ const Layout = () => {
                   <DropdownMenu.Item
                     onSelect={() => {
                       actions.logout();
-                      window.location.reload();
                     }}
                   >
                     Log out

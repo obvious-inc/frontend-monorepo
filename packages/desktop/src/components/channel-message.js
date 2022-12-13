@@ -795,14 +795,16 @@ const EmojiPickerMobileDialog = ({ onSelect, isOpen, onRequestClose }) => (
 );
 
 const MemberDisplayName = React.forwardRef(
-  ({ displayName, color, deleted, ...props }, ref) => (
+  ({ displayName, color, deleted, unknown, ...props }, ref) => (
     <button
       ref={ref}
       disabled={deleted}
       css={(t) =>
         css({
           lineHeight: 1.2,
-          color: color ?? (deleted ? t.colors.textDimmed : t.colors.textNormal),
+          color:
+            color ??
+            (deleted || unknown ? t.colors.textDimmed : t.colors.textNormal),
           fontWeight: t.text.weights.smallHeader,
           outline: "none",
           ":not([disabled])": {
@@ -813,7 +815,7 @@ const MemberDisplayName = React.forwardRef(
       }
       {...props}
     >
-      {deleted ? "Deleted user" : displayName}
+      {deleted ? "Deleted user" : unknown ? "Unknown user" : displayName}
     </button>
   )
 );
@@ -821,10 +823,14 @@ const MemberDisplayName = React.forwardRef(
 const MemberDisplayNameWithPopover = React.forwardRef(
   ({ user, color, popoverProps, ...props }, ref) => (
     <Popover.Root placement="right" {...popoverProps}>
-      <Popover.Trigger asChild disabled={user == null || user.deleted}>
+      <Popover.Trigger
+        asChild
+        disabled={user == null || user.deleted || user.unknown}
+      >
         <MemberDisplayName
           ref={ref}
           deleted={user?.deleted}
+          unknown={user?.unknown}
           displayName={user?.displayName}
           color={color}
           {...props}
@@ -1836,10 +1842,9 @@ const MessageLeftColumn = ({ isHovering, simplified, compact, message }) => {
 const SystemMessageContent = ({ message }) => {
   switch (message.type) {
     case "user-invited": {
-      const isMissingData = [
-        message.inviter?.displayName,
-        message.author?.displayName,
-      ].some((n) => n == null);
+      const isMissingData = [message.inviter, message.author].some(
+        (u) => !u?.deleted && !u?.unknown && u?.displayName == null
+      );
 
       return (
         <span style={{ opacity: isMissingData ? 0 : 1 }}>
@@ -1850,7 +1855,9 @@ const SystemMessageContent = ({ message }) => {
     }
     case "member-joined": {
       const isMissingData =
-        !message.author?.deleted && message.author?.displayName == null;
+        !message.author?.deleted &&
+        !message.author?.unknown &&
+        message.author?.displayName == null;
       return (
         <span style={{ opacity: isMissingData ? 0 : 1 }}>
           <MemberDisplayNameWithPopover user={message.author} /> joined the

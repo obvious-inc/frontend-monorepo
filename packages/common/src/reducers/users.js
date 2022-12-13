@@ -13,7 +13,7 @@ const entriesById = (state = {}, action) => {
       const users = action.members ?? action.users;
       const mergedUsers = users.map((u) => {
         const existingUser = state[u.id];
-        return { ...existingUser, ...u };
+        return { ...existingUser, ...u, unknown: false };
       });
       const usersById = indexBy((m) => m.id, mergedUsers);
       return { ...state, ...usersById };
@@ -24,6 +24,14 @@ const entriesById = (state = {}, action) => {
     case "fetch-client-boot-data-request-successful": {
       const exisingUser = state[action.user.id];
       return { ...state, [action.user.id]: { ...exisingUser, ...action.user } };
+    }
+
+    case "register-unknown-users": {
+      const usersById = indexBy(
+        (u) => u.id,
+        action.userIds.map((id) => ({ id, unknown: true }))
+      );
+      return { ...state, ...usersById };
     }
 
     case "server-event:user-profile-updated":
@@ -106,7 +114,7 @@ export const selectUser = createSelector(
   (state) => state.me.user?.id,
   (user, ensName, loggedInUserId) => {
     if (user == null) return null;
-    if (user.deleted) return user;
+    if (user.deleted || user.unknown) return user;
 
     const isLoggedInUser = user.id === loggedInUserId;
 

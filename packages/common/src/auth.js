@@ -15,9 +15,22 @@ const useCachedRefreshToken = () => {
   };
 };
 
+const listeners = new Set();
+
 const Context = React.createContext({});
 
 export const useAuth = () => React.useContext(Context);
+
+export const useAuthListener = (listener_) => {
+  const listener = useLatestCallback(listener_);
+
+  React.useEffect(() => {
+    listeners.add(listener);
+    return () => {
+      listeners.delete(listener);
+    };
+  }, []);
+};
 
 export const Provider = ({ apiOrigin, ...props }) => {
   const [accessToken, setAccessToken] = useCachedState(
@@ -144,7 +157,7 @@ export const Provider = ({ apiOrigin, ...props }) => {
         return authorizedFetch(url, { ...options, headers });
       } catch (e) {
         // Sign out if the access token refresh doesn’t succeed
-        logout();
+        for (const listener of listeners) listener("access-token-expired");
       }
     }
 

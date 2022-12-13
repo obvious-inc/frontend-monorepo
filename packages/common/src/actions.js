@@ -68,6 +68,8 @@ export default ({
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ user_ids: userIds }),
     }).then((rawUsers) => {
+      // Assuming missing users are deleted here
+      // TODO: Make this less brittle
       const users = userIds.map((id) => {
         const rawUser = rawUsers.find((u) => u.id === id);
         if (rawUser == null) return { id, deleted: true };
@@ -327,23 +329,27 @@ export default ({
             });
 
           // Beautifuly fetch non-member users
-          if (authStatus === "authenticated")
-            fetchChannel(channelId).then((c) => {
-              const allUserIds = [
-                ...messages
-                  // TODO: move message parsing here
-                  .filter((m) => m.type === 0 || m.type === 1)
-                  .flatMap((m) => [m.author, m.inviter].filter(Boolean)),
-                ...messages
-                  .flatMap((m) => getMentions(m.blocks))
-                  .map((m) => m.ref),
-              ];
-              const filteredUserIds = unique(allUserIds).filter(
-                (id) => !c.memberUserIds.includes(id)
-              );
+          fetchChannel(channelId).then((c) => {
+            const allUserIds = [
+              ...messages
+                // TODO: move message parsing here
+                .filter((m) => m.type === 0 || m.type === 1)
+                .flatMap((m) => [m.author, m.inviter].filter(Boolean)),
+              ...messages
+                .flatMap((m) => getMentions(m.blocks))
+                .map((m) => m.ref),
+            ];
+            const filteredUserIds = unique(allUserIds).filter(
+              (id) => !c.memberUserIds.includes(id)
+            );
 
-              fetchUsers(filteredUserIds);
-            });
+            if (authStatus === "authenticated") fetchUsers(filteredUserIds);
+            else
+              dispatch({
+                type: "register-unknown-users",
+                userIds: filteredUserIds,
+              });
+          });
 
           return messages;
         }
