@@ -9,10 +9,10 @@ let pendingRefreshAccessTokenPromise;
 
 const useCachedRefreshToken = () => {
   const cacheStore = useCacheStore();
-  return {
-    get: () => cacheStore.readAsync(REFRESH_TOKEN_CACHE_KEY),
-    set: (token) => cacheStore.writeAsync(REFRESH_TOKEN_CACHE_KEY, token),
-  };
+  return [
+    () => cacheStore.readAsync(REFRESH_TOKEN_CACHE_KEY),
+    (token) => cacheStore.writeAsync(REFRESH_TOKEN_CACHE_KEY, token),
+  ];
 };
 
 const listeners = new Set();
@@ -37,8 +37,7 @@ export const Provider = ({ apiOrigin, ...props }) => {
     ACCESS_TOKEN_CACHE_KEY,
     null
   );
-  const { get: getRefreshToken, set: setRefreshToken } =
-    useCachedRefreshToken();
+  const [getRefreshToken, setRefreshToken] = useCachedRefreshToken();
 
   const status =
     accessToken === undefined
@@ -82,51 +81,68 @@ export const Provider = ({ apiOrigin, ...props }) => {
   });
 
   const refreshAccessToken = useLatestCallback(async () => {
-    if (pendingRefreshAccessTokenPromise != null)
-      return pendingRefreshAccessTokenPromise;
-
     const refreshToken = await getRefreshToken();
     if (refreshToken == null) throw new Error("Missing refresh token");
 
-    const run = async () => {
-      const responseBody = await fetch(`${apiOrigin}/auth/refresh`, {
-        method: "POST",
-        body: JSON.stringify({ refresh_token: refreshToken }),
-        headers: {
-          "Content-Type": "application/json",
-        },
-      }).then((response) => {
-        if (response.ok) return response.json();
+    if (pendingRefreshAccessTokenPromise != null)
+      return pendingRefreshAccessTokenPromise;
 
-        setAccessToken(null);
+    pendingRefreshAccessTokenPromise = new Promise((resolve, reject) => {
+      const run = () =>
+        fetch(`${apiOrigin}/auth/refresh`, {
+          method: "POST",
+          body: JSON.stringify({ refresh_token: refreshToken }),
+          headers: { "Content-Type": "application/json" },
+        }).then(
+          (response) => {
+            if (response.ok)
+              return response.json().then((body) => ({
+                accessToken: body.access_token,
+                refreshToken: body.refresh_token,
+              }));
 
-        // clearRefreshToken();
+            if (response.status === 401)
+              return Promise.reject(new Error("refresh-token-expired"));
 
-        return Promise.reject(new Error(response.statusText));
-      });
+            return Promise.reject(new Error(response.statusText));
+          },
+          () =>
+            // Retry after 3 seconds
+            new Promise((resolve, reject) => {
+              setTimeout(() => {
+                run().then(resolve, reject);
+              }, 3000);
+            })
+        );
 
-      setAccessToken(responseBody.access_token);
-      setRefreshToken(responseBody.refresh_token);
+      return run()
+        .then(
+          ({ accessToken, refreshToken }) => {
+            setAccessToken(accessToken);
+            setRefreshToken(refreshToken);
+            resolve(accessToken);
+          },
+          (e) => {
+            if (e.message !== "refresh-token-expired") {
+              reject(e);
+              return;
+            }
 
-      return responseBody.access_token;
-    };
+            // Sign out if the refresh fails
+            setAccessToken(null);
+            setRefreshToken(null);
 
-    const promise = run();
+            for (const listener of listeners) listener("access-token-expired");
 
-    pendingRefreshAccessTokenPromise = promise;
+            reject(new Error("access-token-expired"));
+          }
+        )
+        .finally(() => {
+          pendingRefreshAccessTokenPromise = null;
+        });
+    });
 
-    try {
-      const accessToken = await promise;
-      pendingRefreshAccessTokenPromise = null;
-      return accessToken;
-    } catch (e) {
-      // Retry after 3 seconds
-      pendingRefreshAccessTokenPromise = new Promise((resolve, reject) => {
-        setTimeout(() => {
-          run().then(resolve, reject);
-        }, 3000);
-      });
-    }
+    return pendingRefreshAccessTokenPromise;
   });
 
   const authorizedFetch = useLatestCallback(async (url, options) => {
@@ -149,69 +165,68 @@ export const Provider = ({ apiOrigin, ...props }) => {
       headers,
     });
 
-    if (accessToken != null && response.status === 401) {
-      try {
-        const newAccessToken = await refreshAccessToken();
-        const headers = new Headers(options?.headers);
-        headers.set("Authorization", `Bearer ${newAccessToken}`);
-        return authorizedFetch(url, { ...options, headers });
-      } catch (e) {
-        // Sign out if the access token refresh doesn’t succeed
-        for (const listener of listeners) listener("access-token-expired");
-      }
-    }
-
-    if (!response.ok) {
+    const createError = () => {
       const error = new Error(response.statusText);
       error.response = response;
       error.code = response.status;
-      return Promise.reject(error);
+      return error;
+    };
+
+    if (accessToken != null && response.status === 401) {
+      let newAccessToken;
+      try {
+        newAccessToken = await refreshAccessToken();
+      } catch (e) {
+        return Promise.reject(createError());
+      }
+      const headers = new Headers(options?.headers);
+      headers.set("Authorization", `Bearer ${newAccessToken}`);
+      return authorizedFetch(url, { ...options, headers });
     }
 
+    if (!response.ok) return Promise.reject(createError());
+
+    // Expect an empty body on 204s
     if (response.status === 204) return undefined;
 
     return response.json();
   });
 
-  const verifyAccessToken = useLatestCallback(async () => {
-    const refreshToken = await getRefreshToken();
+  // const verifyAccessToken = useLatestCallback(async () => {
+  //   const refreshToken = await getRefreshToken();
 
-    try {
-      const tokenPayload = atob(refreshToken.split(".")[1]);
-      const expiresAt = new Date(Number(tokenPayload.exp) * 1000);
-      const isValid = expiresAt > new Date();
-      if (!isValid) return null;
-      return { accessToken, refreshToken };
-    } catch (e) {
-      console.warn(e);
-      return null;
-    }
-  });
+  //   try {
+  //     const tokenPayload = atob(refreshToken.split(".")[1]);
+  //     const expiresAt = new Date(Number(tokenPayload.exp) * 1000);
+  //     const isValid = expiresAt > new Date();
+  //     if (!isValid) return null;
+  //     return { accessToken, refreshToken };
+  //   } catch (e) {
+  //     console.warn(e);
+  //     return null;
+  //   }
+  // });
 
   const contextValue = React.useMemo(
     () => ({
-      status,
-      accessToken,
       apiOrigin,
+      accessToken,
+      status,
       authorizedFetch,
       login,
       logout,
       setAccessToken,
       setRefreshToken,
-      verifyAccessToken,
-      refreshAccessToken,
     }),
     [
-      status,
-      accessToken,
       apiOrigin,
+      accessToken,
+      status,
       authorizedFetch,
       login,
       logout,
       setAccessToken,
       setRefreshToken,
-      verifyAccessToken,
-      refreshAccessToken,
     ]
   );
 
