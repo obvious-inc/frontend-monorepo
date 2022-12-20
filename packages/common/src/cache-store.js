@@ -9,6 +9,7 @@ export const Provider = ({ syncStorage, asyncStorage, children }) => {
     () => ({ syncStorage, asyncStorage }),
     [syncStorage, asyncStorage]
   );
+
   return <Context.Provider value={contextValue}>{children}</Context.Provider>;
 };
 
@@ -109,6 +110,32 @@ export const useCachedState = (key, initialState) => {
 
     handleCachedValue(store.read(key));
   }, [key, asyncStorage, syncStorage]);
+
+  React.useEffect(() => {
+    const listener = (e) => {
+      if (e.key !== buildKey(key)) return;
+      try {
+        const value = JSON.parse(e.newValue);
+        setCachedState(value);
+      } catch (e) {
+        // Ignore
+      }
+    };
+
+    try {
+      window.addEventListener("storage", listener);
+    } catch (e) {
+      // Ignore
+    }
+
+    return () => {
+      try {
+        window.removeEventListener("storage", listener);
+      } catch (e) {
+        // Ignore
+      }
+    };
+  }, [key]);
 
   return [cachedState, set];
 };

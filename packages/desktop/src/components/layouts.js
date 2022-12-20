@@ -637,7 +637,7 @@ const ChannelItem = ({ id, expandable }) => {
   const theme = useTheme();
   const user = useMe();
   const name = useChannelName(id);
-  const { kind, image } = useChannel(id);
+  const { kind, image } = useChannel(id) ?? {};
   const link = `/channels/${id}`;
   const hasUnread = useChannelHasUnread(id);
   const notificationCount = useChannelMentionCount(id);
