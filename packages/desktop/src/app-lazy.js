@@ -269,6 +269,7 @@ const App = () => {
         <Route path="/" element={<Layout />}>
           <Route index element={<EmptyHome />} />
           <Route path="/channels/:channelId" element={<Channel />} />
+          <Route path="/waku" element={<Waku />} />
         </Route>
         <Route path="c/:channelId" element={<Channel noSideMenu />} />
         <Route
@@ -289,6 +290,35 @@ const App = () => {
       </Routes>
     </>
   );
+};
+
+const Waku = () => {
+  const wakuRef = React.useRef();
+  const [isConnected, setConnected] = React.useState(false);
+
+  React.useEffect(() => {
+    const initWaku = async () => {
+      const [{ waitForRemotePeer }, { createRelayNode }, { Protocols }] =
+        await Promise.all([
+          import("@waku/core"),
+          import("@waku/create"),
+          import("@waku/interfaces"),
+        ]);
+
+      const waku = await createRelayNode({ defaultBootstrap: true });
+      await waku.start();
+      await waitForRemotePeer(waku, [Protocols.Relay]);
+
+      wakuRef.current = waku;
+      setConnected(true);
+    };
+
+    initWaku();
+  }, []);
+
+  if (!isConnected) return null;
+
+  return <>hi</>;
 };
 
 const RequireAuth = ({ children }) => {
