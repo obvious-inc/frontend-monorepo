@@ -363,15 +363,24 @@ export const selectChannel = createSelector(
     if (!members) return null;
     return selectChannelMembers(state, channelId);
   },
+  (state, channelId, { readStates = false } = {}) => {
+    if (!readStates) return null;
+    return selectChannelHasUnread(state, channelId);
+  },
   (state, channelId) => {
     const channel = state.channels.entriesById[channelId];
     if (channel == null || channel.isDeleted) return null;
     return channel;
   },
-  (members, channel) => {
-    if (channel == null) return null;
-    if (members == null) return channel;
-    return { ...channel, members };
+  (members, hasUnread, channel_) => {
+    if (channel_ == null) return null;
+
+    const channel = { ...channel_ };
+
+    if (members != null) channel.members = members;
+    if (hasUnread != null) channel.hasUnread = hasUnread;
+
+    return channel;
   }
 );
 
@@ -455,7 +464,7 @@ export const selectAllChannels = createSelector(
 );
 
 export const selectMemberChannels = createSelector(
-  (state) => {
+  (state, options) => {
     if (state.me.user == null) return [];
 
     const blockedUserIds = state.users.blockedUserIds;
@@ -474,7 +483,7 @@ export const selectMemberChannels = createSelector(
 
         return c.memberUserIds?.includes(me.id);
       })
-      .map(([id]) => selectChannel(state, id));
+      .map(([id]) => selectChannel(state, id, options));
 
     return channels;
   },

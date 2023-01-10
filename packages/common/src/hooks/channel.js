@@ -141,7 +141,8 @@ export const useChannelTypingMembers = (channelId) =>
     )
   );
 
-export const useMemberChannels = () => useStore(selectMemberChannels);
+export const useMemberChannels = (...args) =>
+  useStore((s) => selectMemberChannels(s, ...args));
 
 export const useAllChannels = ({ members = false } = {}) =>
   useStore(
