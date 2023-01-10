@@ -289,7 +289,7 @@ const MessageInput = React.forwardRef(
       if (autoCompleteMode !== "emojis" || emojis.length !== 0) return;
       fetchEmojis().then((es) => {
         const filteredEmoji = es.filter(
-          (e) => parseFloat(e.unicode_version) < 13
+          (e) => e.unicode_version === "" || parseFloat(e.unicode_version) < 13
         );
         setEmojis(filteredEmoji);
       });

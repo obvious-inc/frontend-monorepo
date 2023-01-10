@@ -1028,7 +1028,11 @@ const useEmoji = () => {
 
   React.useEffect(() => {
     import("@shades/common/emoji").then(({ default: emoji }) => {
-      setData(emoji.filter((e) => parseFloat(e.unicode_version) < 13));
+      setData(
+        emoji.filter(
+          (e) => e.unicode_version === "" || parseFloat(e.unicode_version) < 13
+        )
+      );
     });
   }, []);
 

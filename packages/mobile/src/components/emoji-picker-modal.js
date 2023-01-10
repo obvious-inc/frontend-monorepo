@@ -16,7 +16,7 @@ const { groupBy, indexBy } = Shades.utils.array;
 const { search: searchEmoji } = Shades.utils.emoji;
 
 const supportedEmojis = Shades.emoji.filter(
-  (e) => parseFloat(e.unicode_version) < 13
+  (e) => e.unicode_version === "" || parseFloat(e.unicode_version) < 13
 );
 
 const emojiByCategoryEntries = Object.entries(
