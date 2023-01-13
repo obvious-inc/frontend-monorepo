@@ -51,6 +51,7 @@ import AuthHome from "./components/auth";
 
 const Channel = React.lazy(() => import("./components/channel"));
 const ChannelBase = React.lazy(() => import("./components/channel-base"));
+const WakuChannel = React.lazy(() => import("./components/waku-channel"));
 
 const { partition } = arrayUtils;
 const { waterfall } = functionUtils;
@@ -93,49 +94,48 @@ const useSystemNotifications = () => {
     !hasGrantedPushNotificationPermission
       ? null
       : (action) => {
-          switch (action.type) {
-            case "server-event:message-created": {
-              const me = selectors.selectMe();
-              const message = selectors.selectMessage(action.data.message.id);
+        switch (action.type) {
+          case "server-event:message-created": {
+            const me = selectors.selectMe();
+            const message = selectors.selectMessage(action.data.message.id);
 
-              if (message.authorUserId === me.id) break;
+            if (message.authorUserId === me.id) break;
 
-              const hasUnread = selectors.selectChannelHasUnread(
-                message.channelId
-              );
+            const hasUnread = selectors.selectChannelHasUnread(
+              message.channelId
+            );
 
-              if (!hasUnread) break;
+            if (!hasUnread) break;
 
-              const channel = selectors.selectChannel(message.channelId);
+            const channel = selectors.selectChannel(message.channelId);
 
-              import("@shades/common/nouns").then((module) => {
-                sendNotification({
-                  title: `Message from ${
-                    message.author?.displayName ?? message.authorUserId
+            import("@shades/common/nouns").then((module) => {
+              sendNotification({
+                title: `Message from ${message.author?.displayName ?? message.authorUserId
                   }`,
-                  body: message.stringContent,
-                  icon:
-                    message.author == null
-                      ? undefined
-                      : message.author.profilePicture?.small ??
-                        module.generatePlaceholderAvatarDataUri(
-                          message.author.walletAddress,
-                          { pixelSize: 24 }
-                        ),
-                  onClick: ({ close }) => {
-                    navigate(`/channels/${channel.id}`);
-                    window.focus();
-                    close();
-                  },
-                });
+                body: message.stringContent,
+                icon:
+                  message.author == null
+                    ? undefined
+                    : message.author.profilePicture?.small ??
+                    module.generatePlaceholderAvatarDataUri(
+                      message.author.walletAddress,
+                      { pixelSize: 24 }
+                    ),
+                onClick: ({ close }) => {
+                  navigate(`/channels/${channel.id}`);
+                  window.focus();
+                  close();
+                },
               });
+            });
 
-              break;
-            }
-
-            default: // Ignore
+            break;
           }
+
+          default: // Ignore
         }
+      }
   );
 };
 
@@ -269,7 +269,7 @@ const App = () => {
         <Route path="/" element={<Layout />}>
           <Route index element={<EmptyHome />} />
           <Route path="/channels/:channelId" element={<Channel />} />
-          <Route path="/waku" element={<Waku />} />
+          <Route path="/waku/:channelId" element={<WakuChannel />} />
         </Route>
         <Route path="c/:channelId" element={<Channel noSideMenu />} />
         <Route
@@ -290,35 +290,6 @@ const App = () => {
       </Routes>
     </>
   );
-};
-
-const Waku = () => {
-  const wakuRef = React.useRef();
-  const [isConnected, setConnected] = React.useState(false);
-
-  React.useEffect(() => {
-    const initWaku = async () => {
-      const [{ waitForRemotePeer }, { createRelayNode }, { Protocols }] =
-        await Promise.all([
-          import("@waku/core"),
-          import("@waku/create"),
-          import("@waku/interfaces"),
-        ]);
-
-      const waku = await createRelayNode({ defaultBootstrap: true });
-      await waku.start();
-      await waitForRemotePeer(waku, [Protocols.Relay]);
-
-      wakuRef.current = waku;
-      setConnected(true);
-    };
-
-    initWaku();
-  }, []);
-
-  if (!isConnected) return null;
-
-  return <>hi</>;
 };
 
 const RequireAuth = ({ children }) => {

@@ -25,6 +25,7 @@ importers:
       '@emotion/react': ^11.10.4
       '@manypkg/find-root': ^1.1.0
       '@newshades/iframe-provider': ^0.2.0
+      '@noble/ed25519': ^1.7.1
       '@nouns/assets': ^0.4.0
       '@nouns/contracts': ^0.1.3
       '@nouns/sdk': ^0.2.0
@@ -35,9 +36,11 @@ importers:
       '@sentry/react': ^6.19.7
       '@shades/common': workspace:0.0.0
       '@swc/core': 1.2.130
+      '@waku/byte-utils': ^0.0.2
       '@waku/core': ^0.0.8
       '@waku/create': ^0.0.6
       '@waku/interfaces': ^0.0.6
+      '@waku/message-encryption': ^0.0.7
       assert: ^2.0.0
       copy-webpack-plugin: ^10.2.4
       css-loader: ^6.7.1
@@ -86,6 +89,7 @@ importers:
       '@emotion/react': 11.10.4_react@18.1.0
       '@manypkg/find-root': 1.1.0
       '@newshades/iframe-provider': 0.2.0
+      '@noble/ed25519': 1.7.1
       '@nouns/assets': 0.4.0
       '@nouns/contracts': 0.1.3
       '@nouns/sdk': 0.2.0_ethers@5.7.2
@@ -95,9 +99,11 @@ importers:
       '@radix-ui/react-tooltip': 0.1.7_ef5jwxihqo6n7gxfmzogljlgcm
       '@sentry/react': 6.19.7_react@18.1.0
       '@shades/common': link:../common
+      '@waku/byte-utils': 0.0.2
       '@waku/core': 0.0.8
       '@waku/create': 0.0.6
       '@waku/interfaces': 0.0.6
+      '@waku/message-encryption': 0.0.7
       date-fns: 2.29.3
       dotenv: 16.0.3
       electron-squirrel-startup: 1.0.0
@@ -1685,7 +1691,7 @@ packages:
     resolution: {integrity: sha512-lcqtG74lwQevxC/OTZHZzszb8HS91VkmJxTyndQUu9a6AXBok2a95lyWCK2l8/VPLg0JxIpwYgUCHTTTExDK/A==}
     engines: {npm: '>=8.7.0'}
     dependencies:
-      '@libp2p/crypto': 1.0.11
+      '@libp2p/crypto': 1.0.11_uint8arraylist@2.4.3
       '@libp2p/interface-connection': 3.0.7
       '@libp2p/interface-connection-manager': 1.3.5
       '@libp2p/interface-keys': 1.0.6
@@ -1718,7 +1724,7 @@ packages:
     resolution: {integrity: sha512-nXw09UwSE5JCiB5Dte6j0b0Qe+KbtepJvaPz/f5JyxcoyUfLE/t7XWRZAZmcuWBeVWWpOItnK5WmW8uocoiwCQ==}
     engines: {node: '>=16.0.0', npm: '>=7.0.0'}
     dependencies:
-      '@libp2p/crypto': 1.0.11
+      '@libp2p/crypto': 1.0.11_uint8arraylist@2.4.3
       '@libp2p/interface-connection-encrypter': 3.0.5
       '@libp2p/interface-keys': 1.0.6
       '@libp2p/interface-metrics': 4.0.4
@@ -1734,7 +1740,7 @@ packages:
       it-pb-stream: 2.0.3
       it-pipe: 2.0.5
       it-stream-types: 1.0.5
-      protons-runtime: 4.0.1
+      protons-runtime: 4.0.1_uint8arraylist@2.4.3
       uint8arraylist: 2.4.3
       uint8arrays: 4.0.3
     transitivePeerDependencies:
@@ -3400,7 +3406,7 @@ packages:
       - supports-color
     dev: false
 
-  /@libp2p/crypto/1.0.11:
+  /@libp2p/crypto/1.0.11_uint8arraylist@2.4.3:
     resolution: {integrity: sha512-DWiG/0fKIDnkhTF3HoCu2OzkuKXysR/UKGdM9JZkT6F9jS9rwZYEwmacs4ybw1qyufyH+pMXV3/vuUu2Q/UxLw==}
     engines: {node: '>=16.0.0', npm: '>=7.0.0'}
     dependencies:
@@ -3410,8 +3416,10 @@ packages:
       err-code: 3.0.1
       multiformats: 11.0.0
       node-forge: 1.3.1
-      protons-runtime: 4.0.1
+      protons-runtime: 4.0.1_uint8arraylist@2.4.3
       uint8arrays: 4.0.3
+    transitivePeerDependencies:
+      - uint8arraylist
     dev: false
 
   /@libp2p/interface-address-manager/2.0.3:
@@ -3731,12 +3739,12 @@ packages:
     resolution: {integrity: sha512-+fHhbmDK9Ws6Dmj2ZmfrQouQTZEbTS3FCi3nUDJnnjIS95+radaP085IVkNJYJeeWpxJV90D4EUwtoy83PaoCw==}
     engines: {node: '>=16.0.0', npm: '>=7.0.0'}
     dependencies:
-      '@libp2p/crypto': 1.0.11
+      '@libp2p/crypto': 1.0.11_uint8arraylist@2.4.3
       '@libp2p/interface-keys': 1.0.6
       '@libp2p/interface-peer-id': 1.1.2
       '@libp2p/peer-id': 1.1.18
       multiformats: 10.0.3
-      protons-runtime: 4.0.1
+      protons-runtime: 4.0.1_uint8arraylist@2.4.3
       uint8arraylist: 2.4.3
       uint8arrays: 4.0.3
     dev: false
@@ -3755,7 +3763,7 @@ packages:
     resolution: {integrity: sha512-o4v6N5B0hsx94TnSkLD7v8GmyQ/pNJbhy+pY8YDsmPhcwAGTnpRdlxWZraMBz8ut+vGoD7E34IdMMgJX/tgAJA==}
     engines: {node: '>=16.0.0', npm: '>=7.0.0'}
     dependencies:
-      '@libp2p/crypto': 1.0.11
+      '@libp2p/crypto': 1.0.11_uint8arraylist@2.4.3
       '@libp2p/interface-peer-id': 1.1.2
       '@libp2p/interface-record': 2.0.5
       '@libp2p/logger': 2.0.5
@@ -3770,7 +3778,7 @@ packages:
       it-map: 2.0.0
       it-pipe: 2.0.5
       multiformats: 10.0.3
-      protons-runtime: 4.0.1
+      protons-runtime: 4.0.1_uint8arraylist@2.4.3
       uint8-varint: 1.0.4
       uint8arraylist: 2.4.3
       uint8arrays: 4.0.3
@@ -3801,7 +3809,7 @@ packages:
       it-pipe: 2.0.5
       mortice: 3.0.1
       multiformats: 10.0.3
-      protons-runtime: 4.0.1
+      protons-runtime: 4.0.1_uint8arraylist@2.4.3
       uint8arraylist: 2.4.3
       uint8arrays: 4.0.3
     transitivePeerDependencies:
@@ -3812,7 +3820,7 @@ packages:
     resolution: {integrity: sha512-pQNpUC6KWDKCm7A9bv4tT2t3a7a4IpJdfzHsRBjAaKEcIRgP/s/q0Xn8ySdcggg1fvdjMp5VY6NfuuRbSCu9LA==}
     engines: {node: '>=16.0.0', npm: '>=7.0.0'}
     dependencies:
-      '@libp2p/crypto': 1.0.11
+      '@libp2p/crypto': 1.0.11_uint8arraylist@2.4.3
       '@libp2p/interface-connection': 3.0.7
       '@libp2p/interface-peer-id': 1.1.2
       '@libp2p/interface-pubsub': 3.0.5
@@ -8069,12 +8077,12 @@ packages:
       - zenObservable
     dev: false
 
-  /@waku/enr/0.0.3:
+  /@waku/enr/0.0.3_uint8arraylist@2.4.3:
     resolution: {integrity: sha512-OOwR0NiQsg6IGzFY9XoEEedeNOEBRlw9kwr5K1p+EzE4jIJClknAJ+Pfv7IDHrkk3SFA0BRik2vJLy5p7R9Gdw==}
     engines: {node: '>=16'}
     dependencies:
       '@ethersproject/rlp': 5.7.0
-      '@libp2p/crypto': 1.0.11
+      '@libp2p/crypto': 1.0.11_uint8arraylist@2.4.3
       '@libp2p/interface-peer-id': 1.1.2
       '@libp2p/peer-id': 1.1.18
       '@multiformats/multiaddr': 11.1.5
@@ -8083,6 +8091,7 @@ packages:
       js-sha3: 0.8.0
     transitivePeerDependencies:
       - supports-color
+      - uint8arraylist
     dev: false
 
   /@waku/interfaces/0.0.6:
@@ -8113,6 +8122,29 @@ packages:
       - supports-color
     dev: false
 
+  /@waku/message-encryption/0.0.7:
+    resolution: {integrity: sha512-SSEvU7KYuqd0H/RaVjiPnFwZFFdAxaNfp/FqEcL7X0NR6Yhrp4wMvLGeZa8ru6dB0fVIF4ZqJuKdK5F0L1G9Dg==}
+    engines: {node: '>=16'}
+    dependencies:
+      '@noble/secp256k1': 1.7.1
+      '@waku/byte-utils': 0.0.2
+      '@waku/core': 0.0.8
+      '@waku/interfaces': 0.0.6
+      '@waku/proto': 0.0.1
+      js-sha3: 0.8.0
+    transitivePeerDependencies:
+      - '@babel/core'
+      - '@octokit/core'
+      - '@typescript-eslint/parser'
+      - encoding
+      - eslint-import-resolver-typescript
+      - eslint-import-resolver-webpack
+      - supports-color
+      - uint8arraylist
+      - zen-observable
+      - zenObservable
+    dev: false
+
   /@waku/peer-exchange/0.0.1:
     resolution: {integrity: sha512-8elLF3BzacI5Dt9L947m1+iBPdqVaU4elhBxa/lp5NKjy6laOSrcU2I38e9+TIttp4CHlz2ifLscrEDnZplNxQ==}
     engines: {node: '>=16'}
@@ -8124,7 +8156,7 @@ packages:
       '@libp2p/interface-peer-info': 1.0.7
       '@libp2p/interface-peer-store': 1.2.7
       '@waku/core': 0.0.8
-      '@waku/enr': 0.0.3
+      '@waku/enr': 0.0.3_uint8arraylist@2.4.3
       '@waku/interfaces': 0.0.6
       debug: 4.3.4
       it-all: 1.0.6
@@ -8141,6 +8173,15 @@ packages:
       - supports-color
       - zen-observable
       - zenObservable
+    dev: false
+
+  /@waku/proto/0.0.1:
+    resolution: {integrity: sha512-2JdwwHeKivkKrbSvFprJCL71fcL26SAM3XrAUcy7jr7wZqXDbxndqHS4rsypyN9X4QHBLs9Df8qMao3eEy/cLw==}
+    engines: {node: '>=16'}
+    dependencies:
+      protons-runtime: 3.1.0
+    transitivePeerDependencies:
+      - uint8arraylist
     dev: false
 
   /@waku/proto/0.0.1_uint8arraylist@2.4.3:
@@ -15966,7 +16007,7 @@ packages:
     dependencies:
       '@achingbrain/nat-port-mapper': 1.0.7
       '@libp2p/connection': 4.0.2
-      '@libp2p/crypto': 1.0.11
+      '@libp2p/crypto': 1.0.11_uint8arraylist@2.4.3
       '@libp2p/interface-address-manager': 2.0.3
       '@libp2p/interface-connection': 3.0.7
       '@libp2p/interface-connection-encrypter': 3.0.5
@@ -16023,7 +16064,7 @@ packages:
       p-retry: 5.1.2
       p-settle: 5.1.0
       private-ip: 2.3.4
-      protons-runtime: 4.0.1
+      protons-runtime: 4.0.1_uint8arraylist@2.4.3
       rate-limiter-flexible: 2.4.1
       retimer: 3.0.0
       sanitize-filename: 1.6.3
@@ -19495,6 +19536,15 @@ packages:
       long: 5.2.1
     dev: false
 
+  /protons-runtime/3.1.0:
+    resolution: {integrity: sha512-S1iSPQC0McdHKJRi0XcATBkWgwWPx46UDfrnshYDXBvGHSYqkFtn4MQ8Gatf67w7FzFtHivA+Hb0ZPq56upG8w==}
+    engines: {node: '>=16.0.0', npm: '>=7.0.0'}
+    peerDependencies:
+      uint8arraylist: ^2.3.2
+    dependencies:
+      protobufjs: 7.1.2
+    dev: false
+
   /protons-runtime/3.1.0_uint8arraylist@2.4.3:
     resolution: {integrity: sha512-S1iSPQC0McdHKJRi0XcATBkWgwWPx46UDfrnshYDXBvGHSYqkFtn4MQ8Gatf67w7FzFtHivA+Hb0ZPq56upG8w==}
     engines: {node: '>=16.0.0', npm: '>=7.0.0'}
@@ -19505,9 +19555,11 @@ packages:
       uint8arraylist: 2.4.3
     dev: false
 
-  /protons-runtime/4.0.1:
+  /protons-runtime/4.0.1_uint8arraylist@2.4.3:
     resolution: {integrity: sha512-SPeV+8TzJAp5UJYPV7vJkLRi08CP0DksxpKK60rcNaZSPkMBQwc0jQrmkHqwc5P0cYbZzKsdYrUBwRrDLrzTfQ==}
     engines: {node: '>=16.0.0', npm: '>=7.0.0'}
+    peerDependencies:
+      uint8arraylist: ^2.3.2
     dependencies:
       protobufjs: 7.1.2
       uint8arraylist: 2.4.3
