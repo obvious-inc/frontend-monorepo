@@ -9,9 +9,9 @@ import {
 } from "ethers/lib/utils";
 import { waitForRemotePeer, createEncoder, createDecoder } from "@waku/core";
 import {
-  // createLightNode,
+  createLightNode,
   // createRelayNode,
-  createFullNode,
+  // createFullNode,
 } from "@waku/create";
 import { Protocols } from "@waku/interfaces";
 import {
@@ -99,10 +99,9 @@ export const createClient = async ({
   userEthereumAddress,
   signerEdDSAPrivateKey,
 }) => {
-  const node = await createFullNode({ defaultBootstrap: true });
+  const node = await createLightNode({ defaultBootstrap: true });
   await node.start();
   await waitForRemotePeer(node, [
-    Protocols.Relay,
     Protocols.Filter,
     Protocols.LightPush,
     Protocols.Store,
@@ -121,7 +120,14 @@ export const createClient = async ({
 
     const operations = wakuMessages
       .filter((m) => m != null)
-      .map((m) => deserializeWakuMessagePayload(m.payload))
+      .map((m) => {
+        try {
+          return deserializeWakuMessagePayload(m.payload);
+        } catch (e) {
+          console.warn(e);
+          return null;
+        }
+      })
       .filter((o) => validateOperationStructure(o));
 
     const validOperations = (

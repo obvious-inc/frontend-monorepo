@@ -2,7 +2,10 @@ import {
   getPublicKey as getEdDSAPublicKey,
   utils as EdDSAUtils,
 } from "@noble/ed25519";
+import { hexToBytes, bytesToHex } from "@waku/byte-utils";
+import { encrypt, decrypt } from "@metamask/browser-passworder";
 import React from "react";
+import { css } from "@emotion/react";
 import { useParams } from "react-router-dom";
 import { useAccount, useSignTypedData } from "wagmi";
 import {
@@ -13,13 +16,13 @@ import {
   createClient as createNSWakuClient,
   OperationTypes,
 } from "@shades/common/waku";
+import Button from "./button";
+import Input from "./input";
 
 const { sort, comparator } = arrayUtils;
 
-// TODO: encrypted keystore
-const signerEdDSAPrivateKey = EdDSAUtils.randomPrivateKey();
-
-const sortMessages = (ms) => sort(comparator("timestamp"), ms);
+const sortMessages = (ms) =>
+  sort(comparator({ value: "timestamp", order: "desc" }), ms);
 
 const useOperationStore = () => {
   const signersByUserAddressReducer = (state, operation) => {
@@ -79,7 +82,7 @@ const WakuChannel = () => {
   const { address: connectedWalletAddress } = useAccount();
   const { signTypedDataAsync: signTypedData } = useSignTypedData();
 
-  const [signerPublicKey, setSignerPublicKey] = React.useState(null);
+  const [signerKeyPair, setSignerKeyPair] = React.useState(null);
   const [isConnected, setConnected] = React.useState(false);
   const [{ messagesById, signersByUserAddress }, mergeOperations] =
     useOperationStore();
@@ -104,15 +107,16 @@ const WakuChannel = () => {
 
   React.useEffect(() => {
     if (connectedWalletAddress == null) return;
+    if (signerKeyPair == null) return;
 
     createNSWakuClient({
       userEthereumAddress: connectedWalletAddress,
-      signerEdDSAPrivateKey,
+      signerEdDSAPrivateKey: hexToBytes(signerKeyPair.privateKey),
     }).then((client) => {
       clientRef.current = client;
       setConnected(true);
     });
-  }, [connectedWalletAddress]);
+  }, [connectedWalletAddress, signerKeyPair]);
 
   React.useEffect(() => {
     if (!isConnected) return;
@@ -147,14 +151,57 @@ const WakuChannel = () => {
   }, [isConnected, channelId, mergeOperations]);
 
   React.useEffect(() => {
-    getEdDSAPublicKey(signerEdDSAPrivateKey).then((signerPublicKey) => {
-      setSignerPublicKey(`0x${EdDSAUtils.bytesToHex(signerPublicKey)}`);
+    const getPublicKey = (privateKey) =>
+      getEdDSAPublicKey(hexToBytes(privateKey)).then(
+        (signerPublicKey) => `0x${bytesToHex(signerPublicKey)}`
+      );
+
+    const storedBlob = localStorage.getItem("ns:keystore");
+
+    if (storedBlob != null) {
+      const password = prompt("Unlock stored signer key");
+      const gavePassword = (password?.trim() || "") !== "";
+      if (gavePassword) {
+        decrypt(password, storedBlob).then(
+          ({ signer: privateKey }) => {
+            console.log("de", privateKey);
+            getPublicKey(privateKey).then((publicKey) => {
+              setSignerKeyPair({ publicKey, privateKey });
+            });
+          },
+          () => {
+            location.reload();
+          }
+        );
+        return;
+      }
+    }
+
+    const privateKey = `0x${bytesToHex(EdDSAUtils.randomPrivateKey())}`;
+
+    getPublicKey(privateKey).then((publicKey) => {
+      setSignerKeyPair({ privateKey, publicKey });
+    });
+
+    const password = prompt(
+      "Password protect your signer key, or leave empty to use a throwaway key."
+    );
+
+    if ((password?.trim() || "") === "") {
+      alert("Ok throwaway signer it is!");
+      return;
+    }
+
+    encrypt(password, { signer: privateKey }).then((blob) => {
+      localStorage.setItem("ns:keystore", blob);
     });
   }, []);
 
+  const signerPublicKey = signerKeyPair?.publicKey;
+
   if (signerPublicKey == null) return null;
-  if (connectedWalletAddress == null) return "Connect wallet";
-  if (!isConnected) return "Establishing network connection...";
+  if (connectedWalletAddress == null) return <C>Connect wallet</C>;
+  if (!isConnected) return <C>Establishing network connection...</C>;
 
   const userBroadcastedSigners = signersByUserAddress.get(
     connectedWalletAddress
@@ -174,6 +221,18 @@ const WakuChannel = () => {
   );
 };
 
+const C = (props) => (
+  <div
+    style={{
+      flex: 1,
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "center",
+    }}
+    {...props}
+  />
+);
+
 const ChannelView = ({
   users,
   messages,
@@ -182,30 +241,49 @@ const ChannelView = ({
   broadcastSigner,
 }) => {
   return (
-    <div>
-      <ul>
-        {users.map((u) => {
-          const signerCount = u.signers.length;
-          return (
-            <li key={u.id}>
-              {u.displayName} ({signerCount}{" "}
-              {signerCount === 1 ? "signer" : "signers"})
-            </li>
-          );
-        })}
-      </ul>
-
-      <hr />
-
-      <ul>
-        {sortMessages(messages).map((m) => (
-          <li key={m.id}>
-            {ethereumUtils.truncateAddress(m.user)}: {m.body.content}
-          </li>
-        ))}
-      </ul>
-
+    <div
+      css={css({
+        flex: 1,
+        display: "flex",
+        flexDirection: "column",
+        li: { listStyle: "none" },
+      })}
+    >
+      {users.length === 0 ? (
+        <div style={{ height: "1rem" }} />
+      ) : (
+        <header style={{ padding: "1rem" }}>
+          <div
+            css={(t) =>
+              css({
+                fontSize: t.fontSizes.small,
+                color: t.colors.textMuted,
+                fontWeight: "600",
+              })
+            }
+          >
+            Member list
+          </div>
+          <ul>
+            {users.map((u) => {
+              const signerCount = u.signers.length;
+              return (
+                <li key={u.id}>
+                  {u.displayName} ({signerCount}{" "}
+                  {signerCount === 1 ? "signer" : "signers"})
+                </li>
+              );
+            })}
+          </ul>
+        </header>
+      )}
       <form
+        style={{
+          padding: "0 1rem",
+          display: "grid",
+          gridTemplateColumns: "minmax(0,1fr) auto",
+          gridGap: "1rem",
+        }}
         onSubmit={(e) => {
           e.preventDefault();
           const content = e.target.message.value;
@@ -214,7 +292,7 @@ const ChannelView = ({
           e.target.message.value = "";
         }}
       >
-        <input
+        <Input
           name="message"
           placeholder={
             hasBroadcastedSigner ? "..." : "Broadcast signer to message"
@@ -223,17 +301,39 @@ const ChannelView = ({
         />
 
         {hasBroadcastedSigner ? (
-          <input type="submit" value="Send" />
+          <Button type="submit">Send</Button>
         ) : (
-          <button
+          <Button
+            type="button"
             onClick={() => {
               broadcastSigner();
             }}
           >
             Broadcast signer
-          </button>
+          </Button>
         )}
       </form>
+      <main style={{ padding: "1rem", flex: 1, overflow: "auto" }}>
+        <ul>
+          {sortMessages(messages).map((m) => (
+            <li key={m.id} style={{ margin: "0 0 0.5rem" }}>
+              <div
+                css={(t) =>
+                  css({
+                    fontSize: t.fontSizes.small,
+                    color: t.colors.textDimmed,
+                  })
+                }
+              >
+                {ethereumUtils.truncateAddress(m.user)}
+              </div>
+              <div css={(t) => css({ color: t.colors.textNormal })}>
+                {m.body.content}
+              </div>
+            </li>
+          ))}
+        </ul>
+      </main>
     </div>
   );
 };
