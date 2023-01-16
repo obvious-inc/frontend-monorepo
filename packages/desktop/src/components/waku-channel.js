@@ -322,23 +322,31 @@ const ChannelView = ({
       </form>
       <main style={{ padding: "1.6rem", flex: 1, overflow: "auto" }}>
         <ul>
-          {sortMessages(messages).map((m) => (
-            <li key={m.id} style={{ margin: "0 0 0.5rem" }}>
-              <div
-                css={(t) =>
-                  css({
-                    fontSize: t.fontSizes.small,
-                    color: t.colors.textDimmed,
-                  })
-                }
+          {sortMessages(messages).map((m, i, ms) => {
+            const compact = ms[i - 1]?.user === m.user;
+            return (
+              <li
+                key={m.id}
+                style={{ margin: i === 0 || compact ? 0 : "0.5rem 0 0" }}
               >
-                <UserDisplayName address={m.user} />
-              </div>
-              <div css={(t) => css({ color: t.colors.textNormal })}>
-                {m.body.content}
-              </div>
-            </li>
-          ))}
+                {!compact && (
+                  <div
+                    css={(t) =>
+                      css({
+                        fontSize: t.fontSizes.small,
+                        color: t.colors.textDimmed,
+                      })
+                    }
+                  >
+                    <UserDisplayName address={m.user} />
+                  </div>
+                )}
+                <div css={(t) => css({ color: t.colors.textNormal })}>
+                  {m.body.content}
+                </div>
+              </li>
+            );
+          })}
         </ul>
       </main>
     </div>
