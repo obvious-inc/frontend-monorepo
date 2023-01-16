@@ -151,51 +151,61 @@ const WakuChannel = () => {
   }, [isConnected, channelId, mergeOperations]);
 
   React.useEffect(() => {
+    if (connectedWalletAddress == null) return;
+
+    const storeKey = `ns:keystore:${connectedWalletAddress.toLowerCase()}`;
+
     const getPublicKey = (privateKey) =>
       getEdDSAPublicKey(hexToBytes(privateKey)).then(
         (signerPublicKey) => `0x${bytesToHex(signerPublicKey)}`
       );
 
-    const storedBlob = localStorage.getItem("ns:keystore");
+    const runCreateSignerFlow = () => {
+      const privateKey = `0x${bytesToHex(EdDSAUtils.randomPrivateKey())}`;
 
-    if (storedBlob != null) {
-      const password = prompt("Unlock stored signer key");
-      const gavePassword = (password?.trim() || "") !== "";
-      if (gavePassword) {
-        decrypt(password, storedBlob).then(
-          ({ signer: privateKey }) => {
-            console.log("de", privateKey);
-            getPublicKey(privateKey).then((publicKey) => {
-              setSignerKeyPair({ publicKey, privateKey });
-            });
-          },
-          () => {
-            location.reload();
-          }
-        );
-        return;
-      }
-    }
+      getPublicKey(privateKey).then((publicKey) => {
+        setSignerKeyPair({ privateKey, publicKey });
+      });
 
-    const privateKey = `0x${bytesToHex(EdDSAUtils.randomPrivateKey())}`;
+      const password = prompt(
+        "Signer key created. Password protect your key, or leave empty to use a throwaway key."
+      );
 
-    getPublicKey(privateKey).then((publicKey) => {
-      setSignerKeyPair({ privateKey, publicKey });
-    });
+      if ((password?.trim() || "") === "") return;
 
-    const password = prompt(
-      "Password protect your signer key, or leave empty to use a throwaway key."
-    );
+      encrypt(password, { signer: privateKey }).then((blob) => {
+        localStorage.setItem(storeKey, blob);
+      });
+    };
 
-    if ((password?.trim() || "") === "") {
-      alert("Ok throwaway signer it is!");
+    const storedBlob = localStorage.getItem(storeKey);
+
+    if (storedBlob == null) {
+      runCreateSignerFlow();
       return;
     }
 
-    encrypt(password, { signer: privateKey }).then((blob) => {
-      localStorage.setItem("ns:keystore", blob);
-    });
-  }, []);
+    const password = prompt(
+      "Unlock stored signer key, or leave emply to create a new one."
+    );
+    const gavePassword = (password?.trim() || "") !== "";
+
+    if (!gavePassword) {
+      runCreateSignerFlow();
+      return;
+    }
+
+    decrypt(password, storedBlob).then(
+      ({ signer: privateKey }) => {
+        getPublicKey(privateKey).then((publicKey) => {
+          setSignerKeyPair({ publicKey, privateKey });
+        });
+      },
+      () => {
+        location.reload();
+      }
+    );
+  }, [connectedWalletAddress]);
 
   const signerPublicKey = signerKeyPair?.publicKey;
 
