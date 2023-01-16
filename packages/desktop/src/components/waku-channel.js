@@ -89,6 +89,7 @@ const WakuChannel = () => {
 
   const [signerKeyPair, setSignerKeyPair] = React.useState(null);
   const [isConnected, setConnected] = React.useState(false);
+  const [signersFetched, setSignersFetched] = React.useState(false);
   const [{ messagesById, signersByUserAddress }, mergeOperations] =
     useOperationStore();
 
@@ -125,7 +126,12 @@ const WakuChannel = () => {
 
   React.useEffect(() => {
     if (!isConnected) return;
-    clientRef.current.fetchSigners().then(mergeOperations);
+    clientRef.current
+      .fetchSigners()
+      .then(mergeOperations)
+      .then(() => {
+        setSignersFetched(true);
+      });
   }, [isConnected, mergeOperations]);
 
   React.useEffect(() => {
@@ -235,6 +241,7 @@ const WakuChannel = () => {
       users={users}
       messages={messagesFromVerifiedUsers}
       submitMessage={submitMessage}
+      disabled={!signersFetched}
       hasBroadcastedSigner={hasBroadcastedSigner}
       broadcastSigner={() => {
         clientRef.current.submitSigner({ signerPublicKey, signTypedData });
@@ -261,6 +268,7 @@ const ChannelView = ({
   submitMessage,
   hasBroadcastedSigner,
   broadcastSigner,
+  disabled,
 }) => {
   return (
     <div
@@ -327,6 +335,7 @@ const ChannelView = ({
             onClick={() => {
               broadcastSigner();
             }}
+            disabled={disabled}
           >
             Broadcast signer
           </Button>
