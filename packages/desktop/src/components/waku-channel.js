@@ -7,7 +7,7 @@ import { encrypt, decrypt } from "@metamask/browser-passworder";
 import React from "react";
 import { css } from "@emotion/react";
 import { useParams } from "react-router-dom";
-import { useAccount, useSignTypedData } from "wagmi";
+import { useEnsName, useAccount, useSignTypedData } from "wagmi";
 import {
   array as arrayUtils,
   ethereum as ethereumUtils,
@@ -90,7 +90,7 @@ const WakuChannel = () => {
   const users = [...signersByUserAddress.entries()].map(
     ([address, signers]) => ({
       id: address,
-      displayName: ethereumUtils.truncateAddress(address),
+      address,
       signers: [...signers],
     })
   );
@@ -260,9 +260,9 @@ const ChannelView = ({
       })}
     >
       {users.length === 0 ? (
-        <div style={{ height: "1rem" }} />
+        <div style={{ height: "1.6rem" }} />
       ) : (
-        <header style={{ padding: "1rem" }}>
+        <header style={{ padding: "1.6rem" }}>
           <div
             css={(t) =>
               css({
@@ -275,27 +275,24 @@ const ChannelView = ({
             Member list
           </div>
           <ul>
-            {users.map((u) => {
-              const signerCount = u.signers.length;
-              return (
-                <li key={u.id}>
-                  {u.displayName} ({signerCount}{" "}
-                  {signerCount === 1 ? "signer" : "signers"})
-                </li>
-              );
-            })}
+            {users.map((u) => (
+              <li key={u.id}>
+                <UserDisplayName address={u.address} />
+              </li>
+            ))}
           </ul>
         </header>
       )}
       <form
         style={{
-          padding: "0 1rem",
+          padding: "0 1.6rem",
           display: "grid",
           gridTemplateColumns: "minmax(0,1fr) auto",
           gridGap: "1rem",
         }}
         onSubmit={(e) => {
           e.preventDefault();
+          e.target.message.focus();
           const content = e.target.message.value;
           if (content.trim() === "") return;
           submitMessage({ content });
@@ -323,7 +320,7 @@ const ChannelView = ({
           </Button>
         )}
       </form>
-      <main style={{ padding: "1rem", flex: 1, overflow: "auto" }}>
+      <main style={{ padding: "1.6rem", flex: 1, overflow: "auto" }}>
         <ul>
           {sortMessages(messages).map((m) => (
             <li key={m.id} style={{ margin: "0 0 0.5rem" }}>
@@ -335,7 +332,7 @@ const ChannelView = ({
                   })
                 }
               >
-                {ethereumUtils.truncateAddress(m.user)}
+                <UserDisplayName address={m.user} />
               </div>
               <div css={(t) => css({ color: t.colors.textNormal })}>
                 {m.body.content}
@@ -346,6 +343,11 @@ const ChannelView = ({
       </main>
     </div>
   );
+};
+
+const UserDisplayName = ({ address }) => {
+  const { data: name } = useEnsName({ address });
+  return name ?? ethereumUtils.truncateAddress(address);
 };
 
 export default WakuChannel;

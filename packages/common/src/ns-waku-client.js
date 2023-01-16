@@ -1,3 +1,4 @@
+import debug from "debug";
 import {
   getPublicKey as getEdDSAPublicKey,
   sign as signWithEdDSAKey,
@@ -20,6 +21,8 @@ import {
   hexToBytes,
   bytesToHex,
 } from "@waku/byte-utils";
+
+const log = debug("ns:waku-client");
 
 export const OperationTypes = { MESSAGE_ADD: 1, SIGNER_ADD: 2 };
 
@@ -107,47 +110,61 @@ export const createClient = async ({
     Protocols.Store,
   ]);
 
-  const createOperationFetcher = (wakuDecoders) => async () => {
-    const wakuMessagePromises = [];
+  node.store.peers().then((peers) => {
+    peers.forEach((p) => {
+      log(`connected to ${p.addresses[0].multiaddr.toString()}`);
+    });
+  });
 
-    for await (const page of node.store.queryGenerator(wakuDecoders, {
-      pageDirection: "backward",
-    })) {
-      wakuMessagePromises.push(...page);
-    }
+  const createOperationFetcher =
+    (wakuDecoders) =>
+    async ({ limit = 30 } = {}) => {
+      const wakuMessagePromises = [];
 
-    const wakuMessages = await Promise.all(wakuMessagePromises);
+      for await (const page of node.store.queryGenerator(wakuDecoders, {
+        pageDirection: "backward",
+        pageSize: limit,
+      })) {
+        wakuMessagePromises.push(...page);
+        if (wakuMessagePromises.length >= limit) break;
+      }
 
-    const operations = wakuMessages
-      .filter((m) => m != null)
-      .map((m) => {
-        try {
-          return deserializeWakuMessagePayload(m.payload);
-        } catch (e) {
-          console.warn(e);
-          return null;
-        }
-      })
-      .filter((o) => validateOperationStructure(o));
+      const wakuMessages = await Promise.all(wakuMessagePromises);
 
-    const validOperations = (
-      await Promise.all(
-        operations.map(async (o) => {
-          if (!validateOperationStructure(o)) return null;
-          const verified = await verifyOperation(o);
-          if (!verified) return null;
-          return o;
+      const operations = wakuMessages
+        .filter((m) => m != null)
+        .map((m) => {
+          try {
+            return deserializeWakuMessagePayload(m.payload);
+          } catch (e) {
+            console.warn(e);
+            return null;
+          }
         })
-      )
-    ).filter(Boolean);
+        .filter((o) => validateOperationStructure(o));
 
-    return validOperations;
-  };
+      const validOperations = (
+        await Promise.all(
+          operations.map(async (o) => {
+            if (!validateOperationStructure(o)) return null;
+            const verified = await verifyOperation(o);
+            if (!verified) return null;
+            return o;
+          })
+        )
+      ).filter(Boolean);
 
-  const createOperationSubmitter = (encoder) => (operation) =>
-    node.lightPush.push(encoder, {
+      log("fetched");
+
+      return validOperations;
+    };
+
+  const createOperationSubmitter = (encoder) => (operation) => {
+    log("submit", operation);
+    return node.lightPush.push(encoder, {
       payload: serializeWakuMessagePayload(operation),
     });
+  };
 
   const makeOperationData = (type, body) => ({
     body,
@@ -197,7 +214,7 @@ export const createClient = async ({
 
   const fetchSigners = () => {
     const decoder = createDecoder(SIGNER_ADD_WAKU_CONTENT_TOPIC);
-    return createOperationFetcher([decoder])();
+    return createOperationFetcher([decoder])({ limit: 100 });
   };
 
   const fetchChannelMessages = (channelId) => {
@@ -237,6 +254,7 @@ export const createClient = async ({
       [...globalWakuDecoders, ...channelSpecificWakuDecoders],
       async (message) => {
         const operation = deserializeWakuMessagePayload(message.payload);
+        log("incoming message");
         if (!validateOperationStructure(operation)) return;
         const verified = await verifyOperation(operation);
         if (!verified) return;

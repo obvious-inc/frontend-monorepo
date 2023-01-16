@@ -64,6 +64,7 @@
     "@waku/interfaces": "^0.0.6",
     "@waku/message-encryption": "^0.0.7",
     "date-fns": "^2.29.3",
+    "debug": "^4.3.4",
     "dotenv": "^16.0.3",
     "electron-squirrel-startup": "^1.0.0",
     "eth-provider": "^0.10.0",
