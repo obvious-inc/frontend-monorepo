@@ -7,7 +7,7 @@ import { encrypt, decrypt } from "@metamask/browser-passworder";
 import React from "react";
 import { css } from "@emotion/react";
 import { useParams } from "react-router-dom";
-import { useEnsName, useAccount, useSignTypedData } from "wagmi";
+import { useEnsName, useSignTypedData } from "wagmi";
 import {
   array as arrayUtils,
   ethereum as ethereumUtils,
@@ -16,6 +16,7 @@ import {
   createClient as createNSWakuClient,
   OperationTypes,
 } from "@shades/common/waku";
+import useWallet from "../hooks/wallet";
 import Button from "./button";
 import Input from "./input";
 
@@ -79,7 +80,11 @@ const WakuChannel = () => {
 
   const clientRef = React.useRef();
 
-  const { address: connectedWalletAddress } = useAccount();
+  const {
+    connect: connectWallet,
+    accountAddress: connectedWalletAddress,
+    isConnecting: isConnectingWallet,
+  } = useWallet();
   const { signTypedDataAsync: signTypedData } = useSignTypedData();
 
   const [signerKeyPair, setSignerKeyPair] = React.useState(null);
@@ -209,9 +214,16 @@ const WakuChannel = () => {
 
   const signerPublicKey = signerKeyPair?.publicKey;
 
-  if (signerPublicKey == null) return null;
-  if (connectedWalletAddress == null) return <C>Connect wallet</C>;
+  if (connectedWalletAddress == null)
+    return (
+      <C>
+        <Button onClick={connectWallet} disabled={isConnectingWallet}>
+          Connect wallet
+        </Button>
+      </C>
+    );
   if (!isConnected) return <C>Establishing network connection...</C>;
+  if (signerPublicKey == null) return null;
 
   const userBroadcastedSigners = signersByUserAddress.get(
     connectedWalletAddress
@@ -341,7 +353,11 @@ const ChannelView = ({
                     <UserDisplayName address={m.user} />
                   </div>
                 )}
-                <div css={(t) => css({ color: t.colors.textNormal })}>
+                <div
+                  css={(t) =>
+                    css({ color: t.colors.textNormal, userSelect: "text" })
+                  }
+                >
                   {m.body.content}
                 </div>
               </li>
