@@ -1,1 +1,1 @@
-export { createClient, OperationTypes } from "./ns-waku-client.js";
+export * from "./ns-waku-client.js";

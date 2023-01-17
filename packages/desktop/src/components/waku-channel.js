@@ -1,8 +1,5 @@
-import {
-  getPublicKey as getEdDSAPublicKey,
-  utils as EdDSAUtils,
-} from "@noble/ed25519";
-import { hexToBytes, bytesToHex } from "@waku/byte-utils";
+import { utils as EdDSAUtils } from "@noble/ed25519";
+import { bytesToHex } from "@waku/byte-utils";
 import { encrypt, decrypt } from "@metamask/browser-passworder";
 import React from "react";
 import { css } from "@emotion/react";
@@ -13,8 +10,13 @@ import {
   ethereum as ethereumUtils,
 } from "@shades/common/utils";
 import {
-  createClient as createNSWakuClient,
-  OperationTypes,
+  Provider as ClientProvider,
+  useClientState,
+  useSubmitters,
+  useFetchers,
+  useChannelMessages,
+  useChannelSubscription,
+  useUsers,
 } from "@shades/common/waku";
 import useWallet from "../hooks/wallet";
 import Button from "./button";
@@ -25,158 +27,18 @@ const { sort, comparator } = arrayUtils;
 const sortMessages = (ms) =>
   sort(comparator({ value: "timestamp", order: "desc" }), ms);
 
-const useOperationStore = () => {
-  const signersByUserAddressReducer = (state, operation) => {
-    switch (operation.data.type) {
-      case OperationTypes.SIGNER_ADD: {
-        const userAddress = operation.data.user;
-        const previousSignerSet = new Set(state.get(userAddress)) ?? new Set();
-        const updatedSignerSet = previousSignerSet.add(
-          operation.data.body.signer
-        );
-        return new Map(state.set(userAddress, updatedSignerSet));
-      }
-
-      default:
-        return state;
-    }
-  };
-
-  const messagesByIdReducer = (state, operation) => {
-    switch (operation.data.type) {
-      case OperationTypes.MESSAGE_ADD: {
-        const message = {
-          id: operation.hash,
-          signer: operation.signer,
-          ...operation.data,
-        };
-        return new Map(state.set(message.id, message));
-      }
-      default:
-        return state;
-    }
-  };
-
-  const operationReducer = (state, operation) => ({
-    ...state,
-    messagesById: messagesByIdReducer(state.messagesById, operation),
-    signersByUserAddress: signersByUserAddressReducer(
-      state.signersByUserAddress,
-      operation
-    ),
-  });
-
-  const [state, dispatch] = React.useReducer(
-    (state, operations) =>
-      operations.reduce((s, o) => operationReducer(s, o), state),
-    { messagesById: new Map(), signersByUserAddress: new Map() }
-  );
-
-  return [state, dispatch];
-};
-
-const WakuChannel = () => {
-  const { channelId } = useParams();
-
-  const clientRef = React.useRef();
-
-  const {
-    connect: connectWallet,
-    accountAddress: connectedWalletAddress,
-    isConnecting: isConnectingWallet,
-  } = useWallet();
-  const { signTypedDataAsync: signTypedData } = useSignTypedData();
-
-  const [signerKeyPair, setSignerKeyPair] = React.useState(null);
-  const [isConnected, setConnected] = React.useState(false);
-  const [signersFetched, setSignersFetched] = React.useState(false);
-  const [{ messagesById, signersByUserAddress }, mergeOperations] =
-    useOperationStore();
-
-  const users = [...signersByUserAddress.entries()].map(
-    ([address, signers]) => ({
-      id: address,
-      address,
-      signers: [...signers],
-    })
-  );
-
-  const messagesFromVerifiedUsers = [...messagesById.values()].filter((m) => {
-    const userSigners = signersByUserAddress.get(m.user);
-    return userSigners != null && userSigners.has(m.signer);
-  });
-
-  const submitMessage = React.useCallback(
-    (message) => clientRef.current.submitChannelMessage(channelId, message),
-    [channelId]
-  );
+const useSignerPrivateKey = (custodyAddress) => {
+  const [signerPrivateKey, setSignerPrivateKey] = React.useState(null);
 
   React.useEffect(() => {
-    if (connectedWalletAddress == null) return;
-    if (signerKeyPair == null) return;
+    if (custodyAddress == null) return;
 
-    createNSWakuClient({
-      userEthereumAddress: connectedWalletAddress,
-      signerEdDSAPrivateKey: hexToBytes(signerKeyPair.privateKey),
-    }).then((client) => {
-      clientRef.current = client;
-      setConnected(true);
-    });
-  }, [connectedWalletAddress, signerKeyPair]);
-
-  React.useEffect(() => {
-    if (!isConnected) return;
-    clientRef.current
-      .fetchSigners()
-      .then(mergeOperations)
-      .then(() => {
-        setSignersFetched(true);
-      });
-  }, [isConnected, mergeOperations]);
-
-  React.useEffect(() => {
-    if (!isConnected) return;
-    clientRef.current.fetchChannelMessages(channelId).then(mergeOperations);
-  }, [isConnected, channelId, mergeOperations]);
-
-  React.useEffect(() => {
-    if (!isConnected) return;
-
-    const unsubscribe = clientRef.current.subscribe(
-      [channelId],
-      (operation) => {
-        switch (operation.data.type) {
-          case OperationTypes.MESSAGE_ADD:
-          case OperationTypes.SIGNER_ADD:
-            mergeOperations([operation]);
-            break;
-          default:
-            console.warn(`Unknown operation type "${operation.data.type}"`);
-        }
-      }
-    );
-
-    return () => {
-      unsubscribe();
-    };
-  }, [isConnected, channelId, mergeOperations]);
-
-  React.useEffect(() => {
-    if (connectedWalletAddress == null) return;
-
-    const storeKey = `ns:keystore:${connectedWalletAddress.toLowerCase()}`;
-
-    const getPublicKey = (privateKey) =>
-      getEdDSAPublicKey(hexToBytes(privateKey)).then(
-        (signerPublicKey) => `0x${bytesToHex(signerPublicKey)}`
-      );
+    const storeKey = `ns:keystore:${custodyAddress.toLowerCase()}`;
 
     const runCreateSignerFlow = () => {
       const privateKey = `0x${bytesToHex(EdDSAUtils.randomPrivateKey())}`;
 
-      getPublicKey(privateKey).then((publicKey) => {
-        setSignerKeyPair({ privateKey, publicKey });
-      });
+      setSignerPrivateKey(privateKey);
 
       const password = prompt(
         "Signer key created. Password protect your key, or leave empty to use a throwaway key."
@@ -208,45 +70,28 @@ const WakuChannel = () => {
 
     decrypt(password, storedBlob).then(
       ({ signer: privateKey }) => {
-        getPublicKey(privateKey).then((publicKey) => {
-          setSignerKeyPair({ publicKey, privateKey });
-        });
+        setSignerPrivateKey(privateKey);
       },
       () => {
         location.reload();
       }
     );
-  }, [connectedWalletAddress]);
+  }, [custodyAddress]);
 
-  const signerPublicKey = signerKeyPair?.publicKey;
+  return signerPrivateKey;
+};
 
-  if (connectedWalletAddress == null)
-    return (
-      <C>
-        <Button onClick={connectWallet} disabled={isConnectingWallet}>
-          Connect wallet
-        </Button>
-      </C>
-    );
-  if (!isConnected) return <C>Establishing network connection...</C>;
-  if (signerPublicKey == null) return null;
-
-  const userBroadcastedSigners = signersByUserAddress.get(
-    connectedWalletAddress
-  );
-  const hasBroadcastedSigner = userBroadcastedSigners?.has(signerPublicKey);
+const WakuChannel = () => {
+  const { accountAddress } = useWallet();
+  const signerPrivateKey = useSignerPrivateKey(accountAddress);
 
   return (
-    <ChannelView
-      users={users}
-      messages={messagesFromVerifiedUsers}
-      submitMessage={submitMessage}
-      disabled={!signersFetched}
-      hasBroadcastedSigner={hasBroadcastedSigner}
-      broadcastSigner={() => {
-        clientRef.current.submitSigner({ signerPublicKey, signTypedData });
-      }}
-    />
+    <ClientProvider
+      account={accountAddress}
+      signerEdDSAPrivateKey={signerPrivateKey}
+    >
+      <ChannelView />
+    </ClientProvider>
   );
 };
 
@@ -262,14 +107,54 @@ const C = (props) => (
   />
 );
 
-const ChannelView = ({
-  users,
-  messages,
-  submitMessage,
-  hasBroadcastedSigner,
-  broadcastSigner,
-  disabled,
-}) => {
+const ChannelView = () => {
+  const { channelId } = useParams();
+
+  const {
+    connect: connectWallet,
+    accountAddress: connectedWalletAddress,
+    isConnecting: isConnectingWallet,
+  } = useWallet();
+  const { signTypedDataAsync: signTypedData } = useSignTypedData();
+  const {
+    didInitialize: didInitializeClient,
+    peers,
+    signerKeyPair,
+  } = useClientState();
+
+  useChannelSubscription(channelId);
+
+  const [signersFetched, setSignersFetched] = React.useState(false);
+  const { submitChannelMessage, submitSigner } = useSubmitters();
+  const { fetchChannelMessages, fetchSigners } = useFetchers();
+  const messages = useChannelMessages(channelId);
+  const users = useUsers();
+
+  const me = users.find((u) => u.address === connectedWalletAddress);
+
+  const hasBroadcastedSigner =
+    signerKeyPair?.publicKey != null &&
+    me?.signers.includes(signerKeyPair.publicKey);
+
+  const messagesFromVerifiedUsers = messages.filter((m) => {
+    const user = users.find((u) => u.id === m.user);
+    return user != null && user.signers.includes(m.signer);
+  });
+
+  React.useEffect(() => {
+    if (!didInitializeClient) return;
+    fetchSigners().then(() => {
+      setSignersFetched(true);
+    });
+  }, [didInitializeClient, fetchSigners]);
+
+  React.useEffect(() => {
+    if (!didInitializeClient) return;
+    fetchChannelMessages(channelId);
+  }, [didInitializeClient, channelId, fetchChannelMessages]);
+
+  if (!didInitializeClient) return <C>Establishing network connection...</C>;
+
   return (
     <div
       css={css({
@@ -279,6 +164,23 @@ const ChannelView = ({
         li: { listStyle: "none" },
       })}
     >
+      {peers.length !== 0 && (
+        <ul
+          css={(t) =>
+            css({
+              padding: "1.6rem",
+              paddingBottom: 0,
+              color: t.colors.link,
+              fontSize: t.fontSizes.small,
+            })
+          }
+        >
+          {peers.map((p) => (
+            <li key={p.id}>{p.name}</li>
+          ))}
+        </ul>
+      )}
+
       {users.length === 0 ? (
         <div style={{ height: "1.6rem" }} />
       ) : (
@@ -303,6 +205,7 @@ const ChannelView = ({
           </ul>
         </header>
       )}
+
       <form
         style={{
           padding: "0 1.6rem",
@@ -315,7 +218,7 @@ const ChannelView = ({
           e.target.message.focus();
           const content = e.target.message.value;
           if (content.trim() === "") return;
-          submitMessage({ content });
+          submitChannelMessage(channelId, { content });
           e.target.message.value = "";
         }}
       >
@@ -327,23 +230,28 @@ const ChannelView = ({
           disabled={!hasBroadcastedSigner}
         />
 
-        {hasBroadcastedSigner ? (
-          <Button type="submit">Send</Button>
-        ) : (
+        {connectedWalletAddress == null ? (
+          <Button onClick={connectWallet} disabled={isConnectingWallet}>
+            Connect wallet
+          </Button>
+        ) : !hasBroadcastedSigner ? (
           <Button
             type="button"
             onClick={() => {
-              broadcastSigner();
+              submitSigner({ signTypedData });
             }}
-            disabled={disabled}
+            disabled={!signersFetched}
           >
             Broadcast signer
           </Button>
+        ) : (
+          <Button type="submit">Send</Button>
         )}
       </form>
+
       <main style={{ padding: "1.6rem", flex: 1, overflow: "auto" }}>
         <ul>
-          {sortMessages(messages).map((m, i, ms) => {
+          {sortMessages(messagesFromVerifiedUsers).map((m, i, ms) => {
             const compact = ms[i - 1]?.user === m.user;
             return (
               <li

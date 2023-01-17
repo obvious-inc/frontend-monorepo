@@ -1,4 +1,3 @@
-import debug from "debug";
 import {
   getPublicKey as getEdDSAPublicKey,
   sign as signWithEdDSAKey,
@@ -8,23 +7,14 @@ import {
   keccak256 as hashWithKeccak256,
   verifyTypedData as verifyECDSATypedDataSignature,
 } from "ethers/lib/utils";
-import { waitForRemotePeer, createEncoder, createDecoder } from "@waku/core";
-import {
-  createLightNode,
-  // createRelayNode,
-  // createFullNode,
-} from "@waku/create";
-import { Protocols } from "@waku/interfaces";
-import {
-  utf8ToBytes,
-  bytesToUtf8,
-  hexToBytes,
-  bytesToHex,
-} from "@waku/byte-utils";
+import { createEncoder, createDecoder } from "@waku/core";
+import { utf8ToBytes, hexToBytes, bytesToHex } from "@waku/byte-utils";
+import React from "react";
+import { createClient as createWakuClient } from "./waku-client.js";
+import combineReducers from "./utils/combine-reducers.js";
+import useLatestCallback from "./hooks/latest-callback.js";
 
-const log = debug("ns:waku-client");
-
-export const OperationTypes = { MESSAGE_ADD: 1, SIGNER_ADD: 2 };
+const OperationTypes = { MESSAGE_ADD: 1, SIGNER_ADD: 2 };
 
 const OPERATION_ECDSA_SIGNATURE_DOMAIN = {
   name: "NewShades Message Signature",
@@ -38,23 +28,24 @@ const SIGNER_ADD_OPERATION_ECDSA_SIGNATURE_TYPES = {
   ],
 };
 
-const createWakuContentTopic = (name) => `/newshades/1/${name}/json`;
+const createContentTopic = (name) => `/newshades/1/${name}/json`;
 
-const createChannelMessageAddWakuContentTopic = (channelId) =>
-  createWakuContentTopic(
+const createChannelMessageAddContentTopic = (channelId) =>
+  createContentTopic(
     `channel-message-add-${hashWithKeccak256(utf8ToBytes(channelId))}`
   );
 
-const SIGNER_ADD_WAKU_CONTENT_TOPIC = createWakuContentTopic("signer-add");
+const SIGNER_ADD_WAKU_CONTENT_TOPIC = createContentTopic("signer-add");
 
 // Topics everyone should listen to
-const globalWakuContentTopics = [SIGNER_ADD_WAKU_CONTENT_TOPIC];
+const globalContentTopics = [SIGNER_ADD_WAKU_CONTENT_TOPIC];
 
+// Topics unique per user
 // const getUserWakuTopics = () => {}
 
-const getChannelSpecificWakuTopics = (channelId) =>
+const getChannelSpecificContentTopics = (channelId) =>
   // Should include message deletes and updates, as well as downstream operations like reactions, replies, new members, etc.
-  [createChannelMessageAddWakuContentTopic(channelId)];
+  [createChannelMessageAddContentTopic(channelId)];
 
 const validateOperationStructure = (o) => {
   if (o == null) return false;
@@ -72,6 +63,8 @@ const hashOperationData = (data) =>
   hashWithKeccak256(utf8ToBytes(JSON.stringify(data))).slice(2);
 
 const verifyOperation = async (operation) => {
+  if (!validateOperationStructure(operation)) return false;
+
   if (operation.data.type === OperationTypes.SIGNER_ADD) {
     const recoveredAddress = verifyECDSATypedDataSignature(
       OPERATION_ECDSA_SIGNATURE_DOMAIN,
@@ -92,99 +85,240 @@ const verifyOperation = async (operation) => {
     hexToBytes(operation.signer)
   );
 
+  // TODO verify user `operation.data.user` has verified signer `operation.signer`
+
   return ok;
 };
 
-const serializeWakuMessagePayload = (p) => utf8ToBytes(JSON.stringify(p));
-const deserializeWakuMessagePayload = (p) => JSON.parse(bytesToUtf8(p));
-
-export const createClient = async ({
-  userEthereumAddress,
-  signerEdDSAPrivateKey,
-}) => {
-  const node = await createLightNode({ defaultBootstrap: true });
-  await node.start();
-  await waitForRemotePeer(node, [
-    Protocols.Filter,
-    Protocols.LightPush,
-    Protocols.Store,
-  ]);
-
-  node.store.peers().then((peers) => {
-    peers.forEach((p) => {
-      log(`connected to ${p.addresses[0].multiaddr.toString()}`);
-    });
-  });
-
-  const createOperationFetcher =
-    (wakuDecoders) =>
-    async ({ limit = 30 } = {}) => {
-      const wakuMessagePromises = [];
-
-      for await (const page of node.store.queryGenerator(wakuDecoders, {
-        pageDirection: "backward",
-        pageSize: limit,
-      })) {
-        wakuMessagePromises.push(...page);
-        if (wakuMessagePromises.length >= limit) break;
+const useOperationStore = () => {
+  const signersByUserAddress = (state, operation) => {
+    switch (operation.data.type) {
+      case OperationTypes.SIGNER_ADD: {
+        const userAddress = operation.data.user;
+        const previousSignerSet = new Set(state.get(userAddress)) ?? new Set();
+        const updatedSignerSet = previousSignerSet.add(
+          operation.data.body.signer
+        );
+        return new Map(state.set(userAddress, updatedSignerSet));
       }
 
-      const wakuMessages = await Promise.all(wakuMessagePromises);
-
-      const operations = wakuMessages
-        .filter((m) => m != null)
-        .map((m) => {
-          try {
-            return deserializeWakuMessagePayload(m.payload);
-          } catch (e) {
-            console.warn(e);
-            return null;
-          }
-        })
-        .filter((o) => validateOperationStructure(o));
-
-      const validOperations = (
-        await Promise.all(
-          operations.map(async (o) => {
-            if (!validateOperationStructure(o)) return null;
-            const verified = await verifyOperation(o);
-            if (!verified) return null;
-            return o;
-          })
-        )
-      ).filter(Boolean);
-
-      log("fetched");
-
-      return validOperations;
-    };
-
-  const createOperationSubmitter = (encoder) => (operation) => {
-    log("submit", operation);
-    return node.lightPush.push(encoder, {
-      payload: serializeWakuMessagePayload(operation),
-    });
+      default:
+        return state;
+    }
   };
+
+  const messagesById = (state, operation) => {
+    switch (operation.data.type) {
+      case OperationTypes.MESSAGE_ADD: {
+        const message = {
+          id: operation.hash,
+          signer: operation.signer,
+          ...operation.data,
+        };
+        return new Map(state.set(message.id, message));
+      }
+      default:
+        return state;
+    }
+  };
+
+  const messageIdsByChannelId = (state, operation) => {
+    switch (operation.data.type) {
+      case OperationTypes.MESSAGE_ADD: {
+        const messageId = operation.hash;
+        const channelId = operation.data.body.channelId;
+        const previousMessageSet = new Set(state.get(channelId)) ?? new Set();
+        const updatedMessageSet = previousMessageSet.add(messageId);
+        return new Map(state.set(channelId, updatedMessageSet));
+      }
+      default:
+        return state;
+    }
+  };
+
+  const operationReducer = combineReducers({
+    messagesById,
+    messageIdsByChannelId,
+    signersByUserAddress,
+  });
+
+  const [state, dispatch] = React.useReducer(
+    (state, operations) =>
+      operations.reduce((s, o) => operationReducer(s, o), state),
+    {
+      messagesById: new Map(),
+      messageIdsByChannelId: new Map(),
+      signersByUserAddress: new Map(),
+    }
+  );
+
+  return [state, dispatch];
+};
+
+const SignerContext = React.createContext();
+const WakuClientContext = React.createContext();
+const StoreContext = React.createContext();
+
+export const Provider = ({ account, signerEdDSAPrivateKey, children }) => {
+  const clientRef = React.useRef();
+  const store = useOperationStore();
+  const [didInitialize, setInitialized] = React.useState(false);
+  const [signerPublicKey, setSignerPublicKey] = React.useState(null);
+
+  React.useEffect(() => {
+    createWakuClient().then((client) => {
+      clientRef.current = client;
+      setInitialized(true);
+    });
+  }, []);
+
+  React.useEffect(() => {
+    if (!didInitialize) return;
+
+    const unsubscribe = clientRef.current.subscribe(
+      globalContentTopics.map(createDecoder),
+      async (wakuMessagePayload) => {
+        const verified = await verifyOperation(wakuMessagePayload);
+        if (!verified) return;
+        mergeOperations([wakuMessagePayload]);
+      }
+    );
+
+    return () => {
+      unsubscribe();
+    };
+  }, [didInitialize]);
+
+  React.useEffect(() => {
+    if (signerEdDSAPrivateKey == null) return;
+
+    getEdDSAPublicKey(hexToBytes(signerEdDSAPrivateKey)).then(
+      (publicKeyBytes) => {
+        const publicKeyHex = `0x${bytesToHex(publicKeyBytes)}`;
+        setSignerPublicKey(publicKeyHex);
+      }
+    );
+  }, [signerEdDSAPrivateKey]);
+
+  const signerKeyPair = {
+    privateKey: signerEdDSAPrivateKey,
+    publicKey: signerPublicKey,
+  };
+
+  return (
+    <SignerContext.Provider value={{ account, signerKeyPair }}>
+      <WakuClientContext.Provider
+        value={{ didInitialize, client: clientRef.current }}
+      >
+        <StoreContext.Provider value={store}>{children}</StoreContext.Provider>
+      </WakuClientContext.Provider>
+    </SignerContext.Provider>
+  );
+};
+
+export const useClientState = () => {
+  const { signerKeyPair } = React.useContext(SignerContext);
+  const { didInitialize, client } = React.useContext(WakuClientContext);
+
+  const [peers, setPeers] = React.useState([]);
+
+  React.useEffect(() => {
+    if (!didInitialize) return;
+
+    client.getPeers().then((peers) => {
+      setPeers(peers);
+    });
+  }, [didInitialize, client]);
+
+  return { didInitialize, signerKeyPair, peers };
+};
+
+export const useChannelMessages = (channelId) => {
+  const [{ messageIdsByChannelId, messagesById }] =
+    React.useContext(StoreContext);
+  const channelMessageIdSet = messageIdsByChannelId.get(channelId) ?? new Set();
+  return [...channelMessageIdSet].map((id) => messagesById.get(id));
+};
+
+export const useUsers = () => {
+  const [{ signersByUserAddress }] = React.useContext(StoreContext);
+
+  const users = [...signersByUserAddress.entries()].map(
+    ([address, signers]) => ({
+      id: address,
+      address,
+      signers: [...signers],
+    })
+  );
+
+  return users;
+};
+
+export const useFetchers = () => {
+  const { client } = React.useContext(WakuClientContext);
+  const [, mergeOperations] = React.useContext(StoreContext);
+
+  const fetchOperations = async (decoders, options) => {
+    const wakuMessagePayloads = await client.fetchMessages(decoders, options);
+
+    const validOperations = (
+      await Promise.all(
+        wakuMessagePayloads.map(async (o) => {
+          const verified = await verifyOperation(o);
+          if (!verified) return null;
+          return o;
+        })
+      )
+    ).filter(Boolean);
+
+    return validOperations;
+  };
+
+  const fetchSigners = useLatestCallback(async () => {
+    const operations = await fetchOperations(
+      [createDecoder(SIGNER_ADD_WAKU_CONTENT_TOPIC)],
+      { limit: 100 }
+    );
+    mergeOperations(operations);
+    return operations;
+  });
+
+  const fetchChannelMessages = useLatestCallback(async (channelId) => {
+    const channelMessageAddContentTopic =
+      createChannelMessageAddContentTopic(channelId);
+    const operations = await fetchOperations([
+      createDecoder(channelMessageAddContentTopic),
+    ]);
+    mergeOperations(operations);
+    return operations;
+  });
+
+  return { fetchSigners, fetchChannelMessages };
+};
+
+export const useSubmitters = () => {
+  const { account: custodyAddress, signerKeyPair } =
+    React.useContext(SignerContext) ?? {};
+  const { client: wakuClient } = React.useContext(WakuClientContext);
 
   const makeOperationData = (type, body) => ({
     body,
     type,
-    user: userEthereumAddress,
+    user: custodyAddress,
     timestamp: new Date().getTime(),
   });
 
   const makeEdDSASignedOperation = async (type, body) => {
     const data = makeOperationData(type, body);
     const hash = hashOperationData(data);
-    const signerPublicKeyBytes = await getEdDSAPublicKey(signerEdDSAPrivateKey);
     const signatureBytes = await signWithEdDSAKey(
       hexToBytes(hash),
-      signerEdDSAPrivateKey
+      hexToBytes(signerKeyPair.privateKey)
     );
     return {
       data,
       hash,
-      signer: `0x${bytesToHex(signerPublicKeyBytes)}`,
+      signer: signerKeyPair.publicKey,
       signature: `0x${bytesToHex(signatureBytes)}`,
     };
   };
@@ -197,7 +331,7 @@ export const createClient = async ({
       domain: OPERATION_ECDSA_SIGNATURE_DOMAIN,
       types: SIGNER_ADD_OPERATION_ECDSA_SIGNATURE_TYPES,
       value: {
-        user: userEthereumAddress,
+        user: custodyAddress,
         signer,
       },
     });
@@ -207,69 +341,54 @@ export const createClient = async ({
     return {
       data,
       hash,
-      signer: userEthereumAddress,
+      signer: custodyAddress,
       signature,
     };
   };
 
-  const fetchSigners = () => {
-    const decoder = createDecoder(SIGNER_ADD_WAKU_CONTENT_TOPIC);
-    return createOperationFetcher([decoder])({ limit: 100 });
-  };
-
-  const fetchChannelMessages = (channelId) => {
-    const decoder = createDecoder(
-      createChannelMessageAddWakuContentTopic(channelId)
-    );
-    return createOperationFetcher([decoder])();
-  };
-
   const submitChannelMessage = async (channelId, { content }) => {
+    const contentTopic = createChannelMessageAddContentTopic(channelId);
+    const encoder = createEncoder(contentTopic);
     const operation = await makeEdDSASignedOperation(
       OperationTypes.MESSAGE_ADD,
       { channelId, content }
     );
-    const wakuContentTopic = createChannelMessageAddWakuContentTopic(channelId);
-    return createOperationSubmitter(createEncoder(wakuContentTopic))(operation);
+    return wakuClient.submitMessage(encoder, operation);
   };
 
-  const submitSigner = async ({ signerPublicKey, signTypedData }) => {
+  const submitSigner = async ({ signTypedData }) => {
+    const encoder = createEncoder(SIGNER_ADD_WAKU_CONTENT_TOPIC);
     const operation = await makeECDSASignedSignerAddOperation({
-      signerPublicKey,
+      signerPublicKey: signerKeyPair.publicKey,
       signTypedData,
     });
-    return createOperationSubmitter(
-      createEncoder(SIGNER_ADD_WAKU_CONTENT_TOPIC)
-    )(operation);
+    return wakuClient.submitMessage(encoder, operation);
   };
 
-  const subscribe = async (channels, cb) => {
-    const globalWakuDecoders = globalWakuContentTopics.map(createDecoder);
+  return { submitSigner, submitChannelMessage };
+};
 
-    const channelSpecificWakuDecoders = channels.flatMap((id) =>
-      getChannelSpecificWakuTopics(id).map(createDecoder)
-    );
+export const useChannelSubscription = (channelId) => {
+  const { client } = React.useContext(WakuClientContext);
+  const [, mergeOperations] = React.useContext(StoreContext);
+  const { didInitialize } = useClientState();
 
-    const unsubscribe = await node.filter.subscribe(
-      [...globalWakuDecoders, ...channelSpecificWakuDecoders],
-      async (message) => {
-        const operation = deserializeWakuMessagePayload(message.payload);
-        log("incoming message");
-        if (!validateOperationStructure(operation)) return;
-        const verified = await verifyOperation(operation);
+  React.useEffect(() => {
+    if (!didInitialize) return;
+
+    const contentTopics = getChannelSpecificContentTopics(channelId);
+
+    const unsubscribe = client.subscribe(
+      contentTopics.map(createDecoder),
+      async (wakuMessagePayload) => {
+        const verified = await verifyOperation(wakuMessagePayload);
         if (!verified) return;
-        cb(operation);
+        mergeOperations([wakuMessagePayload]);
       }
     );
 
-    return unsubscribe;
-  };
-
-  return {
-    subscribe,
-    submitSigner,
-    fetchSigners,
-    fetchChannelMessages,
-    submitChannelMessage,
-  };
+    return () => {
+      unsubscribe?.();
+    };
+  }, [client, didInitialize, channelId]);
 };
