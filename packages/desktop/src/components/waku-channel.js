@@ -1,6 +1,4 @@
-import { utils as EdDSAUtils } from "@noble/ed25519";
-import { bytesToHex } from "@waku/byte-utils";
-import { encrypt, decrypt } from "@metamask/browser-passworder";
+import { utils as ethersUtils } from "ethers";
 import React from "react";
 import { css } from "@emotion/react";
 import { useParams } from "react-router-dom";
@@ -10,10 +8,11 @@ import {
   ethereum as ethereumUtils,
 } from "@shades/common/utils";
 import {
-  Provider as ClientProvider,
   useClientState,
   useSubmitters,
   useFetchers,
+  useChannel,
+  useChannelMembers,
   useChannelMessages,
   useChannelSubscription,
   useUsers,
@@ -27,87 +26,7 @@ const { sort, comparator } = arrayUtils;
 const sortMessages = (ms) =>
   sort(comparator({ value: "timestamp", order: "desc" }), ms);
 
-const useSignerPrivateKey = (custodyAddress) => {
-  const [signerPrivateKey, setSignerPrivateKey] = React.useState(null);
-
-  React.useEffect(() => {
-    if (custodyAddress == null) return;
-
-    const storeKey = `ns:keystore:${custodyAddress.toLowerCase()}`;
-
-    const runCreateSignerFlow = () => {
-      const privateKey = `0x${bytesToHex(EdDSAUtils.randomPrivateKey())}`;
-
-      setSignerPrivateKey(privateKey);
-
-      const password = prompt(
-        "Signer key created. Password protect your key, or leave empty to use a throwaway key."
-      );
-
-      if ((password?.trim() || "") === "") return;
-
-      encrypt(password, { signer: privateKey }).then((blob) => {
-        localStorage.setItem(storeKey, blob);
-      });
-    };
-
-    const storedBlob = localStorage.getItem(storeKey);
-
-    if (storedBlob == null) {
-      runCreateSignerFlow();
-      return;
-    }
-
-    const password = prompt(
-      "Unlock stored signer key, or leave emply to create a new one."
-    );
-    const gavePassword = (password?.trim() || "") !== "";
-
-    if (!gavePassword) {
-      runCreateSignerFlow();
-      return;
-    }
-
-    decrypt(password, storedBlob).then(
-      ({ signer: privateKey }) => {
-        setSignerPrivateKey(privateKey);
-      },
-      () => {
-        location.reload();
-      }
-    );
-  }, [custodyAddress]);
-
-  return signerPrivateKey;
-};
-
 const WakuChannel = () => {
-  const { accountAddress } = useWallet();
-  const signerPrivateKey = useSignerPrivateKey(accountAddress);
-
-  return (
-    <ClientProvider
-      account={accountAddress}
-      signerEdDSAPrivateKey={signerPrivateKey}
-    >
-      <ChannelView />
-    </ClientProvider>
-  );
-};
-
-const C = (props) => (
-  <div
-    style={{
-      flex: 1,
-      display: "flex",
-      alignItems: "center",
-      justifyContent: "center",
-    }}
-    {...props}
-  />
-);
-
-const ChannelView = () => {
   const { channelId } = useParams();
 
   const {
@@ -116,44 +35,53 @@ const ChannelView = () => {
     isConnecting: isConnectingWallet,
   } = useWallet();
   const { signTypedDataAsync: signTypedData } = useSignTypedData();
-  const {
-    didInitialize: didInitializeClient,
-    peers,
-    signerKeyPair,
-  } = useClientState();
+  const { peers, signerKeyPair } = useClientState();
+
+  const [signersFetched, setSignersFetched] = React.useState(false);
 
   useChannelSubscription(channelId);
 
-  const [signersFetched, setSignersFetched] = React.useState(false);
-  const { submitChannelMessage, submitSigner } = useSubmitters();
-  const { fetchChannelMessages, fetchSigners } = useFetchers();
-  const messages = useChannelMessages(channelId);
+  const {
+    submitChannelMessageAdd,
+    submitChannelMessageRemove,
+    submitChannelMemberAdd,
+    submitSignerAdd,
+    submitChannelBroadcast,
+  } = useSubmitters();
+  const { fetchChannel, fetchChannelMessages, fetchSigners } = useFetchers();
+
   const users = useUsers();
-
-  const me = users.find((u) => u.address === connectedWalletAddress);
-
-  const hasBroadcastedSigner =
-    signerKeyPair?.publicKey != null &&
-    me?.signers.includes(signerKeyPair.publicKey);
-
-  const messagesFromVerifiedUsers = messages.filter((m) => {
-    const user = users.find((u) => u.id === m.user);
-    return user != null && user.signers.includes(m.signer);
+  const channel = useChannel(channelId);
+  const memberAddresses = useChannelMembers(channelId);
+  const messages = useChannelMessages(channelId);
+  // TODO enforce upstream in "sdk"
+  const messagesWithVerifiedSigners = messages.filter((m) => {
+    const authorUser = users.find((u) => u.id === m.user);
+    return authorUser != null && authorUser.signers.includes(m.signer);
   });
 
+  const me = users.find((u) => u.address === connectedWalletAddress);
+  const hasBroadcastedSigner = me?.signers.includes(signerKeyPair.publicKey);
+
+  const isMember = memberAddresses.some((a) => a === connectedWalletAddress);
+  const canPost = isMember && hasBroadcastedSigner;
+
   React.useEffect(() => {
-    if (!didInitializeClient) return;
     fetchSigners().then(() => {
       setSignersFetched(true);
     });
-  }, [didInitializeClient, fetchSigners]);
+  }, [fetchSigners]);
 
   React.useEffect(() => {
-    if (!didInitializeClient) return;
-    fetchChannelMessages(channelId);
-  }, [didInitializeClient, channelId, fetchChannelMessages]);
+    // Need to fetch channel first for now to ensure we have membership info when messages arrive
+    fetchChannel(channelId).then(() => {
+      fetchChannelMessages(channelId);
+    });
+  }, [channelId, fetchChannel, fetchChannelMessages]);
 
-  if (!didInitializeClient) return <C>Establishing network connection...</C>;
+  React.useEffect(() => {
+    submitChannelBroadcast({ channelIds: [channelId] });
+  }, [channelId, submitChannelBroadcast]);
 
   return (
     <div
@@ -164,47 +92,120 @@ const ChannelView = () => {
         li: { listStyle: "none" },
       })}
     >
-      {peers.length !== 0 && (
-        <ul
-          css={(t) =>
-            css({
-              padding: "1.6rem",
-              paddingBottom: 0,
-              color: t.colors.link,
-              fontSize: t.fontSizes.small,
-            })
-          }
+      <header style={{ padding: "1.6rem" }}>
+        <div
+          style={{
+            display: "grid",
+            gridTemplateColumns: "auto minmax(0,1fr)",
+            gridGap: "1.6rem",
+            alignItems: "flex-start",
+          }}
         >
-          {peers.map((p) => (
-            <li key={p.id}>{p.name}</li>
-          ))}
-        </ul>
-      )}
-
-      {users.length === 0 ? (
-        <div style={{ height: "1.6rem" }} />
-      ) : (
-        <header style={{ padding: "1.6rem" }}>
           <div
             css={(t) =>
               css({
-                fontSize: t.fontSizes.small,
-                color: t.colors.textMuted,
-                fontWeight: "600",
+                fontWeight: t.text.weights.header,
+                flex: 1,
+                overflow: "hidden",
+                textOverflow: "ellipsis",
               })
             }
           >
-            Member list
+            {channel?.name ?? channelId}
           </div>
-          <ul>
-            {users.map((u) => (
-              <li key={u.id}>
-                <UserDisplayName address={u.address} />
-              </li>
-            ))}
-          </ul>
-        </header>
-      )}
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "flex-end",
+              overflow: "hidden",
+            }}
+          >
+            <ul
+              css={(t) =>
+                css({
+                  color: t.colors.link,
+                  fontSize: t.fontSizes.small,
+                  flex: 1,
+                  minWidth: 0,
+                })
+              }
+            >
+              {peers.map((p) => (
+                <li
+                  key={p.id}
+                  style={{
+                    textAlign: "right",
+                    whiteSpace: "nowrap",
+                    overflow: "hidden",
+                    textOverflow: "ellipsis",
+                  }}
+                >
+                  {p.name}
+                </li>
+              ))}
+            </ul>
+
+            {connectedWalletAddress == null ? (
+              <Button
+                size="small"
+                onClick={connectWallet}
+                disabled={isConnectingWallet}
+                style={{ marginLeft: "1.6rem" }}
+              >
+                Connect wallet
+              </Button>
+            ) : signersFetched && !hasBroadcastedSigner ? (
+              <Button
+                size="small"
+                type="button"
+                onClick={() => {
+                  submitSignerAdd({ signTypedData });
+                }}
+                style={{ marginLeft: "1.6rem" }}
+              >
+                Broadcast signer
+              </Button>
+            ) : null}
+          </div>
+        </div>
+
+        <div
+          css={(t) =>
+            css({
+              fontSize: t.fontSizes.small,
+              color: t.colors.textMuted,
+              fontWeight: "600",
+              marginTop: "1rem",
+            })
+          }
+        >
+          Member list
+        </div>
+        <ul>
+          {memberAddresses.map((a) => (
+            <li key={a}>
+              <UserDisplayName address={a} />
+            </li>
+          ))}
+        </ul>
+        {channel?.owner === connectedWalletAddress && (
+          <Button
+            onClick={() => {
+              try {
+                const maybeAddress = prompt("Member address");
+                const address = ethersUtils.getAddress(maybeAddress);
+                submitChannelMemberAdd(channelId, address);
+              } catch (e) {
+                alert("Invalid address");
+              }
+            }}
+            style={{ marginTop: "1rem" }}
+          >
+            Add member
+          </Button>
+        )}
+      </header>
 
       <form
         style={{
@@ -218,41 +219,34 @@ const ChannelView = () => {
           e.target.message.focus();
           const content = e.target.message.value;
           if (content.trim() === "") return;
-          submitChannelMessage(channelId, { content });
+          submitChannelMessageAdd(channelId, { content });
           e.target.message.value = "";
         }}
       >
         <Input
           name="message"
           placeholder={
-            hasBroadcastedSigner ? "..." : "Broadcast signer to message"
+            connectedWalletAddress == null
+              ? "Connect wallet to message"
+              : !isMember
+              ? "Only members can post"
+              : !hasBroadcastedSigner
+              ? "Broadcast signer to message"
+              : "..."
           }
-          disabled={!hasBroadcastedSigner}
+          disabled={!canPost}
         />
 
-        {connectedWalletAddress == null ? (
-          <Button onClick={connectWallet} disabled={isConnectingWallet}>
-            Connect wallet
-          </Button>
-        ) : !hasBroadcastedSigner ? (
-          <Button
-            type="button"
-            onClick={() => {
-              submitSigner({ signTypedData });
-            }}
-            disabled={!signersFetched}
-          >
-            Broadcast signer
-          </Button>
-        ) : (
-          <Button type="submit">Send</Button>
-        )}
+        <Button type="submit" disabled={!canPost}>
+          Send
+        </Button>
       </form>
 
       <main style={{ padding: "1.6rem", flex: 1, overflow: "auto" }}>
         <ul>
-          {sortMessages(messagesFromVerifiedUsers).map((m, i, ms) => {
+          {sortMessages(messagesWithVerifiedSigners).map((m, i, ms) => {
             const compact = ms[i - 1]?.user === m.user;
+            const isAuthor = m.user === connectedWalletAddress;
             return (
               <li
                 key={m.id}
@@ -270,13 +264,18 @@ const ChannelView = () => {
                     <UserDisplayName address={m.user} />
                   </div>
                 )}
-                <div
-                  css={(t) =>
-                    css({ color: t.colors.textNormal, userSelect: "text" })
-                  }
+                <button
+                  css={(t) => css({ color: t.colors.textNormal })}
+                  onClick={() => {
+                    if (!isAuthor) return;
+                    if (!confirm("Remove message?")) return;
+                    submitChannelMessageRemove(channelId, {
+                      targetMessageId: m.id,
+                    });
+                  }}
                 >
                   {m.body.content}
-                </div>
+                </button>
               </li>
             );
           })}

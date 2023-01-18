@@ -51,7 +51,9 @@ import AuthHome from "./components/auth";
 
 const Channel = React.lazy(() => import("./components/channel"));
 const ChannelBase = React.lazy(() => import("./components/channel-base"));
+const WakuLayout = React.lazy(() => import("./components/waku-layout"));
 const WakuChannel = React.lazy(() => import("./components/waku-channel"));
+const WakuHome = React.lazy(() => import("./components/waku-home"));
 
 const { partition } = arrayUtils;
 const { waterfall } = functionUtils;
@@ -269,7 +271,10 @@ const App = () => {
         <Route path="/" element={<Layout />}>
           <Route index element={<EmptyHome />} />
           <Route path="/channels/:channelId" element={<Channel />} />
-          <Route path="/waku/:channelId" element={<WakuChannel />} />
+          <Route element={<WakuLayout />}>
+            <Route path="/waku" element={<WakuHome />} />
+            <Route path="/waku/:channelId" element={<WakuChannel />} />
+          </Route>
         </Route>
         <Route path="c/:channelId" element={<Channel noSideMenu />} />
         <Route
