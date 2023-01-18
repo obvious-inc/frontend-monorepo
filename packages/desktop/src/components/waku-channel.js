@@ -116,7 +116,7 @@ const WakuChannel = () => {
           <div
             style={{
               display: "flex",
-              alignItems: "center",
+              alignItems: "flex-start",
               justifyContent: "flex-end",
               overflow: "hidden",
             }}
