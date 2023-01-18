@@ -1,7 +1,7 @@
 import { utils as ethersUtils } from "ethers";
 import React from "react";
 import { css } from "@emotion/react";
-import { useParams } from "react-router-dom";
+import { useParams, useNavigate } from "react-router-dom";
 import { useEnsName, useSignTypedData } from "wagmi";
 import {
   array as arrayUtils,
@@ -28,6 +28,7 @@ const sortMessages = (ms) =>
 
 const WakuChannel = () => {
   const { channelId } = useParams();
+  const navigate = useNavigate();
 
   const {
     connect: connectWallet,
@@ -223,7 +224,9 @@ const WakuChannel = () => {
           switch (content) {
             case "/remove-channel": {
               if (!isOwner) return;
-              return submitChannelRemove(channelId);
+              return submitChannelRemove(channelId).then(() => {
+                navigate("/waku");
+              });
             }
             default:
               return submitChannelMessageAdd(channelId, { content });
@@ -236,10 +239,10 @@ const WakuChannel = () => {
             connectedWalletAddress == null
               ? "Connect wallet to message"
               : !isMember
-                ? "Only members can post"
-                : !hasBroadcastedSigner
-                  ? "Broadcast signer to message"
-                  : "..."
+              ? "Only members can post"
+              : !hasBroadcastedSigner
+              ? "Broadcast signer to message"
+              : "..."
           }
           disabled={!canPost}
         />

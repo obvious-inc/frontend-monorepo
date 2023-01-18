@@ -8082,7 +8082,7 @@ packages:
       '@waku/interfaces': 0.0.7
       '@waku/libp2p-utils': 0.0.2
       '@waku/peer-exchange': 0.0.2
-      '@waku/proto': 0.0.2_uint8arraylist@2.4.3
+      '@waku/proto': 0.0.2
       chai: 4.3.7
       debug: 4.3.4
       fast-check: 2.25.0
@@ -8228,7 +8228,6 @@ packages:
       - eslint-import-resolver-typescript
       - eslint-import-resolver-webpack
       - supports-color
-      - uint8arraylist
       - zen-observable
       - zenObservable
     dev: false
@@ -8277,7 +8276,7 @@ packages:
       '@waku/enr': 0.0.4
       '@waku/interfaces': 0.0.7
       '@waku/libp2p-utils': 0.0.2
-      '@waku/proto': 0.0.2_uint8arraylist@2.4.3
+      '@waku/proto': 0.0.2
       debug: 4.3.4
       it-all: 1.0.6
       it-length-prefixed: 8.0.4
@@ -8300,17 +8299,6 @@ packages:
     engines: {node: '>=16'}
     dependencies:
       protons-runtime: 3.1.0
-    transitivePeerDependencies:
-      - uint8arraylist
-    dev: false
-
-  /@waku/proto/0.0.2_uint8arraylist@2.4.3:
-    resolution: {integrity: sha512-5+hERUscSRbERu2BkTqvSR4Jl3YMvtPegQ/YZbhwBTk5MBS23kGzMBxf1MdQ3Sfy5TiU7yc2Q5G5vItvPkEOUw==}
-    engines: {node: '>=16'}
-    dependencies:
-      protons-runtime: 3.1.0_uint8arraylist@2.4.3
-    transitivePeerDependencies:
-      - uint8arraylist
     dev: false
 
   /@walletconnect/browser-utils/1.8.0:
@@ -19724,17 +19712,6 @@ packages:
   /protons-runtime/3.1.0:
     resolution: {integrity: sha512-S1iSPQC0McdHKJRi0XcATBkWgwWPx46UDfrnshYDXBvGHSYqkFtn4MQ8Gatf67w7FzFtHivA+Hb0ZPq56upG8w==}
     engines: {node: '>=16.0.0', npm: '>=7.0.0'}
-    peerDependencies:
-      uint8arraylist: ^2.3.2
-    dependencies:
-      protobufjs: 7.1.2
-    dev: false
-
-  /protons-runtime/3.1.0_uint8arraylist@2.4.3:
-    resolution: {integrity: sha512-S1iSPQC0McdHKJRi0XcATBkWgwWPx46UDfrnshYDXBvGHSYqkFtn4MQ8Gatf67w7FzFtHivA+Hb0ZPq56upG8w==}
-    engines: {node: '>=16.0.0', npm: '>=7.0.0'}
-    peerDependencies:
-      uint8arraylist: ^2.3.2
     dependencies:
       protobufjs: 7.1.2
       uint8arraylist: 2.4.3
