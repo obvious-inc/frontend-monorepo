@@ -81,17 +81,21 @@ const verifyOperation = async (operation) => {
 
   const verifySignature = async () => {
     if (operation.data.type === OperationTypes.SIGNER_ADD) {
-      const recoveredAddress = verifyECDSATypedDataSignature(
-        OPERATION_ECDSA_SIGNATURE_DOMAIN,
-        SIGNER_ADD_OPERATION_ECDSA_SIGNATURE_TYPES,
-        {
-          user: operation.data.user,
-          signer: operation.data.body.signer,
-        },
-        operation.signature
-      );
+      try {
+        const recoveredAddress = verifyECDSATypedDataSignature(
+          OPERATION_ECDSA_SIGNATURE_DOMAIN,
+          SIGNER_ADD_OPERATION_ECDSA_SIGNATURE_TYPES,
+          {
+            user: operation.data.user,
+            signer: operation.data.body.signer,
+          },
+          operation.signature
+        );
 
-      return recoveredAddress === operation.signer;
+        return recoveredAddress === operation.signer;
+      } catch (e) {
+        return false;
+      }
     }
 
     try {
