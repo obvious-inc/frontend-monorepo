@@ -58,11 +58,12 @@ export const createClient = async () => {
   };
 
   const submitMessage = async (encoder, payload) => {
-    await node.lightPush.push(
+    const res = await node.lightPush.push(
       encoder,
       { payload: serializeWakuMessagePayload(payload) },
       { peerId: preferredPeer.id }
     );
+    if (res.recipients.length === 0) throw new Error();
     return payload;
   };
 
@@ -80,7 +81,9 @@ export const createClient = async () => {
       { peerId: preferredPeer.id }
     );
 
-    return unsubscribe;
+    return () => {
+      unsubscribe();
+    };
   };
 
   const getPeers = async () =>

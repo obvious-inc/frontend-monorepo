@@ -46,9 +46,8 @@ const WakuChannel = () => {
     submitChannelMessageRemove,
     submitChannelMemberAdd,
     submitSignerAdd,
-    submitChannelBroadcast,
   } = useSubmitters();
-  const { fetchChannel, fetchChannelMessages, fetchSigners } = useFetchers();
+  const { fetchChannel, fetchChannelMessages, fetchUsers } = useFetchers();
 
   const users = useUsers();
   const channel = useChannel(channelId);
@@ -67,10 +66,11 @@ const WakuChannel = () => {
   const canPost = isMember && hasBroadcastedSigner;
 
   React.useEffect(() => {
-    fetchSigners().then(() => {
+    if (memberAddresses.length === 0) return;
+    fetchUsers(memberAddresses).then(() => {
       setSignersFetched(true);
     });
-  }, [fetchSigners]);
+  }, [memberAddresses, fetchUsers]);
 
   React.useEffect(() => {
     // Need to fetch channel first for now to ensure we have membership info when messages arrive
@@ -78,10 +78,6 @@ const WakuChannel = () => {
       fetchChannelMessages(channelId);
     });
   }, [channelId, fetchChannel, fetchChannelMessages]);
-
-  React.useEffect(() => {
-    submitChannelBroadcast({ channelIds: [channelId] });
-  }, [channelId, submitChannelBroadcast]);
 
   return (
     <div

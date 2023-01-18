@@ -1,3 +1,4 @@
+import debug from "debug";
 import {
   sign as signWithEdDSAKey,
   verify as verifyEdDSASignature,
@@ -11,8 +12,11 @@ import { utf8ToBytes, hexToBytes, bytesToHex } from "@waku/byte-utils";
 import React from "react";
 import { createClient as createWakuClient } from "./waku-client.js";
 import combineReducers from "./utils/combine-reducers.js";
+import { mirror } from "./utils/object.js";
 import { sort, comparator } from "./utils/array.js";
 import useLatestCallback from "./hooks/latest-callback.js";
+
+const log = debug("ns-waku-client");
 
 const OperationTypes = {
   SIGNER_ADD: 1,
@@ -20,8 +24,10 @@ const OperationTypes = {
   CHANNEL_MEMBER_ADD: 3,
   CHANNEL_MESSAGE_ADD: 4,
   CHANNEL_MESSAGE_REMOVE: 5,
-  CHANNEL_BROADCAST: 20,
+  CHANNEL_BROADCAST: 30,
 };
+
+const getOperationTypeName = (type) => mirror(OperationTypes)[type];
 
 const OPERATION_ECDSA_SIGNATURE_DOMAIN = {
   name: "NewShades Message Signature",
@@ -37,19 +43,16 @@ const SIGNER_ADD_OPERATION_ECDSA_SIGNATURE_TYPES = {
 
 const createContentTopic = (name) => `/newshades/1/${name}/json`;
 
+const createUserContentTopic = (identityAddress) =>
+  createContentTopic(`user-${identityAddress.toLowerCase()}`);
 const createChannelContentTopic = (channelId) =>
   createContentTopic(`channel-${channelId}`);
 const createChannelMetaContentTopic = (channelId) =>
   createContentTopic(`channel-meta-${channelId}`);
 
-const SIGNER_ADD_CONTENT_TOPIC = createContentTopic("signer-add");
 const BROADCAST_CONTENT_TOPIC = createContentTopic("broadcast");
 
-// Topics everyone should listen to
-const globalContentTopics = [SIGNER_ADD_CONTENT_TOPIC, BROADCAST_CONTENT_TOPIC];
-
-// Topics unique per user
-// const getUserWakuTopics = () => {}
+const globalContentTopics = [BROADCAST_CONTENT_TOPIC];
 
 const getChannelSpecificContentTopics = (channelId) => [
   createChannelContentTopic(channelId),
@@ -132,7 +135,7 @@ const validateOperationPermissions = (o, state) => {
     case OperationTypes.CHANNEL_MESSAGE_ADD: {
       const { channelId } = o.data.body;
       const memberAddresses =
-        memberAddressesByChannelId.get(channelId) ?? new Set();
+        new Set(memberAddressesByChannelId.get(channelId)) ?? new Set();
       return memberAddresses.has(o.data.user);
     }
 
@@ -178,11 +181,10 @@ const useOperationStore = () => {
       }
 
       case OperationTypes.CHANNEL_BROADCAST: {
-        for (const id of operation.data.body.channelIds) {
-          if (state.get(id) != null) continue;
-          state.set(id, { id });
-        }
-        return new Map(state);
+        const { channelId } = operation.data.body;
+        if (state.get(channelId) != null) return state;
+        const nextState = new Map(state).set(channelId, { id: channelId });
+        return nextState;
       }
 
       default:
@@ -195,17 +197,21 @@ const useOperationStore = () => {
       case OperationTypes.CHANNEL_ADD: {
         const channelId = operation.hash;
         const previousMemberSet = new Set(state.get(channelId)) ?? new Set();
-        const updatedMemberSet = previousMemberSet.add(operation.data.user);
-        return new Map(state.set(channelId, updatedMemberSet));
+        const updatedMemberSet = new Set(previousMemberSet).add(
+          operation.data.user
+        );
+        if (previousMemberSet.size === updatedMemberSet.size) return state;
+        return new Map(state.set(channelId, [...updatedMemberSet]));
       }
 
       case OperationTypes.CHANNEL_MEMBER_ADD: {
         const channelId = operation.data.body.channelId;
         const previousMemberSet = new Set(state.get(channelId)) ?? new Set();
-        const updatedMemberSet = previousMemberSet.add(
+        const updatedMemberSet = new Set(previousMemberSet).add(
           operation.data.body.user
         );
-        return new Map(state.set(channelId, updatedMemberSet));
+        if (previousMemberSet.size === updatedMemberSet.size) return state;
+        return new Map(state.set(channelId, [...updatedMemberSet]));
       }
 
       default:
@@ -263,7 +269,13 @@ const useOperationStore = () => {
       switch (action.type) {
         case "merge-batch":
           return action.operations.reduce((s, o) => {
-            if (!validateOperationPermissions(o, s)) return s;
+            if (!validateOperationPermissions(o, s)) {
+              log(
+                `rejecting operation "${getOperationTypeName(o.data.type)}"`,
+                o
+              );
+              return s;
+            }
             return operationReducer(s, o);
           }, state);
 
@@ -296,7 +308,7 @@ const SignerContext = React.createContext();
 const WakuClientContext = React.createContext();
 const StoreContext = React.createContext();
 
-export const Provider = ({ account, signerKeyPair, children }) => {
+export const Provider = ({ identity, signerKeyPair, children }) => {
   const clientRef = React.useRef();
   const store = useOperationStore();
   const [didInitialize, setInitialized] = React.useState(false);
@@ -334,7 +346,7 @@ export const Provider = ({ account, signerKeyPair, children }) => {
   }, [didInitialize]);
 
   return (
-    <SignerContext.Provider value={{ account, signerKeyPair }}>
+    <SignerContext.Provider value={{ identity, signerKeyPair }}>
       <WakuClientContext.Provider
         value={{ didInitialize, client: clientRef.current }}
       >
@@ -384,8 +396,8 @@ export const useChannel = (channelId) => {
 
 export const useChannelMembers = (channelId) => {
   const [{ memberAddressesByChannelId }] = React.useContext(StoreContext);
-  const addresses = memberAddressesByChannelId.get(channelId) ?? new Set();
-  return [...addresses];
+  const addresses = memberAddressesByChannelId.get(channelId) ?? [];
+  return addresses;
 };
 
 export const useChannelMessages = (channelId) => {
@@ -422,7 +434,10 @@ export const useFetchers = () => {
       await Promise.all(
         wakuMessagePayloads.map(async (o) => {
           const verified = await verifyOperation(o);
-          if (!verified) return null;
+          if (!verified) {
+            log("rejected operation", o);
+            return null;
+          }
           return o;
         })
       )
@@ -431,9 +446,11 @@ export const useFetchers = () => {
     return validOperations;
   };
 
-  const fetchSigners = useLatestCallback(async () => {
+  const fetchUsers = useLatestCallback(async (userIdentityAddresses) => {
     const operations = await fetchOperations(
-      [createDecoder(SIGNER_ADD_CONTENT_TOPIC)],
+      userIdentityAddresses.map((a) =>
+        createDecoder(createUserContentTopic(a))
+      ),
       { limit: 100 }
     );
     mergeOperations(operations);
@@ -441,10 +458,10 @@ export const useFetchers = () => {
   });
 
   const fetchChannel = useLatestCallback(async (channelId) => {
-    const channelContentTopic = createChannelMetaContentTopic(channelId);
-    const operations = await fetchOperations([
-      createDecoder(channelContentTopic),
-    ]);
+    const contentTopic = createChannelMetaContentTopic(channelId);
+    const operations = await fetchOperations([createDecoder(contentTopic)], {
+      limit: 1000,
+    });
     mergeOperations(operations);
     return operations;
   });
@@ -459,25 +476,25 @@ export const useFetchers = () => {
   });
 
   const fetchBroadcasts = useLatestCallback(async () => {
-    const operations = await fetchOperations([
-      createDecoder(BROADCAST_CONTENT_TOPIC),
-    ]);
+    const operations = await fetchOperations(
+      [createDecoder(BROADCAST_CONTENT_TOPIC)],
+      { limit: 1000 }
+    );
     mergeOperations(operations);
     return operations;
   });
 
-  return { fetchSigners, fetchChannel, fetchChannelMessages, fetchBroadcasts };
+  return { fetchUsers, fetchChannel, fetchChannelMessages, fetchBroadcasts };
 };
 
 export const useSubmitters = () => {
-  const { account: custodyAddress, signerKeyPair } =
-    React.useContext(SignerContext) ?? {};
+  const { identity, signerKeyPair } = React.useContext(SignerContext) ?? {};
   const { client: wakuClient } = React.useContext(WakuClientContext);
 
   const makeOperationData = (type, body) => ({
     body,
     type,
-    user: custodyAddress,
+    user: identity,
     timestamp: new Date().getTime(),
   });
 
@@ -504,7 +521,7 @@ export const useSubmitters = () => {
       domain: OPERATION_ECDSA_SIGNATURE_DOMAIN,
       types: SIGNER_ADD_OPERATION_ECDSA_SIGNATURE_TYPES,
       value: {
-        user: custodyAddress,
+        user: identity,
         signer,
       },
     });
@@ -514,9 +531,18 @@ export const useSubmitters = () => {
     return {
       data,
       hash,
-      signer: custodyAddress,
+      signer: identity,
       signature,
     };
+  };
+
+  const submitChannelBroadcast = async (channelId) => {
+    const encoder = createEncoder(BROADCAST_CONTENT_TOPIC);
+    const operation = await makeEdDSASignedOperation(
+      OperationTypes.CHANNEL_BROADCAST,
+      { channelId }
+    );
+    return wakuClient.submitMessage(encoder, operation);
   };
 
   const submitChannelAdd = useLatestCallback(async ({ name }) => {
@@ -524,11 +550,12 @@ export const useSubmitters = () => {
       OperationTypes.CHANNEL_ADD,
       { name }
     );
-    const contentTopic = createChannelMetaContentTopic(operation.hash);
+    const channelId = operation.hash;
+    const contentTopic = createChannelMetaContentTopic(channelId);
     const encoder = createEncoder(contentTopic);
-    return wakuClient
-      .submitMessage(encoder, operation)
-      .then(() => ({ id: operation.hash }));
+    await wakuClient.submitMessage(encoder, operation);
+    await submitChannelBroadcast(channelId);
+    return { id: channelId };
   });
 
   const submitChannelMemberAdd = useLatestCallback(
@@ -568,20 +595,11 @@ export const useSubmitters = () => {
   );
 
   const submitSignerAdd = useLatestCallback(async ({ signTypedData }) => {
-    const encoder = createEncoder(SIGNER_ADD_CONTENT_TOPIC);
+    const encoder = createEncoder(createUserContentTopic(identity));
     const operation = await makeECDSASignedSignerAddOperation({
       signerPublicKey: signerKeyPair.publicKey,
       signTypedData,
     });
-    return wakuClient.submitMessage(encoder, operation);
-  });
-
-  const submitChannelBroadcast = useLatestCallback(async ({ channelIds }) => {
-    const encoder = createEncoder(BROADCAST_CONTENT_TOPIC);
-    const operation = await makeEdDSASignedOperation(
-      OperationTypes.CHANNEL_BROADCAST,
-      { channelIds }
-    );
     return wakuClient.submitMessage(encoder, operation);
   });
 
@@ -591,7 +609,6 @@ export const useSubmitters = () => {
     submitChannelMessageAdd,
     submitChannelMessageRemove,
     submitChannelMemberAdd,
-    submitChannelBroadcast,
   };
 };
 

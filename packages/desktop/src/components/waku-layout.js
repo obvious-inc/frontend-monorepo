@@ -96,7 +96,7 @@ const WakuLayout = () => {
 
   return (
     <ClientProvider
-      account={accountAddress}
+      identity={accountAddress}
       signerKeyPair={
         signerPublicKey == null
           ? null

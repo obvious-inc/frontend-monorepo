@@ -17,3 +17,6 @@ export const mapValues = (mapper, obj) =>
 
 export const filter = (predicate, obj) =>
   Object.fromEntries(Object.entries(obj).filter(predicate));
+
+export const mirror = (obj) =>
+  Object.fromEntries(Object.entries(obj).map(([key, value]) => [key, value]));

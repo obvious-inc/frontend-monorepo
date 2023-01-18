@@ -96,48 +96,49 @@ const useSystemNotifications = () => {
     !hasGrantedPushNotificationPermission
       ? null
       : (action) => {
-        switch (action.type) {
-          case "server-event:message-created": {
-            const me = selectors.selectMe();
-            const message = selectors.selectMessage(action.data.message.id);
+          switch (action.type) {
+            case "server-event:message-created": {
+              const me = selectors.selectMe();
+              const message = selectors.selectMessage(action.data.message.id);
 
-            if (message.authorUserId === me.id) break;
+              if (message.authorUserId === me.id) break;
 
-            const hasUnread = selectors.selectChannelHasUnread(
-              message.channelId
-            );
+              const hasUnread = selectors.selectChannelHasUnread(
+                message.channelId
+              );
 
-            if (!hasUnread) break;
+              if (!hasUnread) break;
 
-            const channel = selectors.selectChannel(message.channelId);
+              const channel = selectors.selectChannel(message.channelId);
 
-            import("@shades/common/nouns").then((module) => {
-              sendNotification({
-                title: `Message from ${message.author?.displayName ?? message.authorUserId
+              import("@shades/common/nouns").then((module) => {
+                sendNotification({
+                  title: `Message from ${
+                    message.author?.displayName ?? message.authorUserId
                   }`,
-                body: message.stringContent,
-                icon:
-                  message.author == null
-                    ? undefined
-                    : message.author.profilePicture?.small ??
-                    module.generatePlaceholderAvatarDataUri(
-                      message.author.walletAddress,
-                      { pixelSize: 24 }
-                    ),
-                onClick: ({ close }) => {
-                  navigate(`/channels/${channel.id}`);
-                  window.focus();
-                  close();
-                },
+                  body: message.stringContent,
+                  icon:
+                    message.author == null
+                      ? undefined
+                      : message.author.profilePicture?.small ??
+                        module.generatePlaceholderAvatarDataUri(
+                          message.author.walletAddress,
+                          { pixelSize: 24 }
+                        ),
+                  onClick: ({ close }) => {
+                    navigate(`/channels/${channel.id}`);
+                    window.focus();
+                    close();
+                  },
+                });
               });
-            });
 
-            break;
+              break;
+            }
+
+            default: // Ignore
           }
-
-          default: // Ignore
         }
-      }
   );
 };
 
