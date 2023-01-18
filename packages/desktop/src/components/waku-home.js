@@ -1,7 +1,7 @@
 import React from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { css } from "@emotion/react";
-import { useSubmitters, useFetchers, useChannels } from "@shades/common/waku";
+import { useSubmitters, useChannels } from "@shades/common/waku";
 import useWallet from "../hooks/wallet";
 import Button from "./button";
 
@@ -14,20 +14,9 @@ const WakuHome = () => {
     isConnecting: isConnectingWallet,
   } = useWallet();
 
-  const { fetchBroadcasts, fetchChannel } = useFetchers();
   const { submitChannelAdd } = useSubmitters();
-  const channels = useChannels();
-
-  React.useEffect(() => {
-    fetchBroadcasts();
-  }, [fetchBroadcasts]);
-
-  React.useEffect(() => {
-    for (let channel of channels) {
-      if (channel.name != null) continue;
-      fetchChannel(channel.id);
-    }
-  }, [fetchChannel, channels]);
+  const channels_ = useChannels();
+  const channels = channels_.filter((c) => c.name != null);
 
   if (connectedWalletAddress == null)
     return (

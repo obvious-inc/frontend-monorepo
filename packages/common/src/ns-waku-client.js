@@ -21,9 +21,11 @@ const log = debug("ns-waku-client");
 const OperationTypes = {
   SIGNER_ADD: 1,
   CHANNEL_ADD: 2,
-  CHANNEL_MEMBER_ADD: 3,
-  CHANNEL_MESSAGE_ADD: 4,
-  CHANNEL_MESSAGE_REMOVE: 5,
+  CHANNEL_REMOVE: 3,
+  CHANNEL_MEMBER_ADD: 4,
+  CHANNEL_MEMBER_REMOVE: 5,
+  CHANNEL_MESSAGE_ADD: 6,
+  CHANNEL_MESSAGE_REMOVE: 7,
   CHANNEL_BROADCAST: 30,
 };
 
@@ -63,17 +65,23 @@ const hashOperationData = (data) =>
   hashWithKeccak256(utf8ToBytes(JSON.stringify(data))).slice(2);
 
 const validateOperationStructure = (o) => {
+  const assertString = (v) => typeof v === "string";
+  const assertNumber = (v) => typeof v === "number";
+
   if (o == null) return false;
-  if (typeof o.hash !== "string") return false;
-  if (typeof o.signer !== "string") return false;
-  if (typeof o.signature !== "string") return false;
-  if (typeof o.data?.type !== "number") return false;
-  if (typeof o.data?.user !== "string") return false;
-  if (typeof o.data?.timestamp !== "number") return false;
+  if (!assertString(o.hash)) return false;
+  if (!assertString(o.signer)) return false;
+  if (!assertString(o.signature)) return false;
+  if (!assertString(o.data?.user)) return false;
+  if (!assertNumber(o.data?.type)) return false;
+  if (!assertNumber(o.data?.timestamp)) return false;
   if (o.data?.body == null) return false;
 
+  const { body } = o.data;
+
   switch (o.data.type) {
-    // TODO
+    case OperationTypes.CHANNEL_MEMBER_ADD:
+      return [body.channelId, body.user].every(assertString);
     default:
       return true;
   }
@@ -132,6 +140,12 @@ const validateOperationPermissions = (o, state) => {
       return channel != null && channel.owner === o.data.user;
     }
 
+    case OperationTypes.CHANNEL_REMOVE: {
+      const { channelId } = o.data.body;
+      const channel = channelsById.get(channelId);
+      return channel != null && channel.owner === o.data.user;
+    }
+
     case OperationTypes.CHANNEL_MESSAGE_ADD: {
       const { channelId } = o.data.body;
       const memberAddresses =
@@ -178,6 +192,13 @@ const useOperationStore = () => {
           owner: operation.data.user,
         };
         return new Map(state.set(channel.id, channel));
+      }
+
+      case OperationTypes.CHANNEL_REMOVE: {
+        const { channelId } = operation.data.body;
+        const nextState = new Map(state);
+        nextState.delete(channelId);
+        return nextState;
       }
 
       case OperationTypes.CHANNEL_BROADCAST: {
@@ -304,6 +325,31 @@ const useOperationStore = () => {
   return [state, mergeOperations];
 };
 
+const Bootstrap = ({ children }) => {
+  const { identity } = React.useContext(SignerContext) ?? {};
+  const { fetchBroadcasts, fetchUsers } = useFetchers();
+  const { didInitialize } = React.useContext(WakuClientContext);
+
+  const userContentTopics = [identity]
+    .filter(Boolean)
+    .map(createUserContentTopic);
+
+  useSubscription([...globalContentTopics, ...userContentTopics]);
+
+  React.useEffect(() => {
+    if (!didInitialize) return;
+    if (identity == null) return;
+    fetchUsers([identity]);
+  }, [didInitialize, identity, fetchUsers]);
+
+  React.useEffect(() => {
+    if (!didInitialize) return;
+    fetchBroadcasts();
+  }, [didInitialize, fetchBroadcasts]);
+
+  return children;
+};
+
 const SignerContext = React.createContext();
 const WakuClientContext = React.createContext();
 const StoreContext = React.createContext();
@@ -313,8 +359,6 @@ export const Provider = ({ identity, signerKeyPair, children }) => {
   const store = useOperationStore();
   const [didInitialize, setInitialized] = React.useState(false);
 
-  const mergeOperations = store[1];
-
   React.useEffect(() => {
     createWakuClient().then((client) => {
       clientRef.current = client;
@@ -322,35 +366,14 @@ export const Provider = ({ identity, signerKeyPair, children }) => {
     });
   }, []);
 
-  React.useEffect(() => {
-    if (!didInitialize) return;
-
-    let unsubscribe;
-
-    clientRef.current
-      .subscribe(
-        globalContentTopics.map(createDecoder),
-        async (wakuMessagePayload) => {
-          const verified = await verifyOperation(wakuMessagePayload);
-          if (!verified) return;
-          mergeOperations([wakuMessagePayload]);
-        }
-      )
-      .then((u) => {
-        unsubscribe = u;
-      });
-
-    return () => {
-      unsubscribe?.();
-    };
-  }, [didInitialize]);
-
   return (
     <SignerContext.Provider value={{ identity, signerKeyPair }}>
       <WakuClientContext.Provider
         value={{ didInitialize, client: clientRef.current }}
       >
-        <StoreContext.Provider value={store}>{children}</StoreContext.Provider>
+        <StoreContext.Provider value={store}>
+          <Bootstrap>{children}</Bootstrap>
+        </StoreContext.Provider>
       </WakuClientContext.Provider>
     </SignerContext.Provider>
   );
@@ -386,7 +409,22 @@ export const useClientState = () => {
 
 export const useChannels = () => {
   const [{ channelsById }] = React.useContext(StoreContext);
-  return [...channelsById.values()];
+  const { fetchChannel } = useFetchers();
+
+  const channels = [...channelsById.values()];
+
+  const channelIds = channels.map((c) => c.id).join(":");
+
+  React.useEffect(() => {
+    if (channelIds === "") return;
+    for (let id of channelIds.split(":")) {
+      const channel = channelsById.get(id);
+      if (channel.name != null) continue;
+      fetchChannel(id);
+    }
+  }, [fetchChannel, channelsById, channelIds]);
+
+  return channels;
 };
 
 export const useChannel = (channelId) => {
@@ -424,10 +462,12 @@ export const useUsers = () => {
 };
 
 export const useFetchers = () => {
-  const { client } = React.useContext(WakuClientContext);
+  const { client, didInitialize } = React.useContext(WakuClientContext);
   const [, mergeOperations] = React.useContext(StoreContext);
 
   const fetchOperations = async (decoders, options) => {
+    if (!didInitialize) throw new Error();
+
     const wakuMessagePayloads = await client.fetchMessages(decoders, options);
 
     const validOperations = (
@@ -478,7 +518,7 @@ export const useFetchers = () => {
   const fetchBroadcasts = useLatestCallback(async () => {
     const operations = await fetchOperations(
       [createDecoder(BROADCAST_CONTENT_TOPIC)],
-      { limit: 1000 }
+      { limit: 100 }
     );
     mergeOperations(operations);
     return operations;
@@ -489,7 +529,7 @@ export const useFetchers = () => {
 
 export const useSubmitters = () => {
   const { identity, signerKeyPair } = React.useContext(SignerContext) ?? {};
-  const { client: wakuClient } = React.useContext(WakuClientContext);
+  const { client } = React.useContext(WakuClientContext);
 
   const makeOperationData = (type, body) => ({
     body,
@@ -542,7 +582,7 @@ export const useSubmitters = () => {
       OperationTypes.CHANNEL_BROADCAST,
       { channelId }
     );
-    return wakuClient.submitMessage(encoder, operation);
+    return client.submitMessage(encoder, operation);
   };
 
   const submitChannelAdd = useLatestCallback(async ({ name }) => {
@@ -553,9 +593,19 @@ export const useSubmitters = () => {
     const channelId = operation.hash;
     const contentTopic = createChannelMetaContentTopic(channelId);
     const encoder = createEncoder(contentTopic);
-    await wakuClient.submitMessage(encoder, operation);
+    await client.submitMessage(encoder, operation);
     await submitChannelBroadcast(channelId);
     return { id: channelId };
+  });
+
+  const submitChannelRemove = useLatestCallback(async (channelId) => {
+    const operation = await makeEdDSASignedOperation(
+      OperationTypes.CHANNEL_REMOVE,
+      { channelId }
+    );
+    const contentTopic = createChannelMetaContentTopic(channelId);
+    const encoder = createEncoder(contentTopic);
+    return wakuClient.submitMessage(encoder, operation);
   });
 
   const submitChannelMemberAdd = useLatestCallback(
@@ -566,7 +616,7 @@ export const useSubmitters = () => {
       );
       const contentTopic = createChannelMetaContentTopic(channelId);
       const encoder = createEncoder(contentTopic);
-      return wakuClient.submitMessage(encoder, operation);
+      return client.submitMessage(encoder, operation);
     }
   );
 
@@ -578,7 +628,7 @@ export const useSubmitters = () => {
         OperationTypes.CHANNEL_MESSAGE_ADD,
         { channelId, content }
       );
-      return wakuClient.submitMessage(encoder, operation);
+      return client.submitMessage(encoder, operation);
     }
   );
 
@@ -590,7 +640,7 @@ export const useSubmitters = () => {
         OperationTypes.CHANNEL_MESSAGE_REMOVE,
         { channelId, targetMessageId }
       );
-      return wakuClient.submitMessage(encoder, operation);
+      return client.submitMessage(encoder, operation);
     }
   );
 
@@ -600,27 +650,30 @@ export const useSubmitters = () => {
       signerPublicKey: signerKeyPair.publicKey,
       signTypedData,
     });
-    return wakuClient.submitMessage(encoder, operation);
+    return client.submitMessage(encoder, operation);
   });
 
   return {
     submitSignerAdd,
     submitChannelAdd,
+    submitChannelRemove,
     submitChannelMessageAdd,
     submitChannelMessageRemove,
     submitChannelMemberAdd,
   };
 };
 
-export const useChannelSubscription = (channelId) => {
+const useSubscription = (contentTopics) => {
   const { client } = React.useContext(WakuClientContext);
   const [, mergeOperations] = React.useContext(StoreContext);
   const { didInitialize } = useClientState();
 
+  const stringifiedTopics = contentTopics.join(" ");
+
   React.useEffect(() => {
     if (!didInitialize) return;
 
-    const contentTopics = getChannelSpecificContentTopics(channelId);
+    const contentTopics = stringifiedTopics.split(" ");
 
     let unsubscribe;
 
@@ -641,5 +694,10 @@ export const useChannelSubscription = (channelId) => {
     return () => {
       unsubscribe?.();
     };
-  }, [client, didInitialize, channelId]);
+  }, [client, didInitialize, stringifiedTopics]);
+};
+
+export const useChannelSubscription = (channelId) => {
+  const contentTopics = getChannelSpecificContentTopics(channelId);
+  useSubscription(contentTopics);
 };

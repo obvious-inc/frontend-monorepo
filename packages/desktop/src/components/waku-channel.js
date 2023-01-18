@@ -46,6 +46,7 @@ const WakuChannel = () => {
     submitChannelMessageRemove,
     submitChannelMemberAdd,
     submitSignerAdd,
+    submitChannelRemove,
   } = useSubmitters();
   const { fetchChannel, fetchChannelMessages, fetchUsers } = useFetchers();
 
@@ -63,6 +64,7 @@ const WakuChannel = () => {
   const hasBroadcastedSigner = me?.signers.includes(signerKeyPair.publicKey);
 
   const isMember = memberAddresses.some((a) => a === connectedWalletAddress);
+  const isOwner = channel?.owner === connectedWalletAddress;
   const canPost = isMember && hasBroadcastedSigner;
 
   React.useEffect(() => {
@@ -185,7 +187,7 @@ const WakuChannel = () => {
             </li>
           ))}
         </ul>
-        {channel?.owner === connectedWalletAddress && (
+        {isOwner && (
           <Button
             onClick={() => {
               try {
@@ -213,10 +215,19 @@ const WakuChannel = () => {
         onSubmit={(e) => {
           e.preventDefault();
           e.target.message.focus();
-          const content = e.target.message.value;
-          if (content.trim() === "") return;
-          submitChannelMessageAdd(channelId, { content });
+          const content = e.target.message.value.trim();
+          if (content === "") return;
+
           e.target.message.value = "";
+
+          switch (content) {
+            case "/remove-channel": {
+              if (!isOwner) return;
+              return submitChannelRemove(channelId);
+            }
+            default:
+              return submitChannelMessageAdd(channelId, { content });
+          }
         }}
       >
         <Input
@@ -225,10 +236,10 @@ const WakuChannel = () => {
             connectedWalletAddress == null
               ? "Connect wallet to message"
               : !isMember
-              ? "Only members can post"
-              : !hasBroadcastedSigner
-              ? "Broadcast signer to message"
-              : "..."
+                ? "Only members can post"
+                : !hasBroadcastedSigner
+                  ? "Broadcast signer to message"
+                  : "..."
           }
           disabled={!canPost}
         />
