@@ -22,6 +22,17 @@ const createConfig = ({ file, dependencies = [] }) => ({
 const entrypoints = [
   { file: "app.js", dependencies: ["react", "reselect"] },
   { file: "utils.js" },
+  {
+    file: "waku.js",
+    dependencies: [
+      "ethers",
+      "@waku/core",
+      "@waku/create",
+      "@waku/byte-utils",
+      "@waku/interfaces",
+      "@noble/ed25519",
+    ],
+  },
   { file: "react.js", dependencies: ["react"] },
   { file: "nouns.js", dependencies: ["ethers", "@nouns/assets", "@nouns/sdk"] },
   { file: "emoji.js" },

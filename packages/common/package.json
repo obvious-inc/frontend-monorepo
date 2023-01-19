@@ -12,6 +12,7 @@
   "exports": {
     "./app": "./dist/app.js",
     "./utils": "./dist/utils.js",
+    "./waku": "./dist/waku.js",
     "./react": "./dist/react.js",
     "./nouns": "./dist/nouns.js",
     "./emoji": "./dist/emoji.js"
