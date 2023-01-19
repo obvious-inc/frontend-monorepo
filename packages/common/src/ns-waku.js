@@ -2,6 +2,10 @@ import { verify as verifyEdDSASignature } from "@noble/ed25519";
 import { verifyTypedData as verifyECDSATypedDataSignature } from "ethers/lib/utils";
 import { keccak256 } from "ethers/lib/utils";
 import { utf8ToBytes, hexToBytes } from "@waku/byte-utils";
+import {
+  createDecoder as createSymmetricDecoder,
+  createEncoder as createSymmetricEncoder,
+} from "@waku/message-encryption/symmetric";
 import { mirror } from "./utils/object.js";
 import { assertString, assertNumber } from "./utils/assert.js";
 
@@ -30,6 +34,9 @@ export const OperationTypes = {
 
 export const getOperationTypeName = (type) => mirror(OperationTypes)[type];
 
+const create32ByteEncryptionKeyFromString = (string) =>
+  hexToBytes(keccak256(utf8ToBytes(string)));
+
 const createContentTopic = (name) => `/newshades/1/${name}/json`;
 
 export const BROADCAST_CONTENT_TOPIC = createContentTopic("broadcast");
@@ -37,16 +44,28 @@ export const BROADCAST_CONTENT_TOPIC = createContentTopic("broadcast");
 export const createUserContentTopic = (identityAddress) =>
   createContentTopic(`user-${identityAddress.toLowerCase()}`);
 
-export const createChannelContentTopic = (channelId) =>
+const createPublicChannelContentTopic = (channelId) =>
   createContentTopic(`channel-${channelId}`);
 
-export const createChannelMetaContentTopic = (channelId) =>
+const createPublicChannelMetaContentTopic = (channelId) =>
   createContentTopic(`channel-meta-${channelId}`);
 
-export const getChannelSpecificContentTopics = (channelId) => [
-  createChannelContentTopic(channelId),
-  createChannelMetaContentTopic(channelId),
-];
+const createSymmetricEncryptionCodec = (contentTopic) => {
+  // Derive encryption key from content topic
+  const encryptionKey = create32ByteEncryptionKeyFromString(contentTopic);
+  return {
+    encoder: createSymmetricEncoder(contentTopic, encryptionKey),
+    decoder: createSymmetricDecoder(contentTopic, encryptionKey),
+  };
+};
+
+export const createPublicChannelCodec = (channelId) =>
+  createSymmetricEncryptionCodec(createPublicChannelContentTopic(channelId));
+
+export const createPublicChannelMetaCodec = (channelId) =>
+  createSymmetricEncryptionCodec(
+    createPublicChannelMetaContentTopic(channelId)
+  );
 
 export const hashOperationData = (data) =>
   keccak256(utf8ToBytes(JSON.stringify(data))).slice(2);
@@ -65,6 +84,7 @@ const validateOperationStructure = (o) => {
   switch (o.data.type) {
     case OperationTypes.CHANNEL_MEMBER_ADD:
       return [body.channelId, body.user].every(assertString);
+    // validate all types
     default:
       return true;
   }

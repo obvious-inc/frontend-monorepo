@@ -1,7 +1,6 @@
 import debug from "debug";
 import { sign as signWithEdDSAKey } from "@noble/ed25519";
 import { createEncoder, createDecoder } from "@waku/core";
-// import { createDecoder as createSymmetricDecoder } from "@waku/message-encryption/symmetric";
 import { hexToBytes, bytesToHex } from "@waku/byte-utils";
 import React from "react";
 import { createClient as createWakuClient } from "./waku-client.js";
@@ -12,9 +11,8 @@ import {
   OperationTypes,
   BROADCAST_CONTENT_TOPIC,
   createUserContentTopic,
-  createChannelContentTopic,
-  createChannelMetaContentTopic,
-  getChannelSpecificContentTopics,
+  createPublicChannelCodec,
+  createPublicChannelMetaCodec,
   hashOperationData,
   verifyOperation,
 } from "./ns-waku.js";
@@ -64,11 +62,14 @@ const Bootstrap = ({ children }) => {
   const { fetchBroadcasts, fetchUsers } = useFetchers();
   const { didInitialize } = useClient();
 
-  const userContentTopics = [identity]
-    .filter(Boolean)
-    .map(createUserContentTopic);
+  const subscriptionDecoders = React.useMemo(() => {
+    const broadcastDecoder = createDecoder(BROADCAST_CONTENT_TOPIC);
+    if (identity == null) return [broadcastDecoder];
+    const userDecoder = createDecoder(createUserContentTopic(identity));
+    return [broadcastDecoder, userDecoder];
+  }, [identity]);
 
-  useSubscription([BROADCAST_CONTENT_TOPIC, ...userContentTopics]);
+  useSubscription(subscriptionDecoders);
 
   React.useEffect(() => {
     if (!didInitialize) return;
@@ -122,30 +123,22 @@ export const useClientState = () => {
   return { didInitialize, signerKeyPair, peers };
 };
 
-const useSubscription = (contentTopics) => {
+const useSubscription = (decoders) => {
   const { client } = useClient();
   const [, mergeOperations] = useOperationStore();
   const { didInitialize } = useClientState();
 
-  const stringifiedTopics = contentTopics.join(" ");
-
   React.useEffect(() => {
     if (!didInitialize) return;
-
-    const contentTopics = stringifiedTopics.split(" ");
 
     let unsubscribe;
 
     client
-      .subscribe(
-        contentTopics.map(createDecoder),
-        async (wakuMessagePayload) => {
-          const verified = await verifyOperation(wakuMessagePayload);
-
-          if (!verified) return;
-          mergeOperations([wakuMessagePayload]);
-        }
-      )
+      .subscribe(decoders, async (wakuMessagePayload) => {
+        const verified = await verifyOperation(wakuMessagePayload);
+        if (!verified) return;
+        mergeOperations([wakuMessagePayload]);
+      })
       .then((u) => {
         unsubscribe = u;
       });
@@ -153,7 +146,7 @@ const useSubscription = (contentTopics) => {
     return () => {
       unsubscribe?.();
     };
-  }, [client, didInitialize, stringifiedTopics]);
+  }, [client, didInitialize, decoders]);
 };
 
 export const useFetchers = () => {
@@ -193,8 +186,8 @@ export const useFetchers = () => {
   });
 
   const fetchChannel = useLatestCallback(async (channelId) => {
-    const contentTopic = createChannelMetaContentTopic(channelId);
-    const operations = await fetchOperations([createDecoder(contentTopic)], {
+    const Codec = createPublicChannelMetaCodec(channelId);
+    const operations = await fetchOperations([Codec.decoder], {
       limit: 1000,
     });
     mergeOperations(operations);
@@ -202,10 +195,8 @@ export const useFetchers = () => {
   });
 
   const fetchChannelMessages = useLatestCallback(async (channelId) => {
-    const channelContentTopic = createChannelContentTopic(channelId);
-    const operations = await fetchOperations([
-      createDecoder(channelContentTopic),
-    ]);
+    const Codec = createPublicChannelCodec(channelId);
+    const operations = await fetchOperations([Codec.decoder]);
     mergeOperations(operations);
     return operations;
   });
@@ -286,9 +277,8 @@ export const useSubmitters = () => {
       { name }
     );
     const channelId = operation.hash;
-    const contentTopic = createChannelMetaContentTopic(channelId);
-    const encoder = createEncoder(contentTopic);
-    await client.submitMessage(encoder, operation);
+    const Codec = createPublicChannelMetaCodec(channelId);
+    await client.submitMessage(Codec.encoder, operation);
     await submitChannelBroadcast(channelId);
     return { id: channelId };
   });
@@ -298,9 +288,8 @@ export const useSubmitters = () => {
       OperationTypes.CHANNEL_REMOVE,
       { channelId }
     );
-    const contentTopic = createChannelMetaContentTopic(channelId);
-    const encoder = createEncoder(contentTopic);
-    return client.submitMessage(encoder, operation);
+    const Codec = createPublicChannelMetaCodec(channelId);
+    return client.submitMessage(Codec.encoder, operation);
   });
 
   const submitChannelMemberAdd = useLatestCallback(
@@ -309,33 +298,30 @@ export const useSubmitters = () => {
         OperationTypes.CHANNEL_MEMBER_ADD,
         { channelId, user: memberAddress }
       );
-      const contentTopic = createChannelMetaContentTopic(channelId);
-      const encoder = createEncoder(contentTopic);
-      return client.submitMessage(encoder, operation);
+      const Codec = createPublicChannelMetaCodec(channelId);
+      return client.submitMessage(Codec.encoder, operation);
     }
   );
 
   const submitChannelMessageAdd = useLatestCallback(
     async (channelId, { content }) => {
-      const contentTopic = createChannelContentTopic(channelId);
-      const encoder = createEncoder(contentTopic);
       const operation = await makeEdDSASignedOperation(
         OperationTypes.CHANNEL_MESSAGE_ADD,
         { channelId, content }
       );
-      return client.submitMessage(encoder, operation);
+      const Codec = createPublicChannelCodec(channelId);
+      return client.submitMessage(Codec.encoder, operation);
     }
   );
 
   const submitChannelMessageRemove = useLatestCallback(
     async (channelId, { targetMessageId }) => {
-      const contentTopic = createChannelContentTopic(channelId);
-      const encoder = createEncoder(contentTopic);
       const operation = await makeEdDSASignedOperation(
         OperationTypes.CHANNEL_MESSAGE_REMOVE,
         { channelId, targetMessageId }
       );
-      return client.submitMessage(encoder, operation);
+      const Codec = createPublicChannelCodec(channelId);
+      return client.submitMessage(Codec.encoder, operation);
     }
   );
 
@@ -359,8 +345,14 @@ export const useSubmitters = () => {
 };
 
 export const useChannelSubscription = (channelId) => {
-  const contentTopics = getChannelSpecificContentTopics(channelId);
-  useSubscription(contentTopics);
+  const decoders = React.useMemo(
+    () =>
+      [createPublicChannelCodec, createPublicChannelMetaCodec].map(
+        (c) => c(channelId).decoder
+      ),
+    [channelId]
+  );
+  useSubscription(decoders);
 };
 
 export const useChannels = () => {
