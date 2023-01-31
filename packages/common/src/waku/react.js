@@ -1,27 +1,23 @@
 import debug from "debug";
-import { sign as signWithEdDSAKey } from "@noble/ed25519";
 import { createEncoder, createDecoder } from "@waku/core";
-import { hexToBytes, bytesToHex } from "@waku/byte-utils";
 import React from "react";
-import { createClient as createWakuClient } from "./waku-client.js";
-import useLatestCallback from "./hooks/latest-callback.js";
+import useLatestCallback from "../hooks/latest-callback.js";
+import { createClient as createWakuClient } from "./client.js";
 import {
-  OPERATION_ECDSA_SIGNATURE_DOMAIN,
-  SIGNER_ADD_OPERATION_ECDSA_SIGNATURE_TYPES,
   OperationTypes,
   BROADCAST_CONTENT_TOPIC,
   createUserContentTopic,
   createPublicChannelCodec,
   createPublicChannelMetaCodec,
-  hashOperationData,
   verifyOperation,
-} from "./ns-waku.js";
+  createOperationFactory,
+} from "./ns-protocol.js";
 import {
   Provider as OperationStoreProvider,
   useOperationStore,
-} from "./ns-waku-operation-store.js";
+} from "./operation-store.js";
 
-const log = debug("ns-waku-react");
+const log = debug("ns:protocol-react");
 
 const ClientContext = React.createContext();
 
@@ -217,50 +213,11 @@ export const useSubmitters = () => {
   const { identity, signerKeyPair } = useSigner();
   const { client } = useClient();
 
-  const makeOperationData = (type, body) => ({
-    body,
-    type,
-    user: identity,
-    timestamp: new Date().getTime(),
-  });
-
-  const makeEdDSASignedOperation = async (type, body) => {
-    const data = makeOperationData(type, body);
-    const hash = hashOperationData(data);
-    const signatureBytes = await signWithEdDSAKey(
-      hexToBytes(hash),
-      hexToBytes(signerKeyPair.privateKey)
-    );
-    return {
-      data,
-      hash,
-      signer: signerKeyPair.publicKey,
-      signature: `0x${bytesToHex(signatureBytes)}`,
-    };
-  };
-
-  const makeECDSASignedSignerAddOperation = async ({
-    signerPublicKey: signer,
-    signTypedData,
-  }) => {
-    const signature = await signTypedData({
-      domain: OPERATION_ECDSA_SIGNATURE_DOMAIN,
-      types: SIGNER_ADD_OPERATION_ECDSA_SIGNATURE_TYPES,
-      value: {
-        user: identity,
-        signer,
-      },
+  const { makeEdDSASignedOperation, makeECDSASignedSignerAddOperation } =
+    createOperationFactory({
+      identity,
+      EdDSASignerKeyPair: signerKeyPair,
     });
-    const data = makeOperationData(OperationTypes.SIGNER_ADD, { signer });
-    const hash = hashOperationData(data);
-
-    return {
-      data,
-      hash,
-      signer: identity,
-      signature,
-    };
-  };
 
   const submitChannelBroadcast = async (channelId) => {
     const encoder = createEncoder(BROADCAST_CONTENT_TOPIC);

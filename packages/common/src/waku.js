@@ -1,1 +1,1 @@
-export * from "./ns-waku-react.js";
+export * from "./waku/react.js";

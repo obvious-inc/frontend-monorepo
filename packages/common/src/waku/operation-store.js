@@ -1,14 +1,14 @@
 import debug from "debug";
 import React from "react";
-import combineReducers from "./utils/combine-reducers.js";
-import { sort, comparator } from "./utils/array.js";
+import combineReducers from "../utils/combine-reducers.js";
+import { sort, comparator } from "../utils/array.js";
 import {
   OperationTypes,
   getOperationTypeName,
   validateOperationPermissions,
-} from "./ns-waku.js";
+} from "./ns-protocol.js";
 
-const log = debug("ns-waku:operation-store");
+const log = debug("ns:operation-store");
 
 const useOperationStoreInternal = () => {
   // const [operationHistory, setOperationHistory] = React.useState([]);
