@@ -1,0 +1,8 @@
+{
+  "extension": ["ts"],
+  "spec": "src/**/*.spec.ts",
+  "require": ["ts-node/register", "jsdom-global/register"],
+  "loader": "ts-node/esm",
+  "node-option": ["experimental-specifier-resolution=node", "loader=ts-node/esm"],
+  "exit": true
+}

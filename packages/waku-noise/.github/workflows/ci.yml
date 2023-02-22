@@ -1,0 +1,70 @@
+name: CI
+
+on:
+  push:
+    branches:
+      - "master"
+      - "staging"
+      - "trying"
+  pull_request:
+
+env:
+  NODE_JS: "16"
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-node@v3
+        with:
+          node-version: ${{ env.NODE_JS }}
+      - uses: bahmutov/npm-install@v1
+      - run: npm run test:lint
+      - run: npm run test:prettier
+      - run: npm run test:spelling
+      - run: npm run test:tsc
+
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-node@v3
+        with:
+          node-version: ${{ env.NODE_JS }}
+      - uses: bahmutov/npm-install@v1
+      - run: npm run build
+
+  browser:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-node@v3
+        with:
+          node-version: ${{ env.NODE_JS }}
+      - uses: bahmutov/npm-install@v1
+      - run: npm run test:browser
+
+  release_next:
+    runs-on: ubuntu-latest
+    needs: [check, build, browser]
+    if: github.event_name == 'push' && github.ref == 'refs/heads/master'
+    steps:
+      - uses: actions/checkout@v2.3.3
+      - uses: actions/setup-node@v3
+        with:
+          node-version: ${{ env.NODE_JS }}
+      - uses: bahmutov/npm-install@v1
+
+      - name: Append git hash to version
+        shell: bash
+        run: |
+          CURR_VERSION=$(cat package.json | jq .version | tr -d '"')
+          GIT_HASH=$(git rev-parse --short HEAD)
+          cat package.json| jq --arg version "$CURR_VERSION-$GIT_HASH" '.version |= $version' > _package.json
+          mv -f _package.json package.json
+
+      - name: Authenticate with registry
+        run: echo "//registry.npmjs.org/:_authToken=${{ secrets.NPM_TOKEN }}" > ./.npmrc
+
+      - run: npm publish --tag next --access public

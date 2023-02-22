@@ -6,7 +6,7 @@ module.exports = {
     "plugin:react-hooks/recommended",
     "prettier",
   ],
-  plugins: ["react"],
+  plugins: ["jest", "react"],
   rules: {
     "react/prop-types": "off",
     "react/display-name": "off",
@@ -16,5 +16,8 @@ module.exports = {
     react: {
       version: "detect",
     },
+  },
+  env: {
+    "jest/globals": true,
   },
 };
