@@ -1,156 +1,571 @@
-import { HMACDRBG } from "@stablelib/hmac-drbg";
-import { randomBytes } from "@stablelib/random";
-import * as x25519 from "@stablelib/x25519";
+import { jest, it, expect } from "@jest/globals";
+import { randomString } from "@stablelib/random";
+import { HKDF } from "@stablelib/hkdf";
+import { SHA256 } from "@stablelib/sha256";
 import {
   Handshake,
-  MessageNametagBuffer,
   NoiseHandshakePatterns,
-  // PayloadV2,
   NoisePublicKey,
+  generateX25519KeyPair,
 } from "@waku/noise";
 
 const test = it;
-const assert = (value) => {
-  expect(value).toBeTruthy();
-};
-const assertEqual = (v1, v2) => {
-  expect(v1 === v2).toBeTruthy();
-};
-
-const encoder = new TextEncoder();
-const decoder = new TextDecoder();
-
-const codec = {
-  encode: (t) => encoder.encode(t),
-  decode: (b) => decoder.decode(b),
-};
+const mock = jest.fn;
 
 const uint8ArrayEquals = (a, b) => {
-  if (a === b) {
-    return true;
-  }
+  if (a === b) return true;
 
-  if (a.byteLength !== b.byteLength) {
-    return false;
-  }
+  if (a.byteLength !== b.byteLength) return false;
 
   for (let i = 0; i < a.byteLength; i++) {
-    if (a[i] !== b[i]) {
-      return false;
-    }
+    if (a[i] !== b[i]) return false;
   }
 
   return true;
 };
 
-const generateX25519KeyPair = () => {
-  const keypair = x25519.generateKeyPair();
+const assert = (value) => {
+  expect(value).toBeTruthy();
+};
+
+const assertEqual = (v1, v2) => {
+  assert(v1 === v2);
+};
+
+const assertCalled = (mockFn) => expect(mockFn).toHaveBeenCalled();
+// const assertCalledTimes = (mockFn, times) =>
+//   expect(mockFn).toHaveBeenCalledTimes(times);
+// const assertCalledWith = (mockFn, ...args) =>
+//   expect(mockFn).toHaveBeenCalledWith(...args);
+
+// const sleep = async (millis) =>
+//   new Promise((resolve) => {
+//     setTimeout(() => resolve(), millis);
+//   });
+
+// const bytesToHex = (bytes) =>
+//   bytes
+//     .map((b) => {
+//       const s = b.toString(16);
+//       return b < 0x10 ? `0${s}` : s;
+//     })
+//     .join("");
+
+const encoder = new TextEncoder();
+const decoder = new TextDecoder();
+
+const encodeMessage = (m) => encoder.encode(JSON.stringify(m));
+const decodeMessage = (m) => JSON.parse(decoder.decode(m));
+
+const dh = (/* privateKey, publicKey */) => null;
+const hkdf = (ck) => new HKDF(SHA256, new Uint8Array(), ck).expand(32);
+const encryptSymmetric = (clearText) => clearText;
+const decryptSymmetric = (cipherText) => cipherText;
+
+const isHandshakeMessage = (m) => m.protocolId === 11;
+
+const verifyMessage = (account, message) => {
+  if (message.dhHeader?.key == null) throw new Error();
+  const secret = dh(account.privateKey, message.dhHeader.key);
+  return decryptSymmetric(message.payload, secret);
+};
+
+const derivePatritionedTopicFromKey = (publicKey) => publicKey;
+
+const NETWORK_LATENCY = 100;
+
+const createDummyNetwork = () => {
+  let subscribers = [];
+
+  const subscribe = (topics, listener) => {
+    const subscriber = { topics, listener };
+    subscribers.push(subscriber);
+    return () => {
+      subscribers = subscribers.filter((s) => s !== subscriber);
+    };
+  };
+
+  const publish = (topic, message) => {
+    return new Promise((resolve) => {
+      // Random latency
+      const latency = Math.random() * NETWORK_LATENCY;
+      setTimeout(() => {
+        for (const subscriber of subscribers) {
+          if (
+            // Treat empty topic lists as "listen to everything"
+            subscriber.topics.length === 0 ||
+            subscriber.topics.some((t) => uint8ArrayEquals(t, topic))
+          ) {
+            subscriber.listener(message, topic);
+          }
+        }
+        resolve();
+      }, latency);
+    });
+  };
 
   return {
-    publicKey: keypair.publicKey,
-    privateKey: keypair.secretKey,
+    publish,
+    subscribe,
+    // Test helper for waiting until the network is "idle"
+    _idle: async (millis = NETWORK_LATENCY * 2) =>
+      new Promise((resolve) => {
+        let handle;
+
+        const restartTimer = ({ onResolve }) => {
+          clearTimeout(handle);
+          handle = setTimeout(() => {
+            onResolve();
+            resolve();
+          }, millis);
+        };
+
+        const unsubscribe = subscribe([], () => {
+          restartTimer({ onResolve: unsubscribe });
+        });
+
+        restartTimer({ onResolve: unsubscribe });
+      }),
   };
 };
 
-const rng = new HMACDRBG();
-const hsPattern = NoiseHandshakePatterns.XK1;
+const createFilteredNode = ({ network }) => {
+  const publishedMessages = [];
+  return {
+    publish: (topic, message) => {
+      publishedMessages.push(message);
+      return network.publish(topic, message);
+    },
+    subscribe: (topics, listener) =>
+      network.subscribe(topics, async (message, topic) => {
+        // Ignore self
+        if (publishedMessages.includes(message)) return;
+        listener(message, topic);
+      }),
+  };
+};
 
-test("Noise XK1 Handhshake and message encryption (short test)", () => {
-  // We initialize Alice's and Bob's Handshake State
-  const aliceStaticKey = generateX25519KeyPair();
-  const bobStaticKey = generateX25519KeyPair();
+const createNode = ({ account, network }) => {
+  const accountTopic = derivePatritionedTopicFromKey(account.publicKey);
+  const observedTopics = [accountTopic];
 
-  // Alice knows Bob’s static key
-  const preMessagePKs = [NoisePublicKey.fromPublicKey(bobStaticKey.publicKey)];
+  let listeners = [];
 
-  const aliceHS = new Handshake({
-    hsPattern,
-    staticKey: aliceStaticKey,
-    preMessagePKs,
+  const sessions = {};
+  let accountsWithPendingHandshakes = [];
+
+  const node = createFilteredNode({ network });
+
+  const initSession = ({ recipientAccountPublicKey, handshakeResult }) => {
+    const session = createNoiseSession({
+      node,
+      account,
+      handshakeResult,
+    });
+    sessions[recipientAccountPublicKey] = session;
+    accountsWithPendingHandshakes = accountsWithPendingHandshakes.filter((k) =>
+      uint8ArrayEquals(k, recipientAccountPublicKey)
+    );
+
+    session.subscribe((message) => {
+      for (const listener of listeners) listener(message, "noise");
+    });
+
+    return session;
+  };
+
+  const handleHandshakeMessage = async (message) => {
+    try {
+      const handshakeResult = await initNoiseHandshakeAsResponder({
+        account,
+        initiatorHandshakePayload: message,
+        node,
+      });
+
+      initSession({
+        recipientAccountPublicKey: handshakeResult.rs,
+        handshakeResult,
+      });
+    } catch (e) {
+      // console.warn(e);
+    }
+  };
+
+  node.subscribe(observedTopics, async (message) => {
+    if (isHandshakeMessage(message)) {
+      handleHandshakeMessage(message);
+      return;
+    }
+
+    try {
+      const verifiedMessage = verifyMessage(account, message);
+      for (const listener of listeners) listener(verifiedMessage.data, "dh");
+    } catch (e) {
+      // console.warn(e)
+    }
+  });
+
+  const sendDH = (recipientAccountPublicKey, message) => {
+    const ephemeralKey = generateX25519KeyPair();
+    const secret = dh(ephemeralKey.privateKey, recipientAccountPublicKey);
+
+    const topic = derivePatritionedTopicFromKey(recipientAccountPublicKey);
+
+    return node.publish(topic, {
+      dhHeader: { key: ephemeralKey.publicKey },
+      payload: encryptSymmetric(
+        { sender: account.publicKey, data: message },
+        secret
+      ),
+    });
+  };
+
+  return {
+    accountPublicKey: account.publicKey,
+    sendPrivate: async (recipientAccountPublicKey, message) => {
+      const session = sessions[recipientAccountPublicKey];
+      if (session != null) return session.send(message);
+
+      const sendResult = await sendDH(recipientAccountPublicKey, message);
+
+      if (
+        accountsWithPendingHandshakes.some((k) =>
+          uint8ArrayEquals(k, recipientAccountPublicKey)
+        )
+      )
+        return sendResult;
+
+      initNoiseHandshakeAsInitiator({
+        account,
+        node,
+        recipientAccountPublicKey,
+      }).then((handshakeResult) => {
+        // TODO: wait until a message is received until this is used for sending
+        initSession({ recipientAccountPublicKey, handshakeResult });
+      });
+
+      accountsWithPendingHandshakes.push(recipientAccountPublicKey);
+
+      return sendResult;
+    },
+    observe: (listener) => {
+      listeners.push(listener);
+      return () => {
+        listeners = listeners.filter((l) => l !== listener);
+      };
+    },
+  };
+};
+
+const initNoiseHandshakeAsInitiator = ({
+  account,
+  node,
+  recipientAccountPublicKey,
+}) => {
+  const recipientTopic = derivePatritionedTopicFromKey(
+    recipientAccountPublicKey
+  );
+
+  const handshake = new Handshake({
+    hsPattern: NoiseHandshakePatterns.XK1,
+    staticKey: account,
+    preMessagePKs: [NoisePublicKey.fromPublicKey(recipientAccountPublicKey)],
     initiator: true,
   });
-  const bobHS = new Handshake({
-    hsPattern,
-    staticKey: bobStaticKey,
-    preMessagePKs,
+
+  const handshakeWrite = (includeNameTag = true) =>
+    handshake.stepHandshake({
+      messageNametag: includeNameTag
+        ? handshake.hs.toMessageNametag()
+        : undefined,
+    }).payload2;
+  const handshakeRead = (p) =>
+    handshake.stepHandshake({
+      readPayloadV2: p,
+      messageNametag: handshake.hs.toMessageNametag(),
+    });
+
+  return new Promise((resolve) => {
+    const unsubscribe = node.subscribe([recipientTopic], (payload) => {
+      if (!isHandshakeMessage(payload)) return;
+
+      try {
+        // 2nd step
+        //   <- e, ee, es
+        handshakeRead(payload);
+
+        // 3rd step
+        //   -> s, se
+        node.publish(recipientTopic, handshakeWrite());
+
+        // Done, finalize handshake
+        resolve(handshake.finalizeHandshake());
+
+        unsubscribe();
+      } catch (e) {
+        // console.warn(e);
+      }
+    });
+
+    // 1st step
+    //   -> e
+    node.publish(recipientTopic, handshakeWrite(false));
+  });
+};
+
+const initNoiseHandshakeAsResponder = ({
+  account,
+  node,
+  initiatorHandshakePayload,
+}) => {
+  const accountTopic = derivePatritionedTopicFromKey(account.publicKey);
+
+  const handshake = new Handshake({
+    hsPattern: NoiseHandshakePatterns.XK1,
+    staticKey: account,
+    preMessagePKs: [NoisePublicKey.fromPublicKey(account.publicKey)],
   });
 
-  const aliceWrite = (message) => {
-    const step = aliceHS.stepHandshake({
-      transportMessage: codec.encode(message),
+  const handshakeWrite = () =>
+    handshake.stepHandshake({ messageNametag: handshake.hs.toMessageNametag() })
+      .payload2;
+  const handshakeRead = (p, includeNameTag = true) =>
+    handshake.stepHandshake({
+      readPayloadV2: p,
+      messageNametag: includeNameTag
+        ? handshake.hs.toMessageNametag()
+        : undefined,
     });
-    return step.payload2;
-  };
-  const bobRead = (payload) => {
-    const step = bobHS.stepHandshake({ readPayloadV2: payload });
-    return step.transportMessage;
-  };
 
-  const bobWrite = (message) => {
-    const step = bobHS.stepHandshake({
-      transportMessage: codec.encode(message),
+  // 1st step (responser)
+  //   -> e
+  handshakeRead(initiatorHandshakePayload, false);
+
+  return new Promise((resolve) => {
+    const unsubscribe = node.subscribe([accountTopic], (payload) => {
+      if (!isHandshakeMessage(payload)) return;
+
+      try {
+        // 3rd step (responder)
+        //   -> s, se
+        handshakeRead(payload);
+
+        // Done, finalize handshake
+        resolve(handshake.finalizeHandshake());
+
+        unsubscribe();
+      } catch (e) {
+        // console.warn(e);
+      }
     });
-    return step.payload2;
-  };
 
-  const aliceRead = (payload) => {
-    const step = aliceHS.stepHandshake({
-      readPayloadV2: payload,
-    });
-    return step.transportMessage;
-  };
+    // 2nd step (responder)
+    //   -> s, se
+    node.publish(accountTopic, handshakeWrite());
+  });
+};
 
-  // Here the handshake starts
-  // Write and read calls alternate between Alice and Bob: the handhshake progresses by alternatively calling stepHandshake for each user
+const createNoiseSessionIdBuffer = (handshakeHash) => {
+  const buffer = [hkdf(handshakeHash)];
 
-  // 1st step
-  bobRead(aliceWrite("Hi Bob!"));
-  aliceWrite("test");
-
-  // 2nd step
-  aliceRead(bobWrite("Hi Alice!"));
-
-  // 3rd step
-  bobRead(aliceWrite("Final!"));
-
-  // After Handshake
-  // ==========
-
-  // We finalize the handshake to retrieve the Inbound/Outbound symmetric states
-  const aliceHSResult = aliceHS.finalizeHandshake();
-  const bobHSResult = bobHS.finalizeHandshake();
-
-  const defaultMessageNametagBuffer = new MessageNametagBuffer();
-
-  // We test read/write of random messages exchanged between Alice and Bob
-  for (let i = 0; i < 10; i++) {
-    // Alice writes to Bob
-    let message = randomBytes(32);
-    let payload2 = aliceHSResult.writeMessage(
-      message,
-      defaultMessageNametagBuffer
-    );
-    // let serializedPayload = payload2.serialize();
-    // let deserializedPayload = PayloadV2.deserialize(serializedPayload);
-    let readMessage = bobHSResult.readMessage(
-      // deserializedPayload,
-      payload2,
-      defaultMessageNametagBuffer
-    );
-
-    assert(uint8ArrayEquals(message, readMessage));
-
-    // Bob writes to Alice
-    message = randomBytes(32);
-    payload2 = bobHSResult.writeMessage(message, defaultMessageNametagBuffer);
-    // serializedPayload = payload2.serialize();
-    // deserializedPayload = PayloadV2.deserialize(serializedPayload);
-    readMessage = aliceHSResult.readMessage(
-      // deserializedPayload,
-      payload2,
-      defaultMessageNametagBuffer
-    );
-
-    assert(uint8ArrayEquals(message, readMessage));
+  while (buffer.length < 3) {
+    const last = buffer.slice(-1)[0];
+    buffer.push(hkdf(last));
   }
+
+  return {
+    next: () => buffer[1],
+    shift: () => {
+      buffer.shift();
+      const last = buffer.slice(-1)[0];
+      buffer.push(last);
+    },
+    indexOf: (item) => buffer.findIndex((i) => uint8ArrayEquals(i, item)),
+    toArray: () => buffer,
+  };
+};
+
+const createNoiseSession = ({ node, handshakeResult }) => {
+  const sessionIdBuffer = createNoiseSessionIdBuffer(handshakeResult.h);
+
+  let listeners = [];
+
+  const start = () => {
+    let unsubscribe;
+    let failedMessages = [];
+
+    const subscribe = (handler) =>
+      node.subscribe(sessionIdBuffer.toArray(), handler);
+
+    const read = (payload) =>
+      decodeMessage(handshakeResult.readMessage(payload));
+    const emit = (message) => {
+      for (const listener of listeners) listener(message);
+    };
+
+    const retryFailed = () => {
+      if (failedMessages.length === 0) return;
+
+      for (let failedMessage of failedMessages) {
+        try {
+          const message = read(failedMessage);
+          failedMessages = failedMessages.filter((m) => m !== message);
+          emit(message);
+          retryFailed();
+        } catch (e) {
+          // console.warn(e)
+        }
+      }
+    };
+
+    const handler = (payload, topic) => {
+      try {
+        const message = read(payload);
+
+        if (sessionIdBuffer.indexOf(topic) > 0) {
+          sessionIdBuffer.shift();
+          unsubscribe();
+          unsubscribe = subscribe(handler);
+        }
+
+        emit(message);
+        retryFailed();
+      } catch (e) {
+        failedMessages.push(payload);
+      }
+    };
+
+    unsubscribe = subscribe(handler);
+
+    return () => {
+      unsubscribe();
+    };
+  };
+
+  const subscribe = (listener) => {
+    listeners.push(listener);
+    return () => {
+      listeners = listeners.filter((l) => l !== listener);
+    };
+  };
+
+  const send = (message) => {
+    const payload = handshakeResult.writeMessage(encodeMessage(message));
+    const nextSessionId = sessionIdBuffer.next();
+    return node.publish(nextSessionId, payload);
+  };
+
+  start();
+
+  return { subscribe, send };
+};
+
+test("basic", async () => {
+  const network = createDummyNetwork();
+
+  const aliceNode = createNode({
+    account: generateX25519KeyPair(),
+    network,
+  });
+  const bobNode = createNode({
+    account: generateX25519KeyPair(),
+    network,
+  });
+
+  {
+    // Alice writes to Bob
+    const message = { foo: randomString(32) };
+    const listener = mock((incomingMessage, protocol) => {
+      assertEqual(message.foo, incomingMessage.foo);
+      assertEqual(protocol, "dh");
+    });
+    const unobserve = bobNode.observe(listener);
+    aliceNode.sendPrivate(bobNode.accountPublicKey, message);
+    await network._idle();
+    unobserve();
+    assertCalled(listener);
+  }
+
+  for (let i = 0; i < 5; i++) {
+    {
+      // Alice writes to Bob
+      const message = { foo: randomString(32) };
+      const listener = mock((incomingMessage, protocol) => {
+        assertEqual(message.foo, incomingMessage.foo);
+        assertEqual(protocol, "noise");
+      });
+      const unobserve = bobNode.observe(listener);
+      aliceNode.sendPrivate(bobNode.accountPublicKey, message);
+      await network._idle();
+      unobserve();
+      assertCalled(listener);
+    }
+
+    {
+      // Bob writes to Alice
+      const message = { foo: randomString(32) };
+      const listener = mock((incomingMessage, protocol) => {
+        assertEqual(message.foo, incomingMessage.foo);
+        assertEqual(protocol, "noise");
+      });
+      const unobserve = aliceNode.observe(listener);
+      bobNode.sendPrivate(aliceNode.accountPublicKey, message);
+      await network._idle();
+      unobserve();
+      assertCalled(listener);
+    }
+  }
+});
+
+// Waku’s noise implementation does name tag checking which enforces messages to
+// arrive in order. To allow for out-of-order message this POC caches and
+// continously tries to replay failed encryption attempts as new messages arrive.
+test("out-of-order messages", async () => {
+  const network = createDummyNetwork();
+
+  const aliceNode = createNode({
+    account: generateX25519KeyPair(),
+    network,
+  });
+  const bobNode = createNode({
+    account: generateX25519KeyPair(),
+    network,
+  });
+
+  // Get the handshake over with first since we only care about out-of-order
+  // messages on noise sessions
+  aliceNode.sendPrivate(bobNode.accountPublicKey, {
+    foo: "handshake",
+  });
+  await network._idle();
+
+  const sentMessages = [];
+  const receivedMessages = [];
+
+  const listener = mock((incomingMessage) => {
+    receivedMessages.push(incomingMessage);
+  });
+  const unobserveAlice = aliceNode.observe(listener);
+  const unobserveBob = bobNode.observe(listener);
+
+  const exchanges = 10;
+
+  for (let i = 0; i < exchanges; i++) {
+    const [aliceMessage, bobMessage] = ["alice", "bob"].map((name) => ({
+      payload: `${name} ${i}`,
+    }));
+    aliceNode.sendPrivate(bobNode.accountPublicKey, aliceMessage);
+    bobNode.sendPrivate(aliceNode.accountPublicKey, bobMessage);
+    sentMessages.push(aliceMessage, bobMessage);
+  }
+
+  await network._idle();
+
+  unobserveAlice();
+  unobserveBob();
+
+  assertEqual(receivedMessages.length, exchanges * 2);
+  // Just to make sure we didn’t get perfect order by chance
+  assert(receivedMessages.some((m, i) => m !== sentMessages[i]));
+  console.log(sentMessages, receivedMessages);
 });

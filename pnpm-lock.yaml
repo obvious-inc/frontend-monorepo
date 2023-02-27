@@ -39,7 +39,7 @@ importers:
       '@shades/common': workspace:0.0.0
       '@stablelib/hmac-drbg': ^1.0.2
       '@stablelib/random': ^1.0.2
-      '@stablelib/x25519': ^1.0.3
+      '@stablelib/sha256': ^1.0.1
       '@swc/core': 1.2.130
       '@swc/jest': ^0.2.24
       '@waku/byte-utils': ^0.0.2
@@ -115,7 +115,7 @@ importers:
       '@shades/common': link:../common
       '@stablelib/hmac-drbg': 1.0.2
       '@stablelib/random': 1.0.2
-      '@stablelib/x25519': 1.0.3
+      '@stablelib/sha256': 1.0.1
       '@waku/byte-utils': 0.0.2
       '@waku/core': 0.0.9
       '@waku/create': 0.0.6
@@ -9417,6 +9417,8 @@ packages:
   /@waku/core/0.0.10:
     resolution: {integrity: sha512-PyQYO41jwT8dEdkyJ+TSjXc4/4S3fsHXn47l1uITa+vkQ2y2uoSiKXpl1eF+hofqJAxcMn7Mh+Ul3UTAWdGC+g==}
     engines: {node: '>=16'}
+    peerDependencies:
+      '@multiformats/multiaddr': ^11.0.6
     peerDependenciesMeta:
       '@multiformats/multiaddr':
         optional: true
@@ -9437,7 +9439,54 @@ packages:
       '@waku/interfaces': 0.0.7
       '@waku/libp2p-utils': 0.0.2
       '@waku/peer-exchange': 0.0.2
-      '@waku/proto': 0.0.2
+      '@waku/proto': 0.0.2_uint8arraylist@2.4.3
+      debug: 4.3.4
+      it-all: 1.0.6
+      it-length-prefixed: 8.0.4
+      it-pipe: 2.0.5
+      libp2p: 0.40.0
+      p-event: 5.0.1
+      uint8arraylist: 2.4.3
+      uint8arrays: 4.0.3
+      uuid: 9.0.0
+    transitivePeerDependencies:
+      - '@babel/core'
+      - '@octokit/core'
+      - '@typescript-eslint/parser'
+      - encoding
+      - eslint-import-resolver-typescript
+      - eslint-import-resolver-webpack
+      - supports-color
+      - zen-observable
+      - zenObservable
+    dev: false
+
+  /@waku/core/0.0.10_372vh7voyrxwovd2ceqs33ozqi:
+    resolution: {integrity: sha512-PyQYO41jwT8dEdkyJ+TSjXc4/4S3fsHXn47l1uITa+vkQ2y2uoSiKXpl1eF+hofqJAxcMn7Mh+Ul3UTAWdGC+g==}
+    engines: {node: '>=16'}
+    peerDependencies:
+      '@multiformats/multiaddr': ^11.0.6
+    peerDependenciesMeta:
+      '@multiformats/multiaddr':
+        optional: true
+    dependencies:
+      '@chainsafe/libp2p-gossipsub': 5.4.1
+      '@libp2p/interface-connection': 3.0.7
+      '@libp2p/interface-peer-discovery': 1.0.4
+      '@libp2p/interface-peer-id': 1.1.2
+      '@libp2p/interface-peer-info': 1.0.7
+      '@libp2p/interface-peer-store': 1.2.7
+      '@libp2p/interface-pubsub': 3.0.5
+      '@libp2p/interface-registrar': 2.0.7
+      '@libp2p/interfaces': 3.3.0
+      '@libp2p/peer-id': 1.1.18
+      '@multiformats/multiaddr': 11.3.0
+      '@noble/hashes': 1.1.5
+      '@waku/byte-utils': 0.0.2
+      '@waku/interfaces': 0.0.7
+      '@waku/libp2p-utils': 0.0.2
+      '@waku/peer-exchange': 0.0.2_372vh7voyrxwovd2ceqs33ozqi
+      '@waku/proto': 0.0.2_uint8arraylist@2.4.3
       debug: 4.3.4
       it-all: 1.0.6
       it-length-prefixed: 8.0.4
@@ -9526,8 +9575,8 @@ packages:
       '@waku/byte-utils': 0.0.2
       '@waku/interfaces': 0.0.7
       '@waku/libp2p-utils': 0.0.2
-      '@waku/peer-exchange': 0.0.2
-      '@waku/proto': 0.0.2
+      '@waku/peer-exchange': 0.0.2_372vh7voyrxwovd2ceqs33ozqi
+      '@waku/proto': 0.0.2_uint8arraylist@2.4.3
       chai: 4.3.7
       debug: 4.3.4
       fast-check: 2.25.0
@@ -9577,6 +9626,7 @@ packages:
       interface-datastore: 7.0.3
     transitivePeerDependencies:
       - '@babel/core'
+      - '@multiformats/multiaddr'
       - '@octokit/core'
       - '@typescript-eslint/parser'
       - bufferutil
@@ -9674,6 +9724,7 @@ packages:
       - eslint-import-resolver-typescript
       - eslint-import-resolver-webpack
       - supports-color
+      - uint8arraylist
       - zen-observable
       - zenObservable
     dev: false
@@ -9698,6 +9749,7 @@ packages:
       uint8arraylist: 2.4.3
     transitivePeerDependencies:
       - '@babel/core'
+      - '@multiformats/multiaddr'
       - '@octokit/core'
       - '@typescript-eslint/parser'
       - encoding
@@ -9722,7 +9774,7 @@ packages:
       '@waku/enr': 0.0.4_uint8arraylist@2.4.3
       '@waku/interfaces': 0.0.7
       '@waku/libp2p-utils': 0.0.2
-      '@waku/proto': 0.0.2
+      '@waku/proto': 0.0.2_uint8arraylist@2.4.3
       debug: 4.3.4
       it-all: 1.0.6
       it-length-prefixed: 8.0.4
@@ -9730,6 +9782,40 @@ packages:
       uint8arraylist: 2.4.3
     transitivePeerDependencies:
       - '@babel/core'
+      - '@multiformats/multiaddr'
+      - '@octokit/core'
+      - '@typescript-eslint/parser'
+      - encoding
+      - eslint-import-resolver-typescript
+      - eslint-import-resolver-webpack
+      - supports-color
+      - zen-observable
+      - zenObservable
+    dev: false
+
+  /@waku/peer-exchange/0.0.2_372vh7voyrxwovd2ceqs33ozqi:
+    resolution: {integrity: sha512-Vq4bQ0biryedrQBBUuqYdlExNbReo1DYXY1yFX+ICh6eVmQKz46dGFlmIBKodajXo82pNhk3fFv+sr/J0ShXzQ==}
+    engines: {node: '>=16'}
+    dependencies:
+      '@libp2p/interface-connection': 3.0.7
+      '@libp2p/interface-peer-discovery': 1.0.4
+      '@libp2p/interface-peer-discovery-compliance-tests': 2.0.4
+      '@libp2p/interface-peer-id': 1.1.2
+      '@libp2p/interface-peer-info': 1.0.7
+      '@libp2p/interface-peer-store': 1.2.7
+      '@waku/core': 0.0.10_372vh7voyrxwovd2ceqs33ozqi
+      '@waku/enr': 0.0.4_uint8arraylist@2.4.3
+      '@waku/interfaces': 0.0.7
+      '@waku/libp2p-utils': 0.0.2
+      '@waku/proto': 0.0.2_uint8arraylist@2.4.3
+      debug: 4.3.4
+      it-all: 1.0.6
+      it-length-prefixed: 8.0.4
+      it-pipe: 2.0.5
+      uint8arraylist: 2.4.3
+    transitivePeerDependencies:
+      - '@babel/core'
+      - '@multiformats/multiaddr'
       - '@octokit/core'
       - '@typescript-eslint/parser'
       - encoding
@@ -9777,6 +9863,17 @@ packages:
     engines: {node: '>=16'}
     dependencies:
       protons-runtime: 3.1.0
+    transitivePeerDependencies:
+      - uint8arraylist
+    dev: false
+
+  /@waku/proto/0.0.2_uint8arraylist@2.4.3:
+    resolution: {integrity: sha512-5+hERUscSRbERu2BkTqvSR4Jl3YMvtPegQ/YZbhwBTk5MBS23kGzMBxf1MdQ3Sfy5TiU7yc2Q5G5vItvPkEOUw==}
+    engines: {node: '>=16'}
+    dependencies:
+      protons-runtime: 3.1.0_uint8arraylist@2.4.3
+    transitivePeerDependencies:
+      - uint8arraylist
     dev: false
 
   /@walletconnect/browser-utils/1.8.0:
@@ -10083,7 +10180,7 @@ packages:
       webpack: 4.x.x || 5.x.x
       webpack-cli: 4.x.x
     dependencies:
-      webpack: 5.74.0_webpack-cli@4.10.0
+      webpack: 5.74.0_povibhb7cctselr6hkpwkojvwu
       webpack-cli: 4.10.0_vnmgq7jx5zjkzolvtfp7mdf5ri
 
   /@webpack-cli/info/1.5.0_webpack-cli@4.10.0:
@@ -10104,7 +10201,7 @@ packages:
         optional: true
     dependencies:
       webpack-cli: 4.10.0_vnmgq7jx5zjkzolvtfp7mdf5ri
-      webpack-dev-server: 4.11.1_5v66e2inugklgvlh4huuavolfq
+      webpack-dev-server: 4.11.1_uptvlxzxtuqbyzxasnpdw7lg2a
 
   /@xmldom/xmldom/0.7.6:
     resolution: {integrity: sha512-HHXP9hskkFQHy8QxxUXkS7946FFIhYVfGqsk0WLwllmexN9x/+R4UBLvurHEuyXRfVEObVR8APuQehykLviwSQ==}
@@ -10921,7 +11018,7 @@ packages:
   /axios/0.21.4_debug@4.3.4:
     resolution: {integrity: sha512-ut5vewkiu8jjGBdqpM44XxjuCjq9LAKeHVmoVfHVzy8eHgxxq8SbAVQNovDA8mVi05kP0Ea/n/UzcSHcTJQfNg==}
     dependencies:
-      follow-redirects: 1.15.2
+      follow-redirects: 1.15.2_debug@4.3.4
     transitivePeerDependencies:
       - debug
     dev: false
@@ -10929,7 +11026,7 @@ packages:
   /axios/0.27.2_debug@4.3.4:
     resolution: {integrity: sha512-t+yRIyySRTp/wua5xEr+z1q60QmLq8ABsS5O9Me1AsE5dfKqgnCFzwiCZZ/cGNd1lq4/7akDWMxdhVlucjmnOQ==}
     dependencies:
-      follow-redirects: 1.15.2
+      follow-redirects: 1.15.2_debug@4.3.4
       form-data: 4.0.0
     transitivePeerDependencies:
       - debug
@@ -16033,7 +16130,6 @@ packages:
         optional: true
     dependencies:
       debug: 4.3.4
-    dev: true
 
   /fontfaceobserver/2.3.0:
     resolution: {integrity: sha512-6FPvD/IVyT4ZlNe7Wcn5Fb/4ChigpucKYSvD6a+0iMoLn2inpo711eyIcKjmDtE5XNcgAkSH9uN/nfAeZzHEfg==}
@@ -17064,6 +17160,7 @@ packages:
       micromatch: 4.0.5
     transitivePeerDependencies:
       - debug
+    dev: true
 
   /http-proxy-middleware/2.0.6_bwlemkrjb22k3yqlwsvvolpocy:
     resolution: {integrity: sha512-ya/UeJ6HVBYxrgYotAZo1KvPWlgB48kUJLDePFeneHsVujFaW5WNj2NgWCAE//B1Dl02BIfYlpNgBy8Kf8Rjmw==}
@@ -17082,7 +17179,6 @@ packages:
       micromatch: 4.0.5
     transitivePeerDependencies:
       - debug
-    dev: true
 
   /http-proxy/1.18.1:
     resolution: {integrity: sha512-7mz/721AbnJwIVbnaSv1Cz3Am0ZLT/UBwkC92VlxhXv/k/BBQfM2fXElQNC27BVGr0uwUpplYPQM9LnaBMR5NQ==}
@@ -17093,6 +17189,7 @@ packages:
       requires-port: 1.0.0
     transitivePeerDependencies:
       - debug
+    dev: true
 
   /http-proxy/1.18.1_debug@4.3.4:
     resolution: {integrity: sha512-7mz/721AbnJwIVbnaSv1Cz3Am0ZLT/UBwkC92VlxhXv/k/BBQfM2fXElQNC27BVGr0uwUpplYPQM9LnaBMR5NQ==}
@@ -17103,7 +17200,6 @@ packages:
       requires-port: 1.0.0
     transitivePeerDependencies:
       - debug
-    dev: true
 
   /http2-wrapper/1.0.3:
     resolution: {integrity: sha512-V+23sDMr12Wnz7iTcDeJr3O6AIxlnvT/bmaAAAP/Xda35C90p9599p0F1eHR/N1KILWSoWVAiOMFjBBXaXSMxg==}
@@ -23057,6 +23153,18 @@ packages:
   /protons-runtime/3.1.0:
     resolution: {integrity: sha512-S1iSPQC0McdHKJRi0XcATBkWgwWPx46UDfrnshYDXBvGHSYqkFtn4MQ8Gatf67w7FzFtHivA+Hb0ZPq56upG8w==}
     engines: {node: '>=16.0.0', npm: '>=7.0.0'}
+    peerDependencies:
+      uint8arraylist: ^2.3.2
+    dependencies:
+      protobufjs: 7.1.2
+      uint8arraylist: 2.4.3
+    dev: false
+
+  /protons-runtime/3.1.0_uint8arraylist@2.4.3:
+    resolution: {integrity: sha512-S1iSPQC0McdHKJRi0XcATBkWgwWPx46UDfrnshYDXBvGHSYqkFtn4MQ8Gatf67w7FzFtHivA+Hb0ZPq56upG8w==}
+    engines: {node: '>=16.0.0', npm: '>=7.0.0'}
+    peerDependencies:
+      uint8arraylist: ^2.3.2
     dependencies:
       protobufjs: 7.1.2
       uint8arraylist: 2.4.3
@@ -25898,6 +26006,7 @@ packages:
       serialize-javascript: 6.0.0
       terser: 5.15.1
       webpack: 5.74.0_webpack-cli@4.10.0
+    dev: true
 
   /terser-webpack-plugin/5.3.6_webpack@5.75.0:
     resolution: {integrity: sha512-kfLFk+PoLUQIbLmB1+PZDMRSZS99Mp+/MHqDNmMA6tOItzRt+Npe3E+fsMs5mfcM0wCtrrdU387UnV+vnSffXQ==}
@@ -27081,8 +27190,8 @@ packages:
       import-local: 3.1.0
       interpret: 2.2.0
       rechoir: 0.7.1
-      webpack: 5.74.0_webpack-cli@4.10.0
-      webpack-dev-server: 4.11.1_5v66e2inugklgvlh4huuavolfq
+      webpack: 5.74.0_povibhb7cctselr6hkpwkojvwu
+      webpack-dev-server: 4.11.1_uptvlxzxtuqbyzxasnpdw7lg2a
       webpack-merge: 5.8.0
 
   /webpack-dev-middleware/5.3.3_webpack@5.74.0:
@@ -27096,7 +27205,7 @@ packages:
       mime-types: 2.1.35
       range-parser: 1.2.1
       schema-utils: 4.0.0
-      webpack: 5.74.0_webpack-cli@4.10.0
+      webpack: 5.74.0_povibhb7cctselr6hkpwkojvwu
 
   /webpack-dev-server/4.11.1_5v66e2inugklgvlh4huuavolfq:
     resolution: {integrity: sha512-lILVz9tAUy1zGFwieuaQtYiadImb5M3d+H+L1zDYalYoDl0cksAB1UNyuE5MMWJrG6zR1tXkCP2fitl7yoUJiw==}
@@ -27145,6 +27254,7 @@ packages:
       - debug
       - supports-color
       - utf-8-validate
+    dev: true
 
   /webpack-dev-server/4.11.1_uptvlxzxtuqbyzxasnpdw7lg2a:
     resolution: {integrity: sha512-lILVz9tAUy1zGFwieuaQtYiadImb5M3d+H+L1zDYalYoDl0cksAB1UNyuE5MMWJrG6zR1tXkCP2fitl7yoUJiw==}
@@ -27193,7 +27303,6 @@ packages:
       - debug
       - supports-color
       - utf-8-validate
-    dev: true
 
   /webpack-merge/4.2.2:
     resolution: {integrity: sha512-TUE1UGoTX2Cd42j3krGYqObZbOD+xF7u28WB7tfUordytSjbWTIjK/8V0amkBfTYN4/pB/GIDlJZZ657BGG19g==}
@@ -27291,6 +27400,7 @@ packages:
       - '@swc/core'
       - esbuild
       - uglify-js
+    dev: true
 
   /webpack/5.75.0:
     resolution: {integrity: sha512-piaIaoVJlqMsPtX/+3KTTO6jfvrSYgauFVdt8cr9LTHKmcq/AMd4mhzsiP7ZF/PGRNPGA8336jldh9l2Kt2ogQ==}

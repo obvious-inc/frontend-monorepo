@@ -108,7 +108,6 @@ export class HandshakeState {
   // Uses the cryptographic information stored in the input handshake state to generate a random message nametag
   // In current implementation the messageNametag = HKDF(handshake hash value), but other derivation mechanisms can be implemented
   toMessageNametag(): MessageNametag {
-    console.log("HELLO!");
     const [output] = HKDF(this.ss.h, new Uint8Array(), 32, 1);
     return output.subarray(0, MessageNametagLength);
   }

@@ -45,7 +45,7 @@ export class HandshakeResult {
   rs: bytes32 = new Uint8Array();
   h: bytes32 = new Uint8Array();
 
-  constructor(private csOutbound: CipherState, private csInbound: CipherState) { }
+  constructor(private csOutbound: CipherState, private csInbound: CipherState) {}
 
   // Noise specification, Section 5:
   // Transport messages are then encrypted and decrypted by calling EncryptWithAd()
