@@ -1,4 +1,5 @@
 export * as array from "./utils/array";
+export * as uint8Array from "./utils/uint8-array";
 export * as object from "./utils/object";
 export * as function from "./utils/function";
 export * as url from "./utils/url";
