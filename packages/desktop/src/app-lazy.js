@@ -98,6 +98,9 @@ const useSystemNotifications = () => {
               const me = selectors.selectMe();
               const message = selectors.selectMessage(action.data.message.id);
 
+              // Temporary test
+              if (message == null) break;
+
               if (message.authorUserId === me.id) break;
 
               const hasUnread = selectors.selectChannelHasUnread(
