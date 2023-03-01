@@ -128,8 +128,8 @@ export const createNode = ({ account, network }) => {
 
   const initSession = ({ recipientAccountPublicKey, sessionData }) => {
     const persist = (sessionData) => {
-      const cache = sessionCache[account.publicKey] ?? [];
-      cache.push(serializeSession(sessionData));
+      const cache = sessionCache[account.publicKey] ?? {};
+      cache[recipientAccountPublicKey] = serializeSession(sessionData);
       sessionCache[account.publicKey] = cache;
     };
 
@@ -204,9 +204,11 @@ export const createNode = ({ account, network }) => {
 
   // Restore cached sessions
   if (sessionCache[account.publicKey] != null) {
-    const serializedSessions = sessionCache[account.publicKey];
-    for (const sessionData of serializedSessions.map(deserializeSession)) {
-      initSession({ recipientAccountPublicKey: sessionData.rs, sessionData });
+    const cache = sessionCache[account.publicKey];
+    for (const cacheEntry of Object.entries(cache)) {
+      const [recipientAccountPublicKey, serializedSession] = cacheEntry;
+      const sessionData = deserializeSession(serializedSession);
+      initSession({ recipientAccountPublicKey, sessionData });
     }
   }
 
@@ -262,8 +264,10 @@ const createHandshakeResult = ({
   const result = new HandshakeResult(csOutbound, csInbound);
   result.nametagsInbound.secret = nametagsInboundSecret;
   result.nametagsOutbound.secret = nametagsOutboundSecret;
-  result.nametagsInbound.initNametagsBuffer(nametagsInboundCounter);
-  result.nametagsOutbound.initNametagsBuffer(nametagsOutboundCounter);
+  result.nametagsInbound.initNametagsBuffer();
+  result.nametagsInbound.delete(nametagsInboundCounter ?? 0);
+  result.nametagsOutbound.initNametagsBuffer();
+  result.nametagsOutbound.delete(nametagsOutboundCounter ?? 0);
   return result;
 };
 
@@ -287,9 +291,9 @@ const serializeSession = ({
     csInboundKey: Array.apply([], csInboundKey),
     csInboundNonce: csInboundNonce.getUint64(),
     nametagsOutboundSecret: Array.apply([], nametagsOutboundSecret),
-    nametagsOutboundCounter: nametagsOutboundCounter,
+    nametagsOutboundCounter,
     nametagsInboundSecret: Array.apply([], nametagsInboundSecret),
-    nametagsInboundCounter: nametagsInboundCounter,
+    nametagsInboundCounter,
   });
 };
 
@@ -490,22 +494,27 @@ const createNoiseSession = ({ node, sessionData, onUpdate }) => {
 
   let listeners = [];
 
+  let nametagsOutboundCounter = sessionData.nametagsOutboundCounter ?? 0;
+  let nametagsInboundCounter = sessionData.nametagsInboundCounter ?? 0;
+
   const emitSessionUpdate = () => {
     onUpdate?.({
       ...sessionData,
       id: sessionIdBuffer.toArray()[0],
-      nametagsOutboundCounter: handshakeResult.nametagsOutbound.getCounter(),
-      nametagsInboundCounter: handshakeResult.nametagsInbound.getCounter(),
+      nametagsOutboundCounter,
+      nametagsInboundCounter,
     });
   };
 
   const read = (payload) => {
     const result = decodeMessage(handshakeResult.readMessage(payload));
+    nametagsInboundCounter++;
     emitSessionUpdate();
     return result;
   };
   const write = (message) => {
     const payload = handshakeResult.writeMessage(encodeMessage(message));
+    nametagsOutboundCounter++;
     emitSessionUpdate();
     return payload;
   };

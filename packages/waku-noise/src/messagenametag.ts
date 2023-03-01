@@ -32,9 +32,9 @@ export class MessageNametagBuffer {
   /**
    * Initializes the empty Message nametag buffer. The n-th nametag is equal to HKDF( secret || n )
    */
-  initNametagsBuffer(counter = 0): void {
+  initNametagsBuffer(): void {
     // We default the counter and buffer fields
-    this.counter = counter;
+    this.counter = 0;
     this.buffer = new Array<MessageNametag>(MessageNametagBufferSize);
 
     if (this.secret) {
@@ -122,9 +122,5 @@ export class MessageNametagBuffer {
       // We warn users that no secret is set
       console.debug("The message nametags buffer has no secret set");
     }
-  }
-
-  getCounter() {
-    return this.counter;
   }
 }

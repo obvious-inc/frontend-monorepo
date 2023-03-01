@@ -141,6 +141,10 @@ test.only("session caching", async () => {
     await network._idle();
     unobserve();
     assertCalled(listener);
+
+    // Send another one to offset the noise nametags
+    aliceNode.sendPrivate(bobNode.accountPublicKey, message);
+    await network._idle();
   }
 
   {
