@@ -26,6 +26,8 @@ import {
 } from "./patterns.js";
 import { ChaChaPolyCipherState, NoisePublicKey } from "./publickey.js";
 import { QR } from "./qr.js";
+export { CipherState } from "./noise.js";
+export { Nonce } from "./nonce.js";
 
 export {
   Handshake,

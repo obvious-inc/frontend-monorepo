@@ -114,3 +114,50 @@ test("out-of-order messages", async () => {
   assert(receivedMessages.some((m, i) => m !== sentMessages[i]));
   console.log(sentMessages, receivedMessages);
 });
+
+test.only("session caching", async () => {
+  const network = createDummyNetwork();
+
+  const aliceAccount = generateX25519KeyPair();
+
+  const bobNode = createNode({
+    account: generateX25519KeyPair(),
+    network,
+  });
+
+  {
+    // Fresh node with no cached session
+    const aliceNode = createNode({
+      account: aliceAccount,
+      network,
+    });
+    const message = { foo: randomString(32) };
+    const listener = mock((_, protocol) => {
+      // First message will fall back to the DH protocol
+      assertEqual(protocol, "dh");
+    });
+    const unobserve = bobNode.observe(listener);
+    aliceNode.sendPrivate(bobNode.accountPublicKey, message);
+    await network._idle();
+    unobserve();
+    assertCalled(listener);
+  }
+
+  {
+    // Now there should be cached session to bob
+    const aliceNode = createNode({
+      account: aliceAccount,
+      network,
+    });
+    const message = { foo: randomString(32) };
+    const listener = mock((_, protocol) => {
+      // First message will use the noise procotol
+      assertEqual(protocol, "noise");
+    });
+    const unobserve = bobNode.observe(listener);
+    aliceNode.sendPrivate(bobNode.accountPublicKey, message);
+    await network._idle();
+    unobserve();
+    assertCalled(listener);
+  }
+});
