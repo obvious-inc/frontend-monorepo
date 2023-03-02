@@ -81,15 +81,14 @@ export const Provider = ({ apiOrigin, ...props }) => {
   });
 
   const refreshAccessToken = useLatestCallback(async () => {
-    const refreshToken = await getRefreshToken();
-    if (refreshToken == null) throw new Error("Missing refresh token");
-
     if (pendingRefreshAccessTokenPromise != null)
       return pendingRefreshAccessTokenPromise;
 
     pendingRefreshAccessTokenPromise = new Promise((resolve, reject) => {
-      const run = () =>
-        fetch(`${apiOrigin}/auth/refresh`, {
+      const run = async () => {
+        const refreshToken = await getRefreshToken();
+        if (refreshToken == null) throw new Error("missing-refresh-token");
+        return fetch(`${apiOrigin}/auth/refresh`, {
           method: "POST",
           body: JSON.stringify({ refresh_token: refreshToken }),
           headers: { "Content-Type": "application/json" },
@@ -114,6 +113,7 @@ export const Provider = ({ apiOrigin, ...props }) => {
               }, 3000);
             })
         );
+      };
 
       return run()
         .then(
