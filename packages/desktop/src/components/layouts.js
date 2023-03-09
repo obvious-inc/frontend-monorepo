@@ -62,10 +62,14 @@ const Layout = () => {
     React.useState(false);
 
   // const memberChannels = state.selectMemberChannels();
-  const memberChannels = useMemberChannels();
+  const memberChannels = useMemberChannels({ readStates: true });
 
   // const starredChannels = state.selectStarredChannels();
   const starredChannels = useStarredChannels();
+
+  const unseenChannels = memberChannels.filter(
+    (c) => c.hasBeenSeen === false && c.id !== params.channelId
+  );
 
   // const popularPublicChannels = state
   //   .selectPublicChannels()
@@ -310,6 +314,16 @@ const Layout = () => {
                 {selectedChannel != null && !selectedChannelIsListed && (
                   <>
                     <ChannelItem id={selectedChannel.id} />
+
+                    <div style={{ marginBottom: "1.5rem" }} />
+                  </>
+                )}
+
+                {unseenChannels.length !== 0 && (
+                  <>
+                    {unseenChannels.map((c) => (
+                      <ChannelItem key={c.id} id={c.id} />
+                    ))}
 
                     <div style={{ marginBottom: "1.5rem" }} />
                   </>

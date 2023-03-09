@@ -321,6 +321,13 @@ const readStatesById = (state = {}, action) => {
       };
     }
 
+    case "server-event:channel-user-invited": {
+      const channelId = action.data.channel.id;
+      const existingState = state[channelId];
+      if (existingState != null) return state;
+      return { ...state, [channelId]: {} };
+    }
+
     case "logout":
       return {};
 
@@ -367,18 +374,23 @@ export const selectChannel = createSelector(
     if (!readStates) return null;
     return selectChannelHasUnread(state, channelId);
   },
+  (state, channelId, { readStates = false } = {}) => {
+    if (!readStates) return null;
+    return selectChannelHasBeenSeen(state, channelId);
+  },
   (state, channelId) => {
     const channel = state.channels.entriesById[channelId];
     if (channel == null || channel.isDeleted) return null;
     return channel;
   },
-  (members, hasUnread, channel_) => {
+  (members, hasUnread, hasBeenSeen, channel_) => {
     if (channel_ == null) return null;
 
     const channel = { ...channel_ };
 
     if (members != null) channel.members = members;
     if (hasUnread != null) channel.hasUnread = hasUnread;
+    if (hasBeenSeen != null) channel.hasBeenSeen = hasBeenSeen;
 
     return channel;
   }
@@ -403,18 +415,27 @@ export const selectTotalMentionCount = createSelector(
   { memoizeOptions: { maxSize: 1000 } }
 );
 
+export const selectChannelHasBeenSeen = createSelector(
+  (state, channelId) => state.channels.readStatesById[channelId],
+  (channelState) => {
+    if (channelState == null) return null;
+    return channelState.lastReadAt != null;
+  },
+  { memoizeOptions: { maxSize: 1000 } }
+);
+
 export const selectChannelHasUnread = createSelector(
   (state, channelId) => state.channels.readStatesById[channelId],
   (channelState) => {
     if (channelState == null) return false;
 
-    const lastReadTimestamp =
-      channelState.lastReadAt == null
-        ? new Date().getTime()
-        : new Date(channelState.lastReadAt).getTime();
+    const hasMessages = channelState.lastMessageAt != null;
+    const hasSeen = channelState.lastReadAt != null;
 
-    if (lastReadTimestamp == null) return false;
+    if (!hasMessages) return !hasSeen;
+    if (!hasSeen) return true;
 
+    const lastReadTimestamp = new Date(channelState.lastReadAt).getTime();
     const lastMessageTimestamp = new Date(channelState.lastMessageAt).getTime();
 
     return lastReadTimestamp < lastMessageTimestamp;
@@ -424,7 +445,7 @@ export const selectChannelHasUnread = createSelector(
 
 export const selectChannelLastMessageAt = (state, channelId) => {
   const readState = state.channels.readStatesById[channelId];
-  if (readState.lastMessageAt == null) return null;
+  if (readState?.lastMessageAt == null) return null;
   return new Date(readState.lastMessageAt);
 };
 

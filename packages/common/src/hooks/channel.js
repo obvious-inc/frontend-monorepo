@@ -9,6 +9,7 @@ import {
   selectChannelMembers,
   selectChannelName,
   selectChannelHasUnread,
+  selectChannelHasBeenSeen,
   selectChannelMentionCount,
   selectChannelAccessLevel,
   selectIsChannelStarred,
@@ -65,6 +66,14 @@ export const useChannelHasUnread = (channelId) =>
   useStore(
     React.useCallback(
       (state) => selectChannelHasUnread(state, channelId),
+      [channelId]
+    )
+  );
+
+export const useChannelHasBeenSeen = (channelId) =>
+  useStore(
+    React.useCallback(
+      (state) => selectChannelHasBeenSeen(state, channelId),
       [channelId]
     )
   );
