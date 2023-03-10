@@ -10,7 +10,11 @@ let pendingRefreshAccessTokenPromise;
 const useCachedRefreshToken = () => {
   const cacheStore = useCacheStore();
   return [
-    () => cacheStore.readAsync(REFRESH_TOKEN_CACHE_KEY),
+    async () => {
+      const token = await cacheStore.readAsync(REFRESH_TOKEN_CACHE_KEY);
+      cacheStore.clear(REFRESH_TOKEN_CACHE_KEY);
+      return token;
+    },
     (token) => cacheStore.writeAsync(REFRESH_TOKEN_CACHE_KEY, token),
   ];
 };
@@ -37,7 +41,7 @@ export const Provider = ({ apiOrigin, ...props }) => {
     ACCESS_TOKEN_CACHE_KEY,
     null
   );
-  const [getRefreshToken, setRefreshToken] = useCachedRefreshToken();
+  const [consumeRefreshToken, storeRefreshToken] = useCachedRefreshToken();
 
   const status =
     accessToken === undefined
@@ -69,7 +73,7 @@ export const Provider = ({ apiOrigin, ...props }) => {
         responseBody;
 
       setAccessToken(accessToken);
-      setRefreshToken(refreshToken);
+      storeRefreshToken(refreshToken);
 
       return { accessToken, refreshToken };
     }
@@ -77,18 +81,19 @@ export const Provider = ({ apiOrigin, ...props }) => {
 
   const logout = useLatestCallback(() => {
     setAccessToken(null);
-    setRefreshToken(null);
+    storeRefreshToken(null);
   });
 
   const refreshAccessToken = useLatestCallback(async () => {
     if (pendingRefreshAccessTokenPromise != null)
       return pendingRefreshAccessTokenPromise;
 
+    const refreshToken = await consumeRefreshToken();
+    if (refreshToken == null) throw new Error("missing-refresh-token");
+
     pendingRefreshAccessTokenPromise = new Promise((resolve, reject) => {
-      const run = async () => {
-        const refreshToken = await getRefreshToken();
-        if (refreshToken == null) throw new Error("missing-refresh-token");
-        return fetch(`${apiOrigin}/auth/refresh`, {
+      const run = async () =>
+        fetch(`${apiOrigin}/auth/refresh`, {
           method: "POST",
           body: JSON.stringify({ refresh_token: refreshToken }),
           headers: { "Content-Type": "application/json" },
@@ -113,13 +118,12 @@ export const Provider = ({ apiOrigin, ...props }) => {
               }, 3000);
             })
         );
-      };
 
       return run()
         .then(
           ({ accessToken, refreshToken }) => {
             setAccessToken(accessToken);
-            setRefreshToken(refreshToken);
+            storeRefreshToken(refreshToken);
             resolve(accessToken);
           },
           (e) => {
@@ -130,7 +134,7 @@ export const Provider = ({ apiOrigin, ...props }) => {
 
             // Sign out if the refresh fails
             setAccessToken(null);
-            setRefreshToken(null);
+            storeRefreshToken(null);
 
             for (const listener of listeners) listener("access-token-expired");
 
@@ -216,7 +220,7 @@ export const Provider = ({ apiOrigin, ...props }) => {
       login,
       logout,
       setAccessToken,
-      setRefreshToken,
+      storeRefreshToken,
     }),
     [
       apiOrigin,
@@ -226,7 +230,7 @@ export const Provider = ({ apiOrigin, ...props }) => {
       login,
       logout,
       setAccessToken,
-      setRefreshToken,
+      storeRefreshToken,
     ]
   );
 
