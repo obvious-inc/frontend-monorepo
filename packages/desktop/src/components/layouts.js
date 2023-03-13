@@ -23,6 +23,7 @@ import {
   ethereum as ethereumUtils,
 } from "@shades/common/utils";
 import useSideMenu from "../hooks/side-menu";
+import useCommandCenter from "../hooks/command-center";
 import useWallet from "../hooks/wallet";
 import useWalletLogin from "../hooks/wallet-login";
 import {
@@ -43,6 +44,8 @@ const { truncateAddress } = ethereumUtils;
 
 const Layout = () => {
   const params = useParams();
+
+  const { open: openCommandCenter } = useCommandCenter();
 
   const serverConnectionState = useServerConnectionState();
 
@@ -295,7 +298,7 @@ const Layout = () => {
               icon={<MagnificationGlassIcon style={{ width: "1.4rem" }} />}
               title="Quick Find"
               onClick={() => {
-                alert("thoon");
+                openCommandCenter();
               }}
             />
             <ListItem

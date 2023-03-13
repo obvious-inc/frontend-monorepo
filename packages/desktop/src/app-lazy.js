@@ -37,11 +37,13 @@ import { IFrameEthereumProvider } from "@newshades/iframe-provider";
 import { Provider as GlobalMediaQueriesProvider } from "./hooks/global-media-queries";
 import { send as sendNotification } from "./utils/notifications";
 import { Provider as SideMenuProvider } from "./hooks/side-menu";
+import useCommandCenter, {
+  Provider as CommandCenterProvider,
+} from "./hooks/command-center";
 import useWalletEvent from "./hooks/wallet-event";
 import useWalletLogin, {
   Provider as WalletLoginProvider,
 } from "./hooks/wallet-login";
-import useKeyboardShortcuts from "./hooks/keyboard-shortcuts";
 import LoginScreen from "./components/login-screen";
 import EmptyHome from "./components/empty-home";
 import Layout from "./components/layouts";
@@ -301,28 +303,16 @@ const App = () => {
 };
 
 const CommandCenter = () => {
-  const [isOpen, setOpen] = React.useState(false);
-  const [query, setQuery] = React.useState("");
-
-  const close = () => {
-    setQuery("");
-    setOpen(false);
-  };
-
-  useKeyboardShortcuts({
-    "$mod+K": () => {
-      setOpen((isOpen) => {
-        if (isOpen) setQuery("");
-        return !isOpen;
-      });
-    },
-  });
-
+  const { isOpen, query, onQueryChange, close } = useCommandCenter();
   if (!isOpen) return null;
 
   return (
     <React.Suspense fallback={null}>
-      <CommandCenterLazy query={query} onQueryChange={setQuery} close={close} />
+      <CommandCenterLazy
+        query={query}
+        onQueryChange={onQueryChange}
+        close={close}
+      />
     </React.Suspense>
   );
 };
@@ -356,7 +346,9 @@ export default function LazyRoot() {
                   <Tooltip.Provider delayDuration={300}>
                     <SideMenuProvider>
                       <GlobalMediaQueriesProvider>
-                        <App />
+                        <CommandCenterProvider>
+                          <App />
+                        </CommandCenterProvider>
                       </GlobalMediaQueriesProvider>
                     </SideMenuProvider>
                   </Tooltip.Provider>
