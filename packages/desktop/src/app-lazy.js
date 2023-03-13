@@ -303,16 +303,13 @@ const App = () => {
 };
 
 const CommandCenter = () => {
-  const { isOpen, query, onQueryChange, close } = useCommandCenter();
-  if (!isOpen) return null;
+  const props = useCommandCenter();
+
+  if (!props.isOpen) return null;
 
   return (
     <React.Suspense fallback={null}>
-      <CommandCenterLazy
-        query={query}
-        onQueryChange={onQueryChange}
-        close={close}
-      />
+      <CommandCenterLazy {...props} />
     </React.Suspense>
   );
 };

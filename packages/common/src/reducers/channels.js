@@ -314,8 +314,8 @@ const readStatesById = (state = {}, action) => {
           unreadMentionMessageIds:
             userMentions.length === 0
               ? channel.unreadMentionMessageIds?.filter(
-                  (id) => id !== messageId
-                ) ?? []
+                (id) => id !== messageId
+              ) ?? []
               : unique([...channel.unreadMentionMessageIds, messageId]),
         },
       };
@@ -533,9 +533,9 @@ export const selectDmChannels = createSelector(
 );
 
 export const selectPublicChannels = createSelector(
-  (state) =>
+  (state, options) =>
     state.channels.publicChannelIds
-      .map((id) => selectChannel(state, id))
+      .map((id) => selectChannel(state, id, options))
       .filter(Boolean),
   (state) => state.channels.readStatesById,
   sortChannelsByActivity,

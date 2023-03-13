@@ -9,7 +9,12 @@ import {
   useFocusRing,
   mergeProps,
 } from "react-aria";
-import { useAllChannels } from "@shades/common/app";
+import {
+  useMe,
+  useActions,
+  useAllChannels,
+  usePublicChannels,
+} from "@shades/common/app";
 import { channel as channelUtils } from "@shades/common/utils";
 import { useLatestCallback } from "@shades/common/react";
 import Dialog from "./dialog";
@@ -17,39 +22,100 @@ import Input from "./input";
 
 const { search: searchChannels } = channelUtils;
 
-const CommandCenter = ({ query, onQueryChange, close }) => {
+const mapChannelToOption = (c) => ({
+  value: c.id,
+  label: c.name,
+  description: c.description,
+});
+
+const useFilteredChannelOptions = (channels, query) =>
+  React.useMemo(() => {
+    const filteredChannels =
+      query.length <= 1 ? channels : searchChannels(channels, query);
+
+    return filteredChannels.map(mapChannelToOption);
+  }, [channels, query]);
+
+const CommandCenter = ({ mode, ...props }) => {
+  const sharedProps = { ...props, onRequestClose: props.close };
+
+  switch (mode) {
+    case "discover":
+      return <CommandCenterDiscoverMode {...sharedProps} />;
+    default:
+      return <CommandCenterChannelFilterMode {...sharedProps} />;
+  }
+};
+
+const CommandCenterChannelFilterMode = ({ query, close, ...props }) => {
   const navigate = useNavigate();
 
-  const dialogRef = React.useRef(null);
+  const deferredQuery = React.useDeferredValue(query.trim().toLowerCase());
+  const channels = useAllChannels({ name: true, members: true });
+  const filteredOptions = useFilteredChannelOptions(channels, deferredQuery);
+
+  return (
+    <AlwaysOpenComboboxInDialog
+      aria-label="Find channels"
+      placeholder="Find channel..."
+      options={filteredOptions}
+      onSelect={(value) => {
+        close();
+        navigate(`/channels/${value}`);
+      }}
+      {...props}
+    />
+  );
+};
+
+const CommandCenterDiscoverMode = ({ query, close, ...props }) => {
+  const navigate = useNavigate();
+  const me = useMe();
+  const { fetchPubliclyReadableChannels } = useActions();
 
   const deferredQuery = React.useDeferredValue(query.trim().toLowerCase());
-
-  const allChannelsWithMembers = useAllChannels({ name: true, members: true });
-
-  const filterChannels = React.useCallback(
-    (query) => {
-      if (query.length <= 1) return allChannelsWithMembers;
-      return searchChannels(allChannelsWithMembers, query);
-    },
-    [allChannelsWithMembers]
+  const channels = usePublicChannels({ name: true, members: true });
+  const channelsNotMember = channels.filter(
+    (c) => !c.memberUserIds.includes(me.id)
+  );
+  const filteredOptions = useFilteredChannelOptions(
+    channelsNotMember,
+    deferredQuery
   );
 
-  const filteredOptions = React.useMemo(() => {
-    return filterChannels(deferredQuery).map((c) => ({
-      value: c.id,
-      label: c.name,
-      description: c.description,
-    }));
-  }, [filterChannels, deferredQuery]);
+  React.useEffect(() => {
+    fetchPubliclyReadableChannels();
+  }, [fetchPubliclyReadableChannels]);
+
+  return (
+    <AlwaysOpenComboboxInDialog
+      aria-label="Discover channels"
+      placeholder="Find public channel..."
+      options={filteredOptions}
+      onSelect={(value) => {
+        close();
+        navigate(`/channels/${value}`);
+      }}
+      {...props}
+    />
+  );
+};
+
+const AlwaysOpenComboboxInDialog = ({
+  query,
+  onQueryChange,
+  onSelect,
+  onRequestClose,
+  ...props
+}) => {
+  const dialogRef = React.useRef(null);
 
   return (
     <Dialog
       dialogRef={dialogRef}
       width="66rem"
       isOpen
-      onRequestClose={() => {
-        close();
-      }}
+      onRequestClose={onRequestClose}
       css={css({
         "@media (min-width: 600px)": {
           position: "relative",
@@ -67,17 +133,14 @@ const CommandCenter = ({ query, onQueryChange, close }) => {
       }}
     >
       <AlwaysOpenCombobox
-        aria-label="Find channels"
-        placeholder="Find channel..."
         inputValue={query}
-        options={filteredOptions}
         onInputChange={onQueryChange}
         onSelectionChange={(value) => {
           if (value == null) return;
-          close();
-          navigate(`/channels/${value}`);
+          onSelect(value);
         }}
         popoverRef={dialogRef}
+        {...props}
       />
     </Dialog>
   );

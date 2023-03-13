@@ -163,7 +163,13 @@ export const useAllChannels = ({ name = false, members = false } = {}) =>
 
 export const useStarredChannels = () => useStore(selectStarredChannels);
 
-export const usePublicChannels = () => useStore(selectPublicChannels);
+export const usePublicChannels = ({ name = false, members = false } = {}) =>
+  useStore(
+    React.useCallback(
+      (state) => selectPublicChannels(state, { name, members }),
+      [name, members]
+    )
+  );
 
 export const useTotalMentionCount = () => useStore(selectTotalMentionCount);
 

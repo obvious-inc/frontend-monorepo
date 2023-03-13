@@ -306,7 +306,7 @@ const Layout = () => {
               icon={<PlanetIcon style={{ width: "1.4rem" }} />}
               title="Discover"
               onClick={() => {
-                alert("thoon");
+                openCommandCenter({ mode: "discover" });
               }}
             />
 
