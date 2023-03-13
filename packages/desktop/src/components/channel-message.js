@@ -557,7 +557,13 @@ const Embed = ({
             css={css({
               marginLeft: "1rem",
               paddingTop: "1rem",
-              img: { width: "8rem", height: "auto", borderRadius: "0.3rem" },
+              height: 0,
+              img: {
+                maxWidth: "8rem",
+                maxHeight: "5.8rem",
+                height: "auto",
+                borderRadius: "0.3rem",
+              },
             })}
           >
             <img src={image} loading="lazy" />
