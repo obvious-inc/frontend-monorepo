@@ -72,6 +72,7 @@ importers:
       stream-http: ^3.2.0
       style-loader: ^3.3.1
       swc-loader: ^0.1.16
+      tinykeys: ^1.4.0
       url: ^0.11.0
       util: ^0.12.5
       wagmi: ^0.6.8
@@ -112,6 +113,7 @@ importers:
       slate: 0.75.0
       slate-history: 0.66.0_slate@0.75.0
       slate-react: 0.75.0_q5rzi7lxng4kpyna4dtdyfrhei
+      tinykeys: 1.4.0
       wagmi: 0.6.8_djy3m2fp6xlalq6qwq5sqrcfgu
       zustand: 4.3.6_react@18.1.0
     devDependencies:
@@ -15822,6 +15824,10 @@ packages:
 
   /tiny-warning/1.0.3:
     resolution: {integrity: sha512-lBN9zLN/oAf68o3zNXYrdCt1kP8WsiGW8Oo2ka41b2IM5JL/S1CTyX1rW0mb/zSuJun0ZUrDxx4sqvYS2FWzPA==}
+    dev: false
+
+  /tinykeys/1.4.0:
+    resolution: {integrity: sha512-ysnVd2E4nWbNXIbHaUidcKGLTmNimqP0hdpsD0Ph5hPJ84ntCF6PHj+Jg3im9nZt9/hNsBg/E6m1psHc2KaPnQ==}
     dev: false
 
   /tmp/0.0.33:

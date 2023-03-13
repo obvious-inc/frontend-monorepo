@@ -366,6 +366,10 @@ export const selectChannelName = createSelector(
 );
 
 export const selectChannel = createSelector(
+  (state, channelId, { name = false } = {}) => {
+    if (!name) return null;
+    return selectChannelName(state, channelId);
+  },
   (state, channelId, { members = false } = {}) => {
     if (!members) return null;
     return selectChannelMembers(state, channelId);
@@ -383,11 +387,12 @@ export const selectChannel = createSelector(
     if (channel == null || channel.isDeleted) return null;
     return channel;
   },
-  (members, hasUnread, hasBeenSeen, channel_) => {
+  (name, members, hasUnread, hasBeenSeen, channel_) => {
     if (channel_ == null) return null;
 
     const channel = { ...channel_ };
 
+    if (name != null) channel.name = name;
     if (members != null) channel.members = members;
     if (hasUnread != null) channel.hasUnread = hasUnread;
     if (hasBeenSeen != null) channel.hasBeenSeen = hasBeenSeen;
@@ -476,11 +481,12 @@ export const selectDmChannelFromUserIds = (state, userIds) => {
 };
 
 export const selectAllChannels = createSelector(
-  (state, { members = false } = {}) =>
-    Object.keys(state.channels.entriesById).map((id) =>
-      selectChannel(state, id, { members })
-    ),
-  (channels) => channels,
+  (state, options) =>
+    Object.keys(state.channels.entriesById)
+      .map((id) => selectChannel(state, id, options))
+      .filter(Boolean),
+  (state) => state.channels.readStatesById,
+  sortChannelsByActivity,
   { memoizeOptions: { equalityCheck: arrayShallowEquals } }
 );
 
@@ -516,7 +522,7 @@ export const selectMemberChannels = createSelector(
 export const selectDmChannels = createSelector(
   (state) => {
     const channels = Object.entries(state.channels.entriesById)
-      .filter((entry) => !entry[1].delete && entry[1].kind === "dm")
+      .filter((entry) => !entry[1].isDeleted && entry[1].kind === "dm")
       .map(([id]) => selectChannel(state, id));
 
     return channels;

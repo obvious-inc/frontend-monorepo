@@ -41,6 +41,7 @@ import useWalletEvent from "./hooks/wallet-event";
 import useWalletLogin, {
   Provider as WalletLoginProvider,
 } from "./hooks/wallet-login";
+import useKeyboardShortcuts from "./hooks/keyboard-shortcuts";
 import LoginScreen from "./components/login-screen";
 import EmptyHome from "./components/empty-home";
 import Layout from "./components/layouts";
@@ -51,6 +52,9 @@ import AuthHome from "./components/auth";
 
 const Channel = React.lazy(() => import("./components/channel"));
 const ChannelBase = React.lazy(() => import("./components/channel-base"));
+const CommandCenterLazy = React.lazy(() =>
+  import("./components/command-center")
+);
 
 const { partition } = arrayUtils;
 const { waterfall } = functionUtils;
@@ -290,7 +294,36 @@ const App = () => {
         />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
+
+      <CommandCenter />
     </>
+  );
+};
+
+const CommandCenter = () => {
+  const [isOpen, setOpen] = React.useState(false);
+  const [query, setQuery] = React.useState("");
+
+  const close = () => {
+    setQuery("");
+    setOpen(false);
+  };
+
+  useKeyboardShortcuts({
+    "$mod+K": () => {
+      setOpen((isOpen) => {
+        if (isOpen) setQuery("");
+        return !isOpen;
+      });
+    },
+  });
+
+  if (!isOpen) return null;
+
+  return (
+    <React.Suspense fallback={null}>
+      <CommandCenterLazy query={query} onQueryChange={setQuery} close={close} />
+    </React.Suspense>
   );
 };
 

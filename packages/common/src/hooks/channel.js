@@ -153,11 +153,11 @@ export const useChannelTypingMembers = (channelId) =>
 export const useMemberChannels = (...args) =>
   useStore((s) => selectMemberChannels(s, ...args));
 
-export const useAllChannels = ({ members = false } = {}) =>
+export const useAllChannels = ({ name = false, members = false } = {}) =>
   useStore(
     React.useCallback(
-      (state) => selectAllChannels(state, { members }),
-      [members]
+      (state) => selectAllChannels(state, { name, members }),
+      [name, members]
     )
   );
 

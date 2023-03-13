@@ -12,13 +12,15 @@ import {
 const Dialog = ({
   underlayProps: customUnderlayProps,
   dialogElementProps,
+  dialogRef,
   ...props
 }) => {
   const { children } = props;
 
   // Handle interacting outside the dialog and pressing
   // the Escape key to close the modal.
-  const ref = React.useRef();
+  const internalRef = React.useRef();
+  const ref = dialogRef ?? internalRef;
   const { overlayProps, underlayProps } = useOverlay(props, ref);
 
   // Prevent scrolling while the modal is open, and hide content
@@ -51,6 +53,7 @@ const DialogWrapper = ({
   onRequestClose,
   children,
   underlayProps,
+  dialogRef,
   ...props
 }) => {
   if (!isOpen) return null;
@@ -62,6 +65,7 @@ const DialogWrapper = ({
         isDismissable
         underlayProps={underlayProps}
         dialogElementProps={props}
+        dialogRef={dialogRef}
       >
         {children}
       </Dialog>
