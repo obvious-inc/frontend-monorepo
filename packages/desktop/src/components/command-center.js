@@ -11,6 +11,7 @@ import {
 } from "react-aria";
 import { useAllChannels } from "@shades/common/app";
 import { channel as channelUtils } from "@shades/common/utils";
+import { useLatestCallback } from "@shades/common/react";
 import Dialog from "./dialog";
 import Input from "./input";
 
@@ -120,6 +121,16 @@ const AlwaysOpenCombobox = ({ value, options = [], popoverRef, ...props_ }) => {
     },
     state
   );
+
+  const selectFirstKey = useLatestCallback(() => {
+    const firstKey = state.collection.getFirstKey();
+    state.selectionManager.setFocusedKey(firstKey);
+  });
+
+  React.useEffect(() => {
+    if (options.length === 0) return;
+    selectFirstKey();
+  }, [options, selectFirstKey]);
 
   return (
     <>
