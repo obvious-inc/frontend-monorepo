@@ -81,9 +81,12 @@ const useFetch = (fetcher, dependencies) => {
     fetcherRef.current?.();
   });
 
-  useOnlineListener(() => {
-    fetcherRef.current?.();
-  });
+  useOnlineListener(
+    () => {
+      fetcherRef.current?.();
+    },
+    { requireFocus: true }
+  );
 };
 
 const pendingFetchMessagePromisesCache = {};
@@ -477,11 +480,14 @@ export const ChannelBase = ({
       markChannelRead(channel.id);
   });
 
-  useOnlineListener(() => {
-    fetchMessages(channel.id, { limit: 30 });
-    if (channelHasUnread && didScrollToBottomRef.current)
-      markChannelRead(channel.id);
-  });
+  useOnlineListener(
+    () => {
+      fetchMessages(channel.id, { limit: 30 });
+      if (channelHasUnread && didScrollToBottomRef.current)
+        markChannelRead(channel.id);
+    },
+    { requireFocus: true }
+  );
 
   const submitMessage = useLatestCallback(async (blocks) => {
     setPendingReplyMessageId(null);

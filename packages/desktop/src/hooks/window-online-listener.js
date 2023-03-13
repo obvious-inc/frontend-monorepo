@@ -1,6 +1,6 @@
 import React from "react";
 
-const useWindowOnlineListener = (handler) => {
+const useWindowOnlineListener = (handler, { requireFocus = false } = {}) => {
   const handlerRef = React.useRef(handler);
 
   React.useEffect(() => {
@@ -8,6 +8,8 @@ const useWindowOnlineListener = (handler) => {
   });
 
   React.useEffect(() => {
+    if (requireFocus && !document.hasFocus()) return;
+
     const handler = () => {
       handlerRef.current();
     };
@@ -15,7 +17,7 @@ const useWindowOnlineListener = (handler) => {
     return () => {
       window.removeEventListener("online", handler);
     };
-  }, []);
+  }, [requireFocus]);
 };
 
 export default useWindowOnlineListener;

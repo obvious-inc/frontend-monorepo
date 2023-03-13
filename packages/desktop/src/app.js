@@ -62,12 +62,15 @@ const App = () => {
     fetchStarredItems();
   });
 
-  useOnlineListener(() => {
-    if (authStatus !== "authenticated") return;
-    fetchUserChannels();
-    fetchUserChannelsReadStates();
-    fetchStarredItems();
-  });
+  useOnlineListener(
+    () => {
+      if (authStatus !== "authenticated") return;
+      fetchUserChannels();
+      fetchUserChannelsReadStates();
+      fetchStarredItems();
+    },
+    { requireFocus: true }
+  );
 
   return (
     <React.Suspense fallback={null}>
