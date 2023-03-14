@@ -552,12 +552,16 @@ const Embed = ({
               );
             })()}
         </div>
-        {video == null && image != null && (
+        {video == null && image != null && description != null && (
           <div
             css={css({
+              display: "flex",
+              alignItems: "flex-start",
+              justifyContent: "flex-end",
               marginLeft: "1rem",
               paddingTop: "1rem",
               height: 0,
+              width: "8rem",
               img: {
                 maxWidth: "8rem",
                 maxHeight: "5.8rem",
