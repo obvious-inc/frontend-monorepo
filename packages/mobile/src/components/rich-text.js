@@ -203,11 +203,7 @@ const createParser = ({
         }
 
         default:
-          return (
-            <Text key={i}>
-              Unsupported element type {`"${el.type}"`}: {children()}
-            </Text>
-          );
+          return <Text key={i}>Unsupported element type {`"${el.type}"`}</Text>;
       }
     };
 

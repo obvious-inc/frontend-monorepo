@@ -74,7 +74,7 @@ const createParser = ({
       const parseNode = (n, i, ns) =>
         n.text == null ? parseElement(n, i, ns) : parseLeaf(n, i, ns);
 
-      const children = () => el.children.map(parseNode);
+      const children = () => el.children?.map(parseNode);
 
       switch (el.type) {
         case "paragraph": {
@@ -201,9 +201,20 @@ const createParser = ({
         }
         default:
           return (
-            <React.Fragment key={i}>
-              {el.type}: {children()}
-            </React.Fragment>
+            <span
+              key={i}
+              title={JSON.stringify(el, null, 2)}
+              css={(t) =>
+                css({
+                  whiteSpace: "nowrap",
+                  color: t.colors.textMuted,
+                  background: t.colors.backgroundModifierHover,
+                })
+              }
+            >
+              Unsupported element type:{" "}
+              <span css={css({ fontStyle: "italic" })}>{el.type}</span>
+            </span>
           );
       }
     };
