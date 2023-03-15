@@ -1,5 +1,5 @@
 import React from "react";
-import createZustandStoreHook from "zustand";
+import { create as createZustandStoreHook } from "zustand";
 import { useAuth, useAuthListener } from "./auth.js";
 import { useStore as useCacheStore } from "./cache-store.js";
 import rootReducer from "./root-reducer.js";
