@@ -43,6 +43,7 @@ export const isNodeEmpty = (el) => {
 export const cleanNodes = (nodes) =>
   nodes.reduce((acc, n) => {
     if (isNodeEmpty(n)) return acc;
+    if (n.type === "link") return [...acc, { type: "link", url: n.url }];
     if (n.type === "user") return [...acc, { type: "user", ref: n.ref }];
     if (n.children == null) return [...acc, n];
     return [...acc, { ...n, children: cleanNodes(n.children) }];
@@ -50,8 +51,13 @@ export const cleanNodes = (nodes) =>
 
 export const normalizeNodes = (nodes) =>
   nodes.reduce((acc, n) => {
+    if (n.type === "link")
+      return [...acc, { ...n, children: [{ text: n.url }] }];
     if (n.type === "user")
       return [...acc, { ...n, children: [{ text: "" }] }, { text: "" }];
+    // TODO implement plugin "unsupported-element"
+    if (n.children == null && n.text == null)
+      return [...acc, { ...n, text: "" }];
     if (n.children == null) return [...acc, n];
     return [...acc, { ...n, children: normalizeNodes(n.children) }];
   }, []);
