@@ -239,7 +239,7 @@ const ChannelLink = ({ id }) => {
   const channelName = useChannelName(id);
   return (
     <Link to={`/channels/${id}`} className="channel-link">
-      #{channelName ?? "..."}
+      #{channelName ?? id}
     </Link>
   );
 };

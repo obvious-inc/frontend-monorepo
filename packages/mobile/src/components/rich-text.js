@@ -5,9 +5,14 @@ import { decode as decodeBase64 } from "base-64";
 import * as Shades from "@shades/common";
 import theme from "../theme";
 
-const { useUser } = Shades.app;
+const { useUser, useChannelName } = Shades.app;
 
 const svgDataUrlPrefix = "data:image/svg+xml;base64,";
+
+const ChannelLink = ({ id, textDefaultStyle }) => {
+  const channelName = useChannelName(id);
+  return <Text style={textDefaultStyle}>#{channelName ?? id}</Text>;
+};
 
 const UserElement = ({ userId, onPress, textDefaultStyle, index }) => {
   const user = useUser(userId);
@@ -119,6 +124,15 @@ const createParser = ({
               onPress={() => {
                 onPressInteractiveElement(el);
               }}
+            />
+          );
+
+        case "channel-link":
+          return (
+            <ChannelLink
+              key={i}
+              id={el.ref}
+              textDefaultStyle={textDefaultStyle}
             />
           );
 
