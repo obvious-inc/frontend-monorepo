@@ -134,9 +134,9 @@ const RichTextInput = React.forwardRef(
 
       const { middleware, elements, handlers } = mergePlugins([
         createControlledParagraphLineBreaksPlugin(),
-        createInlineLinksPlugin(),
         createUserMentionsPlugin(),
         createChannelLinksPlugin(),
+        createInlineLinksPlugin(),
       ]);
 
       return {
