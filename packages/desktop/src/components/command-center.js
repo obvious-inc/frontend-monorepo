@@ -158,7 +158,8 @@ const AlwaysOpenCombobox = ({ value, options = [], popoverRef, ...props_ }) => {
   };
 
   const state = useComboBoxState(props);
-  const { open: openCombobox } = state;
+
+  const openCombobox = useLatestCallback(() => state.open());
 
   // Setup refs and get props for child elements.
   // let buttonRef = React.useRef(null);
@@ -167,7 +168,7 @@ const AlwaysOpenCombobox = ({ value, options = [], popoverRef, ...props_ }) => {
 
   React.useEffect(() => {
     openCombobox();
-  }, [openCombobox]);
+  }, [options, openCombobox]);
 
   const {
     // buttonProps,
