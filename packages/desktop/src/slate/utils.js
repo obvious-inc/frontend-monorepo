@@ -36,9 +36,9 @@ export const isNodeEmpty = (el) => {
   if (el.type === "user") return false;
   if (el.type === "channel-link") return false;
   if (el.type === "attachments") return false;
-  return el.children == null
-    ? el.text.trim() === ""
-    : el.children.every(isNodeEmpty);
+  if (el.type === "link") return false;
+  if (el.children != null) return el.children.every(isNodeEmpty);
+  return el.text.trim() === "";
 };
 
 export const cleanNodes = (nodes) =>
