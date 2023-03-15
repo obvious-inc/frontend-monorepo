@@ -61,7 +61,6 @@ const ChannelMessage = React.memo(function ChannelMessage_({
   previousMessageId,
   hasPendingReply,
   initReply: initReply_,
-  getMember,
   isAdmin,
   hasTouchFocus,
   giveTouchFocus,
@@ -323,12 +322,7 @@ const ChannelMessage = React.memo(function ChannelMessage_({
         </div>
       )}
 
-      {message.isReply && (
-        <RepliedMessage
-          message={message.repliedMessage}
-          getMember={getMember}
-        />
-      )}
+      {message.isReply && <RepliedMessage message={message.repliedMessage} />}
 
       <div
         css={css({
@@ -384,7 +378,6 @@ const ChannelMessage = React.memo(function ChannelMessage_({
                 })
               }
               members={members}
-              getMember={getMember}
             />
           ) : (
             <>
@@ -392,7 +385,6 @@ const ChannelMessage = React.memo(function ChannelMessage_({
                 compact={compact}
                 blocks={message.content}
                 onClickInteractiveElement={onClickInteractiveElement}
-                getMember={getMember}
                 suffix={message.isEdited && editedMessageSuffix}
               />
 
@@ -1605,7 +1597,7 @@ const EditMessageInput = React.forwardRef(
   }
 );
 
-const RepliedMessage = ({ message, getMember }) => {
+const RepliedMessage = ({ message }) => {
   const authorMember = message?.author;
   const showAvatar = authorMember != null && !authorMember?.deleted;
 
@@ -1712,11 +1704,7 @@ const RepliedMessage = ({ message, getMember }) => {
                   })
                 }
               >
-                <RichText
-                  inline
-                  blocks={message?.content ?? []}
-                  getMember={getMember}
-                />
+                <RichText inline blocks={message?.content ?? []} />
               </span>
             </>
           )}

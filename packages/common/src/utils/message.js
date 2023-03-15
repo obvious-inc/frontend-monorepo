@@ -59,6 +59,8 @@ const stringifyElement = (el) => {
     case "user":
       // TODO
       return `@<u:${el.ref}>`;
+    case "channel-link":
+      return `@<c:${el.ref}>`;
     case "link":
       return el.url;
     case "attachments":

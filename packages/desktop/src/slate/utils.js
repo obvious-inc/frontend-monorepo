@@ -34,6 +34,7 @@ export const mergePlugins = (plugins) => {
 
 export const isNodeEmpty = (el) => {
   if (el.type === "user") return false;
+  if (el.type === "channel-link") return false;
   if (el.type === "attachments") return false;
   return el.children == null
     ? el.text.trim() === ""
@@ -45,6 +46,8 @@ export const cleanNodes = (nodes) =>
     if (isNodeEmpty(n)) return acc;
     if (n.type === "link") return [...acc, { type: "link", url: n.url }];
     if (n.type === "user") return [...acc, { type: "user", ref: n.ref }];
+    if (n.type === "channel-link")
+      return [...acc, { type: "channel-link", ref: n.ref }];
     if (n.children == null) return [...acc, n];
     return [...acc, { ...n, children: cleanNodes(n.children) }];
   }, []);
@@ -53,7 +56,7 @@ export const normalizeNodes = (nodes) =>
   nodes.reduce((acc, n) => {
     if (n.type === "link")
       return [...acc, { ...n, children: [{ text: n.url }] }];
-    if (n.type === "user")
+    if (n.type === "user" || n.type === "channel-link")
       return [...acc, { ...n, children: [{ text: "" }] }, { text: "" }];
     // TODO implement plugin "unsupported-element"
     if (n.children == null && n.text == null)
@@ -118,4 +121,30 @@ export const search = (editor, query, options = {}) => {
   }
 
   return [start, end];
+};
+
+export const getWords = ([node, path]) => {
+  if (!Text.isText(node)) return [];
+
+  let offset = 0;
+  const wordEntries = [];
+
+  for (let wordString of node.text.split(/\s+/)) {
+    if (wordString === "") {
+      offset += 1;
+      continue;
+    }
+
+    wordEntries.push([
+      wordString,
+      {
+        anchor: { path, offset },
+        focus: { path, offset: offset + wordString.length },
+      },
+    ]);
+
+    offset += wordString.length + 1;
+  }
+
+  return wordEntries;
 };

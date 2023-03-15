@@ -9,7 +9,6 @@ import {
   useServerConnectionState,
   useMe,
   useChannel,
-  useChannelMembers,
   useChannelName,
   useMemberChannels,
   usePublicChannels,
@@ -33,13 +32,14 @@ import {
   DoubleChevronLeft as DoubleChevronLeftIcon,
 } from "./icons";
 import Avatar from "./avatar";
+import ChannelAvatar from "./channel-avatar";
 import * as DropdownMenu from "./dropdown-menu";
 import SideMenuLayout from "./side-menu-layout";
 import CreateChannelDialog from "./create-channel-dialog";
 import NotificationBadge from "./notification-badge";
 import Spinner from "./spinner";
 
-const { reverse, sort, comparator } = arrayUtils;
+const { sort, comparator } = arrayUtils;
 const { truncateAddress } = ethereumUtils;
 
 const Layout = () => {
@@ -652,9 +652,7 @@ const CollapsableSection = ({
 
 const ChannelItem = ({ id, expandable }) => {
   const theme = useTheme();
-  const user = useMe();
   const name = useChannelName(id);
-  const { kind, image } = useChannel(id) ?? {};
   const link = `/channels/${id}`;
   const hasUnread = useChannelHasUnread(id);
   const notificationCount = useChannelMentionCount(id);
@@ -665,12 +663,6 @@ const ChannelItem = ({ id, expandable }) => {
   const closeMenu = () => {
     if (isFloatingMenuEnabled) toggleMenu();
   };
-
-  const memberUsers = useChannelMembers(id);
-  const memberUsersExcludingMe = memberUsers.filter(
-    (u) => user == null || u.id !== user.id
-  );
-  const isFetchingMembers = memberUsers.some((m) => m.walletAddress == null);
 
   const avatarPixelSize = theme.avatars.size;
   const avatarBorderRadius = theme.avatars.borderRadius;
@@ -723,66 +715,7 @@ const ChannelItem = ({ id, expandable }) => {
       }
       icon={
         <span>
-          {image != null ? (
-            <Avatar url={image} {...avatarProps} />
-          ) : kind === "dm" ? (
-            <>
-              {isFetchingMembers ? (
-                <Avatar
-                  {...avatarProps}
-                  background={theme.colors.backgroundModifierHover}
-                />
-              ) : memberUsersExcludingMe.length <= 1 ? (
-                <Avatar
-                  url={
-                    (memberUsersExcludingMe[0] ?? memberUsers[0])
-                      ?.profilePicture?.small
-                  }
-                  walletAddress={
-                    (memberUsersExcludingMe[0] ?? memberUsers[0])?.walletAddress
-                  }
-                  {...avatarProps}
-                />
-              ) : (
-                <div
-                  style={{
-                    width: `${avatarPixelSize}px`,
-                    height: `${avatarPixelSize}px`,
-                    position: "relative",
-                  }}
-                >
-                  {reverse(memberUsersExcludingMe.slice(0, 2)).map(
-                    (user, i) => (
-                      <Avatar
-                        key={user.id}
-                        url={user?.profilePicture?.small}
-                        walletAddress={user?.walletAddress}
-                        {...avatarProps}
-                        css={css({
-                          position: "absolute",
-                          top: i === 0 ? "3px" : 0,
-                          left: i === 0 ? "3px" : 0,
-                          width: "calc(100% - 3px)",
-                          height: "calc(100% - 3px)",
-                          boxShadow:
-                            i !== 0
-                              ? `1px 1px 0 0px rgb(0 0 0 / 30%)`
-                              : undefined,
-                        })}
-                      />
-                    )
-                  )}
-                </div>
-              )}
-            </>
-          ) : (
-            <Avatar
-              url={image}
-              // Emojis: https://dev.to/acanimal/how-to-slice-or-get-symbols-from-a-unicode-string-with-emojis-in-javascript-lets-learn-how-javascript-represent-strings-h3a
-              signature={name == null ? null : [...name][0]}
-              {...avatarProps}
-            />
-          )}
+          <ChannelAvatar id={id} {...avatarProps} />
         </span>
       }
     />

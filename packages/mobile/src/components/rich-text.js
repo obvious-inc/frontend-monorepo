@@ -203,7 +203,17 @@ const createParser = ({
         }
 
         default:
-          return <Text key={i}>Unsupported element type {`"${el.type}"`}</Text>;
+          return (
+            <Text
+              key={i}
+              style={{
+                ...textDefaultStyle,
+                color: theme.colors.textMuted,
+              }}
+            >
+              Unsupported element type {`"${el.type}"`}
+            </Text>
+          );
       }
     };
 

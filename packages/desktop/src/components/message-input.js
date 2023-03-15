@@ -1,13 +1,15 @@
 import React from "react";
-import { css } from "@emotion/react";
+import { css, useTheme } from "@emotion/react";
 import {
   array as arrayUtils,
   emoji as emojiUtils,
   ethereum as ethereumUtils,
 } from "@shades/common/utils";
 import { useLatestCallback } from "@shades/common/react";
-import RichTextInput from "./rich-text-input";
-import Avatar from "./avatar";
+import { useChannel, useAllChannels } from "@shades/common/app";
+import RichTextInput from "./rich-text-input.js";
+import Avatar from "./avatar.js";
+import ChannelAvatar from "./channel-avatar.js";
 
 const { sort } = arrayUtils;
 
@@ -40,16 +42,18 @@ const MessageInput = React.forwardRef(
       executeCommand: executeCommand_,
       disableCommands = false,
       members,
-      getMember,
     },
     editorRef
   ) => {
+    const channels = useAllChannels({ name: true });
     const [emojis, setEmojis] = React.useState([]);
 
     const preventInputBlurRef = React.useRef();
     const mentionQueryRangeRef = React.useRef();
+    const channelQueryRangeRef = React.useRef();
 
     const [mentionQuery, setMentionQuery] = React.useState(null);
+    const [channelQuery, setChannelQuery] = React.useState(null);
     const [emojiQuery, setEmojiQuery] = React.useState(null);
     const [commandQuery, setCommandQuery] = React.useState(null);
     const [commandArgumentsQuery, setCommandArgumentsQuery] =
@@ -60,6 +64,7 @@ const MessageInput = React.forwardRef(
     const autoCompleteMode = (() => {
       if (commandQuery != null) return "commands";
       if (mentionQuery != null) return "mentions";
+      if (channelQuery != null) return "channels";
       if (emojiQuery != null) return "emojis";
       return null;
     })();
@@ -106,6 +111,35 @@ const MessageInput = React.forwardRef(
         };
       });
     }, [autoCompleteMode, mentionQuery, members]);
+
+    const filteredChannelOptions = React.useMemo(() => {
+      if (autoCompleteMode !== "channels") return [];
+
+      const lowerCaseQuery = channelQuery?.toLowerCase() ?? null;
+
+      const unorderedFilteredChannels = channels.filter(
+        (c) =>
+          lowerCaseQuery != null &&
+          c.name?.toLowerCase().includes(lowerCaseQuery)
+      );
+
+      const orderedFilteredChannels = sort((o1, o2) => {
+        const [i1, i2] = [o1, o2].map((o) =>
+          o.name.toLowerCase().indexOf(lowerCaseQuery)
+        );
+
+        if (i1 < i2) return -1;
+        if (i1 > i2) return 1;
+        return 0;
+      }, unorderedFilteredChannels);
+
+      return orderedFilteredChannels.slice(0, 10).map((c) => {
+        return {
+          value: c.id,
+          render: () => <ChannelAutoCompleteItem id={c.id} />,
+        };
+      });
+    }, [autoCompleteMode, channelQuery, channels]);
 
     const filteredEmojiOptions = React.useMemo(() => {
       if (autoCompleteMode !== "emojis") return [];
@@ -180,6 +214,7 @@ const MessageInput = React.forwardRef(
     const autoCompleteOptions = {
       commands: filteredCommandOptions,
       mentions: filteredMentionOptions,
+      channels: filteredChannelOptions,
       emojis: filteredEmojiOptions,
     }[autoCompleteMode];
 
@@ -193,6 +228,13 @@ const MessageInput = React.forwardRef(
               at: mentionQueryRangeRef.current,
             });
             setMentionQuery(null);
+            break;
+
+          case "channels":
+            editorRef.current.insertChannelLink(option.value, {
+              at: channelQueryRangeRef.current,
+            });
+            setChannelQuery(null);
             break;
 
           case "emojis":
@@ -228,6 +270,7 @@ const MessageInput = React.forwardRef(
         autoCompleteMode,
         editorRef,
         mentionQueryRangeRef,
+        channelQueryRangeRef,
         commandQuery,
         commandArgumentsQuery,
         executeCommand,
@@ -320,6 +363,19 @@ const MessageInput = React.forwardRef(
             },
             {
               type: "word",
+              handler: (word, range) => {
+                if (word.startsWith("#")) {
+                  setChannelQuery(word.slice(1));
+                  setSelectedAutoCompleteIndex(0);
+                  channelQueryRangeRef.current = range;
+                  return;
+                }
+
+                setChannelQuery(null);
+              },
+            },
+            {
+              type: "word",
               handler: (word) => {
                 if (word.startsWith(":")) {
                   setEmojiQuery(word.slice(1));
@@ -362,7 +418,6 @@ const MessageInput = React.forwardRef(
             setEmojiQuery(null);
             setCommandQuery(null);
           }}
-          getMember={getMember}
         />
 
         {isAutoCompleteMenuOpen && autoCompleteOptions.length !== 0 && (
@@ -454,16 +509,69 @@ const AutoCompleteListbox = ({
             onItemClick(item, i);
           }}
         >
-          {item.image && <div className="image">{item.image}</div>}
-          <div>
-            <div className="label">{item.label}</div>
-            {item.description && (
-              <div className="description">{item.description}</div>
-            )}
-          </div>
+          {typeof item.render === "function" ? (
+            item.render({})
+          ) : (
+            <>
+              {item.image && <div className="image">{item.image}</div>}
+              <div>
+                <div className="label">{item.label}</div>
+                {item.description && (
+                  <div className="description">{item.description}</div>
+                )}
+              </div>
+            </>
+          )}
         </li>
       ))}
     </ul>
+  );
+};
+
+const ChannelAutoCompleteItem = ({ id }) => {
+  const channel = useChannel(id, { name: true });
+  const theme = useTheme();
+
+  const avatarPixelSize = 22;
+
+  return (
+    <div
+      css={css({
+        display: "flex",
+        alignItems: "center",
+        ".image": {
+          width: "3.2rem",
+          height: "3.2rem",
+          borderRadius: "50%",
+          overflow: "hidden",
+          marginRight: "1rem",
+        },
+      })}
+    >
+      <div css={css({ marginRight: "1rem" })}>
+        <ChannelAvatar
+          id={id}
+          transparent
+          size={`${avatarPixelSize}px`}
+          pixelSize={avatarPixelSize}
+          borderRadius={theme.avatars.borderRadius}
+          background={theme.colors.backgroundModifierHover}
+        />
+      </div>
+      <div
+        css={(t) =>
+          css({
+            flex: 1,
+            minWidth: 0,
+            color: t.colors.textNormal,
+            fontSize: t.fontSizes.channelMessages,
+            fontWeight: t.text.weights.default,
+          })
+        }
+      >
+        {channel.name}
+      </div>
+    </div>
   );
 };
 

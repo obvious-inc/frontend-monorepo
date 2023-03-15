@@ -1,7 +1,5 @@
-
 import { Transforms } from "slate";
 import { useSelected, useFocused } from "slate-react";
-
 
 const middleware = (editor) => {
   const { isInline, isVoid } = editor;

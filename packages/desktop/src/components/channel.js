@@ -344,8 +344,6 @@ export const ChannelBase = ({
 
   const { messageIds, hasAllMessages } = useMessages(channel.id);
 
-  const getMember = useLatestCallback((id) => selectors.selectUser(id));
-
   const inputRef = React.useRef();
 
   const isMember = user != null && channel.memberUserIds.includes(user.id);
@@ -726,7 +724,6 @@ export const ChannelBase = ({
                   previousMessageId={messageIds[i - 1]}
                   hasPendingReply={pendingReplyMessageId === messageId}
                   initReply={initReply}
-                  getMember={getMember}
                   isAdmin={isAdmin}
                   hasTouchFocus={touchFocusedMessageId === messageId}
                   giveTouchFocus={
@@ -757,7 +754,6 @@ export const ChannelBase = ({
           submit={submitMessage}
           placeholder={inputPlaceholder}
           members={members}
-          getMember={getMember}
           onInputChange={handleInputChange}
         />
         {typingMembers.length > 0 && (

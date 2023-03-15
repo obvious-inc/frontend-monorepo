@@ -14,6 +14,7 @@ import { createCss as createRichTextCss } from "./rich-text";
 import createControlledParagraphLineBreaksPlugin from "../slate/plugins/controlled-paragraph-line-breaks";
 import createInlineLinksPlugin from "../slate/plugins/inline-links";
 import createUserMentionsPlugin from "../slate/plugins/user-mentions";
+import createChannelLinksPlugin from "../slate/plugins/channel-link";
 import { search, mergePlugins } from "../slate/utils";
 
 const { compose } = functionUtils;
@@ -119,15 +120,7 @@ const withEditorCommands = (editor) => {
 
 const RichTextInput = React.forwardRef(
   (
-    {
-      value,
-      onChange,
-      onKeyDown,
-      disabled = false,
-      triggers = [],
-      getMember,
-      ...props
-    },
+    { value, onChange, onKeyDown, disabled = false, triggers = [], ...props },
     ref
   ) => {
     const { editor, handlers, customElementsByNodeType } = React.useMemo(() => {
@@ -143,6 +136,7 @@ const RichTextInput = React.forwardRef(
         createControlledParagraphLineBreaksPlugin(),
         createInlineLinksPlugin(),
         createUserMentionsPlugin(),
+        createChannelLinksPlugin(),
       ]);
 
       return {
@@ -155,22 +149,13 @@ const RichTextInput = React.forwardRef(
     const renderElement = React.useCallback(
       (props) => {
         const CustomComponent = customElementsByNodeType[props.element.type];
-        if (CustomComponent) {
-          if (props.element.type === "user") {
-            const member = getMember(props.element.ref);
-            return (
-              <CustomComponent
-                {...props}
-                id={props.element.ref}
-                displayName={member?.displayName}
-              />
-            );
-          }
-          return <CustomComponent {...props} />;
-        }
-        return <Element {...props} />;
+        return CustomComponent == null ? (
+          <Element {...props} />
+        ) : (
+          <CustomComponent {...props} />
+        );
       },
-      [customElementsByNodeType, getMember]
+      [customElementsByNodeType]
     );
     const renderLeaf = React.useCallback((props) => <Leaf {...props} />, []);
 
@@ -267,14 +252,15 @@ const RichTextInput = React.forwardRef(
   }
 );
 
-const Element = ({ ...props }) => {
+const Element = (props) => {
   const { attributes, children, element } = props;
 
   switch (element.type) {
     case "paragraph":
       return <p {...attributes}>{children}</p>;
     default:
-      throw new Error(`Unrecognized element type "${element.type}"`);
+      console.warn(`Unsupported element type "${element.type}"`);
+      return <p {...attributes}>{children}</p>;
   }
 };
 

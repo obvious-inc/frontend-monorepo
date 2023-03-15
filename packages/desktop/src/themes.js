@@ -21,6 +21,18 @@ const createNotion = () => {
   const backgroundDarkTintLighter = "hsl(0 0% 11%)";
   const backgroundLight = "hsl(0 0% 15%)";
 
+  const fontSizes = {
+    tiny: "1.05rem",
+    small: "1.2rem",
+    default: "1.4rem",
+    large: "1.6rem",
+    header: "2rem",
+    huge: "3.2rem",
+    headerDefault: "1.6rem",
+    channelMessages: "1.6rem",
+    menus: "1.4rem",
+  };
+
   return {
     sidebarWidth: "25rem",
     avatars: {
@@ -93,19 +105,11 @@ const createNotion = () => {
       mentionBackgroundModifierHover: createPrimary({ opacity: 0.5 }),
       mentionFocusBorder: primary,
     },
-    fontSizes: {
-      tiny: "1.05rem",
-      small: "1.2rem",
-      default: "1.4rem",
-      large: "1.6rem",
-      header: "2rem",
-      huge: "3.2rem",
-      headerDefault: "1.6rem",
-      channelMessages: "1.6rem",
-      menus: "1.4rem",
-    },
+    fontSizes,
     text: {
+      sizes: fontSizes,
       weights: {
+        default: "400",
         smallHeader: "600",
         header: "700",
         notificationBadge: "500",

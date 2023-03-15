@@ -1,5 +1,7 @@
 import React from "react";
+import { Link } from "react-router-dom";
 import { css } from "@emotion/react";
+import { useUser, useChannelName } from "@shades/common/app";
 import * as Popover from "./popover";
 import ProfilePreview from "./profile-preview";
 
@@ -28,7 +30,8 @@ export const createCss = (theme, { inline = false, compact = false } = {}) => ({
     textDecoration: "underline",
     color: theme.colors.linkModifierHover,
   },
-  ".mention": {
+  ".mention, .channel-link": {
+    display: "inline-block",
     border: 0,
     lineHeight: "inherit",
     borderRadius: "0.3rem",
@@ -44,11 +47,13 @@ export const createCss = (theme, { inline = false, compact = false } = {}) => ({
       "&:hover": {
         color: theme.colors.mentionTextModifierHover,
         background: theme.colors.mentionBackgroundModifierHover,
+        textDecoration: "none",
       },
       "&[data-focused], &:focus-visible": {
         position: "relative",
         zIndex: 1,
         boxShadow: `0 0 0 0.2rem ${theme.colors.mentionFocusBorder}`,
+        textDecoration: "none",
       },
     },
   },
@@ -66,7 +71,6 @@ const createParser = ({
   inline,
   // compact,
   suffix,
-  getMember,
   onClickInteractiveElement,
 }) => {
   const parse = (blocks) => {
@@ -95,24 +99,11 @@ const createParser = ({
             </a>
           );
 
-        case "user": {
-          const member = getMember(el.ref);
-          return member == null ? null : (
-            <Popover.Root key={i} placement="right">
-              <Popover.Trigger asChild disabled={member?.deleted}>
-                <button className="mention">
-                  @
-                  {member?.deleted
-                    ? "Deleted user"
-                    : member?.displayName ?? "..."}
-                </button>
-              </Popover.Trigger>
-              <Popover.Content>
-                {member != null && <ProfilePreview userId={member.id} />}
-              </Popover.Content>
-            </Popover.Root>
-          );
-        }
+        case "channel-link":
+          return <ChannelLink key={i} id={el.ref} />;
+
+        case "user":
+          return <UserMention key={i} id={el.ref} />;
 
         case "attachments": {
           if (inline) {
@@ -225,6 +216,34 @@ const createParser = ({
   return parse;
 };
 
+const UserMention = ({ id }) => {
+  const user = useUser(id);
+
+  if (user == null) return null;
+
+  return (
+    <Popover.Root placement="right">
+      <Popover.Trigger asChild disabled={user.deleted}>
+        <button className="mention">
+          @{user.deleted ? "Deleted user" : user.displayName ?? "..."}
+        </button>
+      </Popover.Trigger>
+      <Popover.Content>
+        <ProfilePreview userId={id} />
+      </Popover.Content>
+    </Popover.Root>
+  );
+};
+
+const ChannelLink = ({ id }) => {
+  const channelName = useChannelName(id);
+  return (
+    <Link to={`/channels/${id}`} className="channel-link">
+      #{channelName ?? "..."}
+    </Link>
+  );
+};
+
 const Image = (props) => {
   const ref = React.useRef();
 
@@ -263,7 +282,6 @@ const RichText = ({
   inline = false,
   compact = false,
   blocks,
-  getMember,
   onClickInteractiveElement,
   suffix,
   ...props
@@ -274,10 +292,9 @@ const RichText = ({
         inline,
         compact,
         suffix,
-        getMember,
         onClickInteractiveElement,
       }),
-    [inline, compact, suffix, getMember, onClickInteractiveElement]
+    [inline, compact, suffix, onClickInteractiveElement]
   );
   return (
     <div

@@ -1,36 +1,11 @@
 import { url as urlUtils } from "@shades/common/utils";
 import { Editor, Transforms, Point, Text } from "slate";
+import { getWords } from "../utils.js";
 
 const wrapLink = (editor, url, { at } = {}) => {
   const parsedUrl = new URL(url);
   const link = { type: "link", url: parsedUrl.href, children: [] };
   Transforms.wrapNodes(editor, link, { at, split: true });
-};
-
-const getWords = ([node, path]) => {
-  if (!Text.isText(node)) return [];
-
-  let offset = 0;
-  const wordEntries = [];
-
-  for (let wordString of node.text.split(/\s+/)) {
-    if (wordString === "") {
-      offset += 1;
-      continue;
-    }
-
-    wordEntries.push([
-      wordString,
-      {
-        anchor: { path, offset },
-        focus: { path, offset: offset + wordString.length },
-      },
-    ]);
-
-    offset += wordString.length + 1;
-  }
-
-  return wordEntries;
 };
 
 const createMiddleware = ({ isUrl }) => {
@@ -125,11 +100,13 @@ const createMiddleware = ({ isUrl }) => {
   };
 };
 
-const LinkComponent = ({ attributes, children, element }) => (
-  <a {...attributes} href={element.url}>
-    {children}
-  </a>
-);
+const LinkComponent = ({ attributes, children, element }) => {
+  return (
+    <a {...attributes} href={element.url}>
+      {children}
+    </a>
+  );
+};
 
 export default ({ isUrl = urlUtils.validate } = {}) => ({
   middleware: createMiddleware({ isUrl }),

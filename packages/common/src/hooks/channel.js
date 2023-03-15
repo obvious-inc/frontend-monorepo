@@ -27,12 +27,12 @@ import {
   selectHasReacted,
 } from "../reducers/messages.js";
 
-export const useChannel = (channelId, { members = false } = {}) => {
+export const useChannel = (channelId, options = {}) => {
   return useStore(
     React.useCallback(
       (state) =>
-        channelId == null ? null : selectChannel(state, channelId, { members }),
-      [channelId, members]
+        channelId == null ? null : selectChannel(state, channelId, options),
+      [channelId, ...Object.values(options)]
     )
   );
 };
