@@ -704,7 +704,9 @@ export default ({
       fetchPreferences();
 
       const me = parseUser(rawMe);
-      const channels = rawChannels.map(parseChannel);
+      const channels = rawChannels
+        .map(parseChannel)
+        .map((c) => ({ ...c, memberUserIds: [me.id] }));
 
       dispatch({
         type: "fetch-client-boot-data-request-successful",

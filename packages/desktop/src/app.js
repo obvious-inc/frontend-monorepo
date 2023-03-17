@@ -33,8 +33,8 @@ const App = () => {
     fetchClientBootData,
     fetchUserChannels,
     fetchUserChannelsReadStates,
+    fetchChannelMembers,
     fetchStarredItems,
-    fetchUsers,
     fetchPubliclyReadableChannels,
   } = actions;
 
@@ -44,12 +44,13 @@ const App = () => {
     if (authStatus !== "authenticated") return;
 
     fetchClientBootData().then(({ channels }) => {
-      const dmUserIds = unique(
-        channels.filter((c) => c.kind === "dm").flatMap((c) => c.memberUserIds)
+      const dmChannelIds = unique(
+        channels.filter((c) => c.kind === "dm").map((c) => c.id)
       );
-      fetchUsers(dmUserIds);
+      console.log(dmChannelIds);
+      for (const id of dmChannelIds) fetchChannelMembers(id);
     });
-  }, [authStatus, fetchClientBootData, fetchUsers]);
+  }, [authStatus, fetchClientBootData, fetchChannelMembers]);
 
   React.useEffect(() => {
     if (authStatus === "not-authenticated") fetchPubliclyReadableChannels();

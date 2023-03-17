@@ -342,7 +342,12 @@ export const selectChannelName = createSelector(
   (state, channelId) => {
     const channel = state.channels.entriesById[channelId];
 
-    if (channel == null || channel.kind !== "dm") return null;
+    if (
+      channel == null ||
+      channel.kind !== "dm" ||
+      channel.memberUserIds == null
+    )
+      return null;
 
     return channel.memberUserIds.map((userId) => selectUser(state, userId));
   },
@@ -350,6 +355,8 @@ export const selectChannelName = createSelector(
     if (channel == null || channel.isDeleted) return null;
 
     if (channel.name != null || channel.kind !== "dm") return channel.name;
+
+    if (channel.memberUserIds == null) return null;
 
     if (channel.memberUserIds.length === 1)
       return channelMemberUsers[0] == null
@@ -459,11 +466,17 @@ export const selectDmChannelFromUserId = (state, userId) => {
 
   if (userId === state.me.user.id)
     return dmChannels.find(
-      (c) => c.memberUserIds.length === 1 && c.memberUserIds[0] === userId
+      (c) =>
+        c.memberUserIds != null &&
+        c.memberUserIds.length === 1 &&
+        c.memberUserIds[0] === userId
     );
 
   const userDmChannels = dmChannels.filter(
-    (c) => c.memberUserIds.length <= 2 && c.memberUserIds.includes(userId)
+    (c) =>
+      c.memberUserIds != null &&
+      c.memberUserIds.length <= 2 &&
+      c.memberUserIds.includes(userId)
   );
 
   if (userDmChannels.length > 1) throw new Error();
@@ -475,6 +488,7 @@ export const selectDmChannelFromUserIds = (state, userIds) => {
   const dmChannels = selectDmChannels(state);
   return dmChannels.find(
     (c) =>
+      c.memberUserIds != null &&
       c.memberUserIds.length === userIds.length &&
       c.memberUserIds.every((id) => userIds.includes(id))
   );
@@ -503,7 +517,11 @@ export const selectMemberChannels = createSelector(
 
         if (c.isDeleted) return false;
 
-        if (c.kind === "dm" && c.memberUserIds?.length === 2) {
+        if (
+          c.kind === "dm" &&
+          c.memberUserIds != null &&
+          c.memberUserIds?.length === 2
+        ) {
           const memberId = c.memberUserIds.filter((id) => id !== me.id)[0];
           return !blockedUserIds.includes(memberId);
         }
@@ -558,8 +576,9 @@ export const selectIsChannelStarred = (state, id) =>
 export const selectChannelMembers = createSelector(
   (state, channelId) => {
     const channel = state.channels.entriesById[channelId];
-    if (channel == null || channel.isDeleted) return [];
-    return channel.memberUserIds?.map((id) => {
+    if (channel == null || channel.isDeleted || channel.memberUserIds == null)
+      return [];
+    return channel.memberUserIds.map((id) => {
       const user = selectUser(state, id);
       return { ...user, id, isOwner: id === channel.ownerUserId };
     });
