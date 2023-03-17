@@ -42,7 +42,7 @@ jobs:
         run: pnpm -F mobile build
 
       - name: Run update
-        working-directory: packages/mobile
+        working-directory: apps/mobile
         run: eas update --auto -p ios
         env:
           EXPO_UPDATES_URL: ${{ secrets.EXPO_UPDATES_URL }}
