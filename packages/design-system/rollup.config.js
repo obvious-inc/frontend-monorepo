@@ -21,6 +21,7 @@ const createConfig = ({ file, dependencies = [] }) => ({
 
 const entrypoints = [
   { file: "theme.js" },
+  { file: "icons.js" },
   { file: "sidebar-layout.js", dependencies: ["react", "@emotion/react"] },
   {
     file: "button.js",

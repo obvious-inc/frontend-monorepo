@@ -6,7 +6,7 @@ import {
 import {
   DoubleChevronRight as DoubleChevronRightIcon,
   HamburgerMenu as HamburgerMenuIcon,
-} from "./icons";
+} from "@shades/design-system/icons";
 
 const isNative = window.Native != null;
 

@@ -2,7 +2,7 @@ import isToday from "date-fns/isToday";
 import isYesterday from "date-fns/isYesterday";
 import Pusher from "pusher-js";
 import React from "react";
-import { ThemeProvider, css } from "@emotion/react";
+import { ThemeProvider, useTheme, css } from "@emotion/react";
 import { useDateFormatter } from "react-aria";
 import {
   WagmiConfig,
@@ -39,9 +39,16 @@ import theme from "@shades/design-system/theme";
 import {
   Provider as SidebarProvider,
   Layout as SidebarLayout,
+  useState as useSidebarState,
+  useToggle as useSidebarToggle,
 } from "@shades/design-system/sidebar-layout";
 import Button from "@shades/design-system/button";
 import Avatar from "@shades/design-system/avatar";
+import {
+  DoubleChevronRight as DoubleChevronRightIcon,
+  DoubleChevronLeft as DoubleChevronLeftIcon,
+  HamburgerMenu as HamburgerMenuIcon,
+} from "@shades/design-system/icons";
 
 const { reverse } = arrayUtils;
 const { truncateAddress } = ethereumUtils;
@@ -49,6 +56,96 @@ const { truncateAddress } = ethereumUtils;
 const FormattedDate = ({ value, ...options }) => {
   const formatter = useDateFormatter(options);
   return formatter.format(value);
+};
+
+const MainHeader = ({ children }) => {
+  const { isCollapsed: isSidebarCollapsed } = useSidebarState();
+  const toggleMenu = useSidebarToggle();
+
+  return (
+    <div
+      css={css({
+        height: "6.2rem",
+        // height: theme.mainHeader.height,
+        padding: "0 2rem",
+        display: "flex",
+        alignItems: "center",
+        // borderBottom: "0.1rem solid",
+        // borderColor: theme.colors.borderLight,
+        minWidth: 0,
+        width: "100%",
+      })}
+    >
+      <div css={css({ display: "flex", justifyContent: "center" })}>
+        <button
+          onClick={() => {
+            toggleMenu();
+          }}
+          css={(t) =>
+            css({
+              position: "relative",
+              margin: "0 -0.1rem",
+              marginRight: "2rem",
+              width: "2.4rem",
+              height: "2.4rem",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              borderRadius: "0.3rem",
+              background: "none",
+              border: 0,
+              cursor: "pointer",
+              color: t.colors.textNormal,
+              ".chevron": {
+                opacity: 0,
+                transition: "0.2s opacity ease-out",
+              },
+              ":hover": {
+                background: t.colors.backgroundModifierHover,
+                ".chevron": { opacity: 1 },
+                ".hamburger": { display: "none" },
+              },
+            })
+          }
+        >
+          {isSidebarCollapsed ? (
+            <DoubleChevronRightIcon
+              className="chevron"
+              style={{
+                position: "relative",
+                left: "1px",
+                width: "1.6rem",
+                height: "1.6rem",
+              }}
+            />
+          ) : (
+            <DoubleChevronLeftIcon
+              className="chevron"
+              style={{ width: "1.6rem", height: "1.6rem" }}
+            />
+          )}
+          <div
+            style={{
+              position: "absolute",
+              top: 0,
+              left: 0,
+              width: "100%",
+              height: "100%",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+            }}
+          >
+            <HamburgerMenuIcon
+              className="hamburger"
+              style={{ width: "1.6rem", height: "1.6rem" }}
+            />
+          </div>
+        </button>
+      </div>
+      {children}
+    </div>
+  );
 };
 
 const usePlaceholderAvatar = (
@@ -130,6 +227,9 @@ const ChannelMembersAvatar = ({ id, ...props }) => {
     return <UserAvatar walletAddress={member.walletAddress} {...props} />;
   }
 
+  const avatarOffset = `calc(${props.size} / 5)`;
+  const avatarSize = `calc(100% - ${props.size} / 5)`;
+
   return (
     <div
       style={{
@@ -145,11 +245,12 @@ const ChannelMembersAvatar = ({ id, ...props }) => {
           {...props}
           css={css({
             position: "absolute",
-            top: i === 0 ? "3px" : 0,
-            left: i === 0 ? "3px" : 0,
-            width: "calc(100% - 3px)",
-            height: "calc(100% - 3px)",
-            boxShadow: i !== 0 ? `1px 1px 0 0px rgb(0 0 0 / 30%)` : undefined,
+            top: i === 0 ? avatarOffset : 0,
+            left: i === 0 ? avatarOffset : 0,
+            width: avatarSize,
+            height: avatarSize,
+            filter: i === 0 ? "brightness(0.8)" : undefined,
+            // boxShadow: i !== 0 ? `1px 1px 0 0px rgb(0 0 0 / 30%)` : undefined,
           })}
         />
       ))}
@@ -157,8 +258,61 @@ const ChannelMembersAvatar = ({ id, ...props }) => {
   );
 };
 
+const HeaderItem = ({ label, count = 0, active }) => (
+  <div
+    css={(t) =>
+      css({
+        fontSize: t.fontSizes.large,
+        fontWeight: t.text.weights.header,
+        display: "flex",
+        alignItems: "center",
+        // color: t.colors.textNormal,
+        color: active ? "white" : t.colors.textNormal,
+        marginRight: "2rem",
+      })
+    }
+  >
+    <div
+    // css={(t) =>
+    //   css({
+    //     position: "relative",
+    //     ":after": {
+    //       position: "absolute",
+    //       top: "calc(100% + 0.2rem)",
+    //       left: "50%",
+    //       transform: "translateX(-50%)",
+    //       content: '""',
+    //       display: active ? "block" : "none",
+    //       width: "0.5rem",
+    //       height: "0.5rem",
+    //       background: "white",
+    //       borderRadius: "50%",
+    //     },
+    //   })
+    // }
+    >
+      {label}
+    </div>
+    {count > 0 && (
+      <div
+        css={(t) => {
+          return css({
+            marginLeft: "0.7rem",
+            fontSize: t.fontSizes.small,
+            fontWeight: t.text.weights.default,
+            lineHeight: 1,
+          });
+        }}
+      >
+        {count}
+      </div>
+    )}
+  </div>
+);
+
 const Inbox = () => {
-  const channels = useMemberChannels();
+  const channels = useMemberChannels({ readStates: true });
+  const unreadCount = channels.filter((c) => c.hasUnread).length;
 
   return (
     <div
@@ -173,6 +327,83 @@ const Inbox = () => {
         height: 100%;
       `}
     >
+      <MainHeader>
+        <div
+          style={{
+            flex: 1,
+            minWidth: 0,
+            display: "flex",
+            alignItems: "center",
+          }}
+        >
+          <HeaderItem label="All" count="12" />
+          <HeaderItem label="Known senders" count={unreadCount} active />
+        </div>
+        <div
+          css={(t) =>
+            css({
+              display: "grid",
+              gridAutoColumns: "auto",
+              gridAutoFlow: "column",
+              gridGap: "2rem",
+              alignItems: "center",
+              color: t.colors.textNormal,
+            })
+          }
+        >
+          {/* <MagnificationGlassIcon */}
+          {/*   css={(t) => */}
+          {/*     css({ */}
+          {/*       width: "1.6rem", */}
+          {/*       height: "auto", */}
+          {/*       color: t.colors.textDimmed, */}
+          {/*     }) */}
+          {/*   } */}
+          {/* /> */}
+          <svg
+            viewBox="0 0 17 17"
+            style={{
+              display: "block",
+              width: "1.6rem",
+              height: "auto",
+            }}
+          >
+            <path
+              d="M6.78027 13.6729C8.24805 13.6729 9.60156 13.1982 10.709 12.4072L14.875 16.5732C15.0684 16.7666 15.3232 16.8633 15.5957 16.8633C16.167 16.8633 16.5713 16.4238 16.5713 15.8613C16.5713 15.5977 16.4834 15.3516 16.29 15.1582L12.1504 11.0098C13.0205 9.86719 13.5391 8.45215 13.5391 6.91406C13.5391 3.19629 10.498 0.155273 6.78027 0.155273C3.0625 0.155273 0.0214844 3.19629 0.0214844 6.91406C0.0214844 10.6318 3.0625 13.6729 6.78027 13.6729ZM6.78027 12.2139C3.87988 12.2139 1.48047 9.81445 1.48047 6.91406C1.48047 4.01367 3.87988 1.61426 6.78027 1.61426C9.68066 1.61426 12.0801 4.01367 12.0801 6.91406C12.0801 9.81445 9.68066 12.2139 6.78027 12.2139Z"
+              fill="currentColor"
+            />
+          </svg>
+          <Button
+            variant="primary"
+            size="small"
+            style={{
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              padding: 0,
+              width: "3.4rem",
+              height: "3.4rem",
+              borderRadius: "50%",
+            }}
+          >
+            <svg
+              viewBox="0 0 64 64"
+              style={{
+                display: "block",
+                width: "2.1rem",
+                height: "auto",
+                margin: "auto",
+              }}
+            >
+              <path
+                fillRule="evenodd"
+                d="M52.47 16.78v0c-.3.29-.77.29-1.07 0l-4.2-4.18v0c-.3-.3-.3-.77-.01-1.06 0-.01 0-.01 0-.01l2.89-2.89h0c.87-.88 2.3-.88 3.18 0l2.06 2.06v-.001c.87.87.87 2.28 0 3.16 -.01 0-.01 0-.01 0Zm-22.72 21.7l-5.05 1.51v0c-.3.08-.62-.08-.7-.38 -.04-.11-.04-.22-.001-.33l1.51-5.06v0c.28-.96.8-1.82 1.5-2.52l17.5-17.52v-.001c.29-.3.76-.3 1.06 0l4.18 4.19v0c.29.29.29.76 0 1.061L32.23 36.94v0c-.71.7-1.57 1.22-2.53 1.5ZM52 29.01v17 0c-.01 3.31-2.69 5.99-6 6H18v0c-3.32-.01-6-2.69-6-6.01V17.99v0c0-3.32 2.68-6 6-6.01h17v0c1.1 0 2 .89 2 2 0 1.1-.9 2-2.01 2h-17v0c-1.11 0-2 .89-2 2v28 0c0 1.1.89 1.99 2 2h28 0c1.1-.01 1.99-.9 2-2.01V28.96v0c0-1.11.89-2 2-2 1.1 0 2 .89 2 2Z"
+                fill="currentColor"
+              />
+            </svg>
+          </Button>
+        </div>
+      </MainHeader>
       <div
         css={css({
           position: "relative",
@@ -216,6 +447,8 @@ const Inbox = () => {
 };
 
 const ChannelItem = ({ id }) => {
+  const theme = useTheme();
+
   const me = useMe();
   const channel = useChannel(id, { readStates: true, name: true });
   const members = useChannelMembers(id);
@@ -228,107 +461,140 @@ const ChannelItem = ({ id }) => {
   const message = messages[0];
 
   return (
-    <a
-      href={`https://app.newshades.xyz/channels/${id}`}
-      css={(t) =>
-        css({
-          color: "inherit",
-          textDecoration: "none",
-          padding: "1.5rem 2rem",
-          borderBottom: "0.1rem solid",
-          borderColor: t.colors.borderLight,
-          ":hover": { background: "rgb(255 255 255 / 2%)" },
-        })
-      }
+    <div
+      css={() => {
+        const hoverColor = "hsl(0 100% 100% / 6%)";
+        return css({
+          ":after": {
+            content: '""',
+            display: "block",
+            width: "100%",
+            // width: "calc(100% - 4rem)",
+            // borderBottom: "0.1rem solid",
+            // borderColor: t.colors.borderLight,
+            height: "1px",
+            background: `linear-gradient(90deg, transparent 0%, ${hoverColor} 20%, ${hoverColor} 80%, transparent 100%)`,
+          },
+        });
+      }}
     >
-      <div
-        style={{
-          display: "grid",
-          gridTemplateColumns: "18rem minmax(0,1fr) auto",
-          alignItems: "center",
-          gridGap: "1rem",
+      <a
+        href={`https://app.newshades.xyz/channels/${id}`}
+        css={() => {
+          const hoverColor = "hsl(0 100% 100% / 2%)";
+          return css({
+            display: "block",
+            color: "inherit",
+            textDecoration: "none",
+            padding: "1rem 2rem",
+            // borderBottom: "0.1rem solid",
+            // borderColor: t.colors.borderLight,
+            ":hover": {
+              background: `linear-gradient(90deg, transparent 0%, ${hoverColor} 20%, ${hoverColor} 80%, transparent 100%)`,
+            },
+          });
         }}
       >
-        <div style={{ display: "flex", alignItems: "center" }}>
-          <ChannelMembersAvatar id={id} size="2.2rem" />
-          <div
-            css={(t) =>
-              css({
-                whiteSpace: "nowrap",
-                overflow: "hidden",
-                textOverflow: "ellipsis",
-                flex: 1,
-                minWidth: 0,
-                fontSize: t.fontSizes.default,
-                color: t.colors.textDimmed,
-                marginLeft: "0.7rem",
-              })
-            }
-          >
-            {membersExcludingMe.length > 3
-              ? `${members.length} participants`
-              : membersExcludingMe
-                  .map((u) => u.displayName ?? truncateAddress(u.walletAddress))
-                  .join(", ")}
-          </div>
-        </div>
-        <div style={{ display: "flex", alignItems: "center" }}>
-          <div
-            css={(t) =>
-              css({
-                marginRight: "1rem",
-                color: channel.hasUnread ? undefined : t.colors.textDimmed,
-              })
-            }
-          >
-            {channel.name}
-          </div>
-
-          <div
-            css={(t) =>
-              css({
-                fontSize: t.fontSizes.small,
-                color: t.colors.textDimmed,
-                flex: 1,
-                minWidth: 0,
-                whiteSpace: "nowrap",
-                overflow: "hidden",
-                textOverflow: "ellipsis",
-              })
-            }
-          >
-            {message != null && (
-              <>
-                {message.author != null && <>{message.author.displayName}: </>}
-                {message.stringContent}
-              </>
-            )}
-          </div>
-        </div>
         <div
-          css={(t) =>
-            css({ fontSize: t.fontSizes.small, color: t.colors.textDimmed })
-          }
+          style={{
+            display: "grid",
+            gridTemplateColumns: "21rem minmax(0,1fr) auto",
+            alignItems: "center",
+            gridGap: "1rem",
+          }}
         >
-          {message &&
-            (isToday(new Date(message.createdAt)) ? (
-              <FormattedDate
-                value={new Date(message.createdAt)}
-                hour="numeric"
-                minute="numeric"
-              />
-            ) : isYesterday(new Date(message.createdAt)) ? (
-              "Yesterday"
-            ) : (
-              <FormattedDate
-                value={new Date(message.createdAt)}
-                month="short"
-                day="numeric"
-              />
-            ))}
+          <div style={{ display: "flex", alignItems: "center" }}>
+            <ChannelMembersAvatar
+              id={id}
+              size="2.6rem"
+              background={theme.colors.backgroundTertiary}
+            />
+            <div
+              css={(t) =>
+                css({
+                  whiteSpace: "nowrap",
+                  overflow: "hidden",
+                  textOverflow: "ellipsis",
+                  flex: 1,
+                  minWidth: 0,
+                  fontSize: t.fontSizes.default,
+                  color: t.colors.textDimmed,
+                  marginLeft: "1rem",
+                })
+              }
+            >
+              {membersExcludingMe.length > 3
+                ? `${members.length} participants`
+                : membersExcludingMe
+                    .map(
+                      (u) => u.displayName ?? truncateAddress(u.walletAddress)
+                    )
+                    .join(", ")}
+            </div>
+          </div>
+          <div
+            css={(t) =>
+              css({
+                fontSize: t.fontSizes.default,
+              })
+            }
+          >
+            <span
+              css={(t) =>
+                css({
+                  whiteSpace: "nowrap",
+                  overflow: "hidden",
+                  textOverflow: "ellipsis",
+                  fontWeight: channel.hasUnread ? "500" : undefined,
+                  color: channel.hasUnread
+                    ? t.colors.textNormal
+                    : t.colors.textDimmed,
+                })
+              }
+            >
+              {channel.name}
+            </span>
+            <div
+              css={(t) =>
+                css({
+                  whiteSpace: "nowrap",
+                  overflow: "hidden",
+                  textOverflow: "ellipsis",
+                  color: t.colors.textMuted,
+                })
+              }
+            >
+              {message?.author?.displayName != null && (
+                <>{message.author.displayName}: </>
+              )}
+              {message?.stringContent || "..."}
+            </div>
+          </div>
+          <div
+            css={(t) =>
+              css({ fontSize: t.fontSizes.small, color: t.colors.textMuted })
+            }
+          >
+            {message &&
+              (isToday(new Date(message.createdAt)) ? (
+                <FormattedDate
+                  value={new Date(message.createdAt)}
+                  hour="numeric"
+                  minute="numeric"
+                />
+              ) : isYesterday(new Date(message.createdAt)) ? (
+                "Yesterday"
+              ) : (
+                <FormattedDate
+                  value={new Date(message.createdAt)}
+                  month="short"
+                  day="numeric"
+                />
+              ))}
+          </div>
         </div>
-      </div>
-    </a>
+      </a>
+    </div>
   );
 };
 
@@ -430,7 +696,7 @@ const Layout = ({ children }) => {
                 })
               }
             >
-              {me.walletAddress}
+              {truncateAddress(me.walletAddress)}
             </div>
           </div>
           <div css={css({ display: "flex", alignItems: "center" })}>
@@ -471,53 +737,19 @@ const Layout = ({ children }) => {
                   })
                 }
               >
-                {/* <DoubleChevronLeftIcon */}
-                {/*   css={css({ */}
-                {/*     position: "relative", */}
-                {/*     right: "1px", */}
-                {/*     width: "1.6rem", */}
-                {/*     height: "1.6rem", */}
-                {/*   })} */}
-                {/* /> */}
+                <DoubleChevronLeftIcon
+                  css={css({
+                    position: "relative",
+                    right: "1px",
+                    width: "1.6rem",
+                    height: "1.6rem",
+                  })}
+                />
               </div>
             )}
           </div>
         </button>
       )}
-      sidebarContent={
-        <>
-          <div style={{ height: "1.5rem" }} />
-          <div
-            css={css({
-              display: "flex",
-              alignItems: "center",
-              padding: "0 1.4rem",
-            })}
-          >
-            <input
-              readOnly
-              value="Search..."
-              css={(t) =>
-                css({
-                  outline: "none",
-                  color: t.colors.textDimmed,
-                  background: t.colors.backgroundModifierHover,
-                  fontSize: t.fontSizes.default,
-                  border: 0,
-                  padding: "0.5rem 1.1rem",
-                  borderRadius: "0.5rem",
-                  width: "100%",
-                })
-              }
-            />
-          </div>
-          <div style={{ height: "2rem" }} />
-          <ListItem compact={false} title="Inbox" />
-          <ListItem compact={false} title="Drafts" />
-          <ListItem compact={false} title="Sent" />
-          <ListItem compact={false} title="Starred" />
-        </>
-      }
       sidebarBottomContent={({ toggle: toggleMenu }) => (
         <button
           css={(theme) =>

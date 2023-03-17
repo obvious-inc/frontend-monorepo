@@ -22,14 +22,16 @@ import {
 } from "@shades/common/utils";
 import { useLatestCallback } from "@shades/common/react";
 import Button from "@shades/design-system/button";
-import { isNodeEmpty, normalizeNodes, cleanNodes } from "../slate/utils";
-import useHover from "../hooks/hover";
-import useGlobalMediaQueries from "../hooks/global-media-queries";
 import {
   DotsHorizontal as DotsHorizontalIcon,
   EditPen as EditPenIcon,
   ReplyArrow as ReplyArrowIcon,
-} from "./icons";
+  AddEmojiReaction as AddEmojiReactionIcon,
+  JoinArrowRight as JoinArrowRightIcon,
+} from "@shades/design-system/icons";
+import { isNodeEmpty, normalizeNodes, cleanNodes } from "../slate/utils";
+import useHover from "../hooks/hover";
+import useGlobalMediaQueries from "../hooks/global-media-queries";
 import MessageInput from "./message-input";
 import RichText from "./rich-text";
 import Input from "./input";
@@ -39,10 +41,6 @@ import * as DropdownMenu from "./dropdown-menu";
 import * as Toolbar from "./toolbar";
 import * as Tooltip from "./tooltip";
 import Dialog from "./dialog";
-import {
-  AddEmojiReaction as AddEmojiReactionIcon,
-  JoinArrowRight as JoinArrowRightIcon,
-} from "./icons";
 import ProfilePreview from "./profile-preview";
 
 const { groupBy, indexBy } = arrayUtils;

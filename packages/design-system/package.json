@@ -11,6 +11,7 @@
   },
   "exports": {
     "./theme": "./dist/theme.js",
+    "./icons": "./dist/icons.js",
     "./sidebar-layout": "./dist/sidebar-layout.js",
     "./button": "./dist/button.js",
     "./avatar": "./dist/avatar.js"

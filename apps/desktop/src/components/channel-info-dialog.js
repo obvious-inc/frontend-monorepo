@@ -21,12 +21,6 @@ import {
   user as userUtils,
 } from "@shades/common/utils";
 import Button from "@shades/design-system/button";
-import Input from "./input";
-import UserAvatar from "./user-avatar";
-import ChannelAvatar from "./channel-avatar";
-import Dialog from "./dialog";
-import Select from "./select";
-import * as Tooltip from "./tooltip";
 import {
   Cross as CrossIcon,
   Star as StarIcon,
@@ -38,7 +32,13 @@ import {
   Lock as LockIcon,
   EyeOff as EyeOffIcon,
   AtSign as AtSignIcon,
-} from "./icons";
+} from "@shades/design-system/icons";
+import Input from "./input";
+import UserAvatar from "./user-avatar";
+import ChannelAvatar from "./channel-avatar";
+import Dialog from "./dialog";
+import Select from "./select";
+import * as Tooltip from "./tooltip";
 
 const { sort } = arrayUtils;
 const {

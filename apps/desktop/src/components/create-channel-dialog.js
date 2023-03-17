@@ -5,15 +5,15 @@ import { ethereum as ethereumUtils } from "@shades/common/utils";
 import { useActions, useAuth } from "@shades/common/app";
 import { useWallet, useWalletLogin } from "@shades/common/wallet";
 import Button from "@shades/design-system/button";
-import Dialog from "./dialog";
-import Input from "./input";
-import Select from "./select";
 import {
   Cross as CrossIcon,
   Globe as GlobeIcon,
   Lock as LockIcon,
   EyeOff as EyeOffIcon,
-} from "./icons";
+} from "@shades/design-system/icons";
+import Dialog from "./dialog";
+import Input from "./input";
+import Select from "./select";
 
 const { truncateAddress } = ethereumUtils;
 

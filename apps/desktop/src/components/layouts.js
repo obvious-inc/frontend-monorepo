@@ -27,13 +27,13 @@ import {
   useToggle as useSidebarToggle,
   Layout as SidebarLayout,
 } from "@shades/design-system/sidebar-layout";
-import useCommandCenter from "../hooks/command-center";
 import {
   MagnificationGlass as MagnificationGlassIcon,
   Planet as PlanetIcon,
   Triangle as TriangleIcon,
   DoubleChevronLeft as DoubleChevronLeftIcon,
-} from "./icons";
+} from "@shades/design-system/icons";
+import useCommandCenter from "../hooks/command-center";
 import UserAvatar from "./user-avatar";
 import ChannelAvatar from "./channel-avatar";
 import * as DropdownMenu from "./dropdown-menu";

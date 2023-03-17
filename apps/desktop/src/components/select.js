@@ -10,11 +10,11 @@ import {
   // mergeProps,
 } from "react-aria";
 import Button from "@shades/design-system/button";
-import * as Popover from "./popover";
 import {
   CaretDown as CaretDownIcon,
   Checkmark as CheckmarkIcon,
-} from "./icons";
+} from "@shades/design-system/icons";
+import * as Popover from "./popover";
 
 const Select = ({
   placeholder = "Select an item",

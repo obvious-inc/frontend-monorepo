@@ -34,6 +34,14 @@ import {
 } from "@shades/common/utils";
 import { useLatestCallback } from "@shades/common/react";
 import Button from "@shades/design-system/button";
+import {
+  Cross as CrossIcon,
+  PlusCircle as PlusCircleIcon,
+  CrossCircle as CrossCircleIcon,
+  Star as StarIcon,
+  StrokedStar as StrokedStarIcon,
+  Globe as GlobeIcon,
+} from "@shades/design-system/icons";
 import useGlobalMediaQueries from "../hooks/global-media-queries";
 import useWindowFocusOrDocumentVisibleListener from "../hooks/window-focus-or-document-visible-listener";
 import useOnlineListener from "../hooks/window-online-listener";
@@ -50,14 +58,6 @@ import * as Tooltip from "./tooltip";
 import Dialog from "./dialog";
 import Input from "./input";
 import ChannelInfoDialog from "./channel-info-dialog";
-import {
-  Cross as CrossIcon,
-  PlusCircle as PlusCircleIcon,
-  CrossCircle as CrossCircleIcon,
-  Star as StarIcon,
-  StrokedStar as StrokedStarIcon,
-  Globe as GlobeIcon,
-} from "./icons";
 import useIsOnScreen from "../hooks/is-on-screen";
 import useScrollListener from "../hooks/scroll-listener";
 import useMutationObserver from "../hooks/mutation-observer";
