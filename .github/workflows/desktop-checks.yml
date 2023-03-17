@@ -2,8 +2,9 @@ name: Desktop | CI checks
 on:
   push:
     paths-ignore:
-      - "packages/landing"
-      - "packages/mobile"
+      - "apps/landing"
+      - "apps/mobile"
+      - "apps/inbox"
 
 jobs:
   checks:

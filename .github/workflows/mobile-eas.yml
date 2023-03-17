@@ -5,8 +5,9 @@ on:
     branches:
       - main
     paths-ignore:
-      - "packages/landing"
-      - "packages/desktop"
+      - "apps/landing"
+      - "apps/desktop"
+      - "apps/inbox"
 
 jobs:
   build:
