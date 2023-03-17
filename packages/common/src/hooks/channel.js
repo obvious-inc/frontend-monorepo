@@ -32,6 +32,7 @@ export const useChannel = (channelId, options = {}) => {
     React.useCallback(
       (state) =>
         channelId == null ? null : selectChannel(state, channelId, options),
+      // eslint-disable-next-line
       [channelId, ...Object.values(options)]
     )
   );

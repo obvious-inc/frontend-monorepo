@@ -98,7 +98,7 @@ export const Provider = ({ Pusher, pusherKey, debug = false, children }) => {
     return () => {
       removeListener();
     };
-  }, [addListener]);
+  }, [handleServerMessage, addListener]);
 
   const serverConnection = React.useMemo(
     () => ({ addListener, isConnected: pusherState === "connected" }),
