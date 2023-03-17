@@ -7,11 +7,8 @@ import {
   useActions,
   useAfterActionListener,
 } from "@shades/common/app";
-import { array as arrayUtils } from "@shades/common/utils";
 import useWindowFocusOrDocumentVisibleListener from "./hooks/window-focus-or-document-visible-listener";
 import useOnlineListener from "./hooks/window-online-listener";
-
-const { unique } = arrayUtils;
 
 const LazyApp = React.lazy(() => import("./app-lazy"));
 

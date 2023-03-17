@@ -21,7 +21,7 @@ export const Provider = ({ cloudflareAccountHash, children }) => {
 
   const contextValue = React.useMemo(
     () => ({ buildCloudflareImageUrl }),
-    [cloudflareAccountHash]
+    [buildCloudflareImageUrl]
   );
 
   return <Context.Provider value={contextValue}>{children}</Context.Provider>;

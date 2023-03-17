@@ -389,12 +389,16 @@ export const selectChannel = createSelector(
     if (!readStates) return null;
     return selectChannelHasBeenSeen(state, channelId);
   },
+  (state, channelId, { gating = false } = {}) => {
+    if (!gating) return null;
+    return selectChannelAccessLevel(state, channelId);
+  },
   (state, channelId) => {
     const channel = state.channels.entriesById[channelId];
     if (channel == null || channel.isDeleted) return null;
     return channel;
   },
-  (name, members, hasUnread, hasBeenSeen, channel_) => {
+  (name, members, hasUnread, hasBeenSeen, gating, channel_) => {
     if (channel_ == null) return null;
 
     const channel = { ...channel_ };
@@ -403,6 +407,7 @@ export const selectChannel = createSelector(
     if (members != null) channel.members = members;
     if (hasUnread != null) channel.hasUnread = hasUnread;
     if (hasBeenSeen != null) channel.hasBeenSeen = hasBeenSeen;
+    if (gating != null) channel.gating = gating;
 
     return channel;
   }

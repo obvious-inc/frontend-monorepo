@@ -8,7 +8,7 @@ import {
 import { useLatestCallback } from "@shades/common/react";
 import { useChannel, useAllChannels } from "@shades/common/app";
 import RichTextInput from "./rich-text-input.js";
-import Avatar from "./avatar.js";
+import UserAvatar from "./user-avatar.js";
 import ChannelAvatar from "./channel-avatar.js";
 
 const { sort } = arrayUtils;
@@ -101,9 +101,8 @@ const MessageInput = React.forwardRef(
           label,
           description: hasCustomDisplayName ? truncatedAddress : undefined,
           image: (
-            <Avatar
+            <UserAvatar
               transparent
-              url={m.profilePicture?.small}
               walletAddress={m.walletAddress}
               size="3.2rem"
             />
@@ -532,8 +531,6 @@ const ChannelAutoCompleteItem = ({ id }) => {
   const channel = useChannel(id, { name: true });
   const theme = useTheme();
 
-  const avatarPixelSize = 22;
-
   return (
     <div
       css={css({
@@ -552,8 +549,7 @@ const ChannelAutoCompleteItem = ({ id }) => {
         <ChannelAvatar
           id={id}
           transparent
-          size={`${avatarPixelSize}px`}
-          pixelSize={avatarPixelSize}
+          size="2.2rem"
           borderRadius={theme.avatars.borderRadius}
           background={theme.colors.backgroundModifierHover}
         />

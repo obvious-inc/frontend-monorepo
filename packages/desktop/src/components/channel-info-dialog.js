@@ -20,9 +20,10 @@ import {
   ethereum as ethereumUtils,
   user as userUtils,
 } from "@shades/common/utils";
-import Button from "./button";
+import Button from "@shades/design-system/button";
 import Input from "./input";
-import Avatar from "./avatar";
+import UserAvatar from "./user-avatar";
+import ChannelAvatar from "./channel-avatar";
 import Dialog from "./dialog";
 import Select from "./select";
 import * as Tooltip from "./tooltip";
@@ -220,12 +221,7 @@ const ChannelInfoDialog = ({
                 }
                 style={{ marginRight: "1.1rem" }}
               >
-                <Avatar
-                  transparent
-                  url={channel.image}
-                  size="2.4rem"
-                  pixelSize={24}
-                />
+                <ChannelAvatar id={channel.id} size="2.4rem" />
               </a>
             )}
             <h1
@@ -930,12 +926,10 @@ const MembersDirectoryTab = ({ channelId, addMember }) => {
                       });
                   }}
                 >
-                  <Avatar
+                  <UserAvatar
                     transparent
-                    url={member.profilePicture?.small}
                     walletAddress={member.walletAddress}
                     size="3.6rem"
-                    pixelSize={36}
                   />
                   <div>
                     <div css={css({ display: "flex", alignItems: "center" })}>

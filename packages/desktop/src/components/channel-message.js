@@ -21,6 +21,7 @@ import {
   emoji as emojiUtils,
 } from "@shades/common/utils";
 import { useLatestCallback } from "@shades/common/react";
+import Button from "@shades/design-system/button";
 import { isNodeEmpty, normalizeNodes, cleanNodes } from "../slate/utils";
 import useHover from "../hooks/hover";
 import useGlobalMediaQueries from "../hooks/global-media-queries";
@@ -31,9 +32,8 @@ import {
 } from "./icons";
 import MessageInput from "./message-input";
 import RichText from "./rich-text";
-import Button from "./button";
 import Input from "./input";
-import Avatar from "./avatar";
+import UserAvatar from "./user-avatar";
 import * as Popover from "./popover";
 import * as DropdownMenu from "./dropdown-menu";
 import * as Toolbar from "./toolbar";
@@ -943,9 +943,8 @@ const MessageHeader = ({ compact, message, authorUser, createdAt }) => {
               },
             })}
           >
-            <Avatar
+            <UserAvatar
               transparent
-              url={message.author?.profilePicture?.small}
               walletAddress={message.author?.walletAddress}
               size="2rem"
               style={{
@@ -1631,9 +1630,8 @@ const RepliedMessage = ({ message }) => {
         })}
       >
         {showAvatar && (
-          <Avatar
+          <UserAvatar
             transparent
-            url={authorMember?.profilePicture?.small}
             walletAddress={authorMember?.walletAddress}
             size="1.4rem"
           />
@@ -1824,12 +1822,10 @@ const MessageLeftColumn = ({ isHovering, simplified, compact, message }) => {
               })
             }
           >
-            <Avatar
+            <UserAvatar
               transparent
-              url={message.author?.profilePicture?.small}
               walletAddress={message.author?.walletAddress}
               size="3.8rem"
-              pixelSize={38}
             />
           </button>
         </Popover.Trigger>

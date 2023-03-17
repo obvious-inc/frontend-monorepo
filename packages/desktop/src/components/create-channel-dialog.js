@@ -3,10 +3,9 @@ import { useNavigate } from "react-router-dom";
 import { css } from "@emotion/react";
 import { ethereum as ethereumUtils } from "@shades/common/utils";
 import { useActions, useAuth } from "@shades/common/app";
-import useWallet from "../hooks/wallet";
-import useWalletLogin from "../hooks/wallet-login";
+import { useWallet, useWalletLogin } from "@shades/common/wallet";
+import Button from "@shades/design-system/button";
 import Dialog from "./dialog";
-import Button from "./button";
 import Input from "./input";
 import Select from "./select";
 import {

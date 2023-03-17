@@ -1,4 +1,5 @@
 import React from "react";
+import useLatestCallback from "./hooks/latest-callback.js";
 
 const Context = React.createContext(null);
 
@@ -70,7 +71,6 @@ export const useStore = () => {
 };
 
 export const useCachedState = (key, initialState) => {
-  const { syncStorage, asyncStorage } = React.useContext(Context) ?? {};
   const store = useStore();
 
   const [cachedState, setCachedState] = React.useState(() => {
@@ -91,7 +91,7 @@ export const useCachedState = (key, initialState) => {
     return store.write(key, newState);
   };
 
-  React.useEffect(() => {
+  const setInitialState = useLatestCallback(() => {
     const handleCachedValue = (cachedValue) => {
       if (cachedValue != null) {
         setCachedState(cachedValue);
@@ -103,13 +103,17 @@ export const useCachedState = (key, initialState) => {
       );
     };
 
-    if (store?.isAsync) {
+    if (store.isAsync) {
       store.read(key).then(handleCachedValue);
       return;
     }
 
     handleCachedValue(store.read(key));
-  }, [key, asyncStorage, syncStorage]);
+  });
+
+  React.useEffect(() => {
+    setInitialState();
+  }, [setInitialState, key]);
 
   React.useEffect(() => {
     const listener = (e) => {

@@ -9,7 +9,7 @@ import {
   // useFocusRing,
   // mergeProps,
 } from "react-aria";
-import Button from "./button";
+import Button from "@shades/design-system/button";
 import * as Popover from "./popover";
 import {
   CaretDown as CaretDownIcon,

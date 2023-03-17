@@ -23,6 +23,7 @@ import {
   useHasAllChannelMessages,
   useHasFetchedChannelMessages,
 } from "@shades/common/app";
+import { useWallet, useWalletLogin } from "@shades/common/wallet";
 import {
   getImageFileDimensions,
   getImageDimensionsFromUrl,
@@ -32,20 +33,19 @@ import {
   user as userUtils,
 } from "@shades/common/utils";
 import { useLatestCallback } from "@shades/common/react";
+import Button from "@shades/design-system/button";
 import useGlobalMediaQueries from "../hooks/global-media-queries";
 import useWindowFocusOrDocumentVisibleListener from "../hooks/window-focus-or-document-visible-listener";
 import useOnlineListener from "../hooks/window-online-listener";
 import useInterval from "../hooks/interval";
-import useWallet from "../hooks/wallet";
-import useWalletLogin from "../hooks/wallet-login";
 import { isNodeEmpty, cleanNodes } from "../slate/utils";
 import useCommands from "../hooks/commands";
 import MessageInput from "./message-input";
 import Spinner from "./spinner";
 import ChannelMessage from "./channel-message";
 import ChannelHeader from "./channel-header";
-import Avatar from "./avatar";
-import Button from "./button";
+import UserAvatar from "./user-avatar";
+import ChannelAvatar from "./channel-avatar";
 import * as Tooltip from "./tooltip";
 import Dialog from "./dialog";
 import Input from "./input";
@@ -1710,7 +1710,7 @@ export const Channel = ({ channelId, compact, noSideMenu }) => {
                         ) : (
                           <>({truncateAddress(walletAccountAddress)})</>
                         )}
-                        <Avatar
+                        <UserAvatar
                           data-avatar
                           transparent
                           walletAddress={walletAccountAddress}
@@ -1756,12 +1756,7 @@ export const Channel = ({ channelId, compact, noSideMenu }) => {
             }
             style={{ marginRight: "1.1rem" }}
           >
-            <Avatar
-              transparent
-              url={channel.image}
-              size="2.4rem"
-              pixelSize={24}
-            />
+            <ChannelAvatar transparent id={channel.id} size="2.4rem" />
           </a>
         )}
 
@@ -1931,14 +1926,12 @@ const MembersDisplayButton = React.forwardRef(({ onClick, members }, ref) => {
           }
         >
           {membersToDisplay.map((user, i) => (
-            <Avatar
+            <UserAvatar
               key={user.id}
               transparent
               background={theme.colors.backgroundTertiary}
-              url={user?.profilePicture?.small}
               walletAddress={user?.walletAddress}
               size="2rem"
-              pixelSize={20}
               css={(theme) =>
                 css({
                   marginLeft: i === 0 ? 0 : "-0.4rem",

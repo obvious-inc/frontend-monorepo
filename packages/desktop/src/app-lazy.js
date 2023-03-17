@@ -28,28 +28,27 @@ import {
   useActions,
   useAfterActionListener,
 } from "@shades/common/app";
+import { useWalletLogin, WalletLoginProvider } from "@shades/common/wallet";
 import {
   ethereum as ethereumUtils,
   array as arrayUtils,
   function as functionUtils,
 } from "@shades/common/utils";
+import defaultTheme from "@shades/design-system/theme";
+import { Provider as SidebarProvider } from "@shades/design-system/sidebar-layout";
 import { IFrameEthereumProvider } from "@newshades/iframe-provider";
 import { Provider as GlobalMediaQueriesProvider } from "./hooks/global-media-queries";
 import { send as sendNotification } from "./utils/notifications";
-import { Provider as SideMenuProvider } from "./hooks/side-menu";
 import useCommandCenter, {
   Provider as CommandCenterProvider,
 } from "./hooks/command-center";
 import useWalletEvent from "./hooks/wallet-event";
-import useWalletLogin, {
-  Provider as WalletLoginProvider,
-} from "./hooks/wallet-login";
 import LoginScreen from "./components/login-screen";
 import EmptyHome from "./components/empty-home";
 import Layout from "./components/layouts";
 import TitleBar from "./components/title-bar";
 import * as Tooltip from "./components/tooltip";
-import { notion as defaultTheme, nounsTv as nounsTvTheme } from "./themes";
+import { nounsTv as nounsTvTheme } from "./themes";
 import AuthHome from "./components/auth";
 
 const Channel = React.lazy(() => import("./components/channel"));
@@ -128,8 +127,7 @@ const useSystemNotifications = () => {
                       ? undefined
                       : message.author.profilePicture?.small ??
                         module.generatePlaceholderAvatarDataUri(
-                          message.author.walletAddress,
-                          { pixelSize: 24 }
+                          message.author.walletAddress
                         ),
                   onClick: ({ close }) => {
                     navigate(`/channels/${channel.id}`);
@@ -329,6 +327,7 @@ const specifiedTheme = searchParams.get("theme");
 const theme = specifiedTheme === "nouns-tv" ? nounsTvTheme : defaultTheme;
 
 export default function LazyRoot() {
+  const { login } = useAuth();
   return (
     <BrowserRouter>
       <WagmiConfig client={wagmiClient}>
@@ -337,17 +336,33 @@ export default function LazyRoot() {
             Pusher={Pusher}
             pusherKey={process.env.PUSHER_KEY}
           >
-            <WalletLoginProvider>
+            <WalletLoginProvider
+              authenticate={({
+                message,
+                signature,
+                signedAt,
+                address,
+                nonce,
+              }) =>
+                login({
+                  message,
+                  signature,
+                  signedAt,
+                  address,
+                  nonce,
+                })
+              }
+            >
               <ThemeProvider theme={theme}>
                 <OverlayProvider style={{ width: "100%", height: "100%" }}>
                   <Tooltip.Provider delayDuration={300}>
-                    <SideMenuProvider>
+                    <SidebarProvider>
                       <GlobalMediaQueriesProvider>
                         <CommandCenterProvider>
                           <App />
                         </CommandCenterProvider>
                       </GlobalMediaQueriesProvider>
-                    </SideMenuProvider>
+                    </SidebarProvider>
                   </Tooltip.Provider>
                 </OverlayProvider>
               </ThemeProvider>

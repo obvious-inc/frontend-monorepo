@@ -1,11 +1,12 @@
 import { css } from "@emotion/react";
 import { useMe, useChannel, useChannelMembers } from "@shades/common/app";
 import { array as arrayUtils } from "@shades/common/utils";
-import Avatar from "./avatar.js";
+import Avatar from "@shades/design-system/avatar";
+import UserAvatar from "./user-avatar.js";
 
 const { reverse } = arrayUtils;
 
-const ChannelMembersAvatar = ({ id, ...props }) => {
+export const ChannelMembersAvatar = ({ id, transparent, ...props }) => {
   const me = useMe();
   const memberUsers = useChannelMembers(id);
   const memberUsersExcludingMe = memberUsers.filter(
@@ -18,9 +19,9 @@ const ChannelMembersAvatar = ({ id, ...props }) => {
   if (memberUsersExcludingMe.length <= 1) {
     const member = memberUsersExcludingMe[0] ?? memberUsers[0];
     return (
-      <Avatar
-        url={member.profilePicture?.small}
+      <UserAvatar
         walletAddress={member.walletAddress}
+        transparent={transparent}
         {...props}
       />
     );
@@ -29,16 +30,16 @@ const ChannelMembersAvatar = ({ id, ...props }) => {
   return (
     <div
       style={{
-        width: `${props.size}px`,
-        height: `${props.size}px`,
+        width: props.size,
+        height: props.size,
         position: "relative",
       }}
     >
       {reverse(memberUsersExcludingMe.slice(0, 2)).map((user, i) => (
-        <Avatar
-          key={user.id}
-          url={user.profilePicture?.small}
+        <UserAvatar
+          key={user.walletAddress}
           walletAddress={user.walletAddress}
+          transparent={transparent}
           {...props}
           css={css({
             position: "absolute",
@@ -54,20 +55,17 @@ const ChannelMembersAvatar = ({ id, ...props }) => {
   );
 };
 
-const ChannelAvatar = ({ id, ...props }) => {
+const ChannelAvatar = ({ id, transparent, ...props }) => {
   const channel = useChannel(id);
 
   if (channel == null) return <Avatar {...props} />;
   if (channel.image != null) return <Avatar url={channel.image} {...props} />;
-  if (channel.kind === "dm") return <ChannelMembersAvatar id={id} {...props} />;
+  if (channel.kind === "dm")
+    return (
+      <ChannelMembersAvatar id={id} transparent={transparent} {...props} />
+    );
 
-  return (
-    <Avatar
-      // Emojis: https://dev.to/acanimal/how-to-slice-or-get-symbols-from-a-unicode-string-with-emojis-in-javascript-lets-learn-how-javascript-represent-strings-h3a
-      signature={channel.name == null ? null : [...channel.name][0]}
-      {...props}
-    />
-  );
+  return <Avatar signature={channel.name} {...props} />;
 };
 
 export default ChannelAvatar;

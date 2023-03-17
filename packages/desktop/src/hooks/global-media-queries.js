@@ -1,5 +1,5 @@
 import React from "react";
-import useMatchMedia from "./match-media";
+import { useMatchMedia } from "@shades/common/react";
 
 const Context = React.createContext({});
 

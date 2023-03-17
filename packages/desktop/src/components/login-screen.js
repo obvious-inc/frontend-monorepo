@@ -1,12 +1,11 @@
 import { ethereum as ethereumUtils } from "@shades/common/utils";
+import { useWallet, useWalletLogin } from "@shades/common/wallet";
 import React from "react";
 import { css } from "@emotion/react";
-import useWallet from "../hooks/wallet";
-import useWalletLogin from "../hooks/wallet-login";
+import Button from "@shades/design-system/button";
 import * as Tooltip from "../components/tooltip";
 import Spinner from "../components/spinner";
-import Avatar from "../components/avatar";
-import Button from "../components/button";
+import UserAvatar from "../components/user-avatar";
 
 const { truncateAddress } = ethereumUtils;
 
@@ -259,7 +258,7 @@ const LoginScreen = ({ mobileAppLogin, onSuccess, onError }) => {
             </>
           ) : (
             <>
-              <Avatar
+              <UserAvatar
                 transparent
                 walletAddress={accountAddress}
                 size="8rem"

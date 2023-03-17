@@ -1,23 +1,59 @@
+import React from "react";
 import { css } from "@emotion/react";
-import useSideMenu from "../hooks/side-menu";
-import Spinner from "./spinner";
+import { useMatchMedia } from "@shades/common/react";
 
 const isNative = window.Native != null;
 
-const SideMenuLayout = ({
+const Context = React.createContext();
+
+export const Provider = ({ initialIsOpen, children }) => {
+  const isSmallScreen = useMatchMedia("(max-width: 800px)");
+
+  const [isCollapsed, setCollapsed] = React.useState(
+    initialIsOpen == null ? isSmallScreen : !initialIsOpen
+  );
+
+  const toggle = React.useCallback((collapse) => {
+    if (collapse != null) {
+      setCollapsed(collapse);
+      return;
+    }
+
+    setCollapsed((c) => !c);
+  }, []);
+
+  React.useEffect(() => {
+    if (initialIsOpen != null) return;
+    setCollapsed(isSmallScreen);
+  }, [initialIsOpen, isSmallScreen]);
+
+  const contextValue = React.useMemo(
+    () => ({ isFloating: isSmallScreen || isCollapsed, isCollapsed, toggle }),
+    [isSmallScreen, isCollapsed, toggle]
+  );
+
+  return <Context.Provider value={contextValue}>{children}</Context.Provider>;
+};
+
+export const useState = () => {
+  const { isFloating, isCollapsed } = React.useContext(Context);
+  return { isFloating, isCollapsed };
+};
+
+export const useToggle = () => React.useContext(Context).toggle;
+
+export const Layout = ({
+  width,
   header,
   sidebarContent,
   sidebarBottomContent,
   children,
 }) => {
-  const {
-    isFloating: isFloatingMenuEnabled,
-    isCollapsed,
-    toggle: toggleMenu,
-  } = useSideMenu();
+  const { isFloating: isFloatingMenuEnabled, isCollapsed } = useState();
+  const toggleSidebar = useToggle();
 
-  const headerContent = header({
-    toggleMenu: isFloatingMenuEnabled ? toggleMenu : undefined,
+  const headerContent = header?.({
+    toggle: isFloatingMenuEnabled ? toggleSidebar : undefined,
   });
 
   return (
@@ -35,9 +71,11 @@ const SideMenuLayout = ({
         css={(theme) =>
           css({
             display: "flex",
-            width: theme.sidebarWidth,
+            width: width ?? theme.sidebarWidth,
             maxWidth: "calc(100vw - 4.8rem)",
-            minWidth: `min(calc(100vw - 4.8rem), ${theme.sidebarWidth})`,
+            minWidth: `min(calc(100vw - 4.8rem), ${
+              width ?? theme.sidebarWidth
+            })`,
             right: "100%",
             height: "100%",
             zIndex: isFloatingMenuEnabled ? 2 : undefined,
@@ -93,7 +131,7 @@ const SideMenuLayout = ({
           >
             {sidebarContent}
           </div>
-          {sidebarBottomContent({ toggleMenu })}
+          {sidebarBottomContent?.({ toggle: toggleSidebar })}
         </div>
       </div>
       {isFloatingMenuEnabled && (
@@ -106,60 +144,12 @@ const SideMenuLayout = ({
             zIndex: 1,
           }}
           onClick={() => {
-            toggleMenu();
+            toggleSidebar();
           }}
         />
       )}
-      <div
-        css={(theme) =>
-          css({
-            position: "absolute",
-            top: 0,
-            bottom: 0,
-            right: 0,
-            left: isFloatingMenuEnabled
-              ? 0
-              : theme.mainMenu.leftStackNavWidth ?? 0,
-            zIndex: 1,
-            pointerEvents: "none",
-          })
-        }
-      >
-        <OverlaySpinner
-          show={
-            false // !serverConnection.isConnected
-          }
-        />
-      </div>
 
       {children}
     </div>
   );
 };
-
-const OverlaySpinner = ({ show }) => (
-  <div
-    css={(theme) =>
-      css({
-        position: "absolute",
-        top: 0,
-        left: 0,
-        width: "100%",
-        height: "100%",
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        transition: "0.2s opacity ease-out",
-        background: theme.colors.backgroundSecondary,
-      })
-    }
-    style={{
-      pointerEvents: show ? "all" : "none",
-      opacity: show ? 1 : 0,
-    }}
-  >
-    <Spinner size="2.4rem" />
-  </div>
-);
-
-export default SideMenuLayout;

@@ -87,7 +87,6 @@ const {
   useTotalMentionCount,
 } = Shades.app;
 const { useLatestCallback } = Shades.react;
-const { unique } = Shades.utils.array;
 
 const { provider } = configureWagmiChains(
   [mainnetChain],

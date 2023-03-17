@@ -29,7 +29,7 @@ export const useAuthListener = (listener_) => {
     return () => {
       listeners.delete(listener);
     };
-  }, []);
+  }, [listener]);
 };
 
 export const Provider = ({ apiOrigin, ...props }) => {

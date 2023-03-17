@@ -17,24 +17,26 @@ import {
   useChannelMentionCount,
   useHasFetchedMenuData,
 } from "@shades/common/app";
+import { useWallet, useWalletLogin } from "@shades/common/wallet";
 import {
   array as arrayUtils,
   ethereum as ethereumUtils,
 } from "@shades/common/utils";
-import useSideMenu from "../hooks/side-menu";
+import {
+  useState as useSidebarState,
+  useToggle as useSidebarToggle,
+  Layout as SidebarLayout,
+} from "@shades/design-system/sidebar-layout";
 import useCommandCenter from "../hooks/command-center";
-import useWallet from "../hooks/wallet";
-import useWalletLogin from "../hooks/wallet-login";
 import {
   MagnificationGlass as MagnificationGlassIcon,
   Planet as PlanetIcon,
   Triangle as TriangleIcon,
   DoubleChevronLeft as DoubleChevronLeftIcon,
 } from "./icons";
-import Avatar from "./avatar";
+import UserAvatar from "./user-avatar";
 import ChannelAvatar from "./channel-avatar";
 import * as DropdownMenu from "./dropdown-menu";
-import SideMenuLayout from "./side-menu-layout";
 import CreateChannelDialog from "./create-channel-dialog";
 import NotificationBadge from "./notification-badge";
 import Spinner from "./spinner";
@@ -104,8 +106,8 @@ const Layout = () => {
   const hasFetchedMenuData = useHasFetchedMenuData();
 
   return (
-    <SideMenuLayout
-      header={({ toggleMenu }) =>
+    <SidebarLayout
+      header={({ toggle: toggleMenu }) =>
         authenticationStatus === "not-authenticated" &&
         walletAccountAddress == null ? null : isLoadingUser ? (
           <div />
@@ -196,7 +198,7 @@ const Layout = () => {
           </DropdownMenu.Root>
         )
       }
-      sidebarBottomContent={({ toggleMenu }) => (
+      sidebarBottomContent={({ toggle: toggleMenu }) => (
         <>
           <button
             css={(theme) =>
@@ -406,7 +408,7 @@ const Layout = () => {
       <React.Suspense fallback={null}>
         <Outlet />
       </React.Suspense>
-    </SideMenuLayout>
+    </SidebarLayout>
   );
 };
 
@@ -481,12 +483,10 @@ const ProfileDropdownTrigger = React.forwardRef(
             {isConnecting ? (
               <Spinner size="1.8rem" color={theme.colors.textMuted} />
             ) : (
-              <Avatar
+              <UserAvatar
                 transparent
-                url={user?.profilePicture?.small}
                 walletAddress={user?.walletAddress}
                 size="1.8rem"
-                pixelSize={18}
               />
             )}
           </div>
@@ -657,21 +657,17 @@ const ChannelItem = ({ id, expandable }) => {
   const hasUnread = useChannelHasUnread(id);
   const notificationCount = useChannelMentionCount(id);
 
-  const { isFloating: isFloatingMenuEnabled, toggle: toggleMenu } =
-    useSideMenu();
+  const { isFloating: isFloatingMenuEnabled } = useSidebarState();
+  const toggleMenu = useSidebarToggle();
 
   const closeMenu = () => {
     if (isFloatingMenuEnabled) toggleMenu();
   };
 
-  const avatarPixelSize = theme.avatars.size;
-  const avatarBorderRadius = theme.avatars.borderRadius;
-
   const avatarProps = {
     transparent: true,
-    size: `${avatarPixelSize}px`,
-    pixelSize: avatarPixelSize,
-    borderRadius: avatarBorderRadius,
+    size: theme.avatars.size,
+    borderRadius: theme.avatars.borderRadius,
     background: theme.colors.backgroundModifierHover,
   };
 

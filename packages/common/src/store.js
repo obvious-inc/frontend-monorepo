@@ -196,11 +196,13 @@ export const Provider = ({ cloudflareAccountHash, children }) => {
 
   const selectors = mapValues(
     (selector) =>
+      // eslint-disable-next-line
       useLatestCallback((...args) => selector(getStoreState(), ...args)),
     selectorFunctions
   );
 
   const actions = mapValues(
+    // eslint-disable-next-line
     (actionFn) => useLatestCallback(actionFn),
     createActions({
       dispatch,
@@ -280,8 +282,11 @@ export const Provider = ({ cloudflareAccountHash, children }) => {
       actions,
       serverMessageHandler,
     }),
+    // eslint-disable-next-line
     [
+      // eslint-disable-next-line
       ...Object.values(selectors),
+      // eslint-disable-next-line
       ...Object.values(actions),
       serverMessageHandler,
     ]
