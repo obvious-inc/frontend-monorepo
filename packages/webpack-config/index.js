@@ -90,13 +90,13 @@ module.exports = (_, argv) => {
           {
             from: path.resolve(
               __dirname,
-              "../landing/public/favicon-32x32.png"
+              "../../apps/landing/public/favicon-32x32.png"
             ),
           },
           {
             from: path.resolve(
               __dirname,
-              "../landing/public/favicon-192x192.png"
+              "../../apps/landing/public/favicon-192x192.png"
             ),
           },
         ],
