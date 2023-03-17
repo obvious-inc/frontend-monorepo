@@ -685,6 +685,11 @@ export default ({
         fetchBlockedUsers(),
       ]);
 
+      const me = parseUser(rawMe);
+      const channels = rawChannels
+        .map(parseChannel)
+        .map((c) => ({ ...c, memberUserIds: [me.id] }));
+
       // TODO: Change this
       const missingChannelStars = starredItems.filter(
         (i) =>
@@ -703,10 +708,10 @@ export default ({
 
       fetchPreferences();
 
-      const me = parseUser(rawMe);
-      const channels = rawChannels
-        .map(parseChannel)
-        .map((c) => ({ ...c, memberUserIds: [me.id] }));
+      const dmChannelIds = unique(
+        channels.filter((c) => c.kind === "dm").map((c) => c.id)
+      );
+      for (const id of dmChannelIds) fetchChannelMembers(id);
 
       dispatch({
         type: "fetch-client-boot-data-request-successful",

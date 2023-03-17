@@ -138,19 +138,9 @@ const App = () => {
     fetchUserChannels,
     fetchUserChannelsReadStates,
     fetchStarredItems,
-    fetchUsers,
     fetchPubliclyReadableChannels,
     registerDevicePushToken,
   } = actions;
-
-  const bootClient = useLatestCallback(() =>
-    fetchClientBootData().then(({ channels }) => {
-      const dmUserIds = unique(
-        channels.filter((c) => c.kind === "dm").flatMap((c) => c.memberUserIds)
-      );
-      return fetchUsers(dmUserIds);
-    })
-  );
 
   const updateClient = useLatestCallback(() =>
     Promise.all([
@@ -167,8 +157,8 @@ const App = () => {
 
   React.useEffect(() => {
     if (authStatus !== "authenticated") return;
-    bootClient();
-  }, [authStatus, bootClient]);
+    fetchClientBootData();
+  }, [authStatus, fetchClientBootData]);
 
   useAppActiveListener(() => {
     if (authStatus !== "authenticated") return;
