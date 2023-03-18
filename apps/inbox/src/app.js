@@ -53,19 +53,22 @@ import {
 const { reverse } = arrayUtils;
 const { truncateAddress } = ethereumUtils;
 
+const headerHeight = "6.2rem";
+
 const FormattedDate = ({ value, ...options }) => {
   const formatter = useDateFormatter(options);
   return formatter.format(value);
 };
 
-const MainHeader = ({ children }) => {
-  const { isCollapsed: isSidebarCollapsed } = useSidebarState();
+const MainHeader = ({ height, children }) => {
+  const { isCollapsed: isSidebarCollapsed, isFloating: isSidebarFloating } =
+    useSidebarState();
   const toggleMenu = useSidebarToggle();
 
   return (
     <div
       css={css({
-        height: "6.2rem",
+        height,
         // height: theme.mainHeader.height,
         padding: "0 2rem",
         display: "flex",
@@ -76,73 +79,79 @@ const MainHeader = ({ children }) => {
         width: "100%",
       })}
     >
-      <div css={css({ display: "flex", justifyContent: "center" })}>
-        <button
-          onClick={() => {
-            toggleMenu();
-          }}
-          css={(t) =>
-            css({
-              position: "relative",
-              margin: "0 -0.1rem",
-              marginRight: "2rem",
-              width: "2.4rem",
-              height: "2.4rem",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              borderRadius: "0.3rem",
-              background: "none",
-              border: 0,
-              cursor: "pointer",
-              color: t.colors.textNormal,
-              ".chevron": {
-                opacity: 0,
-                transition: "0.2s opacity ease-out",
-              },
-              ":hover": {
-                background: t.colors.backgroundModifierHover,
-                ".chevron": { opacity: 1 },
-                ".hamburger": { display: "none" },
-              },
-            })
-          }
+      {isSidebarFloating && (
+        <div
+          css={css({
+            display: "flex",
+            justifyContent: "center",
+            marginRight: "2rem",
+          })}
         >
-          {isSidebarCollapsed ? (
-            <DoubleChevronRightIcon
-              className="chevron"
-              style={{
-                position: "relative",
-                left: "1px",
-                width: "1.6rem",
-                height: "1.6rem",
-              }}
-            />
-          ) : (
-            <DoubleChevronLeftIcon
-              className="chevron"
-              style={{ width: "1.6rem", height: "1.6rem" }}
-            />
-          )}
-          <div
-            style={{
-              position: "absolute",
-              top: 0,
-              left: 0,
-              width: "100%",
-              height: "100%",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
+          <button
+            onClick={() => {
+              toggleMenu();
             }}
+            css={(t) =>
+              css({
+                position: "relative",
+                width: "2.6rem",
+                height: "2.6rem",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                borderRadius: "0.3rem",
+                background: "none",
+                border: 0,
+                cursor: "pointer",
+                color: t.colors.textNormal,
+                ".chevron": {
+                  opacity: 0,
+                  transition: "0.2s opacity ease-out",
+                },
+                ":hover": {
+                  background: t.colors.backgroundModifierHover,
+                  ".chevron": { opacity: 1 },
+                  ".hamburger": { display: "none" },
+                },
+              })
+            }
           >
-            <HamburgerMenuIcon
-              className="hamburger"
-              style={{ width: "1.6rem", height: "1.6rem" }}
-            />
-          </div>
-        </button>
-      </div>
+            {isSidebarCollapsed ? (
+              <DoubleChevronRightIcon
+                className="chevron"
+                style={{
+                  position: "relative",
+                  left: "1px",
+                  width: "1.6rem",
+                  height: "1.6rem",
+                }}
+              />
+            ) : (
+              <DoubleChevronLeftIcon
+                className="chevron"
+                style={{ width: "1.6rem", height: "1.6rem" }}
+              />
+            )}
+            <div
+              style={{
+                position: "absolute",
+                top: 0,
+                left: 0,
+                width: "100%",
+                height: "100%",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+              }}
+            >
+              <HamburgerMenuIcon
+                className="hamburger"
+                style={{ width: "1.6rem", height: "1.6rem" }}
+              />
+            </div>
+          </button>
+        </div>
+      )}
       {children}
     </div>
   );
@@ -327,7 +336,7 @@ const Inbox = () => {
         height: 100%;
       `}
     >
-      <MainHeader>
+      <MainHeader height={headerHeight}>
         <div
           style={{
             flex: 1,
@@ -336,8 +345,7 @@ const Inbox = () => {
             alignItems: "center",
           }}
         >
-          <HeaderItem label="All" count="12" />
-          <HeaderItem label="Known senders" count={unreadCount} active />
+          <HeaderItem label="Inbox" count={unreadCount} active />
         </div>
         <div
           css={(t) =>
@@ -605,16 +613,22 @@ const Layout = ({ children }) => {
 
   return (
     <SidebarLayout
-      header={({ toggle: toggleMenu }) => (
+      headerHeight={headerHeight}
+      header={({
+        toggle: toggleMenu,
+        isFloating: isMenuFloating,
+        isCollapsed: isMenuCollapsed,
+        isHoveringSidebar: isHoveringMenu,
+      }) => (
         <button
           css={(theme) =>
             css({
               width: "100%",
               display: "grid",
               gridTemplateColumns: "auto minmax(0,1fr) auto",
-              gridGap: "0.8rem",
+              gridGap: "1rem",
               alignItems: "center",
-              padding: "0.2rem 1.4rem",
+              padding: "0.2rem 2rem",
               height: "100%",
               cursor: "pointer",
               transition: "20ms ease-in",
@@ -630,42 +644,18 @@ const Layout = ({ children }) => {
         >
           <div
             css={css({
-              width: "2.2rem",
-              height: "2.2rem",
+              width: "3rem",
+              height: "3rem",
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
-              marginTop: "1px",
             })}
           >
-            <div
-              style={{
-                userSelect: "none",
-                display: "flex",
-                alignCtems: "center",
-                justifyContent: "center",
-                height: "2rem",
-                width: "2rem",
-                marginTop: "1px",
-              }}
-            >
-              <div
-                css={(t) =>
-                  css({
-                    width: 18,
-                    height: 18,
-                    borderRadius: "50%",
-                    background: t.colors.backgroundModifierHover,
-                    overflow: "hidden",
-                  })
-                }
-              >
-                <img
-                  src={me.profilePicture?.small}
-                  style={{ display: "block", height: "100%", width: "100%" }}
-                />
-              </div>
-            </div>
+            <UserAvatar
+              walletAddress={me.walletAddress}
+              size="3rem"
+              background={theme.colors.backgroundModifierHover}
+            />
           </div>
           <div>
             <div
@@ -711,7 +701,7 @@ const Layout = ({ children }) => {
                 <path d="M 3.5 0L 3.98809 -0.569442L 3.5 -0.987808L 3.01191 -0.569442L 3.5 0ZM 3.5 9L 3.01191 9.56944L 3.5 9.98781L 3.98809 9.56944L 3.5 9ZM 0.488094 3.56944L 3.98809 0.569442L 3.01191 -0.569442L -0.488094 2.43056L 0.488094 3.56944ZM 3.01191 0.569442L 6.51191 3.56944L 7.48809 2.43056L 3.98809 -0.569442L 3.01191 0.569442ZM -0.488094 6.56944L 3.01191 9.56944L 3.98809 8.43056L 0.488094 5.43056L -0.488094 6.56944ZM 3.98809 9.56944L 7.48809 6.56944L 6.51191 5.43056L 3.01191 8.43056L 3.98809 9.56944Z" />
               </svg>
             </div>
-            {toggleMenu != null && (
+            {(isMenuFloating || (!isMenuCollapsed && isHoveringMenu)) && (
               <div
                 role="button"
                 tabIndex={0}
@@ -750,182 +740,110 @@ const Layout = ({ children }) => {
           </div>
         </button>
       )}
-      sidebarBottomContent={({ toggle: toggleMenu }) => (
-        <button
-          css={(theme) =>
-            css({
-              transition: "background 20ms ease-in",
-              cursor: "pointer",
-              boxShadow: "rgba(255, 255, 255, 0.094) 0 -1px 0",
-              outline: "none",
-              ":hover": {
-                background: theme.colors.backgroundModifierHover,
-              },
-              ":focus-visible": {
-                boxShadow: `0 0 0 0.2rem ${theme.colors.primary} inset`,
-              },
-            })
-          }
-          onClick={() => {
-            toggleMenu();
-          }}
-        >
-          <div
-            css={css({
-              display: "flex",
-              alignItems: "center",
-              width: "100%",
-              padding: "0.2rem 1rem",
-              height: "4.5rem",
-            })}
-          >
-            <div
-              css={css({
-                width: "2.2rem",
-                height: "2.2rem",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                marginRight: "0.8rem",
-              })}
-            >
-              <svg
-                viewBox="0 0 16 16"
-                css={(theme) =>
-                  css({
-                    width: "1.6rem",
-                    height: "1.6rem",
-                    display: "block",
-                    fill: theme.colors.textDimmed,
-                  })
-                }
-              >
-                <path d="M7.977 14.963c.407 0 .747-.324.747-.723V8.72h5.362c.399 0 .74-.34.74-.747a.746.746 0 00-.74-.738H8.724V1.706c0-.398-.34-.722-.747-.722a.732.732 0 00-.739.722v5.529h-5.37a.746.746 0 00-.74.738c0 .407.341.747.74.747h5.37v5.52c0 .399.332.723.739.723z" />
-              </svg>
-            </div>
-            <div
-              css={(theme) =>
-                css({
-                  flex: "1 1 auto",
-                  whiteSpace: "nowrap",
-                  minWidth: 0,
-                  overflow: "hidden",
-                  textOverflow: "ellipsis",
-                  color: theme.colors.textDimmed,
-                  fontSize: "1.4rem",
-                  fontWeight: "500",
-                })
-              }
-            >
-              New Message
-            </div>
-          </div>
-        </button>
-      )}
     >
       {children}
     </SidebarLayout>
   );
 };
 
-const ListItem = ({
-  component: Component = "button",
-  compact = true,
-  indendationLevel = 0,
-  title,
-  disabled,
-  ...props
-}) => (
-  <div
-    css={(theme) => css`
-      padding: 0 ${theme.mainMenu.containerHorizontalPadding};
+// const ListItem = ({
+//   component: Component = "button",
+//   compact = true,
+//   indendationLevel = 0,
+//   title,
+//   disabled,
+//   ...props
+// }) => (
+//   <div
+//     css={(theme) => css`
+//       padding: 0 ${theme.mainMenu.containerHorizontalPadding};
 
-      &:not(:last-of-type) {
-        margin-bottom: ${theme.mainMenu.itemDistance};
-      }
-      & > * {
-        display: flex;
-        align-items: center;
-        width: 100%;
-        border: 0;
-        font-size: ${theme.fontSizes.default};
-        font-weight: ${theme.mainMenu.itemTextWeight};
-        text-align: left;
-        background: transparent;
-        border-radius: ${theme.mainMenu.itemBorderRadius};
-        cursor: pointer;
-        outline: none;
-        color: ${disabled
-          ? theme.mainMenu.itemTextColorDisabled
-          : theme.mainMenu.itemTextColor};
-        padding: 0.2rem ${theme.mainMenu.itemHorizontalPadding};
-        padding-left: calc(
-          ${theme.mainMenu.itemHorizontalPadding} + ${indendationLevel} * 2.2rem
-        );
-        text-decoration: none;
-        line-height: 1.3;
-        height: ${theme.mainMenu.itemHeight};
-        margin: 0.1rem 0;
-        pointer-events: ${disabled ? "none" : "all"};
-      }
-      & > *.active {
-        background: ${theme.colors.backgroundModifierSelected};
-      }
-      & > *:not(.active):hover {
-        background: ${theme.colors.backgroundModifierHover};
-      }
-      & > *.active {
-        color: ${theme.colors.textNormal};
-      }
-      & > *:focus-visible {
-        box-shadow: 0 0 0 0.2rem ${theme.colors.primary};
-      }
-    `}
-  >
-    <Component {...props}>
-      <div
-        css={css({
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          width: "2.2rem",
-          height: "1.8rem",
-          marginRight: compact ? "0.4rem" : "0.8rem",
-        })}
-      >
-        <div
-          css={(theme) =>
-            css({
-              color: disabled
-                ? "rgb(255 255 255 / 22%)"
-                : theme.colors.textMuted,
-              background: theme.colors.backgroundModifierHover,
-              borderRadius: "50%",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              width: "2rem",
-              height: "2rem",
-            })
-          }
-        >
-          {/* {icon} */}
-        </div>
-      </div>
-      <div
-        style={{
-          flex: 1,
-          minWidth: 0,
-          whiteSpace: "nowrap",
-          overflow: "hidden",
-          textOverflow: "ellipsis",
-        }}
-      >
-        {title}
-      </div>
-    </Component>
-  </div>
-);
+//       &:not(:last-of-type) {
+//         margin-bottom: ${theme.mainMenu.itemDistance};
+//       }
+//       & > * {
+//         display: flex;
+//         align-items: center;
+//         width: 100%;
+//         border: 0;
+//         font-size: ${theme.fontSizes.default};
+//         font-weight: ${theme.mainMenu.itemTextWeight};
+//         text-align: left;
+//         background: transparent;
+//         border-radius: ${theme.mainMenu.itemBorderRadius};
+//         cursor: pointer;
+//         outline: none;
+//         color: ${disabled
+//           ? theme.mainMenu.itemTextColorDisabled
+//           : theme.mainMenu.itemTextColor};
+//         padding: 0.2rem ${theme.mainMenu.itemHorizontalPadding};
+//         padding-left: calc(
+//           ${theme.mainMenu.itemHorizontalPadding} + ${indendationLevel} * 2.2rem
+//         );
+//         text-decoration: none;
+//         line-height: 1.3;
+//         height: ${theme.mainMenu.itemHeight};
+//         margin: 0.1rem 0;
+//         pointer-events: ${disabled ? "none" : "all"};
+//       }
+//       & > *.active {
+//         background: ${theme.colors.backgroundModifierSelected};
+//       }
+//       & > *:not(.active):hover {
+//         background: ${theme.colors.backgroundModifierHover};
+//       }
+//       & > *.active {
+//         color: ${theme.colors.textNormal};
+//       }
+//       & > *:focus-visible {
+//         box-shadow: 0 0 0 0.2rem ${theme.colors.primary};
+//       }
+//     `}
+//   >
+//     <Component {...props}>
+//       <div
+//         css={css({
+//           display: "flex",
+//           alignItems: "center",
+//           justifyContent: "center",
+//           width: "2.2rem",
+//           height: "1.8rem",
+//           marginRight: compact ? "0.4rem" : "0.8rem",
+//         })}
+//       >
+//         <div
+//           css={(theme) =>
+//             css({
+//               color: disabled
+//                 ? "rgb(255 255 255 / 22%)"
+//                 : theme.colors.textMuted,
+//               background: theme.colors.backgroundModifierHover,
+//               borderRadius: "50%",
+//               display: "flex",
+//               alignItems: "center",
+//               justifyContent: "center",
+//               width: "2rem",
+//               height: "2rem",
+//             })
+//           }
+//         >
+//           {/* {icon} */}
+//         </div>
+//       </div>
+//       <div
+//         style={{
+//           flex: 1,
+//           minWidth: 0,
+//           whiteSpace: "nowrap",
+//           overflow: "hidden",
+//           textOverflow: "ellipsis",
+//         }}
+//       >
+//         {title}
+//       </div>
+//     </Component>
+//   </div>
+// );
 
 const LoginScreen = () => {
   const {

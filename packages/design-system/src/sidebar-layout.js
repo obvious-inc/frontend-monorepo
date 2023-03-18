@@ -1,6 +1,6 @@
 import React from "react";
 import { css } from "@emotion/react";
-import { useMatchMedia } from "@shades/common/react";
+import { useMatchMedia, useHover } from "@shades/common/react";
 
 const isNative = window.Native != null;
 
@@ -44,16 +44,21 @@ export const useToggle = () => React.useContext(Context).toggle;
 
 export const Layout = ({
   width,
+  headerHeight,
   header,
   sidebarContent,
   sidebarBottomContent,
   children,
 }) => {
-  const { isFloating: isFloatingMenuEnabled, isCollapsed } = useState();
-  const toggleSidebar = useToggle();
+  const [isHoveringSidebar, sidebarHoverHandlers] = useHover();
+  const { isFloating, isCollapsed } = useState();
+  const toggle = useToggle();
 
   const headerContent = header?.({
-    toggle: isFloatingMenuEnabled ? toggleSidebar : undefined,
+    toggle,
+    isFloating,
+    isCollapsed,
+    isHoveringSidebar,
   });
 
   return (
@@ -78,21 +83,20 @@ export const Layout = ({
             })`,
             right: "100%",
             height: "100%",
-            zIndex: isFloatingMenuEnabled ? 2 : undefined,
+            zIndex: isFloating ? 2 : undefined,
             background: theme.colors.backgroundSecondary,
             boxShadow:
-              !isFloatingMenuEnabled || isCollapsed
+              !isFloating || isCollapsed
                 ? ""
                 : "rgb(15 15 15 / 10%) 0px 0px 0px 1px, rgb(15 15 15 / 20%) 0px 3px 6px, rgb(15 15 15 / 40%) 0px 9px 24px",
-            position: isFloatingMenuEnabled ? "fixed" : "static",
+            position: isFloating ? "fixed" : "static",
             transition: "200ms transform ease-out",
             transform:
-              !isFloatingMenuEnabled || isCollapsed
-                ? undefined
-                : "translateX(100%)",
+              !isFloating || isCollapsed ? undefined : "translateX(100%)",
             paddingTop: isNative ? "2.6rem" : 0,
           })
         }
+        {...sidebarHoverHandlers}
       >
         <div
           css={css({
@@ -106,7 +110,7 @@ export const Layout = ({
             <div
               css={(theme) =>
                 css({
-                  height: theme.mainHeader.height,
+                  height: headerHeight ?? theme.mainHeader.height,
                   display: "flex",
                   alignItems: "center",
                   fontSize: "1.5rem",
@@ -131,10 +135,10 @@ export const Layout = ({
           >
             {sidebarContent}
           </div>
-          {sidebarBottomContent?.({ toggle: toggleSidebar })}
+          {sidebarBottomContent?.({ toggle })}
         </div>
       </div>
-      {isFloatingMenuEnabled && (
+      {isFloating && (
         <div
           style={{
             display: isCollapsed ? "none" : "block",
@@ -144,7 +148,7 @@ export const Layout = ({
             zIndex: 1,
           }}
           onClick={() => {
-            toggleSidebar();
+            toggle();
           }}
         />
       )}

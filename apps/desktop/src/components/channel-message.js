@@ -20,7 +20,7 @@ import {
   message as messageUtils,
   emoji as emojiUtils,
 } from "@shades/common/utils";
-import { useLatestCallback } from "@shades/common/react";
+import { useLatestCallback, useHover } from "@shades/common/react";
 import Button from "@shades/design-system/button";
 import {
   DotsHorizontal as DotsHorizontalIcon,
@@ -30,7 +30,6 @@ import {
   JoinArrowRight as JoinArrowRightIcon,
 } from "@shades/design-system/icons";
 import { isNodeEmpty, normalizeNodes, cleanNodes } from "../slate/utils";
-import useHover from "../hooks/hover";
 import useGlobalMediaQueries from "../hooks/global-media-queries";
 import MessageInput from "./message-input";
 import RichText from "./rich-text";

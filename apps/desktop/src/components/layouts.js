@@ -107,7 +107,12 @@ const Layout = () => {
 
   return (
     <SidebarLayout
-      header={({ toggle: toggleMenu }) =>
+      header={({
+        isFloating: isMenuFloating,
+        isCollapsed: isMenuCollapsed,
+        isHoveringSidebar: isHoveringMenu,
+        toggle: toggleMenu,
+      }) =>
         authenticationStatus === "not-authenticated" &&
         walletAccountAddress == null ? null : isLoadingUser ? (
           <div />
@@ -125,7 +130,11 @@ const Layout = () => {
                     ? "Unverified account"
                     : null
                 }
-                toggleMenu={toggleMenu}
+                toggleMenu={
+                  isMenuFloating || (!isMenuCollapsed && isHoveringMenu)
+                    ? toggleMenu
+                    : null
+                }
               />
             </DropdownMenu.Trigger>
             <DropdownMenu.Content
@@ -455,6 +464,12 @@ const ProfileDropdownTrigger = React.forwardRef(
             ":focus-visible": {
               boxShadow: `0 0 0 0.2rem ${theme.colors.primary} inset`,
             },
+            ".dropdown-icon": {
+              display: toggleMenu == null ? "block" : "none",
+            },
+            ":hover .dropdown-icon, :focus .dropdown-icon": {
+              display: "block",
+            },
           })
         }
         {...props}
@@ -543,7 +558,10 @@ const ProfileDropdownTrigger = React.forwardRef(
           )}
         </div>
         <div css={css({ display: "flex", alignItems: "center" })}>
-          <div css={css({ width: "1.2rem", height: "1.2rem" })}>
+          <div
+            css={css({ width: "1.2rem", height: "1.2rem" })}
+            className="dropdown-icon"
+          >
             <svg
               viewBox="-1 -1 9 11"
               style={{ width: "100%", height: "100%" }}
