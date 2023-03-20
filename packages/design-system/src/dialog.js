@@ -117,7 +117,7 @@ const StyledDialog = ({
             justifyContent: "center",
             overflow: "auto",
             background: transparent ? "none" : "hsl(0 0% 0% / 40%)",
-            padding: "2.8rem 1.5rem 0",
+            padding: "6rem 1.5rem 0",
             "@media (min-width: 600px)": {
               padding: "2.8rem",
               alignItems: "center",

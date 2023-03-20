@@ -42,8 +42,9 @@ const NewMessageDialogContent = ({ titleProps, close, createChannel }) => {
       css={css({
         flex: 1,
         overflow: "auto",
-        position: "relative",
         padding: "1.5rem",
+        display: "flex",
+        flexDirection: "column",
         "@media (min-width: 600px)": {
           padding: "2.5rem",
         },
@@ -84,7 +85,7 @@ const NewMessageDialogContent = ({ titleProps, close, createChannel }) => {
           </Button>
         </div>
       </header>
-      <main>
+      <main css={css({ flex: 1, minHeight: 0 })}>
         <form
           id="new-message-form"
           onSubmit={(e) => {
@@ -197,7 +198,12 @@ const NewMessageDialog = ({ isOpen, close }) => {
   const navigate = useNavigate();
 
   return (
-    <Dialog width="72rem" isOpen={isOpen} onRequestClose={close}>
+    <Dialog
+      width="72rem"
+      height="min(80vh, 82rem)"
+      isOpen={isOpen}
+      onRequestClose={close}
+    >
       {({ titleProps }) => (
         <NewMessageDialogContent
           titleProps={titleProps}

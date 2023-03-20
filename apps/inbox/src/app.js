@@ -365,7 +365,15 @@ const Channel = () => {
           height: 100%;
         `}
       >
-        <MainHeader height={headerHeight} css={css({ padding: "0 4rem" })}>
+        <MainHeader
+          height={headerHeight}
+          css={css({
+            padding: "0 2rem",
+            "@media (min-width: 600px)": {
+              padding: "0 4rem",
+            },
+          })}
+        >
           <div
             style={{
               flex: 1,
@@ -617,24 +625,30 @@ const MessageItem = ({ id }) => {
             width: "100%",
             color: "inherit",
             textDecoration: "none",
-            padding: "1.5rem 4rem",
-            // borderBottom: "0.1rem solid",
-            // borderColor: t.colors.borderLight,
+            padding: "1.5rem 2rem",
             ":hover": {
               background: `linear-gradient(90deg, transparent 0%, ${hoverColor} 20%, ${hoverColor} 80%, transparent 100%)`,
+            },
+            "@media (min-width: 600px)": {
+              padding: "1.5rem 4rem",
             },
           });
         }}
       >
         <div
-          style={{
+          css={css({
             display: "grid",
-            gridTemplateColumns: "13rem minmax(0,1fr) auto",
+            gridTemplateColumns: "minmax(0,1fr) auto",
             alignItems: "center",
             gridGap: "2rem",
-          }}
+            ".sender": { display: "none" },
+            "@media (min-width: 600px)": {
+              gridTemplateColumns: "13rem minmax(0,1fr) auto",
+              ".sender": { display: "flex" },
+            },
+          })}
         >
-          <div style={{ display: "flex", alignItems: "center" }}>
+          <div className="sender" css={css({ alignItems: "center" })}>
             <UserAvatar
               walletAddress={message.author?.walletAddress}
               size="2.6rem"
@@ -904,14 +918,19 @@ const ChannelItem = ({ id }) => {
         }}
       >
         <div
-          style={{
+          css={css({
             display: "grid",
-            gridTemplateColumns: "21rem minmax(0,1fr) 6rem",
+            gridTemplateColumns: "minmax(0,1fr) 6rem",
             alignItems: "center",
             gridGap: "1rem",
-          }}
+            ".sender": { display: "none" },
+            "@media (min-width: 600px)": {
+              gridTemplateColumns: "21rem minmax(0,1fr) 6rem",
+              ".sender": { display: "flex" },
+            },
+          })}
         >
-          <div style={{ display: "flex", alignItems: "center" }}>
+          <div className="sender" style={{ alignItems: "center" }}>
             <ChannelMembersAvatar
               id={id}
               size="2.6rem"
@@ -934,10 +953,10 @@ const ChannelItem = ({ id }) => {
               {membersExcludingMe.length > 3
                 ? `${members.length} participants`
                 : membersExcludingMe
-                  .map(
-                    (u) => u.displayName ?? truncateAddress(u.walletAddress)
-                  )
-                  .join(", ")}
+                    .map(
+                      (u) => u.displayName ?? truncateAddress(u.walletAddress)
+                    )
+                    .join(", ")}
             </div>
           </div>
           <div
