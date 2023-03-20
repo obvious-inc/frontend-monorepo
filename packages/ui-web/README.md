@@ -1,12 +1,12 @@
-# @shades/design-system
+# @shades/ui-web
 
 React components targeting web.
 
 ```sh
 # You have to run this from the repo root folder
-pnpm -F design-system i
+pnpm -F ui-web i
 ```
 
 ```sh
-pnpm -F design-system dev
+pnpm -F ui-web dev
 ```

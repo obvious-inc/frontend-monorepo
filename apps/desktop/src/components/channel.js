@@ -33,7 +33,7 @@ import {
   user as userUtils,
 } from "@shades/common/utils";
 import { useLatestCallback } from "@shades/common/react";
-import Button from "@shades/design-system/button";
+import Button from "@shades/ui-web/button";
 import {
   Cross as CrossIcon,
   PlusCircle as PlusCircleIcon,
@@ -41,7 +41,7 @@ import {
   Star as StarIcon,
   StrokedStar as StrokedStarIcon,
   Globe as GlobeIcon,
-} from "@shades/design-system/icons";
+} from "@shades/ui-web/icons";
 import useGlobalMediaQueries from "../hooks/global-media-queries";
 import useWindowFocusOrDocumentVisibleListener from "../hooks/window-focus-or-document-visible-listener";
 import useOnlineListener from "../hooks/window-online-listener";

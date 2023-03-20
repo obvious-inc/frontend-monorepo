@@ -1,7 +1,7 @@
 import React from "react";
 import { css } from "@emotion/react";
 import { useAuth } from "@shades/common/app";
-import { Home as HomeIcon } from "@shades/design-system/icons";
+import { Home as HomeIcon } from "@shades/ui-web/icons";
 import ChannelHeader from "./channel-header";
 
 const LoginScreen = React.lazy(() => import("./login-screen"));

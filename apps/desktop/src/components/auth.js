@@ -2,7 +2,7 @@ import React from "react";
 import { css } from "@emotion/react";
 import { useAuth, useChannel, useChannelName } from "@shades/common/app";
 import { permission as permissionUtils } from "@shades/common/utils";
-import Button from "@shades/design-system/button";
+import Button from "@shades/ui-web/button";
 
 const { parseScopes } = permissionUtils;
 

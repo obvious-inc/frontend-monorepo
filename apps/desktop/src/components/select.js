@@ -9,11 +9,11 @@ import {
   // useFocusRing,
   // mergeProps,
 } from "react-aria";
-import Button from "@shades/design-system/button";
+import Button from "@shades/ui-web/button";
 import {
   CaretDown as CaretDownIcon,
   Checkmark as CheckmarkIcon,
-} from "@shades/design-system/icons";
+} from "@shades/ui-web/icons";
 import * as Popover from "./popover";
 
 const Select = ({

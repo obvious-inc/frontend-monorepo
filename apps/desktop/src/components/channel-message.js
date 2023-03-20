@@ -21,14 +21,14 @@ import {
   emoji as emojiUtils,
 } from "@shades/common/utils";
 import { useLatestCallback, useHover } from "@shades/common/react";
-import Button from "@shades/design-system/button";
+import Button from "@shades/ui-web/button";
 import {
   DotsHorizontal as DotsHorizontalIcon,
   EditPen as EditPenIcon,
   ReplyArrow as ReplyArrowIcon,
   AddEmojiReaction as AddEmojiReactionIcon,
   JoinArrowRight as JoinArrowRightIcon,
-} from "@shades/design-system/icons";
+} from "@shades/ui-web/icons";
 import { isNodeEmpty, normalizeNodes, cleanNodes } from "../slate/utils";
 import useGlobalMediaQueries from "../hooks/global-media-queries";
 import MessageInput from "./message-input";

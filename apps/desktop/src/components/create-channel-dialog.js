@@ -4,14 +4,14 @@ import { css } from "@emotion/react";
 import { ethereum as ethereumUtils } from "@shades/common/utils";
 import { useActions, useAuth } from "@shades/common/app";
 import { useWallet, useWalletLogin } from "@shades/common/wallet";
-import Dialog from "@shades/design-system/dialog";
-import Button from "@shades/design-system/button";
+import Dialog from "@shades/ui-web/dialog";
+import Button from "@shades/ui-web/button";
 import {
   Cross as CrossIcon,
   Globe as GlobeIcon,
   Lock as LockIcon,
   EyeOff as EyeOffIcon,
-} from "@shades/design-system/icons";
+} from "@shades/ui-web/icons";
 import Input from "./input";
 import Select from "./select";
 

@@ -3,8 +3,8 @@ import { useNavigate } from "react-router-dom";
 import { css } from "@emotion/react";
 // import { ethereum as ethereumUtils } from "@shades/common/utils";
 import { useActions } from "@shades/common/app";
-import Dialog from "@shades/design-system/dialog";
-import Button from "@shades/design-system/button";
+import Dialog from "@shades/ui-web/dialog";
+import Button from "@shades/ui-web/button";
 
 // const { truncateAddress } = ethereumUtils;
 

@@ -3,7 +3,7 @@ import { useEnsName } from "wagmi";
 import { css } from "@emotion/react";
 import { useActions, useSelectors, useMe, useUser } from "@shades/common/app";
 import { ethereum as ethereumUtils } from "@shades/common/utils";
-import Button from "@shades/design-system/button";
+import Button from "@shades/ui-web/button";
 import UserAvatar from "./user-avatar";
 import * as Tooltip from "./tooltip";
 import { useNavigate } from "react-router-dom";

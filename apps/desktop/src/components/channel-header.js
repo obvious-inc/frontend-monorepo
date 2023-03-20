@@ -2,11 +2,11 @@ import { css } from "@emotion/react";
 import {
   useState as useSidebarState,
   useToggle as useSidebarToggle,
-} from "@shades/design-system/sidebar-layout";
+} from "@shades/ui-web/sidebar-layout";
 import {
   DoubleChevronRight as DoubleChevronRightIcon,
   HamburgerMenu as HamburgerMenuIcon,
-} from "@shades/design-system/icons";
+} from "@shades/ui-web/icons";
 
 const isNative = window.Native != null;
 

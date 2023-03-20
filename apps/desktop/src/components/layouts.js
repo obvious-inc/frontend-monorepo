@@ -26,13 +26,13 @@ import {
   useState as useSidebarState,
   useToggle as useSidebarToggle,
   Layout as SidebarLayout,
-} from "@shades/design-system/sidebar-layout";
+} from "@shades/ui-web/sidebar-layout";
 import {
   MagnificationGlass as MagnificationGlassIcon,
   Planet as PlanetIcon,
   Triangle as TriangleIcon,
   DoubleChevronLeft as DoubleChevronLeftIcon,
-} from "@shades/design-system/icons";
+} from "@shades/ui-web/icons";
 import useCommandCenter from "../hooks/command-center";
 import UserAvatar from "./user-avatar";
 import ChannelAvatar from "./channel-avatar";

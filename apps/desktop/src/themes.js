@@ -1,4 +1,4 @@
-import baseTheme from "@shades/design-system/theme";
+import baseTheme from "@shades/ui-web/theme";
 
 export const nounsTv = {
   ...baseTheme,

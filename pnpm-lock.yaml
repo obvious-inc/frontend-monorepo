@@ -22,7 +22,7 @@ importers:
       '@radix-ui/react-tooltip': ^0.1.7
       '@sentry/react': ^6.19.7
       '@shades/common': workspace:0.0.0
-      '@shades/design-system': workspace:0.0.0
+      '@shades/ui-web': workspace:0.0.0
       '@swc/core': 1.2.130
       assert: ^2.0.0
       copy-webpack-plugin: ^11.0.0
@@ -83,7 +83,7 @@ importers:
       '@radix-ui/react-tooltip': 0.1.7_ef5jwxihqo6n7gxfmzogljlgcm
       '@sentry/react': 6.19.7_react@18.1.0
       '@shades/common': link:../../packages/common
-      '@shades/design-system': link:../../packages/design-system
+      '@shades/ui-web': link:../../packages/ui-web
       date-fns: 2.29.3
       dotenv: 16.0.3
       electron-squirrel-startup: 1.0.0
@@ -143,7 +143,7 @@ importers:
       '@nouns/contracts': ^0.3.0
       '@nouns/sdk': ^0.4.0
       '@shades/common': workspace:0.0.0
-      '@shades/design-system': workspace:0.0.0
+      '@shades/ui-web': workspace:0.0.0
       '@swc/core': 1.2.130
       copy-webpack-plugin: ^11.0.0
       css-loader: ^6.7.3
@@ -190,7 +190,7 @@ importers:
       '@nouns/contracts': 0.3.0
       '@nouns/sdk': 0.4.0_ethers@5.7.2
       '@shades/common': link:../../packages/common
-      '@shades/design-system': link:../../packages/design-system
+      '@shades/ui-web': link:../../packages/ui-web
       date-fns: 2.29.3
       dotenv: 16.0.3
       ethers: 5.7.2
@@ -354,7 +354,10 @@ importers:
       rollup: 2.79.1
       rollup-plugin-swc: 0.2.1_lufexssd5zchzefmgyok2v4n44
 
-  packages/design-system:
+  packages/fs:
+    specifiers: {}
+
+  packages/ui-web:
     specifiers:
       '@shades/common': workspace:0.0.0
       '@swc/core': ^1.3.11
@@ -368,9 +371,6 @@ importers:
       prettier: 2.8.4
       rollup: 2.79.1
       rollup-plugin-swc: 0.2.1_lufexssd5zchzefmgyok2v4n44
-
-  packages/fs:
-    specifiers: {}
 
   packages/webpack-config:
     specifiers: {}

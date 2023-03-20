@@ -2,7 +2,7 @@ import { ethereum as ethereumUtils } from "@shades/common/utils";
 import { useWallet, useWalletLogin } from "@shades/common/wallet";
 import React from "react";
 import { css } from "@emotion/react";
-import Button from "@shades/design-system/button";
+import Button from "@shades/ui-web/button";
 import * as Tooltip from "../components/tooltip";
 import Spinner from "../components/spinner";
 import UserAvatar from "../components/user-avatar";

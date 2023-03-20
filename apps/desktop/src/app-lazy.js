@@ -34,8 +34,8 @@ import {
   array as arrayUtils,
   function as functionUtils,
 } from "@shades/common/utils";
-import defaultTheme from "@shades/design-system/theme";
-import { Provider as SidebarProvider } from "@shades/design-system/sidebar-layout";
+import defaultTheme from "@shades/ui-web/theme";
+import { Provider as SidebarProvider } from "@shades/ui-web/sidebar-layout";
 import { IFrameEthereumProvider } from "@newshades/iframe-provider";
 import { Provider as GlobalMediaQueriesProvider } from "./hooks/global-media-queries";
 import { send as sendNotification } from "./utils/notifications";

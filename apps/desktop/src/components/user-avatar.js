@@ -1,5 +1,5 @@
 import { useEnsAvatar, useUserWithWalletAddress } from "@shades/common/app";
-import Avatar from "@shades/design-system/avatar";
+import Avatar from "@shades/ui-web/avatar";
 import React from "react";
 import { useEnsAvatar as useWagmiEnsAvatar } from "wagmi";
 

@@ -20,7 +20,7 @@ import {
   ethereum as ethereumUtils,
   user as userUtils,
 } from "@shades/common/utils";
-import Button from "@shades/design-system/button";
+import Button from "@shades/ui-web/button";
 import {
   Cross as CrossIcon,
   Star as StarIcon,
@@ -32,7 +32,7 @@ import {
   Lock as LockIcon,
   EyeOff as EyeOffIcon,
   AtSign as AtSignIcon,
-} from "@shades/design-system/icons";
+} from "@shades/ui-web/icons";
 import Input from "./input";
 import UserAvatar from "./user-avatar";
 import ChannelAvatar from "./channel-avatar";

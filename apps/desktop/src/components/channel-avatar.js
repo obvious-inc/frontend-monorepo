@@ -1,7 +1,7 @@
 import { css } from "@emotion/react";
 import { useMe, useChannel, useChannelMembers } from "@shades/common/app";
 import { array as arrayUtils } from "@shades/common/utils";
-import Avatar from "@shades/design-system/avatar";
+import Avatar from "@shades/ui-web/avatar";
 import UserAvatar from "./user-avatar.js";
 
 const { reverse } = arrayUtils;

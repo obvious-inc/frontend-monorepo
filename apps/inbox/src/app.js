@@ -46,22 +46,22 @@ import {
   useWalletLogin,
   WalletLoginProvider,
 } from "@shades/common/wallet";
-import theme from "@shades/design-system/theme";
+import theme from "@shades/ui-web/theme";
 import {
   Provider as SidebarProvider,
   Layout as SidebarLayout,
   useState as useSidebarState,
   useToggle as useSidebarToggle,
-} from "@shades/design-system/sidebar-layout";
-import Button from "@shades/design-system/button";
-import Avatar from "@shades/design-system/avatar";
+} from "@shades/ui-web/sidebar-layout";
+import Button from "@shades/ui-web/button";
+import Avatar from "@shades/ui-web/avatar";
 import {
   DoubleChevronRight as DoubleChevronRightIcon,
   DoubleChevronLeft as DoubleChevronLeftIcon,
   HamburgerMenu as HamburgerMenuIcon,
   Checkmark as CheckmarkIcon,
   DotsHorizontal as DotsHorizontalIcon,
-} from "@shades/design-system/icons";
+} from "@shades/ui-web/icons";
 import NewMessageDialog from "./components/new-messaage-dialog.js";
 
 const { reverse } = arrayUtils;

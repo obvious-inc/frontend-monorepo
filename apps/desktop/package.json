@@ -57,7 +57,7 @@
     "@radix-ui/react-tooltip": "^0.1.7",
     "@sentry/react": "^6.19.7",
     "@shades/common": "workspace:0.0.0",
-    "@shades/design-system": "workspace:0.0.0",
+    "@shades/ui-web": "workspace:0.0.0",
     "date-fns": "^2.29.3",
     "dotenv": "^16.0.3",
     "electron-squirrel-startup": "^1.0.0",
