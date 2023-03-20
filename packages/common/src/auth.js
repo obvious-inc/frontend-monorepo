@@ -84,39 +84,30 @@ export const Provider = ({ apiOrigin, ...props }) => {
     if (pendingRefreshAccessTokenPromise != null)
       return pendingRefreshAccessTokenPromise;
 
-    pendingRefreshAccessTokenPromise = new Promise((resolve, reject) => {
-      const run = async () => {
-        const refreshToken = await readRefreshToken();
-        if (refreshToken == null) throw new Error("missing-refresh-token");
+    const run = async () => {
+      const refreshToken = await readRefreshToken();
+      if (refreshToken == null) throw new Error("missing-refresh-token");
 
-        return fetch(`${apiOrigin}/auth/refresh`, {
-          method: "POST",
-          body: JSON.stringify({ refresh_token: refreshToken }),
-          headers: { "Content-Type": "application/json" },
-        }).then(
-          (response) => {
-            if (response.ok)
-              return response.json().then((body) => ({
-                accessToken: body.access_token,
-                refreshToken: body.refresh_token,
-              }));
+      return fetch(`${apiOrigin}/auth/refresh`, {
+        method: "POST",
+        body: JSON.stringify({ refresh_token: refreshToken }),
+        headers: { "Content-Type": "application/json" },
+      }).then((response) => {
+        if (response.ok)
+          return response.json().then((body) => ({
+            accessToken: body.access_token,
+            refreshToken: body.refresh_token,
+          }));
 
-            if (response.status === 401)
-              return Promise.reject(new Error("refresh-token-expired"));
+        if (response.status === 401)
+          return Promise.reject(new Error("refresh-token-expired"));
 
-            return Promise.reject(new Error(response.statusText));
-          },
-          () =>
-            // Retry after 3 seconds
-            new Promise((resolve, reject) => {
-              setTimeout(() => {
-                run().then(resolve, reject);
-              }, 3000);
-            })
-        );
-      };
+        return Promise.reject(new Error(response.statusText));
+      });
+    };
 
-      return run()
+    pendingRefreshAccessTokenPromise = new Promise((resolve, reject) =>
+      run()
         .then(
           ({ accessToken, refreshToken }) => {
             setAccessToken(accessToken);
@@ -147,8 +138,8 @@ export const Provider = ({ apiOrigin, ...props }) => {
         )
         .finally(() => {
           pendingRefreshAccessTokenPromise = null;
-        });
-    });
+        })
+    );
 
     return pendingRefreshAccessTokenPromise;
   });
