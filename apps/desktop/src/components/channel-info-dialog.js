@@ -21,6 +21,7 @@ import {
   user as userUtils,
 } from "@shades/common/utils";
 import Button from "@shades/ui-web/button";
+import Dialog from "@shades/ui-web/dialog";
 import {
   Cross as CrossIcon,
   Star as StarIcon,
@@ -36,7 +37,6 @@ import {
 import Input from "./input";
 import UserAvatar from "./user-avatar";
 import ChannelAvatar from "./channel-avatar";
-import Dialog from "./dialog";
 import Select from "./select";
 import * as Tooltip from "./tooltip";
 

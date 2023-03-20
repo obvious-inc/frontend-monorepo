@@ -34,6 +34,7 @@ import {
 } from "@shades/common/utils";
 import { useLatestCallback } from "@shades/common/react";
 import Button from "@shades/ui-web/button";
+import Dialog from "@shades/ui-web/dialog";
 import {
   Cross as CrossIcon,
   PlusCircle as PlusCircleIcon,
@@ -55,7 +56,6 @@ import ChannelHeader from "./channel-header";
 import UserAvatar from "./user-avatar";
 import ChannelAvatar from "./channel-avatar";
 import * as Tooltip from "./tooltip";
-import Dialog from "./dialog";
 import Input from "./input";
 import ChannelInfoDialog from "./channel-info-dialog";
 import useIsOnScreen from "../hooks/is-on-screen";

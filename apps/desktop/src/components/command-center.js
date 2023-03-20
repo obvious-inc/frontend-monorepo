@@ -17,7 +17,7 @@ import {
 } from "@shades/common/app";
 import { channel as channelUtils } from "@shades/common/utils";
 import { useLatestCallback } from "@shades/common/react";
-import Dialog from "./dialog";
+import Dialog from "@shades/ui-web/dialog";
 import Input from "./input";
 
 const { search: searchChannels } = channelUtils;

@@ -22,6 +22,7 @@ import {
 } from "@shades/common/utils";
 import { useLatestCallback, useHover } from "@shades/common/react";
 import Button from "@shades/ui-web/button";
+import Dialog from "@shades/ui-web/dialog";
 import {
   DotsHorizontal as DotsHorizontalIcon,
   EditPen as EditPenIcon,
@@ -39,7 +40,6 @@ import * as Popover from "./popover";
 import * as DropdownMenu from "./dropdown-menu";
 import * as Toolbar from "./toolbar";
 import * as Tooltip from "./tooltip";
-import Dialog from "./dialog";
 import ProfilePreview from "./profile-preview";
 
 const { groupBy, indexBy } = arrayUtils;
