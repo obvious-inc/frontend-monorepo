@@ -13,6 +13,7 @@
     "./theme": "./dist/theme.js",
     "./icons": "./dist/icons.js",
     "./sidebar-layout": "./dist/sidebar-layout.js",
+    "./dialog": "./dist/dialog.js",
     "./button": "./dist/button.js",
     "./avatar": "./dist/avatar.js"
   },

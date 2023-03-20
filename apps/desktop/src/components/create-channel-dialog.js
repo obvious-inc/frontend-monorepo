@@ -4,6 +4,7 @@ import { css } from "@emotion/react";
 import { ethereum as ethereumUtils } from "@shades/common/utils";
 import { useActions, useAuth } from "@shades/common/app";
 import { useWallet, useWalletLogin } from "@shades/common/wallet";
+import Dialog from "@shades/design-system/dialog";
 import Button from "@shades/design-system/button";
 import {
   Cross as CrossIcon,
@@ -11,7 +12,6 @@ import {
   Lock as LockIcon,
   EyeOff as EyeOffIcon,
 } from "@shades/design-system/icons";
-import Dialog from "./dialog";
 import Input from "./input";
 import Select from "./select";
 

@@ -19,15 +19,24 @@ const createConfig = ({ file, dependencies = [] }) => ({
   plugins,
 });
 
+const emotionDeps = ["@emotion/react", "@emotion/react/jsx-runtime"];
+
 const entrypoints = [
   { file: "theme.js" },
-  { file: "icons.js" },
-  { file: "sidebar-layout.js", dependencies: ["react", "@emotion/react"] },
+  { file: "icons.js", dependencies: ["react", ...emotionDeps] },
+  {
+    file: "sidebar-layout.js",
+    dependencies: ["@shades/common/react", "react", ...emotionDeps],
+  },
+  {
+    file: "dialog.js",
+    dependencies: ["react", "react-aria", ...emotionDeps],
+  },
   {
     file: "button.js",
-    dependencies: ["react", "@emotion/react", "react-aria"],
+    dependencies: ["react", "react-aria", ...emotionDeps],
   },
-  { file: "avatar.js", dependencies: ["react", "@emotion/react"] },
+  { file: "avatar.js", dependencies: ["react", ...emotionDeps] },
 ];
 
 export default [

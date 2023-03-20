@@ -2,6 +2,15 @@ import isToday from "date-fns/isToday";
 import isYesterday from "date-fns/isYesterday";
 import Pusher from "pusher-js";
 import React from "react";
+import {
+  BrowserRouter,
+  Routes,
+  Route,
+  Navigate,
+  useParams,
+  Link,
+  Outlet,
+} from "react-router-dom";
 import { ThemeProvider, useTheme, css } from "@emotion/react";
 import { useDateFormatter } from "react-aria";
 import {
@@ -21,12 +30,14 @@ import {
 } from "@shades/common/utils";
 import {
   ServerConnectionProvider,
+  useActions,
   useAuth,
   useMe,
   useChannel,
   useChannelMembers,
   useMemberChannels,
   useChannelMessages,
+  useMessage,
   useEnsAvatar,
   useUserWithWalletAddress,
 } from "@shades/common/app";
@@ -49,6 +60,7 @@ import {
   DoubleChevronLeft as DoubleChevronLeftIcon,
   HamburgerMenu as HamburgerMenuIcon,
 } from "@shades/design-system/icons";
+import NewMessageDialog from "./components/new-messaage-dialog.js";
 
 const { reverse } = arrayUtils;
 const { truncateAddress } = ethereumUtils;
@@ -319,9 +331,22 @@ const HeaderItem = ({ label, count = 0, active }) => (
   </div>
 );
 
-const Inbox = () => {
-  const channels = useMemberChannels({ readStates: true });
-  const unreadCount = channels.filter((c) => c.hasUnread).length;
+const Channel = () => {
+  const params = useParams();
+  const { fetchMessages } = useActions();
+  const channel = useChannel(params.channelId, { name: true });
+  const messages_ = useChannelMessages(params.channelId);
+  const messages = [...messages_].reverse();
+
+  const ref = React.useRef();
+
+  React.useEffect(() => {
+    fetchMessages(params.channelId).then(() => {
+      ref.current?.scrollIntoView();
+    });
+  }, [fetchMessages, params.channelId]);
+
+  if (channel == null || messages.length === 0) return null;
 
   return (
     <div
@@ -332,125 +357,479 @@ const Inbox = () => {
         min-width: min(30.6rem, 100vw);
         background: ${theme.colors.backgroundPrimary};
         display: flex;
-        flex-direction: column;
         height: 100%;
       `}
     >
-      <MainHeader height={headerHeight}>
-        <div
-          style={{
-            flex: 1,
-            minWidth: 0,
-            display: "flex",
-            alignItems: "center",
-          }}
-        >
-          <HeaderItem label="Inbox" count={unreadCount} active />
-        </div>
-        <div
-          css={(t) =>
-            css({
-              display: "grid",
-              gridAutoColumns: "auto",
-              gridAutoFlow: "column",
-              gridGap: "2rem",
-              alignItems: "center",
-              color: t.colors.textNormal,
-            })
-          }
-        >
-          {/* <MagnificationGlassIcon */}
-          {/*   css={(t) => */}
-          {/*     css({ */}
-          {/*       width: "1.6rem", */}
-          {/*       height: "auto", */}
-          {/*       color: t.colors.textDimmed, */}
-          {/*     }) */}
-          {/*   } */}
-          {/* /> */}
-          <svg
-            viewBox="0 0 17 17"
+      <div
+        css={css`
+          flex: 1;
+          min-width: min(30.6rem, 100vw);
+          display: flex;
+          flex-direction: column;
+          height: 100%;
+        `}
+      >
+        <MainHeader height={headerHeight}>
+          <div
             style={{
-              display: "block",
-              width: "1.6rem",
-              height: "auto",
-            }}
-          >
-            <path
-              d="M6.78027 13.6729C8.24805 13.6729 9.60156 13.1982 10.709 12.4072L14.875 16.5732C15.0684 16.7666 15.3232 16.8633 15.5957 16.8633C16.167 16.8633 16.5713 16.4238 16.5713 15.8613C16.5713 15.5977 16.4834 15.3516 16.29 15.1582L12.1504 11.0098C13.0205 9.86719 13.5391 8.45215 13.5391 6.91406C13.5391 3.19629 10.498 0.155273 6.78027 0.155273C3.0625 0.155273 0.0214844 3.19629 0.0214844 6.91406C0.0214844 10.6318 3.0625 13.6729 6.78027 13.6729ZM6.78027 12.2139C3.87988 12.2139 1.48047 9.81445 1.48047 6.91406C1.48047 4.01367 3.87988 1.61426 6.78027 1.61426C9.68066 1.61426 12.0801 4.01367 12.0801 6.91406C12.0801 9.81445 9.68066 12.2139 6.78027 12.2139Z"
-              fill="currentColor"
-            />
-          </svg>
-          <Button
-            variant="primary"
-            size="small"
-            style={{
+              flex: 1,
+              minWidth: 0,
               display: "flex",
               alignItems: "center",
-              justifyContent: "center",
-              padding: 0,
-              width: "3.4rem",
-              height: "3.4rem",
-              borderRadius: "50%",
             }}
           >
+            <HeaderItem label={channel?.name} active />
+          </div>
+          <div
+            css={(t) =>
+              css({
+                display: "grid",
+                gridAutoColumns: "auto",
+                gridAutoFlow: "column",
+                gridGap: "2rem",
+                alignItems: "center",
+                color: t.colors.textNormal,
+              })
+            }
+          >
+            {/* <MagnificationGlassIcon */}
+            {/*   css={(t) => */}
+            {/*     css({ */}
+            {/*       width: "1.6rem", */}
+            {/*       height: "auto", */}
+            {/*       color: t.colors.textDimmed, */}
+            {/*     }) */}
+            {/*   } */}
+            {/* /> */}
             <svg
-              viewBox="0 0 64 64"
+              viewBox="0 0 17 17"
               style={{
                 display: "block",
-                width: "2.1rem",
+                width: "1.6rem",
                 height: "auto",
-                margin: "auto",
               }}
             >
               <path
-                fillRule="evenodd"
-                d="M52.47 16.78v0c-.3.29-.77.29-1.07 0l-4.2-4.18v0c-.3-.3-.3-.77-.01-1.06 0-.01 0-.01 0-.01l2.89-2.89h0c.87-.88 2.3-.88 3.18 0l2.06 2.06v-.001c.87.87.87 2.28 0 3.16 -.01 0-.01 0-.01 0Zm-22.72 21.7l-5.05 1.51v0c-.3.08-.62-.08-.7-.38 -.04-.11-.04-.22-.001-.33l1.51-5.06v0c.28-.96.8-1.82 1.5-2.52l17.5-17.52v-.001c.29-.3.76-.3 1.06 0l4.18 4.19v0c.29.29.29.76 0 1.061L32.23 36.94v0c-.71.7-1.57 1.22-2.53 1.5ZM52 29.01v17 0c-.01 3.31-2.69 5.99-6 6H18v0c-3.32-.01-6-2.69-6-6.01V17.99v0c0-3.32 2.68-6 6-6.01h17v0c1.1 0 2 .89 2 2 0 1.1-.9 2-2.01 2h-17v0c-1.11 0-2 .89-2 2v28 0c0 1.1.89 1.99 2 2h28 0c1.1-.01 1.99-.9 2-2.01V28.96v0c0-1.11.89-2 2-2 1.1 0 2 .89 2 2Z"
+                d="M6.78027 13.6729C8.24805 13.6729 9.60156 13.1982 10.709 12.4072L14.875 16.5732C15.0684 16.7666 15.3232 16.8633 15.5957 16.8633C16.167 16.8633 16.5713 16.4238 16.5713 15.8613C16.5713 15.5977 16.4834 15.3516 16.29 15.1582L12.1504 11.0098C13.0205 9.86719 13.5391 8.45215 13.5391 6.91406C13.5391 3.19629 10.498 0.155273 6.78027 0.155273C3.0625 0.155273 0.0214844 3.19629 0.0214844 6.91406C0.0214844 10.6318 3.0625 13.6729 6.78027 13.6729ZM6.78027 12.2139C3.87988 12.2139 1.48047 9.81445 1.48047 6.91406C1.48047 4.01367 3.87988 1.61426 6.78027 1.61426C9.68066 1.61426 12.0801 4.01367 12.0801 6.91406C12.0801 9.81445 9.68066 12.2139 6.78027 12.2139Z"
                 fill="currentColor"
               />
             </svg>
-          </Button>
-        </div>
-      </MainHeader>
-      <div
-        css={css({
-          position: "relative",
-          flex: 1,
-          display: "flex",
-          minHeight: 0,
-          minWidth: 0,
-        })}
-      >
+          </div>
+        </MainHeader>
         <div
           css={css({
-            position: "absolute",
-            top: 0,
-            left: 0,
-            right: 0,
-            bottom: 0,
-            overflowY: "scroll",
-            overflowX: "hidden",
-            minHeight: 0,
+            position: "relative",
             flex: 1,
-            overflowAnchor: "none",
+            display: "flex",
+            minHeight: 0,
+            minWidth: 0,
           })}
         >
           <div
             css={css({
-              display: "flex",
-              flexDirection: "column",
-              justifyContent: "flex-end",
-              alignItems: "stretch",
-              minHeight: "100%",
+              position: "absolute",
+              top: 0,
+              left: 0,
+              right: 0,
+              bottom: 0,
+              overflowY: "scroll",
+              overflowX: "hidden",
+              minHeight: 0,
+              flex: 1,
+              overflowAnchor: "none",
             })}
           >
-            {channels.map((c) => (
-              <ChannelItem key={c.id} id={c.id} />
-            ))}
+            <div
+              css={css({
+                display: "flex",
+                flexDirection: "column",
+                justifyContent: "flex-end",
+                alignItems: "stretch",
+                minHeight: "100%",
+              })}
+            >
+              {messages.slice(0, -1).map((m) => (
+                <MessageItem key={m.id} id={m.id} />
+              ))}
+              <div ref={ref} css={css({ padding: "0 2rem 2rem" })}>
+                <ReplyForm messageId={messages.slice(-1)[0]?.id} />
+              </div>
+            </div>
           </div>
         </div>
       </div>
+      <div
+        css={(t) =>
+          css({
+            width: "32rem",
+            background: t.colors.backgroundSecondary,
+          })
+        }
+      />
     </div>
+  );
+};
+
+const ReplyForm = ({ messageId }) => {
+  const message = useMessage(messageId);
+  return (
+    <div
+      css={(t) =>
+        css({
+          background: t.colors.backgroundSecondary,
+          padding: "2rem",
+          borderRadius: "0.5rem",
+          color: t.colors.textDimmed,
+          fontSize: t.fontSizes.large,
+        })
+      }
+    >
+      <div style={{ display: "flex", alignItems: "center" }}>
+        <div style={{ flex: 1, display: "flex", alignItems: "center" }}>
+          <UserAvatar
+            walletAddress={message?.author?.walletAddress}
+            size="2.6rem"
+            background={theme.colors.backgroundTertiary}
+          />
+          <div
+            css={(t) =>
+              css({
+                whiteSpace: "nowrap",
+                overflow: "hidden",
+                textOverflow: "ellipsis",
+                flex: 1,
+                minWidth: 0,
+                fontSize: t.fontSizes.large,
+                color: t.colors.textDimmed,
+                marginLeft: "1rem",
+              })
+            }
+          >
+            {message?.author?.displayName}
+          </div>
+        </div>
+        <div
+          css={(t) =>
+            css({ fontSize: t.fontSizes.small, color: t.colors.textMuted })
+          }
+        >
+          {message &&
+            (isToday(new Date(message.createdAt)) ? (
+              <FormattedDate
+                value={new Date(message.createdAt)}
+                hour="numeric"
+                minute="numeric"
+              />
+            ) : isYesterday(new Date(message.createdAt)) ? (
+              "Yesterday"
+            ) : (
+              <FormattedDate
+                value={new Date(message.createdAt)}
+                month="short"
+                day="numeric"
+              />
+            ))}
+        </div>
+      </div>
+      <div
+        css={(t) =>
+          css({
+            fontSize: t.fontSizes.large,
+            whiteSpace: "nowrap",
+            overflow: "hidden",
+            textOverflow: "ellipsis",
+            color: t.colors.textDimmed,
+            margin: "2rem 0",
+            paddingBottom: "2rem",
+            borderBottom: "0.1rem solid",
+            borderColor: t.colors.borderLight,
+          })
+        }
+      >
+        {message?.stringContent || "..."}
+      </div>
+      <div css={css({ paddingBottom: "1rem" })}>
+        Draft to {message?.author?.displayName}
+      </div>
+      <input
+        autoFocus
+        placeholder="Type your reply..."
+        css={(t) =>
+          css({
+            background: "none",
+            border: 0,
+            width: "100%",
+            outline: "none",
+            color: t.colors.textNormal,
+            fontSize: t.fontSizes.large,
+            padding: "1rem 0",
+            "::placeholder": { color: t.colors.textMuted },
+          })
+        }
+      />
+      <div css={css({ paddingTop: "2rem" })}>
+        <Button variant="primary">Send</Button>
+      </div>
+    </div>
+  );
+};
+
+const MessageItem = ({ id }) => {
+  const message = useMessage(id);
+
+  return (
+    <div
+    // css={() => {
+    //   const hoverColor = "hsl(0 100% 100% / 6%)";
+    //   return css({
+    //     ":after": {
+    //       content: '""',
+    //       display: "block",
+    //       width: "100%",
+    //       // width: "calc(100% - 4rem)",
+    //       // borderBottom: "0.1rem solid",
+    //       // borderColor: t.colors.borderLight,
+    //       height: "1px",
+    //       background: `linear-gradient(90deg, transparent 0%, ${hoverColor} 20%, ${hoverColor} 80%, transparent 100%)`,
+    //     },
+    //   });
+    // }}
+    >
+      <button
+        to={`/c/${id}`}
+        css={() => {
+          const hoverColor = "hsl(0 100% 100% / 2%)";
+          return css({
+            display: "block",
+            width: "100%",
+            color: "inherit",
+            textDecoration: "none",
+            padding: "1.5rem 4rem",
+            // borderBottom: "0.1rem solid",
+            // borderColor: t.colors.borderLight,
+            ":hover": {
+              background: `linear-gradient(90deg, transparent 0%, ${hoverColor} 20%, ${hoverColor} 80%, transparent 100%)`,
+            },
+          });
+        }}
+      >
+        <div
+          style={{
+            display: "grid",
+            gridTemplateColumns: "13rem minmax(0,1fr) auto",
+            alignItems: "center",
+            gridGap: "2rem",
+          }}
+        >
+          <div style={{ display: "flex", alignItems: "center" }}>
+            <UserAvatar
+              walletAddress={message.author?.walletAddress}
+              size="2.6rem"
+              background={theme.colors.backgroundTertiary}
+            />
+            <div
+              css={(t) =>
+                css({
+                  whiteSpace: "nowrap",
+                  overflow: "hidden",
+                  textOverflow: "ellipsis",
+                  flex: 1,
+                  minWidth: 0,
+                  fontSize: t.fontSizes.large,
+                  color: t.colors.textDimmed,
+                  marginLeft: "1rem",
+                })
+              }
+            >
+              {message.author?.displayName}
+            </div>
+          </div>
+          <div
+            css={(t) =>
+              css({
+                fontSize: t.fontSizes.large,
+                whiteSpace: "nowrap",
+                overflow: "hidden",
+                textOverflow: "ellipsis",
+                color: t.colors.textDimmed,
+              })
+            }
+          >
+            {message?.stringContent || "..."}
+          </div>
+          <div
+            css={(t) =>
+              css({ fontSize: t.fontSizes.small, color: t.colors.textMuted })
+            }
+          >
+            {message &&
+              (isToday(new Date(message.createdAt)) ? (
+                <FormattedDate
+                  value={new Date(message.createdAt)}
+                  hour="numeric"
+                  minute="numeric"
+                />
+              ) : isYesterday(new Date(message.createdAt)) ? (
+                "Yesterday"
+              ) : (
+                <FormattedDate
+                  value={new Date(message.createdAt)}
+                  month="short"
+                  day="numeric"
+                />
+              ))}
+          </div>
+        </div>
+      </button>
+    </div>
+  );
+};
+
+const Inbox = () => {
+  const [showNewMessageDialog, setShowNewMessageDialog] = React.useState(false);
+  const channels = useMemberChannels({ readStates: true });
+  const unreadCount = channels.filter((c) => c.hasUnread).length;
+
+  return (
+    <>
+      <div
+        css={(theme) => css`
+          position: relative;
+          z-index: 0;
+          flex: 1;
+          min-width: min(30.6rem, 100vw);
+          background: ${theme.colors.backgroundPrimary};
+          display: flex;
+          flex-direction: column;
+          height: 100%;
+        `}
+      >
+        <MainHeader height={headerHeight}>
+          <div
+            style={{
+              flex: 1,
+              minWidth: 0,
+              display: "flex",
+              alignItems: "center",
+            }}
+          >
+            <HeaderItem label="Inbox" count={unreadCount} active />
+          </div>
+          <div
+            css={(t) =>
+              css({
+                display: "grid",
+                gridAutoColumns: "auto",
+                gridAutoFlow: "column",
+                gridGap: "2rem",
+                alignItems: "center",
+                color: t.colors.textNormal,
+              })
+            }
+          >
+            {/* <MagnificationGlassIcon */}
+            {/*   css={(t) => */}
+            {/*     css({ */}
+            {/*       width: "1.6rem", */}
+            {/*       height: "auto", */}
+            {/*       color: t.colors.textDimmed, */}
+            {/*     }) */}
+            {/*   } */}
+            {/* /> */}
+            <svg
+              viewBox="0 0 17 17"
+              style={{
+                display: "block",
+                width: "1.6rem",
+                height: "auto",
+              }}
+            >
+              <path
+                d="M6.78027 13.6729C8.24805 13.6729 9.60156 13.1982 10.709 12.4072L14.875 16.5732C15.0684 16.7666 15.3232 16.8633 15.5957 16.8633C16.167 16.8633 16.5713 16.4238 16.5713 15.8613C16.5713 15.5977 16.4834 15.3516 16.29 15.1582L12.1504 11.0098C13.0205 9.86719 13.5391 8.45215 13.5391 6.91406C13.5391 3.19629 10.498 0.155273 6.78027 0.155273C3.0625 0.155273 0.0214844 3.19629 0.0214844 6.91406C0.0214844 10.6318 3.0625 13.6729 6.78027 13.6729ZM6.78027 12.2139C3.87988 12.2139 1.48047 9.81445 1.48047 6.91406C1.48047 4.01367 3.87988 1.61426 6.78027 1.61426C9.68066 1.61426 12.0801 4.01367 12.0801 6.91406C12.0801 9.81445 9.68066 12.2139 6.78027 12.2139Z"
+                fill="currentColor"
+              />
+            </svg>
+            <Button
+              variant="primary"
+              size="small"
+              onClick={() => {
+                setShowNewMessageDialog(true);
+              }}
+              style={{
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                padding: 0,
+                width: "3.4rem",
+                height: "3.4rem",
+                borderRadius: "50%",
+              }}
+            >
+              <svg
+                viewBox="0 0 64 64"
+                style={{
+                  display: "block",
+                  width: "2.1rem",
+                  height: "auto",
+                  margin: "auto",
+                }}
+              >
+                <path
+                  fillRule="evenodd"
+                  d="M52.47 16.78v0c-.3.29-.77.29-1.07 0l-4.2-4.18v0c-.3-.3-.3-.77-.01-1.06 0-.01 0-.01 0-.01l2.89-2.89h0c.87-.88 2.3-.88 3.18 0l2.06 2.06v-.001c.87.87.87 2.28 0 3.16 -.01 0-.01 0-.01 0Zm-22.72 21.7l-5.05 1.51v0c-.3.08-.62-.08-.7-.38 -.04-.11-.04-.22-.001-.33l1.51-5.06v0c.28-.96.8-1.82 1.5-2.52l17.5-17.52v-.001c.29-.3.76-.3 1.06 0l4.18 4.19v0c.29.29.29.76 0 1.061L32.23 36.94v0c-.71.7-1.57 1.22-2.53 1.5ZM52 29.01v17 0c-.01 3.31-2.69 5.99-6 6H18v0c-3.32-.01-6-2.69-6-6.01V17.99v0c0-3.32 2.68-6 6-6.01h17v0c1.1 0 2 .89 2 2 0 1.1-.9 2-2.01 2h-17v0c-1.11 0-2 .89-2 2v28 0c0 1.1.89 1.99 2 2h28 0c1.1-.01 1.99-.9 2-2.01V28.96v0c0-1.11.89-2 2-2 1.1 0 2 .89 2 2Z"
+                  fill="currentColor"
+                />
+              </svg>
+            </Button>
+          </div>
+        </MainHeader>
+        <div
+          css={css({
+            position: "relative",
+            flex: 1,
+            display: "flex",
+            minHeight: 0,
+            minWidth: 0,
+          })}
+        >
+          <div
+            css={css({
+              position: "absolute",
+              top: 0,
+              left: 0,
+              right: 0,
+              bottom: 0,
+              overflowY: "scroll",
+              overflowX: "hidden",
+              minHeight: 0,
+              flex: 1,
+              overflowAnchor: "none",
+            })}
+          >
+            <div
+              css={css({
+                display: "flex",
+                flexDirection: "column",
+                justifyContent: "flex-end",
+                alignItems: "stretch",
+                minHeight: "100%",
+              })}
+            >
+              {channels.map((c) => (
+                <ChannelItem key={c.id} id={c.id} />
+              ))}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <NewMessageDialog
+        isOpen={showNewMessageDialog}
+        close={() => {
+          setShowNewMessageDialog(false);
+        }}
+      />
+    </>
   );
 };
 
@@ -486,8 +865,8 @@ const ChannelItem = ({ id }) => {
         });
       }}
     >
-      <a
-        href={`https://app.newshades.xyz/channels/${id}`}
+      <Link
+        to={`/c/${id}`}
         css={() => {
           const hoverColor = "hsl(0 100% 100% / 2%)";
           return css({
@@ -601,12 +980,12 @@ const ChannelItem = ({ id }) => {
               ))}
           </div>
         </div>
-      </a>
+      </Link>
     </div>
   );
 };
 
-const Layout = ({ children }) => {
+const Layout = () => {
   const me = useMe();
 
   if (me == null) return null;
@@ -741,7 +1120,7 @@ const Layout = ({ children }) => {
         </button>
       )}
     >
-      {children}
+      <Outlet />
     </SidebarLayout>
   );
 };
@@ -948,24 +1327,30 @@ const wagmiClient = createWagmiClient({
 const App = () => {
   const { login } = useAuth();
   return (
-    <WagmiConfig client={wagmiClient}>
-      <ServerConnectionProvider
-        Pusher={Pusher}
-        pusherKey={process.env.PUSHER_KEY}
-      >
-        <WalletLoginProvider authenticate={login}>
-          <ThemeProvider theme={theme}>
-            <SidebarProvider initialIsOpen={false}>
-              <RequireAuth>
-                <Layout>
-                  <Inbox />
-                </Layout>
-              </RequireAuth>
-            </SidebarProvider>
-          </ThemeProvider>
-        </WalletLoginProvider>
-      </ServerConnectionProvider>
-    </WagmiConfig>
+    <BrowserRouter>
+      <WagmiConfig client={wagmiClient}>
+        <ServerConnectionProvider
+          Pusher={Pusher}
+          pusherKey={process.env.PUSHER_KEY}
+        >
+          <WalletLoginProvider authenticate={login}>
+            <ThemeProvider theme={theme}>
+              <SidebarProvider initialIsOpen={false}>
+                <RequireAuth>
+                  <Routes>
+                    <Route path="/" element={<Layout />}>
+                      <Route index element={<Inbox />} />
+                      <Route path="/c/:channelId" element={<Channel />} />
+                    </Route>
+                    <Route path="*" element={<Navigate to="/" replace />} />
+                  </Routes>
+                </RequireAuth>
+              </SidebarProvider>
+            </ThemeProvider>
+          </WalletLoginProvider>
+        </ServerConnectionProvider>
+      </WagmiConfig>
+    </BrowserRouter>
   );
 };
 
