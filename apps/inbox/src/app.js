@@ -59,6 +59,8 @@ import {
   DoubleChevronRight as DoubleChevronRightIcon,
   DoubleChevronLeft as DoubleChevronLeftIcon,
   HamburgerMenu as HamburgerMenuIcon,
+  Checkmark as CheckmarkIcon,
+  DotsHorizontal as DotsHorizontalIcon,
 } from "@shades/design-system/icons";
 import NewMessageDialog from "./components/new-messaage-dialog.js";
 
@@ -72,7 +74,7 @@ const FormattedDate = ({ value, ...options }) => {
   return formatter.format(value);
 };
 
-const MainHeader = ({ height, children }) => {
+const MainHeader = ({ sidebarToggle, height, children, ...props }) => {
   const { isCollapsed: isSidebarCollapsed, isFloating: isSidebarFloating } =
     useSidebarState();
   const toggleMenu = useSidebarToggle();
@@ -90,8 +92,9 @@ const MainHeader = ({ height, children }) => {
         minWidth: 0,
         width: "100%",
       })}
+      {...props}
     >
-      {isSidebarFloating && (
+      {sidebarToggle && isSidebarFloating && (
         <div
           css={css({
             display: "flex",
@@ -99,34 +102,19 @@ const MainHeader = ({ height, children }) => {
             marginRight: "2rem",
           })}
         >
-          <button
+          <IconButton
             onClick={() => {
               toggleMenu();
             }}
-            css={(t) =>
-              css({
-                position: "relative",
-                width: "2.6rem",
-                height: "2.6rem",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                borderRadius: "0.3rem",
-                background: "none",
-                border: 0,
-                cursor: "pointer",
-                color: t.colors.textNormal,
-                ".chevron": {
-                  opacity: 0,
-                  transition: "0.2s opacity ease-out",
-                },
-                ":hover": {
-                  background: t.colors.backgroundModifierHover,
-                  ".chevron": { opacity: 1 },
-                  ".hamburger": { display: "none" },
-                },
-              })
-            }
+            css={css({
+              position: "relative",
+              ".chevron": {
+                opacity: 0,
+                transition: "0.2s opacity ease-out",
+              },
+              ":hover .chevron": { opacity: 1 },
+              ":hover .hamburger": { display: "none" },
+            })}
           >
             {isSidebarCollapsed ? (
               <DoubleChevronRightIcon
@@ -161,7 +149,7 @@ const MainHeader = ({ height, children }) => {
                 style={{ width: "1.6rem", height: "1.6rem" }}
               />
             </div>
-          </button>
+          </IconButton>
         </div>
       )}
       {children}
@@ -279,8 +267,14 @@ const ChannelMembersAvatar = ({ id, ...props }) => {
   );
 };
 
-const HeaderItem = ({ label, count = 0, active }) => (
-  <div
+const HeaderItem = ({
+  component: Component = "div",
+  label,
+  count = 0,
+  active,
+  ...props
+}) => (
+  <Component
     css={(t) =>
       css({
         fontSize: t.fontSizes.large,
@@ -289,9 +283,11 @@ const HeaderItem = ({ label, count = 0, active }) => (
         alignItems: "center",
         // color: t.colors.textNormal,
         color: active ? "white" : t.colors.textNormal,
-        marginRight: "2rem",
+        marginRight: "3rem",
+        textDecoration: "none",
       })
     }
+    {...props}
   >
     <div
     // css={(t) =>
@@ -328,7 +324,7 @@ const HeaderItem = ({ label, count = 0, active }) => (
         {count}
       </div>
     )}
-  </div>
+  </Component>
 );
 
 const Channel = () => {
@@ -369,7 +365,7 @@ const Channel = () => {
           height: 100%;
         `}
       >
-        <MainHeader height={headerHeight}>
+        <MainHeader height={headerHeight} css={css({ padding: "0 4rem" })}>
           <div
             style={{
               flex: 1,
@@ -378,6 +374,30 @@ const Channel = () => {
               alignItems: "center",
             }}
           >
+            <div
+              style={{
+                width: "2.6rem",
+                display: "flex",
+                justifyContent: "center",
+                marginRight: "1rem",
+              }}
+            >
+              <IconButton
+                component={Link}
+                to="/"
+                css={css({ color: "inherit" })}
+              >
+                <svg
+                  viewBox="0 0 64 64"
+                  style={{ width: "1.6rem", height: "auto" }}
+                >
+                  <path
+                    d="m56.12,35H19.36l16.76,16.76-4.24,4.24L7.88,32,31.88,8l4.24,4.24-16.76,16.76h36.76v6Z"
+                    fill="currentColor"
+                  />
+                </svg>
+              </IconButton>
+            </div>
             <HeaderItem label={channel?.name} active />
           </div>
           <div
@@ -392,15 +412,6 @@ const Channel = () => {
               })
             }
           >
-            {/* <MagnificationGlassIcon */}
-            {/*   css={(t) => */}
-            {/*     css({ */}
-            {/*       width: "1.6rem", */}
-            {/*       height: "auto", */}
-            {/*       color: t.colors.textDimmed, */}
-            {/*     }) */}
-            {/*   } */}
-            {/* /> */}
             <svg
               viewBox="0 0 17 17"
               style={{
@@ -451,7 +462,7 @@ const Channel = () => {
               {messages.slice(0, -1).map((m) => (
                 <MessageItem key={m.id} id={m.id} />
               ))}
-              <div ref={ref} css={css({ padding: "0 2rem 2rem" })}>
+              <div ref={ref} css={css({ padding: "1.5rem 2rem 2rem" })}>
                 <ReplyForm messageId={messages.slice(-1)[0]?.id} />
               </div>
             </div>
@@ -551,9 +562,10 @@ const ReplyForm = ({ messageId }) => {
       <div css={css({ paddingBottom: "1rem" })}>
         Draft to {message?.author?.displayName}
       </div>
-      <input
+      <textarea
         autoFocus
         placeholder="Type your reply..."
+        rows={2}
         css={(t) =>
           css({
             background: "none",
@@ -563,12 +575,13 @@ const ReplyForm = ({ messageId }) => {
             color: t.colors.textNormal,
             fontSize: t.fontSizes.large,
             padding: "1rem 0",
+            resize: "none",
             "::placeholder": { color: t.colors.textMuted },
           })
         }
       />
       <div css={css({ paddingTop: "2rem" })}>
-        <Button variant="primary">Send</Button>
+        <Button variant="primary">Send message</Button>
       </div>
     </div>
   );
@@ -704,7 +717,7 @@ const Inbox = () => {
           height: 100%;
         `}
       >
-        <MainHeader height={headerHeight}>
+        <MainHeader sidebarToggle height={headerHeight}>
           <div
             style={{
               flex: 1,
@@ -713,7 +726,14 @@ const Inbox = () => {
               alignItems: "center",
             }}
           >
-            <HeaderItem label="Inbox" count={unreadCount} active />
+            <HeaderItem
+              component={Link}
+              to="/"
+              label="Inbox"
+              count={unreadCount}
+              active
+            />
+            <HeaderItem component={Link} to="/" label="Archive" />
           </div>
           <div
             css={(t) =>
@@ -879,13 +899,14 @@ const ChannelItem = ({ id }) => {
             ":hover": {
               background: `linear-gradient(90deg, transparent 0%, ${hoverColor} 20%, ${hoverColor} 80%, transparent 100%)`,
             },
+            ":hover .hover-action": { display: "block" },
           });
         }}
       >
         <div
           style={{
             display: "grid",
-            gridTemplateColumns: "21rem minmax(0,1fr) auto",
+            gridTemplateColumns: "21rem minmax(0,1fr) 6rem",
             alignItems: "center",
             gridGap: "1rem",
           }}
@@ -913,53 +934,86 @@ const ChannelItem = ({ id }) => {
               {membersExcludingMe.length > 3
                 ? `${members.length} participants`
                 : membersExcludingMe
-                    .map(
-                      (u) => u.displayName ?? truncateAddress(u.walletAddress)
-                    )
-                    .join(", ")}
+                  .map(
+                    (u) => u.displayName ?? truncateAddress(u.walletAddress)
+                  )
+                  .join(", ")}
             </div>
           </div>
           <div
             css={(t) =>
               css({
-                fontSize: t.fontSizes.default,
+                display: "flex",
+                alignItems: "center",
+                fontSize: t.fontSizes.large,
               })
             }
           >
-            <span
-              css={(t) =>
-                css({
-                  whiteSpace: "nowrap",
-                  overflow: "hidden",
-                  textOverflow: "ellipsis",
-                  fontWeight: channel.hasUnread ? "500" : undefined,
-                  color: channel.hasUnread
-                    ? t.colors.textNormal
-                    : t.colors.textDimmed,
-                })
-              }
-            >
-              {channel.name}
-            </span>
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <span
+                css={(t) =>
+                  css({
+                    whiteSpace: "nowrap",
+                    overflow: "hidden",
+                    textOverflow: "ellipsis",
+                    fontWeight: channel.hasUnread ? "500" : undefined,
+                    color: channel.hasUnread
+                      ? t.colors.textNormal
+                      : t.colors.textDimmed,
+                  })
+                }
+              >
+                {channel.name}
+              </span>
+              <div
+                css={(t) =>
+                  css({
+                    whiteSpace: "nowrap",
+                    overflow: "hidden",
+                    textOverflow: "ellipsis",
+                    color: t.colors.textMuted,
+                    fontSize: t.fontSizes.default,
+                  })
+                }
+              >
+                {message?.author?.displayName != null && (
+                  <>{message.author.displayName}: </>
+                )}
+                {message?.stringContent || "..."}
+              </div>
+            </div>
             <div
+              className="hover-action"
               css={(t) =>
                 css({
-                  whiteSpace: "nowrap",
-                  overflow: "hidden",
-                  textOverflow: "ellipsis",
-                  color: t.colors.textMuted,
+                  display: "none",
+                  color: t.colors.textDimmed,
+                  padding: "0 1rem",
                 })
               }
             >
-              {message?.author?.displayName != null && (
-                <>{message.author.displayName}: </>
-              )}
-              {message?.stringContent || "..."}
+              <CheckmarkIcon style={{ width: "1.3rem", height: "auto" }} />
+            </div>
+            <div
+              className="hover-action"
+              css={(t) =>
+                css({
+                  display: "none",
+                  color: t.colors.textDimmed,
+                  padding: "0 1rem",
+                })
+              }
+            >
+              <DotsHorizontalIcon style={{ width: "2rem", height: "auto" }} />
             </div>
           </div>
           <div
             css={(t) =>
-              css({ fontSize: t.fontSizes.small, color: t.colors.textMuted })
+              css({
+                textAlign: "right",
+                fontSize: t.fontSizes.small,
+                color: t.colors.textMuted,
+              })
             }
           >
             {message &&
@@ -1296,6 +1350,29 @@ const LoginScreen = () => {
     </div>
   );
 };
+
+const IconButton = ({ component: Component = "button", ...props }) => (
+  <Component
+    css={(t) =>
+      css({
+        width: "2.6rem",
+        height: "2.6rem",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        borderRadius: "0.3rem",
+        background: "none",
+        border: 0,
+        cursor: "pointer",
+        color: t.colors.textNormal,
+        ":hover": {
+          background: t.colors.backgroundModifierHover,
+        },
+      })
+    }
+    {...props}
+  />
+);
 
 const RequireAuth = ({ children }) => {
   const { status: authStatus } = useAuth();
