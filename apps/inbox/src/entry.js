@@ -1,10 +1,6 @@
 import React from "react";
 import { createRoot } from "react-dom/client";
 import {
-  array as arrayUtils,
-  function as functionUtils,
-} from "@shades/common/utils";
-import {
   AuthProvider,
   AppStoreProvider,
   CacheStoreProvider,
@@ -13,9 +9,6 @@ import {
 } from "@shades/common/app";
 import "./reset.css";
 import "./index.css";
-
-const { unique } = arrayUtils;
-const { waterfall } = functionUtils;
 
 const LazyApp = React.lazy(() => import("./app"));
 
@@ -27,22 +20,7 @@ const App = () => {
 
   React.useEffect(() => {
     if (authStatus !== "authenticated") return;
-
-    fetchClientBootData().then(({ channels }) => {
-      const dmUserIds = unique(
-        channels.filter((c) => c.kind === "dm").flatMap((c) => c.memberUserIds)
-      );
-      fetchUsers(dmUserIds);
-
-      waterfall(
-        channels.map((c) =>
-          Promise.all([
-            fetchMessages(c.id, { limit: 1 }),
-            fetchUsers(c.memberUserIds.slice(0, 3)),
-          ])
-        )
-      );
-    });
+    fetchClientBootData();
   }, [authStatus, fetchClientBootData, fetchUsers, fetchMessages]);
 
   return (

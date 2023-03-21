@@ -7,18 +7,15 @@ import {
   Routes,
   Route,
   Navigate,
-  useParams,
   Link,
   NavLink,
   Outlet,
 } from "react-router-dom";
 import { ThemeProvider, useTheme, css } from "@emotion/react";
-import { useDateFormatter } from "react-aria";
 import {
   WagmiConfig,
   createClient as createWagmiClient,
   configureChains as configureWagmiChains,
-  useEnsAvatar as useWagmiEnsAvatar,
 } from "wagmi";
 import { mainnet as mainnetChain } from "wagmi/chains";
 import { infuraProvider } from "wagmi/providers/infura";
@@ -28,7 +25,6 @@ import { WalletConnectConnector } from "wagmi/connectors/walletConnect";
 import {
   array as arrayUtils,
   ethereum as ethereumUtils,
-  message as messageUtils,
 } from "@shades/common/utils";
 import {
   ServerConnectionProvider,
@@ -39,9 +35,6 @@ import {
   useChannelMembers,
   useMemberChannels,
   useChannelMessages,
-  useMessage,
-  useEnsAvatar,
-  useUserWithWalletAddress,
   useHasFetchedUserChannels,
 } from "@shades/common/app";
 import {
@@ -53,174 +46,25 @@ import theme from "@shades/ui-web/theme";
 import {
   Provider as SidebarProvider,
   Layout as SidebarLayout,
-  useState as useSidebarState,
-  useToggle as useSidebarToggle,
 } from "@shades/ui-web/sidebar-layout";
 import Button from "@shades/ui-web/button";
 import Avatar from "@shades/ui-web/avatar";
 import {
-  DoubleChevronRight as DoubleChevronRightIcon,
   DoubleChevronLeft as DoubleChevronLeftIcon,
-  HamburgerMenu as HamburgerMenuIcon,
   Checkmark as CheckmarkIcon,
   DotsHorizontal as DotsHorizontalIcon,
 } from "@shades/ui-web/icons";
 import NewMessageDialog from "./components/new-messaage-dialog.js";
+import MainHeader from "./components/main-header.js";
+import HeaderItem from "./components/header-item.js";
+import FormattedDate from "./components/formatted-date.js";
+import UserAvatar from "./components/user-avatar.js";
+import IconButton from "./components/icon-button.js";
+
+const Channel = React.lazy(() => import("./components/channel.js"));
 
 const { reverse } = arrayUtils;
 const { truncateAddress } = ethereumUtils;
-
-const headerHeight = "6.2rem";
-
-const FormattedDate = ({ value, ...options }) => {
-  const formatter = useDateFormatter(options);
-  return formatter.format(value);
-};
-
-const MainHeader = ({ sidebarToggle, height, children, ...props }) => {
-  const { isCollapsed: isSidebarCollapsed, isFloating: isSidebarFloating } =
-    useSidebarState();
-  const toggleMenu = useSidebarToggle();
-
-  return (
-    <div
-      css={css({
-        height,
-        // height: theme.mainHeader.height,
-        padding: "0 2rem",
-        display: "flex",
-        alignItems: "center",
-        // borderBottom: "0.1rem solid",
-        // borderColor: theme.colors.borderLight,
-        minWidth: 0,
-        width: "100%",
-      })}
-      {...props}
-    >
-      {sidebarToggle && isSidebarFloating && (
-        <div
-          css={css({
-            display: "flex",
-            justifyContent: "center",
-            marginRight: "2rem",
-          })}
-        >
-          <IconButton
-            onClick={() => {
-              toggleMenu();
-            }}
-            css={css({
-              position: "relative",
-              ".chevron": {
-                opacity: 0,
-                transition: "0.2s opacity ease-out",
-              },
-              ":hover .chevron": { opacity: 1 },
-              ":hover .hamburger": { display: "none" },
-            })}
-          >
-            {isSidebarCollapsed ? (
-              <DoubleChevronRightIcon
-                className="chevron"
-                style={{
-                  position: "relative",
-                  left: "1px",
-                  width: "1.6rem",
-                  height: "1.6rem",
-                }}
-              />
-            ) : (
-              <DoubleChevronLeftIcon
-                className="chevron"
-                style={{ width: "1.6rem", height: "1.6rem" }}
-              />
-            )}
-            <div
-              style={{
-                position: "absolute",
-                top: 0,
-                left: 0,
-                width: "100%",
-                height: "100%",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-              }}
-            >
-              <HamburgerMenuIcon
-                className="hamburger"
-                style={{ width: "1.6rem", height: "1.6rem" }}
-              />
-            </div>
-          </IconButton>
-        </div>
-      )}
-      {children}
-    </div>
-  );
-};
-
-const usePlaceholderAvatar = (
-  walletAddress,
-  { enabled = true, transparent = false } = {}
-) => {
-  const [generatedPlaceholderAvatarUrl, setGeneratedPlaceholderAvatarUrl] =
-    React.useState(null);
-
-  React.useEffect(() => {
-    if (!enabled || walletAddress == null) return;
-    import("@shades/common/nouns").then((module) =>
-      module
-        .generatePlaceholderAvatarDataUri(walletAddress, { transparent })
-        .then((url) => {
-          setGeneratedPlaceholderAvatarUrl(url);
-        })
-    );
-  }, [enabled, transparent, walletAddress]);
-
-  return generatedPlaceholderAvatarUrl;
-};
-
-const UserAvatar = React.forwardRef(
-  ({ walletAddress, highRes, transparent, ...props }, ref) => {
-    const user = useUserWithWalletAddress(walletAddress);
-    const userCustomAvatarUrl =
-      user?.profilePicture?.[highRes ? "large" : "small"];
-    const cachedEnsAvatarUrl = useEnsAvatar(walletAddress);
-
-    const { data: fetchedEnsAvatarUrl, isLoading: isLoadingEnsAvatar } =
-      useWagmiEnsAvatar({
-        addressOrName: walletAddress,
-        enabled: userCustomAvatarUrl == null && cachedEnsAvatarUrl == null,
-      });
-
-    const ensAvatarUrl = fetchedEnsAvatarUrl ?? cachedEnsAvatarUrl;
-
-    const enablePlaceholder =
-      userCustomAvatarUrl == null && ensAvatarUrl == null;
-
-    const placeholderAvatarUrl = usePlaceholderAvatar(walletAddress, {
-      enabled: enablePlaceholder,
-      transparent,
-    });
-
-    const isLoadingPlaceholder =
-      enablePlaceholder && placeholderAvatarUrl == null;
-
-    const imageUrl =
-      userCustomAvatarUrl ?? ensAvatarUrl ?? placeholderAvatarUrl;
-
-    return (
-      <Avatar
-        ref={ref}
-        url={imageUrl}
-        isLoading={isLoadingEnsAvatar || isLoadingPlaceholder}
-        signature={user?.displayName ?? user?.walletAddress.slice(2)}
-        {...props}
-      />
-    );
-  }
-);
 
 const ChannelMembersAvatar = ({ id, ...props }) => {
   const me = useMe();
@@ -266,503 +110,6 @@ const ChannelMembersAvatar = ({ id, ...props }) => {
           })}
         />
       ))}
-    </div>
-  );
-};
-
-const HeaderItem = ({
-  component: Component = "div",
-  label,
-  count = 0,
-  ...props
-}) => (
-  <Component
-    css={(t) =>
-      css({
-        fontSize: t.fontSizes.large,
-        fontWeight: t.text.weights.header,
-        display: "flex",
-        alignItems: "center",
-        marginRight: "3rem",
-        textDecoration: "none",
-        color: t.colors.textNormal,
-        "&.active": {
-          color: "white",
-        },
-      })
-    }
-    {...props}
-  >
-    <div
-    // css={(t) =>
-    //   css({
-    //     position: "relative",
-    //     ":after": {
-    //       position: "absolute",
-    //       top: "calc(100% + 0.2rem)",
-    //       left: "50%",
-    //       transform: "translateX(-50%)",
-    //       content: '""',
-    //       display: active ? "block" : "none",
-    //       width: "0.5rem",
-    //       height: "0.5rem",
-    //       background: "white",
-    //       borderRadius: "50%",
-    //     },
-    //   })
-    // }
-    >
-      {label}
-    </div>
-    {count > 0 && (
-      <div
-        css={(t) => {
-          return css({
-            marginLeft: "0.7rem",
-            fontSize: t.fontSizes.small,
-            fontWeight: t.text.weights.default,
-            lineHeight: 1,
-          });
-        }}
-      >
-        {count}
-      </div>
-    )}
-  </Component>
-);
-
-const Channel = () => {
-  const params = useParams();
-  const { fetchMessages, createMessage, markChannelRead } = useActions();
-
-  const channel = useChannel(params.channelId, { name: true });
-  const messages_ = useChannelMessages(params.channelId);
-  const messages = [...messages_].reverse();
-
-  const [selectedMessageId, setSelectedMessageId] = React.useState(
-    () => messages.slice(-1)[0]?.id
-  );
-
-  const formContainerRef = React.useRef();
-
-  const sendReply = React.useCallback(
-    async (message) => {
-      await Promise.all([
-        markChannelRead(params.channelId),
-        createMessage({
-          channel: params.channelId,
-          blocks: [messageUtils.createParagraphElement(message)],
-        }),
-      ]);
-      setSelectedMessageId(null);
-    },
-    [markChannelRead, createMessage, params.channelId]
-  );
-
-  React.useEffect(() => {
-    fetchMessages(params.channelId).then((messages) => {
-      setSelectedMessageId(messages[0]?.id);
-      formContainerRef.current?.scrollIntoView();
-    });
-  }, [fetchMessages, params.channelId]);
-
-  if (channel == null || messages.length === 0) return null;
-
-  return (
-    <div
-      css={(theme) => css`
-        position: relative;
-        z-index: 0;
-        flex: 1;
-        min-width: min(30.6rem, 100vw);
-        background: ${theme.colors.backgroundPrimary};
-        display: flex;
-        height: 100%;
-      `}
-    >
-      <div
-        css={css`
-          flex: 1;
-          min-width: min(30.6rem, 100vw);
-          display: flex;
-          flex-direction: column;
-          height: 100%;
-        `}
-      >
-        <MainHeader
-          height={headerHeight}
-          css={css({
-            padding: "0 2rem",
-            "@media (min-width: 600px)": {
-              padding: "0 4rem",
-            },
-          })}
-        >
-          <div
-            style={{
-              flex: 1,
-              minWidth: 0,
-              display: "flex",
-              alignItems: "center",
-            }}
-          >
-            <div
-              style={{
-                width: "2.6rem",
-                display: "flex",
-                justifyContent: "center",
-                marginRight: "1rem",
-              }}
-            >
-              <IconButton
-                component={Link}
-                to="/"
-                css={css({ color: "inherit" })}
-              >
-                <svg
-                  viewBox="0 0 64 64"
-                  style={{ width: "1.6rem", height: "auto" }}
-                >
-                  <path
-                    d="m56.12,35H19.36l16.76,16.76-4.24,4.24L7.88,32,31.88,8l4.24,4.24-16.76,16.76h36.76v6Z"
-                    fill="currentColor"
-                  />
-                </svg>
-              </IconButton>
-            </div>
-            <HeaderItem label={channel?.name} />
-          </div>
-          <div
-            css={(t) =>
-              css({
-                display: "grid",
-                gridAutoColumns: "auto",
-                gridAutoFlow: "column",
-                gridGap: "2rem",
-                alignItems: "center",
-                color: t.colors.textNormal,
-              })
-            }
-          >
-            <svg
-              viewBox="0 0 17 17"
-              style={{
-                display: "block",
-                width: "1.6rem",
-                height: "auto",
-              }}
-            >
-              <path
-                d="M6.78027 13.6729C8.24805 13.6729 9.60156 13.1982 10.709 12.4072L14.875 16.5732C15.0684 16.7666 15.3232 16.8633 15.5957 16.8633C16.167 16.8633 16.5713 16.4238 16.5713 15.8613C16.5713 15.5977 16.4834 15.3516 16.29 15.1582L12.1504 11.0098C13.0205 9.86719 13.5391 8.45215 13.5391 6.91406C13.5391 3.19629 10.498 0.155273 6.78027 0.155273C3.0625 0.155273 0.0214844 3.19629 0.0214844 6.91406C0.0214844 10.6318 3.0625 13.6729 6.78027 13.6729ZM6.78027 12.2139C3.87988 12.2139 1.48047 9.81445 1.48047 6.91406C1.48047 4.01367 3.87988 1.61426 6.78027 1.61426C9.68066 1.61426 12.0801 4.01367 12.0801 6.91406C12.0801 9.81445 9.68066 12.2139 6.78027 12.2139Z"
-                fill="currentColor"
-              />
-            </svg>
-          </div>
-        </MainHeader>
-        <div
-          css={css({
-            position: "relative",
-            flex: 1,
-            display: "flex",
-            minHeight: 0,
-            minWidth: 0,
-          })}
-        >
-          <div
-            css={css({
-              position: "absolute",
-              top: 0,
-              left: 0,
-              right: 0,
-              bottom: 0,
-              overflowY: "scroll",
-              overflowX: "hidden",
-              minHeight: 0,
-              flex: 1,
-              overflowAnchor: "none",
-            })}
-          >
-            <div
-              css={css({
-                display: "flex",
-                flexDirection: "column",
-                justifyContent: "flex-end",
-                alignItems: "stretch",
-                minHeight: "100%",
-              })}
-            >
-              {messages.map((m) =>
-                m.id === selectedMessageId ? (
-                  <div
-                    key={`${m.id}-reply-form`}
-                    ref={formContainerRef}
-                    css={css({ padding: "1.5rem 2rem 2rem" })}
-                  >
-                    <ReplyForm messageId={m.id} sendReply={sendReply} />
-                  </div>
-                ) : (
-                  <MessageItem
-                    key={m.id}
-                    id={m.id}
-                    onClick={() => setSelectedMessageId(m.id)}
-                  />
-                )
-              )}
-            </div>
-          </div>
-        </div>
-      </div>
-      <div
-        css={(t) =>
-          css({
-            width: "32rem",
-            background: t.colors.backgroundSecondary,
-          })
-        }
-      />
-    </div>
-  );
-};
-
-const ReplyForm = ({ messageId, sendReply }) => {
-  const message = useMessage(messageId);
-  const [hasPendingSubmit, setPending] = React.useState(false);
-  const [replyContent, setReplyContent] = React.useState("");
-
-  return (
-    <form
-      onSubmit={(e) => {
-        e.preventDefault();
-        setPending(true);
-        sendReply(replyContent.trim()).finally(() => {
-          setPending(false);
-        });
-      }}
-      css={(t) =>
-        css({
-          background: t.colors.backgroundSecondary,
-          padding: "2rem",
-          borderRadius: "0.5rem",
-          color: t.colors.textDimmed,
-          fontSize: t.fontSizes.large,
-        })
-      }
-    >
-      <div style={{ display: "flex", alignItems: "center" }}>
-        <div style={{ flex: 1, display: "flex", alignItems: "center" }}>
-          <UserAvatar
-            walletAddress={message?.author?.walletAddress}
-            size="2.6rem"
-            background={theme.colors.backgroundTertiary}
-          />
-          <div
-            css={(t) =>
-              css({
-                whiteSpace: "nowrap",
-                overflow: "hidden",
-                textOverflow: "ellipsis",
-                flex: 1,
-                minWidth: 0,
-                fontSize: t.fontSizes.large,
-                color: t.colors.textDimmed,
-                marginLeft: "1rem",
-              })
-            }
-          >
-            {message?.author?.displayName}
-          </div>
-        </div>
-        <div
-          css={(t) =>
-            css({ fontSize: t.fontSizes.small, color: t.colors.textMuted })
-          }
-        >
-          {message &&
-            (isToday(new Date(message.createdAt)) ? (
-              <FormattedDate
-                value={new Date(message.createdAt)}
-                hour="numeric"
-                minute="numeric"
-              />
-            ) : isYesterday(new Date(message.createdAt)) ? (
-              "Yesterday"
-            ) : (
-              <FormattedDate
-                value={new Date(message.createdAt)}
-                month="short"
-                day="numeric"
-              />
-            ))}
-        </div>
-      </div>
-      <div
-        css={(t) =>
-          css({
-            fontSize: t.fontSizes.large,
-            whiteSpace: "nowrap",
-            overflow: "hidden",
-            textOverflow: "ellipsis",
-            color: t.colors.textDimmed,
-            margin: "2rem 0",
-            paddingBottom: "2rem",
-            borderBottom: "0.1rem solid",
-            borderColor: t.colors.borderLight,
-          })
-        }
-      >
-        {message?.stringContent || "..."}
-      </div>
-      <div css={css({ paddingBottom: "1rem" })}>
-        Draft to {message?.author?.displayName}
-      </div>
-      <textarea
-        autoFocus
-        placeholder="Type your reply..."
-        rows={2}
-        value={replyContent}
-        onChange={(e) => setReplyContent(e.target.value)}
-        disabled={hasPendingSubmit}
-        css={(t) =>
-          css({
-            background: "none",
-            border: 0,
-            width: "100%",
-            outline: "none",
-            color: t.colors.textNormal,
-            fontSize: t.fontSizes.large,
-            padding: "1rem 0",
-            resize: "none",
-            "::placeholder": { color: t.colors.textMuted },
-          })
-        }
-      />
-      <div css={css({ paddingTop: "2rem" })}>
-        <Button
-          variant="primary"
-          type="submit"
-          isLoading={hasPendingSubmit}
-          disabled={hasPendingSubmit}
-        >
-          Send message
-        </Button>
-      </div>
-    </form>
-  );
-};
-
-const MessageItem = ({ id, onClick }) => {
-  const message = useMessage(id);
-
-  return (
-    <div
-    // css={() => {
-    //   const hoverColor = "hsl(0 100% 100% / 6%)";
-    //   return css({
-    //     ":after": {
-    //       content: '""',
-    //       display: "block",
-    //       width: "100%",
-    //       // width: "calc(100% - 4rem)",
-    //       // borderBottom: "0.1rem solid",
-    //       // borderColor: t.colors.borderLight,
-    //       height: "1px",
-    //       background: `linear-gradient(90deg, transparent 0%, ${hoverColor} 20%, ${hoverColor} 80%, transparent 100%)`,
-    //     },
-    //   });
-    // }}
-    >
-      <button
-        onClick={onClick}
-        css={() => {
-          const hoverColor = "hsl(0 100% 100% / 2%)";
-          return css({
-            display: "block",
-            width: "100%",
-            color: "inherit",
-            textDecoration: "none",
-            padding: "1.5rem 2rem",
-            ":hover": {
-              background: `linear-gradient(90deg, transparent 0%, ${hoverColor} 20%, ${hoverColor} 80%, transparent 100%)`,
-            },
-            "@media (min-width: 600px)": {
-              padding: "1.5rem 4rem",
-            },
-          });
-        }}
-      >
-        <div
-          css={css({
-            display: "grid",
-            gridTemplateColumns: "minmax(0,1fr) auto",
-            alignItems: "center",
-            gridGap: "2rem",
-            ".sender": { display: "none" },
-            "@media (min-width: 600px)": {
-              gridTemplateColumns: "13rem minmax(0,1fr) auto",
-              ".sender": { display: "flex" },
-            },
-          })}
-        >
-          <div className="sender" css={css({ alignItems: "center" })}>
-            <UserAvatar
-              walletAddress={message.author?.walletAddress}
-              size="2.6rem"
-              background={theme.colors.backgroundTertiary}
-            />
-            <div
-              css={(t) =>
-                css({
-                  whiteSpace: "nowrap",
-                  overflow: "hidden",
-                  textOverflow: "ellipsis",
-                  flex: 1,
-                  minWidth: 0,
-                  fontSize: t.fontSizes.large,
-                  color: t.colors.textDimmed,
-                  marginLeft: "1rem",
-                })
-              }
-            >
-              {message.author?.displayName}
-            </div>
-          </div>
-          <div
-            css={(t) =>
-              css({
-                fontSize: t.fontSizes.large,
-                whiteSpace: "nowrap",
-                overflow: "hidden",
-                textOverflow: "ellipsis",
-                color: t.colors.textDimmed,
-              })
-            }
-          >
-            {message?.stringContent || "..."}
-          </div>
-          <div
-            css={(t) =>
-              css({ fontSize: t.fontSizes.small, color: t.colors.textMuted })
-            }
-          >
-            {message &&
-              (isToday(new Date(message.createdAt)) ? (
-                <FormattedDate
-                  value={new Date(message.createdAt)}
-                  hour="numeric"
-                  minute="numeric"
-                />
-              ) : isYesterday(new Date(message.createdAt)) ? (
-                "Yesterday"
-              ) : (
-                <FormattedDate
-                  value={new Date(message.createdAt)}
-                  month="short"
-                  day="numeric"
-                />
-              ))}
-          </div>
-        </div>
-      </button>
     </div>
   );
 };
@@ -816,7 +163,7 @@ const InboxLayout = () => {
           })
         }
       >
-        <MainHeader sidebarToggle height={headerHeight}>
+        <MainHeader sidebarToggle>
           <div
             style={{
               flex: 1,
@@ -910,6 +257,7 @@ const InboxLayout = () => {
 const InboxChannelList = ({ filter, emptyFallback }) => {
   const hasFetchedChannels = useHasFetchedUserChannels();
   const channels = useMemberChannels({ readStates: true });
+
   const channelIds = React.useMemo(
     () => channels.filter(filter).map((c) => c.id),
     [channels, filter]
@@ -963,6 +311,7 @@ const InboxChannelList = ({ filter, emptyFallback }) => {
 const ChannelItem = ({ id }) => {
   const theme = useTheme();
 
+  const { fetchMessages, markChannelRead } = useActions();
   const me = useMe();
   const channel = useChannel(id, { readStates: true, name: true });
   const members = useChannelMembers(id);
@@ -973,6 +322,10 @@ const ChannelItem = ({ id }) => {
   );
 
   const message = messages[0];
+
+  React.useEffect(() => {
+    fetchMessages(id, { limit: 1 });
+  }, [fetchMessages, id]);
 
   return (
     <div
@@ -1001,12 +354,13 @@ const ChannelItem = ({ id }) => {
             color: "inherit",
             textDecoration: "none",
             padding: "1rem 2rem",
-            // borderBottom: "0.1rem solid",
-            // borderColor: t.colors.borderLight,
             ":hover": {
               background: `linear-gradient(90deg, transparent 0%, ${hoverColor} 20%, ${hoverColor} 80%, transparent 100%)`,
             },
-            ":hover .hover-action": { display: "block" },
+            "@media (hover: hover)": {
+              ".hover-actions": { display: "none" },
+              ":hover .hover-actions": { display: "grid" },
+            },
           });
         }}
       >
@@ -1095,28 +449,52 @@ const ChannelItem = ({ id }) => {
               </div>
             </div>
             <div
-              className="hover-action"
-              css={(t) =>
-                css({
-                  display: "none",
-                  color: t.colors.textDimmed,
-                  padding: "0 1rem",
-                })
-              }
+              className="hover-actions"
+              css={css({
+                display: "grid",
+                gridAutoColumns: "auto",
+                gridAutoFlow: "column",
+                gridGap: "0.8rem",
+                marginLeft: "1rem",
+              })}
             >
-              <CheckmarkIcon style={{ width: "1.3rem", height: "auto" }} />
-            </div>
-            <div
-              className="hover-action"
-              css={(t) =>
-                css({
-                  display: "none",
-                  color: t.colors.textDimmed,
-                  padding: "0 1rem",
-                })
-              }
-            >
-              <DotsHorizontalIcon style={{ width: "2rem", height: "auto" }} />
+              {channel.hasUnread && (
+                <IconButton
+                  component="div"
+                  role="button"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    markChannelRead(id);
+                  }}
+                >
+                  <CheckmarkIcon
+                    css={(t) =>
+                      css({
+                        width: "1.3rem",
+                        height: "auto",
+                        color: t.colors.textDimmed,
+                      })
+                    }
+                  />
+                </IconButton>
+              )}
+              <IconButton
+                component="div"
+                role="button"
+                onClick={(e) => {
+                  e.preventDefault();
+                }}
+              >
+                <DotsHorizontalIcon
+                  css={(t) =>
+                    css({
+                      width: "2rem",
+                      height: "auto",
+                      color: t.colors.textDimmed,
+                    })
+                  }
+                />
+              </IconButton>
             </div>
           </div>
           <div
@@ -1153,12 +531,13 @@ const ChannelItem = ({ id }) => {
 
 const RootLayout = () => {
   const me = useMe();
+  const theme = useTheme();
 
   if (me == null) return null;
 
   return (
     <SidebarLayout
-      headerHeight={headerHeight}
+      headerHeight={theme.mainHeader.height}
       header={({
         toggle: toggleMenu,
         isFloating: isMenuFloating,
@@ -1463,29 +842,6 @@ const LoginScreen = () => {
   );
 };
 
-const IconButton = ({ component: Component = "button", ...props }) => (
-  <Component
-    css={(t) =>
-      css({
-        width: "2.6rem",
-        height: "2.6rem",
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        borderRadius: "0.3rem",
-        background: "none",
-        border: 0,
-        cursor: "pointer",
-        color: t.colors.textNormal,
-        ":hover": {
-          background: t.colors.backgroundModifierHover,
-        },
-      })
-    }
-    {...props}
-  />
-);
-
 const ComposeIcon = (props) => (
   <svg viewBox="0 0 64 64" {...props}>
     <path
@@ -1523,6 +879,14 @@ const wagmiClient = createWagmiClient({
   ],
 });
 
+const customTheme = {
+  ...theme,
+  mainHeader: {
+    ...theme.mainHeader,
+    height: "6.2rem",
+  },
+};
+
 const App = () => {
   const { login } = useAuth();
   return (
@@ -1533,7 +897,7 @@ const App = () => {
           pusherKey={process.env.PUSHER_KEY}
         >
           <WalletLoginProvider authenticate={login}>
-            <ThemeProvider theme={theme}>
+            <ThemeProvider theme={customTheme}>
               <SidebarProvider initialIsOpen={false}>
                 <RequireAuth>
                   <Routes>

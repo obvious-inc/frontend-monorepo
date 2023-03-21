@@ -44,7 +44,6 @@ export const useToggle = () => React.useContext(Context).toggle;
 
 export const Layout = ({
   width,
-  headerHeight,
   header,
   sidebarContent,
   sidebarBottomContent,
@@ -110,7 +109,7 @@ export const Layout = ({
             <div
               css={(theme) =>
                 css({
-                  height: headerHeight ?? theme.mainHeader.height,
+                  height: theme.mainHeader.height,
                   display: "flex",
                   alignItems: "center",
                   fontSize: "1.5rem",
