@@ -1,28 +1,44 @@
+import { utils as ethersUtils } from "ethers";
 import React from "react";
 import { useNavigate } from "react-router-dom";
 import { css } from "@emotion/react";
+import { useEnsAddress } from "wagmi";
 // import { ethereum as ethereumUtils } from "@shades/common/utils";
 import { useActions } from "@shades/common/app";
+import { message as messageUtils } from "@shades/common/utils";
 import Dialog from "@shades/ui-web/dialog";
 import Button from "@shades/ui-web/button";
 
 // const { truncateAddress } = ethereumUtils;
 
-const NewMessageDialogContent = ({ titleProps, close, createChannel }) => {
-  const [name, setName] = React.useState("");
-  const [description, setDescription] = React.useState("");
+const NewMessageDialogContent = ({ titleProps, close, createMessage }) => {
+  const [recipient, setRecipient] = React.useState("");
+  const [subject, setSubject] = React.useState("");
   const [message, setMessage] = React.useState("");
 
   const [hasPendingRequest, setPendingRequest] = React.useState(false);
 
-  const hasDraftableInput = [name, description, message].some(
+  const { data: ensWalletAddress } = useEnsAddress({
+    name: recipient,
+    enabled: /^.+\.eth$/.test(recipient),
+  });
+
+  const recipientWalletAddress =
+    ensWalletAddress ?? (ethersUtils.isAddress(recipient) ? recipient : null);
+
+  const hasDraftableInput = [recipient, subject, message].some(
     (t) => t.trim().length !== 0
   );
-  const hasRequiredInput = [name, message].every((t) => t.trim().length !== 0);
+  const hasRequiredInput =
+    recipientWalletAddress != null && message.trim().length !== 0;
 
   const submit = () => {
     setPendingRequest(true);
-    createChannel({ name, description })
+    createMessage({
+      subject: subject.trim(),
+      recipientWalletAddress,
+      message: message.trim(),
+    })
       .then(
         () => {
           close();
@@ -114,15 +130,15 @@ const NewMessageDialogContent = ({ titleProps, close, createChannel }) => {
           }
         >
           <input
-            value={name}
-            onChange={(e) => setName(e.target.value)}
             autoFocus
+            value={recipient}
+            onChange={(e) => setRecipient(e.target.value)}
             disabled={hasPendingRequest}
-            placeholder="To"
+            placeholder="To (ENS or wallet address)"
           />
           <input
-            value={description}
-            onChange={(e) => setDescription(e.target.value)}
+            value={subject}
+            onChange={(e) => setSubject(e.target.value)}
             disabled={hasPendingRequest}
             placeholder="Subject"
           />
@@ -208,9 +224,20 @@ const NewMessageDialog = ({ isOpen, close }) => {
         <NewMessageDialogContent
           titleProps={titleProps}
           close={close}
-          createChannel={async (...args) => {
-            const channel = await actions.createPrivateChannel(...args);
-            navigate(`/c/${channel.id}`);
+          createMessage={async ({
+            recipientWalletAddress,
+            subject,
+            message,
+          }) => {
+            const channel = await actions.createPrivateChannel({
+              name: subject,
+              memberWalletAddresses: [recipientWalletAddress],
+            });
+            await actions.createMessage({
+              channel: channel.id,
+              blocks: [messageUtils.createParagraphElement(message)],
+            });
+            navigate("/");
           }}
         />
       )}

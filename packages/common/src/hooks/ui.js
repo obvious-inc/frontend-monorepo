@@ -1,11 +1,11 @@
 import { useStore } from "../store.js";
 import {
-  selectHasFetchedInitialData,
+  selectHasFetchedUserChannels,
   selectHasFetchedMenuData,
 } from "../reducers/ui.js";
 
-export const useHasFetchedInitialData = () =>
-  useStore((s) => selectHasFetchedInitialData(s));
+export const useHasFetchedUserChannels = () =>
+  useStore((s) => selectHasFetchedUserChannels(s));
 
 export const useHasFetchedMenuData = () =>
   useStore((s) => selectHasFetchedMenuData(s));

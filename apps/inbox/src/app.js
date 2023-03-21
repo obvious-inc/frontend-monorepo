@@ -9,6 +9,7 @@ import {
   Navigate,
   useParams,
   Link,
+  NavLink,
   Outlet,
 } from "react-router-dom";
 import { ThemeProvider, useTheme, css } from "@emotion/react";
@@ -27,6 +28,7 @@ import { WalletConnectConnector } from "wagmi/connectors/walletConnect";
 import {
   array as arrayUtils,
   ethereum as ethereumUtils,
+  message as messageUtils,
 } from "@shades/common/utils";
 import {
   ServerConnectionProvider,
@@ -40,6 +42,7 @@ import {
   useMessage,
   useEnsAvatar,
   useUserWithWalletAddress,
+  useHasFetchedUserChannels,
 } from "@shades/common/app";
 import {
   useWallet,
@@ -271,7 +274,6 @@ const HeaderItem = ({
   component: Component = "div",
   label,
   count = 0,
-  active,
   ...props
 }) => (
   <Component
@@ -281,10 +283,12 @@ const HeaderItem = ({
         fontWeight: t.text.weights.header,
         display: "flex",
         alignItems: "center",
-        // color: t.colors.textNormal,
-        color: active ? "white" : t.colors.textNormal,
         marginRight: "3rem",
         textDecoration: "none",
+        color: t.colors.textNormal,
+        "&.active": {
+          color: "white",
+        },
       })
     }
     {...props}
@@ -329,16 +333,36 @@ const HeaderItem = ({
 
 const Channel = () => {
   const params = useParams();
-  const { fetchMessages } = useActions();
+  const { fetchMessages, createMessage, markChannelRead } = useActions();
+
   const channel = useChannel(params.channelId, { name: true });
   const messages_ = useChannelMessages(params.channelId);
   const messages = [...messages_].reverse();
 
-  const ref = React.useRef();
+  const [selectedMessageId, setSelectedMessageId] = React.useState(
+    () => messages.slice(-1)[0]?.id
+  );
+
+  const formContainerRef = React.useRef();
+
+  const sendReply = React.useCallback(
+    async (message) => {
+      await Promise.all([
+        markChannelRead(params.channelId),
+        createMessage({
+          channel: params.channelId,
+          blocks: [messageUtils.createParagraphElement(message)],
+        }),
+      ]);
+      setSelectedMessageId(null);
+    },
+    [markChannelRead, createMessage, params.channelId]
+  );
 
   React.useEffect(() => {
-    fetchMessages(params.channelId).then(() => {
-      ref.current?.scrollIntoView();
+    fetchMessages(params.channelId).then((messages) => {
+      setSelectedMessageId(messages[0]?.id);
+      formContainerRef.current?.scrollIntoView();
     });
   }, [fetchMessages, params.channelId]);
 
@@ -406,7 +430,7 @@ const Channel = () => {
                 </svg>
               </IconButton>
             </div>
-            <HeaderItem label={channel?.name} active />
+            <HeaderItem label={channel?.name} />
           </div>
           <div
             css={(t) =>
@@ -467,12 +491,23 @@ const Channel = () => {
                 minHeight: "100%",
               })}
             >
-              {messages.slice(0, -1).map((m) => (
-                <MessageItem key={m.id} id={m.id} />
-              ))}
-              <div ref={ref} css={css({ padding: "1.5rem 2rem 2rem" })}>
-                <ReplyForm messageId={messages.slice(-1)[0]?.id} />
-              </div>
+              {messages.map((m) =>
+                m.id === selectedMessageId ? (
+                  <div
+                    key={`${m.id}-reply-form`}
+                    ref={formContainerRef}
+                    css={css({ padding: "1.5rem 2rem 2rem" })}
+                  >
+                    <ReplyForm messageId={m.id} sendReply={sendReply} />
+                  </div>
+                ) : (
+                  <MessageItem
+                    key={m.id}
+                    id={m.id}
+                    onClick={() => setSelectedMessageId(m.id)}
+                  />
+                )
+              )}
             </div>
           </div>
         </div>
@@ -489,10 +524,20 @@ const Channel = () => {
   );
 };
 
-const ReplyForm = ({ messageId }) => {
+const ReplyForm = ({ messageId, sendReply }) => {
   const message = useMessage(messageId);
+  const [hasPendingSubmit, setPending] = React.useState(false);
+  const [replyContent, setReplyContent] = React.useState("");
+
   return (
-    <div
+    <form
+      onSubmit={(e) => {
+        e.preventDefault();
+        setPending(true);
+        sendReply(replyContent.trim()).finally(() => {
+          setPending(false);
+        });
+      }}
       css={(t) =>
         css({
           background: t.colors.backgroundSecondary,
@@ -574,6 +619,9 @@ const ReplyForm = ({ messageId }) => {
         autoFocus
         placeholder="Type your reply..."
         rows={2}
+        value={replyContent}
+        onChange={(e) => setReplyContent(e.target.value)}
+        disabled={hasPendingSubmit}
         css={(t) =>
           css({
             background: "none",
@@ -589,13 +637,20 @@ const ReplyForm = ({ messageId }) => {
         }
       />
       <div css={css({ paddingTop: "2rem" })}>
-        <Button variant="primary">Send message</Button>
+        <Button
+          variant="primary"
+          type="submit"
+          isLoading={hasPendingSubmit}
+          disabled={hasPendingSubmit}
+        >
+          Send message
+        </Button>
       </div>
-    </div>
+    </form>
   );
 };
 
-const MessageItem = ({ id }) => {
+const MessageItem = ({ id, onClick }) => {
   const message = useMessage(id);
 
   return (
@@ -617,7 +672,7 @@ const MessageItem = ({ id }) => {
     // }}
     >
       <button
-        to={`/c/${id}`}
+        onClick={onClick}
         css={() => {
           const hoverColor = "hsl(0 100% 100% / 2%)";
           return css({
@@ -712,7 +767,35 @@ const MessageItem = ({ id }) => {
   );
 };
 
+const EmptyChannelList = ({ children }) => (
+  <div
+    css={(t) =>
+      css({
+        flex: 1,
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        color: t.colors.textDimmed,
+      })
+    }
+  >
+    <div>{children}</div>
+  </div>
+);
+
 const Inbox = () => {
+  const filter = React.useCallback((c) => c.hasUnread, []);
+  return <InboxChannelList filter={filter} emptyFallback="No new messages" />;
+};
+
+const Archive = () => {
+  const filter = React.useCallback((c) => !c.hasUnread, []);
+  return (
+    <InboxChannelList filter={filter} emptyFallback="No archived messages" />
+  );
+};
+
+const InboxLayout = () => {
   const [showNewMessageDialog, setShowNewMessageDialog] = React.useState(false);
   const channels = useMemberChannels({ readStates: true });
   const unreadCount = channels.filter((c) => c.hasUnread).length;
@@ -720,16 +803,18 @@ const Inbox = () => {
   return (
     <>
       <div
-        css={(theme) => css`
-          position: relative;
-          z-index: 0;
-          flex: 1;
-          min-width: min(30.6rem, 100vw);
-          background: ${theme.colors.backgroundPrimary};
-          display: flex;
-          flex-direction: column;
-          height: 100%;
-        `}
+        css={(t) =>
+          css({
+            position: "relative",
+            zIndex: 0,
+            flex: 1,
+            minWidth: "min(30.6rem, 100vw)",
+            background: t.colors.backgroundPrimary,
+            display: "flex",
+            flexDirection: "column",
+            height: "100%",
+          })
+        }
       >
         <MainHeader sidebarToggle height={headerHeight}>
           <div
@@ -741,13 +826,12 @@ const Inbox = () => {
             }}
           >
             <HeaderItem
-              component={Link}
+              component={NavLink}
               to="/"
               label="Inbox"
               count={unreadCount}
-              active
             />
-            <HeaderItem component={Link} to="/" label="Archive" />
+            <HeaderItem component={NavLink} to="/archive" label="Archive" />
           </div>
           <div
             css={(t) =>
@@ -799,62 +883,18 @@ const Inbox = () => {
                 borderRadius: "50%",
               }}
             >
-              <svg
-                viewBox="0 0 64 64"
+              <ComposeIcon
                 style={{
                   display: "block",
                   width: "2.1rem",
                   height: "auto",
                   margin: "auto",
                 }}
-              >
-                <path
-                  fillRule="evenodd"
-                  d="M52.47 16.78v0c-.3.29-.77.29-1.07 0l-4.2-4.18v0c-.3-.3-.3-.77-.01-1.06 0-.01 0-.01 0-.01l2.89-2.89h0c.87-.88 2.3-.88 3.18 0l2.06 2.06v-.001c.87.87.87 2.28 0 3.16 -.01 0-.01 0-.01 0Zm-22.72 21.7l-5.05 1.51v0c-.3.08-.62-.08-.7-.38 -.04-.11-.04-.22-.001-.33l1.51-5.06v0c.28-.96.8-1.82 1.5-2.52l17.5-17.52v-.001c.29-.3.76-.3 1.06 0l4.18 4.19v0c.29.29.29.76 0 1.061L32.23 36.94v0c-.71.7-1.57 1.22-2.53 1.5ZM52 29.01v17 0c-.01 3.31-2.69 5.99-6 6H18v0c-3.32-.01-6-2.69-6-6.01V17.99v0c0-3.32 2.68-6 6-6.01h17v0c1.1 0 2 .89 2 2 0 1.1-.9 2-2.01 2h-17v0c-1.11 0-2 .89-2 2v28 0c0 1.1.89 1.99 2 2h28 0c1.1-.01 1.99-.9 2-2.01V28.96v0c0-1.11.89-2 2-2 1.1 0 2 .89 2 2Z"
-                  fill="currentColor"
-                />
-              </svg>
+              />
             </Button>
           </div>
         </MainHeader>
-        <div
-          css={css({
-            position: "relative",
-            flex: 1,
-            display: "flex",
-            minHeight: 0,
-            minWidth: 0,
-          })}
-        >
-          <div
-            css={css({
-              position: "absolute",
-              top: 0,
-              left: 0,
-              right: 0,
-              bottom: 0,
-              overflowY: "scroll",
-              overflowX: "hidden",
-              minHeight: 0,
-              flex: 1,
-              overflowAnchor: "none",
-            })}
-          >
-            <div
-              css={css({
-                display: "flex",
-                flexDirection: "column",
-                justifyContent: "flex-end",
-                alignItems: "stretch",
-                minHeight: "100%",
-              })}
-            >
-              {channels.map((c) => (
-                <ChannelItem key={c.id} id={c.id} />
-              ))}
-            </div>
-          </div>
-        </div>
+        <Outlet />
       </div>
 
       <NewMessageDialog
@@ -864,6 +904,59 @@ const Inbox = () => {
         }}
       />
     </>
+  );
+};
+
+const InboxChannelList = ({ filter, emptyFallback }) => {
+  const hasFetchedChannels = useHasFetchedUserChannels();
+  const channels = useMemberChannels({ readStates: true });
+  const channelIds = React.useMemo(
+    () => channels.filter(filter).map((c) => c.id),
+    [channels, filter]
+  );
+
+  if (hasFetchedChannels && channelIds.length === 0)
+    return <EmptyChannelList>{emptyFallback}</EmptyChannelList>;
+
+  return (
+    <div
+      css={css({
+        position: "relative",
+        flex: 1,
+        display: "flex",
+        minHeight: 0,
+        minWidth: 0,
+      })}
+    >
+      <div
+        css={css({
+          position: "absolute",
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          overflowY: "scroll",
+          overflowX: "hidden",
+          minHeight: 0,
+          flex: 1,
+          overflowAnchor: "none",
+        })}
+      >
+        <div
+          css={css({
+            display: "flex",
+            flexDirection: "column",
+            justifyContent: "flex-start",
+            alignItems: "stretch",
+            minHeight: "100%",
+          })}
+        >
+          {channelIds.map((id) => (
+            <ChannelItem key={id} id={id} />
+          ))}
+        </div>
+      </div>
+    </div>
   );
 };
 
@@ -1058,7 +1151,7 @@ const ChannelItem = ({ id }) => {
   );
 };
 
-const Layout = () => {
+const RootLayout = () => {
   const me = useMe();
 
   if (me == null) return null;
@@ -1393,6 +1486,16 @@ const IconButton = ({ component: Component = "button", ...props }) => (
   />
 );
 
+const ComposeIcon = (props) => (
+  <svg viewBox="0 0 64 64" {...props}>
+    <path
+      fillRule="evenodd"
+      d="M52.47 16.78v0c-.3.29-.77.29-1.07 0l-4.2-4.18v0c-.3-.3-.3-.77-.01-1.06 0-.01 0-.01 0-.01l2.89-2.89h0c.87-.88 2.3-.88 3.18 0l2.06 2.06v-.001c.87.87.87 2.28 0 3.16 -.01 0-.01 0-.01 0Zm-22.72 21.7l-5.05 1.51v0c-.3.08-.62-.08-.7-.38 -.04-.11-.04-.22-.001-.33l1.51-5.06v0c.28-.96.8-1.82 1.5-2.52l17.5-17.52v-.001c.29-.3.76-.3 1.06 0l4.18 4.19v0c.29.29.29.76 0 1.061L32.23 36.94v0c-.71.7-1.57 1.22-2.53 1.5ZM52 29.01v17 0c-.01 3.31-2.69 5.99-6 6H18v0c-3.32-.01-6-2.69-6-6.01V17.99v0c0-3.32 2.68-6 6-6.01h17v0c1.1 0 2 .89 2 2 0 1.1-.9 2-2.01 2h-17v0c-1.11 0-2 .89-2 2v28 0c0 1.1.89 1.99 2 2h28 0c1.1-.01 1.99-.9 2-2.01V28.96v0c0-1.11.89-2 2-2 1.1 0 2 .89 2 2Z"
+      fill="currentColor"
+    />
+  </svg>
+);
+
 const RequireAuth = ({ children }) => {
   const { status: authStatus } = useAuth();
 
@@ -1434,8 +1537,11 @@ const App = () => {
               <SidebarProvider initialIsOpen={false}>
                 <RequireAuth>
                   <Routes>
-                    <Route path="/" element={<Layout />}>
-                      <Route index element={<Inbox />} />
+                    <Route path="/" element={<RootLayout />}>
+                      <Route element={<InboxLayout />}>
+                        <Route index element={<Inbox />} />
+                        <Route path="/archive" element={<Archive />} />
+                      </Route>
                       <Route path="/c/:channelId" element={<Channel />} />
                     </Route>
                     <Route path="*" element={<Navigate to="/" replace />} />

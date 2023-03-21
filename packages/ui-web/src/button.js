@@ -2,11 +2,11 @@ import React from "react";
 import { useButton } from "react-aria";
 import { css, keyframes } from "@emotion/react";
 
-const baseStyles = (t, { multiline, align }) => ({
+const baseStyles = (t, { align }) => ({
   userSelect: "none",
   transition: "background 20ms ease-in",
   fontWeight: "400",
-  lineHeight: multiline ? 1.25 : 1,
+  lineHeight: 1.25,
   border: 0,
   borderRadius: "0.3rem",
   cursor: "pointer",
@@ -138,7 +138,7 @@ const Button = React.forwardRef(
         {...defaultPropsByComponent[Component]}
         css={(theme) =>
           css({
-            ...baseStyles(theme, { multiline, align }),
+            ...baseStyles(theme, { align }),
             ...stylesBySize(theme, { multiline, align })[size],
             ...stylesByVariant(theme, { danger })[variant],
           })
