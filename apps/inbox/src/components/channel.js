@@ -8,7 +8,7 @@ import {
   useMe,
   useActions,
   useChannel,
-  useChannelMessages,
+  useSortedChannelMessageIds,
   useMessage,
 } from "@shades/common/app";
 import theme from "@shades/ui-web/theme";
@@ -25,11 +25,10 @@ const Channel = () => {
     useActions();
 
   const channel = useChannel(params.channelId, { name: true });
-  const messages_ = useChannelMessages(params.channelId);
-  const messages = [...messages_].reverse();
+  const messageIds = useSortedChannelMessageIds(params.channelId);
 
   const [selectedMessageId, setSelectedMessageId] = React.useState(
-    () => messages.slice(-1)[0]?.id
+    () => messageIds.slice(-1)[0]
   );
 
   const formContainerRef = React.useRef();
@@ -38,11 +37,14 @@ const Channel = () => {
     async (message, { targetMessageId } = {}) => {
       await Promise.all([
         markChannelRead(params.channelId),
-        createMessage({
-          channel: params.channelId,
-          blocks: [messageUtils.createParagraphElement(message)],
-          replyToMessageId: targetMessageId,
-        }),
+        createMessage(
+          {
+            channel: params.channelId,
+            blocks: [messageUtils.createParagraphElement(message)],
+            replyToMessageId: targetMessageId,
+          },
+          { optimistic: false }
+        ),
       ]);
       setSelectedMessageId(null);
     },
@@ -65,7 +67,7 @@ const Channel = () => {
     formContainerRef.current.scrollIntoView({ block: "nearest" });
   }, [selectedMessageId]);
 
-  if (messages.length === 0) return null;
+  if (messageIds.length === 0) return null;
 
   return (
     <div
@@ -186,30 +188,33 @@ const Channel = () => {
               css={css({
                 display: "flex",
                 flexDirection: "column",
-                justifyContent: "flex-end",
+                justifyContent: "flex-start",
                 alignItems: "stretch",
                 minHeight: "100%",
-                paddingBottom: "0.5rem",
+                paddingBottom:
+                  messageIds.slice(-1)[0] === selectedMessageId
+                    ? "0.5rem"
+                    : "2rem",
               })}
             >
-              {messages.map((m, i) =>
-                m.id === selectedMessageId ? (
+              {messageIds.map((id, i) =>
+                id === selectedMessageId ? (
                   <div
-                    key={`${m.id}-reply-form`}
+                    key={`${id}-reply-form`}
                     ref={formContainerRef}
                     css={css({ padding: "1.5rem 2rem" })}
                   >
                     <ReplyForm
-                      messageId={m.id}
+                      messageId={id}
                       sendReply={sendReply}
-                      isLastMessage={i === messages.length - 1}
+                      isLastMessage={i === messageIds.length - 1}
                     />
                   </div>
                 ) : (
                   <MessageItem
-                    key={m.id}
-                    id={m.id}
-                    onClick={() => setSelectedMessageId(m.id)}
+                    key={id}
+                    id={id}
+                    onClick={() => setSelectedMessageId(id)}
                   />
                 )
               )}
@@ -383,7 +388,6 @@ const ReplyForm = ({ messageId, sendReply, isLastMessage }) => {
 
 const MessageItem = ({ id, onClick }) => {
   const message = useMessage(id);
-  console.log(message);
 
   return (
     <button

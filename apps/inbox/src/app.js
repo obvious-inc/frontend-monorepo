@@ -34,7 +34,8 @@ import {
   useChannel,
   useChannelMembers,
   useMemberChannels,
-  useChannelMessages,
+  useMessage,
+  useSortedChannelMessageIds,
   useHasFetchedUserChannels,
 } from "@shades/common/app";
 import {
@@ -315,13 +316,12 @@ const ChannelItem = ({ id }) => {
   const me = useMe();
   const channel = useChannel(id, { readStates: true, name: true });
   const members = useChannelMembers(id);
-  const messages = useChannelMessages(id);
+  const messageIds = useSortedChannelMessageIds(id);
+  const message = useMessage(messageIds.slice(-1)[0]);
 
   const membersExcludingMe = members.filter(
     (m) => m.walletAddress !== me.walletAddress && m.walletAddress != null
   );
-
-  const message = messages[0];
 
   React.useEffect(() => {
     fetchMessages(id, { limit: 1 });

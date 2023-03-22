@@ -127,7 +127,7 @@ const useSortedChannelMessages = ({ channelId }) => {
   const actions = useActions();
   const { fetchMessages } = actions;
 
-  const messages = useChannelMessages(channelId);
+  const messages = useChannelMessages(channelId, { sorted: true });
 
   useFetch(() => {
     if (channelId == null) return;
@@ -135,7 +135,7 @@ const useSortedChannelMessages = ({ channelId }) => {
   }, [channelId, fetchMessages]);
 
   const sortedMessages = messages.sort(
-    (m1, m2) => new Date(m1.created_at) - new Date(m2.created_at)
+    (m1, m2) => new Date(m1.createdAt) - new Date(m2.createdAt)
   );
 
   return sortedMessages;

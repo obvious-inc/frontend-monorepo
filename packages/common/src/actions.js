@@ -365,7 +365,10 @@ export default ({
         return message;
       });
     },
-    async createMessage({ channel, blocks, replyToMessageId }) {
+    async createMessage(
+      { channel, blocks, replyToMessageId },
+      { optimistic = true } = {}
+    ) {
       const me = selectMe(getStoreState());
 
       // TODO: Less hacky optimistc UI
@@ -377,15 +380,17 @@ export default ({
       };
       const dummyId = generateDummyId();
 
-      dispatch({
-        type: "message-create-request-sent",
-        message: {
-          ...message,
-          id: dummyId,
-          created_at: new Date().toISOString(),
-          author: me.id,
-        },
-      });
+      if (optimistic) {
+        dispatch({
+          type: "message-create-request-sent",
+          message: {
+            ...message,
+            id: dummyId,
+            created_at: new Date().toISOString(),
+            author: me.id,
+          },
+        });
+      }
 
       return authorizedFetch("/messages", {
         method: "POST",
