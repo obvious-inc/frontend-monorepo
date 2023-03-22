@@ -77,8 +77,9 @@ export const Layout = ({
             display: "flex",
             width: width ?? theme.sidebarWidth,
             maxWidth: "calc(100vw - 4.8rem)",
-            minWidth: `min(calc(100vw - 4.8rem), ${width ?? theme.sidebarWidth
-              })`,
+            minWidth: `min(calc(100vw - 4.8rem), ${
+              width ?? theme.sidebarWidth
+            })`,
             right: "100%",
             height: "100%",
             zIndex: isFloating ? 2 : undefined,

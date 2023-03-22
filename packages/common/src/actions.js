@@ -352,7 +352,7 @@ export default ({
       // starredItems,
     });
 
-    return { user: me, channels, readStates, starredItems };
+    return { user: me, channels, readStates };
   };
 
   return {

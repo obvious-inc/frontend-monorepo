@@ -28,10 +28,10 @@ import {
   Layout as SidebarLayout,
 } from "@shades/ui-web/sidebar-layout";
 import {
-  MagnificationGlass as MagnificationGlassIcon,
-  Planet as PlanetIcon,
-  Triangle as TriangleIcon,
   DoubleChevronLeft as DoubleChevronLeftIcon,
+  MagnificationGlass as MagnificationGlassIcon,
+  PlusSmall as PlusSmallIcon,
+  Triangle as TriangleIcon,
 } from "@shades/ui-web/icons";
 import useCommandCenter from "../hooks/command-center";
 import UserAvatar from "./user-avatar";
@@ -43,6 +43,8 @@ import Spinner from "./spinner";
 
 const { sort, comparator } = arrayUtils;
 const { truncateAddress } = ethereumUtils;
+
+const TRUNCATION_THRESHOLD = 8;
 
 const Layout = () => {
   const params = useParams();
@@ -63,22 +65,27 @@ const Layout = () => {
     []
   );
 
+  const [truncatedSections, setTruncatedSections] = React.useState([
+    "starred",
+    "member-channels",
+  ]);
+
   const [isCreateChannelDialogOpen, setCreateChannelDialogOpen] =
     React.useState(false);
 
-  // const memberChannels = state.selectMemberChannels();
   const memberChannels = useMemberChannels({ readStates: true });
 
-  // const starredChannels = state.selectStarredChannels();
-  const starredChannels = useStarredChannels();
+  const starredChannels = useStarredChannels({ readStates: true });
+
+  const memberChannelsExcludingStarred = React.useMemo(() => {
+    const starredChannelIds = starredChannels.map((c) => c.id);
+    return memberChannels.filter((c) => !starredChannelIds.includes(c.id));
+  }, [memberChannels, starredChannels]);
 
   const unseenChannels = memberChannels.filter(
     (c) => c.hasBeenSeen === false && c.id !== params.channelId
   );
 
-  // const popularPublicChannels = state
-  //   .selectPublicChannels()
-  //   .filter((c) => c.memberUserIds.length >= 3);
   const popularPublicChannels = usePublicChannels().filter(
     (c) => c.memberUserIds.length >= 3
   );
@@ -86,15 +93,13 @@ const Layout = () => {
   const listedChannels =
     authenticationStatus === "authenticated"
       ? [
-          ...memberChannels,
           ...starredChannels,
+          ...memberChannelsExcludingStarred,
           ...(memberChannels.length === 0 ? popularPublicChannels : []),
         ]
       : popularPublicChannels;
 
   const selectedChannel = useChannel(params.channelId);
-  // const selectedChannel =
-  //   params.channelId == null ? null : state.selectChannel(params.channelId);
 
   const selectedChannelIsListed = listedChannels.some(
     (c) => c.id === params.channelId
@@ -105,14 +110,13 @@ const Layout = () => {
 
   const hasFetchedMenuData = useHasFetchedMenuData();
 
+  const toggleMenu = useSidebarToggle();
+  const { isFloating: isMenuFloating, isCollapsed: isMenuCollapsed } =
+    useSidebarState();
+
   return (
     <SidebarLayout
-      header={({
-        isFloating: isMenuFloating,
-        isCollapsed: isMenuCollapsed,
-        isHoveringSidebar: isHoveringMenu,
-        toggle: toggleMenu,
-      }) =>
+      header={({ isHoveringSidebar }) =>
         authenticationStatus === "not-authenticated" &&
         walletAccountAddress == null ? null : isLoadingUser ? (
           <div />
@@ -131,7 +135,7 @@ const Layout = () => {
                     : null
                 }
                 toggleMenu={
-                  isMenuFloating || (!isMenuCollapsed && isHoveringMenu)
+                  isMenuFloating || (!isMenuCollapsed && isHoveringSidebar)
                     ? toggleMenu
                     : null
                 }
@@ -207,94 +211,6 @@ const Layout = () => {
           </DropdownMenu.Root>
         )
       }
-      sidebarBottomContent={({
-        toggle: toggleMenu,
-        isFloating: isMenuFloating,
-      }) => (
-        <>
-          <button
-            css={(theme) =>
-              css({
-                transition: "background 20ms ease-in",
-                cursor: "pointer",
-                boxShadow: "rgba(255, 255, 255, 0.094) 0 -1px 0",
-                outline: "none",
-                ":hover": {
-                  background: theme.colors.backgroundModifierHover,
-                },
-                ":focus-visible": {
-                  boxShadow: `0 0 0 0.2rem ${theme.colors.primary} inset`,
-                },
-              })
-            }
-            onClick={() => {
-              setCreateChannelDialogOpen(true);
-              if (isMenuFloating) toggleMenu();
-            }}
-          >
-            <div
-              css={css({
-                display: "flex",
-                alignItems: "center",
-                width: "100%",
-                padding: "0.2rem 1rem",
-                height: "4.5rem",
-              })}
-            >
-              <div
-                css={css({
-                  width: "2.2rem",
-                  height: "2.2rem",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  marginRight: "0.8rem",
-                })}
-              >
-                <svg
-                  viewBox="0 0 16 16"
-                  css={(theme) =>
-                    css({
-                      width: "1.6rem",
-                      height: "1.6rem",
-                      display: "block",
-                      fill: theme.colors.textDimmed,
-                    })
-                  }
-                >
-                  <path d="M7.977 14.963c.407 0 .747-.324.747-.723V8.72h5.362c.399 0 .74-.34.74-.747a.746.746 0 00-.74-.738H8.724V1.706c0-.398-.34-.722-.747-.722a.732.732 0 00-.739.722v5.529h-5.37a.746.746 0 00-.74.738c0 .407.341.747.74.747h5.37v5.52c0 .399.332.723.739.723z" />
-                </svg>
-              </div>
-              <div
-                css={(theme) =>
-                  css({
-                    flex: "1 1 auto",
-                    whiteSpace: "nowrap",
-                    minWidth: 0,
-                    overflow: "hidden",
-                    textOverflow: "ellipsis",
-                    color: theme.colors.textDimmed,
-                    fontSize: "1.4rem",
-                    fontWeight: "500",
-                  })
-                }
-              >
-                New channel
-              </div>
-            </div>
-          </button>
-
-          <CreateChannelDialog
-            isOpen={isCreateChannelDialogOpen}
-            close={() => {
-              setCreateChannelDialogOpen(false);
-            }}
-            onChannelCreated={() => {
-              toggleMenu();
-            }}
-          />
-        </>
-      )}
       sidebarContent={
         isLoadingUser ? null : (
           <>
@@ -310,17 +226,20 @@ const Layout = () => {
             <ListItem
               compact={false}
               icon={<MagnificationGlassIcon style={{ width: "1.4rem" }} />}
-              title="Quick Find"
+              title="Search"
               onClick={() => {
                 openCommandCenter();
               }}
             />
             <ListItem
               compact={false}
-              icon={<PlanetIcon style={{ width: "1.4rem" }} />}
-              title="Discover"
+              icon={
+                <PlusSmallIcon style={{ width: "1.6rem", height: "auto" }} />
+              }
+              title="New channel"
               onClick={() => {
-                openCommandCenter({ mode: "discover" });
+                setCreateChannelDialogOpen(true);
+                if (isMenuFloating) toggleMenu();
               }}
             />
 
@@ -346,69 +265,92 @@ const Layout = () => {
                   </>
                 )}
 
-                {starredChannels.length !== 0 && (
-                  <CollapsableSection
-                    title="Starred"
-                    expanded={!collapsedIds.includes("starred")}
-                    onToggleExpanded={() => {
-                      setCollapsedIds((ids) =>
-                        ids.includes("starred")
-                          ? ids.filter((id) => id !== "starred")
-                          : [...ids, "starred"]
-                      );
-                    }}
-                  >
-                    {starredChannels.map((c) => (
-                      <ChannelItem key={c.id} id={c.id} />
-                    ))}
-                  </CollapsableSection>
-                )}
+                {[
+                  {
+                    key: "starred",
+                    title: "Starred",
+                    channels: starredChannels,
+                    isHidden: starredChannels.length === 0,
+                  },
+                  {
+                    key: "member-channels",
+                    title: "Channels",
+                    channels: memberChannelsExcludingStarred,
+                    isHidden: memberChannelsExcludingStarred.length === 0,
+                  },
+                  {
+                    key: "public",
+                    title: "Popular channels",
+                    channels: sort(
+                      comparator(
+                        {
+                          value: (c) => c.memberUserIds.length,
+                          order: "desc",
+                        },
+                        { value: (c) => c.name.toLowerCase() }
+                      ),
+                      popularPublicChannels
+                    ),
+                    isHidden:
+                      memberChannels.length !== 0 ||
+                      popularPublicChannels.length === 0,
+                  },
+                ]
+                  .filter((s) => !s.isHidden)
+                  .map(({ key, title, channels }) => {
+                    const isTruncated = truncatedSections.includes(key);
 
-                {memberChannels.length !== 0 && (
-                  <CollapsableSection
-                    title="Channels"
-                    expanded={!collapsedIds.includes("dms-topics")}
-                    onToggleExpanded={() => {
-                      setCollapsedIds((ids) =>
-                        ids.includes("dms-topics")
-                          ? ids.filter((id) => id !== "dms-topics")
-                          : [...ids, "dms-topics"]
-                      );
-                    }}
-                  >
-                    {memberChannels.map((c) => (
-                      <ChannelItem key={c.id} id={c.id} />
-                    ))}
-                  </CollapsableSection>
-                )}
+                    const deriveTruncationCount = () => {
+                      if (!isTruncated) return 0;
 
-                {memberChannels.length === 0 &&
-                  popularPublicChannels.length !== 0 && (
-                    <CollapsableSection
-                      title="Popular channels"
-                      expanded={!collapsedIds.includes("public")}
-                      onToggleExpanded={() => {
-                        setCollapsedIds((ids) =>
-                          ids.includes("public")
-                            ? ids.filter((id) => id !== "public")
-                            : [...ids, "public"]
-                        );
-                      }}
-                    >
-                      {sort(
-                        comparator(
-                          {
-                            value: (c) => c.memberUserIds.length,
-                            order: "desc",
-                          },
-                          { value: (c) => c.name.toLowerCase() }
-                        ),
-                        popularPublicChannels
-                      ).map((c) => (
-                        <ChannelItem key={c.id} id={c.id} />
-                      ))}
-                    </CollapsableSection>
-                  )}
+                      const defaultTruncationCount =
+                        channels.length - TRUNCATION_THRESHOLD;
+                      const readCount = channels.filter(
+                        (c) => !c.hasUnread
+                      ).length;
+
+                      return Math.min(defaultTruncationCount, readCount);
+                    };
+
+                    const truncationCount = deriveTruncationCount();
+
+                    const visibleChannels =
+                      isTruncated && truncationCount > 1
+                        ? channels.slice(0, channels.length - truncationCount)
+                        : channels;
+
+                    return (
+                      <CollapsableSection
+                        key={key}
+                        title={title}
+                        expanded={!collapsedIds.includes(key)}
+                        truncatedCount={
+                          channels.length - visibleChannels.length
+                        }
+                        onToggleExpanded={() => {
+                          setCollapsedIds((ids) =>
+                            ids.includes(key)
+                              ? ids.filter((id) => id !== key)
+                              : [...ids, key]
+                          );
+                          setTruncatedSections((ids) =>
+                            ids.includes(key) ? ids : [...ids, key]
+                          );
+                        }}
+                        onToggleTruncated={() => {
+                          setTruncatedSections((ids) =>
+                            ids.includes(key)
+                              ? ids.filter((id) => id !== key)
+                              : [...ids, key]
+                          );
+                        }}
+                      >
+                        {visibleChannels.map((c) => (
+                          <ChannelItem key={c.id} id={c.id} />
+                        ))}
+                      </CollapsableSection>
+                    );
+                  })}
 
                 <div style={{ height: "0.1rem" }} />
               </>
@@ -420,6 +362,16 @@ const Layout = () => {
       <React.Suspense fallback={null}>
         <Outlet />
       </React.Suspense>
+
+      <CreateChannelDialog
+        isOpen={isCreateChannelDialogOpen}
+        close={() => {
+          setCreateChannelDialogOpen(false);
+        }}
+        onChannelCreated={() => {
+          toggleMenu();
+        }}
+      />
     </SidebarLayout>
   );
 };
@@ -618,26 +570,24 @@ const ProfileDropdownTrigger = React.forwardRef(
 const CollapsableSection = ({
   title,
   expanded,
+  truncatedCount = 0,
   onToggleExpanded,
+  onToggleTruncated,
   children,
 }) => (
   <section style={{ marginBottom: expanded ? "1.8rem" : 0 }}>
     <div
-      css={(theme) => css`
-        font-size: 1.2rem;
-        font-weight: 600;
-        margin: 0.6rem 0 0.2rem;
-        padding: 0 0.8rem 0
-          calc(
-            ${theme.mainMenu.itemHorizontalPadding} +
-              ${theme.mainMenu.containerHorizontalPadding}
-          );
-        min-height: 2.4rem;
-        display: grid;
-        align-items: center;
-        grid-template-columns: minmax(0, 1fr) auto;
-        grid-gap: 1rem;
-      `}
+      css={(t) =>
+        css({
+          margin: "0.6rem 0 0.2rem",
+          padding: `0 0.8rem 0 calc( ${t.mainMenu.itemHorizontalPadding} + ${t.mainMenu.containerHorizontalPadding})`,
+          minHeight: "2.4rem",
+          display: "grid",
+          alignItems: "center",
+          gridTemplateColumns: "minmax(0, 1fr) auto",
+          gridGap: "1rem",
+        })
+      }
     >
       <button
         onClick={onToggleExpanded}
@@ -663,12 +613,41 @@ const CollapsableSection = ({
           })
         }
       >
-        {title}
+        <SmallText>{title}</SmallText>
       </button>
     </div>
 
-    {expanded && children}
+    {expanded && (
+      <>
+        {children}
+        {truncatedCount > 0 && (
+          <ListItem
+            component="button"
+            onClick={onToggleTruncated}
+            title={
+              <SmallText css={css({ padding: "0 0.4rem" })}>
+                {truncatedCount} more...
+              </SmallText>
+            }
+          />
+        )}
+      </>
+    )}
   </section>
+);
+
+const SmallText = ({ component: Component = "div", ...props }) => (
+  <Component
+    css={(t) =>
+      css({
+        fontSize: t.fontSizes.small,
+        fontWeight: "600",
+        lineHeight: 1,
+        color: "rgb(255 255 255 / 28.2%)",
+      })
+    }
+    {...props}
+  />
 );
 
 const ChannelItem = ({ id, expandable }) => {

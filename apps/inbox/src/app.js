@@ -51,9 +51,10 @@ import {
 import Button from "@shades/ui-web/button";
 import Avatar from "@shades/ui-web/avatar";
 import {
-  DoubleChevronLeft as DoubleChevronLeftIcon,
   Checkmark as CheckmarkIcon,
+  Compose as ComposeIcon,
   DotsHorizontal as DotsHorizontalIcon,
+  DoubleChevronLeft as DoubleChevronLeftIcon,
 } from "@shades/ui-web/icons";
 import NewMessageDialog from "./components/new-messaage-dialog.js";
 import MainHeader from "./components/main-header.js";
@@ -234,7 +235,7 @@ const InboxLayout = () => {
               <ComposeIcon
                 style={{
                   display: "block",
-                  width: "2.1rem",
+                  width: "1.7rem",
                   height: "auto",
                   margin: "auto",
                 }}
@@ -841,16 +842,6 @@ const LoginScreen = () => {
     </div>
   );
 };
-
-const ComposeIcon = (props) => (
-  <svg viewBox="0 0 64 64" {...props}>
-    <path
-      fillRule="evenodd"
-      d="M52.47 16.78v0c-.3.29-.77.29-1.07 0l-4.2-4.18v0c-.3-.3-.3-.77-.01-1.06 0-.01 0-.01 0-.01l2.89-2.89h0c.87-.88 2.3-.88 3.18 0l2.06 2.06v-.001c.87.87.87 2.28 0 3.16 -.01 0-.01 0-.01 0Zm-22.72 21.7l-5.05 1.51v0c-.3.08-.62-.08-.7-.38 -.04-.11-.04-.22-.001-.33l1.51-5.06v0c.28-.96.8-1.82 1.5-2.52l17.5-17.52v-.001c.29-.3.76-.3 1.06 0l4.18 4.19v0c.29.29.29.76 0 1.061L32.23 36.94v0c-.71.7-1.57 1.22-2.53 1.5ZM52 29.01v17 0c-.01 3.31-2.69 5.99-6 6H18v0c-3.32-.01-6-2.69-6-6.01V17.99v0c0-3.32 2.68-6 6-6.01h17v0c1.1 0 2 .89 2 2 0 1.1-.9 2-2.01 2h-17v0c-1.11 0-2 .89-2 2v28 0c0 1.1.89 1.99 2 2h28 0c1.1-.01 1.99-.9 2-2.01V28.96v0c0-1.11.89-2 2-2 1.1 0 2 .89 2 2Z"
-      fill="currentColor"
-    />
-  </svg>
-);
 
 const RequireAuth = ({ children }) => {
   const { status: authStatus } = useAuth();

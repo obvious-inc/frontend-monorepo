@@ -151,24 +151,39 @@ export const useChannelTypingMembers = (channelId) =>
     )
   );
 
-export const useMemberChannels = (...args) =>
-  useStore((s) => selectMemberChannels(s, ...args));
-
-export const useAllChannels = ({ name = false, members = false } = {}) =>
+export const useMemberChannels = (options = {}) =>
   useStore(
     React.useCallback(
-      (state) => selectAllChannels(state, { name, members }),
-      [name, members]
+      (s) => selectMemberChannels(s, options),
+      // eslint-disable-next-line
+      Object.values(options)
     )
   );
 
-export const useStarredChannels = () => useStore(selectStarredChannels);
-
-export const usePublicChannels = ({ name = false, members = false } = {}) =>
+export const useAllChannels = (options = {}) =>
   useStore(
     React.useCallback(
-      (state) => selectPublicChannels(state, { name, members }),
-      [name, members]
+      (state) => selectAllChannels(state, options),
+      // eslint-disable-next-line
+      Object.values(options)
+    )
+  );
+
+export const useStarredChannels = (options = {}) =>
+  useStore(
+    React.useCallback(
+      (state) => selectStarredChannels(state, options),
+      // eslint-disable-next-line
+      Object.values(options)
+    )
+  );
+
+export const usePublicChannels = (options = {}) =>
+  useStore(
+    React.useCallback(
+      (state) => selectPublicChannels(state, options),
+      // eslint-disable-next-line
+      Object.values(options)
     )
   );
 
