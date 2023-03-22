@@ -155,7 +155,7 @@ export default ({
     });
 
   const fetchUserPrivateChannels = () =>
-    authorizedFetch("/channels").then((rawChannels) => {
+    authorizedFetch("/channels?scope=private").then((rawChannels) => {
       const channels = rawChannels.map(parseChannel);
       // TODO handle this action
       dispatch({ type: "fetch-channels-request-successful", channels });
