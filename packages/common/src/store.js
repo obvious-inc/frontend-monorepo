@@ -127,7 +127,7 @@ const createApiParsers = ({ buildCloudflareImageUrl }) => ({
     if (u.description !== undefined)
       parsedData.description = normalizeString(u.description);
 
-    if (u.status !== null) parsedData.status = normalizeString(u.status);
+    if (u.status !== undefined) parsedData.status = normalizeString(u.status);
 
     if (u.pfp !== undefined) parsedData.profilePicture = createProfilePicture();
 
