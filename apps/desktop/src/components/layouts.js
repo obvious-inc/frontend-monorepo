@@ -207,7 +207,10 @@ const Layout = () => {
           </DropdownMenu.Root>
         )
       }
-      sidebarBottomContent={({ toggle: toggleMenu }) => (
+      sidebarBottomContent={({
+        toggle: toggleMenu,
+        isFloating: isMenuFloating,
+      }) => (
         <>
           <button
             css={(theme) =>
@@ -226,7 +229,7 @@ const Layout = () => {
             }
             onClick={() => {
               setCreateChannelDialogOpen(true);
-              toggleMenu();
+              if (isMenuFloating) toggleMenu();
             }}
           >
             <div

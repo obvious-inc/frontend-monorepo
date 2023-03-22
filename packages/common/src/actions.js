@@ -87,6 +87,15 @@ export default ({
       return channels;
     });
 
+  const fetchUserChannelsReadStates = () =>
+    authorizedFetch("/users/me/read_states").then((readStates) => {
+      dispatch({
+        type: "fetch-user-channels-read-states-request-successful",
+        readStates,
+      });
+      return readStates;
+    });
+
   const fetchChannel = (id) =>
     authorizedFetch(`/channels/${id}`, {
       allowUnauthorized: true,
@@ -143,6 +152,14 @@ export default ({
         permissions: res,
       });
       return res;
+    });
+
+  const fetchUserPrivateChannels = () =>
+    authorizedFetch("/channels").then((rawChannels) => {
+      const channels = rawChannels.map(parseChannel);
+      // TODO handle this action
+      dispatch({ type: "fetch-channels-request-successful", channels });
+      return channels;
     });
 
   const fetchChannelPublicPermissions = (id) =>
@@ -236,6 +253,107 @@ export default ({
 
   const unstarItem = (starId) =>
     authorizedFetch(`/stars/${starId}`, { method: "DELETE" });
+
+  const fetchClientBootDataFull = async () => {
+    const [
+      { user: rawMe, channels: rawChannels, read_states: readStates, apps },
+      starredItems,
+    ] = await Promise.all([
+      authorizedFetch("/ready"),
+      fetchStarredItems(),
+      fetchBlockedUsers(),
+    ]);
+
+    const me = parseUser(rawMe);
+    const channels = rawChannels
+      .map(parseChannel)
+      .map((c) => ({ ...c, memberUserIds: [me.id] }));
+
+    // TODO: Change this
+    const missingChannelStars = starredItems.filter(
+      (i) =>
+        i.type === "channel" && rawChannels.every((c) => c.id !== i.reference)
+    );
+
+    if (missingChannelStars.length !== 0)
+      await Promise.all(
+        missingChannelStars.map((s) =>
+          fetchChannel(s.reference).catch((e) => {
+            // 403 may happen if you have starred a channel you no longer have access to
+            if (e.code !== 403 && e.code !== 404) throw e;
+          })
+        )
+      );
+
+    fetchPreferences();
+
+    const dmChannelIds = unique(
+      channels.filter((c) => c.kind === "dm").map((c) => c.id)
+    );
+    for (const id of dmChannelIds) fetchChannelMembers(id);
+
+    dispatch({
+      type: "fetch-client-boot-data-request-successful",
+      user: me,
+      channels,
+      readStates,
+      apps,
+      // starredItems,
+    });
+
+    return { user: me, channels, readStates, starredItems };
+  };
+
+  const fetchClientBootDataPrivate = async () => {
+    const [
+      rawChannels,
+      rawMe,
+      readStates,
+      // starredItems
+    ] = await Promise.all([
+      fetchUserPrivateChannels(),
+      fetchMe(),
+      fetchUserChannelsReadStates(),
+      // fetchStarredItems(),
+      fetchBlockedUsers(),
+    ]);
+
+    const me = parseUser(rawMe);
+    const channels = rawChannels.map((c) => ({ ...c, memberUserIds: [me.id] }));
+
+    // TODO: Change this
+    // const missingChannelStars = starredItems.filter(
+    //   (i) =>
+    //     i.type === "channel" && rawChannels.every((c) => c.id !== i.reference)
+    // );
+
+    // if (missingChannelStars.length !== 0)
+    //   await Promise.all(
+    //     missingChannelStars.map((s) =>
+    //       fetchChannel(s.reference).catch((e) => {
+    //         // 403 may happen if you have starred a channel you no longer have access to
+    //         if (e.code !== 403 && e.code !== 404) throw e;
+    //       })
+    //     )
+    //   );
+
+    fetchPreferences();
+
+    const dmChannelIds = unique(
+      channels.filter((c) => c.kind === "dm").map((c) => c.id)
+    );
+    for (const id of dmChannelIds) fetchChannelMembers(id);
+
+    dispatch({
+      type: "fetch-client-boot-data-request-successful",
+      user: me,
+      channels,
+      readStates,
+      // starredItems,
+    });
+
+    return { user: me, channels, readStates, starredItems };
+  };
 
   return {
     logout() {
@@ -501,6 +619,7 @@ export default ({
     },
     fetchChannel,
     fetchUserChannels,
+    fetchUserPrivateChannels,
     fetchPubliclyReadableChannels() {
       return authorizedFetch("/channels/@public", {
         allowUnauthorized: true,
@@ -513,15 +632,7 @@ export default ({
         return channels;
       });
     },
-    fetchUserChannelsReadStates() {
-      return authorizedFetch("/users/me/read_states").then((readStates) => {
-        dispatch({
-          type: "fetch-user-channels-read-states-request-successful",
-          readStates,
-        });
-        return readStates;
-      });
-    },
+    fetchUserChannelsReadStates,
     createChannel,
     createDmChannel({ name, memberUserIds, memberWalletAddresses }) {
       return authorizedFetch("/channels", {
@@ -680,54 +791,15 @@ export default ({
         return res;
       });
     },
-    async fetchClientBootData() {
-      const [
-        { user: rawMe, channels: rawChannels, read_states: readStates, apps },
-        starredItems,
-      ] = await Promise.all([
-        authorizedFetch("/ready"),
-        fetchStarredItems(),
-        fetchBlockedUsers(),
-      ]);
-
-      const me = parseUser(rawMe);
-      const channels = rawChannels
-        .map(parseChannel)
-        .map((c) => ({ ...c, memberUserIds: [me.id] }));
-
-      // TODO: Change this
-      const missingChannelStars = starredItems.filter(
-        (i) =>
-          i.type === "channel" && rawChannels.every((c) => c.id !== i.reference)
-      );
-
-      if (missingChannelStars.length !== 0)
-        await Promise.all(
-          missingChannelStars.map((s) =>
-            fetchChannel(s.reference).catch((e) => {
-              // 403 may happen if you have starred a channel you no longer have access to
-              if (e.code !== 403 && e.code !== 404) throw e;
-            })
-          )
-        );
-
-      fetchPreferences();
-
-      const dmChannelIds = unique(
-        channels.filter((c) => c.kind === "dm").map((c) => c.id)
-      );
-      for (const id of dmChannelIds) fetchChannelMembers(id);
-
-      dispatch({
-        type: "fetch-client-boot-data-request-successful",
-        user: me,
-        channels,
-        readStates,
-        apps,
-        // starredItems,
-      });
-
-      return { user: me, channels, readStates, starredItems };
+    fetchClientBootData(mode = "full") {
+      switch (mode) {
+        case "full":
+          return fetchClientBootDataFull();
+        case "private-only":
+          return fetchClientBootDataPrivate();
+        default:
+          throw new Error(`Unrecognized boot mode "${mode}"`);
+      }
     },
     starItem,
     unstarItem,

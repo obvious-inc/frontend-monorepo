@@ -16,12 +16,12 @@ const App = () => {
   const { status: authStatus } = useAuth();
   const actions = useActions();
 
-  const { fetchClientBootData, fetchUsers, fetchMessages } = actions;
+  const { fetchClientBootData } = actions;
 
   React.useEffect(() => {
     if (authStatus !== "authenticated") return;
-    fetchClientBootData();
-  }, [authStatus, fetchClientBootData, fetchUsers, fetchMessages]);
+    fetchClientBootData("private-only");
+  }, [authStatus, fetchClientBootData]);
 
   return (
     <React.Suspense fallback={null}>
