@@ -265,9 +265,7 @@ export default ({
     ]);
 
     const me = parseUser(rawMe);
-    const channels = rawChannels
-      .map(parseChannel)
-      .map((c) => ({ ...c, memberUserIds: [me.id] }));
+    const channels = rawChannels.map(parseChannel);
 
     // TODO: Change this
     const missingChannelStars = starredItems.filter(
@@ -287,10 +285,15 @@ export default ({
 
     fetchPreferences();
 
-    const dmChannelIds = unique(
-      channels.filter((c) => c.kind === "dm").map((c) => c.id)
+    fetchUsers(
+      unique(
+        channels
+          .filter((c) => c.kind === "dm")
+          .flatMap((c) =>
+            c.memberUserIds.filter((id) => id !== me.id).slice(0, 3)
+          )
+      )
     );
-    for (const id of dmChannelIds) fetchChannelMembers(id);
 
     dispatch({
       type: "fetch-client-boot-data-request-successful",
@@ -319,7 +322,10 @@ export default ({
     ]);
 
     const me = parseUser(rawMe);
-    const channels = rawChannels.map((c) => ({ ...c, memberUserIds: [me.id] }));
+    const channels = rawChannels.map((c) => ({
+      ...c,
+      memberUserIds: c.memberUserIds == null ? [me.id] : c.memberUserIds,
+    }));
 
     // TODO: Change this
     // const missingChannelStars = starredItems.filter(
@@ -447,7 +453,7 @@ export default ({
             });
 
           // Beautifuly fetch non-member users
-          fetchChannel(channelId).then((c) => {
+          fetchChannelMembers(channelId).then((ms) => {
             const allUserIds = [
               ...messages
                 // TODO: move message parsing here
@@ -457,8 +463,8 @@ export default ({
                 .flatMap((m) => getMentions(m.blocks))
                 .map((m) => m.ref),
             ];
-            const filteredUserIds = unique(allUserIds).filter(
-              (id) => !c.memberUserIds.includes(id)
+            const filteredUserIds = unique(allUserIds).filter((id) =>
+              ms.some((m) => m.id === id)
             );
 
             if (authStatus === "authenticated") fetchUsers(filteredUserIds);

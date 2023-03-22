@@ -219,7 +219,7 @@ const CreateChannelDialogContent = ({ titleProps, close, createChannel }) => {
   );
 };
 
-const CreateChannelDialog = ({ isOpen, close, onChannelCreated }) => {
+const CreateChannelDialog = ({ isOpen, close }) => {
   const actions = useActions();
   const { status: authenticationStatus } = useAuth();
   const navigate = useNavigate();
@@ -272,7 +272,6 @@ const CreateChannelDialog = ({ isOpen, close, onChannelCreated }) => {
             const channel = await create();
 
             navigate(`/channels/${channel.id}`);
-            onChannelCreated();
           }}
         />
       )}

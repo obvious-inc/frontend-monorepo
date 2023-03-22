@@ -29,7 +29,9 @@ const entriesById = (state = {}, action) => {
     case "register-unknown-users": {
       const usersById = indexBy(
         (u) => u.id,
-        action.userIds.map((id) => ({ id, unknown: true }))
+        action.userIds.map((id) =>
+          state[id] == null ? { id, unknown: true } : state[id]
+        )
       );
       return { ...state, ...usersById };
     }
@@ -144,9 +146,13 @@ export const selectUsers = createSelector(
 );
 
 export const selectUserFromWalletAddress = (state, address) =>
-  selectAllUsers(state).find(
-    (u) => u.walletAddress.toLowerCase() === address.toLowerCase()
-  );
+  selectAllUsers(state).find((u) => {
+    if (u.walletAddress == null) console.log(u);
+    return (
+      u.walletAddress != null &&
+      u.walletAddress.toLowerCase() === address.toLowerCase()
+    );
+  });
 
 export const selectStarredUserIds = createSelector(
   (state) => Object.keys(state.users.starsByUserId),

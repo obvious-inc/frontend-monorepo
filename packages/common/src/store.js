@@ -146,7 +146,10 @@ const createApiParsers = ({ buildCloudflareImageUrl }) => ({
       kind: rawChannel.kind,
       createdAt: rawChannel.created_at,
       lastMessageAt: rawChannel.last_message_at,
-      memberUserIds: rawChannel.members ?? [],
+      memberUserIds:
+        rawChannel.members == null
+          ? undefined
+          : rawChannel.members.map((m) => (typeof m === "string" ? m : m.user)),
       ownerUserId: rawChannel.owner,
       isDeleted: rawChannel.deleted,
     };

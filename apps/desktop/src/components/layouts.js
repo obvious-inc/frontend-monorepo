@@ -368,9 +368,6 @@ const Layout = () => {
         close={() => {
           setCreateChannelDialogOpen(false);
         }}
-        onChannelCreated={() => {
-          toggleMenu();
-        }}
       />
     </SidebarLayout>
   );
