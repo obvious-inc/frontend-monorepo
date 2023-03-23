@@ -49,6 +49,7 @@ import {
   Layout as SidebarLayout,
 } from "@shades/ui-web/sidebar-layout";
 import Button from "@shades/ui-web/button";
+import IconButton from "@shades/ui-web/icon-button";
 import Avatar from "@shades/ui-web/avatar";
 import {
   Checkmark as CheckmarkIcon,
@@ -61,7 +62,6 @@ import MainHeader from "./components/main-header.js";
 import HeaderItem from "./components/header-item.js";
 import FormattedDate from "./components/formatted-date.js";
 import UserAvatar from "./components/user-avatar.js";
-import IconButton from "./components/icon-button.js";
 
 const Channel = React.lazy(() => import("./components/channel.js"));
 
@@ -670,105 +670,6 @@ const RootLayout = () => {
     </SidebarLayout>
   );
 };
-
-// const ListItem = ({
-//   component: Component = "button",
-//   compact = true,
-//   indendationLevel = 0,
-//   title,
-//   disabled,
-//   ...props
-// }) => (
-//   <div
-//     css={(theme) => css`
-//       padding: 0 ${theme.mainMenu.containerHorizontalPadding};
-
-//       &:not(:last-of-type) {
-//         margin-bottom: ${theme.mainMenu.itemDistance};
-//       }
-//       & > * {
-//         display: flex;
-//         align-items: center;
-//         width: 100%;
-//         border: 0;
-//         font-size: ${theme.fontSizes.default};
-//         font-weight: ${theme.mainMenu.itemTextWeight};
-//         text-align: left;
-//         background: transparent;
-//         border-radius: ${theme.mainMenu.itemBorderRadius};
-//         cursor: pointer;
-//         outline: none;
-//         color: ${disabled
-//           ? theme.mainMenu.itemTextColorDisabled
-//           : theme.mainMenu.itemTextColor};
-//         padding: 0.2rem ${theme.mainMenu.itemHorizontalPadding};
-//         padding-left: calc(
-//           ${theme.mainMenu.itemHorizontalPadding} + ${indendationLevel} * 2.2rem
-//         );
-//         text-decoration: none;
-//         line-height: 1.3;
-//         height: ${theme.mainMenu.itemHeight};
-//         margin: 0.1rem 0;
-//         pointer-events: ${disabled ? "none" : "all"};
-//       }
-//       & > *.active {
-//         background: ${theme.colors.backgroundModifierSelected};
-//       }
-//       & > *:not(.active):hover {
-//         background: ${theme.colors.backgroundModifierHover};
-//       }
-//       & > *.active {
-//         color: ${theme.colors.textNormal};
-//       }
-//       & > *:focus-visible {
-//         box-shadow: 0 0 0 0.2rem ${theme.colors.primary};
-//       }
-//     `}
-//   >
-//     <Component {...props}>
-//       <div
-//         css={css({
-//           display: "flex",
-//           alignItems: "center",
-//           justifyContent: "center",
-//           width: "2.2rem",
-//           height: "1.8rem",
-//           marginRight: compact ? "0.4rem" : "0.8rem",
-//         })}
-//       >
-//         <div
-//           css={(theme) =>
-//             css({
-//               color: disabled
-//                 ? "rgb(255 255 255 / 22%)"
-//                 : theme.colors.textMuted,
-//               background: theme.colors.backgroundModifierHover,
-//               borderRadius: "50%",
-//               display: "flex",
-//               alignItems: "center",
-//               justifyContent: "center",
-//               width: "2rem",
-//               height: "2rem",
-//             })
-//           }
-//         >
-//           {/* {icon} */}
-//         </div>
-//       </div>
-//       <div
-//         style={{
-//           flex: 1,
-//           minWidth: 0,
-//           whiteSpace: "nowrap",
-//           overflow: "hidden",
-//           textOverflow: "ellipsis",
-//         }}
-//       >
-//         {title}
-//       </div>
-//     </Component>
-//   </div>
-// );
 
 const LoginScreen = () => {
   const {

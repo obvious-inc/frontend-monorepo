@@ -13,9 +13,9 @@ import {
 } from "@shades/common/app";
 import theme from "@shades/ui-web/theme";
 import Button from "@shades/ui-web/button";
+import IconButton from "@shades/ui-web/icon-button";
 import MainHeader from "./main-header.js";
 import HeaderItem from "./header-item.js";
-import IconButton from "./icon-button.js";
 import FormattedDate from "./formatted-date.js";
 import UserAvatar from "./user-avatar.js";
 

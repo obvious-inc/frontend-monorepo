@@ -20,16 +20,19 @@ const backgroundDark = "hsl(0 0% 10%)";
 const backgroundDarkTintLighter = "hsl(0 0% 11%)";
 const backgroundLight = "hsl(0 0% 15%)";
 
+const normalTextSize = "1.4rem";
+const largeText = "1.6rem";
+
 const fontSizes = {
   tiny: "1.05rem",
   small: "1.2rem",
-  default: "1.4rem",
-  large: "1.6rem",
+  default: normalTextSize,
+  large: largeText,
   header: "2rem",
   huge: "3.2rem",
-  headerDefault: "1.6rem",
-  channelMessages: "1.6rem",
-  menus: "1.4rem",
+  headerDefault: largeText,
+  channelMessages: largeText,
+  menus: normalTextSize,
 };
 
 export default {
@@ -79,7 +82,7 @@ export default {
     textDanger,
     link: primaryTintLighter,
     linkModifierHover: createPrimary({ saturation: 1, lightness: 0.62 }),
-    borderLight: "hsl(0 0% 20%)",
+    borderLight: "hsl(0 0% 100% / 20%)",
     borderDanger: "rgb(110, 54, 48)",
     backgroundPrimary: backgroundDark,
     backgroundSecondary: backgroundNormal,

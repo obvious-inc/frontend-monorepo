@@ -847,7 +847,7 @@ const MembersDirectoryTab = ({ channelId, addMember }) => {
                   marginTop: "0.1rem",
                 },
                 ":hover": {
-                  background: t.colors.backgroundModifierSelected,
+                  background: t.colors.backgroundModifierHover,
                 },
                 ":focus-visible": {
                   boxShadow: `0 0 0 0.2rem ${t.colors.primary} inset`,

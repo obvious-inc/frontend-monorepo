@@ -160,7 +160,7 @@ const RichTextInput = React.forwardRef(
     const renderLeaf = React.useCallback((props) => <Leaf {...props} />, []);
 
     React.useEffect(() => {
-      ref.current = editor;
+      if (ref != null) ref.current = editor;
       // :this-is-fine:
       Editor.normalize(editor, { force: true });
     }, [ref, editor, onChange]);

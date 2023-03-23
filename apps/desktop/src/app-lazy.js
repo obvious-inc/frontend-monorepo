@@ -49,12 +49,15 @@ import Layout from "./components/layouts";
 import TitleBar from "./components/title-bar";
 import * as Tooltip from "./components/tooltip";
 import { nounsTv as nounsTvTheme } from "./themes";
-import AuthHome from "./components/auth";
 
-const Channel = React.lazy(() => import("./components/channel"));
+const ChannelScreen = React.lazy(() => import("./components/channel"));
 const ChannelBase = React.lazy(() => import("./components/channel-base"));
 const CommandCenterLazy = React.lazy(() =>
   import("./components/command-center")
+);
+const AuthScreen = React.lazy(() => import("./components/auth"));
+const NewMessageScreen = React.lazy(() =>
+  import("./components/new-message-screen")
 );
 
 const { partition } = arrayUtils;
@@ -275,9 +278,10 @@ const App = () => {
       <Routes>
         <Route path="/" element={<Layout />}>
           <Route index element={<EmptyHome />} />
-          <Route path="/channels/:channelId" element={<Channel />} />
+          <Route path="/new" element={<NewMessageScreen />} />
+          <Route path="/channels/:channelId" element={<ChannelScreen />} />
         </Route>
-        <Route path="c/:channelId" element={<Channel noSideMenu />} />
+        <Route path="/c/:channelId" element={<ChannelScreen noSideMenu />} />
         <Route
           path="/support"
           element={
@@ -288,7 +292,7 @@ const App = () => {
           path="/oauth/authorize"
           element={
             <RequireAuth>
-              <AuthHome />
+              <AuthScreen />
             </RequireAuth>
           }
         />

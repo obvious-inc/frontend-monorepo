@@ -8,7 +8,7 @@ import {
   DoubleChevronLeft as DoubleChevronLeftIcon,
   HamburgerMenu as HamburgerMenuIcon,
 } from "@shades/ui-web/icons";
-import IconButton from "./icon-button.js";
+import IconButton from "@shades/ui-web/icon-button";
 
 const MainHeader = ({ sidebarToggle, children, ...props }) => {
   const { isCollapsed: isSidebarCollapsed, isFloating: isSidebarFloating } =

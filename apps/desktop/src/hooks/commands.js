@@ -10,14 +10,7 @@ import miscCommands from "../commands/misc";
 
 const { mapValues, filter: filterObject } = objectUtils;
 
-const allCommands = {
-  ...textCommands,
-  ...userCommands,
-  ...channelCommands,
-  ...miscCommands,
-};
-
-const useCommands = ({ context, serverId, channelId } = {}) => {
+const useCommands = ({ context, channelId } = {}) => {
   const actions = useActions();
   const selectors = useSelectors();
   const navigate = useNavigate();
@@ -30,25 +23,23 @@ const useCommands = ({ context, serverId, channelId } = {}) => {
       navigate,
       actions,
       context,
-      serverId,
       channelId,
       ethersProvider,
       state: selectors,
     }),
-    [
-      user,
-      navigate,
-      actions,
-      context,
-      serverId,
-      channelId,
-      ethersProvider,
-      selectors,
-    ]
+    [user, navigate, actions, context, channelId, ethersProvider, selectors]
   );
 
   const commands = React.useMemo(() => {
     if (user == null) return [];
+    if (commandDependencies.channelId == null) return textCommands;
+
+    const allCommands = {
+      ...textCommands,
+      ...userCommands,
+      ...channelCommands,
+      ...miscCommands,
+    };
 
     const commandsWithDependeciesInjected = mapValues((command) => {
       if (typeof command !== "function") return command;

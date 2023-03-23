@@ -15,6 +15,7 @@
     "./sidebar-layout": "./dist/sidebar-layout.js",
     "./dialog": "./dist/dialog.js",
     "./button": "./dist/button.js",
+    "./icon-button": "./dist/icon-button.js",
     "./avatar": "./dist/avatar.js"
   },
   "peerDependencies": {

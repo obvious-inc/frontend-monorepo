@@ -41,7 +41,7 @@ const MessageInput = React.forwardRef(
       commands,
       executeCommand: executeCommand_,
       disableCommands = false,
-      members,
+      members = [],
     },
     editorRef
   ) => {
@@ -468,11 +468,8 @@ const AutoCompleteListbox = ({
             fontWeight: "400",
             cursor: "pointer",
             outline: "none",
-            "&:hover": {
+            '&:hover, &:focus, &[data-selected="true"]': {
               background: theme.colors.backgroundModifierHover,
-            },
-            '&:focus, &[data-selected="true"]': {
-              background: theme.colors.backgroundModifierSelected,
             },
             ".image": {
               width: "3.2rem",

@@ -760,9 +760,7 @@ const ListItem = ({
         margin: 0.1rem 0;
         pointer-events: ${disabled ? "none" : "all"};
       }
-      & > *.active {
-        background: ${theme.colors.backgroundModifierSelected};
-      }
+      & > *.active,
       & > *:not(.active):hover {
         background: ${theme.colors.backgroundModifierHover};
       }

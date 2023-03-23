@@ -36,6 +36,7 @@ const entrypoints = [
     file: "button.js",
     dependencies: ["react", "react-aria", ...emotionDeps],
   },
+  { file: "icon-button.js", dependencies: ["react", ...emotionDeps] },
   { file: "avatar.js", dependencies: ["react", ...emotionDeps] },
 ];
 
