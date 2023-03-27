@@ -10,7 +10,7 @@ export const search = (users, rawQuery) => {
   const matchUser = (user) => {
     const name = user.customDisplayName ?? user.displayName;
     const address = user.walletAddress;
-    const ensName = user.ensName;
+    const ensName = user.ensName?.slice(0, -4);
 
     return [name, address, ensName]
       .filter((p) => (p ?? "").trim() !== "")

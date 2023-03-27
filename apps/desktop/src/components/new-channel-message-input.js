@@ -316,19 +316,19 @@ const NewChannelMessageInput = React.memo(
             executeMessage();
             editorRef.current.focus();
           }}
-          css={(theme) =>
+          css={(t) =>
             css({
               padding: "1rem 1rem 1rem 1.6rem",
               maxHeight: "60vh",
               minHeight: "4.5rem",
               overflow: "auto",
-              background: theme.colors.backgroundTertiary,
+              background: t.colors.backgroundTertiary,
               borderRadius: "0.6rem",
               borderTopLeftRadius: replyingToMessage ? 0 : undefined,
               borderTopRightRadius: replyingToMessage ? 0 : undefined,
-              fontSize: theme.fontSizes.channelMessages,
+              fontSize: t.fontSizes.channelMessages,
               "[role=textbox] [data-slate-placeholder]": {
-                color: "rgb(255 255 255 / 40%)",
+                color: t.colors.inputPlaceholder,
                 opacity: "1 !important",
                 whiteSpace: "nowrap",
                 overflow: "hidden",

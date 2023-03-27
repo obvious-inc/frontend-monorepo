@@ -1,11 +1,11 @@
 import React from "react";
 import { useStore as useCacheStore, useCachedState } from "./cache-store";
-import useLatestCallback from "./hooks/latest-callback";
+import useLatestCallback from "./react/hooks/latest-callback";
 
 const ACCESS_TOKEN_CACHE_KEY = "access-token";
 const REFRESH_TOKEN_CACHE_KEY = "refresh-token";
 
-let pendingRefreshAccessTokenPromise;
+let pendingRefreshPromise;
 
 const useCachedRefreshToken = () => {
   const cacheStore = useCacheStore();
@@ -75,73 +75,64 @@ export const Provider = ({ apiOrigin, ...props }) => {
     }
   );
 
-  const logout = useLatestCallback(() => {
+  const clearTokenStore = useLatestCallback(() => {
     setAccessToken(null);
     writeRefreshToken(null);
   });
 
   const refreshAccessToken = useLatestCallback(async () => {
-    if (pendingRefreshAccessTokenPromise != null)
-      return pendingRefreshAccessTokenPromise;
+    if (pendingRefreshPromise != null) return pendingRefreshPromise;
 
-    const run = async () => {
+    const refresh = async () => {
       const refreshToken = await readRefreshToken();
       if (refreshToken == null) throw new Error("missing-refresh-token");
 
-      return fetch(`${apiOrigin}/auth/refresh`, {
+      const response = await fetch(`${apiOrigin}/auth/refresh`, {
         method: "POST",
         body: JSON.stringify({ refresh_token: refreshToken }),
         headers: { "Content-Type": "application/json" },
-      }).then((response) => {
-        if (response.ok)
-          return response.json().then((body) => ({
-            accessToken: body.access_token,
-            refreshToken: body.refresh_token,
-          }));
-
-        if (response.status === 401)
-          return Promise.reject(new Error("refresh-token-expired"));
-
-        return Promise.reject(new Error(response.statusText));
       });
+
+      if (response.ok) {
+        const body = await response.json();
+        return {
+          accessToken: body.access_token,
+          refreshToken: body.refresh_token,
+        };
+      }
+
+      if (response.status === 401)
+        return Promise.reject(new Error("refresh-token-expired"));
+
+      return Promise.reject(new Error(response.statusText));
     };
 
-    pendingRefreshAccessTokenPromise = new Promise((resolve, reject) =>
-      run()
-        .then(
-          ({ accessToken, refreshToken }) => {
-            setAccessToken(accessToken);
-            writeRefreshToken(refreshToken);
-            resolve(accessToken);
-          },
-          (e) => {
-            switch (e.message) {
-              case "refresh-token-expired":
-              case "missing-refresh-token": {
-                // Sign out if the refresh fails in a known way
-                setAccessToken(null);
-                writeRefreshToken(null);
+    const refreshAndCacheTokens = async () => {
+      try {
+        const { accessToken, refreshToken } = await refresh();
+        setAccessToken(accessToken);
+        await writeRefreshToken(refreshToken);
+        return accessToken;
+      } catch (e) {
+        switch (e.message) {
+          case "refresh-token-expired":
+          case "missing-refresh-token":
+            // Log out if the refresh fails in a known way
+            clearTokenStore();
+            for (const listener of listeners) listener("access-token-expired");
+            return Promise.reject(new Error("access-token-expired"));
 
-                for (const listener of listeners)
-                  listener("access-token-expired");
+          default:
+            return Promise.reject(e);
+        }
+      } finally {
+        pendingRefreshPromise = null;
+      }
+    };
 
-                reject(new Error("access-token-expired"));
-
-                break;
-              }
-
-              default:
-                reject(e);
-                break;
-            }
-          }
-        )
-        .finally(() => {
-          pendingRefreshAccessTokenPromise = null;
-        })
-    );
-
-    return pendingRefreshAccessTokenPromise;
+    const promise = refreshAndCacheTokens();
+    pendingRefreshPromise = promise;
+    return promise;
   });
 
   const authorizedFetch = useLatestCallback(async (url, options) => {
@@ -213,7 +204,7 @@ export const Provider = ({ apiOrigin, ...props }) => {
       status,
       authorizedFetch,
       login,
-      logout,
+      clearTokenStore,
       setAccessToken,
       writeRefreshToken,
     }),
@@ -223,7 +214,7 @@ export const Provider = ({ apiOrigin, ...props }) => {
       status,
       authorizedFetch,
       login,
-      logout,
+      clearTokenStore,
       setAccessToken,
       writeRefreshToken,
     ]

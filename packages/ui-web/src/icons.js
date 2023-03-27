@@ -119,6 +119,15 @@ export const CrossCircle = (props) => (
   </svg>
 );
 
+export const CrossSmall = (props) => (
+  <svg viewBox="0 0 8 8" {...props}>
+    <polygon
+      fill="currentColor"
+      points="8 1.01818182 6.98181818 0 4 2.98181818 1.01818182 0 0 1.01818182 2.98181818 4 0 6.98181818 1.01818182 8 4 5.01818182 6.98181818 8 8 6.98181818 5.01818182 4"
+    />
+  </svg>
+);
+
 export const DotsHorizontal = (props) => (
   <svg width="24" height="24" viewBox="0 0 24 24" {...props}>
     <path

@@ -9,7 +9,6 @@ import { publicProvider } from "wagmi/providers/public";
 import { InjectedConnector } from "wagmi/connectors/injected";
 import { WalletConnectConnector } from "wagmi/connectors/walletConnect";
 import React from "react";
-import { OverlayProvider } from "react-aria";
 import { css } from "@emotion/react";
 import {
   BrowserRouter,
@@ -358,17 +357,15 @@ export default function LazyRoot() {
               }
             >
               <ThemeProvider theme={theme}>
-                <OverlayProvider style={{ width: "100%", height: "100%" }}>
-                  <Tooltip.Provider delayDuration={300}>
-                    <SidebarProvider>
-                      <GlobalMediaQueriesProvider>
-                        <CommandCenterProvider>
-                          <App />
-                        </CommandCenterProvider>
-                      </GlobalMediaQueriesProvider>
-                    </SidebarProvider>
-                  </Tooltip.Provider>
-                </OverlayProvider>
+                <Tooltip.Provider delayDuration={300}>
+                  <SidebarProvider>
+                    <GlobalMediaQueriesProvider>
+                      <CommandCenterProvider>
+                        <App />
+                      </CommandCenterProvider>
+                    </GlobalMediaQueriesProvider>
+                  </SidebarProvider>
+                </Tooltip.Provider>
               </ThemeProvider>
             </WalletLoginProvider>
           </ServerConnectionProvider>

@@ -77,7 +77,7 @@ const Select = ({
       <Popover.Root
         placement="bottom left"
         offset={5}
-        open={state.isOpen}
+        isOpen={state.isOpen}
         onOpenChange={(s) => {
           if (!s) state.close();
         }}

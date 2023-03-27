@@ -633,10 +633,7 @@ export default () => {
                   },
                 }}
               >
-                <AuthProvider
-                  apiOrigin={API_ENDPOINT}
-                  tokenStorage={AsyncStorage}
-                >
+                <AuthProvider apiOrigin={API_ENDPOINT}>
                   <AppStoreProvider
                     cloudflareAccountHash={CLOUDFLARE_ACCOUNT_HASH}
                   >

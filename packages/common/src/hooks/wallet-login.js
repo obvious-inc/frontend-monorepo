@@ -1,7 +1,7 @@
 import { Wallet } from "ethers";
 import { useSignMessage } from "wagmi";
 import React from "react";
-import useLatestCallback from "./latest-callback.js";
+import useLatestCallback from "../react/hooks/latest-callback.js";
 
 const prepareLoginMessage = (address) => {
   const signedAt = new Date().toISOString();

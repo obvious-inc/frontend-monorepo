@@ -1,90 +1,70 @@
-import { useLatestCallback } from "@shades/common/react";
+import { useComposedRefs } from "@shades/common/react";
 import { css } from "@emotion/react";
 import React from "react";
+import { useOverlayTriggerState } from "@react-stately/overlays";
 import {
   DismissButton,
-  FocusScope,
   mergeProps,
-  OverlayContainer,
-  useDialog,
-  useModal,
-  useOverlay,
-  useOverlayPosition,
+  Overlay,
+  usePopover,
   useOverlayTrigger,
   useButton,
+  useDialog,
 } from "react-aria";
 
-const useComposedRefs = (...refs) => {
-  return useLatestCallback((value) => {
-    refs.forEach((ref) => {
-      if (ref == null) return;
-      if (typeof ref === "function") {
-        ref(value);
-        return;
-      }
+const Dialog = ({ children, ...props }) => {
+  const ref = React.useRef();
 
-      ref.current = value;
-    });
-  });
+  const {
+    dialogProps,
+    // titleProps
+  } = useDialog(props, ref);
+  return (
+    <div ref={ref} {...dialogProps} style={{ outline: "none" }}>
+      {children}
+    </div>
+  );
 };
 
 const Context = React.createContext();
 
-const useOverlayTriggerState = ({ controlledIsOpen, onChange: onChange_ }) => {
-  const [uncontrolledIsOpen, setUncontrolledIsOpen] = React.useState(false);
-  const isControlled = controlledIsOpen != null;
-  const isOpen = isControlled ? controlledIsOpen : uncontrolledIsOpen;
-
-  const onChange = useLatestCallback(onChange_);
-
-  const setOpen = React.useCallback(
-    (args) => {
-      if (isControlled) {
-        const nextValue = typeof args === "function" ? args(isOpen) : args;
-        onChange(nextValue);
-        return;
-      }
-
-      setUncontrolledIsOpen(args);
-    },
-    [isControlled, isOpen, onChange]
-  );
-
-  const prevUncontrolledIsOpenRef = React.useRef(uncontrolledIsOpen);
-
-  React.useEffect(() => {
-    if (
-      onChange == null ||
-      prevUncontrolledIsOpenRef.current === uncontrolledIsOpen
-    )
-      return;
-
-    onChange(uncontrolledIsOpen);
-    prevUncontrolledIsOpenRef.current = uncontrolledIsOpen;
-  }, [uncontrolledIsOpen, prevUncontrolledIsOpenRef, onChange]);
-
-  const open = React.useCallback(() => setOpen(true), [setOpen]);
-  const close = React.useCallback(() => setOpen(false), [setOpen]);
-  const toggle = React.useCallback(() => setOpen((s) => !s), [setOpen]);
-
-  return { isOpen, open, close, toggle };
-};
-
 export const Root = ({
-  open,
+  isOpen,
   onOpenChange,
   children,
-  placement = "top",
+  placement: preferredPlacement = "top",
   offset = 8,
   containerPadding = 10,
+  triggerRef: triggerRefExternal,
+  targetRef,
+  isDialog = true,
+  isModal = isDialog,
+  dialogProps = {},
+  ...props
 }) => {
-  const state = useOverlayTriggerState({
-    controlledIsOpen: open,
-    onChange: onOpenChange,
-  });
+  const state = useOverlayTriggerState({ isOpen, onOpenChange });
 
-  const triggerRef = React.useRef();
-  const overlayRef = React.useRef();
+  const popoverRef = React.useRef();
+  const triggerRefInternal = React.useRef();
+  const triggerRef = triggerRefExternal ?? triggerRefInternal;
+
+  const {
+    popoverProps,
+    underlayProps,
+    // arrowProps,
+    placement,
+  } = usePopover(
+    {
+      isNonModal: !isModal,
+      ...props,
+      triggerRef: targetRef ?? triggerRef,
+      popoverRef,
+      placement: preferredPlacement,
+      offset,
+      containerPadding,
+    },
+    state
+  );
 
   const { triggerProps, overlayProps } = useOverlayTrigger(
     { type: "dialog" },
@@ -92,25 +72,20 @@ export const Root = ({
     triggerRef
   );
 
-  const { overlayProps: overlayPositionProps } = useOverlayPosition({
-    targetRef: triggerRef,
-    overlayRef,
-    placement,
-    offset,
-    containerPadding,
-    isOpen: state.isOpen,
-    // Disable "close on scroll"
-    onClose: () => {},
-  });
-
   return (
     <Context.Provider
       value={{
         state,
         triggerRef,
+        popoverRef,
         triggerProps,
-        overlayRef,
-        overlayProps: mergeProps(overlayProps, overlayPositionProps),
+        targetRef,
+        popoverProps: mergeProps(popoverProps, overlayProps),
+        underlayProps,
+        dialogProps,
+        placement,
+        isDialog,
+        isModal,
       }}
     >
       {children}
@@ -139,90 +114,84 @@ export const Trigger = React.forwardRef(
 );
 
 const ContentInner = React.forwardRef(
-  ({ width = "auto", widthFollowTrigger, asChild, children }, forwardedRef) => {
+  (
+    { width = "auto", widthFollowTrigger, children, ...props },
+    forwardedRef
+  ) => {
     const {
+      isDialog,
       state,
-      overlayProps: props,
-      overlayRef,
+      popoverProps,
+      popoverRef,
+      dialogProps,
       triggerRef,
+      targetRef,
     } = React.useContext(Context);
 
-    const ref = useComposedRefs(overlayRef, forwardedRef);
+    const ref = useComposedRefs(popoverRef, forwardedRef);
+    const anchorRef = targetRef ?? triggerRef;
 
-    // Handle interacting outside the dialog and pressing
-    // the Escape key to close the modal.
-    const { overlayProps } = useOverlay(
-      {
-        onClose: state.close,
-        isOpen: state.isOpen,
-        isDismissable: true,
-      },
-      overlayRef
-    );
-
-    // Hide content outside the modal from screen readers.
-    const { modalProps } = useModal();
-
-    // Get props for the dialog and its title
-    const { dialogProps, titleProps } = useDialog({}, overlayRef);
-
-    const containerProps = mergeProps(
-      overlayProps,
-      dialogProps,
-      props,
-      modalProps
-    );
+    const containerProps = isDialog
+      ? mergeProps(props, dialogProps, popoverProps)
+      : mergeProps(props, popoverProps);
 
     const dismissButtonElement = <DismissButton onDismiss={state.close} />;
 
-    return (
-      <FocusScope restoreFocus>
-        {typeof children === "function" ? (
-          children({
-            isOpen: state.isOpen,
-            containerProps,
-            titleProps,
-            dismissButtonElement,
-            ref,
+    return typeof children === "function" ? (
+      children({
+        ref,
+        props: containerProps,
+        isOpen: state.isOpen,
+        dismissButtonElement,
+      })
+    ) : (
+      <div
+        ref={ref}
+        css={(t) =>
+          css({
+            minWidth: widthFollowTrigger ? 0 : "min-content",
+            width: widthFollowTrigger
+              ? anchorRef.current?.offsetWidth ?? "auto"
+              : width,
+            maxWidth: "calc(100vw - 2rem)",
+            background: t.colors.dialogBackground,
+            borderRadius: "0.6rem",
+            boxShadow:
+              "rgb(15 15 15 / 5%) 0px 0px 0px 1px, rgba(15, 15, 15, 0.1) 0px 3px 6px, rgba(15, 15, 15, 0.2) 0px 9px 24px",
+            outline: "none", // TODO
+            overflow: "auto",
           })
-        ) : asChild ? (
-          React.cloneElement(children, { ...containerProps, ref })
-        ) : (
-          <div
-            ref={ref}
-            css={(theme) =>
-              css({
-                minWidth: "min-content",
-                width: widthFollowTrigger
-                  ? triggerRef.current?.offsetWidth ?? "auto"
-                  : width,
-                maxWidth: "calc(100vw - 2rem)",
-                background: theme.colors.dialogBackground,
-                borderRadius: "0.4rem",
-                boxShadow:
-                  "rgb(15 15 15 / 5%) 0px 0px 0px 1px, rgba(15, 15, 15, 0.1) 0px 3px 6px, rgba(15, 15, 15, 0.2) 0px 9px 24px",
-                outline: "none", // TODO
-              })
-            }
-            {...containerProps}
-          >
-            {children}
-            {dismissButtonElement}
-          </div>
-        )}
-      </FocusScope>
+        }
+        {...containerProps}
+      >
+        {dismissButtonElement}
+        {isDialog ? <Dialog {...dialogProps}>{children}</Dialog> : children}
+        {dismissButtonElement}
+      </div>
     );
   }
 );
 
-export const Content = React.forwardRef((props, forwardRef) => {
-  const { state } = React.useContext(Context);
+export const Content = React.forwardRef((props, ref) => {
+  const { state, isModal, underlayProps } = React.useContext(Context);
 
   if (!state.isOpen) return null;
 
   return (
-    <OverlayContainer>
-      <ContentInner {...props} ref={forwardRef} />
-    </OverlayContainer>
+    <Overlay>
+      {isModal && (
+        <div
+          {...underlayProps}
+          style={{
+            position: "fixed",
+            top: 0,
+            left: 0,
+            width: "100%",
+            height: "100%",
+          }}
+        />
+      )}
+      <ContentInner {...props} ref={ref} />
+    </Overlay>
   );
 });

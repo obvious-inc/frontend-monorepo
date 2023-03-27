@@ -7,7 +7,7 @@ import {
   useSwitchNetwork,
 } from "wagmi";
 import { mainnet as mainnetChain } from "wagmi/chains";
-import useLatestCallback from "../hooks/latest-callback.js";
+import useLatestCallback from "../react/hooks/latest-callback.js";
 
 const ETHEREUM_MAINNET_CHAIN_ID = mainnetChain.id;
 

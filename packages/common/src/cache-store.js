@@ -1,5 +1,5 @@
 import React from "react";
-import useLatestCallback from "./hooks/latest-callback.js";
+import useLatestCallback from "./react/hooks/latest-callback.js";
 
 const Context = React.createContext(null);
 

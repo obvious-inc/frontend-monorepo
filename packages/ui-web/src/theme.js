@@ -10,6 +10,7 @@ const primary = createPrimary();
 const primaryTintDarker = createPrimary({ saturation: 1, lightness: 0.43 });
 const primaryTintLighter = createPrimary({ saturation: 1, lightness: 0.6 });
 const primaryTransparent = createPrimary({ opacity: 0.4 });
+const primaryTransparentDark = createPrimary({ opacity: 0.15 });
 const textNormal = "hsl(0 0% 83%)";
 const textMuted = "hsl(0 0% 40%)";
 const textDimmed = "hsl(0 0% 60%)";
@@ -71,11 +72,13 @@ export default {
     primary,
     primaryModifierHover: primaryTintDarker,
     primaryTransparent,
+    primaryTransparentDark,
     textNormal,
     textDimmed,
     textDimmedModifierHover,
     textMuted,
     textHeader: "white",
+    textAccent: "white",
     textHeaderSecondary: "hsl(0 0% 72%)",
     textHighlight: "#ffd376", // Light yellow
     textSelectionBackground: createPrimary({ saturation: 1, lightness: 0 }),
@@ -91,6 +94,7 @@ export default {
     dialogPopoverBackground: backgroundLight,
     channelInputBackground: backgroundLight,
     inputBackground: backgroundDark,
+    inputPlaceholder: "hsl(0 0% 100% / 40%)",
     backgroundModifierSelected: "hsl(0 0% 100% / 5.5%)",
     backgroundModifierHover: "hsl(0 0% 100% / 5.5%)",
     interactiveNormal: "#b9bbbe",

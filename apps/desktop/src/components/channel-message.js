@@ -640,7 +640,7 @@ const Reactions = ({ messageId, items = [], addReaction, hideAddButton }) => {
         {inputDeviceCanHover ? (
           <Popover.Root
             placement="top"
-            open={isInlineEmojiPickerOpen}
+            isOpen={isInlineEmojiPickerOpen}
             onOpenChange={(s) => {
               setInlineEmojiPickerOpen(s);
             }}
@@ -1369,7 +1369,7 @@ const MessageToolbar = React.memo(
         {inputDeviceCanHover ? (
           <Popover.Root
             placement="left"
-            open={isEmojiPickerOpen}
+            isOpen={isEmojiPickerOpen}
             onOpenChange={onEmojiPickerOpenChange}
           >
             <Toolbar.Button
@@ -1381,17 +1381,6 @@ const MessageToolbar = React.memo(
               <Popover.Trigger>
                 <span>
                   <AddEmojiReactionIcon style={{ width: "1.6rem" }} />
-                  {/* <Popover.Anochor */}
-                  {/*   style={{ */}
-                  {/*     width: "3.3rem", */}
-                  {/*     height: "3.3rem", */}
-                  {/*     position: "absolute", */}
-                  {/*     top: "50%", */}
-                  {/*     left: "50%", */}
-                  {/*     transform: "translateY(-50%) translateX(-50%)", */}
-                  {/*     pointerEvents: "none", */}
-                  {/*   }} */}
-                  {/* /> */}
                 </span>
               </Popover.Trigger>
             </Toolbar.Button>

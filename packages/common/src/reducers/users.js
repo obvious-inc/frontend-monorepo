@@ -100,10 +100,14 @@ const starsByUserId = (state = {}, action) => {
   }
 };
 
-const selectAllUsers = (state) =>
-  Object.keys(state.users.entriesById).map((userId) =>
-    selectUser(state, userId)
-  );
+export const selectAllUsers = createSelector(
+  (state) =>
+    Object.keys(state.users.entriesById).map((userId) =>
+      selectUser(state, userId)
+    ),
+  (users) => users,
+  { memoizeOptions: { equalityCheck: arrayShallowEquals } }
+);
 
 export const selectUser = createSelector(
   (state, userId) => state.users.entriesById[userId],

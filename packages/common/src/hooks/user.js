@@ -4,6 +4,7 @@ import {
   selectUser,
   selectUsers,
   selectUserFromWalletAddress,
+  selectAllUsers,
 } from "../reducers/users.js";
 
 export const useUser = (userId) =>
@@ -22,3 +23,5 @@ export const useUsers = (userIds) =>
   useStore(
     React.useCallback((state) => selectUsers(state, userIds), [userIds])
   );
+
+export const useAllUsers = () => useStore((state) => selectAllUsers(state));

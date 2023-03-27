@@ -20,7 +20,10 @@ const IconButton = ({
         cursor: "pointer",
         color: dimmed ? t.colors.textDimmed : t.colors.textNormal,
         outline: "none",
-        ":disabled": { color: t.colors.textMuted, pointerEvents: "none" },
+        ":disabled, [disabled]": {
+          color: t.colors.textMuted,
+          pointerEvents: "none",
+        },
         ":focus-visible": {
           boxShadow: `0 0 0 0.2rem ${t.colors.primary}`,
         },

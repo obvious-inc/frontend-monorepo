@@ -21,7 +21,7 @@ import {
 } from "./reducers/channels.js";
 import { selectMessage } from "./reducers/messages.js";
 import { selectEnsName } from "./reducers/ens.js";
-import useLatestCallback from "./hooks/latest-callback.js";
+import useLatestCallback from "./react/hooks/latest-callback.js";
 
 const selectorFunctions = {
   selectMe,
@@ -176,7 +176,7 @@ export const Provider = ({ cloudflareAccountHash, children }) => {
   const {
     status: authStatus,
     authorizedFetch,
-    logout: clearAuthTokens,
+    clearTokenStore: clearAuthTokenStore,
   } = useAuth();
 
   const dispatch = useActionDispatcher();
@@ -216,7 +216,7 @@ export const Provider = ({ cloudflareAccountHash, children }) => {
       parseUser,
       parseChannel,
       buildCloudflareImageUrl,
-      clearAuthTokens,
+      clearAuthTokenStore,
     })
   );
 
