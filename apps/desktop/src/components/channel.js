@@ -43,6 +43,7 @@ import useGlobalMediaQueries from "../hooks/global-media-queries";
 import useWindowFocusOrDocumentVisibleListener from "../hooks/window-focus-or-document-visible-listener";
 import useOnlineListener from "../hooks/window-online-listener";
 import useInterval from "../hooks/interval";
+import useFetch from "../hooks/fetch";
 import { isNodeEmpty } from "../slate/utils";
 import Spinner from "./spinner";
 import ChannelMessage from "./channel-message";
@@ -59,29 +60,6 @@ import useMutationObserver from "../hooks/mutation-observer";
 
 const { sort } = arrayUtils;
 const { truncateAddress } = ethereumUtils;
-
-const useFetch = (fetcher, dependencies) => {
-  const fetcherRef = React.useRef(fetcher);
-
-  React.useEffect(() => {
-    fetcherRef.current = fetcher;
-  });
-
-  React.useEffect(() => {
-    fetcherRef.current?.();
-  }, dependencies); // eslint-disable-line
-
-  useWindowFocusOrDocumentVisibleListener(() => {
-    fetcherRef.current?.();
-  });
-
-  useOnlineListener(
-    () => {
-      fetcherRef.current?.();
-    },
-    { requireFocus: true }
-  );
-};
 
 const pendingFetchMessagePromisesCache = {};
 
