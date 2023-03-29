@@ -327,17 +327,13 @@ const NewChannelMessageInput = React.memo(
               borderTopLeftRadius: replyingToMessage ? 0 : undefined,
               borderTopRightRadius: replyingToMessage ? 0 : undefined,
               fontSize: t.fontSizes.channelMessages,
-              "[role=textbox] [data-slate-placeholder]": {
+              "[data-slate-placeholder]": {
                 color: t.colors.inputPlaceholder,
                 opacity: "1 !important",
                 whiteSpace: "nowrap",
                 overflow: "hidden",
                 textOverflow: "ellipsis",
                 top: 0,
-              },
-              // Prevents iOS zooming in on input fields
-              "@supports (-webkit-touch-callout: none)": {
-                "[role=textbox]": { fontSize: "1.6rem" },
               },
             })
           }

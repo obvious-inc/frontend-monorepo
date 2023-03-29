@@ -103,7 +103,9 @@ const useFilteredAccounts = (query) => {
       : filteredUsers;
 
     return filteredUsersIncludingEnsMatch.filter(
-      (u) => u.walletAddress.toLowerCase() !== me.walletAddress.toLowerCase()
+      (u) =>
+        me == null ||
+        u.walletAddress.toLowerCase() !== me.walletAddress.toLowerCase()
     );
   }, [me, users, query, ensMatchWalletAddress]);
 
@@ -312,12 +314,15 @@ const NewMessageScreen = () => {
     <div
       css={(t) =>
         css({
+          position: "relative",
+          zIndex: 0,
           flex: 1,
-          background: t.colors.backgroundPrimary,
+          minWidth: 0,
           display: "flex",
           flexDirection: "column",
           alignItems: "stretch",
           height: "100%",
+          background: t.colors.backgroundPrimary,
         })
       }
     >
@@ -335,91 +340,82 @@ const NewMessageScreen = () => {
           New Message
         </div>
       </ChannelHeader>
-      <div
-        css={css({
-          flex: 1,
-          display: "flex",
-          flexDirection: "column",
-          justifyContent: "stretch",
-          minHeight: 0,
-          minWidth: 0,
-        })}
-      >
-        <div css={css({ padding: "0 1.6rem" })}>
-          {!isRecipientsCommitted ? (
-            <MessageRecipientCombobox
-              label="To:"
-              ariaLabel="Message recipient search"
-              placeholder="An ENS name, or Ethereum address"
-              state={recipientsState}
-              onSelect={(key) => {
-                if (getKeyItemType(key) === "channel") {
-                  setRecipientsCommitted(true);
-                  messageInputRef.current.focus();
-                }
-              }}
-              onBlur={() => {
-                if (recipientsState.selectedKeys.length !== 0) {
-                  setRecipientsCommitted(true);
-                  messageInputRef.current.focus();
-                }
-              }}
-            />
-          ) : firstSelectedKeyType === "channel" ? (
-            <MessageRecipientChannelHeader
-              channelId={getKeyItemIdentifier(recipientsState.selectedKeys[0])}
-              component="button"
-              onClick={() => {
-                setRecipientsCommitted(false);
-              }}
-            />
-          ) : (
-            <MessageRecipientAccountsHeader
-              walletAddresses={recipientsState.selectedKeys.map(
-                getKeyItemIdentifier
-              )}
-              component="button"
-              onClick={() => {
-                setRecipientsCommitted(false);
-              }}
-            />
-          )}
-        </div>
-        <div style={{ flex: 1 }} />
-        <div style={{ padding: "2rem 1.6rem" }}>
-          <NewChannelMessageInput
-            ref={messageInputRef}
-            uploadImage={actions.uploadImage}
-            submit={async (message) => {
-              if (firstSelectedKeyType === "channel" || dmChannel != null) {
-                const channelId =
-                  dmChannel?.id ??
-                  getKeyItemIdentifier(recipientsState.selectedKeys[0]);
-                actions.createMessage({ channel: channelId, blocks: message });
-                navigate(`/channels/${channelId}`);
-                return;
+      <div css={css({ padding: "0 1.6rem" })}>
+        {!isRecipientsCommitted ? (
+          <MessageRecipientCombobox
+            label="To:"
+            ariaLabel="Message recipient search"
+            placeholder="An ENS name, or Ethereum address"
+            state={recipientsState}
+            onSelect={(key) => {
+              if (getKeyItemType(key) === "channel") {
+                setRecipientsCommitted(true);
+                messageInputRef.current.focus();
               }
-
-              const firstMemberNames = selectedAccounts
-                .slice(0, 3)
-                .map((a) => a.displayName ?? truncateAddress(a.walletAddress))
-                .join(", ");
-
-              const channel = await actions.createPrivateChannel({
-                name:
-                  selectedAccounts.length > 3
-                    ? `${firstMemberNames}, ...`
-                    : firstMemberNames,
-                memberWalletAddresses: selectedWalletAddresses,
-              });
-              actions.createMessage({ channel: channel.id, blocks: message });
-              navigate(`/channels/${channel.id}`);
             }}
-            placeholder="Type your message..."
-            members={selectedAccounts}
-            submitDisabled={recipientsState.selectedKeys.length == 0}
+            onBlur={() => {
+              if (recipientsState.selectedKeys.length !== 0) {
+                setRecipientsCommitted(true);
+                messageInputRef.current.focus();
+              }
+            }}
           />
-        </div>
+        ) : firstSelectedKeyType === "channel" ? (
+          <MessageRecipientChannelHeader
+            channelId={getKeyItemIdentifier(recipientsState.selectedKeys[0])}
+            component="button"
+            onClick={() => {
+              setRecipientsCommitted(false);
+            }}
+          />
+        ) : (
+          <MessageRecipientAccountsHeader
+            walletAddresses={recipientsState.selectedKeys.map(
+              getKeyItemIdentifier
+            )}
+            component="button"
+            onClick={() => {
+              setRecipientsCommitted(false);
+            }}
+          />
+        )}
+      </div>
+
+      <div css={css({ flex: 1 })} />
+
+      <div style={{ padding: "0 1.6rem 2rem" }}>
+        <NewChannelMessageInput
+          ref={messageInputRef}
+          uploadImage={actions.uploadImage}
+          submit={async (message) => {
+            if (firstSelectedKeyType === "channel" || dmChannel != null) {
+              const channelId =
+                dmChannel?.id ??
+                getKeyItemIdentifier(recipientsState.selectedKeys[0]);
+              actions.createMessage({ channel: channelId, blocks: message });
+              navigate(`/channels/${channelId}`);
+              return;
+            }
+
+            const firstMemberNames = selectedAccounts
+              .slice(0, 3)
+              .map((a) => a.displayName ?? truncateAddress(a.walletAddress))
+              .join(", ");
+
+            const channel = await actions.createPrivateChannel({
+              name:
+                selectedAccounts.length > 3
+                  ? `${firstMemberNames}, ...`
+                  : firstMemberNames,
+              memberWalletAddresses: selectedWalletAddresses,
+            });
+            actions.createMessage({ channel: channel.id, blocks: message });
+            navigate(`/channels/${channel.id}`);
+          }}
+          placeholder="Type your message..."
+          members={selectedAccounts}
+          submitDisabled={recipientsState.selectedKeys.length == 0}
+        />
       </div>
     </div>
   );

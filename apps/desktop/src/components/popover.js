@@ -38,7 +38,6 @@ export const Root = ({
   triggerRef: triggerRefExternal,
   targetRef,
   isDialog = true,
-  isModal = isDialog,
   dialogProps = {},
   ...props
 }) => {
@@ -47,24 +46,6 @@ export const Root = ({
   const popoverRef = React.useRef();
   const triggerRefInternal = React.useRef();
   const triggerRef = triggerRefExternal ?? triggerRefInternal;
-
-  const {
-    popoverProps,
-    underlayProps,
-    // arrowProps,
-    placement,
-  } = usePopover(
-    {
-      isNonModal: !isModal,
-      ...props,
-      triggerRef: targetRef ?? triggerRef,
-      popoverRef,
-      placement: preferredPlacement,
-      offset,
-      containerPadding,
-    },
-    state
-  );
 
   const { triggerProps, overlayProps } = useOverlayTrigger(
     { type: "dialog" },
@@ -80,12 +61,13 @@ export const Root = ({
         popoverRef,
         triggerProps,
         targetRef,
-        popoverProps: mergeProps(popoverProps, overlayProps),
-        underlayProps,
+        overlayProps,
         dialogProps,
-        placement,
+        placement: preferredPlacement,
+        offset,
+        containerPadding,
         isDialog,
-        isModal,
+        popoverInputProps: props,
       }}
     >
       {children}
@@ -121,76 +103,104 @@ const ContentInner = React.forwardRef(
     const {
       isDialog,
       state,
-      popoverProps,
       popoverRef,
       dialogProps,
+      overlayProps,
       triggerRef,
       targetRef,
+      preferredPlacement,
+      offset,
+      containerPadding,
+      popoverInputProps,
     } = React.useContext(Context);
+
+    const {
+      popoverProps,
+      underlayProps,
+      // arrowProps,
+      // placement,
+    } = usePopover(
+      {
+        isNonModal: !isDialog, // Should be rare, only for combobox
+        ...props,
+        triggerRef: targetRef ?? triggerRef,
+        popoverRef,
+        placement: preferredPlacement,
+        offset,
+        containerPadding,
+        ...popoverInputProps,
+      },
+      state
+    );
 
     const ref = useComposedRefs(popoverRef, forwardedRef);
     const anchorRef = targetRef ?? triggerRef;
 
     const containerProps = isDialog
-      ? mergeProps(props, dialogProps, popoverProps)
-      : mergeProps(props, popoverProps);
+      ? mergeProps(props, dialogProps, overlayProps, popoverProps)
+      : mergeProps(props, overlayProps, popoverProps);
 
     const dismissButtonElement = <DismissButton onDismiss={state.close} />;
 
-    return typeof children === "function" ? (
-      children({
-        ref,
-        props: containerProps,
-        isOpen: state.isOpen,
-        dismissButtonElement,
-      })
-    ) : (
-      <div
-        ref={ref}
-        css={(t) =>
-          css({
-            minWidth: widthFollowTrigger ? 0 : "min-content",
-            width: widthFollowTrigger
-              ? anchorRef.current?.offsetWidth ?? "auto"
-              : width,
-            maxWidth: "calc(100vw - 2rem)",
-            background: t.colors.dialogBackground,
-            borderRadius: "0.6rem",
-            boxShadow:
-              "rgb(15 15 15 / 5%) 0px 0px 0px 1px, rgba(15, 15, 15, 0.1) 0px 3px 6px, rgba(15, 15, 15, 0.2) 0px 9px 24px",
-            outline: "none", // TODO
-            overflow: "auto",
+    return (
+      <>
+        {isDialog && (
+          <div
+            {...underlayProps}
+            style={{
+              position: "fixed",
+              top: 0,
+              left: 0,
+              width: "100%",
+              height: "100%",
+            }}
+          />
+        )}
+
+        {typeof children === "function" ? (
+          children({
+            ref,
+            props: containerProps,
+            isOpen: state.isOpen,
+            dismissButtonElement,
           })
-        }
-        {...containerProps}
-      >
-        {dismissButtonElement}
-        {isDialog ? <Dialog {...dialogProps}>{children}</Dialog> : children}
-        {dismissButtonElement}
-      </div>
+        ) : (
+          <div
+            ref={ref}
+            css={(t) =>
+              css({
+                minWidth: widthFollowTrigger ? 0 : "min-content",
+                width: widthFollowTrigger
+                  ? anchorRef.current?.offsetWidth ?? "auto"
+                  : width,
+                maxWidth: "calc(100vw - 2rem)",
+                background: t.colors.dialogBackground,
+                borderRadius: "0.6rem",
+                boxShadow:
+                  "rgb(15 15 15 / 5%) 0px 0px 0px 1px, rgba(15, 15, 15, 0.1) 0px 3px 6px, rgba(15, 15, 15, 0.2) 0px 9px 24px",
+                outline: "none", // TODO
+                overflow: "auto",
+              })
+            }
+            {...containerProps}
+          >
+            {dismissButtonElement}
+            {isDialog ? <Dialog {...dialogProps}>{children}</Dialog> : children}
+            {dismissButtonElement}
+          </div>
+        )}
+      </>
     );
   }
 );
 
 export const Content = React.forwardRef((props, ref) => {
-  const { state, isModal, underlayProps } = React.useContext(Context);
+  const { state } = React.useContext(Context);
 
   if (!state.isOpen) return null;
 
   return (
     <Overlay>
-      {isModal && (
-        <div
-          {...underlayProps}
-          style={{
-            position: "fixed",
-            top: 0,
-            left: 0,
-            width: "100%",
-            height: "100%",
-          }}
-        />
-      )}
       <ContentInner {...props} ref={ref} />
     </Overlay>
   );
