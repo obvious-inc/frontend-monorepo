@@ -29,8 +29,10 @@ const stylesByVariant = (t, { danger }) => ({
     color: danger ? t.colors.textDanger : t.colors.textNormal,
     border: "1px solid",
     borderColor: danger ? t.colors.borderDanger : "rgb(255 255 255 / 13%)",
-    "&:not([disabled]):hover": {
-      background: danger ? "rgb(235 87 87 / 10%)" : "rgb(47 47 47)",
+    "@media (hover: hover)": {
+      "&:not([disabled]):hover": {
+        background: danger ? "rgb(235 87 87 / 10%)" : "rgb(47 47 47)",
+      },
     },
   },
   transparent: {
@@ -38,9 +40,11 @@ const stylesByVariant = (t, { danger }) => ({
     border: "0.1rem solid",
     borderColor: "rgb(255 255 255 / 20%)",
     background: "none",
-    "&:not([disabled]):hover": {
-      color: "white",
-      borderColor: "rgb(255 255 255 / 25%)",
+    "@media (hover: hover)": {
+      "&:not([disabled]):hover": {
+        color: "white",
+        borderColor: "rgb(255 255 255 / 25%)",
+      },
     },
   },
   primary: {
@@ -49,8 +53,10 @@ const stylesByVariant = (t, { danger }) => ({
     "&:focus-visible": {
       boxShadow: `0 0 0 0.2rem ${t.colors.primaryTransparent}`,
     },
-    "&:not([disabled]):hover": {
-      background: t.colors.primaryModifierHover,
+    "@media (hover: hover)": {
+      "&:not([disabled]):hover": {
+        background: t.colors.primaryModifierHover,
+      },
     },
   },
 });
