@@ -116,13 +116,16 @@ const AlwaysOpenComboboxInDialog = ({
       width="66rem"
       isOpen
       onRequestClose={onRequestClose}
-      css={css({
-        "@media (min-width: 600px)": {
-          position: "relative",
-          top: "9rem",
-          maxHeight: "calc(100% - 16rem)",
-        },
-      })}
+      css={(t) =>
+        css({
+          background: t.colors.backgroundSecondary,
+          "@media (min-width: 600px)": {
+            position: "relative",
+            top: "9rem",
+            maxHeight: "calc(100% - 16rem)",
+          },
+        })
+      }
       underlayProps={{
         css: css({
           "@media (min-width: 600px)": {
