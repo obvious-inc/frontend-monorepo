@@ -350,7 +350,7 @@ const NewMessageScreen = () => {
             <MessageRecipientCombobox
               label="To:"
               ariaLabel="Message recipient search"
-              placeholder="example.ens, or a wallet address 0x..."
+              placeholder="An ENS name, or Ethereum address"
               state={recipientsState}
               onSelect={(key) => {
                 if (getKeyItemType(key) === "channel") {
