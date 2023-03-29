@@ -64,12 +64,6 @@ module.exports = (_, argv) => {
         process: "process/browser.js",
         Buffer: ["buffer", "Buffer"],
       }),
-      new WorkboxPlugin.GenerateSW({
-        // these options encourage the ServiceWorkers to get in there fast
-        // and not allow any straggling "old" SWs to hang around
-        clientsClaim: true,
-        skipWaiting: true,
-      }),
     ],
     // All for WalletConnect to build T_T
     resolve: {
@@ -109,6 +103,13 @@ module.exports = (_, argv) => {
         ],
       }),
       new CopyPlugin({ patterns: [{ from: "static" }] }),
+      new WorkboxPlugin.GenerateSW({
+        // these options encourage the ServiceWorkers to get in there fast
+        // and not allow any straggling "old" SWs to hang around
+        clientsClaim: true,
+        skipWaiting: true,
+        maximumFileSizeToCacheInBytes: 5000000, // 5 MB
+      }),
     ],
     optimization: {
       moduleIds: "deterministic",
@@ -116,7 +117,7 @@ module.exports = (_, argv) => {
       splitChunks: {
         cacheGroups: {
           vendor: {
-            test: /[\\/]node_modules[\\/](react|react-dom|react-intl|react-router-dom|pusher-js)[\\/]/,
+            test: /[\\/]node_modules[\\/](ethers|wagmi|@emotion|react|react-dom|react-intl|react-router-dom|react-aria|pusher-js)[\\/]/,
             name: "vendors",
             chunks: "all",
           },
