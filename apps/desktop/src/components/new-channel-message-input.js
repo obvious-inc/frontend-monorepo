@@ -333,6 +333,7 @@ const NewChannelMessageInput = React.memo(
                 whiteSpace: "nowrap",
                 overflow: "hidden",
                 textOverflow: "ellipsis",
+                top: 0,
               },
               // Prevents iOS zooming in on input fields
               "@supports (-webkit-touch-callout: none)": {
