@@ -52,6 +52,7 @@ module.exports = (_, argv) => {
       new HtmlWebpackPlugin({
         template: "src/index.web.html.ejs",
         title: "NewShades",
+        manifestPath: isProduction ? "/app.webmanifest" : null,
       }),
       new webpack.EnvironmentPlugin({
         PUSHER_KEY: undefined,
