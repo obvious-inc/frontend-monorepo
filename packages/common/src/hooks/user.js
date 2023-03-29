@@ -19,9 +19,15 @@ export const useUserWithWalletAddress = (address) =>
     )
   );
 
-export const useUsers = (userIds) =>
+export const useUsers = (userIdsOrWalletAddresses) =>
   useStore(
-    React.useCallback((state) => selectUsers(state, userIds), [userIds])
+    React.useCallback(
+      (state) =>
+        userIdsOrWalletAddresses.length === 0
+          ? []
+          : selectUsers(state, userIdsOrWalletAddresses),
+      [userIdsOrWalletAddresses]
+    )
   );
 
 export const useAllUsers = () => useStore((state) => selectAllUsers(state));

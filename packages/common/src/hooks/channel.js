@@ -18,6 +18,8 @@ import {
   selectHasAllMessages,
   selectTotalMentionCount,
   selectPermissions as selectChannelPermissions,
+  selectChannelsWithMembers,
+  selectDmChannelWithMember,
 } from "../reducers/channels.js";
 import { selectChannelTypingMembers } from "../reducers/channel-typing-status.js";
 import {
@@ -187,6 +189,16 @@ export const usePublicChannels = (options = {}) =>
     )
   );
 
+export const useChannelsWithMembers = (memberWalletAddresses, options = {}) =>
+  useStore(
+    React.useCallback(
+      (state) =>
+        selectChannelsWithMembers(state, memberWalletAddresses, options),
+      // eslint-disable-next-line
+      [memberWalletAddresses, ...Object.values(options)]
+    )
+  );
+
 export const useTotalMentionCount = () => useStore(selectTotalMentionCount);
 
 export const useMessage = (messageId) =>
@@ -202,5 +214,16 @@ export const useHasReactedWithEmoji = (messageId, emoji) =>
     React.useCallback(
       (state) => selectHasReacted(state, messageId, emoji),
       [messageId, emoji]
+    )
+  );
+
+export const useDmChannelWithMember = (walletAddress) =>
+  useStore(
+    React.useCallback(
+      (state) =>
+        walletAddress == null
+          ? null
+          : selectDmChannelWithMember(state, walletAddress),
+      [walletAddress]
     )
   );

@@ -105,7 +105,11 @@ const withTextCommands = (editor) => {
 };
 
 const withEditorCommands = (editor) => {
-  editor.focus = () => ReactEditor.focus(editor);
+  editor.focus = () => {
+    ReactEditor.focus(editor);
+    // Focus doesn’t always work without this for some reason
+    Transforms.select(editor, Editor.end(editor, []));
+  };
 
   editor.clear = () => {
     editor.children = [{ type: "paragraph", children: [{ text: "" }] }];

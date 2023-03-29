@@ -640,7 +640,7 @@ const SmallText = ({ component: Component = "div", ...props }) => (
         fontSize: t.fontSizes.small,
         fontWeight: "600",
         lineHeight: 1,
-        color: "rgb(255 255 255 / 28.2%)",
+        color: t.colors.textDimmedAlpha,
       })
     }
     {...props}

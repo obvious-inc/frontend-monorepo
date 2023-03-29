@@ -14,6 +14,7 @@ const primaryTransparentDark = createPrimary({ opacity: 0.15 });
 const textNormal = "hsl(0 0% 83%)";
 const textMuted = "hsl(0 0% 40%)";
 const textDimmed = "hsl(0 0% 60%)";
+const textDimmedAlpha = "hsl(0 0% 100% / 28%)";
 const textDimmedModifierHover = "hsl(0 0% 58%)";
 const textDanger = "rgb(235, 87, 87)";
 const backgroundNormal = "hsl(0 0% 13%)";
@@ -74,8 +75,9 @@ export default {
     primaryTransparent,
     primaryTransparentDark,
     textNormal,
-    textDimmed,
     textDimmedModifierHover,
+    textDimmed,
+    textDimmedAlpha,
     textMuted,
     textHeader: "white",
     textAccent: "white",
@@ -95,7 +97,6 @@ export default {
     channelInputBackground: backgroundLight,
     inputBackground: backgroundDark,
     inputPlaceholder: "hsl(0 0% 100% / 40%)",
-    backgroundModifierSelected: "hsl(0 0% 100% / 5.5%)",
     backgroundModifierHover: "hsl(0 0% 100% / 5.5%)",
     interactiveNormal: "#b9bbbe",
     interactiveHover: "#dcddde",

@@ -1,10 +1,11 @@
 import React from "react";
-import { Item, useComboBoxState } from "react-stately";
+import { useComboBoxState } from "react-stately";
 import { useComboBox as useReactAriaCombobox, useButton } from "react-aria";
 
+export { Item, Section } from "react-stately";
+
 const useCombobox = ({
-  value,
-  options = [],
+  // options = [],
   disabled,
   onSelect,
   inputRef: inputRefExternal,
@@ -12,15 +13,9 @@ const useCombobox = ({
 }) => {
   const props = {
     allowsCustomValue: true,
+    shouldCloseOnBlur: true,
     ...props_,
     onSelectionChange: onSelect,
-    selectedKey: value,
-    disabledKeys: [
-      ...props_.disabledKeys,
-      ...options.filter((o) => o.disabled).map((o) => o.value),
-    ],
-    items: options.map((o) => ({ ...o, key: o.value })),
-    children: (o) => <Item textValue={o.label} />,
     isDisabled: disabled,
   };
 

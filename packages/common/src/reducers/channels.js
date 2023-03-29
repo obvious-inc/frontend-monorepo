@@ -1,11 +1,12 @@
 import { createSelector } from "reselect";
 import combineReducers from "../utils/combine-reducers";
 import { indexBy, unique, sort } from "../utils/array";
-import { omitKey } from "../utils/object";
+import { omitKey, mapValues } from "../utils/object";
 import { getMentions } from "../utils/message";
 import { arrayShallowEquals } from "../utils/reselect";
 import * as Permissions from "../utils/permissions";
 import { selectUser } from "./users";
+import { selectMe } from "./me";
 
 const sortChannelsByActivity = (channels, readStatesByChannelId) =>
   sort((c1, c2) => {
@@ -509,6 +510,34 @@ export const selectAllChannels = createSelector(
   { memoizeOptions: { equalityCheck: arrayShallowEquals } }
 );
 
+export const selectChannelsWithMembers = createSelector(
+  (state, _, options) => selectAllChannels(state, options),
+  (state) => {
+    const memberWalletAddressesByChannelId = mapValues((c) => {
+      const users = c.memberUserIds
+        .map((id) => selectUser(state, id))
+        .filter(Boolean);
+      return users.map((u) => u.walletAddress).filter(Boolean);
+    }, state.channels.entriesById);
+    return memberWalletAddressesByChannelId;
+  },
+  (_, query) => query,
+  (channels, memberWalletAddressesByChannelId, memberWalletAddressesQuery) => {
+    if (memberWalletAddressesQuery.length === 0) return [];
+    return channels.filter((c) => {
+      const memberWalletAddresses = memberWalletAddressesByChannelId[c.id];
+      return (
+        memberWalletAddresses != null &&
+        memberWalletAddresses.length >= memberWalletAddressesQuery.length &&
+        memberWalletAddressesQuery.every((a) =>
+          memberWalletAddresses.includes(a.toLowerCase())
+        )
+      );
+    });
+  },
+  { memoizeOptions: { equalityCheck: arrayShallowEquals } }
+);
+
 export const selectMemberChannels = createSelector(
   (state, options) => {
     if (state.me.user == null) return [];
@@ -543,16 +572,34 @@ export const selectMemberChannels = createSelector(
 );
 
 export const selectDmChannels = createSelector(
-  (state) => {
+  (state, options) => {
     const channels = Object.entries(state.channels.entriesById)
       .filter((entry) => !entry[1].isDeleted && entry[1].kind === "dm")
-      .map(([id]) => selectChannel(state, id));
+      .map(([id]) => selectChannel(state, id, options));
 
     return channels;
   },
   (state) => state.channels.readStatesById,
   sortChannelsByActivity,
   { memoizeOptions: { equalityCheck: arrayShallowEquals } }
+);
+
+export const selectDmChannelWithMember = createSelector(
+  (state) => selectMe(state),
+  (state) => selectDmChannels(state, { members: true }),
+  (_, walletAddress) => walletAddress,
+  (me, channels, walletAddress) => {
+    return channels.find((c) => {
+      if (c.members.length > 2) return false;
+      const members = c.members.filter(
+        (u) => u.walletAddress.toLowerCase() !== me.walletAddress.toLowerCase()
+      );
+      if (members.length !== 1) return false;
+      return (
+        members[0].walletAddress.toLowerCase() === walletAddress.toLowerCase()
+      );
+    });
+  }
 );
 
 export const selectPublicChannels = createSelector(

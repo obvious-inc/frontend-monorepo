@@ -5,6 +5,8 @@ import {
 } from "./string.js";
 
 export const search = (users, rawQuery) => {
+  if (users.length === 0) return [];
+
   const query = rawQuery.trim().toLowerCase();
 
   const matchUser = (user) => {

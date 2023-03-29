@@ -1,6 +1,7 @@
 export const getWords = (string) => string.trim().split(/[\s,.]+/);
 
 export const match = (string, query) => {
+  if (query.trim() === "") return false;
   const normalizedString = string.toLowerCase();
   return getWords(query.toLowerCase()).some((w) =>
     normalizedString.includes(w)
@@ -8,6 +9,8 @@ export const match = (string, query) => {
 };
 
 export const getWordMatchCount = (string, query, { exact = false } = {}) => {
+  if (query.trim() === "") return 0;
+
   const queryWords = getWords(query.toLowerCase());
   const normalizedString = string.toLowerCase();
 

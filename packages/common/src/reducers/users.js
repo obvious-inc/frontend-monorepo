@@ -130,6 +130,7 @@ export const selectUser = createSelector(
 
     return {
       ...user,
+      walletAddress: user.walletAddress?.toLowerCase(),
       ensName,
       displayName: user.displayName ?? truncateAddress(user.walletAddress),
       description: user.description,
@@ -143,15 +144,20 @@ export const selectUser = createSelector(
 );
 
 export const selectUsers = createSelector(
-  (state, userIds) =>
-    userIds.map((userId) => selectUser(state, userId)).filter(Boolean),
+  (state, userIdsOrWalletAddresses) =>
+    userIdsOrWalletAddresses
+      .map((userIdOrWalletAddress) =>
+        userIdOrWalletAddress.startsWith("0x")
+          ? selectUserFromWalletAddress(state, userIdOrWalletAddress)
+          : selectUser(state, userIdOrWalletAddress)
+      )
+      .filter(Boolean),
   (users) => users,
   { memoizeOptions: { equalityCheck: arrayShallowEquals } }
 );
 
 export const selectUserFromWalletAddress = (state, address) =>
   selectAllUsers(state).find((u) => {
-    if (u.walletAddress == null) console.log(u);
     return (
       u.walletAddress != null &&
       u.walletAddress.toLowerCase() === address.toLowerCase()

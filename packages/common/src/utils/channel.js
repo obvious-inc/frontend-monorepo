@@ -3,18 +3,16 @@ import {
   match as matchString,
   getWordMatchCount as getStringWordMatchCount,
 } from "./string.js";
+import { search as searchUsers } from "./user.js";
 
 export const search = (channels, rawQuery) => {
+  if (channels.length === 0) return [];
+
   const query = rawQuery.trim().toLowerCase();
 
-  const matchChannel = (channel) => {
-    if (channel.name == null)
-      return channel.members?.some(
-        (m) => m.displayName != null && matchString(m.displayName, query)
-      );
-
-    return matchString(channel.name, query);
-  };
+  const matchChannel = (channel) =>
+    matchString(channel.name ?? "", query) ||
+    searchUsers(channel.members ?? [], query).length > 0;
 
   const unorderedChannels = channels.filter(matchChannel);
 
@@ -33,8 +31,15 @@ export const search = (channels, rawQuery) => {
         value: (c) => c.name?.toLowerCase().indexOf(query.toLowerCase()),
         type: "index",
       },
+      {
+        value: (c) => {
+          const memberMatches = searchUsers(c.members ?? [], query);
+          return memberMatches.length;
+        },
+        order: "desc",
+      },
       (c) => {
-        if (!matchString(c.name ?? "", query)) return Infinity;
+        if (c.name == null || !matchString(c.name, query)) return Infinity;
         return c.name.length;
       },
       (c) => c.memberUserIds.length ?? Infinity,
@@ -45,3 +50,12 @@ export const search = (channels, rawQuery) => {
 
   return orderedChannels;
 };
+
+export const createDefaultComparator = () =>
+  comparator(
+    {
+      value: (c) => c.memberUserIds.length ?? 0,
+      order: "desc",
+    },
+    (c) => c.name?.toLowerCase()
+  );

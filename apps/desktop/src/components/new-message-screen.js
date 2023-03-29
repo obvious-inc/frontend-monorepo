@@ -1,22 +1,31 @@
 import { utils as ethersUtils } from "ethers";
 import React from "react";
+import { useNavigate } from "react-router";
 import { css, useTheme } from "@emotion/react";
 import { useEnsAddress } from "wagmi";
 import {
   useListBox,
+  useListBoxSection,
   useOption,
-  useFocusRing,
   useKeyboard,
   mergeProps,
 } from "react-aria";
 import {
   useActions,
+  useMe,
+  useUsers,
   useAllUsers,
+  useMemberChannels,
   useUserWithWalletAddress,
+  useChannel,
+  useChannelName,
+  useDmChannelWithMember,
 } from "@shades/common/app";
 import {
   user as userUtils,
+  channel as channelUtils,
   ethereum as ethereumUtils,
+  array as arrayUtils,
 } from "@shades/common/utils";
 import { useState as useSidebarState } from "@shades/ui-web/sidebar-layout";
 import {
@@ -24,137 +33,130 @@ import {
   Checkmark as CheckmarkIcon,
 } from "@shades/ui-web/icons";
 import IconButton from "@shades/ui-web/icon-button";
-import useCombobox from "../hooks/combobox";
-import ChannelHeader from "./channel-header";
-import UserAvatar from "./user-avatar";
-import NewChannelMessageInput from "./new-channel-message-input";
-import * as Popover from "./popover";
+import Combobox, {
+  Item as ComboboxItem,
+  Section as ComboboxSection,
+} from "./combobox";
+import { Grid as FlexGrid, Item as FlexGridItem } from "./flex-grid.js";
+import ChannelHeader from "./channel-header.js";
+import UserAvatar from "./user-avatar.js";
+import ChannelAvatar from "./channel-avatar.js";
+import NewChannelMessageInput from "./new-channel-message-input.js";
 
-const { search: searchUsers } = userUtils;
+const {
+  search: searchUsers,
+  createDefaultComparator: createDefaultUserComparator,
+} = userUtils;
+const {
+  search: searchChannels,
+  createDefaultComparator: createDefaultChannelComparator,
+} = channelUtils;
 const { truncateAddress } = ethereumUtils;
+const { sort } = arrayUtils;
 
-const useFilteredAccountOptions = (query, { selectedAccounts = [] } = {}) => {
+const getKeyItemType = (key) => {
+  if (key == null) return null;
+  const [type] = key.split("-");
+  return type;
+};
+
+const getKeyItemIdentifier = (key) => {
+  const type = getKeyItemType(key);
+  if (type == null) return null;
+  return key.slice(type.length + 1);
+};
+
+const useFilteredAccounts = (query) => {
+  const me = useMe();
   const users = useAllUsers();
 
-  const deferredQuery = React.useDeferredValue(query.trim().toLowerCase());
-
-  const { data: ensWalletAddress } = useEnsAddress({
-    name: deferredQuery,
-    enabled: /^.+\.eth$/.test(deferredQuery),
+  const { data: ensMatchWalletAddress } = useEnsAddress({
+    name: query,
+    enabled: /^.+\.eth$/.test(query),
   });
 
   const filteredOptions = React.useMemo(() => {
-    const mapUserToOption = (c) => ({
-      value: c.walletAddress,
-      label: c.displayName ?? c.walletAddress,
-      description:
-        c.displayName == null ? null : truncateAddress(c.walletAddress),
-      icon:
-        c.walletAddress == null
-          ? null
-          : () => <UserAvatar size="2.4rem" walletAddress={c.walletAddress} />,
-      isSelected: selectedAccounts.includes(c.walletAddress),
-    });
-
     const filteredUsers =
-      deferredQuery.length <= 1 ? users : searchUsers(users, deferredQuery);
+      query.length <= 0
+        ? sort(createDefaultUserComparator(), users)
+        : searchUsers(users, query);
 
-    const queryUser = ethersUtils.isAddress(deferredQuery)
-      ? { walletAddress: deferredQuery }
-      : ensWalletAddress != null
+    const queryUser = ethersUtils.isAddress(query)
+      ? { walletAddress: query }
+      : ensMatchWalletAddress != null
       ? {
-          walletAddress: ensWalletAddress,
-          displayName: deferredQuery,
+          walletAddress: ensMatchWalletAddress,
+          displayName: query,
         }
       : null;
 
-    if (
-      queryUser == null ||
-      filteredUsers.some(
+    const includeEnsAccount =
+      queryUser != null &&
+      !filteredUsers.some(
         (u) =>
           u.walletAddress.toLowerCase() ===
           queryUser.walletAddress.toLowerCase()
-      )
-    )
-      return filteredUsers.map(mapUserToOption);
+      );
 
-    return [queryUser, ...filteredUsers].map(mapUserToOption);
-  }, [users, deferredQuery, ensWalletAddress, selectedAccounts]);
+    const filteredUsersIncludingEnsMatch = includeEnsAccount
+      ? [queryUser, ...filteredOptions]
+      : filteredUsers;
+
+    return filteredUsersIncludingEnsMatch.filter(
+      (u) => u.walletAddress.toLowerCase() !== me.walletAddress.toLowerCase()
+    );
+  }, [me, users, query, ensMatchWalletAddress]);
 
   return filteredOptions;
 };
 
-const NewMessageScreen = () => {
-  const { isFloating: isSidebarFloating } = useSidebarState();
-  const actions = useActions();
+const useFilteredChannels = (query, { selectedWalletAddresses }) => {
+  const channels = useMemberChannels({ name: true, members: true });
 
-  const selectedAccountsState = useTagFieldComboboxState();
+  const selectedWalletAddressesQuery = selectedWalletAddresses.join(" ");
 
-  return (
-    <div
-      css={(t) =>
-        css({
-          flex: 1,
-          background: t.colors.backgroundPrimary,
-          display: "flex",
-          flexDirection: "column",
-          alignItems: "stretch",
-          height: "100%",
-        })
-      }
-    >
-      <ChannelHeader>
-        <div
-          css={(t) =>
-            css({
-              fontSize: t.text.sizes.headerDefault,
-              fontWeight: t.text.weights.header,
-              color: t.colors.textHeader,
-            })
-          }
-          style={{ paddingLeft: isSidebarFloating ? 0 : "1.6rem" }}
-        >
-          New Message
-        </div>
-      </ChannelHeader>
-      <div
-        css={css({
-          flex: 1,
-          display: "flex",
-          flexDirection: "column",
-          justifyContent: "stretch",
-          minHeight: 0,
-          minWidth: 0,
-        })}
-      >
-        <div css={css({ padding: "0 1.6rem" })}>
-          <AccountsTagFieldCombobox
-            label="To:"
-            ariaLabel="Account search"
-            placeholder="example.ens, or a wallet address 0x..."
-            state={selectedAccountsState}
-          />
-        </div>
-        <div style={{ flex: 1 }}></div>
-        <div style={{ padding: "2rem 1.6rem" }}>
-          <NewChannelMessageInput
-            uploadImage={actions.uploadImage}
-            submit={(message) => {
-              console.log(
-                "submit",
-                selectedAccountsState.selectedKeys,
-                message
-              );
-            }}
-            placeholder="Type your message..."
-            members={[]}
-            // members={recipientUser == null ? [] : [recipientUser]}
-            // submitDisabled={recipientWalletAddress == null}
-          />
-        </div>
-      </div>
-    </div>
-  );
+  const filteredChannels = React.useMemo(() => {
+    const filteredChannels =
+      query.length <= 0
+        ? selectedWalletAddressesQuery.length === 0
+          ? sort(createDefaultChannelComparator(), channels)
+          : searchChannels(channels, selectedWalletAddressesQuery)
+        : searchChannels(channels, query);
+
+    return filteredChannels.filter((c) => c.kind !== "dm").slice(0, 3);
+  }, [channels, query, selectedWalletAddressesQuery]);
+
+  return filteredChannels;
+};
+
+const useFilteredComboboxItems = (query, state) => {
+  const deferredQuery = React.useDeferredValue(query.trim().toLowerCase());
+
+  const selectedWalletAddresses = state.selectedKeys.map(getKeyItemIdentifier);
+
+  const channels = useFilteredChannels(deferredQuery, {
+    selectedWalletAddresses,
+  });
+  const accounts = useFilteredAccounts(deferredQuery);
+
+  const items = React.useMemo(() => {
+    const channelItems = channels.map((c) => ({
+      key: `channel-${c.id}`,
+      textValue: c.name ?? "untitled",
+    }));
+
+    const accountItems = accounts.map((a) => ({
+      key: `account-${a.walletAddress}`,
+      textValue: a.displayName ?? a.walletAddress,
+    }));
+
+    return [
+      { key: "channels", title: "Channels", children: channelItems },
+      { key: "accounts", title: "Accounts", children: accountItems },
+    ].filter((s) => s.children.length !== 0);
+  }, [channels, accounts]);
+
+  return items;
 };
 
 const useTagFieldComboboxState = () => {
@@ -163,21 +165,12 @@ const useTagFieldComboboxState = () => {
     focusedIndex: -1,
   });
 
-  const select = React.useCallback(
-    (key) =>
-      setState((s) => ({ ...s, selectedKeys: [...s.selectedKeys, key] })),
-    []
-  );
-
-  const deselect = React.useCallback(
-    (key) =>
-      setState((s) => {
-        const indexToDeselect = s.selectedKeys.findIndex((k) => k === key);
-        return {
-          selectedKeys: s.selectedKeys.filter((_, i) => i !== indexToDeselect),
-          focusedIndex: -1,
-        };
-      }),
+  const setSelection = React.useCallback(
+    (keys) =>
+      setState((s) => ({
+        ...s,
+        selectedKeys: typeof keys === "function" ? keys(s.selectedKeys) : keys,
+      })),
     []
   );
 
@@ -235,9 +228,8 @@ const useTagFieldComboboxState = () => {
 
   return {
     selectedKeys,
+    setSelection,
     focusedIndex,
-    select,
-    deselect,
     focusIndex,
     focusLast,
     clearFocus,
@@ -286,27 +278,157 @@ const useTagFieldCombobox = ({ inputRef }, state) => {
 
   return {
     inputProps: keyboardProps,
-    tagButtonProps: keyboardProps,
+    tagButtonProps: { ...keyboardProps, tabIndex: -1 },
   };
 };
 
-const AccountsTagFieldCombobox = ({ label, ariaLabel, placeholder, state }) => {
-  const inputRef = React.useRef();
-  const containerRef = React.useRef();
+const NewMessageScreen = () => {
+  const navigate = useNavigate();
+  const messageInputRef = React.useRef();
+  const { isFloating: isSidebarFloating } = useSidebarState();
+  const actions = useActions();
+  const recipientsState = useTagFieldComboboxState();
+  const [isRecipientsCommitted, setRecipientsCommitted] = React.useState(false);
+  const firstSelectedKeyType = getKeyItemType(recipientsState.selectedKeys[0]);
+  const shouldMatchDm =
+    recipientsState.selectedKeys.length === 1 &&
+    firstSelectedKeyType === "account";
 
-  const [query, setQuery] = React.useState("");
-  const filteredOptions = useFilteredAccountOptions(query, {
-    selectedAccounts: state.selectedKeys,
-  });
+  const dmChannel = useDmChannelWithMember(
+    shouldMatchDm ? getKeyItemIdentifier(recipientsState.selectedKeys[0]) : null
+  );
 
-  const { inputProps, tagButtonProps } = useTagFieldCombobox(
-    { inputRef },
-    state
+  const selectedWalletAddresses = recipientsState.selectedKeys
+    .filter((k) => getKeyItemType(k) === "account")
+    .map(getKeyItemIdentifier);
+
+  const selectedUsers = useUsers(selectedWalletAddresses);
+  const selectedAccounts = selectedWalletAddresses.map(
+    (a) =>
+      selectedUsers.find((u) => u.walletAddress === a) ?? { walletAddress: a }
   );
 
   return (
     <div
-      ref={containerRef}
+      css={(t) =>
+        css({
+          flex: 1,
+          background: t.colors.backgroundPrimary,
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "stretch",
+          height: "100%",
+        })
+      }
+    >
+      <ChannelHeader>
+        <div
+          css={(t) =>
+            css({
+              fontSize: t.text.sizes.headerDefault,
+              fontWeight: t.text.weights.header,
+              color: t.colors.textHeader,
+            })
+          }
+          style={{ paddingLeft: isSidebarFloating ? 0 : "1.6rem" }}
+        >
+          New Message
+        </div>
+      </ChannelHeader>
+      <div
+        css={css({
+          flex: 1,
+          display: "flex",
+          flexDirection: "column",
+          justifyContent: "stretch",
+          minHeight: 0,
+          minWidth: 0,
+        })}
+      >
+        <div css={css({ padding: "0 1.6rem" })}>
+          {!isRecipientsCommitted ? (
+            <MessageRecipientCombobox
+              label="To:"
+              ariaLabel="Message recipient search"
+              placeholder="example.ens, or a wallet address 0x..."
+              state={recipientsState}
+              onSelect={(key) => {
+                if (getKeyItemType(key) === "channel") {
+                  setRecipientsCommitted(true);
+                  messageInputRef.current.focus();
+                }
+              }}
+              onBlur={() => {
+                if (recipientsState.selectedKeys.length !== 0) {
+                  setRecipientsCommitted(true);
+                  messageInputRef.current.focus();
+                }
+              }}
+            />
+          ) : firstSelectedKeyType === "channel" ? (
+            <MessageRecipientChannelHeader
+              channelId={getKeyItemIdentifier(recipientsState.selectedKeys[0])}
+              component="button"
+              onClick={() => {
+                setRecipientsCommitted(false);
+              }}
+            />
+          ) : (
+            <MessageRecipientAccountsHeader
+              walletAddresses={recipientsState.selectedKeys.map(
+                getKeyItemIdentifier
+              )}
+              component="button"
+              onClick={() => {
+                setRecipientsCommitted(false);
+              }}
+            />
+          )}
+        </div>
+        <div style={{ flex: 1 }} />
+        <div style={{ padding: "2rem 1.6rem" }}>
+          <NewChannelMessageInput
+            ref={messageInputRef}
+            uploadImage={actions.uploadImage}
+            submit={async (message) => {
+              if (firstSelectedKeyType === "channel" || dmChannel != null) {
+                const channelId =
+                  dmChannel?.id ??
+                  getKeyItemIdentifier(recipientsState.selectedKeys[0]);
+                actions.createMessage({ channel: channelId, blocks: message });
+                navigate(`/channels/${channelId}`);
+                return;
+              }
+
+              const firstMemberNames = selectedAccounts
+                .slice(0, 3)
+                .map((a) => a.displayName ?? truncateAddress(a.walletAddress))
+                .join(", ");
+
+              const channel = await actions.createPrivateChannel({
+                name:
+                  selectedAccounts.length > 3
+                    ? `${firstMemberNames}, ...`
+                    : firstMemberNames,
+                memberWalletAddresses: selectedWalletAddresses,
+              });
+              actions.createMessage({ channel: channel.id, blocks: message });
+              navigate(`/channels/${channel.id}`);
+            }}
+            placeholder="Type your message..."
+            members={selectedAccounts}
+            submitDisabled={recipientsState.selectedKeys.length == 0}
+          />
+        </div>
+      </div>
+    </div>
+  );
+};
+
+const MessageRecipientsInputContainer = React.forwardRef(
+  ({ component: Component = "div", label, children, ...props }, ref) => (
+    <Component
+      ref={ref}
       css={(t) =>
         css({
           display: "flex",
@@ -316,31 +438,147 @@ const AccountsTagFieldCombobox = ({ label, ariaLabel, placeholder, state }) => {
           fontSize: t.text.sizes.channelMessages,
           borderRadius: "0.6rem",
           padding: "1.05rem 1.6rem",
+          outline: "none",
+          ":focus-visible": {
+            filter: "brightness(1.05)",
+            boxShadow: `0 0 0 0.2rem ${t.colors.primary}`,
+          },
+          "@media (hover: hover)": {
+            ":not(:has(input))": {
+              cursor: "pointer",
+              ":hover": { filter: "brightness(1.05)" },
+            },
+          },
         })
       }
+      {...props}
     >
-      {label && <div style={{ marginRight: "0.8rem" }}>{label}</div>}
+      {label && (
+        <div
+          css={(t) =>
+            css({ color: t.colors.inputPlaceholder, marginRight: "0.8rem" })
+          }
+        >
+          {label}
+        </div>
+      )}
+      {children}
+    </Component>
+  )
+);
 
+const MessageRecipientChannelHeader = ({ channelId, ...props }) => {
+  const channelName = useChannelName(channelId);
+
+  return (
+    <MessageRecipientsInputContainer label="To:" {...props}>
+      <div style={{ display: "flex", alignItems: "center" }}>
+        <ChannelAvatar
+          id={channelId}
+          size="2.4rem"
+          style={{ marginRight: "0.5rem" }}
+        />
+        <div css={(t) => css({ color: t.colors.textNormal })}>
+          {channelName}
+        </div>
+      </div>
+    </MessageRecipientsInputContainer>
+  );
+};
+
+const MessageRecipientAccountsHeader = ({ walletAddresses, ...props }) => {
+  const users = useUsers(walletAddresses);
+  const accounts = walletAddresses.map(
+    (a) => users.find((u) => u.walletAddress === a) ?? { walletAddress: a }
+  );
+
+  return (
+    <MessageRecipientsInputContainer
+      label="To:"
+      css={(t) =>
+        css({
+          display: "flex",
+          alignItems: "center",
+          color: t.colors.textNormal,
+        })
+      }
+      {...props}
+    >
+      {accounts
+        .map((a) => a.displayName ?? truncateAddress(a.walletAddress))
+        .join(", ")}
+    </MessageRecipientsInputContainer>
+  );
+};
+
+const MessageRecipientCombobox = ({
+  label,
+  ariaLabel,
+  placeholder,
+  state,
+  onSelect,
+  onBlur,
+}) => {
+  const inputRef = React.useRef();
+  const containerRef = React.useRef();
+
+  const [query, setQuery] = React.useState("");
+  const filteredComboboxItems = useFilteredComboboxItems(query, state);
+  const { inputProps: tagFieldInputProps, tagButtonProps } =
+    useTagFieldCombobox({ inputRef }, state);
+
+  const { keyboardProps: inputKeyboardProps } = useKeyboard({
+    onKeyDown: (e) => {
+      if (e.key === "Escape" || e.key === "Tab") {
+        state.clearFocus();
+        setQuery("");
+      } else {
+        e.continuePropagation();
+      }
+    },
+  });
+
+  const { selectedKeys } = state;
+
+  return (
+    <MessageRecipientsInputContainer ref={containerRef} label={label}>
       <FlexGrid gridGap="0.5rem" css={css({ flex: 1, minWidth: 0 })}>
-        {state.selectedKeys.map((walletAddress, i) => (
-          <FlexGridItem key={walletAddress}>
-            <SelectedAccountTag
-              walletAddress={walletAddress}
-              isFocused={i === state.focusedIndex}
-              focus={() => {
-                inputRef.current.focus();
-                state.focusIndex(i);
-              }}
-              deselect={() => {
-                inputRef.current.focus();
-                state.deselect(walletAddress);
-              }}
-              {...tagButtonProps}
-            />
-          </FlexGridItem>
-        ))}
+        {state.selectedKeys.map((key, i) => {
+          const type = getKeyItemType(key);
+          const identifier = getKeyItemIdentifier(key);
 
-        <FlexGridItem css={css({ flex: 1 })}>
+          const props = {
+            isFocused: i === state.focusedIndex,
+            focus: () => {
+              inputRef.current.focus();
+              state.focusIndex(i);
+            },
+            deselect: () => {
+              inputRef.current.focus();
+              state.setSelection((keys) => keys.filter((k) => k !== key));
+            },
+            ...tagButtonProps,
+          };
+
+          switch (type) {
+            case "account":
+              return (
+                <FlexGridItem key={key}>
+                  <SelectedAccountTag {...props} walletAddress={identifier} />
+                </FlexGridItem>
+              );
+            case "channel":
+              return (
+                <FlexGridItem key={key}>
+                  <SelectedChannelTag {...props} channelId={identifier} />
+                </FlexGridItem>
+              );
+            default:
+              throw new Error();
+          }
+        })}
+
+        <FlexGridItem css={css({ flex: 1, minWidth: 0 })}>
           <Combobox
             aria-label={ariaLabel}
             autoFocus
@@ -348,179 +586,191 @@ const AccountsTagFieldCombobox = ({ label, ariaLabel, placeholder, state }) => {
               state.selectedKeys.length === 0 ? placeholder : undefined
             }
             allowsCustomValue={false}
-            options={filteredOptions}
-            value={null}
-            onSelect={(walletAddress) => {
-              if (walletAddress == null) return;
+            // allowsCustomValue={true}
+            selectedKey={null}
+            onSelect={(key) => {
+              if (key == null) return;
+
               setQuery("");
-              state.select(walletAddress);
+
+              switch (getKeyItemType(key)) {
+                case "account":
+                  state.setSelection((keys) => {
+                    const nonChannelKeys = keys.filter(
+                      (k) => getKeyItemType(k) !== "channel"
+                    );
+                    return [...nonChannelKeys, key];
+                  });
+                  break;
+
+                // There should only ever be one selected channel at the time
+                case "channel":
+                  state.setSelection([key]);
+                  break;
+
+                default:
+                  throw new Error();
+              }
+
+              onSelect(key);
             }}
             inputValue={query}
             onInputChange={setQuery}
             disabledKeys={state.selectedKeys}
             targetRef={containerRef}
             inputRef={inputRef}
-            inputProps={{
-              ...mergeProps(inputProps, {
-                onChange: () => {
-                  state.clearFocus();
-                },
-                onClick: () => {
-                  state.clearFocus();
-                },
-                onBlur: (e) => {
-                  if (
-                    e.relatedTarget != null &&
-                    containerRef.current.contains(e.relatedTarget)
-                  )
-                    return;
+            items={filteredComboboxItems}
+            popoverMaxHeight={365}
+            renderInput={({ inputRef, inputProps }) => (
+              <input
+                ref={inputRef}
+                css={(t) =>
+                  css({
+                    color: t.colors.textNormal,
+                    background: "none",
+                    border: 0,
+                    padding: 0,
+                    width: "100%",
+                    minWidth: "12rem",
+                    outline: "none",
+                    "::placeholder": {
+                      color: t.colors.inputPlaceholder,
+                    },
+                  })
+                }
+                {...mergeProps(
+                  {
+                    onChange: () => {
+                      state.clearFocus();
+                    },
+                    onClick: () => {
+                      state.clearFocus();
+                    },
+                    onBlur: (e) => {
+                      if (
+                        e.relatedTarget != null &&
+                        containerRef.current.contains(e.relatedTarget)
+                      )
+                        return;
 
-                  state.clearFocus();
-                },
-              }),
-              css: (t) =>
-                css({
-                  color: t.colors.textNormal,
-                  background: "none",
-                  border: 0,
-                  padding: 0,
-                  width: "100%",
-                  minWidth: "12rem",
-                  outline: "none",
-                  "::placeholder": {
-                    color: t.colors.inputPlaceholder,
+                      setQuery("");
+                      state.clearFocus();
+                      onBlur(e);
+                    },
                   },
-                }),
-            }}
-            listBoxProps={{ css: css({ maxHeight: "36.5rem" }) }}
-          />
+                  inputProps,
+                  tagFieldInputProps,
+                  inputKeyboardProps
+                )}
+              />
+            )}
+            renderListbox={({ state, listBoxRef, listBoxProps }) => (
+              <MessageRecipientListBox
+                ref={listBoxRef}
+                listBoxProps={listBoxProps}
+                state={state}
+                selectedKeys={selectedKeys}
+              />
+            )}
+          >
+            {(item) => (
+              <ComboboxSection
+                key={item.key}
+                items={item.children}
+                title={item.title}
+              >
+                {(item) => (
+                  <ComboboxItem key={item.key} textValue={item.textValue} />
+                )}
+              </ComboboxSection>
+            )}
+          </Combobox>
         </FlexGridItem>
       </FlexGrid>
-    </div>
+    </MessageRecipientsInputContainer>
   );
 };
 
-const SelectedAccountTag = ({
-  walletAddress,
-  isFocused,
-  focus,
-  deselect,
-  ...props
-}) => {
-  const user = useUserWithWalletAddress(walletAddress);
-  return (
-    <button
-      tabIndex={-1}
-      data-focused={isFocused ? "true" : undefined}
+const Tag = ({ label, isFocused, focus, deselect, ...props }) => (
+  <button
+    data-focused={isFocused ? "true" : undefined}
+    css={(t) =>
+      css({
+        display: "flex",
+        alignItems: "center",
+        border: 0,
+        lineHeight: "inherit",
+        borderRadius: "0.3rem",
+        padding: "0 0.2rem",
+        fontWeight: "500",
+        outline: "none",
+        cursor: "pointer",
+        color: t.colors.mentionText,
+        background: t.colors.mentionBackground,
+        "&[data-focused]": {
+          position: "relative",
+          zIndex: 1,
+          boxShadow: `0 0 0 0.2rem ${t.colors.mentionFocusBorder}`,
+          textDecoration: "none",
+          "[data-deselect-button]": { color: t.colors.textAccent },
+        },
+        "@media (hover: hover)": {
+          "&:hover": {
+            color: t.colors.mentionTextModifierHover,
+            background: t.colors.mentionBackgroundModifierHover,
+            textDecoration: "none",
+          },
+        },
+      })
+    }
+    onFocus={() => {
+      focus();
+    }}
+    {...props}
+  >
+    {label}
+    <IconButton
+      data-deselect-button
+      component="div"
+      role="button"
+      size="1.8rem"
+      onClick={(e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        deselect();
+      }}
+      style={{ marginLeft: "0.2rem" }}
       css={(t) =>
         css({
-          display: "flex",
-          alignItems: "center",
-          border: 0,
-          lineHeight: "inherit",
-          borderRadius: "0.3rem",
-          padding: "0 0.2rem",
-          fontWeight: "500",
-          outline: "none",
-          cursor: "pointer",
-          color: t.colors.mentionText,
-          background: t.colors.mentionBackground,
-          "&[data-focused]": {
-            position: "relative",
-            zIndex: 1,
-            boxShadow: `0 0 0 0.2rem ${t.colors.mentionFocusBorder}`,
-            textDecoration: "none",
-            "[data-deselect-button]": {
-              color: t.colors.textAccent,
-              // backdropFilter: "brightness(1.5) saturate(1.25)",
-              // svg: { transform: "scale(1.1)" },
-            },
-          },
+          color: "inherit",
           "@media (hover: hover)": {
-            "&:hover": {
-              color: t.colors.mentionTextModifierHover,
-              background: t.colors.mentionBackgroundModifierHover,
-              textDecoration: "none",
+            ":hover": {
+              color: t.colors.textAccent,
+              backdropFilter: "brightness(1.5) saturate(1.25)",
             },
           },
         })
       }
-      onFocus={() => {
-        focus();
-      }}
-      {...props}
     >
-      {user?.displayName ?? truncateAddress(walletAddress)}
-      <IconButton
-        data-deselect-button
-        component="div"
-        role="button"
-        size="1.8rem"
-        onClick={(e) => {
-          e.preventDefault();
-          e.stopPropagation();
-          deselect();
-        }}
-        style={{ marginLeft: "0.2rem" }}
-        css={(t) =>
-          css({
-            color: "inherit",
-            "@media (hover: hover)": {
-              ":hover": {
-                color: t.colors.textAccent,
-                backdropFilter: "brightness(1.5) saturate(1.25)",
-              },
-            },
-          })
-        }
-      >
-        <CrossSmallIcon style={{ width: "0.9rem", height: "auto" }} />
-      </IconButton>
-    </button>
-  );
+      <CrossSmallIcon style={{ width: "0.9rem", height: "auto" }} />
+    </IconButton>
+  </button>
+);
+
+const SelectedAccountTag = ({ walletAddress, ...props }) => {
+  const user = useUserWithWalletAddress(walletAddress);
+  const label = user?.displayName ?? truncateAddress(walletAddress);
+  return <Tag label={label} {...props} />;
 };
 
-const Combobox = ({
-  targetRef,
-  inputRef: inputRefExternal,
-  inputProps: inputPropsExternal,
-  listBoxProps: listBoxPropsExternal,
-  ...props
-}) => {
-  const { state, popoverRef, inputRef, listBoxRef, listBoxProps, inputProps } =
-    useCombobox({ ...props, inputRef: inputRefExternal });
-
-  return (
-    <>
-      <input ref={inputRef} {...mergeProps(inputProps, inputPropsExternal)} />
-      <Popover.Root
-        placement="bottom left"
-        offset={5}
-        isOpen={state.isOpen}
-        onOpenChange={state.setOpen}
-        triggerRef={inputRef}
-        targetRef={targetRef}
-        isDialog={false}
-      >
-        <Popover.Content ref={popoverRef} widthFollowTrigger>
-          <ListBox
-            ref={listBoxRef}
-            listBoxProps={listBoxProps}
-            state={state}
-            {...listBoxPropsExternal}
-          />
-        </Popover.Content>
-      </Popover.Root>
-    </>
-  );
+const SelectedChannelTag = ({ channelId, ...props }) => {
+  const name = useChannelName(channelId);
+  return <Tag label={name} {...props} />;
 };
 
-const ListBox = React.forwardRef(
-  ({ state, listBoxProps: listBoxPropsInput, ...props }, ref) => {
-    const {
-      listBoxProps,
-      // labelProps
-    } = useListBox(listBoxPropsInput, state, ref);
+const MessageRecipientListBox = React.forwardRef(
+  ({ state, listBoxProps: listBoxPropsInput, selectedKeys }, ref) => {
+    const { listBoxProps } = useListBox(listBoxPropsInput, state, ref);
 
     return (
       <ul
@@ -533,37 +783,80 @@ const ListBox = React.forwardRef(
             "li:not(:last-of-type)": { marginBottom: "0.2rem" },
           })
         }
-        {...mergeProps(props, listBoxProps)}
+        {...listBoxProps}
       >
-        {[...state.collection].map((item) => (
-          <Option key={item.key} item={item} state={state} />
-        ))}
+        {[...state.collection].map((item) => {
+          if (item.type === "section")
+            return (
+              <MessageRecipientComboboxSection
+                key={item.key}
+                state={state}
+                item={item}
+                selectedKeys={selectedKeys}
+              />
+            );
+
+          return (
+            <MessageRecipientComboboxOption
+              key={item.key}
+              state={state}
+              item={item}
+              isSelected={selectedKeys.includes(item.key)}
+            />
+          );
+        })}
       </ul>
     );
   }
 );
 
-const Option = ({ item, state }) => {
+const MessageRecipientComboboxOption = ({ item, state, isSelected }) => {
+  const props = {
+    itemKey: item.key,
+    state,
+    isSelected,
+  };
+
+  const type = getKeyItemType(item.key);
+
+  switch (type) {
+    case "account":
+      return (
+        <MessageRecipientComboboxAccountOption
+          identifier={item.key}
+          {...props}
+        />
+      );
+    case "channel":
+      return (
+        <MessageRecipientComboboxChannelOption
+          identifier={item.key}
+          {...props}
+        />
+      );
+    default:
+      throw new Error();
+  }
+};
+
+const MessageRecipientOption = ({
+  itemKey,
+  state,
+  isSelected,
+  label,
+  description,
+  icon,
+}) => {
   const ref = React.useRef();
-  const {
-    optionProps,
-    labelProps,
-    descriptionProps,
-    // isSelected,
-    isFocused,
-    isDisabled,
-  } = useOption({ key: item.key }, state, ref);
+
+  const { optionProps, labelProps, descriptionProps, isFocused, isDisabled } =
+    useOption({ key: itemKey }, state, ref);
 
   const theme = useTheme();
 
-  const {
-    // isFocusVisible,
-    focusProps,
-  } = useFocusRing();
-
   return (
     <li
-      {...mergeProps(optionProps, focusProps)}
+      {...optionProps}
       ref={ref}
       css={(t) =>
         css({
@@ -577,30 +870,27 @@ const Option = ({ item, state }) => {
           color: t.colors.textNormal,
           borderRadius: "0.3rem",
           outline: "none",
-          cursor: isDisabled ? "default" : "pointer",
         })
       }
       style={{
-        background: item.value.isSelected
+        cursor: isDisabled ? "default" : "pointer",
+        background: isSelected
           ? theme.colors.primaryTransparentDark
-          : // ? // ? "rgb(34 130 226 / 17%)"
-          isFocused
+          : isFocused
           ? theme.colors.backgroundModifierHover
           : undefined,
       }}
     >
-      {item.value.icon != null && (
-        <div
-          css={css({
-            marginRight: "1rem",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-          })}
-        >
-          {item.value.icon()}
-        </div>
-      )}
+      <div
+        css={css({
+          marginRight: "1rem",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+        })}
+      >
+        {icon}
+      </div>
       <div
         css={css({
           flex: 1,
@@ -614,9 +904,9 @@ const Option = ({ item, state }) => {
           css={(t) => css({ fontSize: t.text.sizes.channelMessages })}
           style={{ color: isFocused ? theme.colors.textAccent : undefined }}
         >
-          {item.value.label}
+          {label}
         </div>
-        {item.value.description != null && (
+        {description != null && (
           <div
             {...descriptionProps}
             css={(t) =>
@@ -632,10 +922,10 @@ const Option = ({ item, state }) => {
               })
             }
           >
-            {item.value.description}
+            {description}
           </div>
         )}
-        {item.value.isSelected && (
+        {isSelected && (
           <div css={css({ padding: "0 0.5rem" })}>
             <CheckmarkIcon style={{ width: "1.2rem" }} />
           </div>
@@ -644,34 +934,87 @@ const Option = ({ item, state }) => {
     </li>
   );
 };
+const MessageRecipientComboboxSection = ({
+  item: section,
+  state,
+  selectedKeys,
+}) => {
+  const { itemProps, headingProps, groupProps } = useListBoxSection({
+    heading: section.rendered,
+  });
 
-const FlexGridContext = React.createContext();
+  // const isAtTop = section.key === state.collection.getFirstKey();
 
-const FlexGrid = ({ gridGap = 0, children, ...props }) => (
-  <FlexGridContext.Provider value={{ gridGap }}>
-    <div
-      style={{
-        display: "flex",
-        flexWrap: "wrap",
-        margin: `calc(${gridGap} * -1) 0 0 calc(${gridGap} * -1)`,
-        ...props.style,
-      }}
-      {...props}
-    >
-      {children}
-    </div>
-  </FlexGridContext.Provider>
-);
-
-const FlexGridItem = ({ children, ...props }) => {
-  const { gridGap } = React.useContext(FlexGridContext);
   return (
-    <div
-      style={{ margin: `${gridGap} 0 0 ${gridGap}`, ...props.style }}
-      {...props}
-    >
-      {children}
-    </div>
+    <li {...itemProps}>
+      <div
+        {...headingProps}
+        css={(t) =>
+          css({
+            fontSize: t.fontSizes.small,
+            fontWeight: "600",
+            color: t.colors.textDimmedAlpha,
+            padding: "0.5rem 0.8rem",
+          })
+        }
+      >
+        {section.rendered}
+      </div>
+      <ul {...groupProps}>
+        {[...section.childNodes].map((node) => (
+          <MessageRecipientComboboxOption
+            key={node.key}
+            item={node}
+            state={state}
+            isSelected={selectedKeys.includes(node.key)}
+          />
+        ))}
+      </ul>
+    </li>
+  );
+};
+
+const MessageRecipientComboboxAccountOption = ({
+  itemKey,
+  state,
+  isSelected,
+}) => {
+  const walletAddress = getKeyItemIdentifier(itemKey);
+  const user = useUserWithWalletAddress(walletAddress) ?? { walletAddress };
+
+  const address = truncateAddress(user.walletAddress);
+  const name = user.displayName ?? address;
+  const description = name != address ? address : null;
+
+  return (
+    <MessageRecipientOption
+      itemKey={itemKey}
+      state={state}
+      isSelected={isSelected}
+      label={name}
+      description={description}
+      icon={<UserAvatar size="2.4rem" walletAddress={user.walletAddress} />}
+    />
+  );
+};
+
+const MessageRecipientComboboxChannelOption = ({
+  itemKey,
+  state,
+  isSelected,
+}) => {
+  const channelId = getKeyItemIdentifier(itemKey);
+  const channel = useChannel(channelId, { name: true });
+
+  return (
+    <MessageRecipientOption
+      itemKey={itemKey}
+      state={state}
+      isSelected={isSelected}
+      label={channel.name}
+      description={channel.description}
+      icon={<ChannelAvatar size="2.4rem" id={channel.id} />}
+    />
   );
 };
 
