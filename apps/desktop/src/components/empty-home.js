@@ -2,7 +2,7 @@ import React from "react";
 import { css } from "@emotion/react";
 import { useAuth } from "@shades/common/app";
 import { Home as HomeIcon } from "@shades/ui-web/icons";
-import ChannelHeader from "./channel-header";
+import NavBar from "./nav-bar.js";
 
 const LoginScreen = React.lazy(() => import("./login-screen"));
 
@@ -22,7 +22,7 @@ const EmptyHome = () => {
         })
       }
     >
-      <ChannelHeader />
+      <NavBar />
       {authStatus === "not-authenticated" ? (
         <LoginScreen
           showThrowawayWalletOption={window.location.search.includes(

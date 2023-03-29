@@ -49,8 +49,8 @@ import TitleBar from "./components/title-bar";
 import * as Tooltip from "./components/tooltip";
 import { nounsTv as nounsTvTheme } from "./themes";
 
-const ChannelScreen = React.lazy(() => import("./components/channel"));
-const ChannelBase = React.lazy(() => import("./components/channel-base"));
+const ChannelScreen = React.lazy(() => import("./components/channel-route"));
+const ChannelBase = React.lazy(() => import("./components/channel"));
 const CommandCenterLazy = React.lazy(() =>
   import("./components/command-center")
 );

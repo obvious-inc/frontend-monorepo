@@ -10,7 +10,7 @@ import {
 
 const isNative = window.Native != null;
 
-const ChannelHeader = ({ noSideMenu, children }) => {
+const NavBar = ({ noSideMenu, children }) => {
   const { isFloating: isSideMenuFloating, isCollapsed: isSideMenuCollapsed } =
     useSidebarState();
   const toggleMenu = useSidebarToggle();
@@ -121,4 +121,4 @@ const ChannelHeader = ({ noSideMenu, children }) => {
   );
 };
 
-export default ChannelHeader;
+export default NavBar;

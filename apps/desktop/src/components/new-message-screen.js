@@ -38,7 +38,7 @@ import Combobox, {
   Section as ComboboxSection,
 } from "./combobox";
 import { Grid as FlexGrid, Item as FlexGridItem } from "./flex-grid.js";
-import ChannelHeader from "./channel-header.js";
+import NavBar from "./nav-bar.js";
 import UserAvatar from "./user-avatar.js";
 import ChannelAvatar from "./channel-avatar.js";
 import NewChannelMessageInput from "./new-channel-message-input.js";
@@ -326,7 +326,7 @@ const NewMessageScreen = () => {
         })
       }
     >
-      <ChannelHeader>
+      <NavBar>
         <div
           css={(t) =>
             css({
@@ -339,7 +339,7 @@ const NewMessageScreen = () => {
         >
           New Message
         </div>
-      </ChannelHeader>
+      </NavBar>
       <div css={css({ padding: "0 1.6rem" })}>
         {!isRecipientsCommitted ? (
           <MessageRecipientCombobox
