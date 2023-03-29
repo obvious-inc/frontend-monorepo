@@ -206,7 +206,7 @@ export const Provider = ({ apiOrigin, ...props }) => {
       login,
       clearTokenStore,
       setAccessToken,
-      writeRefreshToken,
+      setRefreshToken: writeRefreshToken,
     }),
     [
       apiOrigin,
