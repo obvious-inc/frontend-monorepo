@@ -101,6 +101,7 @@ module.exports = (_, argv) => {
           },
         ],
       }),
+      new CopyPlugin({ patterns: [{ from: "static" }] }),
     ],
     optimization: {
       moduleIds: "deterministic",
