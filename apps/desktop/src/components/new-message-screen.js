@@ -2,7 +2,7 @@ import { utils as ethersUtils } from "ethers";
 import React from "react";
 import { useNavigate } from "react-router";
 import { css, useTheme } from "@emotion/react";
-import { useEnsAddress } from "wagmi";
+import { useEnsAddress, useEnsName } from "wagmi";
 import {
   useListBox,
   useListBoxSection,
@@ -71,6 +71,17 @@ const getKeyItemIdentifier = (key) => {
   return key.slice(type.length + 1);
 };
 
+const useAccountDisplayName = (walletAddress) => {
+  const user = useUserWithWalletAddress(walletAddress);
+  const { data: ensName } = useEnsName({
+    address: walletAddress,
+    enabled: user == null,
+  });
+  const displayName =
+    user?.displayName ?? ensName ?? truncateAddress(walletAddress);
+  return displayName;
+};
+
 const useFilteredAccounts = (query) => {
   const me = useMe();
   const users = useAllUsers();
@@ -91,10 +102,7 @@ const useFilteredAccounts = (query) => {
     const queryUser = ethersUtils.isAddress(query)
       ? { walletAddress: query }
       : ensMatchWalletAddress != null
-      ? {
-          walletAddress: ensMatchWalletAddress,
-          displayName: query,
-        }
+      ? { walletAddress: ensMatchWalletAddress }
       : null;
 
     const includeEnsAccount =
@@ -106,7 +114,7 @@ const useFilteredAccounts = (query) => {
       );
 
     const filteredUsersIncludingEnsMatch = includeEnsAccount
-      ? [queryUser, ...filteredOptions]
+      ? [queryUser, ...filteredUsers]
       : filteredUsers;
 
     return filteredUsersIncludingEnsMatch.filter(
@@ -576,6 +584,9 @@ const MessageRecipientChannelHeader = ({ channelId, ...props }) => {
   );
 };
 
+const AccountDisplayName = ({ walletAddress }) =>
+  useAccountDisplayName(walletAddress);
+
 const MessageRecipientAccountsHeader = ({ walletAddresses, ...props }) => {
   const users = useUsers(walletAddresses);
   const accounts = walletAddresses.map(
@@ -594,9 +605,12 @@ const MessageRecipientAccountsHeader = ({ walletAddresses, ...props }) => {
       }
       {...props}
     >
-      {accounts
-        .map((a) => a.displayName ?? truncateAddress(a.walletAddress))
-        .join(", ")}
+      {accounts.map((a, i, as) => (
+        <React.Fragment key={a.walletAddress}>
+          <AccountDisplayName walletAddress={a.walletAddress} />
+          {i !== as.length - 1 ? <>, </> : null}
+        </React.Fragment>
+      ))}
     </MessageRecipientsInputContainer>
   );
 };
@@ -848,8 +862,7 @@ const Tag = ({ label, isFocused, focus, deselect, ...props }) => (
 );
 
 const SelectedAccountTag = ({ walletAddress, ...props }) => {
-  const user = useUserWithWalletAddress(walletAddress);
-  const label = user?.displayName ?? truncateAddress(walletAddress);
+  const label = useAccountDisplayName(walletAddress);
   return <Tag label={label} {...props} />;
 };
 
@@ -1073,7 +1086,7 @@ const MessageRecipientComboboxAccountOption = ({
   const user = useUserWithWalletAddress(walletAddress) ?? { walletAddress };
 
   const address = truncateAddress(user.walletAddress);
-  const name = user.displayName ?? address;
+  const name = useAccountDisplayName(walletAddress)
   const description = name != address ? address : null;
 
   return (
