@@ -706,11 +706,13 @@ const AboutTab = ({ channelId, dismiss }) => {
                       : "text",
                   placeholder,
                   hint,
-                  required: editingPropery === "name",
+                  required: channel.kind !== "dm" && editingPropery === "name",
                   validate: (value) => {
                     switch (editingPropery) {
                       case "name":
-                        return value.trim().length !== 0;
+                        return (
+                          channel.kind === "dm" || value.trim().length !== 0
+                        );
                       default:
                         throw new Error();
                     }

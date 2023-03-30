@@ -16,9 +16,13 @@ import {
   usePublicChannels,
 } from "@shades/common/app";
 import { channel as channelUtils } from "@shades/common/utils";
+import { MagnificationGlass as SearchIcon } from "@shades/ui-web/icons";
 import { useLatestCallback } from "@shades/common/react";
 import Dialog from "@shades/ui-web/dialog";
 import Input from "./input";
+import ChannelAvatar from "./channel-avatar";
+
+const MAX_CHANNEL_COUNT = 12;
 
 const { search: searchChannels } = channelUtils;
 
@@ -26,14 +30,15 @@ const mapChannelToOption = (c) => ({
   value: c.id,
   label: c.name,
   description: c.description,
+  channelId: c.id,
 });
 
 const useFilteredChannelOptions = (channels, query) =>
   React.useMemo(() => {
     const filteredChannels =
-      query.length <= 1 ? channels : searchChannels(channels, query);
+      query.length === 0 ? channels : searchChannels(channels, query);
 
-    return filteredChannels.map(mapChannelToOption);
+    return filteredChannels.slice(0, MAX_CHANNEL_COUNT).map(mapChannelToOption);
   }, [channels, query]);
 
 const CommandCenter = ({ mode, ...props }) => {
@@ -201,21 +206,37 @@ const AlwaysOpenCombobox = ({ value, options = [], popoverRef, ...props_ }) => {
 
   return (
     <>
-      <Input
-        ref={inputRef}
-        {...inputProps}
-        css={(t) =>
-          css({
-            background: "none",
-            borderBottom: "0.1rem solid",
-            borderColor: t.colors.borderLight,
-            fontSize: t.fontSizes.large,
-            borderRadius: 0,
-            padding: "1rem 1.4rem",
-            "&:focus": { boxShadow: "none" },
-          })
-        }
-      />
+      <div style={{ position: "relative" }}>
+        <SearchIcon
+          css={(t) =>
+            css({
+              color: t.colors.textMuted,
+              width: "1.8rem",
+              pointerEvents: "none",
+              position: "absolute",
+              top: "50%",
+              transform: "translateY(-50%)",
+              left: "1.5rem",
+            })
+          }
+          aria-hidden="true"
+        />
+        <Input
+          ref={inputRef}
+          {...inputProps}
+          css={(t) =>
+            css({
+              background: "none",
+              fontSize: t.fontSizes.large,
+              padding: "1rem 1.4rem 1rem 4.4rem",
+              borderBottom: "0.1rem solid",
+              borderColor: t.colors.borderLighter,
+              borderRadius: 0,
+              "&:focus": { boxShadow: "none" },
+            })
+          }
+        />
+      </div>
       <ListBox
         listBoxProps={listBoxProps}
         listBoxRef={listBoxRef}
@@ -283,17 +304,18 @@ const Option = ({ item, state }) => {
       css={(t) =>
         css({
           minHeight: t.dropdownMenus.itemHeight,
-          padding: "0.5rem 1rem",
+          padding: "0.7rem 1rem",
           display: "flex",
           alignItems: "center",
           justifyContent: "flex-start",
           lineHeight: 1.4,
-          // fontSize: t.fontSizes.menus,
           fontWeight: "400",
+          fontSize: t.fontSizes.large,
           color: isDisabled ? t.colors.textMuted : t.colors.textNormal,
           borderRadius: "0.3rem",
           outline: "none",
           cursor: isDisabled ? "not-allowed" : "pointer",
+          whiteSpace: "nowrap",
           // ":focus": { background: t.colors.backgroundModifierHover },
         })
       }
@@ -304,28 +326,37 @@ const Option = ({ item, state }) => {
           : undefined,
       }}
     >
-      {/* {item.value.icon != null && ( */}
-      {/*   <div */}
-      {/*     css={css({ */}
-      {/*       width: "3rem", */}
-      {/*       marginRight: "1rem", */}
-      {/*       display: "flex", */}
-      {/*       alignItems: "center", */}
-      {/*       justifyContent: "center", */}
-      {/*     })} */}
-      {/*   > */}
-      {/*     {item.value.icon} */}
-      {/*   </div> */}
-      {/* )} */}
-      <div css={css({ width: "100%", display: "flex", alignItems: "center" })}>
-        <div {...labelProps}>{item.value.label}</div>
+      <div
+        css={css({
+          width: "2rem",
+          marginRight: "1rem",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+        })}
+      >
+        <ChannelAvatar id={item.value.channelId} size="2rem" />
+      </div>
+      <div
+        style={{ display: "flex", alignItems: "center", flex: 1, minWidth: 0 }}
+      >
+        <div
+          {...labelProps}
+          style={{
+            minWidth: 0,
+            overflow: "hidden",
+            textOverflow: "ellipsis",
+          }}
+        >
+          {item.value.label}
+        </div>
         {item.value.description != null && (
           <div
             {...descriptionProps}
             css={(t) =>
               css({
                 color: isDisabled ? t.colors.textMuted : t.colors.textDimmed,
-                fontSize: t.fontSizes.small,
+                fontSize: t.fontSizes.default,
                 flex: 1,
                 minWidth: 0,
                 whiteSpace: "nowrap",
