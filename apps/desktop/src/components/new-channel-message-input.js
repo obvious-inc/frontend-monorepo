@@ -128,6 +128,7 @@ const NewChannelMessageInput = React.memo(
       submit,
       uploadImage,
       disabled = false,
+      submitDisabled = false,
       cancelReply,
       channelId,
       replyTargetMessageId,
@@ -211,6 +212,8 @@ const NewChannelMessageInput = React.memo(
           return;
         }
       }
+
+      if (submitDisabled) return;
 
       // Regular submit if we don’t have pending file uploads
       if (imageUploads.length === 0 && uploadPromiseRef.current == null) {
@@ -451,7 +454,9 @@ const NewChannelMessageInput = React.memo(
             </div>
 
             <IconButton
-              disabled={disabled || isEmptyMessage || isPending}
+              disabled={
+                disabled || submitDisabled || isEmptyMessage || isPending
+              }
               css={(t) => css({ color: t.colors.primary })}
               type="submit"
             >

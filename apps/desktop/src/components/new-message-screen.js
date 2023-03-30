@@ -509,13 +509,15 @@ const NewMessageScreen = () => {
 
               try {
                 const selectedAccountDisplayNames = await Promise.all(
-                  selectedAccounts.slice(0, 2).map((a) =>
-                    fetch(
-                      `https://api.ensideas.com/ens/resolve/${a.walletAddress}`
-                    )
-                      .then((r) => r.json())
-                      .then((data) => data.displayName)
-                      .catch(() => truncateAddress(a.walletAddressA))
+                  selectedAccounts.slice(0, 2).map(
+                    (a) =>
+                      a.displayName ??
+                      fetch(
+                        `https://api.ensideas.com/ens/resolve/${a.walletAddress}`
+                      )
+                        .then((r) => r.json())
+                        .then((data) => data.displayName)
+                        .catch(() => truncateAddress(a.walletAddressA))
                   )
                 );
 
@@ -541,10 +543,8 @@ const NewMessageScreen = () => {
             }}
             placeholder="Type your message..."
             members={selectedAccounts}
-            disabled={
-              hasPendingMessageSubmit ||
-              recipientsState.selectedKeys.length == 0
-            }
+            disabled={hasPendingMessageSubmit}
+            submitDisabled={recipientsState.selectedKeys.length == 0}
             channelId={matchingChannelId}
             replyTargetMessageId={replyTargetMessageId}
             cancelReply={cancelReply}
