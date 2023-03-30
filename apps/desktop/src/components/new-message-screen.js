@@ -48,6 +48,8 @@ import ChannelMessagesScrollView from "./channel-messages-scroll-view";
 import CreateChannelDialog from "./create-channel-dialog";
 import { useScrollAwareMessageFetcher } from "./channel";
 
+const MAX_ACCOUNT_MATCH_COUNT = 20;
+
 const {
   search: searchUsers,
   createDefaultComparator: createDefaultUserComparator,
@@ -94,11 +96,13 @@ const useFilteredAccounts = (query) => {
         ? sort(createDefaultUserComparator(), users)
         : searchUsers(users, query);
 
-    return filteredUsers.filter(
-      (u) =>
-        me == null ||
-        u.walletAddress.toLowerCase() !== me.walletAddress.toLowerCase()
-    );
+    return filteredUsers
+      .slice(0, MAX_ACCOUNT_MATCH_COUNT)
+      .filter(
+        (u) =>
+          me == null ||
+          u.walletAddress.toLowerCase() !== me.walletAddress.toLowerCase()
+      );
   }, [me, users, query]);
 
   return filteredOptions;
