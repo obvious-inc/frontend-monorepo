@@ -424,7 +424,9 @@ const Channel = ({ channelId, compact, noSideMenu }) => {
   const [notFound, setNotFound] = React.useState(false);
 
   const isMember =
-    me != null && channel.memberUserIds.some((id) => id === me.id);
+    me != null &&
+    channel != null &&
+    channel.memberUserIds.some((id) => id === me.id);
 
   const fetchMessages = useMessageFetcher();
 
