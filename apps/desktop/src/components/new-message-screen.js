@@ -86,11 +86,6 @@ const useFilteredAccounts = (query) => {
   const me = useMe();
   const users = useAllUsers();
 
-  const { data: ensMatchWalletAddress } = useEnsAddress({
-    name: query,
-    enabled: /^.+\.eth$/.test(query),
-  });
-
   const filteredOptions = React.useMemo(() => {
     if (query.trim() === "") return [];
 
@@ -99,30 +94,12 @@ const useFilteredAccounts = (query) => {
         ? sort(createDefaultUserComparator(), users)
         : searchUsers(users, query);
 
-    const queryUser = ethersUtils.isAddress(query)
-      ? { walletAddress: query }
-      : ensMatchWalletAddress != null
-      ? { walletAddress: ensMatchWalletAddress }
-      : null;
-
-    const includeEnsAccount =
-      queryUser != null &&
-      !filteredUsers.some(
-        (u) =>
-          u.walletAddress.toLowerCase() ===
-          queryUser.walletAddress.toLowerCase()
-      );
-
-    const filteredUsersIncludingEnsMatch = includeEnsAccount
-      ? [queryUser, ...filteredUsers]
-      : filteredUsers;
-
-    return filteredUsersIncludingEnsMatch.filter(
+    return filteredUsers.filter(
       (u) =>
         me == null ||
         u.walletAddress.toLowerCase() !== me.walletAddress.toLowerCase()
     );
-  }, [me, users, query, ensMatchWalletAddress]);
+  }, [me, users, query]);
 
   return filteredOptions;
 };
@@ -148,32 +125,90 @@ const useFilteredChannels = (query, { selectedWalletAddresses }) => {
   return filteredChannels;
 };
 
+const useExternalAccount = (ensNameOrWalletAddress) => {
+  const { data: ensMatchWalletAddress } = useEnsAddress({
+    name: ensNameOrWalletAddress,
+    enabled: /^.+\.eth$/.test(ensNameOrWalletAddress),
+  });
+
+  const account = React.useMemo(
+    () =>
+      ensMatchWalletAddress != null
+        ? { walletAddress: ensMatchWalletAddress }
+        : ethersUtils.isAddress(ensNameOrWalletAddress)
+        ? { walletAddress: ensNameOrWalletAddress }
+        : null,
+    [ensMatchWalletAddress, ensNameOrWalletAddress]
+  );
+
+  return account;
+};
+
+const useExactAccountMatch = (query) => {
+  const externalAccount = useExternalAccount(query);
+  const user = useUserWithWalletAddress(externalAccount?.walletAddress);
+  return user ?? externalAccount;
+};
+
 const useFilteredComboboxItems = (query, state) => {
   const deferredQuery = React.useDeferredValue(query.trim().toLowerCase());
 
   const selectedWalletAddresses = state.selectedKeys.map(getKeyItemIdentifier);
 
+  const exactAccountMatch = useExactAccountMatch(deferredQuery);
   const channels = useFilteredChannels(deferredQuery, {
     selectedWalletAddresses,
   });
   const accounts = useFilteredAccounts(deferredQuery);
 
   const items = React.useMemo(() => {
+    if (ethersUtils.isAddress(deferredQuery))
+      return [
+        {
+          key: "address",
+          children: [
+            { key: `account-${deferredQuery}`, textValue: deferredQuery },
+          ],
+        },
+      ];
+
     const channelItems = channels.map((c) => ({
       key: `channel-${c.id}`,
       textValue: c.name ?? "untitled",
     }));
 
-    const accountItems = accounts.map((a) => ({
+    const accountsExcludingEnsMatch =
+      exactAccountMatch == null
+        ? accounts
+        : accounts.filter(
+            (a) =>
+              a.walletAddress.toLowerCase() !==
+              exactAccountMatch.walletAddress.toLowerCase()
+          );
+
+    const accountItems = accountsExcludingEnsMatch.map((a) => ({
       key: `account-${a.walletAddress}`,
       textValue: a.displayName ?? a.walletAddress,
     }));
 
     return [
+      {
+        key: "ens",
+        title: "ENS match",
+        children:
+          exactAccountMatch == null
+            ? []
+            : [
+                {
+                  key: `account-${exactAccountMatch.walletAddress}`,
+                  textValue: exactAccountMatch.walletAddress,
+                },
+              ],
+      },
       { key: "channels", title: "Channels", children: channelItems },
       { key: "accounts", title: "Accounts", children: accountItems },
     ].filter((s) => s.children.length !== 0);
-  }, [channels, accounts]);
+  }, [deferredQuery, exactAccountMatch, channels, accounts]);
 
   return items;
 };
@@ -1050,19 +1085,21 @@ const MessageRecipientComboboxSection = ({
 
   return (
     <li {...itemProps}>
-      <div
-        {...headingProps}
-        css={(t) =>
-          css({
-            fontSize: t.fontSizes.small,
-            fontWeight: "600",
-            color: t.colors.textDimmedAlpha,
-            padding: "0.5rem 0.8rem",
-          })
-        }
-      >
-        {section.rendered}
-      </div>
+      {section.rendered != null && (
+        <div
+          {...headingProps}
+          css={(t) =>
+            css({
+              fontSize: t.fontSizes.small,
+              fontWeight: "600",
+              color: t.colors.textDimmedAlpha,
+              padding: "0.5rem 0.8rem",
+            })
+          }
+        >
+          {section.rendered}
+        </div>
+      )}
       <ul {...groupProps}>
         {[...section.childNodes].map((node) => (
           <MessageRecipientComboboxOption
@@ -1086,7 +1123,7 @@ const MessageRecipientComboboxAccountOption = ({
   const user = useUserWithWalletAddress(walletAddress) ?? { walletAddress };
 
   const address = truncateAddress(user.walletAddress);
-  const name = useAccountDisplayName(walletAddress)
+  const name = useAccountDisplayName(walletAddress);
   const description = name != address ? address : null;
 
   return (
