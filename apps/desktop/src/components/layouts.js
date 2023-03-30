@@ -225,6 +225,7 @@ const Layout = () => {
               title="Search"
               onClick={() => {
                 openCommandCenter();
+                if (isMenuFloating) toggleMenu();
               }}
             />
             <ListItem
@@ -235,6 +236,9 @@ const Layout = () => {
               title="New message"
               component={NavLink}
               to="/new"
+              onClick={() => {
+                if (isMenuFloating) toggleMenu();
+              }}
             />
 
             {(authenticationStatus === "not-authenticated" ||
