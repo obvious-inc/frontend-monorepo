@@ -31,7 +31,9 @@ import { useState as useSidebarState } from "@shades/ui-web/sidebar-layout";
 import {
   CrossSmall as CrossSmallIcon,
   Checkmark as CheckmarkIcon,
+  PlusSmall as PlusSmallIcon,
 } from "@shades/ui-web/icons";
+import Button from "@shades/ui-web/button";
 import IconButton from "@shades/ui-web/icon-button";
 import Combobox, {
   Item as ComboboxItem,
@@ -42,6 +44,9 @@ import NavBar from "./nav-bar.js";
 import UserAvatar from "./user-avatar.js";
 import ChannelAvatar from "./channel-avatar.js";
 import NewChannelMessageInput from "./new-channel-message-input.js";
+import ChannelMessagesScrollView from "./channel-messages-scroll-view";
+import CreateChannelDialog from "./create-channel-dialog";
+import { useScrollAwareMessageFetcher } from "./channel";
 
 const {
   search: searchUsers,
@@ -76,6 +81,8 @@ const useFilteredAccounts = (query) => {
   });
 
   const filteredOptions = React.useMemo(() => {
+    if (query.trim() === "") return [];
+
     const filteredUsers =
       query.length <= 0
         ? sort(createDefaultUserComparator(), users)
@@ -118,6 +125,8 @@ const useFilteredChannels = (query, { selectedWalletAddresses }) => {
   const selectedWalletAddressesQuery = selectedWalletAddresses.join(" ");
 
   const filteredChannels = React.useMemo(() => {
+    if (query.trim() === "") return [];
+
     const filteredChannels =
       query.length <= 0
         ? selectedWalletAddressesQuery.length === 0
@@ -300,6 +309,12 @@ const NewMessageScreen = () => {
     shouldMatchDm ? getKeyItemIdentifier(recipientsState.selectedKeys[0]) : null
   );
 
+  const matchingChannelId =
+    dmChannel?.id ??
+    (firstSelectedKeyType === "channel"
+      ? getKeyItemIdentifier(recipientsState.selectedKeys[0])
+      : null);
+
   const selectedWalletAddresses = recipientsState.selectedKeys
     .filter((k) => getKeyItemType(k) === "account")
     .map(getKeyItemIdentifier);
@@ -310,114 +325,192 @@ const NewMessageScreen = () => {
       selectedUsers.find((u) => u.walletAddress === a) ?? { walletAddress: a }
   );
 
+  const [replyTargetMessageId, setReplyTargetMessageId] = React.useState(null);
+  const [isCreateChannelDialogOpen, setCreateChannelDialogOpen] =
+    React.useState(false);
+
+  const initReply = React.useCallback((messageId) => {
+    setReplyTargetMessageId(messageId);
+    messageInputRef.current.focus();
+  }, []);
+
+  const cancelReply = React.useCallback(() => {
+    setReplyTargetMessageId(null);
+    messageInputRef.current.focus();
+  }, []);
+
   return (
-    <div
-      css={(t) =>
-        css({
-          position: "relative",
-          zIndex: 0,
-          flex: 1,
-          minWidth: 0,
-          display: "flex",
-          flexDirection: "column",
-          alignItems: "stretch",
-          height: "100%",
-          background: t.colors.backgroundPrimary,
-        })
-      }
-    >
-      <NavBar>
-        <div
-          css={(t) =>
-            css({
-              fontSize: t.text.sizes.headerDefault,
-              fontWeight: t.text.weights.header,
-              color: t.colors.textHeader,
-            })
-          }
-          style={{ paddingLeft: isSidebarFloating ? 0 : "1.6rem" }}
-        >
-          New Message
+    <>
+      <div
+        css={(t) =>
+          css({
+            position: "relative",
+            zIndex: 0,
+            flex: 1,
+            minWidth: 0,
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "stretch",
+            height: "100%",
+            background: t.colors.backgroundPrimary,
+          })
+        }
+      >
+        <NavBar>
+          <div
+            css={(t) =>
+              css({
+                fontSize: t.text.sizes.headerDefault,
+                fontWeight: t.text.weights.header,
+                color: t.colors.textHeader,
+                marginRight: "1rem",
+              })
+            }
+            style={{ paddingLeft: isSidebarFloating ? 0 : "1.6rem" }}
+          >
+            New Message
+          </div>
+          <div
+            style={{
+              flex: 1,
+              minWidth: 0,
+              display: "flex",
+              justifyContent: "flex-end",
+            }}
+          >
+            <Button
+              size="small"
+              icon={<PlusSmallIcon style={{ width: "1.3rem" }} />}
+              align="left"
+              onClick={() => {
+                setCreateChannelDialogOpen(true);
+              }}
+            >
+              New channel
+            </Button>
+          </div>
+        </NavBar>
+        <div css={css({ padding: "0 1.6rem" })}>
+          {!isRecipientsCommitted ? (
+            <MessageRecipientCombobox
+              label="To:"
+              ariaLabel="Message recipient search"
+              placeholder="An ENS name, or Ethereum address"
+              state={recipientsState}
+              onSelect={(key) => {
+                if (getKeyItemType(key) === "channel") {
+                  setRecipientsCommitted(true);
+                  messageInputRef.current.focus();
+                }
+              }}
+              onBlur={() => {
+                if (recipientsState.selectedKeys.length !== 0) {
+                  setRecipientsCommitted(true);
+                  messageInputRef.current.focus();
+                }
+              }}
+            />
+          ) : firstSelectedKeyType === "channel" ? (
+            <MessageRecipientChannelHeader
+              channelId={getKeyItemIdentifier(recipientsState.selectedKeys[0])}
+              component="button"
+              onClick={() => {
+                setRecipientsCommitted(false);
+              }}
+            />
+          ) : (
+            <MessageRecipientAccountsHeader
+              walletAddresses={recipientsState.selectedKeys.map(
+                getKeyItemIdentifier
+              )}
+              component="button"
+              onClick={() => {
+                setRecipientsCommitted(false);
+              }}
+            />
+          )}
         </div>
-      </NavBar>
-      <div css={css({ padding: "0 1.6rem" })}>
-        {!isRecipientsCommitted ? (
-          <MessageRecipientCombobox
-            label="To:"
-            ariaLabel="Message recipient search"
-            placeholder="An ENS name, or Ethereum address"
-            state={recipientsState}
-            onSelect={(key) => {
-              if (getKeyItemType(key) === "channel") {
-                setRecipientsCommitted(true);
-                messageInputRef.current.focus();
-              }
-            }}
-            onBlur={() => {
-              if (recipientsState.selectedKeys.length !== 0) {
-                setRecipientsCommitted(true);
-                messageInputRef.current.focus();
-              }
-            }}
-          />
-        ) : firstSelectedKeyType === "channel" ? (
-          <MessageRecipientChannelHeader
-            channelId={getKeyItemIdentifier(recipientsState.selectedKeys[0])}
-            component="button"
-            onClick={() => {
-              setRecipientsCommitted(false);
-            }}
-          />
+
+        {matchingChannelId == null ? (
+          <div css={css({ flex: 1 })} />
         ) : (
-          <MessageRecipientAccountsHeader
-            walletAddresses={recipientsState.selectedKeys.map(
-              getKeyItemIdentifier
-            )}
-            component="button"
-            onClick={() => {
-              setRecipientsCommitted(false);
-            }}
+          <ChannelMessages
+            channelId={matchingChannelId}
+            initReply={initReply}
+            replyTargetMessageId={replyTargetMessageId}
           />
         )}
+
+        <div style={{ padding: "0 1.6rem 2rem" }}>
+          <NewChannelMessageInput
+            ref={messageInputRef}
+            uploadImage={actions.uploadImage}
+            submit={async (message) => {
+              if (matchingChannelId != null) {
+                actions.createMessage({
+                  channel: matchingChannelId,
+                  blocks: message,
+                });
+                navigate(`/channels/${matchingChannelId}`);
+                return;
+              }
+
+              const firstMemberNames = selectedAccounts
+                .slice(0, 3)
+                .map((a) => a.displayName ?? truncateAddress(a.walletAddress))
+                .join(", ");
+
+              const channel = await actions.createPrivateChannel({
+                name:
+                  selectedAccounts.length > 3
+                    ? `${firstMemberNames}, ...`
+                    : firstMemberNames,
+                memberWalletAddresses: selectedWalletAddresses,
+              });
+              actions.createMessage({ channel: channel.id, blocks: message });
+              navigate(`/channels/${channel.id}`);
+            }}
+            placeholder="Type your message..."
+            members={selectedAccounts}
+            disabled={recipientsState.selectedKeys.length == 0}
+            channelId={matchingChannelId}
+            replyTargetMessageId={replyTargetMessageId}
+            cancelReply={cancelReply}
+          />
+        </div>
       </div>
 
-      <div css={css({ flex: 1 })} />
+      <CreateChannelDialog
+        isOpen={isCreateChannelDialogOpen}
+        close={() => {
+          setCreateChannelDialogOpen(false);
+        }}
+      />
+    </>
+  );
+};
 
-      <div style={{ padding: "0 1.6rem 2rem" }}>
-        <NewChannelMessageInput
-          ref={messageInputRef}
-          uploadImage={actions.uploadImage}
-          submit={async (message) => {
-            if (firstSelectedKeyType === "channel" || dmChannel != null) {
-              const channelId =
-                dmChannel?.id ??
-                getKeyItemIdentifier(recipientsState.selectedKeys[0]);
-              actions.createMessage({ channel: channelId, blocks: message });
-              navigate(`/channels/${channelId}`);
-              return;
-            }
+const ChannelMessages = ({ channelId, initReply, replyTargetMessageId }) => {
+  const scrollContainerRef = React.useRef();
+  const didScrollToBottomRef = React.useRef(false);
 
-            const firstMemberNames = selectedAccounts
-              .slice(0, 3)
-              .map((a) => a.displayName ?? truncateAddress(a.walletAddress))
-              .join(", ");
+  const { fetcher: fetchMessages, pendingMessagesBeforeCount } =
+    useScrollAwareMessageFetcher(channelId, { scrollContainerRef });
 
-            const channel = await actions.createPrivateChannel({
-              name:
-                selectedAccounts.length > 3
-                  ? `${firstMemberNames}, ...`
-                  : firstMemberNames,
-              memberWalletAddresses: selectedWalletAddresses,
-            });
-            actions.createMessage({ channel: channel.id, blocks: message });
-            navigate(`/channels/${channel.id}`);
-          }}
-          placeholder="Type your message..."
-          members={selectedAccounts}
-          submitDisabled={recipientsState.selectedKeys.length == 0}
-        />
-      </div>
-    </div>
+  React.useEffect(() => {
+    fetchMessages({ limit: 30 });
+  }, [fetchMessages]);
+
+  return (
+    <ChannelMessagesScrollView
+      channelId={channelId}
+      scrollContainerRef={scrollContainerRef}
+      didScrollToBottomRef={didScrollToBottomRef}
+      fetchMessages={fetchMessages}
+      initReply={initReply}
+      replyTargetMessageId={replyTargetMessageId}
+      pendingMessagesBeforeCount={pendingMessagesBeforeCount}
+    />
   );
 };
 
@@ -435,6 +528,7 @@ const MessageRecipientsInputContainer = React.forwardRef(
           borderRadius: "0.6rem",
           padding: "1.05rem 1.6rem",
           outline: "none",
+          boxShadow: t.shadows.elevationHigh,
           ":focus-visible": {
             filter: "brightness(1.05)",
             boxShadow: `0 0 0 0.2rem ${t.colors.primary}`,
@@ -654,9 +748,9 @@ const MessageRecipientCombobox = ({
                       onBlur(e);
                     },
                   },
+                  inputKeyboardProps,
                   inputProps,
-                  tagFieldInputProps,
-                  inputKeyboardProps
+                  tagFieldInputProps
                 )}
               />
             )}

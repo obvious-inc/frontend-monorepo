@@ -37,7 +37,6 @@ import useCommandCenter from "../hooks/command-center";
 import UserAvatar from "./user-avatar";
 import ChannelAvatar from "./channel-avatar";
 import * as DropdownMenu from "./dropdown-menu";
-import CreateChannelDialog from "./create-channel-dialog";
 import NotificationBadge from "./notification-badge";
 import Spinner from "./spinner";
 
@@ -69,9 +68,6 @@ const Layout = () => {
     "starred",
     "member-channels",
   ]);
-
-  const [isCreateChannelDialogOpen, setCreateChannelDialogOpen] =
-    React.useState(false);
 
   const memberChannels = useMemberChannels({ readStates: true });
 
@@ -236,11 +232,9 @@ const Layout = () => {
               icon={
                 <PlusSmallIcon style={{ width: "1.6rem", height: "auto" }} />
               }
-              title="New channel"
-              onClick={() => {
-                setCreateChannelDialogOpen(true);
-                if (isMenuFloating) toggleMenu();
-              }}
+              title="New message"
+              component={NavLink}
+              to="/new"
             />
 
             {(authenticationStatus === "not-authenticated" ||
@@ -362,13 +356,6 @@ const Layout = () => {
       <React.Suspense fallback={null}>
         <Outlet />
       </React.Suspense>
-
-      <CreateChannelDialog
-        isOpen={isCreateChannelDialogOpen}
-        close={() => {
-          setCreateChannelDialogOpen(false);
-        }}
-      />
     </SidebarLayout>
   );
 };

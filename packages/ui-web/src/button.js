@@ -73,7 +73,7 @@ const stylesBySize = (theme, { multiline, align }) => {
       fontSize: theme.fontSizes.default,
       padding: [
         multiline ? "0.5rem" : 0,
-        align === "left" ? "0.7rem" : "1rem",
+        align === "left" ? "0.7rem" : "0.9rem",
       ].join(" "),
       [heightProp]: "2.8rem",
     },

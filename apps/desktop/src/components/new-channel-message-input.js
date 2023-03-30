@@ -4,6 +4,7 @@ import {
   getImageFileDimensions,
   message as messageUtils,
 } from "@shades/common/utils";
+import { useMessage } from "@shades/common/app";
 import {
   AtSign as AtSignIcon,
   CrossCircle as CrossCircleIcon,
@@ -123,21 +124,22 @@ const AttachmentList = ({ items, remove }) => (
 const NewChannelMessageInput = React.memo(
   React.forwardRef(function NewMessageInput_(
     {
+      context,
       submit,
       uploadImage,
-      disabled,
-      replyingToMessage,
+      disabled = false,
       cancelReply,
-      context,
       channelId,
+      replyTargetMessageId,
       onInputChange,
-      submitDisabled = false,
       ...props
     },
     editorRef_
   ) {
     const ref = React.useRef();
     const editorRef = editorRef_ ?? ref;
+
+    const replyTargetMessage = useMessage(replyTargetMessageId);
 
     const [pendingMessage, setPendingMessage] = React.useState(() => [
       createEmptyParagraphElement(),
@@ -254,7 +256,7 @@ const NewChannelMessageInput = React.memo(
 
     return (
       <div css={css({ position: "relative" })}>
-        {replyingToMessage && (
+        {replyTargetMessage != null && (
           <div
             css={(theme) =>
               css({
@@ -279,15 +281,15 @@ const NewChannelMessageInput = React.memo(
                 css={(t) =>
                   css({
                     fontWeight: "500",
-                    color: replyingToMessage.author?.deleted
+                    color: replyTargetMessage.author?.deleted
                       ? t.colors.textDimmed
                       : undefined,
                   })
                 }
               >
-                {replyingToMessage.author?.deleted
+                {replyTargetMessage.author?.deleted
                   ? "Deleted user"
-                  : replyingToMessage.author?.displayName}
+                  : replyTargetMessage.author?.displayName}
               </span>
             </div>
             <button
@@ -324,8 +326,8 @@ const NewChannelMessageInput = React.memo(
               overflow: "auto",
               background: t.colors.backgroundTertiary,
               borderRadius: "0.6rem",
-              borderTopLeftRadius: replyingToMessage ? 0 : undefined,
-              borderTopRightRadius: replyingToMessage ? 0 : undefined,
+              borderTopLeftRadius: replyTargetMessage ? 0 : undefined,
+              borderTopRightRadius: replyTargetMessage ? 0 : undefined,
               fontSize: t.fontSizes.channelMessages,
               "[data-slate-placeholder]": {
                 color: t.colors.inputPlaceholder,
@@ -449,7 +451,7 @@ const NewChannelMessageInput = React.memo(
             </div>
 
             <IconButton
-              disabled={submitDisabled || isEmptyMessage || isPending}
+              disabled={disabled || isEmptyMessage || isPending}
               css={(t) => css({ color: t.colors.primary })}
               type="submit"
             >
