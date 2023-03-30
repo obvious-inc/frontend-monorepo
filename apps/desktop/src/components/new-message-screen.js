@@ -338,6 +338,7 @@ const useTagFieldCombobox = ({ inputRef }, state) => {
 
 const NewMessageScreen = () => {
   const navigate = useNavigate();
+  const me = useMe();
   const messageInputRef = React.useRef();
   const { isFloating: isSidebarFloating } = useSidebarState();
   const actions = useActions();
@@ -368,6 +369,8 @@ const NewMessageScreen = () => {
       selectedUsers.find((u) => u.walletAddress === a) ?? { walletAddress: a }
   );
 
+  const [hasPendingMessageSubmit, setHasPendingMessageSubmit] =
+    React.useState(false);
   const [replyTargetMessageId, setReplyTargetMessageId] = React.useState(null);
   const [isCreateChannelDialogOpen, setCreateChannelDialogOpen] =
     React.useState(false);
@@ -498,24 +501,46 @@ const NewMessageScreen = () => {
                 return;
               }
 
-              const firstMemberNames = selectedAccounts
-                .slice(0, 3)
-                .map((a) => a.displayName ?? truncateAddress(a.walletAddress))
-                .join(", ");
+              setHasPendingMessageSubmit(true);
 
-              const channel = await actions.createPrivateChannel({
-                name:
-                  selectedAccounts.length > 3
-                    ? `${firstMemberNames}, ...`
-                    : firstMemberNames,
-                memberWalletAddresses: selectedWalletAddresses,
-              });
-              actions.createMessage({ channel: channel.id, blocks: message });
-              navigate(`/channels/${channel.id}`);
+              try {
+                const selectedAccountDisplayNames = await Promise.all(
+                  selectedAccounts.slice(0, 2).map((a) =>
+                    fetch(
+                      `https://api.ensideas.com/ens/resolve/${a.walletAddress}`
+                    )
+                      .then((r) => r.json())
+                      .then((data) => data.displayName)
+                      .catch(() => truncateAddress(a.walletAddressA))
+                  )
+                );
+
+                const firstMemberNames = [
+                  me.displayName ?? truncateAddress(me.walletAddress),
+                  ...selectedAccountDisplayNames,
+                ].join(", ");
+
+                const channel = await actions.createPrivateChannel({
+                  name:
+                    selectedAccounts.length > 3
+                      ? `${firstMemberNames}, ...`
+                      : firstMemberNames,
+                  memberWalletAddresses: selectedWalletAddresses,
+                });
+                actions.createMessage({ channel: channel.id, blocks: message });
+                navigate(`/channels/${channel.id}`);
+              } catch (e) {
+                alert("Oh no, something went wrong!");
+              } finally {
+                setHasPendingMessageSubmit(false);
+              }
             }}
             placeholder="Type your message..."
             members={selectedAccounts}
-            disabled={recipientsState.selectedKeys.length == 0}
+            disabled={
+              hasPendingMessageSubmit ||
+              recipientsState.selectedKeys.length == 0
+            }
             channelId={matchingChannelId}
             replyTargetMessageId={replyTargetMessageId}
             cancelReply={cancelReply}
