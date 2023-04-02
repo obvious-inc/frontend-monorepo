@@ -23,6 +23,9 @@ import { selectMessage } from "./reducers/messages.js";
 import { selectEnsName } from "./reducers/ens.js";
 import useLatestCallback from "./react/hooks/latest-callback.js";
 
+const isTruncatedAddress = (s) =>
+  typeof s === "string" && s.startsWith("0x") && s.includes("...");
+
 const selectorFunctions = {
   selectMe,
   selectUser,
@@ -121,7 +124,7 @@ const createApiParsers = ({ buildCloudflareImageUrl }) => ({
     if (u.push_tokens != null) parsedData.pushTokens = u.push_tokens;
     if (u.created_at != null) parsedData.createdAt = u.created_at;
 
-    if (u.display_name !== undefined)
+    if (u.display_name !== undefined && !isTruncatedAddress(u.display_name))
       parsedData.displayName = normalizeString(u.display_name);
 
     if (u.description !== undefined)

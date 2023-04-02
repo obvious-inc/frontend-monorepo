@@ -1,7 +1,9 @@
+import { utils as ethersUtils } from "ethers";
 import {
   WagmiConfig,
   createClient as createWagmiClient,
   configureChains as configureWagmiChains,
+  useProvider,
 } from "wagmi";
 import { mainnet as mainnetChain } from "wagmi/chains";
 import { infuraProvider } from "wagmi/providers/infura";
@@ -16,6 +18,7 @@ import {
   Route,
   Navigate,
   useNavigate,
+  useParams,
 } from "react-router-dom";
 import { IntlProvider } from "react-intl";
 import { ThemeProvider, Global } from "@emotion/react";
@@ -282,6 +285,10 @@ const App = () => {
         </Route>
         <Route path="/c/:channelId" element={<ChannelScreen noSideMenu />} />
         <Route
+          path="/dm/:ensNameOrEthereumAddress"
+          element={<RedirectDmIntent />}
+        />
+        <Route
           path="/support"
           element={
             <ChannelBase noSideMenu channelId="638880b142d6c362cc0b7224" />
@@ -313,6 +320,30 @@ const CommandCenter = () => {
       <CommandCenterLazy {...props} />
     </React.Suspense>
   );
+};
+
+const RedirectDmIntent = () => {
+  const { ensNameOrEthereumAddress } = useParams();
+  const navigate = useNavigate();
+  const provider = useProvider();
+
+  React.useEffect(() => {
+    if (ethersUtils.isAddress(ensNameOrEthereumAddress)) {
+      navigate(`/new?account=${ensNameOrEthereumAddress}`, { replace: true });
+      return;
+    }
+
+    provider.resolveName(ensNameOrEthereumAddress).then((address) => {
+      if (address == null) {
+        navigate("/", { replace: true });
+        return;
+      }
+
+      navigate(`/new?account=${address}`, { replace: true });
+    });
+  }, [navigate, provider, ensNameOrEthereumAddress]);
+
+  return null;
 };
 
 const RequireAuth = ({ children }) => {

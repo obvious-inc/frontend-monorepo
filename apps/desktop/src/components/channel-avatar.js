@@ -1,12 +1,9 @@
-import { css } from "@emotion/react";
 import { useMe, useChannel, useChannelMembers } from "@shades/common/app";
-import { array as arrayUtils } from "@shades/common/utils";
 import Avatar from "@shades/ui-web/avatar";
 import UserAvatar from "./user-avatar.js";
+import UserAvatarStack from "./user-avatar-stack.js";
 
-const { reverse } = arrayUtils;
-
-export const ChannelMembersAvatar = ({ id, transparent, ...props }) => {
+const ChannelMembersAvatar = ({ id, transparent, highRes, ...props }) => {
   const me = useMe();
   const memberUsers = useChannelMembers(id);
   const memberUsersExcludingMe = memberUsers.filter(
@@ -22,47 +19,28 @@ export const ChannelMembersAvatar = ({ id, transparent, ...props }) => {
       <UserAvatar
         walletAddress={member.walletAddress}
         transparent={transparent}
+        highRes={highRes}
         {...props}
       />
     );
   }
 
-  return (
-    <div
-      style={{
-        width: props.size,
-        height: props.size,
-        position: "relative",
-      }}
-    >
-      {reverse(memberUsersExcludingMe.slice(0, 2)).map((user, i) => (
-        <UserAvatar
-          key={user.walletAddress}
-          walletAddress={user.walletAddress}
-          transparent={transparent}
-          {...props}
-          css={css({
-            position: "absolute",
-            top: i === 0 ? "3px" : 0,
-            left: i === 0 ? "3px" : 0,
-            width: "calc(100% - 3px)",
-            height: "calc(100% - 3px)",
-            boxShadow: i !== 0 ? `1px 1px 0 0px rgb(0 0 0 / 30%)` : undefined,
-          })}
-        />
-      ))}
-    </div>
-  );
+  return <UserAvatarStack accounts={memberUsersExcludingMe} {...props} />;
 };
 
-const ChannelAvatar = ({ id, transparent, ...props }) => {
+const ChannelAvatar = ({ id, transparent, highRes, ...props }) => {
   const channel = useChannel(id);
 
   if (channel == null) return <Avatar {...props} />;
   if (channel.image != null) return <Avatar url={channel.image} {...props} />;
   if (channel.kind === "dm")
     return (
-      <ChannelMembersAvatar id={id} transparent={transparent} {...props} />
+      <ChannelMembersAvatar
+        id={id}
+        transparent={transparent}
+        highRes={highRes}
+        {...props}
+      />
     );
 
   return <Avatar signature={channel.name} {...props} />;

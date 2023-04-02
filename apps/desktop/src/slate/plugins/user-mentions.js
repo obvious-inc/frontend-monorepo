@@ -1,6 +1,6 @@
 import { Transforms } from "slate";
 import { useSelected, useFocused } from "slate-react";
-import { useUser } from "@shades/common/app";
+import InlineUserButton from "../../components/inline-user-button.js";
 
 const middleware = (editor) => {
   const { isInline, isVoid } = editor;
@@ -29,21 +29,19 @@ const middleware = (editor) => {
 };
 
 const MentionComponent = ({ element, attributes, children }) => {
-  const user = useUser(element.ref);
-
   const selected = useSelected();
   const focused = useFocused();
   const isFocused = selected && focused;
 
   return (
-    <span
-      className="mention"
+    <InlineUserButton
+      userId={element.ref}
+      component="span"
       data-focused={isFocused ? "true" : undefined}
       {...attributes}
     >
-      @{user?.deleted ? "Deleted user" : user?.displayName ?? "..."}
       {children}
-    </span>
+    </InlineUserButton>
   );
 };
 

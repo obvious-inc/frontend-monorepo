@@ -1,9 +1,11 @@
 import React from "react";
 import { Link } from "react-router-dom";
 import { css } from "@emotion/react";
-import { useUser, useChannelName } from "@shades/common/app";
-import * as Popover from "./popover";
-import ProfilePreview from "./profile-preview";
+import { useUser } from "@shades/common/app";
+import InlineUserButton from "./inline-user-button.js";
+import InlineChannelButton from "./inline-channel-button.js";
+import * as Popover from "./popover.js";
+import ProfilePreview from "./profile-preview.js";
 
 const SINGLE_IMAGE_ATTACHMENT_MAX_WIDTH = 560;
 const SINGLE_IMAGE_ATTACHMENT_MAX_HEIGHT = 280;
@@ -21,40 +23,19 @@ export const createCss = (theme, { inline = false, compact = false } = {}) => ({
     : undefined,
   em: { fontStyle: "italic" },
   strong: { fontWeight: "600" },
-  a: {
+  "a.link": {
     color: theme.colors.link,
     textDecoration: "none",
     outline: "none",
   },
-  "a:hover, a:focus-visible": {
+  "a.link:focus-visible": {
     textDecoration: "underline",
     color: theme.colors.linkModifierHover,
   },
-  ".mention, .channel-link": {
-    display: "inline-block",
-    border: 0,
-    lineHeight: "inherit",
-    borderRadius: "0.3rem",
-    padding: "0 0.2rem",
-    fontWeight: "500",
-    outline: "none",
-    color: theme.colors.textDimmed,
-    background: theme.colors.backgroundTertiary,
-    "&:not([disabled])": {
-      cursor: "pointer",
-      color: theme.colors.mentionText,
-      background: theme.colors.mentionBackground,
-      "&:hover": {
-        color: theme.colors.mentionTextModifierHover,
-        background: theme.colors.mentionBackgroundModifierHover,
-        textDecoration: "none",
-      },
-      "&[data-focused], &:focus-visible": {
-        position: "relative",
-        zIndex: 1,
-        boxShadow: `0 0 0 0.2rem ${theme.colors.mentionFocusBorder}`,
-        textDecoration: "none",
-      },
+  "@media(hover: hover)": {
+    "a.link:hover": {
+      textDecoration: "underline",
+      color: theme.colors.linkModifierHover,
     },
   },
 });
@@ -94,13 +75,26 @@ const createParser = ({
 
         case "link":
           return (
-            <a key={i} href={el.url} target="_blank" rel="noreferrer">
+            <a
+              key={i}
+              href={el.url}
+              target="_blank"
+              rel="noreferrer"
+              className="link"
+            >
               {el.url}
             </a>
           );
 
         case "channel-link":
-          return <ChannelLink key={i} id={el.ref} />;
+          return (
+            <InlineChannelButton
+              key={i}
+              channelId={el.ref}
+              component={Link}
+              to={`/channels/${el.ref}`}
+            />
+          );
 
         case "user":
           return <UserMention key={i} id={el.ref} />;
@@ -224,23 +218,12 @@ const UserMention = ({ id }) => {
   return (
     <Popover.Root placement="right">
       <Popover.Trigger asChild disabled={user.deleted}>
-        <button className="mention">
-          @{user.deleted ? "Deleted user" : user.displayName ?? "..."}
-        </button>
+        <InlineUserButton variant="button" userId={user.id} />
       </Popover.Trigger>
       <Popover.Content>
         <ProfilePreview userId={id} />
       </Popover.Content>
     </Popover.Root>
-  );
-};
-
-const ChannelLink = ({ id }) => {
-  const channelName = useChannelName(id);
-  return (
-    <Link to={`/channels/${id}`} className="channel-link">
-      #{channelName ?? id}
-    </Link>
   );
 };
 

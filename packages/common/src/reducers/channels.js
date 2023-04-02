@@ -468,6 +468,8 @@ export const selectChannelLastMessageAt = (state, channelId) => {
 };
 
 export const selectDmChannelFromUserId = (state, userId) => {
+  if (userId == null) return null;
+
   const dmChannels = selectDmChannels(state);
 
   if (userId === state.me.user.id)
@@ -592,10 +594,14 @@ export const selectDmChannelWithMember = createSelector(
     return channels.find((c) => {
       if (c.members.length > 2) return false;
       const members = c.members.filter(
-        (u) => u.walletAddress.toLowerCase() !== me.walletAddress.toLowerCase()
+        (u) =>
+          me == null ||
+          u.walletAddress == null ||
+          u.walletAddress.toLowerCase() !== me.walletAddress.toLowerCase()
       );
       if (members.length !== 1) return false;
       return (
+        members[0].walletAddress != null &&
         members[0].walletAddress.toLowerCase() === walletAddress.toLowerCase()
       );
     });

@@ -4,6 +4,8 @@ import {
   array as arrayUtils,
   emoji as emojiUtils,
   ethereum as ethereumUtils,
+  user as userUtils,
+  channel as channelUtils,
 } from "@shades/common/utils";
 import { useLatestCallback } from "@shades/common/react";
 import { useChannel, useAllChannels } from "@shades/common/app";
@@ -12,6 +14,14 @@ import UserAvatar from "./user-avatar.js";
 import ChannelAvatar from "./channel-avatar.js";
 
 const { sort } = arrayUtils;
+const {
+  search: searchUsers,
+  createDefaultComparator: createUserDefaultComparator,
+} = userUtils;
+const {
+  search: searchChannels,
+  createDefaultComparator: createChannelDefaultComparator,
+} = channelUtils;
 
 let emojiModulePromise = null;
 
@@ -74,25 +84,12 @@ const MessageInput = React.forwardRef(
     const filteredMentionOptions = React.useMemo(() => {
       if (autoCompleteMode !== "mentions") return [];
 
-      const lowerCaseQuery = mentionQuery?.toLowerCase() ?? null;
+      const filteredMembers =
+        mentionQuery.trim() === ""
+          ? sort(createUserDefaultComparator(), members)
+          : searchUsers(members, mentionQuery);
 
-      const unorderedFilteredMembers = members.filter(
-        (member) =>
-          lowerCaseQuery != null &&
-          member.displayName?.toLowerCase().includes(lowerCaseQuery)
-      );
-
-      const orderedFilteredMembers = sort((o1, o2) => {
-        const [i1, i2] = [o1, o2].map((o) =>
-          o.displayName.toLowerCase().indexOf(lowerCaseQuery)
-        );
-
-        if (i1 < i2) return -1;
-        if (i1 > i2) return 1;
-        return 0;
-      }, unorderedFilteredMembers);
-
-      return orderedFilteredMembers.slice(0, 10).map((m) => {
+      return filteredMembers.slice(0, 10).map((m) => {
         const label = m.displayName;
         const truncatedAddress = ethereumUtils.truncateAddress(m.walletAddress);
         const hasCustomDisplayName = label !== truncatedAddress;
@@ -114,25 +111,12 @@ const MessageInput = React.forwardRef(
     const filteredChannelOptions = React.useMemo(() => {
       if (autoCompleteMode !== "channels") return [];
 
-      const lowerCaseQuery = channelQuery?.toLowerCase() ?? null;
+      const filteredChannels =
+        channelQuery.trim() === ""
+          ? sort(createChannelDefaultComparator(), channels)
+          : searchChannels(channels, channelQuery);
 
-      const unorderedFilteredChannels = channels.filter(
-        (c) =>
-          lowerCaseQuery != null &&
-          c.name?.toLowerCase().includes(lowerCaseQuery)
-      );
-
-      const orderedFilteredChannels = sort((o1, o2) => {
-        const [i1, i2] = [o1, o2].map((o) =>
-          o.name.toLowerCase().indexOf(lowerCaseQuery)
-        );
-
-        if (i1 < i2) return -1;
-        if (i1 > i2) return 1;
-        return 0;
-      }, unorderedFilteredChannels);
-
-      return orderedFilteredChannels.slice(0, 10).map((c) => {
+      return filteredChannels.slice(0, 10).map((c) => {
         return {
           value: c.id,
           render: () => <ChannelAutoCompleteItem id={c.id} />,

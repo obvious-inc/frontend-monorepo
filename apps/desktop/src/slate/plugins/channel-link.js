@@ -1,7 +1,7 @@
 import { Transforms, Text, Editor } from "slate";
 import { useSelected, useFocused } from "slate-react";
-import { useChannelName } from "@shades/common/app";
 import { getWords } from "../utils.js";
+import InlineChannelButton from "../../components/inline-channel-button.js";
 
 const ELEMENT_TYPE = "channel-link";
 
@@ -80,21 +80,19 @@ const middleware = (editor) => {
 };
 
 const LinkComponent = ({ element, attributes, children }) => {
-  const channelName = useChannelName(element.ref);
-
   const selected = useSelected();
   const focused = useFocused();
   const isFocused = selected && focused;
 
   return (
-    <span
-      className={ELEMENT_TYPE}
+    <InlineChannelButton
+      channelId={element.ref}
+      component="span"
       data-focused={isFocused ? "true" : undefined}
       {...attributes}
     >
-      #{channelName ?? element.ref}
       {children}
-    </span>
+    </InlineChannelButton>
   );
 };
 

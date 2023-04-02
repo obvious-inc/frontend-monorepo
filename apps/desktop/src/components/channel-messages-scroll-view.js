@@ -4,16 +4,23 @@ import {
   useActions,
   useMe,
   useChannel,
-  useChannelAccessLevel,
   useChannelHasUnread,
+  useChannelAccessLevel,
   useSortedChannelMessageIds,
   useHasAllChannelMessages,
   useHasFetchedChannelMessages,
 } from "@shades/common/app";
-import useGlobalMediaQueries from "../hooks/global-media-queries";
-import ChannelMessage from "./channel-message";
-import useIsOnScreen from "../hooks/is-on-screen";
-import useScrollListener from "../hooks/scroll-listener";
+import { ethereum as ethereumUtils } from "@shades/common/utils";
+import useGlobalMediaQueries from "../hooks/global-media-queries.js";
+import useIsOnScreen from "../hooks/is-on-screen.js";
+import useScrollListener from "../hooks/scroll-listener.js";
+import ChannelPrologue from "./channel-prologue.js";
+import ChannelMessage from "./channel-message.js";
+import ChannelAvatar from "./channel-avatar.js";
+import InlineUserButtonWithProfilePopover from "./inline-user-button-with-profile-popover.js";
+import FormattedDate from "./formatted-date.js";
+
+const { truncateAddress } = ethereumUtils;
 
 const scrollPositionCache = {};
 
@@ -211,7 +218,7 @@ const ChannelMessagesScrollView = ({
             minHeight: "100%",
           })}
         >
-          {hasAllMessages && <ChannelPrologue channelId={channelId} />}
+          {hasAllMessages && <ChannelIntro channelId={channelId} />}
 
           {!hasAllMessages && messageIds.length > 0 && (
             <OnScreenTrigger
@@ -269,79 +276,121 @@ const ChannelMessagesScrollView = ({
   );
 };
 
-const ChannelPrologue = ({ channelId }) => {
+const ChannelIntro = ({ channelId }) => {
   const me = useMe();
-  const channel = useChannel(channelId, { name: true });
+  const channel = useChannel(channelId, { name: true, members: true });
   const channelAccessLevel = useChannelAccessLevel(channelId);
   const messageIds = useSortedChannelMessageIds(channelId);
 
   const isAdmin = me != null && me.id === channel.ownerUserId;
-  const channelPrefix = channel.kind === "dm" ? "@" : "#";
+  const hasMembers = channel.memberUserIds.length > 1;
+
+  const buildBody = () => {
+    if (channel.kind === "dm") {
+      return (
+        <>
+          This conversation is just between{" "}
+          {channel.members
+            .filter(
+              (m) =>
+                me == null ||
+                m.walletAddress.toLowerCase() !== me.walletAddress.toLowerCase()
+            )
+            .map((m, i, ms) => {
+              return (
+                <React.Fragment key={m.walletAddress}>
+                  <InlineUserButtonWithProfilePopover userId={m.id} />
+                  {i !== ms.length - 1 ? ", " : null}
+                </React.Fragment>
+              );
+            })}{" "}
+          and you.
+        </>
+      );
+    }
+
+    if (channel.description != null)
+      return (
+        <>
+          {channel.description.split(/^\s*$/m).map((s) => (
+            <p key={s}>{s.trim()}</p>
+          ))}
+        </>
+      );
+
+    return (
+      <>
+        This is the very beginning of <strong>{channel.name}</strong>.
+      </>
+    );
+  };
+
+  const buildInfo = () => {
+    if (channel.kind !== "topic" || hasMembers) return null;
+
+    if (channelAccessLevel === "open")
+      return "This channel is open for anyone to join. Share its URL to help people find it!";
+
+    if (isAdmin)
+      return <>Add members with the &ldquo;/add-member&rdquo; command.</>;
+
+    return null;
+  };
+
+  if (channel == null || (channel.kind === "dm" && me == null)) return null;
+
+  if (channel.kind === "dm" && channel.memberUserIds.length === 2)
+    return <DMChannelIntro channelId={channelId} />;
 
   return (
-    <div
-      css={css({ padding: "6rem 1.6rem 0" })}
-      style={{ paddingBottom: messageIds.length !== 0 ? "1rem" : 0 }}
-    >
-      <div
-        css={(theme) =>
-          css({
-            borderBottom: "0.1rem solid",
-            borderColor: theme.colors.borderLight,
-            padding: "0 0 1.5rem",
-          })
-        }
-      >
-        <div
-          css={(theme) =>
-            css({
-              fontSize: theme.fontSizes.huge,
-              fontFamily: theme.fontStacks.headers,
-              fontWeight: "500",
-              color: theme.colors.textHeader,
-              margin: "0 0 0.5rem",
-            })
-          }
-        >
-          Welcome to {channelPrefix}
-          {channel.name}!
-        </div>
-        <div
-          css={(theme) =>
-            css({
-              fontSize: theme.fontSizes.channelMessages,
-              color: theme.colors.textDimmed,
-            })
-          }
-        >
-          This is the start of {channelPrefix}
-          {channel.name}. {channel.description}
-          {channel.kind === "topic" &&
-            isAdmin &&
-            channel.memberUserIds.length <= 1 &&
-            channelAccessLevel != null && (
-              <div
-                css={(theme) =>
-                  css({
-                    color: theme.colors.textHighlight,
-                    fontSize: theme.fontSizes.default,
-                    marginTop: "1rem",
-                  })
-                }
-              >
-                {channelAccessLevel === "open" ? (
-                  <>
-                    This channel is open for anyone to join. Share its URL to
-                    help people find it!
-                  </>
-                ) : (
-                  <>Add members with the &ldquo;/add-member&rdquo; command.</>
-                )}
-              </div>
-            )}
-        </div>
-      </div>
-    </div>
+    <ChannelPrologue
+      title={channel.name}
+      subtitle={
+        <>
+          Created by{" "}
+          <InlineUserButtonWithProfilePopover userId={channel.ownerUserId} /> on{" "}
+          <FormattedDate value={channel.createdAt} day="numeric" month="long" />
+        </>
+      }
+      image={<ChannelAvatar id={channelId} highRes size="6.6rem" />}
+      body={buildBody()}
+      info={buildInfo()}
+      style={{ paddingBottom: messageIds.length === 0 ? 0 : "1rem" }}
+    />
+  );
+};
+
+const DMChannelIntro = ({ channelId }) => {
+  const me = useMe();
+  const channel = useChannel(channelId, { name: true, members: true });
+  const members = channel.members.filter((m) => me != null && me.id !== m.id);
+  const truncatedMemberAddress =
+    members[0]?.walletAddress == null
+      ? null
+      : truncateAddress(members[0].walletAddress);
+
+  return (
+    <ChannelPrologue
+      image={<ChannelAvatar id={channelId} size="6.6rem" />}
+      title={channel.name}
+      subtitle={
+        channel.name.toLowerCase() === truncatedMemberAddress.toLowerCase()
+          ? null
+          : truncatedMemberAddress
+      }
+      body={
+        <>
+          This conversation is just between{" "}
+          {members.map((m, i, ms) => (
+            <React.Fragment key={m.id}>
+              <InlineUserButtonWithProfilePopover userId={m.id} />
+              {i !== ms.length - 1 && `, `}
+            </React.Fragment>
+          ))}{" "}
+          and you.
+        </>
+      }
+    />
   );
 };
 

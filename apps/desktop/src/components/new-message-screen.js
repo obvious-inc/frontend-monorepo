@@ -1,8 +1,8 @@
 import { utils as ethersUtils } from "ethers";
 import React from "react";
-import { useNavigate } from "react-router";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { css, useTheme } from "@emotion/react";
-import { useEnsAddress, useEnsName } from "wagmi";
+import { useEnsAddress } from "wagmi";
 import {
   useListBox,
   useListBoxSection,
@@ -18,6 +18,7 @@ import {
   useMemberChannels,
   useUserWithWalletAddress,
   useChannel,
+  useChannelMembers,
   useChannelName,
   useDmChannelWithMember,
 } from "@shades/common/app";
@@ -35,6 +36,7 @@ import {
 } from "@shades/ui-web/icons";
 import Button from "@shades/ui-web/button";
 import IconButton from "@shades/ui-web/icon-button";
+import useAccountDisplayName from "../hooks/account-display-name.js";
 import Combobox, {
   Item as ComboboxItem,
   Section as ComboboxSection,
@@ -42,11 +44,14 @@ import Combobox, {
 import { Grid as FlexGrid, Item as FlexGridItem } from "./flex-grid.js";
 import NavBar from "./nav-bar.js";
 import UserAvatar from "./user-avatar.js";
+import UserAvatarStack from "./user-avatar-stack.js";
 import ChannelAvatar from "./channel-avatar.js";
 import NewChannelMessageInput from "./new-channel-message-input.js";
-import ChannelMessagesScrollView from "./channel-messages-scroll-view";
-import CreateChannelDialog from "./create-channel-dialog";
-import { useScrollAwareMessageFetcher } from "./channel";
+import ChannelMessagesScrollView from "./channel-messages-scroll-view.js";
+import ChannelPrologue from "./channel-prologue.js";
+import CreateChannelDialog from "./create-channel-dialog.js";
+import InlineUserButtonWithProfilePopover from "./inline-user-button-with-profile-popover.js";
+import { useScrollAwareMessageFetcher } from "./channel.js";
 
 const MAX_ACCOUNT_MATCH_COUNT = 20;
 
@@ -73,16 +78,8 @@ const getKeyItemIdentifier = (key) => {
   return key.slice(type.length + 1);
 };
 
-const useAccountDisplayName = (walletAddress) => {
-  const user = useUserWithWalletAddress(walletAddress);
-  const { data: ensName } = useEnsName({
-    address: walletAddress,
-    enabled: user == null,
-  });
-  const displayName =
-    user?.displayName ?? ensName ?? truncateAddress(walletAddress);
-  return displayName;
-};
+const getIdentifiersOfType = (type, keys) =>
+  keys.filter((k) => getKeyItemType(k) === type).map(getKeyItemIdentifier);
 
 const useFilteredAccounts = (query) => {
   const me = useMe();
@@ -217,20 +214,61 @@ const useFilteredComboboxItems = (query, state) => {
   return items;
 };
 
-const useTagFieldComboboxState = () => {
-  const [{ selectedKeys, focusedIndex }, setState] = React.useState({
-    selectedKeys: [],
-    focusedIndex: -1,
+const useRecipientsTagFieldComboboxState = () => {
+  const [searchParams, setSearchParams] = useSearchParams();
+
+  const recipientsState = useTagFieldComboboxState(() => {
+    const accountKeys =
+      searchParams
+        .get("account")
+        ?.split(",")
+        .filter(ethersUtils.isAddress)
+        .map((a) => `account-${a}`) ?? [];
+    const channelKeys =
+      searchParams
+        .get("channel")
+        ?.split(",")
+        .map((id) => `channel-${id}`) ?? [];
+
+    return { focusedKey: -1, selectedKeys: [...channelKeys, ...accountKeys] };
   });
 
-  const setSelection = React.useCallback(
-    (keys) =>
-      setState((s) => ({
-        ...s,
-        selectedKeys: typeof keys === "function" ? keys(s.selectedKeys) : keys,
-      })),
-    []
+  React.useEffect(() => {
+    const accounts = getIdentifiersOfType(
+      "account",
+      recipientsState.selectedKeys
+    );
+    const channels = getIdentifiersOfType(
+      "channel",
+      recipientsState.selectedKeys
+    );
+
+    setSearchParams((params) => {
+      if (accounts.length === 0) params.delete("account");
+      else params.set("account", accounts.join(","));
+
+      if (channels.length === 0) params.delete("channel");
+      else params.set("channel", channels[0]);
+
+      return params;
+    });
+  }, [recipientsState.selectedKeys, setSearchParams]);
+
+  return recipientsState;
+};
+
+const useTagFieldComboboxState = (initialState) => {
+  const [state, setState] = React.useState(
+    initialState ?? { selectedKeys: [], focusIndex: -1 }
   );
+  const { selectedKeys, focusedIndex } = state;
+
+  const setSelection = React.useCallback((keys) => {
+    setState((s) => ({
+      ...s,
+      selectedKeys: typeof keys === "function" ? keys(s.selectedKeys) : keys,
+    }));
+  }, []);
 
   const clearFocus = React.useCallback(
     () => setState((s) => ({ ...s, focusedIndex: -1 })),
@@ -340,37 +378,69 @@ const useTagFieldCombobox = ({ inputRef }, state) => {
   };
 };
 
-const NewMessageScreen = () => {
-  const navigate = useNavigate();
-  const me = useMe();
-  const messageInputRef = React.useRef();
-  const { isFloating: isSidebarFloating } = useSidebarState();
-  const actions = useActions();
-  const recipientsState = useTagFieldComboboxState();
-  const [isRecipientsCommitted, setRecipientsCommitted] = React.useState(false);
-  const firstSelectedKeyType = getKeyItemType(recipientsState.selectedKeys[0]);
-  const shouldMatchDm =
-    recipientsState.selectedKeys.length === 1 &&
-    firstSelectedKeyType === "account";
-
-  const dmChannel = useDmChannelWithMember(
-    shouldMatchDm ? getKeyItemIdentifier(recipientsState.selectedKeys[0]) : null
+const createDefaultChannelName = async (accounts) => {
+  const displayNames = await Promise.all(
+    accounts.slice(0, 3).map(
+      (a) =>
+        a.displayName ??
+        fetch(`https://api.ensideas.com/ens/resolve/${a.walletAddress}`)
+          .then((r) => r.json())
+          .then((data) => data.displayName)
+          .catch(() => truncateAddress(a.walletAddressA))
+    )
   );
 
-  const matchingChannelId =
-    dmChannel?.id ??
-    (firstSelectedKeyType === "channel"
-      ? getKeyItemIdentifier(recipientsState.selectedKeys[0])
-      : null);
+  const joineddisplayNames = displayNames.join(", ");
 
-  const selectedWalletAddresses = recipientsState.selectedKeys
-    .filter((k) => getKeyItemType(k) === "account")
-    .map(getKeyItemIdentifier);
+  return accounts.length > 3
+    ? `${joineddisplayNames}, ...`
+    : joineddisplayNames;
+};
+
+const NewMessageScreen = () => {
+  const navigate = useNavigate();
+
+  const me = useMe();
+  const actions = useActions();
+
+  const messageInputRef = React.useRef();
+
+  const { isFloating: isSidebarFloating } = useSidebarState();
+
+  const [isRecipientsCommitted, setRecipientsCommitted] = React.useState(false);
+
+  const recipientsState = useRecipientsTagFieldComboboxState();
+
+  const { selectedChannelId, selectedWalletAddresses } = React.useMemo(() => {
+    const selectedChannelId = recipientsState.selectedKeys
+      .filter((k) => getKeyItemType(k) === "channel")
+      .map(getKeyItemIdentifier)[0];
+    const selectedWalletAddresses = recipientsState.selectedKeys
+      .filter((k) => getKeyItemType(k) === "account")
+      .map(getKeyItemIdentifier);
+    return { selectedChannelId, selectedWalletAddresses };
+  }, [recipientsState.selectedKeys]);
+
+  const matchType =
+    selectedChannelId != null
+      ? "channel"
+      : selectedWalletAddresses.length === 1
+      ? "dm"
+      : "group";
+
+  const dmChannel = useDmChannelWithMember(
+    matchType === "dm" ? selectedWalletAddresses[0] : null
+  );
+
+  const channelId = dmChannel?.id ?? selectedChannelId;
+  const channelMembers = useChannelMembers(channelId);
 
   const selectedUsers = useUsers(selectedWalletAddresses);
   const selectedAccounts = selectedWalletAddresses.map(
     (a) =>
-      selectedUsers.find((u) => u.walletAddress === a) ?? { walletAddress: a }
+      selectedUsers.find(
+        (u) => u.walletAddress.toLowerCase() === a.toLowerCase()
+      ) ?? { walletAddress: a }
   );
 
   const [hasPendingMessageSubmit, setHasPendingMessageSubmit] =
@@ -454,15 +524,15 @@ const NewMessageScreen = () => {
                 }
               }}
               onBlur={() => {
-                if (recipientsState.selectedKeys.length !== 0) {
+                if (channelId != null || selectedWalletAddresses.length !== 0) {
                   setRecipientsCommitted(true);
                   messageInputRef.current.focus();
                 }
               }}
             />
-          ) : firstSelectedKeyType === "channel" ? (
+          ) : channelId != null ? (
             <MessageRecipientChannelHeader
-              channelId={getKeyItemIdentifier(recipientsState.selectedKeys[0])}
+              channelId={channelId}
               component="button"
               onClick={() => {
                 setRecipientsCommitted(false);
@@ -470,9 +540,7 @@ const NewMessageScreen = () => {
             />
           ) : (
             <MessageRecipientAccountsHeader
-              walletAddresses={recipientsState.selectedKeys.map(
-                getKeyItemIdentifier
-              )}
+              walletAddresses={selectedWalletAddresses}
               component="button"
               onClick={() => {
                 setRecipientsCommitted(false);
@@ -481,11 +549,24 @@ const NewMessageScreen = () => {
           )}
         </div>
 
-        {matchingChannelId == null ? (
-          <div css={css({ flex: 1 })} />
+        {channelId == null ? (
+          <div
+            css={css({
+              flex: 1,
+              display: "flex",
+              flexDirection: "column",
+              alignItems: "stretch",
+              justifyContent: "flex-end",
+              paddingBottom: "2rem",
+            })}
+          >
+            {selectedWalletAddresses.length !== 0 && (
+              <ChannelIntro walletAddresses={selectedWalletAddresses} />
+            )}
+          </div>
         ) : (
           <ChannelMessages
-            channelId={matchingChannelId}
+            channelId={channelId}
             initReply={initReply}
             replyTargetMessageId={replyTargetMessageId}
           />
@@ -496,41 +577,25 @@ const NewMessageScreen = () => {
             ref={messageInputRef}
             uploadImage={actions.uploadImage}
             submit={async (message) => {
-              if (matchingChannelId != null) {
+              if (channelId != null) {
                 actions.createMessage({
-                  channel: matchingChannelId,
+                  channel: channelId,
                   blocks: message,
                 });
-                navigate(`/channels/${matchingChannelId}`);
+                navigate(`/channels/${channelId}`);
                 return;
               }
 
               setHasPendingMessageSubmit(true);
 
               try {
-                const selectedAccountDisplayNames = await Promise.all(
-                  selectedAccounts.slice(0, 2).map(
-                    (a) =>
-                      a.displayName ??
-                      fetch(
-                        `https://api.ensideas.com/ens/resolve/${a.walletAddress}`
-                      )
-                        .then((r) => r.json())
-                        .then((data) => data.displayName)
-                        .catch(() => truncateAddress(a.walletAddressA))
-                  )
-                );
-
-                const firstMemberNames = [
-                  me.displayName ?? truncateAddress(me.walletAddress),
-                  ...selectedAccountDisplayNames,
-                ].join(", ");
+                const channelName = await createDefaultChannelName([
+                  me,
+                  ...selectedAccounts,
+                ]);
 
                 const channel = await actions.createPrivateChannel({
-                  name:
-                    selectedAccounts.length > 3
-                      ? `${firstMemberNames}, ...`
-                      : firstMemberNames,
+                  name: channelName,
                   memberWalletAddresses: selectedWalletAddresses,
                 });
                 actions.createMessage({ channel: channel.id, blocks: message });
@@ -542,10 +607,13 @@ const NewMessageScreen = () => {
               }
             }}
             placeholder="Type your message..."
-            members={selectedAccounts}
+            // @mentions require user is for now, so we can’t pass `selectedAccounts`
+            members={channelId == null ? selectedUsers : channelMembers}
             disabled={hasPendingMessageSubmit}
-            submitDisabled={recipientsState.selectedKeys.length == 0}
-            channelId={matchingChannelId}
+            submitDisabled={
+              channelId == null && selectedWalletAddresses.length === 0
+            }
+            channelId={channelId}
             replyTargetMessageId={replyTargetMessageId}
             cancelReply={cancelReply}
           />
@@ -691,6 +759,7 @@ const MessageRecipientCombobox = ({
   const containerRef = React.useRef();
 
   const [query, setQuery] = React.useState("");
+
   const filteredComboboxItems = useFilteredComboboxItems(query, state);
   const { inputProps: tagFieldInputProps, tagButtonProps } =
     useTagFieldCombobox({ inputRef }, state);
@@ -1183,6 +1252,96 @@ const MessageRecipientComboboxChannelOption = ({
       label={channel.name}
       description={channel.description}
       icon={<ChannelAvatar size="2.4rem" id={channel.id} />}
+    />
+  );
+};
+
+const ChannelIntro = ({ walletAddresses: walletAddresses_ }) => {
+  const me = useMe();
+
+  const walletAddresses = walletAddresses_.filter(
+    (a) => me == null || me.walletAddress.toLowerCase() !== a.toLowerCase()
+  );
+
+  if (me == null) return null;
+
+  if (walletAddresses.length === 1)
+    return <DMChannelIntro walletAddress={walletAddresses[0]} />;
+
+  return (
+    <ChannelPrologue
+      title={[me.walletAddress, ...walletAddresses]
+        .slice(0, 3)
+        .map((a, i, as) => (
+          <React.Fragment key={a}>
+            <InlineUserButtonWithProfilePopover
+              walletAddress={a}
+              css={(t) =>
+                css({
+                  color: t.colors.textHeader,
+                })
+              }
+            />
+            {i !== as.length - 1 && ", "}
+            {i === as.length - 1 &&
+              walletAddresses.length >= as.length &&
+              ", ..."}
+          </React.Fragment>
+        ))}
+      subtitle={
+        <>
+          {walletAddresses.length + 1} participants
+        </>
+      }
+      image={
+        <UserAvatarStack
+          count={3}
+          accounts={walletAddresses.map((a) => ({ walletAddress: a }))}
+          highRes
+          transparent
+          size="6.6rem"
+          // background={theme.colors.backgroundModifierHover}
+        />
+      }
+      body={
+        <>
+          This conversation is between{" "}
+          {walletAddresses.map((a, i, as) => (
+            <React.Fragment key={a}>
+              <InlineUserButtonWithProfilePopover walletAddress={a} />
+              {i !== as.length - 1 ? ", " : null}
+            </React.Fragment>
+          ))}{" "}
+          and you.
+        </>
+      }
+    />
+  );
+};
+
+const DMChannelIntro = ({ walletAddress }) => {
+  const displayName = useAccountDisplayName(walletAddress);
+  const truncatedAddress = truncateAddress(walletAddress);
+  const hasCustomDisplayName =
+    displayName.toLowerCase() !== truncatedAddress.toLowerCase();
+
+  return (
+    <ChannelPrologue
+      image={<UserAvatar walletAddress={walletAddress} size="6.6rem" />}
+      title={
+        <InlineUserButtonWithProfilePopover
+          walletAddress={walletAddress}
+          css={(t) => css({ color: t.colors.textHeader })}
+        />
+      }
+      subtitle={hasCustomDisplayName ? truncatedAddress : null}
+      body={
+        <>
+          This conversation is just between{" "}
+          <InlineUserButtonWithProfilePopover walletAddress={walletAddress} />{" "}
+          and you.
+        </>
+      }
     />
   );
 };

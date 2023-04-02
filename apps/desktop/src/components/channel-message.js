@@ -36,11 +36,13 @@ import MessageInput from "./message-input";
 import RichText from "./rich-text";
 import Input from "./input";
 import UserAvatar from "./user-avatar";
+import InlineUserButton from "./inline-user-button";
 import * as Popover from "./popover";
 import * as DropdownMenu from "./dropdown-menu";
 import * as Toolbar from "./toolbar";
 import * as Tooltip from "./tooltip";
 import ProfilePreview from "./profile-preview";
+import InlineUserButtonWithProfilePopover from "./inline-user-button-with-profile-popover";
 
 const { groupBy, indexBy } = arrayUtils;
 const { withoutAttachments } = messageUtils;
@@ -793,55 +795,6 @@ const EmojiPickerMobileDialog = ({ onSelect, isOpen, onRequestClose }) => (
   </Dialog>
 );
 
-const MemberDisplayName = React.forwardRef(
-  ({ displayName, color, deleted, unknown, ...props }, ref) => (
-    <button
-      ref={ref}
-      disabled={deleted}
-      css={(t) =>
-        css({
-          lineHeight: 1.2,
-          color:
-            color ??
-            (deleted || unknown ? t.colors.textDimmed : t.colors.textNormal),
-          fontWeight: t.text.weights.smallHeader,
-          outline: "none",
-          ":not([disabled])": {
-            cursor: "pointer",
-            ":hover, :focus-visible": { textDecoration: "underline" },
-          },
-        })
-      }
-      {...props}
-    >
-      {deleted ? "Deleted user" : unknown ? "Unknown user" : displayName}
-    </button>
-  )
-);
-
-const MemberDisplayNameWithPopover = React.forwardRef(
-  ({ user, color, popoverProps, ...props }, ref) => (
-    <Popover.Root placement="right" {...popoverProps}>
-      <Popover.Trigger
-        asChild
-        disabled={user == null || user.deleted || user.unknown}
-      >
-        <MemberDisplayName
-          ref={ref}
-          deleted={user?.deleted}
-          unknown={user?.unknown}
-          displayName={user?.displayName}
-          color={color}
-          {...props}
-        />
-      </Popover.Trigger>
-      <Popover.Content>
-        {user != null && <ProfilePreview userId={user.id} />}
-      </Popover.Content>
-    </Popover.Root>
-  )
-);
-
 const AppDisplayName = React.forwardRef(
   ({ displayName, color, ...props }, ref) => (
     <div
@@ -935,8 +888,10 @@ const MessageHeader = ({ compact, message, authorUser, createdAt }) => {
             css={css({
               display: "inline",
               cursor: "pointer",
-              ":hover [data-name]": {
-                textDecoration: "underline",
+              "@media(hover: hover)": {
+                ":hover [data-name]": {
+                  textDecoration: "underline",
+                },
               },
             })}
           >
@@ -951,10 +906,10 @@ const MessageHeader = ({ compact, message, authorUser, createdAt }) => {
                 transform: "translateY(0.1rem)",
               }}
             />
-            <MemberDisplayName
+            <InlineUserButton
+              variant="link"
               data-name
-              deleted={message.author?.deleted}
-              displayName={message.author?.displayName}
+              userId={message.authorUserId}
               style={{ marginRight: "1rem" }}
             />
           </div>
@@ -977,13 +932,14 @@ const MessageHeader = ({ compact, message, authorUser, createdAt }) => {
         margin: 0 0 0.2rem;
         cursor: default;
         min-height: 1.9rem;
+        line-height: 1.2;
       `}
     >
       {authorUser != null && (
         <>
-          <MemberDisplayNameWithPopover user={authorUser} />
+          <InlineUserButtonWithProfilePopover user={authorUser} />
 
-          <TinyMutedText>
+          <TinyMutedText style={{ lineHeight: 1.5 }}>
             <FormattedDateWithTooltip
               value={createdAt}
               hour="numeric"
@@ -1832,8 +1788,9 @@ const SystemMessageContent = ({ message }) => {
 
       return (
         <span style={{ opacity: isMissingData ? 0 : 1 }}>
-          <MemberDisplayNameWithPopover user={message.inviter} /> added{" "}
-          <MemberDisplayNameWithPopover user={message.author} /> to the channel.
+          <InlineUserButtonWithProfilePopover user={message.inviter} /> added{" "}
+          <InlineUserButtonWithProfilePopover user={message.author} /> to the
+          channel.
         </span>
       );
     }
@@ -1844,8 +1801,8 @@ const SystemMessageContent = ({ message }) => {
         message.author?.displayName == null;
       return (
         <span style={{ opacity: isMissingData ? 0 : 1 }}>
-          <MemberDisplayNameWithPopover user={message.author} /> joined the
-          channel. Welcome!
+          <InlineUserButtonWithProfilePopover user={message.author} /> joined
+          the channel. Welcome!
         </span>
       );
     }
@@ -1855,8 +1812,8 @@ const SystemMessageContent = ({ message }) => {
       if (updates.length == 0 || updates.length > 1) {
         return (
           <>
-            <MemberDisplayNameWithPopover user={message.author} /> updated the
-            channel.
+            <InlineUserButtonWithProfilePopover user={message.author} /> updated
+            the channel.
           </>
         );
       }
@@ -1868,7 +1825,7 @@ const SystemMessageContent = ({ message }) => {
         case "description":
           return (
             <>
-              <MemberDisplayNameWithPopover user={message.author} />{" "}
+              <InlineUserButtonWithProfilePopover user={message.author} />{" "}
               {(value ?? "") === "" ? (
                 "cleared the channel topic."
               ) : (
@@ -1879,7 +1836,7 @@ const SystemMessageContent = ({ message }) => {
         case "name":
           return (
             <>
-              <MemberDisplayNameWithPopover user={message.author} />{" "}
+              <InlineUserButtonWithProfilePopover user={message.author} />{" "}
               {(value ?? "") === "" ? (
                 <>cleared the channel {field}.</>
               ) : (
@@ -1892,8 +1849,8 @@ const SystemMessageContent = ({ message }) => {
         default:
           return (
             <>
-              <MemberDisplayNameWithPopover user={message.author} /> updated the
-              channel {field}.
+              <InlineUserButtonWithProfilePopover user={message.author} />{" "}
+              updated the channel {field}.
             </>
           );
       }
@@ -1907,8 +1864,8 @@ const SystemMessageContent = ({ message }) => {
 
       return (
         <span style={{ opacity: isMissingData ? 0 : undefined }}>
-          <MemberDisplayNameWithPopover user={message.installer} /> installed a
-          new app:{" "}
+          <InlineUserButtonWithProfilePopover user={message.installer} />{" "}
+          installed a new app:{" "}
           <InlineAppDisplayName displayName={message.app?.name ?? "..."} />
         </span>
       );
