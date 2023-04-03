@@ -125,14 +125,33 @@ export const Provider = ({ apiOrigin, ...props }) => {
           default:
             return Promise.reject(e);
         }
-      } finally {
-        pendingRefreshPromise = null;
       }
     };
 
     const promise = refreshAndCacheTokens();
     pendingRefreshPromise = promise;
-    return promise;
+
+    const finish = async () => {
+      try {
+        return await promise;
+      } finally {
+        pendingRefreshPromise = null;
+      }
+    };
+
+    if (typeof navigator === "undefined" || navigator?.locks?.request == null)
+      return finish();
+
+    return new Promise((resolve, reject) => {
+      navigator.locks.request("ns:access-token-refresh", async () => {
+        try {
+          const result = await finish();
+          resolve(result);
+        } catch (e) {
+          reject(e);
+        }
+      });
+    });
   });
 
   const authorizedFetch = useLatestCallback(async (url, options) => {

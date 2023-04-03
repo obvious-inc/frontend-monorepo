@@ -67,7 +67,7 @@ const ChannelNavBar = ({ noSideMenu, channelId }) => {
   const [isAddMemberDialogOpen, setAddMemberDialogOpen] = React.useState(false);
 
   const isChannelDialogOpen = channelDialogMode != null;
-  const isFetchingMembers = channel.members.some(
+  const isFetchingMembers = channel?.members.some(
     (m) => m.walletAddress == null
   );
   const isEmbedded = searchParams.get("mode") === "embedded";

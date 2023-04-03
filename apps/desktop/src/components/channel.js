@@ -117,6 +117,8 @@ const useMessageInputPlaceholder = (channelId) => {
   const channel = useChannel(channelId, { name: true });
   const channelAccessLevel = useChannelAccessLevel(channelId);
 
+  if (channel == null) return "...";
+
   if (channel.kind === "dm") return `Message ${channel.name}`;
 
   const hasConnectedWallet = walletAccountAddress != null;
@@ -158,7 +160,7 @@ const useMessageInputPlaceholder = (channelId) => {
   }
 };
 
-const ChannelScreen = ({ channelId, compact, noSideMenu }) => {
+const ChannelContent = ({ channelId, compact }) => {
   const { accountAddress: walletAccountAddress } = useWallet();
   const { login } = useWalletLogin();
   const { status: authenticationStatus } = useAuth();
@@ -304,22 +306,7 @@ const ChannelScreen = ({ channelId, compact, noSideMenu }) => {
   }, []);
 
   return (
-    <div
-      css={(t) =>
-        css({
-          position: "relative",
-          zIndex: 0,
-          flex: 1,
-          minWidth: "min(30.6rem, 100vw)",
-          background: t.colors.backgroundPrimary,
-          display: "flex",
-          flexDirection: "column",
-          height: "100%",
-        })
-      }
-    >
-      <ChannelNavBar channelId={channelId} noSideMenu={noSideMenu} />
-
+    <>
       <ChannelMessagesScrollView
         channelId={channelId}
         compact={compact}
@@ -348,7 +335,7 @@ const ChannelScreen = ({ channelId, compact, noSideMenu }) => {
 
         <TypingIndicator channelId={channelId} />
       </div>
-    </div>
+    </>
   );
 };
 
@@ -481,47 +468,67 @@ const Channel = ({ channelId, compact, noSideMenu }) => {
 
   if (notFound)
     return (
-      <div
-        css={(theme) =>
-          css({
-            background: theme.colors.backgroundPrimary,
-            flex: 1,
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            height: "100%",
-          })
-        }
-      >
-        Not found
-      </div>
+      <Layout channelId={channelId} noSideMenu={noSideMenu}>
+        <div
+          css={(t) =>
+            css({
+              flex: 1,
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              paddingBottom: t.mainHeader.height,
+            })
+          }
+        >
+          Not found
+        </div>
+      </Layout>
     );
 
   if (channel == null)
     return (
-      <div
-        css={(theme) =>
-          css({
-            background: theme.colors.backgroundPrimary,
-            flex: 1,
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            height: "100%",
-          })
-        }
-      >
-        <Spinner size="2.4rem" />
-      </div>
+      <Layout channelId={channelId} noSideMenu={noSideMenu}>
+        <div
+          css={(t) =>
+            css({
+              flex: 1,
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              paddingBottom: t.mainHeader.height,
+            })
+          }
+        >
+          <Spinner size="2.4rem" />
+        </div>
+      </Layout>
     );
 
   return (
-    <ChannelScreen
-      channelId={channelId}
-      compact={compact}
-      noSideMenu={noSideMenu}
-    />
+    <Layout channelId={channelId} noSideMenu={noSideMenu}>
+      <ChannelContent channelId={channelId} compact={compact} />
+    </Layout>
   );
 };
+
+const Layout = ({ channelId, noSideMenu, children }) => (
+  <div
+    css={(t) =>
+      css({
+        position: "relative",
+        zIndex: 0,
+        flex: 1,
+        minWidth: "min(30.6rem, 100vw)",
+        background: t.colors.backgroundPrimary,
+        display: "flex",
+        flexDirection: "column",
+        height: "100%",
+      })
+    }
+  >
+    <ChannelNavBar channelId={channelId} noSideMenu={noSideMenu} />
+    {children}
+  </div>
+);
 
 export default Channel;
