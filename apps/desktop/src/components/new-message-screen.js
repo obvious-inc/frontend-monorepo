@@ -823,6 +823,7 @@ const MessageRecipientCombobox = ({
               state.selectedKeys.length === 0 ? placeholder : undefined
             }
             allowsCustomValue={false}
+            allowsEmptyCollection={true}
             // allowsCustomValue={true}
             selectedKey={null}
             onSelect={(key) => {
@@ -1007,19 +1008,21 @@ const SelectedChannelTag = ({ channelId, ...props }) => {
 const MessageRecipientListBox = React.forwardRef(
   ({ state, listBoxProps: listBoxPropsInput, selectedKeys }, ref) => {
     const { listBoxProps } = useListBox(listBoxPropsInput, state, ref);
+    const theme = useTheme();
 
     return (
       <ul
         ref={ref}
-        css={(t) =>
-          css({
-            display: "block",
-            padding: t.dropdownMenus.padding,
-            listStyle: "none",
-            "li:not(:last-of-type)": { marginBottom: "0.2rem" },
-          })
-        }
+        css={css({
+          display: "block",
+          listStyle: "none",
+          "li:not(:last-of-type)": { marginBottom: "0.2rem" },
+        })}
         {...listBoxProps}
+        style={{
+          padding:
+            state.collection.size === 0 ? 0 : theme.dropdownMenus.padding,
+        }}
       >
         {[...state.collection].map((item) => {
           if (item.type === "section")
@@ -1288,11 +1291,7 @@ const ChannelIntro = ({ walletAddresses: walletAddresses_ }) => {
               ", ..."}
           </React.Fragment>
         ))}
-      subtitle={
-        <>
-          {walletAddresses.length + 1} participants
-        </>
-      }
+      subtitle={<>{walletAddresses.length + 1} participants</>}
       image={
         <UserAvatarStack
           count={3}
