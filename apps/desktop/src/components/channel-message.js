@@ -1608,7 +1608,7 @@ const RepliedMessage = ({ message, onClickMessage }) => {
             </span>
           ) : (
             <>
-              <Popover.Root placement="right">
+              <Popover.Root placement="top">
                 <Popover.Trigger
                   asChild
                   disabled={authorMember == null || authorMember.deleted}
@@ -1746,7 +1746,7 @@ const MessageLeftColumn = ({ isHovering, simplified, compact, message }) => {
 
   return (
     <div css={css({ padding: "0.2rem 0 0" })}>
-      <Popover.Root placement="right">
+      <Popover.Root placement="top">
         <Popover.Trigger
           asChild
           disabled={message.author == null || message.author.deleted}

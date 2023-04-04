@@ -21,6 +21,7 @@ const backgroundNormal = "hsl(0 0% 13%)";
 const backgroundDark = "hsl(0 0% 10%)";
 const backgroundDarkTintLighter = "hsl(0 0% 11%)";
 const backgroundLight = "hsl(0 0% 15%)";
+const backgroundLighter = "hsl(0 0% 17%)";
 
 const normalTextSize = "1.4rem";
 const largeText = "1.6rem";
@@ -96,6 +97,7 @@ export default {
     dialogBackground: backgroundLight,
     dialogPopoverBackground: backgroundLight,
     channelInputBackground: backgroundLight,
+    backgroundTooltip: backgroundLighter,
     inputBackground: backgroundDark,
     inputPlaceholder: "hsl(0 0% 100% / 40%)",
     backgroundModifierHover: "hsl(0 0% 100% / 5.5%)",

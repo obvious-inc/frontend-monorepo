@@ -13,7 +13,7 @@ const InlineUserButtonWithProfilePopover = React.forwardRef(
     if (userId == null && walletAddress == null) return null;
 
     return (
-      <Popover.Root placement="right" {...popoverProps}>
+      <Popover.Root placement="top" {...popoverProps}>
         <Popover.Trigger asChild>
           <InlineUserButton
             ref={ref}

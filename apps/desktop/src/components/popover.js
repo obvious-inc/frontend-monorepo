@@ -108,7 +108,7 @@ const ContentInner = React.forwardRef(
       overlayProps,
       triggerRef,
       targetRef,
-      preferredPlacement,
+      placement: preferredPlacement,
       offset,
       containerPadding,
       popoverInputProps,

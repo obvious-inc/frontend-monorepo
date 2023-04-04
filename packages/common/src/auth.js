@@ -25,8 +25,8 @@ const useCachedAccessToken = () => {
     token === undefined
       ? "loading"
       : token == null
-        ? "not-authenticated"
-        : "authenticated";
+      ? "not-authenticated"
+      : "authenticated";
 
   return [
     { token, state },
@@ -193,7 +193,7 @@ export const Provider = ({ apiOrigin, ...props }) => {
     if (heldLock != null)
       return new Promise((resolve, reject) => {
         navigator.locks
-          .request(LOCK_KEY, () => { })
+          .request(LOCK_KEY, () => {})
           .then(readAuthTokens)
           .then(({ accessToken }) => {
             resolve(accessToken);

@@ -8,7 +8,7 @@ export const Root = Tooltip.Root;
 
 export const Trigger = Tooltip.Trigger;
 
-export const Content = React.forwardRef(({ dark, ...props }, ref) => (
+export const Content = React.forwardRef((props, ref) => (
   <Tooltip.Content
     ref={ref}
     css={(theme) =>
@@ -16,9 +16,7 @@ export const Content = React.forwardRef(({ dark, ...props }, ref) => (
         fontSize: "1.2rem",
         fontWeight: "500",
         color: theme.colors.textNormal,
-        background: dark
-          ? theme.colors.dialogPopoverBackground
-          : theme.colors.dialogBackground,
+        background: theme.colors.backgroundTooltip,
         padding: "0.4rem 0.8rem",
         borderRadius: "0.3rem",
         lineHeight: 1.3,
