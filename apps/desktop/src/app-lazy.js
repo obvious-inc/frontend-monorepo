@@ -20,7 +20,6 @@ import {
   useNavigate,
   useParams,
 } from "react-router-dom";
-import { IntlProvider } from "react-intl";
 import { ThemeProvider, Global } from "@emotion/react";
 import Pusher from "pusher-js";
 import {
@@ -365,42 +364,28 @@ export default function LazyRoot() {
   return (
     <BrowserRouter>
       <WagmiConfig client={wagmiClient}>
-        <IntlProvider locale="en">
-          <ServerConnectionProvider
-            Pusher={Pusher}
-            pusherKey={process.env.PUSHER_KEY}
+        <ServerConnectionProvider
+          Pusher={Pusher}
+          pusherKey={process.env.PUSHER_KEY}
+        >
+          <WalletLoginProvider
+            authenticate={({ message, signature, signedAt, address, nonce }) =>
+              login({ message, signature, signedAt, address, nonce })
+            }
           >
-            <WalletLoginProvider
-              authenticate={({
-                message,
-                signature,
-                signedAt,
-                address,
-                nonce,
-              }) =>
-                login({
-                  message,
-                  signature,
-                  signedAt,
-                  address,
-                  nonce,
-                })
-              }
-            >
-              <ThemeProvider theme={theme}>
-                <Tooltip.Provider delayDuration={300}>
-                  <SidebarProvider>
-                    <GlobalMediaQueriesProvider>
-                      <CommandCenterProvider>
-                        <App />
-                      </CommandCenterProvider>
-                    </GlobalMediaQueriesProvider>
-                  </SidebarProvider>
-                </Tooltip.Provider>
-              </ThemeProvider>
-            </WalletLoginProvider>
-          </ServerConnectionProvider>
-        </IntlProvider>
+            <ThemeProvider theme={theme}>
+              <Tooltip.Provider delayDuration={300}>
+                <SidebarProvider>
+                  <GlobalMediaQueriesProvider>
+                    <CommandCenterProvider>
+                      <App />
+                    </CommandCenterProvider>
+                  </GlobalMediaQueriesProvider>
+                </SidebarProvider>
+              </Tooltip.Provider>
+            </ThemeProvider>
+          </WalletLoginProvider>
+        </ServerConnectionProvider>
       </WagmiConfig>
     </BrowserRouter>
   );

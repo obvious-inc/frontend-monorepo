@@ -118,7 +118,7 @@ module.exports = (_, argv) => {
       splitChunks: {
         cacheGroups: {
           vendor: {
-            test: /[\\/]node_modules[\\/](ethers|wagmi|@emotion|react|react-dom|react-intl|react-router-dom|react-aria|pusher-js)[\\/]/,
+            test: /[\\/]node_modules[\\/](ethers|wagmi|@emotion|react|react-dom|react-router-dom|react-aria|pusher-js)[\\/]/,
             name: "vendors",
             chunks: "all",
           },

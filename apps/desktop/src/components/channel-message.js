@@ -1,7 +1,7 @@
 import isDateToday from "date-fns/isToday";
+import isDateYesterday from "date-fns/isYesterday";
 import React from "react";
 import { useNavigate } from "react-router-dom";
-import { FormattedDate, FormattedRelativeTime } from "react-intl";
 import { css, useTheme } from "@emotion/react";
 import {
   useActions,
@@ -32,6 +32,7 @@ import {
 } from "@shades/ui-web/icons";
 import { isNodeEmpty, normalizeNodes, cleanNodes } from "../slate/utils";
 import useGlobalMediaQueries from "../hooks/global-media-queries";
+import FormattedDate from "./formatted-date";
 import MessageInput from "./message-input";
 import RichText from "./rich-text";
 import Input from "./input";
@@ -1899,17 +1900,10 @@ const FormattedDateWithTooltip = React.memo(
     ...props
   }) => {
     const formattedDate =
-      !disableRelative && isDateToday(value) ? (
+      !disableRelative && (isDateToday(value) || isDateYesterday(value)) ? (
         <span>
-          <span css={css({ textTransform: "capitalize" })}>
-            <FormattedRelativeTime
-              value={0}
-              unit="day"
-              style="long"
-              numeric="auto"
-            />
-          </span>{" "}
-          at <FormattedDate value={value} hour="numeric" minute="numeric" />
+          {isDateToday(value) ? "Today" : "Yesterday"} at{" "}
+          <FormattedDate value={value} hour="numeric" minute="numeric" />
         </span>
       ) : (
         <FormattedDate value={value} {...props} />

@@ -71,7 +71,6 @@
     "react-aria": "^3.23.1",
     "react-dom": "18.1.0",
     "react-helmet": "^6.1.0",
-    "react-intl": "^6.3.0",
     "react-router-dom": "^6.9.0",
     "react-stately": "^3.21.0",
     "reselect": "^4.1.7",

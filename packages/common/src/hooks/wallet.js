@@ -50,6 +50,7 @@ const useWallet = () => {
     connectAsync: connectWallet,
     reset: cancelConnectionAttempt,
     connectors,
+    isLoading,
     // error,
   } = useConnect();
   const {
@@ -87,7 +88,7 @@ const useWallet = () => {
     accountAddress,
     accountEnsName: ensName,
     chain: activeChain,
-    isConnecting,
+    isConnecting: isConnecting ?? isLoading,
     canConnect: firstReadyConnector != null,
     error: connectError,
     connect,

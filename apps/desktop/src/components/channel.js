@@ -322,14 +322,14 @@ const ChannelContent = ({ channelId, compact }) => {
         <NewChannelMessageInput
           ref={inputRef}
           disabled={disableInput}
-          context={channel.kind}
+          context={channel?.kind}
           channelId={channelId}
           replyTargetMessageId={replyTargetMessageId}
           cancelReply={cancelReply}
           uploadImage={actions.uploadImage}
           submit={submitMessage}
           placeholder={inputPlaceholder}
-          members={channel.members}
+          members={channel?.members ?? []}
           onInputChange={handleInputChange}
         />
 
