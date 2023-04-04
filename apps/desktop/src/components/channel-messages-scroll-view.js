@@ -26,6 +26,10 @@ const { truncateAddress } = ethereumUtils;
 
 const scrollPositionCache = {};
 
+const isScrolledToBottom = (el) =>
+  Math.ceil(el.scrollTop) + el.getBoundingClientRect().height >=
+  el.scrollHeight;
+
 const useScroll = ({
   cacheKey,
   scrollContainerRef,
@@ -64,17 +68,13 @@ const useScroll = ({
 
     el.scrollTop = cachedScrollTop;
 
-    const isAtBottom =
-      Math.ceil(cachedScrollTop) + el.getBoundingClientRect().height >=
-      el.scrollHeight;
+    const isAtBottom = isScrolledToBottom(el);
 
     didScrollToBottomRef.current = isAtBottom;
   }, [scrollContainerRef, didScrollToBottomRef, cacheKey, scrollToBottom]);
 
   useScrollListener(scrollContainerRef, (e) => {
-    const isAtBottom =
-      Math.ceil(e.target.scrollTop) + e.target.getBoundingClientRect().height >=
-      e.target.scrollHeight;
+    const isAtBottom = isScrolledToBottom(e.target);
 
     if (isAtBottom) {
       delete scrollPositionCache[cacheKey];

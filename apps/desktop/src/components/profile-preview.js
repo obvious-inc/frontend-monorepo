@@ -3,7 +3,6 @@ import { useEnsName } from "wagmi";
 import { css } from "@emotion/react";
 import {
   useSelectors,
-  useMe,
   useUser,
   useUserWithWalletAddress,
 } from "@shades/common/app";
@@ -80,6 +79,7 @@ const ProfilePreview = React.forwardRef(({ userId, walletAddress }, ref) => {
             <h2
               css={(t) =>
                 css({
+                  color: t.colors.header,
                   fontSize: t.text.sizes.large,
                   fontWeight: t.text.weights.smallHeader,
                   lineHeight: 1.2,
@@ -164,6 +164,15 @@ const ProfilePreview = React.forwardRef(({ userId, walletAddress }, ref) => {
           })
         }
       >
+        {user.description != null && (
+          <div
+            css={(t) =>
+              css({ fontSize: t.text.sizes.default, marginBottom: "1.2rem" })
+            }
+          >
+            {user.description}
+          </div>
+        )}
         <div
           css={css({
             display: "grid",

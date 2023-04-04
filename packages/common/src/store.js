@@ -17,6 +17,7 @@ import {
   selectChannelAccessLevel,
   selectStarredChannels,
   selectDmChannelFromUserId,
+  selectDmChannelWithMember,
   selectChannelHasUnread,
 } from "./reducers/channels.js";
 import { selectMessage } from "./reducers/messages.js";
@@ -33,6 +34,7 @@ const selectorFunctions = {
   selectMessage,
   selectEnsName,
   selectDmChannelFromUserId,
+  selectDmChannelWithMember,
   selectChannel,
   selectChannelName,
   selectStarredChannels,
