@@ -128,8 +128,10 @@ const useFilteredChannels = (query, { selectedWalletAddresses }) => {
 
 const useExternalAccount = (ensNameOrWalletAddress) => {
   const { data: ensMatchWalletAddress } = useEnsAddress({
-    name: ensNameOrWalletAddress,
-    enabled: /^.+\.eth$/.test(ensNameOrWalletAddress),
+    name: /^.+\.eth$/.test(ensNameOrWalletAddress)
+      ? ensNameOrWalletAddress
+      : `${ensNameOrWalletAddress}.eth`,
+    enabled: ensNameOrWalletAddress.length >= 3, // /^.+\.eth$/.test(ensNameOrWalletAddress),
   });
 
   const account = React.useMemo(
