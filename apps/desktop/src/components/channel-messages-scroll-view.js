@@ -15,6 +15,7 @@ import { useLatestCallback } from "@shades/common/react";
 import useGlobalMediaQueries from "../hooks/global-media-queries.js";
 import useIsOnScreen from "../hooks/is-on-screen.js";
 import useScrollListener from "../hooks/scroll-listener.js";
+import useMutationObserver from "../hooks/mutation-observer.js";
 import ChannelPrologue from "./channel-prologue.js";
 import ChannelMessage from "./channel-message.js";
 import ChannelAvatar from "./channel-avatar.js";
@@ -179,6 +180,15 @@ const ChannelMessagesScrollView = ({
       }
     },
   });
+
+  useMutationObserver(
+    scrollContainerRef,
+    () => {
+      if (!didScrollToBottomRef.current) return;
+      scrollToBottom();
+    },
+    { subtree: true, childList: true }
+  );
 
   const lastMessageId = messageIds.slice(-1)[0];
 
