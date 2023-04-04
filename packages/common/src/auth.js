@@ -25,8 +25,8 @@ const useCachedAccessToken = () => {
     token === undefined
       ? "loading"
       : token == null
-      ? "not-authenticated"
-      : "authenticated";
+        ? "not-authenticated"
+        : "authenticated";
 
   return [
     { token, state },
@@ -50,7 +50,7 @@ const useTokenStore = () => {
   });
 
   const write = useLatestCallback(async ({ accessToken, refreshToken }) => {
-    writeAccessToken(accessToken);
+    await writeAccessToken(accessToken);
     await writeRefreshToken(refreshToken);
   });
 
@@ -119,7 +119,7 @@ export const Provider = ({ apiOrigin, ...props }) => {
       const { refresh_token: refreshToken, access_token: accessToken } =
         responseBody;
 
-      writeAuthTokens({ accessToken, refreshToken });
+      await writeAuthTokens({ accessToken, refreshToken });
 
       return { accessToken, refreshToken };
     }
@@ -193,7 +193,7 @@ export const Provider = ({ apiOrigin, ...props }) => {
     if (heldLock != null)
       return new Promise((resolve, reject) => {
         navigator.locks
-          .request(LOCK_KEY, () => {})
+          .request(LOCK_KEY, () => { })
           .then(readAuthTokens)
           .then(({ accessToken }) => {
             resolve(accessToken);

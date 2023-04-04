@@ -279,7 +279,14 @@ const App = () => {
       <Routes>
         <Route path="/" element={<Layout />}>
           <Route index element={<EmptyHome />} />
-          <Route path="/new" element={<NewMessageScreen />} />
+          <Route
+            path="/new"
+            element={
+              <RequireAuth>
+                <NewMessageScreen />
+              </RequireAuth>
+            }
+          />
           <Route path="/channels/:channelId" element={<ChannelScreen />} />
         </Route>
         <Route path="/c/:channelId" element={<ChannelScreen noSideMenu />} />

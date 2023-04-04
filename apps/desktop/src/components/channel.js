@@ -27,6 +27,8 @@ import NewChannelMessageInput from "./new-channel-message-input";
 import ChannelNavBar from "./channel-nav-bar";
 import useReverseScrollPositionMaintainer from "../hooks/reverse-scroll-position-maintainer";
 
+const LazyLoginScreen = React.lazy(() => import("./login-screen"));
+
 const pendingFetchMessagePromisesCache = {};
 
 // This fetcher only allows for a single request (with the same query) to be
@@ -471,7 +473,9 @@ const Channel = ({ channelId, compact, noSideMenu }) => {
   );
 
   if (notFound)
-    return (
+    return authenticationStatus === "not-authenticated" ? (
+      <LazyLoginScreen />
+    ) : (
       <Layout channelId={channelId} noSideMenu={noSideMenu}>
         <div
           css={(t) =>

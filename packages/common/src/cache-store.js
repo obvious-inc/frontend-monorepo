@@ -87,11 +87,11 @@ export const useCachedState = (key, initialState) => {
     return cachedValue;
   });
 
-  const set = useLatestCallback((newState_) => {
+  const set = useLatestCallback(async (newState_) => {
     const newState =
       typeof newState_ === "function" ? newState_(cachedState) : newState_;
+    await write(newState);
     setCachedState(newState);
-    return write(newState);
   });
 
   const setInitialState = useLatestCallback(() => {
