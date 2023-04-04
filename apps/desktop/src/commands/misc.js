@@ -1,5 +1,4 @@
 import { getImageDimensionsFromUrl } from "@shades/common/utils";
-import { getChecksumAddress } from "../utils/ethereum";
 import { send as sendNotification } from "../utils/notifications";
 import {
   getNoun,
@@ -8,42 +7,33 @@ import {
 } from "../utils/nouns";
 
 const commands = {
-  dm: ({ actions, state, navigate, ethersProvider }) => ({
+  dm: ({ state, navigate, ethersProvider }) => ({
     arguments: ["wallet-address-or-ens-name"],
     description: "Start a one-to-one conversation with a wallet",
     execute: async ({ args, editor }) => {
-      let addresses = args;
-      if (addresses[0] == null) {
-        const addressPromptAnswer = prompt(
-          "Give the wallet address of the user you want to message"
-        );
-        if (addressPromptAnswer == null) return;
-        addresses = addressPromptAnswer.split(" ").map((s) => s.trim());
-      }
-
       try {
-        const resolvedAddress = await Promise.all(
-          addresses.map((a) => ethersProvider.resolveName(a))
+        const resolvedAddresses = await Promise.all(
+          args.map((a) => ethersProvider.resolveName(a))
         );
 
-        const checksumAddresses = await Promise.all(
-          resolvedAddress.map(getChecksumAddress)
-        );
-        const users = checksumAddresses.map(state.selectUserFromWalletAddress);
-        const joinedChannel = users.some((u) => u == null)
-          ? null
-          : state.selectDmChannelFromUserIds(users.map((u) => u.id));
+        if (resolvedAddresses.length !== 1) {
+          navigate(`/new?account=${resolvedAddresses.join(",")}`);
+          return;
+        }
 
-        const channel =
-          joinedChannel ??
-          (await actions.createDmChannel({
-            memberWalletAddresses: checksumAddresses,
-          }));
-        editor.clear();
+        const channel = state.selectDmChannelWithMember(resolvedAddresses[0]);
+
+        if (channel == null) {
+          navigate(`/new?account=${resolvedAddresses[0]}`);
+          return;
+        }
+
         navigate(`/channels/${channel.id}`);
+        editor.clear();
       } catch (e) {
-        if (e.code === "INVALID_ARGUMENT") throw new Error("Invalid address");
-        throw e;
+        // if (e.code === "INVALID_ARGUMENT") throw new Error("Invalid address");
+        // throw e;
+        navigate("/new");
       }
     },
   }),
