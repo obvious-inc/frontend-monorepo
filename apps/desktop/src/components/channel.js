@@ -283,10 +283,10 @@ const ChannelContent = ({ channelId, compact }) => {
 
   const throttledRegisterTypingActivity = React.useMemo(
     () =>
-      throttle(() => actions.registerChannelTypingActivity(channel.id), 3000, {
+      throttle(() => actions.registerChannelTypingActivity(channelId), 3000, {
         trailing: false,
       }),
-    [actions, channel.id]
+    [actions, channelId]
   );
 
   const handleInputChange = useLatestCallback((blocks) => {
@@ -323,7 +323,7 @@ const ChannelContent = ({ channelId, compact }) => {
           ref={inputRef}
           disabled={disableInput}
           context={channel.kind}
-          channelId={channel.id}
+          channelId={channelId}
           replyTargetMessageId={replyTargetMessageId}
           cancelReply={cancelReply}
           uploadImage={actions.uploadImage}

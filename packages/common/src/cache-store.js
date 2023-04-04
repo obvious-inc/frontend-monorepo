@@ -73,10 +73,13 @@ export const useStore = () => {
 export const useCachedState = (key, initialState) => {
   const store = useStore();
 
+  const read = () => store.read(key);
+  const write = (value) => store.write(key, value);
+
   const [cachedState, setCachedState] = React.useState(() => {
     if (store?.isAsync) return undefined;
 
-    const cachedValue = store.read(key);
+    const cachedValue = read(key);
 
     if (cachedValue == null)
       return typeof initialState === "function" ? initialState() : initialState;
@@ -84,12 +87,12 @@ export const useCachedState = (key, initialState) => {
     return cachedValue;
   });
 
-  const set = (newState_) => {
+  const set = useLatestCallback((newState_) => {
     const newState =
       typeof newState_ === "function" ? newState_(cachedState) : newState_;
     setCachedState(newState);
-    return store.write(key, newState);
-  };
+    return write(newState);
+  });
 
   const setInitialState = useLatestCallback(() => {
     const handleCachedValue = (cachedValue) => {
@@ -104,11 +107,11 @@ export const useCachedState = (key, initialState) => {
     };
 
     if (store.isAsync) {
-      store.read(key).then(handleCachedValue);
+      read().then(handleCachedValue);
       return;
     }
 
-    handleCachedValue(store.read(key));
+    handleCachedValue(read());
   });
 
   React.useEffect(() => {
@@ -141,5 +144,5 @@ export const useCachedState = (key, initialState) => {
     };
   }, [key]);
 
-  return [cachedState, set];
+  return [cachedState, set, { read }];
 };

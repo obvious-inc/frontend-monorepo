@@ -179,7 +179,7 @@ export const Provider = ({ cloudflareAccountHash, children }) => {
   const {
     status: authStatus,
     authorizedFetch,
-    clearTokenStore: clearAuthTokenStore,
+    tokenStore: authTokenStore,
   } = useAuth();
 
   const dispatch = useActionDispatcher();
@@ -219,7 +219,7 @@ export const Provider = ({ cloudflareAccountHash, children }) => {
       parseUser,
       parseChannel,
       buildCloudflareImageUrl,
-      clearAuthTokenStore,
+      authTokenStore,
     })
   );
 

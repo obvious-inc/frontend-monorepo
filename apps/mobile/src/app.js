@@ -127,7 +127,7 @@ const useFetch = (fetcher_, deps = []) => {
 };
 
 const App = () => {
-  const { status: authStatus, setAccessToken, setRefreshToken } = useAuth();
+  const { status: authStatus, tokenStore } = useAuth();
   const actions = useActions();
   const me = useMe();
 
@@ -203,8 +203,7 @@ const App = () => {
     return (
       <SignInView
         onSuccess={({ accessToken, refreshToken }) => {
-          setAccessToken(accessToken);
-          setRefreshToken(refreshToken);
+          tokenStore.write({ accessToken, refreshToken });
         }}
         onError={() => {
           // TODO

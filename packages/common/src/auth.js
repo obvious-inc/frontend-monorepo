@@ -9,9 +9,59 @@ let pendingRefreshPromise;
 
 const useCachedRefreshToken = () => {
   const cacheStore = useCacheStore();
+  return {
+    read: () => cacheStore.readAsync(REFRESH_TOKEN_CACHE_KEY),
+    write: (token) => cacheStore.writeAsync(REFRESH_TOKEN_CACHE_KEY, token),
+  };
+};
+
+const useCachedAccessToken = () => {
+  const [token, setToken, { read }] = useCachedState(
+    ACCESS_TOKEN_CACHE_KEY,
+    null
+  );
+
+  const state =
+    token === undefined
+      ? "loading"
+      : token == null
+      ? "not-authenticated"
+      : "authenticated";
+
   return [
-    () => cacheStore.readAsync(REFRESH_TOKEN_CACHE_KEY),
-    (token) => cacheStore.writeAsync(REFRESH_TOKEN_CACHE_KEY, token),
+    { token, state },
+    { read, write: setToken },
+  ];
+};
+
+const useTokenStore = () => {
+  const [
+    { token: accessToken, state },
+    { write: writeAccessToken, read: readAccessToken },
+  ] = useCachedAccessToken();
+
+  const { read: readRefreshToken, write: writeRefreshToken } =
+    useCachedRefreshToken();
+
+  const read = useLatestCallback(async () => {
+    const accessToken = await readAccessToken();
+    const refreshToken = await readRefreshToken();
+    return { accessToken, refreshToken };
+  });
+
+  const write = useLatestCallback(async ({ accessToken, refreshToken }) => {
+    writeAccessToken(accessToken);
+    await writeRefreshToken(refreshToken);
+  });
+
+  const clear = useLatestCallback(async () => {
+    writeAccessToken(null);
+    await writeRefreshToken(null);
+  });
+
+  return [
+    { state, accessToken },
+    { read, write, clear },
   ];
 };
 
@@ -33,18 +83,19 @@ export const useAuthListener = (listener_) => {
 };
 
 export const Provider = ({ apiOrigin, ...props }) => {
-  const [accessToken, setAccessToken] = useCachedState(
-    ACCESS_TOKEN_CACHE_KEY,
-    null
-  );
-  const [readRefreshToken, writeRefreshToken] = useCachedRefreshToken();
+  const [
+    { accessToken, state: authState },
+    { read: readAuthTokens, write: writeAuthTokens, clear: clearAuthTokens },
+  ] = useTokenStore();
 
-  const status =
-    accessToken === undefined
-      ? "loading"
-      : accessToken == null
-      ? "not-authenticated"
-      : "authenticated";
+  const tokenStore = React.useMemo(
+    () => ({
+      read: readAuthTokens,
+      write: writeAuthTokens,
+      clear: clearAuthTokens,
+    }),
+    [readAuthTokens, writeAuthTokens, clearAuthTokens]
+  );
 
   const login = useLatestCallback(
     async ({ message, signature, address, signedAt, nonce }) => {
@@ -68,23 +119,17 @@ export const Provider = ({ apiOrigin, ...props }) => {
       const { refresh_token: refreshToken, access_token: accessToken } =
         responseBody;
 
-      setAccessToken(accessToken);
-      writeRefreshToken(refreshToken);
+      writeAuthTokens({ accessToken, refreshToken });
 
       return { accessToken, refreshToken };
     }
   );
 
-  const clearTokenStore = useLatestCallback(() => {
-    setAccessToken(null);
-    writeRefreshToken(null);
-  });
-
   const refreshAccessToken = useLatestCallback(async () => {
     if (pendingRefreshPromise != null) return pendingRefreshPromise;
 
     const refresh = async () => {
-      const refreshToken = await readRefreshToken();
+      const { refreshToken } = await readAuthTokens();
       if (refreshToken == null) throw new Error("missing-refresh-token");
 
       const response = await fetch(`${apiOrigin}/auth/refresh`, {
@@ -110,15 +155,14 @@ export const Provider = ({ apiOrigin, ...props }) => {
     const refreshAndCacheTokens = async () => {
       try {
         const { accessToken, refreshToken } = await refresh();
-        setAccessToken(accessToken);
-        await writeRefreshToken(refreshToken);
+        await writeAuthTokens({ accessToken, refreshToken });
         return accessToken;
       } catch (e) {
         switch (e.message) {
           case "refresh-token-expired":
           case "missing-refresh-token":
             // Log out if the refresh fails in a known way
-            clearTokenStore();
+            await clearAuthTokens();
             for (const listener of listeners) listener("access-token-expired");
             return Promise.reject(new Error("access-token-expired"));
 
@@ -128,10 +172,9 @@ export const Provider = ({ apiOrigin, ...props }) => {
       }
     };
 
-    const promise = refreshAndCacheTokens();
-    pendingRefreshPromise = promise;
-
-    const finish = async () => {
+    const run = async () => {
+      const promise = refreshAndCacheTokens();
+      pendingRefreshPromise = promise;
       try {
         return await promise;
       } finally {
@@ -140,12 +183,27 @@ export const Provider = ({ apiOrigin, ...props }) => {
     };
 
     if (typeof navigator === "undefined" || navigator?.locks?.request == null)
-      return finish();
+      return run();
+
+    const LOCK_KEY = "ns:access-token-refresh";
+
+    const locks = await navigator.locks.query();
+    const heldLock = locks.held.find((l) => l.name === LOCK_KEY);
+
+    if (heldLock != null)
+      return new Promise((resolve, reject) => {
+        navigator.locks
+          .request(LOCK_KEY, () => {})
+          .then(readAuthTokens)
+          .then(({ accessToken }) => {
+            resolve(accessToken);
+          }, reject);
+      });
 
     return new Promise((resolve, reject) => {
-      navigator.locks.request("ns:access-token-refresh", async () => {
+      navigator.locks.request(LOCK_KEY, async () => {
         try {
-          const result = await finish();
+          const result = await run();
           resolve(result);
         } catch (e) {
           reject(e);
@@ -157,6 +215,8 @@ export const Provider = ({ apiOrigin, ...props }) => {
   const authorizedFetch = useLatestCallback(async (url, options) => {
     const requireAccessToken =
       !options?.allowUnauthorized && !options?.unauthorized;
+
+    const { accessToken } = await readAuthTokens();
 
     if (requireAccessToken && accessToken == null)
       throw new Error("Missing access token");
@@ -219,24 +279,13 @@ export const Provider = ({ apiOrigin, ...props }) => {
   const contextValue = React.useMemo(
     () => ({
       apiOrigin,
+      status: authState,
       accessToken,
-      status,
       authorizedFetch,
       login,
-      clearTokenStore,
-      setAccessToken,
-      setRefreshToken: writeRefreshToken,
+      tokenStore,
     }),
-    [
-      apiOrigin,
-      accessToken,
-      status,
-      authorizedFetch,
-      login,
-      clearTokenStore,
-      setAccessToken,
-      writeRefreshToken,
-    ]
+    [apiOrigin, authState, accessToken, authorizedFetch, login, tokenStore]
   );
 
   return <Context.Provider value={contextValue} {...props} />;

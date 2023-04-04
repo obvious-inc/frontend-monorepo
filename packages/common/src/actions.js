@@ -32,7 +32,7 @@ export default ({
   parseUser,
   parseChannel,
   buildCloudflareImageUrl,
-  clearAuthTokenStore,
+  authTokenStore,
 }) => {
   const fetchMe = () =>
     authorizedFetch("/users/me").then((me) => {
@@ -363,7 +363,7 @@ export default ({
 
   return {
     logout() {
-      clearAuthTokenStore();
+      authTokenStore.clear();
       dispatch({ type: "logout" });
     },
     fetchMe,
