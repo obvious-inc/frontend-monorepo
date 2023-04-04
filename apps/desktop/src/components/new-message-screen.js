@@ -245,15 +245,18 @@ const useRecipientsTagFieldComboboxState = () => {
       recipientsState.selectedKeys
     );
 
-    setSearchParams((params) => {
-      if (accounts.length === 0) params.delete("account");
-      else params.set("account", accounts.join(","));
+    setSearchParams(
+      (params) => {
+        if (accounts.length === 0) params.delete("account");
+        else params.set("account", accounts.join(","));
 
-      if (channels.length === 0) params.delete("channel");
-      else params.set("channel", channels[0]);
+        if (channels.length === 0) params.delete("channel");
+        else params.set("channel", channels[0]);
 
-      return params;
-    });
+        return params;
+      },
+      { replace: true }
+    );
   }, [recipientsState.selectedKeys, setSearchParams]);
 
   return recipientsState;
