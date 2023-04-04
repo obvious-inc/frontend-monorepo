@@ -3,8 +3,16 @@ const commands = {
     description:
       "Update your global nickname. This will be used in all channels.",
     execute: async ({ args, editor }) => {
-      const displayName = args.join(" ");
+      const displayName = args.join(" ").trim();
       await actions.updateMe({ displayName });
+      editor.clear();
+    },
+  }),
+  "set-status": ({ actions }) => ({
+    description: "Set your status. This will be visible under your profile.",
+    execute: async ({ args, editor }) => {
+      const description = args.join(" ").trim();
+      await actions.updateMe({ description });
       editor.clear();
     },
   }),
