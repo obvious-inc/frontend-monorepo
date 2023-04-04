@@ -65,6 +65,7 @@ const ChannelMessage = React.memo(function ChannelMessage_({
   hasTouchFocus,
   giveTouchFocus,
   compact,
+  scrollToMessage,
 }) {
   const editInputRef = React.useRef();
   const containerRef = React.useRef();
@@ -267,6 +268,7 @@ const ChannelMessage = React.memo(function ChannelMessage_({
     <div
       ref={containerRef}
       role="listitem"
+      data-message-id={messageId}
       style={{
         background: hasPendingReply
           ? theme.colors.messageBackgroundModifierHighlight
@@ -322,7 +324,14 @@ const ChannelMessage = React.memo(function ChannelMessage_({
         </div>
       )}
 
-      {message.isReply && <RepliedMessage message={message.repliedMessage} />}
+      {message.isReply && (
+        <RepliedMessage
+          message={message.repliedMessage}
+          onClickMessage={() => {
+            scrollToMessage(message.repliedMessage.id);
+          }}
+        />
+      )}
 
       <div
         css={css({
@@ -1539,7 +1548,7 @@ const EditMessageInput = React.forwardRef(
   }
 );
 
-const RepliedMessage = ({ message }) => {
+const RepliedMessage = ({ message, onClickMessage }) => {
   const authorMember = message?.author;
   const showAvatar = authorMember != null && !authorMember?.deleted;
 
@@ -1638,6 +1647,7 @@ const RepliedMessage = ({ message }) => {
               <span
                 role="button"
                 tabIndex={0}
+                onClick={onClickMessage}
                 css={(theme) =>
                   css({
                     cursor: "pointer",

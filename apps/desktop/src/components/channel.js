@@ -187,6 +187,10 @@ const ChannelContent = ({ channelId, compact }) => {
   const { fetcher: fetchMessages, pendingMessagesBeforeCount } =
     useScrollAwareMessageFetcher(channelId, { scrollContainerRef });
 
+  const fetchMoreMessages = useLatestCallback((args) =>
+    fetchMessages(args ?? { beforeMessageId: messageIds[0], limit: 30 })
+  );
+
   const inputPlaceholder = useMessageInputPlaceholder(channelId);
 
   const [replyTargetMessageId, setReplyTargetMessageId] = React.useState(null);
@@ -312,7 +316,7 @@ const ChannelContent = ({ channelId, compact }) => {
         compact={compact}
         scrollContainerRef={scrollContainerRef}
         didScrollToBottomRef={didScrollToBottomRef}
-        fetchMessages={fetchMessages}
+        fetchMoreMessages={fetchMoreMessages}
         initReply={initReply}
         replyTargetMessageId={replyTargetMessageId}
         pendingMessagesBeforeCount={pendingMessagesBeforeCount}

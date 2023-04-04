@@ -11,6 +11,7 @@ import {
   useHasFetchedChannelMessages,
 } from "@shades/common/app";
 import { ethereum as ethereumUtils } from "@shades/common/utils";
+import { useLatestCallback } from "@shades/common/react";
 import useGlobalMediaQueries from "../hooks/global-media-queries.js";
 import useIsOnScreen from "../hooks/is-on-screen.js";
 import useScrollListener from "../hooks/scroll-listener.js";
@@ -90,7 +91,7 @@ const useScroll = ({
 const ChannelMessagesScrollView = ({
   channelId,
   compact,
-  fetchMessages,
+  fetchMoreMessages,
   initReply,
   scrollContainerRef,
   didScrollToBottomRef,
@@ -98,6 +99,7 @@ const ChannelMessagesScrollView = ({
   pendingMessagesBeforeCount,
 }) => {
   const messagesContainerRef = React.useRef();
+  const disableFetchMoreRef = React.useRef();
 
   const { markChannelRead } = useActions();
   const user = useMe();
@@ -145,7 +147,9 @@ const ChannelMessagesScrollView = ({
       // No need to react if we’ve already fetched the full message history
       hasAllMessages ||
       // Wait for any pending fetch requests to finish before we fetch again
-      pendingMessagesBeforeCount !== 0
+      pendingMessagesBeforeCount !== 0 ||
+      // Skip if manually disabled
+      disableFetchMoreRef.current
     )
       return;
 
@@ -155,7 +159,7 @@ const ChannelMessagesScrollView = ({
 
     if (!isCloseToTop) return;
 
-    fetchMessages({ beforeMessageId: messageIds[0], limit: 30 });
+    fetchMoreMessages();
   });
 
   const { scrollToBottom } = useScroll({
@@ -183,6 +187,36 @@ const ChannelMessagesScrollView = ({
     if (lastMessageId == null || !didScrollToBottomRef.current) return;
     scrollToBottom();
   }, [lastMessageId, scrollToBottom, didScrollToBottomRef]);
+
+  const scrollToMessage = useLatestCallback((id) => {
+    const scrollTo = () => {
+      const el = document.querySelector(`[data-message-id="${id}"]`);
+      if (el == null) return false;
+      disableFetchMoreRef.current = true;
+      el.scrollIntoView({ behavior: "instant", block: "start" });
+      requestAnimationFrame(() => {
+        disableFetchMoreRef.current = false;
+      });
+      return true;
+    };
+
+    if (scrollTo()) return;
+
+    const scrollToFetchedMessage = (query) =>
+      fetchMoreMessages(query).then((ms) => {
+        if (ms.some((m) => m.id === id)) {
+          scrollTo();
+          return;
+        }
+
+        scrollToFetchedMessage({
+          beforeMessageId: ms.slice(-1)[0].id,
+          limit: 30,
+        });
+      });
+
+    scrollToFetchedMessage();
+  });
 
   return (
     <div
@@ -226,7 +260,7 @@ const ChannelMessagesScrollView = ({
                 // This should only happen on huge viewports where all messages from the
                 // initial fetch fit in view without a scrollbar. All other cases should be
                 // covered by the scroll listener
-                fetchMessages({ beforeMessageId: messageIds[0], limit: 30 });
+                fetchMoreMessages();
               }}
             />
           )}
@@ -266,6 +300,7 @@ const ChannelMessagesScrollView = ({
                   inputDeviceCanHover ? undefined : setTouchFocusedMessageId
                 }
                 compact={compact}
+                scrollToMessage={scrollToMessage}
               />
             ))}
             <div css={css({ height: "1.6rem" })} />
