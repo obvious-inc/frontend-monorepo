@@ -1,11 +1,12 @@
 import React from "react";
 import { useStore as useCacheStore, useCachedState } from "./cache-store";
+import { create as createLock } from "./utils/locks";
 import useLatestCallback from "./react/hooks/latest-callback";
 
 const ACCESS_TOKEN_CACHE_KEY = "access-token";
 const REFRESH_TOKEN_CACHE_KEY = "refresh-token";
 
-let pendingRefreshPromise;
+const requestAccessTokenRefreshLock = createLock("ns:access-token-refresh");
 
 const useCachedRefreshToken = () => {
   const cacheStore = useCacheStore();
@@ -125,12 +126,17 @@ export const Provider = ({ apiOrigin, ...props }) => {
     }
   );
 
-  const refreshAccessToken = useLatestCallback(async () => {
-    if (pendingRefreshPromise != null) return pendingRefreshPromise;
+  const refreshAccessToken = useLatestCallback(async (refreshToken) => {
+    const lock = requestAccessTokenRefreshLock();
 
-    const refresh = async () => {
-      const { refreshToken } = await readAuthTokens();
-      if (refreshToken == null) throw new Error("missing-refresh-token");
+    if (lock != null) await lock;
+
+    return requestAccessTokenRefreshLock(async () => {
+      const { refreshToken: cachedRefreshToken } = await readAuthTokens();
+
+      // Prevents race conditions where a refresh happened when we were waiting
+      // for the lock to release
+      if (refreshToken !== cachedRefreshToken) return;
 
       const response = await fetch(`${apiOrigin}/auth/refresh`, {
         method: "POST",
@@ -140,75 +146,18 @@ export const Provider = ({ apiOrigin, ...props }) => {
 
       if (response.ok) {
         const body = await response.json();
-        return {
+        const tokens = {
           accessToken: body.access_token,
           refreshToken: body.refresh_token,
         };
+        await writeAuthTokens(tokens);
+        return;
       }
 
       if (response.status === 401)
         return Promise.reject(new Error("refresh-token-expired"));
 
       return Promise.reject(new Error(response.statusText));
-    };
-
-    const refreshAndCacheTokens = async () => {
-      try {
-        const { accessToken, refreshToken } = await refresh();
-        await writeAuthTokens({ accessToken, refreshToken });
-        return accessToken;
-      } catch (e) {
-        switch (e.message) {
-          case "refresh-token-expired":
-          case "missing-refresh-token":
-            // Log out if the refresh fails in a known way
-            await clearAuthTokens();
-            for (const listener of listeners) listener("access-token-expired");
-            return Promise.reject(new Error("access-token-expired"));
-
-          default:
-            return Promise.reject(e);
-        }
-      }
-    };
-
-    const run = async () => {
-      const promise = refreshAndCacheTokens();
-      pendingRefreshPromise = promise;
-      try {
-        return await promise;
-      } finally {
-        pendingRefreshPromise = null;
-      }
-    };
-
-    if (typeof navigator === "undefined" || navigator?.locks?.request == null)
-      return run();
-
-    const LOCK_KEY = "ns:access-token-refresh";
-
-    const locks = await navigator.locks.query();
-    const heldLock = locks.held.find((l) => l.name === LOCK_KEY);
-
-    if (heldLock != null)
-      return new Promise((resolve, reject) => {
-        navigator.locks
-          .request(LOCK_KEY, () => {})
-          .then(readAuthTokens)
-          .then(({ accessToken }) => {
-            resolve(accessToken);
-          }, reject);
-      });
-
-    return new Promise((resolve, reject) => {
-      navigator.locks.request(LOCK_KEY, async () => {
-        try {
-          const result = await run();
-          resolve(result);
-        } catch (e) {
-          reject(e);
-        }
-      });
     });
   });
 
@@ -216,7 +165,12 @@ export const Provider = ({ apiOrigin, ...props }) => {
     const requireAccessToken =
       !options?.allowUnauthorized && !options?.unauthorized;
 
-    const { accessToken } = await readAuthTokens();
+    if (requireAccessToken) {
+      const lock = requestAccessTokenRefreshLock();
+      if (lock != null) await lock;
+    }
+
+    const { accessToken, refreshToken } = await readAuthTokens();
 
     if (requireAccessToken && accessToken == null)
       throw new Error("Missing access token");
@@ -244,9 +198,17 @@ export const Provider = ({ apiOrigin, ...props }) => {
     if (accessToken != null && response.status === 401) {
       let newAccessToken;
       try {
-        newAccessToken = await refreshAccessToken();
+        await refreshAccessToken(refreshToken);
+        const { accessToken } = await readAuthTokens();
+        newAccessToken = accessToken;
       } catch (e) {
-        return Promise.reject(createError());
+        if (e.message !== "refresh-token-expired")
+          return Promise.reject(new Error("access-token-refresh-failed"));
+
+        // Log out if the refresh token had expired
+        await clearAuthTokens();
+        for (const listener of listeners) listener("access-token-expired");
+        return Promise.reject(new Error("access-token-expired"));
       }
       const headers = new Headers(options?.headers);
       headers.set("Authorization", `Bearer ${newAccessToken}`);
