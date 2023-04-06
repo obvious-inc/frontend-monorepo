@@ -148,6 +148,9 @@ const ProfilePreview = React.forwardRef(({ userId, walletAddress }, ref) => {
                   <span css={(t) => css({ color: t.colors.link })}>
                     etherscan.io
                   </span>
+                  <div css={(t) => css({ color: t.colors.textDimmed })}>
+                    {user.walletAddress}
+                  </div>
                 </div>
               </Tooltip.Content>
             </Tooltip.Root>

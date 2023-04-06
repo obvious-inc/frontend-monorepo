@@ -19,6 +19,8 @@ import {
   Navigate,
   useNavigate,
   useParams,
+  useLocation,
+  matchPath,
 } from "react-router-dom";
 import { ThemeProvider, Global } from "@emotion/react";
 import Pusher from "pusher-js";
@@ -28,6 +30,7 @@ import {
   useSelectors,
   useActions,
   useAfterActionListener,
+  useCacheStore,
 } from "@shades/common/app";
 import { useWalletLogin, WalletLoginProvider } from "@shades/common/wallet";
 import {
@@ -201,6 +204,50 @@ const useUserEnsNames = () => {
   });
 };
 
+const channelHistoryCacheKey = "active-channel-id";
+
+const useChannelHistoryCache = () => {
+  const location = useLocation();
+  const navigate = useNavigate();
+  const { status: authStatus } = useAuth();
+  const { writeAsync: cacheWrite, readAsync: cacheRead } =
+    useCacheStore() ?? {};
+
+  React.useEffect(() => {
+    if (authStatus !== "authenticated") return;
+    if (location.pathname !== "/") return;
+    if (cacheRead == null) return;
+
+    let cancelled = false;
+
+    cacheRead(channelHistoryCacheKey).then((channelId) => {
+      if (cancelled) return;
+      if (channelId == null) return;
+      navigate(`/channels/${channelId}`, { replace: true });
+    });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [location, authStatus, navigate, cacheRead]);
+
+  React.useEffect(() => {
+    if (authStatus !== "authenticated") return;
+    if (cacheWrite == null) return;
+
+    const match = matchPath(
+      { path: "/channels/:channelId" },
+      location.pathname
+    );
+
+    if (match == null) {
+      cacheWrite(channelHistoryCacheKey, null);
+    } else {
+      cacheWrite(channelHistoryCacheKey, match.params.channelId);
+    }
+  }, [location, authStatus, cacheRead, cacheWrite]);
+};
+
 const App = () => {
   const navigate = useNavigate();
 
@@ -211,6 +258,8 @@ const App = () => {
 
   useSystemNotifications();
   useUserEnsNames();
+
+  useChannelHistoryCache();
 
   useWalletEvent("disconnect", () => {
     if (authStatus === "not-authenticated") return;

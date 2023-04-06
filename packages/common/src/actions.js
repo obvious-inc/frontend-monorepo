@@ -364,6 +364,7 @@ export default ({
   return {
     logout() {
       authTokenStore.clear();
+      cacheStore.clear();
       dispatch({ type: "logout" });
     },
     fetchMe,
