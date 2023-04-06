@@ -1,17 +1,16 @@
 import { sort, comparator } from "./array.js";
 import {
   match as matchString,
-  getWords as getStringWords,
   getWordMatchCount as getStringWordMatchCount,
 } from "./string.js";
 
 export const search = (emoji, rawQuery) => {
   const query = rawQuery.trim().toLowerCase();
 
+  const buildAliasTokens = (emoji) => [...emoji.aliases, ...emoji.tags];
   const buildMatchTokens = (emoji) => [
+    ...buildAliasTokens(emoji),
     emoji.description,
-    ...emoji.aliases,
-    ...emoji.tags,
   ];
 
   const buildMatchString = (emoji) => buildMatchTokens(emoji).join(" ");
@@ -24,12 +23,28 @@ export const search = (emoji, rawQuery) => {
     comparator(
       {
         value: (e) =>
-          buildMatchTokens(e).findIndex(
-            (t) =>
-              getStringWords(query).filter((w) => w === t.toLowerCase())
-                .length > 0
-          ),
+          buildAliasTokens(e).findIndex((t) => t.toLowerCase() === query),
         type: "index",
+      },
+      {
+        value: (e) => {
+          if (!e.aliases[0].toLowerCase().startsWith(query)) return Infinity;
+          return e.aliases[0].length;
+        },
+      },
+      {
+        value: (e) => {
+          if (!e.aliases[0].toLowerCase().includes(query)) return Infinity;
+          return e.aliases[0].length;
+        },
+      },
+      {
+        value: (e) => {
+          const token = buildAliasTokens(e).find((t) =>
+            t.toLowerCase().startsWith(query)
+          );
+          return token?.length ?? Infinity;
+        },
       },
       {
         value: (e) =>
