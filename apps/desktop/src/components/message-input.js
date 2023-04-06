@@ -129,26 +129,67 @@ const MessageInput = React.forwardRef(
 
       const query = emojiQuery ?? null;
 
+      const lowerCaseQuery = query?.trim().toLowerCase();
+
       const orderedFilteredEmojis =
         query == null ? emojis : emojiUtils.search(emojis, query);
 
-      return orderedFilteredEmojis.slice(0, 10).map((e) => ({
-        value: e.emoji,
-        label: (
-          <span>
-            <span
-              css={css({
-                display: "inline-flex",
-                transform: "scale(1.35)",
-                marginRight: "0.5rem",
+      return orderedFilteredEmojis.slice(0, 10).map((e) => {
+        const [firstAlias, ...otherAliases] = [...e.aliases, ...e.tags];
+        const visibleAliases = [
+          firstAlias,
+          ...otherAliases.filter(
+            (a) => lowerCaseQuery != null && a.includes(lowerCaseQuery)
+          ),
+        ];
+        return {
+          value: e.emoji,
+          label: (
+            <span>
+              <span
+                css={css({
+                  display: "inline-flex",
+                  transform: "scale(1.35)",
+                  marginRight: "0.5rem",
+                })}
+              >
+                {e.emoji}
+              </span>{" "}
+              {visibleAliases.map((a, i) => {
+                const isMatch = a.includes(lowerCaseQuery);
+                const matchStartIndex = isMatch && a.indexOf(lowerCaseQuery);
+                const matchEndIndex =
+                  isMatch && a.indexOf(lowerCaseQuery) + lowerCaseQuery.length;
+                return (
+                  <React.Fragment key={a}>
+                    {i !== 0 && " "}:
+                    {isMatch ? (
+                      <>
+                        {a.slice(0, matchStartIndex)}
+                        <span
+                          data-matching-text="true"
+                          // css={(t) =>
+                          //   css({
+                          //     color: t.colors.textHighlight,
+                          //     background: `${t.colors.textHighlight}11`,
+                          //   })
+                          // }
+                        >
+                          {a.slice(matchStartIndex, matchEndIndex)}
+                        </span>
+                        {a.slice(matchEndIndex)}
+                      </>
+                    ) : (
+                      a
+                    )}
+                    :
+                  </React.Fragment>
+                );
               })}
-            >
-              {e.emoji}
-            </span>{" "}
-            :{e.aliases[0]}:
-          </span>
-        ),
-      }));
+            </span>
+          ),
+        };
+      });
     }, [emojis, autoCompleteMode, emojiQuery]);
 
     const filteredCommandOptions = React.useMemo(() => {
@@ -452,9 +493,6 @@ const AutoCompleteListbox = ({
             fontWeight: "400",
             cursor: "pointer",
             outline: "none",
-            '&:hover, &:focus, &[data-selected="true"]': {
-              background: theme.colors.backgroundModifierHover,
-            },
             ".image": {
               width: "3.2rem",
               height: "3.2rem",
@@ -473,6 +511,16 @@ const AutoCompleteListbox = ({
               color: theme.colors.textDimmed,
               fontSize: "1.2rem",
               whiteSpace: "pre-line",
+            },
+            '[data-matching-text="true"]': {
+              color: theme.colors.textHeader,
+              background: theme.colors.textHighlightBackground,
+            },
+            '&:hover, &:focus, &[data-selected="true"]': {
+              background: theme.colors.backgroundModifierHover,
+              ".label": {
+                color: theme.colors.textHeader,
+              },
             },
           },
         })
