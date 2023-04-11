@@ -7,13 +7,14 @@ import {
   useActions,
   useSelectors,
   useMessageEmbeds,
-  useCachedState,
   useMe,
   useUsers,
   useMessage,
   useChannel,
   useChannelMembers,
   useHasReactedWithEmoji,
+  useEmojis,
+  useRecentEmojis,
 } from "@shades/common/app";
 import {
   array as arrayUtils,
@@ -30,7 +31,11 @@ import {
   AddEmojiReaction as AddEmojiReactionIcon,
   JoinArrowRight as JoinArrowRightIcon,
 } from "@shades/ui-web/icons";
-import { isNodeEmpty, normalizeNodes, cleanNodes } from "../slate/utils";
+import {
+  isNodeEmpty,
+  parseMessageBlocks,
+  toMessageBlocks,
+} from "../slate/utils";
 import useGlobalMediaQueries from "../hooks/global-media-queries";
 import FormattedDate from "./formatted-date";
 import MessageInput from "./message-input";
@@ -45,7 +50,7 @@ import * as Tooltip from "./tooltip";
 import ProfilePreview from "./profile-preview";
 import InlineUserButtonWithProfilePopover from "./inline-user-button-with-profile-popover";
 
-const { groupBy, indexBy } = arrayUtils;
+const { groupBy } = arrayUtils;
 const { withoutAttachments } = messageUtils;
 const { search: searchEmoji } = emojiUtils;
 
@@ -987,42 +992,16 @@ const MessageHeader = ({ compact, message, authorUser, createdAt }) => {
   );
 };
 
-const useEmoji = () => {
-  const [data, setData] = React.useState([]);
-
-  React.useEffect(() => {
-    import("@shades/common/emoji").then(({ default: emoji }) => {
-      setData(
-        emoji.filter(
-          (e) => e.unicode_version === "" || parseFloat(e.unicode_version) < 13
-        )
-      );
-    });
-  }, []);
-
-  return data;
-};
-
 // Super hacky and inaccessible
 const EmojiPicker = ({ width = "auto", height = "100%", onSelect }) => {
   const inputRef = React.useRef();
 
-  const emoji = useEmoji();
-  const emojiByEmoji = React.useMemo(
-    () => indexBy((e) => e.emoji, emoji),
-    [emoji]
-  );
-
-  const [recentEmoji] = useCachedState("recent-emoji", []);
+  const emojis = useEmojis();
+  const recentEmojis = useRecentEmojis();
 
   const emojiByCategoryEntries = React.useMemo(
-    () => Object.entries(groupBy((e) => e.category, emoji)),
-    [emoji]
-  );
-
-  const recentEmojiData = React.useMemo(
-    () => recentEmoji?.map((e) => emojiByEmoji[e]).filter(Boolean),
-    [emojiByEmoji, recentEmoji]
+    () => Object.entries(groupBy((e) => e.category, emojis)),
+    [emojis]
   );
 
   const [highlightedEntry, setHighlightedEntry] = React.useState(null);
@@ -1033,16 +1012,16 @@ const EmojiPicker = ({ width = "auto", height = "100%", onSelect }) => {
 
   const filteredEmojisByCategoryEntries = React.useMemo(() => {
     if (trimmedQuery.length === 0) {
-      if (recentEmojiData.length === 0) return emojiByCategoryEntries;
+      if (recentEmojis.length === 0) return emojiByCategoryEntries;
       return [
-        ["Recently used", recentEmojiData.slice(0, 4 * 9)],
+        ["Recently used", recentEmojis.slice(0, 4 * 9)],
         ...emojiByCategoryEntries,
       ];
     }
 
     const emoji = emojiByCategoryEntries.flatMap((entry) => entry[1]);
     return [[undefined, searchEmoji(emoji, trimmedQuery)]];
-  }, [emojiByCategoryEntries, recentEmojiData, trimmedQuery]);
+  }, [emojiByCategoryEntries, recentEmojis, trimmedQuery]);
 
   const highlightedEmojiItem = React.useMemo(
     () =>
@@ -1449,8 +1428,8 @@ const MessageToolbar = React.memo(
 
 const EditMessageInput = React.forwardRef(
   ({ blocks, save, requestRemove, onCancel, ...props }, editorRef) => {
-    const [pendingMessage, setPendingMessage] = React.useState(() =>
-      normalizeNodes(withoutAttachments(blocks))
+    const [pendingSlateNodes, setPendingSlateNodes] = React.useState(() =>
+      parseMessageBlocks(withoutAttachments(blocks))
     );
 
     const [isSaving, setSaving] = React.useState(false);
@@ -1461,7 +1440,7 @@ const EditMessageInput = React.forwardRef(
     const submit = async () => {
       if (!allowSubmit) return;
 
-      const blocks = cleanNodes(pendingMessage);
+      const blocks = toMessageBlocks(pendingSlateNodes);
 
       const isEmpty = blocks.every(isNodeEmpty);
 
@@ -1500,9 +1479,9 @@ const EditMessageInput = React.forwardRef(
       >
         <MessageInput
           ref={editorRef}
-          initialValue={pendingMessage}
-          onChange={(value) => {
-            setPendingMessage(value);
+          initialValue={pendingSlateNodes}
+          onChange={(nodes) => {
+            setPendingSlateNodes(nodes);
           }}
           placeholder={`Press "Enter" to delete message`}
           onKeyDown={(e) => {

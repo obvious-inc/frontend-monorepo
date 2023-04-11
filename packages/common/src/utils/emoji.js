@@ -95,3 +95,7 @@ export const search = (emoji, rawQuery) => {
 
   return orderedItems;
 };
+
+// https://stackoverflow.com/a/64007175/1460918
+export const isEmoji = (maybeEmoji) =>
+  /\p{Extended_Pictographic}/u.test(maybeEmoji);

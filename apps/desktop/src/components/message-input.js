@@ -8,7 +8,12 @@ import {
   channel as channelUtils,
 } from "@shades/common/utils";
 import { useLatestCallback } from "@shades/common/react";
-import { useChannel, useAllChannels } from "@shades/common/app";
+import {
+  useChannel,
+  useAllChannels,
+  useEmojis,
+  useRecentEmojis,
+} from "@shades/common/app";
 import RichTextInput from "./rich-text-input.js";
 import UserAvatar from "./user-avatar.js";
 import ChannelAvatar from "./channel-avatar.js";
@@ -22,23 +27,6 @@ const {
   search: searchChannels,
   createDefaultComparator: createChannelDefaultComparator,
 } = channelUtils;
-
-let emojiModulePromise = null;
-
-const fetchEmojis = () => {
-  if (emojiModulePromise) return emojiModulePromise;
-  emojiModulePromise = import("@shades/common/emoji").then(
-    (module) => {
-      emojiModulePromise = null;
-      return module.default;
-    },
-    (error) => {
-      emojiModulePromise = null;
-      return Promise.reject(error);
-    }
-  );
-  return emojiModulePromise;
-};
 
 const MessageInput = React.forwardRef(
   (
@@ -56,11 +44,11 @@ const MessageInput = React.forwardRef(
     editorRef
   ) => {
     const channels = useAllChannels({ name: true });
-    const [emojis, setEmojis] = React.useState([]);
 
     const preventInputBlurRef = React.useRef();
     const mentionQueryRangeRef = React.useRef();
     const channelQueryRangeRef = React.useRef();
+    const emojiQueryRangeRef = React.useRef();
 
     const [mentionQuery, setMentionQuery] = React.useState(null);
     const [channelQuery, setChannelQuery] = React.useState(null);
@@ -78,6 +66,11 @@ const MessageInput = React.forwardRef(
       if (emojiQuery != null) return "emojis";
       return null;
     })();
+
+    const emojis = useEmojis({
+      enabled: autoCompleteMode === "emojis",
+    });
+    const recentEmojis = useRecentEmojis();
 
     const isAutoCompleteMenuOpen = autoCompleteMode != null;
 
@@ -129,10 +122,17 @@ const MessageInput = React.forwardRef(
 
       const query = emojiQuery ?? null;
 
-      const lowerCaseQuery = query?.trim().toLowerCase();
+      const lowerCaseQuery = emojiQuery?.trim().toLowerCase();
+
+      const getDefaultSet = () => {
+        if (recentEmojis == null || recentEmojis.length === 0) return emojis;
+        return recentEmojis;
+      };
 
       const orderedFilteredEmojis =
-        query == null ? emojis : emojiUtils.search(emojis, query);
+        emojiQuery.trim() === ""
+          ? getDefaultSet()
+          : emojiUtils.search(emojis, query);
 
       return orderedFilteredEmojis.slice(0, 10).map((e) => {
         const [firstAlias, ...otherAliases] = [...e.aliases, ...e.tags];
@@ -190,7 +190,7 @@ const MessageInput = React.forwardRef(
           ),
         };
       });
-    }, [emojis, autoCompleteMode, emojiQuery]);
+    }, [emojis, recentEmojis, autoCompleteMode, emojiQuery]);
 
     const filteredCommandOptions = React.useMemo(() => {
       if (autoCompleteMode !== "commands") return [];
@@ -262,8 +262,9 @@ const MessageInput = React.forwardRef(
             break;
 
           case "emojis":
-            editorRef.current.replaceCurrentWord(option.value);
-            editorRef.current.insertText(" ");
+            editorRef.current.insertEmoji(option.value, {
+              at: emojiQueryRangeRef.current,
+            });
             setEmojiQuery(null);
             break;
 
@@ -352,16 +353,6 @@ const MessageInput = React.forwardRef(
       "aria-activedescendant": `autocomplete-listbox-option-${selectedAutoCompleteIndex}`,
     };
 
-    React.useEffect(() => {
-      if (autoCompleteMode !== "emojis" || emojis.length !== 0) return;
-      fetchEmojis().then((es) => {
-        const filteredEmoji = es.filter(
-          (e) => e.unicode_version === "" || parseFloat(e.unicode_version) < 13
-        );
-        setEmojis(filteredEmoji);
-      });
-    }, [autoCompleteMode, emojis]);
-
     return (
       <>
         <RichTextInput
@@ -400,10 +391,11 @@ const MessageInput = React.forwardRef(
             },
             {
               type: "word",
-              handler: (word) => {
+              handler: (word, range) => {
                 if (word.startsWith(":")) {
                   setEmojiQuery(word.slice(1));
                   setSelectedAutoCompleteIndex(0);
+                  emojiQueryRangeRef.current = range;
                   return;
                 }
 

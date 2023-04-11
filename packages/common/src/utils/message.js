@@ -63,6 +63,8 @@ const stringifyElement = (el) => {
       return `@<c:${el.ref}>`;
     case "link":
       return el.url;
+    case "emoji":
+      return el.emoji;
     case "attachments":
     case "image-attachment":
       return "";

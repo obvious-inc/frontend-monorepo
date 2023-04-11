@@ -6,14 +6,11 @@ import { SectionedActionList } from "./account-modal";
 import { AddEmojiReaction as AddEmojiReactionIcon } from "../components/icons";
 import theme from "../theme";
 
-const { useActions, useMe, useMessage, useCachedState } = Shades.app;
+const { useActions, useMe, useMessage, useRecentEmojis } = Shades.app;
 const { message: messageUtils } = Shades.utils;
-const { unique } = Shades.utils.array;
 
 const hapticImpactLight = () =>
   Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-
-const defaultEmoji = ["😍", "👍", "🔥", "✨", "🙏", "👀", "✅", "😎"];
 
 const windowWidth = Dimensions.get("window").width;
 
@@ -33,12 +30,7 @@ const MessageModal = ({
   const me = useMe();
   const message = useMessage(messageId);
 
-  const [mostRecentEmoji_] = useCachedState("recent-emoji", []);
-
-  const mostRecentEmoji =
-    mostRecentEmoji_ == null
-      ? null
-      : unique([...mostRecentEmoji_, ...defaultEmoji]);
+  const recentEmojis = useRecentEmojis();
 
   const addReaction = (emoji) =>
     actions.addMessageReaction(messageId, { emoji });
@@ -141,7 +133,7 @@ const MessageModal = ({
           marginBottom: 20,
         }}
       >
-        {mostRecentEmoji?.slice(0, emojiColumnCount - 1).map((emoji) => (
+        {recentEmojis.slice(0, emojiColumnCount - 1).map((emoji) => (
           <Pressable
             key={emoji}
             onPress={() => {

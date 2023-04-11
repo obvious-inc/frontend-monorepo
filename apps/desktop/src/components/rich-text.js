@@ -4,6 +4,7 @@ import { css } from "@emotion/react";
 import { useUser } from "@shades/common/app";
 import InlineUserButton from "./inline-user-button.js";
 import InlineChannelButton from "./inline-channel-button.js";
+import Emoji from "./emoji.js";
 import * as Popover from "./popover.js";
 import ProfilePreview from "./profile-preview.js";
 
@@ -85,6 +86,9 @@ const createParser = ({
               {el.url}
             </a>
           );
+
+        case "emoji":
+          return <Emoji key={i} emoji={el.emoji} />;
 
         case "channel-link":
           return (

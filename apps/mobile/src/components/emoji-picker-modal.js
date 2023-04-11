@@ -11,7 +11,7 @@ import * as Shades from "@shades/common";
 import Input from "./input";
 import theme from "../theme";
 
-const { useCachedState } = Shades.app;
+const { useRecentEmojis } = Shades.app;
 const { groupBy, indexBy } = Shades.utils.array;
 const { search: searchEmoji } = Shades.utils.emoji;
 
@@ -30,7 +30,7 @@ const emojiColumnCount = 7;
 const emojiSize = Math.floor((windowWidth - 20) / emojiColumnCount);
 
 const EmojiPickerModal = ({ onSelect }) => {
-  const [recentEmoji] = useCachedState("recent-emoji", []);
+  const recentEmojis = useRecentEmojis();
 
   const [query, setQuery] = React.useState("");
   const trimmedQuery = React.useDeferredValue(query.trim());
@@ -47,13 +47,13 @@ const EmojiPickerModal = ({ onSelect }) => {
       );
 
     if (trimmedQuery.length <= 1) {
-      if (recentEmoji == null || recentEmoji.length === 0)
+      if (recentEmojis.length === 0)
         return prepareEntries(emojiByCategoryEntries);
 
       return prepareEntries([
         [
           "Recently used",
-          recentEmoji
+          recentEmojis
             .slice(0, emojiColumnCount * 4) // 4 rows seems like a good max
             .map((e) => emojiByEmoji[e]),
         ],
@@ -65,7 +65,7 @@ const EmojiPickerModal = ({ onSelect }) => {
     const filteredItems = searchEmoji(allItems, trimmedQuery);
 
     return [{ id: "filtered", items: filteredItems }];
-  }, [trimmedQuery, recentEmoji]);
+  }, [trimmedQuery, recentEmojis]);
 
   return (
     <KeyboardAvoidingView

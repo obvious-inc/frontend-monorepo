@@ -6,6 +6,7 @@ import {
   stringifyBlocks as stringifyMessageBlocks,
   getMentions,
 } from "./utils/message.js";
+import { isEmoji } from "./utils/emoji.js";
 import {
   openChannelPermissionOverrides,
   closedChannelPermissionOverrides,
@@ -576,11 +577,7 @@ export default ({
       });
     },
     addMessageReaction(messageId, { emoji }) {
-      invariant(
-        // https://stackoverflow.com/questions/18862256/how-to-detect-emoji-using-javascript#answer-64007175
-        /\p{Emoji}/u.test(emoji),
-        "Only emojis allowed"
-      );
+      invariant(isEmoji(emoji), "Only emojis allowed");
 
       const me = selectMe(getStoreState());
 
@@ -591,6 +588,7 @@ export default ({
         userId: me.id,
       });
 
+      // TODO: Extract recent emoji cache into its own thing
       if (cacheStore != null) {
         cacheStore.readAsync("recent-emoji").then((cachedEmoji) => {
           cacheStore.write(

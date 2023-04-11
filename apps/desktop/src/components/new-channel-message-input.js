@@ -14,7 +14,7 @@ import {
   PlusCircle as PlusCircleIcon,
 } from "@shades/ui-web/icons";
 import IconButton from "@shades/ui-web/icon-button";
-import { isNodeEmpty, cleanNodes } from "../slate/utils";
+import { isNodeEmpty, toMessageBlocks } from "../slate/utils";
 import useCommands from "../hooks/commands";
 import MessageInput from "./message-input";
 import Spinner from "./spinner";
@@ -142,7 +142,7 @@ const NewChannelMessageInput = React.memo(
 
     const replyTargetMessage = useMessage(replyTargetMessageId);
 
-    const [pendingMessage, setPendingMessage] = React.useState(() => [
+    const [pendingSlateNodes, setPendingSlateNodes] = React.useState(() => [
       createEmptyParagraphElement(),
     ]);
 
@@ -151,18 +151,18 @@ const NewChannelMessageInput = React.memo(
     const [imageUploads, setImageUploads] = React.useState([]);
 
     const isEmptyMessage =
-      imageUploads.length === 0 && pendingMessage.every(isNodeEmpty);
+      imageUploads.length === 0 && pendingSlateNodes.every(isNodeEmpty);
 
     const fileInputRef = React.useRef();
     const uploadPromiseRef = React.useRef();
-    const previousPendingMessageRef = React.useRef(pendingMessage);
+    const previousPendingSlateNodesRef = React.useRef(pendingSlateNodes);
 
     React.useEffect(() => {
-      if (previousPendingMessageRef.current !== pendingMessage) {
-        onInputChange?.(pendingMessage);
+      if (previousPendingSlateNodesRef.current !== pendingSlateNodes) {
+        onInputChange?.(pendingSlateNodes);
       }
-      previousPendingMessageRef.current = pendingMessage;
-    }, [pendingMessage, onInputChange]);
+      previousPendingSlateNodesRef.current = pendingSlateNodes;
+    }, [pendingSlateNodes, onInputChange]);
 
     const {
       execute: executeCommand_,
@@ -187,7 +187,7 @@ const NewChannelMessageInput = React.memo(
     };
 
     const executeMessage = async () => {
-      const blocks = cleanNodes(pendingMessage);
+      const blocks = toMessageBlocks(pendingSlateNodes);
 
       const isEmpty = blocks.every(isNodeEmpty);
 
@@ -347,9 +347,9 @@ const NewChannelMessageInput = React.memo(
         >
           <MessageInput
             ref={editorRef}
-            initialValue={pendingMessage}
-            onChange={(value) => {
-              setPendingMessage(value);
+            initialValue={pendingSlateNodes}
+            onChange={(nodes) => {
+              setPendingSlateNodes(nodes);
             }}
             onKeyDown={(e) => {
               if (!e.isDefaultPrevented() && !e.shiftKey && e.key === "Enter") {

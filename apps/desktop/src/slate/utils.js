@@ -37,32 +37,51 @@ export const isNodeEmpty = (el) => {
   if (el.type === "channel-link") return false;
   if (el.type === "attachments") return false;
   if (el.type === "link") return false;
+  if (el.type === "emoji") return false;
   if (el.children != null) return el.children.every(isNodeEmpty);
   return el.text.trim() === "";
 };
 
-export const cleanNodes = (nodes) =>
+export const toMessageBlocks = (nodes) =>
   nodes.reduce((acc, n) => {
     if (isNodeEmpty(n)) return acc;
     if (n.type === "link") return [...acc, { type: "link", url: n.url }];
+    if (n.type === "emoji") return [...acc, { type: "emoji", emoji: n.emoji }];
     if (n.type === "user") return [...acc, { type: "user", ref: n.ref }];
     if (n.type === "channel-link")
       return [...acc, { type: "channel-link", ref: n.ref }];
     if (n.children == null) return [...acc, n];
-    return [...acc, { ...n, children: cleanNodes(n.children) }];
+    return [...acc, { ...n, children: toMessageBlocks(n.children) }];
   }, []);
 
-export const normalizeNodes = (nodes) =>
-  nodes.reduce((acc, n) => {
+export const parseMessageBlocks = (blocks) =>
+  blocks.reduce((acc, n) => {
     if (n.type === "link")
-      return [...acc, { ...n, children: [{ text: n.url }] }];
+      return [
+        ...acc,
+        { text: "" },
+        { ...n, children: [{ text: n.url }] },
+        { text: "" },
+      ];
+    if (n.type === "emoji")
+      return [
+        ...acc,
+        { text: "" },
+        { ...n, children: [{ text: n.emoji }] },
+        { text: "" },
+      ];
     if (n.type === "user" || n.type === "channel-link")
-      return [...acc, { ...n, children: [{ text: "" }] }, { text: "" }];
+      return [
+        ...acc,
+        { text: "" },
+        { ...n, children: [{ text: "" }] },
+        { text: "" },
+      ];
     // TODO implement plugin "unsupported-element"
     if (n.children == null && n.text == null)
       return [...acc, { ...n, text: "" }];
     if (n.children == null) return [...acc, n];
-    return [...acc, { ...n, children: normalizeNodes(n.children) }];
+    return [...acc, { ...n, children: parseMessageBlocks(n.children) }];
   }, []);
 
 export const search = (editor, query, options = {}) => {
@@ -129,7 +148,7 @@ export const getWords = ([node, path]) => {
   let offset = 0;
   const wordEntries = [];
 
-  for (let wordString of node.text.split(/\s+/)) {
+  for (const wordString of node.text.split(/\s+/)) {
     if (wordString === "") {
       offset += 1;
       continue;
@@ -147,4 +166,25 @@ export const getWords = ([node, path]) => {
   }
 
   return wordEntries;
+};
+
+export const getCharacters = ([node, path]) => {
+  if (!Text.isText(node)) return [];
+
+  let offset = 0;
+  const characterEntries = [];
+
+  for (const charString of [...node.text]) {
+    characterEntries.push([
+      charString,
+      {
+        anchor: { path, offset },
+        focus: { path, offset: offset + charString.length },
+      },
+    ]);
+
+    offset += charString.length;
+  }
+
+  return characterEntries;
 };

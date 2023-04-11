@@ -12,6 +12,7 @@ import isHotkey from "is-hotkey";
 import { function as functionUtils } from "@shades/common/utils";
 import { createCss as createRichTextCss } from "./rich-text";
 import createControlledParagraphLineBreaksPlugin from "../slate/plugins/controlled-paragraph-line-breaks";
+import createEmojiPlugin from "../slate/plugins/emojis";
 import createInlineLinksPlugin from "../slate/plugins/inline-links";
 import createUserMentionsPlugin from "../slate/plugins/user-mentions";
 import createChannelLinksPlugin from "../slate/plugins/channel-link";
@@ -47,18 +48,18 @@ const withMarks = (editor) => {
 
 const withTextCommands = (editor) => {
   const findWordStart = (p = editor.selection.anchor) => {
-    const prevPoint = Editor.before(editor, p, { unit: "character" });
+    const prevPoint = Editor.before(editor, p, { unit: "offset" });
     if (prevPoint == null) return p;
     const char = Editor.string(editor, Editor.range(editor, prevPoint, p));
-    if (char === " ") return p;
+    if (char === "" || char.match(/\s/)) return p;
     return findWordStart(prevPoint);
   };
 
   const findWordEnd = (p = editor.selection.anchor) => {
-    const nextPoint = Editor.after(editor, p, { unit: "character" });
+    const nextPoint = Editor.after(editor, p, { unit: "offset" });
     if (nextPoint == null) return p;
     const char = Editor.string(editor, Editor.range(editor, p, nextPoint));
-    if (char === " ") return p;
+    if (char === "" || char.match(/\s/)) return p;
     return findWordEnd(nextPoint);
   };
 
@@ -141,6 +142,7 @@ const RichTextInput = React.forwardRef(
         createUserMentionsPlugin(),
         createChannelLinksPlugin(),
         createInlineLinksPlugin(),
+        createEmojiPlugin(),
       ]);
 
       return {
@@ -187,13 +189,16 @@ const RichTextInput = React.forwardRef(
                   continue;
 
                 const wordRange = editor.getWordRange();
-                const wordString = Editor.string(editor, wordRange);
+                const wordString = Editor.string(editor, wordRange, {
+                  voids: true,
+                });
 
                 if (trigger.match == null || trigger.match(wordString))
                   trigger.handler(wordString, wordRange);
 
                 break;
               }
+
               case "command": {
                 if (
                   editor.selection == null ||

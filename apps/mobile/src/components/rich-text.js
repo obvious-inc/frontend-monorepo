@@ -98,6 +98,13 @@ const createParser = ({
             </View>
           );
 
+        case "emoji":
+          return (
+            <Text key={i} style={textDefaultStyle}>
+              {el.emoji}
+            </Text>
+          );
+
         case "link":
           return (
             <Text

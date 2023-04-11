@@ -16,6 +16,8 @@ export {
   useStore as useCacheStore,
   useCachedState,
 } from "./cache-store.js";
+export { default as useEmojis } from "./hooks/emojis.js";
+export { default as useRecentEmojis } from "./hooks/recent-emojis.js";
 export { default as useMessageEmbeds } from "./hooks/message-embeds.js";
 export { default as useMessageReactions } from "./hooks/message-reactions.js";
 export * from "./hooks/ens.js";
