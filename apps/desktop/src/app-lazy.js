@@ -26,6 +26,7 @@ import { ThemeProvider, Global } from "@emotion/react";
 import Pusher from "pusher-js";
 import {
   ServerConnectionProvider,
+  EmojiProvider,
   useAuth,
   useSelectors,
   useActions,
@@ -434,7 +435,19 @@ export default function LazyRoot() {
                 <SidebarProvider>
                   <GlobalMediaQueriesProvider>
                     <CommandCenterProvider>
-                      <App />
+                      <EmojiProvider
+                        loader={() =>
+                          import("@shades/common/emoji").then((m) =>
+                            m.default.filter(
+                              (e) =>
+                                e.unicode_version === "" ||
+                                parseFloat(e.unicode_version) <= 12
+                            )
+                          )
+                        }
+                      >
+                        <App />
+                      </EmojiProvider>
                     </CommandCenterProvider>
                   </GlobalMediaQueriesProvider>
                 </SidebarProvider>

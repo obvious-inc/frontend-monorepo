@@ -81,12 +81,18 @@ const {
   ServerConnectionProvider,
   AppStoreProvider,
   CacheStoreProvider,
+  EmojiProvider,
   useAuth,
   useActions,
   useMe,
   useTotalMentionCount,
 } = Shades.app;
 const { useLatestCallback } = Shades.react;
+const { emojis: unfilteredEmojis } = Shades;
+
+const emojis = unfilteredEmojis.filter(
+  (e) => e.unicode_version === "" || parseFloat(e.unicode_version) <= 12
+);
 
 const { provider } = configureWagmiChains(
   [mainnetChain],
@@ -640,7 +646,9 @@ export default () => {
                       Pusher={Pusher}
                       pusherKey={PUSHER_KEY}
                     >
-                      <App />
+                      <EmojiProvider loader={() => emojis}>
+                        <App />
+                      </EmojiProvider>
                     </ServerConnectionProvider>
                   </AppStoreProvider>
                 </AuthProvider>

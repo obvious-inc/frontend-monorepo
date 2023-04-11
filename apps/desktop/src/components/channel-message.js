@@ -14,7 +14,6 @@ import {
   useChannelMembers,
   useHasReactedWithEmoji,
   useEmojis,
-  useRecentEmojis,
 } from "@shades/common/app";
 import {
   array as arrayUtils,
@@ -996,8 +995,7 @@ const MessageHeader = ({ compact, message, authorUser, createdAt }) => {
 const EmojiPicker = ({ width = "auto", height = "100%", onSelect }) => {
   const inputRef = React.useRef();
 
-  const emojis = useEmojis();
-  const recentEmojis = useRecentEmojis();
+  const { allEntries: emojis, recentlyUsedEntries: recentEmojis } = useEmojis();
 
   const emojiByCategoryEntries = React.useMemo(
     () => Object.entries(groupBy((e) => e.category, emojis)),

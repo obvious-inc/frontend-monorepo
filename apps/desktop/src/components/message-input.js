@@ -8,12 +8,7 @@ import {
   channel as channelUtils,
 } from "@shades/common/utils";
 import { useLatestCallback } from "@shades/common/react";
-import {
-  useChannel,
-  useAllChannels,
-  useEmojis,
-  useRecentEmojis,
-} from "@shades/common/app";
+import { useChannel, useAllChannels, useEmojis } from "@shades/common/app";
 import RichTextInput from "./rich-text-input.js";
 import UserAvatar from "./user-avatar.js";
 import ChannelAvatar from "./channel-avatar.js";
@@ -67,10 +62,9 @@ const MessageInput = React.forwardRef(
       return null;
     })();
 
-    const emojis = useEmojis({
-      enabled: autoCompleteMode === "emojis",
-    });
-    const recentEmojis = useRecentEmojis();
+    const { allEntries: emojis, recentlyUsedEntries: recentEmojis } = useEmojis(
+      { enabled: autoCompleteMode === "emojis" }
+    );
 
     const isAutoCompleteMenuOpen = autoCompleteMode != null;
 
@@ -124,10 +118,8 @@ const MessageInput = React.forwardRef(
 
       const lowerCaseQuery = emojiQuery?.trim().toLowerCase();
 
-      const getDefaultSet = () => {
-        if (recentEmojis == null || recentEmojis.length === 0) return emojis;
-        return recentEmojis;
-      };
+      const getDefaultSet = () =>
+        recentEmojis.length === 0 ? emojis : recentEmojis;
 
       const orderedFilteredEmojis =
         emojiQuery.trim() === ""
@@ -139,7 +131,7 @@ const MessageInput = React.forwardRef(
         const visibleAliases = [
           firstAlias,
           ...otherAliases.filter(
-            (a) => lowerCaseQuery != null && a.includes(lowerCaseQuery)
+            (a) => lowerCaseQuery !== "" && a.includes(lowerCaseQuery)
           ),
         ];
         return {

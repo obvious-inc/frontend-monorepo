@@ -5,8 +5,8 @@ import useEmojis from "./emojis.js";
 
 const defaultSet = ["😍", "👍", "🔥", "✨", "🙏", "👀", "✅", "😎"];
 
-const useRecentEmojis = () => {
-  const emojis = useEmojis();
+const useRecentEmojis = ({ enabled, fetcher } = {}) => {
+  const emojis = useEmojis({ enabled, fetcher });
   const [recentEmojiCache] = useCachedState("recent-emoji", []);
 
   const recentEmoji = React.useMemo(

@@ -1,40 +1,74 @@
 import React from "react";
+import { unique, indexBy } from "../utils/array.js";
+import { useCachedState } from "../cache-store.js";
+import useLatestCallback from "../react/hooks/latest-callback.js";
 
-let emojiModulePromise = null;
+const defaultEmojiSet = ["😍", "👍", "🔥", "✨", "🙏", "👀", "✅", "😎"];
 
-let cachedEmojis = null;
+let loaderPromise = null;
 
-const fetchEmojis = () => {
-  if (emojiModulePromise) return emojiModulePromise;
-  emojiModulePromise = import("@shades/common/emoji").then(
-    (module) => {
-      emojiModulePromise = null;
-      return module.default;
-    },
-    (error) => {
-      emojiModulePromise = null;
-      return Promise.reject(error);
-    }
-  );
-  return emojiModulePromise;
+const createSingeltonLoader = (loader) => async () => {
+  if (loaderPromise != null) return loaderPromise;
+
+  try {
+    loaderPromise = loader();
+    return await loaderPromise;
+  } finally {
+    loaderPromise = null;
+  }
 };
 
+const Context = React.createContext();
+
+const useLoader = () => {
+  const loader = React.useContext(Context);
+
+  return useLatestCallback(async () => {
+    const load = createSingeltonLoader(loader);
+    return load();
+  });
+};
+
+export const Provider = ({ loader, children }) => (
+  <Context.Provider value={loader}>{children}</Context.Provider>
+);
+
+let cachedEntries = null;
+
 const useEmojis = ({ enabled = true } = {}) => {
-  const [emojis, setEmojis] = React.useState(cachedEmojis ?? []);
+  const loader = useLoader();
+  const [entries, setEntries] = React.useState(cachedEntries ?? []);
+  const recentlyUsedEntries = useRecentUsedEntries(entries);
 
   React.useEffect(() => {
-    if (!enabled || emojis.length !== 0) return;
+    if (!enabled || entries.length !== 0) return;
 
-    fetchEmojis().then((es) => {
-      const filteredEmoji = es.filter(
-        (e) => e.unicode_version === "" || parseFloat(e.unicode_version) < 13
-      );
-      cachedEmojis = filteredEmoji;
-      setEmojis(filteredEmoji);
+    loader().then((entries) => {
+      cachedEntries = entries;
+      setEntries(entries);
     });
-  }, [enabled, emojis.length]);
+  }, [loader, enabled, entries.length]);
 
-  return emojis;
+  return { allEntries: entries, recentlyUsedEntries };
+};
+
+const useRecentUsedEntries = (entries) => {
+  const [recentlyUsedEmojis] = useCachedState("recent-emoji", []);
+
+  const entriesByEmoji = React.useMemo(
+    () => indexBy((e) => e.emoji, entries),
+    [entries]
+  );
+
+  const recentlyUsedEntries = React.useMemo(
+    () =>
+      unique([...(recentlyUsedEmojis ?? []), ...defaultEmojiSet])
+        .map((e) => entriesByEmoji[e])
+        .filter(Boolean),
+    [recentlyUsedEmojis, entriesByEmoji]
+  );
+
+  return recentlyUsedEntries;
 };
 
 export default useEmojis;

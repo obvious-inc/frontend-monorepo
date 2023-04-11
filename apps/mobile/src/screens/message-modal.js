@@ -6,7 +6,7 @@ import { SectionedActionList } from "./account-modal";
 import { AddEmojiReaction as AddEmojiReactionIcon } from "../components/icons";
 import theme from "../theme";
 
-const { useActions, useMe, useMessage, useRecentEmojis } = Shades.app;
+const { useActions, useMe, useMessage, useEmojis } = Shades.app;
 const { message: messageUtils } = Shades.utils;
 
 const hapticImpactLight = () =>
@@ -30,7 +30,7 @@ const MessageModal = ({
   const me = useMe();
   const message = useMessage(messageId);
 
-  const recentEmojis = useRecentEmojis();
+  const { recentlyUsedEntries: recentEmojis } = useEmojis();
 
   const addReaction = (emoji) =>
     actions.addMessageReaction(messageId, { emoji });
