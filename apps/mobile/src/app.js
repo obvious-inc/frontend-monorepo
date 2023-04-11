@@ -88,7 +88,7 @@ const {
   useTotalMentionCount,
 } = Shades.app;
 const { useLatestCallback } = Shades.react;
-const { emojis: unfilteredEmojis } = Shades;
+const { emoji: unfilteredEmojis } = Shades;
 
 const emojis = unfilteredEmojis.filter(
   (e) => e.unicode_version === "" || parseFloat(e.unicode_version) <= 12

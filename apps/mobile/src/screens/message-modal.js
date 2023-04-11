@@ -133,12 +133,12 @@ const MessageModal = ({
           marginBottom: 20,
         }}
       >
-        {recentEmojis.slice(0, emojiColumnCount - 1).map((emoji) => (
+        {recentEmojis.slice(0, emojiColumnCount - 1).map((e) => (
           <Pressable
-            key={emoji}
+            key={e.emoji}
             onPress={() => {
               hapticImpactLight();
-              addReaction(emoji);
+              addReaction(e.emoji);
               dismiss();
             }}
             style={({ pressed }) => ({
@@ -152,7 +152,7 @@ const MessageModal = ({
                 : theme.colors.backgroundLight,
             })}
           >
-            <Text style={{ fontSize: 25, lineHeight: 30 }}>{emoji}</Text>
+            <Text style={{ fontSize: 25, lineHeight: 30 }}>{e.emoji}</Text>
           </Pressable>
         ))}
 
