@@ -1,3 +1,4 @@
+import { utils as ethersUtils } from "ethers";
 import React from "react";
 import { useTab, useTabList, useTabPanel } from "react-aria";
 import { useNavigate } from "react-router-dom";
@@ -916,10 +917,10 @@ const MembersDirectoryTab = ({ channelId, addMember }) => {
             const truncatedAddress =
               member.walletAddress == null
                 ? null
-                : truncateAddress(member.walletAddress);
+                : truncateAddress(ethersUtils.getAddress(member.walletAddress));
 
             const hasSubtitle =
-              member.ensName != null || member.displayName !== truncatedAddress;
+              member.ensName != null || member.displayName != null;
             return (
               <li key={member.id} css={css({ display: "block" })}>
                 <button
@@ -940,7 +941,7 @@ const MembersDirectoryTab = ({ channelId, addMember }) => {
                   />
                   <div>
                     <div css={css({ display: "flex", alignItems: "center" })}>
-                      {member.displayName}
+                      {member.displayName ?? member.ensName ?? truncatedAddress}
                       {member.isOwner && (
                         <span
                           css={(theme) =>
@@ -1000,11 +1001,14 @@ const MembersDirectoryTab = ({ channelId, addMember }) => {
                           })
                         }
                       >
-                        {member.ensName == null
-                          ? truncatedAddress
-                          : member.displayName === truncatedAddress
-                          ? member.ensName
-                          : `${member.ensName} (${truncatedAddress})`}
+                        {member.displayName != null &&
+                        member.ensName != null ? (
+                          <>
+                            {member.ensName} ({truncatedAddress})
+                          </>
+                        ) : (
+                          truncatedAddress
+                        )}
                       </div>
                     )}
                   </div>
