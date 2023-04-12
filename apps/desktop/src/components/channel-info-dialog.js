@@ -499,6 +499,7 @@ const ChannelInfoDialog = ({
           <MembersDirectoryTab
             channelId={channelId}
             addMember={showAddMemberDialog}
+            dismiss={dismiss}
           />
         </Item>
       </Tabs>
@@ -781,7 +782,8 @@ const ProperyButton = ({ name, value, ...props }) => (
   </button>
 );
 
-const MembersDirectoryTab = ({ channelId, addMember }) => {
+const MembersDirectoryTab = ({ dismiss, channelId, addMember }) => {
+  const navigate = useNavigate();
   const inputRef = React.useRef();
 
   const [query, setQuery] = React.useState("");
@@ -925,13 +927,19 @@ const MembersDirectoryTab = ({ channelId, addMember }) => {
               <li key={member.id} css={css({ display: "block" })}>
                 <button
                   onClick={() => {
-                    navigator.clipboard
-                      .writeText(member.walletAddress)
-                      .then(() => {
-                        alert(
-                          "Close your eyes and imagine a beautiful profile dialog/popover appearing"
-                        );
-                      });
+                    const dmChannel = selectors.selectDmChannelFromUserId(
+                      member.id
+                    );
+
+                    if (dmChannel != null) {
+                      navigate(`/channels/${dmChannel.id}`);
+                      dismiss()
+                      return;
+                    }
+
+                    navigate(
+                      `/new?account=${member.walletAddress.toLowerCase()}`
+                    );
                   }}
                 >
                   <UserAvatar
