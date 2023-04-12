@@ -43,6 +43,7 @@ import defaultTheme from "@shades/ui-web/theme";
 import { Provider as SidebarProvider } from "@shades/ui-web/sidebar-layout";
 import { IFrameEthereumProvider } from "@newshades/iframe-provider";
 import { Provider as GlobalMediaQueriesProvider } from "./hooks/global-media-queries";
+import { Provider as DialogsProvider } from "./hooks/dialogs";
 import { send as sendNotification } from "./utils/notifications";
 import useCommandCenter, {
   Provider as CommandCenterProvider,
@@ -433,23 +434,25 @@ export default function LazyRoot() {
             <ThemeProvider theme={theme}>
               <Tooltip.Provider delayDuration={300}>
                 <SidebarProvider>
-                  <GlobalMediaQueriesProvider>
-                    <CommandCenterProvider>
-                      <EmojiProvider
-                        loader={() =>
-                          import("@shades/common/emoji").then((m) =>
-                            m.default.filter(
-                              (e) =>
-                                e.unicode_version === "" ||
-                                parseFloat(e.unicode_version) <= 12
+                  <DialogsProvider>
+                    <GlobalMediaQueriesProvider>
+                      <CommandCenterProvider>
+                        <EmojiProvider
+                          loader={() =>
+                            import("@shades/common/emoji").then((m) =>
+                              m.default.filter(
+                                (e) =>
+                                  e.unicode_version === "" ||
+                                  parseFloat(e.unicode_version) <= 12
+                              )
                             )
-                          )
-                        }
-                      >
-                        <App />
-                      </EmojiProvider>
-                    </CommandCenterProvider>
-                  </GlobalMediaQueriesProvider>
+                          }
+                        >
+                          <App />
+                        </EmojiProvider>
+                      </CommandCenterProvider>
+                    </GlobalMediaQueriesProvider>
+                  </DialogsProvider>
                 </SidebarProvider>
               </Tooltip.Provider>
             </ThemeProvider>

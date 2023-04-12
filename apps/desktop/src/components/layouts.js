@@ -22,6 +22,7 @@ import {
   array as arrayUtils,
   ethereum as ethereumUtils,
 } from "@shades/common/utils";
+import Dialog from "@shades/ui-web/dialog";
 import {
   useState as useSidebarState,
   useToggle as useSidebarToggle,
@@ -34,6 +35,7 @@ import {
   Triangle as TriangleIcon,
 } from "@shades/ui-web/icons";
 import useCommandCenter from "../hooks/command-center";
+import { useDialog } from "../hooks/dialogs";
 import UserAvatar from "./user-avatar";
 import ChannelAvatar from "./channel-avatar";
 import * as DropdownMenu from "./dropdown-menu";
@@ -44,6 +46,10 @@ const { sort, comparator } = arrayUtils;
 const { truncateAddress } = ethereumUtils;
 
 const TRUNCATION_THRESHOLD = 8;
+
+const LazyEditProfileDialog = React.lazy(() =>
+  import("./edit-user-profile-dialog.js")
+);
 
 const Layout = () => {
   const params = useParams();
@@ -110,257 +116,284 @@ const Layout = () => {
   const { isFloating: isMenuFloating, isCollapsed: isMenuCollapsed } =
     useSidebarState();
 
+  const {
+    isOpen: isEditProfileDialogOpen,
+    open: openEditProfileDialog,
+    dismiss: dismissEditProfileDialog,
+  } = useDialog("edit-profile");
+
   return (
-    <SidebarLayout
-      header={({ isHoveringSidebar }) =>
-        authenticationStatus === "not-authenticated" &&
-        walletAccountAddress == null ? null : isLoadingUser ? (
-          <div />
-        ) : (
-          <DropdownMenu.Root>
-            <DropdownMenu.Trigger asChild>
-              <ProfileDropdownTrigger
-                isConnecting={
-                  authenticationStatus === "authenticated" &&
-                  !serverConnectionState.isConnected
+    <>
+      <SidebarLayout
+        header={({ isHoveringSidebar }) =>
+          authenticationStatus === "not-authenticated" &&
+          walletAccountAddress == null ? null : isLoadingUser ? (
+            <div />
+          ) : (
+            <DropdownMenu.Root>
+              <DropdownMenu.Trigger asChild>
+                <ProfileDropdownTrigger
+                  isConnecting={
+                    authenticationStatus === "authenticated" &&
+                    !serverConnectionState.isConnected
+                  }
+                  user={user ?? { walletAddress: walletAccountAddress }}
+                  subtitle={
+                    authenticationStatus === "not-authenticated"
+                      ? "Unverified account"
+                      : null
+                  }
+                  toggleMenu={
+                    isMenuFloating || (!isMenuCollapsed && isHoveringSidebar)
+                      ? toggleMenu
+                      : null
+                  }
+                />
+              </DropdownMenu.Trigger>
+              <DropdownMenu.Content
+                side="bottom"
+                align="center"
+                sideOffset={0}
+                alignOffset={0}
+                css={(theme) =>
+                  css({ width: `calc(${theme.sidebarWidth} - 2rem)` })
                 }
-                user={user ?? { walletAddress: walletAccountAddress }}
-                subtitle={
-                  authenticationStatus === "not-authenticated"
-                    ? "Unverified account"
-                    : null
-                }
-                toggleMenu={
-                  isMenuFloating || (!isMenuCollapsed && isHoveringSidebar)
-                    ? toggleMenu
-                    : null
-                }
+              >
+                {authenticationStatus === "not-authenticated" ? (
+                  <>
+                    <DropdownMenu.Item
+                      onSelect={() => {
+                        login(walletAccountAddress);
+                      }}
+                      css={(t) => css({ color: t.colors.link })}
+                    >
+                      Verify account
+                    </DropdownMenu.Item>
+                    <DropdownMenu.Item
+                      onSelect={() => {
+                        alert("Just switch account from your wallet!");
+                      }}
+                    >
+                      Switch to another account
+                    </DropdownMenu.Item>
+                    <DropdownMenu.Separator />
+                    <DropdownMenu.Item disabled>Settings</DropdownMenu.Item>
+                    <DropdownMenu.Item disabled>Edit profile</DropdownMenu.Item>
+                    <DropdownMenu.Item
+                      onSelect={() => {
+                        navigator.clipboard.writeText(user.walletAddress);
+                      }}
+                    >
+                      Copy wallet address
+                    </DropdownMenu.Item>
+                  </>
+                ) : (
+                  <>
+                    <DropdownMenu.Item disabled>Settings</DropdownMenu.Item>
+                    <DropdownMenu.Item
+                      onSelect={() => {
+                        openEditProfileDialog();
+                      }}
+                    >
+                      Edit profile
+                    </DropdownMenu.Item>
+                    <DropdownMenu.Item
+                      onSelect={() => {
+                        navigator.clipboard.writeText(user.walletAddress);
+                      }}
+                    >
+                      Copy wallet address
+                    </DropdownMenu.Item>
+                    <DropdownMenu.Separator />
+                    <DropdownMenu.Item
+                      onSelect={() => {
+                        alert("Just switch account from your wallet!");
+                      }}
+                    >
+                      Switch to another account
+                    </DropdownMenu.Item>
+                    <DropdownMenu.Separator />
+                    <DropdownMenu.Item
+                      onSelect={() => {
+                        actions.logout();
+                      }}
+                    >
+                      Log out
+                    </DropdownMenu.Item>
+                  </>
+                )}
+              </DropdownMenu.Content>
+            </DropdownMenu.Root>
+          )
+        }
+        sidebarContent={
+          isLoadingUser ? null : (
+            <>
+              <div
+                style={{
+                  height:
+                    authenticationStatus === "not-authenticated" &&
+                    walletAccountAddress == null
+                      ? "2rem"
+                      : "1rem",
+                }}
               />
-            </DropdownMenu.Trigger>
-            <DropdownMenu.Content
-              side="bottom"
-              align="center"
-              sideOffset={0}
-              alignOffset={0}
-              css={(theme) =>
-                css({ width: `calc(${theme.sidebarWidth} - 2rem)` })
-              }
-            >
-              {authenticationStatus === "not-authenticated" ? (
+              <ListItem
+                compact={false}
+                icon={<MagnificationGlassIcon style={{ width: "1.4rem" }} />}
+                title="Search"
+                onClick={() => {
+                  openCommandCenter();
+                  if (isMenuFloating) toggleMenu();
+                }}
+              />
+              <ListItem
+                compact={false}
+                icon={
+                  <PlusSmallIcon style={{ width: "1.6rem", height: "auto" }} />
+                }
+                title="New message"
+                component={NavLink}
+                to="/new"
+                onClick={() => {
+                  if (isMenuFloating) toggleMenu();
+                }}
+              />
+
+              {(authenticationStatus === "not-authenticated" ||
+                hasFetchedMenuData) && (
                 <>
-                  <DropdownMenu.Item
-                    onSelect={() => {
-                      login(walletAccountAddress);
-                    }}
-                    css={(t) => css({ color: t.colors.link })}
-                  >
-                    Verify account
-                  </DropdownMenu.Item>
-                  <DropdownMenu.Item
-                    onSelect={() => {
-                      alert("Just switch account from your wallet!");
-                    }}
-                  >
-                    Switch to another account
-                  </DropdownMenu.Item>
-                  <DropdownMenu.Separator />
-                  <DropdownMenu.Item disabled>Settings</DropdownMenu.Item>
-                  <DropdownMenu.Item disabled>Edit profile</DropdownMenu.Item>
-                  <DropdownMenu.Item
-                    onSelect={() => {
-                      navigator.clipboard.writeText(user.walletAddress);
-                    }}
-                  >
-                    Copy wallet address
-                  </DropdownMenu.Item>
-                </>
-              ) : (
-                <>
-                  <DropdownMenu.Item disabled>Settings</DropdownMenu.Item>
-                  <DropdownMenu.Item disabled>Edit profile</DropdownMenu.Item>
-                  <DropdownMenu.Item
-                    onSelect={() => {
-                      navigator.clipboard.writeText(user.walletAddress);
-                    }}
-                  >
-                    Copy wallet address
-                  </DropdownMenu.Item>
-                  <DropdownMenu.Separator />
-                  <DropdownMenu.Item
-                    onSelect={() => {
-                      alert("Just switch account from your wallet!");
-                    }}
-                  >
-                    Switch to another account
-                  </DropdownMenu.Item>
-                  <DropdownMenu.Separator />
-                  <DropdownMenu.Item
-                    onSelect={() => {
-                      actions.logout();
-                    }}
-                  >
-                    Log out
-                  </DropdownMenu.Item>
+                  <div style={{ marginBottom: "1.5rem" }} />
+                  {selectedChannel != null && !selectedChannelIsListed && (
+                    <>
+                      <ChannelItem id={selectedChannel.id} />
+
+                      <div style={{ marginBottom: "1.5rem" }} />
+                    </>
+                  )}
+
+                  {unseenChannels.length !== 0 && (
+                    <>
+                      {unseenChannels.map((c) => (
+                        <ChannelItem key={c.id} id={c.id} />
+                      ))}
+
+                      <div style={{ marginBottom: "1.5rem" }} />
+                    </>
+                  )}
+
+                  {[
+                    {
+                      key: "starred",
+                      title: "Starred",
+                      channels: starredChannels,
+                      isHidden: starredChannels.length === 0,
+                    },
+                    {
+                      key: "member-channels",
+                      title: "Channels",
+                      channels: memberChannelsExcludingStarred,
+                      isHidden: memberChannelsExcludingStarred.length === 0,
+                    },
+                    {
+                      key: "public",
+                      title: "Popular channels",
+                      channels: sort(
+                        comparator(
+                          {
+                            value: (c) => c.memberUserIds.length,
+                            order: "desc",
+                          },
+                          { value: (c) => c.name.toLowerCase() }
+                        ),
+                        popularPublicChannels
+                      ),
+                      isHidden:
+                        memberChannels.length !== 0 ||
+                        popularPublicChannels.length === 0,
+                    },
+                  ]
+                    .filter((s) => !s.isHidden)
+                    .map(({ key, title, channels }) => {
+                      const isTruncated = truncatedSections.includes(key);
+
+                      const deriveTruncationCount = () => {
+                        if (!isTruncated) return 0;
+
+                        const defaultTruncationCount =
+                          channels.length - TRUNCATION_THRESHOLD;
+                        const readCount = channels.filter(
+                          (c) => !c.hasUnread
+                        ).length;
+
+                        return Math.min(defaultTruncationCount, readCount);
+                      };
+
+                      const truncationCount = deriveTruncationCount();
+
+                      const visibleChannels =
+                        isTruncated && truncationCount > 1
+                          ? channels.slice(0, channels.length - truncationCount)
+                          : channels;
+
+                      return (
+                        <CollapsableSection
+                          key={key}
+                          title={title}
+                          expanded={!collapsedIds.includes(key)}
+                          truncatedCount={
+                            channels.length - visibleChannels.length
+                          }
+                          onToggleExpanded={() => {
+                            setCollapsedIds((ids) =>
+                              ids.includes(key)
+                                ? ids.filter((id) => id !== key)
+                                : [...ids, key]
+                            );
+                            setTruncatedSections((ids) =>
+                              ids.includes(key) ? ids : [...ids, key]
+                            );
+                          }}
+                          onToggleTruncated={() => {
+                            setTruncatedSections((ids) =>
+                              ids.includes(key)
+                                ? ids.filter((id) => id !== key)
+                                : [...ids, key]
+                            );
+                          }}
+                        >
+                          {visibleChannels.map((c) => (
+                            <ChannelItem key={c.id} id={c.id} />
+                          ))}
+                        </CollapsableSection>
+                      );
+                    })}
+
+                  <div style={{ height: "0.1rem" }} />
                 </>
               )}
-            </DropdownMenu.Content>
-          </DropdownMenu.Root>
-        )
-      }
-      sidebarContent={
-        isLoadingUser ? null : (
-          <>
-            <div
-              style={{
-                height:
-                  authenticationStatus === "not-authenticated" &&
-                  walletAccountAddress == null
-                    ? "2rem"
-                    : "1rem",
-              }}
-            />
-            <ListItem
-              compact={false}
-              icon={<MagnificationGlassIcon style={{ width: "1.4rem" }} />}
-              title="Search"
-              onClick={() => {
-                openCommandCenter();
-                if (isMenuFloating) toggleMenu();
-              }}
-            />
-            <ListItem
-              compact={false}
-              icon={
-                <PlusSmallIcon style={{ width: "1.6rem", height: "auto" }} />
-              }
-              title="New message"
-              component={NavLink}
-              to="/new"
-              onClick={() => {
-                if (isMenuFloating) toggleMenu();
-              }}
-            />
+            </>
+          )
+        }
+      >
+        <React.Suspense fallback={null}>
+          <Outlet />
+        </React.Suspense>
+      </SidebarLayout>
 
-            {(authenticationStatus === "not-authenticated" ||
-              hasFetchedMenuData) && (
-              <>
-                <div style={{ marginBottom: "1.5rem" }} />
-                {selectedChannel != null && !selectedChannelIsListed && (
-                  <>
-                    <ChannelItem id={selectedChannel.id} />
-
-                    <div style={{ marginBottom: "1.5rem" }} />
-                  </>
-                )}
-
-                {unseenChannels.length !== 0 && (
-                  <>
-                    {unseenChannels.map((c) => (
-                      <ChannelItem key={c.id} id={c.id} />
-                    ))}
-
-                    <div style={{ marginBottom: "1.5rem" }} />
-                  </>
-                )}
-
-                {[
-                  {
-                    key: "starred",
-                    title: "Starred",
-                    channels: starredChannels,
-                    isHidden: starredChannels.length === 0,
-                  },
-                  {
-                    key: "member-channels",
-                    title: "Channels",
-                    channels: memberChannelsExcludingStarred,
-                    isHidden: memberChannelsExcludingStarred.length === 0,
-                  },
-                  {
-                    key: "public",
-                    title: "Popular channels",
-                    channels: sort(
-                      comparator(
-                        {
-                          value: (c) => c.memberUserIds.length,
-                          order: "desc",
-                        },
-                        { value: (c) => c.name.toLowerCase() }
-                      ),
-                      popularPublicChannels
-                    ),
-                    isHidden:
-                      memberChannels.length !== 0 ||
-                      popularPublicChannels.length === 0,
-                  },
-                ]
-                  .filter((s) => !s.isHidden)
-                  .map(({ key, title, channels }) => {
-                    const isTruncated = truncatedSections.includes(key);
-
-                    const deriveTruncationCount = () => {
-                      if (!isTruncated) return 0;
-
-                      const defaultTruncationCount =
-                        channels.length - TRUNCATION_THRESHOLD;
-                      const readCount = channels.filter(
-                        (c) => !c.hasUnread
-                      ).length;
-
-                      return Math.min(defaultTruncationCount, readCount);
-                    };
-
-                    const truncationCount = deriveTruncationCount();
-
-                    const visibleChannels =
-                      isTruncated && truncationCount > 1
-                        ? channels.slice(0, channels.length - truncationCount)
-                        : channels;
-
-                    return (
-                      <CollapsableSection
-                        key={key}
-                        title={title}
-                        expanded={!collapsedIds.includes(key)}
-                        truncatedCount={
-                          channels.length - visibleChannels.length
-                        }
-                        onToggleExpanded={() => {
-                          setCollapsedIds((ids) =>
-                            ids.includes(key)
-                              ? ids.filter((id) => id !== key)
-                              : [...ids, key]
-                          );
-                          setTruncatedSections((ids) =>
-                            ids.includes(key) ? ids : [...ids, key]
-                          );
-                        }}
-                        onToggleTruncated={() => {
-                          setTruncatedSections((ids) =>
-                            ids.includes(key)
-                              ? ids.filter((id) => id !== key)
-                              : [...ids, key]
-                          );
-                        }}
-                      >
-                        {visibleChannels.map((c) => (
-                          <ChannelItem key={c.id} id={c.id} />
-                        ))}
-                      </CollapsableSection>
-                    );
-                  })}
-
-                <div style={{ height: "0.1rem" }} />
-              </>
-            )}
-          </>
-        )
-      }
-    >
-      <React.Suspense fallback={null}>
-        <Outlet />
-      </React.Suspense>
-    </SidebarLayout>
+      <Dialog
+        isOpen={isEditProfileDialogOpen}
+        onRequestClose={dismissEditProfileDialog}
+        width="52rem"
+      >
+        {({ titleProps }) => (
+          <LazyEditProfileDialog
+            titleProps={titleProps}
+            dismiss={dismissEditProfileDialog}
+          />
+        )}
+      </Dialog>
+    </>
   );
 };
 

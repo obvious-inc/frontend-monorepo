@@ -4,7 +4,6 @@ import { css } from "@emotion/react";
 import { ethereum as ethereumUtils } from "@shades/common/utils";
 import { useActions, useAuth } from "@shades/common/app";
 import { useWallet, useWalletLogin } from "@shades/common/wallet";
-import Dialog from "@shades/ui-web/dialog";
 import Button from "@shades/ui-web/button";
 import {
   Cross as CrossIcon,
@@ -219,7 +218,7 @@ const CreateChannelDialogContent = ({ titleProps, close, createChannel }) => {
   );
 };
 
-const CreateChannelDialog = ({ isOpen, close }) => {
+const CreateChannelDialog = ({ dismiss, titleProps }) => {
   const actions = useActions();
   const { status: authenticationStatus } = useAuth();
   const navigate = useNavigate();
@@ -227,55 +226,49 @@ const CreateChannelDialog = ({ isOpen, close }) => {
   const { login } = useWalletLogin();
 
   return (
-    <Dialog width="46rem" isOpen={isOpen} onRequestClose={close}>
-      {({ titleProps }) => (
-        <CreateChannelDialogContent
-          titleProps={titleProps}
-          close={close}
-          createChannel={async ({ name, description, permissionType }) => {
-            if (authenticationStatus !== "authenticated") {
-              if (walletAccountAddress == null) {
-                alert(
-                  "You need to connect and verify your account to create channels."
-                );
-                return;
-              }
-              if (
-                !confirm(
-                  `You need to verify your account to create channels. Press ok to verify "${truncateAddress(
-                    walletAccountAddress
-                  )}" with wallet signature.`
-                )
-              )
-                return;
+    <CreateChannelDialogContent
+      titleProps={titleProps}
+      close={dismiss}
+      createChannel={async ({ name, description, permissionType }) => {
+        if (authenticationStatus !== "authenticated") {
+          if (walletAccountAddress == null) {
+            alert(
+              "You need to connect and verify your account to create channels."
+            );
+            return;
+          }
+          if (
+            !confirm(
+              `You need to verify your account to create channels. Press ok to verify "${truncateAddress(
+                walletAccountAddress
+              )}" with wallet signature.`
+            )
+          )
+            return;
 
-              await login(walletAccountAddress);
-            }
+          await login(walletAccountAddress);
+        }
 
-            const params = { name, description };
+        const params = { name, description };
 
-            const create = () => {
-              switch (permissionType) {
-                case "open":
-                  return actions.createOpenChannel(params);
-                case "closed":
-                  return actions.createClosedChannel(params);
-                case "private":
-                  return actions.createPrivateChannel(params);
-                default:
-                  throw new Error(
-                    `Unrecognized channel type "${permissionType}"`
-                  );
-              }
-            };
+        const create = () => {
+          switch (permissionType) {
+            case "open":
+              return actions.createOpenChannel(params);
+            case "closed":
+              return actions.createClosedChannel(params);
+            case "private":
+              return actions.createPrivateChannel(params);
+            default:
+              throw new Error(`Unrecognized channel type "${permissionType}"`);
+          }
+        };
 
-            const channel = await create();
+        const channel = await create();
 
-            navigate(`/channels/${channel.id}`);
-          }}
-        />
-      )}
-    </Dialog>
+        navigate(`/channels/${channel.id}`);
+      }}
+    />
   );
 };
 

@@ -132,7 +132,7 @@ export const selectUser = createSelector(
       ...user,
       walletAddress: user.walletAddress?.toLowerCase(),
       ensName,
-      displayName: user.displayName ?? truncateAddress(user.walletAddress),
+      displayName: user.displayName,
       description: user.description,
       customDisplayName: hasCustomDisplayName ? user.displayName : null,
       hasCustomDisplayName,

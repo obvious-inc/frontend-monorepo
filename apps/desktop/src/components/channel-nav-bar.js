@@ -22,13 +22,17 @@ import {
   StrokedStar as StrokedStarIcon,
   Globe as GlobeIcon,
 } from "@shades/ui-web/icons";
+import { useDialog } from "../hooks/dialogs";
 import Spinner from "./spinner";
 import NavBar from "./nav-bar";
 import UserAvatar from "./user-avatar";
 import ChannelAvatar from "./channel-avatar";
 import * as Tooltip from "./tooltip";
-import ChannelInfoDialog from "./channel-info-dialog";
-import AddChannelMemberDialog from "./add-channel-member-dialog";
+import AddChannelMemberDialog from "./add-channel-member-dialog.js";
+
+const LazyChannelInfoDialog = React.lazy(() =>
+  import("./channel-info-dialog.js")
+);
 
 const { sort } = arrayUtils;
 const { truncateAddress } = ethereumUtils;
@@ -63,10 +67,18 @@ const ChannelNavBar = ({ noSideMenu, channelId }) => {
     // error: loginError
   } = useWalletLogin();
 
-  const [channelDialogMode, setChannelDialogMode] = React.useState(null);
-  const [isAddMemberDialogOpen, setAddMemberDialogOpen] = React.useState(false);
+  const {
+    isOpen: isChannelDialogOpen,
+    data: channelDialogMode,
+    open: setChannelDialogMode,
+    dismiss: dismissChannelDialog,
+  } = useDialog("channel-info-dialog");
+  const {
+    isOpen: isAddMemberDialogOpen,
+    open: openAddMemberDialog,
+    dismiss: dismissAddMemberDialog,
+  } = useDialog("add-member-dialog");
 
-  const isChannelDialogOpen = channelDialogMode != null;
   const isFetchingMembers = channel?.members.some(
     (m) => m.walletAddress == null
   );
@@ -181,27 +193,21 @@ const ChannelNavBar = ({ noSideMenu, channelId }) => {
             />
             <Dialog
               isOpen={isChannelDialogOpen}
-              onRequestClose={() => {
-                setChannelDialogMode(null);
-              }}
+              onRequestClose={dismissChannelDialog}
               height="min(calc(100% - 3rem), 82rem)"
             >
               {({ titleProps }) => (
-                <ChannelInfoDialog
+                <LazyChannelInfoDialog
                   channelId={channelId}
                   initialTab={channelDialogMode}
                   members={channel.members}
                   titleProps={titleProps}
                   showAddMemberDialog={
                     channel.kind === "topic" && isChannelOwner
-                      ? () => {
-                          setAddMemberDialogOpen(true);
-                        }
+                      ? openAddMemberDialog
                       : null
                   }
-                  dismiss={() => {
-                    setChannelDialogMode(null);
-                  }}
+                  dismiss={dismissChannelDialog}
                 />
               )}
             </Dialog>
@@ -232,9 +238,7 @@ const ChannelNavBar = ({ noSideMenu, channelId }) => {
         <AddChannelMemberDialog
           channelId={channelId}
           isOpen={isAddMemberDialogOpen}
-          onRequestClose={() => {
-            setAddMemberDialogOpen(false);
-          }}
+          onRequestClose={dismissAddMemberDialog}
         />
 
         {authenticationStatus === "not-authenticated" && (

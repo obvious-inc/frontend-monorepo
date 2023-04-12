@@ -36,6 +36,8 @@ import {
 } from "@shades/ui-web/icons";
 import Button from "@shades/ui-web/button";
 import IconButton from "@shades/ui-web/icon-button";
+import Dialog from "@shades/ui-web/dialog";
+import { useDialog } from "../hooks/dialogs.js";
 import useAccountDisplayName from "../hooks/account-display-name.js";
 import Combobox, {
   Item as ComboboxItem,
@@ -49,9 +51,12 @@ import ChannelAvatar from "./channel-avatar.js";
 import NewChannelMessageInput from "./new-channel-message-input.js";
 import ChannelMessagesScrollView from "./channel-messages-scroll-view.js";
 import ChannelPrologue from "./channel-prologue.js";
-import CreateChannelDialog from "./create-channel-dialog.js";
 import InlineUserButtonWithProfilePopover from "./inline-user-button-with-profile-popover.js";
 import { useScrollAwareMessageFetcher } from "./channel.js";
+
+const LazyCreateChannelDialog = React.lazy(() =>
+  import("./create-channel-dialog.js")
+);
 
 const MAX_ACCOUNT_MATCH_COUNT = 20;
 
@@ -451,8 +456,11 @@ const NewMessageScreen = () => {
   const [hasPendingMessageSubmit, setHasPendingMessageSubmit] =
     React.useState(false);
   const [replyTargetMessageId, setReplyTargetMessageId] = React.useState(null);
-  const [isCreateChannelDialogOpen, setCreateChannelDialogOpen] =
-    React.useState(false);
+  const {
+    isOpen: isCreateChannelDialogOpen,
+    open: openCreateChannelDialog,
+    dismiss: dismissCreateChannelDialog,
+  } = useDialog("create-channel");
 
   const initReply = React.useCallback((messageId) => {
     setReplyTargetMessageId(messageId);
@@ -508,7 +516,7 @@ const NewMessageScreen = () => {
               icon={<PlusSmallIcon style={{ width: "1.3rem" }} />}
               align="left"
               onClick={() => {
-                setCreateChannelDialogOpen(true);
+                openCreateChannelDialog();
               }}
             >
               New channel
@@ -612,7 +620,7 @@ const NewMessageScreen = () => {
               }
             }}
             placeholder="Type your message..."
-            // @mentions require user is for now, so we can’t pass `selectedAccounts`
+            // @mentions require user ids for now, so we can’t pass `selectedAccounts`
             members={channelId == null ? selectedUsers : channelMembers}
             disabled={hasPendingMessageSubmit}
             submitDisabled={
@@ -625,12 +633,19 @@ const NewMessageScreen = () => {
         </div>
       </div>
 
-      <CreateChannelDialog
+      <Dialog
+        width="46rem"
         isOpen={isCreateChannelDialogOpen}
-        close={() => {
-          setCreateChannelDialogOpen(false);
-        }}
-      />
+        onRequestClose={dismissCreateChannelDialog}
+      >
+        {({ titleProps }) => (
+          <LazyCreateChannelDialog
+            isOpen={isCreateChannelDialogOpen}
+            dismiss={dismissCreateChannelDialog}
+            titleProps={titleProps}
+          />
+        )}
+      </Dialog>
     </>
   );
 };

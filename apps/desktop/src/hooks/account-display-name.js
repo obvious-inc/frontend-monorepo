@@ -5,13 +5,19 @@ import { ethereum as ethereumUtils } from "@shades/common/utils";
 
 const { truncateAddress } = ethereumUtils;
 
-const useAccountDisplayName = (walletAddress) => {
+const useAccountDisplayName = (
+  walletAddress,
+  { customDisplayName = true } = {}
+) => {
   const user = useUserWithWalletAddress(walletAddress);
 
   const { data: ensName } = useEnsName({
     address: walletAddress,
-    enabled: user == null && walletAddress != null,
+    enabled: user == null && walletAddress != null && customDisplayName,
   });
+
+  if (!customDisplayName)
+    return ensName ?? truncateAddress(ethereumUtils.getAddress(walletAddress));
 
   const displayName =
     user?.displayName ??

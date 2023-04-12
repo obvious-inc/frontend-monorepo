@@ -34,11 +34,13 @@ import {
   EyeOff as EyeOffIcon,
   AtSign as AtSignIcon,
 } from "@shades/ui-web/icons";
+import { useDialog } from "../hooks/dialogs";
 import Input from "./input";
 import UserAvatar from "./user-avatar";
 import ChannelAvatar from "./channel-avatar";
 import Select from "./select";
 import * as Tooltip from "./tooltip";
+import FormDialog from "./form-dialog";
 
 const { sort } = arrayUtils;
 const {
@@ -513,7 +515,12 @@ const AboutTab = ({ channelId, dismiss }) => {
   const isOwner = me != null && me.id === channel.ownerUserId;
   const isAdmin = isOwner;
 
-  const [editDialogMode, setEditDialogMode] = React.useState(null);
+  const {
+    isOpen: isEditDialogOpen,
+    data: editDialogMode,
+    open: setEditDialogMode,
+    dismiss: dismissEditDialog,
+  } = useDialog("edit-channel-property");
 
   return (
     <>
@@ -668,10 +675,8 @@ const AboutTab = ({ channelId, dismiss }) => {
       </div>
 
       <Dialog
-        isOpen={editDialogMode != null}
-        onRequestClose={() => {
-          setEditDialogMode(null);
-        }}
+        isOpen={isEditDialogOpen}
+        onRequestClose={dismissEditDialog}
         width="42rem"
       >
         {({ titleProps }) => {
@@ -1009,148 +1014,6 @@ const MembersDirectoryTab = ({ channelId, addMember }) => {
           })}
         </ul>
       </div>
-    </div>
-  );
-};
-
-const FormDialog = ({
-  title,
-  titleProps,
-  dismiss,
-  controls,
-  submit,
-  submitLabel,
-}) => {
-  const firstInputRef = React.useRef();
-
-  const [hasPendingSubmit, setPendingSubmit] = React.useState(false);
-
-  const [state, setState] = React.useState(() =>
-    controls.reduce((acc, c) => {
-      return { ...acc, [c.key]: c.initialValue ?? "" };
-    }, {})
-  );
-
-  const hasRequiredInput = controls.every((c) => {
-    if (!c.required) return true;
-    return c.validate(state[c.key]);
-  });
-
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-
-    setPendingSubmit(true);
-    try {
-      await submit(state);
-    } catch (e) {
-      console.error(e);
-      // TODO
-    } finally {
-      setPendingSubmit(false);
-    }
-  };
-
-  React.useEffect(() => {
-    firstInputRef.current.focus();
-  }, []);
-
-  return (
-    <div
-      css={css({
-        padding: "1.5rem",
-        "@media (min-width: 600px)": {
-          padding: "2rem",
-        },
-      })}
-    >
-      <header
-        css={css({
-          display: "grid",
-          gridTemplateColumns: "minmax(0,1fr) auto",
-          alignItems: "flex-end",
-          margin: "0 0 1.5rem",
-          "@media (min-width: 600px)": {
-            margin: "0 0 2rem",
-          },
-        })}
-      >
-        <h1
-          css={(t) =>
-            css({
-              fontSize: t.fontSizes.header,
-              color: t.colors.textHeader,
-              lineHeight: 1.2,
-            })
-          }
-          {...titleProps}
-        >
-          {title}
-        </h1>
-        <Button
-          size="small"
-          onClick={() => {
-            dismiss();
-          }}
-          css={css({ width: "2.8rem", padding: 0 })}
-        >
-          <CrossIcon
-            style={{ width: "1.5rem", height: "auto", margin: "auto" }}
-          />
-        </Button>
-      </header>
-      <main>
-        <form id="dialog-form" onSubmit={handleSubmit}>
-          {controls.map((c, i) => (
-            <Input
-              key={c.key}
-              ref={i === 0 ? firstInputRef : undefined}
-              size="large"
-              multiline={c.type === "multiline-text"}
-              value={state[c.key]}
-              disabled={hasPendingSubmit}
-              onChange={(e) => {
-                setState((s) => ({ ...s, [c.key]: e.target.value }));
-              }}
-              placeholder={c.placeholder}
-              hint={c.hint}
-            />
-          ))}
-        </form>
-      </main>
-      <footer
-        css={css({
-          display: "flex",
-          justifyContent: "flex-end",
-          paddingTop: "2.5rem",
-          "@media (min-width: 600px)": {
-            paddingTop: "3rem",
-          },
-        })}
-      >
-        <div
-          css={css({
-            display: "grid",
-            gridAutoFlow: "column",
-            gridAutoColumns: "minmax(0,1fr)",
-            gridGap: "1rem",
-          })}
-        >
-          <Button size="medium" variant="transparent" onClick={dismiss}>
-            Cancel
-          </Button>
-          <Button
-            type="submit"
-            form="dialog-form"
-            size="medium"
-            variant="primary"
-            isLoading={hasPendingSubmit}
-            disabled={!hasRequiredInput || hasPendingSubmit}
-            style={{ minWidth: "8rem" }}
-          >
-            {submitLabel}
-          </Button>
-        </div>
-      </footer>
     </div>
   );
 };
