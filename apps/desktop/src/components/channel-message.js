@@ -1771,7 +1771,7 @@ const SystemMessageContent = ({ message }) => {
   switch (message.type) {
     case "user-invited": {
       const isMissingData = [message.inviter, message.author].some(
-        (u) => !u?.deleted && !u?.unknown && u?.displayName == null
+        (u) => !u?.deleted && !u?.unknown && u?.walletAddress == null
       );
 
       return (
@@ -1786,7 +1786,7 @@ const SystemMessageContent = ({ message }) => {
       const isMissingData =
         !message.author?.deleted &&
         !message.author?.unknown &&
-        message.author?.displayName == null;
+        message.author?.walletAddress == null;
       return (
         <span style={{ opacity: isMissingData ? 0 : 1 }}>
           <InlineUserButtonWithProfilePopover user={message.author} /> joined
@@ -1846,7 +1846,7 @@ const SystemMessageContent = ({ message }) => {
 
     case "app-installed": {
       const isMissingData = [
-        message.installer?.displayName,
+        message.installer?.walletAddress,
         message.app?.name,
       ].some((n) => n == null);
 
