@@ -101,7 +101,6 @@ export default {
     backgroundTertiary: backgroundLight,
     dialogBackground: backgroundLight,
     popoverBackground: backgroundLight,
-    channelInputBackground: backgroundLight,
     backgroundTooltip: backgroundLighter,
     buttonHover: backgroundLighter,
     toolbarBackground: backgroundLight,

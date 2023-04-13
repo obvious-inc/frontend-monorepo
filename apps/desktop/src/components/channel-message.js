@@ -1467,7 +1467,7 @@ const EditMessageInput = React.forwardRef(
         css={(theme) =>
           css({
             position: "relative",
-            background: theme.colors.channelInputBackground,
+            background: theme.colors.inputBackground,
             padding: "0.6rem 0.8rem 0.8rem",
             borderRadius: "0.7rem",
             // Prevents iOS zooming in on input fields

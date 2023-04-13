@@ -1,5 +1,6 @@
 import React from "react";
 import { css } from "@emotion/react";
+import AutoAdjustingHeightTextArea from "./auto-adjusting-height-textarea.js";
 
 let id = 0;
 const genId = () => {
@@ -21,7 +22,7 @@ const Input = React.forwardRef(
   ) => {
     const [id] = React.useState(() => genId());
 
-    const Component = multiline ? "textarea" : "input";
+    const Component = multiline ? AutoAdjustingHeightTextArea : "input";
 
     const renderInput = (extraProps) => (
       <Component

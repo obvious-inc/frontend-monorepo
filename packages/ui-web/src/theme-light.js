@@ -11,8 +11,8 @@ const backgroundDark = "hsl(60deg 11% 96%)";
 const backgroundDarkTintLighter = "hsl(60deg 11% 97%)";
 const backgroundDarker = "hsl(60deg 11% 94%)";
 
-const backgroundModifierDark = "hsl(0 0% 0% / 6%)";
-const backgroundModifierDarker = "hsl(0 0% 0% / 12%)";
+const backgroundModifierDark = "hsl(60deg 11% 0% / 6%)";
+const backgroundModifierDarker = "hsl(60deg 11% 0% / 12%)";
 
 export default {
   ...dark,
@@ -25,7 +25,6 @@ export default {
     backgroundTertiary: backgroundDarker,
     dialogBackground: backgroundDark,
     popoverBackground: backgroundNormal,
-    channelInputBackground: backgroundDarker,
     backgroundTooltip: backgroundDarker,
     inputBackground: backgroundDarker,
     inputPlaceholder: textMutedAlpha,
@@ -59,7 +58,7 @@ export default {
     elevationHigh:
       "rgb(15 15 15 / 5%) 0px 0px 0px 1px, rgb(15 15 15 / 10%) 0px 3px 6px, rgb(15 15 15 / 20%) 0px 9px 24px",
     elevationLow:
-      "rgb(15 15 15 / 6%) 0px 0px 0px 1px, rgb(15 15 15 / 10%) 0px 2px 6px",
+      "rgb(15 15 15 / 5%) 0px 0px 0px 1px, rgb(15 15 15 / 15%) 0px 3px 10px",
   },
   avatars: { ...dark.avatars, background: backgroundModifierDarker },
   mainMenu: {

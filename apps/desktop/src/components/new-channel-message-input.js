@@ -97,9 +97,9 @@ const AttachmentList = ({ items, remove }) => (
               right: 0,
               transform: "translateX(50%) translateY(-50%)",
               cursor: "pointer",
-              background: theme.colors.channelInputBackground,
+              background: theme.colors.inputBackground,
               borderRadius: "50%",
-              boxShadow: `0 0 0 0.2rem ${theme.colors.channelInputBackground}`,
+              boxShadow: `0 0 0 0.2rem ${theme.colors.inputBackground}`,
               svg: {
                 width: "2.2rem",
                 height: "auto",

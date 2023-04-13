@@ -1330,7 +1330,6 @@ const ChannelIntro = ({ walletAddresses: walletAddresses_ }) => {
           highRes
           transparent
           size="6.6rem"
-          // background={theme.colors.backgroundModifierHover}
         />
       }
       body={
@@ -1357,7 +1356,9 @@ const DMChannelIntro = ({ walletAddress }) => {
 
   return (
     <ChannelPrologue
-      image={<UserAvatar walletAddress={walletAddress} size="6.6rem" />}
+      image={
+        <UserAvatar walletAddress={walletAddress} size="6.6rem" transparent />
+      }
       title={
         <InlineUserButtonWithProfilePopover
           walletAddress={walletAddress}
