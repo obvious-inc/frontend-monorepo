@@ -108,7 +108,7 @@ const commands = {
 
       if (context === "topic") {
         const channel = state.selectChannel(channelId);
-        return user.id !== channel.ownerUserId;
+        return channel == null || user.id !== channel.ownerUserId;
       }
 
       return true;
@@ -166,7 +166,11 @@ const commands = {
     },
     exclude: () => {
       const channel = state.selectChannel(channelId);
-      return channel.kind !== "topic" || channel.ownerUserId !== user.id;
+      return (
+        channel == null ||
+        channel.kind !== "topic" ||
+        channel.ownerUserId !== user.id
+      );
     },
   }),
   "remove-member": ({ state, actions, channelId, user, ethersProvider }) => ({
@@ -197,47 +201,52 @@ const commands = {
     },
     exclude: () => {
       const channel = state.selectChannel(channelId);
-      return channel.kind !== "topic" || channel.ownerUserId !== user.id;
+      return (
+        channel == null ||
+        channel.kind !== "topic" ||
+        channel.ownerUserId !== user.id
+      );
     },
   }),
   "join-channel": ({ state, actions, channelId, user }) => {
-    const channel = state.selectChannel(channelId);
-    const channelName = state.selectChannelName(channelId);
+    const channel = state.selectChannel(channelId, { name: true });
     return {
-      description: `Join "#${channelName}".`,
+      description: `Join "#${channel?.name}".`,
       execute: async ({ editor }) => {
         await actions.joinChannel(channelId);
         editor.clear();
       },
       exclude: () =>
-        channel.kind !== "topic" || channel.memberUserIds.includes(user.id),
+        channel == null ||
+        channel.kind !== "topic" ||
+        channel.memberUserIds.includes(user.id),
     };
   },
   "leave-channel": ({ state, actions, channelId, user }) => {
-    const channel = state.selectChannel(channelId);
-    const channelName = state.selectChannelName(channelId);
+    const channel = state.selectChannel(channelId, { name: true });
     return {
-      description: `Leave "#${channelName}".`,
+      description: `Leave "#${channel?.name}".`,
       execute: async ({ editor }) => {
         await actions.leaveChannel(channelId);
         editor.clear();
       },
-      exclude: () => {
-        return channel.kind !== "topic" || channel.ownerUserId === user.id;
-      },
+      exclude: () =>
+        channel == null ||
+        channel.kind !== "topic" ||
+        channel.ownerUserId === user.id,
     };
   },
   "make-open": ({ state, actions, channelId, user }) => {
-    const channel = state.selectChannel(channelId);
-    const channelName = state.selectChannelName(channelId);
+    const channel = state.selectChannel(channelId, { name: true });
     const accessLevel = state.selectChannelAccessLevel(channelId);
     return {
-      description: `Make "#${channelName}" an open channel that anyone can see and join.`,
+      description: `Make "#${channel?.name}" an open channel that anyone can see and join.`,
       execute: async ({ editor }) => {
         await actions.makeChannelOpen(channelId);
         editor.clear();
       },
       exclude: () =>
+        channel == null ||
         accessLevel === "open" ||
         channel.kind !== "topic" ||
         channel.ownerUserId !== user.id ||
@@ -245,16 +254,16 @@ const commands = {
     };
   },
   "make-closed": ({ state, actions, channelId, user }) => {
-    const channel = state.selectChannel(channelId);
-    const channelName = state.selectChannelName(channelId);
+    const channel = state.selectChannel(channelId, { name: true });
     const accessLevel = state.selectChannelAccessLevel(channelId);
     return {
-      description: `Make "#${channelName}" a closed channel that anyone can see, but not join.`,
+      description: `Make "#${channel?.name}" a closed channel that anyone can see, but not join.`,
       execute: async ({ editor }) => {
         await actions.makeChannelClosed(channelId);
         editor.clear();
       },
       exclude: () =>
+        channel == null ||
         accessLevel === "closed" ||
         channel.kind !== "topic" ||
         channel.ownerUserId !== user.id ||
@@ -262,16 +271,16 @@ const commands = {
     };
   },
   "make-private": ({ state, actions, channelId, user }) => {
-    const channel = state.selectChannel(channelId);
-    const channelName = state.selectChannelName(channelId);
+    const channel = state.selectChannel(channelId, { name: true });
     const accessLevel = state.selectChannelAccessLevel(channelId);
     return {
-      description: `Make "#${channelName}" a private channel that only members can see`,
+      description: `Make "#${channel?.name}" a private channel that only members can see`,
       execute: async ({ editor }) => {
         await actions.makeChannelPrivate(channelId);
         editor.clear();
       },
       exclude: () =>
+        channel == null ||
         channel.kind !== "topic" ||
         channel.ownerUserId !== user.id ||
         accessLevel === "private",

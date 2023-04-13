@@ -1,3 +1,4 @@
+import { utils as ethersUtils } from "ethers";
 import { createSelector } from "reselect";
 import combineReducers from "../utils/combine-reducers";
 import { indexBy, unique, sort } from "../utils/array";
@@ -7,6 +8,7 @@ import { arrayShallowEquals } from "../utils/reselect";
 import * as Permissions from "../utils/permissions";
 import { selectUser } from "./users";
 import { selectMe } from "./me";
+import { truncateAddress } from "../utils/ethereum.js";
 
 const sortChannelsByActivity = (channels, readStatesByChannelId) =>
   sort((c1, c2) => {
@@ -366,7 +368,13 @@ export const selectChannelName = createSelector(
 
     return channelMemberUsers
       .filter((u) => u?.id !== loggedInUserId)
-      .map((u) => u?.displayName)
+      .map((u) => {
+        if (u == null || u.walletAddress == null) return null;
+        return (
+          u.displayName ??
+          truncateAddress(ethersUtils.getAddress(u.walletAddress))
+        );
+      })
       .filter(Boolean)
       .join(", ");
   },
@@ -446,6 +454,11 @@ export const selectChannelHasUnread = createSelector(
   (state, channelId) => state.channels.readStatesById[channelId],
   (channelState) => {
     if (channelState == null) return false;
+    if (
+      channelState.unreadMentionMessageIds != null &&
+      channelState.unreadMentionMessageIds.length > 0
+    )
+      return true;
 
     const hasMessages = channelState.lastMessageAt != null;
     const hasSeen = channelState.lastReadAt != null;

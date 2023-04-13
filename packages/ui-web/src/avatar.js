@@ -20,10 +20,10 @@ const Avatar = React.forwardRef(
           ref={ref}
           src={url}
           loading="lazy"
-          css={(theme) =>
+          css={(t) =>
             css({
-              borderRadius: borderRadius ?? theme.avatars.borderRadius,
-              background: background ?? theme.colors.backgroundModifierHover,
+              borderRadius: borderRadius ?? t.avatars.borderRadius,
+              background: background ?? t.avatars.background,
               height: size,
               width: size,
               objectFit: "cover",
@@ -36,10 +36,10 @@ const Avatar = React.forwardRef(
     return (
       <div
         ref={ref}
-        css={(theme) =>
+        css={(t) =>
           css({
-            borderRadius: borderRadius ?? theme.avatars.borderRadius,
-            background: background ?? theme.colors.backgroundModifierHover,
+            borderRadius: borderRadius ?? t.avatars.borderRadius,
+            background: background ?? t.avatars.background,
             height: size,
             width: size,
             display: "flex",

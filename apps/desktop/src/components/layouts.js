@@ -51,6 +51,8 @@ const LazyEditProfileDialog = React.lazy(() =>
   import("./edit-user-profile-dialog.js")
 );
 
+const LazySettingsDialog = React.lazy(() => import("./settings-dialog.js"));
+
 const Layout = () => {
   const params = useParams();
 
@@ -121,6 +123,11 @@ const Layout = () => {
     open: openEditProfileDialog,
     dismiss: dismissEditProfileDialog,
   } = useDialog("edit-profile");
+  const {
+    isOpen: isSettingsDialogOpen,
+    open: openSettingsDialog,
+    dismiss: dismissSettingsDialog,
+  } = useDialog("settings");
 
   return (
     <>
@@ -189,9 +196,17 @@ const Layout = () => {
                   </>
                 ) : (
                   <>
-                    <DropdownMenu.Item disabled>Settings</DropdownMenu.Item>
                     <DropdownMenu.Item
                       onSelect={() => {
+                        if (isMenuFloating) toggleMenu();
+                        openSettingsDialog();
+                      }}
+                    >
+                      Settings
+                    </DropdownMenu.Item>
+                    <DropdownMenu.Item
+                      onSelect={() => {
+                        if (isMenuFloating) toggleMenu();
                         openEditProfileDialog();
                       }}
                     >
@@ -390,6 +405,19 @@ const Layout = () => {
           <LazyEditProfileDialog
             titleProps={titleProps}
             dismiss={dismissEditProfileDialog}
+          />
+        )}
+      </Dialog>
+
+      <Dialog
+        isOpen={isSettingsDialogOpen}
+        onRequestClose={dismissSettingsDialog}
+        width="38rem"
+      >
+        {({ titleProps }) => (
+          <LazySettingsDialog
+            titleProps={titleProps}
+            dismiss={dismissSettingsDialog}
           />
         )}
       </Dialog>
@@ -664,7 +692,7 @@ const SmallText = ({ component: Component = "div", ...props }) => (
         fontSize: t.fontSizes.small,
         fontWeight: "600",
         lineHeight: 1,
-        color: t.colors.textDimmedAlpha,
+        color: t.colors.textMutedAlpha,
       })
     }
     {...props}
@@ -701,34 +729,18 @@ const ChannelItem = ({ id, expandable }) => {
       onClick={closeMenu}
       notificationCount={notificationCount}
       title={
-        <>
-          <div
-            className="title"
-            css={(theme) =>
-              css({
-                color: hasUnread ? theme.colors.textNormal : undefined,
-                overflow: "hidden",
-                textOverflow: "ellipsis",
-              })
-            }
-          >
-            {name}
-            {/* {(name ?? "") === "" ? ( */}
-            {/*   <div */}
-            {/*     css={(theme) => */}
-            {/*       css({ */}
-            {/*         width: "100%", */}
-            {/*         height: "1.5rem", */}
-            {/*         background: theme.colors.backgroundModifierHover, */}
-            {/*         borderRadius: "0.3rem", */}
-            {/*       }) */}
-            {/*     } */}
-            {/*   /> */}
-            {/* ) : ( */}
-            {/*   name */}
-            {/* )} */}
-          </div>
-        </>
+        <div
+          className="title"
+          css={(theme) =>
+            css({
+              color: hasUnread ? theme.colors.textNormal : undefined,
+              overflow: "hidden",
+              textOverflow: "ellipsis",
+            })
+          }
+        >
+          {name}
+        </div>
       }
       icon={
         <span>

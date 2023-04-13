@@ -1,13 +1,26 @@
 import React from "react";
 import { useParams } from "react-router-dom";
 import { Helmet as ReactHelmet } from "react-helmet";
-import { useChannel, useChannelName, useAuth } from "@shades/common/app";
+import {
+  useChannel,
+  useChannelName,
+  useAuth,
+  useCachedState,
+} from "@shades/common/app";
 import { getImageDimensionsFromUrl } from "@shades/common/utils";
 import Channel from "./channel.js";
+
+const useCompactnessPreference = () => {
+  const compactModeOverride = location.search.includes("compact=1");
+  const [compactPreference] = useCachedState("preferred-compactness");
+  const preference = compactModeOverride ? "compact" : compactPreference;
+  return preference ?? "normal";
+};
 
 const ChannelRoute = (props) => {
   const params = useParams();
   const { status } = useAuth();
+  const compactnessPreference = useCompactnessPreference();
   if (status === "loading") return null;
   return (
     <>
@@ -15,7 +28,7 @@ const ChannelRoute = (props) => {
       <Channel
         channelId={params.channelId}
         {...props}
-        compact={location.search.includes("compact=1")}
+        compact={compactnessPreference === "compact"}
       />
     </>
   );

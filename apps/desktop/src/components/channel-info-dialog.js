@@ -55,7 +55,7 @@ const ChannelPermissionIcon = ({ channelId, ...props }) => {
   const permissionType = useChannelAccessLevel(channelId);
 
   const deriveComponent = () => {
-    if (channel.kind === "dm") return AtSignIcon;
+    if (channel != null && channel.kind === "dm") return AtSignIcon;
     return { open: GlobeIcon, closed: LockIcon, private: EyeOffIcon }[
       permissionType
     ];
@@ -172,16 +172,19 @@ const ChannelInfoDialog = ({
   const me = useMe();
   const channel = useChannel(channelId);
   const channelName = useChannelName(channelId);
-  const isMember = me != null && channel.memberUserIds.includes(me.id);
   const isChannelStarred = useIsChannelStarred(channelId);
   const channelPermissionType = useChannelAccessLevel(channelId);
   const notificationSetting = useChannelNotificationSetting(channelId);
 
-  const memberCount = channel.memberUserIds.length;
-
   React.useEffect(() => {
+    if (channel == null) return;
     dismissButtonRef.current.focus();
-  }, []);
+  }, [channel]);
+
+  if (channel == null) return null;
+
+  const isMember = me != null && channel.memberUserIds.includes(me.id);
+  const memberCount = channel.memberUserIds.length;
 
   const showPermissionTypeBadge =
     channel.kind === "dm" ||
@@ -208,7 +211,7 @@ const ChannelInfoDialog = ({
           })}
         >
           <div css={css({ display: "flex", alignItems: "center" })}>
-            {channel.image != null && (
+            {channel.imageLarge != null && (
               <a
                 href={channel.imageLarge}
                 rel="noreferrer"
@@ -224,7 +227,7 @@ const ChannelInfoDialog = ({
                 }
                 style={{ marginRight: "1.1rem" }}
               >
-                <ChannelAvatar id={channel.id} size="2.4rem" />
+                <ChannelAvatar id={channelId} size="2.4rem" />
               </a>
             )}
             <h1
@@ -510,11 +513,12 @@ const AboutTab = ({ channelId, dismiss }) => {
   const navigate = useNavigate();
   const actions = useActions();
   const me = useMe();
-  const channel = useChannel(channelId);
-  const channelName = useChannelName(channelId);
+  const channel = useChannel(channelId, { name: true });
   const channelPermissionType = useChannelAccessLevel(channelId);
-  const isMember = me != null && channel.memberUserIds.includes(me.id);
-  const isOwner = me != null && me.id === channel.ownerUserId;
+  const isMember =
+    me != null && channel != null && channel.memberUserIds.includes(me.id);
+  const isOwner =
+    me != null && channel != null && me.id === channel.ownerUserId;
   const isAdmin = isOwner;
 
   const {
@@ -523,6 +527,8 @@ const AboutTab = ({ channelId, dismiss }) => {
     open: setEditDialogMode,
     dismiss: dismissEditDialog,
   } = useDialog("edit-channel-property");
+
+  if (channel == null) return null;
 
   return (
     <>
@@ -546,7 +552,7 @@ const AboutTab = ({ channelId, dismiss }) => {
             <li>
               <ProperyButton
                 name="Name"
-                value={channelName}
+                value={channel.name}
                 onClick={() => {
                   setEditDialogMode("name");
                 }}
@@ -579,7 +585,7 @@ const AboutTab = ({ channelId, dismiss }) => {
             }
           >
             <dt>Name</dt>
-            <dd>{channelName}</dd>
+            <dd>{channel.name}</dd>
             <dt>Topic</dt>
             <dd>{channel.description ?? "-"}</dd>
           </dl>
@@ -659,12 +665,14 @@ const AboutTab = ({ channelId, dismiss }) => {
                   danger
                   size="default"
                   disabled={!isAdmin}
-                  onClick={() => {
+                  onClick={async () => {
                     if (
                       !confirm("Are you sure you want to delete this channel?")
                     )
                       return;
+
                     actions.deleteChannel(channelId);
+                    dismiss();
                     navigate("/");
                   }}
                 >
@@ -696,12 +704,10 @@ const AboutTab = ({ channelId, dismiss }) => {
             description: "Make sure to include a couple of emojis 🌸 🌈",
           }[editingPropery];
 
-          const dismiss = () => setEditDialogMode(null);
-
           return (
             <FormDialog
               titleProps={titleProps}
-              dismiss={dismiss}
+              dismiss={dismissEditDialog}
               title={title}
               controls={[
                 {
@@ -933,7 +939,7 @@ const MembersDirectoryTab = ({ dismiss, channelId, addMember }) => {
 
                     if (dmChannel != null) {
                       navigate(`/channels/${dmChannel.id}`);
-                      dismiss()
+                      dismiss();
                       return;
                     }
 

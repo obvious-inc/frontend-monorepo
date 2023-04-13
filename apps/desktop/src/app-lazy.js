@@ -32,14 +32,19 @@ import {
   useActions,
   useAfterActionListener,
   useCacheStore,
+  useCachedState,
 } from "@shades/common/app";
+import { useMatchMedia } from "@shades/common/react";
 import { useWalletLogin, WalletLoginProvider } from "@shades/common/wallet";
 import {
   ethereum as ethereumUtils,
   array as arrayUtils,
   function as functionUtils,
 } from "@shades/common/utils";
-import defaultTheme from "@shades/ui-web/theme";
+import defaultTheme, {
+  dark as darkTheme,
+  light as lightTheme,
+} from "@shades/ui-web/theme";
 import { Provider as SidebarProvider } from "@shades/ui-web/sidebar-layout";
 import { IFrameEthereumProvider } from "@newshades/iframe-provider";
 import { Provider as GlobalMediaQueriesProvider } from "./hooks/global-media-queries";
@@ -215,7 +220,13 @@ const useChannelHistoryCache = () => {
   const { writeAsync: cacheWrite, readAsync: cacheRead } =
     useCacheStore() ?? {};
 
+  const isPageLoadRef = React.useRef(true);
+
   React.useEffect(() => {
+    if (!isPageLoadRef.current) return;
+
+    isPageLoadRef.current = false;
+
     if (authStatus !== "authenticated") return;
     if (location.pathname !== "/") return;
     if (cacheRead == null) return;
@@ -231,7 +242,7 @@ const useChannelHistoryCache = () => {
     return () => {
       cancelled = true;
     };
-  }, [location, authStatus, navigate, cacheRead]);
+  }, [location, authStatus, navigate, cacheRead, isPageLoadRef]);
 
   React.useEffect(() => {
     if (authStatus !== "authenticated") return;
@@ -257,6 +268,8 @@ const App = () => {
   const selectors = useSelectors();
   const actions = useActions();
   const { login } = useWalletLogin();
+
+  const [preferredZoom] = useCachedState("preferred-zoom");
 
   useSystemNotifications();
   useUserEnsNames();
@@ -314,6 +327,18 @@ const App = () => {
       <Global
         styles={(theme) =>
           css({
+            html: {
+              fontSize:
+                preferredZoom === "tiny"
+                  ? "0.546875em"
+                  : preferredZoom === "small"
+                  ? "0.5859375em"
+                  : preferredZoom === "large"
+                  ? "0.6640625em"
+                  : preferredZoom === "huge"
+                  ? "0.703125em"
+                  : undefined,
+            },
             body: {
               color: theme.colors.textNormal,
               fontFamily: theme.fontStacks.default,
@@ -414,11 +439,33 @@ const RequireAuth = ({ children }) => {
 };
 
 const searchParams = new URLSearchParams(location.search);
-const specifiedTheme = searchParams.get("theme");
-const theme = specifiedTheme === "nouns-tv" ? nounsTvTheme : defaultTheme;
+const themeMap = {
+  dark: darkTheme,
+  light: lightTheme,
+  "nouns-tv": nounsTvTheme,
+};
+
+const useTheme = () => {
+  const [preferredTheme] = useCachedState("preferred-theme");
+  const systemPrefersDarkTheme = useMatchMedia("(prefers-color-scheme: dark)");
+
+  const theme = React.useMemo(() => {
+    const specifiedTheme = searchParams.get("theme");
+    if (specifiedTheme) return themeMap[specifiedTheme] ?? defaultTheme;
+
+    if (preferredTheme === "system")
+      return systemPrefersDarkTheme ? darkTheme : lightTheme;
+
+    return themeMap[preferredTheme] ?? defaultTheme;
+  }, [preferredTheme, systemPrefersDarkTheme]);
+
+  return theme;
+};
 
 export default function LazyRoot() {
   const { login } = useAuth();
+  const theme = useTheme();
+
   return (
     <BrowserRouter>
       <WagmiConfig client={wagmiClient}>

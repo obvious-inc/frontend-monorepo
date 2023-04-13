@@ -37,10 +37,10 @@ body {
   font-size: 1.5rem;
   user-select: none;
   -webkit-user-select: none;
-  background: rgb(25 25 25);
-  color: white;
   overflow: hidden;
   text-rendering: optimizeLegibility;
+  color: black;
+  background: white;
 }
 
 html,
@@ -64,5 +64,12 @@ svg {
   input,
   [role="textbox"] {
     font-size: 1.6rem;
+  }
+}
+
+@media (prefers-color-scheme: dark) {
+  body {
+    color: white;
+    background: rgb(25 25 25);
   }
 }

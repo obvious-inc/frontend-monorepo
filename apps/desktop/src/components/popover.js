@@ -174,10 +174,9 @@ const ContentInner = React.forwardRef(
                   ? anchorRef.current?.offsetWidth ?? "auto"
                   : width,
                 maxWidth: "calc(100vw - 2rem)",
-                background: t.colors.dialogBackground,
+                background: t.colors.popoverBackground,
                 borderRadius: "0.6rem",
-                boxShadow:
-                  "rgb(15 15 15 / 5%) 0px 0px 0px 1px, rgba(15, 15, 15, 0.1) 0px 3px 6px, rgba(15, 15, 15, 0.2) 0px 9px 24px",
+                boxShadow: t.shadows.elevationHigh,
                 outline: "none", // TODO
                 overflow: "auto",
               })

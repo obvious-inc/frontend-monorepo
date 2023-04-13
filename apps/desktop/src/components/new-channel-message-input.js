@@ -261,7 +261,7 @@ const NewChannelMessageInput = React.memo(
       <div css={css({ position: "relative" })}>
         {replyTargetMessage != null && (
           <div
-            css={(theme) =>
+            css={(t) =>
               css({
                 position: "absolute",
                 bottom: "100%",
@@ -269,12 +269,12 @@ const NewChannelMessageInput = React.memo(
                 width: "100%",
                 display: "flex",
                 alignItems: "center",
-                background: theme.colors.backgroundSecondary,
+                background: t.colors.backgroundSecondary,
                 borderTopLeftRadius: "0.7rem",
                 borderTopRightRadius: "0.7rem",
                 padding: "0.6rem 1rem 0.6rem 1.1rem",
                 fontSize: "1.2rem",
-                color: "rgb(255 255 255 / 54%)",
+                color: t.colors.textMuted, // "rgb(255 255 255 / 54%)",
               })
             }
           >
@@ -310,7 +310,15 @@ const NewChannelMessageInput = React.memo(
                 })
               }
             >
-              <CrossCircleIcon style={{ width: "1.6rem", height: "auto" }} />
+              <CrossCircleIcon
+                css={(t) =>
+                  css({
+                    width: "1.6rem",
+                    height: "auto",
+                    color: t.colors.textMuted,
+                  })
+                }
+              />
             </button>
           </div>
         )}

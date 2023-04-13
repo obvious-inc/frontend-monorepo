@@ -31,7 +31,7 @@ const Input = React.forwardRef(
           css({
             display: "block",
             color: theme.colors.textNormal,
-            background: theme.colors.backgroundSecondary,
+            background: theme.colors.inputBackground,
             fontSize: "1.5rem",
             fontWeight: "400",
             borderRadius: "0.3rem",

@@ -21,6 +21,7 @@ import {
   useChannelMembers,
   useChannelName,
   useDmChannelWithMember,
+  useSortedChannelMessageIds,
 } from "@shades/common/app";
 import {
   user as userUtils,
@@ -28,6 +29,7 @@ import {
   ethereum as ethereumUtils,
   array as arrayUtils,
 } from "@shades/common/utils";
+import { useLatestCallback } from "@shades/common/react";
 import { useState as useSidebarState } from "@shades/ui-web/sidebar-layout";
 import {
   CrossSmall as CrossSmallIcon,
@@ -653,9 +655,14 @@ const NewMessageScreen = () => {
 const ChannelMessages = ({ channelId, initReply, replyTargetMessageId }) => {
   const scrollContainerRef = React.useRef();
   const didScrollToBottomRef = React.useRef(false);
+  const messageIds = useSortedChannelMessageIds(channelId);
 
   const { fetcher: fetchMessages, pendingMessagesBeforeCount } =
     useScrollAwareMessageFetcher(channelId, { scrollContainerRef });
+
+  const fetchMoreMessages = useLatestCallback((args) =>
+    fetchMessages(args ?? { beforeMessageId: messageIds[0], limit: 30 })
+  );
 
   React.useEffect(() => {
     fetchMessages({ limit: 30 });
@@ -666,7 +673,7 @@ const ChannelMessages = ({ channelId, initReply, replyTargetMessageId }) => {
       channelId={channelId}
       scrollContainerRef={scrollContainerRef}
       didScrollToBottomRef={didScrollToBottomRef}
-      fetchMessages={fetchMessages}
+      fetchMoreMessages={fetchMoreMessages}
       initReply={initReply}
       replyTargetMessageId={replyTargetMessageId}
       pendingMessagesBeforeCount={pendingMessagesBeforeCount}
@@ -680,15 +687,17 @@ const MessageRecipientsInputContainer = React.forwardRef(
       ref={ref}
       css={(t) =>
         css({
+          position: "relative",
+          zIndex: 1,
           display: "flex",
           width: "100%",
           color: t.colors.inputPlaceholder,
-          background: t.colors.backgroundTertiary,
+          background: t.colors.inputBackground,
           fontSize: t.text.sizes.channelMessages,
           borderRadius: "0.6rem",
           padding: "1.05rem 1.6rem",
           outline: "none",
-          boxShadow: t.shadows.elevationHigh,
+          boxShadow: t.shadows.elevationLow,
           ":focus-visible": {
             filter: "brightness(1.05)",
             boxShadow: `0 0 0 0.2rem ${t.colors.primary}`,
@@ -696,7 +705,9 @@ const MessageRecipientsInputContainer = React.forwardRef(
           "@media (hover: hover)": {
             ":not(:has(input))": {
               cursor: "pointer",
-              ":hover": { filter: "brightness(1.05)" },
+              ":hover": {
+                filter: "brightness(1.05)",
+              },
             },
           },
         })
@@ -1213,7 +1224,7 @@ const MessageRecipientComboboxSection = ({
             css({
               fontSize: t.fontSizes.small,
               fontWeight: "600",
-              color: t.colors.textDimmedAlpha,
+              color: t.colors.textMutedAlpha,
               padding: "0.5rem 0.8rem",
             })
           }

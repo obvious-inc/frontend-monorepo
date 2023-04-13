@@ -7,11 +7,13 @@ export const Trigger = DropdownMenu.Trigger;
 export const Separator = React.forwardRef((props, ref) => (
   <DropdownMenu.Separator
     ref={ref}
-    css={css({
-      height: "1px",
-      background: "rgb(255 255 255 / 5%)",
-      margin: "0.5rem -0.5rem",
-    })}
+    css={(t) =>
+      css({
+        height: "1px",
+        background: t.colors.borderLighter,
+        margin: "0.5rem -0.5rem",
+      })
+    }
     {...props}
   />
 ));
@@ -34,11 +36,11 @@ export const Item = React.forwardRef((props, ref) => (
         color: theme.colors.textNormal,
         borderRadius: "0.3rem",
         "&:hover, &:focus": {
-          background: "rgb(255 255 255 / 5%)",
+          background: theme.colors.backgroundModifierHover,
           outline: "none",
         },
         "&[data-disabled]": {
-          color: "rgb(255 255 255 / 42%)",
+          color: theme.colors.textMuted,
           pointerEvents: "none",
         },
       })

@@ -12,7 +12,7 @@ export const Root = React.forwardRef((props, ref) => (
         display: "flex",
         padding: "0.4rem",
         borderRadius: theme.dropdownMenus.borderRadius,
-        background: theme.colors.dialogBackground,
+        background: theme.colors.toolbarBackground,
         boxShadow: theme.shadows.elevationHigh,
       })
     }
@@ -23,13 +23,13 @@ export const Root = React.forwardRef((props, ref) => (
 export const Button = React.forwardRef((props, ref) => (
   <Toolbar.Button
     ref={ref}
-    css={(theme) =>
+    css={(t) =>
       css({
         all: "unset",
         flex: "0 0 auto",
-        color: theme.colors.textNormal,
+        color: t.colors.textNormal,
         height: 25,
-        padding: "0 5px",
+        padding: "0 0.5rem",
         borderRadius: 4,
         display: "inline-flex",
         fontSize: 13,
@@ -39,13 +39,17 @@ export const Button = React.forwardRef((props, ref) => (
         boxShadow: 0,
         margin: "0",
         cursor: "pointer",
-        "&:hover": { background: "rgb(255 255 255 / 10%)" },
+        "@media(hover: hover)": {
+          "&:hover": {
+            background: t.colors.backgroundModifierHover,
+          },
+        },
         "&:focus": {
           position: "relative",
-          boxShadow: `0 0 0 2px ${theme.colors.primary}`,
+          boxShadow: `0 0 0 2px ${t.colors.primary}`,
         },
         "&[disabled]": {
-          color: "rgb(255 255 255 / 40%)",
+          color: t.colors.textMuted, // "rgb(255 255 255 / 40%)",
           pointerEvents: "none",
         },
       })
@@ -57,11 +61,14 @@ export const Button = React.forwardRef((props, ref) => (
 export const Separator = React.forwardRef((props, ref) => (
   <Toolbar.Separator
     ref={ref}
-    css={css({
-      width: "1px",
-      background: "rgb(255 255 255 / 20%)",
-      margin: "0.4rem",
-    })}
+    css={(t) =>
+      css({
+        width: "1px",
+        background: t.colors.borderLight,
+        // background: "rgb(255 255 255 / 20%)",
+        margin: "0.4rem",
+      })
+    }
     {...props}
   />
 ));

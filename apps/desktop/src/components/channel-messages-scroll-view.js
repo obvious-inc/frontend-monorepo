@@ -111,8 +111,8 @@ const ChannelMessagesScrollView = ({
   const hasFetchedChannelMessagesAtLeastOnce =
     useHasFetchedChannelMessages(channelId);
 
-  const isAdmin = user != null && user.id === channel.ownerUserId;
-
+  const isAdmin =
+    user != null && channel != null && user.id === channel.ownerUserId;
   const { inputDeviceCanHover } = useGlobalMediaQueries();
   const [touchFocusedMessageId, setTouchFocusedMessageId] =
     React.useState(null);
@@ -327,8 +327,8 @@ const ChannelIntro = ({ channelId }) => {
   const channelAccessLevel = useChannelAccessLevel(channelId);
   const messageIds = useSortedChannelMessageIds(channelId);
 
-  const isAdmin = me != null && me.id === channel.ownerUserId;
-  const hasMembers = channel.memberUserIds.length > 1;
+  const isAdmin = me != null && me.id === channel?.ownerUserId;
+  const hasMembers = channel != null && channel.memberUserIds.length > 1;
 
   const buildBody = () => {
     if (channel.kind === "dm") {

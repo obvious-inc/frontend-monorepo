@@ -177,7 +177,7 @@ const ChannelNavBar = ({ noSideMenu, channelId }) => {
           }
         >
           {isChannelStarred ? (
-            <StarIcon style={{ color: "rgb(202, 152, 73)" }} />
+            <StarIcon css={(t) => css({ color: t.colors.backgroundYellow })} />
           ) : (
             <StrokedStarIcon />
           )}
@@ -385,11 +385,11 @@ const ChannelNavBar = ({ noSideMenu, channelId }) => {
               css({
                 flex: 1,
                 minWidth: 0,
-                color: t.colors.textHeaderSecondary,
+                color: t.colors.textDimmed,
                 marginLeft: "1.1rem",
                 padding: "0 1.1rem",
                 borderLeft: "1px solid",
-                borderColor: "hsl(0 0% 100% / 20%)",
+                borderColor: t.colors.borderLight,
                 whiteSpace: "nowrap",
                 overflow: "hidden",
                 textOverflow: "ellipsis",
@@ -462,7 +462,9 @@ const MembersDisplayButton = React.forwardRef(({ onClick, members }, ref) => {
               ":focus-visible": {
                 boxShadow: `0 0 0 0.2rem ${t.colors.primary}`,
               },
-              ":hover": { background: t.colors.backgroundModifierHover },
+              "@media(hover: hover)": {
+                ":hover": { background: t.colors.backgroundModifierHover },
+              },
             })
           }
         >
@@ -491,7 +493,7 @@ const MembersDisplayButton = React.forwardRef(({ onClick, members }, ref) => {
                 marginLeft: "0.4rem",
                 padding: "0 0.3rem",
                 fontSize: theme.fontSizes.small,
-                color: theme.colors.textHeaderSecondary,
+                color: theme.colors.textDimmed,
               })
             }
           >

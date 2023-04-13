@@ -28,22 +28,22 @@ const stylesByVariant = (t, { danger }) => ({
   default: {
     color: danger ? t.colors.textDanger : t.colors.textNormal,
     border: "1px solid",
-    borderColor: danger ? t.colors.borderDanger : "rgb(255 255 255 / 13%)",
+    borderColor: danger ? t.colors.borderDanger : t.colors.borderLight,
     "@media (hover: hover)": {
       "&:not([disabled]):hover": {
-        background: danger ? "rgb(235 87 87 / 10%)" : "rgb(47 47 47)",
+        background: danger ? "rgb(235 87 87 / 10%)" : t.colors.buttonHover,
       },
     },
   },
   transparent: {
     color: t.colors.textNormal,
     border: "0.1rem solid",
-    borderColor: "rgb(255 255 255 / 20%)",
+    borderColor: t.colors.borderLight,
     background: "none",
     "@media (hover: hover)": {
       "&:not([disabled]):hover": {
-        color: "white",
-        borderColor: "rgb(255 255 255 / 25%)",
+        color: t.colors.textAccent,
+        borderColor: t.colors.borderLightModifierHover,
       },
     },
   },

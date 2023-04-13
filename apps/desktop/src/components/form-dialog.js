@@ -3,6 +3,7 @@ import { css } from "@emotion/react";
 import { Cross as CrossIcon } from "@shades/ui-web/icons";
 import Button from "@shades/ui-web/button";
 import Input from "./input.js";
+import Select from "./select.js";
 
 const FormDialog = ({
   title,
@@ -10,7 +11,8 @@ const FormDialog = ({
   dismiss,
   controls,
   submit,
-  submitLabel,
+  submitLabel = "Save",
+  cancelLabel = "Cancel",
 }) => {
   const firstInputRef = React.useRef();
 
@@ -29,6 +31,8 @@ const FormDialog = ({
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+
+    if (submit == null) return;
 
     setPendingSubmit(true);
     try {
@@ -93,20 +97,37 @@ const FormDialog = ({
         <form id="dialog-form" onSubmit={handleSubmit}>
           {controls.map((c, i) => (
             <div key={c.key} css={css({ "& + &": { marginTop: "2rem" } })}>
-              <Input
-                ref={i === 0 ? firstInputRef : undefined}
-                size="large"
-                multiline={c.type === "multiline-text"}
-                value={state[c.key]}
-                disabled={hasPendingSubmit}
-                onChange={(e) => {
-                  setState((s) => ({ ...s, [c.key]: e.target.value }));
-                }}
-                label={c.label}
-                placeholder={c.placeholder}
-                hint={c.hint}
-                rows={c.rows}
-              />
+              {c.type === "select" ? (
+                <Select
+                  ref={i === 0 ? firstInputRef : undefined}
+                  size="large"
+                  value={c.value === undefined ? state[c.key] : c.value}
+                  disabled={hasPendingSubmit}
+                  onChange={(value) => {
+                    setState((s) => ({ ...s, [c.key]: value }));
+                    if (c.onChange) c.onChange(value);
+                  }}
+                  label={c.label}
+                  placeholder={c.placeholder}
+                  options={c.options}
+                />
+              ) : (
+                <Input
+                  ref={i === 0 ? firstInputRef : undefined}
+                  size="large"
+                  multiline={c.type === "multiline-text"}
+                  value={c.value === undefined ? state[c.key] : c.value}
+                  disabled={hasPendingSubmit}
+                  onChange={(e) => {
+                    setState((s) => ({ ...s, [c.key]: e.target.value }));
+                    if (c.onChange) c.onChange(e.target.value);
+                  }}
+                  label={c.label}
+                  placeholder={c.placeholder}
+                  hint={c.hint}
+                  rows={c.rows}
+                />
+              )}
             </div>
           ))}
         </form>
@@ -129,20 +150,22 @@ const FormDialog = ({
             gridGap: "1rem",
           })}
         >
-          <Button size="medium" variant="transparent" onClick={dismiss}>
-            Cancel
+          <Button size="medium" onClick={dismiss}>
+            {cancelLabel}
           </Button>
-          <Button
-            type="submit"
-            form="dialog-form"
-            size="medium"
-            variant="primary"
-            isLoading={hasPendingSubmit}
-            disabled={!hasRequiredInput || hasPendingSubmit}
-            style={{ minWidth: "8rem" }}
-          >
-            {submitLabel}
-          </Button>
+          {submit != null && (
+            <Button
+              type="submit"
+              form="dialog-form"
+              size="medium"
+              variant="primary"
+              isLoading={hasPendingSubmit}
+              disabled={!hasRequiredInput || hasPendingSubmit}
+              style={{ minWidth: "8rem" }}
+            >
+              {submitLabel}
+            </Button>
+          )}
         </div>
       </footer>
     </div>

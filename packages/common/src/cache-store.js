@@ -6,9 +6,26 @@ const Context = React.createContext(null);
 const buildKey = (key) => `ns:${key}`;
 
 export const Provider = ({ syncStorage, asyncStorage, children }) => {
+  const [cachedStateMap, setCachedStateMap] = React.useState(new Map());
+
+  const getCachedState = React.useCallback(
+    (key) => cachedStateMap.get(key),
+    [cachedStateMap]
+  );
+
+  const setCachedState = React.useCallback(
+    (key, value) =>
+      setCachedStateMap((prev) => {
+        const next = new Map(prev);
+        next.set(key, value);
+        return next;
+      }),
+    []
+  );
+
   const contextValue = React.useMemo(
-    () => ({ syncStorage, asyncStorage }),
-    [syncStorage, asyncStorage]
+    () => ({ syncStorage, asyncStorage, getCachedState, setCachedState }),
+    [syncStorage, asyncStorage, getCachedState, setCachedState]
   );
 
   return <Context.Provider value={contextValue}>{children}</Context.Provider>;
@@ -72,36 +89,29 @@ export const useStore = () => {
 
 export const useCachedState = (key, initialState) => {
   const store = useStore();
+  const { getCachedState, setCachedState } = React.useContext(Context) ?? {};
+
+  const cachedState = getCachedState(key);
 
   const read = () => store.read(key);
   const write = (value) => store.write(key, value);
-
-  const [cachedState, setCachedState] = React.useState(() => {
-    if (store?.isAsync) return undefined;
-
-    const cachedValue = read(key);
-
-    if (cachedValue == null)
-      return typeof initialState === "function" ? initialState() : initialState;
-
-    return cachedValue;
-  });
 
   const set = useLatestCallback(async (newState_) => {
     const newState =
       typeof newState_ === "function" ? newState_(cachedState) : newState_;
     await write(newState);
-    setCachedState(newState);
+    setCachedState(key, newState);
   });
 
   const setInitialState = useLatestCallback(() => {
     const handleCachedValue = (cachedValue) => {
       if (cachedValue != null) {
-        setCachedState(cachedValue);
+        setCachedState(key, cachedValue);
         return;
       }
 
       setCachedState(
+        key,
         typeof initialState === "function" ? initialState() : initialState
       );
     };
@@ -123,7 +133,7 @@ export const useCachedState = (key, initialState) => {
       if (e.key !== buildKey(key)) return;
       try {
         const value = JSON.parse(e.newValue);
-        setCachedState(value);
+        setCachedState(key, value);
       } catch (e) {
         // Ignore
       }
@@ -142,7 +152,7 @@ export const useCachedState = (key, initialState) => {
         // Ignore
       }
     };
-  }, [key]);
+  }, [key, setCachedState]);
 
   return [cachedState, set, { read }];
 };

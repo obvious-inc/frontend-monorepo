@@ -47,10 +47,12 @@ const EmptyHome = () => {
             })}
           >
             <HomeIcon
-              style={{
-                width: "6rem",
-                color: "rgb(255 255 255 / 5%)",
-              }}
+              css={(t) =>
+                css({
+                  width: "6rem",
+                  color: t.colors.backgroundModifierHover,
+                })
+              }
             />
           </div>
         </div>

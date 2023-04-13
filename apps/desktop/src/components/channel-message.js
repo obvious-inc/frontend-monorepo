@@ -99,7 +99,7 @@ const ChannelMessage = React.memo(function ChannelMessage_({
     !isEditing &&
     (hasTouchFocus || isHovering || isDropdownOpen || isEmojiPickerOpen);
 
-  const isDirectMessage = channel.kind === "dm";
+  const isDirectMessage = channel != null && channel.kind === "dm";
   const isOwnMessage = user?.id === message.authorUserId;
 
   const allowEdit =
@@ -199,7 +199,7 @@ const ChannelMessage = React.memo(function ChannelMessage_({
               disabled: !allowDirectMessages,
               visible:
                 !isOwnMessage &&
-                !(isDirectMessage && channel.memberUserIds.length <= 2),
+                !(isDirectMessage && channel?.memberUserIds.length <= 2),
             },
             {
               onSelect: () => {
@@ -215,7 +215,7 @@ const ChannelMessage = React.memo(function ChannelMessage_({
       isAdmin,
       isDirectMessage,
       isOwnMessage,
-      channel.memberUserIds.length,
+      channel?.memberUserIds.length,
       initReply,
       message.author?.walletAddress,
       message.isSystemMessage,
@@ -607,47 +607,49 @@ const Reactions = ({ messageId, items = [], addReaction, hideAddButton }) => {
   return (
     <>
       <div
-        css={css({
-          display: "grid",
-          gridAutoFlow: "column",
-          gridAutoColumns: "auto",
-          gridGap: "0.4rem",
-          justifyContent: "flex-start",
-          margin: "0.5rem -1px 0",
-          ":not(:focus-within) [data-fader]": {
-            opacity: hideAddButton ? 0 : 1,
-          },
-          button: {
-            display: "flex",
-            alignItems: "center",
-            height: "2.5rem",
-            fontSize: "1.5rem",
-            background: "rgb(255 255 255 / 4%)",
-            borderRadius: "0.7rem",
-            padding: "0 0.7rem 0 0.6rem",
-            lineHeight: 1,
-            userSelect: "none",
-            border: "1px solid transparent",
-            cursor: "pointer",
-            outline: "none",
-            ":focus-visible, &.active:focus-visible": {
-              borderColor: "white",
+        css={(t) =>
+          css({
+            display: "grid",
+            gridAutoFlow: "column",
+            gridAutoColumns: "auto",
+            gridGap: "0.4rem",
+            justifyContent: "flex-start",
+            margin: "0.5rem -1px 0",
+            ":not(:focus-within) [data-fader]": {
+              opacity: hideAddButton ? 0 : 1,
             },
-            "&.active": {
-              background: "#007ab333",
-              borderColor: "#007ab3a8",
+            button: {
+              display: "flex",
+              alignItems: "center",
+              height: "2.5rem",
+              fontSize: "1.5rem",
+              background: t.colors.backgroundModifierHover,
+              borderRadius: "0.7rem",
+              padding: "0 0.7rem 0 0.6rem",
+              lineHeight: 1,
+              userSelect: "none",
+              border: "1px solid transparent",
+              cursor: "pointer",
+              outline: "none",
+              ":focus-visible, &.active:focus-visible": {
+                borderColor: t.colors.textAccent,
+              },
+              "&.active": {
+                background: "#007ab333",
+                borderColor: "#007ab3a8",
+              },
+              "&:not(.active):hover": {
+                borderColor: t.colors.borderLight,
+              },
+              ".count": {
+                fontSize: "1rem",
+                fontWeight: "400",
+                color: t.colors.textNormal,
+                marginLeft: "0.5rem",
+              },
             },
-            "&:not(.active):hover": {
-              borderColor: "rgb(255 255 255 / 20%)",
-            },
-            ".count": {
-              fontSize: "1rem",
-              fontWeight: "400",
-              color: "rgb(255 255 255 / 70%)",
-              marginLeft: "0.5rem",
-            },
-          },
-        })}
+          })
+        }
       >
         {items.map((r) => (
           <Reaction key={r.emoji} messageId={messageId} {...r} />
@@ -1193,16 +1195,16 @@ const EmojiPicker = ({ width = "auto", height = "100%", onSelect }) => {
           <div key={category ?? "no-category"}>
             {category != null && (
               <div
-                css={(theme) =>
+                css={(t) =>
                   css({
                     position: "sticky",
                     top: 0,
                     zIndex: 1,
-                    background: `linear-gradient(-180deg, ${theme.colors.dialogBackground} 50%, transparent)`,
+                    background: `linear-gradient(-180deg, ${t.colors.popoverBackground} 50%, transparent)`,
                     padding: "0.6rem 0.9rem",
                     fontSize: "1.2rem",
                     fontWeight: "500",
-                    color: "rgb(255 255 255 / 40%)",
+                    color: t.colors.textDimmed, // "rgb(255 255 255 / 40%)",
                     textTransform: "uppercase",
                     pointerEvents: "none",
                   })
@@ -1264,7 +1266,7 @@ const Emoji = React.forwardRef(({ emoji, isHighlighted, ...props }, ref) => (
   <button
     ref={ref}
     data-selected={isHighlighted ? "true" : undefined}
-    css={(theme) =>
+    css={(t) =>
       css({
         display: "flex",
         alignItems: "center",
@@ -1278,12 +1280,12 @@ const Emoji = React.forwardRef(({ emoji, isHighlighted, ...props }, ref) => (
         cursor: "pointer",
         outline: "none",
         "&[data-selected]": {
-          background: "rgb(255 255 255 / 10%)",
+          background: t.colors.backgroundModifierHover,
         },
         "&:focus": {
           position: "relative",
           zIndex: 2,
-          boxShadow: `0 0 0 0.2rem ${theme.colors.primary}`,
+          boxShadow: `0 0 0 0.2rem ${t.colors.primary}`,
         },
       })
     }
@@ -1531,24 +1533,26 @@ const RepliedMessage = ({ message, onClickMessage }) => {
 
   return (
     <div
-      css={css({
-        position: "relative",
-        paddingLeft: "5rem",
-        marginBottom: "0.5rem",
-        ":before": {
-          content: '""',
-          position: "absolute",
-          right: "calc(100% - 5rem + 0.3rem)",
-          top: "calc(50% - 1px)",
-          width: "2.9rem",
-          height: "1.4rem",
-          borderTop: "2px solid rgb(255 255 255 / 15%)",
-          borderLeft: "2px solid rgb(255 255 255 / 15%)",
-          borderRight: 0,
-          borderBottom: 0,
-          borderTopLeftRadius: "0.4rem",
-        },
-      })}
+      css={(t) =>
+        css({
+          position: "relative",
+          paddingLeft: "5rem",
+          marginBottom: "0.5rem",
+          ":before": {
+            content: '""',
+            position: "absolute",
+            right: "calc(100% - 5rem + 0.3rem)",
+            top: "calc(50% - 1px)",
+            width: "2.9rem",
+            height: "1.4rem",
+            border: "0.2rem solid",
+            borderColor: t.colors.borderLighter,
+            borderRight: 0,
+            borderBottom: 0,
+            borderTopLeftRadius: "0.4rem",
+          },
+        })
+      }
     >
       <div
         css={css({
@@ -1567,13 +1571,15 @@ const RepliedMessage = ({ message, onClickMessage }) => {
         )}
 
         <div
-          css={css({
-            fontSize: "1.3rem",
-            whiteSpace: "nowrap",
-            overflow: "hidden",
-            textOverflow: "ellipsis",
-            color: "rgb(255 255 255 / 54%)",
-          })}
+          css={(t) =>
+            css({
+              fontSize: "1.3rem",
+              whiteSpace: "nowrap",
+              overflow: "hidden",
+              textOverflow: "ellipsis",
+              color: t.colors.textMuted,
+            })
+          }
         >
           {message?.deleted ? (
             <span
