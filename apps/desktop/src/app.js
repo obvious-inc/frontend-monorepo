@@ -7,8 +7,9 @@ import {
   useActions,
   useAfterActionListener,
 } from "@shades/common/app";
-import useWindowFocusOrDocumentVisibleListener from "./hooks/window-focus-or-document-visible-listener";
-import useOnlineListener from "./hooks/window-online-listener";
+import useWindowFocusOrDocumentVisibleListener from "./hooks/window-focus-or-document-visible-listener.js";
+import useOnlineListener from "./hooks/window-online-listener.js";
+import ErrorBoundary from "./components/error-boundary.js";
 
 const LazyApp = React.lazy(() => import("./app-lazy"));
 
@@ -63,9 +64,11 @@ const App = () => {
   );
 
   return (
-    <React.Suspense fallback={null}>
-      <LazyApp />
-    </React.Suspense>
+    <ErrorBoundary fallback={() => window.location.reload()}>
+      <React.Suspense fallback={null}>
+        <LazyApp />
+      </React.Suspense>
+    </ErrorBoundary>
   );
 };
 

@@ -25,6 +25,7 @@ import Spinner from "./spinner";
 import ChannelMessagesScrollView from "./channel-messages-scroll-view";
 import NewChannelMessageInput from "./new-channel-message-input";
 import ChannelNavBar from "./channel-nav-bar";
+import ErrorBoundary from "./error-boundary.js";
 import useReverseScrollPositionMaintainer from "../hooks/reverse-scroll-position-maintainer";
 
 const LazyLoginScreen = React.lazy(() => import("./login-screen"));
@@ -478,7 +479,11 @@ const Channel = ({ channelId, compact, noSideMenu }) => {
 
   if (notFound)
     return authenticationStatus === "not-authenticated" ? (
-      <LazyLoginScreen />
+      <ErrorBoundary fallback={() => window.location.reload()}>
+        <React.Suspense fallback={null}>
+          <LazyLoginScreen />
+        </React.Suspense>
+      </ErrorBoundary>
     ) : (
       <Layout channelId={channelId} noSideMenu={noSideMenu}>
         <div

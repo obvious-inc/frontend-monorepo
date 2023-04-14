@@ -41,6 +41,7 @@ import ChannelAvatar from "./channel-avatar";
 import * as DropdownMenu from "./dropdown-menu";
 import NotificationBadge from "./notification-badge";
 import Spinner from "./spinner";
+import ErrorBoundary from "./error-boundary";
 
 const { sort, comparator } = arrayUtils;
 const { truncateAddress } = ethereumUtils;
@@ -391,9 +392,11 @@ const Layout = () => {
           )
         }
       >
-        <React.Suspense fallback={null}>
-          <Outlet />
-        </React.Suspense>
+        <ErrorBoundary fallback={() => window.location.reload()}>
+          <React.Suspense fallback={null}>
+            <Outlet />
+          </React.Suspense>
+        </ErrorBoundary>
       </SidebarLayout>
 
       <Dialog
@@ -402,10 +405,14 @@ const Layout = () => {
         width="52rem"
       >
         {({ titleProps }) => (
-          <LazyEditProfileDialog
-            titleProps={titleProps}
-            dismiss={dismissEditProfileDialog}
-          />
+          <ErrorBoundary fallback={() => window.location.reload()}>
+            <React.Suspense fallback={null}>
+              <LazyEditProfileDialog
+                titleProps={titleProps}
+                dismiss={dismissEditProfileDialog}
+              />
+            </React.Suspense>
+          </ErrorBoundary>
         )}
       </Dialog>
 
@@ -415,10 +422,14 @@ const Layout = () => {
         width="38rem"
       >
         {({ titleProps }) => (
-          <LazySettingsDialog
-            titleProps={titleProps}
-            dismiss={dismissSettingsDialog}
-          />
+          <ErrorBoundary fallback={() => window.location.reload()}>
+            <React.Suspense fallback={null}>
+              <LazySettingsDialog
+                titleProps={titleProps}
+                dismiss={dismissSettingsDialog}
+              />
+            </React.Suspense>
+          </ErrorBoundary>
         )}
       </Dialog>
     </>

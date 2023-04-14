@@ -50,6 +50,7 @@ import NavBar from "./nav-bar.js";
 import UserAvatar from "./user-avatar.js";
 import UserAvatarStack from "./user-avatar-stack.js";
 import ChannelAvatar from "./channel-avatar.js";
+import ErrorBoundary from "./error-boundary.js";
 import NewChannelMessageInput from "./new-channel-message-input.js";
 import ChannelMessagesScrollView from "./channel-messages-scroll-view.js";
 import ChannelPrologue from "./channel-prologue.js";
@@ -641,11 +642,15 @@ const NewMessageScreen = () => {
         onRequestClose={dismissCreateChannelDialog}
       >
         {({ titleProps }) => (
-          <LazyCreateChannelDialog
-            isOpen={isCreateChannelDialogOpen}
-            dismiss={dismissCreateChannelDialog}
-            titleProps={titleProps}
-          />
+          <ErrorBoundary fallback={() => window.location.reload()}>
+            <React.Suspense fallback={null}>
+              <LazyCreateChannelDialog
+                isOpen={isCreateChannelDialogOpen}
+                dismiss={dismissCreateChannelDialog}
+                titleProps={titleProps}
+              />
+            </React.Suspense>
+          </ErrorBoundary>
         )}
       </Dialog>
     </>

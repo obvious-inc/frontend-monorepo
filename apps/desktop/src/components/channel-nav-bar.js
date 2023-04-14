@@ -28,6 +28,7 @@ import NavBar from "./nav-bar";
 import UserAvatar from "./user-avatar";
 import ChannelAvatar from "./channel-avatar";
 import * as Tooltip from "./tooltip";
+import ErrorBoundary from "./error-boundary.js";
 import AddChannelMemberDialog from "./add-channel-member-dialog.js";
 
 const LazyChannelInfoDialog = React.lazy(() =>
@@ -197,18 +198,22 @@ const ChannelNavBar = ({ noSideMenu, channelId }) => {
               height="min(calc(100% - 3rem), 82rem)"
             >
               {({ titleProps }) => (
-                <LazyChannelInfoDialog
-                  channelId={channelId}
-                  initialTab={channelDialogMode}
-                  members={channel.members}
-                  titleProps={titleProps}
-                  showAddMemberDialog={
-                    channel.kind === "topic" && isChannelOwner
-                      ? openAddMemberDialog
-                      : null
-                  }
-                  dismiss={dismissChannelDialog}
-                />
+                <ErrorBoundary fallback={() => window.location.reload()}>
+                  <React.Suspense fallback={null}>
+                    <LazyChannelInfoDialog
+                      channelId={channelId}
+                      initialTab={channelDialogMode}
+                      members={channel.members}
+                      titleProps={titleProps}
+                      showAddMemberDialog={
+                        channel.kind === "topic" && isChannelOwner
+                          ? openAddMemberDialog
+                          : null
+                      }
+                      dismiss={dismissChannelDialog}
+                    />
+                  </React.Suspense>
+                </ErrorBoundary>
               )}
             </Dialog>
           </>
