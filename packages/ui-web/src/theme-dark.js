@@ -110,6 +110,7 @@ export default {
     buttonHover: backgroundLighter,
     toolbarBackground: backgroundLight,
     inputBackground: backgroundLight,
+    inputBackgroundContrast: backgroundModifierHover,
     inputPlaceholder: "hsl(0 0% 100% / 40%)",
     backgroundModifierHover,
     backgroundYellow: "rgb(202, 152, 73)",

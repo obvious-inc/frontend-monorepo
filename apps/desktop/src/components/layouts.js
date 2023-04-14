@@ -117,7 +117,7 @@ const Layout = () => {
   const toggleMenu = useSidebarToggle();
   const {
     isFloating: isMenuFloating,
-    isCollapsed: isMenuCollapsed,
+    // isCollapsed: isMenuCollapsed,
     sidebarFocusTargetRef: menuFocusTargetRef,
   } = useSidebarState();
 
@@ -153,11 +153,7 @@ const Layout = () => {
                       ? "Unverified account"
                       : null
                   }
-                  toggleMenu={
-                    isMenuFloating || (!isMenuCollapsed && isHoveringSidebar)
-                      ? toggleMenu
-                      : null
-                  }
+                  isHoveringSidebar={isHoveringSidebar}
                 />
               </DropdownMenu.Trigger>
               <DropdownMenu.Content
@@ -430,10 +426,14 @@ const Layout = () => {
 };
 
 const ProfileDropdownTrigger = React.forwardRef(
-  ({ isConnecting, user, subtitle, toggleMenu, ...props }, ref) => {
+  ({ isConnecting, user, subtitle, isHoveringSidebar, ...props }, ref) => {
     const { data: userEnsName } = useEnsName({ address: user.walletAddress });
+    const { isFloating: isMenuFloating, isCollapsed: isMenuCollapsed } =
+      useSidebarState();
+    const toggleMenu = useSidebarToggle();
 
-    const theme = useTheme();
+    const showCollapseButton =
+      isMenuFloating || (!isMenuCollapsed && isHoveringSidebar);
 
     const truncatedAddress =
       user?.walletAddress == null ? null : truncateAddress(user.walletAddress);
@@ -454,7 +454,6 @@ const ProfileDropdownTrigger = React.forwardRef(
     return (
       <button
         ref={ref}
-        data-has-menu-toggle={toggleMenu != null}
         css={(theme) =>
           css({
             width: "100%",
@@ -464,18 +463,18 @@ const ProfileDropdownTrigger = React.forwardRef(
             alignItems: "center",
             padding: "0.2rem 1.4rem",
             height: "100%",
-            cursor: "pointer",
             transition: "20ms ease-in",
             outline: "none",
-            ":hover": {
-              background: theme.colors.backgroundModifierHover,
-            },
             ":focus-visible": {
               boxShadow: `0 0 0 0.2rem ${theme.colors.primary} inset`,
             },
-            '[data-has-menu-toggle="true"]': {
-              ".dropdown-icon": {
-                display: "none",
+            ".dropdown-icon": {
+              display: "var(--dropdown-icon-display)",
+            },
+            "@media (hover: hover)": {
+              cursor: "pointer",
+              ":hover": {
+                background: theme.colors.backgroundModifierHover,
               },
               ":hover .dropdown-icon, :focus .dropdown-icon": {
                 display: "block",
@@ -483,6 +482,9 @@ const ProfileDropdownTrigger = React.forwardRef(
             },
           })
         }
+        style={{
+          "--dropdown-icon-display": showCollapseButton ? "none" : "block",
+        }}
         {...props}
       >
         <div
@@ -507,7 +509,10 @@ const ProfileDropdownTrigger = React.forwardRef(
             }}
           >
             {isConnecting ? (
-              <Spinner size="1.8rem" color={theme.colors.textMuted} />
+              <Spinner
+                size="1.8rem"
+                css={(t) => css({ color: t.colors.textMuted })}
+              />
             ) : (
               <UserAvatar
                 transparent
@@ -581,7 +586,7 @@ const ProfileDropdownTrigger = React.forwardRef(
               <path d="M 3.5 0L 3.98809 -0.569442L 3.5 -0.987808L 3.01191 -0.569442L 3.5 0ZM 3.5 9L 3.01191 9.56944L 3.5 9.98781L 3.98809 9.56944L 3.5 9ZM 0.488094 3.56944L 3.98809 0.569442L 3.01191 -0.569442L -0.488094 2.43056L 0.488094 3.56944ZM 3.01191 0.569442L 6.51191 3.56944L 7.48809 2.43056L 3.98809 -0.569442L 3.01191 0.569442ZM -0.488094 6.56944L 3.01191 9.56944L 3.98809 8.43056L 0.488094 5.43056L -0.488094 6.56944ZM 3.98809 9.56944L 7.48809 6.56944L 6.51191 5.43056L 3.01191 8.43056L 3.98809 9.56944Z" />
             </svg>
           </div>
-          {toggleMenu != null && (
+          {showCollapseButton && (
             <div
               role="button"
               tabIndex={0}
@@ -742,13 +747,11 @@ const ChannelItem = ({ id, expandable }) => {
       title={
         <div
           className="title"
-          css={(theme) =>
-            css({
-              color: hasUnread ? theme.colors.textNormal : undefined,
-              overflow: "hidden",
-              textOverflow: "ellipsis",
-            })
-          }
+          css={css({
+            overflow: "hidden",
+            textOverflow: "ellipsis",
+          })}
+          style={{ color: hasUnread ? theme.colors.textNormal : undefined }}
         >
           {name}
         </div>
@@ -780,51 +783,63 @@ const ListItem = React.forwardRef(
     ref
   ) => (
     <div
-      css={(theme) => css`
-        padding: 0 ${theme.mainMenu.containerHorizontalPadding};
-
-        &:not(:last-of-type) {
-          margin-bottom: ${theme.mainMenu.itemDistance};
-        }
-        & > * {
-          display: flex;
-          align-items: center;
-          width: 100%;
-          border: 0;
-          font-size: ${theme.fontSizes.default};
-          font-weight: ${theme.mainMenu.itemTextWeight};
-          text-align: left;
-          background: transparent;
-          border-radius: ${theme.mainMenu.itemBorderRadius};
-          cursor: pointer;
-          outline: none;
-          color: ${disabled
-            ? theme.mainMenu.itemTextColorDisabled
-            : theme.mainMenu.itemTextColor};
-          padding: 0.2rem ${theme.mainMenu.itemHorizontalPadding};
-          padding-left: calc(
-            ${theme.mainMenu.itemHorizontalPadding} + ${indendationLevel} *
-              2.2rem
-          );
-          text-decoration: none;
-          line-height: 1.3;
-          height: ${theme.mainMenu.itemHeight};
-          margin: 0.1rem 0;
-          pointer-events: ${disabled ? "none" : "all"};
-        }
-        & > *.active,
-        & > *:not(.active):hover {
-          background: ${theme.colors.backgroundModifierHover};
-        }
-        & > *.active {
-          color: ${theme.colors.textNormal};
-        }
-        & > *:focus-visible {
-          box-shadow: ${theme.shadows.focus};
-        }
-      `}
+      css={(t) =>
+        css({
+          padding: `0 ${t.mainMenu.containerHorizontalPadding}`,
+          "&:not(:last-of-type)": {
+            marginBottom: t.mainMenu.itemDistance,
+          },
+        })
+      }
     >
-      <Component ref={ref} {...props}>
+      <Component
+        ref={ref}
+        disabled={Component === "button" ? disabled : undefined}
+        css={(t) =>
+          css({
+            "--disabled-color": t.mainMenu.itemTextColorDisabled,
+            display: "flex",
+            alignItems: "center",
+            width: "100%",
+            border: 0,
+            fontSize: t.fontSizes.default,
+            fontWeight: t.mainMenu.itemTextWeight,
+            textAlign: "left",
+            background: "transparent",
+            borderRadius: t.mainMenu.itemBorderRadius,
+            outline: "none",
+            color: t.mainMenu.itemTextColor,
+            padding: `0.2rem ${t.mainMenu.itemHorizontalPadding}`,
+            paddingLeft: `calc(${t.mainMenu.itemHorizontalPadding} + var(--indentation-level) * 2.2rem)`,
+            textDecoration: "none",
+            lineHeight: 1.3,
+            height: t.mainMenu.itemHeight,
+            margin: "0.1rem 0",
+            "&.active": {
+              color: t.colors.textNormal,
+              background: t.colors.backgroundModifierHover,
+            },
+            "@media (hover: hover)": {
+              ":not(:disabled)": {
+                cursor: "pointer",
+              },
+              ":not(:disabled,&.active):hover": {
+                background: t.colors.backgroundModifierHover,
+              },
+            },
+            ":focus-visible": {
+              boxShadow: t.shadows.focus,
+            },
+          })
+        }
+        style={{
+          "--indentation-level": indendationLevel,
+          pointerEvents:
+            Component !== "button" && disabled ? "none" : undefined,
+          color: disabled ? `var(--disabled-color)` : undefined,
+        }}
+        {...props}
+      >
         {expandable && (
           <div
             css={css({
@@ -842,18 +857,18 @@ const ListItem = React.forwardRef(
               onClick={() => {
                 onToggleExpanded();
               }}
-              css={(theme) =>
+              css={(t) =>
                 css({
                   display: "flex",
                   alignItems: "center",
                   justifyContent: "center",
                   width: "2rem",
                   height: "2rem",
-                  color: theme.colors.textMuted,
+                  color: t.colors.textMuted,
                   borderRadius: "0.3rem",
                   transition: "background 20ms ease-in",
                   ":hover": {
-                    background: theme.colors.backgroundModifierHover,
+                    background: t.colors.backgroundModifierHover,
                   },
                 })
               }
@@ -876,15 +891,13 @@ const ListItem = React.forwardRef(
               justifyContent: "center",
               width: "2.2rem",
               height: "1.8rem",
-              marginRight: compact ? "0.4rem" : "0.8rem",
             })}
+            style={{ marginRight: compact ? "0.4rem" : "0.8rem" }}
           >
             <div
-              css={(theme) =>
+              css={(t) =>
                 css({
-                  color: disabled
-                    ? "rgb(255 255 255 / 22%)"
-                    : theme.colors.textMuted,
+                  color: t.colors.textMuted,
                   display: "flex",
                   alignItems: "center",
                   justifyContent: "center",
@@ -892,6 +905,9 @@ const ListItem = React.forwardRef(
                   height: "2rem",
                 })
               }
+              style={{
+                color: disabled ? "rgb(255 255 255 / 22%)" : undefined,
+              }}
             >
               {icon}
             </div>

@@ -31,6 +31,7 @@ export default {
     popoverBackground: backgroundNormal,
     backgroundTooltip: backgroundNormal,
     inputBackground: backgroundDarker,
+    inputBackgroundContrast: backgroundModifierDark,
     inputPlaceholder: textMutedAlpha,
     messageBackgroundModifierFocus: backgroundDarkTintLighter,
     messageBackgroundModifierHighlight: "hsl(210deg 67% 70% / 15%)",

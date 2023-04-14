@@ -21,16 +21,12 @@ const dashAnimation = keyframes({
   },
 });
 
-const Spinner = ({
-  size = "2rem",
-  color = "currentColor",
-  strokeWidth = 6,
-  style,
-}) => (
+const Spinner = ({ size = "2rem", color, strokeWidth = 6, style }) => (
   <svg
     viewBox="0 0 50 50"
     style={{ width: size, height: "auto", color, ...style }}
     css={css({
+      color: "currentcolor",
       animation: `${rotateAnimation} 2.5s linear infinite`,
       circle: {
         animation: `${dashAnimation} 2s ease-in-out infinite`,

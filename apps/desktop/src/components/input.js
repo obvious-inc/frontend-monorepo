@@ -12,6 +12,7 @@ const Input = React.forwardRef(
     {
       size,
       multiline = false,
+      contrast,
       label,
       hint,
       containerProps,
@@ -28,26 +29,32 @@ const Input = React.forwardRef(
       <Component
         ref={ref}
         autoComplete="off"
-        css={(theme) =>
+        css={(t) =>
           css({
+            "--bg-regular": t.colors.inputBackground,
+            "--bg-contrast":
+              t.colors.inputBackgroundContrast ?? t.colors.inputBackground,
             display: "block",
-            color: theme.colors.textNormal,
-            background: theme.colors.inputBackground,
+            color: t.colors.textNormal,
+            background: t.colors.inputBackground,
             fontSize: "1.5rem",
             fontWeight: "400",
             borderRadius: "0.3rem",
-            padding: size === "large" ? "0.7rem 0.9rem" : "0.5rem 0.7rem",
             width: "100%",
             maxWidth: "100%",
             outline: "none",
             border: 0,
-            "::placeholder": { color: theme.colors.inputPlaceholder },
-            "&:disabled": { color: theme.colors.textMuted },
-            "&:focus-visible": { boxShadow: theme.shadows.focus },
+            "::placeholder": { color: t.colors.inputPlaceholder },
+            "&:disabled": { color: t.colors.textMuted },
+            "&:focus-visible": { boxShadow: t.shadows.focus },
             // Prevents iOS zooming in on input fields
             "@supports (-webkit-touch-callout: none)": { fontSize: "1.6rem" },
           })
         }
+        style={{
+          background: contrast ? "var(--bg-contrast)" : "var(--bg-regular)",
+          padding: size === "large" ? "0.7rem 0.9rem" : "0.5rem 0.7rem",
+        }}
         {...props}
         {...extraProps}
       />

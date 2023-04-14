@@ -2,7 +2,7 @@ import isDateToday from "date-fns/isToday";
 import isDateYesterday from "date-fns/isYesterday";
 import React from "react";
 import { useNavigate } from "react-router-dom";
-import { css, useTheme } from "@emotion/react";
+import { css } from "@emotion/react";
 import {
   useActions,
   useSelectors,
@@ -90,8 +90,6 @@ const ChannelMessage = React.memo(function ChannelMessage_({
   const [isDropdownOpen, setDropdownOpen] = React.useState(false);
   const [isEmojiPickerOpen, setEmojiPickerOpen] = React.useState(false);
   const [isEditing, setEditingMessage] = React.useState(false);
-
-  const theme = useTheme();
 
   const me = useMe();
 
@@ -275,20 +273,22 @@ const ChannelMessage = React.memo(function ChannelMessage_({
       data-message-id={messageId}
       style={{
         background: hasPendingReply
-          ? theme.colors.messageBackgroundModifierHighlight
+          ? "var(--bg-hightlight)"
           : showAsFocused
-          ? theme.colors.messageBackgroundModifierFocus
+          ? "var(--bg-focus)"
           : undefined,
         padding:
           showSimplifiedMessage || compact
             ? "0.5rem 1.6rem"
             : "0.7rem 1.6rem 0.3rem",
+        color: message.isOptimistic ? "var(--optimistic-color)" : undefined,
       }}
-      css={(theme) =>
+      css={(t) =>
         css({
-          color: message.isOptimistic
-            ? theme.colors.textMuted
-            : theme.colors.textNormal,
+          "--optimistic-color": t.colors.textMuted,
+          "--bg-hightlight": t.colors.messageBackgroundModifierHighlight,
+          "--bg-focus": t.colors.messageBackgroundModifierFocus,
+          color: t.colors.textNormal,
           position: "relative",
           lineHeight: 1.46668,
           userSelect: "text",
@@ -342,8 +342,10 @@ const ChannelMessage = React.memo(function ChannelMessage_({
           display: "grid",
           gridTemplateColumns: `${AVATAR_SIZE} minmax(0, 1fr)`,
           alignItems: "flex-start",
-          gridGap: compact ? COMPACT_GUTTER_SIZE : GUTTER_SIZE,
         })}
+        style={{
+          gridGap: compact ? COMPACT_GUTTER_SIZE : GUTTER_SIZE,
+        }}
       >
         <MessageLeftColumn
           message={message}
@@ -780,29 +782,29 @@ const EmojiPickerMobileDialog = ({ onSelect, isOpen, onRequestClose }) => (
       })}
     >
       <div
-        css={(theme) =>
+        css={(t) =>
           css({
             height: "0.4rem",
             width: "4.2rem",
             borderRadius: "0.2rem",
-            background: theme.colors.interactiveNormal,
-            boxShadow:
-              "rgb(15 15 15 / 5%) 0px 0px 0px 1px, rgba(15, 15, 15, 0.1) 0px 3px 6px, rgba(15, 15, 15, 0.2) 0px 9px 24px",
+            background: t.light
+              ? t.colors.backgroundTertiary
+              : t.colors.textMuted,
+            boxShadow: t.shadows.elevationLow,
           })
         }
       />
     </button>
     <div
-      css={(theme) =>
+      css={(t) =>
         css({
           flex: 1,
           minHeight: 0,
           padding: "0.4rem 0.4rem 0",
-          background: theme.colors.dialogBackground,
+          background: t.colors.dialogBackground,
           borderTopLeftRadius: "0.6rem",
           borderTopRightRadius: "0.6rem",
-          boxShadow:
-            "rgb(15 15 15 / 10%) 0px 0px 0px 1px, rgb(15 15 15 / 20%) 0px 5px 10px, rgb(15 15 15 / 40%) 0px 15px 40px",
+          boxShadow: t.shadows.elevationHigh,
         })
       }
     >
@@ -815,15 +817,16 @@ const AppDisplayName = React.forwardRef(
   ({ displayName, color, ...props }, ref) => (
     <div
       ref={ref}
-      css={(theme) =>
+      css={(t) =>
         css({
+          "--default-color": t.colors.pink,
+          fontWeight: t.text.weights.emphasis,
           lineHeight: 1.2,
-          color: color ?? theme.colors.pink,
-          fontWeight: theme.text.weights.smallHeader,
           display: "inline-flex",
           alignItems: "center",
         })
       }
+      style={{ color: color ?? "var(--default-color)" }}
       {...props}
     >
       {displayName}
@@ -854,12 +857,13 @@ const InlineAppDisplayName = React.forwardRef(
   ({ displayName, color, ...props }, ref) => (
     <span
       ref={ref}
-      css={(theme) =>
+      css={(t) =>
         css({
-          color: color ?? theme.colors.pink,
-          fontWeight: "500",
+          "--default-color": t.colors.pink,
+          fontWeight: t.text.weights.emphasis,
         })
       }
+      style={{ color: color ?? "var(--default-color)" }}
       {...props}
     >
       {displayName}
@@ -1167,6 +1171,7 @@ const EmojiPicker = ({ width = "auto", height = "100%", onSelect }) => {
     >
       <div css={css({ padding: "0.7rem 0.7rem 0.3rem" })}>
         <Input
+          contrast
           ref={inputRef}
           value={query}
           onChange={(e) => {
@@ -1728,6 +1733,8 @@ const MessageLeftColumn = ({ isHovering, simplified, compact, message }) => {
         </TinyMutedText>
       </div>
     );
+  const hasVerfifiedProfilePicture =
+    message.author?.profilePicture?.isVerified ?? false;
 
   return (
     <div css={css({ padding: "0.2rem 0 0" })}>
@@ -1739,26 +1746,33 @@ const MessageLeftColumn = ({ isHovering, simplified, compact, message }) => {
           <button
             css={(t) =>
               css({
+                "--regular-color": t.colors.borderLight,
+                "--verified-color": t.colors.primary,
                 position: "relative",
                 borderRadius: t.avatars.borderRadius,
                 overflow: "hidden",
                 outline: "none",
                 ":focus-visible": {
-                  boxShadow: `0 0 0 0.2rem ${t.colors.primary}`,
+                  boxShadow: t.shadows.focus,
                 },
                 ":not([disabled])": {
-                  cursor: "pointer",
-                  ":hover": {
-                    boxShadow: message.author?.profilePicture?.isVerified
-                      ? `0 0 0 0.2rem ${t.colors.primary}`
-                      : `0 0 0 0.2rem ${t.colors.borderLight}`,
-                  },
                   ":active": {
                     transform: "translateY(0.1rem)",
+                  },
+                  "@media (hover: hover)": {
+                    cursor: "pointer",
+                    ":hover": {
+                      boxShadow: "var(--hover-box-shadow)",
+                    },
                   },
                 },
               })
             }
+            style={{
+              "--hover-box-shadow": hasVerfifiedProfilePicture
+                ? "0 0 0 0.2rem var(--verified-color)"
+                : "0 0 0 0.2rem var(--regular-color)",
+            }}
           >
             <UserAvatar
               transparent

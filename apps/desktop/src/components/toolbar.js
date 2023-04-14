@@ -65,7 +65,6 @@ export const Separator = React.forwardRef((props, ref) => (
       css({
         width: "1px",
         background: t.colors.borderLight,
-        // background: "rgb(255 255 255 / 20%)",
         margin: "0.4rem",
       })
     }
