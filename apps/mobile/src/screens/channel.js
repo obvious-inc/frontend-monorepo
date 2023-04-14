@@ -839,9 +839,9 @@ const Message = ({
       })}
     >
       {message.isReply && (
-        <RepliedMessage
+        <ReplyTargetMessage
           key={m.id}
-          message={message.repliedMessage}
+          messageId={message.replyTargetMessageId}
           selectUser={selectUser}
           onPressInteractiveMessageElement={
             handlePressInteractiveMessageElement
@@ -1184,11 +1184,12 @@ const Embed = ({
   );
 };
 
-const RepliedMessage = ({
-  message,
+const ReplyTargetMessage = ({
+  messageId,
   selectUser,
   onPressInteractiveMessageElement,
 }) => {
+  const message = useMessage(messageId);
   const authorMember = message?.author;
   const showAvatar =
     !message?.deleted &&

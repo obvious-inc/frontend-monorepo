@@ -8,6 +8,7 @@ const Context = React.createContext();
 
 export const Provider = ({ initialIsOpen, children }) => {
   const isSmallScreen = useMatchMedia("(max-width: 800px)");
+  const sidebarFocusTargetRef = React.useRef();
 
   const [isCollapsed, setCollapsed] = React.useState(
     initialIsOpen == null ? isSmallScreen : !initialIsOpen
@@ -15,11 +16,15 @@ export const Provider = ({ initialIsOpen, children }) => {
 
   const toggle = React.useCallback((collapse) => {
     if (collapse != null) {
+      if (!collapse) sidebarFocusTargetRef.current?.focus();
       setCollapsed(collapse);
       return;
     }
 
-    setCollapsed((c) => !c);
+    setCollapsed((c) => {
+      if (c) sidebarFocusTargetRef.current?.focus();
+      return !c;
+    });
   }, []);
 
   React.useEffect(() => {
@@ -28,16 +33,22 @@ export const Provider = ({ initialIsOpen, children }) => {
   }, [initialIsOpen, isSmallScreen]);
 
   const contextValue = React.useMemo(
-    () => ({ isFloating: isSmallScreen || isCollapsed, isCollapsed, toggle }),
-    [isSmallScreen, isCollapsed, toggle]
+    () => ({
+      sidebarFocusTargetRef,
+      isFloating: isSmallScreen || isCollapsed,
+      isCollapsed,
+      toggle,
+    }),
+    [isSmallScreen, isCollapsed, toggle, sidebarFocusTargetRef]
   );
 
   return <Context.Provider value={contextValue}>{children}</Context.Provider>;
 };
 
 export const useState = () => {
-  const { isFloating, isCollapsed } = React.useContext(Context);
-  return { isFloating, isCollapsed };
+  const { isFloating, isCollapsed, sidebarFocusTargetRef } =
+    React.useContext(Context);
+  return { isFloating, isCollapsed, sidebarFocusTargetRef };
 };
 
 export const useToggle = () => React.useContext(Context).toggle;
@@ -85,9 +96,7 @@ export const Layout = ({
             zIndex: isFloating ? 2 : undefined,
             background: theme.colors.backgroundSecondary,
             boxShadow:
-              !isFloating || isCollapsed
-                ? ""
-                : "rgb(15 15 15 / 10%) 0px 0px 0px 1px, rgb(15 15 15 / 20%) 0px 3px 6px, rgb(15 15 15 / 40%) 0px 9px 24px",
+              !isFloating || isCollapsed ? "none" : theme.mainMenu.boxShadow,
             position: isFloating ? "fixed" : "static",
             transition: "200ms transform ease-out",
             transform:

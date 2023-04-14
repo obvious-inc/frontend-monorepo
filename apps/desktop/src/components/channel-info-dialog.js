@@ -757,11 +757,11 @@ const ProperyButton = ({ name, value, ...props }) => (
         background: t.colors.backgroundSecondary,
         cursor: "pointer",
         outline: "none",
-        ":hover": { background: t.colors.dialogBackground },
-        ":focus-visible": { boxShadow: `0 0 0 0.2rem ${t.colors.primary}` },
         padding: "1rem 1.5rem",
-        "@media (min-width: 600px)": {
-          padding: "1.5rem 2rem",
+        ":focus-visible": { boxShadow: t.shadows.focus },
+        "@media (min-width: 600px)": { padding: "1.5rem 2rem" },
+        "@media (hover: hover)": {
+          ":hover": { background: t.colors.backgroundTertiary },
         },
       })
     }

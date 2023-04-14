@@ -60,7 +60,7 @@ export const Content = React.forwardRef((props, ref) => (
         minWidth: theme.dropdownMenus.minWidth,
         maxWidth: theme.dropdownMenus.maxWidth,
         padding: theme.dropdownMenus.padding,
-        background: theme.colors.dialogBackground,
+        background: theme.colors.popoverBackground,
         borderRadius: theme.dropdownMenus.borderRadius,
         boxShadow: theme.dropdownMenus.boxShadow,
       })

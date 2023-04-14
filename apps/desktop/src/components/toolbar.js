@@ -46,10 +46,10 @@ export const Button = React.forwardRef((props, ref) => (
         },
         "&:focus": {
           position: "relative",
-          boxShadow: `0 0 0 2px ${t.colors.primary}`,
+          boxShadow: t.shadows.focus,
         },
         "&[disabled]": {
-          color: t.colors.textMuted, // "rgb(255 255 255 / 40%)",
+          color: t.colors.textMuted,
           pointerEvents: "none",
         },
       })

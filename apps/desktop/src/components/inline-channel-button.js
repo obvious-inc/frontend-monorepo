@@ -3,7 +3,7 @@ import { useChannelName } from "@shades/common/app";
 import InlineButton from "./inline-button.js";
 
 const InlineChannelButton = React.forwardRef(
-  ({ channelId, variant, children, ...props }, ref) => {
+  ({ channelId, variant = "button", children, ...props }, ref) => {
     const label = useChannelName(channelId) ?? `${channelId.slice(0, 8)}...`;
 
     return (

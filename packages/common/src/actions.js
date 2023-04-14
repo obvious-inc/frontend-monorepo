@@ -32,6 +32,7 @@ export default ({
   cacheStore,
   parseUser,
   parseChannel,
+  parseMessage,
   buildCloudflareImageUrl,
   authTokenStore,
 }) => {
@@ -424,9 +425,11 @@ export default ({
         .join("?");
 
       return authorizedFetch(url, { allowUnauthorized: true }).then(
-        (messages) => {
+        (rawMessages) => {
+          const messages = rawMessages.map(parseMessage);
+
           dispatch({
-            type: "messages-fetched",
+            type: "fetch-messages:request-successful",
             channelId,
             limit,
             beforeMessageId,
@@ -434,21 +437,22 @@ export default ({
             messages,
           });
 
-          const replies = messages.filter((m) => m.reply_to != null);
+          const replies = messages.filter(
+            (m) => m.replyTargetMessageId != null
+          );
 
           // Fetch all messages replied to async. Works for now!
           for (let reply of replies)
             authorizedFetch(
-              `/channels/${channelId}/messages/${reply.reply_to}`,
-              {
-                allowUnauthorized: true,
-              }
-            ).then((message) => {
+              `/channels/${channelId}/messages/${reply.replyTargetMessageId}`,
+              { allowUnauthorized: true }
+            ).then((rawMessage) => {
+              const message = parseMessage(rawMessage);
               dispatch({
-                type: "message-fetched",
+                type: "fetch-message:request-successful",
                 message: message ?? {
-                  id: reply.reply_to,
-                  channel: channelId,
+                  id: reply.replyTargetMessageId,
+                  channelId,
                   deleted: true,
                 },
               });
@@ -460,9 +464,11 @@ export default ({
               ...messages
                 // TODO: move message parsing here
                 .filter((m) => m.type === 0 || m.type === 1)
-                .flatMap((m) => [m.author, m.inviter].filter(Boolean)),
+                .flatMap((m) =>
+                  [m.authorUserId, m.inviterUserId].filter(Boolean)
+                ),
               ...messages
-                .flatMap((m) => getMentions(m.blocks))
+                .flatMap((m) => getMentions(m.content))
                 .map((m) => m.ref),
             ];
             const filteredUserIds = unique(allUserIds).filter((id) =>
@@ -483,37 +489,36 @@ export default ({
     },
     markChannelRead,
     fetchMessage(id) {
-      return authorizedFetch(`/messages/${id}`).then((message) => {
+      return authorizedFetch(`/messages/${id}`).then((rawMessage) => {
+        const message = parseMessage(rawMessage);
         dispatch({
-          type: "message-fetch-request-successful",
+          type: "fetch-message:request-successful",
           message,
         });
         return message;
       });
     },
     async createMessage(
-      { channel, blocks, replyToMessageId },
+      { channel: channelId, blocks, replyToMessageId: replyTargetMessageId },
       { optimistic = true } = {}
     ) {
       const me = selectMe(getStoreState());
+      const stringContent = stringifyMessageBlocks(blocks);
 
       // TODO: Less hacky optimistc UI
-      const message = {
-        channel,
-        blocks,
-        content: stringifyMessageBlocks(blocks),
-        reply_to: replyToMessageId,
-      };
       const dummyId = generateDummyId();
 
       if (optimistic) {
         dispatch({
-          type: "message-create-request-sent",
+          type: "create-message:request-sent",
           message: {
-            ...message,
             id: dummyId,
-            created_at: new Date().toISOString(),
-            author: me.id,
+            type: "regular",
+            createdAt: new Date().toISOString(),
+            authorUserId: me.id,
+            channelId,
+            content: blocks,
+            stringContent,
           },
         });
       }
@@ -521,24 +526,30 @@ export default ({
       return authorizedFetch("/messages", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(message),
+        body: JSON.stringify({
+          channel: channelId,
+          blocks,
+          content: stringContent,
+          reply_to: replyTargetMessageId,
+        }),
       }).then(
-        (message) => {
+        (rawMessage) => {
+          const message = parseMessage(rawMessage);
           dispatch({
-            type: "message-create-request-successful",
+            type: "create-message:request-successful",
             message,
             optimisticEntryId: dummyId,
           });
-          markChannelRead(message.channel, {
-            readAt: new Date(message.created_at),
+          markChannelRead(message.channelId, {
+            readAt: new Date(message.createdAt),
           });
           return message;
         },
         (error) => {
           dispatch({
-            type: "message-create-request-failed",
+            type: "create-message:request-failed",
             error,
-            channelId: channel,
+            channelId,
             optimisticEntryId: dummyId,
           });
           return Promise.reject(error);
@@ -553,12 +564,13 @@ export default ({
           blocks,
           content: stringifyMessageBlocks(blocks),
         }),
-      }).then((message) => {
+      }).then((rawMessage) => {
+        const message = parseMessage(rawMessage);
         dispatch({
           type: "message-update-request-successful",
           message,
         });
-        return message;
+        return rawMessage;
       });
     },
     removeMessage(messageId) {

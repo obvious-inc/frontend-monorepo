@@ -93,21 +93,21 @@ const ChannelMessage = React.memo(function ChannelMessage_({
 
   const theme = useTheme();
 
-  const user = useMe();
+  const me = useMe();
 
   const showAsFocused =
     !isEditing &&
     (hasTouchFocus || isHovering || isDropdownOpen || isEmojiPickerOpen);
 
   const isDirectMessage = channel != null && channel.kind === "dm";
-  const isOwnMessage = user?.id === message.authorUserId;
+  const isOwnMessage = me?.id === message.authorUserId;
 
   const allowEdit =
     !message.isSystemMessage &&
     !message.isAppMessage &&
-    user?.id === message.authorUserId;
+    me?.id === message.authorUserId;
 
-  const allowDirectMessages = user != null;
+  const allowDirectMessages = me != null;
 
   const createdAtDate = React.useMemo(
     () => new Date(message.createdAt),
@@ -127,7 +127,7 @@ const ChannelMessage = React.memo(function ChannelMessage_({
     !message.isReply &&
     previousMessage != null &&
     previousMessage.authorId === message.authorId &&
-    createdAtDate - new Date(previousMessage.created_at) <
+    createdAtDate - new Date(previousMessage.createdAt) <
       5 * ONE_MINUTE_IN_MILLIS;
 
   const reactions = message.reactions;
@@ -161,12 +161,12 @@ const ChannelMessage = React.memo(function ChannelMessage_({
     (emoji) => {
       const existingReaction = reactions.find((r) => r.emoji === emoji);
 
-      if (!existingReaction?.users.includes(user?.id))
+      if (!existingReaction?.users.includes(me?.id))
         addMessageReaction(messageId, { emoji });
 
       setEmojiPickerOpen(false);
     },
-    [messageId, reactions, addMessageReaction, user?.id]
+    [messageId, reactions, addMessageReaction, me?.id]
   );
 
   const toolbarDropdownItems = React.useMemo(
@@ -298,7 +298,7 @@ const ChannelMessage = React.memo(function ChannelMessage_({
         ? hoverHandlers
         : {
             onClick: () => {
-              giveTouchFocus(message.id);
+              giveTouchFocus(messageId);
             },
           })}
     >
@@ -316,7 +316,7 @@ const ChannelMessage = React.memo(function ChannelMessage_({
           <MessageToolbar
             allowReplies={!isOwnMessage && !message.isSystemMessage}
             allowEdit={allowEdit}
-            allowReactions={user != null}
+            allowReactions={me != null}
             initReply={initReply}
             initEdit={initEdit}
             addReaction={addReaction}
@@ -329,10 +329,10 @@ const ChannelMessage = React.memo(function ChannelMessage_({
       )}
 
       {message.isReply && (
-        <RepliedMessage
-          message={message.repliedMessage}
+        <ReplyTargetMessage
+          messageId={message.replyTargetMessageId}
           onClickMessage={() => {
-            scrollToMessage(message.repliedMessage.id);
+            scrollToMessage(message.replyTargetMessageId);
           }}
         />
       )}
@@ -401,7 +401,7 @@ const ChannelMessage = React.memo(function ChannelMessage_({
                 suffix={message.isEdited && editedMessageSuffix}
               />
 
-              {message.embeds?.length > 0 && <Embeds messageId={message.id} />}
+              {message.embeds?.length > 0 && <Embeds messageId={messageId} />}
             </>
           )}
 
@@ -1527,7 +1527,8 @@ const EditMessageInput = React.forwardRef(
   }
 );
 
-const RepliedMessage = ({ message, onClickMessage }) => {
+const ReplyTargetMessage = ({ messageId, onClickMessage }) => {
+  const message = useMessage(messageId);
   const authorMember = message?.author;
   const showAvatar = authorMember != null && !authorMember?.deleted;
 
@@ -1577,7 +1578,7 @@ const RepliedMessage = ({ message, onClickMessage }) => {
               whiteSpace: "nowrap",
               overflow: "hidden",
               textOverflow: "ellipsis",
-              color: t.colors.textMuted,
+              color: t.colors.textDimmed,
             })
           }
         >
@@ -1626,7 +1627,8 @@ const RepliedMessage = ({ message, onClickMessage }) => {
                 <Popover.Content>
                   <ProfilePreview userId={message?.authorUserId} />
                 </Popover.Content>
-              </Popover.Root>{" "}
+              </Popover.Root>
+              {": "}
               <span
                 role="button"
                 tabIndex={0}
@@ -1661,7 +1663,7 @@ const MessageLeftColumn = ({ isHovering, simplified, compact, message }) => {
       >
         <TinyMutedText nowrap style={{ float: "right" }}>
           <FormattedDateWithTooltip
-            value={new Date(message.created_at)}
+            value={new Date(message.createdAt)}
             hour="numeric"
             minute="numeric"
             tooltipContentProps={{ sideOffset: 7 }}
@@ -1683,7 +1685,7 @@ const MessageLeftColumn = ({ isHovering, simplified, compact, message }) => {
       >
         <TinyMutedText nowrap style={{ float: "right" }}>
           <FormattedDate
-            value={new Date(message.created_at)}
+            value={new Date(message.createdAt)}
             hour="numeric"
             minute="numeric"
           />
@@ -1716,7 +1718,7 @@ const MessageLeftColumn = ({ isHovering, simplified, compact, message }) => {
       >
         <TinyMutedText nowrap style={{ float: "right" }}>
           <FormattedDateWithTooltip
-            value={new Date(message.created_at)}
+            value={new Date(message.createdAt)}
             hour="numeric"
             minute="numeric"
             tooltipContentProps={{ sideOffset: 7 }}
@@ -1874,7 +1876,7 @@ const TinyMutedText = ({ children, nowrap = false, style }) => (
   <div
     css={(theme) =>
       css({
-        color: theme.colors.textMuted,
+        color: theme.colors.textDimmed,
         fontSize: theme.fontSizes.tiny,
       })
     }

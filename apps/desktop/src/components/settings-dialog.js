@@ -1,10 +1,13 @@
+import { useTheme } from "@emotion/react";
 import { useCachedState } from "@shades/common/app";
 import FormDialog from "./form-dialog.js";
 
 const SettingsDialog = ({ titleProps, dismiss }) => {
+  const theme = useTheme();
+
   const [themePreference, setThemePreference] = useCachedState(
     "preferred-theme",
-    "system"
+    theme.name ?? "system"
   );
   const [compactnessPreference, setCompactnessPreference] = useCachedState(
     "preferred-compactness",
@@ -26,6 +29,7 @@ const SettingsDialog = ({ titleProps, dismiss }) => {
           value: themePreference,
           type: "select",
           label: "Theme",
+          size: "medium",
           options: [
             { value: "system", label: "Use system setting" },
             { value: "light", label: "Light" },
@@ -40,6 +44,7 @@ const SettingsDialog = ({ titleProps, dismiss }) => {
           value: compactnessPreference,
           type: "select",
           label: "Messages",
+          size: "medium",
           options: [
             { value: "normal", label: "Normal" },
             { value: "compact", label: "Compact" },
@@ -53,6 +58,7 @@ const SettingsDialog = ({ titleProps, dismiss }) => {
           value: zoomPreference,
           type: "select",
           label: "Text size",
+          size: "medium",
           options: [
             { value: "tiny", label: "Tiny" },
             { value: "small", label: "Small" },

@@ -16,8 +16,9 @@ import {
 import IconButton from "@shades/ui-web/icon-button";
 import { isNodeEmpty, toMessageBlocks } from "../slate/utils";
 import useCommands from "../hooks/commands";
-import MessageInput from "./message-input";
-import Spinner from "./spinner";
+import InlineUserButtonWithProfilePopover from "./inline-user-button-with-profile-popover.js";
+import MessageInput from "./message-input.js";
+import Spinner from "./spinner.js";
 
 const { createEmptyParagraphElement } = messageUtils;
 
@@ -47,7 +48,9 @@ const AttachmentList = ({ items, remove }) => (
         css={css({
           position: "relative",
           ".delete-button": { opacity: 0 },
-          ":hover .delete-button": { opacity: 1 },
+          "@media (hover: hover)": {
+            ":hover .delete-button": { opacity: 1 },
+          },
         })}
       >
         <button
@@ -100,13 +103,11 @@ const AttachmentList = ({ items, remove }) => (
               background: theme.colors.inputBackground,
               borderRadius: "50%",
               boxShadow: `0 0 0 0.2rem ${theme.colors.inputBackground}`,
-              svg: {
-                width: "2.2rem",
-                height: "auto",
-                color: theme.colors.interactiveNormal,
-              },
-              ":hover svg": {
-                color: theme.colors.interactiveHover,
+              color: theme.colors.textDimmed,
+              "@media (hover: hover)": {
+                ":hover": {
+                  color: theme.colors.textDimmedModifierHover,
+                },
               },
             })
           }
@@ -114,7 +115,13 @@ const AttachmentList = ({ items, remove }) => (
             remove({ url });
           }}
         >
-          <PlusCircleIcon style={{ transform: "rotate(45deg" }} />
+          <PlusCircleIcon
+            style={{
+              width: "2.2rem",
+              height: "auto",
+              transform: "rotate(45deg",
+            }}
+          />
         </button>
       </div>
     ))}
@@ -269,56 +276,49 @@ const NewChannelMessageInput = React.memo(
                 width: "100%",
                 display: "flex",
                 alignItems: "center",
-                background: t.colors.backgroundSecondary,
+                background: t.light
+                  ? t.colors.backgroundQuarternary
+                  : t.colors.backgroundSecondary,
+                // filter: t.light ? "brightness(0.925)" : "brightness(0.875)",
                 borderTopLeftRadius: "0.7rem",
                 borderTopRightRadius: "0.7rem",
                 padding: "0.6rem 1rem 0.6rem 1.1rem",
                 fontSize: "1.2rem",
-                color: t.colors.textMuted, // "rgb(255 255 255 / 54%)",
+                color: t.colors.textDimmed,
               })
             }
           >
             <div css={css({ flex: 1, paddingTop: "0.2rem" })}>
               Replying to{" "}
-              <span
+              <InlineUserButtonWithProfilePopover
+                userId={replyTargetMessage.authorUserId}
+                variant="link"
                 css={(t) =>
                   css({
-                    fontWeight: "500",
-                    color: replyTargetMessage.author?.deleted
-                      ? t.colors.textDimmed
-                      : undefined,
+                    color: t.colors.textDimmed,
+                    ":disabled": { color: t.colors.textMuted },
                   })
                 }
-              >
-                {replyTargetMessage.author?.deleted
-                  ? "Deleted user"
-                  : replyTargetMessage.author?.displayName}
-              </span>
+              />
             </div>
             <button
               onClick={cancelReply}
-              css={(theme) =>
+              css={(t) =>
                 css({
-                  color: theme.colors.interactiveNormal,
+                  color: t.colors.textDimmed,
                   cursor: "pointer",
                   outline: "none",
                   borderRadius: "50%",
-                  ":hover": { color: theme.colors.interactiveHover },
                   ":focus-visible": {
-                    boxShadow: `0 0 0 0.2rem ${theme.colors.primary}`,
+                    boxShadow: `0 0 0 0.2rem ${t.colors.primary}`,
+                  },
+                  "@media (hover: hover)": {
+                    ":hover": { color: t.colors.textDimmedModifierHover },
                   },
                 })
               }
             >
-              <CrossCircleIcon
-                css={(t) =>
-                  css({
-                    width: "1.6rem",
-                    height: "auto",
-                    color: t.colors.textMuted,
-                  })
-                }
-              />
+              <CrossCircleIcon style={{ width: "1.6rem", height: "auto" }} />
             </button>
           </div>
         )}

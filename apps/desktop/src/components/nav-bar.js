@@ -72,16 +72,20 @@ const NavBar = ({ noSideMenu, children }) => {
                   borderRadius: "0.3rem",
                   background: "none",
                   border: 0,
-                  cursor: "pointer",
                   color: t.colors.textNormal,
+                  outline: "none",
+                  ":focus-visible": { boxShadow: t.shadows.focus },
                   ".chevron": {
                     opacity: 0,
                     transition: "0.2s opacity ease-out",
                   },
-                  ":hover": {
-                    background: t.colors.backgroundModifierHover,
-                    ".chevron": { opacity: 1 },
-                    ".hamburger": { display: "none" },
+                  "@media (hover: hover)": {
+                    cursor: "pointer",
+                    ":hover": {
+                      background: t.colors.backgroundModifierHover,
+                      ".chevron": { opacity: 1 },
+                      ".hamburger": { display: "none" },
+                    },
                   },
                 })
               }

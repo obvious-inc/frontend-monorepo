@@ -351,7 +351,7 @@ const ChannelNavBar = ({ noSideMenu, channelId }) => {
         style={{
           flex: 1,
           minWidth: 0,
-          overflow: "hidden",
+          // overflow: "hidden",
           display: "flex",
           alignItems: "center",
         }}
@@ -367,8 +367,13 @@ const ChannelNavBar = ({ noSideMenu, channelId }) => {
                 minWidth: 0,
                 overflow: "hidden",
                 textOverflow: "ellipsis",
-                cursor: "pointer",
-                ":hover": { color: t.colors.textNormal },
+                borderRadius: "0.3rem",
+                outline: "none",
+                "&:focus-visible": { boxShadow: t.shadows.focus },
+                "@media (hover: hover)": {
+                  cursor: "pointer",
+                  ":hover": { color: t.colors.textNormal },
+                },
               })
             }
           >
@@ -377,31 +382,48 @@ const ChannelNavBar = ({ noSideMenu, channelId }) => {
         )}
 
         {channel.description != null && (
-          <button
-            onClick={() => {
-              setChannelDialogMode("about");
-            }}
-            css={(t) =>
-              css({
-                flex: 1,
-                minWidth: 0,
-                color: t.colors.textDimmed,
-                marginLeft: "1.1rem",
-                padding: "0 1.1rem",
-                borderLeft: "1px solid",
-                borderColor: t.colors.borderLight,
-                whiteSpace: "nowrap",
-                overflow: "hidden",
-                textOverflow: "ellipsis",
-                userSelect: "text",
-                cursor: "pointer",
-                maxWidth: "100%",
-                ":hover": { color: t.colors.textDimmedModifierHover },
-              })
-            }
-          >
-            {channel.description}
-          </button>
+          <>
+            <div
+              role="separator"
+              aria-orientation="vertical"
+              css={(t) =>
+                css({
+                  width: "0.1rem",
+                  height: "1.8rem",
+                  background: t.colors.borderLight,
+                  margin: "0 1.1rem",
+                })
+              }
+            />
+
+            <button
+              onClick={() => {
+                setChannelDialogMode("about");
+              }}
+              css={(t) =>
+                css({
+                  flex: 1,
+                  minWidth: 0,
+                  color: t.colors.textDimmed,
+                  marginRight: "1.1rem",
+                  whiteSpace: "nowrap",
+                  overflow: "hidden",
+                  textOverflow: "ellipsis",
+                  userSelect: "text",
+                  maxWidth: "100%",
+                  borderRadius: "0.3rem",
+                  outline: "none",
+                  "&:focus-visible": { boxShadow: t.shadows.focus },
+                  "@media (hover: hover)": {
+                    cursor: "pointer",
+                    ":hover": { color: t.colors.textDimmedModifierHover },
+                  },
+                })
+              }
+            >
+              {channel.description}
+            </button>
+          </>
         )}
       </div>
 

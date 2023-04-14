@@ -84,7 +84,10 @@ export const useScrollAwareMessageFetcher = (
 
   useBeforeActionListener((action) => {
     // Maintain scroll position when new messages arrive
-    if (action.type === "messages-fetched" && action.channelId === channelId)
+    if (
+      action.type === "fetch-messages:request-successful" &&
+      action.channelId === channelId
+    )
       maintainScrollPositionDuringTheNextDomMutation();
   });
 

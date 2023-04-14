@@ -115,8 +115,11 @@ const Layout = () => {
   const hasFetchedMenuData = useHasFetchedMenuData();
 
   const toggleMenu = useSidebarToggle();
-  const { isFloating: isMenuFloating, isCollapsed: isMenuCollapsed } =
-    useSidebarState();
+  const {
+    isFloating: isMenuFloating,
+    isCollapsed: isMenuCollapsed,
+    sidebarFocusTargetRef: menuFocusTargetRef,
+  } = useSidebarState();
 
   const {
     isOpen: isEditProfileDialogOpen,
@@ -254,6 +257,7 @@ const Layout = () => {
                 }}
               />
               <ListItem
+                ref={menuFocusTargetRef}
                 compact={false}
                 icon={<MagnificationGlassIcon style={{ width: "1.4rem" }} />}
                 title="Search"
@@ -592,10 +596,14 @@ const ProfileDropdownTrigger = React.forwardRef(
                   marginLeft: "0.7rem",
                   marginRight: "-0.4rem",
                   borderRadius: "0.3rem",
+                  outline: "none",
                   color: t.colors.textMuted,
-                  ":hover": {
-                    color: t.colors.textNormal,
-                    background: t.colors.backgroundModifierHover,
+                  ":focus-visible": { boxShadow: t.shadows.focus },
+                  "@media (hover: hover)": {
+                    ":hover": {
+                      color: t.colors.textNormal,
+                      background: t.colors.backgroundModifierHover,
+                    },
                   },
                 })
               }
@@ -751,150 +759,158 @@ const ChannelItem = ({ id, expandable }) => {
   );
 };
 
-const ListItem = ({
-  component: Component = "button",
-  expandable,
-  expanded,
-  compact = true,
-  onToggleExpanded,
-  indendationLevel = 0,
-  icon,
-  title,
-  notificationCount,
-  disabled,
-  ...props
-}) => (
-  <div
-    css={(theme) => css`
-      padding: 0 ${theme.mainMenu.containerHorizontalPadding};
+const ListItem = React.forwardRef(
+  (
+    {
+      component: Component = "button",
+      expandable,
+      expanded,
+      compact = true,
+      onToggleExpanded,
+      indendationLevel = 0,
+      icon,
+      title,
+      notificationCount,
+      disabled,
+      ...props
+    },
+    ref
+  ) => (
+    <div
+      css={(theme) => css`
+        padding: 0 ${theme.mainMenu.containerHorizontalPadding};
 
-      &:not(:last-of-type) {
-        margin-bottom: ${theme.mainMenu.itemDistance};
-      }
-      & > * {
-        display: flex;
-        align-items: center;
-        width: 100%;
-        border: 0;
-        font-size: ${theme.fontSizes.default};
-        font-weight: ${theme.mainMenu.itemTextWeight};
-        text-align: left;
-        background: transparent;
-        border-radius: ${theme.mainMenu.itemBorderRadius};
-        cursor: pointer;
-        outline: none;
-        color: ${disabled
-          ? theme.mainMenu.itemTextColorDisabled
-          : theme.mainMenu.itemTextColor};
-        padding: 0.2rem ${theme.mainMenu.itemHorizontalPadding};
-        padding-left: calc(
-          ${theme.mainMenu.itemHorizontalPadding} + ${indendationLevel} * 2.2rem
-        );
-        text-decoration: none;
-        line-height: 1.3;
-        height: ${theme.mainMenu.itemHeight};
-        margin: 0.1rem 0;
-        pointer-events: ${disabled ? "none" : "all"};
-      }
-      & > *.active,
-      & > *:not(.active):hover {
-        background: ${theme.colors.backgroundModifierHover};
-      }
-      & > *.active {
-        color: ${theme.colors.textNormal};
-      }
-      & > *:focus-visible {
-        box-shadow: 0 0 0 0.2rem ${theme.colors.primary};
-      }
-    `}
-  >
-    <Component {...props}>
-      {expandable && (
-        <div
-          css={css({
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            width: "2.2rem",
-            height: "2.2rem",
-          })}
-          style={{ marginRight: icon == null ? "0.4rem" : 0 }}
-        >
+        &:not(:last-of-type) {
+          margin-bottom: ${theme.mainMenu.itemDistance};
+        }
+        & > * {
+          display: flex;
+          align-items: center;
+          width: 100%;
+          border: 0;
+          font-size: ${theme.fontSizes.default};
+          font-weight: ${theme.mainMenu.itemTextWeight};
+          text-align: left;
+          background: transparent;
+          border-radius: ${theme.mainMenu.itemBorderRadius};
+          cursor: pointer;
+          outline: none;
+          color: ${disabled
+            ? theme.mainMenu.itemTextColorDisabled
+            : theme.mainMenu.itemTextColor};
+          padding: 0.2rem ${theme.mainMenu.itemHorizontalPadding};
+          padding-left: calc(
+            ${theme.mainMenu.itemHorizontalPadding} + ${indendationLevel} *
+              2.2rem
+          );
+          text-decoration: none;
+          line-height: 1.3;
+          height: ${theme.mainMenu.itemHeight};
+          margin: 0.1rem 0;
+          pointer-events: ${disabled ? "none" : "all"};
+        }
+        & > *.active,
+        & > *:not(.active):hover {
+          background: ${theme.colors.backgroundModifierHover};
+        }
+        & > *.active {
+          color: ${theme.colors.textNormal};
+        }
+        & > *:focus-visible {
+          box-shadow: ${theme.shadows.focus};
+        }
+      `}
+    >
+      <Component ref={ref} {...props}>
+        {expandable && (
           <div
-            role="button"
-            tabIndex={0}
-            onClick={() => {
-              onToggleExpanded();
-            }}
-            css={(theme) =>
-              css({
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                width: "2rem",
-                height: "2rem",
-                color: theme.colors.textMuted,
-                borderRadius: "0.3rem",
-                transition: "background 20ms ease-in",
-                ":hover": {
-                  background: theme.colors.backgroundModifierHover,
-                },
-              })
-            }
+            css={css({
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              width: "2.2rem",
+              height: "2.2rem",
+            })}
+            style={{ marginRight: icon == null ? "0.4rem" : 0 }}
           >
-            <TriangleIcon
-              style={{
-                transition: "transform 200ms ease-out",
-                transform: `rotate(${expanded ? "180deg" : "90deg"})`,
-                width: "0.963rem",
+            <div
+              role="button"
+              tabIndex={0}
+              onClick={() => {
+                onToggleExpanded();
               }}
-            />
+              css={(theme) =>
+                css({
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  width: "2rem",
+                  height: "2rem",
+                  color: theme.colors.textMuted,
+                  borderRadius: "0.3rem",
+                  transition: "background 20ms ease-in",
+                  ":hover": {
+                    background: theme.colors.backgroundModifierHover,
+                  },
+                })
+              }
+            >
+              <TriangleIcon
+                style={{
+                  transition: "transform 200ms ease-out",
+                  transform: `rotate(${expanded ? "180deg" : "90deg"})`,
+                  width: "0.963rem",
+                }}
+              />
+            </div>
           </div>
-        </div>
-      )}
-      {icon != null && (
-        <div
-          css={css({
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            width: "2.2rem",
-            height: "1.8rem",
-            marginRight: compact ? "0.4rem" : "0.8rem",
-          })}
-        >
+        )}
+        {icon != null && (
           <div
-            css={(theme) =>
-              css({
-                color: disabled
-                  ? "rgb(255 255 255 / 22%)"
-                  : theme.colors.textMuted,
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                width: "2rem",
-                height: "2rem",
-              })
-            }
+            css={css({
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              width: "2.2rem",
+              height: "1.8rem",
+              marginRight: compact ? "0.4rem" : "0.8rem",
+            })}
           >
-            {icon}
+            <div
+              css={(theme) =>
+                css({
+                  color: disabled
+                    ? "rgb(255 255 255 / 22%)"
+                    : theme.colors.textMuted,
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  width: "2rem",
+                  height: "2rem",
+                })
+              }
+            >
+              {icon}
+            </div>
           </div>
+        )}
+        <div
+          style={{
+            flex: 1,
+            minWidth: 0,
+            whiteSpace: "nowrap",
+            overflow: "hidden",
+            textOverflow: "ellipsis",
+          }}
+        >
+          {title}
         </div>
-      )}
-      <div
-        style={{
-          flex: 1,
-          minWidth: 0,
-          whiteSpace: "nowrap",
-          overflow: "hidden",
-          textOverflow: "ellipsis",
-        }}
-      >
-        {title}
-      </div>
-      {notificationCount > 0 && <NotificationBadge count={notificationCount} />}
-    </Component>
-  </div>
+        {notificationCount > 0 && (
+          <NotificationBadge count={notificationCount} />
+        )}
+      </Component>
+    </div>
+  )
 );
 
 export default Layout;

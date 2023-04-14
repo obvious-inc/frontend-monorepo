@@ -26,7 +26,12 @@ const InlineUserButton = React.forwardRef(
 
     return (
       // {children} need to be rendered to work in Slate editor
-      <InlineButton ref={ref} variant={variant} disabled={disabled} {...props}>
+      <InlineButton
+        ref={ref}
+        variant={variant}
+        {...props}
+        disabled={props.disabled ?? disabled}
+      >
         {variant === "button" && "@"}
         {label}
         {children}

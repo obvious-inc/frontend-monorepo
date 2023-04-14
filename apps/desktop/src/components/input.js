@@ -43,7 +43,7 @@ const Input = React.forwardRef(
             border: 0,
             "::placeholder": { color: theme.colors.inputPlaceholder },
             "&:disabled": { color: theme.colors.textMuted },
-            "&:focus": { boxShadow: `0 0 0 0.2rem ${theme.colors.primary}` },
+            "&:focus-visible": { boxShadow: theme.shadows.focus },
             // Prevents iOS zooming in on input fields
             "@supports (-webkit-touch-callout: none)": { fontSize: "1.6rem" },
           })

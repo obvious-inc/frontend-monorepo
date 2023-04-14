@@ -241,6 +241,7 @@ const Channel = () => {
 const ReplyForm = ({ messageId, sendReply, isLastMessage }) => {
   const me = useMe();
   const message = useMessage(messageId);
+  const replyTargetMessage = useMessage(message?.replyTargetMessageId);
   const [hasPendingSubmit, setPending] = React.useState(false);
   const [replyContent, setReplyContent] = React.useState("");
 
@@ -325,7 +326,7 @@ const ReplyForm = ({ messageId, sendReply, isLastMessage }) => {
           })
         }
       >
-        {message.repliedMessage?.stringContent != null && (
+        {replyTargetMessage?.stringContent != null && (
           <div
             css={(t) =>
               css({
@@ -336,7 +337,7 @@ const ReplyForm = ({ messageId, sendReply, isLastMessage }) => {
               })
             }
           >
-            {message.repliedMessage.stringContent}
+            {replyTargetMessage.stringContent}
           </div>
         )}
         {message?.stringContent || "..."}

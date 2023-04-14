@@ -27,7 +27,8 @@ const { truncateAddress } = ethereumUtils;
 const scrollPositionCache = {};
 
 const isScrolledToBottom = (el) =>
-  Math.ceil(el.scrollTop) + el.getBoundingClientRect().height >=
+  // ceil is required when page is zoomed
+  Math.ceil(el.scrollTop) + Math.ceil(el.getBoundingClientRect().height) >=
   el.scrollHeight;
 
 const useScroll = ({

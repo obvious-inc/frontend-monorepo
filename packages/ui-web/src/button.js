@@ -21,7 +21,7 @@ const baseStyles = (t, { align }) => ({
   textOverflow: "ellipsis",
   outline: "none",
   "&[disabled]": { opacity: 0.5, cursor: "not-allowed" },
-  "&:focus-visible": { boxShadow: `0 0 0 0.2rem ${t.colors.primary}` },
+  "&:focus-visible": { boxShadow: t.shadows.focus },
 });
 
 const stylesByVariant = (t, { danger }) => ({
@@ -51,7 +51,7 @@ const stylesByVariant = (t, { danger }) => ({
     color: "white",
     background: t.colors.primary,
     "&:focus-visible": {
-      boxShadow: `0 0 0 0.2rem ${t.colors.primaryTransparent}`,
+      boxShadow: `0 0 0 0.3rem ${t.colors.primaryTransparent}`,
     },
     "@media (hover: hover)": {
       "&:not([disabled]):hover": {
@@ -90,6 +90,12 @@ const stylesBySize = (theme, { multiline, align }) => {
       padding: ["1.2rem", align === "left" ? "1.2rem" : "2rem"].join(" "),
     },
   };
+};
+
+const iconLayoutPropsBySize = {
+  small: { size: "2.8rem", gutter: "0.6rem" },
+  medium: { size: "3rem", gutter: "0.8rem" },
+  large: { size: "3.2rem", gutter: "1rem" },
 };
 
 const defaultPropsByComponent = {
@@ -132,11 +138,8 @@ const Button = React.forwardRef(
       onPressStart,
     });
 
-    const iconLayout = {
-      small: { size: "2.8rem", gutter: "0.6rem" },
-      medium: { size: "3rem", gutter: "0.8rem" },
-      large: { size: "3.2rem", gutter: "1rem" },
-    }[size];
+    const iconLayout =
+      iconLayoutPropsBySize[size] ?? iconLayoutPropsBySize.medium;
 
     return (
       <Component

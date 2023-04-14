@@ -173,6 +173,77 @@ const createApiParsers = ({ buildCloudflareImageUrl }) => ({
 
     return { ...channel, image, imageLarge };
   },
+  parseMessage(rawMessage) {
+    if (rawMessage.deleted) return { id: rawMessage.id, deleted: true };
+
+    const systemMessageTypes = [
+      "member-joined",
+      "user-invited",
+      "channel-updated",
+    ];
+    const appMessageTypes = ["webhook", "app", "app-installed"];
+    const deriveMessageType = (message) => {
+      switch (message.type) {
+        case undefined:
+        case 0:
+          return "regular";
+        case 1:
+          if (message.inviter) return "user-invited";
+          return "member-joined";
+        case 2:
+        case 3:
+          return "webhook";
+        case 5:
+          return "channel-updated";
+        case 6:
+          return "app-installed";
+        default:
+          console.warn(`Unknown message type "${message.type}"`);
+      }
+    };
+
+    const type = deriveMessageType(rawMessage);
+
+    const isSystemMessage = systemMessageTypes.includes(type);
+    const isAppMessage = appMessageTypes.includes(type);
+
+    const appId = rawMessage.app;
+    const authorUserId = rawMessage.author;
+
+    const content =
+      rawMessage.blocks?.length > 0
+        ? rawMessage.blocks
+        : [{ type: "paragraph", children: [{ text: rawMessage.content }] }];
+
+    const authorId = isSystemMessage
+      ? "system"
+      : isAppMessage
+      ? appId
+      : authorUserId;
+
+    return {
+      id: rawMessage.id,
+      deleted: rawMessage.deleted,
+      createdAt: rawMessage.created_at,
+      channelId: rawMessage.channel,
+      authorUserId,
+      authorId,
+      isEdited: rawMessage.edited_at != null,
+      type,
+      isSystemMessage,
+      isAppMessage,
+      installerUserId: rawMessage.installer,
+      inviterUserId: rawMessage.inviter,
+      content,
+      stringContent: rawMessage.content,
+      embeds: rawMessage.embeds,
+      reactions: rawMessage.reactions,
+      appId,
+      replyTargetMessageId: rawMessage.reply_to,
+      isReply: rawMessage.reply_to != null,
+      updates: rawMessage.updates,
+    };
+  },
 });
 
 const Context = React.createContext({});
@@ -198,7 +269,7 @@ export const Provider = ({ cloudflareAccountHash, children }) => {
     [cloudflareAccountHash]
   );
 
-  const { parseUser, parseChannel } = createApiParsers({
+  const { parseUser, parseChannel, parseMessage } = createApiParsers({
     buildCloudflareImageUrl,
   });
 
@@ -220,6 +291,7 @@ export const Provider = ({ cloudflareAccountHash, children }) => {
       cacheStore,
       parseUser,
       parseChannel,
+      parseMessage,
       buildCloudflareImageUrl,
       authTokenStore,
     })
@@ -266,10 +338,19 @@ export const Provider = ({ cloudflareAccountHash, children }) => {
       case "channel-user":
         dispatchEvent({ channel: parseChannel(data.channel) });
         break;
+
       case "user-profile-updated":
       case "user-presence-updated":
       case "channel-user-joined":
         dispatchEvent({ user: parseUser(data.user) });
+        break;
+
+      case "message-created":
+      case "message-updated":
+      case "message-removed":
+      case "message-reaction-added":
+      case "message-reaction-removed":
+        dispatchEvent({ message: parseMessage(data.message) });
         break;
 
       case "channel-user-invited":

@@ -8,10 +8,10 @@ import { selectApp } from "./apps";
 
 const entriesById = (state = {}, action) => {
   switch (action.type) {
-    case "messages-fetched":
+    case "fetch-messages:request-successful":
       return { ...state, ...indexBy((m) => m.id, action.messages) };
 
-    case "message-fetched":
+    case "fetch-message:request-successful":
       // Ignore messages already in cache to prevent rerenders. Updates should
       // be covered by server events anyway. Should be fine. Right? RIGHT?
       if (state[action.message.id] != null) return state;
@@ -46,29 +46,26 @@ const entriesById = (state = {}, action) => {
     case "server-event:message-removed":
       return omitKey(action.data.message.id, state);
 
-    case "message-fetch-request-successful":
-      return { ...state, [action.message.id]: action.message };
-
     case "message-delete-request-successful":
       return {
         ...state,
         [action.messageId]: { ...state[action.messageId], deleted: true },
       };
 
-    case "message-create-request-sent":
+    case "create-message:request-sent":
       return {
         ...state,
         [action.message.id]: { ...action.message, isOptimistic: true },
       };
 
-    case "message-create-request-successful":
+    case "create-message:request-successful":
       return {
         // Remove the optimistic entry
         ...omitKey(action.optimisticEntryId, state),
         [action.message.id]: action.message,
       };
 
-    case "message-create-request-failed":
+    case "create-message:request-failed":
       // Remove the optimistic entry
       return omitKey(action.optimisticEntryId, state);
 
@@ -153,21 +150,21 @@ const entriesById = (state = {}, action) => {
 
 const entryIdsByChannelId = (state = {}, action) => {
   switch (action.type) {
-    case "messages-fetched": {
+    case "fetch-messages:request-successful": {
       const messageIdsByChannelId = mapValues(
         (ms, channelId) => {
           const previousIds = state[channelId] ?? [];
           const newIds = ms.map((m) => m.id);
           return unique([...previousIds, ...newIds]);
         },
-        groupBy((m) => m.channel, action.messages)
+        groupBy((m) => m.channelId, action.messages)
       );
 
       return { ...state, ...messageIdsByChannelId };
     }
 
-    case "message-fetched": {
-      const channelId = action.message.channel;
+    case "fetch-message:request-successful": {
+      const { channelId } = action.message;
       const channelMessageIds = state[channelId] ?? [];
 
       return {
@@ -177,7 +174,7 @@ const entryIdsByChannelId = (state = {}, action) => {
     }
 
     case "server-event:message-created": {
-      const channelId = action.data.message.channel;
+      const { channelId } = action.data.message;
       const channelMessageIds = state[channelId] ?? [];
       return {
         ...state,
@@ -185,8 +182,8 @@ const entryIdsByChannelId = (state = {}, action) => {
       };
     }
 
-    case "message-create-request-sent": {
-      const channelId = action.message.channel;
+    case "create-message:request-sent": {
+      const { channelId } = action.message;
       const channelMessageIds = state[channelId] ?? [];
       return {
         ...state,
@@ -194,8 +191,8 @@ const entryIdsByChannelId = (state = {}, action) => {
       };
     }
 
-    case "message-create-request-successful": {
-      const channelId = action.message.channel;
+    case "create-message:request-successful": {
+      const { channelId } = action.message;
       const channelMessageIds = state[channelId] ?? [];
       return {
         ...state,
@@ -207,8 +204,8 @@ const entryIdsByChannelId = (state = {}, action) => {
       };
     }
 
-    case "message-create-request-failed": {
-      const channelId = action.channelId;
+    case "create-message:request-failed": {
+      const { channelId } = action;
       const channelMessageIds = state[channelId] ?? [];
       return {
         ...state,
@@ -239,130 +236,58 @@ const entryIdsByChannelId = (state = {}, action) => {
   }
 };
 
-const systemMessageTypes = ["member-joined", "user-invited", "channel-updated"];
-const appMessageTypes = ["webhook", "app", "app-installed"];
-
-const deriveMessageType = (message) => {
-  switch (message.type) {
-    case undefined:
-    case 0:
-      return "regular";
-    case 1:
-      if (message.inviter) return "user-invited";
-      return "member-joined";
-    case 2:
-    case 3:
-      return "webhook";
-    case 5:
-      return "channel-updated";
-    case 6:
-      return "app-installed";
-    default:
-      console.warn(`Unknown message type "${message.type}"`);
-  }
-};
-
-export const isSystemMessage = (message) => {
-  const messageType = deriveMessageType(message);
-  return systemMessageTypes.includes(messageType);
-};
-
 export const selectMessage = createSelector(
   (state, messageId) => state.messages.entriesById[messageId],
   (state, messageId) => {
     const message = state.messages.entriesById[messageId];
     if (message == null) return null;
-    return selectUser(state, message.author);
+    return selectUser(state, message.authorUserId);
   },
   (state, messageId) => {
     const message = state.messages.entriesById[messageId];
-    if (message == null || message.inviter == null) return null;
-    return selectUser(state, message.inviter);
+    if (message == null || message.inviterUserId == null) return null;
+    return selectUser(state, message.inviterUserId);
   },
   (state, messageId) => {
     const message = state.messages.entriesById[messageId];
-    if (message == null || message.installer == null) return null;
-    return selectUser(state, message.installer);
-  },
-  (state, messageId) => {
-    const message = state.messages.entriesById[messageId];
-    if (message == null || message.reply_to == null) return null;
-    return selectMessage(state, message.reply_to);
+    if (message == null || message.installerUserId == null) return null;
+    return selectUser(state, message.installerUserId);
   },
   (state) => state.me.user?.id,
   (state, messageId) => {
     const message = state.messages.entriesById[messageId];
-    if (message == null || !message.app) return null;
-    return selectApp(state, message.app);
+    if (message == null || !message.appId) return null;
+    return selectApp(state, message.appId);
   },
   (state) => state.users.blockedUserIds,
   (
-    message,
+    rawMessage,
     author,
     inviter,
     installer,
-    repliedMessage,
     loggedInUserId,
     app,
     blockedUserIds
   ) => {
-    if (message == null) return null;
-
-    const type = deriveMessageType(message);
-
-    if (type == null) return null;
+    if (rawMessage == null || rawMessage.type == null) return null;
 
     const isBlocked =
-      type === "regular" && blockedUserIds.includes(message.author);
+      rawMessage.type === "regular" &&
+      blockedUserIds.includes(rawMessage.authorUserId);
 
-    if (message.deleted) return { ...message, isBlocked };
-
-    const isSystemMessage = systemMessageTypes.includes(type);
-    const isAppMessage = appMessageTypes.includes(type);
-
-    const appId = message.app;
-    const authorUserId = message.author;
-    const inviterUserId = message.inviter;
-    const installerUserId = message.installer;
-    const authorId = isSystemMessage
-      ? "system"
-      : isAppMessage
-      ? appId
-      : authorUserId;
-
-    if (message.reply_to != null) {
-      message.repliedMessage = repliedMessage;
-      message.isReply = true;
-    }
+    const reactions =
+      rawMessage.reactions?.map((r) => ({
+        ...r,
+        hasReacted: r.users.includes(loggedInUserId),
+      })) ?? [];
 
     return {
-      ...message,
-      createdAt: message.created_at,
-      channelId: message.channel,
-      authorUserId,
-      authorId,
-      isEdited: message.edited_at != null,
+      ...rawMessage,
       isBlocked,
-      type,
-      isSystemMessage,
-      isAppMessage,
-      isOptimistic: message.isOptimistic,
       author,
-      inviterUserId,
-      inviter,
-      installerUserId,
+      reactions,
       installer,
-      content:
-        message.blocks?.length > 0
-          ? message.blocks
-          : [{ type: "paragraph", children: [{ text: message.content }] }],
-      stringContent: message.content,
-      reactions:
-        message.reactions?.map((r) => ({
-          ...r,
-          hasReacted: r.users.includes(loggedInUserId),
-        })) ?? [],
-      appId,
+      inviter,
       app,
     };
   },

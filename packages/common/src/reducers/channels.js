@@ -121,7 +121,7 @@ const metaById = (state = {}, action) => {
       };
     }
 
-    case "messages-fetched": {
+    case "fetch-messages:request-successful": {
       const config = state[action.channelId];
       const hasAllMessages = action.messages.length < action.limit;
       return {
@@ -220,19 +220,6 @@ const readStatesById = (state = {}, action) => {
       return { ...state, ...entriesByChannelId };
     }
 
-    // case "fetch-user-channels-request-successful": {
-    //   const mergedReadStates = action.channels.map((c) => {
-    //     const existingState = state[c.id];
-    //     return {
-    //       ...existingState,
-    //       channelId: c.id,
-    //       lastMessageAt: c.last_message_at,
-    //     };
-    //   });
-    //   const entriesByChannelId = indexBy((s) => s.channelId, mergedReadStates);
-    //   return { ...state, ...entriesByChannelId };
-    // }
-
     case "mark-channel-read:request-sent":
       return {
         ...state,
@@ -243,14 +230,14 @@ const readStatesById = (state = {}, action) => {
         },
       };
 
-    case "message-create-request-sent":
-    case "message-create-request-successful":
+    case "create-message:request-sent":
+    case "create-message:request-successful":
       return {
         ...state,
-        [action.message.channel]: {
-          ...state[action.message.channel],
-          lastReadAt: action.message.created_at,
-          lastMessageAt: action.message.created_at,
+        [action.message.channelId]: {
+          ...state[action.message.channelId],
+          lastReadAt: action.message.createdAt,
+          lastMessageAt: action.message.createdAt,
         },
       };
 
@@ -265,10 +252,11 @@ const readStatesById = (state = {}, action) => {
 
     case "server-event:message-created": {
       const isOwnMessage =
-        action.user != null && action.data.message.author === action.user.id;
-      const channelState = state[action.data.message.channel];
+        action.user != null &&
+        action.data.message.authorUserId === action.user.id;
+      const channelState = state[action.data.message.channelId];
 
-      const userMentions = getMentions(action.data.message.blocks).filter(
+      const userMentions = getMentions(action.data.message.content).filter(
         (m) => m.ref === action.user.id
       );
       const unreadMentionMessageIds =
@@ -278,9 +266,9 @@ const readStatesById = (state = {}, action) => {
         ...state,
         [action.data.message.channel]: {
           ...channelState,
-          lastMessageAt: action.data.message.created_at,
+          lastMessageAt: action.data.message.createdAt,
           lastReadAt: isOwnMessage
-            ? action.data.message.created_at
+            ? action.data.message.createdAt
             : channelState?.lastReadAt,
           unreadMentionMessageIds:
             userMentions.length === 0
@@ -291,10 +279,10 @@ const readStatesById = (state = {}, action) => {
     }
 
     case "server-event:message-removed": {
-      const channelState = state[action.data.message.channel];
+      const channelState = state[action.data.message.channelId];
       return {
         ...state,
-        [action.data.message.channel]: {
+        [action.data.message.channelId]: {
           ...channelState,
           unreadMentionMessageIds: channelState.unreadMentionMessageIds.filter(
             (id) => id !== action.data.message.id
@@ -304,15 +292,15 @@ const readStatesById = (state = {}, action) => {
     }
 
     case "server-event:message-updated": {
-      const channel = state[action.data.message.channel];
+      const channel = state[action.data.message.channelId];
       const messageId = action.data.message.id;
-      const userMentions = getMentions(action.data.message.blocks).filter(
+      const userMentions = getMentions(action.data.message.content).filter(
         (m) => m.ref === action.user.id
       );
 
       return {
         ...state,
-        [action.data.message.channel]: {
+        [action.data.message.channelId]: {
           ...channel,
           unreadMentionMessageIds:
             userMentions.length === 0

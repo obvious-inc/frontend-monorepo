@@ -151,7 +151,6 @@ const CreateChannelDialogContent = ({ titleProps, close, createChannel }) => {
           <Select
             label="Permissions"
             value={selectedType}
-            variant="transparent"
             size="medium"
             onChange={(value) => {
               setSelectedType(value);

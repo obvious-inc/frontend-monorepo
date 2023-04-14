@@ -100,7 +100,7 @@ const FormDialog = ({
               {c.type === "select" ? (
                 <Select
                   ref={i === 0 ? firstInputRef : undefined}
-                  size="large"
+                  size={c.size ?? "large"}
                   value={c.value === undefined ? state[c.key] : c.value}
                   disabled={hasPendingSubmit}
                   onChange={(value) => {
@@ -114,7 +114,7 @@ const FormDialog = ({
               ) : (
                 <Input
                   ref={i === 0 ? firstInputRef : undefined}
-                  size="large"
+                  size={c.size ?? "large"}
                   multiline={c.type === "multiline-text"}
                   value={c.value === undefined ? state[c.key] : c.value}
                   disabled={hasPendingSubmit}

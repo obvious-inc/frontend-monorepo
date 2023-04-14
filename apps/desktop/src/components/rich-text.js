@@ -210,6 +210,7 @@ const createParser = ({
   return (blocks) => {
     // Special "large emoji" case
     if (
+      !inline &&
       blocks.length === 1 &&
       blocks[0].children.length <= 10 &&
       blocks[0].children.every((b) => b.type === "emoji")

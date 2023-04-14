@@ -13,8 +13,9 @@ const primaryTransparent = createPrimary({ opacity: 0.4 });
 const primaryTransparentDark = createPrimary({ opacity: 0.15 });
 const textNormal = "hsl(0 0% 83%)";
 const textDimmed = "hsl(0 0% 60%)";
-const textDimmedModifierHover = "hsl(0 0% 58%)";
+const textDimmedModifierHover = "hsl(0 0% 66%)";
 const textMuted = "hsl(0 0% 40%)";
+const textMutedModifierHover = "hsl(0 0% 46%)";
 const textMutedAlpha = "hsl(0 0% 100% / 28%)";
 const textDanger = "rgb(235, 87, 87)";
 const backgroundNormal = "hsl(0 0% 13%)";
@@ -41,6 +42,7 @@ const fontSizes = {
 };
 
 export default {
+  name: "dark",
   sidebarWidth: "25rem",
   avatars: {
     borderRadius: "50%",
@@ -59,8 +61,10 @@ export default {
     inputHeight: "2.9rem",
     itemDistance: 0,
     itemTextColor: textDimmed,
-    itemTextColorDisabled: "rgb(255 255 255 / 28%)",
+    itemTextColorDisabled: textMutedAlpha,
     containerHorizontalPadding: "0.4rem",
+    boxShadow:
+      "rgb(15 15 15 / 10%) 0px 0px 0px 1px, rgb(15 15 15 / 20%) 0px 3px 6px, rgb(15 15 15 / 40%) 0px 9px 24px",
   },
   dropdownMenus: {
     width: "22rem",
@@ -82,6 +86,7 @@ export default {
     textDimmedModifierHover,
     textDimmed,
     textMuted,
+    textMutedModifierHover,
     textMutedAlpha,
     textHeader: "white",
     textAccent: "white",
@@ -99,7 +104,7 @@ export default {
     backgroundPrimary: backgroundDark,
     backgroundSecondary: backgroundNormal,
     backgroundTertiary: backgroundLight,
-    dialogBackground: backgroundLight,
+    dialogBackground: backgroundDark,
     popoverBackground: backgroundLight,
     backgroundTooltip: backgroundLighter,
     buttonHover: backgroundLighter,
@@ -127,8 +132,9 @@ export default {
     sizes: fontSizes,
     weights: {
       default: "400",
-      smallHeader: "600",
       header: "700",
+      smallHeader: "600",
+      emphasis: "600",
       notificationBadge: "500",
     },
   },
@@ -141,6 +147,9 @@ export default {
       "Menlo, Consolas, Monaco, Liberation Mono, Lucida Console, monospace",
   },
   shadows: {
+    focus: `0 0 0 0.1rem ${primary}, 0 0 0 0.3rem ${createPrimary({
+      opacity: 0.4,
+    })}`,
     elevationHigh:
       "rgb(15 15 15 / 10%) 0px 0px 0px 1px, rgb(15 15 15 / 20%) 0px 5px 10px, rgb(15 15 15 / 40%) 0px 15px 40px",
     elevationLow:

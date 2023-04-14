@@ -25,7 +25,7 @@ const Select = React.forwardRef(
       options,
       onChange,
       icon,
-      variant = "transparent",
+      variant,
       size = "default",
       width,
       ...props
