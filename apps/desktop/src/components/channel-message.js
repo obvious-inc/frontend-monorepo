@@ -10,10 +10,12 @@ import {
   useMe,
   useUsers,
   useMessage,
+  useUser,
   useChannel,
   useChannelMembers,
   useHasReactedWithEmoji,
   useEmojis,
+  useMessageReactions,
 } from "@shades/common/app";
 import {
   array as arrayUtils,
@@ -68,7 +70,7 @@ const ChannelMessage = React.memo(function ChannelMessage_({
   isAdmin,
   hasTouchFocus,
   giveTouchFocus,
-  compact,
+  layout,
   scrollToMessage,
 }) {
   const editInputRef = React.useRef();
@@ -92,6 +94,8 @@ const ChannelMessage = React.memo(function ChannelMessage_({
   const [isEditing, setEditingMessage] = React.useState(false);
 
   const me = useMe();
+
+  const compact = layout === "compact";
 
   const showAsFocused =
     !isEditing &&
@@ -241,29 +245,14 @@ const ChannelMessage = React.memo(function ChannelMessage_({
     setEmojiPickerOpen(isOpen);
   }, []);
 
-  const onClickInteractiveElement = React.useCallback((el) => {
-    switch (el.type) {
-      case "image-attachment":
-        window.open(el.url, "_blank");
-        break;
-      default:
-        throw new Error();
-    }
-  }, []);
-
-  const editedMessageSuffix = React.useMemo(
-    () => (
-      <span
-        css={css({
-          fontSize: "1rem",
-          color: "rgb(255 255 255 / 35%)",
-        })}
-      >
-        {" "}
-        (edited)
-      </span>
-    ),
-    []
+  const replyTargetMessageElement = message.isReply && (
+    <ReplyTargetMessage
+      messageId={message.replyTargetMessageId}
+      layout={layout}
+      onClickMessage={() => {
+        scrollToMessage(message.replyTargetMessageId);
+      }}
+    />
   );
 
   return (
@@ -272,23 +261,28 @@ const ChannelMessage = React.memo(function ChannelMessage_({
       role="listitem"
       data-message-id={messageId}
       style={{
-        background: hasPendingReply
-          ? "var(--bg-hightlight)"
+        "--background": hasPendingReply
+          ? "var(--bg-highlight)"
           : showAsFocused
           ? "var(--bg-focus)"
           : undefined,
-        padding:
+        "--padding":
           showSimplifiedMessage || compact
             ? "0.5rem 1.6rem"
             : "0.7rem 1.6rem 0.3rem",
-        color: message.isOptimistic ? "var(--optimistic-color)" : undefined,
+        "--color": message.isOptimistic
+          ? "var(--color-optimistic)"
+          : "var(--color-regular)",
       }}
       css={(t) =>
         css({
-          "--optimistic-color": t.colors.textMuted,
-          "--bg-hightlight": t.colors.messageBackgroundModifierHighlight,
+          "--color-regular": t.colors.textNormal,
+          "--color-optimistic": t.colors.textMuted,
+          "--bg-highlight": t.colors.messageBackgroundModifierHighlight,
           "--bg-focus": t.colors.messageBackgroundModifierFocus,
-          color: t.colors.textNormal,
+          background: "var(--background)",
+          padding: "var(--padding)",
+          color: "var(--color)",
           position: "relative",
           lineHeight: 1.46668,
           userSelect: "text",
@@ -328,14 +322,7 @@ const ChannelMessage = React.memo(function ChannelMessage_({
         </div>
       )}
 
-      {message.isReply && (
-        <ReplyTargetMessage
-          messageId={message.replyTargetMessageId}
-          onClickMessage={() => {
-            scrollToMessage(message.replyTargetMessageId);
-          }}
-        />
-      )}
+      {message.isReply && layout !== "bubbles" && replyTargetMessageElement}
 
       <div
         css={css({
@@ -348,26 +335,53 @@ const ChannelMessage = React.memo(function ChannelMessage_({
         }}
       >
         <MessageLeftColumn
-          message={message}
+          messageId={messageId}
+          layout={layout}
           simplified={showSimplifiedMessage}
-          compact={compact}
           isHovering={isHovering}
         />
 
-        <div>
+        <div
+          style={{
+            display: layout === "bubbles" ? "flex" : "block",
+            flexDirection: "column",
+          }}
+        >
           {!showSimplifiedMessage && (
-            <MessageHeader
-              compact={compact}
-              simplified={showSimplifiedMessage}
-              message={message}
-              authorUser={message.author}
-              createdAt={createdAtDate}
-              isOwnMessage={isOwnMessage}
-            />
+            <MessageHeader messageId={messageId} layout={layout} />
+          )}
+
+          {message.isReply && layout === "bubbles" && (
+            <Bubble
+              small
+              align={isOwnMessage ? "right" : "left"}
+              css={(t) =>
+                css({
+                  background: t.colors.backgroundTertiary,
+                  margin: "0 0 0.5rem",
+                })
+              }
+            >
+              {replyTargetMessageElement}
+            </Bubble>
           )}
 
           {message.isSystemMessage ? (
-            <SystemMessageContent message={message} />
+            layout === "bubbles" ? (
+              <div
+                css={(t) =>
+                  css({
+                    color: t.colors.textDimmed,
+                    fontSize: t.text.sizes.small,
+                    padding: "0 0.5rem",
+                  })
+                }
+              >
+                <SystemMessageContent messageId={messageId} minimal />
+              </div>
+            ) : (
+              <SystemMessageContent messageId={messageId} />
+            )
           ) : isEditing ? (
             <EditMessageInput
               ref={editInputRef}
@@ -396,13 +410,7 @@ const ChannelMessage = React.memo(function ChannelMessage_({
             />
           ) : (
             <>
-              <RichText
-                compact={compact}
-                blocks={message.content}
-                onClickInteractiveElement={onClickInteractiveElement}
-                suffix={message.isEdited && editedMessageSuffix}
-              />
-
+              <MessageBody messageId={messageId} layout={layout} />
               {message.embeds?.length > 0 && <Embeds messageId={messageId} />}
             </>
           )}
@@ -410,9 +418,9 @@ const ChannelMessage = React.memo(function ChannelMessage_({
           {reactions.length !== 0 && (
             <Reactions
               messageId={messageId}
-              items={reactions}
               addReaction={addReaction}
               hideAddButton={!isHovering && !hasTouchFocus}
+              layout={layout}
             />
           )}
         </div>
@@ -420,6 +428,74 @@ const ChannelMessage = React.memo(function ChannelMessage_({
     </div>
   );
 });
+
+const MessageBody = React.memo(({ messageId, layout }) => {
+  const me = useMe();
+  const message = useMessage(messageId);
+
+  const onClickInteractiveElement = React.useCallback((el) => {
+    switch (el.type) {
+      case "image-attachment":
+        window.open(el.url, "_blank");
+        break;
+      default:
+        throw new Error();
+    }
+  }, []);
+
+  if (message == null) return null;
+
+  const richText = (
+    <RichText
+      compact={layout === "compact"}
+      blocks={message.content}
+      onClickInteractiveElement={onClickInteractiveElement}
+      suffix={
+        message.isEdited && (
+          <span
+            css={css({
+              fontSize: "1rem",
+              color: "rgb(255 255 255 / 35%)",
+            })}
+          >
+            {" "}
+            (edited)
+          </span>
+        )
+      }
+    />
+  );
+
+  if (layout === "bubbles") {
+    const isAuthorMe = me != null && message.authorUserId === me.id;
+    return <Bubble align={isAuthorMe ? "right" : "left"}>{richText}</Bubble>;
+  }
+
+  return richText;
+});
+
+const Bubble = ({ align, small, children, ...props }) => (
+  <div
+    css={(t) =>
+      css({
+        "--bg-regular": t.colors.backgroundTertiary,
+        "--bg-me": t.colors.primaryTransparent,
+        background: "var(--background)",
+        maxWidth: "min(calc(100% - 3.2rem), 64rem)",
+      })
+    }
+    style={{
+      "--background": align === "right" ? "var(--bg-me)" : "var(--bg-regular)",
+      alignSelf: align === "right" ? "flex-end" : "flex-start",
+      padding: small ? "0.4rem 0.6rem" : "0.7rem 1.4rem",
+      borderRadius: small ? "1.35rem" : "1.9rem",
+      minHeight: small ? 0 : "3.8rem",
+    }}
+    {...props}
+  >
+    {children}
+  </div>
+);
 
 const Embeds = React.memo(({ messageId }) => {
   const embeds = useMessageEmbeds(messageId);
@@ -585,10 +661,19 @@ const Embed = ({
   </li>
 );
 
-const Reactions = ({ messageId, items = [], addReaction, hideAddButton }) => {
+const Reactions = ({ messageId, addReaction, hideAddButton, layout }) => {
+  const me = useMe();
+  const message = useMessage(messageId);
+  const items = useMessageReactions(messageId);
+
+  const isAuthorMe = me != null && me.id === message.authorUserId;
+
   const { inputDeviceCanHover } = useGlobalMediaQueries();
   const [isInlineEmojiPickerOpen, setInlineEmojiPickerOpen] =
     React.useState(false);
+
+  const align =
+    layout !== "bubbles" ? undefined : isAuthorMe ? "right" : "left";
 
   const addReactionButton = (
     <button
@@ -606,6 +691,46 @@ const Reactions = ({ messageId, items = [], addReaction, hideAddButton }) => {
       <AddEmojiReactionIcon />
     </button>
   );
+
+  const addReactionDialogTrigger = inputDeviceCanHover ? (
+    <Popover.Root
+      placement="top"
+      isOpen={isInlineEmojiPickerOpen}
+      onOpenChange={(s) => {
+        setInlineEmojiPickerOpen(s);
+      }}
+    >
+      <Popover.Trigger asChild>{addReactionButton}</Popover.Trigger>
+      <Popover.Content>
+        {/* <Popover.Arrow /> */}
+        <EmojiPicker
+          width="31.6rem"
+          height="28.4rem"
+          onSelect={(emoji) => {
+            setInlineEmojiPickerOpen(false);
+            return addReaction(emoji);
+          }}
+        />
+      </Popover.Content>
+    </Popover.Root>
+  ) : (
+    <>
+      {addReactionButton}
+      <EmojiPickerMobileDialog
+        isOpen={isInlineEmojiPickerOpen}
+        onRequestClose={() => setInlineEmojiPickerOpen(false)}
+        onSelect={(...args) => {
+          setInlineEmojiPickerOpen(false);
+          return addReaction(...args);
+        }}
+      />
+    </>
+  );
+
+  const reactionList = items.map((r) => (
+    <Reaction key={r.emoji} messageId={messageId} {...r} />
+  ));
+
   return (
     <>
       <div
@@ -618,7 +743,7 @@ const Reactions = ({ messageId, items = [], addReaction, hideAddButton }) => {
             justifyContent: "flex-start",
             margin: "0.5rem -1px 0",
             ":not(:focus-within) [data-fader]": {
-              opacity: hideAddButton ? 0 : 1,
+              opacity: "var(--fader-opacity)",
             },
             button: {
               display: "flex",
@@ -626,7 +751,7 @@ const Reactions = ({ messageId, items = [], addReaction, hideAddButton }) => {
               height: "2.5rem",
               fontSize: "1.5rem",
               background: t.colors.backgroundModifierHover,
-              borderRadius: "0.7rem",
+              borderRadius: "var(--border-radius)",
               padding: "0 0.7rem 0 0.6rem",
               lineHeight: 1,
               userSelect: "none",
@@ -652,43 +777,27 @@ const Reactions = ({ messageId, items = [], addReaction, hideAddButton }) => {
             },
           })
         }
+        style={{
+          "--fader-opacity": hideAddButton ? 0 : 1,
+          "--border-radius": layout === "bubbles" ? "1.25rem" : "0.7rem",
+          padding: layout === "bubbles" ? "0 0.5rem" : undefined,
+          alignSelf:
+            align === "left"
+              ? "flex-start"
+              : align === "right"
+              ? "flex-end"
+              : undefined,
+        }}
       >
-        {items.map((r) => (
-          <Reaction key={r.emoji} messageId={messageId} {...r} />
-        ))}
-
-        {inputDeviceCanHover ? (
-          <Popover.Root
-            placement="top"
-            isOpen={isInlineEmojiPickerOpen}
-            onOpenChange={(s) => {
-              setInlineEmojiPickerOpen(s);
-            }}
-          >
-            <Popover.Trigger asChild>{addReactionButton}</Popover.Trigger>
-            <Popover.Content>
-              {/* <Popover.Arrow /> */}
-              <EmojiPicker
-                width="31.6rem"
-                height="28.4rem"
-                onSelect={(emoji) => {
-                  setInlineEmojiPickerOpen(false);
-                  return addReaction(emoji);
-                }}
-              />
-            </Popover.Content>
-          </Popover.Root>
+        {layout !== "bubbles" || align === "left" || !inputDeviceCanHover ? (
+          <>
+            {reactionList}
+            {addReactionDialogTrigger}
+          </>
         ) : (
           <>
-            {addReactionButton}
-            <EmojiPickerMobileDialog
-              isOpen={isInlineEmojiPickerOpen}
-              onRequestClose={() => setInlineEmojiPickerOpen(false)}
-              onSelect={(...args) => {
-                setInlineEmojiPickerOpen(false);
-                return addReaction(...args);
-              }}
-            />
+            {addReactionDialogTrigger}
+            {reactionList}
           </>
         )}
       </div>
@@ -801,7 +910,7 @@ const EmojiPickerMobileDialog = ({ onSelect, isOpen, onRequestClose }) => (
           flex: 1,
           minHeight: 0,
           padding: "0.4rem 0.4rem 0",
-          background: t.colors.dialogBackground,
+          background: t.colors.popoverBackground,
           borderTopLeftRadius: "0.6rem",
           borderTopRightRadius: "0.6rem",
           boxShadow: t.shadows.elevationHigh,
@@ -871,7 +980,11 @@ const InlineAppDisplayName = React.forwardRef(
   )
 );
 
-const MessageHeader = ({ compact, message, authorUser, createdAt }) => {
+const MessageHeader = ({ layout, messageId }) => {
+  const message = useMessage(messageId);
+  const authorUser = useUser(message?.authorUserId);
+  const me = useMe();
+
   if (message.isSystemMessage) return null;
 
   if (message.isAppMessage) {
@@ -884,7 +997,7 @@ const MessageHeader = ({ compact, message, authorUser, createdAt }) => {
           <span
             style={{
               opacity: isWaitingForApp ? 0 : 1,
-              marginRight: compact ? "1rem" : 0,
+              marginRight: layout === "compact" ? "1rem" : 0,
             }}
           >
             <AppDisplayName displayName={message.app?.name ?? "..."} />
@@ -897,7 +1010,36 @@ const MessageHeader = ({ compact, message, authorUser, createdAt }) => {
     }
   }
 
-  if (compact)
+  if (layout === "bubbles") {
+    const isAuthorMe = me != null && message.authorUserId === me.id;
+    return (
+      <div
+        style={{
+          height: "2rem",
+          display: "flex",
+          alignItems: "flex-end",
+          alignSelf: isAuthorMe ? "flex-end" : "flex-start",
+          padding: "0.2rem 0",
+          paddingLeft: isAuthorMe ? 0 : "1.4rem",
+          paddingRight: isAuthorMe ? "1.4rem" : 0,
+        }}
+      >
+        <InlineUserButtonWithProfilePopover
+          userId={message.authorUserId}
+          css={(t) =>
+            css({
+              display: "block",
+              fontSize: t.text.sizes.small,
+              fontWeight: t.text.weights.normal,
+              color: t.colors.textDimmed,
+            })
+          }
+        />
+      </div>
+    );
+  }
+
+  if (layout === "compact")
     return (
       <Popover.Root placement="right">
         <Popover.Trigger
@@ -955,13 +1097,13 @@ const MessageHeader = ({ compact, message, authorUser, createdAt }) => {
         line-height: 1.2;
       `}
     >
-      {authorUser != null && (
+      {message.authorUserId != null && (
         <>
-          <InlineUserButtonWithProfilePopover user={authorUser} />
+          <InlineUserButtonWithProfilePopover userId={message.authorUserId} />
 
           <TinyMutedText style={{ lineHeight: 1.5 }}>
             <FormattedDateWithTooltip
-              value={createdAt}
+              value={message.createdAt}
               hour="numeric"
               minute="numeric"
               day="numeric"
@@ -1532,9 +1674,10 @@ const EditMessageInput = React.forwardRef(
   }
 );
 
-const ReplyTargetMessage = ({ messageId, onClickMessage }) => {
+const ReplyTargetMessage = ({ messageId, layout, onClickMessage }) => {
   const message = useMessage(messageId);
-  const authorMember = message?.author;
+  const authorMember = useUser(message?.authorUserId);
+
   const showAvatar = authorMember != null && !authorMember?.deleted;
 
   return (
@@ -1542,9 +1685,8 @@ const ReplyTargetMessage = ({ messageId, onClickMessage }) => {
       css={(t) =>
         css({
           position: "relative",
-          paddingLeft: "5rem",
-          marginBottom: "0.5rem",
           ":before": {
+            display: "var(--path-display)",
             content: '""',
             position: "absolute",
             right: "calc(100% - 5rem + 0.3rem)",
@@ -1559,6 +1701,11 @@ const ReplyTargetMessage = ({ messageId, onClickMessage }) => {
           },
         })
       }
+      style={{
+        "--path-display": layout === "bubbles" ? "none" : "block",
+        paddingLeft: layout !== "bubbles" ? "5rem" : undefined,
+        marginBottom: layout === "bubbles" ? 0 : "0.5rem",
+      }}
     >
       <div
         css={css({
@@ -1655,7 +1802,10 @@ const ReplyTargetMessage = ({ messageId, onClickMessage }) => {
   );
 };
 
-const MessageLeftColumn = ({ isHovering, simplified, compact, message }) => {
+const MessageLeftColumn = ({ messageId, simplified, layout, isHovering }) => {
+  const me = useMe();
+  const message = useMessage(messageId);
+
   if (simplified)
     return (
       <div
@@ -1680,7 +1830,9 @@ const MessageLeftColumn = ({ isHovering, simplified, compact, message }) => {
     );
 
   if (message.isSystemMessage || message.isAppMessage)
-    return isHovering ? (
+    return layout === "bubbles" ? (
+      <div />
+    ) : isHovering ? (
       <div
         css={css({
           transition: "0.15s opacity",
@@ -1711,7 +1863,7 @@ const MessageLeftColumn = ({ isHovering, simplified, compact, message }) => {
       </div>
     );
 
-  if (compact)
+  if (layout === "compact")
     return (
       <div
         css={css({
@@ -1733,11 +1885,20 @@ const MessageLeftColumn = ({ isHovering, simplified, compact, message }) => {
         </TinyMutedText>
       </div>
     );
+
+  const isAuthorMe = me != null && message.authorUserId === me.id;
+
+  if (layout === "bubbles" && isAuthorMe) return <div />;
+
   const hasVerfifiedProfilePicture =
     message.author?.profilePicture?.isVerified ?? false;
 
   return (
-    <div css={css({ padding: "0.2rem 0 0" })}>
+    <div
+      style={{
+        padding: layout === "bubbles" ? "2rem 0 0" : "0.2rem 0 0",
+      }}
+    >
       <Popover.Root placement="top">
         <Popover.Trigger
           asChild
@@ -1748,6 +1909,7 @@ const MessageLeftColumn = ({ isHovering, simplified, compact, message }) => {
               css({
                 "--regular-color": t.colors.borderLight,
                 "--verified-color": t.colors.primary,
+                display: "block",
                 position: "relative",
                 borderRadius: t.avatars.borderRadius,
                 overflow: "hidden",
@@ -1789,7 +1951,9 @@ const MessageLeftColumn = ({ isHovering, simplified, compact, message }) => {
   );
 };
 
-const SystemMessageContent = ({ message }) => {
+const SystemMessageContent = ({ messageId, minimal }) => {
+  const message = useMessage(messageId);
+
   switch (message.type) {
     case "user-invited": {
       const isMissingData = [message.inviter, message.author].some(
@@ -1798,9 +1962,10 @@ const SystemMessageContent = ({ message }) => {
 
       return (
         <span style={{ opacity: isMissingData ? 0 : 1 }}>
-          <InlineUserButtonWithProfilePopover user={message.inviter} /> added{" "}
-          <InlineUserButtonWithProfilePopover user={message.author} /> to the
-          channel.
+          <InlineUserButtonWithProfilePopover userId={message.inviterUserId} />{" "}
+          added{" "}
+          <InlineUserButtonWithProfilePopover userId={message.authorUserId} />{" "}
+          to the channel.
         </span>
       );
     }
@@ -1811,8 +1976,8 @@ const SystemMessageContent = ({ message }) => {
         message.author?.walletAddress == null;
       return (
         <span style={{ opacity: isMissingData ? 0 : 1 }}>
-          <InlineUserButtonWithProfilePopover user={message.author} /> joined
-          the channel. Welcome!
+          <InlineUserButtonWithProfilePopover userId={message.authorUserId} />{" "}
+          joined the channel. Welcome!
         </span>
       );
     }
@@ -1822,8 +1987,8 @@ const SystemMessageContent = ({ message }) => {
       if (updates.length == 0 || updates.length > 1) {
         return (
           <>
-            <InlineUserButtonWithProfilePopover user={message.author} /> updated
-            the channel.
+            <InlineUserButtonWithProfilePopover userId={message.authorUserId} />{" "}
+            updated the channel.
           </>
         );
       }
@@ -1835,7 +2000,9 @@ const SystemMessageContent = ({ message }) => {
         case "description":
           return (
             <>
-              <InlineUserButtonWithProfilePopover user={message.author} />{" "}
+              <InlineUserButtonWithProfilePopover
+                userId={message.authorUserId}
+              />{" "}
               {(value ?? "") === "" ? (
                 "cleared the channel topic."
               ) : (
@@ -1846,7 +2013,9 @@ const SystemMessageContent = ({ message }) => {
         case "name":
           return (
             <>
-              <InlineUserButtonWithProfilePopover user={message.author} />{" "}
+              <InlineUserButtonWithProfilePopover
+                userId={message.authorUserId}
+              />{" "}
               {(value ?? "") === "" ? (
                 <>cleared the channel {field}.</>
               ) : (
@@ -1859,7 +2028,9 @@ const SystemMessageContent = ({ message }) => {
         default:
           return (
             <>
-              <InlineUserButtonWithProfilePopover user={message.author} />{" "}
+              <InlineUserButtonWithProfilePopover
+                userId={message.authorUserId}
+              />{" "}
               updated the channel {field}.
             </>
           );
@@ -1874,7 +2045,9 @@ const SystemMessageContent = ({ message }) => {
 
       return (
         <span style={{ opacity: isMissingData ? 0 : undefined }}>
-          <InlineUserButtonWithProfilePopover user={message.installer} />{" "}
+          <InlineUserButtonWithProfilePopover
+            userId={message.installerUserId}
+          />{" "}
           installed a new app:{" "}
           <InlineAppDisplayName displayName={message.app?.name ?? "..."} />
         </span>
@@ -1909,9 +2082,10 @@ const FormattedDateWithTooltip = React.memo(
     ...props
   }) => {
     const formattedDate =
-      !disableRelative && (isDateToday(value) || isDateYesterday(value)) ? (
+      !disableRelative &&
+      (isDateToday(new Date(value)) || isDateYesterday(new Date(value))) ? (
         <span>
-          {isDateToday(value) ? "Today" : "Yesterday"} at{" "}
+          {isDateToday(new Date(value)) ? "Today" : "Yesterday"} at{" "}
           <FormattedDate value={value} hour="numeric" minute="numeric" />
         </span>
       ) : (

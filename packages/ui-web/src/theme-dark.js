@@ -133,6 +133,7 @@ export default {
     sizes: fontSizes,
     weights: {
       default: "400",
+      normal: "400",
       header: "700",
       smallHeader: "600",
       emphasis: "600",

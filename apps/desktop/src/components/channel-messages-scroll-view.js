@@ -92,7 +92,7 @@ const useScroll = ({
 
 const ChannelMessagesScrollView = ({
   channelId,
-  compact,
+  layout,
   fetchMoreMessages,
   initReply,
   scrollContainerRef,
@@ -310,7 +310,7 @@ const ChannelMessagesScrollView = ({
                 giveTouchFocus={
                   inputDeviceCanHover ? undefined : setTouchFocusedMessageId
                 }
-                compact={compact}
+                layout={layout}
                 scrollToMessage={scrollToMessage}
               />
             ))}
@@ -345,7 +345,10 @@ const ChannelIntro = ({ channelId }) => {
             .map((m, i, ms) => {
               return (
                 <React.Fragment key={m.walletAddress}>
-                  <InlineUserButtonWithProfilePopover userId={m.id} />
+                  <InlineUserButtonWithProfilePopover
+                    userId={m.id}
+                    css={(t) => css({ color: t.colors.textNormal })}
+                  />
                   {i !== ms.length - 1 ? ", " : null}
                 </React.Fragment>
               );
@@ -429,7 +432,10 @@ const DMChannelIntro = ({ channelId }) => {
           This conversation is just between{" "}
           {members.map((m, i, ms) => (
             <React.Fragment key={m.id}>
-              <InlineUserButtonWithProfilePopover userId={m.id} />
+              <InlineUserButtonWithProfilePopover
+                userId={m.id}
+                css={(t) => css({ color: t.colors.textNormal })}
+              />
               {i !== ms.length - 1 && `, `}
             </React.Fragment>
           ))}{" "}

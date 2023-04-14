@@ -12,8 +12,13 @@ import Channel from "./channel.js";
 
 const useCompactnessPreference = () => {
   const compactModeOverride = location.search.includes("compact=1");
+  const bubblesModeOverride = location.search.includes("bubbles=1");
   const [compactPreference] = useCachedState("preferred-compactness");
-  const preference = compactModeOverride ? "compact" : compactPreference;
+  const preference = compactModeOverride
+    ? "compact"
+    : bubblesModeOverride
+    ? "bubbles"
+    : compactPreference;
   return preference ?? "normal";
 };
 
@@ -28,7 +33,7 @@ const ChannelRoute = (props) => {
       <Channel
         channelId={params.channelId}
         {...props}
-        compact={compactnessPreference === "compact"}
+        layout={compactnessPreference}
       />
     </>
   );

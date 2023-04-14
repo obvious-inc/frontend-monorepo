@@ -1342,7 +1342,10 @@ const ChannelIntro = ({ walletAddresses: walletAddresses_ }) => {
           This conversation is between{" "}
           {walletAddresses.map((a, i, as) => (
             <React.Fragment key={a}>
-              <InlineUserButtonWithProfilePopover walletAddress={a} />
+              <InlineUserButtonWithProfilePopover
+                walletAddress={a}
+                css={(t) => css({ color: t.colors.textNormal })}
+              />
               {i !== as.length - 1 ? ", " : null}
             </React.Fragment>
           ))}{" "}
@@ -1374,7 +1377,10 @@ const DMChannelIntro = ({ walletAddress }) => {
       body={
         <>
           This conversation is just between{" "}
-          <InlineUserButtonWithProfilePopover walletAddress={walletAddress} />{" "}
+          <InlineUserButtonWithProfilePopover
+            walletAddress={walletAddress}
+            css={(t) => css({ color: t.colors.textNormal })}
+          />{" "}
           and you.
         </>
       }

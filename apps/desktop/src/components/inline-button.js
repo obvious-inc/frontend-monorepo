@@ -30,8 +30,9 @@ const Link = React.forwardRef(
           display: "inline",
           lineHeight: "inherit",
           fontSize: "inherit",
-          color: props.disabled ? t.colors.textDimmed : t.colors.textNormal,
-          fontWeight: t.text.weights.smallHeader,
+          color: "inherit",
+          // color: props.disabled ? t.colors.textDimmed : t.colors.textNormal,
+          fontWeight: t.text.weights.emphasis,
           outline: "none",
           textDecoration: "none",
           ":not([disabled])": {

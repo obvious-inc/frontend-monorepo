@@ -48,6 +48,7 @@ const SettingsDialog = ({ titleProps, dismiss }) => {
           options: [
             { value: "normal", label: "Normal" },
             { value: "compact", label: "Compact" },
+            { value: "bubbles", label: "Bubbles" },
           ],
           onChange: (value) => {
             setCompactnessPreference(value);

@@ -166,7 +166,7 @@ const useMessageInputPlaceholder = (channelId) => {
   }
 };
 
-const ChannelContent = ({ channelId, compact }) => {
+const ChannelContent = ({ channelId, layout }) => {
   const { accountAddress: walletAccountAddress } = useWallet();
   const { login } = useWalletLogin();
   const { status: authenticationStatus } = useAuth();
@@ -320,7 +320,7 @@ const ChannelContent = ({ channelId, compact }) => {
     <>
       <ChannelMessagesScrollView
         channelId={channelId}
-        compact={compact}
+        layout={layout}
         scrollContainerRef={scrollContainerRef}
         didScrollToBottomRef={didScrollToBottomRef}
         fetchMoreMessages={fetchMoreMessages}
@@ -405,7 +405,7 @@ const TypingIndicator = ({ channelId }) => {
   );
 };
 
-const Channel = ({ channelId, compact, noSideMenu }) => {
+const Channel = ({ channelId, layout, noSideMenu }) => {
   const { status: authenticationStatus } = useAuth();
   const actions = useActions();
 
@@ -523,7 +523,7 @@ const Channel = ({ channelId, compact, noSideMenu }) => {
 
   return (
     <Layout channelId={channelId} noSideMenu={noSideMenu}>
-      <ChannelContent channelId={channelId} compact={compact} />
+      <ChannelContent channelId={channelId} layout={layout} />
     </Layout>
   );
 };
