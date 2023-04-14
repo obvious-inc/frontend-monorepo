@@ -454,6 +454,7 @@ const ProfileDropdownTrigger = React.forwardRef(
     return (
       <button
         ref={ref}
+        data-has-menu-toggle={toggleMenu != null}
         css={(theme) =>
           css({
             width: "100%",
@@ -472,11 +473,13 @@ const ProfileDropdownTrigger = React.forwardRef(
             ":focus-visible": {
               boxShadow: `0 0 0 0.2rem ${theme.colors.primary} inset`,
             },
-            ".dropdown-icon": {
-              display: toggleMenu == null ? "block" : "none",
-            },
-            ":hover .dropdown-icon, :focus .dropdown-icon": {
-              display: "block",
+            '[data-has-menu-toggle="true"]': {
+              ".dropdown-icon": {
+                display: "none",
+              },
+              ":hover .dropdown-icon, :focus .dropdown-icon": {
+                display: "block",
+              },
             },
           })
         }
