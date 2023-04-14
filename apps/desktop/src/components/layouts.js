@@ -539,7 +539,7 @@ const ProfileDropdownTrigger = React.forwardRef(
               css({
                 color: theme.colors.textNormal,
                 fontSize: theme.fontSizes.default,
-                fontWeight: theme.text.weights.header,
+                fontWeight: theme.text.weights.emphasis,
                 lineHeight: "2rem",
                 whiteSpace: "nowrap",
                 overflow: "hidden",

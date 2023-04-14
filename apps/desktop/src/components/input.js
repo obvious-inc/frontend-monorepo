@@ -32,11 +32,10 @@ const Input = React.forwardRef(
         css={(t) =>
           css({
             "--bg-regular": t.colors.inputBackground,
-            "--bg-contrast":
-              t.colors.inputBackgroundContrast ?? t.colors.inputBackground,
+            "--bg-contrast": t.colors.inputBackgroundContrast,
+            background: "var(--bg)",
             display: "block",
             color: t.colors.textNormal,
-            background: t.colors.inputBackground,
             fontSize: "1.5rem",
             fontWeight: "400",
             borderRadius: "0.3rem",
@@ -44,6 +43,7 @@ const Input = React.forwardRef(
             maxWidth: "100%",
             outline: "none",
             border: 0,
+            padding: "var(--padding)",
             "::placeholder": { color: t.colors.inputPlaceholder },
             "&:disabled": { color: t.colors.textMuted },
             "&:focus-visible": { boxShadow: t.shadows.focus },
@@ -52,8 +52,9 @@ const Input = React.forwardRef(
           })
         }
         style={{
-          background: contrast ? "var(--bg-contrast)" : "var(--bg-regular)",
-          padding: size === "large" ? "0.7rem 0.9rem" : "0.5rem 0.7rem",
+          "--bg": contrast ? "var(--bg-contrast)" : "var(--bg-regular)",
+          "--padding": size === "large" ? "0.7rem 0.9rem" : "0.5rem 0.7rem",
+          ...props.style,
         }}
         {...props}
         {...extraProps}
