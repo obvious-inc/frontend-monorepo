@@ -62,7 +62,6 @@ const LoginScreen = ({ mobileAppLogin, onSuccess, onError }) => {
         display: flex;
         align-items: center;
         justify-content: center;
-        color: white;
         text-align: center;
         padding: 2rem;
 
@@ -75,9 +74,11 @@ const LoginScreen = ({ mobileAppLogin, onSuccess, onError }) => {
       {isAuthenticatingWithThrowawayWallet ? (
         <div>
           <Spinner
-            color="rgb(255 255 255 / 15%)"
             size="2.4rem"
-            style={{ margin: "0 auto 2rem" }}
+            css={(t) => ({
+              color: t.colors.textMuted,
+              margin: "0 auto 2rem",
+            })}
           />
           <div style={{ marginBottom: "1rem" }}>
             Authenticating with throwaway wallet...
@@ -86,9 +87,11 @@ const LoginScreen = ({ mobileAppLogin, onSuccess, onError }) => {
       ) : accountAddress == null && isConnecting ? (
         <div>
           <Spinner
-            color="rgb(255 255 255 / 15%)"
             size="2.4rem"
-            style={{ margin: "0 auto 2rem" }}
+            css={(t) => ({
+              color: t.colors.textMuted,
+              margin: "0 auto 2rem",
+            })}
           />
           <div style={{ marginBottom: "1rem" }}>
             Requesting wallet address...
@@ -152,9 +155,11 @@ const LoginScreen = ({ mobileAppLogin, onSuccess, onError }) => {
       ) : loginStatus === "requesting-signature" ? (
         <div>
           <Spinner
-            color="rgb(255 255 255 / 15%)"
             size="2.4rem"
-            style={{ margin: "0 auto 2rem" }}
+            css={(t) => ({
+              color: t.colors.textMuted,
+              margin: "0 auto 2rem",
+            })}
           />
           <div style={{ marginBottom: "1rem" }}>
             Requesting signature from {truncateAddress(accountAddress)}

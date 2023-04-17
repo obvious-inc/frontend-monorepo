@@ -1,3 +1,4 @@
+import { utils as ethersUtils } from "ethers";
 import React from "react";
 import { css } from "@emotion/react";
 import {
@@ -106,7 +107,9 @@ const ChannelMessagesScrollView = ({
   const { markChannelRead } = useActions();
   const user = useMe();
   const channel = useChannel(channelId, { name: true });
-  const messageIds = useSortedChannelMessageIds(channelId);
+  const messageIds = useSortedChannelMessageIds(channelId, {
+    threads: layout !== "bubbles",
+  });
   const hasAllMessages = useHasAllChannelMessages(channelId);
   const channelHasUnread = useChannelHasUnread(channelId);
   const hasFetchedChannelMessagesAtLeastOnce =
@@ -388,7 +391,7 @@ const ChannelIntro = ({ channelId }) => {
 
   if (channel == null || (channel.kind === "dm" && me == null)) return null;
 
-  if (channel.kind === "dm" && channel.memberUserIds.length === 2)
+  if (channel.kind === "dm" && channel.memberUserIds.length <= 2)
     return <DMChannelIntro channelId={channelId} />;
 
   return (
@@ -412,35 +415,50 @@ const ChannelIntro = ({ channelId }) => {
 const DMChannelIntro = ({ channelId }) => {
   const me = useMe();
   const channel = useChannel(channelId, { name: true, members: true });
-  const members = channel.members.filter((m) => me != null && me.id !== m.id);
-  const truncatedMemberAddress =
-    members[0]?.walletAddress == null
+  const membersExcludingMe = channel.members.filter(
+    (m) => me != null && me.id !== m.id
+  );
+  const member = membersExcludingMe[0] ?? me;
+  const truncatedAddress =
+    member?.walletAddress == null
       ? null
-      : truncateAddress(members[0].walletAddress);
+      : truncateAddress(ethersUtils.getAddress(member.walletAddress));
+
+  const isOwnDm = member != null && me != null && member.id === me.id;
+
+  const title = channel.name;
+
+  const getSubtitle = () => {
+    if (isOwnDm) return me.displayName == null ? null : truncatedAddress;
+
+    if (title.toLowerCase() === truncatedAddress?.toLowerCase()) return null;
+
+    return truncatedAddress;
+  };
 
   return (
     <ChannelPrologue
-      image={<ChannelAvatar id={channelId} size="6.6rem" />}
-      title={channel.name}
-      subtitle={
-        channel.name.toLowerCase() === truncatedMemberAddress.toLowerCase()
-          ? null
-          : truncatedMemberAddress
-      }
+      image={<ChannelAvatar id={channelId} size="6.6rem" highRes />}
+      title={title}
+      subtitle={getSubtitle()}
       body={
-        <>
-          This conversation is just between{" "}
-          {members.map((m, i, ms) => (
-            <React.Fragment key={m.id}>
-              <InlineUserButtonWithProfilePopover
-                userId={m.id}
-                css={(t) => css({ color: t.colors.textNormal })}
-              />
-              {i !== ms.length - 1 && `, `}
-            </React.Fragment>
-          ))}{" "}
-          and you.
-        </>
+        channel.members.length <= 1 ? (
+          "This is your space. Draft messages, manage a to-do list, or try out /-commands."
+        ) : (
+          <>
+            This conversation is just between{" "}
+            {membersExcludingMe.map((m, i, ms) => (
+              <React.Fragment key={m.id}>
+                <InlineUserButtonWithProfilePopover
+                  userId={m.id}
+                  css={(t) => css({ color: t.colors.textNormal })}
+                />
+                {i !== ms.length - 1 && `, `}
+              </React.Fragment>
+            ))}{" "}
+            and you.
+          </>
+        )
       }
     />
   );

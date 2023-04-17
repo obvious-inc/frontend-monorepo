@@ -317,7 +317,7 @@ const ChannelItem = ({ id }) => {
   const me = useMe();
   const channel = useChannel(id, { readStates: true, name: true });
   const members = useChannelMembers(id);
-  const messageIds = useSortedChannelMessageIds(id);
+  const messageIds = useSortedChannelMessageIds(id, { threads: false });
   const message = useMessage(messageIds.slice(-1)[0]);
 
   const membersExcludingMe = members.filter(

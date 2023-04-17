@@ -459,15 +459,14 @@ const AutoCompleteListbox = ({
       css={(theme) =>
         css({
           position: "absolute",
-          bottom: "100%",
+          bottom: "calc(100% + 0.5rem)",
           left: 0,
           width: "100%",
           zIndex: 1,
-          background: theme.colors.dialogBackground,
+          background: theme.colors.popoverBackground,
           borderRadius: "0.7rem",
           padding: "0.5rem 0",
-          boxShadow:
-            "rgb(15 15 15 / 5%) 0px 0px 0px 1px, rgba(15, 15, 15, 0.1) 0px 3px 6px, rgba(15, 15, 15, 0.2) 0px 9px 24px",
+          boxShadow: theme.shadows.elevationLow,
           "[role=option]": {
             display: "flex",
             alignItems: "center",

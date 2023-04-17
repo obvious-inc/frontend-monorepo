@@ -600,8 +600,11 @@ const Channel = ({ navigation, route: { params } }) => {
             setPendingMessage(messageUtils.stringifyBlocks(message.content));
           }}
           startReply={() => {
+            const targetMessage = selectors.selectMessage(selectedMessageId);
+            setReplyTargetMessageId(
+              targetMessage?.replyTargetMessageId ?? selectedMessageId
+            );
             setEditingMessageId(null);
-            setReplyTargetMessageId(selectedMessageId);
             setSelectedMessageId(null);
           }}
           deleteMessage={() => {

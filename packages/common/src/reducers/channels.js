@@ -264,7 +264,7 @@ const readStatesById = (state = {}, action) => {
 
       return {
         ...state,
-        [action.data.message.channel]: {
+        [action.data.message.channelId]: {
           ...channelState,
           lastMessageAt: action.data.message.createdAt,
           lastReadAt: isOwnMessage
@@ -349,19 +349,23 @@ export const selectChannelName = createSelector(
 
     if (channel.memberUserIds == null) return null;
 
+    const truncate = (u) =>
+      u.walletAddress == null
+        ? null
+        : truncateAddress(ethersUtils.getAddress(u.walletAddress));
+
     if (channel.memberUserIds.length === 1)
       return channelMemberUsers[0] == null
         ? null
-        : `${channelMemberUsers[0].displayName} (you)`;
+        : `${
+            channelMemberUsers[0].displayName ?? truncate(channelMemberUsers[0])
+          } (you)`;
 
     return channelMemberUsers
       .filter((u) => u?.id !== loggedInUserId)
       .map((u) => {
         if (u == null || u.walletAddress == null) return null;
-        return (
-          u.displayName ??
-          truncateAddress(ethersUtils.getAddress(u.walletAddress))
-        );
+        return u.displayName ?? truncate(u.walletAddress);
       })
       .filter(Boolean)
       .join(", ");

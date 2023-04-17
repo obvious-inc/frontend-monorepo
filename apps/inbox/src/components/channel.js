@@ -25,7 +25,9 @@ const Channel = () => {
     useActions();
 
   const channel = useChannel(params.channelId, { name: true });
-  const messageIds = useSortedChannelMessageIds(params.channelId);
+  const messageIds = useSortedChannelMessageIds(params.channelId, {
+    threads: false,
+  });
 
   const [selectedMessageId, setSelectedMessageId] = React.useState(
     () => messageIds.slice(-1)[0]

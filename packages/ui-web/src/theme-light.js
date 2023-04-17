@@ -1,5 +1,7 @@
 import dark, { createPrimary } from "./theme-dark.js";
 
+const primaryText = createPrimary({ saturation: 0.9, lightness: 0.48 });
+
 const textNormal = "hsl(45deg 8% 20%)";
 const textDimmed = "hsl(45deg 2% 46%)";
 const textDimmedModifierHover = "hsl(45deg 2% 52%)";
@@ -45,6 +47,8 @@ export default {
     textHeader: textAccent,
     textHighlight: "#9e7626", // Light yellow
     textHighlightBackground: "#b8810e26",
+    link: primaryText,
+    linkModifierHover: primaryText,
     borderLight: "hsl(0 0% 0% / 14%)",
     borderLightModifierHover: "hsl(0 0% 0% / 18%)",
     borderLighter: "hsl(0 0% 0% / 12%)",

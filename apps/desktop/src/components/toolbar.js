@@ -28,11 +28,12 @@ export const Button = React.forwardRef((props, ref) => (
         all: "unset",
         flex: "0 0 auto",
         color: t.colors.textNormal,
-        height: 25,
-        padding: "0 0.5rem",
+        width: "2.5rem",
+        height: "2.5rem",
+        // padding: "0 0.5rem",
         borderRadius: 4,
         display: "inline-flex",
-        fontSize: 13,
+        // fontSize: 13,
         lineHeight: 1,
         alignItems: "center",
         justifyContent: "center",
@@ -65,7 +66,7 @@ export const Separator = React.forwardRef((props, ref) => (
       css({
         width: "1px",
         background: t.colors.borderLight,
-        margin: "0.4rem",
+        margin: "0.3rem",
       })
     }
     {...props}

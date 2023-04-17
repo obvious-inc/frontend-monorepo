@@ -24,7 +24,7 @@ export const createCss = (theme, { inline = false, compact = false } = {}) => ({
     : undefined,
   em: { fontStyle: "italic" },
   strong: { fontWeight: "600" },
-  "a.link": {
+  "a.link, a.link:active, a.link:visited": {
     color: theme.colors.link,
     textDecoration: "none",
     outline: "none",
@@ -49,12 +49,7 @@ const parseLeaf = (l, i) => {
   return <React.Fragment key={i}>{children}</React.Fragment>;
 };
 
-const createParser = ({
-  inline,
-  // compact,
-  suffix,
-  onClickInteractiveElement,
-}) => {
+const createParser = ({ inline, suffix, onClickInteractiveElement }) => {
   const parseElement = (el, i, els, { root = false } = {}) => {
     const parseNode = (n, i, ns) =>
       n.text == null ? parseElement(n, i, ns) : parseLeaf(n, i, ns);
@@ -293,10 +288,7 @@ const RichText = ({
     [inline, compact, suffix, onClickInteractiveElement]
   );
   return (
-    <div
-      css={(theme) => css(createCss(theme, { inline: inline, compact }))}
-      {...props}
-    >
+    <div css={(theme) => css(createCss(theme, { inline, compact }))} {...props}>
       {parse(blocks)}
     </div>
   );

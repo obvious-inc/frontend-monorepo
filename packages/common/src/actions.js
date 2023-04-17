@@ -515,10 +515,11 @@ export default ({
             id: dummyId,
             type: "regular",
             createdAt: new Date().toISOString(),
-            authorUserId: me.id,
-            channelId,
             content: blocks,
             stringContent,
+            authorUserId: me.id,
+            channelId,
+            replyTargetMessageId,
           },
         });
       }

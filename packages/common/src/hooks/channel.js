@@ -48,11 +48,12 @@ export const useChannelMessages = (channelId) =>
     )
   );
 
-export const useSortedChannelMessageIds = (channelId) =>
+export const useSortedChannelMessageIds = (channelId, options = {}) =>
   useStore(
     React.useCallback(
-      (state) => selectSortedChannelMessageIds(state, channelId),
-      [channelId]
+      (state) => selectSortedChannelMessageIds(state, channelId, options),
+      // eslint-disable-next-line
+      [channelId, ...Object.values(options)]
     )
   );
 
@@ -201,11 +202,13 @@ export const useChannelsWithMembers = (memberWalletAddresses, options = {}) =>
 
 export const useTotalMentionCount = () => useStore(selectTotalMentionCount);
 
-export const useMessage = (messageId) =>
+export const useMessage = (messageId, options = {}) =>
   useStore(
     React.useCallback(
-      (state) => (messageId == null ? null : selectMessage(state, messageId)),
-      [messageId]
+      (state) =>
+        messageId == null ? null : selectMessage(state, messageId, options),
+      // eslint-disable-next-line
+      [messageId, ...Object.values(options)]
     )
   );
 

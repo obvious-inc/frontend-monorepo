@@ -20,10 +20,10 @@ const textMutedAlpha = "hsl(0 0% 100% / 28%)";
 const textDanger = "rgb(235, 87, 87)";
 const backgroundNormal = "hsl(0 0% 13%)";
 const backgroundDark = "hsl(0 0% 10%)";
-const backgroundDarkTintLighter = "hsl(0 0% 11%)";
 const backgroundLight = "hsl(0 0% 15%)";
 const backgroundLighter = "hsl(0 0% 17%)";
 
+const backgroundModifierLighter = "hsl(0 0% 100% / 1.5%)";
 const backgroundModifierHover = "hsl(0 0% 100% / 5.5%)";
 
 const normalTextSize = "1.4rem";
@@ -116,7 +116,7 @@ export default {
     backgroundYellow: "rgb(202, 152, 73)",
     interactiveNormal: "#b9bbbe",
     interactiveHover: "#dcddde",
-    messageBackgroundModifierFocus: backgroundDarkTintLighter,
+    messageBackgroundModifierFocus: backgroundModifierLighter,
     messageBackgroundModifierHighlight: createPrimary({
       lightness: 0.4,
       opacity: 0.15,

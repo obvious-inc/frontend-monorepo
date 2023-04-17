@@ -660,7 +660,7 @@ const NewMessageScreen = () => {
 const ChannelMessages = ({ channelId, initReply, replyTargetMessageId }) => {
   const scrollContainerRef = React.useRef();
   const didScrollToBottomRef = React.useRef(false);
-  const messageIds = useSortedChannelMessageIds(channelId);
+  const messageIds = useSortedChannelMessageIds(channelId, { threads: true });
 
   const { fetcher: fetchMessages, pendingMessagesBeforeCount } =
     useScrollAwareMessageFetcher(channelId, { scrollContainerRef });

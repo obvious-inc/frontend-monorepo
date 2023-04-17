@@ -16,6 +16,7 @@ import {
   useHasReactedWithEmoji,
   useEmojis,
   useMessageReactions,
+  useSortedMessageReplies,
 } from "@shades/common/app";
 import {
   array as arrayUtils,
@@ -29,6 +30,7 @@ import {
   DotsHorizontal as DotsHorizontalIcon,
   EditPen as EditPenIcon,
   ReplyArrow as ReplyArrowIcon,
+  EmojiFace as EmojiFaceIcon,
   AddEmojiReaction as AddEmojiReactionIcon,
   JoinArrowRight as JoinArrowRightIcon,
 } from "@shades/ui-web/icons";
@@ -42,6 +44,7 @@ import FormattedDate from "./formatted-date";
 import MessageInput from "./message-input";
 import RichText from "./rich-text";
 import Input from "./input";
+import Link from "./link";
 import UserAvatar from "./user-avatar";
 import InlineUserButton from "./inline-user-button";
 import * as Popover from "./popover";
@@ -72,6 +75,10 @@ const ChannelMessage = React.memo(function ChannelMessage_({
   giveTouchFocus,
   layout,
   scrollToMessage,
+  showLeftColumn = true,
+  showReplyTargetMessages = true,
+  horizontalPadding = "1.6rem",
+  ...containerProps
 }) {
   const editInputRef = React.useRef();
   const containerRef = React.useRef();
@@ -84,7 +91,7 @@ const ChannelMessage = React.memo(function ChannelMessage_({
   const navigate = useNavigate();
 
   const channel = useChannel(channelId);
-  const message = useMessage(messageId);
+  const message = useMessage(messageId, { replies: true });
   const previousMessage = useMessage(previousMessageId);
   const members = useChannelMembers(channelId);
 
@@ -245,15 +252,16 @@ const ChannelMessage = React.memo(function ChannelMessage_({
     setEmojiPickerOpen(isOpen);
   }, []);
 
-  const replyTargetMessageElement = message.isReply && (
-    <ReplyTargetMessage
-      messageId={message.replyTargetMessageId}
-      layout={layout}
-      onClickMessage={() => {
-        scrollToMessage(message.replyTargetMessageId);
-      }}
-    />
-  );
+  const replyTargetMessageElement = showReplyTargetMessages &&
+    message.isReply && (
+      <ReplyTargetMessage
+        messageId={message.replyTargetMessageId}
+        layout={layout}
+        onClickMessage={() => {
+          scrollToMessage(message.replyTargetMessageId);
+        }}
+      />
+    );
 
   return (
     <div
@@ -265,11 +273,11 @@ const ChannelMessage = React.memo(function ChannelMessage_({
           ? "var(--bg-highlight)"
           : showAsFocused
           ? "var(--bg-focus)"
-          : undefined,
+          : "transparent",
         "--padding":
           showSimplifiedMessage || compact
-            ? "0.5rem 1.6rem"
-            : "0.7rem 1.6rem 0.3rem",
+            ? `0.5rem ${horizontalPadding}`
+            : `0.7rem ${horizontalPadding} 0.3rem`,
         "--color": message.isOptimistic
           ? "var(--color-optimistic)"
           : "var(--color-regular)",
@@ -295,17 +303,20 @@ const ChannelMessage = React.memo(function ChannelMessage_({
               giveTouchFocus(messageId);
             },
           })}
+      {...containerProps}
     >
       {!message.isOptimistic && (
         <div
           css={css({
             position: "absolute",
             top: 0,
-            right: "1.6rem",
             transform: "translateY(-50%)",
             zIndex: 1,
           })}
-          style={{ display: showAsFocused ? "block" : "none" }}
+          style={{
+            display: showAsFocused ? "block" : "none",
+            right: horizontalPadding,
+          }}
         >
           <MessageToolbar
             allowReplies={!isOwnMessage && !message.isSystemMessage}
@@ -322,24 +333,31 @@ const ChannelMessage = React.memo(function ChannelMessage_({
         </div>
       )}
 
-      {message.isReply && layout !== "bubbles" && replyTargetMessageElement}
+      {message.isReply &&
+        layout !== "bubbles" &&
+        showReplyTargetMessages &&
+        replyTargetMessageElement}
 
       <div
         css={css({
           display: "grid",
-          gridTemplateColumns: `${AVATAR_SIZE} minmax(0, 1fr)`,
           alignItems: "flex-start",
         })}
         style={{
+          gridTemplateColumns: showLeftColumn
+            ? `${AVATAR_SIZE} minmax(0,1fr)`
+            : "minmax(0,1fr)",
           gridGap: compact ? COMPACT_GUTTER_SIZE : GUTTER_SIZE,
         }}
       >
-        <MessageLeftColumn
-          messageId={messageId}
-          layout={layout}
-          simplified={showSimplifiedMessage}
-          isHovering={isHovering}
-        />
+        {showLeftColumn && (
+          <MessageLeftColumn
+            messageId={messageId}
+            layout={layout}
+            simplified={showSimplifiedMessage}
+            isHovering={isHovering}
+          />
+        )}
 
         <div
           style={{
@@ -411,7 +429,9 @@ const ChannelMessage = React.memo(function ChannelMessage_({
           ) : (
             <>
               <MessageBody messageId={messageId} layout={layout} />
-              {message.embeds?.length > 0 && <Embeds messageId={messageId} />}
+              {message.embeds?.length > 0 && (
+                <Embeds messageId={messageId} layout={layout} />
+              )}
             </>
           )}
 
@@ -423,11 +443,193 @@ const ChannelMessage = React.memo(function ChannelMessage_({
               layout={layout}
             />
           )}
+
+          {layout !== "bubbles" && message.replyMessageIds?.length >= 2 && (
+            <Thread
+              messageId={messageId}
+              layout={layout}
+              initReply={initReply}
+            />
+          )}
         </div>
       </div>
     </div>
   );
 });
+
+const Thread = ({ messageId, layout, initReply }) => {
+  const [isExpanded, setExpanded] = React.useState(true);
+  const replyMessages = useSortedMessageReplies(messageId) ?? [];
+  const lastReply = replyMessages.slice(-1)[0];
+  const lastReplyAuthorUser = useUser(lastReply?.authorUserId);
+  return (
+    <div style={{ paddingLeft: layout === "compact" ? "2.7rem" : 0 }}>
+      <button
+        onClick={() => {
+          setExpanded((s) => !s);
+        }}
+        css={(t) =>
+          css({
+            outline: "none",
+            display: "flex",
+            alignItems: "center",
+            padding: "0.4rem",
+            width: "calc(100% + 0.4rem)",
+            position: "relative",
+            left: "-0.4rem",
+            marginTop: "0.2rem",
+            borderRadius: "0.5rem",
+            "[data-view-replies]": { display: "none" },
+            "@media(hover: hover)": {
+              cursor: "pointer",
+              ":hover": {
+                background: t.colors.backgroundModifierHover,
+                // boxShadow: t.shadows.elevationLow,
+                "[data-link]": {
+                  color: t.colors.linkModifierHover,
+                  textDecoration: "underline",
+                },
+                "[data-last-reply-at]": { display: "none" },
+                "[data-view-replies]": { display: "inline" },
+              },
+            },
+          })
+        }
+      >
+        {isExpanded ? (
+          <div style={{ width: "2rem", height: "2rem", position: "relative" }}>
+            <div
+              css={(t) =>
+                css({
+                  position: "absolute",
+                  bottom: "-0.4rem",
+                  right: 0,
+                  border: "0.2rem solid",
+                  borderColor: t.colors.borderLight,
+                  width: "1.1rem",
+                  height: "1.5rem",
+                  borderRight: 0,
+                  borderBottom: 0,
+                  borderTopLeftRadius: "0.4rem",
+                })
+              }
+            />
+          </div>
+        ) : (
+          <UserAvatar
+            transparent
+            walletAddress={lastReplyAuthorUser?.walletAddress}
+            size="2rem"
+          />
+        )}
+        <Link
+          data-link
+          component="div"
+          css={(t) => css({ fontSize: t.text.sizes.small, margin: "0 0.7rem" })}
+        >
+          {replyMessages.length} replies
+        </Link>
+        <div
+          css={(t) =>
+            css({ color: t.colors.textDimmed, fontSize: t.text.sizes.small })
+          }
+        >
+          <span data-last-reply-at>
+            Last reply{" "}
+            <FormattedDateWithTooltip
+              capitalize={false}
+              value={lastReply.createdAt}
+            />
+          </span>
+          <span data-view-replies>
+            {isExpanded ? "Hide replies" : "View replies"}
+          </span>
+        </div>
+      </button>
+      {isExpanded && (
+        <div>
+          {replyMessages.map((m, i, ms) => (
+            <ChannelMessage
+              key={m.id}
+              messageId={m.id}
+              previousMessageId={ms[i - 1]}
+              layout="compact"
+              showLeftColumn={false}
+              showReplyTargetMessages={false}
+              initReply={initReply}
+              horizontalPadding={0}
+              css={css({ padding: "0.6rem 0", borderRadius: "0.5rem" })}
+            />
+          ))}
+          <button
+            onClick={() => {
+              initReply(lastReply.id);
+            }}
+            css={(t) =>
+              css({
+                outline: "none",
+                padding: "0.4rem 0",
+                marginTop: "0.2rem",
+                width: "100%",
+                display: "flex",
+                alignItems: "center",
+                borderRadius: "0.5rem",
+                "@media(hover: hover)": {
+                  cursor: "pointer",
+                  ":hover": {
+                    background: t.colors.backgroundModifierHover,
+                    // boxShadow: t.shadows.elevationLow,
+                    "[data-link]": {
+                      color: t.colors.linkModifierHover,
+                      textDecoration: "underline",
+                    },
+                  },
+                },
+              })
+            }
+          >
+            <div
+              style={{ width: "2rem", height: "2rem", position: "relative" }}
+            >
+              <div
+                css={(t) =>
+                  css({
+                    position: "absolute",
+                    top: "-0.4rem",
+                    right: 0,
+                    border: "0.2rem solid",
+                    borderColor: t.colors.borderLight,
+                    width: "1.1rem",
+                    height: "1.5rem",
+                    borderRight: 0,
+                    borderTop: 0,
+                    borderBottomLeftRadius: "0.4rem",
+                  })
+                }
+              />
+            </div>
+            <Link
+              data-link
+              component="div"
+              css={(t) =>
+                css({
+                  fontSize: t.text.sizes.small,
+                  margin: "0 0.7rem",
+                  display: "inline-flex",
+                })
+              }
+            >
+              Add reply
+              <ReplyArrowIcon
+                style={{ width: "1.2rem", marginLeft: "0.5rem" }}
+              />
+            </Link>
+          </button>
+        </div>
+      )}
+    </div>
+  );
+};
 
 const MessageBody = React.memo(({ messageId, layout }) => {
   const me = useMe();
@@ -474,14 +676,13 @@ const MessageBody = React.memo(({ messageId, layout }) => {
   return richText;
 });
 
-const Bubble = ({ align, small, children, ...props }) => (
+const Bubble = ({ align, small, maxWidth = "64rem", children, ...props }) => (
   <div
     css={(t) =>
       css({
         "--bg-regular": t.colors.backgroundTertiary,
         "--bg-me": t.colors.primaryTransparent,
         background: "var(--background)",
-        maxWidth: "min(calc(100% - 3.2rem), 64rem)",
       })
     }
     style={{
@@ -490,6 +691,7 @@ const Bubble = ({ align, small, children, ...props }) => (
       padding: small ? "0.4rem 0.6rem" : "0.7rem 1.4rem",
       borderRadius: small ? "1.35rem" : "1.9rem",
       minHeight: small ? 0 : "3.8rem",
+      maxWidth: `min(calc(100% - 3.2rem), ${maxWidth})`,
     }}
     {...props}
   >
@@ -497,20 +699,40 @@ const Bubble = ({ align, small, children, ...props }) => (
   </div>
 );
 
-const Embeds = React.memo(({ messageId }) => {
+const Embeds = React.memo(({ messageId, layout }) => {
+  const me = useMe();
+  const message = useMessage(messageId);
   const embeds = useMessageEmbeds(messageId);
+  const maxWidth = "60rem";
 
   return (
     <ul
       css={css({
+        display: "flex",
+        flexDirection: "column",
         marginTop: "0.5rem",
-        maxWidth: "60rem",
         "li + li": { marginTop: "1rem" },
       })}
+      style={{
+        maxWidth: layout === "bubbles" ? undefined : maxWidth,
+      }}
     >
-      {embeds.map((embed, i) => (
-        <Embed key={`${embed.url}-${i}`} {...embed} />
-      ))}
+      {embeds.map((embed, i) => {
+        const embedContent = <Embed {...embed} />;
+
+        if (layout !== "bubbles") return embedContent;
+
+        const isAuthorMe = me != null && message.authorUserId === me.id;
+        return (
+          <Bubble
+            key={`${embed.url}-${i}`}
+            align={isAuthorMe ? "right" : "left"}
+            maxWidth={maxWidth}
+          >
+            {embedContent}
+          </Bubble>
+        );
+      })}
     </ul>
   );
 });
@@ -688,7 +910,8 @@ const Reactions = ({ messageId, addReaction, hideAddButton, layout }) => {
         })
       }
     >
-      <AddEmojiReactionIcon />
+      {/* <AddEmojiReactionIcon /> */}
+      <EmojiFaceIcon style={{ width: "1.6rem", height: "auto" }} />
     </button>
   );
 
@@ -1472,7 +1695,8 @@ const MessageToolbar = React.memo(
             >
               <Popover.Trigger>
                 <span>
-                  <AddEmojiReactionIcon style={{ width: "1.6rem" }} />
+                  {/* <AddEmojiReactionIcon style={{ width: "1.6rem" }} /> */}
+                  <EmojiFaceIcon style={{ width: "1.6rem" }} />
                 </span>
               </Popover.Trigger>
             </Toolbar.Button>
@@ -1529,7 +1753,7 @@ const MessageToolbar = React.memo(
             }}
             aria-label="Edit"
           >
-            <EditPenIcon />
+            <EditPenIcon style={{ width: "1.6rem", height: "auto" }} />
           </Toolbar.Button>
         )}
 
@@ -1543,7 +1767,7 @@ const MessageToolbar = React.memo(
               <Toolbar.Button asChild>
                 <DropdownMenu.Trigger>
                   <DotsHorizontalIcon
-                    css={css({ width: "1.6rem", height: "auto" })}
+                    css={css({ width: "1.7rem", height: "auto" })}
                   />
                 </DropdownMenu.Trigger>
               </Toolbar.Button>
@@ -1689,12 +1913,12 @@ const ReplyTargetMessage = ({ messageId, layout, onClickMessage }) => {
             display: "var(--path-display)",
             content: '""',
             position: "absolute",
-            right: "calc(100% - 5rem + 0.3rem)",
+            right: "calc(100% - 5rem + 0.5rem)",
             top: "calc(50% - 1px)",
-            width: "2.9rem",
-            height: "1.4rem",
+            width: "2.7rem",
+            height: "1.2rem",
             border: "0.2rem solid",
-            borderColor: t.colors.borderLighter,
+            borderColor: t.colors.borderLight,
             borderRight: 0,
             borderBottom: 0,
             borderTopLeftRadius: "0.4rem",
@@ -1951,7 +2175,7 @@ const MessageLeftColumn = ({ messageId, simplified, layout, isHovering }) => {
   );
 };
 
-const SystemMessageContent = ({ messageId, minimal }) => {
+const SystemMessageContent = ({ messageId }) => {
   const message = useMessage(messageId);
 
   switch (message.type) {
@@ -2079,14 +2303,17 @@ const FormattedDateWithTooltip = React.memo(
     tooltipContentProps,
     disableRelative,
     disableTooltip,
+    capitalize = true,
     ...props
   }) => {
     const formattedDate =
       !disableRelative &&
       (isDateToday(new Date(value)) || isDateYesterday(new Date(value))) ? (
         <span>
-          {isDateToday(new Date(value)) ? "Today" : "Yesterday"} at{" "}
-          <FormattedDate value={value} hour="numeric" minute="numeric" />
+          <span style={{ textTransform: capitalize ? "capitalize" : "none" }}>
+            {isDateToday(new Date(value)) ? "today" : "yesterday"}
+          </span>{" "}
+          at <FormattedDate value={value} hour="numeric" minute="numeric" />
         </span>
       ) : (
         <FormattedDate value={value} {...props} />

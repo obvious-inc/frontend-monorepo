@@ -4,6 +4,7 @@ import { css } from "@emotion/react";
 import {
   useAuth,
   useActions,
+  useSelectors,
   useBeforeActionListener,
   useMe,
   useChannel,
@@ -172,6 +173,7 @@ const ChannelContent = ({ channelId, layout }) => {
   const { status: authenticationStatus } = useAuth();
 
   const actions = useActions();
+  const selectors = useSelectors();
 
   const { markChannelRead } = actions;
 
@@ -306,10 +308,13 @@ const ChannelContent = ({ channelId, layout }) => {
     throttledRegisterTypingActivity();
   });
 
-  const initReply = React.useCallback((messageId) => {
-    setReplyTargetMessageId(messageId);
+  const initReply = useLatestCallback((targetMessageId) => {
+    const targetMessage = selectors.selectMessage(targetMessageId);
+    setReplyTargetMessageId(
+      targetMessage?.replyTargetMessageId ?? targetMessageId
+    );
     inputRef.current.focus();
-  }, []);
+  });
 
   const cancelReply = React.useCallback(() => {
     setReplyTargetMessageId(null);

@@ -27,4 +27,5 @@ export * from "./hooks/ens.js";
 export * from "./hooks/me.js";
 export * from "./hooks/user.js";
 export * from "./hooks/channel.js";
+export * from "./hooks/message.js";
 export * from "./hooks/ui.js";

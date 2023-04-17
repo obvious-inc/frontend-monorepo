@@ -102,7 +102,7 @@ const createMiddleware = ({ isUrl }) => {
 
 const LinkComponent = ({ attributes, children, element }) => {
   return (
-    <a {...attributes} href={element.url}>
+    <a {...attributes} href={element.url} className="link">
       {children}
     </a>
   );

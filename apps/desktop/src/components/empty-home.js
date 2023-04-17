@@ -55,7 +55,7 @@ const EmptyHome = () => {
               css={(t) =>
                 css({
                   width: "6rem",
-                  color: t.colors.backgroundModifierHover,
+                  color: t.colors.borderLight,
                 })
               }
             />
