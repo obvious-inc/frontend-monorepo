@@ -681,7 +681,7 @@ const Bubble = ({ align, small, maxWidth = "64rem", children, ...props }) => (
     css={(t) =>
       css({
         "--bg-regular": t.colors.backgroundTertiary,
-        "--bg-me": t.colors.primaryTransparent,
+        "--bg-me": t.colors.primaryTransparentSoft,
         background: "var(--background)",
       })
     }

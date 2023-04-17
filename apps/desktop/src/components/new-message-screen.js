@@ -1150,7 +1150,7 @@ const MessageRecipientOption = ({
       style={{
         cursor: isDisabled ? "default" : "pointer",
         background: isSelected
-          ? theme.colors.primaryTransparentDark
+          ? theme.colors.primaryTransparentSoft
           : isFocused
           ? theme.colors.backgroundModifierHover
           : undefined,
@@ -1186,7 +1186,7 @@ const MessageRecipientOption = ({
             {...descriptionProps}
             css={(t) =>
               css({
-                color: t.colors.inputPlaceholder,
+                color: t.colors.textDimmed,
                 fontSize: t.fontSizes.default,
                 flex: 1,
                 minWidth: 0,

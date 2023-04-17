@@ -1,6 +1,8 @@
 import dark, { createPrimary } from "./theme-dark.js";
 
 const primaryText = createPrimary({ saturation: 0.9, lightness: 0.48 });
+const primaryTransparent = createPrimary({ opacity: 0.3 });
+const primaryTransparentSoft = createPrimary({ opacity: 0.15 });
 
 const textNormal = "hsl(45deg 8% 20%)";
 const textDimmed = "hsl(45deg 2% 46%)";
@@ -38,6 +40,8 @@ export default {
     messageBackgroundModifierFocus: backgroundDarkTintLighter,
     messageBackgroundModifierHighlight: "hsl(210deg 67% 70% / 15%)",
     backgroundModifierHover: backgroundModifierDark,
+    primaryTransparent,
+    primaryTransparentSoft,
     textNormal,
     textDimmedModifierHover,
     textDimmed,

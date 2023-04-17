@@ -10,7 +10,7 @@ const primary = createPrimary();
 const primaryTintDarker = createPrimary({ saturation: 1, lightness: 0.43 });
 const primaryTintLighter = createPrimary({ saturation: 1, lightness: 0.6 });
 const primaryTransparent = createPrimary({ opacity: 0.4 });
-const primaryTransparentDark = createPrimary({ opacity: 0.15 });
+const primaryTransparentSoft = createPrimary({ opacity: 0.15 });
 const textNormal = "hsl(0 0% 83%)";
 const textDimmed = "hsl(0 0% 60%)";
 const textDimmedModifierHover = "hsl(0 0% 66%)";
@@ -81,7 +81,7 @@ export default {
     primary,
     primaryModifierHover: primaryTintDarker,
     primaryTransparent,
-    primaryTransparentDark,
+    primaryTransparentSoft,
     textNormal,
     textDimmedModifierHover,
     textDimmed,
