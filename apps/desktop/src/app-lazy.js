@@ -55,7 +55,6 @@ import useCommandCenter, {
 } from "./hooks/command-center";
 import useWalletEvent from "./hooks/wallet-event";
 import LoginScreen from "./components/login-screen";
-import EmptyHome from "./components/empty-home";
 import Layout from "./components/layouts";
 import TitleBar from "./components/title-bar";
 import * as Tooltip from "./components/tooltip";
@@ -211,56 +210,6 @@ const useUserEnsNames = () => {
   });
 };
 
-const channelHistoryCacheKey = "active-channel-id";
-
-const useChannelHistoryCache = () => {
-  const location = useLocation();
-  const navigate = useNavigate();
-  const { status: authStatus } = useAuth();
-  const { writeAsync: cacheWrite, readAsync: cacheRead } =
-    useCacheStore() ?? {};
-
-  const isPageLoadRef = React.useRef(true);
-
-  React.useEffect(() => {
-    if (!isPageLoadRef.current) return;
-
-    isPageLoadRef.current = false;
-
-    if (authStatus !== "authenticated") return;
-    if (location.pathname !== "/") return;
-    if (cacheRead == null) return;
-
-    let cancelled = false;
-
-    cacheRead(channelHistoryCacheKey).then((channelId) => {
-      if (cancelled) return;
-      if (channelId == null) return;
-      navigate(`/channels/${channelId}`, { replace: true });
-    });
-
-    return () => {
-      cancelled = true;
-    };
-  }, [location, authStatus, navigate, cacheRead, isPageLoadRef]);
-
-  React.useEffect(() => {
-    if (authStatus !== "authenticated") return;
-    if (cacheWrite == null) return;
-
-    const match = matchPath(
-      { path: "/channels/:channelId" },
-      location.pathname
-    );
-
-    if (match == null) {
-      cacheWrite(channelHistoryCacheKey, null);
-    } else {
-      cacheWrite(channelHistoryCacheKey, match.params.channelId);
-    }
-  }, [location, authStatus, cacheRead, cacheWrite]);
-};
-
 const App = () => {
   const navigate = useNavigate();
 
@@ -273,8 +222,6 @@ const App = () => {
 
   useSystemNotifications();
   useUserEnsNames();
-
-  useChannelHistoryCache();
 
   useWalletEvent("disconnect", () => {
     if (authStatus === "not-authenticated") return;
@@ -354,7 +301,7 @@ const App = () => {
 
       <Routes>
         <Route path="/" element={<Layout />}>
-          <Route index element={<EmptyHome />} />
+          <Route index element={<IndexRoute />} />
           <Route
             path="/new"
             element={
@@ -445,6 +392,68 @@ const themeMap = {
   "nouns-tv": nounsTvTheme,
 };
 
+const usePageLoadEffect = (cb, deps) => {
+  const isPageLoadRef = React.useRef(true);
+
+  React.useEffect(() => {
+    if (!isPageLoadRef.current) return;
+    isPageLoadRef.current = false;
+    cb();
+    // eslint-disable-next-line
+  }, deps);
+};
+
+const CHANNEL_HISTORY_CACHE_KEY = "active-channel-id";
+
+const IndexRoute = () => {
+  const location = useLocation();
+  const navigate = useNavigate();
+  const { status: authStatus } = useAuth();
+  const { writeAsync: cacheWrite, readAsync: cacheRead } =
+    useCacheStore() ?? {};
+
+  usePageLoadEffect(() => {
+    const fallbackRedirect = () => navigate("/new", { replace: true });
+
+    if (authStatus !== "authenticated" || cacheRead == null) {
+      fallbackRedirect();
+      return;
+    }
+
+    let cancelled = false;
+
+    cacheRead(CHANNEL_HISTORY_CACHE_KEY).then((channelId) => {
+      if (cancelled || channelId == null) {
+        fallbackRedirect();
+        return;
+      }
+      navigate(`/channels/${channelId}`, { replace: true });
+    });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [location, authStatus, navigate, cacheRead]);
+
+  React.useEffect(() => {
+    if (authStatus !== "authenticated") return;
+    if (cacheWrite == null) return;
+
+    const match = matchPath(
+      { path: "/channels/:channelId" },
+      location.pathname
+    );
+
+    if (match == null) {
+      cacheWrite(CHANNEL_HISTORY_CACHE_KEY, null);
+    } else {
+      cacheWrite(CHANNEL_HISTORY_CACHE_KEY, match.params.channelId);
+    }
+  }, [location, authStatus, cacheRead, cacheWrite]);
+
+  return null;
+};
+
 const useTheme = () => {
   const [preferredTheme] = useCachedState("preferred-theme");
   const systemPrefersDarkTheme = useMatchMedia("(prefers-color-scheme: dark)");
@@ -463,8 +472,10 @@ const useTheme = () => {
 };
 
 export default function LazyRoot() {
-  const { login } = useAuth();
+  const { login, state: authState } = useAuth();
   const theme = useTheme();
+
+  if (authState === "loading") return null;
 
   return (
     <BrowserRouter>

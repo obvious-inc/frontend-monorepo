@@ -507,7 +507,15 @@ const Channel = ({ channelId, layout, noSideMenu }) => {
       </Layout>
     );
 
-  if (channel == null)
+  if (
+    channel == null ||
+    // The message bubble layout uses the logged in user’s id to decide what
+    // messages to right align. We wait to the user response here to prevent
+    // layout shift.
+    (layout === "bubbles" &&
+      authenticationStatus === "authenticated" &&
+      me == null)
+  )
     return (
       <Layout channelId={channelId} noSideMenu={noSideMenu}>
         <div

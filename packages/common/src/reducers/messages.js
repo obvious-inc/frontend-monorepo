@@ -3,6 +3,7 @@ import combineReducers from "../utils/combine-reducers";
 import { indexBy, groupBy, unique, sort } from "../utils/array";
 import { omitKey, mapValues } from "../utils/object";
 import { arrayShallowEquals } from "../utils/reselect";
+import { stringifyBlocks as stringifyMessageBlocks } from "../utils/message";
 import { selectUser } from "./users";
 import { selectApp } from "./apps";
 
@@ -387,6 +388,15 @@ export const selectSortedMessageReplies = createSelector(
     sort((m1, m2) => new Date(m1.createdAt) - new Date(m2.createdAt), messages),
   { memoizeOptions: { equalityCheck: arrayShallowEquals } }
 );
+
+export const selectStringifiedMessageContent = (state, messageId) => {
+  const message = state.messages.entriesById[messageId];
+  if (message == null) return null;
+  return stringifyMessageBlocks(message.content, {
+    renderUser: (id) => id,
+    renderChannelLink: (id) => id,
+  });
+};
 
 export default combineReducers({
   entriesById,

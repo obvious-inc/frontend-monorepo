@@ -8,14 +8,17 @@ import {
   useCachedState,
   useServerConnectionState,
   useMe,
+  useUser,
   useChannel,
   useChannelName,
+  useChannelMessages,
   useMemberChannels,
   usePublicChannels,
   useStarredChannels,
   useChannelHasUnread,
   useChannelMentionCount,
   useHasFetchedMenuData,
+  useStringifiedMessageContent,
 } from "@shades/common/app";
 import { useWallet, useWalletLogin } from "@shades/common/wallet";
 import {
@@ -34,6 +37,7 @@ import {
   PlusSmall as PlusSmallIcon,
   Triangle as TriangleIcon,
 } from "@shades/ui-web/icons";
+import useFetch from "../hooks/fetch";
 import useCommandCenter from "../hooks/command-center";
 import { useDialog } from "../hooks/dialogs";
 import UserAvatar from "./user-avatar";
@@ -122,6 +126,12 @@ const Layout = () => {
     sidebarFocusTargetRef: menuFocusTargetRef,
   } = useSidebarState();
 
+  const [sidebarMode] = useCachedState("preferred-sidebar-mode");
+
+  const channelItemProps = {
+    size: sidebarMode === "large" ? "large" : "normal",
+  };
+
   const {
     isOpen: isEditProfileDialogOpen,
     open: openEditProfileDialog,
@@ -136,6 +146,7 @@ const Layout = () => {
   return (
     <>
       <SidebarLayout
+        width={sidebarMode === "large" ? "26rem" : undefined}
         header={({ isHoveringSidebar }) =>
           authenticationStatus === "not-authenticated" &&
           walletAccountAddress == null ? null : isLoadingUser ? (
@@ -243,7 +254,79 @@ const Layout = () => {
         }
         sidebarContent={
           isLoadingUser ? null : (
-            <>
+            <div
+              css={(t) =>
+                css({
+                  "--item-height": t.mainMenu.itemHeight,
+                  "--disabled-color": t.mainMenu.itemTextColorDisabled,
+                  ".list-item": {
+                    padding: `0 ${t.mainMenu.containerHorizontalPadding}`,
+                    "&:not(:last-of-type)": {
+                      marginBottom: t.mainMenu.itemDistance,
+                    },
+                    "& > *": {
+                      display: "flex",
+                      alignItems: "center",
+                      width: "100%",
+                      border: 0,
+                      fontSize: t.fontSizes.default,
+                      fontWeight: t.mainMenu.itemTextWeight,
+                      textAlign: "left",
+                      background: "transparent",
+                      borderRadius: t.mainMenu.itemBorderRadius,
+                      outline: "none",
+                      color: t.mainMenu.itemTextColor,
+                      padding: `0.2rem ${t.mainMenu.itemHorizontalPadding}`,
+                      paddingLeft: `calc(${t.mainMenu.itemHorizontalPadding} + var(--indentation-level) * 2.2rem)`,
+                      textDecoration: "none",
+                      lineHeight: 1.3,
+                      margin: "0.1rem 0",
+                      "&.active": {
+                        color: t.colors.textNormal,
+                        background: t.colors.backgroundModifierHover,
+                      },
+                      ".icon-container": {
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        height: "1.8rem",
+                      },
+                      ".icon-container > *": {
+                        color: t.colors.textMuted,
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                      },
+                      ".title-container": {
+                        flex: 1,
+                        minWidth: 0,
+                        whiteSpace: "nowrap",
+                        overflow: "hidden",
+                        textOverflow: "ellipsis",
+                      },
+                      ".subtitle-container": {
+                        color: t.colors.textMuted,
+                        fontSize: t.text.sizes.small,
+                        fontWeight: t.text.weights.normal,
+                        overflow: "hidden",
+                        textOverflow: "ellipsis",
+                      },
+                      "@media (hover: hover)": {
+                        ":not(:disabled)": {
+                          cursor: "pointer",
+                        },
+                        ":not(:disabled,&.active):hover": {
+                          background: t.colors.backgroundModifierHover,
+                        },
+                      },
+                      ":focus-visible": {
+                        boxShadow: t.shadows.focus,
+                      },
+                    },
+                  },
+                })
+              }
+            >
               <div
                 style={{
                   height:
@@ -282,7 +365,10 @@ const Layout = () => {
                   <div style={{ marginBottom: "1.5rem" }} />
                   {selectedChannel != null && !selectedChannelIsListed && (
                     <>
-                      <ChannelItem id={selectedChannel.id} />
+                      <ChannelItem
+                        id={selectedChannel.id}
+                        {...channelItemProps}
+                      />
 
                       <div style={{ marginBottom: "1.5rem" }} />
                     </>
@@ -291,7 +377,11 @@ const Layout = () => {
                   {unseenChannels.length !== 0 && (
                     <>
                       {unseenChannels.map((c) => (
-                        <ChannelItem key={c.id} id={c.id} />
+                        <ChannelItem
+                          key={c.id}
+                          id={c.id}
+                          {...channelItemProps}
+                        />
                       ))}
 
                       <div style={{ marginBottom: "1.5rem" }} />
@@ -379,7 +469,11 @@ const Layout = () => {
                           }}
                         >
                           {visibleChannels.map((c) => (
-                            <ChannelItem key={c.id} id={c.id} />
+                            <ChannelItem
+                              key={c.id}
+                              id={c.id}
+                              {...channelItemProps}
+                            />
                           ))}
                         </CollapsableSection>
                       );
@@ -388,7 +482,7 @@ const Layout = () => {
                   <div style={{ height: "0.1rem" }} />
                 </>
               )}
-            </>
+            </div>
           )
         }
       >
@@ -726,12 +820,30 @@ const SmallText = ({ component: Component = "div", ...props }) => (
   />
 );
 
-const ChannelItem = ({ id, expandable }) => {
+const useLastMessage = (channelId) => {
+  const actions = useActions();
+  const messages = useChannelMessages(channelId);
+
+  // Fetch the most recent message if non exist in cache
+  useFetch(
+    channelId == null || messages.length !== 0
+      ? null
+      : () => actions.fetchMessages(channelId, { limit: 1 }),
+    [channelId, messages?.length]
+  );
+
+  return messages?.[0];
+};
+
+const ChannelItem = ({ id, expandable, size = "normal" }) => {
   const theme = useTheme();
   const name = useChannelName(id);
   const link = `/channels/${id}`;
   const hasUnread = useChannelHasUnread(id);
   const notificationCount = useChannelMentionCount(id);
+
+  const lastMessage = useLastMessage(size === "large" ? id : null);
+  const lastMessageAuthorUser = useUser(lastMessage?.authorUserId);
 
   const { isFloating: isFloatingMenuEnabled } = useSidebarState();
   const toggleMenu = useSidebarToggle();
@@ -742,7 +854,7 @@ const ChannelItem = ({ id, expandable }) => {
 
   const avatarProps = {
     transparent: true,
-    size: theme.avatars.size,
+    size: size === "large" ? "3rem" : theme.avatars.size,
     borderRadius: theme.avatars.borderRadius,
     background: theme.colors.backgroundModifierHover,
   };
@@ -767,14 +879,29 @@ const ChannelItem = ({ id, expandable }) => {
           {name}
         </div>
       }
+      subtitle={
+        lastMessage == null ? null : (
+          <>
+            {lastMessageAuthorUser?.displayName != null && (
+              <>{lastMessageAuthorUser.displayName}: </>
+            )}
+            <StringifiedMessageContent messageId={lastMessage.id} />
+          </>
+        )
+      }
       icon={
         <span>
           <ChannelAvatar id={id} {...avatarProps} />
         </span>
       }
+      size={size}
     />
   );
 };
+
+const StringifiedMessageContent = React.memo(({ messageId }) =>
+  useStringifiedMessageContent(messageId)
+);
 
 const ListItem = React.forwardRef(
   (
@@ -782,165 +909,114 @@ const ListItem = React.forwardRef(
       component: Component = "button",
       expandable,
       expanded,
+      size,
       compact = true,
       onToggleExpanded,
       indendationLevel = 0,
       icon,
       title,
+      subtitle,
       notificationCount,
       disabled,
       ...props
     },
     ref
-  ) => (
-    <div
-      css={(t) =>
-        css({
-          padding: `0 ${t.mainMenu.containerHorizontalPadding}`,
-          "&:not(:last-of-type)": {
-            marginBottom: t.mainMenu.itemDistance,
-          },
-        })
-      }
-    >
-      <Component
-        ref={ref}
-        disabled={Component === "button" ? disabled : undefined}
-        css={(t) =>
-          css({
-            "--disabled-color": t.mainMenu.itemTextColorDisabled,
-            display: "flex",
-            alignItems: "center",
-            width: "100%",
-            border: 0,
-            fontSize: t.fontSizes.default,
-            fontWeight: t.mainMenu.itemTextWeight,
-            textAlign: "left",
-            background: "transparent",
-            borderRadius: t.mainMenu.itemBorderRadius,
-            outline: "none",
-            color: t.mainMenu.itemTextColor,
-            padding: `0.2rem ${t.mainMenu.itemHorizontalPadding}`,
-            paddingLeft: `calc(${t.mainMenu.itemHorizontalPadding} + var(--indentation-level) * 2.2rem)`,
-            textDecoration: "none",
-            lineHeight: 1.3,
-            height: t.mainMenu.itemHeight,
-            margin: "0.1rem 0",
-            "&.active": {
-              color: t.colors.textNormal,
-              background: t.colors.backgroundModifierHover,
-            },
-            "@media (hover: hover)": {
-              ":not(:disabled)": {
-                cursor: "pointer",
-              },
-              ":not(:disabled,&.active):hover": {
-                background: t.colors.backgroundModifierHover,
-              },
-            },
-            ":focus-visible": {
-              boxShadow: t.shadows.focus,
-            },
-          })
-        }
-        style={{
-          "--indentation-level": indendationLevel,
-          pointerEvents:
-            Component !== "button" && disabled ? "none" : undefined,
-          color: disabled ? `var(--disabled-color)` : undefined,
-        }}
-        {...props}
-      >
-        {expandable && (
-          <div
-            css={css({
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              width: "2.2rem",
-              height: "2.2rem",
-            })}
-            style={{ marginRight: icon == null ? "0.4rem" : 0 }}
-          >
-            <div
-              role="button"
-              tabIndex={0}
-              onClick={() => {
-                onToggleExpanded();
-              }}
-              css={(t) =>
-                css({
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  width: "2rem",
-                  height: "2rem",
-                  color: t.colors.textMuted,
-                  borderRadius: "0.3rem",
-                  transition: "background 20ms ease-in",
-                  ":hover": {
-                    background: t.colors.backgroundModifierHover,
-                  },
-                })
-              }
-            >
-              <TriangleIcon
-                style={{
-                  transition: "transform 200ms ease-out",
-                  transform: `rotate(${expanded ? "180deg" : "90deg"})`,
-                  width: "0.963rem",
-                }}
-              />
-            </div>
-          </div>
-        )}
-        {icon != null && (
-          <div
-            css={css({
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              width: "2.2rem",
-              height: "1.8rem",
-            })}
-            style={{ marginRight: compact ? "0.4rem" : "0.8rem" }}
-          >
-            <div
-              css={(t) =>
-                css({
-                  color: t.colors.textMuted,
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  width: "2rem",
-                  height: "2rem",
-                })
-              }
-              style={{
-                color: disabled ? "rgb(255 255 255 / 22%)" : undefined,
-              }}
-            >
-              {icon}
-            </div>
-          </div>
-        )}
-        <div
+  ) => {
+    const iconSize = size === "large" ? "3rem" : "2rem";
+    return (
+      <div className="list-item">
+        <Component
+          ref={ref}
+          disabled={Component === "button" ? disabled : undefined}
           style={{
-            flex: 1,
-            minWidth: 0,
-            whiteSpace: "nowrap",
-            overflow: "hidden",
-            textOverflow: "ellipsis",
+            "--indentation-level": indendationLevel,
+            pointerEvents:
+              Component !== "button" && disabled ? "none" : undefined,
+            color: disabled ? `var(--disabled-color)` : undefined,
+            height: size === "large" ? "4.4rem" : "var(--item-height)",
           }}
+          {...props}
         >
-          {title}
-        </div>
-        {notificationCount > 0 && (
-          <NotificationBadge count={notificationCount} />
-        )}
-      </Component>
-    </div>
-  )
+          {expandable && (
+            <div
+              css={css({
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                width: "2.2rem",
+                height: "2.2rem",
+              })}
+              style={{ marginRight: icon == null ? "0.4rem" : 0 }}
+            >
+              <div
+                role="button"
+                tabIndex={0}
+                onClick={() => {
+                  onToggleExpanded();
+                }}
+                css={(t) =>
+                  css({
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    width: "2rem",
+                    height: "2rem",
+                    color: t.colors.textMuted,
+                    borderRadius: "0.3rem",
+                    transition: "background 20ms ease-in",
+                    ":hover": {
+                      background: t.colors.backgroundModifierHover,
+                    },
+                  })
+                }
+              >
+                <TriangleIcon
+                  style={{
+                    transition: "transform 200ms ease-out",
+                    transform: `rotate(${expanded ? "180deg" : "90deg"})`,
+                    width: "0.963rem",
+                  }}
+                />
+              </div>
+            </div>
+          )}
+          {icon != null && (
+            <div
+              className="icon-container"
+              style={{
+                marginRight:
+                  size === "large"
+                    ? "0.88888888rem"
+                    : compact
+                    ? "0.4rem"
+                    : "0.8rem",
+                width: `calc(${iconSize} + 0.2rem)`,
+              }}
+            >
+              <div
+                style={{
+                  color: disabled ? "rgb(255 255 255 / 22%)" : undefined,
+                  width: iconSize,
+                  height: iconSize,
+                }}
+              >
+                {icon}
+              </div>
+            </div>
+          )}
+          <div className="title-container">
+            {title}
+            {subtitle != null && (
+              <div className="subtitle-container">{subtitle}</div>
+            )}
+          </div>
+          {notificationCount > 0 && (
+            <NotificationBadge count={notificationCount} />
+          )}
+        </Component>
+      </div>
+    );
+  }
 );
 
 export default Layout;

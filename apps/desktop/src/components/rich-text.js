@@ -100,7 +100,7 @@ const createParser = ({ inline, suffix, onClickInteractiveElement }) => {
       case "attachments": {
         if (inline) {
           if (root && i === 0)
-            return parseNode({ text: "Image attachment", italic: true });
+            return parseNode({ text: "Image attachment ", italic: true });
           return null;
         }
 

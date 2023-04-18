@@ -597,7 +597,11 @@ const Channel = ({ navigation, route: { params } }) => {
             setEditingMessageId(selectedMessageId);
             const message = selectors.selectMessage(selectedMessageId);
             setSelectedMessageId(null);
-            setPendingMessage(messageUtils.stringifyBlocks(message.content));
+            setPendingMessage(
+              messageUtils.stringifyBlocks(message.content, {
+                humanReadable: false,
+              })
+            );
           }}
           startReply={() => {
             const targetMessage = selectors.selectMessage(selectedMessageId);

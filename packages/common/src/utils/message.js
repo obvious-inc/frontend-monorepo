@@ -42,48 +42,61 @@ export const getMentions = (nodes) => {
 export const withoutAttachments = (nodes) =>
   filter((n) => n.type !== "attachments", nodes);
 
-const stringifyTextNode = (l) => {
-  let text = l.text;
-  if (l.bold) text = `*${text}*`;
-  if (l.italic) text = `_${text}_`;
-  if (l.strikethrough) text = `~${text}~`;
-  return text;
+export const stringifyBlocks = (
+  blockElements,
+  { humanReadable = true, renderUser, renderChannelLink } = {}
+) => {
+  const stringifyTextNode = (l) => {
+    let text = l.text;
+
+    if (humanReadable) return l.strikethrough ? `~${text}~` : text;
+
+    if (l.bold) text = `*${text}*`;
+    if (l.italic) text = `_${text}_`;
+    if (l.strikethrough) text = `~${text}~`;
+    return text;
+  };
+
+  const stringifyElement = (el) => {
+    const children = () => el.children.map(stringifyNode).join("");
+
+    switch (el.type) {
+      case "paragraph":
+        return `\n${children()}\n`;
+      case "user": {
+        if (!humanReadable) return `@<u:${el.ref}>`;
+        return renderUser(el.ref);
+      }
+      case "channel-link": {
+        if (!humanReadable) return `@<c:${el.ref}>`;
+        return renderChannelLink(el.ref);
+      }
+      case "link":
+        return el.url;
+      case "emoji":
+        return el.emoji;
+      case "attachments":
+        return `\n${children()}\n`;
+      case "image-attachment":
+        return humanReadable ? el.url : "";
+      default:
+        throw new Error();
+    }
+  };
+
+  const stringifyNode = (n) => {
+    if (n.text != null) return stringifyTextNode(n);
+    return stringifyElement(n);
+  };
+
+  return (
+    blockElements
+      .map(stringifyElement)
+      .join("")
+      // Gets rid of the the outer paragraph line breaks, I dunno
+      .replace(/^[\n]|[\n]$/g, "")
+  );
 };
-
-const stringifyElement = (el) => {
-  const children = () => el.children.map(stringifyNode).join("");
-
-  switch (el.type) {
-    case "paragraph":
-      return `\n${children()}\n`;
-    case "user":
-      // TODO
-      return `@<u:${el.ref}>`;
-    case "channel-link":
-      return `@<c:${el.ref}>`;
-    case "link":
-      return el.url;
-    case "emoji":
-      return el.emoji;
-    case "attachments":
-    case "image-attachment":
-      return "";
-    default:
-      throw new Error();
-  }
-};
-
-const stringifyNode = (n) => {
-  if (n.text != null) return stringifyTextNode(n);
-  return stringifyElement(n);
-};
-
-export const stringifyBlocks = (blockElements) =>
-  blockElements
-    .map(stringifyElement)
-    .join("")
-    // Gets rid of the the outer paragraph line breaks, I dunno
-    .replace(/^[\n]|[\n]$/g, "");
 
 export const createParagraphElement = (content = "") => ({
   type: "paragraph",

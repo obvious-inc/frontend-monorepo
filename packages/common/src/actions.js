@@ -437,51 +437,51 @@ export default ({
             messages,
           });
 
-          const replies = messages.filter(
-            (m) => m.replyTargetMessageId != null
+          // const replies = messages.filter(
+          //   (m) => m.replyTargetMessageId != null
+          // );
+
+          // // Fetch all messages replied to async. Works for now!
+          // for (let reply of replies)
+          //   authorizedFetch(
+          //     `/channels/${channelId}/messages/${reply.replyTargetMessageId}`,
+          //     { allowUnauthorized: true }
+          //   ).then((rawMessage) => {
+          //     const message = parseMessage(rawMessage);
+          //     dispatch({
+          //       type: "fetch-message:request-successful",
+          //       message: message ?? {
+          //         id: reply.replyTargetMessageId,
+          //         channelId,
+          //         deleted: true,
+          //       },
+          //     });
+          //   });
+
+          const messageUserIds = unique([
+            ...messages
+              .filter((m) => m.type === "regular" || m.type === "user-invited")
+              .flatMap((m) =>
+                [m.authorUserId, m.inviterUserId].filter(Boolean)
+              ),
+            ...messages
+              .flatMap((m) => getMentions(m.content))
+              .map((m) => m.ref),
+          ]);
+
+          const cachedUserIds = Object.keys(getStoreState().users.entriesById);
+
+          const missingUserIds = messageUserIds.filter(
+            (id) => !cachedUserIds.includes(id)
           );
 
-          // Fetch all messages replied to async. Works for now!
-          for (let reply of replies)
-            authorizedFetch(
-              `/channels/${channelId}/messages/${reply.replyTargetMessageId}`,
-              { allowUnauthorized: true }
-            ).then((rawMessage) => {
-              const message = parseMessage(rawMessage);
-              dispatch({
-                type: "fetch-message:request-successful",
-                message: message ?? {
-                  id: reply.replyTargetMessageId,
-                  channelId,
-                  deleted: true,
-                },
-              });
+          // Beautifuly fetch missing users
+          if (authStatus === "authenticated") fetchUsers(missingUserIds);
+          else
+            dispatch({
+              type: "register-unknown-users",
+              userIds: missingUserIds,
             });
-
-          // Beautifuly fetch non-member users
-          fetchChannelMembers(channelId).then((ms) => {
-            const allUserIds = [
-              ...messages
-                // TODO: move message parsing here
-                .filter((m) => m.type === 0 || m.type === 1)
-                .flatMap((m) =>
-                  [m.authorUserId, m.inviterUserId].filter(Boolean)
-                ),
-              ...messages
-                .flatMap((m) => getMentions(m.content))
-                .map((m) => m.ref),
-            ];
-            const filteredUserIds = unique(allUserIds).filter((id) =>
-              ms.some((m) => m.id === id)
-            );
-
-            if (authStatus === "authenticated") fetchUsers(filteredUserIds);
-            else
-              dispatch({
-                type: "register-unknown-users",
-                userIds: filteredUserIds,
-              });
-          });
 
           return messages;
         }
@@ -503,7 +503,9 @@ export default ({
       { optimistic = true } = {}
     ) {
       const me = selectMe(getStoreState());
-      const stringContent = stringifyMessageBlocks(blocks);
+      const stringContent = stringifyMessageBlocks(blocks, {
+        humanReadable: false,
+      });
 
       // TODO: Less hacky optimistc UI
       const dummyId = generateDummyId();
@@ -563,7 +565,7 @@ export default ({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           blocks,
-          content: stringifyMessageBlocks(blocks),
+          content: stringifyMessageBlocks(blocks, { humanReadable: false }),
         }),
       }).then((rawMessage) => {
         const message = parseMessage(rawMessage);

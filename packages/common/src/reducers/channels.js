@@ -365,7 +365,7 @@ export const selectChannelName = createSelector(
       .filter((u) => u?.id !== loggedInUserId)
       .map((u) => {
         if (u == null || u.walletAddress == null) return null;
-        return u.displayName ?? truncate(u.walletAddress);
+        return u.displayName ?? truncate(u);
       })
       .filter(Boolean)
       .join(", ");

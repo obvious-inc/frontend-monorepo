@@ -718,14 +718,16 @@ const Embeds = React.memo(({ messageId, layout }) => {
       }}
     >
       {embeds.map((embed, i) => {
-        const embedContent = <Embed {...embed} />;
+        const key = `${embed.url}-${i}`;
+
+        const embedContent = <Embed key={key} {...embed} />;
 
         if (layout !== "bubbles") return embedContent;
 
         const isAuthorMe = me != null && message.authorUserId === me.id;
         return (
           <Bubble
-            key={`${embed.url}-${i}`}
+            key={key}
             align={isAuthorMe ? "right" : "left"}
             maxWidth={maxWidth}
           >

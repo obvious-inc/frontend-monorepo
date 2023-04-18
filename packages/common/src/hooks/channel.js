@@ -43,7 +43,8 @@ export const useChannel = (channelId, options = {}) => {
 export const useChannelMessages = (channelId) =>
   useStore(
     React.useCallback(
-      (state) => selectChannelMessages(state, channelId),
+      (state) =>
+        channelId == null ? null : selectChannelMessages(state, channelId),
       [channelId]
     )
   );

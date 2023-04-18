@@ -13,6 +13,10 @@ const SettingsDialog = ({ titleProps, dismiss }) => {
     "preferred-compactness",
     "normal"
   );
+  const [sidebarModePreference, setSidebarModePreference] = useCachedState(
+    "preferred-sidebar-mode",
+    "normal"
+  );
   const [zoomPreference, setZoomPreference] = useCachedState(
     "preferred-zoom",
     "normal"
@@ -52,6 +56,20 @@ const SettingsDialog = ({ titleProps, dismiss }) => {
           ],
           onChange: (value) => {
             setCompactnessPreference(value);
+          },
+        },
+        {
+          key: "sidebar-mode-preference",
+          value: sidebarModePreference,
+          type: "select",
+          label: "Sidebar",
+          size: "medium",
+          options: [
+            { value: "normal", label: "Normal" },
+            { value: "large", label: "Large" },
+          ],
+          onChange: (value) => {
+            setSidebarModePreference(value);
           },
         },
         {

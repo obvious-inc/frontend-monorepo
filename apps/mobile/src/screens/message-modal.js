@@ -1,3 +1,4 @@
+import { utils as ethersUtils } from "ethers";
 import * as Haptics from "expo-haptics";
 import * as Clipboard from "expo-clipboard";
 import { View, Alert, Pressable, Text, Dimensions } from "react-native";
@@ -6,8 +7,10 @@ import { SectionedActionList } from "./account-modal";
 import { AddEmojiReaction as AddEmojiReactionIcon } from "../components/icons";
 import theme from "../theme";
 
-const { useActions, useMe, useMessage, useEmojis } = Shades.app;
-const { message: messageUtils } = Shades.utils;
+const { useActions, useSelectors, useMe, useMessage, useEmojis } = Shades.app;
+const { message: messageUtils, ethereum: ethereumUtils } = Shades.utils;
+
+const { truncateAddress } = ethereumUtils;
 
 const hapticImpactLight = () =>
   Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
@@ -27,6 +30,7 @@ const MessageModal = ({
   deleteMessage,
 }) => {
   const actions = useActions();
+  const selectors = useSelectors();
   const me = useMe();
   const message = useMessage(messageId);
 
@@ -53,7 +57,23 @@ const MessageModal = ({
           label: "Copy text",
           onPress: async () => {
             await Clipboard.setStringAsync(
-              messageUtils.stringifyBlocks(message.blocks)
+              messageUtils.stringifyBlocks(message.blocks, {
+                renderUser: (id) => {
+                  const user = selectors.selectUser(id);
+                  if (user == null || user.unknown) return "@[unknown-user]";
+                  if (user.deleted) return "@[deleted-user]";
+                  if (user.displayName != null) return `@${user.displayName}`;
+                  if (user.walletAddress == null) return null;
+                  const truncatedAddress = truncateAddress(
+                    ethersUtils.getAddress(user.walletAddress)
+                  );
+                  return `@${truncatedAddress}`;
+                },
+                renderChannelLink: (id) => {
+                  const channel = selectors.selectChannel(id, { name: true });
+                  return `#${channel?.name ?? `${id.slice(0, 8)}...`}`;
+                },
+              })
             );
             dismiss();
           },
