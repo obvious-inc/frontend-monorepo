@@ -31,7 +31,7 @@ export default async (req) => {
   );
 
   if (userResponse.status === 404)
-    return new Response(JSON.stringify({ result: [] }), {
+    return new Response(JSON.stringify({ results: [] }), {
       status: 200,
       headers: {
         "content-type": "application/json",
