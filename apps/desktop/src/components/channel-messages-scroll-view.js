@@ -17,6 +17,7 @@ import useGlobalMediaQueries from "../hooks/global-media-queries.js";
 import useIsOnScreen from "../hooks/is-on-screen.js";
 import useScrollListener from "../hooks/scroll-listener.js";
 import useMutationObserver from "../hooks/mutation-observer.js";
+import useLayoutSetting from "../hooks/layout-setting.js";
 import ChannelPrologue from "./channel-prologue.js";
 import ChannelMessage from "./channel-message.js";
 import ChannelAvatar from "./channel-avatar.js";
@@ -93,7 +94,7 @@ const useScroll = ({
 
 const ChannelMessagesScrollView = ({
   channelId,
-  layout,
+  layout: customLayout,
   fetchMoreMessages,
   initReply,
   scrollContainerRef,
@@ -103,6 +104,9 @@ const ChannelMessagesScrollView = ({
 }) => {
   const messagesContainerRef = React.useRef();
   const disableFetchMoreRef = React.useRef();
+
+  const layout_ = useLayoutSetting();
+  const layout = customLayout ?? layout_;
 
   const { markChannelRead } = useActions();
   const user = useMe();

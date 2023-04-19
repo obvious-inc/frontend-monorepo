@@ -5,20 +5,20 @@ import FormDialog from "./form-dialog.js";
 const SettingsDialog = ({ titleProps, dismiss }) => {
   const theme = useTheme();
 
-  const [themePreference, setThemePreference] = useCachedState(
-    "preferred-theme",
+  const [themeSetting, setThemeSetting] = useCachedState(
+    "settings:theme",
     theme.name ?? "system"
   );
-  const [compactnessPreference, setCompactnessPreference] = useCachedState(
-    "preferred-compactness",
+  const [layoutSetting, setLayoutSetting] = useCachedState(
+    "settings:layout",
     "normal"
   );
-  const [sidebarModePreference, setSidebarModePreference] = useCachedState(
-    "preferred-sidebar-mode",
+  const [sidebarItemSizeSetting, setSidebarItemSizeSetting] = useCachedState(
+    "settings:sidebar-item-size",
     "normal"
   );
-  const [zoomPreference, setZoomPreference] = useCachedState(
-    "preferred-zoom",
+  const [zoomSetting, setZoomSetting] = useCachedState(
+    "settings:zoom",
     "normal"
   );
 
@@ -29,8 +29,8 @@ const SettingsDialog = ({ titleProps, dismiss }) => {
       title="Settings"
       controls={[
         {
-          key: "theme-preference",
-          value: themePreference,
+          key: "theme",
+          value: themeSetting,
           type: "select",
           label: "Theme",
           size: "medium",
@@ -40,12 +40,12 @@ const SettingsDialog = ({ titleProps, dismiss }) => {
             { value: "dark", label: "Dark" },
           ],
           onChange: (value) => {
-            setThemePreference(value);
+            setThemeSetting(value);
           },
         },
         {
-          key: "compactness-preference",
-          value: compactnessPreference,
+          key: "layout",
+          value: layoutSetting,
           type: "select",
           label: "Messages",
           size: "medium",
@@ -55,26 +55,26 @@ const SettingsDialog = ({ titleProps, dismiss }) => {
             { value: "bubbles", label: "Bubbles" },
           ],
           onChange: (value) => {
-            setCompactnessPreference(value);
+            setLayoutSetting(value);
           },
         },
         {
-          key: "sidebar-mode-preference",
-          value: sidebarModePreference,
+          key: "sidebar-item-size",
+          value: sidebarItemSizeSetting,
           type: "select",
-          label: "Sidebar",
+          label: "Sidebar item size",
           size: "medium",
           options: [
             { value: "normal", label: "Normal" },
             { value: "large", label: "Large" },
           ],
           onChange: (value) => {
-            setSidebarModePreference(value);
+            setSidebarItemSizeSetting(value);
           },
         },
         {
-          key: "zoom-preference",
-          value: zoomPreference,
+          key: "zoom",
+          value: zoomSetting,
           type: "select",
           label: "Text size",
           size: "medium",
@@ -86,7 +86,7 @@ const SettingsDialog = ({ titleProps, dismiss }) => {
             { value: "huge", label: "Huge" },
           ],
           onChange: (value) => {
-            setZoomPreference(value);
+            setZoomSetting(value);
           },
         },
       ]}

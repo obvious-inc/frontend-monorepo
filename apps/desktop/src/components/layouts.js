@@ -126,7 +126,7 @@ const Layout = () => {
     sidebarFocusTargetRef: menuFocusTargetRef,
   } = useSidebarState();
 
-  const [sidebarMode] = useCachedState("preferred-sidebar-mode");
+  const [sidebarMode] = useCachedState("settings:sidebar-item-size");
 
   const channelItemProps = {
     size: sidebarMode === "large" ? "large" : "normal",
