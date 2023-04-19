@@ -72,10 +72,12 @@ const Layout = () => {
 
   const user = useMe();
 
-  const [collapsedIds, setCollapsedIds] = useCachedState(
+  const [collapsedIds_, setCollapsedIds] = useCachedState(
     "main-menu:collapsed",
     []
   );
+
+  const collapsedIds = collapsedIds_ ?? [];
 
   const [truncatedSections, setTruncatedSections] = React.useState([
     "starred",

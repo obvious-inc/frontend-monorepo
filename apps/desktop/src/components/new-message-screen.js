@@ -93,6 +93,21 @@ const useFilteredAccounts = (query) => {
   const me = useMe();
   const users = useAllUsers();
 
+  React.useEffect(() => {
+    if (me?.walletAddress == null) return;
+
+    fetch(
+      `api/warpcast-following?wallet-address=${me.walletAddress.toLowerCase()}`
+    )
+      .then((res) => {
+        if (!res.ok) return null;
+        return res.json();
+      })
+      .then((suggestions) => {
+        console.log(suggestions);
+      });
+  }, [me?.walletAddress]);
+
   const filteredOptions = React.useMemo(() => {
     if (query.trim() === "") return [];
 
