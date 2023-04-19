@@ -98,7 +98,9 @@ const useFilteredAccounts = (query) => {
     if (me?.walletAddress == null) return;
 
     fetch(
-      `${process.env.EDGE_API_BASE_URL}/related-accounts?wallet-address=${me.walletAddress.toLowerCase()}`
+      `${
+        process.env.EDGE_API_BASE_URL
+      }/related-accounts?wallet-address=${me.walletAddress.toLowerCase()}`
     )
       .then((res) => {
         if (!res.ok) return { results: [] };
@@ -878,6 +880,7 @@ const MessageRecipientCombobox = ({
             allowsCustomValue={false}
             allowsEmptyCollection={true}
             // allowsCustomValue={true}
+            menuTrigger="focus"
             selectedKey={null}
             onSelect={(key) => {
               if (key == null) return;

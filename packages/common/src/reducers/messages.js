@@ -396,13 +396,17 @@ export const selectStringifiedMessageContent = (state, messageId) => {
 
   if (message.isSystemMessage) {
     // ~Mirror of `SystemMessageContent` in channel-message.js
-    const authorDisplayName = message.author?.computedDisplayName ?? '...'
+    const authorDisplayName = message.author?.computedDisplayName ?? "...";
     switch (message.type) {
       case "app-installed":
-        return `${authorDisplayName} installed a new app: ${message.app?.name ?? '...'}`;
+        return `${authorDisplayName} installed a new app: ${
+          message.app?.name ?? "..."
+        }`;
 
       case "user-invited":
-        return `${message.inviter?.computedDisplayName ?? '...'} added ${authorDisplayName} to the channel.`;
+        return `${
+          message.inviter?.computedDisplayName ?? "..."
+        } added ${authorDisplayName} to the channel.`;
 
       case "member-joined":
         return `${authorDisplayName} joined the channel. Welcome!`;
