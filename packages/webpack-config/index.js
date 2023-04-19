@@ -27,6 +27,11 @@ module.exports = (_, argv) => {
           pathRewrite: { "^/api": "" },
           changeOrigin: true,
         },
+        "/edge-api": {
+          target: process.env.EDGE_API_ORIGIN,
+          pathRewrite: { "^/edge-api": "/api" },
+          changeOrigin: true,
+        },
       },
     },
     module: {
@@ -60,6 +65,11 @@ module.exports = (_, argv) => {
         CLOUDFLARE_ACCT_HASH: null,
         DEV: null,
         SENTRY_DSN: null,
+      }),
+      new webpack.DefinePlugin({
+        "process.env.EDGE_API_BASE_URL": JSON.stringify(
+          process.env.EDGE_API_ORIGIN == null ? "/api" : "/edge-api"
+        ),
       }),
       new webpack.ProvidePlugin({
         process: "process/browser.js",

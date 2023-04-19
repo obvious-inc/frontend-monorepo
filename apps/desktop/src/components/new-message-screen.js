@@ -92,9 +92,26 @@ const getIdentifiersOfType = (type, keys) =>
 const useFilteredAccounts = (query) => {
   const me = useMe();
   const users = useAllUsers();
+  const [relatedAccounts, setRelatedAccounts] = React.useState([]);
+
+  React.useEffect(() => {
+    if (me?.walletAddress == null) return;
+
+    fetch(
+      `${process.env.EDGE_API_BASE_URL}/related-accounts?wallet-address=${me.walletAddress.toLowerCase()}`
+    )
+      .then((res) => {
+        if (!res.ok) return { results: [] };
+        return res.json();
+      })
+      .then((responseBody) => {
+        setRelatedAccounts(responseBody.results);
+      });
+  }, [me?.walletAddress]);
 
   const filteredOptions = React.useMemo(() => {
-    if (query.trim() === "") return [];
+    if (query.trim() === "")
+      return relatedAccounts.map((a) => ({ walletAddress: a }));
 
     const filteredUsers =
       query.length <= 0
@@ -108,7 +125,7 @@ const useFilteredAccounts = (query) => {
           me == null ||
           u.walletAddress.toLowerCase() !== me.walletAddress.toLowerCase()
       );
-  }, [me, users, query]);
+  }, [me, users, relatedAccounts, query]);
 
   return filteredOptions;
 };
