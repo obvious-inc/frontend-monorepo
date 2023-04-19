@@ -1,9 +1,9 @@
-import { useCachedState } from "@shades/common/app";
+import useSetting from "./setting.js";
 
 const useLayoutSetting = () => {
   const compactModeOverride = location.search.includes("compact=1");
   const bubblesModeOverride = location.search.includes("bubbles=1");
-  const [layoutSetting] = useCachedState("settings:layout");
+  const [layoutSetting] = useSetting("layout");
   const layout = compactModeOverride
     ? "compact"
     : bubblesModeOverride

@@ -1,26 +1,50 @@
-import { useTheme } from "@emotion/react";
-import { useCachedState } from "@shades/common/app";
+import { invariant } from "@shades/common/utils";
+import useSetting, { getConfig as getSettingConfig } from "../hooks/setting.js";
 import FormDialog from "./form-dialog.js";
 
-const SettingsDialog = ({ titleProps, dismiss }) => {
-  const theme = useTheme();
+const settingInputConfigByKey = {
+  theme: {
+    label: "Theme",
+    optionLabelsByValue: {
+      system: "Use system setting",
+      light: "Light",
+      dark: "Dark",
+    },
+  },
+  layout: {
+    label: "Messages",
+    optionLabelsByValue: {
+      normal: "Normal",
+      compact: "Compact",
+      bubbles: "Bubbles",
+    },
+  },
 
-  const [themeSetting, setThemeSetting] = useCachedState(
-    "settings:theme",
-    theme.name ?? "system"
-  );
-  const [layoutSetting, setLayoutSetting] = useCachedState(
-    "settings:layout",
-    "normal"
-  );
-  const [sidebarItemSizeSetting, setSidebarItemSizeSetting] = useCachedState(
-    "settings:sidebar-item-size",
-    "normal"
-  );
-  const [zoomSetting, setZoomSetting] = useCachedState(
-    "settings:zoom",
-    "normal"
-  );
+  "sidebar-item-size": {
+    label: "Sidebar item size",
+    optionLabelsByValue: {
+      normal: "Normal",
+      large: "Large",
+    },
+  },
+
+  zoom: {
+    label: "Text size",
+    optionLabelsByValue: {
+      tiny: "Tiny",
+      small: "Small",
+      normal: "Normal",
+      large: "Large",
+      huge: "Huge",
+    },
+  },
+};
+
+const SettingsDialog = ({ titleProps, dismiss }) => {
+  const [theme, setTheme] = useSetting("theme");
+  const [layout, setLayout] = useSetting("layout");
+  const [sidebarItemSize, setSidebarItemSize] = useSetting("sidebar-item-size");
+  const [zoom, setZoom] = useSetting("zoom");
 
   return (
     <FormDialog
@@ -30,66 +54,43 @@ const SettingsDialog = ({ titleProps, dismiss }) => {
       controls={[
         {
           key: "theme",
-          value: themeSetting,
-          type: "select",
-          label: "Theme",
-          size: "medium",
-          options: [
-            { value: "system", label: "Use system setting" },
-            { value: "light", label: "Light" },
-            { value: "dark", label: "Dark" },
-          ],
-          onChange: (value) => {
-            setThemeSetting(value);
-          },
+          state: theme,
+          setState: setTheme,
         },
         {
           key: "layout",
-          value: layoutSetting,
-          type: "select",
-          label: "Messages",
-          size: "medium",
-          options: [
-            { value: "normal", label: "Normal" },
-            { value: "compact", label: "Compact" },
-            { value: "bubbles", label: "Bubbles" },
-          ],
-          onChange: (value) => {
-            setLayoutSetting(value);
-          },
+          state: layout,
+          setState: setLayout,
         },
         {
           key: "sidebar-item-size",
-          value: sidebarItemSizeSetting,
-          type: "select",
-          label: "Sidebar item size",
-          size: "medium",
-          options: [
-            { value: "normal", label: "Normal" },
-            { value: "large", label: "Large" },
-          ],
-          onChange: (value) => {
-            setSidebarItemSizeSetting(value);
-          },
+          state: sidebarItemSize,
+          setState: setSidebarItemSize,
         },
         {
           key: "zoom",
-          value: zoomSetting,
-          type: "select",
-          label: "Text size",
-          size: "medium",
-          options: [
-            { value: "tiny", label: "Tiny" },
-            { value: "small", label: "Small" },
-            { value: "normal", label: "Normal" },
-            { value: "large", label: "Large" },
-            { value: "huge", label: "Huge" },
-          ],
-          onChange: (value) => {
-            setZoomSetting(value);
-          },
+          state: zoom,
+          setState: setZoom,
         },
-      ]}
+      ].map(({ key, state, setState }) => {
+        const settingConfig = getSettingConfig(key);
+        const inputConfig = settingInputConfigByKey[key];
+        invariant(settingConfig.type === "enum", "Unsupported setting type");
+        return {
+          key,
+          value: state,
+          onChange: (value) => {
+            setState(value);
+          },
+          type: "select",
+          label: inputConfig.label,
+          size: "medium",
+          options: settingConfig.values.map((value) => ({
+            value,
+            label: inputConfig.optionLabelsByValue[value],
+          })),
+        };
+      })}
       cancelLabel="Close"
     />
   );

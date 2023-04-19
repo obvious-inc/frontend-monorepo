@@ -32,7 +32,6 @@ import {
   useActions,
   useAfterActionListener,
   useCacheStore,
-  useCachedState,
 } from "@shades/common/app";
 import { useMatchMedia } from "@shades/common/react";
 import { useWalletLogin, WalletLoginProvider } from "@shades/common/wallet";
@@ -54,6 +53,7 @@ import useCommandCenter, {
   Provider as CommandCenterProvider,
 } from "./hooks/command-center";
 import useWalletEvent from "./hooks/wallet-event";
+import useSetting from "./hooks/setting";
 import LoginScreen from "./components/login-screen";
 import Layout from "./components/layouts";
 import TitleBar from "./components/title-bar";
@@ -218,7 +218,7 @@ const App = () => {
   const actions = useActions();
   const { login } = useWalletLogin();
 
-  const [preferredZoom] = useCachedState("preferred-zoom");
+  const [zoomSetting] = useSetting("zoom");
 
   useSystemNotifications();
   useUserEnsNames();
@@ -275,16 +275,12 @@ const App = () => {
         styles={(theme) =>
           css({
             html: {
-              fontSize:
-                preferredZoom === "tiny"
-                  ? "0.546875em"
-                  : preferredZoom === "small"
-                  ? "0.5859375em"
-                  : preferredZoom === "large"
-                  ? "0.6640625em"
-                  : preferredZoom === "huge"
-                  ? "0.703125em"
-                  : undefined,
+              fontSize: {
+                tiny: "0.546875em",
+                small: "0.5859375em",
+                large: "0.6640625em",
+                huge: "0.703125em",
+              }[zoomSetting],
             },
             body: {
               color: theme.colors.textNormal,
@@ -386,6 +382,7 @@ const RequireAuth = ({ children }) => {
 };
 
 const searchParams = new URLSearchParams(location.search);
+
 const themeMap = {
   dark: darkTheme,
   light: lightTheme,
@@ -455,18 +452,18 @@ const IndexRoute = () => {
 };
 
 const useTheme = () => {
-  const [preferredTheme] = useCachedState("preferred-theme");
+  const [themeSetting] = useSetting("theme");
   const systemPrefersDarkTheme = useMatchMedia("(prefers-color-scheme: dark)");
 
   const theme = React.useMemo(() => {
     const specifiedTheme = searchParams.get("theme");
     if (specifiedTheme) return themeMap[specifiedTheme] ?? defaultTheme;
 
-    if (preferredTheme === "system")
+    if (themeSetting === "system")
       return systemPrefersDarkTheme ? darkTheme : lightTheme;
 
-    return themeMap[preferredTheme] ?? defaultTheme;
-  }, [preferredTheme, systemPrefersDarkTheme]);
+    return themeMap[themeSetting] ?? defaultTheme;
+  }, [themeSetting, systemPrefersDarkTheme]);
 
   return theme;
 };

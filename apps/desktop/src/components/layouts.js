@@ -40,6 +40,7 @@ import {
 import useFetch from "../hooks/fetch";
 import useCommandCenter from "../hooks/command-center";
 import { useDialog } from "../hooks/dialogs";
+import useSetting from "../hooks/setting";
 import UserAvatar from "./user-avatar";
 import ChannelAvatar from "./channel-avatar";
 import * as DropdownMenu from "./dropdown-menu";
@@ -72,10 +73,12 @@ const Layout = () => {
 
   const user = useMe();
 
-  const [collapsedIds, setCollapsedIds] = useCachedState(
+  const [collapsedIds_, setCollapsedIds] = useCachedState(
     "main-menu:collapsed",
     []
   );
+
+  const collapsedIds = collapsedIds_ ?? [];
 
   const [truncatedSections, setTruncatedSections] = React.useState([
     "starred",
@@ -126,10 +129,10 @@ const Layout = () => {
     sidebarFocusTargetRef: menuFocusTargetRef,
   } = useSidebarState();
 
-  const [sidebarMode] = useCachedState("settings:sidebar-item-size");
+  const [sidebarItemSizeSetting] = useSetting("sidebar-item-size");
 
   const channelItemProps = {
-    size: sidebarMode === "large" ? "large" : "normal",
+    size: sidebarItemSizeSetting === "large" ? "large" : "normal",
   };
 
   const {
@@ -146,7 +149,7 @@ const Layout = () => {
   return (
     <>
       <SidebarLayout
-        width={sidebarMode === "large" ? "26rem" : undefined}
+        width={sidebarItemSizeSetting === "large" ? "26rem" : undefined}
         header={({ isHoveringSidebar }) =>
           authenticationStatus === "not-authenticated" &&
           walletAccountAddress == null ? null : isLoadingUser ? (
