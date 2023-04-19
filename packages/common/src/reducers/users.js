@@ -1,3 +1,5 @@
+
+import { utils as ethersUtils } from "ethers";
 import { createSelector } from "reselect";
 import { mapValues, omitKey } from "../utils/object";
 import { indexBy } from "../utils/array";
@@ -124,18 +126,19 @@ export const selectUser = createSelector(
 
     const isLoggedInUser = user.id === loggedInUserId;
 
-    const hasCustomDisplayName =
-      (user.displayName ?? "") !== "" &&
-      truncateAddress(user.walletAddress) !== user.displayName;
-
     return {
       ...user,
       walletAddress: user.walletAddress?.toLowerCase(),
       ensName,
       displayName: user.displayName,
+      computedDisplayName:
+        user.displayName ??
+        ensName ??
+        (user.walletAddress != null
+          ? truncateAddress(ethersUtils.getAddress(user.walletAddress))
+          : null),
+      hasCustomDisplayName: user.displayName != null,
       description: user.description,
-      customDisplayName: hasCustomDisplayName ? user.displayName : null,
-      hasCustomDisplayName,
       onlineStatus: isLoggedInUser ? "online" : user.status,
       profilePicture: user.profilePicture,
     };

@@ -390,8 +390,49 @@ export const selectSortedMessageReplies = createSelector(
 );
 
 export const selectStringifiedMessageContent = (state, messageId) => {
-  const message = state.messages.entriesById[messageId];
+  const message = selectMessage(state, messageId);
+
   if (message == null) return null;
+
+  if (message.isSystemMessage) {
+    // ~Mirror of `SystemMessageContent` in channel-message.js
+    const authorDisplayName = message.author?.computedDisplayName ?? '...'
+    switch (message.type) {
+      case "app-installed":
+        return `${authorDisplayName} installed a new app: ${message.app?.name ?? '...'}`;
+
+      case "user-invited":
+        return `${message.inviter?.computedDisplayName ?? '...'} added ${authorDisplayName} to the channel.`;
+
+      case "member-joined":
+        return `${authorDisplayName} joined the channel. Welcome!`;
+
+      case "channel-updated": {
+        const updates = Object.entries(message.updates);
+        if (updates.length == 0 || updates.length > 1)
+          return `${authorDisplayName} updated the channel.`;
+
+        const [field_, value] = updates[0];
+        // Alias description to "topic"
+        const field = field_ === "description" ? "topic" : field_;
+
+        // Nested switch case baby!
+        switch (field) {
+          case "name":
+          case "topic":
+            return `${authorDisplayName} ${
+              (value ?? "") === ""
+                ? `cleared the channel ${field}`
+                : `set the channel ${field}: ${value}`
+            }`;
+
+          default:
+            return `${authorDisplayName} updated the channel ${field}.`;
+        }
+      }
+    }
+  }
+
   return stringifyMessageBlocks(message.content, {
     renderUser: (id) => id,
     renderChannelLink: (id) => id,

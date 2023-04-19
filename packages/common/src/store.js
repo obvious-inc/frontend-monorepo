@@ -180,8 +180,11 @@ const createApiParsers = ({ buildCloudflareImageUrl }) => ({
       "member-joined",
       "user-invited",
       "channel-updated",
+      "app-installed",
     ];
-    const appMessageTypes = ["webhook", "app", "app-installed"];
+
+    const appMessageTypes = ["webhook", "app"];
+
     const deriveMessageType = (message) => {
       switch (message.type) {
         case undefined:
