@@ -54,18 +54,19 @@ export default async (req) => {
 
   const verifications = (
     await Promise.all(
-      (
-        await Promise.all(
-          users.map((u) => warpcastFetch(`/v2/verifications?fid=${u.fid}`))
-        )
-      ).map((r) => r.json())
+      users.map((u) =>
+        warpcastFetch(`/v2/verifications?fid=${u.fid}`).then((r) => r.json())
+      )
     )
   ).flatMap((body) => body.result.verifications);
 
-  return new Response(JSON.stringify({ results: verifications }), {
-    status: 200,
-    headers: {
-      "content-type": "application/json",
-    },
-  });
+  return new Response(
+    JSON.stringify({ results: verifications.map((v) => v.address) }),
+    {
+      status: 200,
+      headers: {
+        "content-type": "application/json",
+      },
+    }
+  );
 };
