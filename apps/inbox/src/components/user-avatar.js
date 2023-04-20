@@ -53,12 +53,18 @@ const UserAvatar = React.forwardRef(
     const imageUrl =
       userCustomAvatarUrl ?? ensAvatarUrl ?? placeholderAvatarUrl;
 
+    const getSignature = () => {
+      if (user?.deleted) return "D";
+      if (user?.unknown) return "U";
+      return user?.displayName ?? user?.walletAddress.slice(2);
+    };
+
     return (
       <Avatar
         ref={ref}
         url={imageUrl}
         isLoading={isLoadingEnsAvatar || isLoadingPlaceholder}
-        signature={user?.displayName ?? user?.walletAddress.slice(2)}
+        signature={getSignature()}
         {...props}
       />
     );

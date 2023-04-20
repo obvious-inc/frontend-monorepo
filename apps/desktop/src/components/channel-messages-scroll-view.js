@@ -296,11 +296,33 @@ const ChannelMessagesScrollView = ({
           <div
             ref={messagesContainerRef}
             role="list"
-            css={(theme) =>
+            css={(t) =>
               css({
                 minHeight: 0,
-                fontSize: theme.fontSizes.channelMessages,
+                fontSize: t.fontSizes.channelMessages,
                 fontWeight: "400",
+                ".channel-message-container": {
+                  "--color-regular": t.colors.textNormal,
+                  "--color-optimistic": t.colors.textMuted,
+                  "--bg-highlight": t.colors.messageBackgroundModifierHighlight,
+                  "--bg-focus": t.colors.messageBackgroundModifierFocus,
+                  background: "var(--background)",
+                  padding: "var(--padding)",
+                  color: "var(--color)",
+                  position: "relative",
+                  lineHeight: 1.46668,
+                  userSelect: "text",
+                },
+                ".channel-message-container .toolbar-container": {
+                  position: "absolute",
+                  top: 0,
+                  transform: "translateY(-50%)",
+                  zIndex: 1,
+                },
+                ".channel-message-container .main-container": {
+                  display: "grid",
+                  alignItems: "flex-start",
+                },
               })
             }
           >

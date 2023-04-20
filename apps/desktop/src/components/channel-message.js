@@ -282,20 +282,7 @@ const ChannelMessage = React.memo(function ChannelMessage_({
           ? "var(--color-optimistic)"
           : "var(--color-regular)",
       }}
-      css={(t) =>
-        css({
-          "--color-regular": t.colors.textNormal,
-          "--color-optimistic": t.colors.textMuted,
-          "--bg-highlight": t.colors.messageBackgroundModifierHighlight,
-          "--bg-focus": t.colors.messageBackgroundModifierFocus,
-          background: "var(--background)",
-          padding: "var(--padding)",
-          color: "var(--color)",
-          position: "relative",
-          lineHeight: 1.46668,
-          userSelect: "text",
-        })
-      }
+      className="channel-message-container"
       {...(giveTouchFocus == null
         ? hoverHandlers
         : {
@@ -307,12 +294,7 @@ const ChannelMessage = React.memo(function ChannelMessage_({
     >
       {!message.isOptimistic && (
         <div
-          css={css({
-            position: "absolute",
-            top: 0,
-            transform: "translateY(-50%)",
-            zIndex: 1,
-          })}
+          className="toolbar-container"
           style={{
             display: showAsFocused ? "block" : "none",
             right: horizontalPadding,
@@ -339,10 +321,7 @@ const ChannelMessage = React.memo(function ChannelMessage_({
         replyTargetMessageElement}
 
       <div
-        css={css({
-          display: "grid",
-          alignItems: "flex-start",
-        })}
+        className="main-container"
         style={{
           gridTemplateColumns: showLeftColumn
             ? `${AVATAR_SIZE} minmax(0,1fr)`
@@ -655,10 +634,12 @@ const MessageBody = React.memo(({ messageId, layout }) => {
       suffix={
         message.isEdited && (
           <span
-            css={css({
-              fontSize: "1rem",
-              color: "rgb(255 255 255 / 35%)",
-            })}
+            css={(t) =>
+              css({
+                fontSize: t.text.sizes.tiny,
+                color: t.colors.textMuted,
+              })
+            }
           >
             {" "}
             (edited)
@@ -1286,7 +1267,7 @@ const MessageHeader = ({ layout, messageId }) => {
               walletAddress={message.author?.walletAddress}
               size="2rem"
               style={{
-                display: "inline",
+                display: "inline-flex",
                 verticalAlign: "sub",
                 marginRight: "0.7rem",
                 transform: "translateY(0.1rem)",

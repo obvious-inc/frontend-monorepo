@@ -13,11 +13,9 @@ const SINGLE_IMAGE_ATTACHMENT_MAX_HEIGHT = 280;
 const MULTI_IMAGE_ATTACHMENT_MAX_WIDTH = 280;
 const MULTI_IMAGE_ATTACHMENT_MAX_HEIGHT = 240;
 
-export const createCss = (theme, { inline = false, compact = false } = {}) => ({
-  display: inline || compact ? "inline" : "block",
-  whiteSpace: inline ? "inherit" : "pre-wrap",
+export const createCss = (theme, { compact = false } = {}) => ({
   wordBreak: "break-word",
-  p: { margin: "0", display: inline || compact ? "inline" : undefined },
+  p: { margin: "0", display: "var(--paragraph-display)" },
   "* + p": { marginTop: "1rem" },
   "* + p:before": compact
     ? { display: "block", content: '""', height: "1rem" }
@@ -275,6 +273,7 @@ const RichText = ({
   blocks,
   onClickInteractiveElement,
   suffix,
+  style,
   ...props
 }) => {
   const parse = React.useMemo(
@@ -287,8 +286,24 @@ const RichText = ({
       }),
     [inline, compact, suffix, onClickInteractiveElement]
   );
+
+  const inlineStyle = style ?? {};
+
+  if (!inline) {
+    inlineStyle.whiteSpace = "pre-wrap";
+  }
+
+  if (compact) {
+    inlineStyle["--paragraph-display-before"] = "block";
+  }
+
+  if (inline || compact) {
+    inlineStyle.display = "inline";
+    inlineStyle["--paragraph-display"] = "inline";
+  }
+
   return (
-    <div css={(theme) => css(createCss(theme, { inline, compact }))} {...props}>
+    <div css={(theme) => css(createCss(theme))} style={inlineStyle} {...props}>
       {parse(blocks)}
     </div>
   );
