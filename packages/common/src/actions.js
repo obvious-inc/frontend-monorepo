@@ -437,26 +437,44 @@ export default ({
             messages,
           });
 
-          // const replies = messages.filter(
-          //   (m) => m.replyTargetMessageId != null
-          // );
+          const fetchMessage = (messageId) =>
+            authorizedFetch(`/channels/${channelId}/messages/${messageId}`, {
+              allowUnauthorized: true,
+            }).then((rawMessage) =>
+              rawMessage == null
+                ? {
+                    id: messageId,
+                    channelId,
+                    deleted: true,
+                  }
+                : parseMessage(rawMessage)
+            );
 
-          // // Fetch all messages replied to async. Works for now!
-          // for (let reply of replies)
-          //   authorizedFetch(
-          //     `/channels/${channelId}/messages/${reply.replyTargetMessageId}`,
-          //     { allowUnauthorized: true }
-          //   ).then((rawMessage) => {
-          //     const message = parseMessage(rawMessage);
-          //     dispatch({
-          //       type: "fetch-message:request-successful",
-          //       message: message ?? {
-          //         id: reply.replyTargetMessageId,
-          //         channelId,
-          //         deleted: true,
-          //       },
-          //     });
-          //   });
+          const fetchReplyTargetChain = (messageId, prevChain = []) =>
+            fetchMessage(messageId).then((message) => {
+              const chain = [...prevChain, message];
+              if (message.replyTargetMessageId == null) return chain;
+              return fetchReplyTargetChain(message.replyTargetMessageId, chain);
+            });
+
+          const fetchReplyTargets = async () => {
+            const replies = messages.filter(
+              (m) => m.replyTargetMessageId != null
+            );
+            const responses = await Promise.all(
+              replies.map((m) => fetchReplyTargetChain(m.replyTargetMessageId))
+            );
+            const messages = responses.flatMap((ms) => ms);
+            dispatch({
+              type: "fetch-messages:request-successful",
+              messages,
+              channelId,
+            });
+            return messages;
+          };
+
+          // Fetch all messages replied to async. Works for now!
+          fetchReplyTargets();
 
           const messageUserIds = unique([
             ...messages
@@ -498,6 +516,38 @@ export default ({
         return message;
       });
     },
+    async fetchLastChannelMessage(channelId) {
+      const [message] = await authorizedFetch(
+        `/channels/${channelId}/messages?limit=1`,
+        { allowUnauthorized: true }
+      ).then((ms) => ms.map(parseMessage));
+
+      if (message.replyTargetMessageId == null) {
+        dispatch({
+          type: "fetch-message:request-successful",
+          message,
+        });
+        return message;
+      }
+
+      const fetchLastNonReplyBeforeMessage = async (messageId) => {
+        const [message] = await authorizedFetch(
+          `/channels/${channelId}/messages?limit=1&before=${messageId}`,
+          { allowUnauthorized: true }
+        ).then((ms) => ms.map(parseMessage));
+        if (message.replyTargetMessageId == null) return message;
+        return fetchLastNonReplyBeforeMessage(message.id);
+      };
+
+      const lastNonReply = await fetchLastNonReplyBeforeMessage(message.id);
+
+      dispatch({
+        type: "fetch-message:request-successful",
+        message: lastNonReply,
+      });
+
+      return lastNonReply;
+    },
     async createMessage(
       { channel: channelId, blocks, replyToMessageId: replyTargetMessageId },
       { optimistic = true } = {}
@@ -519,6 +569,7 @@ export default ({
             createdAt: new Date().toISOString(),
             content: blocks,
             stringContent,
+            authorId: me.id,
             authorUserId: me.id,
             channelId,
             replyTargetMessageId,

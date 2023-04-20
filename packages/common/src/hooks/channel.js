@@ -40,6 +40,7 @@ export const useChannel = (channelId, options = {}) => {
   );
 };
 
+// LEGACY
 export const useChannelMessages = (channelId) =>
   useStore(
     React.useCallback(

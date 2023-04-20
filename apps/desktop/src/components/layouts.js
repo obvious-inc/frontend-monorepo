@@ -9,9 +9,10 @@ import {
   useServerConnectionState,
   useMe,
   useUser,
+  useMessage,
   useChannel,
   useChannelName,
-  useChannelMessages,
+  useSortedChannelMessageIds,
   useMemberChannels,
   usePublicChannels,
   useStarredChannels,
@@ -824,18 +825,19 @@ const SmallText = ({ component: Component = "div", ...props }) => (
 );
 
 const useLastMessage = (channelId) => {
-  const actions = useActions();
-  const messages = useChannelMessages(channelId);
+  const { fetchLastChannelMessage } = useActions();
+  const messageIds = useSortedChannelMessageIds(channelId);
+  const message = useMessage(messageIds?.slice(-1)[0]);
 
   // Fetch the most recent message if non exist in cache
   useFetch(
-    channelId == null || messages.length !== 0
+    channelId == null || message != null
       ? null
-      : () => actions.fetchMessages(channelId, { limit: 1 }),
-    [channelId, messages?.length]
+      : () => fetchLastChannelMessage(channelId),
+    [channelId, message]
   );
 
-  return messages?.[0];
+  return message;
 };
 
 const ChannelItem = ({ id, expandable, size = "normal" }) => {

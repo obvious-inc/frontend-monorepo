@@ -1313,7 +1313,7 @@ const MessageHeader = ({ layout, messageId }) => {
               minute="numeric"
               day="numeric"
               month="short"
-              tooltipContentProps={{ sideOffset: 8 }}
+              tooltipSideOffset={8}
             />
           </TinyMutedText>
         </>
@@ -2015,7 +2015,7 @@ const MessageLeftColumn = ({ messageId, simplified, layout, isHovering }) => {
             value={new Date(message.createdAt)}
             hour="numeric"
             minute="numeric"
-            tooltipContentProps={{ sideOffset: 7 }}
+            tooltipSideOffset={7}
             disableRelative
             disableTooltip={!isHovering}
           />
@@ -2072,7 +2072,7 @@ const MessageLeftColumn = ({ messageId, simplified, layout, isHovering }) => {
             value={new Date(message.createdAt)}
             hour="numeric"
             minute="numeric"
-            tooltipContentProps={{ sideOffset: 7 }}
+            tooltipSideOffset={7}
             disableRelative
             disableTooltip={!isHovering}
           />
@@ -2270,7 +2270,7 @@ const TinyMutedText = ({ children, nowrap = false, style }) => (
 const FormattedDateWithTooltip = React.memo(
   ({
     value,
-    tooltipContentProps,
+    tooltipSideOffset = 5,
     disableRelative,
     disableTooltip,
     capitalize = true,
@@ -2296,7 +2296,7 @@ const FormattedDateWithTooltip = React.memo(
         <Tooltip.Trigger asChild>
           <span>{formattedDate}</span>
         </Tooltip.Trigger>
-        <Tooltip.Content side="top" sideOffset={5} {...tooltipContentProps}>
+        <Tooltip.Content side="top" sideOffset={tooltipSideOffset}>
           <FormattedDate
             value={value}
             weekday="long"

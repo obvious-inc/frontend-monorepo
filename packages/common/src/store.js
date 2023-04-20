@@ -98,6 +98,8 @@ export const useAfterActionListener = (listener_) => {
 
 const createApiParsers = ({ buildCloudflareImageUrl }) => ({
   parseUser(u) {
+    if (u.id == null) throw new Error();
+
     const normalizeString = (maybeString) => {
       if (maybeString == null || maybeString.trim() === "") return null;
       return maybeString.trim();
@@ -139,6 +141,8 @@ const createApiParsers = ({ buildCloudflareImageUrl }) => ({
     return parsedData;
   },
   parseChannel(rawChannel) {
+    if (rawChannel.id == null) throw new Error();
+
     const normalizeString = (s) => {
       if (s == null) return null;
       return s.trim() === "" ? null : s;
@@ -174,6 +178,8 @@ const createApiParsers = ({ buildCloudflareImageUrl }) => ({
     return { ...channel, image, imageLarge };
   },
   parseMessage(rawMessage) {
+    if (rawMessage.id == null) throw new Error();
+
     if (rawMessage.deleted) return { id: rawMessage.id, deleted: true };
 
     const systemMessageTypes = [

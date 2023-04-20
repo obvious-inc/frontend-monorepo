@@ -374,7 +374,7 @@ export const selectChannelMessages = createSelector(
       .filter((m) => m != null && !m.deleted);
   },
   (messages) => messages,
-  { memoizeOptions: { equalityCheck: arrayShallowEquals } }
+  { memoizeOptions: { equalityCheck: arrayShallowEquals, maxSize: 1000 } }
 );
 
 export const selectSortedMessageReplies = createSelector(
