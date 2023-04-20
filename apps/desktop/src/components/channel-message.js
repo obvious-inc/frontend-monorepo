@@ -781,7 +781,13 @@ const Embed = ({
         {favicon != null && <img src={favicon} loading="lazy" />}
         {title === siteName ? hostname : siteName}
       </div>
-      <div css={css({ display: "flex" })}>
+      <div
+        css={css({
+          display: "flex",
+          // Hide potential overflow of the embed image
+          overflow: "hidden",
+        })}
+      >
         <div css={css({ flex: 1, minWidth: 0 })}>
           <a
             href={url}
@@ -797,9 +803,11 @@ const Embed = ({
                 whiteSpace: "nowrap",
                 overflow: "hidden",
                 textOverflow: "ellipsis",
-                ":hover": {
-                  color: t.colors.linkModifierHover,
-                  textDecoration: "underline",
+                "@media(hover: hover)": {
+                  ":hover": {
+                    color: t.colors.linkModifierHover,
+                    textDecoration: "underline",
+                  },
                 },
               })
             }
