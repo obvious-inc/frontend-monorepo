@@ -803,7 +803,7 @@ const MembersDirectoryTab = ({ dismiss, channelId, addMember }) => {
 
   const unfilteredMembers = React.useMemo(() => {
     return members.map((m) => {
-      if (m.id === me.id)
+      if (me != null && me.id === m.id)
         return { ...m, displayName: `${m.displayName} (you)` };
 
       if (selectIsUserBlocked(m.id)) return { ...m, isBlocked: true };
