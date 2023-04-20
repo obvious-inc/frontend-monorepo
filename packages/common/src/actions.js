@@ -464,13 +464,12 @@ export default ({
             const responses = await Promise.all(
               replies.map((m) => fetchReplyTargetChain(m.replyTargetMessageId))
             );
-            const messages = responses.flatMap((ms) => ms);
+            const allMessages = responses.flatMap((ms) => ms);
             dispatch({
               type: "fetch-messages:request-successful",
-              messages,
+              messages: allMessages,
               channelId,
             });
-            return messages;
           };
 
           // Fetch all messages replied to async. Works for now!
