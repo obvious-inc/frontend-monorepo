@@ -1173,15 +1173,15 @@ const AppDisplayName = React.forwardRef(
     >
       {displayName}
       <span
-        css={(theme) =>
+        css={(t) =>
           css({
             marginLeft: "0.5rem",
             padding: "0.2rem 0.3rem",
             lineHeight: 1,
-            fontSize: theme.fontSizes.tiny,
+            fontSize: t.fontSizes.tiny,
             borderRadius: "0.3rem",
-            background: theme.colors.backgroundModifierHover,
-            color: "rgb(255 255 255 / 56.5%)",
+            background: t.colors.backgroundModifierHover,
+            color: t.colors.textDimmed,
             textTransform: "uppercase",
             letterSpacing: "0.03em",
             cursor: "default",
@@ -1221,26 +1221,17 @@ const MessageHeader = ({ layout, messageId }) => {
   if (message.isSystemMessage) return null;
 
   if (message.isAppMessage) {
-    switch (message.type) {
-      case "webhook":
-      case "app-installed":
-      case "app": {
-        const isWaitingForApp = message.app?.name == null;
-        return (
-          <span
-            style={{
-              opacity: isWaitingForApp ? 0 : 1,
-              marginRight: layout === "compact" ? "1rem" : 0,
-            }}
-          >
-            <AppDisplayName displayName={message.app?.name ?? "..."} />
-          </span>
-        );
-      }
-
-      default:
-        throw new Error();
-    }
+    const isWaitingForApp = message.app?.name == null;
+    return (
+      <span
+        style={{
+          opacity: isWaitingForApp ? 0 : 1,
+          marginRight: layout === "compact" ? "1rem" : 0,
+        }}
+      >
+        <AppDisplayName displayName={message.app?.name ?? "..."} />
+      </span>
+    );
   }
 
   if (layout === "bubbles") {
@@ -1563,44 +1554,63 @@ const EmojiPicker = ({ width = "auto", height = "100%", onSelect }) => {
       </div>
 
       <div
-        css={css({
-          position: "relative",
-          flex: 1,
-          overflow: "auto",
-          scrollPaddingTop: "3rem",
-          scrollPaddingBottom: "0.5rem",
-        })}
+        css={(t) =>
+          css({
+            position: "relative",
+            flex: 1,
+            overflow: "auto",
+            scrollPaddingTop: "3rem",
+            scrollPaddingBottom: "0.5rem",
+            ".category-title": {
+              position: "sticky",
+              top: 0,
+              zIndex: 1,
+              background: `linear-gradient(-180deg, ${t.colors.popoverBackground} 50%, transparent)`,
+              padding: "0.6rem 0.9rem",
+              fontSize: "1.2rem",
+              fontWeight: "500",
+              color: t.colors.textDimmed,
+              textTransform: "uppercase",
+              pointerEvents: "none",
+            },
+            ".category-container": {
+              display: "grid",
+              justifyContent: "space-between",
+              padding: "0 0.5rem",
+              gridTemplateColumns: "repeat(auto-fill, minmax(3.4rem, 1fr))",
+            },
+            ".emoji": {
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              fontSize: "2.2rem",
+              width: "3.4rem",
+              height: "2.9rem",
+              background: "none",
+              borderRadius: "0.5rem",
+              border: 0,
+              cursor: "pointer",
+              outline: "none",
+              "&[data-selected]": {
+                background: t.colors.backgroundModifierHover,
+              },
+              "&:focus": {
+                position: "relative",
+                zIndex: 2,
+                boxShadow: `0 0 0 0.2rem ${t.colors.primary}`,
+              },
+            },
+          })
+        }
       >
         {filteredEmojisByCategoryEntries.map(([category, emojis], ci) => (
           <div key={category ?? "no-category"}>
             {category != null && (
-              <div
-                css={(t) =>
-                  css({
-                    position: "sticky",
-                    top: 0,
-                    zIndex: 1,
-                    background: `linear-gradient(-180deg, ${t.colors.popoverBackground} 50%, transparent)`,
-                    padding: "0.6rem 0.9rem",
-                    fontSize: "1.2rem",
-                    fontWeight: "500",
-                    color: t.colors.textDimmed, // "rgb(255 255 255 / 40%)",
-                    textTransform: "uppercase",
-                    pointerEvents: "none",
-                  })
-                }
-              >
-                {category}
-              </div>
+              <div className="category-title">{category}</div>
             )}
 
             <div
-              css={css({
-                display: "grid",
-                justifyContent: "space-between",
-                padding: "0 0.5rem",
-                gridTemplateColumns: "repeat(auto-fill, minmax(3.4rem, 1fr))",
-              })}
+              className="category-container"
               style={{ paddingTop: category == null ? "0.8rem" : undefined }}
             >
               {emojis.map(({ emoji }, i) => {
@@ -1609,15 +1619,15 @@ const EmojiPicker = ({ width = "auto", height = "100%", onSelect }) => {
                   highlightedEntry[0] === ci &&
                   highlightedEntry[1] === i;
                 return (
-                  <Emoji
+                  <button
                     key={emoji}
-                    emoji={emoji}
-                    isHighlighted={isHighlighted}
                     ref={(el) => {
                       if (el == null) return;
                       if (isHighlighted)
                         el.scrollIntoView({ block: "nearest" });
                     }}
+                    className="emoji"
+                    data-selected={isHighlighted ? "true" : undefined}
                     onClick={() => {
                       onSelect(emoji);
                     }}
@@ -1631,7 +1641,9 @@ const EmojiPicker = ({ width = "auto", height = "100%", onSelect }) => {
 
                       setHighlightedEntry([ci, i]);
                     }}
-                  />
+                  >
+                    {emoji}
+                  </button>
                 );
               })}
             </div>
@@ -1641,39 +1653,6 @@ const EmojiPicker = ({ width = "auto", height = "100%", onSelect }) => {
     </div>
   );
 };
-
-const Emoji = React.forwardRef(({ emoji, isHighlighted, ...props }, ref) => (
-  <button
-    ref={ref}
-    data-selected={isHighlighted ? "true" : undefined}
-    css={(t) =>
-      css({
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        fontSize: "2.2rem",
-        width: "3.4rem",
-        height: "2.9rem",
-        background: "none",
-        borderRadius: "0.5rem",
-        border: 0,
-        cursor: "pointer",
-        outline: "none",
-        "&[data-selected]": {
-          background: t.colors.backgroundModifierHover,
-        },
-        "&:focus": {
-          position: "relative",
-          zIndex: 2,
-          boxShadow: `0 0 0 0.2rem ${t.colors.primary}`,
-        },
-      })
-    }
-    {...props}
-  >
-    {emoji}
-  </button>
-));
 
 const MessageToolbar = React.memo(
   ({
