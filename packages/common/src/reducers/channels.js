@@ -442,6 +442,11 @@ export const selectChannelHasBeenSeen = createSelector(
   { memoizeOptions: { maxSize: 1000 } }
 );
 
+export const selectChannelLastReadAt = (state, channelId) => {
+  const readState = state.channels.readStatesById[channelId];
+  return readState?.lastReadAt;
+};
+
 export const selectChannelHasUnread = createSelector(
   (state, channelId) => state.channels.readStatesById[channelId],
   (channelState) => {

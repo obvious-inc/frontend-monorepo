@@ -4,6 +4,7 @@ import { indexBy, groupBy, unique, sort } from "../utils/array";
 import { omitKey, mapValues } from "../utils/object";
 import { arrayShallowEquals } from "../utils/reselect";
 import { stringifyBlocks as stringifyMessageBlocks } from "../utils/message";
+import { selectChannelLastReadAt } from "./channels";
 import { selectUser } from "./users";
 import { selectApp } from "./apps";
 
@@ -282,6 +283,13 @@ export const selectMessage = createSelector(
     if (!replies) return null;
     return selectReplyMessageIds(state, messageId);
   },
+  (state, messageId, { readState = false } = {}) => {
+    if (!readState) return null;
+    const message = state.messages.entriesById[messageId];
+    const channelLastReadAt = selectChannelLastReadAt(state, message.channelId);
+    if (channelLastReadAt == null) return false;
+    return new Date(message.createdAt) > new Date(channelLastReadAt);
+  },
   (
     rawMessage,
     author,
@@ -290,7 +298,8 @@ export const selectMessage = createSelector(
     loggedInUserId,
     app,
     blockedUserIds,
-    replyMessageIds
+    replyMessageIds,
+    isUnread
   ) => {
     if (rawMessage == null || rawMessage.type == null) return null;
 
@@ -315,6 +324,7 @@ export const selectMessage = createSelector(
     };
 
     if (replyMessageIds != null) message.replyMessageIds = replyMessageIds;
+    if (typeof isUnread === "boolean") message.isUnread = isUnread;
 
     return message;
   },
