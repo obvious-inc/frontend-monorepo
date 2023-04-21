@@ -1443,13 +1443,13 @@ const Onboarding = () => {
     <div
       css={(t) =>
         css({
-          margin: "auto",
+          margin: "auto auto 0",
           width: "52rem",
           maxWidth: "100%",
           padding: "4rem 1.6rem 0",
           userSelect: "default",
-          fontSize: "1.8rem",
           color: t.colors.textNormal,
+          fontSize: t.text.sizes.large,
           "p.big": { fontSize: "2.8rem", margin: "0 0 2.2rem" },
           ul: { marginTop: "2rem" },
           li: { listStyle: "none" },
@@ -1458,7 +1458,7 @@ const Onboarding = () => {
             display: "block",
             width: "100%",
             textDecoration: "none",
-            padding: "2rem",
+            padding: "1.6rem",
             borderRadius: "0.5rem",
             color: "inherit",
             background: t.colors.backgroundModifierHover,
@@ -1470,6 +1470,13 @@ const Onboarding = () => {
                 color: t.colors.textAccent,
                 background: t.colors.backgroundModifierHoverStrong,
               },
+            },
+          },
+          "@media(min-width: 600px)": {
+            margin: "auto",
+            fontSize: "1.8rem",
+            ".onboarding-actions-list li > *": {
+              padding: "2rem",
             },
           },
         })
