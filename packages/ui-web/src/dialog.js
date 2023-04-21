@@ -96,6 +96,7 @@ const StyledDialog = ({
         boxShadow:
           "rgb(15 15 15 / 10%) 0px 0px 0px 1px, rgb(15 15 15 / 20%) 0px 5px 10px, rgb(15 15 15 / 40%) 0px 15px 40px",
         height: "100%",
+        outline: "none",
         "@media (min-width: 600px)": {
           borderRadius: "0.6rem",
           height: height ?? "auto",
