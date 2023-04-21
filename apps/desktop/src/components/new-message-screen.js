@@ -1489,7 +1489,7 @@ const Onboarding = () => {
           variant="button"
           walletAddress={me?.walletAddress}
         />
-        ! <Emoji emoji="😍" />
+        !
       </motion.p>
 
       <motion.div
@@ -1508,9 +1508,6 @@ const Onboarding = () => {
           },
         }}
       >
-        <motion.p variants={staggeredChildMotionVariants}>
-          Thanks for trying NewShades!
-        </motion.p>
         <motion.p variants={staggeredChildMotionVariants}>
           Here are some easy ways to get started:
         </motion.p>
