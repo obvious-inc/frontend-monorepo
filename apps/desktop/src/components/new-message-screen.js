@@ -1426,13 +1426,13 @@ const DMChannelIntro = ({ walletAddress }) => {
 
 const Onboarding = () => {
   const me = useMe();
-  const memberChannels = useMemberChannels();
+  // const memberChannels = useMemberChannels();
   const { open: openEditProfileDialog } = useDialog("edit-profile");
   const { open: openProfileLinkDialog } = useDialog("profile-link");
 
   if (me == null) return null;
-  // `1` since users currently auto-join NS General
-  if (memberChannels.length > 1) return null;
+  // // `1` since users currently auto-join NS General
+  // if (memberChannels.length > 1) return null;
 
   const staggeredChildMotionVariants = {
     hidden: { opacity: 0 },
