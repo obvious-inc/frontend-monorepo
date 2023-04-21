@@ -60,6 +60,7 @@ const LoginScreen = ({ mobileAppLogin, onSuccess, onError }) => {
   return (
     <div
       css={css`
+        width: 100%;
         flex: 1;
         display: flex;
         align-items: center;
