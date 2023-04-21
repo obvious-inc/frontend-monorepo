@@ -238,7 +238,7 @@ const ChannelInfoDialog = ({
                   display: "flex",
                   alignItems: "flex-end",
                   flexWrap: "wrap",
-                  fontSize: theme.fontSizes.header,
+                  fontSize: theme.fontSizes.headerLarge,
                   color: theme.colors.textHeader,
                   lineHeight: 1.2,
                   whiteSpace: "nowrap",

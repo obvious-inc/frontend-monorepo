@@ -9,8 +9,7 @@ const textDimmed = "hsl(45deg 2% 46%)";
 const textDimmedModifierHover = "hsl(45deg 2% 52%)";
 const textMuted = "hsl(45deg 1% 54%)";
 const textMutedAlpha = "hsl(45deg 8% 20% / 50%)";
-const textAccent = "hsl(0 0% 8%)";
-// const textDanger = "rgb(235, 87, 87)";
+const textAccent = "hsl(0 0% 6%)";
 const backgroundNormal = "hsl(0 0% 100%)";
 const backgroundDark = "hsl(60deg 11% 96%)";
 const backgroundDarkTintLighter = "hsl(60deg 11% 97%)";
@@ -18,7 +17,7 @@ const backgroundDarker = "hsl(60deg 11% 94%)";
 const backgroundDarkest = "hsl(60deg 11% 88%)";
 
 const backgroundModifierDark = "hsl(60deg 11% 0% / 6%)";
-const backgroundModifierDarker = "hsl(60deg 11% 0% / 12%)";
+const backgroundModifierDarker = "hsl(60deg 11% 0% / 10%)";
 
 export default {
   ...dark,
@@ -40,6 +39,7 @@ export default {
     messageBackgroundModifierFocus: backgroundDarkTintLighter,
     messageBackgroundModifierHighlight: "hsl(210deg 67% 70% / 15%)",
     backgroundModifierHover: backgroundModifierDark,
+    backgroundModifierHoverStrong: backgroundModifierDarker,
     primaryTransparent,
     primaryTransparentSoft,
     textNormal,
@@ -53,7 +53,7 @@ export default {
     textHighlightBackground: "#b8810e26",
     link: primaryText,
     linkModifierHover: primaryText,
-    borderLight: "hsl(0 0% 0% / 14%)",
+    borderLight: "hsl(0 0% 0% / 15%)",
     borderLightModifierHover: "hsl(0 0% 0% / 18%)",
     borderLighter: "hsl(0 0% 0% / 12%)",
     toolbarBackground: backgroundNormal,

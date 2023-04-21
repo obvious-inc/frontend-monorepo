@@ -10,7 +10,7 @@ const genId = () => {
 const Input = React.forwardRef(
   (
     {
-      size,
+      size = "normal",
       multiline = false,
       contrast,
       label,
@@ -33,10 +33,12 @@ const Input = React.forwardRef(
           css({
             "--bg-regular": t.colors.inputBackground,
             "--bg-contrast": t.colors.inputBackgroundContrast,
+            "--text-size-normal": t.text.sizes.input,
+            "--text-size-large": t.text.sizes.large,
             background: "var(--bg)",
+            fontSize: "var(--text-size)",
             display: "block",
             color: t.colors.textNormal,
-            fontSize: "1.5rem",
             fontWeight: "400",
             borderRadius: "0.3rem",
             width: "100%",
@@ -53,7 +55,16 @@ const Input = React.forwardRef(
         }
         style={{
           "--bg": contrast ? "var(--bg-contrast)" : "var(--bg-regular)",
-          "--padding": size === "large" ? "0.7rem 0.9rem" : "0.5rem 0.7rem",
+          "--padding":
+            size === "small"
+              ? "0.5rem 0.7rem"
+              : size === "large"
+              ? "0.9rem 1.1rem"
+              : "0.7rem 0.9rem",
+          "--text-size":
+            size === "large"
+              ? "var(--text-size-large)"
+              : "var(--text-size-normal)",
           ...props.style,
         }}
         {...props}
@@ -72,7 +83,7 @@ const Input = React.forwardRef(
               css({
                 display: "inline-block",
                 color: t.colors.textDimmed,
-                fontSize: t.fontSizes.default,
+                fontSize: t.text.sizes.base,
                 lineHeight: 1.2,
                 margin: "0 0 0.8rem",
               })
@@ -87,7 +98,7 @@ const Input = React.forwardRef(
           <div
             css={(t) =>
               css({
-                fontSize: t.fontSizes.small,
+                fontSize: t.text.sizes.small,
                 color: t.colors.textDimmed,
                 marginTop: "0.7rem",
               })

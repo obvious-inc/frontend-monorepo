@@ -88,7 +88,7 @@ const StyledDialog = ({
         width: "100%",
         maxWidth: width,
         color: theme.colors.textNormal,
-        background: theme.colors.backgroundPrimary,
+        background: theme.colors.dialogBackground,
         borderTopLeftRadius: "0.6rem",
         borderTopRightRadius: "0.6rem",
         display: "flex",

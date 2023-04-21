@@ -1,7 +1,12 @@
 import { utils as ethersUtils } from "ethers";
 import React from "react";
-import { useNavigate, useSearchParams } from "react-router-dom";
+import {
+  useNavigate,
+  useSearchParams,
+  Link as RouterLink,
+} from "react-router-dom";
 import { css, useTheme } from "@emotion/react";
+import { motion } from "framer-motion";
 import { useEnsAddress } from "wagmi";
 import {
   useListBox,
@@ -53,9 +58,15 @@ import ChannelAvatar from "./channel-avatar.js";
 import ErrorBoundary from "./error-boundary.js";
 import NewChannelMessageInput from "./new-channel-message-input.js";
 import ChannelMessagesScrollView from "./channel-messages-scroll-view.js";
-import ChannelPrologue from "./channel-prologue.js";
+import ChannelPrologue, {
+  PersonalDMChannelPrologue,
+} from "./channel-prologue.js";
 import InlineUserButtonWithProfilePopover from "./inline-user-button-with-profile-popover.js";
+import InlineChannelButton from "./inline-channel-button.js";
+import Emoji from "./emoji.js";
 import { useScrollAwareMessageFetcher } from "./channel.js";
+
+const INTRO_CHANNEL_ID = "625806ed89bff47879344a9c";
 
 const LazyCreateChannelDialog = React.lazy(() =>
   import("./create-channel-dialog.js")
@@ -515,7 +526,7 @@ const NewMessageScreen = () => {
           <div
             css={(t) =>
               css({
-                fontSize: t.text.sizes.headerDefault,
+                fontSize: t.text.sizes.header,
                 fontWeight: t.text.weights.header,
                 color: t.colors.textHeader,
                 marginRight: "1rem",
@@ -595,7 +606,9 @@ const NewMessageScreen = () => {
               paddingBottom: "2rem",
             })}
           >
-            {selectedWalletAddresses.length !== 0 && (
+            {selectedWalletAddresses.length === 0 ? (
+              <Onboarding />
+            ) : (
               <ChannelIntro walletAddresses={selectedWalletAddresses} />
             )}
           </div>
@@ -717,7 +730,7 @@ const MessageRecipientsInputContainer = React.forwardRef(
           width: "100%",
           color: t.colors.inputPlaceholder,
           background: t.colors.inputBackground,
-          fontSize: t.text.sizes.channelMessages,
+          fontSize: t.text.sizes.large,
           borderRadius: "0.6rem",
           padding: "1.05rem 1.6rem",
           outline: "none",
@@ -1196,7 +1209,7 @@ const MessageRecipientOption = ({
       >
         <div
           {...labelProps}
-          css={(t) => css({ fontSize: t.text.sizes.channelMessages })}
+          css={(t) => css({ fontSize: t.text.sizes.large })}
           style={{ color: isFocused ? theme.colors.textAccent : undefined }}
         >
           {label}
@@ -1207,7 +1220,7 @@ const MessageRecipientOption = ({
             css={(t) =>
               css({
                 color: t.colors.textDimmed,
-                fontSize: t.fontSizes.default,
+                fontSize: t.text.sizes.base,
                 flex: 1,
                 minWidth: 0,
                 whiteSpace: "nowrap",
@@ -1247,7 +1260,7 @@ const MessageRecipientComboboxSection = ({
           {...headingProps}
           css={(t) =>
             css({
-              fontSize: t.fontSizes.small,
+              fontSize: t.text.sizes.small,
               fontWeight: "600",
               color: t.colors.textMutedAlpha,
               padding: "0.5rem 0.8rem",
@@ -1324,6 +1337,8 @@ const ChannelIntro = ({ walletAddresses: walletAddresses_ }) => {
 
   if (me == null) return null;
 
+  if (walletAddresses.length === 0) return <PersonalDMChannelPrologue />;
+
   if (walletAddresses.length === 1)
     return <DMChannelIntro walletAddress={walletAddresses[0]} />;
 
@@ -1378,6 +1393,7 @@ const ChannelIntro = ({ walletAddresses: walletAddresses_ }) => {
 
 const DMChannelIntro = ({ walletAddress }) => {
   const displayName = useAccountDisplayName(walletAddress);
+
   const truncatedAddress = truncateAddress(walletAddress);
   const hasCustomDisplayName =
     displayName.toLowerCase() !== truncatedAddress.toLowerCase();
@@ -1405,6 +1421,127 @@ const DMChannelIntro = ({ walletAddress }) => {
         </>
       }
     />
+  );
+};
+
+const Onboarding = () => {
+  const me = useMe();
+  const memberChannels = useMemberChannels();
+  const { open: openEditProfileDialog } = useDialog("edit-profile");
+  const { open: openProfileLinkDialog } = useDialog("profile-link");
+
+  if (me == null) return null;
+  // `1` since users currently auto-join NS General
+  if (memberChannels.length > 1) return null;
+
+  const staggeredChildMotionVariants = {
+    hidden: { opacity: 0 },
+    visible: { opacity: 1 },
+  };
+
+  return (
+    <div
+      css={(t) =>
+        css({
+          margin: "auto",
+          width: "52rem",
+          maxWidth: "100%",
+          padding: "4rem 1.6rem 0",
+          userSelect: "default",
+          fontSize: "1.8rem",
+          color: t.colors.textNormal,
+          "p.big": { fontSize: "2.8rem", margin: "0 0 2.2rem" },
+          ul: { marginTop: "2rem" },
+          li: { listStyle: "none" },
+          "p + p, li + li, ul": { marginTop: "1.4rem" },
+          ".onboarding-actions-list li > *": {
+            display: "block",
+            width: "100%",
+            textDecoration: "none",
+            padding: "2rem",
+            borderRadius: "0.5rem",
+            color: "inherit",
+            background: t.colors.backgroundModifierHover,
+            outline: "none",
+            ":focus-visible": { boxShadow: t.shadows.focus },
+            "@media(hover: hover)": {
+              cursor: "pointer",
+              ":hover": {
+                color: t.colors.textAccent,
+                background: t.colors.backgroundModifierHoverStrong,
+              },
+            },
+          },
+        })
+      }
+    >
+      <motion.p
+        className="big"
+        initial="hidden"
+        animate="visible"
+        variants={{
+          hidden: { opacity: 0 },
+          visible: { opacity: 1, transition: { delay: 0.6 } },
+        }}
+      >
+        Hi{" "}
+        <InlineUserButtonWithProfilePopover
+          variant="button"
+          walletAddress={me?.walletAddress}
+        />
+        ! <Emoji emoji="😍" />
+      </motion.p>
+
+      <motion.div
+        initial="hidden"
+        animate="visible"
+        variants={{
+          hidden: { opacity: 0 },
+          visible: {
+            opacity: 1,
+            transition: {
+              delay: 0.5,
+              when: "beforeChildren",
+              staggerChildren: 0.1,
+              ease: "easeOut",
+            },
+          },
+        }}
+      >
+        <motion.p variants={staggeredChildMotionVariants}>
+          Thanks for trying NewShades!
+        </motion.p>
+        <motion.p variants={staggeredChildMotionVariants}>
+          Here are some easy ways to get started:
+        </motion.p>
+
+        <ul className="onboarding-actions-list">
+          <motion.li variants={staggeredChildMotionVariants}>
+            <RouterLink
+              to={`/channels/${INTRO_CHANNEL_ID}`}
+              variants={{ hidden: { opacity: 0 }, visible: { opacity: 1 } }}
+            >
+              Say hi <Emoji emoji="👋" /> in{" "}
+              <InlineChannelButton
+                channelId={INTRO_CHANNEL_ID}
+                component="div"
+              />
+            </RouterLink>
+          </motion.li>
+          <motion.li variants={staggeredChildMotionVariants}>
+            <button onClick={openProfileLinkDialog}>
+              Share your account with some friends <Emoji emoji="💁" />
+            </button>
+          </motion.li>
+          <motion.li variants={staggeredChildMotionVariants}>
+            <button onClick={openEditProfileDialog}>
+              Set a display name <Emoji emoji="🏷️" />, and profile picture{" "}
+              <Emoji emoji="🖼️" />
+            </button>
+          </motion.li>
+        </ul>
+      </motion.div>
+    </div>
   );
 };
 

@@ -64,6 +64,7 @@ export const useStore = () => {
   };
 
   const clear = (key_) => {
+    if (key_ == null) return storage.clear();
     const key = buildKey(key_);
     return storage.removeItem(key);
   };

@@ -60,6 +60,10 @@ const LazyEditProfileDialog = React.lazy(() =>
 
 const LazySettingsDialog = React.lazy(() => import("./settings-dialog.js"));
 
+const LazyProfileLinkDialog = React.lazy(() =>
+  import("./profile-link-dialog.js")
+);
+
 const Layout = () => {
   const params = useParams();
 
@@ -72,7 +76,7 @@ const Layout = () => {
   const { login } = useWalletLogin();
   const actions = useActions();
 
-  const user = useMe();
+  const me = useMe();
 
   const [collapsedIds_, setCollapsedIds] = useCachedState(
     "main-menu:collapsed",
@@ -87,30 +91,36 @@ const Layout = () => {
   ]);
 
   const memberChannels = useMemberChannels({ readStates: true });
-
   const starredChannels = useStarredChannels({ readStates: true });
-
-  const memberChannelsExcludingStarred = React.useMemo(() => {
-    const starredChannelIds = starredChannels.map((c) => c.id);
-    return memberChannels.filter((c) => !starredChannelIds.includes(c.id));
-  }, [memberChannels, starredChannels]);
-
-  const unseenChannels = memberChannels.filter(
-    (c) => c.hasBeenSeen === false && c.id !== params.channelId
+  const topChannels = React.useMemo(
+    () =>
+      memberChannels.filter(
+        (c) => c.hasBeenSeen === false && c.id !== params.channelId
+      ),
+    [memberChannels, params.channelId]
   );
 
-  const popularPublicChannels = usePublicChannels().filter(
-    (c) => c.memberUserIds.length >= 3
+  const memberChannelsExcludingStarredAndTopChannels = React.useMemo(() => {
+    const starredChannelIds = starredChannels.map((c) => c.id);
+    const topChannelIds = topChannels.map((c) => c.id);
+    const exlcudedChannelIds = [...starredChannelIds, ...topChannelIds];
+    return memberChannels.filter((c) => !exlcudedChannelIds.includes(c.id));
+  }, [memberChannels, starredChannels, topChannels]);
+
+  const popularNonMemberPublicChannels = usePublicChannels().filter(
+    (c) =>
+      c.memberUserIds.length >= 3 &&
+      (me == null || !c.memberUserIds.includes(me.id))
   );
 
   const listedChannels =
     authenticationStatus === "authenticated"
       ? [
           ...starredChannels,
-          ...memberChannelsExcludingStarred,
-          ...(memberChannels.length === 0 ? popularPublicChannels : []),
+          ...memberChannelsExcludingStarredAndTopChannels,
+          ...(memberChannels.length <= 1 ? popularNonMemberPublicChannels : []),
         ]
-      : popularPublicChannels;
+      : popularNonMemberPublicChannels;
 
   const selectedChannel = useChannel(params.channelId);
 
@@ -118,8 +128,7 @@ const Layout = () => {
     (c) => c.id === params.channelId
   );
 
-  const isLoadingUser =
-    authenticationStatus === "authenticated" && user == null;
+  const isLoadingUser = authenticationStatus === "authenticated" && me == null;
 
   const hasFetchedMenuData = useHasFetchedMenuData();
 
@@ -146,11 +155,16 @@ const Layout = () => {
     open: openSettingsDialog,
     dismiss: dismissSettingsDialog,
   } = useDialog("settings");
+  const {
+    isOpen: isProfileLinkDialogOpen,
+    open: openProfileLinkDialog,
+    dismiss: dismissProfileLinkDialog,
+  } = useDialog("profile-link");
 
   return (
     <>
       <SidebarLayout
-        width={sidebarItemSizeSetting === "large" ? "26rem" : undefined}
+        width={sidebarItemSizeSetting === "large" ? "27rem" : undefined}
         header={({ isHoveringSidebar }) =>
           authenticationStatus === "not-authenticated" &&
           walletAccountAddress == null ? null : isLoadingUser ? (
@@ -163,7 +177,7 @@ const Layout = () => {
                     authenticationStatus === "authenticated" &&
                     !serverConnectionState.isConnected
                   }
-                  user={user ?? { walletAddress: walletAccountAddress }}
+                  user={me ?? { walletAddress: walletAccountAddress }}
                   subtitle={
                     authenticationStatus === "not-authenticated"
                       ? "Unverified account"
@@ -201,9 +215,12 @@ const Layout = () => {
                     <DropdownMenu.Separator />
                     <DropdownMenu.Item disabled>Settings</DropdownMenu.Item>
                     <DropdownMenu.Item disabled>Edit profile</DropdownMenu.Item>
+                    <DropdownMenu.Item disabled>
+                      Share profile
+                    </DropdownMenu.Item>
                     <DropdownMenu.Item
                       onSelect={() => {
-                        navigator.clipboard.writeText(user.walletAddress);
+                        navigator.clipboard.writeText(me.walletAddress);
                       }}
                     >
                       Copy wallet address
@@ -229,7 +246,15 @@ const Layout = () => {
                     </DropdownMenu.Item>
                     <DropdownMenu.Item
                       onSelect={() => {
-                        navigator.clipboard.writeText(user.walletAddress);
+                        if (isMenuFloating) toggleMenu();
+                        openProfileLinkDialog();
+                      }}
+                    >
+                      Share profile
+                    </DropdownMenu.Item>
+                    <DropdownMenu.Item
+                      onSelect={() => {
+                        navigator.clipboard.writeText(me.walletAddress);
                       }}
                     >
                       Copy wallet address
@@ -378,9 +403,9 @@ const Layout = () => {
                     </>
                   )}
 
-                  {unseenChannels.length !== 0 && (
+                  {topChannels.length !== 0 && (
                     <>
-                      {unseenChannels.map((c) => (
+                      {topChannels.map((c) => (
                         <ChannelItem
                           key={c.id}
                           id={c.id}
@@ -402,8 +427,10 @@ const Layout = () => {
                     {
                       key: "member-channels",
                       title: "Channels",
-                      channels: memberChannelsExcludingStarred,
-                      isHidden: memberChannelsExcludingStarred.length === 0,
+                      channels: memberChannelsExcludingStarredAndTopChannels,
+                      isHidden:
+                        memberChannelsExcludingStarredAndTopChannels.length ===
+                        0,
                     },
                     {
                       key: "public",
@@ -416,11 +443,11 @@ const Layout = () => {
                           },
                           { value: (c) => c.name.toLowerCase() }
                         ),
-                        popularPublicChannels
+                        popularNonMemberPublicChannels
                       ),
                       isHidden:
-                        memberChannels.length !== 0 ||
-                        popularPublicChannels.length === 0,
+                        memberChannels.length > 1 ||
+                        popularNonMemberPublicChannels.length === 0,
                     },
                   ]
                     .filter((s) => !s.isHidden)
@@ -525,6 +552,23 @@ const Layout = () => {
               <LazySettingsDialog
                 titleProps={titleProps}
                 dismiss={dismissSettingsDialog}
+              />
+            </React.Suspense>
+          </ErrorBoundary>
+        )}
+      </Dialog>
+
+      <Dialog
+        isOpen={isProfileLinkDialogOpen}
+        onRequestClose={dismissProfileLinkDialog}
+        width="38rem"
+      >
+        {({ titleProps }) => (
+          <ErrorBoundary fallback={() => window.location.reload()}>
+            <React.Suspense fallback={null}>
+              <LazyProfileLinkDialog
+                titleProps={titleProps}
+                dismiss={dismissProfileLinkDialog}
               />
             </React.Suspense>
           </ErrorBoundary>
@@ -886,12 +930,14 @@ const ChannelItem = ({ id, expandable, size = "normal" }) => {
       }
       subtitle={
         lastMessage == null ? null : (
-          <>
+          <div
+            style={{ color: hasUnread ? theme.colors.textDimmed : undefined }}
+          >
             {lastMessageAuthorUser?.displayName != null && (
               <>{lastMessageAuthorUser.displayName}: </>
             )}
             <StringifiedMessageContent messageId={lastMessage.id} />
-          </>
+          </div>
         )
       }
       icon={

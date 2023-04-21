@@ -572,7 +572,7 @@ const ChannelAutoCompleteItem = ({ id }) => {
             flex: 1,
             minWidth: 0,
             color: t.colors.textNormal,
-            fontSize: t.fontSizes.channelMessages,
+            fontSize: t.text.sizes.large,
             fontWeight: t.text.weights.default,
           })
         }

@@ -28,6 +28,11 @@ export const Provider = ({ authenticate, children }) => {
   const [status, setStatus] = React.useState("idle");
   const [error, setError] = React.useState(null);
 
+  const reset = React.useCallback(() => {
+    setStatus("idle");
+    setError(null);
+  }, []);
+
   const loginWithWalletSignature = useLatestCallback(async (address) => {
     setError(null);
     setStatus("requesting-signature");
@@ -83,10 +88,11 @@ export const Provider = ({ authenticate, children }) => {
     () => ({
       login: loginWithWalletSignature,
       loginWithThrowawayWallet,
+      reset,
       status,
       error,
     }),
-    [loginWithWalletSignature, loginWithThrowawayWallet, status, error]
+    [loginWithWalletSignature, loginWithThrowawayWallet, reset, status, error]
   );
 
   return (

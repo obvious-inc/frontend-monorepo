@@ -25,20 +25,23 @@ const backgroundLighter = "hsl(0 0% 17%)";
 
 const backgroundModifierLighter = "hsl(0 0% 100% / 1.5%)";
 const backgroundModifierHover = "hsl(0 0% 100% / 5.5%)";
+const backgroundModifierHoverStrong = "hsl(0 0% 100% / 8%)";
 
 const normalTextSize = "1.4rem";
 const largeText = "1.6rem";
 
-const fontSizes = {
+const textSizes = {
   tiny: "1.05rem",
   small: "1.2rem",
+  base: normalTextSize,
   default: normalTextSize,
   large: largeText,
-  header: "2rem",
   huge: "3.2rem",
-  headerDefault: largeText,
-  channelMessages: largeText,
+  header: largeText,
+  headerLarge: "2rem",
   menus: normalTextSize,
+  button: "1.5rem",
+  input: "1.5rem",
 };
 
 export default {
@@ -96,7 +99,7 @@ export default {
     textSelectionBackground: createPrimary({ saturation: 1, lightness: 0 }),
     textDanger,
     link: primaryTintLighter,
-    linkModifierHover: createPrimary({ saturation: 1, lightness: 0.62 }),
+    linkModifierHover: createPrimary({ saturation: 1, lightness: 0.65 }),
     borderLight: "hsl(0 0% 100% / 20%)",
     borderLightModifierHover: "hsl(0 0% 100% / 25%)",
     borderLighter: "hsl(0 0% 100% / 12%)",
@@ -104,7 +107,7 @@ export default {
     backgroundPrimary: backgroundDark,
     backgroundSecondary: backgroundNormal,
     backgroundTertiary: backgroundLight,
-    dialogBackground: backgroundDark,
+    dialogBackground: backgroundNormal,
     popoverBackground: backgroundLight,
     backgroundTooltip: backgroundLighter,
     buttonHover: backgroundLighter,
@@ -113,6 +116,7 @@ export default {
     inputBackgroundContrast: backgroundModifierHover,
     inputPlaceholder: "hsl(0 0% 100% / 40%)",
     backgroundModifierHover,
+    backgroundModifierHoverStrong,
     backgroundYellow: "rgb(202, 152, 73)",
     interactiveNormal: "#b9bbbe",
     interactiveHover: "#dcddde",
@@ -128,9 +132,9 @@ export default {
     mentionBackgroundModifierHover: createPrimary({ opacity: 0.5 }),
     mentionFocusBorder: primary,
   },
-  fontSizes,
+  fontSizes: textSizes,
   text: {
-    sizes: fontSizes,
+    sizes: textSizes,
     weights: {
       default: "400",
       normal: "400",

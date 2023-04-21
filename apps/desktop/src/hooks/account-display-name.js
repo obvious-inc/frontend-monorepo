@@ -17,7 +17,7 @@ const useAccountDisplayName = (
   });
 
   if (!customDisplayName)
-    return ensName ?? truncateAddress(ethereumUtils.getAddress(walletAddress));
+    return ensName ?? truncateAddress(ethersUtils.getAddress(walletAddress));
 
   const displayName =
     user?.displayName ??

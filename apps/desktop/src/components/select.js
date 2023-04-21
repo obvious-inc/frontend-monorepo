@@ -62,7 +62,7 @@ const Select = React.forwardRef(
               css({
                 display: "inline-block",
                 color: t.colors.textDimmed,
-                fontSize: t.fontSizes.default,
+                fontSize: t.text.sizes.base,
                 lineHeight: 1.2,
                 margin: "0 0 0.8rem",
               })
@@ -114,7 +114,7 @@ const Select = React.forwardRef(
                         css={(t) =>
                           css({
                             color: t.colors.textDimmed,
-                            fontSize: t.fontSizes.small,
+                            fontSize: t.text.sizes.small,
                           })
                         }
                       >

@@ -81,7 +81,7 @@ const AddChannelMemberDialog = ({ channelId, isOpen, onRequestClose }) => {
             <h1
               css={(t) =>
                 css({
-                  fontSize: t.fontSizes.header,
+                  fontSize: t.fontSizes.headerLarge,
                   lineHeight: 1.2,
                 })
               }

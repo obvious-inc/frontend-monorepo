@@ -39,8 +39,10 @@ const App = () => {
 
   React.useEffect(() => {
     if (authStatus !== "authenticated") return;
-    fetchClientBootData();
-  }, [authStatus, fetchClientBootData]);
+    fetchClientBootData().then(({ channels }) => {
+      if (channels.length <= 1) fetchPubliclyReadableChannels();
+    });
+  }, [authStatus, fetchClientBootData, fetchPubliclyReadableChannels]);
 
   React.useEffect(() => {
     if (authStatus === "not-authenticated") fetchPubliclyReadableChannels();

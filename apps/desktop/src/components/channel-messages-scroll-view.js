@@ -18,7 +18,9 @@ import useIsOnScreen from "../hooks/is-on-screen.js";
 import useScrollListener from "../hooks/scroll-listener.js";
 import useMutationObserver from "../hooks/mutation-observer.js";
 import useLayoutSetting from "../hooks/layout-setting.js";
-import ChannelPrologue from "./channel-prologue.js";
+import ChannelPrologue, {
+  PersonalDMChannelPrologue,
+} from "./channel-prologue.js";
 import ChannelMessage from "./channel-message.js";
 import ChannelAvatar from "./channel-avatar.js";
 import InlineUserButtonWithProfilePopover from "./inline-user-button-with-profile-popover.js";
@@ -299,7 +301,7 @@ const ChannelMessagesScrollView = ({
             css={(t) =>
               css({
                 minHeight: 0,
-                fontSize: t.fontSizes.channelMessages,
+                fontSize: t.text.sizes.large,
                 fontWeight: "400",
                 ".channel-message-container": {
                   "--color-regular": t.colors.textNormal,
@@ -441,50 +443,43 @@ const ChannelIntro = ({ channelId }) => {
 const DMChannelIntro = ({ channelId }) => {
   const me = useMe();
   const channel = useChannel(channelId, { name: true, members: true });
+
   const membersExcludingMe = channel.members.filter(
     (m) => me != null && me.id !== m.id
   );
   const member = membersExcludingMe[0] ?? me;
+
+  const isOwnDm = member != null && me != null && member.id === me.id;
+
+  if (isOwnDm) return <PersonalDMChannelPrologue />;
+
+  const title = channel.name;
   const truncatedAddress =
     member?.walletAddress == null
       ? null
       : truncateAddress(ethersUtils.getAddress(member.walletAddress));
 
-  const isOwnDm = member != null && me != null && member.id === me.id;
-
-  const title = channel.name;
-
-  const getSubtitle = () => {
-    if (isOwnDm) return me.displayName == null ? null : truncatedAddress;
-
-    if (title.toLowerCase() === truncatedAddress?.toLowerCase()) return null;
-
-    return truncatedAddress;
-  };
+  const showSubtitle = title.toLowerCase() !== truncatedAddress?.toLowerCase();
 
   return (
     <ChannelPrologue
       image={<ChannelAvatar id={channelId} size="6.6rem" highRes />}
       title={title}
-      subtitle={getSubtitle()}
+      subtitle={showSubtitle ? truncatedAddress : null}
       body={
-        channel.members.length <= 1 ? (
-          "This is your space. Draft messages, manage a to-do list, or try out /-commands."
-        ) : (
-          <>
-            This conversation is just between{" "}
-            {membersExcludingMe.map((m, i, ms) => (
-              <React.Fragment key={m.id}>
-                <InlineUserButtonWithProfilePopover
-                  userId={m.id}
-                  css={(t) => css({ color: t.colors.textNormal })}
-                />
-                {i !== ms.length - 1 && `, `}
-              </React.Fragment>
-            ))}{" "}
-            and you.
-          </>
-        )
+        <>
+          This conversation is just between{" "}
+          {membersExcludingMe.map((m, i, ms) => (
+            <React.Fragment key={m.id}>
+              <InlineUserButtonWithProfilePopover
+                userId={m.id}
+                css={(t) => css({ color: t.colors.textNormal })}
+              />
+              {i !== ms.length - 1 && `, `}
+            </React.Fragment>
+          ))}{" "}
+          and you.
+        </>
       }
     />
   );

@@ -3,9 +3,9 @@ import { useWallet, useWalletLogin } from "@shades/common/wallet";
 import React from "react";
 import { css } from "@emotion/react";
 import Button from "@shades/ui-web/button";
-import * as Tooltip from "../components/tooltip";
-import Spinner from "../components/spinner";
-import UserAvatar from "../components/user-avatar";
+import * as Tooltip from "./tooltip";
+import Spinner from "./spinner";
+import UserAvatar from "./user-avatar";
 
 const { truncateAddress } = ethereumUtils;
 
@@ -27,6 +27,7 @@ const LoginScreen = ({ mobileAppLogin, onSuccess, onError }) => {
     loginWithThrowawayWallet,
     status: loginStatus,
     error: loginError,
+    reset: resetLoginState,
   } = useWalletLogin();
 
   const [isSwitchingToMainnet, setSwitchingToMainnet] = React.useState(false);
@@ -35,7 +36,8 @@ const LoginScreen = ({ mobileAppLogin, onSuccess, onError }) => {
 
   const error = loginError ?? walletError;
 
-  const showThrowawayWalletOption = mobileAppLogin;
+  const showThrowawayWalletOption =
+    mobileAppLogin || location.search.includes("throwaway=1");
 
   const handleClickLogin = (type) => {
     if (type === "throwaway") setThrowawayAuth(true);
@@ -76,7 +78,7 @@ const LoginScreen = ({ mobileAppLogin, onSuccess, onError }) => {
           <Spinner
             size="2.4rem"
             css={(t) => ({
-              color: t.colors.textMuted,
+              color: t.colors.textDimmed,
               margin: "0 auto 2rem",
             })}
           />
@@ -89,7 +91,7 @@ const LoginScreen = ({ mobileAppLogin, onSuccess, onError }) => {
           <Spinner
             size="2.4rem"
             css={(t) => ({
-              color: t.colors.textMuted,
+              color: t.colors.textDimmed,
               margin: "0 auto 2rem",
             })}
           />
@@ -98,7 +100,7 @@ const LoginScreen = ({ mobileAppLogin, onSuccess, onError }) => {
           </div>
           <Small>Check your wallet</Small>
           <Button
-            size="large"
+            size="medium"
             onClick={cancelWalletConnectionAttempt}
             style={{ marginTop: "2rem" }}
           >
@@ -116,9 +118,8 @@ const LoginScreen = ({ mobileAppLogin, onSuccess, onError }) => {
             Requesting network change...
           </div>
           <Small>Check your wallet</Small>
-
           <Button
-            size="large"
+            size="medium"
             onClick={() => {
               setSwitchingToMainnet(false);
             }}
@@ -133,7 +134,7 @@ const LoginScreen = ({ mobileAppLogin, onSuccess, onError }) => {
             Network not supported
           </div>
           <Button
-            size="large"
+            size="larger"
             onClick={() => {
               setSwitchingToMainnet(true);
               switchToEthereumMainnet().then(
@@ -157,7 +158,7 @@ const LoginScreen = ({ mobileAppLogin, onSuccess, onError }) => {
           <Spinner
             size="2.4rem"
             css={(t) => ({
-              color: t.colors.textMuted,
+              color: t.colors.textDimmed,
               margin: "0 auto 2rem",
             })}
           />
@@ -166,6 +167,13 @@ const LoginScreen = ({ mobileAppLogin, onSuccess, onError }) => {
             ...
           </div>
           <Small>Check your wallet</Small>
+          <Button
+            size="medium"
+            onClick={resetLoginState}
+            style={{ marginTop: "2rem" }}
+          >
+            Cancel
+          </Button>
         </div>
       ) : loginStatus === "requesting-access-token" ? (
         <div>
@@ -179,7 +187,11 @@ const LoginScreen = ({ mobileAppLogin, onSuccess, onError }) => {
       ) : (
         <div>
           {error != null && (
-            <div style={{ color: "#ff9e9e", margin: "0 0 3.4rem" }}>
+            <div
+              css={(t) =>
+                css({ color: t.colors.textDanger, margin: "0 0 3.4rem" })
+              }
+            >
               {walletError != null
                 ? "Could not connect to wallet"
                 : loginError === "signature-rejected"
@@ -192,7 +204,18 @@ const LoginScreen = ({ mobileAppLogin, onSuccess, onError }) => {
             </div>
           )}
           {accountAddress == null ? (
-            <>
+            <div
+              css={(t) =>
+                css({
+                  h1: {
+                    fontSize: "6rem",
+                    margin: "0 0 3rem",
+                  },
+                  p: { fontSize: t.text.sizes.large, margin: "2.8rem 0 0" },
+                })
+              }
+            >
+              <h1>👋</h1>
               <div
                 css={css({
                   display: "grid",
@@ -210,8 +233,8 @@ const LoginScreen = ({ mobileAppLogin, onSuccess, onError }) => {
                 }}
               >
                 <Button
-                  variant={showThrowawayWalletOption ? "primary" : "default"}
-                  size="large"
+                  variant="primary"
+                  size="larger"
                   disabled={!canConnectWallet}
                   onClick={() => {
                     connectWallet();
@@ -221,7 +244,7 @@ const LoginScreen = ({ mobileAppLogin, onSuccess, onError }) => {
                 </Button>
                 {showThrowawayWalletOption && (
                   <Button
-                    size="large"
+                    size="larger"
                     onClick={() => {
                       handleClickLogin("throwaway");
                     }}
@@ -230,13 +253,14 @@ const LoginScreen = ({ mobileAppLogin, onSuccess, onError }) => {
                   </Button>
                 )}
               </div>
+              <p>Connect your wallet to start chatting</p>
               {!mobileAppLogin && (
                 <div style={{ marginTop: "2rem" }}>
                   <Small
                     style={{
                       width: "42rem",
                       maxWidth: "100%",
-                      lineHeight: 1.3,
+                      margin: "auto",
                     }}
                   >
                     Make sure to enable any browser extension wallets before you
@@ -260,24 +284,26 @@ const LoginScreen = ({ mobileAppLogin, onSuccess, onError }) => {
                   </Small>
                 </div>
               )}
-            </>
+            </div>
           ) : (
             <>
               <UserAvatar
                 transparent
                 walletAddress={accountAddress}
-                size="8rem"
-                style={{ margin: "0 auto 3rem" }}
+                size="9.2rem"
+                css={(t) =>
+                  css({
+                    background: t.colors.borderLighter,
+                    margin: "0 auto 2.4rem",
+                  })
+                }
               />
-              <Button size="large" onClick={handleClickLogin}>
-                Verify with wallet signature
-              </Button>
               <div
                 css={(theme) =>
                   css({
-                    fontSize: theme.fontSizes.small,
-                    color: theme.colors.textDimmed,
-                    marginTop: "2rem",
+                    fontSize: theme.text.sizes.base,
+                    color: theme.colors.textNormal,
+                    margin: "0 0 2.8rem",
                   })
                 }
               >
@@ -328,6 +354,43 @@ const LoginScreen = ({ mobileAppLogin, onSuccess, onError }) => {
                   </Tooltip.Content>
                 </Tooltip.Root>
               </div>
+              <Button
+                size="larger"
+                variant="primary"
+                onClick={handleClickLogin}
+              >
+                Verify with wallet signature
+              </Button>
+              <Small
+                css={css({
+                  width: "40rem",
+                  maxWidth: "100%",
+                  marginTop: "2.8rem",
+                  "p + p": { marginTop: "1.4rem" },
+                })}
+              >
+                <p>
+                  Wallet signatures provide a self-custodied alternative to
+                  authentication using centralized identity providers.
+                </p>
+                <p>
+                  The curious may give{" "}
+                  <a
+                    href="https://learn.rainbow.me/what-is-a-cryptoweb3-wallet-actually"
+                    rel="noreferrer"
+                    target="_blank"
+                    css={(theme) =>
+                      css({
+                        color: theme.colors.link,
+                        ":hover": { color: theme.colors.linkModifierHover },
+                      })
+                    }
+                  >
+                    EIP-4361
+                  </a>{" "}
+                  a skim.
+                </p>
+              </Small>
             </>
           )}
         </div>
@@ -336,39 +399,13 @@ const LoginScreen = ({ mobileAppLogin, onSuccess, onError }) => {
   );
 };
 
-// const Button = ({ css: cssProp, ...props }) => (
-//   <button
-//     css={css`
-//       color: white;
-//       background: hsl(0 0% 100% / 6%);
-//       border: 0;
-//       padding: 1.1rem 2.4rem;
-//       font-weight: 500;
-//       font-size: 1.5rem;
-//       border-radius: 0.3rem;
-//       transition: 0.15s ease-out background;
-//       text-align: center;
-//       :not(:disabled) {
-//         cursor: pointer;
-//       }
-//       :hover:not(:disabled) {
-//         background: hsl(0 0% 100% / 8%);
-//       }
-//       :disabled {
-//         opacity: 0.5;
-//       }
-//       ${cssProp}
-//     `}
-//     {...props}
-//   />
-// );
-
 const Small = (props) => (
   <div
     css={(theme) =>
       css({
-        fontSize: theme.fontSizes.small,
+        fontSize: theme.text.sizes.small,
         color: theme.colors.textDimmed,
+        lineHeight: 1.3,
       })
     }
     {...props}

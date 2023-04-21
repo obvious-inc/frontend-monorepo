@@ -441,7 +441,7 @@ const Heading = ({ component: Component = "div", children, ...props }) => (
   <Component
     css={(theme) =>
       css({
-        fontSize: theme.fontSizes.headerDefault,
+        fontSize: theme.fontSizes.header,
         fontWeight: theme.text.weights.header,
         color: theme.colors.textHeader,
         fontFamily: theme.fontStacks.headers,

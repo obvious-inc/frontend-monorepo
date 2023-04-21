@@ -1519,6 +1519,7 @@ const EmojiPicker = ({ width = "auto", height = "100%", onSelect }) => {
       <div css={css({ padding: "0.7rem 0.7rem 0.3rem" })}>
         <Input
           contrast
+          size="small"
           ref={inputRef}
           value={query}
           onChange={(e) => {

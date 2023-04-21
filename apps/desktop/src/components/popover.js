@@ -156,38 +156,34 @@ const ContentInner = React.forwardRef(
             }}
           />
         )}
-
-        {typeof children === "function" ? (
-          children({
-            ref,
-            props: containerProps,
-            isOpen: state.isOpen,
-            dismissButtonElement,
-          })
-        ) : (
-          <div
-            ref={ref}
-            css={(t) =>
-              css({
-                minWidth: widthFollowTrigger ? 0 : "min-content",
-                width: widthFollowTrigger
-                  ? anchorRef.current?.offsetWidth ?? "auto"
-                  : width,
-                maxWidth: "calc(100vw - 2rem)",
-                background: t.colors.popoverBackground,
-                borderRadius: "0.6rem",
-                boxShadow: t.shadows.elevationHigh,
-                outline: "none", // TODO
-                overflow: "auto",
-              })
-            }
-            {...containerProps}
-          >
-            {dismissButtonElement}
-            {isDialog ? <Dialog {...dialogProps}>{children}</Dialog> : children}
-            {dismissButtonElement}
-          </div>
-        )}
+        <div
+          ref={ref}
+          css={(t) =>
+            css({
+              minWidth: widthFollowTrigger ? 0 : "min-content",
+              width: widthFollowTrigger
+                ? anchorRef.current?.offsetWidth ?? "auto"
+                : width,
+              maxWidth: "calc(100vw - 2rem)",
+              background: t.colors.popoverBackground,
+              borderRadius: "0.6rem",
+              boxShadow: t.shadows.elevationHigh,
+              outline: "none", // TODO
+              overflow: "auto",
+            })
+          }
+          {...containerProps}
+        >
+          {dismissButtonElement}
+          {isDialog ? (
+            <Dialog {...dialogProps}>
+              {React.cloneElement(children, { close: state.close })}
+            </Dialog>
+          ) : (
+            children
+          )}
+          {dismissButtonElement}
+        </div>
       </>
     );
   }

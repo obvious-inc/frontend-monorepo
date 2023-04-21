@@ -1,7 +1,7 @@
 import React from "react";
 import { css } from "@emotion/react";
-import { Cross as CrossIcon } from "@shades/ui-web/icons";
-import Button from "@shades/ui-web/button";
+import DialogHeader from "./dialog-header.js";
+import DialogFooter from "./dialog-footer.js";
 import Input from "./input.js";
 import Select from "./select.js";
 
@@ -58,41 +58,8 @@ const FormDialog = ({
         },
       })}
     >
-      <header
-        css={css({
-          display: "grid",
-          gridTemplateColumns: "minmax(0,1fr) auto",
-          alignItems: "flex-end",
-          margin: "0 0 1.5rem",
-          "@media (min-width: 600px)": {
-            margin: "0 0 2rem",
-          },
-        })}
-      >
-        <h1
-          css={(t) =>
-            css({
-              fontSize: t.fontSizes.header,
-              color: t.colors.textHeader,
-              lineHeight: 1.2,
-            })
-          }
-          {...titleProps}
-        >
-          {title}
-        </h1>
-        <Button
-          size="small"
-          onClick={() => {
-            dismiss();
-          }}
-          css={css({ width: "2.8rem", padding: 0 })}
-        >
-          <CrossIcon
-            style={{ width: "1.5rem", height: "auto", margin: "auto" }}
-          />
-        </Button>
-      </header>
+      <DialogHeader title={title} titleProps={titleProps} dismiss={dismiss} />
+
       <main>
         <form id="dialog-form" onSubmit={handleSubmit}>
           {controls.map((c, i) => (
@@ -114,6 +81,7 @@ const FormDialog = ({
               ) : (
                 <Input
                   ref={i === 0 ? firstInputRef : undefined}
+                  contrast
                   size={c.size ?? "large"}
                   multiline={c.type === "multiline-text"}
                   value={c.value === undefined ? state[c.key] : c.value}
@@ -132,42 +100,20 @@ const FormDialog = ({
           ))}
         </form>
       </main>
-      <footer
-        css={css({
-          display: "flex",
-          justifyContent: "flex-end",
-          paddingTop: "2.5rem",
-          "@media (min-width: 600px)": {
-            paddingTop: "3rem",
-          },
-        })}
-      >
-        <div
-          css={css({
-            display: "grid",
-            gridAutoFlow: "column",
-            gridAutoColumns: "minmax(0,1fr)",
-            gridGap: "1rem",
-          })}
-        >
-          <Button size="medium" onClick={dismiss}>
-            {cancelLabel}
-          </Button>
-          {submit != null && (
-            <Button
-              type="submit"
-              form="dialog-form"
-              size="medium"
-              variant="primary"
-              isLoading={hasPendingSubmit}
-              disabled={!hasRequiredInput || hasPendingSubmit}
-              style={{ minWidth: "8rem" }}
-            >
-              {submitLabel}
-            </Button>
-          )}
-        </div>
-      </footer>
+
+      <DialogFooter
+        cancel={dismiss}
+        cancelButtonLabel={cancelLabel}
+        submit={submit}
+        submitButtonLabel={submitLabel}
+        submitButtonProps={{
+          type: "submit",
+          form: "dialog-form",
+          isLoading: hasPendingSubmit,
+          disabled: !hasRequiredInput || hasPendingSubmit,
+          style: { minWidth: "8rem" },
+        }}
+      />
     </div>
   );
 };

@@ -339,7 +339,7 @@ const NewChannelMessageInput = React.memo(
               borderRadius: "0.6rem",
               borderTopLeftRadius: replyTargetMessage ? 0 : undefined,
               borderTopRightRadius: replyTargetMessage ? 0 : undefined,
-              fontSize: t.fontSizes.channelMessages,
+              fontSize: t.text.sizes.large,
               "[data-slate-placeholder]": {
                 color: t.colors.inputPlaceholder,
                 opacity: "1 !important",

@@ -65,12 +65,12 @@ const stylesBySize = (theme, { multiline, align }) => {
   const heightProp = multiline ? "minHeight" : "height";
   return {
     default: {
-      fontSize: theme.fontSizes.default,
+      fontSize: theme.fontSizes.base,
       padding: "0 1.2rem",
       [heightProp]: "3.2rem",
     },
     small: {
-      fontSize: theme.fontSizes.default,
+      fontSize: theme.fontSizes.base,
       padding: [
         multiline ? "0.5rem" : 0,
         align === "left" ? "0.7rem" : "0.9rem",
@@ -78,7 +78,7 @@ const stylesBySize = (theme, { multiline, align }) => {
       [heightProp]: "2.8rem",
     },
     medium: {
-      fontSize: "1.5rem",
+      fontSize: theme.text.sizes.button,
       padding: [
         multiline ? "0.7rem" : 0,
         align === "left" ? "0.9rem" : "1.7rem",
@@ -86,8 +86,12 @@ const stylesBySize = (theme, { multiline, align }) => {
       [heightProp]: "3.6rem",
     },
     large: {
-      fontSize: "1.5rem",
+      fontSize: theme.text.sizes.button,
       padding: ["1.2rem", align === "left" ? "1.2rem" : "2rem"].join(" "),
+    },
+    larger: {
+      fontSize: theme.text.sizes.large,
+      padding: ["1.4rem", align === "left" ? "1.4rem" : "2.8rem"].join(" "),
     },
   };
 };

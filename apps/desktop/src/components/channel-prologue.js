@@ -1,4 +1,11 @@
+import { utils as ethersUtils } from "ethers";
 import { css } from "@emotion/react";
+import { ethereum as ethereumUtils } from "@shades/common/utils";
+import { useMe, useDmChannelWithMember } from "@shades/common/app";
+import UserAvatar from "./user-avatar.js";
+import ChannelAvatar from "./channel-avatar.js";
+
+const { truncateAddress } = ethereumUtils;
 
 const ChannelPrologue = ({ title, subtitle, body, image, info, ...props }) => {
   return (
@@ -7,7 +14,7 @@ const ChannelPrologue = ({ title, subtitle, body, image, info, ...props }) => {
         css({
           padding: "6rem 1.6rem 0",
           color: t.colors.textDimmed,
-          fontSize: t.text.sizes.channelMessages,
+          fontSize: t.text.sizes.large,
         })
       }
       {...props}
@@ -29,7 +36,7 @@ const ChannelPrologue = ({ title, subtitle, body, image, info, ...props }) => {
             <div
               css={(t) =>
                 css({
-                  fontSize: t.text.sizes.header,
+                  fontSize: t.text.sizes.headerLarge,
                   fontWeight: t.text.weights.header,
                   color: t.colors.textHeader,
                   lineHeight: 1.3,
@@ -77,6 +84,37 @@ const ChannelPrologue = ({ title, subtitle, body, image, info, ...props }) => {
         )}
       </div>
     </div>
+  );
+};
+
+export const PersonalDMChannelPrologue = () => {
+  const me = useMe();
+  const channel = useDmChannelWithMember(me?.walletAddress);
+
+  const hasSubtitle = channel?.name != null || me.displayName != null;
+
+  return (
+    <ChannelPrologue
+      image={
+        channel == null ? (
+          <UserAvatar
+            transparent
+            walletAddress={me.walletAddress}
+            size="6.6rem"
+            highRes
+          />
+        ) : (
+          <ChannelAvatar transparent id={channel?.id} size="6.6rem" highRes />
+        )
+      }
+      title={channel?.name ?? me.computedDisplayName}
+      subtitle={
+        hasSubtitle
+          ? truncateAddress(ethersUtils.getAddress(me.walletAddress))
+          : null
+      }
+      body="This is your space. Draft messages, manage a to-do list, or try out /-commands."
+    />
   );
 };
 

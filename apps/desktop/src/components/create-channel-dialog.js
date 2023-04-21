@@ -66,7 +66,7 @@ const CreateChannelDialogContent = ({ titleProps, close, createChannel }) => {
         <h1
           css={(t) =>
             css({
-              fontSize: t.fontSizes.header,
+              fontSize: t.fontSizes.headerLarge,
               lineHeight: "1.2",
               margin: "0 0 1rem",
               color: t.colors.textHeader,
@@ -115,6 +115,7 @@ const CreateChannelDialogContent = ({ titleProps, close, createChannel }) => {
           }}
         >
           <Input
+            contrast
             size="large"
             label="Name"
             value={name}
@@ -125,6 +126,7 @@ const CreateChannelDialogContent = ({ titleProps, close, createChannel }) => {
             containerProps={{ style: { margin: "0 0 2rem" } }}
           />
           <Input
+            contrast
             size="large"
             multiline
             value={description}
