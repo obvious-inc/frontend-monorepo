@@ -1027,7 +1027,7 @@ const MessageRecipientCombobox = React.forwardRef(
             }
           })}
 
-          <FlexGridItem css={css({ flex: 1, minWidth: 0 })}>
+          <FlexGridItem css={css({ flex: 1, minWidth: "12rem" })}>
             <Combobox
               aria-label={ariaLabel}
               placeholder={
@@ -1082,7 +1082,6 @@ const MessageRecipientCombobox = React.forwardRef(
                       border: 0,
                       padding: 0,
                       width: "100%",
-                      minWidth: "12rem",
                       outline: "none",
                       "::placeholder": {
                         color: t.colors.inputPlaceholder,
