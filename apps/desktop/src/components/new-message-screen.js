@@ -1,11 +1,7 @@
 import { utils as ethersUtils } from "ethers";
 import React from "react";
 import { useAccount } from "wagmi";
-import {
-  useNavigate,
-  useSearchParams,
-  Link as RouterLink,
-} from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { css, useTheme } from "@emotion/react";
 import { motion } from "framer-motion";
 import { useEnsAddress } from "wagmi";
@@ -300,8 +296,6 @@ const useRecipientsTagFieldComboboxState = () => {
 
     return { focusedKey: -1, selectedKeys: [...channelKeys, ...accountKeys] };
   });
-
-  const { setSelection } = recipientsState;
 
   React.useEffect(() => {
     const accounts = getIdentifiersOfType(
@@ -776,6 +770,9 @@ const NewMessageScreen = () => {
                         css({
                           fontSize: t.text.sizes.small,
                           color: t.colors.textDimmed,
+                          "@media(max-width: 600px)": {
+                            display: "none",
+                          },
                         })
                       }
                     >
@@ -1687,7 +1684,6 @@ const Onboarding = ({ selectChannel }) => {
               onClick={() => {
                 selectChannel(INTRO_CHANNEL_ID);
               }}
-              variants={{ hidden: { opacity: 0 }, visible: { opacity: 1 } }}
             >
               Say hi <Emoji emoji="👋" /> in{" "}
               <InlineChannelButton
