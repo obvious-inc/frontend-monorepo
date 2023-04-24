@@ -54,6 +54,7 @@ import useCommandCenter, {
 } from "./hooks/command-center";
 import useWalletEvent from "./hooks/wallet-event";
 import useSetting from "./hooks/setting";
+import GlobalDialogs from "./components/global-dialogs";
 import LoginScreen from "./components/login-screen";
 import Layout from "./components/layouts";
 import TitleBar from "./components/title-bar";
@@ -298,14 +299,7 @@ const App = () => {
       <Routes>
         <Route path="/" element={<Layout />}>
           <Route index element={<IndexRoute />} />
-          <Route
-            path="/new"
-            element={
-              <RequireAuth>
-                <NewMessageScreen />
-              </RequireAuth>
-            }
-          />
+          <Route path="/new" element={<NewMessageScreen />} />
           <Route path="/channels/:channelId" element={<ChannelScreen />} />
         </Route>
         <Route path="/c/:channelId" element={<ChannelScreen noSideMenu />} />
@@ -331,6 +325,7 @@ const App = () => {
       </Routes>
 
       <CommandCenter />
+      <GlobalDialogs />
     </>
   );
 };

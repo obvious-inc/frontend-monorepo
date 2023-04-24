@@ -3,9 +3,10 @@ export const CHANNEL_READ_MEMBER_LIST = "channels.members.list";
 export const CHANNEL_READ_MESSAGES = "messages.list";
 export const CHANNEL_ADD_MEMBER = "channels.invite";
 export const CHANNEL_JOIN = "channels.join";
+export const CHANNEL_WRITE_MESSAGES = "messages.create";
 
 const Permissions = Object.freeze({
-  "messages.create": "Send new messages",
+  [CHANNEL_WRITE_MESSAGES]: "Send new messages",
   [CHANNEL_READ_MESSAGES]: "List channel's messages",
   "channels.create": "Create new channels",
   [CHANNEL_READ_INFO]: "View channel information",
@@ -52,8 +53,5 @@ export const openChannelPermissionOverrides = [
   },
 ];
 
-export const parseScopes = (scopes) => {
-  return scopes?.map(function (scope) {
-    return { key: scope, content: Permissions[scope] };
-  });
-};
+export const parseScopes = (scopes) =>
+  scopes?.map((scope) => ({ key: scope, content: Permissions[scope] }));

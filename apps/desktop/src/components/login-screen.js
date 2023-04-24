@@ -59,19 +59,18 @@ const LoginScreen = ({ mobileAppLogin, onSuccess, onError }) => {
 
   return (
     <div
-      css={css`
-        width: 100%;
-        flex: 1;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        text-align: center;
-        padding: 2rem;
-
-        & > * {
-          min-width: 0;
-        }
-      `}
+      css={css({
+        width: "100%",
+        flex: 1,
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        textAlign: "center",
+        padding: "2rem",
+        "& > *": {
+          minWidth: 0,
+        },
+      })}
       style={{ height: mobileAppLogin ? "100%" : undefined }}
     >
       {isAuthenticatingWithThrowawayWallet ? (
@@ -254,7 +253,7 @@ const LoginScreen = ({ mobileAppLogin, onSuccess, onError }) => {
                   </Button>
                 )}
               </div>
-              <p>Connect your wallet to start chatting</p>
+              <p>...and start chatting, using your Ethereum identity</p>
               {!mobileAppLogin && (
                 <div style={{ marginTop: "2rem" }}>
                   <Small
@@ -290,6 +289,7 @@ const LoginScreen = ({ mobileAppLogin, onSuccess, onError }) => {
             <>
               <UserAvatar
                 transparent
+                highRes
                 walletAddress={accountAddress}
                 size="9.2rem"
                 css={(t) =>
@@ -303,7 +303,7 @@ const LoginScreen = ({ mobileAppLogin, onSuccess, onError }) => {
                 css={(theme) =>
                   css({
                     fontSize: theme.text.sizes.base,
-                    color: theme.colors.textNormal,
+                    color: theme.colors.textDimmed,
                     margin: "0 0 2.8rem",
                   })
                 }

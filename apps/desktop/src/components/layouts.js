@@ -1,4 +1,4 @@
-import { useEnsName } from "wagmi";
+import { useEnsName, useAccount } from "wagmi";
 import React from "react";
 import { NavLink, Outlet, useParams } from "react-router-dom";
 import { css, useTheme } from "@emotion/react";
@@ -21,12 +21,11 @@ import {
   useHasFetchedMenuData,
   useStringifiedMessageContent,
 } from "@shades/common/app";
-import { useWallet, useWalletLogin } from "@shades/common/wallet";
+import { useWalletLogin } from "@shades/common/wallet";
 import {
   array as arrayUtils,
   ethereum as ethereumUtils,
 } from "@shades/common/utils";
-import Dialog from "@shades/ui-web/dialog";
 import {
   useState as useSidebarState,
   useToggle as useSidebarToggle,
@@ -54,16 +53,6 @@ const { truncateAddress } = ethereumUtils;
 
 const TRUNCATION_THRESHOLD = 8;
 
-const LazyEditProfileDialog = React.lazy(() =>
-  import("./edit-user-profile-dialog.js")
-);
-
-const LazySettingsDialog = React.lazy(() => import("./settings-dialog.js"));
-
-const LazyProfileLinkDialog = React.lazy(() =>
-  import("./profile-link-dialog.js")
-);
-
 const Layout = () => {
   const params = useParams();
 
@@ -72,8 +61,8 @@ const Layout = () => {
   const serverConnectionState = useServerConnectionState();
 
   const { status: authenticationStatus } = useAuth();
-  const { accountAddress: walletAccountAddress } = useWallet();
-  const { login } = useWalletLogin();
+  const { address: connectedWalletAccountAddress } = useAccount();
+  const { login: initAccountVerification } = useWalletLogin();
   const actions = useActions();
 
   const me = useMe();
@@ -145,21 +134,13 @@ const Layout = () => {
     size: sidebarItemSizeSetting === "large" ? "large" : "normal",
   };
 
+  const { open: openEditProfileDialog } = useDialog("edit-profile");
+  const { open: openSettingsDialog } = useDialog("settings");
+  const { open: openProfileLinkDialog } = useDialog("profile-link");
   const {
-    isOpen: isEditProfileDialogOpen,
-    open: openEditProfileDialog,
-    dismiss: dismissEditProfileDialog,
-  } = useDialog("edit-profile");
-  const {
-    isOpen: isSettingsDialogOpen,
-    open: openSettingsDialog,
-    dismiss: dismissSettingsDialog,
-  } = useDialog("settings");
-  const {
-    isOpen: isProfileLinkDialogOpen,
-    open: openProfileLinkDialog,
-    dismiss: dismissProfileLinkDialog,
-  } = useDialog("profile-link");
+    open: openAccountAuthenticationDialog,
+    dismiss: dismissAccountAuthenticationDialog,
+  } = useDialog("account-authentication");
 
   return (
     <>
@@ -167,7 +148,7 @@ const Layout = () => {
         width={sidebarItemSizeSetting === "large" ? "27rem" : undefined}
         header={({ isHoveringSidebar }) =>
           authenticationStatus === "not-authenticated" &&
-          walletAccountAddress == null ? null : isLoadingUser ? (
+          connectedWalletAccountAddress == null ? null : isLoadingUser ? (
             <div />
           ) : (
             <DropdownMenu.Root>
@@ -177,7 +158,7 @@ const Layout = () => {
                     authenticationStatus === "authenticated" &&
                     !serverConnectionState.isConnected
                   }
-                  user={me ?? { walletAddress: walletAccountAddress }}
+                  user={me ?? { walletAddress: connectedWalletAccountAddress }}
                   subtitle={
                     authenticationStatus === "not-authenticated"
                       ? "Unverified account"
@@ -199,7 +180,13 @@ const Layout = () => {
                   <>
                     <DropdownMenu.Item
                       onSelect={() => {
-                        login(walletAccountAddress);
+                        if (isMenuFloating) toggleMenu();
+                        initAccountVerification(
+                          connectedWalletAccountAddress
+                        ).then(() => {
+                          dismissAccountAuthenticationDialog();
+                        });
+                        openAccountAuthenticationDialog();
                       }}
                       css={(t) => css({ color: t.colors.link })}
                     >
@@ -214,13 +201,27 @@ const Layout = () => {
                     </DropdownMenu.Item>
                     <DropdownMenu.Separator />
                     <DropdownMenu.Item disabled>Settings</DropdownMenu.Item>
-                    <DropdownMenu.Item disabled>Edit profile</DropdownMenu.Item>
-                    <DropdownMenu.Item disabled>
+                    <DropdownMenu.Item
+                      onSelect={() => {
+                        if (isMenuFloating) toggleMenu();
+                        openEditProfileDialog();
+                      }}
+                    >
+                      Edit profile
+                    </DropdownMenu.Item>
+                    <DropdownMenu.Item
+                      onSelect={() => {
+                        if (isMenuFloating) toggleMenu();
+                        openProfileLinkDialog();
+                      }}
+                    >
                       Share profile
                     </DropdownMenu.Item>
                     <DropdownMenu.Item
                       onSelect={() => {
-                        navigator.clipboard.writeText(me.walletAddress);
+                        navigator.clipboard.writeText(
+                          connectedWalletAccountAddress
+                        );
                       }}
                     >
                       Copy wallet address
@@ -360,7 +361,7 @@ const Layout = () => {
                 style={{
                   height:
                     authenticationStatus === "not-authenticated" &&
-                    walletAccountAddress == null
+                    connectedWalletAccountAddress == null
                       ? "2rem"
                       : "1rem",
                 }}
@@ -523,57 +524,6 @@ const Layout = () => {
           </React.Suspense>
         </ErrorBoundary>
       </SidebarLayout>
-
-      <Dialog
-        isOpen={isEditProfileDialogOpen}
-        onRequestClose={dismissEditProfileDialog}
-        width="52rem"
-      >
-        {({ titleProps }) => (
-          <ErrorBoundary fallback={() => window.location.reload()}>
-            <React.Suspense fallback={null}>
-              <LazyEditProfileDialog
-                titleProps={titleProps}
-                dismiss={dismissEditProfileDialog}
-              />
-            </React.Suspense>
-          </ErrorBoundary>
-        )}
-      </Dialog>
-
-      <Dialog
-        isOpen={isSettingsDialogOpen}
-        onRequestClose={dismissSettingsDialog}
-        width="38rem"
-      >
-        {({ titleProps }) => (
-          <ErrorBoundary fallback={() => window.location.reload()}>
-            <React.Suspense fallback={null}>
-              <LazySettingsDialog
-                titleProps={titleProps}
-                dismiss={dismissSettingsDialog}
-              />
-            </React.Suspense>
-          </ErrorBoundary>
-        )}
-      </Dialog>
-
-      <Dialog
-        isOpen={isProfileLinkDialogOpen}
-        onRequestClose={dismissProfileLinkDialog}
-        width="38rem"
-      >
-        {({ titleProps }) => (
-          <ErrorBoundary fallback={() => window.location.reload()}>
-            <React.Suspense fallback={null}>
-              <LazyProfileLinkDialog
-                titleProps={titleProps}
-                dismiss={dismissProfileLinkDialog}
-              />
-            </React.Suspense>
-          </ErrorBoundary>
-        )}
-      </Dialog>
     </>
   );
 };
@@ -923,7 +873,13 @@ const ChannelItem = ({ id, expandable, size = "normal" }) => {
             overflow: "hidden",
             textOverflow: "ellipsis",
           })}
-          style={{ color: hasUnread ? theme.colors.textNormal : undefined }}
+          style={{
+            color: hasUnread ? theme.colors.textNormal : undefined,
+            fontWeight:
+              hasUnread && theme.light
+                ? theme.text.weights.emphasis
+                : undefined,
+          }}
         >
           {name}
         </div>

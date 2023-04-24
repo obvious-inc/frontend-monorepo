@@ -16,8 +16,12 @@ const useAccountDisplayName = (
     enabled: user == null && walletAddress != null && customDisplayName,
   });
 
-  if (!customDisplayName)
-    return ensName ?? truncateAddress(ethersUtils.getAddress(walletAddress));
+  if (!customDisplayName) {
+    if (ensName != null) return ensName;
+    return walletAddress == null
+      ? null
+      : truncateAddress(ethersUtils.getAddress(walletAddress));
+  }
 
   const displayName =
     user?.displayName ??

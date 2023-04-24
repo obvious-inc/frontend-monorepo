@@ -1,5 +1,5 @@
 import React from "react";
-import { useEnsName } from "wagmi";
+import { useAccount, useEnsName } from "wagmi";
 import { css } from "@emotion/react";
 import {
   useSelectors,
@@ -24,6 +24,7 @@ const ProfilePreview = React.forwardRef(
     const selectors = useSelectors();
 
     const me = useMe();
+    const { address: connectedWalletAccountAddress } = useAccount();
     const userFromId = useUser(userId);
     const userFromWalletAddress = useUserWithWalletAddress(walletAddress);
     const user =
@@ -33,10 +34,13 @@ const ProfilePreview = React.forwardRef(
 
     const { open: openEditProfileDialog } = useDialog("edit-profile");
 
+    const meWalletAddress =
+      me == null ? connectedWalletAccountAddress : me.walletAddress;
+
     const isMe =
-      me != null &&
       user != null &&
-      me.walletAddress.toLowerCase() === user.walletAddress.toLowerCase();
+      meWalletAddress != null &&
+      meWalletAddress.toLowerCase() === user.walletAddress.toLowerCase();
 
     const displayName = useAccountDisplayName(user.walletAddress);
 
@@ -45,7 +49,7 @@ const ProfilePreview = React.forwardRef(
     const isOnline = user?.onlineStatus === "online";
 
     const sendMessage = () => {
-      const dmChannel = selectors.selectDmChannelFromUserId(user.id);
+      const dmChannel = selectors.selectDmChannelFromUserId(user?.id);
 
       if (dmChannel != null) {
         navigate(`/channels/${dmChannel.id}`);

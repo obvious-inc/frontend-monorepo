@@ -254,6 +254,7 @@ const RichTextInput = React.forwardRef(
             return css({ ...styles, "a:hover": { textDecoration: "none" } });
           }}
           readOnly={disabled}
+          data-disabled={disabled || undefined}
           {...props}
         />
       </Slate>

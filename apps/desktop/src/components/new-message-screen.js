@@ -1,5 +1,6 @@
 import { utils as ethersUtils } from "ethers";
 import React from "react";
+import { useAccount } from "wagmi";
 import {
   useNavigate,
   useSearchParams,
@@ -17,17 +18,21 @@ import {
 } from "react-aria";
 import {
   useActions,
+  useAuth,
   useMe,
   useUsers,
   useAllUsers,
   useMemberChannels,
+  usePublicChannels,
   useUserWithWalletAddress,
   useChannel,
   useChannelMembers,
   useChannelName,
+  useChannelPermissions,
   useDmChannelWithMember,
   useSortedChannelMessageIds,
 } from "@shades/common/app";
+import { useWallet, useWalletLogin } from "@shades/common/wallet";
 import {
   user as userUtils,
   channel as channelUtils,
@@ -46,6 +51,8 @@ import IconButton from "@shades/ui-web/icon-button";
 import Dialog from "@shades/ui-web/dialog";
 import { useDialog } from "../hooks/dialogs.js";
 import useAccountDisplayName from "../hooks/account-display-name.js";
+import useChannelFetchEffects from "../hooks/channel-fetch-effects.js";
+import useScrollAwareChannelMessagesFetcher from "../hooks/scroll-aware-channel-messages-fetcher.js";
 import Combobox, {
   Item as ComboboxItem,
   Section as ComboboxSection,
@@ -64,7 +71,6 @@ import ChannelPrologue, {
 import InlineUserButtonWithProfilePopover from "./inline-user-button-with-profile-popover.js";
 import InlineChannelButton from "./inline-channel-button.js";
 import Emoji from "./emoji.js";
-import { useScrollAwareMessageFetcher } from "./channel.js";
 
 const INTRO_CHANNEL_ID = "625806ed89bff47879344a9c";
 
@@ -72,12 +78,11 @@ const LazyCreateChannelDialog = React.lazy(() =>
   import("./create-channel-dialog.js")
 );
 
+const LazyLoginScreen = React.lazy(() => import("./login-screen.js"));
+
 const MAX_ACCOUNT_MATCH_COUNT = 20;
 
-const {
-  search: searchUsers,
-  createDefaultComparator: createDefaultUserComparator,
-} = userUtils;
+const { search: searchUsers } = userUtils;
 const {
   search: searchChannels,
   createDefaultComparator: createDefaultChannelComparator,
@@ -102,34 +107,48 @@ const getIdentifiersOfType = (type, keys) =>
 
 const useFilteredAccounts = (query) => {
   const me = useMe();
+  const { address: connectedWalletAccountAddress } = useAccount();
   const users = useAllUsers();
   const [relatedAccounts, setRelatedAccounts] = React.useState([]);
+  const { registerEnsEntries } = useActions();
+
+  const walletAddress = me?.walletAddress ?? connectedWalletAccountAddress;
 
   React.useEffect(() => {
-    if (me?.walletAddress == null) return;
+    if (walletAddress == null) return;
 
     fetch(
       `${
         process.env.EDGE_API_BASE_URL
-      }/related-accounts?wallet-address=${me.walletAddress.toLowerCase()}`
+      }/related-accounts?wallet-address=${walletAddress.toLowerCase()}`
     )
       .then((res) => {
         if (!res.ok) return { results: [] };
         return res.json();
       })
       .then((responseBody) => {
-        setRelatedAccounts(responseBody.results);
+        const addresses = responseBody.results;
+        setRelatedAccounts(addresses.map((a) => ({ walletAddress: a })));
+        Promise.all(
+          addresses.map((a) =>
+            fetch(
+              `https://api.ensideas.com/ens/resolve/${a.toLowerCase()}`
+            ).then((r) => r.json())
+          )
+        ).then((entries) => {
+          setRelatedAccounts(
+            entries.map((e) => ({ walletAddress: e.address, ensName: e.name }))
+          );
+        });
       });
-  }, [me?.walletAddress]);
+  }, [walletAddress, registerEnsEntries]);
 
   const filteredOptions = React.useMemo(() => {
-    if (query.trim() === "")
-      return relatedAccounts.map((a) => ({ walletAddress: a }));
+    if (query.trim() === "") return relatedAccounts;
 
-    const filteredUsers =
-      query.length <= 0
-        ? sort(createDefaultUserComparator(), users)
-        : searchUsers(users, query);
+    const accounts = [...users, ...relatedAccounts];
+
+    const filteredUsers = searchUsers(accounts, query);
 
     return filteredUsers
       .slice(0, MAX_ACCOUNT_MATCH_COUNT)
@@ -145,21 +164,30 @@ const useFilteredAccounts = (query) => {
 
 const useFilteredChannels = (query, { selectedWalletAddresses }) => {
   const channels = useMemberChannels({ name: true, members: true });
+  const publicChannels = usePublicChannels({ name: true, members: true });
 
   const selectedWalletAddressesQuery = selectedWalletAddresses.join(" ");
 
   const filteredChannels = React.useMemo(() => {
-    if (query.trim() === "") return [];
+    if (query.trim() === "")
+      return channels.length === 0
+        ? sort(
+            createDefaultChannelComparator(),
+            publicChannels.filter((c) => c.memberUserIds.length > 1)
+          )
+        : [];
+
+    const allChannels = channels.length === 0 ? publicChannels : channels;
 
     const filteredChannels =
       query.length <= 0
         ? selectedWalletAddressesQuery.length === 0
-          ? sort(createDefaultChannelComparator(), channels)
-          : searchChannels(channels, selectedWalletAddressesQuery)
-        : searchChannels(channels, query);
+          ? sort(createDefaultChannelComparator(), allChannels)
+          : searchChannels(allChannels, selectedWalletAddressesQuery)
+        : searchChannels(allChannels, query);
 
     return filteredChannels.filter((c) => c.kind !== "dm").slice(0, 3);
-  }, [channels, query, selectedWalletAddressesQuery]);
+  }, [channels, publicChannels, query, selectedWalletAddressesQuery]);
 
   return filteredChannels;
 };
@@ -246,8 +274,8 @@ const useFilteredComboboxItems = (query, state) => {
                 },
               ],
       },
-      { key: "channels", title: "Channels", children: channelItems },
       { key: "accounts", title: "Accounts", children: accountItems },
+      { key: "channels", title: "Channels", children: channelItems },
     ].filter((s) => s.children.length !== 0);
   }, [deferredQuery, exactAccountMatch, channels, accounts]);
 
@@ -273,6 +301,8 @@ const useRecipientsTagFieldComboboxState = () => {
     return { focusedKey: -1, selectedKeys: [...channelKeys, ...accountKeys] };
   });
 
+  const { setSelection } = recipientsState;
+
   React.useEffect(() => {
     const accounts = getIdentifiersOfType(
       "account",
@@ -284,15 +314,10 @@ const useRecipientsTagFieldComboboxState = () => {
     );
 
     setSearchParams(
-      (params) => {
-        if (accounts.length === 0) params.delete("account");
-        else params.set("account", accounts.join(","));
-
-        if (channels.length === 0) params.delete("channel");
-        else params.set("channel", channels[0]);
-
-        return params;
-      },
+      [
+        ["account", accounts.length === 0 ? undefined : accounts.join(",")],
+        ["channel", channels[0]],
+      ].filter((e) => e[1]),
       { replace: true }
     );
   }, [recipientsState.selectedKeys, setSearchParams]);
@@ -443,9 +468,20 @@ const createDefaultChannelName = async (accounts) => {
 const NewMessageScreen = () => {
   const navigate = useNavigate();
 
-  const me = useMe();
+  const { status: authenticationStatus } = useAuth();
   const actions = useActions();
+  const me = useMe();
+  const { address: connectedWalletAccountAddress } = useAccount();
+  const { connect: connectWallet, isConnecting: isConnectingWallet } =
+    useWallet();
+  const { login: initAccountVerification, status: accountVerificationStatus } =
+    useWalletLogin();
+  const meWalletAddress =
+    authenticationStatus === "not-authenticated"
+      ? connectedWalletAccountAddress
+      : me?.walletAddress;
 
+  const recipientInputRef = React.useRef();
   const messageInputRef = React.useRef();
 
   const { isFloating: isSidebarFloating } = useSidebarState();
@@ -464,19 +500,24 @@ const NewMessageScreen = () => {
     return { selectedChannelId, selectedWalletAddresses };
   }, [recipientsState.selectedKeys]);
 
+  const dmChannel = useDmChannelWithMember(
+    selectedWalletAddresses.length === 1 ? selectedWalletAddresses[0] : null
+  );
+
+  const channelId = dmChannel?.id ?? selectedChannelId;
+
   const matchType =
-    selectedChannelId != null
+    channelId != null
       ? "channel"
+      : selectedWalletAddresses.length === 0
+      ? null
       : selectedWalletAddresses.length === 1
       ? "dm"
       : "group";
 
-  const dmChannel = useDmChannelWithMember(
-    matchType === "dm" ? selectedWalletAddresses[0] : null
-  );
-
-  const channelId = dmChannel?.id ?? selectedChannelId;
   const channelMembers = useChannelMembers(channelId);
+  const { canPostMessages: canPostChannelMessages } =
+    useChannelPermissions(channelId);
 
   const selectedUsers = useUsers(selectedWalletAddresses);
   const selectedAccounts = selectedWalletAddresses.map(
@@ -489,6 +530,11 @@ const NewMessageScreen = () => {
   const [hasPendingMessageSubmit, setHasPendingMessageSubmit] =
     React.useState(false);
   const [replyTargetMessageId, setReplyTargetMessageId] = React.useState(null);
+
+  const {
+    open: openAccountAuthenticationDialog,
+    dismiss: dismissAccountAuthenticationDialog,
+  } = useDialog("account-authentication");
   const {
     isOpen: isCreateChannelDialogOpen,
     open: openCreateChannelDialog,
@@ -504,6 +550,30 @@ const NewMessageScreen = () => {
     setReplyTargetMessageId(null);
     messageInputRef.current.focus();
   }, []);
+
+  const enableRecipientsInput = true;
+
+  const enableMessageInput =
+    !hasPendingMessageSubmit &&
+    (matchType === "channel" ? canPostChannelMessages : true);
+
+  React.useEffect(() => {
+    if (selectedChannelId != null) {
+      if (!enableMessageInput) return;
+      messageInputRef.current.focus();
+      return;
+    } else if (
+      authenticationStatus === "authenticated" ||
+      meWalletAddress != null
+    ) {
+      recipientInputRef.current?.focus();
+    }
+  }, [
+    authenticationStatus,
+    meWalletAddress,
+    selectedChannelId,
+    enableMessageInput,
+  ]);
 
   return (
     <>
@@ -559,10 +629,12 @@ const NewMessageScreen = () => {
         <div css={css({ padding: "0 1.6rem" })}>
           {!isRecipientsCommitted ? (
             <MessageRecipientCombobox
+              ref={recipientInputRef}
               label="To:"
               ariaLabel="Message recipient search"
               placeholder="An ENS name, or Ethereum address"
               state={recipientsState}
+              disabled={!enableRecipientsInput}
               onSelect={(key) => {
                 if (getKeyItemType(key) === "channel") {
                   setRecipientsCommitted(true);
@@ -595,7 +667,13 @@ const NewMessageScreen = () => {
           )}
         </div>
 
-        {channelId == null ? (
+        {matchType === "channel" ? (
+          <ChannelMessages
+            channelId={channelId}
+            initReply={initReply}
+            replyTargetMessageId={replyTargetMessageId}
+          />
+        ) : (
           <div
             css={css({
               flex: 1,
@@ -606,18 +684,23 @@ const NewMessageScreen = () => {
               paddingBottom: "2rem",
             })}
           >
-            {selectedWalletAddresses.length === 0 ? (
-              <Onboarding />
-            ) : (
+            {selectedWalletAddresses.length !== 0 ? (
               <ChannelIntro walletAddresses={selectedWalletAddresses} />
+            ) : (
+              <>
+                {authenticationStatus === "not-authenticated" &&
+                connectedWalletAccountAddress == null ? (
+                  <LazyLoginScreen />
+                ) : (
+                  <Onboarding
+                    selectChannel={(channelId) => {
+                      recipientsState.setSelection([`channel-${channelId}`]);
+                    }}
+                  />
+                )}
+              </>
             )}
           </div>
-        ) : (
-          <ChannelMessages
-            channelId={channelId}
-            initReply={initReply}
-            replyTargetMessageId={replyTargetMessageId}
-          />
         )}
 
         <div style={{ padding: "0 1.6rem 2rem" }}>
@@ -646,7 +729,10 @@ const NewMessageScreen = () => {
                   name: channelName,
                   memberWalletAddresses: selectedWalletAddresses,
                 });
-                actions.createMessage({ channel: channel.id, blocks: message });
+                actions.createMessage({
+                  channel: channel.id,
+                  blocks: message,
+                });
                 navigate(`/channels/${channel.id}`);
               } catch (e) {
                 alert("Oh no, something went wrong!");
@@ -656,14 +742,81 @@ const NewMessageScreen = () => {
             }}
             placeholder="Type your message..."
             // @mentions require user ids for now, so we can’t pass `selectedAccounts`
-            members={channelId == null ? selectedUsers : channelMembers}
-            disabled={hasPendingMessageSubmit}
+            members={matchType === "channel" ? channelMembers : selectedUsers}
+            disabled={!enableMessageInput}
             submitDisabled={
-              channelId == null && selectedWalletAddresses.length === 0
+              matchType == null || authenticationStatus !== "authenticated"
             }
+            fileUploadDisabled={authenticationStatus !== "authenticated"}
             channelId={channelId}
             replyTargetMessageId={replyTargetMessageId}
             cancelReply={cancelReply}
+            submitArea={
+              authenticationStatus === "not-authenticated" &&
+              matchType != null ? (
+                <div
+                  style={{
+                    alignSelf: "flex-end",
+                    display: "flex",
+                    height: 0,
+                  }}
+                >
+                  <div
+                    style={{
+                      alignSelf: "flex-end",
+                      display: "grid",
+                      gridAutoFlow: "column",
+                      gridAutoColumns: "auto",
+                      gridGap: "1.6rem",
+                      alignItems: "center",
+                    }}
+                  >
+                    <div
+                      css={(t) =>
+                        css({
+                          fontSize: t.text.sizes.small,
+                          color: t.colors.textDimmed,
+                        })
+                      }
+                    >
+                      Account verification required
+                    </div>
+                    {connectedWalletAccountAddress == null ? (
+                      <Button
+                        size="small"
+                        variant="primary"
+                        isLoading={isConnectingWallet}
+                        disabled={isConnectingWallet}
+                        onClick={() => {
+                          connectWallet();
+                          openAccountAuthenticationDialog();
+                        }}
+                      >
+                        Connect wallet
+                      </Button>
+                    ) : (
+                      <Button
+                        size="small"
+                        variant="primary"
+                        isLoading={accountVerificationStatus !== "idle"}
+                        disabled={accountVerificationStatus !== "idle"}
+                        onClick={() => {
+                          initAccountVerification(
+                            connectedWalletAccountAddress
+                          ).then(() => {
+                            dismissAccountAuthenticationDialog();
+                            messageInputRef.current.focus();
+                          });
+                          openAccountAuthenticationDialog();
+                        }}
+                      >
+                        Verify account
+                      </Button>
+                    )}
+                  </div>
+                </div>
+              ) : null
+            }
           />
         </div>
       </div>
@@ -695,7 +848,7 @@ const ChannelMessages = ({ channelId, initReply, replyTargetMessageId }) => {
   const messageIds = useSortedChannelMessageIds(channelId, { threads: true });
 
   const { fetcher: fetchMessages, pendingMessagesBeforeCount } =
-    useScrollAwareMessageFetcher(channelId, { scrollContainerRef });
+    useScrollAwareChannelMessagesFetcher(channelId, { scrollContainerRef });
 
   const fetchMoreMessages = useLatestCallback((args) =>
     fetchMessages(args ?? { beforeMessageId: messageIds[0], limit: 30 })
@@ -704,6 +857,8 @@ const ChannelMessages = ({ channelId, initReply, replyTargetMessageId }) => {
   React.useEffect(() => {
     fetchMessages({ limit: 30 });
   }, [fetchMessages]);
+
+  useChannelFetchEffects(channelId);
 
   return (
     <ChannelMessagesScrollView
@@ -739,6 +894,10 @@ const MessageRecipientsInputContainer = React.forwardRef(
             filter: "brightness(1.05)",
             boxShadow: `0 0 0 0.2rem ${t.colors.primary}`,
           },
+          ":has(input:disabled)": {
+            color: t.colors.textMuted,
+            cursor: "not-allowed",
+          },
           "@media (hover: hover)": {
             ":not(:has(input))": {
               cursor: "pointer",
@@ -751,15 +910,7 @@ const MessageRecipientsInputContainer = React.forwardRef(
       }
       {...props}
     >
-      {label && (
-        <div
-          css={(t) =>
-            css({ color: t.colors.inputPlaceholder, marginRight: "0.8rem" })
-          }
-        >
-          {label}
-        </div>
-      )}
+      {label && <div style={{ marginRight: "0.8rem" }}>{label}</div>}
       {children}
     </Component>
   )
@@ -815,188 +966,191 @@ const MessageRecipientAccountsHeader = ({ walletAddresses, ...props }) => {
   );
 };
 
-const MessageRecipientCombobox = ({
-  label,
-  ariaLabel,
-  placeholder,
-  state,
-  onSelect,
-  onBlur,
-}) => {
-  const inputRef = React.useRef();
-  const containerRef = React.useRef();
+const MessageRecipientCombobox = React.forwardRef(
+  (
+    { label, ariaLabel, placeholder, state, disabled, onSelect, onBlur },
+    inputRef
+  ) => {
+    const containerRef = React.useRef();
 
-  const [query, setQuery] = React.useState("");
+    const [query, setQuery] = React.useState("");
 
-  const filteredComboboxItems = useFilteredComboboxItems(query, state);
-  const { inputProps: tagFieldInputProps, tagButtonProps } =
-    useTagFieldCombobox({ inputRef }, state);
+    const filteredComboboxItems = useFilteredComboboxItems(query, state);
+    const { inputProps: tagFieldInputProps, tagButtonProps } =
+      useTagFieldCombobox({ inputRef }, state);
 
-  const { keyboardProps: inputKeyboardProps } = useKeyboard({
-    onKeyDown: (e) => {
-      if (e.key === "Escape" || e.key === "Tab") {
-        state.clearFocus();
-        setQuery("");
-      } else {
-        e.continuePropagation();
-      }
-    },
-  });
+    const { keyboardProps: inputKeyboardProps } = useKeyboard({
+      onKeyDown: (e) => {
+        if (e.key === "Escape" || e.key === "Tab") {
+          state.clearFocus();
+          setQuery("");
+        } else {
+          e.continuePropagation();
+        }
+      },
+    });
 
-  const { selectedKeys } = state;
+    const { selectedKeys } = state;
 
-  return (
-    <MessageRecipientsInputContainer ref={containerRef} label={label}>
-      <FlexGrid gridGap="0.5rem" css={css({ flex: 1, minWidth: 0 })}>
-        {state.selectedKeys.map((key, i) => {
-          const type = getKeyItemType(key);
-          const identifier = getKeyItemIdentifier(key);
+    return (
+      <MessageRecipientsInputContainer ref={containerRef} label={label}>
+        <FlexGrid gridGap="0.5rem" css={css({ flex: 1, minWidth: 0 })}>
+          {state.selectedKeys.map((key, i) => {
+            const type = getKeyItemType(key);
+            const identifier = getKeyItemIdentifier(key);
 
-          const props = {
-            isFocused: i === state.focusedIndex,
-            focus: () => {
-              inputRef.current.focus();
-              state.focusIndex(i);
-            },
-            deselect: () => {
-              inputRef.current.focus();
-              state.setSelection((keys) => keys.filter((k) => k !== key));
-            },
-            ...tagButtonProps,
-          };
+            const props = {
+              isFocused: i === state.focusedIndex,
+              focus: () => {
+                inputRef.current.focus();
+                state.focusIndex(i);
+              },
+              deselect: () => {
+                inputRef.current.focus();
+                state.setSelection((keys) => keys.filter((k) => k !== key));
+              },
+              ...tagButtonProps,
+            };
 
-          switch (type) {
-            case "account":
-              return (
-                <FlexGridItem key={key}>
-                  <SelectedAccountTag {...props} walletAddress={identifier} />
-                </FlexGridItem>
-              );
-            case "channel":
-              return (
-                <FlexGridItem key={key}>
-                  <SelectedChannelTag {...props} channelId={identifier} />
-                </FlexGridItem>
-              );
-            default:
-              throw new Error();
-          }
-        })}
-
-        <FlexGridItem css={css({ flex: 1, minWidth: 0 })}>
-          <Combobox
-            aria-label={ariaLabel}
-            autoFocus
-            placeholder={
-              state.selectedKeys.length === 0 ? placeholder : undefined
+            switch (type) {
+              case "account":
+                return (
+                  <FlexGridItem key={key}>
+                    <SelectedAccountTag {...props} walletAddress={identifier} />
+                  </FlexGridItem>
+                );
+              case "channel":
+                return (
+                  <FlexGridItem key={key}>
+                    <SelectedChannelTag {...props} channelId={identifier} />
+                  </FlexGridItem>
+                );
+              default:
+                throw new Error();
             }
-            allowsCustomValue={false}
-            allowsEmptyCollection={true}
-            // allowsCustomValue={true}
-            menuTrigger="focus"
-            selectedKey={null}
-            onSelect={(key) => {
-              if (key == null) return;
+          })}
 
-              setQuery("");
-
-              switch (getKeyItemType(key)) {
-                case "account":
-                  state.setSelection((keys) => {
-                    const nonChannelKeys = keys.filter(
-                      (k) => getKeyItemType(k) !== "channel"
-                    );
-                    return [...nonChannelKeys, key];
-                  });
-                  break;
-
-                // There should only ever be one selected channel at the time
-                case "channel":
-                  state.setSelection([key]);
-                  break;
-
-                default:
-                  throw new Error();
+          <FlexGridItem css={css({ flex: 1, minWidth: 0 })}>
+            <Combobox
+              aria-label={ariaLabel}
+              placeholder={
+                state.selectedKeys.length === 0 ? placeholder : undefined
               }
+              allowsCustomValue={false}
+              allowsEmptyCollection={true}
+              // allowsCustomValue={true}
+              menuTrigger="focus"
+              selectedKey={null}
+              onSelect={(key) => {
+                if (key == null) return;
 
-              onSelect(key);
-            }}
-            inputValue={query}
-            onInputChange={setQuery}
-            disabledKeys={state.selectedKeys}
-            targetRef={containerRef}
-            inputRef={inputRef}
-            items={filteredComboboxItems}
-            popoverMaxHeight={365}
-            renderInput={({ inputRef, inputProps }) => (
-              <input
-                ref={inputRef}
-                css={(t) =>
-                  css({
-                    color: t.colors.textNormal,
-                    background: "none",
-                    border: 0,
-                    padding: 0,
-                    width: "100%",
-                    minWidth: "12rem",
-                    outline: "none",
-                    "::placeholder": {
-                      color: t.colors.inputPlaceholder,
-                    },
-                  })
+                setQuery("");
+
+                switch (getKeyItemType(key)) {
+                  case "account":
+                    state.setSelection((keys) => {
+                      const nonChannelKeys = keys.filter(
+                        (k) => getKeyItemType(k) !== "channel"
+                      );
+                      return [...nonChannelKeys, key];
+                    });
+                    break;
+
+                  // There should only ever be one selected channel at the time
+                  case "channel":
+                    state.setSelection([key]);
+                    break;
+
+                  default:
+                    throw new Error();
                 }
-                {...mergeProps(
-                  {
-                    onChange: () => {
-                      state.clearFocus();
-                    },
-                    onClick: () => {
-                      state.clearFocus();
-                    },
-                    onBlur: (e) => {
-                      if (
-                        e.relatedTarget != null &&
-                        containerRef.current.contains(e.relatedTarget)
-                      )
-                        return;
 
-                      setQuery("");
-                      state.clearFocus();
-                      onBlur(e);
+                onSelect(key);
+              }}
+              inputValue={query}
+              onInputChange={setQuery}
+              disabledKeys={state.selectedKeys}
+              disabled={disabled}
+              targetRef={containerRef}
+              inputRef={inputRef}
+              items={filteredComboboxItems}
+              popoverMaxHeight={365}
+              renderInput={({ inputRef, inputProps }) => (
+                <input
+                  ref={inputRef}
+                  css={(t) =>
+                    css({
+                      color: t.colors.textNormal,
+                      background: "none",
+                      border: 0,
+                      padding: 0,
+                      width: "100%",
+                      minWidth: "12rem",
+                      outline: "none",
+                      "::placeholder": {
+                        color: t.colors.inputPlaceholder,
+                      },
+                      ":disabled": {
+                        cursor: "not-allowed",
+                        "::placeholder": {
+                          color: t.colors.textMuted,
+                        },
+                      },
+                    })
+                  }
+                  {...mergeProps(
+                    {
+                      onChange: () => {
+                        state.clearFocus();
+                      },
+                      onClick: () => {
+                        state.clearFocus();
+                      },
+                      onBlur: (e) => {
+                        if (
+                          e.relatedTarget != null &&
+                          containerRef.current.contains(e.relatedTarget)
+                        )
+                          return;
+
+                        setQuery("");
+                        state.clearFocus();
+                        onBlur(e);
+                      },
                     },
-                  },
-                  inputKeyboardProps,
-                  inputProps,
-                  tagFieldInputProps
-                )}
-              />
-            )}
-            renderListbox={({ state, listBoxRef, listBoxProps }) => (
-              <MessageRecipientListBox
-                ref={listBoxRef}
-                listBoxProps={listBoxProps}
-                state={state}
-                selectedKeys={selectedKeys}
-              />
-            )}
-          >
-            {(item) => (
-              <ComboboxSection
-                key={item.key}
-                items={item.children}
-                title={item.title}
-              >
-                {(item) => (
-                  <ComboboxItem key={item.key} textValue={item.textValue} />
-                )}
-              </ComboboxSection>
-            )}
-          </Combobox>
-        </FlexGridItem>
-      </FlexGrid>
-    </MessageRecipientsInputContainer>
-  );
-};
+                    inputKeyboardProps,
+                    inputProps,
+                    tagFieldInputProps
+                  )}
+                />
+              )}
+              renderListbox={({ state, listBoxRef, listBoxProps }) => (
+                <MessageRecipientListBox
+                  ref={listBoxRef}
+                  listBoxProps={listBoxProps}
+                  state={state}
+                  selectedKeys={selectedKeys}
+                />
+              )}
+            >
+              {(item) => (
+                <ComboboxSection
+                  key={item.key}
+                  items={item.children}
+                  title={item.title}
+                >
+                  {(item) => (
+                    <ComboboxItem key={item.key} textValue={item.textValue} />
+                  )}
+                </ComboboxSection>
+              )}
+            </Combobox>
+          </FlexGridItem>
+        </FlexGrid>
+      </MessageRecipientsInputContainer>
+    );
+  }
+);
 
 const Tag = ({ label, isFocused, focus, deselect, ...props }) => (
   <button
@@ -1330,12 +1484,16 @@ const MessageRecipientComboboxChannelOption = ({
 
 const ChannelIntro = ({ walletAddresses: walletAddresses_ }) => {
   const me = useMe();
+  const { address: connectedWalletAccountAddress } = useAccount();
 
-  const walletAddresses = walletAddresses_.filter(
-    (a) => me == null || me.walletAddress.toLowerCase() !== a.toLowerCase()
-  );
-
-  if (me == null) return null;
+  const walletAddresses = walletAddresses_.filter((a) => {
+    const meWalletAddress =
+      me == null ? connectedWalletAccountAddress : me.walletAddress;
+    return (
+      meWalletAddress == null ||
+      meWalletAddress.toLowerCase() !== a.toLowerCase()
+    );
+  });
 
   if (walletAddresses.length === 0) return <PersonalDMChannelPrologue />;
 
@@ -1344,7 +1502,8 @@ const ChannelIntro = ({ walletAddresses: walletAddresses_ }) => {
 
   return (
     <ChannelPrologue
-      title={[me.walletAddress, ...walletAddresses]
+      title={[me?.walletAddress, ...walletAddresses]
+        .filter(Boolean)
         .slice(0, 3)
         .map((a, i, as) => (
           <React.Fragment key={a}>
@@ -1424,13 +1583,16 @@ const DMChannelIntro = ({ walletAddress }) => {
   );
 };
 
-const Onboarding = () => {
+const Onboarding = ({ selectChannel }) => {
   const me = useMe();
+  const { address: connectedWalletAccountAddress } = useAccount();
+  // const connectedWallet = useWallet();
+
   // const memberChannels = useMemberChannels();
   const { open: openEditProfileDialog } = useDialog("edit-profile");
   const { open: openProfileLinkDialog } = useDialog("profile-link");
 
-  if (me == null) return null;
+  // if (me == null) return null;
   // // `1` since users currently auto-join NS General
   // if (memberChannels.length > 1) return null;
 
@@ -1494,7 +1656,7 @@ const Onboarding = () => {
         Hi{" "}
         <InlineUserButtonWithProfilePopover
           variant="button"
-          walletAddress={me?.walletAddress}
+          walletAddress={me?.walletAddress ?? connectedWalletAccountAddress}
         />
         !
       </motion.p>
@@ -1521,8 +1683,10 @@ const Onboarding = () => {
 
         <ul className="onboarding-actions-list">
           <motion.li variants={staggeredChildMotionVariants}>
-            <RouterLink
-              to={`/channels/${INTRO_CHANNEL_ID}`}
+            <button
+              onClick={() => {
+                selectChannel(INTRO_CHANNEL_ID);
+              }}
               variants={{ hidden: { opacity: 0 }, visible: { opacity: 1 } }}
             >
               Say hi <Emoji emoji="👋" /> in{" "}
@@ -1530,7 +1694,7 @@ const Onboarding = () => {
                 channelId={INTRO_CHANNEL_ID}
                 component="div"
               />
-            </RouterLink>
+            </button>
           </motion.li>
           <motion.li variants={staggeredChildMotionVariants}>
             <button onClick={openProfileLinkDialog}>

@@ -35,6 +35,7 @@ const MessageInput = React.forwardRef(
       executeCommand: executeCommand_,
       disableCommands = false,
       members = [],
+      ...props
     },
     editorRef
   ) => {
@@ -139,11 +140,11 @@ const MessageInput = React.forwardRef(
           label: (
             <span>
               <span
-                css={css({
+                style={{
                   display: "inline-flex",
                   transform: "scale(1.35)",
                   marginRight: "0.5rem",
-                })}
+                }}
               >
                 {e.emoji}
               </span>{" "}
@@ -158,15 +159,7 @@ const MessageInput = React.forwardRef(
                     {isMatch ? (
                       <>
                         {a.slice(0, matchStartIndex)}
-                        <span
-                          data-matching-text="true"
-                          // css={(t) =>
-                          //   css({
-                          //     color: t.colors.textHighlight,
-                          //     background: `${t.colors.textHighlight}11`,
-                          //   })
-                          // }
-                        >
+                        <span data-matching-text="true">
                           {a.slice(matchStartIndex, matchEndIndex)}
                         </span>
                         {a.slice(matchEndIndex)}
@@ -426,6 +419,7 @@ const MessageInput = React.forwardRef(
             setEmojiQuery(null);
             setCommandQuery(null);
           }}
+          {...props}
         />
 
         {isAutoCompleteMenuOpen && autoCompleteOptions.length !== 0 && (

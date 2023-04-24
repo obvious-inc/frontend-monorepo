@@ -103,7 +103,8 @@ export const useChannelMembers = (channelId) =>
 export const useChannelAccessLevel = (channelId) =>
   useStore(
     React.useCallback(
-      (state) => selectChannelAccessLevel(state, channelId),
+      (state) =>
+        channelId == null ? null : selectChannelAccessLevel(state, channelId),
       [channelId]
     )
   );
@@ -143,7 +144,8 @@ export const useChannelHasOpenReadAccess = (channelId) =>
 export const useChannelPermissions = (channelId) =>
   useStore(
     React.useCallback(
-      (state) => selectChannelPermissions(state, channelId),
+      (state) =>
+        channelId == null ? {} : selectChannelPermissions(state, channelId),
       [channelId]
     )
   );

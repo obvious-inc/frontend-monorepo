@@ -1,7 +1,9 @@
 import { utils as ethersUtils } from "ethers";
+import { useAccount } from "wagmi";
 import { css } from "@emotion/react";
 import { ethereum as ethereumUtils } from "@shades/common/utils";
 import { useMe, useDmChannelWithMember } from "@shades/common/app";
+import useAccountDisplayName from "../hooks/account-display-name.js";
 import UserAvatar from "./user-avatar.js";
 import ChannelAvatar from "./channel-avatar.js";
 
@@ -89,9 +91,18 @@ const ChannelPrologue = ({ title, subtitle, body, image, info, ...props }) => {
 
 export const PersonalDMChannelPrologue = () => {
   const me = useMe();
+  const { address: connectedWalletAccountAddress } = useAccount();
   const channel = useDmChannelWithMember(me?.walletAddress);
+  const walletAddress = me?.walletAddress ?? connectedWalletAccountAddress;
+  const accountDisplayName = useAccountDisplayName(walletAddress);
+  const truncatedAddress = truncateAddress(
+    ethersUtils.getAddress(walletAddress)
+  );
 
-  const hasSubtitle = channel?.name != null || me.displayName != null;
+  const hasSubtitle =
+    me == null
+      ? truncatedAddress !== accountDisplayName
+      : channel?.name != null || me?.displayName != null;
 
   return (
     <ChannelPrologue
@@ -99,7 +110,7 @@ export const PersonalDMChannelPrologue = () => {
         channel == null ? (
           <UserAvatar
             transparent
-            walletAddress={me.walletAddress}
+            walletAddress={walletAddress}
             size="6.6rem"
             highRes
           />
@@ -107,12 +118,8 @@ export const PersonalDMChannelPrologue = () => {
           <ChannelAvatar transparent id={channel?.id} size="6.6rem" highRes />
         )
       }
-      title={channel?.name ?? me.computedDisplayName}
-      subtitle={
-        hasSubtitle
-          ? truncateAddress(ethersUtils.getAddress(me.walletAddress))
-          : null
-      }
+      title={channel?.name ?? accountDisplayName}
+      subtitle={hasSubtitle ? truncatedAddress : null}
       body="This is your space. Draft messages, manage a to-do list, or try out /-commands."
     />
   );

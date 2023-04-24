@@ -395,8 +395,8 @@ export default ({
               setting === "off"
                 ? { muted: true }
                 : setting === "mentions"
-                ? { mentions: true }
-                : {},
+                  ? { mentions: true }
+                  : {},
           },
         }),
       });
@@ -443,10 +443,10 @@ export default ({
             }).then((rawMessage) =>
               rawMessage == null
                 ? {
-                    id: messageId,
-                    channelId,
-                    deleted: true,
-                  }
+                  id: messageId,
+                  channelId,
+                  deleted: true,
+                }
                 : parseMessage(rawMessage)
             );
 

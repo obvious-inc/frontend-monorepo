@@ -315,7 +315,7 @@ const ChannelNavBar = ({ noSideMenu, channelId }) => {
 
                 <Button
                   size="small"
-                  variant={theme.name === "nouns.tv" ? "primary" : "default"}
+                  variant="primary"
                   onClick={() => {
                     login(walletAccountAddress);
                   }}

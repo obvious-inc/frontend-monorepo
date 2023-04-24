@@ -37,13 +37,12 @@ const stylesByVariant = (t, { danger }) => ({
   },
   transparent: {
     color: t.colors.textNormal,
-    border: "0.1rem solid",
-    borderColor: t.colors.borderLight,
+    // borderColor: t.colors.borderLight,
     background: "none",
     "@media (hover: hover)": {
       "&:not([disabled]):hover": {
         color: t.colors.textAccent,
-        borderColor: t.colors.borderLightModifierHover,
+        background: t.colors.buttonHover,
       },
     },
   },

@@ -122,6 +122,7 @@ const metaById = (state = {}, action) => {
     }
 
     case "fetch-messages:request-successful": {
+      if (action.limit == null) return state;
       const config = state[action.channelId];
       const hasAllMessages = action.messages.length < action.limit;
       return {
@@ -305,8 +306,8 @@ const readStatesById = (state = {}, action) => {
           unreadMentionMessageIds:
             userMentions.length === 0
               ? channel.unreadMentionMessageIds?.filter(
-                  (id) => id !== messageId
-                ) ?? []
+                (id) => id !== messageId
+              ) ?? []
               : unique([...channel.unreadMentionMessageIds, messageId]),
         },
       };
@@ -357,9 +358,8 @@ export const selectChannelName = createSelector(
     if (channel.memberUserIds.length === 1)
       return channelMemberUsers[0] == null
         ? null
-        : `${
-            channelMemberUsers[0].displayName ?? truncate(channelMemberUsers[0])
-          } (you)`;
+        : `${channelMemberUsers[0].displayName ?? truncate(channelMemberUsers[0])
+        } (you)`;
 
     return channelMemberUsers
       .filter((u) => u?.id !== loggedInUserId)
@@ -482,7 +482,7 @@ export const selectDmChannelFromUserId = (state, userId) => {
 
   const dmChannels = selectDmChannels(state);
 
-  if (userId === state.me.user.id)
+  if (userId === state.me.user?.id)
     return dmChannels.find(
       (c) =>
         c.memberUserIds != null &&
@@ -599,20 +599,27 @@ export const selectDmChannels = createSelector(
 export const selectDmChannelWithMember = createSelector(
   (state) => selectMe(state),
   (state) => selectDmChannels(state, { members: true }),
-  (_, walletAddress) => walletAddress,
+  (_, walletAddress) => walletAddress.toLowerCase(),
   (me, channels, walletAddress) => {
     return channels.find((c) => {
       if (c.members.length > 2) return false;
-      const members = c.members.filter(
+      // Personal DM channel
+      if (
+        c.members.length === 1 &&
+        c.members[0].walletAddress.toLowerCase() === walletAddress
+      )
+        return true;
+
+      const membersExcludingMe = c.members.filter(
         (u) =>
           me == null ||
           u.walletAddress == null ||
           u.walletAddress.toLowerCase() !== me.walletAddress.toLowerCase()
       );
-      if (members.length !== 1) return false;
+      if (membersExcludingMe.length !== 1) return false;
       return (
-        members[0].walletAddress != null &&
-        members[0].walletAddress.toLowerCase() === walletAddress.toLowerCase()
+        membersExcludingMe[0].walletAddress != null &&
+        membersExcludingMe[0].walletAddress.toLowerCase() === walletAddress
       );
     });
   }
@@ -691,10 +698,23 @@ export const selectPermissions = (state, channelId) => {
   const canEditDescription = isOwner;
   const canEditPicture = isOwner;
 
-  const canAddMember =
-    meta?.permissions?.includes(Permissions.CHANNEL_ADD_MEMBER) ?? false;
+  const permissions = [
+    ...(meta?.permissions ?? []),
+    ...(meta?.publicPermissions ?? []),
+  ];
 
-  return { canEditName, canEditDescription, canEditPicture, canAddMember };
+  const canPostMessages =
+    permissions.includes(Permissions.CHANNEL_WRITE_MESSAGES) ||
+    permissions.includes(Permissions.CHANNEL_JOIN);
+  const canAddMember = permissions.includes(Permissions.CHANNEL_ADD_MEMBER);
+
+  return {
+    canEditName,
+    canEditDescription,
+    canEditPicture,
+    canAddMember,
+    canPostMessages,
+  };
 };
 
 export default combineReducers({

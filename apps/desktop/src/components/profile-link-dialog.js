@@ -1,10 +1,12 @@
 import { utils as ethersUtils } from "ethers";
 import React from "react";
+import { useAccount } from "wagmi";
 import { css, useTheme } from "@emotion/react";
 import { ethereum as ethereumUtils } from "@shades/common/utils";
 import { useMe } from "@shades/common/app";
 import { Checkmark as CheckmarkIcon } from "@shades/ui-web/icons";
 import Button from "@shades/ui-web/button";
+import useAccountDisplayName from "../hooks/account-display-name.js";
 import Input from "./input";
 import DialogHeader from "./dialog-header.js";
 import DialogFooter from "./dialog-footer.js";
@@ -16,9 +18,15 @@ const { truncateAddress } = ethereumUtils;
 
 const ProfileLinkDialog = ({ titleProps, dismiss }) => {
   const me = useMe();
+  const { address: connectedWalletAccountAddress } = useAccount();
+  const walletAddress = me?.walletAddress ?? connectedWalletAccountAddress;
+  const computedDisplayName = useAccountDisplayName(walletAddress);
+  const truncatedAddress = truncateAddress(
+    ethersUtils.getAddress(walletAddress)
+  );
 
   const [linkCopied, setLinkCopied] = React.useState(false);
-  const accountLink = `${location.origin}/dm/${me.ensName ?? me.walletAddress}`;
+  const accountLink = `${location.origin}/dm/${me?.ensName ?? walletAddress}`;
 
   const theme = useTheme();
 
@@ -30,8 +38,6 @@ const ProfileLinkDialog = ({ titleProps, dismiss }) => {
     }, 2000);
   };
 
-  if (me == null) return null;
-
   return (
     <div
       css={css({
@@ -42,11 +48,9 @@ const ProfileLinkDialog = ({ titleProps, dismiss }) => {
       })}
     >
       <DialogHeader
-        title={me.computedDisplayName}
+        title={computedDisplayName}
         subtitle={
-          (me.displayName ?? me.ensName) == null
-            ? null
-            : truncateAddress(ethersUtils.getAddress(me.walletAddress))
+          computedDisplayName == truncatedAddress ? null : truncatedAddress
         }
         titleProps={titleProps}
         dismiss={dismiss}
@@ -75,7 +79,7 @@ const ProfileLinkDialog = ({ titleProps, dismiss }) => {
             uri={accountLink}
             image={
               <UserAvatar
-                walletAddress={me.walletAddress}
+                walletAddress={walletAddress}
                 highRes
                 transparent
                 background={
@@ -112,8 +116,7 @@ const ProfileLinkDialog = ({ titleProps, dismiss }) => {
           <Input
             contrast
             size="large"
-            // label={me.computedDisplayName}
-            value={`${location.origin}/dm/${me.ensName ?? me.walletAddress}`}
+            value={accountLink}
             readOnly
             onClick={(e) => {
               e.target.select();

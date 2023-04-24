@@ -31,8 +31,8 @@ const useCommands = ({ context, channelId } = {}) => {
   );
 
   const commands = React.useMemo(() => {
-    if (user == null) return [];
-    if (commandDependencies.channelId == null) return textCommands;
+    if (user == null || commandDependencies.channelId == null)
+      return textCommands;
 
     const allCommands = {
       ...textCommands,

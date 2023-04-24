@@ -136,10 +136,12 @@ const NewChannelMessageInput = React.memo(
       uploadImage,
       disabled = false,
       submitDisabled = false,
+      fileUploadDisabled = false,
       cancelReply,
       channelId,
       replyTargetMessageId,
       onInputChange,
+      submitArea,
       ...props
     },
     editorRef_
@@ -340,6 +342,13 @@ const NewChannelMessageInput = React.memo(
               borderTopLeftRadius: replyTargetMessage ? 0 : undefined,
               borderTopRightRadius: replyTargetMessage ? 0 : undefined,
               fontSize: t.text.sizes.large,
+              ":has([data-message-input-root][data-disabled])": {
+                color: t.colors.textMuted,
+                cursor: "not-allowed",
+                "[data-slate-placeholder]": {
+                  color: t.colors.textMuted,
+                },
+              },
               "[data-slate-placeholder]": {
                 color: t.colors.inputPlaceholder,
                 opacity: "1 !important",
@@ -350,8 +359,6 @@ const NewChannelMessageInput = React.memo(
               },
             })
           }
-          // TODO: Nicer pending state
-          style={{ opacity: isPending ? 0.5 : 1 }}
         >
           <MessageInput
             ref={editorRef}
@@ -373,6 +380,7 @@ const NewChannelMessageInput = React.memo(
             executeCommand={executeCommand}
             commands={commands}
             disabled={disabled || isPending}
+            data-message-input-root
             {...props}
           />
 
@@ -413,7 +421,7 @@ const NewChannelMessageInput = React.memo(
                   onClick={() => {
                     fileInputRef.current.click();
                   }}
-                  disabled={disabled || isPending}
+                  disabled={disabled || isPending || fileUploadDisabled}
                 >
                   <PaperClipIcon style={{ width: "1.6rem", height: "auto" }} />
                 </IconButton>
@@ -461,23 +469,25 @@ const NewChannelMessageInput = React.memo(
               </div>
             </div>
 
-            <IconButton
-              disabled={
-                disabled || submitDisabled || isEmptyMessage || isPending
-              }
-              css={(t) => css({ color: t.colors.primary })}
-              type="submit"
-            >
-              <svg width="20" height="20" viewBox="0 0 20 20">
-                <path
-                  fill="currentColor"
-                  stroke="currentColor"
-                  strokeLinejoin="round"
-                  strokeWidth="1.5"
-                  d="M2.25 2.25 17.75 10l-15.5 7.75v-4.539a1.5 1.5 0 0 1 1.46-1.5l6.54-.171a1.54 1.54 0 0 0 0-3.08l-6.54-.172a1.5 1.5 0 0 1-1.46-1.5V2.25Z"
-                />
-              </svg>
-            </IconButton>
+            {submitArea ?? (
+              <IconButton
+                disabled={
+                  disabled || submitDisabled || isEmptyMessage || isPending
+                }
+                css={(t) => css({ color: t.colors.primary })}
+                type="submit"
+              >
+                <svg width="20" height="20" viewBox="0 0 20 20">
+                  <path
+                    fill="currentColor"
+                    stroke="currentColor"
+                    strokeLinejoin="round"
+                    strokeWidth="1.5"
+                    d="M2.25 2.25 17.75 10l-15.5 7.75v-4.539a1.5 1.5 0 0 1 1.46-1.5l6.54-.171a1.54 1.54 0 0 0 0-3.08l-6.54-.172a1.5 1.5 0 0 1-1.46-1.5V2.25Z"
+                  />
+                </svg>
+              </IconButton>
+            )}
           </div>
 
           <input
