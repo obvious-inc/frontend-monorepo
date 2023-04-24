@@ -632,7 +632,7 @@ const NewMessageScreen = () => {
               ref={recipientInputRef}
               label="To:"
               ariaLabel="Message recipient search"
-              placeholder="An ENS name, or Ethereum address"
+              placeholder="An ENS name, Ethereum address, or channel name"
               state={recipientsState}
               disabled={!enableRecipientsInput}
               onSelect={(key) => {
