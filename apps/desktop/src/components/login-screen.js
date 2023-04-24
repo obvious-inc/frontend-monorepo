@@ -253,7 +253,13 @@ const LoginScreen = ({ mobileAppLogin, onSuccess, onError }) => {
                   </Button>
                 )}
               </div>
-              <p>...and start chatting, using your Ethereum identity</p>
+              <p>
+                ...and start chatting, using your{" "}
+                <br
+                  css={css({ "@media(min-width: 400px)": { display: "none" } })}
+                />
+                Ethereum identity
+              </p>
               {!mobileAppLogin && (
                 <div style={{ marginTop: "2rem" }}>
                   <Small
