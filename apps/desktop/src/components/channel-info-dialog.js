@@ -738,7 +738,7 @@ const AboutTab = ({ channelId, dismiss }) => {
                 // Clear description if empty
                 if (payload.description === "") payload.description = null;
                 await actions.updateChannel(channelId, payload);
-                dismiss();
+                dismissEditDialog();
               }}
             />
           );
@@ -754,14 +754,14 @@ const ProperyButton = ({ name, value, ...props }) => (
       css({
         width: "100%",
         borderRadius: "0.5rem",
-        background: t.colors.backgroundSecondary,
-        cursor: "pointer",
+        background: t.colors.backgroundModifierHover,
         outline: "none",
         padding: "1rem 1.5rem",
         ":focus-visible": { boxShadow: t.shadows.focus },
         "@media (min-width: 600px)": { padding: "1.5rem 2rem" },
         "@media (hover: hover)": {
-          ":hover": { background: t.colors.backgroundTertiary },
+          cursor: "pointer",
+          ":hover": { background: t.colors.backgroundModifierHoverStrong },
         },
       })
     }

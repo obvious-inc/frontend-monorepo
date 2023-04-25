@@ -25,6 +25,7 @@ import ChannelMessage from "./channel-message.js";
 import ChannelAvatar from "./channel-avatar.js";
 import InlineUserButtonWithProfilePopover from "./inline-user-button-with-profile-popover.js";
 import FormattedDate from "./formatted-date.js";
+import RichText from "./rich-text.js";
 
 const { truncateAddress } = ethereumUtils;
 
@@ -389,13 +390,14 @@ const ChannelIntro = ({ channelId }) => {
       );
     }
 
+    console.log(channel);
     if (channel.description != null)
       return (
-        <>
-          {channel.description.split(/^\s*$/m).map((s) => (
-            <p key={s}>{s.trim()}</p>
-          ))}
-        </>
+        <RichText blocks={channel.descriptionBlocks} />
+        // {channel.description.split(/^\s*$/m).map((s) => (
+        //   <p key={s}>{s.trim()}</p>
+        // ))}
+        // </>
       );
 
     return (

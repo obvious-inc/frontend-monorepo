@@ -63,11 +63,7 @@ const {
   useHasFetchedChannelMessages,
   useChannelHasUnread,
 } = Shades.app;
-const {
-  message: messageUtils,
-  url: urlUtils,
-  ethereum: ethereumUtils,
-} = Shades.utils;
+const { message: messageUtils, ethereum: ethereumUtils } = Shades.utils;
 
 const ONE_MINUTE_IN_MILLIS = 1000 * 60;
 
@@ -499,37 +495,8 @@ const Channel = ({ navigation, route: { params } }) => {
               });
             }}
             onSubmit={(content, { images } = {}) => {
-              const createBlocks = (content) => {
-                if (content == null || content.trim() === "") return [];
-
-                const paragraphContentElements = content
-                  .split(" ")
-                  .reduce((els, word) => {
-                    const prev = els[els.length - 1];
-
-                    if (urlUtils.validate(word)) {
-                      if (prev != null) prev.text = `${prev.text} `;
-                      const url = new URL(word);
-                      return [...els, { type: "link", url: url.href }];
-                    }
-
-                    if (prev == null || prev.type === "link")
-                      return [
-                        ...els,
-                        { text: prev == null ? word : ` ${word}` },
-                      ];
-
-                    prev.text = `${prev.text} ${word}`;
-
-                    return els;
-                  }, []);
-
-                return [
-                  messageUtils.createParagraphElement(paragraphContentElements),
-                ];
-              };
-
-              const blocks = createBlocks(content);
+              const blocks =
+                content == null ? [] : messageUtils.parseString(content);
 
               if (images != null && images.length > 0)
                 blocks.push({

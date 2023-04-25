@@ -1,11 +1,9 @@
 import React from "react";
-import {
-  useBeforeActionListener,
-} from "@shades/common/app";
+import { useBeforeActionListener } from "@shades/common/app";
 import useChannelMessagesFetcher from "./channel-messages-fetcher.js";
 import useReverseScrollPositionMaintainer from "./reverse-scroll-position-maintainer.js";
 
- const useScrollAwareChannelMessagesFetcher = (
+const useScrollAwareChannelMessagesFetcher = (
   channelId,
   { scrollContainerRef }
 ) => {
@@ -50,4 +48,4 @@ import useReverseScrollPositionMaintainer from "./reverse-scroll-position-mainta
   return { fetcher, pendingMessagesBeforeCount };
 };
 
-export default useScrollAwareChannelMessagesFetcher
+export default useScrollAwareChannelMessagesFetcher;

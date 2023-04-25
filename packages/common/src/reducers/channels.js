@@ -306,8 +306,8 @@ const readStatesById = (state = {}, action) => {
           unreadMentionMessageIds:
             userMentions.length === 0
               ? channel.unreadMentionMessageIds?.filter(
-                (id) => id !== messageId
-              ) ?? []
+                  (id) => id !== messageId
+                ) ?? []
               : unique([...channel.unreadMentionMessageIds, messageId]),
         },
       };
@@ -358,8 +358,9 @@ export const selectChannelName = createSelector(
     if (channel.memberUserIds.length === 1)
       return channelMemberUsers[0] == null
         ? null
-        : `${channelMemberUsers[0].displayName ?? truncate(channelMemberUsers[0])
-        } (you)`;
+        : `${
+            channelMemberUsers[0].displayName ?? truncate(channelMemberUsers[0])
+          } (you)`;
 
     return channelMemberUsers
       .filter((u) => u?.id !== loggedInUserId)

@@ -29,6 +29,7 @@ import UserAvatar from "./user-avatar";
 import ChannelAvatar from "./channel-avatar";
 import * as Tooltip from "./tooltip";
 import ErrorBoundary from "./error-boundary.js";
+import RichText from "./rich-text.js";
 import AddChannelMemberDialog from "./add-channel-member-dialog.js";
 
 const LazyChannelInfoDialog = React.lazy(() =>
@@ -426,7 +427,14 @@ const ChannelNavBar = ({ noSideMenu, channelId }) => {
                 })
               }
             >
-              {channel.description}
+              <RichText
+                blocks={channel.descriptionBlocks}
+                inline
+                onClickInteractiveElement={(e) => {
+                  // Prevent dialog from opening when clicking links
+                  e.stopPropagation();
+                }}
+              />
             </button>
           </>
         )}

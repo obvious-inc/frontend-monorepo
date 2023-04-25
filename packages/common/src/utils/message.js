@@ -1,3 +1,5 @@
+import { validate as validateUrl } from "./url.js";
+
 export const iterate = (fn, nodes) => {
   for (let node of nodes) {
     fn(node);
@@ -41,6 +43,37 @@ export const getMentions = (nodes) => {
 
 export const withoutAttachments = (nodes) =>
   filter((n) => n.type !== "attachments", nodes);
+
+export const parseString = (string) => {
+  if (string.trim() === "") return [];
+
+  const paragraphStrings = string.split(/^\s*$/m);
+
+  const paragraphElements = paragraphStrings.map((paragraphString) => {
+    const words = paragraphString.split(" ");
+
+    const paragraphChildren = words.reduce((els, word) => {
+      const prev = els[els.length - 1];
+
+      if (validateUrl(word)) {
+        if (prev != null) prev.text = `${prev.text} `;
+        const url = new URL(word);
+        return [...els, { type: "link", url: url.href }];
+      }
+
+      if (prev == null || prev.type === "link")
+        return [...els, { text: prev == null ? word : ` ${word}` }];
+
+      prev.text = `${prev.text} ${word}`;
+
+      return els;
+    }, []);
+
+    return createParagraphElement(paragraphChildren);
+  });
+
+  return paragraphElements;
+};
 
 export const stringifyBlocks = (
   blockElements,

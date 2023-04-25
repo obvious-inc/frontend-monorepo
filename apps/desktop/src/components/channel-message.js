@@ -2201,7 +2201,10 @@ const SystemMessageContent = ({ messageId }) => {
               {(value ?? "") === "" ? (
                 "cleared the channel topic."
               ) : (
-                <>set the channel topic: {value}</>
+                <>
+                  set the channel topic:{" "}
+                  <RichText compact blocks={messageUtils.parseString(value)} />
+                </>
               )}
             </>
           );

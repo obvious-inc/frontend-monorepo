@@ -158,6 +158,7 @@ const AlwaysOpenCombobox = ({ value, options = [], popoverRef, ...props_ }) => {
   const props = {
     allowsCustomValue: true,
     ...props_,
+    menuTrigger: "focus",
     selectedKey: value,
     disabledKeys: options.filter((o) => o.disabled).map((o) => o.value),
     items: options.map((o) => ({ ...o, key: o.value })),
@@ -167,16 +168,16 @@ const AlwaysOpenCombobox = ({ value, options = [], popoverRef, ...props_ }) => {
 
   const state = useComboBoxState(props);
 
-  const openCombobox = useLatestCallback(() => state.open());
+  // const openCombobox = useLatestCallback(() => state.open());
 
   // Setup refs and get props for child elements.
   // let buttonRef = React.useRef(null);
   const inputRef = React.useRef(null);
   const listBoxRef = React.useRef(null);
 
-  React.useEffect(() => {
-    openCombobox();
-  }, [options, openCombobox]);
+  // React.useEffect(() => {
+  //   openCombobox();
+  // }, [options, openCombobox]);
 
   const {
     // buttonProps,

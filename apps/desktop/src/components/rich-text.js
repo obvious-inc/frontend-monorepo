@@ -74,6 +74,7 @@ const createParser = ({ inline, suffix, onClickInteractiveElement }) => {
             target="_blank"
             rel="noreferrer"
             className="link"
+            onClick={(e) => onClickInteractiveElement?.(e)}
           >
             {el.url}
           </a>

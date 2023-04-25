@@ -5,6 +5,7 @@ import { useStore as useCacheStore } from "./cache-store.js";
 import rootReducer from "./root-reducer.js";
 import createActions from "./actions.js";
 import { mapValues } from "./utils/object.js";
+import { parseString as parseStringToMessageBlocks } from "./utils/message.js";
 import { selectMe } from "./reducers/me.js";
 import {
   selectUser,
@@ -148,10 +149,14 @@ const createApiParsers = ({ buildCloudflareImageUrl }) => ({
       return s.trim() === "" ? null : s;
     };
 
+    const description = normalizeString(rawChannel.description);
+
     const channel = {
       id: rawChannel.id,
       name: normalizeString(rawChannel.name),
-      description: normalizeString(rawChannel.description),
+      description,
+      descriptionBlocks:
+        description == null ? null : parseStringToMessageBlocks(description),
       kind: rawChannel.kind,
       createdAt: rawChannel.created_at,
       lastMessageAt: rawChannel.last_message_at,

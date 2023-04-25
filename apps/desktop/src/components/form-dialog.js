@@ -49,6 +49,10 @@ const FormDialog = ({
     firstInputRef.current.focus();
   }, []);
 
+  const hasChanges = controls.some(
+    (c) => c.initialValue === undefined || state[c.key] !== c.initialValue
+  );
+
   return (
     <div
       css={css({
@@ -110,7 +114,7 @@ const FormDialog = ({
           type: "submit",
           form: "dialog-form",
           isLoading: hasPendingSubmit,
-          disabled: !hasRequiredInput || hasPendingSubmit,
+          disabled: !hasChanges || !hasRequiredInput || hasPendingSubmit,
           style: { minWidth: "8rem" },
         }}
       />
