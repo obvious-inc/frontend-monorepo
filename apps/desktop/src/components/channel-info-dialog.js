@@ -41,6 +41,7 @@ import UserAvatar from "./user-avatar";
 import ChannelAvatar from "./channel-avatar";
 import Select from "./select";
 import * as Tooltip from "./tooltip";
+import RichText from "./rich-text";
 import FormDialog from "./form-dialog";
 
 const { sort } = arrayUtils;
@@ -550,7 +551,7 @@ const AboutTab = ({ channelId, dismiss }) => {
             })}
           >
             <li>
-              <ProperyButton
+              <PropertyButton
                 name="Name"
                 value={channel.name}
                 onClick={() => {
@@ -559,9 +560,21 @@ const AboutTab = ({ channelId, dismiss }) => {
               />
             </li>
             <li>
-              <ProperyButton
+              <PropertyButton
                 name="Topic"
-                value={channel.description ?? "-"}
+                value={
+                  channel.description == null ? (
+                    "-"
+                  ) : (
+                    <RichText
+                      blocks={channel.descriptionBlocks}
+                      onClickInteractiveElement={(e) => {
+                        // Prevent link clicks from opening dialog
+                        e.stopPropagation();
+                      }}
+                    />
+                  )
+                }
                 onClick={() => {
                   setEditDialogMode("description");
                 }}
@@ -587,7 +600,13 @@ const AboutTab = ({ channelId, dismiss }) => {
             <dt>Name</dt>
             <dd>{channel.name}</dd>
             <dt>Topic</dt>
-            <dd>{channel.description ?? "-"}</dd>
+            <dd>
+              {channel.description == null ? (
+                "-"
+              ) : (
+                <RichText blocks={channel.descriptionBlocks} />
+              )}
+            </dd>
           </dl>
         )}
 
@@ -748,7 +767,7 @@ const AboutTab = ({ channelId, dismiss }) => {
   );
 };
 
-const ProperyButton = ({ name, value, ...props }) => (
+const PropertyButton = ({ name, value, ...props }) => (
   <button
     css={(t) =>
       css({

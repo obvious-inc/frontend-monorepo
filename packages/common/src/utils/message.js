@@ -47,27 +47,35 @@ export const withoutAttachments = (nodes) =>
 export const parseString = (string) => {
   if (string.trim() === "") return [];
 
-  const paragraphStrings = string.split(/^\s*$/m);
+  const paragraphStrings = string.split(/^\s*$/m).map((s) => s.trim());
 
   const paragraphElements = paragraphStrings.map((paragraphString) => {
-    const words = paragraphString.split(" ");
+    const paragraphChildren = paragraphString
+      .split(/\n/)
+      .reduce((paragraphElements, line, i, lines) => {
+        const isLastLine = i === lines.length - 1;
 
-    const paragraphChildren = words.reduce((els, word) => {
-      const prev = els[els.length - 1];
+        const lineElements = line.split(/\s+/).reduce((els, word) => {
+          const prev = els[els.length - 1];
 
-      if (validateUrl(word)) {
-        if (prev != null) prev.text = `${prev.text} `;
-        const url = new URL(word);
-        return [...els, { type: "link", url: url.href }];
-      }
+          if (validateUrl(word)) {
+            if (prev != null) prev.text = `${prev.text} `;
+            const url = new URL(word);
+            return [...els, { type: "link", url: url.href }];
+          }
 
-      if (prev == null || prev.type === "link")
-        return [...els, { text: prev == null ? word : ` ${word}` }];
+          if (prev == null || prev.type === "link")
+            return [...els, { text: prev == null ? word : ` ${word}` }];
 
-      prev.text = `${prev.text} ${word}`;
+          prev.text = `${prev.text} ${word}`;
 
-      return els;
-    }, []);
+          return els;
+        }, []);
+
+        if (isLastLine) return [...paragraphElements, ...lineElements];
+
+        return [...paragraphElements, ...lineElements, { text: "\n" }];
+      }, []);
 
     return createParagraphElement(paragraphChildren);
   });

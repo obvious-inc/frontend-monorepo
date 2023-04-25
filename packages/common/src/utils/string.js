@@ -1,4 +1,5 @@
-export const getWords = (string) => string.trim().split(/[\s,.]+/);
+export const getWords = (string, { splitOnPunctuation = true } = {}) =>
+  string.trim().split(splitOnPunctuation ? /[\s,.]+/ : /[\s]+/);
 
 export const match = (string, query) => {
   if (query.trim() === "") return false;

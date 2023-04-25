@@ -13,13 +13,15 @@ const SINGLE_IMAGE_ATTACHMENT_MAX_HEIGHT = 280;
 const MULTI_IMAGE_ATTACHMENT_MAX_WIDTH = 280;
 const MULTI_IMAGE_ATTACHMENT_MAX_HEIGHT = 240;
 
-export const createCss = (theme, { compact = false } = {}) => ({
+export const createCss = (theme) => ({
   wordBreak: "break-word",
-  p: { margin: "0", display: "var(--paragraph-display)" },
+  p: { margin: "0", display: "var(--paragraph-display, block)" },
   "* + p": { marginTop: "1rem" },
-  "* + p:before": compact
-    ? { display: "block", content: '""', height: "1rem" }
-    : undefined,
+  "* + p:before": {
+    display: "var(--paragraph-display-before, none)",
+    content: '""',
+    height: "1rem",
+  },
   em: { fontStyle: "italic" },
   strong: { fontWeight: "600" },
   "a.link, a.link:active, a.link:visited": {
