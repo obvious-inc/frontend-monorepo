@@ -689,6 +689,7 @@ const NewMessageScreen = () => {
                   <Onboarding
                     selectChannel={(channelId) => {
                       recipientsState.setSelection([`channel-${channelId}`]);
+                      setRecipientsCommitted(true);
                     }}
                   />
                 )}
