@@ -36,6 +36,7 @@ module.exports = {
     },
   },
   plugins: [
+    "expo-localization",
     [
       "expo-image-picker",
       {

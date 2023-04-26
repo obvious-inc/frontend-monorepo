@@ -42,9 +42,9 @@
     "is-hotkey": "^0.2.0",
     "mini-css-extract-plugin": "^2.7.3",
     "pusher-js": "^7.4.0",
-    "react": "18.1.0",
-    "react-aria": "^3.23.1",
-    "react-dom": "18.1.0",
+    "react": "18.2.0",
+    "react-aria": "^3.24.0",
+    "react-dom": "18.2.0",
     "react-helmet": "^6.1.0",
     "react-router-dom": "^6.9.0",
     "react-stately": "^3.21.0",
@@ -56,13 +56,5 @@
     "wagmi": "^0.6.8",
     "workbox-webpack-plugin": "^6.5.4",
     "zustand": "^4.3.6"
-  },
-  "dependenciesMeta": {
-    "@shades/common": {
-      "injected": true
-    },
-    "@shades/ui-web": {
-      "injected": true
-    }
   }
 }
