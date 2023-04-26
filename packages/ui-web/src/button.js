@@ -132,14 +132,17 @@ const Button = React.forwardRef(
     },
     ref
   ) => {
-    const { buttonProps } = useButton({
-      ...props,
-      children,
-      isDisabled: isDisabled ?? props.disabled,
-      elementType: Component,
-      onPress: onPress ?? onClick,
-      onPressStart,
-    });
+    const { buttonProps } = useButton(
+      {
+        ...props,
+        children,
+        isDisabled: isDisabled ?? props.disabled,
+        elementType: Component,
+        onPress: onPress ?? onClick,
+        onPressStart,
+      },
+      ref
+    );
 
     const iconLayout =
       iconLayoutPropsBySize[size] ?? iconLayoutPropsBySize.medium;

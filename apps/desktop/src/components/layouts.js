@@ -142,17 +142,21 @@ const Layout = () => {
     dismiss: dismissAccountAuthenticationDialog,
   } = useDialog("account-authentication");
 
+  const isAuthenticated = authenticationStatus === "authenticated";
+  const menuWidthOverride =
+    sidebarItemSizeSetting === "large" ? "27rem" : undefined;
+
   return (
     <>
       <SidebarLayout
-        width={sidebarItemSizeSetting === "large" ? "27rem" : undefined}
+        width={menuWidthOverride}
         header={({ isHoveringSidebar }) =>
           authenticationStatus === "not-authenticated" &&
           connectedWalletAccountAddress == null ? null : isLoadingUser ? (
             <div />
           ) : (
-            <DropdownMenu.Root>
-              <DropdownMenu.Trigger asChild>
+            <DropdownMenu.Root placement="bottom">
+              <DropdownMenu.Trigger>
                 <ProfileDropdownTrigger
                   isConnecting={
                     authenticationStatus === "authenticated" &&
@@ -168,115 +172,96 @@ const Layout = () => {
                 />
               </DropdownMenu.Trigger>
               <DropdownMenu.Content
-                side="bottom"
-                align="center"
-                sideOffset={0}
-                alignOffset={0}
                 css={(theme) =>
-                  css({ width: `calc(${theme.sidebarWidth} - 2rem)` })
+                  css({
+                    "--menu-width": `var(--menu-width-override, ${theme.sidebarWidth})`,
+                    width: `calc(var(--menu-width) - 2rem)`,
+                  })
                 }
+                style={{ "--menu-width-override": menuWidthOverride }}
+                items={[
+                  !isAuthenticated && {
+                    id: "verify-account",
+                    children: [
+                      {
+                        id: "verify-account",
+                        label: "Verify account",
+                        primary: true,
+                      },
+                    ],
+                  },
+                  {
+                    id: "main",
+                    children: [
+                      { id: "settings", label: "Settings" },
+                      { id: "edit-profile", label: "Edit profile" },
+                      { id: "share-profile", label: "Share profile" },
+                      {
+                        id: "copy-account-address",
+                        label: "Copy account address",
+                      },
+                    ],
+                  },
+                  {
+                    id: "switch",
+                    children: [
+                      {
+                        id: "switch-account",
+                        label: "Switch to another account",
+                      },
+                    ],
+                  },
+                  isAuthenticated && {
+                    id: "log-out",
+                    children: [{ id: "log-out", label: "Log out" }],
+                  },
+                ].filter(Boolean)}
+                onAction={(key) => {
+                  switch (key) {
+                    case "verify-account":
+                      if (isMenuFloating) toggleMenu();
+                      initAccountVerification(
+                        connectedWalletAccountAddress
+                      ).then(() => {
+                        dismissAccountAuthenticationDialog();
+                      });
+                      openAccountAuthenticationDialog();
+                      break;
+
+                    case "settings":
+                      openSettingsDialog();
+                      break;
+
+                    case "edit-profile":
+                      openEditProfileDialog();
+                      break;
+
+                    case "share-profile":
+                      openProfileLinkDialog();
+                      break;
+
+                    case "switch-account":
+                      alert("Just switch account from your wallet!");
+                      break;
+
+                    case "copy-account-address":
+                      navigator.clipboard.writeText(me.walletAddress);
+                      break;
+
+                    case "log-out":
+                      actions.logout();
+                      break;
+                  }
+                }}
               >
-                {authenticationStatus === "not-authenticated" ? (
-                  <>
-                    <DropdownMenu.Item
-                      onSelect={() => {
-                        if (isMenuFloating) toggleMenu();
-                        initAccountVerification(
-                          connectedWalletAccountAddress
-                        ).then(() => {
-                          dismissAccountAuthenticationDialog();
-                        });
-                        openAccountAuthenticationDialog();
-                      }}
-                      css={(t) => css({ color: t.colors.link })}
-                    >
-                      Verify account
-                    </DropdownMenu.Item>
-                    <DropdownMenu.Item
-                      onSelect={() => {
-                        alert("Just switch account from your wallet!");
-                      }}
-                    >
-                      Switch to another account
-                    </DropdownMenu.Item>
-                    <DropdownMenu.Separator />
-                    <DropdownMenu.Item disabled>Settings</DropdownMenu.Item>
-                    <DropdownMenu.Item
-                      onSelect={() => {
-                        if (isMenuFloating) toggleMenu();
-                        openEditProfileDialog();
-                      }}
-                    >
-                      Edit profile
-                    </DropdownMenu.Item>
-                    <DropdownMenu.Item
-                      onSelect={() => {
-                        if (isMenuFloating) toggleMenu();
-                        openProfileLinkDialog();
-                      }}
-                    >
-                      Share profile
-                    </DropdownMenu.Item>
-                    <DropdownMenu.Item
-                      onSelect={() => {
-                        navigator.clipboard.writeText(
-                          connectedWalletAccountAddress
-                        );
-                      }}
-                    >
-                      Copy wallet address
-                    </DropdownMenu.Item>
-                  </>
-                ) : (
-                  <>
-                    <DropdownMenu.Item
-                      onSelect={() => {
-                        if (isMenuFloating) toggleMenu();
-                        openSettingsDialog();
-                      }}
-                    >
-                      Settings
-                    </DropdownMenu.Item>
-                    <DropdownMenu.Item
-                      onSelect={() => {
-                        if (isMenuFloating) toggleMenu();
-                        openEditProfileDialog();
-                      }}
-                    >
-                      Edit profile
-                    </DropdownMenu.Item>
-                    <DropdownMenu.Item
-                      onSelect={() => {
-                        if (isMenuFloating) toggleMenu();
-                        openProfileLinkDialog();
-                      }}
-                    >
-                      Share profile
-                    </DropdownMenu.Item>
-                    <DropdownMenu.Item
-                      onSelect={() => {
-                        navigator.clipboard.writeText(me.walletAddress);
-                      }}
-                    >
-                      Copy wallet address
-                    </DropdownMenu.Item>
-                    <DropdownMenu.Separator />
-                    <DropdownMenu.Item
-                      onSelect={() => {
-                        alert("Just switch account from your wallet!");
-                      }}
-                    >
-                      Switch to another account
-                    </DropdownMenu.Item>
-                    <DropdownMenu.Separator />
-                    <DropdownMenu.Item
-                      onSelect={() => {
-                        actions.logout();
-                      }}
-                    >
-                      Log out
-                    </DropdownMenu.Item>
-                  </>
+                {(item) => (
+                  <DropdownMenu.Section items={item.children}>
+                    {(item) => (
+                      <DropdownMenu.Item primary={item.primary}>
+                        {item.label}
+                      </DropdownMenu.Item>
+                    )}
+                  </DropdownMenu.Section>
                 )}
               </DropdownMenu.Content>
             </DropdownMenu.Root>

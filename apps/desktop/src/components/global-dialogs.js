@@ -34,27 +34,6 @@ const GlobalDialogs = () => {
     <>
       {[
         {
-          key: "edit-profile",
-          isOpen: isEditProfileDialogOpen,
-          dismiss: dismissEditProfileDialog,
-          width: "52rem",
-          component: LazyEditProfileDialog,
-        },
-        {
-          key: "settings",
-          isOpen: isSettingsDialogOpen,
-          dismiss: dismissSettingsDialog,
-          width: "38rem",
-          component: LazySettingsDialog,
-        },
-        {
-          key: "profile-link",
-          isOpen: isProfileLinkDialogOpen,
-          dismiss: dismissProfileLinkDialog,
-          width: "38rem",
-          component: LazyProfileLinkDialog,
-        },
-        {
           key: "account-authentication",
           isOpen: isAccountAuthenticationDialogOpen,
           dismiss: () => {
@@ -64,6 +43,27 @@ const GlobalDialogs = () => {
           },
           width: "44rem",
           component: LazyAccountAuthenticationDialog,
+        },
+        {
+          key: "settings",
+          isOpen: isSettingsDialogOpen,
+          dismiss: dismissSettingsDialog,
+          width: "38rem",
+          component: LazySettingsDialog,
+        },
+        {
+          key: "edit-profile",
+          isOpen: isEditProfileDialogOpen,
+          dismiss: dismissEditProfileDialog,
+          width: "52rem",
+          component: LazyEditProfileDialog,
+        },
+        {
+          key: "profile-link",
+          isOpen: isProfileLinkDialogOpen,
+          dismiss: dismissProfileLinkDialog,
+          width: "38rem",
+          component: LazyProfileLinkDialog,
         },
       ].map(({ key, isOpen, dismiss, width, component: Component }) => (
         <Dialog

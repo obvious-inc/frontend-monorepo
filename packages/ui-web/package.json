@@ -19,17 +19,15 @@
     "./avatar": "./dist/avatar.js"
   },
   "peerDependencies": {
+    "@shades/common": "*",
+    "@emotion/css": "*",
     "react": "*",
-    "react-aria": "*",
-    "@emotion/css": "*"
+    "react-aria": "*"
   },
   "devDependencies": {
-    "@swc/core": "^1.3.11",
-    "prettier": "^2.7.1",
+    "@swc/core": "^1.3.55",
+    "prettier": "^2.8.8",
     "rollup": "^2.79.1",
     "rollup-plugin-swc": "^0.2.1"
-  },
-  "dependencies": {
-    "@shades/common": "workspace:0.0.0"
   }
 }

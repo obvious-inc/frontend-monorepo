@@ -1,5 +1,6 @@
 import "./polyfills";
-import { render } from "react-dom";
+import React from "react";
+import { createRoot } from "react-dom/client";
 import * as Sentry from "@sentry/react";
 import App from "./app";
 import "./reset.css";
@@ -28,4 +29,8 @@ if (process.env.NODE_ENV === "production") {
   unregisterServiceWorker();
 }
 
-render(<App />, document.getElementById("app-mount"));
+createRoot(document.getElementById("app-mount")).render(
+  <React.StrictMode>
+    <App />
+  </React.StrictMode>
+);

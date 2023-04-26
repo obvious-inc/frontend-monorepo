@@ -49,6 +49,7 @@ export default {
     textMutedAlpha,
     textAccent,
     textHeader: textAccent,
+    textPrimary: primaryText,
     textHighlight: "#9e7626", // Light yellow
     textHighlightBackground: "#b8810e26",
     link: primaryText,

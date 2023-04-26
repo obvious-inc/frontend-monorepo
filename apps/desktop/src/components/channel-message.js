@@ -96,7 +96,6 @@ const ChannelMessage = React.memo(function ChannelMessage_({
   const members = useChannelMembers(channelId);
 
   const [isHovering, hoverHandlers] = useHover();
-  const [isDropdownOpen, setDropdownOpen] = React.useState(false);
   const [isEmojiPickerOpen, setEmojiPickerOpen] = React.useState(false);
   const [isEditing, setEditingMessage] = React.useState(false);
 
@@ -105,8 +104,7 @@ const ChannelMessage = React.memo(function ChannelMessage_({
   const compact = layout === "compact";
 
   const showAsFocused =
-    !isEditing &&
-    (hasTouchFocus || isHovering || isDropdownOpen || isEmojiPickerOpen);
+    !isEditing && (hasTouchFocus || isHovering || isEmojiPickerOpen);
 
   const isDirectMessage = channel != null && channel.kind === "dm";
   const isOwnMessage = me?.id === message.authorUserId;
@@ -183,41 +181,61 @@ const ChannelMessage = React.memo(function ChannelMessage_({
       message.isSystemMessage || message.isAppMessage
         ? []
         : [
-            { onSelect: initReply, label: "Reply" },
-            { disabled: true, label: "Mark unread" },
             {
-              onSelect: () => {
-                setEditingMessage(true);
-              },
-              label: "Edit message",
-              visible: allowEdit,
+              key: "message",
+              children: [
+                { key: "reply", onSelect: initReply, label: "Reply" },
+                { key: "mark-unread", disabled: true, label: "Mark unread" },
+                {
+                  key: "edit-message",
+                  onSelect: () => {
+                    setEditingMessage(true);
+                  },
+                  label: "Edit message",
+                  visible: allowEdit,
+                },
+                {
+                  key: "delete-message",
+                  onSelect: () => {
+                    if (
+                      confirm("Are you sure you want to remove this message?")
+                    )
+                      remove();
+                  },
+                  label: allowEdit ? "Delete message" : "Admin delete",
+                  visible: allowEdit || isAdmin,
+                  danger: true,
+                },
+              ],
             },
             {
-              onSelect: () => {
-                if (confirm("Are you sure you want to remove this message?"))
-                  remove();
-              },
-              label: allowEdit ? "Delete message" : "Admin delete",
-              visible: allowEdit || isAdmin,
-              style: { color: "#ff5968" },
+              key: "user",
+              children: [
+                {
+                  key: "send-message",
+                  onSelect: sendDirectMessageToAuthor,
+                  label: "Send direct message",
+                  disabled: !allowDirectMessages,
+                  visible:
+                    !isOwnMessage &&
+                    !(isDirectMessage && channel?.memberUserIds.length <= 2),
+                },
+                {
+                  key: "copy-account-address",
+                  onSelect: () => {
+                    navigator.clipboard.writeText(message.author.walletAddress);
+                  },
+                  label: "Copy user wallet address",
+                  visible: message.author?.walletAddress != null,
+                },
+              ],
             },
-            { type: "separator" },
-            {
-              onSelect: sendDirectMessageToAuthor,
-              label: "Send direct message",
-              disabled: !allowDirectMessages,
-              visible:
-                !isOwnMessage &&
-                !(isDirectMessage && channel?.memberUserIds.length <= 2),
-            },
-            {
-              onSelect: () => {
-                navigator.clipboard.writeText(message.author.walletAddress);
-              },
-              label: "Copy user wallet address",
-              visible: message.author?.walletAddress != null,
-            },
-          ].filter((i) => i.visible == null || i.visible),
+          ].map((section) => ({
+            ...section,
+            children: section.children.filter(
+              (i) => i.visible == null || i.visible
+            ),
+          })),
     [
       allowEdit,
       allowDirectMessages,
@@ -244,10 +262,6 @@ const ChannelMessage = React.memo(function ChannelMessage_({
     });
   }, [isEditing]);
 
-  const onDropdownOpenChange = React.useCallback((isOpen) => {
-    setDropdownOpen(isOpen);
-  }, []);
-
   const onEmojiPickerOpenChange = React.useCallback((isOpen) => {
     setEmojiPickerOpen(isOpen);
   }, []);
@@ -273,14 +287,12 @@ const ChannelMessage = React.memo(function ChannelMessage_({
           ? "var(--bg-highlight)"
           : showAsFocused
           ? "var(--bg-focus)"
-          : "transparent",
+          : undefined,
         "--padding":
           showSimplifiedMessage || compact
             ? `0.5rem ${horizontalPadding}`
             : `0.7rem ${horizontalPadding} 0.3rem`,
-        "--color": message.isOptimistic
-          ? "var(--color-optimistic)"
-          : "var(--color-regular)",
+        "--color": message.isOptimistic ? "var(--color-optimistic)" : undefined,
       }}
       className="channel-message-container"
       {...(giveTouchFocus == null
@@ -307,10 +319,9 @@ const ChannelMessage = React.memo(function ChannelMessage_({
             initReply={initReply}
             initEdit={initEdit}
             addReaction={addReaction}
-            onDropdownOpenChange={onDropdownOpenChange}
             isEmojiPickerOpen={isEmojiPickerOpen}
             onEmojiPickerOpenChange={onEmojiPickerOpenChange}
-            dropdownItems={toolbarDropdownItems}
+            dropdownMenuSections={toolbarDropdownItems}
           />
         </div>
       )}
@@ -537,7 +548,7 @@ const Thread = ({ messageId, layout, initReply }) => {
               showReplyTargetMessages={false}
               initReply={initReply}
               horizontalPadding={0}
-              css={css({ padding: "0.6rem 0", borderRadius: "0.5rem" })}
+              style={{ "--padding": "0.6rem 0", "--border-radius": "0.5rem" }}
             />
           ))}
           <button
@@ -1638,20 +1649,21 @@ const EmojiPicker = ({ width = "auto", height = "100%", onSelect }) => {
 
 const MessageToolbar = React.memo(
   ({
-    dropdownItems = [],
+    dropdownMenuSections = [],
     allowReplies,
     allowEdit,
     allowReactions,
     initReply,
     initEdit,
     addReaction,
-    onDropdownOpenChange,
     isEmojiPickerOpen,
     onEmojiPickerOpenChange,
   }) => {
+    const toolbarRef = React.useRef();
     const { inputDeviceCanHover } = useGlobalMediaQueries();
+    const dropdownMenuItems = dropdownMenuSections.flatMap((i) => i.children);
     return (
-      <Toolbar.Root>
+      <Toolbar.Root ref={toolbarRef}>
         {inputDeviceCanHover ? (
           <Popover.Root
             placement="left"
@@ -1728,36 +1740,35 @@ const MessageToolbar = React.memo(
           </Toolbar.Button>
         )}
 
-        {dropdownItems.length > 0 && (
+        {dropdownMenuSections.length > 0 && (
           <>
             <Toolbar.Separator />
-            <DropdownMenu.Root
-              modal={false}
-              onOpenChange={onDropdownOpenChange}
-            >
-              <Toolbar.Button asChild>
-                <DropdownMenu.Trigger>
+            <DropdownMenu.Root placement="bottom end" targetRef={toolbarRef}>
+              <DropdownMenu.Trigger>
+                <Toolbar.Button>
                   <DotsHorizontalIcon
                     css={css({ width: "1.7rem", height: "auto" })}
                   />
-                </DropdownMenu.Trigger>
-              </Toolbar.Button>
-              <DropdownMenu.Content>
-                {dropdownItems.map(
-                  ({ onSelect, label, type, disabled, style }, i) => {
-                    if (type === "separator")
-                      return <DropdownMenu.Separator key={i} />;
-                    return (
-                      <DropdownMenu.Item
-                        key={i}
-                        onSelect={onSelect}
-                        disabled={disabled}
-                        style={style}
-                      >
-                        {label}
+                </Toolbar.Button>
+              </DropdownMenu.Trigger>
+              <DropdownMenu.Content
+                disabledKeys={dropdownMenuItems
+                  .filter((i) => i.disabled)
+                  .map((i) => i.key)}
+                onAction={(key) => {
+                  const item = dropdownMenuItems.find((i) => i.key === key);
+                  item.onSelect();
+                }}
+                items={dropdownMenuSections}
+              >
+                {(section) => (
+                  <DropdownMenu.Section items={section.children}>
+                    {(item) => (
+                      <DropdownMenu.Item danger={item.danger}>
+                        {item.label}
                       </DropdownMenu.Item>
-                    );
-                  }
+                    )}
+                  </DropdownMenu.Section>
                 )}
               </DropdownMenu.Content>
             </DropdownMenu.Root>

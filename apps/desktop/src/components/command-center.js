@@ -117,7 +117,7 @@ const AlwaysOpenComboboxInDialog = ({
 
   return (
     <Dialog
-      dialogRef={dialogRef}
+      ref={dialogRef}
       width="66rem"
       isOpen
       onRequestClose={onRequestClose}

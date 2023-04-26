@@ -34,6 +34,7 @@ export const Root = ({
   children,
   placement: preferredPlacement = "top",
   offset = 8,
+  crossOffset = 0,
   containerPadding = 10,
   triggerRef: triggerRefExternal,
   targetRef,
@@ -65,6 +66,7 @@ export const Root = ({
         dialogProps,
         placement: preferredPlacement,
         offset,
+        crossOffset,
         containerPadding,
         isDialog,
         popoverInputProps: props,
@@ -110,6 +112,7 @@ const ContentInner = React.forwardRef(
       targetRef,
       placement: preferredPlacement,
       offset,
+      crossOffset,
       containerPadding,
       popoverInputProps,
     } = React.useContext(Context);
@@ -127,6 +130,7 @@ const ContentInner = React.forwardRef(
         popoverRef,
         placement: preferredPlacement,
         offset,
+        crossOffset,
         containerPadding,
         ...popoverInputProps,
       },
@@ -173,6 +177,7 @@ const ContentInner = React.forwardRef(
             })
           }
           {...containerProps}
+          style={{ ...containerProps.style, ...props.style }}
         >
           {dismissButtonElement}
           {isDialog ? (

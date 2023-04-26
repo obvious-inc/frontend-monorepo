@@ -94,6 +94,7 @@ export default {
     textHeader: "white",
     textAccent: "white",
     textHeaderSecondary: "hsl(0 0% 72%)",
+    textPrimary: primaryTintLighter,
     textHighlight: "#ffd376", // Light yellow
     textHighlightBackground: "#b8810e66",
     textSelectionBackground: createPrimary({ saturation: 1, lightness: 0 }),
