@@ -1,10 +1,18 @@
-import swc from "rollup-plugin-swc";
+import { swc } from "rollup-plugin-swc3";
 
 const plugins = [
   swc({
-    rollup: {
-      exclude: /node_modules/,
-      extensions: [".js"],
+    "jsc": {
+      "parser": {
+        "syntax": "ecmascript",
+        "jsx": true
+      },
+      "transform": {
+        "react": {
+          "runtime": "automatic",
+          "importSource": "@emotion/react"
+        }
+      }
     },
   }),
 ];

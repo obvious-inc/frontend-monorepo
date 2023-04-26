@@ -68,7 +68,7 @@ const withTextCommands = (editor) => {
     focus: findWordEnd(p),
   });
 
-  editor.select = (target) => Transforms.select(editor, target);
+  // editor.select = (target) => Transforms.select(editor, target);
 
   editor.search = (query, { at }) => search(editor, query, { at });
 
@@ -106,6 +106,8 @@ const withTextCommands = (editor) => {
 };
 
 const withEditorCommands = (editor) => {
+  const { string } = editor;
+
   editor.focus = () => {
     ReactEditor.focus(editor);
     // Focus doesn’t always work without this for some reason
@@ -118,7 +120,7 @@ const withEditorCommands = (editor) => {
     Transforms.select(editor, Editor.start(editor, []));
   };
 
-  editor.string = () => Editor.string(editor, []);
+  editor.string = () => string([]);
 
   return editor;
 };
