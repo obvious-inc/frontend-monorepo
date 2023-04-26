@@ -42,6 +42,9 @@ importers:
       '@shades/ui-web':
         specifier: workspace:0.0.0
         version: link:../../packages/ui-web
+      '@vercel/analytics':
+        specifier: ^1.0.0
+        version: 1.0.0(react@18.2.0)
       date-fns:
         specifier: ^2.29.3
         version: 2.29.3
@@ -7050,6 +7053,14 @@ packages:
       '@urql/core': 2.3.6(graphql@15.8.0)
       graphql: 15.8.0
       wonka: 4.0.15
+    dev: false
+
+  /@vercel/analytics@1.0.0(react@18.2.0):
+    resolution: {integrity: sha512-RQmj7pv82JwGDHrnKeRc6TtSw2U7rWNubc2IH0ernTzWTj02yr9zvIYiYJeztsBzrJtWv7m8Nz6vxxb+cdEtJw==}
+    peerDependencies:
+      react: ^16.8||^17||^18
+    dependencies:
+      react: 18.2.0
     dev: false
 
   /@wagmi/core@0.5.8(@coinbase/wallet-sdk@3.5.3)(@walletconnect/ethereum-provider@1.8.0)(ethers@5.7.2)(react@18.2.0):
