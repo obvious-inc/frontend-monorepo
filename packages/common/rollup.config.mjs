@@ -2,11 +2,11 @@ import { swc } from "rollup-plugin-swc3";
 
 const plugins = [
   swc({
-    "jsc": {
-      "parser": {
-        "syntax": "ecmascript",
-        "jsx": true
-      }
+    jsc: {
+      parser: {
+        syntax: "ecmascript",
+        jsx: true,
+      },
     },
   }),
 ];

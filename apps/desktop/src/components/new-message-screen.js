@@ -86,6 +86,24 @@ const {
 const { truncateAddress } = ethereumUtils;
 const { sort } = arrayUtils;
 
+const fetchRelatedAccounts = (accountAddress) =>
+  fetch(
+    `${
+      process.env.EDGE_API_BASE_URL
+    }/related-accounts?wallet-address=${accountAddress.toLowerCase()}`
+  ).then((res) => {
+    if (!res.ok) return [];
+    return res.json().then((body) => body.results);
+  });
+
+const fetchAccountEnsData = (accountAddress) =>
+  fetch(
+    `https://api.ensideas.com/ens/resolve/${accountAddress.toLowerCase()}`
+  ).then((res) => {
+    if (res.ok) return res.json();
+    return Promise.reject(res.statusText);
+  });
+
 const getKeyItemType = (key) => {
   if (key == null) return null;
   const [type] = key.split("-");
@@ -106,38 +124,23 @@ const useFilteredAccounts = (query) => {
   const { address: connectedWalletAccountAddress } = useAccount();
   const users = useAllUsers();
   const [relatedAccounts, setRelatedAccounts] = React.useState([]);
-  const { registerEnsEntries } = useActions();
 
-  const walletAddress = me?.walletAddress ?? connectedWalletAccountAddress;
+  const meAccountAddress = me?.walletAddress ?? connectedWalletAccountAddress;
 
   React.useEffect(() => {
-    if (walletAddress == null) return;
+    if (meAccountAddress == null) return;
 
-    fetch(
-      `${
-        process.env.EDGE_API_BASE_URL
-      }/related-accounts?wallet-address=${walletAddress.toLowerCase()}`
-    )
-      .then((res) => {
-        if (!res.ok) return { results: [] };
-        return res.json();
-      })
-      .then((responseBody) => {
-        const addresses = responseBody.results;
-        setRelatedAccounts(addresses.map((a) => ({ walletAddress: a })));
-        Promise.all(
-          addresses.map((a) =>
-            fetch(
-              `https://api.ensideas.com/ens/resolve/${a.toLowerCase()}`
-            ).then((r) => r.json())
-          )
-        ).then((entries) => {
+    fetchRelatedAccounts(meAccountAddress).then((accountAddresses) => {
+      setRelatedAccounts(accountAddresses.map((a) => ({ walletAddress: a })));
+      Promise.all(accountAddresses.map((a) => fetchAccountEnsData(a))).then(
+        (entries) => {
           setRelatedAccounts(
             entries.map((e) => ({ walletAddress: e.address, ensName: e.name }))
           );
-        });
-      });
-  }, [walletAddress, registerEnsEntries]);
+        }
+      );
+    });
+  }, [meAccountAddress]);
 
   const filteredOptions = React.useMemo(() => {
     if (query.trim() === "") return relatedAccounts;
@@ -166,12 +169,12 @@ const useFilteredChannels = (query, { selectedWalletAddresses }) => {
 
   const filteredChannels = React.useMemo(() => {
     if (query.trim() === "")
-      return channels.length === 0
-        ? sort(
-            createDefaultChannelComparator(),
-            publicChannels.filter((c) => c.memberUserIds.length > 1)
-          )
-        : [];
+      return sort(
+        createDefaultChannelComparator(),
+        channels.length === 0
+          ? publicChannels.filter((c) => c.memberUserIds.length > 1)
+          : channels
+      );
 
     const allChannels = channels.length === 0 ? publicChannels : channels;
 
@@ -1036,7 +1039,7 @@ const MessageRecipientCombobox = React.forwardRef(
               }
               allowsCustomValue={false}
               allowsEmptyCollection={true}
-              // allowsCustomValue={true}
+              isOpen={filteredComboboxItems.length === 0 ? false : undefined}
               menuTrigger="focus"
               selectedKey={null}
               onSelect={(key) => {
@@ -1131,14 +1134,8 @@ const MessageRecipientCombobox = React.forwardRef(
               )}
             >
               {(item) => (
-                <ComboboxSection
-                  key={item.key}
-                  items={item.children}
-                  title={item.title}
-                >
-                  {(item) => (
-                    <ComboboxItem key={item.key} textValue={item.textValue} />
-                  )}
+                <ComboboxSection items={item.children} title={item.title}>
+                  {(item) => <ComboboxItem textValue={item.textValue} />}
                 </ComboboxSection>
               )}
             </Combobox>

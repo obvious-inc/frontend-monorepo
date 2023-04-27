@@ -7,6 +7,7 @@ export { Item, Section } from "react-stately";
 
 const useCombobox = ({
   // options = [],
+  isOpen,
   disabled,
   onSelect,
   inputRef: inputRefExternal,
@@ -27,7 +28,11 @@ const useCombobox = ({
 
   const inputRef = inputRefExternal ?? inputRefInternal;
 
-  const state = useComboBoxState(props);
+  const uncontrolledState = useComboBoxState(props);
+  const state =
+    typeof isOpen === "boolean"
+      ? { ...uncontrolledState, isOpen }
+      : uncontrolledState;
 
   const {
     buttonProps: buttonPropsInput,

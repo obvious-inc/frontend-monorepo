@@ -362,14 +362,14 @@ export const selectChannelName = createSelector(
             channelMemberUsers[0].displayName ?? truncate(channelMemberUsers[0])
           } (you)`;
 
-    return channelMemberUsers
+    const memberDisplayNames = channelMemberUsers
       .filter((u) => u?.id !== loggedInUserId)
-      .map((u) => {
-        if (u == null || u.walletAddress == null) return null;
-        return u.displayName ?? truncate(u);
-      })
-      .filter(Boolean)
-      .join(", ");
+      .map((u) => u?.computedDisplayName)
+      .filter(Boolean);
+
+    if (memberDisplayNames.length === 0) return null;
+
+    return memberDisplayNames.join(", ");
   },
   { memoizeOptions: { maxSize: 1000, equalityCheck: arrayShallowEquals } }
 );
