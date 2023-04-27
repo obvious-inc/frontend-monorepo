@@ -58,11 +58,11 @@
     "@babel/core": "^7.21.4",
     "babel-preset-expo": "~9.3.2",
     "dotenv": "^16.0.3",
-    "eslint": "^8.26.0",
-    "eslint-config-prettier": "^8.5.0",
+    "eslint": "^8.39.0",
+    "eslint-config-prettier": "^8.8.0",
     "eslint-plugin-react": "^7.31.10",
     "eslint-plugin-react-hooks": "^4.6.0",
-    "prettier": "^2.7.1"
+    "prettier": "^2.8.8"
   },
   "pnpm": {
     "overrides": {
