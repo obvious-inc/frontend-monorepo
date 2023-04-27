@@ -679,7 +679,7 @@ const ProfileDropdownTrigger = React.forwardRef(
               role="button"
               tabIndex={0}
               onPointerDown={(e) => {
-                e.preventDefault();
+                e.stopPropagation();
                 toggleMenu();
               }}
               css={(t) =>

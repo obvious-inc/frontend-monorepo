@@ -64,7 +64,7 @@ const ModalDialog = React.forwardRef(
                 alignItems: "center",
               },
             }),
-            customUnderlayProps.css,
+            customUnderlayProps?.css,
           ]}
           style={{ "--background": transparent ? "none" : undefined }}
         >

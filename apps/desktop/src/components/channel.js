@@ -23,6 +23,7 @@ import useOnlineListener from "../hooks/window-online-listener.js";
 import useChannelFetchEffects from "../hooks/channel-fetch-effects.js";
 import useScrollAwareChannelMessagesFetcher from "../hooks/scroll-aware-channel-messages-fetcher.js";
 import useMessageInputPlaceholder from "../hooks/channel-message-input-placeholder.js";
+import Delay from "./delay.js";
 import Spinner from "./spinner.js";
 import ChannelMessagesScrollView from "./channel-messages-scroll-view.js";
 import NewChannelMessageInput from "./new-channel-message-input.js";
@@ -357,19 +358,21 @@ const Channel = ({ channelId, layout, noSideMenu }) => {
   )
     return (
       <Layout channelId={channelId} noSideMenu={noSideMenu}>
-        <div
-          css={(t) =>
-            css({
-              flex: 1,
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              paddingBottom: t.mainHeader.height,
-            })
-          }
-        >
-          <Spinner size="2.4rem" />
-        </div>
+        <Delay millis={1000}>
+          <div
+            css={(t) =>
+              css({
+                flex: 1,
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                paddingBottom: t.mainHeader.height,
+              })
+            }
+          >
+            <Spinner size="2.4rem" />
+          </div>
+        </Delay>
       </Layout>
     );
 

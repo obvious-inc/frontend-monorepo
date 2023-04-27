@@ -22,10 +22,10 @@ const ChannelPrologue = ({ title, subtitle, body, image, info, ...props }) => {
       {...props}
     >
       <div
-        css={(theme) =>
+        css={(t) =>
           css({
             borderBottom: "0.1rem solid",
-            borderColor: theme.colors.borderLighter,
+            borderColor: t.colors.borderLighter,
             padding: "0 0 1.5rem",
           })
         }

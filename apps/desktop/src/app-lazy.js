@@ -16,7 +16,7 @@ import {
   BrowserRouter,
   Routes,
   Route,
-  Navigate,
+  // Navigate,
   useNavigate,
   useParams,
   useLocation,
@@ -61,6 +61,9 @@ import TitleBar from "./components/title-bar";
 import * as Tooltip from "./components/tooltip";
 import { nounsTv as nounsTvTheme } from "./themes";
 
+const AccountProfileScreen = React.lazy(() =>
+  import("./components/account-profile-screen")
+);
 const ChannelScreen = React.lazy(() => import("./components/channel-route"));
 const ChannelBase = React.lazy(() => import("./components/channel"));
 const CommandCenterLazy = React.lazy(() =>
@@ -285,6 +288,7 @@ const App = () => {
             },
             body: {
               color: theme.colors.textNormal,
+              background: theme.colors.backgroundPrimary,
               fontFamily: theme.fontStacks.default,
               "::selection": {
                 background: theme.colors.textSelectionBackground,
@@ -304,7 +308,7 @@ const App = () => {
         </Route>
         <Route path="/c/:channelId" element={<ChannelScreen noSideMenu />} />
         <Route
-          path="/dm/:ensNameOrEthereumAddress"
+          path="/dm/:ensNameOrEthereumAccountAddress"
           element={<RedirectDmIntent />}
         />
         <Route
@@ -321,7 +325,13 @@ const App = () => {
             </RequireAuth>
           }
         />
-        <Route path="*" element={<Navigate to="/" replace />} />
+        <Route element={<Layout />}>
+          <Route
+            path="/:ensNameOrEthereumAccountAddress"
+            element={<AccountProfileScreen />}
+          />
+        </Route>
+        {/* <Route path="*" element={<Navigate to="/" replace />} /> */}
       </Routes>
 
       <CommandCenter />
@@ -343,17 +353,19 @@ const CommandCenter = () => {
 };
 
 const RedirectDmIntent = () => {
-  const { ensNameOrEthereumAddress } = useParams();
+  const { ensNameOrEthereumAccountAddress } = useParams();
   const navigate = useNavigate();
   const provider = useProvider();
 
   React.useEffect(() => {
-    if (ethersUtils.isAddress(ensNameOrEthereumAddress)) {
-      navigate(`/new?account=${ensNameOrEthereumAddress}`, { replace: true });
+    if (ethersUtils.isAddress(ensNameOrEthereumAccountAddress)) {
+      navigate(`/new?account=${ensNameOrEthereumAccountAddress}`, {
+        replace: true,
+      });
       return;
     }
 
-    provider.resolveName(ensNameOrEthereumAddress).then((address) => {
+    provider.resolveName(ensNameOrEthereumAccountAddress).then((address) => {
       if (address == null) {
         navigate("/", { replace: true });
         return;
@@ -361,7 +373,7 @@ const RedirectDmIntent = () => {
 
       navigate(`/new?account=${address}`, { replace: true });
     });
-  }, [navigate, provider, ensNameOrEthereumAddress]);
+  }, [navigate, provider, ensNameOrEthereumAccountAddress]);
 
   return null;
 };

@@ -25,6 +25,7 @@ import {
 import { useDialog } from "../hooks/dialogs";
 import Spinner from "./spinner";
 import NavBar from "./nav-bar";
+import Heading from "./heading";
 import UserAvatar from "./user-avatar";
 import ChannelAvatar from "./channel-avatar";
 import * as Tooltip from "./tooltip";
@@ -445,25 +446,6 @@ const ChannelNavBar = ({ noSideMenu, channelId }) => {
   );
 };
 
-const Heading = ({ component: Component = "div", children, ...props }) => (
-  <Component
-    css={(theme) =>
-      css({
-        fontSize: theme.fontSizes.header,
-        fontWeight: theme.text.weights.header,
-        color: theme.colors.textHeader,
-        fontFamily: theme.fontStacks.headers,
-        whiteSpace: "nowrap",
-        textOverflow: "ellipsis",
-        userSelect: "text",
-        cursor: "default",
-      })
-    }
-    {...props}
-  >
-    {children}
-  </Component>
-);
 
 const MembersDisplayButton = React.forwardRef(({ onClick, members }, ref) => {
   const theme = useTheme();
