@@ -45,24 +45,27 @@ const ModalDialog = React.forwardRef(
         <div
           {...underlayProps}
           {...customUnderlayProps}
-          css={css({
-            position: "fixed",
-            zIndex: 10,
-            top: 0,
-            left: 0,
-            width: "100%",
-            height: "100%",
-            display: "flex",
-            alignItems: "flex-start",
-            justifyContent: "center",
-            overflow: "auto",
-            background: "var(--background, hsl(0 0% 0% / 40%))",
-            padding: "6rem 1.5rem 0",
-            "@media (min-width: 600px)": {
-              padding: "2.8rem",
-              alignItems: "center",
-            },
-          })}
+          css={[
+            css({
+              position: "fixed",
+              zIndex: 10,
+              top: 0,
+              left: 0,
+              width: "100%",
+              height: "100%",
+              display: "flex",
+              alignItems: "flex-start",
+              justifyContent: "center",
+              overflow: "auto",
+              background: "var(--background, hsl(0 0% 0% / 40%))",
+              padding: "6rem 1.5rem 0",
+              "@media (min-width: 600px)": {
+                padding: "2.8rem",
+                alignItems: "center",
+              },
+            }),
+            customUnderlayProps.css,
+          ]}
           style={{ "--background": transparent ? "none" : undefined }}
         >
           <div
