@@ -121,16 +121,17 @@ const AlwaysOpenComboboxInDialog = ({
       width="66rem"
       isOpen
       onRequestClose={onRequestClose}
-      css={(t) =>
-        css({
-          background: t.colors.backgroundSecondary,
-          "@media (min-width: 600px)": {
-            position: "relative",
-            top: "9rem",
-            maxHeight: "calc(100% - 16rem)",
-          },
-        })
-      }
+      modalProps={{
+        css: (t) =>
+          css({
+            background: t.colors.backgroundSecondary,
+            "@media (min-width: 600px)": {
+              position: "relative",
+              top: "9rem",
+              maxHeight: "calc(100% - 16rem)",
+            },
+          }),
+      }}
       underlayProps={{
         css: css({
           "@media (min-width: 600px)": {
@@ -168,16 +169,8 @@ const AlwaysOpenCombobox = ({ value, options = [], popoverRef, ...props_ }) => {
 
   const state = useComboBoxState(props);
 
-  // const openCombobox = useLatestCallback(() => state.open());
-
-  // Setup refs and get props for child elements.
-  // let buttonRef = React.useRef(null);
   const inputRef = React.useRef(null);
   const listBoxRef = React.useRef(null);
-
-  // React.useEffect(() => {
-  //   openCombobox();
-  // }, [options, openCombobox]);
 
   const {
     // buttonProps,

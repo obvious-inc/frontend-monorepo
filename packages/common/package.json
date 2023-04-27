@@ -22,7 +22,8 @@
     "@nouns/sdk": "*",
     "ethers": "*",
     "react": "*",
-    "reselect": "*"
+    "reselect": "*",
+    "react-aria": "*"
   },
   "devDependencies": {
     "@swc/core": "^1.3.55",

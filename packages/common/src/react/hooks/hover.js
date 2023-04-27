@@ -1,21 +1,8 @@
-import React from "react";
+import { useHover as useReactAriaHover } from "react-aria";
 
-const useHover = (initialValue = false) => {
-  const [isHovering, setHovering] = React.useState(initialValue);
-
-  const onPointerEnter = React.useCallback(() => {
-    setHovering(true);
-  }, []);
-
-  const onPointerMove = React.useCallback(() => {
-    setHovering(true);
-  }, []);
-
-  const onPointerLeave = React.useCallback(() => {
-    setHovering(false);
-  }, []);
-
-  return [isHovering, { onPointerEnter, onPointerLeave, onPointerMove }];
+const useHover = () => {
+  const { isHovered, hoverProps } = useReactAriaHover({});
+  return [isHovered, hoverProps];
 };
 
 export default useHover;

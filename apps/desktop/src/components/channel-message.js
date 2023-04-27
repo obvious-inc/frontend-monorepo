@@ -31,7 +31,6 @@ import {
   EditPen as EditPenIcon,
   ReplyArrow as ReplyArrowIcon,
   EmojiFace as EmojiFaceIcon,
-  AddEmojiReaction as AddEmojiReactionIcon,
   JoinArrowRight as JoinArrowRightIcon,
 } from "@shades/ui-web/icons";
 import {
@@ -1105,7 +1104,7 @@ const EmojiPickerMobileDialog = ({ onSelect, isOpen, onRequestClose }) => (
   <Dialog
     isOpen={isOpen}
     onRequestClose={onRequestClose}
-    css={css({ background: "none" })}
+    modalProps={{ css: css({ background: "none" }) }}
   >
     <button
       onClick={onRequestClose}
@@ -1678,7 +1677,6 @@ const MessageToolbar = React.memo(
             >
               <Popover.Trigger>
                 <span>
-                  {/* <AddEmojiReactionIcon style={{ width: "1.6rem" }} /> */}
                   <EmojiFaceIcon style={{ width: "1.6rem" }} />
                 </span>
               </Popover.Trigger>
@@ -1704,7 +1702,7 @@ const MessageToolbar = React.memo(
                   onEmojiPickerOpenChange(true);
                 }}
               >
-                <AddEmojiReactionIcon style={{ width: "1.6rem" }} />
+                <EmojiFaceIcon style={{ width: "1.6rem" }} />
               </button>
             </Toolbar.Button>
             <EmojiPickerMobileDialog

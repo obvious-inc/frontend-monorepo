@@ -28,7 +28,7 @@ const entrypoints = [
     dependencies: ["react", "wagmi", "wagmi/chains", "ethers"],
   },
   { file: "utils.js" },
-  { file: "react.js", dependencies: ["react"] },
+  { file: "react.js", dependencies: ["react", "react-aria"] },
   { file: "nouns.js", dependencies: ["ethers", "@nouns/assets", "@nouns/sdk"] },
   { file: "emoji.js" },
 ];
