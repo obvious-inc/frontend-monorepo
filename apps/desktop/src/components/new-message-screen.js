@@ -169,12 +169,12 @@ const useFilteredChannels = (query, { selectedWalletAddresses }) => {
 
   const filteredChannels = React.useMemo(() => {
     if (query.trim() === "")
-      return sort(
-        createDefaultChannelComparator(),
-        channels.length === 0
-          ? publicChannels.filter((c) => c.memberUserIds.length > 1)
-          : channels
-      );
+      return channels.length === 0
+        ? sort(
+            createDefaultChannelComparator(),
+            publicChannels.filter((c) => c.memberUserIds.length > 1)
+          )
+        : [];
 
     const allChannels = channels.length === 0 ? publicChannels : channels;
 
