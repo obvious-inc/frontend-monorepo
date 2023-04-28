@@ -629,8 +629,7 @@ const MessageBody = React.memo(({ messageId, layout }) => {
       case "image-attachment":
         window.open(el.url, "_blank");
         break;
-      default:
-        throw new Error();
+      default: // Ignore
     }
   }, []);
 

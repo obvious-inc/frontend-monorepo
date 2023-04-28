@@ -28,6 +28,7 @@ const GlobalDialogs = () => {
   const {
     isOpen: isAccountAuthenticationDialogOpen,
     dismiss: dismissAccountAuthenticationDialog,
+    data: accountAuthenticationData,
   } = useDialog("account-authentication");
 
   return (
@@ -43,6 +44,8 @@ const GlobalDialogs = () => {
           },
           width: "44rem",
           component: LazyAccountAuthenticationDialog,
+          title: accountAuthenticationData?.title,
+          subtitle: accountAuthenticationData?.subtitle,
         },
         {
           key: "settings",
@@ -65,22 +68,37 @@ const GlobalDialogs = () => {
           width: "38rem",
           component: LazyProfileLinkDialog,
         },
-      ].map(({ key, isOpen, dismiss, width, component: Component }) => (
-        <Dialog
-          key={key}
-          isOpen={isOpen}
-          onRequestClose={dismiss}
-          width={width}
-        >
-          {({ titleProps }) => (
-            <ErrorBoundary fallback={() => window.location.reload()}>
-              <React.Suspense fallback={null}>
-                <Component titleProps={titleProps} dismiss={dismiss} />
-              </React.Suspense>
-            </ErrorBoundary>
-          )}
-        </Dialog>
-      ))}
+      ].map(
+        ({
+          key,
+          isOpen,
+          dismiss,
+          width,
+          title,
+          subtitle,
+          component: Component,
+        }) => (
+          <Dialog
+            key={key}
+            isOpen={isOpen}
+            onRequestClose={dismiss}
+            width={width}
+          >
+            {({ titleProps }) => (
+              <ErrorBoundary fallback={() => window.location.reload()}>
+                <React.Suspense fallback={null}>
+                  <Component
+                    title={title}
+                    subtitle={subtitle}
+                    titleProps={titleProps}
+                    dismiss={dismiss}
+                  />
+                </React.Suspense>
+              </ErrorBoundary>
+            )}
+          </Dialog>
+        )
+      )}
     </>
   );
 };

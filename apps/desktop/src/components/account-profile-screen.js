@@ -1,24 +1,68 @@
+import isToday from "date-fns/isToday";
+import isYesterday from "date-fns/isYesterday";
+import isThisYear from "date-fns/isThisYear";
 import { utils as ethersUtils } from "ethers";
 import React from "react";
 import { css } from "@emotion/react";
 import { useParams, useNavigate, useLocation } from "react-router-dom";
-import { useProvider } from "wagmi";
+import {
+  useAccount as useConnectedWalletAccount,
+  useProvider,
+  useEnsName,
+} from "wagmi";
 import { ethereum as ethereumUtils } from "@shades/common/utils";
+import { useWallet, useWalletLogin } from "@shades/common/wallet";
 import {
   useSelectors,
-  useMe,
+  useActions,
+  useAuth,
+  // useMe,
   useUserWithWalletAddress,
+  useIsUserStarred,
 } from "@shades/common/app";
 import Button from "@shades/ui-web/button";
+import useFetch from "../hooks/fetch.js";
+import { useDialog } from "../hooks/dialogs.js";
 import useAccountDisplayName from "../hooks/account-display-name.js";
 import * as Tooltip from "./tooltip.js";
 import Delay from "./delay.js";
+import FormattedDate from "./formatted-date.js";
 import Spinner from "./spinner.js";
 import NavBar from "./nav-bar.js";
 import Heading from "./heading.js";
+import Link from "./link.js";
 import UserAvatar from "./user-avatar.js";
 
 const { truncateAddress } = ethereumUtils;
+
+const prettifyAddress = (a) => truncateAddress(ethersUtils.getAddress(a));
+
+const fetchAccountTransactions = async (accountAddress, query = {}) => {
+  const searchParams = new URLSearchParams({
+    "account-address": accountAddress,
+    ...query,
+  });
+  const res = await fetch(
+    `${process.env.EDGE_API_BASE_URL}/account-transactions?${searchParams}`
+  );
+  const body = await res.json();
+  if (!res.ok) return Promise.reject(body);
+  return body.results;
+};
+
+const useAccountTransactions = (accountAddress) => {
+  const [transactions, setTransactions] = React.useState([]);
+
+  useFetch(
+    () =>
+      fetchAccountTransactions(accountAddress).then((ts) => {
+        setTransactions(ts);
+      }),
+    [accountAddress]
+  );
+
+  return transactions;
+};
 
 const AccountProfileScreen = () => {
   const { ensNameOrEthereumAccountAddress } = useParams();
@@ -101,20 +145,33 @@ const AccountProfile = ({ accountAddress }) => {
   const navigate = useNavigate();
   const location = useLocation();
   const selectors = useSelectors();
+  const { starUser, unstarUser } = useActions();
 
-  const me = useMe();
+  const { address: connectedWalletAccountAddress } =
+    useConnectedWalletAccount();
+  const { connect: connectWallet } = useWallet();
+  const { login: initAccountVerification } = useWalletLogin();
+
+  const { status: authenticationStatus } = useAuth();
+  // const me = useMe();
   const user = useUserWithWalletAddress(accountAddress);
+  const transactions = useAccountTransactions(accountAddress);
   const displayName = useAccountDisplayName(accountAddress);
+  const isStarred = useIsUserStarred(user?.id);
 
-  const isMe =
-    me != null &&
-    me.walletAddress.toLowerCase() === accountAddress.toLowerCase();
+  const {
+    open: openAccountAuthenticationDialog,
+    dismiss: dismissAccountAuthenticationDialog,
+  } = useDialog("account-authentication");
 
-  const truncatedAddress = truncateAddress(
-    ethersUtils.getAddress(accountAddress)
-  );
+  // const isMe =
+  //   me != null &&
+  //   me.walletAddress.toLowerCase() === accountAddress.toLowerCase();
 
-  const [textCopied, setTextCopied] = React.useState(false);
+  const truncatedAddress = prettifyAddress(accountAddress);
+
+  const [hasPendingStarRequest, setPendingStarRequest] = React.useState(false);
+  // const [textCopied, setTextCopied] = React.useState(false);
 
   const isOnline = user?.onlineStatus === "online";
 
@@ -134,10 +191,10 @@ const AccountProfile = ({ accountAddress }) => {
       }
     >
       <NavBar>
-        <UserAvatar
-          walletAddress={accountAddress}
-          style={{ marginRight: "1.1rem" }}
-        />
+        {/* <UserAvatar */}
+        {/*   walletAddress={accountAddress} */}
+        {/*   style={{ marginRight: "1.1rem" }} */}
+        {/* /> */}
 
         <div
           style={{
@@ -149,40 +206,71 @@ const AccountProfile = ({ accountAddress }) => {
         >
           <Heading css={css({ minWidth: 0 })}>{displayName}</Heading>
 
-          {user?.description != null && (
-            <>
-              <div
-                role="separator"
-                aria-orientation="vertical"
-                css={(t) =>
-                  css({
-                    width: "0.1rem",
-                    height: "1.8rem",
-                    background: t.colors.borderLight,
-                    margin: "0 1.1rem",
-                  })
-                }
-              />
+          {/* {user?.description != null && ( */}
+          {/*   <> */}
+          {/*     <div */}
+          {/*       role="separator" */}
+          {/*       aria-orientation="vertical" */}
+          {/*       css={(t) => */}
+          {/*         css({ */}
+          {/*           width: "0.1rem", */}
+          {/*           height: "1.8rem", */}
+          {/*           background: t.colors.borderLight, */}
+          {/*           margin: "0 1.1rem", */}
+          {/*         }) */}
+          {/*       } */}
+          {/*     /> */}
 
-              <div
-                css={(t) =>
-                  css({
-                    flex: 1,
-                    minWidth: 0,
-                    color: t.colors.textDimmed,
-                    marginRight: "1.1rem",
-                    whiteSpace: "nowrap",
-                    overflow: "hidden",
-                    textOverflow: "ellipsis",
-                    userSelect: "text",
-                    maxWidth: "100%",
-                  })
-                }
-              >
-                {user.description}
-              </div>
-            </>
-          )}
+          {/*     <div */}
+          {/*       css={(t) => */}
+          {/*         css({ */}
+          {/*           flex: 1, */}
+          {/*           minWidth: 0, */}
+          {/*           color: t.colors.textDimmed, */}
+          {/*           marginRight: "1.1rem", */}
+          {/*           whiteSpace: "nowrap", */}
+          {/*           overflow: "hidden", */}
+          {/*           textOverflow: "ellipsis", */}
+          {/*           userSelect: "text", */}
+          {/*           maxWidth: "100%", */}
+          {/*         }) */}
+          {/*       } */}
+          {/*     > */}
+          {/*       {user.description} */}
+          {/*     </div> */}
+          {/*   </> */}
+          {/* )} */}
+          <div
+            role="separator"
+            aria-orientation="vertical"
+            css={(t) =>
+              css({
+                width: "0.1rem",
+                height: "1.8rem",
+                background: t.colors.borderLight,
+                margin: "0 1.1rem",
+              })
+            }
+          />
+          <div
+            css={(t) =>
+              css({
+                flex: 1,
+                minWidth: 0,
+                color: t.colors.textDimmed,
+                fontSize: t.text.sizes.default,
+                marginRight: "1.1rem",
+                whiteSpace: "nowrap",
+                overflow: "hidden",
+                textOverflow: "ellipsis",
+                userSelect: "text",
+                maxWidth: "100%",
+              })
+            }
+          >
+            {/* {truncatedAddress} */}
+            {accountAddress}
+          </div>
         </div>
       </NavBar>
       <div
@@ -193,9 +281,11 @@ const AccountProfile = ({ accountAddress }) => {
             flexDirection: "column",
             alignItems: "stretch",
             justifyContent: "flex-start",
-            padding: "6rem 1.6rem 2rem",
+            padding: "6rem 0 0",
             color: t.colors.textNormal,
             fontSize: t.text.sizes.large,
+            overflowY: "scroll",
+            overflowX: "hidden",
           })
         }
       >
@@ -204,7 +294,7 @@ const AccountProfile = ({ accountAddress }) => {
             css({
               borderBottom: "0.1rem solid",
               borderColor: t.colors.borderLighter,
-              padding: "0 0 1.5rem",
+              padding: "0 1.6rem 2rem",
             })
           }
         >
@@ -217,7 +307,7 @@ const AccountProfile = ({ accountAddress }) => {
                 size="6.6rem"
               />
             </div>
-            <div>
+            <div style={{ flex: 1, minWidth: 0 }}>
               <div
                 css={(t) =>
                   css({
@@ -265,8 +355,8 @@ const AccountProfile = ({ accountAddress }) => {
                 <div
                   css={(t) =>
                     css({
-                      fontSize: t.text.sizes.default,
-                      color: t.colors.textDimmed,
+                      fontSize: t.text.sizes.base,
+                      color: t.colors.textNormal,
                     })
                   }
                 >
@@ -275,47 +365,94 @@ const AccountProfile = ({ accountAddress }) => {
               )}
             </div>
           </div>
-
           {user?.description != null && (
-            <div
-              css={css({
-                marginTop: "2rem",
-                // whiteSpace: "pre-wrap",
-                // "p + p": { marginTop: "1.5rem" },
-              })}
-            >
-              {user.description}
-            </div>
+            <div css={css({ marginTop: "2rem" })}>{user.description}</div>
           )}
-
-          <div
-            css={css({
-              marginTop: "2rem",
-              display: "flex",
-            })}
-          >
+          <div css={css({ marginTop: "2rem", display: "flex" })}>
             <div
               css={css({
                 display: "grid",
                 gridAutoFlow: "column",
-                gridAutoColumns: "minmax(10rem, auto)",
+                gridAutoColumns: "minmax(0,1fr)",
                 gridGap: "1.2rem",
+                "@media(min-width: 320px)": {
+                  gridAutoColumns: "minmax(12rem, auto)",
+                },
               })}
             >
+              {(authenticationStatus !== "authenticated" || user != null) && (
+                <Button
+                  size="medium"
+                  variant="primary"
+                  disabled={
+                    authenticationStatus === "loading" || hasPendingStarRequest
+                  }
+                  isLoading={hasPendingStarRequest}
+                  onClick={async () => {
+                    setPendingStarRequest(true);
+
+                    try {
+                      if (authenticationStatus !== "authenticated") {
+                        openAccountAuthenticationDialog({
+                          title: "Verify account",
+                          subtitle: `Verify account to follow ${displayName}`,
+                        });
+                        if (connectedWalletAccountAddress == null)
+                          await connectWallet();
+                        await initAccountVerification(
+                          connectedWalletAccountAddress
+                        );
+                        dismissAccountAuthenticationDialog();
+                      }
+
+                      const user = await new Promise((resolve) => {
+                        const scheduleCheck = () =>
+                          setTimeout(() => {
+                            if (selectors.selectHasFetchedUserChannels()) {
+                              resolve(
+                                selectors.selectUserFromWalletAddress(
+                                  accountAddress
+                                )
+                              );
+                              return;
+                            }
+
+                            scheduleCheck();
+                          }, 500);
+
+                        scheduleCheck();
+                      });
+
+                      if (user == null) return;
+
+                      if (isStarred == null || !isStarred) {
+                        await starUser(user.id);
+                      } else {
+                        await unstarUser(user.id);
+                      }
+                    } finally {
+                      setPendingStarRequest(false);
+                      dismissAccountAuthenticationDialog();
+                    }
+                  }}
+                >
+                  {isStarred ? "Unfollow" : "Follow"}
+                </Button>
+              )}
+
               <Button
-                size="small"
-                variant="primary"
+                size="medium"
                 onClick={() => {
                   const dmChannel = selectors.selectDmChannelFromUserId(
                     user?.id
                   );
 
                   if (dmChannel != null) {
-                    navigate(`/channels/${dmChannel.id}`);
+                    navigate(`/ channels / ${dmChannel.id}`);
                     return;
                   }
 
-                  const newMessageUrl = `/new?account=${user.walletAddress.toLowerCase()}`;
+                  const newMessageUrl = `/ new? account = ${accountAddress}`;
 
                   // Push navigation will be ignored from /new since the search params are
                   // controlled from state
@@ -327,31 +464,219 @@ const AccountProfile = ({ accountAddress }) => {
                   navigate(newMessageUrl);
                 }}
               >
-                {!isMe ? "My DM" : "Message"}
-              </Button>
-              <Button
-                size="small"
-                onClick={() => {
-                  navigator.clipboard.writeText(user.walletAddress);
-                  setTextCopied(true);
-                  setTimeout(() => {
-                    setTextCopied(false);
-                  }, 3000);
-                }}
-                css={css({
-                  whiteSpace: "nowrap",
-                  textOverflow: "ellipsis",
-                  padding: "0 1.6rem",
-                })}
-              >
-                {textCopied ? "Address copied" : "Copy address"}
+                Message
               </Button>
             </div>
           </div>
+        </div>
+        <div
+          style={{
+            padding: "1.6rem",
+          }}
+        >
+          <ul
+            css={(t) =>
+              css({
+                overflowY: "hidden",
+                overflowX: "auto",
+                listStyle: "none",
+                whiteSpace: "nowrap",
+                li: {
+                  display: "grid",
+                  gridGap: "1.6rem",
+                  justifyContent: "flex-start",
+                  gridTemplateColumns: "minmax(0, 1fr) auto",
+                },
+                "li > *": {
+                  overflow: "hidden",
+                  textOverflow: "ellipsis",
+                },
+                "[data-arrow]": {
+                  color: t.colors.textDimmed,
+                  fontSize: t.text.sizes.base,
+                },
+                "[data-date]": {
+                  color: t.colors.textDimmed,
+                  fontSize: t.text.sizes.small,
+                },
+                "[data-tag]": {
+                  display: "inline-flex",
+                  alignItems: "center",
+                  color: t.colors.textNormal,
+                  background: t.colors.backgroundModifierHover,
+                  fontSize: t.text.sizes.base,
+                  borderRadius: "1.3rem",
+                  padding: "0.3rem 1rem",
+                },
+                "li + li": { marginTop: "1rem" },
+                "a[data-tag]": {
+                  textDecoration: "none",
+                  "@media(hover: hover)": {
+                    ":hover": {
+                      textDecoration: "underline",
+                      background: t.colors.backgroundModifierHoverStrong,
+                    },
+                  },
+                },
+              })
+            }
+          >
+            {transactions.map((t) => {
+              const functionName = t.functionName.includes("(")
+                ? t.functionName.slice(0, t.functionName.indexOf("("))
+                : t.functionName || null;
+              const eth = ethersUtils.formatEther(t.value);
+              const [wholeEth, ethDecimals] = eth.split(".");
+              const date = new Date(parseInt(t.timeStamp) * 1000);
+              const showYear = !isThisYear(date);
+
+              const parseCamelCasedString = (str) => {
+                const parsed = str.replace(
+                  /[A-Z]+(?![a-z])|[A-Z]/g,
+                  (matchCapitalLetter, matchOffset) =>
+                    `${
+                      matchOffset === 0 ? "" : " "
+                    }${matchCapitalLetter.toLowerCase()}`
+                );
+                return `${parsed[0].toUpperCase()}${parsed.slice(1)}`;
+              };
+
+              return (
+                <li key={t.hash} rel="noreferrer" target="_blank">
+                  {/* <Link */}
+                  {/*   component="a" */}
+                  {/*   href={`https://etherscan.io/tx/${t.hash}`} */}
+                  {/*   target="_blank" */}
+                  {/* > */}
+                  {/*   <span data-hash>{t.hash}</span> */}
+                  {/* </Link> */}
+                  <div
+                    style={{
+                      display: "grid",
+                      gridAutoFlow: "column",
+                      gridAutoColumns: "auto",
+                      gridGap: "1rem",
+                      alignItems: "center",
+                      justifyContent: "flex-start",
+                      overflowX: "scroll",
+                    }}
+                  >
+                    {functionName == null ? (
+                      <>
+                        <AccountLink address={t.from} />
+                        {eth === "0.0" ? null : (
+                          <a
+                            href={`https://etherscan.io/tx/${t.hash}`}
+                            rel="noreferrer"
+                            target="_blank"
+                            data-tag
+                          >
+                            {ethDecimals.length <= 3 ? (
+                              eth
+                            ) : (
+                              <>
+                                {wholeEth}.{ethDecimals.slice(0, 3)}
+                                ...
+                              </>
+                            )}{" "}
+                            {"Ξ"}
+                          </a>
+                        )}
+                        <span data-arrow>&rarr;</span>
+                        <AccountLink address={t.to} />
+                      </>
+                    ) : (
+                      <>
+                        <a
+                          href={`https://etherscan.io/tx/${t.hash}`}
+                          rel="noreferrer"
+                          target="_blank"
+                          data-tag
+                        >
+                          {parseCamelCasedString(functionName)}
+                        </a>
+                        <span data-arrow>&rarr;</span>
+                        <AccountLink address={t.to} />
+                      </>
+                    )}
+                  </div>
+                  <div data-date>
+                    <Tooltip.Root>
+                      <Tooltip.Trigger asChild>
+                        <span>
+                          {isToday(date) ? (
+                            <FormattedDate
+                              value={date}
+                              hour="numeric"
+                              minute="numeric"
+                            />
+                          ) : isYesterday(date) ? (
+                            <>
+                              Yesterday{" "}
+                              <FormattedDate
+                                value={date}
+                                hour="numeric"
+                                minute="numeric"
+                              />
+                            </>
+                          ) : (
+                            <FormattedDate
+                              value={date}
+                              month="short"
+                              day="numeric"
+                              year={showYear ? "numeric" : undefined}
+                              hour="numeric"
+                              minute="numeric"
+                            />
+                          )}
+                        </span>
+                      </Tooltip.Trigger>
+                      <Tooltip.Content side="top" sideOffset={5}>
+                        <FormattedDate
+                          value={date}
+                          weekday="long"
+                          hour="numeric"
+                          minute="numeric"
+                          day="numeric"
+                          month="long"
+                        />
+                      </Tooltip.Content>
+                    </Tooltip.Root>
+                  </div>
+                </li>
+              );
+            })}
+          </ul>
         </div>
       </div>
     </div>
   );
 };
+
+const AccountLink = React.memo(({ address }) => {
+  const displayName = useAccountDisplayName(address);
+  return (
+    <a
+      href={`https://etherscan.io/address/${address}`}
+      rel="noreferrer"
+      target="_blank"
+      data-tag
+      style={{ paddingLeft: "0.3rem" }}
+    >
+      <UserAvatar
+        walletAddress={address}
+        transparent
+        size="2rem"
+        css={(t) =>
+          css({
+            background: t.colors.backgroundModifierHoverStrong,
+            marginRight: "0.5rem",
+          })
+        }
+      />
+      {displayName}
+    </a>
+  );
+});
 
 export default AccountProfileScreen;

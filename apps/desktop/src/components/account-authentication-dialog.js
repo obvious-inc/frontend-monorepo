@@ -5,7 +5,12 @@ import DialogFooter from "./dialog-footer.js";
 import LoginScreen from "./login-screen.js";
 import Emoji from "./emoji.js";
 
-const AccountAuthenticationDialog = ({ titleProps, dismiss }) => {
+const AccountAuthenticationDialog = ({
+  title,
+  subtitle,
+  titleProps,
+  dismiss,
+}) => {
   const { status: authenticationStatus } = useAuth();
   const isAuthenticated = authenticationStatus === "authenticated";
 
@@ -20,8 +25,8 @@ const AccountAuthenticationDialog = ({ titleProps, dismiss }) => {
       style={{ "--padding": isAuthenticated ? "2rem" : "2rem 2rem 4rem" }}
     >
       <DialogHeader
-        title={isAuthenticated ? "Account verified" : "Verify account"}
-        // subtitle="Verify account to edit profile"
+        title={isAuthenticated ? "Account verified" : title ?? "Verify account"}
+        subtitle={subtitle}
         titleProps={titleProps}
         dismiss={dismiss}
       />

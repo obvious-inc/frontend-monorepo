@@ -34,6 +34,7 @@ const textSizes = {
   tiny: "1.05rem",
   small: "1.2rem",
   base: normalTextSize,
+  // todo: remove default
   default: normalTextSize,
   large: largeText,
   huge: "3.2rem",
@@ -147,11 +148,11 @@ export default {
   },
   fontStacks: {
     default:
-      '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif',
+      'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif',
     headers:
-      '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif',
+      'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif',
     monospace:
-      "Menlo, Consolas, Monaco, Liberation Mono, Lucida Console, monospace",
+      'ui-monospace, "Cascadia Mono", "Segoe UI Mono", "Ubuntu Mono", "Roboto Mono", Menlo, Monaco, Consolas, monospace',
   },
   shadows: {
     focus: `0 0 0 0.1rem ${primary}, 0 0 0 0.3rem ${createPrimary({

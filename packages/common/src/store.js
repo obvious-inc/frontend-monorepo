@@ -9,6 +9,7 @@ import { parseString as parseStringToMessageBlocks } from "./utils/message.js";
 import { selectMe } from "./reducers/me.js";
 import {
   selectUser,
+  selectIsUserStarred,
   selectIsUserBlocked,
   selectUserFromWalletAddress,
 } from "./reducers/users.js";
@@ -23,6 +24,7 @@ import {
 } from "./reducers/channels.js";
 import { selectMessage } from "./reducers/messages.js";
 import { selectEnsName } from "./reducers/ens.js";
+import { selectHasFetchedUserChannels } from "./reducers/ui.js";
 import useLatestCallback from "./react/hooks/latest-callback.js";
 
 const isTruncatedAddress = (s) =>
@@ -41,7 +43,9 @@ const selectorFunctions = {
   selectStarredChannels,
   selectChannelAccessLevel,
   selectChannelHasUnread,
+  selectIsUserStarred,
   selectIsUserBlocked,
+  selectHasFetchedUserChannels,
 };
 
 const useZustandStore = createZustandStoreHook((setState) => {
@@ -232,8 +236,8 @@ const createApiParsers = ({ buildCloudflareImageUrl }) => ({
     const authorId = isSystemMessage
       ? "system"
       : isAppMessage
-      ? appId
-      : authorUserId;
+        ? appId
+        : authorUserId;
 
     return {
       id: rawMessage.id,

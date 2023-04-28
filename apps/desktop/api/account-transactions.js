@@ -36,7 +36,7 @@ export default async (req) => {
       endBlock: 99999999,
       page: searchParams.get("page") ?? 1,
       sort: "desc",
-      offset: 0,
+      offset: 50, // Page size
     })
   );
 

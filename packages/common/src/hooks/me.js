@@ -26,10 +26,16 @@ export const useBlockedUserIds = () => useStore(selectBlockedUserIds);
 
 export const useIsUserStarred = (userId) =>
   useStore(
-    React.useCallback((state) => selectIsUserStarred(state, userId), [userId])
+    React.useCallback(
+      (state) => (userId == null ? null : selectIsUserStarred(state, userId)),
+      [userId]
+    )
   );
 
 export const useIsUserBlocked = (userId) =>
   useStore(
-    React.useCallback((state) => selectIsUserBlocked(state, userId), [userId])
+    React.useCallback(
+      (state) => (userId == null ? null : selectIsUserBlocked(state, userId)),
+      [userId]
+    )
   );
