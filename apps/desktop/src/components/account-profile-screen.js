@@ -443,11 +443,11 @@ const AccountProfile = ({ accountAddress }) => {
                   );
 
                   if (dmChannel != null) {
-                    navigate(`/ channels / ${dmChannel.id}`);
+                    navigate(`/channels/${dmChannel.id}`);
                     return;
                   }
 
-                  const newMessageUrl = `/ new? account = ${accountAddress}`;
+                  const newMessageUrl = `/new?account=${accountAddress}`;
 
                   // Push navigation will be ignored from /new since the search params are
                   // controlled from state
