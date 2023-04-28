@@ -16,19 +16,22 @@ const useAccountDisplayName = (
     enabled: user == null && walletAddress != null && customDisplayName,
   });
 
+  const isAddress = ethersUtils.isAddress(walletAddress);
+
+  if (walletAddress != null && !isAddress)
+    console.warn(`Invalid address "${walletAddress}`);
+
   if (!customDisplayName) {
     if (ensName != null) return ensName;
-    return walletAddress == null
-      ? null
-      : truncateAddress(ethersUtils.getAddress(walletAddress));
+    return isAddress
+      ? truncateAddress(ethersUtils.getAddress(walletAddress))
+      : null;
   }
 
   const displayName =
     user?.displayName ??
     ensName ??
-    (walletAddress == null
-      ? null
-      : truncateAddress(ethersUtils.getAddress(walletAddress)));
+    (isAddress ? truncateAddress(ethersUtils.getAddress(walletAddress)) : null);
 
   return displayName;
 };

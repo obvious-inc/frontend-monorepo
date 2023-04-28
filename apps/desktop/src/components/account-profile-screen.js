@@ -5,11 +5,7 @@ import { utils as ethersUtils } from "ethers";
 import React from "react";
 import { css } from "@emotion/react";
 import { useParams, useNavigate, useLocation } from "react-router-dom";
-import {
-  useAccount as useConnectedWalletAccount,
-  useProvider,
-  useEnsName,
-} from "wagmi";
+import { useAccount as useConnectedWalletAccount, useProvider } from "wagmi";
 import { ethereum as ethereumUtils } from "@shades/common/utils";
 import { useWallet, useWalletLogin } from "@shades/common/wallet";
 import {
@@ -30,7 +26,6 @@ import FormattedDate from "./formatted-date.js";
 import Spinner from "./spinner.js";
 import NavBar from "./nav-bar.js";
 import Heading from "./heading.js";
-import Link from "./link.js";
 import UserAvatar from "./user-avatar.js";
 
 const { truncateAddress } = ethereumUtils;
@@ -541,6 +536,25 @@ const AccountProfile = ({ accountAddress }) => {
                 return `${parsed[0].toUpperCase()}${parsed.slice(1)}`;
               };
 
+              const renderEthTxLinkTag = () => (
+                <a
+                  href={`https://etherscan.io/tx/${t.hash}`}
+                  rel="noreferrer"
+                  target="_blank"
+                  data-tag
+                >
+                  {ethDecimals.length <= 3 ? (
+                    eth
+                  ) : (
+                    <>
+                      {wholeEth}.{ethDecimals.slice(0, 3)}
+                      ...
+                    </>
+                  )}{" "}
+                  {"Ξ"}
+                </a>
+              );
+
               return (
                 <li key={t.hash} rel="noreferrer" target="_blank">
                   {/* <Link */}
@@ -564,23 +578,17 @@ const AccountProfile = ({ accountAddress }) => {
                     {functionName == null ? (
                       <>
                         <AccountLink address={t.from} />
-                        {eth === "0.0" ? null : (
-                          <a
-                            href={`https://etherscan.io/tx/${t.hash}`}
-                            rel="noreferrer"
-                            target="_blank"
-                            data-tag
-                          >
-                            {ethDecimals.length <= 3 ? (
-                              eth
-                            ) : (
-                              <>
-                                {wholeEth}.{ethDecimals.slice(0, 3)}
-                                ...
-                              </>
-                            )}{" "}
-                            {"Ξ"}
-                          </a>
+                        {eth === "0.0" ? null : ethDecimals.length <= 3 ? (
+                          renderEthTxLinkTag()
+                        ) : (
+                          <Tooltip.Root>
+                            <Tooltip.Trigger asChild>
+                              {renderEthTxLinkTag()}
+                            </Tooltip.Trigger>
+                            <Tooltip.Content side="top" sideOffset={5}>
+                              {eth} {"Ξ"}
+                            </Tooltip.Content>
+                          </Tooltip.Root>
                         )}
                         <span data-arrow>&rarr;</span>
                         <AccountLink address={t.to} />
