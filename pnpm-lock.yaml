@@ -513,6 +513,9 @@ importers:
       react:
         specifier: '*'
         version: 18.2.0
+      react-aria:
+        specifier: '*'
+        version: 3.24.0(react-dom@18.2.0)(react@18.2.0)
       reselect:
         specifier: '*'
         version: 4.1.8

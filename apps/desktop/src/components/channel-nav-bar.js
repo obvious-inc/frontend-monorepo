@@ -446,7 +446,6 @@ const ChannelNavBar = ({ noSideMenu, channelId }) => {
   );
 };
 
-
 const MembersDisplayButton = React.forwardRef(({ onClick, members }, ref) => {
   const theme = useTheme();
   const sortedMembers = React.useMemo(
