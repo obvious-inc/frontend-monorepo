@@ -1,8 +1,6 @@
 import { utils as ethersUtils } from "ethers";
 import React from "react";
-import { useTab, useTabList, useTabPanel } from "react-aria";
 import { useNavigate } from "react-router-dom";
-import { Item, useTabListState } from "react-stately";
 import { css } from "@emotion/react";
 import {
   useActions,
@@ -41,6 +39,7 @@ import UserAvatar from "./user-avatar";
 import ChannelAvatar from "./channel-avatar";
 import Select from "./select";
 import * as Tooltip from "./tooltip";
+import * as Tabs from "./tabs";
 import RichText from "./rich-text";
 import FormDialog from "./form-dialog";
 
@@ -65,100 +64,6 @@ const ChannelPermissionIcon = ({ channelId, ...props }) => {
   const Component = deriveComponent();
 
   return <Component {...props} />;
-};
-
-const Tabs = (props) => {
-  const state = useTabListState(props);
-  const ref = React.useRef();
-  const { tabListProps } = useTabList(props, state, ref);
-
-  return (
-    <>
-      <div
-        {...tabListProps}
-        ref={ref}
-        css={(t) =>
-          css({
-            display: "grid",
-            gridAutoFlow: "column",
-            gridAutoColumns: "auto",
-            gridGap: "2rem",
-            justifyContent: "flex-start",
-            borderBottom: "0.1rem solid transparent",
-            borderColor: t.colors.borderLight,
-            padding: "0 1.5rem",
-            "@media (min-width: 600px)": {
-              padding: "0 2rem",
-            },
-          })
-        }
-      >
-        {[...state.collection].map((item) => (
-          <Tab
-            key={item.key}
-            item={item}
-            state={state}
-            orientation={props.orientation}
-          />
-        ))}
-      </div>
-      <TabPanel key={state.selectedItem?.key} state={state} />
-    </>
-  );
-};
-
-const Tab = ({
-  item,
-  state,
-  // orientation
-}) => {
-  const { key, rendered } = item;
-  const ref = React.useRef();
-  const {
-    tabProps,
-    isSelected,
-    // isDisabled
-  } = useTab({ key }, state, ref);
-
-  return (
-    <div
-      {...tabProps}
-      ref={ref}
-      css={(t) =>
-        css({
-          padding: "0.5rem 0",
-          borderBottom: "0.2rem solid",
-          fontSize: t.fontSizes.default,
-          fontWeight: "500",
-          color: isSelected ? t.colors.textNormal : t.colors.textDimmed,
-          borderColor: isSelected ? t.colors.primary : "transparent",
-          cursor: "pointer",
-          outline: "none",
-          marginBottom: "-0.1rem",
-          borderTopLeftRadius: "0.3rem",
-          borderTopRightRadius: "0.3rem",
-          ":hover": { color: t.colors.textNormal },
-          ":focus-visible": {
-            boxShadow: `0 0 0 0.2rem ${t.colors.primary}`,
-            borderColor: t.colors.borderLight,
-          },
-        })
-      }
-    >
-      {rendered}
-    </div>
-  );
-};
-
-const TabPanel = ({ state, ...props }) => {
-  const ref = React.useRef();
-  const { tabPanelProps } = useTabPanel(props, state, ref);
-
-  return (
-    <div {...tabPanelProps} ref={ref} css={css({ flex: 1, minHeight: 0 })}>
-      {state.selectedItem?.props.children}
-    </div>
-  );
 };
 
 const ChannelInfoDialog = ({
@@ -474,15 +379,20 @@ const ChannelInfoDialog = ({
           </div>
         </div>
       </header>
-      <Tabs
+      <Tabs.Root
         aria-label="Channel details"
         defaultSelectedKey={initialTab}
-        css={css({ flex: 1 })}
+        css={css({
+          padding: "0 1.5rem",
+          "@media (min-width: 600px)": {
+            padding: "0 2rem",
+          },
+        })}
       >
-        <Item key="about" title="About">
+        <Tabs.Item key="about" title="About">
           <AboutTab channelId={channelId} dismiss={dismiss} />
-        </Item>
-        <Item
+        </Tabs.Item>
+        <Tabs.Item
           key="members"
           title={
             <>
@@ -505,8 +415,8 @@ const ChannelInfoDialog = ({
             addMember={showAddMemberDialog}
             dismiss={dismiss}
           />
-        </Item>
-      </Tabs>
+        </Tabs.Item>
+      </Tabs.Root>
     </>
   );
 };

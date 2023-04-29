@@ -21,6 +21,7 @@ import useFetch from "../hooks/fetch.js";
 import { useDialog } from "../hooks/dialogs.js";
 import useAccountDisplayName from "../hooks/account-display-name.js";
 import * as Tooltip from "./tooltip.js";
+import * as Tabs from "./tabs.js";
 import Delay from "./delay.js";
 import FormattedDate from "./formatted-date.js";
 import Spinner from "./spinner.js";
@@ -150,7 +151,6 @@ const AccountProfile = ({ accountAddress }) => {
   const { status: authenticationStatus } = useAuth();
   // const me = useMe();
   const user = useUserWithWalletAddress(accountAddress);
-  const transactions = useAccountTransactions(accountAddress);
   const displayName = useAccountDisplayName(accountAddress);
   const isStarred = useIsUserStarred(user?.id);
 
@@ -284,15 +284,7 @@ const AccountProfile = ({ accountAddress }) => {
           })
         }
       >
-        <div
-          css={(t) =>
-            css({
-              borderBottom: "0.1rem solid",
-              borderColor: t.colors.borderLighter,
-              padding: "0 1.6rem 2rem",
-            })
-          }
-        >
+        <div css={css({ padding: "0 1.6rem 3rem" })}>
           <div style={{ display: "flex", alignItems: "center" }}>
             <div style={{ marginRight: "1.2rem" }}>
               <UserAvatar
@@ -464,199 +456,218 @@ const AccountProfile = ({ accountAddress }) => {
             </div>
           </div>
         </div>
-        <div
-          style={{
-            padding: "1.6rem",
-          }}
+        <Tabs.Root
+          size="large"
+          aria-label="Account tabs"
+          defaultSelectedKey="transactions"
+          disabledKeys={["messages", "channels"]}
+          css={css({ padding: "0 1.6rem" })}
         >
-          <ul
-            css={(t) =>
-              css({
-                overflowY: "hidden",
-                overflowX: "auto",
-                listStyle: "none",
-                whiteSpace: "nowrap",
-                li: {
+          <Tabs.Item key="messages" title="Messages" />
+          <Tabs.Item key="channels" title="Channels" />
+          <Tabs.Item key="transactions" title="Transactions">
+            <TransactionsTabPane accountAddress={accountAddress} />
+          </Tabs.Item>
+        </Tabs.Root>
+      </div>
+    </div>
+  );
+};
+
+const TransactionsTabPane = ({ accountAddress }) => {
+  const transactions = useAccountTransactions(accountAddress);
+  return (
+    <div style={{ padding: "1.6rem" }}>
+      <ul
+        css={(t) =>
+          css({
+            overflowY: "hidden",
+            overflowX: "auto",
+            listStyle: "none",
+            whiteSpace: "nowrap",
+            li: {
+              display: "grid",
+              gridGap: "1.6rem",
+              justifyContent: "flex-start",
+              gridTemplateColumns: "minmax(0, 1fr) auto",
+            },
+            "li > *": {
+              overflow: "hidden",
+              textOverflow: "ellipsis",
+            },
+            "[data-arrow]": {
+              color: t.colors.textDimmed,
+              fontSize: t.text.sizes.base,
+            },
+            "[data-date]": {
+              color: t.colors.textDimmed,
+              fontSize: t.text.sizes.small,
+            },
+            "[data-tag]": {
+              display: "inline-flex",
+              alignItems: "center",
+              color: t.colors.textNormal,
+              background: t.colors.backgroundModifierHover,
+              fontSize: t.text.sizes.base,
+              borderRadius: "1.3rem",
+              padding: "0.3rem 1rem",
+            },
+            "li + li": { marginTop: "1rem" },
+            "a[data-tag]": {
+              textDecoration: "none",
+              "@media(hover: hover)": {
+                ":hover": {
+                  textDecoration: "underline",
+                  background: t.colors.backgroundModifierHoverStrong,
+                },
+              },
+            },
+          })
+        }
+      >
+        {transactions.map((t) => {
+          const functionName = t.functionName.includes("(")
+            ? t.functionName.slice(0, t.functionName.indexOf("("))
+            : t.functionName || null;
+          const eth = ethersUtils.formatEther(t.value);
+          const [wholeEth, ethDecimals] = eth.split(".");
+          const date = new Date(parseInt(t.timeStamp) * 1000);
+          const showYear = !isThisYear(date);
+
+          const parseCamelCasedString = (str) => {
+            const parsed = str.replace(
+              /[A-Z]+(?![a-z])|[A-Z]/g,
+              (matchCapitalLetter, matchOffset) =>
+                `${
+                  matchOffset === 0 ? "" : " "
+                }${matchCapitalLetter.toLowerCase()}`
+            );
+            return `${parsed[0].toUpperCase()}${parsed.slice(1)}`;
+          };
+
+          const renderEthTxLinkTag = () => (
+            <a
+              href={`https://etherscan.io/tx/${t.hash}`}
+              rel="noreferrer"
+              target="_blank"
+              data-tag
+            >
+              {eth === "0.0" ? (
+                "0"
+              ) : ethDecimals.length <= 3 ? (
+                eth
+              ) : (
+                <>
+                  {wholeEth}.{ethDecimals.slice(0, 3)}
+                  ...
+                </>
+              )}{" "}
+              {"Ξ"}
+            </a>
+          );
+
+          if (functionName == null && eth === "0.0") console.log(t);
+
+          return (
+            <li key={t.hash} rel="noreferrer" target="_blank">
+              {/* <Link */}
+              {/*   component="a" */}
+              {/*   href={`https://etherscan.io/tx/${t.hash}`} */}
+              {/*   target="_blank" */}
+              {/* > */}
+              {/*   <span data-hash>{t.hash}</span> */}
+              {/* </Link> */}
+              <div
+                style={{
                   display: "grid",
-                  gridGap: "1.6rem",
-                  justifyContent: "flex-start",
-                  gridTemplateColumns: "minmax(0, 1fr) auto",
-                },
-                "li > *": {
-                  overflow: "hidden",
-                  textOverflow: "ellipsis",
-                },
-                "[data-arrow]": {
-                  color: t.colors.textDimmed,
-                  fontSize: t.text.sizes.base,
-                },
-                "[data-date]": {
-                  color: t.colors.textDimmed,
-                  fontSize: t.text.sizes.small,
-                },
-                "[data-tag]": {
-                  display: "inline-flex",
+                  gridAutoFlow: "column",
+                  gridAutoColumns: "auto",
+                  gridGap: "1rem",
                   alignItems: "center",
-                  color: t.colors.textNormal,
-                  background: t.colors.backgroundModifierHover,
-                  fontSize: t.text.sizes.base,
-                  borderRadius: "1.3rem",
-                  padding: "0.3rem 1rem",
-                },
-                "li + li": { marginTop: "1rem" },
-                "a[data-tag]": {
-                  textDecoration: "none",
-                  "@media(hover: hover)": {
-                    ":hover": {
-                      textDecoration: "underline",
-                      background: t.colors.backgroundModifierHoverStrong,
-                    },
-                  },
-                },
-              })
-            }
-          >
-            {transactions.map((t) => {
-              const functionName = t.functionName.includes("(")
-                ? t.functionName.slice(0, t.functionName.indexOf("("))
-                : t.functionName || null;
-              const eth = ethersUtils.formatEther(t.value);
-              const [wholeEth, ethDecimals] = eth.split(".");
-              const date = new Date(parseInt(t.timeStamp) * 1000);
-              const showYear = !isThisYear(date);
-
-              const parseCamelCasedString = (str) => {
-                const parsed = str.replace(
-                  /[A-Z]+(?![a-z])|[A-Z]/g,
-                  (matchCapitalLetter, matchOffset) =>
-                    `${
-                      matchOffset === 0 ? "" : " "
-                    }${matchCapitalLetter.toLowerCase()}`
-                );
-                return `${parsed[0].toUpperCase()}${parsed.slice(1)}`;
-              };
-
-              const renderEthTxLinkTag = () => (
-                <a
-                  href={`https://etherscan.io/tx/${t.hash}`}
-                  rel="noreferrer"
-                  target="_blank"
-                  data-tag
-                >
-                  {ethDecimals.length <= 3 ? (
-                    eth
-                  ) : (
-                    <>
-                      {wholeEth}.{ethDecimals.slice(0, 3)}
-                      ...
-                    </>
-                  )}{" "}
-                  {"Ξ"}
-                </a>
-              );
-
-              return (
-                <li key={t.hash} rel="noreferrer" target="_blank">
-                  {/* <Link */}
-                  {/*   component="a" */}
-                  {/*   href={`https://etherscan.io/tx/${t.hash}`} */}
-                  {/*   target="_blank" */}
-                  {/* > */}
-                  {/*   <span data-hash>{t.hash}</span> */}
-                  {/* </Link> */}
-                  <div
-                    style={{
-                      display: "grid",
-                      gridAutoFlow: "column",
-                      gridAutoColumns: "auto",
-                      gridGap: "1rem",
-                      alignItems: "center",
-                      justifyContent: "flex-start",
-                      overflowX: "scroll",
-                    }}
-                  >
-                    {functionName == null ? (
-                      <>
-                        <AccountLink address={t.from} />
-                        {eth === "0.0" ? null : ethDecimals.length <= 3 ? (
-                          renderEthTxLinkTag()
-                        ) : (
-                          <Tooltip.Root>
-                            <Tooltip.Trigger asChild>
-                              {renderEthTxLinkTag()}
-                            </Tooltip.Trigger>
-                            <Tooltip.Content side="top" sideOffset={5}>
-                              {eth} {"Ξ"}
-                            </Tooltip.Content>
-                          </Tooltip.Root>
-                        )}
-                        <span data-arrow>&rarr;</span>
-                        <AccountLink address={t.to} />
-                      </>
+                  justifyContent: "flex-start",
+                  overflowX: "scroll",
+                }}
+              >
+                {functionName == null ? (
+                  <>
+                    <AccountLink address={t.from} />
+                    {ethDecimals.length <= 3 ? (
+                      renderEthTxLinkTag()
                     ) : (
-                      <>
-                        <a
-                          href={`https://etherscan.io/tx/${t.hash}`}
-                          rel="noreferrer"
-                          target="_blank"
-                          data-tag
-                        >
-                          {parseCamelCasedString(functionName)}
-                        </a>
-                        <span data-arrow>&rarr;</span>
-                        <AccountLink address={t.to} />
-                      </>
+                      <Tooltip.Root>
+                        <Tooltip.Trigger asChild>
+                          {renderEthTxLinkTag()}
+                        </Tooltip.Trigger>
+                        <Tooltip.Content side="top" sideOffset={5}>
+                          {eth} {"Ξ"}
+                        </Tooltip.Content>
+                      </Tooltip.Root>
                     )}
-                  </div>
-                  <div data-date>
-                    <Tooltip.Root>
-                      <Tooltip.Trigger asChild>
-                        <span>
-                          {isToday(date) ? (
-                            <FormattedDate
-                              value={date}
-                              hour="numeric"
-                              minute="numeric"
-                            />
-                          ) : isYesterday(date) ? (
-                            <>
-                              Yesterday{" "}
-                              <FormattedDate
-                                value={date}
-                                hour="numeric"
-                                minute="numeric"
-                              />
-                            </>
-                          ) : (
-                            <FormattedDate
-                              value={date}
-                              month="short"
-                              day="numeric"
-                              year={showYear ? "numeric" : undefined}
-                              hour="numeric"
-                              minute="numeric"
-                            />
-                          )}
-                        </span>
-                      </Tooltip.Trigger>
-                      <Tooltip.Content side="top" sideOffset={5}>
+                    <span data-arrow>&rarr;</span>
+                    <AccountLink address={t.to} />
+                  </>
+                ) : (
+                  <>
+                    <a
+                      href={`https://etherscan.io/tx/${t.hash}`}
+                      rel="noreferrer"
+                      target="_blank"
+                      data-tag
+                    >
+                      {parseCamelCasedString(functionName)}
+                    </a>
+                    <span data-arrow>&rarr;</span>
+                    <AccountLink address={t.to} />
+                  </>
+                )}
+              </div>
+              <div data-date>
+                <Tooltip.Root>
+                  <Tooltip.Trigger asChild>
+                    <span>
+                      {isToday(date) ? (
                         <FormattedDate
                           value={date}
-                          weekday="long"
                           hour="numeric"
                           minute="numeric"
-                          day="numeric"
-                          month="long"
                         />
-                      </Tooltip.Content>
-                    </Tooltip.Root>
-                  </div>
-                </li>
-              );
-            })}
-          </ul>
-        </div>
-      </div>
+                      ) : isYesterday(date) ? (
+                        <>
+                          Yesterday{" "}
+                          <FormattedDate
+                            value={date}
+                            hour="numeric"
+                            minute="numeric"
+                          />
+                        </>
+                      ) : (
+                        <FormattedDate
+                          value={date}
+                          month="short"
+                          day="numeric"
+                          year={showYear ? "numeric" : undefined}
+                          hour="numeric"
+                          minute="numeric"
+                        />
+                      )}
+                    </span>
+                  </Tooltip.Trigger>
+                  <Tooltip.Content side="top" sideOffset={5}>
+                    <FormattedDate
+                      value={date}
+                      weekday="long"
+                      hour="numeric"
+                      minute="numeric"
+                      day="numeric"
+                      month="long"
+                    />
+                  </Tooltip.Content>
+                </Tooltip.Root>
+              </div>
+            </li>
+          );
+        })}
+      </ul>
     </div>
   );
 };

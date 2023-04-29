@@ -43,6 +43,7 @@ const textSizes = {
   menus: normalTextSize,
   button: "1.5rem",
   input: "1.5rem",
+  tab: "1.5rem",
 };
 
 export default {
