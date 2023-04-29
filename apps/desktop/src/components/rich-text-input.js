@@ -120,7 +120,7 @@ const withEditorCommands = (editor) => {
     Transforms.select(editor, Editor.start(editor, []));
   };
 
-  editor.string = () => string([]);
+  editor.string = (location = [], options) => string(location, options);
 
   return editor;
 };
