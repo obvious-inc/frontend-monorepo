@@ -17,6 +17,7 @@ import {
   useIsUserStarred,
 } from "@shades/common/app";
 import Button from "@shades/ui-web/button";
+import { Duplicate as DuplicateIcon } from "@shades/ui-web/icons";
 import useFetch from "../hooks/fetch.js";
 import { useDialog } from "../hooks/dialogs.js";
 import useAccountDisplayName from "../hooks/account-display-name.js";
@@ -166,7 +167,7 @@ const AccountProfile = ({ accountAddress }) => {
   const truncatedAddress = prettifyAddress(accountAddress);
 
   const [hasPendingStarRequest, setPendingStarRequest] = React.useState(false);
-  // const [textCopied, setTextCopied] = React.useState(false);
+  const [textCopied, setTextCopied] = React.useState(false);
 
   const isOnline = user?.onlineStatus === "online";
 
@@ -339,16 +340,43 @@ const AccountProfile = ({ accountAddress }) => {
                 )}
               </div>
               {displayName !== truncatedAddress && (
-                <div
+                <button
+                  onClick={() => {
+                    navigator.clipboard.writeText(
+                      ethersUtils.getAddress(accountAddress)
+                    );
+                    setTextCopied(true);
+                    setTimeout(() => {
+                      setTextCopied(false);
+                    }, 2000);
+                  }}
                   css={(t) =>
                     css({
+                      display: "inline-flex",
+                      alignItems: "center",
                       fontSize: t.text.sizes.base,
                       color: t.colors.textNormal,
+                      padding: "0.2rem",
+                      margin: "-0.2rem",
+                      "@media(hover: hover)": {
+                        cursor: "pointer",
+                        "[data-icon]": { opacity: 0 },
+                        ":hover [data-icon]": { opacity: 1 },
+                      },
                     })
                   }
                 >
-                  {truncatedAddress}
-                </div>
+                  {textCopied ? (
+                    "Address copied"
+                  ) : (
+                    <>
+                      <div style={{ marginRight: "0.6rem" }}>
+                        {truncatedAddress}
+                      </div>
+                      <DuplicateIcon data-icon style={{ width: "1.4rem" }} />
+                    </>
+                  )}
+                </button>
               )}
             </div>
           </div>
@@ -538,8 +566,7 @@ const TransactionsTabPane = ({ accountAddress }) => {
             const parsed = str.replace(
               /[A-Z]+(?![a-z])|[A-Z]/g,
               (matchCapitalLetter, matchOffset) =>
-                `${
-                  matchOffset === 0 ? "" : " "
+                `${matchOffset === 0 ? "" : " "
                 }${matchCapitalLetter.toLowerCase()}`
             );
             return `${parsed[0].toUpperCase()}${parsed.slice(1)}`;
