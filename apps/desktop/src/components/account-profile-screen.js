@@ -523,6 +523,19 @@ const TransactionsTabPane = ({ accountAddress }) => {
               overflow: "hidden",
               textOverflow: "ellipsis",
             },
+            "[data-primary]": { color: t.colors.textPrimary },
+            "[data-dimmed]": { color: t.colors.textDimmed },
+            "[data-emphasis]": { fontWeight: t.text.weights.emphasis },
+            "[data-code]": { fontFamily: t.fontStacks.monospace },
+            "[data-tooltip-highlight]": {
+              fontSize: t.text.sizes.base,
+              fontFamily: t.fontStacks.monospace,
+              color: t.colors.textPrimary,
+              display: "inline-flex",
+            },
+            "* + [data-tooltip-highlight]": {
+              marginTop: "0.1rem",
+            },
             "[data-arrow]": {
               color: t.colors.textDimmed,
               fontSize: t.text.sizes.base,
@@ -566,7 +579,8 @@ const TransactionsTabPane = ({ accountAddress }) => {
             const parsed = str.replace(
               /[A-Z]+(?![a-z])|[A-Z]/g,
               (matchCapitalLetter, matchOffset) =>
-                `${matchOffset === 0 ? "" : " "
+                `${
+                  matchOffset === 0 ? "" : " "
                 }${matchCapitalLetter.toLowerCase()}`
             );
             return `${parsed[0].toUpperCase()}${parsed.slice(1)}`;
@@ -592,8 +606,6 @@ const TransactionsTabPane = ({ accountAddress }) => {
               {"Ξ"}
             </a>
           );
-
-          if (functionName == null && eth === "0.0") console.log(t);
 
           return (
             <li key={t.hash} rel="noreferrer" target="_blank">
@@ -626,7 +638,13 @@ const TransactionsTabPane = ({ accountAddress }) => {
                           {renderEthTxLinkTag()}
                         </Tooltip.Trigger>
                         <Tooltip.Content side="top" sideOffset={5}>
-                          {eth} {"Ξ"}
+                          Transfered amount
+                          <br />
+                          <span data-tooltip-highlight>{eth} ETH</span>
+                          <br />
+                          <span data-dimmed>
+                            Click to view transaction on Etherscan
+                          </span>
                         </Tooltip.Content>
                       </Tooltip.Root>
                     )}
@@ -635,16 +653,30 @@ const TransactionsTabPane = ({ accountAddress }) => {
                   </>
                 ) : (
                   <>
-                    <a
-                      href={`https://etherscan.io/tx/${t.hash}`}
-                      rel="noreferrer"
-                      target="_blank"
-                      data-tag
-                    >
-                      {parseCamelCasedString(functionName)}
-                    </a>
+                    <Tooltip.Root>
+                      <Tooltip.Trigger>
+                        <a
+                          href={`https://etherscan.io/tx/${t.hash}`}
+                          rel="noreferrer"
+                          target="_blank"
+                          data-tag
+                        >
+                          {parseCamelCasedString(functionName)}
+                        </a>
+                      </Tooltip.Trigger>
+                      <Tooltip.Content side="top" align="start" sideOffset={6}>
+                        <span>Contract call</span>{" "}
+                        <span data-arrow>&rarr;</span> {prettifyAddress(t.to)}
+                        <br />
+                        <span data-tooltip-highlight>{t.functionName}</span>
+                        <br />
+                        <span data-dimmed>
+                          Click to view transaction on Etherscan
+                        </span>
+                      </Tooltip.Content>
+                    </Tooltip.Root>
                     <span data-arrow>&rarr;</span>
-                    <AccountLink address={t.to} />
+                    <AccountLink contract address={t.to} />
                   </>
                 )}
               </div>
@@ -699,30 +731,43 @@ const TransactionsTabPane = ({ accountAddress }) => {
   );
 };
 
-const AccountLink = React.memo(({ address }) => {
+const AccountLink = ({ contract, address }) => {
   const displayName = useAccountDisplayName(address);
   return (
-    <a
-      href={`https://etherscan.io/address/${address}`}
-      rel="noreferrer"
-      target="_blank"
-      data-tag
-      style={{ paddingLeft: "0.3rem" }}
-    >
-      <UserAvatar
-        walletAddress={address}
-        transparent
-        size="2rem"
-        css={(t) =>
-          css({
-            background: t.colors.backgroundModifierHoverStrong,
-            marginRight: "0.5rem",
-          })
-        }
-      />
-      {displayName}
-    </a>
+    <Tooltip.Root>
+      <Tooltip.Trigger>
+        <a
+          href={`https://etherscan.io/address/${address}`}
+          rel="noreferrer"
+          target="_blank"
+          data-tag
+          style={{ paddingLeft: "0.3rem" }}
+        >
+          <UserAvatar
+            walletAddress={address}
+            transparent
+            size="2rem"
+            css={(t) =>
+              css({
+                background: t.colors.backgroundModifierHoverStrong,
+                marginRight: "0.5rem",
+              })
+            }
+          />
+          {displayName}
+        </a>
+      </Tooltip.Trigger>
+      <Tooltip.Content side="top" align="center" sideOffset={6}>
+        {contract ? "Contract account" : "Externally owned account"}
+        <br />
+        <span data-tooltip-highlight>{ethersUtils.getAddress(address)}</span>
+        <br />
+        <span data-dimmed>
+          Click to view {contract ? "contract" : "account"} on Etherscan
+        </span>
+      </Tooltip.Content>
+    </Tooltip.Root>
   );
-});
+};
 
 export default AccountProfileScreen;

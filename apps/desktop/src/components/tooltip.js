@@ -11,16 +11,16 @@ export const Trigger = Tooltip.Trigger;
 export const Content = React.forwardRef((props, ref) => (
   <Tooltip.Content
     ref={ref}
-    css={(theme) =>
+    css={(t) =>
       css({
-        fontSize: "1.2rem",
-        fontWeight: "500",
-        color: theme.colors.textNormal,
-        background: theme.colors.backgroundTooltip,
+        fontSize: t.text.sizes.small,
+        textAlign: "left",
+        color: t.colors.textNormal,
+        background: t.colors.backgroundTooltip,
         padding: "0.4rem 0.8rem",
         borderRadius: "0.3rem",
-        lineHeight: 1.3,
-        boxShadow: theme.shadows.elevationHigh,
+        lineHeight: 1.35,
+        boxShadow: t.shadows.elevationHigh,
       })
     }
     {...props}

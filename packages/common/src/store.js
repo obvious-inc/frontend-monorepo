@@ -236,8 +236,8 @@ const createApiParsers = ({ buildCloudflareImageUrl }) => ({
     const authorId = isSystemMessage
       ? "system"
       : isAppMessage
-        ? appId
-        : authorUserId;
+      ? appId
+      : authorUserId;
 
     return {
       id: rawMessage.id,
