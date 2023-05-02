@@ -54,10 +54,11 @@ export const Root = ({
   );
 };
 
-export const Trigger = ({ children }) => {
+export const Trigger = ({ children, asChild }) => {
   const { menuTriggerProps, triggerRef } = React.useContext(Context);
   const { buttonProps } = useButton(menuTriggerProps);
-  return React.cloneElement(children, { ...buttonProps, ref: triggerRef });
+  const props = asChild ? menuTriggerProps : buttonProps;
+  return React.cloneElement(children, { ...props, ref: triggerRef });
   // return children({ props: buttonProps, ref: triggerRef });
 };
 

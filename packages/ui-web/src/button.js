@@ -1,5 +1,5 @@
 import React from "react";
-import { useButton } from "react-aria";
+import { useButton, mergeProps } from "react-aria";
 import { css, keyframes } from "@emotion/react";
 
 const baseStyles = (t, { align }) => ({
@@ -162,8 +162,7 @@ const Button = React.forwardRef(
           pointerEvents: isLoading ? "none" : undefined,
           width: fullWidth ? "100%" : undefined,
         }}
-        {...props}
-        {...buttonProps}
+        {...mergeProps(props, buttonProps)}
       >
         {icon != null && (
           <div

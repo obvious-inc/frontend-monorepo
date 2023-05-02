@@ -17,12 +17,16 @@ import {
   useIsUserStarred,
 } from "@shades/common/app";
 import Button from "@shades/ui-web/button";
-import { Duplicate as DuplicateIcon } from "@shades/ui-web/icons";
+import {
+  Duplicate as DuplicateIcon,
+  DotsHorizontal as DotsHorizontalIcon,
+} from "@shades/ui-web/icons";
 import useFetch from "../hooks/fetch.js";
 import { useDialog } from "../hooks/dialogs.js";
 import useAccountDisplayName from "../hooks/account-display-name.js";
 import * as Tooltip from "./tooltip.js";
 import * as Tabs from "./tabs.js";
+import * as DropdownMenu from "./dropdown-menu.js";
 import Delay from "./delay.js";
 import FormattedDate from "./formatted-date.js";
 import Spinner from "./spinner.js";
@@ -159,6 +163,7 @@ const AccountProfile = ({ accountAddress }) => {
     open: openAccountAuthenticationDialog,
     dismiss: dismissAccountAuthenticationDialog,
   } = useDialog("account-authentication");
+  const { open: openProfileLinkDialog } = useDialog("profile-link");
 
   // const isMe =
   //   me != null &&
@@ -168,6 +173,10 @@ const AccountProfile = ({ accountAddress }) => {
 
   const [hasPendingStarRequest, setPendingStarRequest] = React.useState(false);
   const [textCopied, setTextCopied] = React.useState(false);
+
+  const copyAccountLink = () => {
+    navigator.clipboard.writeText(ethersUtils.getAddress(accountAddress));
+  };
 
   const isOnline = user?.onlineStatus === "online";
 
@@ -186,12 +195,7 @@ const AccountProfile = ({ accountAddress }) => {
         })
       }
     >
-      <NavBar>
-        {/* <UserAvatar */}
-        {/*   walletAddress={accountAddress} */}
-        {/*   style={{ marginRight: "1.1rem" }} */}
-        {/* /> */}
-
+      <NavBar style={{ paddingRight: 0 }}>
         <div
           style={{
             flex: 1,
@@ -202,40 +206,6 @@ const AccountProfile = ({ accountAddress }) => {
         >
           <Heading css={css({ minWidth: 0 })}>{displayName}</Heading>
 
-          {/* {user?.description != null && ( */}
-          {/*   <> */}
-          {/*     <div */}
-          {/*       role="separator" */}
-          {/*       aria-orientation="vertical" */}
-          {/*       css={(t) => */}
-          {/*         css({ */}
-          {/*           width: "0.1rem", */}
-          {/*           height: "1.8rem", */}
-          {/*           background: t.colors.borderLight, */}
-          {/*           margin: "0 1.1rem", */}
-          {/*         }) */}
-          {/*       } */}
-          {/*     /> */}
-
-          {/*     <div */}
-          {/*       css={(t) => */}
-          {/*         css({ */}
-          {/*           flex: 1, */}
-          {/*           minWidth: 0, */}
-          {/*           color: t.colors.textDimmed, */}
-          {/*           marginRight: "1.1rem", */}
-          {/*           whiteSpace: "nowrap", */}
-          {/*           overflow: "hidden", */}
-          {/*           textOverflow: "ellipsis", */}
-          {/*           userSelect: "text", */}
-          {/*           maxWidth: "100%", */}
-          {/*         }) */}
-          {/*       } */}
-          {/*     > */}
-          {/*       {user.description} */}
-          {/*     </div> */}
-          {/*   </> */}
-          {/* )} */}
           <div
             role="separator"
             aria-orientation="vertical"
@@ -264,9 +234,54 @@ const AccountProfile = ({ accountAddress }) => {
               })
             }
           >
-            {/* {truncatedAddress} */}
-            {accountAddress}
+            {truncatedAddress}
           </div>
+        </div>
+        <div
+          css={css({
+            display: "grid",
+            gridAutoFlow: "column",
+            gridAutoColumns: "auto",
+            gridGap: "0.5rem",
+            paddingRight: "0.85rem",
+          })}
+        >
+          <Button
+            variant="transparent"
+            size="small"
+            align="left"
+            onClick={() => {
+              openProfileLinkDialog({ accountAddress });
+            }}
+          >
+            Share
+          </Button>
+          <DropdownMenu.Root>
+            <DropdownMenu.Trigger asChild>
+              <Button variant="transparent" size="small" align="left">
+                <DotsHorizontalIcon style={{ width: "2.2rem" }} />
+              </Button>
+            </DropdownMenu.Trigger>
+            <DropdownMenu.Content
+              disabledKeys={["block"]}
+              onAction={(key) => {
+                console.log("ac", key);
+                switch (key) {
+                  case "copy-link":
+                    copyAccountLink();
+                    break;
+                  default: // Ignore
+                }
+              }}
+            >
+              <DropdownMenu.Item key="copy-link">
+                Copy link to profile
+              </DropdownMenu.Item>
+              <DropdownMenu.Item key="block">Mute account</DropdownMenu.Item>
+              {/* <DropdownMenu.Item key="block">Block account</DropdownMenu.Item> */}
+              {/* <DropdownMenu.Item key="block">Report account</DropdownMenu.Item> */}
+            </DropdownMenu.Content>
+          </DropdownMenu.Root>
         </div>
       </NavBar>
       <div
@@ -295,7 +310,15 @@ const AccountProfile = ({ accountAddress }) => {
                 size="6.6rem"
               />
             </div>
-            <div style={{ flex: 1, minWidth: 0 }}>
+            <div
+              style={{
+                flex: 1,
+                minWidth: 0,
+                display: "flex",
+                flexDirection: "column",
+                alignItems: "flex-start",
+              }}
+            >
               <div
                 css={(t) =>
                   css({
@@ -305,15 +328,15 @@ const AccountProfile = ({ accountAddress }) => {
                     lineHeight: 1.3,
                     display: "flex",
                     alignItems: "center",
+                    justifyContent: "flex-start",
                   })
                 }
               >
-                {displayName}
+                <div style={{ flex: 1, minWidth: 0 }}>{displayName}</div>
                 {user != null && (
                   <>
-                    {" "}
                     <Tooltip.Root>
-                      <Tooltip.Trigger asChild>
+                      <Tooltip.Trigger>
                         <div
                           css={(t) =>
                             css({
@@ -340,43 +363,51 @@ const AccountProfile = ({ accountAddress }) => {
                 )}
               </div>
               {displayName !== truncatedAddress && (
-                <button
-                  onClick={() => {
-                    navigator.clipboard.writeText(
-                      ethersUtils.getAddress(accountAddress)
-                    );
-                    setTextCopied(true);
-                    setTimeout(() => {
-                      setTextCopied(false);
-                    }, 2000);
-                  }}
-                  css={(t) =>
-                    css({
-                      display: "inline-flex",
-                      alignItems: "center",
-                      fontSize: t.text.sizes.base,
-                      color: t.colors.textNormal,
-                      padding: "0.2rem",
-                      margin: "-0.2rem",
-                      "@media(hover: hover)": {
-                        cursor: "pointer",
-                        "[data-icon]": { opacity: 0 },
-                        ":hover [data-icon]": { opacity: 1 },
-                      },
-                    })
-                  }
-                >
-                  {textCopied ? (
-                    "Address copied"
-                  ) : (
-                    <>
-                      <div style={{ marginRight: "0.6rem" }}>
-                        {truncatedAddress}
-                      </div>
-                      <DuplicateIcon data-icon style={{ width: "1.4rem" }} />
-                    </>
-                  )}
-                </button>
+                <Tooltip.Root>
+                  <Tooltip.Trigger asChild>
+                    <button
+                      onClick={() => {
+                        copyAccountLink();
+                        setTextCopied(true);
+                        setTimeout(() => {
+                          setTextCopied(false);
+                        }, 2000);
+                      }}
+                      css={(t) =>
+                        css({
+                          display: "inline-flex",
+                          alignItems: "center",
+                          fontSize: t.text.sizes.base,
+                          color: t.colors.textDimmed,
+                          padding: "0.2rem",
+                          margin: "-0.2rem",
+                          "@media(hover: hover)": {
+                            cursor: "pointer",
+                            "[data-icon]": { opacity: 0 },
+                            ":hover [data-icon]": { opacity: 1 },
+                          },
+                        })
+                      }
+                    >
+                      {textCopied ? (
+                        "Address copied"
+                      ) : (
+                        <>
+                          <div style={{ marginRight: "0.6rem" }}>
+                            {truncatedAddress}
+                          </div>
+                          <DuplicateIcon
+                            data-icon
+                            style={{ width: "1.4rem" }}
+                          />
+                        </>
+                      )}
+                    </button>
+                  </Tooltip.Trigger>
+                  <Tooltip.Content side="right" align="left" sideOffset={7}>
+                    Click to copy address
+                  </Tooltip.Content>
+                </Tooltip.Root>
               )}
             </div>
           </div>

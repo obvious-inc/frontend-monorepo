@@ -16,10 +16,11 @@ import Emoji from "./emoji.js";
 
 const { truncateAddress } = ethereumUtils;
 
-const ProfileLinkDialog = ({ titleProps, dismiss }) => {
+const ProfileLinkDialog = ({ accountAddress, titleProps, dismiss }) => {
   const me = useMe();
   const { address: connectedWalletAccountAddress } = useAccount();
-  const walletAddress = me?.walletAddress ?? connectedWalletAccountAddress;
+  const walletAddress =
+    accountAddress ?? me?.walletAddress ?? connectedWalletAccountAddress;
   const computedDisplayName = useAccountDisplayName(walletAddress);
   const truncatedAddress = truncateAddress(
     ethersUtils.getAddress(walletAddress)
@@ -102,8 +103,8 @@ const ProfileLinkDialog = ({ titleProps, dismiss }) => {
           />
         </div>
         <p>
-          Copy and share your account link below, or let someone scan your QR
-          code <Emoji emoji="🤳" />
+          Copy and share the account link below, or let someone scan the QR code{" "}
+          <Emoji emoji="🤳" />
         </p>
         <div
           css={css({

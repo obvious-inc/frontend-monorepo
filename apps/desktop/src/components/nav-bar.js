@@ -10,7 +10,7 @@ import {
 
 const isNative = window.Native != null;
 
-const NavBar = ({ noSideMenu, children }) => {
+const NavBar = ({ noSideMenu, children, ...props }) => {
   const { isFloating: isSideMenuFloating, isCollapsed: isSideMenuCollapsed } =
     useSidebarState();
   const toggleMenu = useSidebarToggle();
@@ -41,6 +41,7 @@ const NavBar = ({ noSideMenu, children }) => {
             : {}),
         })
       }
+      {...props}
     >
       {isMenuTogglingEnabled && (
         <div

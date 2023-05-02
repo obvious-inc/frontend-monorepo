@@ -160,7 +160,6 @@ const ChannelNavBar = ({ noSideMenu, channelId }) => {
           }}
           css={(t) =>
             css({
-              cursor: "pointer",
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
@@ -170,11 +169,14 @@ const ChannelNavBar = ({ noSideMenu, channelId }) => {
               padding: 0,
               transition: "background 20ms ease-in",
               outline: "none",
-              ":hover": {
-                background: t.colors.backgroundModifierHover,
-              },
               ":focus-visible": {
                 boxShadow: `0 0 0 0.2rem ${t.colors.primary}`,
+              },
+              "@media(hover: hover)": {
+                cursor: "pointer",
+                ":hover": {
+                  background: t.colors.backgroundModifierHover,
+                },
               },
             })
           }

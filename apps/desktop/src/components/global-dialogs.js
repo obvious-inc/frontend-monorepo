@@ -23,8 +23,11 @@ const GlobalDialogs = () => {
     useDialog("edit-profile");
   const { isOpen: isSettingsDialogOpen, dismiss: dismissSettingsDialog } =
     useDialog("settings");
-  const { isOpen: isProfileLinkDialogOpen, dismiss: dismissProfileLinkDialog } =
-    useDialog("profile-link");
+  const {
+    isOpen: isProfileLinkDialogOpen,
+    dismiss: dismissProfileLinkDialog,
+    data: profileLinkData,
+  } = useDialog("profile-link");
   const {
     isOpen: isAccountAuthenticationDialogOpen,
     dismiss: dismissAccountAuthenticationDialog,
@@ -67,6 +70,7 @@ const GlobalDialogs = () => {
           dismiss: dismissProfileLinkDialog,
           width: "38rem",
           component: LazyProfileLinkDialog,
+          componentProps: { accountAddress: profileLinkData?.accountAddress },
         },
       ].map(
         ({
@@ -77,6 +81,7 @@ const GlobalDialogs = () => {
           title,
           subtitle,
           component: Component,
+          componentProps,
         }) => (
           <Dialog
             key={key}
@@ -92,6 +97,7 @@ const GlobalDialogs = () => {
                     subtitle={subtitle}
                     titleProps={titleProps}
                     dismiss={dismiss}
+                    {...componentProps}
                   />
                 </React.Suspense>
               </ErrorBoundary>

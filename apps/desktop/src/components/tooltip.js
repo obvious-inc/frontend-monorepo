@@ -14,6 +14,7 @@ export const Content = React.forwardRef((props, ref) => (
     css={(t) =>
       css({
         fontSize: t.text.sizes.small,
+        fontWeight: t.text.weights.normal,
         textAlign: "left",
         color: t.colors.textNormal,
         background: t.colors.backgroundTooltip,
