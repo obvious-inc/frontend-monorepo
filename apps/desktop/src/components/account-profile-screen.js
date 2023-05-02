@@ -51,6 +51,15 @@ const fetchAccountTransactions = async (accountAddress, query = {}) => {
   return body.results;
 };
 
+const useAccountUser = (accountAddress) => {
+  const user = useUserWithWalletAddress(accountAddress);
+  const { fetchUser } = useActions();
+
+  useFetch(() => fetchUser({ accountAddress }), [accountAddress]);
+
+  return user;
+};
+
 const useAccountTransactions = (accountAddress) => {
   const [transactions, setTransactions] = React.useState([]);
 
@@ -155,7 +164,7 @@ const AccountProfile = ({ accountAddress }) => {
 
   const { status: authenticationStatus } = useAuth();
   // const me = useMe();
-  const user = useUserWithWalletAddress(accountAddress);
+  const user = useAccountUser(accountAddress);
   const displayName = useAccountDisplayName(accountAddress);
   const isStarred = useIsUserStarred(user?.id);
 

@@ -405,6 +405,16 @@ export default ({
       const me = await fetchMe();
       return updateMe({ pushTokens: unique([...me.pushTokens, token]) });
     },
+    async fetchUser({ accountAddress }) {
+      const rawUsers = await authorizedFetch("/users/info", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ wallet_addresses: [accountAddress] }),
+      });
+      const users = rawUsers.map(parseUser);
+      dispatch({ type: "fetch-users-request-successful", users });
+      return users[0];
+    },
     fetchUsers,
     fetchMessages(
       channelId,
