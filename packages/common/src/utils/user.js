@@ -39,7 +39,7 @@ export const search = (users, rawQuery) => {
       },
       (u) => {
         if (!matchString(u.displayName ?? "", query)) return Infinity;
-        return u.displayName.length;
+        return u.displayName?.length;
       },
       (u) => u.displayName?.toLowerCase()
     ),
