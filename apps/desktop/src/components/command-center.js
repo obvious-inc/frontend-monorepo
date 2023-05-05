@@ -61,6 +61,7 @@ const CommandCenterChannelFilterMode = ({ query, close, ...props }) => {
 
   return (
     <AlwaysOpenComboboxInDialog
+      autoFocus
       aria-label="Find channels"
       placeholder="Find channel..."
       options={filteredOptions}
