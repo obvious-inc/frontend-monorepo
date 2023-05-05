@@ -82,12 +82,20 @@ export default ({
       return users;
     });
 
-  const fetchUserChannels = () =>
-    authorizedFetch("/users/me/channels").then((rawChannels) => {
+  const fetchUserChannels = (userId) => {
+    if (userId == null)
+      return authorizedFetch("/users/me/channels").then((rawChannels) => {
+        const channels = rawChannels.map(parseChannel);
+        dispatch({ type: "fetch-user-channels-request-successful", channels });
+        return channels;
+      });
+
+    return authorizedFetch(`/users/${userId}/channels`).then((rawChannels) => {
       const channels = rawChannels.map(parseChannel);
       dispatch({ type: "fetch-user-channels-request-successful", channels });
       return channels;
     });
+  };
 
   const fetchUserChannelsReadStates = () =>
     authorizedFetch("/users/me/read_states").then((readStates) => {
@@ -405,10 +413,20 @@ export default ({
       const me = await fetchMe();
       return updateMe({ pushTokens: unique([...me.pushTokens, token]) });
     },
+    async fetchUser({ accountAddress }) {
+      const rawUsers = await authorizedFetch("/users/info", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ wallet_addresses: [accountAddress] }),
+      });
+      const users = rawUsers.map(parseUser);
+      dispatch({ type: "fetch-users-request-successful", users });
+      return users[0];
+    },
     fetchUsers,
     fetchMessages(
       channelId,
-      { limit = 50, beforeMessageId, afterMessageId } = {}
+      { limit = 50, beforeMessageId, afterMessageId, onSuccess } = {}
     ) {
       if (limit == null) throw new Error(`Missing required "limit" argument`);
 
@@ -428,6 +446,7 @@ export default ({
         (rawMessages) => {
           const messages = rawMessages.map(parseMessage);
 
+          onSuccess?.();
           dispatch({
             type: "fetch-messages:request-successful",
             channelId,
@@ -701,6 +720,15 @@ export default ({
         });
         return channels;
       });
+    },
+    fetchUserMessages(userId) {
+      return authorizedFetch(`/users/${userId}/messages`).then(
+        (rawMessages) => {
+          const messages = rawMessages.map(parseMessage);
+          dispatch({ type: "fetch-messages:request-successful", messages });
+          return messages;
+        }
+      );
     },
     fetchUserChannelsReadStates,
     createChannel,

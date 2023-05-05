@@ -23,7 +23,7 @@ const useChannelFetchEffects = (channelId) => {
     channel != null &&
     channel.memberUserIds.some((id) => id === me.id);
 
-  const fetchMessages = useChannelMessagesFetcher();
+  const fetchMessages = useChannelMessagesFetcher(channelId);
 
   useFetch(
     () => fetchChannelMembers(channelId),
@@ -48,12 +48,12 @@ const useChannelFetchEffects = (channelId) => {
   );
 
   React.useEffect(() => {
-    fetchMessages(channelId, { limit: 30 });
-  }, [channelId, fetchMessages, authenticationStatus]);
+    fetchMessages({ limit: 30 });
+  }, [fetchMessages, authenticationStatus]);
 
   useInterval(
     () => {
-      fetchMessages(channelId, { limit: 20 });
+      fetchMessages({ limit: 20 });
     },
     {
       // Only long-poll fetch when user is logged out, or when not a member

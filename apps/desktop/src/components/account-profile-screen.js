@@ -4,7 +4,12 @@ import isThisYear from "date-fns/isThisYear";
 import { utils as ethersUtils } from "ethers";
 import React from "react";
 import { css } from "@emotion/react";
-import { useParams, useNavigate, useLocation } from "react-router-dom";
+import {
+  useParams,
+  useNavigate,
+  useLocation,
+  Link as RouterLink,
+} from "react-router-dom";
 import { useAccount as useConnectedWalletAccount, useProvider } from "wagmi";
 import { ethereum as ethereumUtils } from "@shades/common/utils";
 import { useWallet, useWalletLogin } from "@shades/common/wallet";
@@ -15,6 +20,7 @@ import {
   // useMe,
   useUserWithWalletAddress,
   useIsUserStarred,
+  useChannelsWithMembers,
 } from "@shades/common/app";
 import Button from "@shades/ui-web/button";
 import {
@@ -33,6 +39,8 @@ import Spinner from "./spinner.js";
 import NavBar from "./nav-bar.js";
 import Heading from "./heading.js";
 import UserAvatar from "./user-avatar.js";
+import ChannelAvatar from "./channel-avatar.js";
+import ChannelMessage from "./channel-message.js";
 
 const { truncateAddress } = ethereumUtils;
 
@@ -49,6 +57,44 @@ const fetchAccountTransactions = async (accountAddress, query = {}) => {
   const body = await res.json();
   if (!res.ok) return Promise.reject(body);
   return body.results;
+};
+
+const useAccountUser = (accountAddress) => {
+  const user = useUserWithWalletAddress(accountAddress);
+  const { fetchUser } = useActions();
+
+  useFetch(() => fetchUser({ accountAddress }), [accountAddress]);
+
+  return user;
+};
+
+const useAccountChannels = (accountAddress) => {
+  const user = useUserWithWalletAddress(accountAddress);
+  const channels = useChannelsWithMembers([accountAddress]);
+  const { fetchUserChannels } = useActions();
+
+  useFetch(user == null ? null : () => fetchUserChannels(user.id), [user]);
+
+  return channels;
+};
+
+const useAccountMessages = (accountAddress) => {
+  const user = useUserWithWalletAddress(accountAddress);
+  const { fetchUserMessages } = useActions();
+
+  const [messages, setMessages] = React.useState([]);
+
+  useFetch(
+    user == null
+      ? null
+      : () =>
+          fetchUserMessages(user.id).then((ms) => {
+            setMessages(ms);
+          }),
+    [user, fetchUserMessages]
+  );
+
+  return messages;
 };
 
 const useAccountTransactions = (accountAddress) => {
@@ -155,7 +201,7 @@ const AccountProfile = ({ accountAddress }) => {
 
   const { status: authenticationStatus } = useAuth();
   // const me = useMe();
-  const user = useUserWithWalletAddress(accountAddress);
+  const user = useAccountUser(accountAddress);
   const displayName = useAccountDisplayName(accountAddress);
   const isStarred = useIsUserStarred(user?.id);
 
@@ -265,7 +311,6 @@ const AccountProfile = ({ accountAddress }) => {
             <DropdownMenu.Content
               disabledKeys={["block"]}
               onAction={(key) => {
-                console.log("ac", key);
                 switch (key) {
                   case "copy-link":
                     copyAccountLink();
@@ -522,13 +567,116 @@ const AccountProfile = ({ accountAddress }) => {
           disabledKeys={["messages", "channels"]}
           css={css({ padding: "0 1.6rem" })}
         >
-          <Tabs.Item key="messages" title="Messages" />
-          <Tabs.Item key="channels" title="Channels" />
+          <Tabs.Item key="messages" title="Messages">
+            <MessagesTabPane accountAddress={accountAddress} />
+          </Tabs.Item>
+          <Tabs.Item key="channels" title="Channels">
+            <ChannelsTabPane accountAddress={accountAddress} />
+          </Tabs.Item>
           <Tabs.Item key="transactions" title="Transactions">
             <TransactionsTabPane accountAddress={accountAddress} />
           </Tabs.Item>
         </Tabs.Root>
       </div>
+    </div>
+  );
+};
+
+const MessagesTabPane = ({ accountAddress }) => {
+  const messages = useAccountMessages(accountAddress);
+
+  return (
+    <div style={{ padding: "1rem" }}>
+      <ul
+        css={(t) =>
+          css({
+            listStyle: "none",
+            a: {
+              display: "block",
+              textDecoration: "none",
+              padding: "0.6rem",
+              color: t.colors.textNormal,
+              borderRadius: "0.5rem",
+            },
+            ".name": {
+              fontSize: t.text.sizes.large,
+              fontWeight: t.text.weights.header,
+              lineHeight: 1.2,
+            },
+            ".description": {
+              color: t.colors.textDimmed,
+              fontSize: t.text.sizes.small,
+              lineHeight: 1.35,
+              marginTop: "0.1rem",
+            },
+            "@media(hover: hover)": {
+              "a:hover": { background: t.colors.backgroundModifierHover },
+            },
+          })
+        }
+      >
+        {messages.map((m) => (
+          <li key={m.id}>
+            <RouterLink to={`/channels/${m.channelId}`}>
+              <ChannelMessage messageId={m.id} />
+            </RouterLink>
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+};
+
+const ChannelsTabPane = ({ accountAddress }) => {
+  const channels = useAccountChannels(accountAddress);
+
+  return (
+    <div style={{ padding: "1rem" }}>
+      <ul
+        css={(t) =>
+          css({
+            listStyle: "none",
+            a: {
+              textDecoration: "none",
+              padding: "0.6rem",
+              color: t.colors.textNormal,
+              borderRadius: "0.5rem",
+              display: "grid",
+              gridTemplateColumns: "auto minmax(0,1fr)",
+              alignItems: "center",
+              gridGap: "1rem",
+            },
+            ".name": {
+              fontSize: t.text.sizes.large,
+              fontWeight: t.text.weights.header,
+              lineHeight: 1.2,
+            },
+            ".description": {
+              color: t.colors.textDimmed,
+              fontSize: t.text.sizes.small,
+              lineHeight: 1.35,
+              marginTop: "0.1rem",
+            },
+            "@media(hover: hover)": {
+              "a:hover": { background: t.colors.backgroundModifierHover },
+            },
+          })
+        }
+      >
+        {channels.map((c) => (
+          <li key={c.id}>
+            <RouterLink to={`/channels/${c.id}`}>
+              <ChannelAvatar id={c.id} transparent size="3.6rem" />
+              <div>
+                <div className="name">{c.name}</div>
+                {c.description != null && (
+                  <div className="description">{c.description}</div>
+                )}
+              </div>
+            </RouterLink>
+          </li>
+        ))}
+      </ul>
     </div>
   );
 };

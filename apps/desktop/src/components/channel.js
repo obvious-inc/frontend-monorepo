@@ -21,7 +21,8 @@ import useGlobalMediaQueries from "../hooks/global-media-queries.js";
 import useWindowFocusOrDocumentVisibleListener from "../hooks/window-focus-or-document-visible-listener.js";
 import useOnlineListener from "../hooks/window-online-listener.js";
 import useChannelFetchEffects from "../hooks/channel-fetch-effects.js";
-import useScrollAwareChannelMessagesFetcher from "../hooks/scroll-aware-channel-messages-fetcher.js";
+// import useScrollAwareChannelMessagesFetcher from "../hooks/scroll-aware-channel-messages-fetcher.js";
+import useChannelMessagesFetcher from "../hooks/channel-messages-fetcher.js";
 import useMessageInputPlaceholder from "../hooks/channel-message-input-placeholder.js";
 import Delay from "./delay.js";
 import Spinner from "./spinner.js";
@@ -91,16 +92,14 @@ const ChannelContent = ({ channelId, layout }) => {
   const { inputDeviceCanHover } = useGlobalMediaQueries();
 
   const inputRef = React.useRef();
-  const scrollContainerRef = React.useRef();
   const didScrollToBottomRef = React.useRef(false);
 
   const messageIds = useSortedChannelMessageIds(channelId);
 
-  const { fetcher: fetchMessages, pendingMessagesBeforeCount } =
-    useScrollAwareChannelMessagesFetcher(channelId, { scrollContainerRef });
+  const fetchMessages = useChannelMessagesFetcher(channelId);
 
   const fetchMoreMessages = useLatestCallback((args) =>
-    fetchMessages(args ?? { beforeMessageId: messageIds[0], limit: 30 })
+    fetchMessages({ beforeMessageId: messageIds[0], limit: 30, ...args })
   );
 
   const inputPlaceholder = useMessageInputPlaceholder(channelId);
@@ -205,12 +204,10 @@ const ChannelContent = ({ channelId, layout }) => {
       <ChannelMessagesScrollView
         channelId={channelId}
         layout={layout}
-        scrollContainerRef={scrollContainerRef}
         didScrollToBottomRef={didScrollToBottomRef}
         fetchMoreMessages={fetchMoreMessages}
         initReply={initReply}
         replyTargetMessageId={replyTargetMessageId}
-        pendingMessagesBeforeCount={pendingMessagesBeforeCount}
       />
 
       <div css={css({ padding: "0 1.6rem" })}>

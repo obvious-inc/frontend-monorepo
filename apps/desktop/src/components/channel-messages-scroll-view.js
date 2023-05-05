@@ -13,15 +13,15 @@ import {
 } from "@shades/common/app";
 import { ethereum as ethereumUtils } from "@shades/common/utils";
 import { useLatestCallback } from "@shades/common/react";
-import useGlobalMediaQueries from "../hooks/global-media-queries.js";
 import useIsOnScreen from "../hooks/is-on-screen.js";
 import useScrollListener from "../hooks/scroll-listener.js";
 import useMutationObserver from "../hooks/mutation-observer.js";
 import useLayoutSetting from "../hooks/layout-setting.js";
+import useReverseScrollPositionMaintainer from "../hooks/reverse-scroll-position-maintainer.js";
 import ChannelPrologue, {
   PersonalDMChannelPrologue,
 } from "./channel-prologue.js";
-import ChannelMessage from "./channel-message.js";
+import MessageList from "./message-list.js";
 import ChannelAvatar from "./channel-avatar.js";
 import InlineUserButtonWithProfilePopover from "./inline-user-button-with-profile-popover.js";
 import FormattedDate from "./formatted-date.js";
@@ -95,41 +95,122 @@ const useScroll = ({
   return { scrollToBottom };
 };
 
+const ReverseVerticalScrollView = React.forwardRef(
+  (
+    {
+      didScrollToBottomRef,
+      scrollCacheKey,
+      onScroll,
+      onScrollToBottom,
+      children,
+    },
+    ref
+  ) => {
+    const scrollContainerRef = React.useRef();
+
+    useReverseScrollPositionMaintainer(scrollContainerRef);
+
+    useScrollListener(scrollContainerRef, onScroll);
+
+    const { scrollToBottom } = useScroll({
+      scrollContainerRef,
+      didScrollToBottomRef,
+      cacheKey: scrollCacheKey,
+      onScrollToBottom,
+    });
+
+    useMutationObserver(
+      scrollContainerRef,
+      () => {
+        if (!didScrollToBottomRef.current) return;
+        scrollToBottom();
+      },
+      { subtree: true, childList: true }
+    );
+
+    React.useImperativeHandle(ref, () => ({ scrollToBottom }), [
+      scrollToBottom,
+    ]);
+
+    return (
+      <div
+        css={css({
+          position: "relative",
+          flex: 1,
+          display: "flex",
+          minHeight: 0,
+          minWidth: 0,
+        })}
+      >
+        <div
+          ref={scrollContainerRef}
+          css={css({
+            position: "absolute",
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            overflowY: "scroll",
+            overflowX: "hidden",
+            minHeight: 0,
+            flex: 1,
+            overflowAnchor: "none",
+          })}
+        >
+          <div
+            css={css({
+              display: "flex",
+              flexDirection: "column",
+              justifyContent: "flex-end",
+              alignItems: "stretch",
+              minHeight: "100%",
+            })}
+          >
+            {children}
+          </div>
+        </div>
+      </div>
+    );
+  }
+);
+
 const ChannelMessagesScrollView = ({
   channelId,
   layout: customLayout,
-  fetchMoreMessages,
+  fetchMoreMessages: fetchMoreMessages_,
   initReply,
-  scrollContainerRef,
   didScrollToBottomRef,
   replyTargetMessageId,
-  pendingMessagesBeforeCount,
 }) => {
+  const scrollViewRef = React.useRef();
   const messagesContainerRef = React.useRef();
   const disableFetchMoreRef = React.useRef();
+
+  const { markChannelRead } = useActions();
 
   const layout_ = useLayoutSetting();
   const layout = customLayout ?? layout_;
 
-  const { markChannelRead } = useActions();
-  const user = useMe();
-  const channel = useChannel(channelId, { name: true });
   const messageIds = useSortedChannelMessageIds(channelId, {
     threads: layout !== "bubbles",
   });
   const hasAllMessages = useHasAllChannelMessages(channelId);
-  const channelHasUnread = useChannelHasUnread(channelId);
   const hasFetchedChannelMessagesAtLeastOnce =
     useHasFetchedChannelMessages(channelId);
+  const channelHasUnread = useChannelHasUnread(channelId);
 
-  const isAdmin =
-    user != null && channel != null && user.id === channel.ownerUserId;
-  const { inputDeviceCanHover } = useGlobalMediaQueries();
-  const [touchFocusedMessageId, setTouchFocusedMessageId] =
-    React.useState(null);
-
+  const [pendingMessagesBeforeCount, setPendingMessagesBeforeCount] =
+    React.useState(0);
   const [averageMessageListItemHeight, setAverageMessageListItemHeight] =
     React.useState(0);
+
+  const fetchMoreMessages = React.useCallback(() => {
+    const count = 30;
+    setPendingMessagesBeforeCount(count);
+    return fetchMoreMessages_({ limit: count }).finally(() => {
+      setPendingMessagesBeforeCount(0);
+    });
+  }, [fetchMoreMessages_]);
 
   React.useEffect(() => {
     if (messageIds.length === 0) return;
@@ -140,74 +221,13 @@ const ChannelMessagesScrollView = ({
     );
   }, [messageIds.length]);
 
-  useScrollListener(scrollContainerRef, () => {
-    // Bounce back when scrolling to the top of the "loading" placeholder. Makes
-    // it feel like you keep scrolling like normal (ish).
-    if (scrollContainerRef.current.scrollTop < 10 && pendingMessagesBeforeCount)
-      scrollContainerRef.current.scrollTop =
-        pendingMessagesBeforeCount * averageMessageListItemHeight -
-        scrollContainerRef.current.getBoundingClientRect().height;
-  });
-
-  // Fetch new messages as the user scrolls up
-  useScrollListener(scrollContainerRef, (e, { direction }) => {
-    if (
-      // We only care about upward scroll
-      direction !== "up" ||
-      // Wait until we have fetched the initial batch of messages
-      messageIds.length === 0 ||
-      // No need to react if we’ve already fetched the full message history
-      hasAllMessages ||
-      // Wait for any pending fetch requests to finish before we fetch again
-      pendingMessagesBeforeCount !== 0 ||
-      // Skip if manually disabled
-      disableFetchMoreRef.current
-    )
-      return;
-
-    const isCloseToTop =
-      // ~4 viewport heights from top
-      e.target.scrollTop < e.target.getBoundingClientRect().height * 4;
-
-    if (!isCloseToTop) return;
-
-    fetchMoreMessages();
-  });
-
-  const { scrollToBottom } = useScroll({
-    scrollContainerRef,
-    didScrollToBottomRef,
-    cacheKey: channelId,
-    onScrollToBottom: () => {
-      if (
-        // Only mark as read when the page has focus
-        document.hasFocus() &&
-        // Wait until the initial message batch is fetched
-        hasFetchedChannelMessagesAtLeastOnce &&
-        // Don’t bother if the channel is already marked as read
-        channelHasUnread
-      ) {
-        markChannelRead(channelId);
-      }
-    },
-  });
-
-  useMutationObserver(
-    scrollContainerRef,
-    () => {
-      if (!didScrollToBottomRef.current) return;
-      scrollToBottom();
-    },
-    { subtree: true, childList: true }
-  );
-
   const lastMessageId = messageIds.slice(-1)[0];
 
   // Keep scroll at bottom when new messages arrive
   React.useEffect(() => {
     if (lastMessageId == null || !didScrollToBottomRef.current) return;
-    scrollToBottom();
-  }, [lastMessageId, scrollToBottom, didScrollToBottomRef]);
+    scrollViewRef.current.scrollToBottom();
+  }, [lastMessageId, didScrollToBottomRef]);
 
   const scrollToMessage = useLatestCallback((id) => {
     const scrollTo = () => {
@@ -240,117 +260,88 @@ const ChannelMessagesScrollView = ({
   });
 
   return (
-    <div
-      css={css({
-        position: "relative",
-        flex: 1,
-        display: "flex",
-        minHeight: 0,
-        minWidth: 0,
-      })}
+    <ReverseVerticalScrollView
+      ref={scrollViewRef}
+      didScrollToBottomRef={didScrollToBottomRef}
+      scrollCacheKey={channelId}
+      onScrollToBottom={() => {
+        if (
+          // Only mark as read when the page has focus
+          document.hasFocus() &&
+          // Wait until the initial message batch is fetched
+          hasFetchedChannelMessagesAtLeastOnce &&
+          // Don’t bother if the channel is already marked as read
+          channelHasUnread
+        ) {
+          markChannelRead(channelId);
+        }
+      }}
+      onScroll={(e, { direction }) => {
+        const el = e.target;
+
+        // Bounce back when scrolling to the top of the "loading" placeholder. Makes
+        // it feel like you keep scrolling like normal (ish).
+        if (el.scrollTop < 10 && pendingMessagesBeforeCount)
+          el.scrollTop =
+            pendingMessagesBeforeCount * averageMessageListItemHeight -
+            el.getBoundingClientRect().height;
+
+        // Fetch more messages when scrolling up
+        if (
+          // We only care about upward scroll
+          direction !== "up" ||
+          // Wait until we have fetched the initial batch of messages
+          messageIds.length === 0 ||
+          // No need to react if we’ve already fetched the full message history
+          hasAllMessages ||
+          // Wait for any pending fetch requests to finish before we fetch again
+          pendingMessagesBeforeCount !== 0 ||
+          // Skip if manually disabled
+          disableFetchMoreRef.current
+        )
+          return;
+
+        const isCloseToTop =
+          // ~4 viewport heights from top
+          el.scrollTop < el.getBoundingClientRect().height * 4;
+
+        if (!isCloseToTop) return;
+
+        fetchMoreMessages();
+      }}
     >
-      <div
-        ref={scrollContainerRef}
-        css={css({
-          position: "absolute",
-          top: 0,
-          left: 0,
-          right: 0,
-          bottom: 0,
-          overflowY: "scroll",
-          overflowX: "hidden",
-          minHeight: 0,
-          flex: 1,
-          overflowAnchor: "none",
-        })}
-      >
+      {hasAllMessages && <ChannelIntro channelId={channelId} />}
+
+      {!hasAllMessages && messageIds.length > 0 && (
+        <OnScreenTrigger
+          callback={() => {
+            // This should only happen on huge viewports where all messages from the
+            // initial fetch fit in view without a scrollbar. All other cases should be
+            // covered by the scroll listener
+            fetchMoreMessages();
+          }}
+        />
+      )}
+
+      {pendingMessagesBeforeCount > 0 && (
         <div
-          css={css({
-            display: "flex",
-            flexDirection: "column",
-            justifyContent: "flex-end",
-            alignItems: "stretch",
-            minHeight: "100%",
-          })}
-        >
-          {hasAllMessages && <ChannelIntro channelId={channelId} />}
+          style={{
+            height: `${
+              pendingMessagesBeforeCount * averageMessageListItemHeight
+            }px`,
+          }}
+        />
+      )}
 
-          {!hasAllMessages && messageIds.length > 0 && (
-            <OnScreenTrigger
-              callback={() => {
-                // This should only happen on huge viewports where all messages from the
-                // initial fetch fit in view without a scrollbar. All other cases should be
-                // covered by the scroll listener
-                fetchMoreMessages();
-              }}
-            />
-          )}
-
-          {pendingMessagesBeforeCount > 0 && (
-            <div
-              style={{
-                height: `${
-                  pendingMessagesBeforeCount * averageMessageListItemHeight
-                }px`,
-              }}
-            />
-          )}
-
-          <div
-            ref={messagesContainerRef}
-            role="list"
-            css={(t) =>
-              css({
-                minHeight: 0,
-                fontSize: t.text.sizes.large,
-                fontWeight: "400",
-                ".channel-message-container": {
-                  "--color-optimistic": t.colors.textMuted,
-                  "--bg-highlight": t.colors.messageBackgroundModifierHighlight,
-                  "--bg-focus": t.colors.messageBackgroundModifierFocus,
-                  background: "var(--background, transparent)",
-                  padding: "var(--padding)",
-                  borderRadius: "var(--border-radius, 0)",
-                  color: "var(--color, ${t.colors.textNormal})",
-                  position: "relative",
-                  lineHeight: 1.46668,
-                  userSelect: "text",
-                },
-                ".channel-message-container .toolbar-container": {
-                  position: "absolute",
-                  top: 0,
-                  transform: "translateY(-50%)",
-                  zIndex: 1,
-                },
-                ".channel-message-container .main-container": {
-                  display: "grid",
-                  alignItems: "flex-start",
-                },
-              })
-            }
-          >
-            {messageIds.map((messageId, i, messageIds) => (
-              <ChannelMessage
-                key={messageId}
-                channelId={channelId}
-                messageId={messageId}
-                previousMessageId={messageIds[i - 1]}
-                hasPendingReply={replyTargetMessageId === messageId}
-                initReply={initReply}
-                isAdmin={isAdmin}
-                hasTouchFocus={touchFocusedMessageId === messageId}
-                giveTouchFocus={
-                  inputDeviceCanHover ? undefined : setTouchFocusedMessageId
-                }
-                layout={layout}
-                scrollToMessage={scrollToMessage}
-              />
-            ))}
-            <div css={css({ height: "1.6rem" })} />
-          </div>
-        </div>
-      </div>
-    </div>
+      <MessageList
+        ref={messagesContainerRef}
+        messageIds={messageIds}
+        layout={layout}
+        initReply={initReply}
+        replyTargetMessageId={replyTargetMessageId}
+        scrollToMessage={scrollToMessage}
+      />
+    </ReverseVerticalScrollView>
   );
 };
 
@@ -390,15 +381,8 @@ const ChannelIntro = ({ channelId }) => {
       );
     }
 
-    console.log(channel);
     if (channel.description != null)
-      return (
-        <RichText blocks={channel.descriptionBlocks} />
-        // {channel.description.split(/^\s*$/m).map((s) => (
-        //   <p key={s}>{s.trim()}</p>
-        // ))}
-        // </>
-      );
+      return <RichText blocks={channel.descriptionBlocks} />;
 
     return (
       <>

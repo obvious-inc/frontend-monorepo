@@ -1,16 +1,17 @@
+import React from "react";
 import { useActions } from "@shades/common/app";
-import { useLatestCallback } from "@shades/common/react";
 
 const pendingPromisesByQueryKey = {};
 
 // This fetcher only allows for a single request (with the same query) to be
 // pending at once. Subsequent "equal" request will simply return the initial
 // pending request promise.
-const useChannelMessagesFetcher = () => {
-  const actions = useActions();
+const useChannelMessagesFetcher = (channelId) => {
+  const { fetchMessages } = useActions();
 
-  const fetchMessages = useLatestCallback(
-    async (channelId, { limit, beforeMessageId, afterMessageId } = {}) => {
+  return React.useCallback(
+    async (query = {}) => {
+      const { limit, beforeMessageId, afterMessageId } = query;
       const queryKey = new URLSearchParams([
         ["channel", channelId],
         ["limit", limit],
@@ -21,11 +22,7 @@ const useChannelMessagesFetcher = () => {
       let pendingPromise = pendingPromisesByQueryKey[queryKey];
 
       if (pendingPromise == null) {
-        pendingPromise = actions.fetchMessages(channelId, {
-          limit,
-          beforeMessageId,
-          afterMessageId,
-        });
+        pendingPromise = fetchMessages(channelId, query);
         pendingPromisesByQueryKey[queryKey] = pendingPromise;
       }
 
@@ -34,10 +31,9 @@ const useChannelMessagesFetcher = () => {
       } finally {
         delete pendingPromisesByQueryKey[queryKey];
       }
-    }
+    },
+    [channelId, fetchMessages]
   );
-
-  return fetchMessages;
 };
 
 export default useChannelMessagesFetcher;

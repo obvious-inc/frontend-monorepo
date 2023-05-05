@@ -3,15 +3,15 @@ import useScrollListener from "./scroll-listener";
 import useMutationObserver from "./mutation-observer";
 
 const useReverseScrollPositionMaintainer = (scrollContainerRef) => {
-  // Whenever this ref is truthy we will try to maintain the scroll position
-  // (keep the same distance to the bottom) when the scroll container’s scroll
-  // height changes
-  const maintainScrollPositionRef = React.useRef(false);
+  // // Whenever this ref is truthy we will try to maintain the scroll position
+  // // (keep the same distance to the bottom) when the scroll container’s scroll
+  // // height changes
+  // const maintainScrollPositionRef = React.useRef(false);
 
-  const maintainScrollPositionDuringTheNextDomMutation =
-    React.useCallback(() => {
-      maintainScrollPositionRef.current = true;
-    }, []);
+  // const maintainScrollPositionDuringTheNextDomMutation =
+  //   React.useCallback(() => {
+  //     maintainScrollPositionRef.current = true;
+  //   }, []);
 
   const prevScrollHeightRef = React.useRef();
   const prevScrollTopRef = React.useRef();
@@ -30,26 +30,26 @@ const useReverseScrollPositionMaintainer = (scrollContainerRef) => {
 
       if (el == null) return;
 
-      if (maintainScrollPositionRef.current) {
-        maintainScrollPositionRef.current = false;
+      // if (maintainScrollPositionRef.current) {
+      // maintainScrollPositionRef.current = false;
 
-        if (prevScrollHeightRef.current === el.scrollHeight) return;
+      if (prevScrollHeightRef.current === el.scrollHeight) return;
 
-        const scrollHeightDiff = el.scrollHeight - prevScrollHeightRef.current;
+      const scrollHeightDiff = el.scrollHeight - prevScrollHeightRef.current;
 
-        // console.log(
-        //   "scroll adjust",
-        //   [el.scrollTop, prevScrollHeightRef.current + scrollHeightDiff].join(
-        //     " -> "
-        //   )
-        // );
+      // console.log(
+      //   "scroll adjust",
+      //   [el.scrollTop, prevScrollHeightRef.current + scrollHeightDiff].join(
+      //     " -> "
+      //   )
+      // );
 
-        // Even with 'overflow-anchor' set to 'none', some browsers still mess
-        // with the scroll, so we keep track of the most recent position in
-        // `prevScrollTopRef` and use that when adjusting `scrollTop`
-        el.scrollTop = prevScrollTopRef.current + scrollHeightDiff;
-        prevScrollTopRef.current = el.scrollTop;
-      }
+      // Even with 'overflow-anchor' set to 'none', some browsers still mess
+      // with the scroll, so we keep track of the most recent position in
+      // `prevScrollTopRef` and use that when adjusting `scrollTop`
+      el.scrollTop = prevScrollTopRef.current + scrollHeightDiff;
+      prevScrollTopRef.current = el.scrollTop;
+      // }
 
       // if (prevScrollHeightRef.current !== el.scrollHeight) {
       //   console.log(
@@ -67,7 +67,7 @@ const useReverseScrollPositionMaintainer = (scrollContainerRef) => {
     prevScrollTopRef.current = scrollContainerRef.current.scrollTop;
   });
 
-  return maintainScrollPositionDuringTheNextDomMutation;
+  // return maintainScrollPositionDuringTheNextDomMutation;
 };
 
 export default useReverseScrollPositionMaintainer;

@@ -13,6 +13,11 @@ const useScrollListener = (scrollContainerRef, handler) => {
     let prevScrollTop = null;
 
     const scrollHandler = (e) => {
+      if (handlerRef.current == null) {
+        console.warn("No handler set");
+        return;
+      }
+
       let scrollDirection = null;
 
       if (prevScrollTop) {

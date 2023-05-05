@@ -65,11 +65,9 @@ const COMPACT_GUTTER_SIZE = "1rem";
 
 const ChannelMessage = React.memo(function ChannelMessage_({
   messageId,
-  channelId,
   previousMessageId,
   hasPendingReply,
   initReply: initReply_,
-  isAdmin,
   hasTouchFocus,
   giveTouchFocus,
   layout,
@@ -89,16 +87,18 @@ const ChannelMessage = React.memo(function ChannelMessage_({
 
   const navigate = useNavigate();
 
-  const channel = useChannel(channelId);
+  const me = useMe();
   const message = useMessage(messageId, { replies: true });
+  const channel = useChannel(message?.channelId);
   const previousMessage = useMessage(previousMessageId);
-  const members = useChannelMembers(channelId);
+  const members = useChannelMembers(message?.channelId);
+
+  const isAdmin =
+    me != null && channel != null && me.id === channel.ownerUserId;
 
   const [isHovering, hoverHandlers] = useHover();
   const [isEmojiPickerOpen, setEmojiPickerOpen] = React.useState(false);
   const [isEditing, setEditingMessage] = React.useState(false);
-
-  const me = useMe();
 
   const compact = layout === "compact";
 

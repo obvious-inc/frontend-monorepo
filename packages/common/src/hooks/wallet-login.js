@@ -55,7 +55,7 @@ export const Provider = ({ authenticate, children }) => {
             address,
             nonce,
           }).catch((e) => {
-            console.log(e);
+            console.warn(e);
             return Promise.reject(new Error("server-login-request-error"));
           })
         );
