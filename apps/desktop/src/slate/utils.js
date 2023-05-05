@@ -43,16 +43,14 @@ export const isNodeEmpty = (el) => {
 };
 
 export const toMessageBlocks = (nodes) =>
-  nodes.reduce((acc, n) => {
-    if (isNodeEmpty(n)) return acc;
-    if (n.type === "link") return [...acc, { type: "link", url: n.url }];
-    if (n.type === "emoji") return [...acc, { type: "emoji", emoji: n.emoji }];
-    if (n.type === "user") return [...acc, { type: "user", ref: n.ref }];
-    if (n.type === "channel-link")
-      return [...acc, { type: "channel-link", ref: n.ref }];
-    if (n.children == null) return [...acc, n];
-    return [...acc, { ...n, children: toMessageBlocks(n.children) }];
-  }, []);
+  nodes.map((n) => {
+    if (n.type === "link") return { type: "link", url: n.url };
+    if (n.type === "emoji") return { type: "emoji", emoji: n.emoji };
+    if (n.type === "user") return { type: "user", ref: n.ref };
+    if (n.type === "channel-link") return { type: "channel-link", ref: n.ref };
+    if (n.children == null) return n;
+    return { ...n, children: toMessageBlocks(n.children) };
+  });
 
 export const parseMessageBlocks = (blocks) =>
   blocks.reduce((acc, n) => {
