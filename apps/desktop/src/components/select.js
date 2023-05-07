@@ -45,13 +45,13 @@ const Select = React.forwardRef(
     const state = useSelectState(selectProps);
 
     const internalRef = React.useRef();
-    const ref = forwardedRef ?? internalRef;
+    const triggerRef = forwardedRef ?? internalRef;
     const {
       // labelProps,
       triggerProps,
       valueProps,
       menuProps,
-    } = useSelect(selectProps, state, ref);
+    } = useSelect(selectProps, state, triggerRef);
 
     return (
       <>
@@ -74,7 +74,7 @@ const Select = React.forwardRef(
 
         <HiddenSelect
           state={state}
-          triggerRef={ref}
+          triggerRef={triggerRef}
           label={props.label}
           name={props.name}
         />
@@ -83,11 +83,10 @@ const Select = React.forwardRef(
           placement="bottom left"
           offset={5}
           isOpen={state.isOpen}
-          onOpenChange={(s) => {
-            if (!s) state.close();
-          }}
+          onOpenChange={state.setOpen}
+          triggerRef={triggerRef}
         >
-          <Popover.Trigger asChild ref={ref} {...triggerProps}>
+          <Popover.Trigger asButtonChild {...triggerProps}>
             <Button
               fullWidth
               multiline

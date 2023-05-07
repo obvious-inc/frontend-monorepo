@@ -78,19 +78,25 @@ export const Root = ({
 };
 
 export const Trigger = React.forwardRef(
-  ({ asChild, children, disabled, ...props }, forwardedRef) => {
-    const { state, triggerProps, triggerRef } = React.useContext(Context);
-    const { buttonProps } = useButton({
+  ({ asButtonChild, asChild, children, disabled, ...props }, forwardedRef) => {
+    const { triggerProps, triggerRef } = React.useContext(Context);
+    const useButtonInput = {
       ...triggerProps,
-      isDisabled: disabled,
-    });
+      ...props,
+      isDisabled: disabled ?? props.isDisabled,
+      // elementType: 'span'
+    };
+    const { buttonProps } = useButton(useButtonInput);
+
     const ref = useComposedRefs(triggerRef, forwardedRef);
-    return typeof children === "function" ? (
-      children({ isOpen: state.isOpen, props, ref })
+
+    // `asButtonChild` indicates that the child itself will call `useButton`
+    return asButtonChild ? (
+      React.cloneElement(children, { ...useButtonInput, ref })
     ) : asChild ? (
-      React.cloneElement(children, { ...mergeProps(props, buttonProps), ref })
+      React.cloneElement(children, { ...buttonProps, ref })
     ) : (
-      <button {...mergeProps(props, buttonProps)} ref={ref}>
+      <button {...buttonProps} ref={ref}>
         {children}
       </button>
     );
