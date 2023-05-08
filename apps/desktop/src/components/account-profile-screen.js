@@ -41,7 +41,7 @@ import NavBar from "./nav-bar.js";
 import Heading from "./heading.js";
 import UserAvatar from "./user-avatar.js";
 import ChannelAvatar from "./channel-avatar.js";
-import ChannelMessage from "./channel-message.js";
+// import ChannelMessage from "./channel-message.js";
 
 const { truncateAddress } = ethereumUtils;
 
@@ -75,27 +75,31 @@ const useAccountChannels = (accountAddress) => {
 
   useFetch(() => fetchUserChannels(accountAddress), [accountAddress]);
 
-  return channels;
-};
-
-const useAccountMessages = (accountAddress) => {
-  const user = useUserWithWalletAddress(accountAddress);
-  const { fetchUserMessages } = useActions();
-
-  const [messages, setMessages] = React.useState([]);
-
-  useFetch(
-    user == null
-      ? null
-      : () =>
-          fetchUserMessages(user.id).then((ms) => {
-            setMessages(ms);
-          }),
-    [user, fetchUserMessages]
+  const nonDmChannels = React.useMemo(
+    () => channels.filter((c) => c.kind !== "dm"),
+    [channels]
   );
-
-  return messages;
+  return nonDmChannels;
 };
+
+// const useAccountMessages = (accountAddress) => {
+//   const user = useUserWithWalletAddress(accountAddress);
+//   const { fetchUserMessages } = useActions();
+
+//   const [messages, setMessages] = React.useState([]);
+
+//   useFetch(
+//     user == null
+//       ? null
+//       : () =>
+//           fetchUserMessages(user.id).then((ms) => {
+//             setMessages(ms);
+//           }),
+//     [user, fetchUserMessages]
+//   );
+
+//   return messages;
+// };
 
 const useAccountTransactions = (accountAddress) => {
   const [transactions, setTransactions] = React.useState([]);
@@ -568,15 +572,15 @@ const AccountProfile = ({ accountAddress }) => {
           aria-label="Account tabs"
           defaultSelectedKey="channels"
           selectedKey={selectedTabKey}
-          disabledKeys={["messages"]}
+          // disabledKeys={["messages"]}
           onSelectionChange={(key) => {
             setSearchParams({ tab: key });
           }}
           css={css({ padding: "0 1.6rem" })}
         >
-          <Tabs.Item key="messages" title="Messages">
-            <MessagesTabPane accountAddress={accountAddress} />
-          </Tabs.Item>
+          {/* <Tabs.Item key="messages" title="Messages"> */}
+          {/*   <MessagesTabPane accountAddress={accountAddress} /> */}
+          {/* </Tabs.Item> */}
           <Tabs.Item key="channels" title="Channels">
             <ChannelsTabPane accountAddress={accountAddress} />
           </Tabs.Item>
@@ -589,50 +593,50 @@ const AccountProfile = ({ accountAddress }) => {
   );
 };
 
-const MessagesTabPane = ({ accountAddress }) => {
-  const messages = useAccountMessages(accountAddress);
+// const MessagesTabPane = ({ accountAddress }) => {
+//   const messages = useAccountMessages(accountAddress);
 
-  return (
-    <div style={{ padding: "1rem" }}>
-      <ul
-        css={(t) =>
-          css({
-            listStyle: "none",
-            a: {
-              display: "block",
-              textDecoration: "none",
-              padding: "0.6rem",
-              color: t.colors.textNormal,
-              borderRadius: "0.5rem",
-            },
-            ".name": {
-              fontSize: t.text.sizes.large,
-              fontWeight: t.text.weights.header,
-              lineHeight: 1.2,
-            },
-            ".description": {
-              color: t.colors.textDimmed,
-              fontSize: t.text.sizes.small,
-              lineHeight: 1.35,
-              marginTop: "0.1rem",
-            },
-            "@media(hover: hover)": {
-              "a:hover": { background: t.colors.backgroundModifierHover },
-            },
-          })
-        }
-      >
-        {messages.map((m) => (
-          <li key={m.id}>
-            <RouterLink to={`/channels/${m.channelId}`}>
-              <ChannelMessage messageId={m.id} />
-            </RouterLink>
-          </li>
-        ))}
-      </ul>
-    </div>
-  );
-};
+//   return (
+//     <div style={{ padding: "1rem" }}>
+//       <ul
+//         css={(t) =>
+//           css({
+//             listStyle: "none",
+//             a: {
+//               display: "block",
+//               textDecoration: "none",
+//               padding: "0.6rem",
+//               color: t.colors.textNormal,
+//               borderRadius: "0.5rem",
+//             },
+//             ".name": {
+//               fontSize: t.text.sizes.large,
+//               fontWeight: t.text.weights.header,
+//               lineHeight: 1.2,
+//             },
+//             ".description": {
+//               color: t.colors.textDimmed,
+//               fontSize: t.text.sizes.small,
+//               lineHeight: 1.35,
+//               marginTop: "0.1rem",
+//             },
+//             "@media(hover: hover)": {
+//               "a:hover": { background: t.colors.backgroundModifierHover },
+//             },
+//           })
+//         }
+//       >
+//         {messages.map((m) => (
+//           <li key={m.id}>
+//             <RouterLink to={`/channels/${m.channelId}`}>
+//               <ChannelMessage messageId={m.id} />
+//             </RouterLink>
+//           </li>
+//         ))}
+//       </ul>
+//     </div>
+//   );
+// };
 
 const ChannelsTabPane = ({ accountAddress }) => {
   const channels = useAccountChannels(accountAddress);
@@ -663,6 +667,9 @@ const ChannelsTabPane = ({ accountAddress }) => {
               fontSize: t.text.sizes.small,
               lineHeight: 1.35,
               marginTop: "0.1rem",
+              whiteSpace: "nowrap",
+              overflow: "hidden",
+              textOverflow: "ellipsis",
             },
             "@media(hover: hover)": {
               "a:hover": { background: t.colors.backgroundModifierHover },
