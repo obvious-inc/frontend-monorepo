@@ -11,6 +11,7 @@ export const Trigger = Tooltip.Trigger;
 export const Content = React.forwardRef((props, ref) => (
   <Tooltip.Content
     ref={ref}
+    collisionPadding={10}
     css={(t) =>
       css({
         fontSize: t.text.sizes.small,

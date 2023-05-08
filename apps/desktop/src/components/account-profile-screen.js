@@ -762,7 +762,7 @@ const TransactionsTabPane = ({ accountAddress }) => {
         {transactions.map((t) => {
           const eth = ethersUtils.formatEther(t.value);
           const [wholeEth, ethDecimals] = eth.split(".");
-          const date = new Date(parseInt(t.timeStamp) * 1000);
+          const date = new Date(parseInt(t.timestamp) * 1000);
           const showYear = !isThisYear(date);
 
           const renderEthTxLinkTag = () => (
@@ -844,14 +844,30 @@ const TransactionsTabPane = ({ accountAddress }) => {
                         </a>
                       </Tooltip.Trigger>
                       <Tooltip.Content side="top" align="start" sideOffset={6}>
-                        <span>Contract call</span>{" "}
-                        <span data-arrow>&rarr;</span> {prettifyAddress(t.to)}
-                        <br />
-                        <span data-tooltip-highlight>{t.functionSignature}</span>
-                        <br />
-                        <span data-dimmed>
-                          Click to view transaction on Etherscan
-                        </span>
+                        <div
+                          style={{
+                            maxWidth: "min(calc(100vw - 3.2rem), 56rem)",
+                            overflow: "hidden",
+                            textOverflow: "ellipsis",
+                          }}
+                        >
+                          <span>Contract call</span>{" "}
+                          <span data-arrow>&rarr;</span> {prettifyAddress(t.to)}
+                          <br />
+                          <span data-tooltip-highlight>
+                            {t.functionSignature}
+                          </span>
+                          <br />
+                          {t.parsedInput?.map((i) => (
+                            <React.Fragment key={i.name}>
+                              {i.name}: {i.value}
+                              <br />
+                            </React.Fragment>
+                          ))}
+                          <span data-dimmed>
+                            Click to view transaction on Etherscan
+                          </span>
+                        </div>
                       </Tooltip.Content>
                     </Tooltip.Root>
                     <span data-arrow>&rarr;</span>
