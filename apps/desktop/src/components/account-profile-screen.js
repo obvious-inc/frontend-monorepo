@@ -8,6 +8,7 @@ import {
   useParams,
   useNavigate,
   useLocation,
+  useSearchParams,
   Link as RouterLink,
 } from "react-router-dom";
 import { useAccount as useConnectedWalletAccount, useProvider } from "wagmi";
@@ -193,6 +194,9 @@ const AccountProfile = ({ accountAddress }) => {
   const location = useLocation();
   const selectors = useSelectors();
   const { starUser, unstarUser } = useActions();
+
+  const [searchParams, setSearchParams] = useSearchParams();
+  const selectedTabKey = searchParams.get("tab") ?? "channels";
 
   const { address: connectedWalletAccountAddress } =
     useConnectedWalletAccount();
@@ -564,7 +568,11 @@ const AccountProfile = ({ accountAddress }) => {
           size="large"
           aria-label="Account tabs"
           defaultSelectedKey="channels"
+          selectedKey={selectedTabKey}
           disabledKeys={["messages"]}
+          onSelectionChange={(key) => {
+            setSearchParams({ tab: key });
+          }}
           css={css({ padding: "0 1.6rem" })}
         >
           <Tabs.Item key="messages" title="Messages">
