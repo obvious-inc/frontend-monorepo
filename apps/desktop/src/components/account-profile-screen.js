@@ -70,11 +70,10 @@ const useAccountUser = (accountAddress) => {
 };
 
 const useAccountChannels = (accountAddress) => {
-  const user = useUserWithWalletAddress(accountAddress);
   const channels = useChannelsWithMembers([accountAddress]);
   const { fetchUserChannels } = useActions();
 
-  useFetch(user == null ? null : () => fetchUserChannels(user.id), [user]);
+  useFetch(() => fetchUserChannels(accountAddress), [accountAddress]);
 
   return channels;
 };

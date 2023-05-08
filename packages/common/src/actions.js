@@ -82,15 +82,17 @@ export default ({
       return users;
     });
 
-  const fetchUserChannels = (userId) => {
-    if (userId == null)
+  const fetchUserChannels = (accountAddress) => {
+    if (accountAddress == null)
       return authorizedFetch("/users/me/channels").then((rawChannels) => {
         const channels = rawChannels.map(parseChannel);
         dispatch({ type: "fetch-user-channels-request-successful", channels });
         return channels;
       });
 
-    return authorizedFetch(`/users/${userId}/channels`).then((rawChannels) => {
+    return authorizedFetch(`/users/${accountAddress}/channels`, {
+      allowUnauthorized: true,
+    }).then((rawChannels) => {
       const channels = rawChannels.map(parseChannel);
       dispatch({ type: "fetch-user-channels-request-successful", channels });
       return channels;
@@ -418,6 +420,7 @@ export default ({
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ wallet_addresses: [accountAddress] }),
+        allowUnauthorized: true,
       });
       const users = rawUsers.map(parseUser);
       dispatch({ type: "fetch-users-request-successful", users });
