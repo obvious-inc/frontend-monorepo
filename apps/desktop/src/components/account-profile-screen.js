@@ -760,24 +760,10 @@ const TransactionsTabPane = ({ accountAddress }) => {
         }
       >
         {transactions.map((t) => {
-          const functionName = t.functionName.includes("(")
-            ? t.functionName.slice(0, t.functionName.indexOf("("))
-            : t.functionName || null;
           const eth = ethersUtils.formatEther(t.value);
           const [wholeEth, ethDecimals] = eth.split(".");
           const date = new Date(parseInt(t.timeStamp) * 1000);
           const showYear = !isThisYear(date);
-
-          const parseCamelCasedString = (str) => {
-            const parsed = str.replace(
-              /[A-Z]+(?![a-z])|[A-Z]/g,
-              (matchCapitalLetter, matchOffset) =>
-                `${
-                  matchOffset === 0 ? "" : " "
-                }${matchCapitalLetter.toLowerCase()}`
-            );
-            return `${parsed[0].toUpperCase()}${parsed.slice(1)}`;
-          };
 
           const renderEthTxLinkTag = () => (
             <a
@@ -820,7 +806,7 @@ const TransactionsTabPane = ({ accountAddress }) => {
                   overflowX: "scroll",
                 }}
               >
-                {functionName == null ? (
+                {t.description == null ? (
                   <>
                     <AccountLink address={t.from} />
                     {ethDecimals.length <= 3 ? (
@@ -854,14 +840,14 @@ const TransactionsTabPane = ({ accountAddress }) => {
                           target="_blank"
                           data-tag
                         >
-                          {parseCamelCasedString(functionName)}
+                          {t.description}
                         </a>
                       </Tooltip.Trigger>
                       <Tooltip.Content side="top" align="start" sideOffset={6}>
                         <span>Contract call</span>{" "}
                         <span data-arrow>&rarr;</span> {prettifyAddress(t.to)}
                         <br />
-                        <span data-tooltip-highlight>{t.functionName}</span>
+                        <span data-tooltip-highlight>{t.functionSignature}</span>
                         <br />
                         <span data-dimmed>
                           Click to view transaction on Etherscan
