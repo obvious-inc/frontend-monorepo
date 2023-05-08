@@ -563,8 +563,8 @@ const AccountProfile = ({ accountAddress }) => {
         <Tabs.Root
           size="large"
           aria-label="Account tabs"
-          defaultSelectedKey="transactions"
-          disabledKeys={["messages", "channels"]}
+          defaultSelectedKey="channels"
+          disabledKeys={["messages"]}
           css={css({ padding: "0 1.6rem" })}
         >
           <Tabs.Item key="messages" title="Messages">
