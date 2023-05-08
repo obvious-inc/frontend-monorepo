@@ -104,14 +104,14 @@ export default async (req) => {
     const inputData = tx.input;
 
     if (inputData === "0x") {
-      transactions.push(parseTransaction);
+      transactions.push(parsedTransaction);
       continue;
     }
 
     const abi = await fetchAbi(tx.to);
 
     if (abi == null) {
-      transactions.push(parseTransaction);
+      transactions.push(parsedTransaction);
       continue;
     }
 
@@ -131,7 +131,7 @@ export default async (req) => {
       });
       transactions.push({ ...parsedTransaction, parsedInput });
     } catch (e) {
-      transactions.push(parseTransaction);
+      transactions.push(parsedTransaction);
     }
   }
 
