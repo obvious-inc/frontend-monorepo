@@ -6,7 +6,7 @@ import useLatestCallback from "../react/hooks/latest-callback.js";
 const prepareLoginMessage = (address) => {
   const signedAt = new Date().toISOString();
   const nonce = crypto.getRandomValues(new Uint32Array(1))[0];
-  const message = `NewShades wants you to sign in with your web3 account
+  const message = `NOM wants you to sign in with your web3 account
 ${address}
 
 URI: ${location.origin}

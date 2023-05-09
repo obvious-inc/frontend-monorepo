@@ -2,7 +2,7 @@
 
 This is the home of the NOM desktop and web client.
 
-Some desktop builds can be found on [the release page](https://github.com/NewShadesDAO/front/releases), but until we get automatic updates going the easiest way to follow along is to access the regular web app on [app.newshades.xyz](https://app.newshades.xyz).
+Some desktop builds can be found on [the release page](https://github.com/NewShadesDAO/front/releases), but until we get automatic updates going the easiest way to follow along is to access the regular web app on [app.nom.xyz](https://app.nom.xyz).
 
 ## Introduction
 
@@ -50,7 +50,7 @@ Note that you only have to run the desktop client when building Electron related
 
 ## Deployment
 
-`HEAD` of `main` is automatically deployed to [app.newshades.xyz](https://app.newshades.xyz) with [Vercel](https://vercel.com/).
+`HEAD` of `main` is automatically deployed to [app.now.xyz](https://app.now.xyz) with [Vercel](https://vercel.com/).
 
 Desktop builds are currently manual.
 

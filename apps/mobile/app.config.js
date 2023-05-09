@@ -22,7 +22,7 @@ module.exports = {
   userInterfaceStyle: "dark",
   ios: {
     supportsTablet: false,
-    bundleIdentifier: "xyz.newshades.newshades",
+    bundleIdentifier: "wtf.nom.nom",
   },
   extra: {
     apiEndpoint: process.env.API_ENDPOINT,

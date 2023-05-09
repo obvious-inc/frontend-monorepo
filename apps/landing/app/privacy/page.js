@@ -25,7 +25,7 @@ For the purposes of this Privacy Policy:
 
   * Affiliate means an entity that controls, is controlled by or is under common control with a party, where "control" means ownership of 50% or more of the shares, equity interest or other securities entitled to vote for election of directors or other managing authority.
 
-  * Application means the software program provided by the Company downloaded by You on any electronic device, named NewShades
+  * Application means the software program provided by the Company downloaded by You on any electronic device, named NOM
 
   * Company (referred to as either "the Company", "We", "Us" or "Our" in this Agreement) refers to Obvious, Inc., 2261 Market Street #4337 San Francisco, CA 94114.
 

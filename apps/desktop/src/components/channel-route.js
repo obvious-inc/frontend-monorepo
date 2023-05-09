@@ -42,7 +42,7 @@ const MetaTags = ({ channelId }) => {
     <ReactHelmet>
       <link
         rel="canonical"
-        href={`https://app.newshades.xyz/channels/${channelId}`}
+        href={`https://app.nom.xyz/channels/${channelId}`}
       />
 
       <title>{`${name} - NOM`}</title>
