@@ -1,13 +1,13 @@
 if (!process.env.CI) require("dotenv").config();
 
 module.exports = {
-  name: "NewShades",
-  slug: "newshades",
-  owner: "newshades",
+  name: "NOM",
+  slug: "nom",
+  owner: "nom",
   version: "1.0.0",
   orientation: "portrait",
   icon: "./assets/icon.png",
-  scheme: "newshades",
+  scheme: "nom",
   splash: {
     image: "./assets/splash.png",
     resizeMode: "contain",

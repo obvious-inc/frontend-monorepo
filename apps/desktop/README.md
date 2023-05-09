@@ -1,12 +1,12 @@
-# NewShades desktop
+# NOM desktop
 
-This is the home of the NewShades desktop and web client.
+This is the home of the NOM desktop and web client.
 
 Some desktop builds can be found on [the release page](https://github.com/NewShadesDAO/front/releases), but until we get automatic updates going the easiest way to follow along is to access the regular web app on [app.newshades.xyz](https://app.newshades.xyz).
 
 ## Introduction
 
-_NewShades desktop_ is a [`React`](https://reactjs.org/) web app, using a thin [`Electron`](https://www.electronjs.org/) wrapper to build for desktop. The details might change quickly but at the time of writing we bundle our Javascript with [`webpack`](https://webpack.js.org/), transpile with [`SWC`](https://swc.rs/); and package, make distributals, and publish our desktop builds with [`Electron Forge`](https://www.electronforge.io/).
+_NOM desktop_ is a [`React`](https://reactjs.org/) web app, using a thin [`Electron`](https://www.electronjs.org/) wrapper to build for desktop. The details might change quickly but at the time of writing we bundle our Javascript with [`webpack`](https://webpack.js.org/), transpile with [`SWC`](https://swc.rs/); and package, make distributals, and publish our desktop builds with [`Electron Forge`](https://www.electronforge.io/).
 
 ## Development setup
 
@@ -33,7 +33,7 @@ Start a local dev server with:
 npm run start-web -w desktop
 ```
 
-By default this expects the [NewShades API](https://github.com/NewShadesDAO/api) to be running on `localhost:5001`, but you can override that with an environment variable `API_ENDPOINT` if you like:
+By default this expects the [NOM API](https://github.com/NewShadesDAO/api) to be running on `localhost:5001`, but you can override that with an environment variable `API_ENDPOINT` if you like:
 
 ```sh
 API_ENDPOINT=https://api.newshades.xyz npm run start-web

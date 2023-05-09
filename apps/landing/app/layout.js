@@ -5,7 +5,7 @@ export default function RootLayout({ children }) {
   return (
     <html>
       <head>
-        <title>NewShades</title>
+        <title>NOM</title>
         <link
           rel="icon"
           type="image/png"

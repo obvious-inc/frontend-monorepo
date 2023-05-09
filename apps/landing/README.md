@@ -1,2 +1,2 @@
-Web landing for NewShades DAO, using [Next.js](https://nextjs.org).
+Web landing for NOM, using [Next.js](https://nextjs.org).
 

@@ -1,5 +1,5 @@
 {
-  "name": "@newshades/monorepo",
+  "name": "@nom/monorepo",
   "scripts": {
     "lint": "pnpm -r run --if-present lint",
     "format": "pnpm -r run --if-present format",
