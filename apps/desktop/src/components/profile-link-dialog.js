@@ -21,7 +21,8 @@ const ProfileLinkDialog = ({ accountAddress, titleProps, dismiss }) => {
   const { address: connectedWalletAccountAddress } = useAccount();
   const walletAddress =
     accountAddress ?? me?.walletAddress ?? connectedWalletAccountAddress;
-  const computedDisplayName = useAccountDisplayName(walletAddress);
+  const { displayName: computedDisplayName } =
+    useAccountDisplayName(walletAddress);
   const truncatedAddress = truncateAddress(
     ethersUtils.getAddress(walletAddress)
   );

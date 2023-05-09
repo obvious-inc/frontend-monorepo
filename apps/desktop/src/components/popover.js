@@ -96,7 +96,7 @@ export const Trigger = React.forwardRef(
     ) : asChild ? (
       React.cloneElement(children, { ...buttonProps, ref })
     ) : (
-      <button {...buttonProps} ref={ref}>
+      <button {...props} {...buttonProps} ref={ref}>
         {children}
       </button>
     );

@@ -1695,14 +1695,11 @@ const MessageToolbar = React.memo(
               asChild
               aria-label="Add reaction"
               style={{ position: "relative" }}
+              onClick={() => {
+                onEmojiPickerOpenChange(true);
+              }}
             >
-              <button
-                onClick={() => {
-                  onEmojiPickerOpenChange(true);
-                }}
-              >
-                <EmojiFaceIcon style={{ width: "1.6rem" }} />
-              </button>
+              <EmojiFaceIcon style={{ width: "1.6rem" }} />
             </Toolbar.Button>
             <EmojiPickerMobileDialog
               isOpen={isEmojiPickerOpen}

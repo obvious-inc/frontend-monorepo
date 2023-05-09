@@ -209,7 +209,7 @@ const AccountProfile = ({ accountAddress }) => {
   const { status: authenticationStatus } = useAuth();
   // const me = useMe();
   const user = useAccountUser(accountAddress);
-  const displayName = useAccountDisplayName(accountAddress);
+  const { displayName, ensName } = useAccountDisplayName(accountAddress);
   const isStarred = useIsUserStarred(user?.id);
 
   const {
@@ -414,23 +414,29 @@ const AccountProfile = ({ accountAddress }) => {
                   </>
                 )}
               </div>
-              {displayName !== truncatedAddress && (
-                <Tooltip.Root>
-                  <Tooltip.Trigger asChild>
-                    <button
-                      onClick={() => {
-                        copyAccountLink();
-                        setTextCopied(true);
-                        setTimeout(() => {
-                          setTextCopied(false);
-                        }, 2000);
-                      }}
-                      css={(t) =>
-                        css({
+              <div
+                css={(t) =>
+                  css({
+                    fontSize: t.text.sizes.base,
+                    color: t.colors.textDimmed,
+                  })
+                }
+              >
+                {displayName !== ensName && <>{ensName}, </>}
+                {displayName !== truncatedAddress && (
+                  <Tooltip.Root>
+                    <Tooltip.Trigger asChild>
+                      <button
+                        onClick={() => {
+                          copyAccountLink();
+                          setTextCopied(true);
+                          setTimeout(() => {
+                            setTextCopied(false);
+                          }, 2000);
+                        }}
+                        css={css({
                           display: "inline-flex",
                           alignItems: "center",
-                          fontSize: t.text.sizes.base,
-                          color: t.colors.textDimmed,
                           padding: "0.2rem",
                           margin: "-0.2rem",
                           "@media(hover: hover)": {
@@ -438,29 +444,29 @@ const AccountProfile = ({ accountAddress }) => {
                             "[data-icon]": { opacity: 0 },
                             ":hover [data-icon]": { opacity: 1 },
                           },
-                        })
-                      }
-                    >
-                      {textCopied ? (
-                        "Address copied"
-                      ) : (
-                        <>
-                          <div style={{ marginRight: "0.6rem" }}>
-                            {truncatedAddress}
-                          </div>
-                          <DuplicateIcon
-                            data-icon
-                            style={{ width: "1.4rem" }}
-                          />
-                        </>
-                      )}
-                    </button>
-                  </Tooltip.Trigger>
-                  <Tooltip.Content side="right" align="left" sideOffset={7}>
-                    Click to copy address
-                  </Tooltip.Content>
-                </Tooltip.Root>
-              )}
+                        })}
+                      >
+                        {textCopied ? (
+                          "Address copied"
+                        ) : (
+                          <>
+                            <div style={{ marginRight: "0.6rem" }}>
+                              {truncatedAddress}
+                            </div>
+                            <DuplicateIcon
+                              data-icon
+                              style={{ width: "1.4rem" }}
+                            />
+                          </>
+                        )}
+                      </button>
+                    </Tooltip.Trigger>
+                    <Tooltip.Content side="right" align="left" sideOffset={7}>
+                      Click to copy address
+                    </Tooltip.Content>
+                  </Tooltip.Root>
+                )}
+              </div>
             </div>
           </div>
           {user?.description != null && (
@@ -923,7 +929,7 @@ const TransactionsTabPane = ({ accountAddress }) => {
 };
 
 const AccountLink = ({ contract, address }) => {
-  const displayName = useAccountDisplayName(address);
+  const { displayName } = useAccountDisplayName(address);
   return (
     <Tooltip.Root>
       <Tooltip.Trigger>

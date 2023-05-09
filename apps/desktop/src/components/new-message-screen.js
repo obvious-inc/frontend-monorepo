@@ -937,7 +937,7 @@ const MessageRecipientChannelHeader = ({ channelId, ...props }) => {
 };
 
 const AccountDisplayName = ({ walletAddress }) =>
-  useAccountDisplayName(walletAddress);
+  useAccountDisplayName(walletAddress).displayName;
 
 const MessageRecipientAccountsHeader = ({ walletAddresses, ...props }) => {
   const users = useUsers(walletAddresses);
@@ -1213,8 +1213,8 @@ const Tag = ({ label, isFocused, focus, deselect, ...props }) => (
 );
 
 const SelectedAccountTag = ({ walletAddress, ...props }) => {
-  const label = useAccountDisplayName(walletAddress);
-  return <Tag label={label} {...props} />;
+  const { displayName } = useAccountDisplayName(walletAddress);
+  return <Tag label={displayName} {...props} />;
 };
 
 const SelectedChannelTag = ({ channelId, ...props }) => {
@@ -1441,15 +1441,15 @@ const MessageRecipientComboboxAccountOption = ({
   const user = useUserWithWalletAddress(walletAddress) ?? { walletAddress };
 
   const address = truncateAddress(user.walletAddress);
-  const name = useAccountDisplayName(walletAddress);
-  const description = name != address ? address : null;
+  const { displayName } = useAccountDisplayName(walletAddress);
+  const description = displayName != address ? address : null;
 
   return (
     <MessageRecipientOption
       itemKey={itemKey}
       state={state}
       isSelected={isSelected}
-      label={name}
+      label={displayName}
       description={description}
       icon={<UserAvatar size="2.4rem" walletAddress={user.walletAddress} />}
     />
@@ -1545,7 +1545,7 @@ const ChannelIntro = ({ walletAddresses: walletAddresses_ }) => {
 };
 
 const DMChannelIntro = ({ walletAddress }) => {
-  const displayName = useAccountDisplayName(walletAddress);
+  const { displayName } = useAccountDisplayName(walletAddress);
 
   const truncatedAddress = truncateAddress(walletAddress);
   const hasCustomDisplayName =

@@ -12,9 +12,10 @@ const EditUserProfileDialog = ({ titleProps, dismiss }) => {
   const { status: authenticationStatus } = useAuth();
   const me = useMe();
 
-  const accountDisplayName = useAccountDisplayName(me?.walletAddress, {
-    customDisplayName: false,
-  });
+  const { displayName: accountDisplayName } = useAccountDisplayName(
+    me?.walletAddress,
+    { customDisplayName: false }
+  );
 
   if (authenticationStatus === "not-authenticated")
     return <LoginDialog titleProps={titleProps} dismiss={dismiss} />;

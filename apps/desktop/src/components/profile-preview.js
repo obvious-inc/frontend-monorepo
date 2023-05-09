@@ -42,7 +42,7 @@ const ProfilePreview = React.forwardRef(
       meWalletAddress != null &&
       meWalletAddress.toLowerCase() === user.walletAddress.toLowerCase();
 
-    const displayName = useAccountDisplayName(user.walletAddress);
+    const { displayName } = useAccountDisplayName(user.walletAddress);
 
     const { data: ensName } = useEnsName({ address: user.walletAddress });
 

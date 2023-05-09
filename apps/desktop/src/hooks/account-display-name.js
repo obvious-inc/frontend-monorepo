@@ -21,11 +21,15 @@ const useAccountDisplayName = (
   if (walletAddress != null && !isAddress)
     console.warn(`Invalid address "${walletAddress}`);
 
+  const names = { ensName, userDisplayName: user?.displayName };
+
   if (!customDisplayName) {
-    if (ensName != null) return ensName;
-    return isAddress
-      ? truncateAddress(ethersUtils.getAddress(walletAddress))
-      : null;
+    const displayName =
+      ensName ??
+      (isAddress
+        ? truncateAddress(ethersUtils.getAddress(walletAddress))
+        : null);
+    return { displayName, ...names };
   }
 
   const displayName =
@@ -33,7 +37,7 @@ const useAccountDisplayName = (
     ensName ??
     (isAddress ? truncateAddress(ethersUtils.getAddress(walletAddress)) : null);
 
-  return displayName;
+  return { displayName, ...names };
 };
 
 export default useAccountDisplayName;

@@ -94,7 +94,8 @@ export const PersonalDMChannelPrologue = () => {
   const { address: connectedWalletAccountAddress } = useAccount();
   const channel = useDmChannelWithMember(me?.walletAddress);
   const walletAddress = me?.walletAddress ?? connectedWalletAccountAddress;
-  const accountDisplayName = useAccountDisplayName(walletAddress);
+  const { displayName: accountDisplayName } =
+    useAccountDisplayName(walletAddress);
   const truncatedAddress = truncateAddress(
     ethersUtils.getAddress(walletAddress)
   );

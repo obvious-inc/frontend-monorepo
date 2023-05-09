@@ -12,7 +12,7 @@ const InlineUserButton = React.forwardRef(
     const user =
       cachedUser ?? (walletAddress == null ? null : { walletAddress });
 
-    const accountDisplayName = useAccountDisplayName(
+    const { displayName: accountDisplayName } = useAccountDisplayName(
       user?.walletAddress ?? walletAddress
     );
 
