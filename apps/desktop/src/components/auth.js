@@ -1,4 +1,5 @@
 import React from "react";
+import { useSearchParams} from "react-router-dom";
 import { css } from "@emotion/react";
 import { useAuth, useChannel, useChannelName } from "@shades/common/app";
 import { permission as permissionUtils } from "@shades/common/utils";
@@ -8,12 +9,12 @@ const { parseScopes } = permissionUtils;
 
 const AuthHome = () => {
   const { authorizedFetch } = useAuth();
+  const [searchParams] = useSearchParams()
 
-  const params = new URLSearchParams(location.search);
-  const clientId = params.get("client_id");
-  const channelId = params.get("channel");
-  const scopes = params.get("scope")?.split(" ");
-  const redirectURI = params.get("redirect_uri");
+  const clientId = searchParams.get("client_id");
+  const channelId = searchParams.get("channel");
+  const scopes = searchParams.get("scope")?.split(" ");
+  const redirectURI = searchParams.get("redirect_uri");
 
   const channel = useChannel(channelId);
   const channelName = useChannelName(channelId);
@@ -22,7 +23,7 @@ const AuthHome = () => {
   const [scopeContent, setScopeContent] = React.useState(parseScopes(scopes));
 
   const submitAuth = () => {
-    authorizedFetch("/oauth/authorize?" + params, {
+    authorizedFetch(`/oauth/authorize?${searchParams}`, {
       method: "POST",
       headers: { "Content-Type": "application/x-www-form-urlencoded" },
       body: "consent=1",
