@@ -7,19 +7,19 @@ export const CHANNEL_WRITE_MESSAGES = "messages.create";
 
 const Permissions = Object.freeze({
   [CHANNEL_WRITE_MESSAGES]: "Send new messages",
-  [CHANNEL_READ_MESSAGES]: "List channel's messages",
-  "channels.create": "Create new channels",
-  [CHANNEL_READ_INFO]: "View channel information",
-  [CHANNEL_ADD_MEMBER]: "Add users to channel",
-  [CHANNEL_JOIN]: "Join channels",
-  "channels.permissions.manage": "Manage channel's permissions",
-  "channels.kick": "Kick users from channel",
-  "channels.delete": "Delete channels",
-  [CHANNEL_READ_MEMBER_LIST]: "List users in channel",
+  [CHANNEL_READ_MESSAGES]: "List topic messages",
+  "channels.create": "Create new topics",
+  [CHANNEL_READ_INFO]: "View topic information",
+  [CHANNEL_ADD_MEMBER]: "Add users to topic",
+  [CHANNEL_JOIN]: "Join topic",
+  "channels.permissions.manage": "Manage topic permissions",
+  "channels.kick": "Kick users from topic",
+  "channels.delete": "Delete topic",
+  [CHANNEL_READ_MEMBER_LIST]: "List users in topic",
   "members.kick": "Kick members",
   "roles.list": "List roles",
   "roles.create": "Create roles",
-  "apps.manage": "Manage channel's apps",
+  "apps.manage": "Manage topic apps",
 });
 
 const closedChannelPublicPermissions = [

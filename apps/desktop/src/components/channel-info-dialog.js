@@ -201,11 +201,11 @@ const ChannelInfoDialog = ({
                     </span>
 
                     {channel.kind === "dm"
-                      ? "DM channel"
+                      ? "DM"
                       : channelPermissionType != null && (
                           <>
                             {channelPermissionType.slice(0, 1).toUpperCase()}
-                            {channelPermissionType.slice(1)} channel
+                            {channelPermissionType.slice(1)} topic
                           </>
                         )}
                   </Tooltip.Trigger>
@@ -218,19 +218,19 @@ const ChannelInfoDialog = ({
                       </>
                     ) : channelPermissionType === "open" ? (
                       <>
-                        Open channels can be seen
+                        Open topics can be seen
                         <br />
                         and joined by anyone.
                       </>
                     ) : channelPermissionType === "closed" ? (
                       <>
-                        Closed channels have open read access,
+                        Closed topics have open read access,
                         <br />
                         but requires an invite to join.
                       </>
                     ) : channelPermissionType === "private" ? (
                       <>
-                        Private channels are only
+                        Private topics are only
                         <br />
                         visible to members.
                       </>
@@ -359,7 +359,7 @@ const ChannelInfoDialog = ({
                     value: "off",
                     label: "Off",
                     description:
-                      "Don’t get any notifications from this channel",
+                      "Don’t get any notifications from this topic",
                   },
                 ]}
               />
@@ -380,7 +380,7 @@ const ChannelInfoDialog = ({
         </div>
       </header>
       <Tabs.Root
-        aria-label="Channel details"
+        aria-label="Topic details"
         defaultSelectedKey={initialTab}
         css={css({
           padding: "0 1.5rem",
@@ -471,7 +471,7 @@ const AboutTab = ({ channelId, dismiss }) => {
             </li>
             <li>
               <PropertyButton
-                name="Topic"
+                name="Description"
                 value={
                   channel.description == null ? (
                     "-"
@@ -509,7 +509,7 @@ const AboutTab = ({ channelId, dismiss }) => {
           >
             <dt>Name</dt>
             <dd>{channel.name}</dd>
-            <dt>Topic</dt>
+            <dt>Description</dt>
             <dd>
               {channel.description == null ? (
                 "-"
@@ -554,12 +554,12 @@ const AboutTab = ({ channelId, dismiss }) => {
             >
               {channelPermissionType === "open" ? (
                 <>
-                  Open channel are safe to leave, you can join again at any
+                  Open topics are safe to leave, you can join again at any
                   time.
                 </>
               ) : (
                 <>
-                  Note that after leaving a {channelPermissionType} channel, an
+                  Note that after leaving a {channelPermissionType} topic, an
                   invite is required to join it again.
                 </>
               )}
@@ -580,7 +580,7 @@ const AboutTab = ({ channelId, dismiss }) => {
                   disabled={isOwner || !isMember}
                   onClick={() => {
                     if (
-                      !confirm("Are you sure you want to leave this channel?")
+                      !confirm("Are you sure you want to leave this topic?")
                     )
                       return;
                     actions.leaveChannel(channelId);
@@ -596,7 +596,7 @@ const AboutTab = ({ channelId, dismiss }) => {
                   disabled={!isAdmin}
                   onClick={async () => {
                     if (
-                      !confirm("Are you sure you want to delete this channel?")
+                      !confirm("Are you sure you want to delete this topic?")
                     )
                       return;
 
@@ -622,12 +622,12 @@ const AboutTab = ({ channelId, dismiss }) => {
           const editingPropery = editDialogMode;
 
           const title = {
-            name: "Edit channel name",
-            description: "Edit channel topic",
+            name: "Edit topic name",
+            description: "Edit topic description",
           }[editingPropery];
           const placeholder = {
             name: "Add a clever title",
-            description: "Add a fun topic",
+            description: "Add a fun description",
           }[editingPropery];
           const hint = {
             description: "Make sure to include a couple of emojis 🌸 🌈",

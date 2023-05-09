@@ -274,7 +274,7 @@ const useFilteredComboboxItems = (query, state) => {
               ],
       },
       { key: "accounts", title: "Accounts", children: accountItems },
-      { key: "channels", title: "Channels", children: channelItems },
+      { key: "channels", title: "Topics", children: channelItems },
     ].filter((s) => s.children.length !== 0);
   }, [deferredQuery, exactAccountMatch, channels, accounts]);
 
@@ -619,7 +619,7 @@ const NewMessageScreen = () => {
                 openCreateChannelDialog();
               }}
             >
-              New channel
+              New topic
             </Button>
           </div>
         </NavBar>
@@ -629,7 +629,7 @@ const NewMessageScreen = () => {
               ref={recipientInputRef}
               label="To:"
               ariaLabel="Message recipient search"
-              placeholder="An ENS name, Ethereum address, or channel name"
+              placeholder="An ENS name, Ethereum address, or topic name"
               state={recipientsState}
               disabled={!enableRecipientsInput}
               onSelect={(key) => {

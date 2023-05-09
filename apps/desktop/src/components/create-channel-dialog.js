@@ -74,7 +74,7 @@ const CreateChannelDialogContent = ({ titleProps, close, createChannel }) => {
           }
           {...titleProps}
         >
-          Create a channel
+          Create a topic
         </h1>
         <div
           css={(t) =>
@@ -82,13 +82,13 @@ const CreateChannelDialogContent = ({ titleProps, close, createChannel }) => {
               color: t.colors.textDimmed,
               fontSize: t.fontSizes.default,
               lineHeight: 1.4,
-              width: "28rem",
+              // width: "26rem",
               maxWidth: "100%",
               margin: "0 auto",
             })
           }
         >
-          Use channels to organize conversation topics and access
+          Use topics to organize conversations and access
         </div>
         <div
           css={css({ position: "absolute", top: "2.5rem", right: "2.5rem" })}
@@ -134,7 +134,7 @@ const CreateChannelDialogContent = ({ titleProps, close, createChannel }) => {
             disabled={hasPendingRequest}
             label={
               <>
-                Topic{" "}
+                Description{" "}
                 <span
                   css={(t) =>
                     css({
@@ -151,7 +151,7 @@ const CreateChannelDialogContent = ({ titleProps, close, createChannel }) => {
           />
 
           <Select
-            label="Permissions"
+            label="Access"
             value={selectedType}
             size="medium"
             onChange={(value) => {
@@ -160,19 +160,19 @@ const CreateChannelDialogContent = ({ titleProps, close, createChannel }) => {
             options={[
               {
                 label: "Open",
-                description: "Anyone can see and join",
+                description: "Visible to anyone, and no permission needed to join",
                 value: "open",
                 icon: <GlobeIcon style={{ width: "2rem" }} />,
               },
               {
                 label: "Closed",
-                description: "Anyone can see but not join",
+                description: "Visible to anyone, but requires an invite to join",
                 value: "closed",
                 icon: <LockIcon style={{ width: "2rem" }} />,
               },
               {
                 label: "Private",
-                description: "Only members can see",
+                description: "Only visible to members",
                 value: "private",
                 icon: <EyeOffIcon style={{ width: "2rem" }} />,
               },

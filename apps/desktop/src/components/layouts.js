@@ -412,7 +412,7 @@ const Layout = () => {
                     },
                     {
                       key: "member-channels",
-                      title: "Channels",
+                      title: "Topics",
                       channels: memberChannelsExcludingStarredAndTopChannels,
                       isHidden:
                         memberChannelsExcludingStarredAndTopChannels.length ===
@@ -420,7 +420,7 @@ const Layout = () => {
                     },
                     {
                       key: "public",
-                      title: "Popular channels",
+                      title: "Popular",
                       channels: sort(
                         comparator(
                           {

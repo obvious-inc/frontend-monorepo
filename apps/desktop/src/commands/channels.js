@@ -1,8 +1,8 @@
 import { getChecksumAddress } from "../utils/ethereum";
 
 const commands = {
-  "create-channel": ({ actions, navigate }) => ({
-    description: "Start a new channel",
+  "create-topic": ({ actions, navigate }) => ({
+    description: "Start a new topic",
     arguments: ["name"],
     execute: async ({ args, editor }) => {
       const name = args.join(" ");
@@ -16,9 +16,9 @@ const commands = {
       navigate(`/channels/${channel.id}`);
     },
   }),
-  "set-channel-name": ({ context, user, state, actions, channelId }) => ({
-    description: "Set a new name for this channel",
-    arguments: ["channel-name"],
+  "set-topic-name": ({ context, user, state, actions, channelId }) => ({
+    description: "Set a new name for this topic",
+    arguments: ["topic-name"],
     execute: async ({ args, editor }) => {
       if (context !== "dm" && args.length < 1) {
         alert('Argument "channel-name" is required');
@@ -41,9 +41,9 @@ const commands = {
       return true;
     },
   }),
-  "set-channel-topic": ({ context, user, state, actions, channelId }) => ({
-    description: "Set a new topic for this channel",
-    arguments: ["channel-topic"],
+  "set-topic-description": ({ context, user, state, actions, channelId }) => ({
+    description: "Set a new description for this topic",
+    arguments: ["topic-description"],
     execute: async ({ args, editor }) => {
       const description = args.join(" ");
       await actions.updateChannel(channelId, {
@@ -62,9 +62,9 @@ const commands = {
       return true;
     },
   }),
-  "set-channel-avatar": ({ context, user, state, actions, channelId }) => ({
-    description: "Set a new avatar for this channel",
-    arguments: ["channel-avatar-url"],
+  "set-topic-avatar": ({ context, user, state, actions, channelId }) => ({
+    description: "Set a new avatar for this topic",
+    arguments: ["topic-avatar-url"],
     execute: async ({ args, editor }) => {
       const arg = args[0]?.trim() === "" ? null : args[0];
       const isUrlOrEmpty = arg == null || arg.match(/^https?:\/\//);
@@ -88,7 +88,7 @@ const commands = {
       return true;
     },
   }),
-  "delete-channel": ({
+  "delete-topic": ({
     context,
     user,
     state,
@@ -96,9 +96,9 @@ const commands = {
     navigate,
     channelId,
   }) => ({
-    description: "Delete the current channel",
+    description: "Delete the current topic",
     execute: async ({ editor }) => {
-      if (!confirm("Are you sure you want to delete this channel?")) return;
+      if (!confirm("Are you sure you want to delete this topic?")) return;
       await actions.deleteChannel(channelId);
       editor.clear();
       navigate("/", { replace: true });
@@ -114,34 +114,9 @@ const commands = {
       return true;
     },
   }),
-  "star-channel": ({ state, actions, channelId }) => ({
-    description: "Star this channel to list it on your home screen",
-    execute: async ({ editor }) => {
-      const channels = state.selectStarredChannels();
-      const isStarred = channels.some((c) => c.id === channelId);
-      if (!isStarred) await actions.starChannel(channelId);
-      editor.clear();
-    },
-    exclude: () => {
-      const channels = state.selectStarredChannels();
-      const isStarred = channels.some((c) => c.id === channelId);
-      return isStarred;
-    },
-  }),
-  "unstar-channel": ({ state, actions, channelId }) => ({
-    description: "Unstar this channel to remove it from your home screen",
-    execute: async ({ editor }) => {
-      await actions.unstarChannel(channelId);
-      editor.clear();
-    },
-    exclude: () => {
-      const channels = state.selectStarredChannels();
-      return channels.every((c) => c.id !== channelId);
-    },
-  }),
   "add-member": ({ state, actions, channelId, user, ethersProvider }) => ({
-    description: "Add a member to this channel",
-    arguments: ["wallet-address-or-ens"],
+    description: "Add a members to this topic",
+    arguments: ["ethereum-account-address-or-ens"],
     execute: async ({ args, editor }) => {
       const walletAddressOrEnsList = args;
       if (walletAddressOrEnsList.length === 0) return;
@@ -174,8 +149,8 @@ const commands = {
     },
   }),
   "remove-member": ({ state, actions, channelId, user, ethersProvider }) => ({
-    description: "Remove a member from this channel",
-    arguments: ["wallet-address-or-ens"],
+    description: "Remove a member from this topic",
+    arguments: ["ethereum-account-address-or-ens"],
     execute: async ({ args, editor }) => {
       const [walletAddressOrEns] = args;
       if (walletAddressOrEns == null) return;
@@ -208,7 +183,7 @@ const commands = {
       );
     },
   }),
-  "join-channel": ({ state, actions, channelId, user }) => {
+  "join-topic": ({ state, actions, channelId, user }) => {
     const channel = state.selectChannel(channelId, { name: true });
     return {
       description: `Join "#${channel?.name}".`,
@@ -222,7 +197,7 @@ const commands = {
         channel.memberUserIds.includes(user.id),
     };
   },
-  "leave-channel": ({ state, actions, channelId, user }) => {
+  "leave-topic": ({ state, actions, channelId, user }) => {
     const channel = state.selectChannel(channelId, { name: true });
     return {
       description: `Leave "#${channel?.name}".`,
@@ -236,11 +211,11 @@ const commands = {
         channel.ownerUserId === user.id,
     };
   },
-  "make-open": ({ state, actions, channelId, user }) => {
+  "open-write-access": ({ state, actions, channelId, user }) => {
     const channel = state.selectChannel(channelId, { name: true });
     const accessLevel = state.selectChannelAccessLevel(channelId);
     return {
-      description: `Make "#${channel?.name}" an open channel that anyone can see and join.`,
+      description: `Make "#${channel?.name}" a completely open topic that anyone can join`,
       execute: async ({ editor }) => {
         await actions.makeChannelOpen(channelId);
         editor.clear();
@@ -253,11 +228,11 @@ const commands = {
         (accessLevel === "private" && channel.memberUserIds.length > 1),
     };
   },
-  "make-closed": ({ state, actions, channelId, user }) => {
+  "open-read-access": ({ state, actions, channelId, user }) => {
     const channel = state.selectChannel(channelId, { name: true });
     const accessLevel = state.selectChannelAccessLevel(channelId);
     return {
-      description: `Make "#${channel?.name}" a closed channel that anyone can see, but not join.`,
+      description: `Make "#${channel?.name}" an open topic that anyone can see. Write access will remain members-only.`,
       execute: async ({ editor }) => {
         await actions.makeChannelClosed(channelId);
         editor.clear();
@@ -270,11 +245,11 @@ const commands = {
         (accessLevel === "private" && channel.memberUserIds.length > 1),
     };
   },
-  "make-private": ({ state, actions, channelId, user }) => {
+  "close-read-access": ({ state, actions, channelId, user }) => {
     const channel = state.selectChannel(channelId, { name: true });
     const accessLevel = state.selectChannelAccessLevel(channelId);
     return {
-      description: `Make "#${channel?.name}" a private channel that only members can see`,
+      description: `Make "#${channel?.name}" a private topic that only members can see`,
       execute: async ({ editor }) => {
         await actions.makeChannelPrivate(channelId);
         editor.clear();
