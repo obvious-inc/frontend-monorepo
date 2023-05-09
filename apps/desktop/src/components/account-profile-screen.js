@@ -724,7 +724,6 @@ const TransactionsTabPane = ({ accountAddress }) => {
               fontSize: t.text.sizes.base,
               fontFamily: t.fontStacks.monospace,
               color: t.colors.textPrimary,
-              display: "inline-flex",
             },
             "* + [data-tooltip-highlight]": {
               marginTop: "0.1rem",
@@ -788,13 +787,6 @@ const TransactionsTabPane = ({ accountAddress }) => {
 
           return (
             <li key={t.hash} rel="noreferrer" target="_blank">
-              {/* <Link */}
-              {/*   component="a" */}
-              {/*   href={`https://etherscan.io/tx/${t.hash}`} */}
-              {/*   target="_blank" */}
-              {/* > */}
-              {/*   <span data-hash>{t.hash}</span> */}
-              {/* </Link> */}
               <div
                 style={{
                   display: "grid",
@@ -845,19 +837,23 @@ const TransactionsTabPane = ({ accountAddress }) => {
                       </Tooltip.Trigger>
                       <Tooltip.Content side="top" align="start" sideOffset={6}>
                         <div
-                          style={{
+                          css={css({
                             maxWidth: "min(calc(100vw - 3.2rem), 56rem)",
                             overflow: "hidden",
                             textOverflow: "ellipsis",
-                          }}
+                          })}
                         >
                           <span>Contract call</span>{" "}
                           <span data-arrow>&rarr;</span> {prettifyAddress(t.to)}
-                          <br />
-                          <span data-tooltip-highlight>
+                          <div
+                            data-tooltip-highlight
+                            style={{
+                              overflow: "hidden",
+                              textOverflow: "ellipsis",
+                            }}
+                          >
                             {t.functionSignature}
-                          </span>
-                          <br />
+                          </div>
                           {t.parsedInput?.map((i) => (
                             <React.Fragment key={i.name}>
                               {i.name}: {i.value}
