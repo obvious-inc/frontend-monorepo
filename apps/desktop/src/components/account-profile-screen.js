@@ -1,7 +1,12 @@
 import isToday from "date-fns/isToday";
 import isYesterday from "date-fns/isYesterday";
 import isThisYear from "date-fns/isThisYear";
-import { utils as ethersUtils } from "ethers";
+import {
+  getAddress as checksumEncodeAddress,
+  isAddress as isEthereumAccountAddress,
+  formatEther,
+} from "viem";
+import { normalize as normalizeEnsName } from "viem/ens";
 import React from "react";
 import { css } from "@emotion/react";
 import {
@@ -11,7 +16,10 @@ import {
   useSearchParams,
   Link as RouterLink,
 } from "react-router-dom";
-import { useAccount as useConnectedWalletAccount, useProvider } from "wagmi";
+import {
+  useAccount as useConnectedWalletAccount,
+  usePublicClient as usePublicEthereumClient,
+} from "wagmi";
 import { ethereum as ethereumUtils } from "@shades/common/utils";
 import { useWallet, useWalletLogin } from "@shades/common/wallet";
 import {
@@ -45,7 +53,7 @@ import ChannelAvatar from "./channel-avatar.js";
 
 const { truncateAddress } = ethereumUtils;
 
-const prettifyAddress = (a) => truncateAddress(ethersUtils.getAddress(a));
+const prettifyAddress = (a) => truncateAddress(checksumEncodeAddress(a));
 
 const fetchAccountTransactions = async (accountAddress, query = {}) => {
   const searchParams = new URLSearchParams({
@@ -117,9 +125,9 @@ const useAccountTransactions = (accountAddress) => {
 
 const AccountProfileScreen = () => {
   const { ensNameOrEthereumAccountAddress } = useParams();
-  const provider = useProvider();
+  const publicEthereumClient = usePublicEthereumClient();
   const isAddress = React.useMemo(
-    () => ethersUtils.isAddress(ensNameOrEthereumAccountAddress),
+    () => isEthereumAccountAddress(ensNameOrEthereumAccountAddress),
     [ensNameOrEthereumAccountAddress]
   );
 
@@ -133,23 +141,27 @@ const AccountProfileScreen = () => {
   React.useEffect(() => {
     if (isAddress) return;
 
-    provider.resolveName(ensNameOrEthereumAccountAddress).then(
-      (address) => {
-        if (address == null) {
-          setNotFound(true);
-          return;
-        }
+    publicEthereumClient
+      .getEnsAddress({
+        name: normalizeEnsName(ensNameOrEthereumAccountAddress),
+      })
+      .then(
+        (address) => {
+          if (address == null) {
+            setNotFound(true);
+            return;
+          }
 
-        setResolvedAddress(address);
-      },
-      (error) => {
-        setNotFound(true);
-        if (error.code !== "INVALID_ARGUMENT") {
-          console.warn("unrecognized error", error.code);
+          setResolvedAddress(address);
+        },
+        (error) => {
+          setNotFound(true);
+          if (error.code !== "INVALID_ARGUMENT") {
+            console.warn("unrecognized error", error.code);
+          }
         }
-      }
-    );
-  }, [isAddress, provider, ensNameOrEthereumAccountAddress]);
+      );
+  }, [isAddress, publicEthereumClient, ensNameOrEthereumAccountAddress]);
 
   if (notFound)
     return (
@@ -228,7 +240,7 @@ const AccountProfile = ({ accountAddress }) => {
   const [textCopied, setTextCopied] = React.useState(false);
 
   const copyAccountLink = () => {
-    navigator.clipboard.writeText(ethersUtils.getAddress(accountAddress));
+    navigator.clipboard.writeText(checksumEncodeAddress(accountAddress));
   };
 
   const isOnline = user?.onlineStatus === "online";
@@ -765,7 +777,7 @@ const TransactionsTabPane = ({ accountAddress }) => {
         }
       >
         {transactions.map((t) => {
-          const eth = ethersUtils.formatEther(t.value);
+          const eth = formatEther(t.value);
           const [wholeEth, ethDecimals] = eth.split(".");
           const date = new Date(parseInt(t.timestamp) * 1000);
           const showYear = !isThisYear(date);
@@ -957,7 +969,7 @@ const AccountLink = ({ contract, address }) => {
       <Tooltip.Content side="top" align="center" sideOffset={6}>
         {contract ? "Contract account" : "Externally owned account"}
         <br />
-        <span data-tooltip-highlight>{ethersUtils.getAddress(address)}</span>
+        <span data-tooltip-highlight>{checksumEncodeAddress(address)}</span>
         <br />
         <span data-dimmed>
           Click to view {contract ? "contract" : "account"} on Etherscan

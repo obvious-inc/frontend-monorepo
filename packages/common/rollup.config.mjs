@@ -22,14 +22,21 @@ const createConfig = ({ file, dependencies = [] }) => ({
 });
 
 const entrypoints = [
-  { file: "app.js", dependencies: ["react", "reselect", "zustand"] },
+  { file: "app.js", dependencies: ["viem", "react", "reselect", "zustand"] },
   {
     file: "wallet.js",
-    dependencies: ["react", "wagmi", "wagmi/chains", "ethers"],
+    dependencies: [
+      "react",
+      "viem",
+      "viem/chains",
+      "viem/accounts",
+      "wagmi",
+      "wagmi/chains",
+    ],
   },
   { file: "utils.js" },
   { file: "react.js", dependencies: ["react", "react-aria"] },
-  { file: "nouns.js", dependencies: ["ethers", "@nouns/assets", "@nouns/sdk"] },
+  { file: "nouns.js", dependencies: ["viem", "@nouns/assets", "@nouns/sdk"] },
   { file: "emoji.js" },
 ];
 

@@ -4,7 +4,7 @@ import {
   getNounData,
 } from "@nouns/assets";
 import { buildSVG } from "@nouns/sdk";
-import { utils } from "ethers";
+import { pad as padHex } from "viem";
 
 const cache = new Map();
 
@@ -16,7 +16,7 @@ export const generatePlaceholderSvgString = async (
 
   if (cache.has(cacheKey)) return cache.get(cacheKey);
 
-  const seed = getNounSeedFromBlockHash(0, utils.hexZeroPad(walletAddress, 32));
+  const seed = getNounSeedFromBlockHash(0, padHex(walletAddress));
   const { parts, background } = getNounData(seed);
 
   return buildSVG(

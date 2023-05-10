@@ -1,5 +1,5 @@
 import React from "react";
-import { useSearchParams} from "react-router-dom";
+import { useSearchParams } from "react-router-dom";
 import { css } from "@emotion/react";
 import { useAuth, useChannel, useChannelName } from "@shades/common/app";
 import { permission as permissionUtils } from "@shades/common/utils";
@@ -9,7 +9,7 @@ const { parseScopes } = permissionUtils;
 
 const AuthHome = () => {
   const { authorizedFetch } = useAuth();
-  const [searchParams] = useSearchParams()
+  const [searchParams] = useSearchParams();
 
   const clientId = searchParams.get("client_id");
   const channelId = searchParams.get("channel");

@@ -65,6 +65,7 @@ module.exports = (_, argv) => {
         CLOUDFLARE_ACCT_HASH: null,
         DEV: null,
         SENTRY_DSN: null,
+        WALLET_CONNECT_PROJECT_ID: null,
       }),
       new webpack.DefinePlugin({
         "process.env.EDGE_API_BASE_URL": JSON.stringify(
@@ -128,7 +129,7 @@ module.exports = (_, argv) => {
       splitChunks: {
         cacheGroups: {
           vendor: {
-            test: /[\\/]node_modules[\\/](ethers|wagmi|@emotion|react|react-dom|react-router-dom|react-aria|pusher-js)[\\/]/,
+            test: /[\\/]node_modules[\\/](viem|wagmi|@emotion|react|react-dom|react-router-dom|react-aria|pusher-js)[\\/]/,
             name: "vendors",
             chunks: "all",
           },

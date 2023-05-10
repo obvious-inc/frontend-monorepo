@@ -1,4 +1,8 @@
-import { getChecksumAddress } from "../utils/ethereum";
+import {
+  isAddress as isEthereumAccountAddress,
+  getAddress as checksumEncodeAddress,
+} from "viem";
+import { normalize as normalizeEnsName } from "viem/ens";
 
 const commands = {
   "create-topic": ({ actions, navigate }) => ({
@@ -88,14 +92,7 @@ const commands = {
       return true;
     },
   }),
-  "delete-topic": ({
-    context,
-    user,
-    state,
-    actions,
-    navigate,
-    channelId,
-  }) => ({
+  "delete-topic": ({ context, user, state, actions, navigate, channelId }) => ({
     description: "Delete the current topic",
     execute: async ({ editor }) => {
       if (!confirm("Are you sure you want to delete this topic?")) return;
@@ -114,8 +111,14 @@ const commands = {
       return true;
     },
   }),
-  "add-member": ({ state, actions, channelId, user, ethersProvider }) => ({
-    description: "Add a members to this topic",
+  "add-member": ({
+    state,
+    actions,
+    channelId,
+    user,
+    publicEthereumClient,
+  }) => ({
+    description: "Add members to this topic",
     arguments: ["ethereum-account-address-or-ens"],
     execute: async ({ args, editor }) => {
       const walletAddressOrEnsList = args;
@@ -125,10 +128,13 @@ const commands = {
 
       for (let walletAddressOrEns of walletAddressOrEnsList) {
         try {
-          const address = await ethersProvider
-            .resolveName(walletAddressOrEns)
-            .then(getChecksumAddress);
-          addresses.push(address);
+          const address = isEthereumAccountAddress(walletAddressOrEns)
+            ? walletAddressOrEns
+            : await publicEthereumClient.getEnsAddress({
+                name: normalizeEnsName(walletAddressOrEns),
+              });
+
+          addresses.push(checksumEncodeAddress(address));
         } catch (e) {
           if (e.code === "INVALID_ARGUMENT")
             throw new Error(`Invalid address "${walletAddressOrEns}"`);
@@ -148,7 +154,13 @@ const commands = {
       );
     },
   }),
-  "remove-member": ({ state, actions, channelId, user, ethersProvider }) => ({
+  "remove-member": ({
+    state,
+    actions,
+    channelId,
+    user,
+    publicEthereumClient,
+  }) => ({
     description: "Remove a member from this topic",
     arguments: ["ethereum-account-address-or-ens"],
     execute: async ({ args, editor }) => {
@@ -156,9 +168,13 @@ const commands = {
       if (walletAddressOrEns == null) return;
 
       try {
-        const address = await ethersProvider
-          .resolveName(walletAddressOrEns)
-          .then(getChecksumAddress);
+        const rawAddress = isEthereumAccountAddress(walletAddressOrEns)
+          ? walletAddressOrEns
+          : await publicEthereumClient.getEnsAddress({
+              name: normalizeEnsName(walletAddressOrEns),
+            });
+
+        const address = checksumEncodeAddress(rawAddress);
 
         const user = state.selectUserFromWalletAddress(address);
 

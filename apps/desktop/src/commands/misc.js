@@ -1,3 +1,5 @@
+import { isAddress as isEthereumAccountAddress } from "viem";
+import { normalize as normalizeEnsName } from "viem/ens";
 import { getImageDimensionsFromUrl } from "@shades/common/utils";
 import { send as sendNotification } from "../utils/notifications";
 import {
@@ -7,33 +9,30 @@ import {
 } from "../utils/nouns";
 
 const commands = {
-  dm: ({ state, navigate, ethersProvider }) => ({
+  dm: ({ state, navigate, publicEthereumClient }) => ({
     arguments: ["wallet-address-or-ens-name"],
     description: "Start a one-to-one conversation with a wallet",
     execute: async ({ args, editor }) => {
+      const query = args[0];
+
       try {
-        const resolvedAddresses = await Promise.all(
-          args.map((a) => ethersProvider.resolveName(a))
-        );
+        const resolvedAddress = isEthereumAccountAddress(query)
+          ? query
+          : await publicEthereumClient.getEnsAddress({
+              name: normalizeEnsName(query),
+            });
 
-        if (resolvedAddresses.length !== 1) {
-          navigate(`/new?account=${resolvedAddresses.join(",")}`);
-          return;
-        }
-
-        const channel = state.selectDmChannelWithMember(resolvedAddresses[0]);
+        const channel = state.selectDmChannelWithMember(resolvedAddress);
 
         if (channel == null) {
-          navigate(`/new?account=${resolvedAddresses[0]}`);
+          navigate(`/new?account=${resolvedAddress}`);
           return;
         }
 
         navigate(`/channels/${channel.id}`);
         editor.clear();
       } catch (e) {
-        // if (e.code === "INVALID_ARGUMENT") throw new Error("Invalid address");
-        // throw e;
-        navigate("/new");
+        navigate(`/new?query=${query}`);
       }
     },
   }),
@@ -184,7 +183,7 @@ const commands = {
       editor.clear();
     },
   }),
-  noun: ({ actions, channelId, ethersProvider }) => ({
+  noun: ({ actions, channelId, publicEthereumClient }) => ({
     description: "F-U-N",
     execute: async ({ args, editor }) => {
       const parseParts = (parts) => {
@@ -200,7 +199,7 @@ const commands = {
       } else {
         if (args.length == 1 && Number.isInteger(Number(args[0]))) {
           const nounId = Number(args[0]);
-          ({ url, parts } = await getNoun(nounId, ethersProvider));
+          ({ url, parts } = await getNoun(nounId, publicEthereumClient));
         } else if (args.length == 1) {
           ({ url, parts } = await getRandomNounWithSeedInput(args[0]));
         } else {

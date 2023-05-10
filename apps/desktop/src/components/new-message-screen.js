@@ -1,4 +1,4 @@
-import { utils as ethersUtils } from "ethers";
+import { isAddress as isEthereumAccountAddress } from "viem";
 import React from "react";
 import { useAccount } from "wagmi";
 import { useNavigate, useSearchParams } from "react-router-dom";
@@ -48,7 +48,7 @@ import Dialog from "@shades/ui-web/dialog";
 import { useDialog } from "../hooks/dialogs.js";
 import useAccountDisplayName from "../hooks/account-display-name.js";
 import useChannelFetchEffects from "../hooks/channel-fetch-effects.js";
-import useScrollAwareChannelMessagesFetcher from "../hooks/scroll-aware-channel-messages-fetcher.js";
+import useChannelMessagesFetcher from "../hooks/channel-messages-fetcher.js";
 import Combobox, {
   Item as ComboboxItem,
   Section as ComboboxSection,
@@ -203,7 +203,7 @@ const useExternalAccount = (ensNameOrWalletAddress) => {
     () =>
       ensMatchWalletAddress != null
         ? { walletAddress: ensMatchWalletAddress }
-        : ethersUtils.isAddress(ensNameOrWalletAddress)
+        : isEthereumAccountAddress(ensNameOrWalletAddress)
         ? { walletAddress: ensNameOrWalletAddress }
         : null,
     [ensMatchWalletAddress, ensNameOrWalletAddress]
@@ -230,7 +230,7 @@ const useFilteredComboboxItems = (query, state) => {
   const accounts = useFilteredAccounts(deferredQuery);
 
   const items = React.useMemo(() => {
-    if (ethersUtils.isAddress(deferredQuery))
+    if (isEthereumAccountAddress(deferredQuery))
       return [
         {
           key: "address",
@@ -289,7 +289,7 @@ const useRecipientsTagFieldComboboxState = () => {
       searchParams
         .get("account")
         ?.split(",")
-        .filter(ethersUtils.isAddress)
+        .filter(isEthereumAccountAddress)
         .map((a) => `account-${a}`) ?? [];
     const channelKeys =
       searchParams
@@ -311,10 +311,16 @@ const useRecipientsTagFieldComboboxState = () => {
     );
 
     setSearchParams(
-      [
-        ["account", accounts.length === 0 ? undefined : accounts.join(",")],
-        ["channel", channels[0]],
-      ].filter((e) => e[1]),
+      (p) => {
+        const currentEntries = [...p.entries()];
+        return [
+          ...currentEntries.filter(
+            (e) => !["account", "channel"].includes(e[0])
+          ),
+          ["account", accounts.length === 0 ? undefined : accounts.join(",")],
+          ["channel", channels[0]],
+        ].filter((e) => e[1]);
+      },
       { replace: true }
     );
   }, [recipientsState.selectedKeys, setSearchParams]);
@@ -844,15 +850,11 @@ const NewMessageScreen = () => {
 };
 
 const ChannelMessages = ({ channelId, initReply, replyTargetMessageId }) => {
-  const scrollContainerRef = React.useRef();
   const didScrollToBottomRef = React.useRef(false);
   const messageIds = useSortedChannelMessageIds(channelId, { threads: true });
-
-  const { fetcher: fetchMessages, pendingMessagesBeforeCount } =
-    useScrollAwareChannelMessagesFetcher(channelId, { scrollContainerRef });
-
+  const fetchMessages = useChannelMessagesFetcher(channelId);
   const fetchMoreMessages = useLatestCallback((args) =>
-    fetchMessages(args ?? { beforeMessageId: messageIds[0], limit: 30 })
+    fetchMessages({ beforeMessageId: messageIds[0], limit: 30, ...args })
   );
 
   React.useEffect(() => {
@@ -864,12 +866,10 @@ const ChannelMessages = ({ channelId, initReply, replyTargetMessageId }) => {
   return (
     <ChannelMessagesScrollView
       channelId={channelId}
-      scrollContainerRef={scrollContainerRef}
-      didScrollToBottomRef={didScrollToBottomRef}
       fetchMoreMessages={fetchMoreMessages}
+      didScrollToBottomRef={didScrollToBottomRef}
       initReply={initReply}
       replyTargetMessageId={replyTargetMessageId}
-      pendingMessagesBeforeCount={pendingMessagesBeforeCount}
     />
   );
 };
@@ -974,7 +974,14 @@ const MessageRecipientCombobox = React.forwardRef(
   ) => {
     const containerRef = React.useRef();
 
-    const [query, setQuery] = React.useState("");
+    // const [query, setQuery] = React.useState(initialQuery);
+    const [searchParams, setSearchParams] = useSearchParams();
+    const query = searchParams.get("query") ?? "";
+    console.log("render", query);
+    const setQuery = (q) => {
+      console.log("set", q);
+      setSearchParams({ query: q });
+    };
 
     const filteredComboboxItems = useFilteredComboboxItems(query, state);
     const { inputProps: tagFieldInputProps, tagButtonProps } =

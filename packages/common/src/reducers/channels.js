@@ -1,4 +1,4 @@
-import { utils as ethersUtils } from "ethers";
+import { getAddress as checksumEncodeAddress } from "viem";
 import { createSelector } from "reselect";
 import combineReducers from "../utils/combine-reducers";
 import { indexBy, unique, sort } from "../utils/array";
@@ -353,7 +353,7 @@ export const selectChannelName = createSelector(
     const truncate = (u) =>
       u.walletAddress == null
         ? null
-        : truncateAddress(ethersUtils.getAddress(u.walletAddress));
+        : truncateAddress(checksumEncodeAddress(u.walletAddress));
 
     if (channel.memberUserIds.length === 1)
       return channelMemberUsers[0] == null
@@ -607,7 +607,7 @@ export const selectDmChannelWithMember = createSelector(
       // Personal DM channel
       if (
         c.members.length === 1 &&
-        c.members[0].walletAddress.toLowerCase() === walletAddress
+        c.members[0].walletAddress?.toLowerCase() === walletAddress
       )
         return true;
 

@@ -1,4 +1,4 @@
-import { utils as ethersUtils } from "ethers";
+import { isAddress as isEthereumAccountAddress } from "viem";
 import React from "react";
 import { View, Text, Pressable, Keyboard, FlatList } from "react-native";
 import { useEnsAddress } from "wagmi";
@@ -113,7 +113,8 @@ export const useFilteredUsers = ({ query }) => {
   const showEnsLoading = isLoadingEns && !trimmedQuery.startsWith("0x");
 
   const queryAddress =
-    ensAddress ?? (ethersUtils.isAddress(trimmedQuery) ? trimmedQuery : null);
+    ensAddress ??
+    (isEthereumAccountAddress(trimmedQuery) ? trimmedQuery : null);
 
   const queryAddressUser = useUserWithWalletAddress(queryAddress);
 

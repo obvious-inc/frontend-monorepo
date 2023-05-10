@@ -1,4 +1,4 @@
-import { utils as ethersUtils } from "ethers";
+import { getAddress as checksumEncodeAddress } from "viem";
 import React from "react";
 import { useAccount } from "wagmi";
 import { css, useTheme } from "@emotion/react";
@@ -24,7 +24,7 @@ const ProfileLinkDialog = ({ accountAddress, titleProps, dismiss }) => {
   const { displayName: computedDisplayName } =
     useAccountDisplayName(walletAddress);
   const truncatedAddress = truncateAddress(
-    ethersUtils.getAddress(walletAddress)
+    checksumEncodeAddress(walletAddress)
   );
 
   const [linkCopied, setLinkCopied] = React.useState(false);
