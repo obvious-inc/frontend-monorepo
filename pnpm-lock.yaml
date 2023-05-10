@@ -533,11 +533,11 @@ importers:
         specifier: ^2.8.8
         version: 2.8.8
       rollup:
-        specifier: ^3.21.6
-        version: 3.21.6
+        specifier: ^3.21.0
+        version: 3.21.0
       rollup-plugin-swc3:
         specifier: ^0.8.1
-        version: 0.8.1(@swc/core@1.3.55)(rollup@3.21.6)
+        version: 0.8.1(@swc/core@1.3.55)(rollup@3.21.0)
 
   packages/fs: {}
 
@@ -563,11 +563,11 @@ importers:
         specifier: ^2.8.8
         version: 2.8.8
       rollup:
-        specifier: ^3.21.6
-        version: 3.21.6
+        specifier: ^3.21.0
+        version: 3.21.0
       rollup-plugin-swc3:
         specifier: ^0.8.1
-        version: 0.8.1(@swc/core@1.3.55)(rollup@3.21.6)
+        version: 0.8.1(@swc/core@1.3.55)(rollup@3.21.0)
 
   packages/webpack-config: {}
 
@@ -15554,7 +15554,7 @@ packages:
     dev: true
     optional: true
 
-  /rollup-plugin-swc3@0.8.1(@swc/core@1.3.55)(rollup@3.21.6):
+  /rollup-plugin-swc3@0.8.1(@swc/core@1.3.55)(rollup@3.21.0):
     resolution: {integrity: sha512-xoHRmrGamXrz4rNfmXiTNf/6pAYY2daFOJavVsrG/HvBgsoa8lx9rtas9XiqOl5DqD04tGn8MiUwarITOPyh8A==}
     engines: {node: '>=12'}
     peerDependencies:
@@ -15565,7 +15565,7 @@ packages:
       '@rollup/pluginutils': 4.2.1
       '@swc/core': 1.3.55
       get-tsconfig: 4.5.0
-      rollup: 3.21.6
+      rollup: 3.21.0
     dev: true
 
   /rollup-plugin-terser@7.0.2(rollup@2.79.1):
@@ -15589,8 +15589,8 @@ packages:
       fsevents: 2.3.2
     dev: false
 
-  /rollup@3.21.6:
-    resolution: {integrity: sha512-SXIICxvxQxR3D4dp/3LDHZIJPC8a4anKMHd4E3Jiz2/JnY+2bEjqrOokAauc5ShGVNFHlEFjBXAXlaxkJqIqSg==}
+  /rollup@3.21.0:
+    resolution: {integrity: sha512-ANPhVcyeHvYdQMUyCbczy33nbLzI7RzrBje4uvNiTDJGIMtlKoOStmympwr9OtS1LZxiDmE2wvxHyVhoLtf1KQ==}
     engines: {node: '>=14.18.0', npm: '>=8.0.0'}
     hasBin: true
     optionalDependencies:
