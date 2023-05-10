@@ -40,7 +40,6 @@ import { useState as useSidebarState } from "@shades/ui-web/sidebar-layout";
 import {
   CrossSmall as CrossSmallIcon,
   Checkmark as CheckmarkIcon,
-  Pen as PenIcon,
 } from "@shades/ui-web/icons";
 import Button from "@shades/ui-web/button";
 import IconButton from "@shades/ui-web/icon-button";
@@ -532,7 +531,6 @@ const NewMessageScreen = () => {
     open: openAccountAuthenticationDialog,
     dismiss: dismissAccountAuthenticationDialog,
   } = useDialog("account-authentication");
-  const { open: openCreateChannelDialog } = useDialog("create-channel");
 
   const initReply = React.useCallback((messageId) => {
     setReplyTargetMessageId(messageId);
@@ -598,25 +596,6 @@ const NewMessageScreen = () => {
             style={{ paddingLeft: isSidebarFloating ? 0 : "1.6rem" }}
           >
             New Message
-          </div>
-          <div
-            style={{
-              flex: 1,
-              minWidth: 0,
-              display: "flex",
-              justifyContent: "flex-end",
-            }}
-          >
-            <Button
-              size="small"
-              icon={<PenIcon style={{ width: "1.6rem" }} />}
-              align="left"
-              onClick={() => {
-                openCreateChannelDialog();
-              }}
-            >
-              New topic
-            </Button>
           </div>
         </NavBar>
         <div css={css({ padding: "0 1.6rem" })}>

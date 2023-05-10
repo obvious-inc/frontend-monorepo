@@ -34,7 +34,7 @@ import {
 import {
   DoubleChevronLeft as DoubleChevronLeftIcon,
   MagnificationGlass as MagnificationGlassIcon,
-  SpeechBubble as SpeechBubbleIcon,
+  ChatBubble as ChatBubbleIcon,
   Triangle as TriangleIcon,
   Pen as PenIcon,
 } from "@shades/ui-web/icons";
@@ -356,7 +356,7 @@ const Layout = () => {
               <ListItem
                 compact={false}
                 icon={
-                  <PenIcon style={{ width: "1.8rem", height: "auto" }} />
+                  <PenIcon style={{ width: "1.9rem", height: "auto" }} />
                 }
                 title="Create topic"
                 onClick={() => {
@@ -367,7 +367,7 @@ const Layout = () => {
               <ListItem
                 compact={false}
                 icon={
-                  <SpeechBubbleIcon style={{ width: "1.6rem", height: "auto" }} />
+                  <ChatBubbleIcon style={{ width: "1.6rem", height: "auto" }} />
                 }
                 title="New message"
                 component={NavLink}
