@@ -15,6 +15,9 @@ const LazyProfileLinkDialog = React.lazy(() =>
 const LazyAccountAuthenticationDialog = React.lazy(() =>
   import("./account-authentication-dialog.js")
 );
+const LazyCreateChannelDialog = React.lazy(() =>
+  import("./create-channel-dialog.js")
+);
 
 const GlobalDialogs = () => {
   const { reset: resetWalletConnectionState } = useConnect();
@@ -33,6 +36,11 @@ const GlobalDialogs = () => {
     dismiss: dismissAccountAuthenticationDialog,
     data: accountAuthenticationData,
   } = useDialog("account-authentication");
+  const {
+    isOpen: isCreateChannelDialogOpen,
+    open: openCreateChannelDialog,
+    dismiss: dismissCreateChannelDialog,
+  } = useDialog("create-channel");
 
   return (
     <>
@@ -71,6 +79,13 @@ const GlobalDialogs = () => {
           width: "38rem",
           component: LazyProfileLinkDialog,
           componentProps: { accountAddress: profileLinkData?.accountAddress },
+        },
+        {
+          key: "create-channel",
+          isOpen: isCreateChannelDialogOpen,
+          dismiss: dismissCreateChannelDialog,
+          width: "48rem",
+          component: LazyCreateChannelDialog,
         },
       ].map(
         ({

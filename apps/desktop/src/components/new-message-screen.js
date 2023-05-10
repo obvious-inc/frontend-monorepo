@@ -40,11 +40,10 @@ import { useState as useSidebarState } from "@shades/ui-web/sidebar-layout";
 import {
   CrossSmall as CrossSmallIcon,
   Checkmark as CheckmarkIcon,
-  PlusSmall as PlusSmallIcon,
+  Pen as PenIcon,
 } from "@shades/ui-web/icons";
 import Button from "@shades/ui-web/button";
 import IconButton from "@shades/ui-web/icon-button";
-import Dialog from "@shades/ui-web/dialog";
 import { useDialog } from "../hooks/dialogs.js";
 import useAccountDisplayName from "../hooks/account-display-name.js";
 import useChannelFetchEffects from "../hooks/channel-fetch-effects.js";
@@ -58,7 +57,6 @@ import NavBar from "./nav-bar.js";
 import UserAvatar from "./user-avatar.js";
 import UserAvatarStack from "./user-avatar-stack.js";
 import ChannelAvatar from "./channel-avatar.js";
-import ErrorBoundary from "./error-boundary.js";
 import NewChannelMessageInput from "./new-channel-message-input.js";
 import ChannelMessagesScrollView from "./channel-messages-scroll-view.js";
 import ChannelPrologue, {
@@ -69,10 +67,6 @@ import InlineChannelButton from "./inline-channel-button.js";
 import Emoji from "./emoji.js";
 
 const INTRO_CHANNEL_ID = "625806ed89bff47879344a9c";
-
-const LazyCreateChannelDialog = React.lazy(() =>
-  import("./create-channel-dialog.js")
-);
 
 const LazyLoginScreen = React.lazy(() => import("./login-screen.js"));
 
@@ -538,11 +532,7 @@ const NewMessageScreen = () => {
     open: openAccountAuthenticationDialog,
     dismiss: dismissAccountAuthenticationDialog,
   } = useDialog("account-authentication");
-  const {
-    isOpen: isCreateChannelDialogOpen,
-    open: openCreateChannelDialog,
-    dismiss: dismissCreateChannelDialog,
-  } = useDialog("create-channel");
+  const { open: openCreateChannelDialog } = useDialog("create-channel");
 
   const initReply = React.useCallback((messageId) => {
     setReplyTargetMessageId(messageId);
@@ -619,7 +609,7 @@ const NewMessageScreen = () => {
           >
             <Button
               size="small"
-              icon={<PlusSmallIcon style={{ width: "1.3rem" }} />}
+              icon={<PenIcon style={{ width: "1.6rem" }} />}
               align="left"
               onClick={() => {
                 openCreateChannelDialog();
@@ -827,24 +817,6 @@ const NewMessageScreen = () => {
           />
         </div>
       </div>
-
-      <Dialog
-        width="46rem"
-        isOpen={isCreateChannelDialogOpen}
-        onRequestClose={dismissCreateChannelDialog}
-      >
-        {({ titleProps }) => (
-          <ErrorBoundary fallback={() => window.location.reload()}>
-            <React.Suspense fallback={null}>
-              <LazyCreateChannelDialog
-                isOpen={isCreateChannelDialogOpen}
-                dismiss={dismissCreateChannelDialog}
-                titleProps={titleProps}
-              />
-            </React.Suspense>
-          </ErrorBoundary>
-        )}
-      </Dialog>
     </>
   );
 };

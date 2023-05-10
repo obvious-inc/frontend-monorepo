@@ -59,7 +59,7 @@ const UserModal = ({ route }) => {
         },
         {
           key: "toggle-star",
-          label: isStarred ? "Remove from favorites" : "Add to favorites",
+          label: isStarred ? "Unfollow" : "Follow",
           disabled: hasPendingStarRequest,
           onPress: () => {
             setPendingStarRequest(true);

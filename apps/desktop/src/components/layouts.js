@@ -34,8 +34,9 @@ import {
 import {
   DoubleChevronLeft as DoubleChevronLeftIcon,
   MagnificationGlass as MagnificationGlassIcon,
-  PlusSmall as PlusSmallIcon,
+  SpeechBubble as SpeechBubbleIcon,
   Triangle as TriangleIcon,
+  Pen as PenIcon,
 } from "@shades/ui-web/icons";
 import useFetch from "../hooks/fetch";
 import useCommandCenter from "../hooks/command-center";
@@ -89,20 +90,12 @@ const Layout = () => {
     [memberChannels, params.channelId]
   );
 
-  const [memberTopicChannelsExcludingStarredAndTopChannels, dmChannels] =
-    React.useMemo(() => {
-      const starredChannelIds = starredChannels.map((c) => c.id);
-      const topChannelIds = topChannels.map((c) => c.id);
-      const exlcudedChannelIds = [...starredChannelIds, ...topChannelIds];
-      const channels = memberChannels.filter(
-        (c) => !exlcudedChannelIds.includes(c.id)
-      );
-      return channels.reduce(
-        ([topics, dms], c) =>
-          c.kind === "dm" ? [topics, [...dms, c]] : [[...topics, c], dms],
-        [[], []]
-      );
-    }, [memberChannels, starredChannels, topChannels]);
+  const memberChannelsExcludingStarredAndTopChannels = React.useMemo(() => {
+    const starredChannelIds = starredChannels.map((c) => c.id);
+    const topChannelIds = topChannels.map((c) => c.id);
+    const exlcudedChannelIds = [...starredChannelIds, ...topChannelIds];
+    return memberChannels.filter((c) => !exlcudedChannelIds.includes(c.id));
+  }, [memberChannels, starredChannels, topChannels]);
 
   const popularNonMemberPublicChannels = usePublicChannels().filter(
     (c) =>
@@ -114,8 +107,7 @@ const Layout = () => {
     authenticationStatus === "authenticated"
       ? [
           ...starredChannels,
-          ...memberTopicChannelsExcludingStarredAndTopChannels,
-          ...dmChannels,
+          ...memberChannelsExcludingStarredAndTopChannels,
           ...(memberChannels.length <= 1 ? popularNonMemberPublicChannels : []),
         ]
       : popularNonMemberPublicChannels;
@@ -146,6 +138,7 @@ const Layout = () => {
   const { open: openEditProfileDialog } = useDialog("edit-profile");
   const { open: openSettingsDialog } = useDialog("settings");
   const { open: openProfileLinkDialog } = useDialog("profile-link");
+  const { open: openCreateChannelDialog } = useDialog("create-channel");
   const {
     open: openAccountAuthenticationDialog,
     dismiss: dismissAccountAuthenticationDialog,
@@ -361,24 +354,35 @@ const Layout = () => {
                 }}
               />
               <ListItem
-                ref={menuFocusTargetRef}
                 compact={false}
-                icon={<MagnificationGlassIcon style={{ width: "1.4rem" }} />}
-                title="Search"
+                icon={
+                  <PenIcon style={{ width: "1.8rem", height: "auto" }} />
+                }
+                title="Create topic"
                 onClick={() => {
-                  openCommandCenter();
+                  openCreateChannelDialog();
                   if (isMenuFloating) toggleMenu();
                 }}
               />
               <ListItem
                 compact={false}
                 icon={
-                  <PlusSmallIcon style={{ width: "1.6rem", height: "auto" }} />
+                  <SpeechBubbleIcon style={{ width: "1.6rem", height: "auto" }} />
                 }
                 title="New message"
                 component={NavLink}
                 to="/new"
                 onClick={() => {
+                  if (isMenuFloating) toggleMenu();
+                }}
+              />
+              <ListItem
+                ref={menuFocusTargetRef}
+                compact={false}
+                icon={<MagnificationGlassIcon style={{ width: "1.4rem" }} />}
+                title="Search"
+                onClick={() => {
+                  openCommandCenter();
                   if (isMenuFloating) toggleMenu();
                 }}
               />
@@ -415,24 +419,17 @@ const Layout = () => {
                   {[
                     {
                       key: "starred",
-                      title: "Starred",
+                      title: "Following",
                       channels: starredChannels,
                       isHidden: starredChannels.length === 0,
                     },
                     {
                       key: "member-channels",
-                      title: "Topics",
-                      channels:
-                        memberTopicChannelsExcludingStarredAndTopChannels,
+                      title: "Recent",
+                      channels: memberChannelsExcludingStarredAndTopChannels,
                       isHidden:
-                        memberTopicChannelsExcludingStarredAndTopChannels.length ===
+                        memberChannelsExcludingStarredAndTopChannels.length ===
                         0,
-                    },
-                    {
-                      key: "dm-channels",
-                      title: "DMs",
-                      channels: dmChannels,
-                      isHidden: dmChannels.length === 0,
                     },
                     {
                       key: "public",

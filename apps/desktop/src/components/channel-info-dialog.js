@@ -311,7 +311,7 @@ const ChannelInfoDialog = ({
               }}
               css={css({ svg: { width: "1.6rem", height: "auto" } })}
             >
-              {isChannelStarred ? "Unstar" : "Star"}
+              {isChannelStarred ? "Unfollow" : "Follow"}
             </Button>
             {isMember ? (
               <Select
