@@ -2,6 +2,9 @@ export const config = {
   runtime: "edge",
 };
 
+const ONE_HOUR_IN_SECONDS = 60 * 60;
+const ONE_WEEK_IN_SECONDS = ONE_HOUR_IN_SECONDS * 25 * 7;
+
 const warpcastFetch = (url) =>
   fetch(`https://api.warpcast.com${url}`, {
     headers: {
@@ -73,7 +76,8 @@ export default async (req) => {
     {
       status: 200,
       headers: {
-        "content-type": "application/json",
+        "Content-Type": "application/json",
+        "Cache-Control": `public, max-age=${ONE_HOUR_IN_SECONDS}, stale-while-revalidate=${ONE_WEEK_IN_SECONDS}`,
       },
     }
   );

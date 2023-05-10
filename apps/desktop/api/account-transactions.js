@@ -4,6 +4,9 @@ export const config = {
   runtime: "edge",
 };
 
+const ONE_HOUR_IN_SECONDS = 60 * 60;
+const TWO_DAYS_IN_SECONDS = ONE_HOUR_IN_SECONDS * 48;
+
 const etherscanRequest = (query) => {
   const searchParams = new URLSearchParams(query);
   return new Request(
@@ -138,7 +141,8 @@ export default async (req) => {
   return new Response(JSON.stringify({ results: transactions }), {
     status: 200,
     headers: {
-      "content-type": "application/json",
+      "Content-Type": "application/json",
+      "Cache-Control": `public, max-age=${ONE_HOUR_IN_SECONDS}, stale-while-revalidate=${TWO_DAYS_IN_SECONDS}`,
     },
   });
 };
