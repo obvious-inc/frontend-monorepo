@@ -809,8 +809,8 @@ const SmallText = ({ component: Component = "div", ...props }) => (
   <Component
     css={(t) =>
       css({
-        fontSize: t.fontSizes.small,
-        fontWeight: "600",
+        fontSize: t.text.sizes.small,
+        fontWeight: t.text.weights.emphasis,
         lineHeight: 1,
         color: t.colors.textMutedAlpha,
       })

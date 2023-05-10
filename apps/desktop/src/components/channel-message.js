@@ -1,3 +1,4 @@
+import getDayOfTheMonth from "date-fns/getDate";
 import isDateToday from "date-fns/isToday";
 import isDateYesterday from "date-fns/isYesterday";
 import React from "react";
@@ -276,7 +277,7 @@ const ChannelMessage = React.memo(function ChannelMessage_({
       />
     );
 
-  return (
+  const messageElement = (
     <div
       ref={containerRef}
       role="listitem"
@@ -444,6 +445,57 @@ const ChannelMessage = React.memo(function ChannelMessage_({
       </div>
     </div>
   );
+  const createdAt = new Date(message.createdAt);
+
+  if (
+    message != null &&
+    previousMessage != null &&
+    getDayOfTheMonth(createdAt) !==
+      getDayOfTheMonth(new Date(previousMessage.createdAt))
+  )
+    return (
+      <>
+        <div
+          role="separator"
+          css={(t) =>
+            css({
+              padding: "1.6rem",
+              display: "grid",
+              gridTemplateColumns: "minmax(0,1fr) auto minmax(0,1fr)",
+              gridGap: "1rem",
+              alignItems: "center",
+              ".divider": { height: "0.1rem" },
+              ".divider:first-of-type": {
+                background: `linear-gradient(-90deg, ${t.colors.borderLighter}, transparent)`,
+              },
+              ".divider:last-of-type": {
+                background: `linear-gradient(90deg, ${t.colors.borderLighter}, transparent)`,
+              },
+              ".date": {
+                fontSize: t.text.sizes.small,
+                fontWeight: t.text.weights.emphasis,
+                color: t.colors.textMutedAlpha,
+              },
+            })
+          }
+        >
+          <div className="divider" />
+          <div className="date">
+            {isDateToday(createdAt) ? (
+              "Today"
+            ) : isDateYesterday(createdAt) ? (
+              "Yesterday"
+            ) : (
+              <FormattedDate value={createdAt} month="long" day="numeric" />
+            )}
+          </div>
+          <div className="divider" />
+        </div>
+        {messageElement}
+      </>
+    );
+
+  return messageElement;
 });
 
 const Thread = ({ messageId, layout, initReply }) => {

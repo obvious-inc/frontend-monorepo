@@ -192,11 +192,13 @@ const useUserEnsNames = () => {
           const promiseCreators = partition(20, usersWithUnknownEnsName).map(
             (users) => () =>
               Promise.all(
-                users.map(({ walletAddress: a }) =>
-                  fetch(
-                    `https://api.ensideas.com/ens/resolve/${a.toLowerCase()}`
-                  ).then((r) => r.json())
-                )
+                users
+                  .filter((u) => u.walletAddress != null)
+                  .map(({ walletAddress: a }) =>
+                    fetch(
+                      `https://api.ensideas.com/ens/resolve/${a.toLowerCase()}`
+                    ).then((r) => r.json())
+                  )
               )
           );
 

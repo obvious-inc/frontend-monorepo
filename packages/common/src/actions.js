@@ -543,6 +543,8 @@ export default ({
         { allowUnauthorized: true }
       ).then((ms) => ms.map(parseMessage));
 
+      if (message == null) return null;
+
       if (message.replyTargetMessageId == null) {
         dispatch({
           type: "fetch-message:request-successful",

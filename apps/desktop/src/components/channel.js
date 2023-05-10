@@ -20,6 +20,7 @@ import { isNodeEmpty } from "../slate/utils.js";
 import useGlobalMediaQueries from "../hooks/global-media-queries.js";
 import useWindowFocusOrDocumentVisibleListener from "../hooks/window-focus-or-document-visible-listener.js";
 import useOnlineListener from "../hooks/window-online-listener.js";
+import useLayoutSetting from "../hooks/layout-setting.js";
 import useChannelFetchEffects from "../hooks/channel-fetch-effects.js";
 // import useScrollAwareChannelMessagesFetcher from "../hooks/scroll-aware-channel-messages-fetcher.js";
 import useChannelMessagesFetcher from "../hooks/channel-messages-fetcher.js";
@@ -77,7 +78,7 @@ const useMarkChannelReadEffects = (channelId, { didScrollToBottomRef }) => {
   );
 };
 
-const ChannelContent = ({ channelId, layout }) => {
+const ChannelContent = ({ channelId }) => {
   const { address: walletAccountAddress } = useAccount();
   const { login } = useWalletLogin();
   const { status: authenticationStatus } = useAuth();
@@ -203,7 +204,6 @@ const ChannelContent = ({ channelId, layout }) => {
     <>
       <ChannelMessagesScrollView
         channelId={channelId}
-        layout={layout}
         didScrollToBottomRef={didScrollToBottomRef}
         fetchMoreMessages={fetchMoreMessages}
         initReply={initReply}
@@ -309,13 +309,14 @@ const useChannelNotFound = (channelId) => {
   return notFound;
 };
 
-const Channel = ({ channelId, layout, noSideMenu }) => {
+const Channel = ({ channelId, noSideMenu }) => {
   const { status: authenticationStatus } = useAuth();
 
   const me = useMe();
   const channel = useChannel(channelId);
 
   const notFound = useChannelNotFound(channelId);
+  const layout = useLayoutSetting();
 
   useChannelFetchEffects(channelId);
 

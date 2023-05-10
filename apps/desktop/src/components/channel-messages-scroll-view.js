@@ -176,7 +176,6 @@ const ReverseVerticalScrollView = React.forwardRef(
 
 const ChannelMessagesScrollView = ({
   channelId,
-  layout: customLayout,
   fetchMoreMessages: fetchMoreMessages_,
   initReply,
   didScrollToBottomRef,
@@ -188,8 +187,7 @@ const ChannelMessagesScrollView = ({
 
   const { markChannelRead } = useActions();
 
-  const layout_ = useLayoutSetting();
-  const layout = customLayout ?? layout_;
+  const layout = useLayoutSetting();
 
   const messageIds = useSortedChannelMessageIds(channelId, {
     threads: layout !== "bubbles",
