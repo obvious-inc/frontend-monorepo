@@ -89,12 +89,20 @@ const Layout = () => {
     [memberChannels, params.channelId]
   );
 
-  const memberChannelsExcludingStarredAndTopChannels = React.useMemo(() => {
-    const starredChannelIds = starredChannels.map((c) => c.id);
-    const topChannelIds = topChannels.map((c) => c.id);
-    const exlcudedChannelIds = [...starredChannelIds, ...topChannelIds];
-    return memberChannels.filter((c) => !exlcudedChannelIds.includes(c.id));
-  }, [memberChannels, starredChannels, topChannels]);
+  const [memberTopicChannelsExcludingStarredAndTopChannels, dmChannels] =
+    React.useMemo(() => {
+      const starredChannelIds = starredChannels.map((c) => c.id);
+      const topChannelIds = topChannels.map((c) => c.id);
+      const exlcudedChannelIds = [...starredChannelIds, ...topChannelIds];
+      const channels = memberChannels.filter(
+        (c) => !exlcudedChannelIds.includes(c.id)
+      );
+      return channels.reduce(
+        ([topics, dms], c) =>
+          c.kind === "dm" ? [topics, [...dms, c]] : [[...topics, c], dms],
+        [[], []]
+      );
+    }, [memberChannels, starredChannels, topChannels]);
 
   const popularNonMemberPublicChannels = usePublicChannels().filter(
     (c) =>
@@ -106,7 +114,8 @@ const Layout = () => {
     authenticationStatus === "authenticated"
       ? [
           ...starredChannels,
-          ...memberChannelsExcludingStarredAndTopChannels,
+          ...memberTopicChannelsExcludingStarredAndTopChannels,
+          ...dmChannels,
           ...(memberChannels.length <= 1 ? popularNonMemberPublicChannels : []),
         ]
       : popularNonMemberPublicChannels;
@@ -413,10 +422,17 @@ const Layout = () => {
                     {
                       key: "member-channels",
                       title: "Topics",
-                      channels: memberChannelsExcludingStarredAndTopChannels,
+                      channels:
+                        memberTopicChannelsExcludingStarredAndTopChannels,
                       isHidden:
-                        memberChannelsExcludingStarredAndTopChannels.length ===
+                        memberTopicChannelsExcludingStarredAndTopChannels.length ===
                         0,
+                    },
+                    {
+                      key: "dm-channels",
+                      title: "DMs",
+                      channels: dmChannels,
+                      isHidden: dmChannels.length === 0,
                     },
                     {
                       key: "public",
