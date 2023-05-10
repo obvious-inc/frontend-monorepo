@@ -1,15 +1,17 @@
-import { utils as ethersUtils } from "ethers";
+import { isAddress as isEthereumAccountAddress } from "viem";
+import { normalize as normalizeEnsName } from "viem/ens";
+import { mainnet } from "viem/chains";
 import {
   WagmiConfig,
-  createClient as createWagmiClient,
+  createConfig as createWagmiConfig,
   configureChains as configureWagmiChains,
-  useProvider,
+  usePublicClient as usePublicEthereumClient,
 } from "wagmi";
-import { mainnet as mainnetChain } from "wagmi/chains";
 import { infuraProvider } from "wagmi/providers/infura";
 import { publicProvider } from "wagmi/providers/public";
 import { InjectedConnector } from "wagmi/connectors/injected";
-import { WalletConnectConnector } from "wagmi/connectors/walletConnect";
+// import { WalletConnectConnector } from "wagmi/connectors/walletConnect";
+import { WalletConnectLegacyConnector } from "wagmi/connectors/walletConnectLegacy";
 import React from "react";
 import { css } from "@emotion/react";
 import {
@@ -84,22 +86,25 @@ const isReactNativeWebView = window.ReactNativeWebView != null;
 const isIFrame = window.parent && window.self && window.parent !== window.self;
 if (isIFrame) window.ethereum = new IFrameEthereumProvider();
 
-const { chains, provider } = configureWagmiChains(
-  [mainnetChain],
+const { chains, publicClient } = configureWagmiChains(
+  [mainnet],
   [infuraProvider({ apiKey: process.env.INFURA_PROJECT_ID }), publicProvider()]
 );
 
-const wagmiClient = createWagmiClient({
+const wagmiConfig = createWagmiConfig({
   autoConnect: true,
-  provider,
+  publicClient,
   connectors: [
     new InjectedConnector({
       chains,
       options: { isIFrame },
     }),
-    new WalletConnectConnector({
+    new WalletConnectLegacyConnector({
       chains,
-      options: { qrcode: true },
+      options: {
+        qrcode: true,
+        projectId: process.env.WALLET_CONNECT_PROJECT_ID,
+      },
     }),
   ],
 });
@@ -355,25 +360,29 @@ const CommandCenter = () => {
 const RedirectDmIntent = () => {
   const { ensNameOrEthereumAccountAddress } = useParams();
   const navigate = useNavigate();
-  const provider = useProvider();
+  const publicEthereumClient = usePublicEthereumClient();
 
   React.useEffect(() => {
-    if (ethersUtils.isAddress(ensNameOrEthereumAccountAddress)) {
+    if (isEthereumAccountAddress(ensNameOrEthereumAccountAddress)) {
       navigate(`/new?account=${ensNameOrEthereumAccountAddress}`, {
         replace: true,
       });
       return;
     }
 
-    provider.resolveName(ensNameOrEthereumAccountAddress).then((address) => {
-      if (address == null) {
-        navigate("/", { replace: true });
-        return;
-      }
+    publicEthereumClient
+      .getEnsAddress({
+        name: normalizeEnsName(ensNameOrEthereumAccountAddress),
+      })
+      .then((address) => {
+        if (address == null) {
+          navigate("/", { replace: true });
+          return;
+        }
 
-      navigate(`/new?account=${address}`, { replace: true });
-    });
-  }, [navigate, provider, ensNameOrEthereumAccountAddress]);
+        navigate(`/new?account=${address}`, { replace: true });
+      });
+  }, [navigate, publicEthereumClient, ensNameOrEthereumAccountAddress]);
 
   return null;
 };
@@ -483,7 +492,7 @@ export default function LazyRoot() {
 
   return (
     <BrowserRouter>
-      <WagmiConfig client={wagmiClient}>
+      <WagmiConfig config={wagmiConfig}>
         <ServerConnectionProvider
           Pusher={Pusher}
           pusherKey={process.env.PUSHER_KEY}

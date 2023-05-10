@@ -1,4 +1,4 @@
-import { utils as ethersUtils } from "ethers";
+import { isAddress as isEthereumAccountAddress } from "viem";
 import React from "react";
 import { useNavigate } from "react-router-dom";
 import { css } from "@emotion/react";
@@ -24,7 +24,8 @@ const NewMessageDialogContent = ({ titleProps, close, createMessage }) => {
   });
 
   const recipientWalletAddress =
-    ensWalletAddress ?? (ethersUtils.isAddress(recipient) ? recipient : null);
+    ensWalletAddress ??
+    (isEthereumAccountAddress(recipient) ? recipient : null);
 
   const hasDraftableInput = [recipient, subject, message].some(
     (t) => t.trim().length !== 0

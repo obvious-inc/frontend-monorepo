@@ -1,4 +1,7 @@
-import { utils as ethersUtils } from "ethers";
+import {
+  getAddress as checksumEncodeAddress,
+  isAddress as isEthereumAccountAddress,
+} from "viem";
 import { useEnsName } from "wagmi";
 import { useUserWithWalletAddress } from "@shades/common/app";
 import { ethereum as ethereumUtils } from "@shades/common/utils";
@@ -16,7 +19,7 @@ const useAccountDisplayName = (
     enabled: user == null && walletAddress != null && customDisplayName,
   });
 
-  const isAddress = ethersUtils.isAddress(walletAddress);
+  const isAddress = isEthereumAccountAddress(walletAddress);
 
   if (walletAddress != null && !isAddress)
     console.warn(`Invalid address "${walletAddress}`);
@@ -27,7 +30,7 @@ const useAccountDisplayName = (
     const displayName =
       ensName ??
       (isAddress
-        ? truncateAddress(ethersUtils.getAddress(walletAddress))
+        ? truncateAddress(checksumEncodeAddress(walletAddress))
         : null);
     return { displayName, ...names };
   }
@@ -35,7 +38,7 @@ const useAccountDisplayName = (
   const displayName =
     user?.displayName ??
     ensName ??
-    (isAddress ? truncateAddress(ethersUtils.getAddress(walletAddress)) : null);
+    (isAddress ? truncateAddress(checksumEncodeAddress(walletAddress)) : null);
 
   return { displayName, ...names };
 };

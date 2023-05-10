@@ -1,4 +1,4 @@
-import { utils as ethersUtils } from "ethers";
+import { getAddress as checksumEncodeAddress } from "viem";
 import * as Haptics from "expo-haptics";
 import * as Clipboard from "expo-clipboard";
 import { View, Alert, Pressable, Text, Dimensions } from "react-native";
@@ -65,7 +65,7 @@ const MessageModal = ({
                   if (user.displayName != null) return `@${user.displayName}`;
                   if (user.walletAddress == null) return null;
                   const truncatedAddress = truncateAddress(
-                    ethersUtils.getAddress(user.walletAddress)
+                    checksumEncodeAddress(user.walletAddress)
                   );
                   return `@${truncatedAddress}`;
                 },

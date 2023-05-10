@@ -12,26 +12,24 @@ export const getRandomNoun = async () => {
   return { url, parts, background, seed: randomSeed };
 };
 
-export const getNoun = async (nounId, provider) => {
+export const getNoun = async (nounId, publicEthereumClient) => {
   const [
     { ImageData, getNounData, getNounSeedFromBlockHash },
     { buildSVG, getContractAddressesForChainOrThrow },
     { NounsTokenABI },
-    { Contract },
   ] = await Promise.all([
     import("@nouns/assets"),
     import("@nouns/sdk"),
     import("@nouns/contracts"),
-    import("ethers"),
   ]);
 
-  const contractAddresses = getContractAddressesForChainOrThrow(1);
-  const tokenContract = new Contract(
-    contractAddresses.nounsToken,
-    NounsTokenABI,
-    provider
-  );
-  const nounSeed = await tokenContract.seeds(nounId);
+  const nounSeed = await publicEthereumClient.readContract({
+    address: getContractAddressesForChainOrThrow(1).nounsToken,
+    abi: NounsTokenABI,
+    functionName: "seeds",
+    args: [nounId],
+  });
+
   let seed = {
     background: Number(nounSeed.background),
     body: Number(nounSeed.body),
@@ -47,8 +45,8 @@ export const getNoun = async (nounId, provider) => {
 
   if (emptySeed) {
     // generate a fresh noun using the current block
-    const currBlockNumber = await provider.getBlockNumber();
-    const currBlock = await provider.getBlock(currBlockNumber);
+    const currBlockNumber = await publicEthereumClient.getBlockNumber();
+    const currBlock = await publicEthereumClient.getBlock(currBlockNumber);
     seed = getNounSeedFromBlockHash(nounId, currBlock.hash);
   }
 

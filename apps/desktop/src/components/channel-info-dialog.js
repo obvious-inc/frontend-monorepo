@@ -1,4 +1,4 @@
-import { utils as ethersUtils } from "ethers";
+import { getAddress as checksumEncodeAddress } from "viem";
 import React from "react";
 import { useNavigate } from "react-router-dom";
 import { css } from "@emotion/react";
@@ -358,8 +358,7 @@ const ChannelInfoDialog = ({
                   {
                     value: "off",
                     label: "Off",
-                    description:
-                      "Don’t get any notifications from this topic",
+                    description: "Don’t get any notifications from this topic",
                   },
                 ]}
               />
@@ -554,8 +553,7 @@ const AboutTab = ({ channelId, dismiss }) => {
             >
               {channelPermissionType === "open" ? (
                 <>
-                  Open topics are safe to leave, you can join again at any
-                  time.
+                  Open topics are safe to leave, you can join again at any time.
                 </>
               ) : (
                 <>
@@ -579,9 +577,7 @@ const AboutTab = ({ channelId, dismiss }) => {
                   size="default"
                   disabled={isOwner || !isMember}
                   onClick={() => {
-                    if (
-                      !confirm("Are you sure you want to leave this topic?")
-                    )
+                    if (!confirm("Are you sure you want to leave this topic?"))
                       return;
                     actions.leaveChannel(channelId);
                     dismiss();
@@ -595,9 +591,7 @@ const AboutTab = ({ channelId, dismiss }) => {
                   size="default"
                   disabled={!isAdmin}
                   onClick={async () => {
-                    if (
-                      !confirm("Are you sure you want to delete this topic?")
-                    )
+                    if (!confirm("Are you sure you want to delete this topic?"))
                       return;
 
                     actions.deleteChannel(channelId);
@@ -854,7 +848,7 @@ const MembersDirectoryTab = ({ dismiss, channelId, addMember }) => {
             const truncatedAddress =
               member.walletAddress == null
                 ? null
-                : truncateAddress(ethersUtils.getAddress(member.walletAddress));
+                : truncateAddress(checksumEncodeAddress(member.walletAddress));
 
             const hasSubtitle =
               member.ensName != null || member.displayName != null;

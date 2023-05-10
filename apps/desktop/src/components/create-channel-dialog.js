@@ -160,13 +160,15 @@ const CreateChannelDialogContent = ({ titleProps, close, createChannel }) => {
             options={[
               {
                 label: "Open",
-                description: "Visible to anyone, and no permission needed to join",
+                description:
+                  "Visible to anyone, and no permission needed to join",
                 value: "open",
                 icon: <GlobeIcon style={{ width: "2rem" }} />,
               },
               {
                 label: "Closed",
-                description: "Visible to anyone, but requires an invite to join",
+                description:
+                  "Visible to anyone, but requires an invite to join",
                 value: "closed",
                 icon: <LockIcon style={{ width: "2rem" }} />,
               },

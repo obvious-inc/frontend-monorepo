@@ -14,14 +14,14 @@ import {
 import { ThemeProvider, useTheme, css } from "@emotion/react";
 import {
   WagmiConfig,
-  createClient as createWagmiClient,
+  createConfig as createWagmiConfig,
   configureChains as configureWagmiChains,
 } from "wagmi";
-import { mainnet as mainnetChain } from "wagmi/chains";
+import { mainnet } from "wagmi/chains";
 import { infuraProvider } from "wagmi/providers/infura";
 import { publicProvider } from "wagmi/providers/public";
 import { InjectedConnector } from "wagmi/connectors/injected";
-import { WalletConnectConnector } from "wagmi/connectors/walletConnect";
+import { WalletConnectLegacyConnector } from "wagmi/connectors/walletConnectLegacy";
 import {
   array as arrayUtils,
   ethereum as ethereumUtils,
@@ -754,19 +754,22 @@ const RequireAuth = ({ children }) => {
   return children;
 };
 
-const { chains, provider } = configureWagmiChains(
-  [mainnetChain],
+const { chains, publicClient } = configureWagmiChains(
+  [mainnet],
   [infuraProvider({ apiKey: process.env.INFURA_PROJECT_ID }), publicProvider()]
 );
 
-const wagmiClient = createWagmiClient({
+const wagmiConfig = createWagmiConfig({
   autoConnect: true,
-  provider,
+  publicClient,
   connectors: [
     new InjectedConnector({ chains }),
-    new WalletConnectConnector({
+    new WalletConnectLegacyConnector({
       chains,
-      options: { qrcode: true },
+      options: {
+        qrcode: true,
+        projectId: process.env.WALLET_CONNECT_PROJECT_ID,
+      },
     }),
   ],
 });
@@ -783,7 +786,7 @@ const App = () => {
   const { login } = useAuth();
   return (
     <BrowserRouter>
-      <WagmiConfig client={wagmiClient}>
+      <WagmiConfig config={wagmiConfig}>
         <ServerConnectionProvider
           Pusher={Pusher}
           pusherKey={process.env.PUSHER_KEY}

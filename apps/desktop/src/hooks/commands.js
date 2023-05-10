@@ -1,6 +1,6 @@
 import React from "react";
 import { useNavigate } from "react-router-dom";
-import { useProvider as useEthersProvider } from "wagmi";
+import { usePublicClient as usePublicEthereumClient } from "wagmi";
 import { useActions, useSelectors, useMe } from "@shades/common/app";
 import { object as objectUtils } from "@shades/common/utils";
 import textCommands from "../commands/text";
@@ -14,7 +14,7 @@ const useCommands = ({ context, channelId } = {}) => {
   const actions = useActions();
   const selectors = useSelectors();
   const navigate = useNavigate();
-  const ethersProvider = useEthersProvider();
+  const publicEthereumClient = usePublicEthereumClient();
   const user = useMe();
 
   const commandDependencies = React.useMemo(
@@ -24,10 +24,18 @@ const useCommands = ({ context, channelId } = {}) => {
       actions,
       context,
       channelId,
-      ethersProvider,
+      publicEthereumClient,
       state: selectors,
     }),
-    [user, navigate, actions, context, channelId, ethersProvider, selectors]
+    [
+      user,
+      navigate,
+      actions,
+      context,
+      channelId,
+      publicEthereumClient,
+      selectors,
+    ]
   );
 
   const commands = React.useMemo(() => {

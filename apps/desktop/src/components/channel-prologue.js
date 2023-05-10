@@ -1,4 +1,4 @@
-import { utils as ethersUtils } from "ethers";
+import { getAddress as checksumEncodeAddress } from "viem";
 import { useAccount } from "wagmi";
 import { css } from "@emotion/react";
 import { ethereum as ethereumUtils } from "@shades/common/utils";
@@ -97,7 +97,7 @@ export const PersonalDMChannelPrologue = () => {
   const { displayName: accountDisplayName } =
     useAccountDisplayName(walletAddress);
   const truncatedAddress = truncateAddress(
-    ethersUtils.getAddress(walletAddress)
+    checksumEncodeAddress(walletAddress)
   );
 
   const hasSubtitle =

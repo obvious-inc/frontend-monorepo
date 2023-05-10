@@ -1,4 +1,4 @@
-import { utils as ethersUtils } from "ethers";
+import { getAddress as checksumEncodeAddress } from "viem";
 import React from "react";
 import { css } from "@emotion/react";
 import {
@@ -443,7 +443,7 @@ const DMChannelIntro = ({ channelId }) => {
   const truncatedAddress =
     member?.walletAddress == null
       ? null
-      : truncateAddress(ethersUtils.getAddress(member.walletAddress));
+      : truncateAddress(checksumEncodeAddress(member.walletAddress));
 
   const showSubtitle = title.toLowerCase() !== truncatedAddress?.toLowerCase();
 

@@ -1,7 +1,8 @@
-import { utils as ethersUtils } from "ethers";
+import { isAddress as isEthereumAccountAddress } from "viem";
+import { normalize as normalizeEnsName } from "viem/ens";
 import React from "react";
 import { css } from "@emotion/react";
-import { useProvider as useEthersProvider } from "wagmi";
+import { usePublicClient as usePublicEthereumClient } from "wagmi";
 import { useActions } from "@shades/common/app";
 import Dialog from "@shades/ui-web/dialog";
 import Button from "@shades/ui-web/button";
@@ -9,7 +10,7 @@ import { Cross as CrossIcon } from "@shades/ui-web/icons";
 import Input from "./input.js";
 
 const AddChannelMemberDialog = ({ channelId, isOpen, onRequestClose }) => {
-  const ethersProvider = useEthersProvider();
+  const ethereumClient = usePublicEthereumClient();
   const actions = useActions();
 
   const inputRef = React.useRef();
@@ -21,22 +22,28 @@ const AddChannelMemberDialog = ({ channelId, isOpen, onRequestClose }) => {
 
   const hasRequiredInput = trimmedQuery.split(" ").some((s) => {
     const query = s.trim();
-    return query.endsWith(".eth") || ethersUtils.isAddress(query);
+    return query.endsWith(".eth") || isEthereumAccountAddress(query);
   });
 
   const submit = async () => {
-    const walletAddressOrEnsList = trimmedQuery.split(" ").map((s) => s.trim());
+    const accountAddressOrEnsList = trimmedQuery
+      .split(" ")
+      .map((s) => s.trim());
     const addresses = [];
 
     setPendingRequest(true);
     try {
-      for (let walletAddressOrEns of walletAddressOrEnsList) {
+      for (const accountAddressOrEns of accountAddressOrEnsList) {
         try {
-          const address = await ethersProvider.resolveName(walletAddressOrEns);
+          const address = isEthereumAccountAddress(accountAddressOrEns)
+            ? accountAddressOrEns
+            : await ethereumClient.getEnsAddress({
+                name: normalizeEnsName(accountAddressOrEns),
+              });
           addresses.push(address);
         } catch (e) {
           if (e.code === "INVALID_ARGUMENT")
-            throw new Error(`Invalid address "${walletAddressOrEns}"`);
+            throw new Error(`Invalid address "${accountAddressOrEns}"`);
           throw e;
         }
       }

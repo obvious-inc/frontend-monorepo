@@ -1,4 +1,4 @@
-import { utils as ethersUtils } from "ethers";
+import { getAddress as checksumEncodeAddress } from "viem";
 import { createSelector } from "reselect";
 import { mapValues, omitKey } from "../utils/object";
 import { indexBy } from "../utils/array";
@@ -134,7 +134,7 @@ export const selectUser = createSelector(
         user.displayName ??
         ensName ??
         (user.walletAddress != null
-          ? truncateAddress(ethersUtils.getAddress(user.walletAddress))
+          ? truncateAddress(checksumEncodeAddress(user.walletAddress))
           : null),
       hasCustomDisplayName: user.displayName != null,
       description: user.description,

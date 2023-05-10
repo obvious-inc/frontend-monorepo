@@ -1,3 +1,5 @@
+// TextEncoder polyfill for viem
+import "fast-text-encoding";
 import "@ethersproject/shims";
 import "react-native-url-polyfill/auto";
 import "react-native-gesture-handler";

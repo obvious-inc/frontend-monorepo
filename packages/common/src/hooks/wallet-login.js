@@ -1,4 +1,9 @@
-import { Wallet } from "ethers";
+import {
+  createWalletClient as createEthereumWalletClient,
+  http as createViemHttpTransport,
+} from "viem";
+import { mainnet } from "viem/chains";
+import { generatePrivateKey, privateKeyToAccount } from "viem/accounts";
 import { useSignMessage } from "wagmi";
 import React from "react";
 import useLatestCallback from "../react/hooks/latest-callback.js";
@@ -69,14 +74,19 @@ export const Provider = ({ authenticate, children }) => {
   });
 
   const loginWithThrowawayWallet = useLatestCallback(async () => {
-    const wallet = Wallet.createRandom();
+    const account = privateKeyToAccount(generatePrivateKey());
+    const walletClient = createEthereumWalletClient({
+      account,
+      chain: mainnet,
+      transport: createViemHttpTransport(),
+    });
 
-    const { message, signedAt, nonce } = prepareLoginMessage(wallet.address);
+    const { message, signedAt, nonce } = prepareLoginMessage(account.address);
 
-    const signature = await wallet.signMessage(message);
+    const signature = await walletClient.signMessage({ message });
 
     return await authenticate({
-      address: wallet.address,
+      address: account.address,
       message,
       signature,
       signedAt,
