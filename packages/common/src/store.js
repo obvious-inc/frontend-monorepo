@@ -154,13 +154,22 @@ const createApiParsers = ({ buildCloudflareImageUrl }) => ({
     };
 
     const description = normalizeString(rawChannel.description);
+    const body =
+      rawChannel.body == null || rawChannel.body.length === 0
+        ? null
+        : rawChannel.body;
 
     const channel = {
       id: rawChannel.id,
       name: normalizeString(rawChannel.name),
       description,
       descriptionBlocks:
-        description == null ? null : parseStringToMessageBlocks(description),
+        description != null
+          ? parseStringToMessageBlocks(description)
+          : body != null
+          ? body
+          : null,
+      body,
       kind: rawChannel.kind,
       createdAt: rawChannel.created_at,
       lastMessageAt: rawChannel.last_message_at,

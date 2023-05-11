@@ -120,6 +120,7 @@ export default ({
   const createChannel = ({
     name,
     description,
+    body,
     memberUserIds,
     memberWalletAddresses,
     permissionOverwrites,
@@ -131,6 +132,7 @@ export default ({
         kind: "topic",
         name,
         description,
+        body,
         members: memberWalletAddresses ?? memberUserIds,
         permission_overwrites: permissionOverwrites,
       }),
@@ -405,8 +407,8 @@ export default ({
               setting === "off"
                 ? { muted: true }
                 : setting === "mentions"
-                  ? { mentions: true }
-                  : {},
+                ? { mentions: true }
+                : {},
           },
         }),
       });
@@ -465,10 +467,10 @@ export default ({
             }).then((rawMessage) =>
               rawMessage == null
                 ? {
-                  id: messageId,
-                  channelId,
-                  deleted: true,
-                }
+                    id: messageId,
+                    channelId,
+                    deleted: true,
+                  }
                 : parseMessage(rawMessage)
             );
 
@@ -753,22 +755,25 @@ export default ({
         return res;
       });
     },
-    createOpenChannel({ name, description }) {
+    createOpenChannel({ name, description, body }) {
       return createChannel({
         name,
         description,
+        body,
         permissionOverwrites: openChannelPermissionOverrides,
       });
     },
     createClosedChannel({
       name,
       description,
+      body,
       memberWalletAddresses,
       memberUserIds,
     }) {
       return createChannel({
         name,
         description,
+        body,
         memberWalletAddresses,
         memberUserIds,
         permissionOverwrites: closedChannelPermissionOverrides,
@@ -777,12 +782,14 @@ export default ({
     createPrivateChannel({
       name,
       description,
+      body,
       memberUserIds,
       memberWalletAddresses,
     }) {
       return createChannel({
         name,
         description,
+        body,
         memberWalletAddresses,
         memberUserIds,
         permissionOverwrites: privateChannelPermissionOverrides,
@@ -846,7 +853,7 @@ export default ({
         return res;
       });
     },
-    updateChannel(id, { name, description, avatar }) {
+    updateChannel(id, { name, description, avatar, body }) {
       return authorizedFetch(`/channels/${id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
@@ -854,6 +861,7 @@ export default ({
           name: cleanString(name),
           description: cleanString(description),
           avatar: cleanString(avatar),
+          body,
         }),
       }).then((res) => {
         // TODO
@@ -904,8 +912,6 @@ export default ({
           throw new Error(`Unrecognized boot mode "${mode}"`);
       }
     },
-    starItem,
-    unstarItem,
     starChannel(channelId) {
       dispatch({
         type: "star-channel:request-sent",
@@ -1029,18 +1035,18 @@ export default ({
 
       const avatarsByAddress = avatars
         ? Object.fromEntries(
-          (
-            await Promise.all(
-              Object.entries(namesByAddress).map(([address, name]) =>
-                publicEthereumClient
-                  .getEnsAvatar({ name })
-                  .then((avatar) =>
-                    avatar == null ? null : [address, avatar]
-                  )
+            (
+              await Promise.all(
+                Object.entries(namesByAddress).map(([address, name]) =>
+                  publicEthereumClient
+                    .getEnsAvatar({ name })
+                    .then((avatar) =>
+                      avatar == null ? null : [address, avatar]
+                    )
+                )
               )
-            )
-          ).filter(Boolean)
-        )
+            ).filter(Boolean)
+          )
         : {};
 
       const entriesByAddress = Object.fromEntries(

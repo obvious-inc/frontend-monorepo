@@ -88,11 +88,13 @@ const FormDialog = ({
                   contrast
                   size={c.size ?? "large"}
                   multiline={c.type === "multiline-text"}
+                  richText={c.type === "rich-text"}
                   value={c.value === undefined ? state[c.key] : c.value}
                   disabled={hasPendingSubmit}
                   onChange={(e) => {
-                    setState((s) => ({ ...s, [c.key]: e.target.value }));
-                    if (c.onChange) c.onChange(e.target.value);
+                    const value = c.type === "rich-text" ? e : e.target.value;
+                    setState((s) => ({ ...s, [c.key]: value }));
+                    if (c.onChange) c.onChange(value);
                   }}
                   label={c.label}
                   placeholder={c.placeholder}

@@ -390,7 +390,7 @@ const ChannelNavBar = ({ noSideMenu, channelId }) => {
           </Heading>
         )}
 
-        {channel.description != null && (
+        {channel.descriptionBlocks != null && (
           <>
             <div
               role="separator"
@@ -520,7 +520,7 @@ const MembersDisplayButton = React.forwardRef(({ onClick, members }, ref) => {
         </button>
       </Tooltip.Trigger>
       <Tooltip.Content sideOffset={5}>
-        View all members of this channel
+        View members
         <div css={(t) => css({ color: t.colors.textDimmed })}>
           {onlineMemberCount === memberCount
             ? "All members online"

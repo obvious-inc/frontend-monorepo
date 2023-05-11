@@ -1,7 +1,10 @@
 import React from "react";
 import { useNavigate } from "react-router-dom";
 import { css } from "@emotion/react";
-import { ethereum as ethereumUtils } from "@shades/common/utils";
+import {
+  ethereum as ethereumUtils,
+  message as messageUtils,
+} from "@shades/common/utils";
 import { useActions, useAuth } from "@shades/common/app";
 import { useWallet, useWalletLogin } from "@shades/common/wallet";
 import Button from "@shades/ui-web/button";
@@ -11,15 +14,16 @@ import {
   Lock as LockIcon,
   EyeOff as EyeOffIcon,
 } from "@shades/ui-web/icons";
-import Input from "./input";
-import Select from "./select";
+import Input from "./input.js";
+import Select from "./select.js";
 
 const { truncateAddress } = ethereumUtils;
+const { createEmptyParagraphElement } = messageUtils;
 
 const CreateChannelDialogContent = ({ titleProps, close, createChannel }) => {
   const [selectedType, setSelectedType] = React.useState("open");
   const [name, setName] = React.useState("");
-  const [description, setDescription] = React.useState("");
+  const [body, setBody] = React.useState(() => [createEmptyParagraphElement()]);
 
   const [hasPendingRequest, setPendingRequest] = React.useState(false);
 
@@ -27,7 +31,7 @@ const CreateChannelDialogContent = ({ titleProps, close, createChannel }) => {
 
   const submit = () => {
     setPendingRequest(true);
-    createChannel({ name, description, permissionType: selectedType })
+    createChannel({ name, body, permissionType: selectedType })
       .then(
         () => {
           close();
@@ -38,7 +42,7 @@ const CreateChannelDialogContent = ({ titleProps, close, createChannel }) => {
         }
       )
       .finally(() => {
-        setPendingRequest(true);
+        setPendingRequest(false);
       });
   };
 
@@ -48,19 +52,16 @@ const CreateChannelDialogContent = ({ titleProps, close, createChannel }) => {
         flex: 1,
         overflow: "auto",
         position: "relative",
-        padding: "1.5rem",
+        padding: "2rem 1.5rem 1.5rem",
         "@media (min-width: 600px)": {
-          padding: "4rem 2.5rem 2.5rem",
+          padding: "3rem 2.5rem 2.5rem",
         },
       })}
     >
       <header
         css={css({
           textAlign: "center",
-          margin: "0 0 1.5rem",
-          "@media (min-width: 600px)": {
-            margin: "0 0 2.5rem",
-          },
+          margin: "0 0 2rem",
         })}
       >
         <h1
@@ -91,7 +92,15 @@ const CreateChannelDialogContent = ({ titleProps, close, createChannel }) => {
           Use topics to organize conversations and access
         </div>
         <div
-          css={css({ position: "absolute", top: "2.5rem", right: "2.5rem" })}
+          css={css({
+            position: "absolute",
+            top: "1.5rem",
+            right: "1.5rem",
+            "@media (min-width: 600px)": {
+              top: "2.5rem",
+              right: "2.5rem",
+            },
+          })}
         >
           <Button
             size="small"
@@ -128,25 +137,15 @@ const CreateChannelDialogContent = ({ titleProps, close, createChannel }) => {
           <Input
             contrast
             size="large"
-            multiline
-            value={description}
-            onChange={(e) => setDescription(e.target.value)}
+            richText
+            value={body}
+            onChange={(e) => {
+              setBody(e);
+            }}
             disabled={hasPendingRequest}
-            label={
-              <>
-                Description{" "}
-                <span
-                  css={(t) =>
-                    css({
-                      fontSize: t.fontSizes.small,
-                      color: t.colors.textMuted,
-                    })
-                  }
-                >
-                  (optional)
-                </span>
-              </>
-            }
+            label="Body"
+            placeholder="..."
+            style={{ minHeight: "13.8rem" }}
             containerProps={{ style: { margin: "0 0 2rem" } }}
           />
 
@@ -160,15 +159,13 @@ const CreateChannelDialogContent = ({ titleProps, close, createChannel }) => {
             options={[
               {
                 label: "Open",
-                description:
-                  "Visible to anyone, and no permission needed to join",
+                description: "Visible to anyone, no permission needed to join",
                 value: "open",
                 icon: <GlobeIcon style={{ width: "2rem" }} />,
               },
               {
                 label: "Closed",
-                description:
-                  "Visible to anyone, but requires an invite to join",
+                description: "Visible to anyone, requires an invite to join",
                 value: "closed",
                 icon: <LockIcon style={{ width: "2rem" }} />,
               },
@@ -232,7 +229,7 @@ const CreateChannelDialog = ({ dismiss, titleProps }) => {
     <CreateChannelDialogContent
       titleProps={titleProps}
       close={dismiss}
-      createChannel={async ({ name, description, permissionType }) => {
+      createChannel={async ({ name, description, body, permissionType }) => {
         if (authenticationStatus !== "authenticated") {
           if (walletAccountAddress == null) {
             alert(
@@ -252,7 +249,7 @@ const CreateChannelDialog = ({ dismiss, titleProps }) => {
           await login(walletAccountAddress);
         }
 
-        const params = { name, description };
+        const params = { name, description, body };
 
         const create = () => {
           switch (permissionType) {

@@ -38,7 +38,6 @@ const GlobalDialogs = () => {
   } = useDialog("account-authentication");
   const {
     isOpen: isCreateChannelDialogOpen,
-    open: openCreateChannelDialog,
     dismiss: dismissCreateChannelDialog,
   } = useDialog("create-channel");
 
@@ -84,7 +83,8 @@ const GlobalDialogs = () => {
           key: "create-channel",
           isOpen: isCreateChannelDialogOpen,
           dismiss: dismissCreateChannelDialog,
-          width: "48rem",
+          width: "58rem",
+          height: "auto",
           component: LazyCreateChannelDialog,
         },
       ].map(
@@ -93,6 +93,7 @@ const GlobalDialogs = () => {
           isOpen,
           dismiss,
           width,
+          height,
           title,
           subtitle,
           component: Component,
@@ -103,6 +104,7 @@ const GlobalDialogs = () => {
             isOpen={isOpen}
             onRequestClose={dismiss}
             width={width}
+            height={height}
           >
             {({ titleProps }) => (
               <ErrorBoundary fallback={() => window.location.reload()}>

@@ -45,27 +45,6 @@ const commands = {
       return true;
     },
   }),
-  "set-topic-description": ({ context, user, state, actions, channelId }) => ({
-    description: "Set a new description for this topic",
-    arguments: ["topic-description"],
-    execute: async ({ args, editor }) => {
-      const description = args.join(" ");
-      await actions.updateChannel(channelId, {
-        description: description.trim() === "" ? null : description,
-      });
-      editor.clear();
-    },
-    exclude: () => {
-      if (context === "dm") return false;
-
-      if (context === "topic") {
-        const channel = state.selectChannel(channelId);
-        return channel?.ownerUserId !== user.id;
-      }
-
-      return true;
-    },
-  }),
   "set-topic-avatar": ({ context, user, state, actions, channelId }) => ({
     description: "Set a new avatar for this topic",
     arguments: ["topic-avatar-url"],

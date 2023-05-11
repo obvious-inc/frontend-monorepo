@@ -470,11 +470,9 @@ const AboutTab = ({ channelId, dismiss }) => {
             </li>
             <li>
               <PropertyButton
-                name="Description"
+                name={channel.body != null ? "Body" : "Description"}
                 value={
-                  channel.description == null ? (
-                    "-"
-                  ) : (
+                  channel.descriptionBlocks != null ? (
                     <RichText
                       blocks={channel.descriptionBlocks}
                       onClickInteractiveElement={(e) => {
@@ -482,15 +480,27 @@ const AboutTab = ({ channelId, dismiss }) => {
                         e.stopPropagation();
                       }}
                     />
+                  ) : channel.body != null ? (
+                    <RichText
+                      blocks={channel.body}
+                      onClickInteractiveElement={(e) => {
+                        // Prevent link clicks from opening dialog
+                        e.stopPropagation();
+                      }}
+                    />
+                  ) : (
+                    "-"
                   )
                 }
                 onClick={() => {
-                  setEditDialogMode("description");
+                  setEditDialogMode(
+                    channel.body != null ? "body" : "description"
+                  );
                 }}
               />
             </li>
           </ul>
-        ) : (
+        ) : channel.body == null ? (
           <dl
             css={(t) =>
               css({
@@ -508,15 +518,19 @@ const AboutTab = ({ channelId, dismiss }) => {
           >
             <dt>Name</dt>
             <dd>{channel.name}</dd>
-            <dt>Description</dt>
+            <dt>{channel.body != null ? "Body" : "Description"}</dt>
             <dd>
-              {channel.description == null ? (
-                "-"
-              ) : (
+              {channel.descriptionBlocks != null ? (
                 <RichText blocks={channel.descriptionBlocks} />
+              ) : channel.body != null ? (
+                <RichText blocks={channel.body} />
+              ) : (
+                "-"
               )}
             </dd>
           </dl>
+        ) : (
+          <RichText blocks={channel.body} />
         )}
 
         {isMember && channel.kind === "topic" && (
@@ -583,7 +597,7 @@ const AboutTab = ({ channelId, dismiss }) => {
                     dismiss();
                   }}
                 >
-                  Leave channel
+                  Leave topic
                 </Button>
                 <Button
                   variant="default"
@@ -599,7 +613,7 @@ const AboutTab = ({ channelId, dismiss }) => {
                     navigate("/");
                   }}
                 >
-                  Delete channel
+                  Delete topic
                 </Button>
               </div>
             </div>
@@ -618,10 +632,12 @@ const AboutTab = ({ channelId, dismiss }) => {
           const title = {
             name: "Edit topic name",
             description: "Edit topic description",
+            body: "Edit topic body",
           }[editingPropery];
           const placeholder = {
             name: "Add a clever title",
             description: "Add a fun description",
+            body: "...",
           }[editingPropery];
           const hint = {
             description: "Make sure to include a couple of emojis 🌸 🌈",
@@ -637,7 +653,9 @@ const AboutTab = ({ channelId, dismiss }) => {
                   key: editingPropery,
                   initialValue: channel[editingPropery],
                   type:
-                    editingPropery === "description"
+                    editingPropery === "body"
+                      ? "rich-text"
+                      : editingPropery === "description"
                       ? "multiline-text"
                       : "text",
                   placeholder,

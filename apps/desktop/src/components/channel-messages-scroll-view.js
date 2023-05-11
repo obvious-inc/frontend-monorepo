@@ -379,7 +379,15 @@ const ChannelIntro = ({ channelId }) => {
       );
     }
 
-    if (channel.description != null)
+    if (channel.body != null)
+      return (
+        <RichText
+          blocks={channel.body}
+          css={(t) => css({ color: t.colors.textNormal })}
+        />
+      );
+
+    if (channel.descriptionBlocks != null)
       return <RichText blocks={channel.descriptionBlocks} />;
 
     return (
@@ -390,15 +398,15 @@ const ChannelIntro = ({ channelId }) => {
   };
 
   const buildInfo = () => {
-    if (channel.kind !== "topic" || hasMembers) return null;
+    if (
+      channel.kind !== "topic" ||
+      hasMembers ||
+      channelAccessLevel === "open" ||
+      !isAdmin
+    )
+      return null;
 
-    if (channelAccessLevel === "open")
-      return "This channel is open for anyone to join. Share its URL to help people find it!";
-
-    if (isAdmin)
-      return <>Add members with the &ldquo;/add-member&rdquo; command.</>;
-
-    return null;
+    return <>Add members with the &ldquo;/add-member&rdquo; command.</>;
   };
 
   if (channel == null || (channel.kind === "dm" && me == null)) return null;

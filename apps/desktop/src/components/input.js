@@ -1,5 +1,6 @@
 import React from "react";
 import { css } from "@emotion/react";
+import RichTextInput from "./rich-text-input.js";
 import AutoAdjustingHeightTextArea from "./auto-adjusting-height-textarea.js";
 
 let id = 0;
@@ -12,6 +13,7 @@ const Input = React.forwardRef(
     {
       size = "normal",
       multiline = false,
+      richText = false,
       contrast,
       label,
       hint,
@@ -23,7 +25,11 @@ const Input = React.forwardRef(
   ) => {
     const [id] = React.useState(() => genId());
 
-    const Component = multiline ? AutoAdjustingHeightTextArea : "input";
+    const Component = richText
+      ? RichTextInput
+      : multiline
+      ? AutoAdjustingHeightTextArea
+      : "input";
 
     const renderInput = (extraProps) => (
       <Component
@@ -53,6 +59,8 @@ const Input = React.forwardRef(
             "@supports (-webkit-touch-callout: none)": { fontSize: "1.6rem" },
           })
         }
+        {...props}
+        {...extraProps}
         style={{
           "--bg": contrast ? "var(--bg-contrast)" : "var(--bg-regular)",
           "--padding":
@@ -67,8 +75,6 @@ const Input = React.forwardRef(
               : "var(--text-size-normal)",
           ...props.style,
         }}
-        {...props}
-        {...extraProps}
       />
     );
 
