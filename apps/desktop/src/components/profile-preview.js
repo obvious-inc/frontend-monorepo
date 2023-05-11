@@ -1,3 +1,4 @@
+import { getAddress as checksumEncodeAddress } from "viem";
 import React from "react";
 import { useAccount, useEnsName } from "wagmi";
 import { css } from "@emotion/react";
@@ -78,7 +79,9 @@ const ProfilePreview = React.forwardRef(
 
     if (user == null) return null;
 
-    const truncatedAddress = ethereumUtils.truncateAddress(user.walletAddress);
+    const truncatedAddress = ethereumUtils.truncateAddress(
+      checksumEncodeAddress(user.walletAddress)
+    );
 
     return (
       <div
@@ -178,7 +181,7 @@ const ProfilePreview = React.forwardRef(
                       etherscan.io
                     </span>
                     <div css={(t) => css({ color: t.colors.textDimmed })}>
-                      {user.walletAddress}
+                      {checksumEncodeAddress(user.walletAddress)}
                     </div>
                   </div>
                 </Tooltip.Content>

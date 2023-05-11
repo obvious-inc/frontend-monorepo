@@ -1,3 +1,4 @@
+import { getAddress as checksumEncodeAddress } from "viem";
 import { useEnsName, useAccount } from "wagmi";
 import React from "react";
 import { NavLink, Outlet, useParams } from "react-router-dom";
@@ -355,9 +356,7 @@ const Layout = () => {
               />
               <ListItem
                 compact={false}
-                icon={
-                  <PenIcon style={{ width: "1.9rem", height: "auto" }} />
-                }
+                icon={<PenIcon style={{ width: "1.9rem", height: "auto" }} />}
                 title="Create topic"
                 onClick={() => {
                   openCreateChannelDialog();
@@ -537,7 +536,9 @@ const ProfileDropdownTrigger = React.forwardRef(
       isMenuFloating || (!isMenuCollapsed && isHoveringSidebar);
 
     const truncatedAddress =
-      user?.walletAddress == null ? null : truncateAddress(user.walletAddress);
+      user?.walletAddress == null
+        ? null
+        : truncateAddress(checksumEncodeAddress(user.walletAddress));
 
     const userDisplayName =
       user == null
