@@ -405,8 +405,8 @@ export default ({
               setting === "off"
                 ? { muted: true }
                 : setting === "mentions"
-                ? { mentions: true }
-                : {},
+                  ? { mentions: true }
+                  : {},
           },
         }),
       });
@@ -465,10 +465,10 @@ export default ({
             }).then((rawMessage) =>
               rawMessage == null
                 ? {
-                    id: messageId,
-                    channelId,
-                    deleted: true,
-                  }
+                  id: messageId,
+                  channelId,
+                  deleted: true,
+                }
                 : parseMessage(rawMessage)
             );
 
@@ -1010,11 +1010,52 @@ export default ({
         { method: "POST" }
       );
     },
-    registerEnsEntries(entriesByAddress) {
+    // This assumes the client is batching request
+    async fetchEnsData(
+      accountAddresses,
+      { publicEthereumClient, avatars = true }
+    ) {
+      const namesByAddress = Object.fromEntries(
+        (
+          await Promise.all(
+            accountAddresses.map((address) =>
+              publicEthereumClient
+                .getEnsName({ address })
+                .then((name) => (name == null ? null : [address, name]))
+            )
+          )
+        ).filter(Boolean)
+      );
+
+      const avatarsByAddress = avatars
+        ? Object.fromEntries(
+          (
+            await Promise.all(
+              Object.entries(namesByAddress).map(([address, name]) =>
+                publicEthereumClient
+                  .getEnsAvatar({ name })
+                  .then((avatar) =>
+                    avatar == null ? null : [address, avatar]
+                  )
+              )
+            )
+          ).filter(Boolean)
+        )
+        : {};
+
+      const entriesByAddress = Object.fromEntries(
+        Object.entries(namesByAddress).map(([address, name]) => [
+          address,
+          { name, avatar: avatarsByAddress[address] },
+        ])
+      );
+
       dispatch({
         type: "fetch-ens-entries:request-successful",
         entriesByAddress,
       });
+
+      return entriesByAddress;
     },
   };
 };

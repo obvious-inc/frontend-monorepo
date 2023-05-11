@@ -37,11 +37,7 @@ import {
 } from "@shades/common/app";
 import { useMatchMedia } from "@shades/common/react";
 import { useWalletLogin, WalletLoginProvider } from "@shades/common/wallet";
-import {
-  ethereum as ethereumUtils,
-  array as arrayUtils,
-  function as functionUtils,
-} from "@shades/common/utils";
+import { ethereum as ethereumUtils } from "@shades/common/utils";
 import defaultTheme, {
   dark as darkTheme,
   light as lightTheme,
@@ -76,8 +72,6 @@ const NewMessageScreen = React.lazy(() =>
   import("./components/new-message-screen")
 );
 
-const { partition } = arrayUtils;
-const { waterfall } = functionUtils;
 const { truncateAddress } = ethereumUtils;
 
 const isNative = window.Native != null;
@@ -88,7 +82,15 @@ if (isIFrame) window.ethereum = new IFrameEthereumProvider();
 
 const { chains, publicClient } = configureWagmiChains(
   [mainnet],
-  [infuraProvider({ apiKey: process.env.INFURA_PROJECT_ID }), publicProvider()]
+  [infuraProvider({ apiKey: process.env.INFURA_PROJECT_ID }), publicProvider()],
+  {
+    batch: {
+      multicall: {
+        wait: 250,
+        batchSize: 1024 * 8, // 8kb seems to be the max size for cloudflare
+      },
+    },
+  }
 );
 
 const wagmiConfig = createWagmiConfig({
@@ -171,8 +173,8 @@ const useSystemNotifications = () => {
 const useUserEnsNames = () => {
   const actions = useActions();
   const selectors = useSelectors();
+  const publicEthereumClient = usePublicEthereumClient();
 
-  const { registerEnsEntries } = actions;
   const { selectEnsName } = selectors;
 
   useAfterActionListener((action) => {
@@ -181,37 +183,19 @@ const useUserEnsNames = () => {
       case "fetch-channel-members-request-successful":
         {
           const users = action.users ?? action.members;
-          const usersWithUnknownEnsName = users.filter(
-            (u) => selectEnsName(u.walletAddress) === undefined
-          );
+          const accountAddressesWithUnknownEnsName = users
+            .filter(
+              (u) =>
+                selectEnsName(u.walletAddress) === undefined &&
+                u.walletAddress != null
+            )
+            .map((u) => u.walletAddress);
 
-          if (usersWithUnknownEnsName.length === 0) break;
+          if (accountAddressesWithUnknownEnsName.length === 0) break;
 
-          // Waterfall in chunks for performance reasons.
-          // TODO switch to ensjs when stable
-          const promiseCreators = partition(20, usersWithUnknownEnsName).map(
-            (users) => () =>
-              Promise.all(
-                users
-                  .filter((u) => u.walletAddress != null)
-                  .map(({ walletAddress: a }) =>
-                    fetch(
-                      `https://api.ensideas.com/ens/resolve/${a.toLowerCase()}`
-                    ).then((r) => r.json())
-                  )
-              )
-          );
-
-          waterfall(promiseCreators).then((chunks) => {
-            const ensEntriesByAddress = Object.fromEntries(
-              chunks
-                .flat()
-                .map((r) => [
-                  r.address.toLowerCase(),
-                  { address: r.address, name: r.name, avatar: r.avatar },
-                ])
-            );
-            registerEnsEntries(ensEntriesByAddress);
+          actions.fetchEnsData(accountAddressesWithUnknownEnsName, {
+            publicEthereumClient,
+            avatars: false,
           });
         }
         break;

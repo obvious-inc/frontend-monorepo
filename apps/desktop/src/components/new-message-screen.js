@@ -4,7 +4,10 @@ import { useAccount } from "wagmi";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { css, useTheme } from "@emotion/react";
 import { motion } from "framer-motion";
-import { useEnsAddress } from "wagmi";
+import {
+  useEnsAddress,
+  usePublicClient as usePublicEthereumClient,
+} from "wagmi";
 import {
   useListBox,
   useListBoxSection,
@@ -89,14 +92,6 @@ const fetchRelatedAccounts = (accountAddress) =>
     return res.json().then((body) => body.results);
   });
 
-const fetchAccountEnsData = (accountAddress) =>
-  fetch(
-    `https://api.ensideas.com/ens/resolve/${accountAddress.toLowerCase()}`
-  ).then((res) => {
-    if (res.ok) return res.json();
-    return Promise.reject(res.statusText);
-  });
-
 const getKeyItemType = (key) => {
   if (key == null) return null;
   const [type] = key.split("-");
@@ -113,6 +108,8 @@ const getIdentifiersOfType = (type, keys) =>
   keys.filter((k) => getKeyItemType(k) === type).map(getKeyItemIdentifier);
 
 const useFilteredAccounts = (query) => {
+  const { fetchEnsData } = useActions();
+  const publicEthereumClient = usePublicEthereumClient();
   const me = useMe();
   const { address: connectedWalletAccountAddress } = useAccount();
   const users = useAllUsers();
@@ -125,15 +122,9 @@ const useFilteredAccounts = (query) => {
 
     fetchRelatedAccounts(meAccountAddress).then((accountAddresses) => {
       setRelatedAccounts(accountAddresses.map((a) => ({ walletAddress: a })));
-      Promise.all(accountAddresses.map((a) => fetchAccountEnsData(a))).then(
-        (entries) => {
-          setRelatedAccounts(
-            entries.map((e) => ({ walletAddress: e.address, ensName: e.name }))
-          );
-        }
-      );
+      fetchEnsData(accountAddresses, { publicEthereumClient });
     });
-  }, [meAccountAddress]);
+  }, [meAccountAddress, fetchEnsData, publicEthereumClient]);
 
   const filteredOptions = React.useMemo(() => {
     if (query.trim() === "") return relatedAccounts;
@@ -442,15 +433,16 @@ const useTagFieldCombobox = ({ inputRef }, state) => {
   };
 };
 
-const createDefaultChannelName = async (accounts) => {
+const createDefaultChannelName = async (accounts, { publicEthereumClient }) => {
   const displayNames = await Promise.all(
     accounts.slice(0, 3).map(
       (a) =>
         a.displayName ??
-        fetch(`https://api.ensideas.com/ens/resolve/${a.walletAddress}`)
-          .then((r) => r.json())
-          .then((data) => data.displayName)
-          .catch(() => truncateAddress(a.walletAddressA))
+        a.ensName ??
+        publicEthereumClient
+          .getEnsName({ address: a.walletAddress })
+          .then((name) => name ?? truncateAddress(a.walletAddress))
+          .catch(() => truncateAddress(a.walletAddress))
     )
   );
 
@@ -463,6 +455,7 @@ const createDefaultChannelName = async (accounts) => {
 
 const NewMessageScreen = () => {
   const navigate = useNavigate();
+  const publicEthereumClient = usePublicEthereumClient();
 
   const { status: authenticationStatus } = useAuth();
   const actions = useActions();
@@ -693,10 +686,10 @@ const NewMessageScreen = () => {
               setHasPendingMessageSubmit(true);
 
               try {
-                const channelName = await createDefaultChannelName([
-                  me,
-                  ...selectedAccounts,
-                ]);
+                const channelName = await createDefaultChannelName(
+                  [me, ...selectedAccounts],
+                  { publicEthereumClient }
+                );
 
                 const channel = await actions.createPrivateChannel({
                   name: channelName,
@@ -925,12 +918,9 @@ const MessageRecipientCombobox = React.forwardRef(
   ) => {
     const containerRef = React.useRef();
 
-    // const [query, setQuery] = React.useState(initialQuery);
     const [searchParams, setSearchParams] = useSearchParams();
     const query = searchParams.get("query") ?? "";
-    console.log("render", query);
     const setQuery = (q) => {
-      console.log("set", q);
       setSearchParams({ query: q });
     };
 
