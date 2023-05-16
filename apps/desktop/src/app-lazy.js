@@ -44,32 +44,35 @@ import defaultTheme, {
 } from "@shades/ui-web/theme";
 import { Provider as SidebarProvider } from "@shades/ui-web/sidebar-layout";
 import { IFrameEthereumProvider } from "@newshades/iframe-provider";
-import { Provider as GlobalMediaQueriesProvider } from "./hooks/global-media-queries";
-import { Provider as DialogsProvider } from "./hooks/dialogs";
-import { send as sendNotification } from "./utils/notifications";
+import { Provider as GlobalMediaQueriesProvider } from "./hooks/global-media-queries.js";
+import { Provider as DialogsProvider } from "./hooks/dialogs.js";
+import { send as sendNotification } from "./utils/notifications.js";
 import useCommandCenter, {
   Provider as CommandCenterProvider,
-} from "./hooks/command-center";
-import useWalletEvent from "./hooks/wallet-event";
-import useSetting from "./hooks/setting";
-import GlobalDialogs from "./components/global-dialogs";
-import LoginScreen from "./components/login-screen";
-import Layout from "./components/layouts";
-import TitleBar from "./components/title-bar";
-import * as Tooltip from "./components/tooltip";
-import { nounsTv as nounsTvTheme } from "./themes";
+} from "./hooks/command-center.js";
+import useWalletEvent from "./hooks/wallet-event.js";
+import useSetting from "./hooks/setting.js";
+import GlobalDialogs from "./components/global-dialogs.js";
+import LoginScreen from "./components/login-screen.js";
+import Layout from "./components/layouts.js";
+import TitleBar from "./components/title-bar.js";
+import * as Tooltip from "./components/tooltip.js";
+import { nounsTv as nounsTvTheme } from "./themes.js";
 
 const AccountProfileScreen = React.lazy(() =>
   import("./components/account-profile-screen")
 );
-const ChannelScreen = React.lazy(() => import("./components/channel-route"));
-const ChannelBase = React.lazy(() => import("./components/channel"));
+const ChannelScreen = React.lazy(() => import("./components/channel-route.js"));
+const ChannelBase = React.lazy(() => import("./components/channel.js"));
 const CommandCenterLazy = React.lazy(() =>
-  import("./components/command-center")
+  import("./components/command-center.js")
 );
-const AuthScreen = React.lazy(() => import("./components/auth"));
+const AuthScreen = React.lazy(() => import("./components/auth.js"));
 const NewMessageScreen = React.lazy(() =>
-  import("./components/new-message-screen")
+  import("./components/new-message-screen.js")
+);
+const ChannelsScreen = React.lazy(() =>
+  import("./components/channels-screen.js")
 );
 
 const { truncateAddress } = ethereumUtils;
@@ -295,6 +298,7 @@ const App = () => {
         <Route path="/" element={<Layout />}>
           <Route index element={<IndexRoute />} />
           <Route path="/new" element={<NewMessageScreen />} />
+          <Route path="/topics" element={<ChannelsScreen />} />
           <Route path="/channels/:channelId" element={<ChannelScreen />} />
         </Route>
         <Route path="/c/:channelId" element={<ChannelScreen noSideMenu />} />

@@ -13,11 +13,14 @@ import {
 } from "@shades/common/app";
 import { ethereum as ethereumUtils } from "@shades/common/utils";
 import { useLatestCallback } from "@shades/common/react";
+import Button from "@shades/ui-web/button";
+import { AddUser as AddUserIcon } from "@shades/ui-web/icons";
 import useIsOnScreen from "../hooks/is-on-screen.js";
 import useScrollListener from "../hooks/scroll-listener.js";
 import useMutationObserver from "../hooks/mutation-observer.js";
 import useLayoutSetting from "../hooks/layout-setting.js";
 import useReverseScrollPositionMaintainer from "../hooks/reverse-scroll-position-maintainer.js";
+import { useDialog } from "../hooks/dialogs.js";
 import ChannelPrologue, {
   PersonalDMChannelPrologue,
 } from "./channel-prologue.js";
@@ -26,6 +29,7 @@ import ChannelAvatar from "./channel-avatar.js";
 import InlineUserButtonWithProfilePopover from "./inline-user-button-with-profile-popover.js";
 import FormattedDate from "./formatted-date.js";
 import RichText from "./rich-text.js";
+import Link from "./link.js";
 
 const { truncateAddress } = ethereumUtils;
 
@@ -352,6 +356,8 @@ const ChannelIntro = ({ channelId }) => {
   const isAdmin = me != null && me.id === channel?.ownerUserId;
   const hasMembers = channel != null && channel.memberUserIds.length > 1;
 
+  const { open: openAddMemberDialog } = useDialog("add-member-dialog");
+
   const buildBody = () => {
     if (channel.kind === "dm") {
       return (
@@ -406,7 +412,24 @@ const ChannelIntro = ({ channelId }) => {
     )
       return null;
 
-    return <>Add members with the &ldquo;/add-member&rdquo; command.</>;
+    return (
+      <div style={{ paddingTop: "1rem" }}>
+        {/* <Link css={css({ display: "inline-flex", alignItems: "center" })}> */}
+        {/*   <AddUserIcon style={{ width: "1.6rem", marginRight: "0.3rem" }} /> */}
+        {/*   Add members */}
+        {/* </Link> */}
+        <Button
+          size="medium"
+          align="left"
+          icon={<AddUserIcon style={{ width: "1.6rem" }} />}
+          onClick={() => {
+            openAddMemberDialog();
+          }}
+        >
+          Add members
+        </Button>
+      </div>
+    );
   };
 
   if (channel == null || (channel.kind === "dm" && me == null)) return null;
