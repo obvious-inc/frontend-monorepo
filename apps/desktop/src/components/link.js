@@ -1,11 +1,16 @@
 import { css } from "@emotion/react";
 
-const Link = ({ component: Component = "button", ...props }) => (
+const Link = ({
+  underline,
+  component: Component = "button",
+  style,
+  ...props
+}) => (
   <Component
     css={(t) =>
       css({
         color: t.colors.link,
-        textDecoration: "none",
+        textDecoration: "var(--text-decoration, none)",
         outline: "none",
         ":focus-visible": {
           textDecoration: "underline",
@@ -20,6 +25,10 @@ const Link = ({ component: Component = "button", ...props }) => (
         },
       })
     }
+    style={{
+      "--text-decoration": underline ? "underline" : undefined,
+      ...style,
+    }}
     {...props}
   />
 );

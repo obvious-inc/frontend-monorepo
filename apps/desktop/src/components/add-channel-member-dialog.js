@@ -64,7 +64,7 @@ const AddChannelMemberDialog = ({ channelId, isOpen, onRequestClose }) => {
   }, [isOpen]);
 
   return (
-    <Dialog isOpen={isOpen} onRequestClose={onRequestClose} width="40rem">
+    <Dialog isOpen={isOpen} onRequestClose={onRequestClose} width="44rem">
       {({ titleProps }) => (
         <div
           css={css({
