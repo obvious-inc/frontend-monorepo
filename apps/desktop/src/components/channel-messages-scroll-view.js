@@ -29,7 +29,6 @@ import ChannelAvatar from "./channel-avatar.js";
 import InlineUserButtonWithProfilePopover from "./inline-user-button-with-profile-popover.js";
 import FormattedDate from "./formatted-date.js";
 import RichText from "./rich-text.js";
-import Link from "./link.js";
 
 const { truncateAddress } = ethereumUtils;
 

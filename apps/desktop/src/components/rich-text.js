@@ -14,16 +14,63 @@ const MULTI_IMAGE_ATTACHMENT_MAX_WIDTH = 280;
 const MULTI_IMAGE_ATTACHMENT_MAX_HEIGHT = 240;
 
 export const createCss = (theme) => ({
-  wordBreak: "break-word",
-  p: { margin: "0", display: "var(--paragraph-display, block)" },
+  // Paragraphs
+  p: {
+    margin: "0",
+    display: "var(--paragraph-display, block)",
+  },
   "* + p": { marginTop: "1rem" },
-  "* + p:before": {
+  "p + *": { marginTop: "1rem" },
+  "p + *:before, * + p:before": {
     display: "var(--paragraph-display-before, none)",
     content: '""',
-    height: "1rem",
+    marginTop: "1rem",
   },
-  em: { fontStyle: "italic" },
-  strong: { fontWeight: "600" },
+
+  // Headings
+  h1: { fontSize: "1.375em" },
+  h2: { fontSize: "1.125em" },
+  "* + h1": { marginTop: "3rem" },
+  "h1 + *": { marginTop: "1rem" },
+  "* + h2": { marginTop: "2.4rem" },
+  "h2 + *": { marginTop: "0.5rem" },
+
+  // Lists
+  "ul, ol": {
+    paddingLeft: "3rem",
+    margin: 0,
+  },
+  "* + ul, ul + *, * + ol, ol + *": { marginTop: "2rem" },
+
+  // Quotes
+  blockquote: {
+    borderLeft: "0.3rem solid",
+    borderColor: theme.colors.borderLight,
+    paddingLeft: "1rem",
+    fontStyle: "italic",
+  },
+  "* + blockquote, blockquote + *": { marginTop: "2rem" },
+
+  // Callouts
+  aside: {
+    background: theme.colors.backgroundModifierHover,
+    padding: "1.6rem",
+    paddingLeft: "1.2rem",
+    borderRadius: "0.3rem",
+    display: "flex",
+  },
+  "* + aside, aside + *": { marginTop: "2rem" },
+  "aside:before": {
+    fontSize: "1.35em",
+    lineHeight: "1em",
+    display: "block",
+    width: "2.4rem",
+    height: "2.4rem",
+    marginRight: "0.8rem",
+    content: '"💡"',
+  },
+
+  // Links
   "a.link, a.link:active, a.link:visited": {
     color: theme.colors.link,
     textDecoration: "none",
@@ -39,7 +86,22 @@ export const createCss = (theme) => ({
       color: theme.colors.linkModifierHover,
     },
   },
+
+  // Misc
+  wordBreak: "break-word",
+  em: { fontStyle: "italic" },
+  strong: { fontWeight: "600" },
 });
+
+const blockComponentsByElementType = {
+  paragraph: "p",
+  "heading-1": "h1",
+  "heading-2": "h2",
+  "bulleted-list": "ul",
+  "numbered-list": "ol",
+  quote: "blockquote",
+  callout: "aside",
+};
 
 const parseLeaf = (l, i) => {
   let children = l.text;
@@ -57,16 +119,27 @@ const createParser = ({ inline, suffix, onClickInteractiveElement }) => {
     const children = () => el.children?.map(parseNode);
 
     switch (el.type) {
-      case "paragraph": {
+      // Top level block elements
+      case "paragraph":
+      case "bulleted-list":
+      case "numbered-list":
+      case "heading-1":
+      case "heading-2":
+      case "quote":
+      case "callout": {
         const isLast = i === els.length - 1;
+        const Component = blockComponentsByElementType[el.type];
         return (
-          <p key={i}>
+          <Component key={i}>
             {children()}
             {inline && " "}
             {isLast && suffix}
-          </p>
+          </Component>
         );
       }
+
+      case "list-item":
+        return <li key={i}>{children()}</li>;
 
       case "link":
         return (
@@ -187,6 +260,7 @@ const createParser = ({ inline, suffix, onClickInteractiveElement }) => {
           </button>
         );
       }
+
       default:
         return (
           <span
@@ -287,11 +361,10 @@ const RichText = ({
     () =>
       createParser({
         inline,
-        compact,
         suffix,
         onClickInteractiveElement,
       }),
-    [inline, compact, suffix, onClickInteractiveElement]
+    [inline, suffix, onClickInteractiveElement]
   );
 
   const inlineStyle = style ?? {};

@@ -343,6 +343,7 @@ const MessageInput = React.forwardRef(
         <RichTextInput
           ref={editorRef}
           {...autoCompleteInputAccesibilityProps}
+          inline
           value={initialValue}
           onChange={onChange}
           disabled={disabled}

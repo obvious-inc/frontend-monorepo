@@ -416,19 +416,17 @@ export const selectStringifiedMessageContent = (state, messageId) => {
       case "user-invited":
         return `${
           message.inviter?.computedDisplayName ?? "..."
-        } added ${authorDisplayName} to the channel.`;
+        } added ${authorDisplayName} to the topic.`;
 
       case "member-joined":
-        return `${authorDisplayName} joined the channel. Welcome!`;
+        return `${authorDisplayName} joined the topic. Welcome!`;
 
       case "channel-updated": {
         const updates = Object.entries(message.updates);
         if (updates.length == 0 || updates.length > 1)
-          return `${authorDisplayName} updated the channel.`;
+          return `${authorDisplayName} updated the topic.`;
 
-        const [field_, value] = updates[0];
-        // Alias description to "topic"
-        const field = field_ === "description" ? "topic" : field_;
+        const [field, value] = updates[0];
 
         // Nested switch case baby!
         switch (field) {
@@ -436,12 +434,12 @@ export const selectStringifiedMessageContent = (state, messageId) => {
           case "topic":
             return `${authorDisplayName} ${
               (value ?? "") === ""
-                ? `cleared the channel ${field}`
-                : `set the channel ${field}: ${value}`
+                ? `cleared the topic ${field}`
+                : `set the topic ${field}: ${value}`
             }`;
 
           default:
-            return `${authorDisplayName} updated the channel ${field}.`;
+            return `${authorDisplayName} updated the topic ${field}.`;
         }
       }
     }

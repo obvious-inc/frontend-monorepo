@@ -2245,7 +2245,7 @@ const SystemMessageContent = ({ messageId }) => {
         );
       }
 
-      let [field, value] = updates[0];
+      const [field, value] = updates[0];
 
       // Nested switch case baby!
       switch (field) {
@@ -2256,10 +2256,10 @@ const SystemMessageContent = ({ messageId }) => {
                 userId={message.authorUserId}
               />{" "}
               {(value ?? "") === "" ? (
-                "cleared the channel topic."
+                "cleared the topic description."
               ) : (
                 <>
-                  set the channel topic:{" "}
+                  set the channel description:{" "}
                   <RichText compact blocks={messageUtils.parseString(value)} />
                 </>
               )}
@@ -2272,10 +2272,10 @@ const SystemMessageContent = ({ messageId }) => {
                 userId={message.authorUserId}
               />{" "}
               {(value ?? "") === "" ? (
-                <>cleared the channel {field}.</>
+                <>cleared the topic {field}.</>
               ) : (
                 <>
-                  set the channel {field}: {value}
+                  set the topic {field}: {value}
                 </>
               )}
             </>
@@ -2286,7 +2286,7 @@ const SystemMessageContent = ({ messageId }) => {
               <InlineUserButtonWithProfilePopover
                 userId={message.authorUserId}
               />{" "}
-              updated the channel {field}.
+              updated the topic {field}.
             </>
           );
       }

@@ -99,27 +99,50 @@ export const stringifyBlocks = (
   };
 
   const stringifyElement = (el) => {
-    const children = () => el.children.map(stringifyNode).join("");
+    const stringifyChildren = () => el.children.map(stringifyNode).join("");
 
     switch (el.type) {
       case "paragraph":
-        return `\n${children()}\n`;
+      case "heading-1":
+      case "heading-2":
+      case "list-item":
+        return `\n${stringifyChildren()}\n`;
+
+      case "quote":
+      case "callout":
+        return `\n> ${stringifyChildren()}\n`;
+
+      case "bulleted-list":
+      case "numbered-list": {
+        const children = el.children.map((el, i) => {
+          const prefix = el.type === "bulleted-list" ? "-" : `${i + 1}.`;
+          return `${prefix} ${stringifyNode(el)}`;
+        });
+        return `\n${children.join("\n")}\n`;
+      }
+
       case "user": {
         if (!humanReadable) return `@<u:${el.ref}>`;
         return renderUser(el.ref);
       }
+
       case "channel-link": {
         if (!humanReadable) return `@<c:${el.ref}>`;
         return renderChannelLink(el.ref);
       }
+
       case "link":
         return el.url;
+
       case "emoji":
         return el.emoji;
+
       case "attachments":
-        return `\n${children()}\n`;
+        return `\n${stringifyChildren()}\n`;
+
       case "image-attachment":
         return humanReadable ? el.url : "";
+
       default:
         throw new Error();
     }

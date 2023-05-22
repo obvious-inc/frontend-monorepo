@@ -1,4 +1,4 @@
-import { Editor, Path, Text } from "slate";
+import { Editor, Path, Point, Text, Element, Range, Transforms } from "slate";
 import { function as functionUtils } from "@shades/common/utils";
 
 const { compose } = functionUtils;
@@ -185,4 +185,117 @@ export const getCharacters = ([node, path]) => {
   }
 
   return characterEntries;
+};
+
+export const intersectsSelection = (editor, nodePath) => {
+  if (editor.selection == null) return false;
+
+  const [nodeStartPoint, nodeEndPoint] = Editor.edges(editor, nodePath);
+  return Range.includes(
+    { anchor: nodeStartPoint, focus: nodeEndPoint },
+    editor.selection
+  );
+};
+
+export const withBlockPrefixShortcut = (
+  { prefix, elementType, afterTransform },
+  editor
+) => {
+  const { insertText } = editor;
+
+  editor.insertText = (text) => {
+    const { selection } = editor;
+
+    if (!text.endsWith(" ") || !selection || !Range.isCollapsed(selection)) {
+      insertText(text);
+      return;
+    }
+
+    const blockEntry = Editor.above(editor, {
+      match: (n) => Element.isElement(n) && Editor.isBlock(editor, n),
+    });
+
+    if (blockEntry == null || blockEntry[0].type === elementType) {
+      insertText(text);
+      return;
+    }
+
+    const range = {
+      anchor: selection.anchor,
+      focus: Editor.start(editor, blockEntry[1]),
+    };
+    const prefixText =
+      Editor.string(editor, range, { voids: true }) + text.slice(0, -1);
+
+    const isMatch = Array.isArray(prefix)
+      ? prefix.includes(prefixText)
+      : prefixText === prefix;
+
+    if (!isMatch) {
+      insertText(text);
+      return;
+    }
+
+    Transforms.select(editor, range);
+
+    if (!Range.isCollapsed(range)) {
+      Transforms.delete(editor);
+    }
+
+    Transforms.setNodes(
+      editor,
+      { type: elementType },
+      { match: (n) => Element.isElement(n) && Editor.isBlock(editor, n) }
+    );
+
+    afterTransform?.({ prefix: prefixText });
+  };
+
+  return editor;
+};
+
+export const withEmptyBlockBackwardDeleteTransform = (
+  { fromElementType, toElementType },
+  editor
+) => {
+  const { deleteBackward } = editor;
+
+  editor.deleteBackward = (...args) => {
+    const { selection } = editor;
+
+    if (!selection || !Range.isCollapsed(selection)) {
+      deleteBackward(...args);
+      return;
+    }
+
+    const match = Editor.above(editor, {
+      match: (n) => Element.isElement(n) && Editor.isBlock(editor, n),
+    });
+
+    if (match == null) {
+      deleteBackward(...args);
+      return;
+    }
+
+    const [block, path] = match;
+    const start = Editor.start(editor, path);
+
+    const isMatchingBlockType = Array.isArray(fromElementType)
+      ? fromElementType.includes(block.type)
+      : fromElementType === block.type;
+
+    if (
+      !Editor.isEditor(block) &&
+      Element.isElement(block) &&
+      isMatchingBlockType &&
+      Point.equals(selection.anchor, start)
+    ) {
+      Transforms.setNodes(editor, { type: toElementType });
+      return;
+    }
+
+    deleteBackward(...args);
+  };
+
+  return editor;
 };

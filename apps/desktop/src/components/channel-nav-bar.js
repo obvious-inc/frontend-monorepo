@@ -334,6 +334,10 @@ const ChannelNavBar = ({ noSideMenu, channelId }) => {
     );
   };
 
+  const descriptionParagraphBlock = channel.descriptionBlocks?.find(
+    (b) => b.type === "paragraph"
+  );
+
   return (
     <NavBar noSideMenu={noSideMenu}>
       {channel.image != null && (
@@ -390,7 +394,7 @@ const ChannelNavBar = ({ noSideMenu, channelId }) => {
           </Heading>
         )}
 
-        {channel.descriptionBlocks != null && (
+        {descriptionParagraphBlock != null && (
           <>
             <div
               role="separator"
@@ -431,7 +435,7 @@ const ChannelNavBar = ({ noSideMenu, channelId }) => {
               }
             >
               <RichText
-                blocks={channel.descriptionBlocks}
+                blocks={[descriptionParagraphBlock]}
                 inline
                 onClickInteractiveElement={(e) => {
                   // Prevent dialog from opening when clicking links

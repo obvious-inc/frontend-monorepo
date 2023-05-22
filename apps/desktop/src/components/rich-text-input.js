@@ -12,8 +12,12 @@ import isHotkey from "is-hotkey";
 import { function as functionUtils } from "@shades/common/utils";
 import { createCss as createRichTextCss } from "./rich-text";
 import createControlledParagraphLineBreaksPlugin from "../slate/plugins/controlled-paragraph-line-breaks";
+import createListsPlugin from "../slate/plugins/lists";
+import createQuotesPlugin from "../slate/plugins/quotes";
+import createCalloutsPlugin from "../slate/plugins/callouts";
 import createEmojiPlugin from "../slate/plugins/emojis";
 import createInlineLinksPlugin from "../slate/plugins/inline-links";
+import createHeadingsPlugin from "../slate/plugins/headings";
 import createUserMentionsPlugin from "../slate/plugins/user-mentions";
 import createChannelLinksPlugin from "../slate/plugins/channel-link";
 import { search, mergePlugins } from "../slate/utils";
@@ -127,7 +131,15 @@ const withEditorCommands = (editor) => {
 
 const RichTextInput = React.forwardRef(
   (
-    { value, onChange, onKeyDown, disabled = false, triggers = [], ...props },
+    {
+      value,
+      onChange,
+      onKeyDown,
+      disabled = false,
+      inline = false,
+      triggers = [],
+      ...props
+    },
     ref
   ) => {
     const { editor, handlers, customElementsByNodeType } = React.useMemo(() => {
@@ -141,6 +153,10 @@ const RichTextInput = React.forwardRef(
 
       const { middleware, elements, handlers } = mergePlugins([
         createControlledParagraphLineBreaksPlugin(),
+        createListsPlugin({ inline }),
+        createQuotesPlugin({ inline }),
+        createCalloutsPlugin({ inline }),
+        createHeadingsPlugin({ inline }),
         createUserMentionsPlugin(),
         createChannelLinksPlugin(),
         createInlineLinksPlugin(),
@@ -152,7 +168,7 @@ const RichTextInput = React.forwardRef(
         customElementsByNodeType: elements,
         handlers,
       };
-    }, []);
+    }, [inline]);
 
     const renderElement = React.useCallback(
       (props) => {
@@ -268,8 +284,30 @@ const Element = (props) => {
   const { attributes, children, element } = props;
 
   switch (element.type) {
+    case "heading-1":
+      return <h1 {...attributes}>{children}</h1>;
+
+    case "heading-2":
+      return <h2 {...attributes}>{children}</h2>;
+
+    case "bulleted-list":
+      return <ul {...attributes}>{children}</ul>;
+
+    case "numbered-list":
+      return <ol {...attributes}>{children}</ol>;
+
+    case "list-item":
+      return <li {...attributes}>{children}</li>;
+
+    case "quote":
+      return <blockquote {...attributes}>{children}</blockquote>;
+
+    case "callout":
+      return <aside {...attributes}>{children}</aside>;
+
     case "paragraph":
       return <p {...attributes}>{children}</p>;
+
     default:
       console.warn(`Unsupported element type "${element.type}"`);
       return <p {...attributes}>{children}</p>;
