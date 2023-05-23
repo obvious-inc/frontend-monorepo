@@ -81,6 +81,11 @@ export default {
     boxShadow:
       "rgb(15 15 15 / 5%) 0px 0px 0px 1px, rgba(15, 15, 15, 0.1) 0px 3px 6px, rgba(15, 15, 15, 0.2) 0px 9px 24px",
   },
+  messages: {
+    avatarSize: "3.8rem",
+    gutterSize: "1.2rem",
+    gutterSizeCompact: "1rem",
+  },
   colors: {
     pink: "#e588f8",
     primary,

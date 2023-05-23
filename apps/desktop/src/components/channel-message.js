@@ -60,10 +60,6 @@ const { search: searchEmoji } = emojiUtils;
 
 const ONE_MINUTE_IN_MILLIS = 1000 * 60;
 
-const AVATAR_SIZE = "3.8rem";
-const GUTTER_SIZE = "1.2rem";
-const COMPACT_GUTTER_SIZE = "1rem";
-
 const ChannelMessage = React.memo(function ChannelMessage_({
   messageId,
   previousMessageId,
@@ -335,9 +331,11 @@ const ChannelMessage = React.memo(function ChannelMessage_({
         className="main-container"
         style={{
           gridTemplateColumns: showLeftColumn
-            ? `${AVATAR_SIZE} minmax(0,1fr)`
+            ? "var(--avatar-size) minmax(0,1fr)"
             : "minmax(0,1fr)",
-          gridGap: compact ? COMPACT_GUTTER_SIZE : GUTTER_SIZE,
+          gridGap: compact
+            ? "var(--gutter-size-compact)"
+            : "var(--gutter-size)",
         }}
       >
         {showLeftColumn && (

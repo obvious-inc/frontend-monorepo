@@ -384,14 +384,6 @@ const ChannelIntro = ({ channelId }) => {
       );
     }
 
-    if (channel.body != null)
-      return (
-        <RichText
-          blocks={channel.body}
-          css={(t) => css({ color: t.colors.textNormal })}
-        />
-      );
-
     if (channel.descriptionBlocks != null)
       return <RichText blocks={channel.descriptionBlocks} />;
 
@@ -433,6 +425,8 @@ const ChannelIntro = ({ channelId }) => {
 
   if (channel == null || (channel.kind === "dm" && me == null)) return null;
 
+  if (channel.body != null) return <PostIntro channelId={channelId} />;
+
   if (channel.kind === "dm" && channel.memberUserIds.length <= 2)
     return <DMChannelIntro channelId={channelId} />;
 
@@ -451,6 +445,99 @@ const ChannelIntro = ({ channelId }) => {
       info={buildInfo()}
       style={{ paddingBottom: messageIds.length === 0 ? 0 : "1rem" }}
     />
+  );
+};
+
+const PostIntro = ({ channelId }) => {
+  const me = useMe();
+  const channel = useChannel(channelId);
+  const layout = useLayoutSetting();
+
+  const channelAccessLevel = useChannelAccessLevel(channelId);
+
+  const isAdmin = me != null && me.id === channel?.ownerUserId;
+  const hasMembers = channel != null && channel.memberUserIds.length > 1;
+
+  const { open: openAddMemberDialog } = useDialog("add-member-dialog");
+
+  if (channel == null) return null;
+
+  const showAddMembersButton =
+    channel.kind === "topic" &&
+    !hasMembers &&
+    channelAccessLevel === "open" &&
+    isAdmin;
+
+  if (channel == null) return null;
+
+  return (
+    <div css={css({ padding: "6rem 1.6rem 1rem", userSelect: "text" })}>
+      <div
+        css={(t) =>
+          css({
+            borderBottom: "0.1rem solid",
+            borderColor: t.colors.borderLighter,
+            padding: "0 0 3.2rem",
+            "@media (min-width: 600px)": {
+              padding: `calc(${t.messages.avatarSize} + ${
+                layout === "compact"
+                  ? t.messages.gutterSize.Compact
+                  : t.messages.gutterSize
+              })`,
+              paddingTop: 0,
+            },
+          })
+        }
+      >
+        <div>
+          <h1 css={css({ lineHeight: 1.15, margin: "0 0 0.3rem" })}>
+            {channel.name}
+          </h1>
+          <div
+            css={(t) =>
+              css({
+                color: t.colors.textDimmed,
+                fontSize: t.text.sizes.base,
+                margin: "0 0 2.6rem",
+              })
+            }
+          >
+            Created by{" "}
+            <InlineUserButtonWithProfilePopover userId={channel.ownerUserId} />{" "}
+            on{" "}
+            <FormattedDate
+              value={channel.createdAt}
+              day="numeric"
+              month="long"
+            />
+          </div>
+        </div>
+        <RichText
+          blocks={channel.body}
+          css={(t) =>
+            css({ color: t.colors.textNormal, fontSize: t.text.sizes.large })
+          }
+        />
+        {showAddMembersButton && (
+          <div style={{ paddingTop: "2.6rem" }}>
+            {/* <Link css={css({ display: "inline-flex", alignItems: "center" })}> */}
+            {/*   <AddUserIcon style={{ width: "1.6rem", marginRight: "0.3rem" }} /> */}
+            {/*   Add members */}
+            {/* </Link> */}
+            <Button
+              size="medium"
+              align="left"
+              icon={<AddUserIcon style={{ width: "1.6rem" }} />}
+              onClick={() => {
+                openAddMemberDialog();
+              }}
+            >
+              Add members
+            </Button>
+          </div>
+        )}
+      </div>
+    </div>
   );
 };
 

@@ -624,7 +624,7 @@ const AboutTab = ({ channelId, dismiss }) => {
       <Dialog
         isOpen={isEditDialogOpen}
         onRequestClose={dismissEditDialog}
-        width="42rem"
+        width={editDialogMode === "body" ? "78rem" : "42rem"}
       >
         {({ titleProps }) => {
           const editingPropery = editDialogMode;

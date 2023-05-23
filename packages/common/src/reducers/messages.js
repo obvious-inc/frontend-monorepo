@@ -216,7 +216,7 @@ const createIndexReducer = (propertyName) => {
       }
 
       case "create-message:request-failed": {
-        const { property } = getIdAndProperty(action.message);
+        const { property } = getIdAndProperty({ channelId: action.channelId });
         const messageIds = state[property] ?? [];
         return {
           ...state,

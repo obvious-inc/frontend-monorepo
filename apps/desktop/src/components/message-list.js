@@ -20,6 +20,9 @@ const MessageList = React.forwardRef(
             minHeight: 0,
             fontSize: t.text.sizes.large,
             fontWeight: "400",
+            "--avatar-size": t.messages.avatarSize,
+            "--gutter-size": t.messages.gutterSize,
+            "--gutter-size-compact": t.messages.gutterSizeCompact,
             ".channel-message-container": {
               "--color-optimistic": t.colors.textMuted,
               "--bg-highlight": t.colors.messageBackgroundModifierHighlight,

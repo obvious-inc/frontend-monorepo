@@ -83,8 +83,8 @@ const GlobalDialogs = () => {
           key: "create-channel",
           isOpen: isCreateChannelDialogOpen,
           dismiss: dismissCreateChannelDialog,
-          width: "58rem",
-          height: "auto",
+          width: "90rem",
+          height: "min(calc(100% - 3rem), 82rem)",
           component: LazyCreateChannelDialog,
         },
       ].map(

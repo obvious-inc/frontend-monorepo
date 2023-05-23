@@ -8,30 +8,39 @@ import {
 import { useActions, useAuth } from "@shades/common/app";
 import { useWallet, useWalletLogin } from "@shades/common/wallet";
 import Button from "@shades/ui-web/button";
-import {
-  Cross as CrossIcon,
-  Globe as GlobeIcon,
-  Lock as LockIcon,
-  EyeOff as EyeOffIcon,
-} from "@shades/ui-web/icons";
-import Input from "./input.js";
+import { AddUser as AddUserIcon } from "@shades/ui-web/icons";
+import { isNodeEmpty as isSlateNodeEmpty } from "../slate/utils.js";
+import RichTextInput from "./rich-text-input.js";
 import Select from "./select.js";
 
 const { truncateAddress } = ethereumUtils;
 const { createEmptyParagraphElement } = messageUtils;
 
-const CreateChannelDialogContent = ({ titleProps, close, createChannel }) => {
-  const [selectedType, setSelectedType] = React.useState("open");
+const CreateChannelDialogContent = ({
+  // titleProps,
+  close,
+  createChannel,
+}) => {
+  const [isPrivate, setPrivate] = React.useState(false);
+  const [hasOpenWriteAccess, setOpenWriteAccess] = React.useState(true);
+
   const [name, setName] = React.useState("");
   const [body, setBody] = React.useState(() => [createEmptyParagraphElement()]);
 
   const [hasPendingRequest, setPendingRequest] = React.useState(false);
 
-  const hasRequiredInput = name.trim().length !== 0;
+  const isBodyEmpty = body.length <= 1 && body.every(isSlateNodeEmpty);
+  const hasRequiredInput = name.trim().length !== 0 && !isBodyEmpty;
 
   const submit = () => {
     setPendingRequest(true);
-    createChannel({ name, body, permissionType: selectedType })
+    const permissionType = isPrivate
+      ? "private"
+      : hasOpenWriteAccess
+      ? "open"
+      : "closed";
+
+    createChannel({ name, body, permissionType })
       .then(
         () => {
           close();
@@ -49,171 +58,188 @@ const CreateChannelDialogContent = ({ titleProps, close, createChannel }) => {
   return (
     <div
       css={css({
+        minHeight: 0,
         flex: 1,
-        overflow: "auto",
-        position: "relative",
-        padding: "2rem 1.5rem 1.5rem",
-        "@media (min-width: 600px)": {
-          padding: "3rem 2.5rem 2.5rem",
-        },
+        display: "flex",
+        flexDirection: "column",
       })}
     >
-      <header
-        css={css({
-          textAlign: "center",
-          margin: "0 0 2rem",
-        })}
+      <div
+        style={{
+          display: "grid",
+          gridAutoFlow: "column",
+          gridAutoColumns: "auto",
+          gridGap: "1rem",
+          justifyContent: "flex-end",
+          padding: "1rem",
+        }}
       >
-        <h1
-          css={(t) =>
-            css({
-              fontSize: t.fontSizes.headerLarge,
-              lineHeight: "1.2",
-              margin: "0 0 1rem",
-              color: t.colors.textHeader,
-            })
-          }
-          {...titleProps}
-        >
-          Create a topic
-        </h1>
-        <div
-          css={(t) =>
-            css({
-              color: t.colors.textDimmed,
-              fontSize: t.fontSizes.default,
-              lineHeight: 1.4,
-              // width: "26rem",
-              maxWidth: "100%",
-              margin: "0 auto",
-            })
-          }
-        >
-          Use topics to organize conversations and access
-        </div>
-        <div
-          css={css({
-            position: "absolute",
-            top: "1.5rem",
-            right: "1.5rem",
-            "@media (min-width: 600px)": {
-              top: "2.5rem",
-              right: "2.5rem",
-            },
-          })}
-        >
-          <Button
-            size="small"
-            onClick={() => {
-              close();
-            }}
-            css={css({ width: "2.8rem", padding: 0 })}
-          >
-            <CrossIcon
-              style={{ width: "1.5rem", height: "auto", margin: "auto" }}
-            />
-          </Button>
-        </div>
-      </header>
-      <main>
-        <form
-          id="create-channel-form"
-          onSubmit={(e) => {
-            e.preventDefault();
-            submit();
+        <Select
+          value={isPrivate ? "private" : "public"}
+          width="max-content"
+          size="small"
+          onChange={(value) => {
+            setPrivate(value === "private");
           }}
-        >
-          <Input
-            contrast
-            size="large"
-            label="Name"
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            autoFocus
-            disabled={hasPendingRequest}
-            placeholder="e.g. Bacon life"
-            containerProps={{ style: { margin: "0 0 2rem" } }}
-          />
-          <Input
-            contrast
-            size="large"
-            richText
-            value={body}
-            onChange={(e) => {
-              setBody(e);
-            }}
-            disabled={hasPendingRequest}
-            label="Body"
-            placeholder="..."
-            style={{ minHeight: "13.8rem" }}
-            containerProps={{ style: { margin: "0 0 2rem" } }}
-          />
-
+          options={[
+            {
+              label: "Public topic",
+              description: "Visible to anyone",
+              value: "public",
+            },
+            {
+              label: "Private topic",
+              description: "Only visible to members",
+              value: "private",
+            },
+          ]}
+          renderTriggerContent={(selectedValue) => {
+            switch (selectedValue) {
+              case "public":
+                return "Public topic";
+              case "private":
+                return "Private topic";
+              default:
+                throw new Error();
+            }
+          }}
+          disabled={hasPendingRequest}
+        />
+        {!isPrivate && (
           <Select
-            label="Access"
-            value={selectedType}
-            size="medium"
+            value={hasOpenWriteAccess ? "open" : "members-only"}
+            size="small"
+            width="max-content"
             onChange={(value) => {
-              setSelectedType(value);
+              setOpenWriteAccess(value === "open");
             }}
             options={[
-              {
-                label: "Open",
-                description: "Visible to anyone, no permission needed to join",
-                value: "open",
-                icon: <GlobeIcon style={{ width: "2rem" }} />,
-              },
-              {
-                label: "Closed",
-                description: "Visible to anyone, requires an invite to join",
-                value: "closed",
-                icon: <LockIcon style={{ width: "2rem" }} />,
-              },
-              {
-                label: "Private",
-                description: "Only visible to members",
-                value: "private",
-                icon: <EyeOffIcon style={{ width: "2rem" }} />,
-              },
-            ].map((o) => ({
-              ...o,
-              icon: (
-                <div
-                  css={css({
-                    width: "2.6rem",
-                    display: "flex",
-                    justifyContent: "center",
-                  })}
-                >
-                  {o.icon}
-                </div>
-              ),
-            }))}
+              { label: "Anyone can post", value: "open" },
+              { label: "Only members can post", value: "members-only" },
+            ]}
+            renderTriggerContent={(selectedValue) => {
+              switch (selectedValue) {
+                case "open":
+                  return "Anyone can post";
+                case "members-only":
+                  return "Only members can post";
+                default:
+                  throw new Error();
+              }
+            }}
             disabled={hasPendingRequest}
           />
-        </form>
-      </main>
-      <footer
+        )}
+        {(isPrivate || !hasOpenWriteAccess) && (
+          <Button
+            disabled
+            size="small"
+            icon={<AddUserIcon style={{ width: "1.6rem" }} />}
+          >
+            Add members
+          </Button>
+        )}
+      </div>
+      <form
+        id="create-channel-form"
+        onSubmit={(e) => {
+          e.preventDefault();
+          submit();
+        }}
         css={css({
+          flex: 1,
+          minHeight: 0,
           display: "flex",
-          justifyContent: "flex-end",
-          paddingTop: "1.5rem",
-          "@media (min-width: 600px)": {
-            paddingTop: "2.5rem",
-          },
+          flexDirection: "column",
         })}
       >
-        <Button
-          type="submit"
-          form="create-channel-form"
-          size="medium"
-          variant="primary"
-          isLoading={hasPendingRequest}
-          disabled={!hasRequiredInput || hasPendingRequest}
+        <div
+          style={{
+            flex: 1,
+            minHeight: 1,
+            display: "flex",
+            flexDirection: "column",
+            overflow: "auto",
+          }}
         >
-          Create
-        </Button>
-      </footer>
+          <main
+            css={css({
+              flex: 1,
+              minHeight: 1,
+              width: "100%",
+              maxWidth: "71rem",
+              margin: "0 auto",
+              padding: "1.5rem",
+              "@media (min-width: 600px)": {
+                padding: "8rem 2.5rem 2.5rem",
+              },
+            })}
+          >
+            <input
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              autoFocus
+              disabled={hasPendingRequest}
+              placeholder="Untitled topic"
+              css={(t) =>
+                css({
+                  background: "none",
+                  fontSize: t.text.sizes.huge,
+                  width: "100%",
+                  outline: "none",
+                  fontWeight: t.text.weights.header,
+                  border: 0,
+                  padding: 0,
+                  margin: "0 0 1rem",
+                  color: t.colors.textNormal,
+                  "::placeholder": { color: t.colors.textMuted },
+                })
+              }
+            />
+            <RichTextInput
+              value={body}
+              onChange={(e) => {
+                setBody(e);
+              }}
+              placeholder={`Use markdown shortcuts like "# " and "1. " to create headings and lists.`}
+              css={(t) =>
+                css({
+                  fontSize: t.text.sizes.large,
+                  "[data-slate-placeholder]": {
+                    opacity: "1 !important",
+                    color: t.colors.textMuted,
+                  },
+                })
+              }
+              style={{ minHeight: "13.8rem" }}
+            />
+          </main>
+        </div>
+        <footer
+          css={css({
+            display: "grid",
+            gridAutoColumns: "auto",
+            gridAutoFlow: "column",
+            gridGap: "1rem",
+            justifyContent: "flex-end",
+            padding: "1rem",
+          })}
+        >
+          <Button type="button" size="medium" disabled>
+            Save draft
+          </Button>
+          <Button
+            type="submit"
+            form="create-channel-form"
+            size="medium"
+            variant="primary"
+            isLoading={hasPendingRequest}
+            disabled={!hasRequiredInput || hasPendingRequest}
+          >
+            Create topic
+          </Button>
+        </footer>
+      </form>
     </div>
   );
 };

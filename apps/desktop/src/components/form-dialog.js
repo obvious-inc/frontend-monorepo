@@ -56,6 +56,9 @@ const FormDialog = ({
   return (
     <div
       css={css({
+        display: "flex",
+        flexDirection: "column",
+        minHeight: 0,
         padding: "1.5rem",
         "@media (min-width: 600px)": {
           padding: "2rem",
@@ -64,7 +67,7 @@ const FormDialog = ({
     >
       <DialogHeader title={title} titleProps={titleProps} dismiss={dismiss} />
 
-      <main>
+      <main css={css({ flex: 1, minHeight: 0, overflow: "auto" })}>
         <form id="dialog-form" onSubmit={handleSubmit}>
           {controls.map((c, i) => (
             <div key={c.key} css={css({ "& + &": { marginTop: "2rem" } })}>
