@@ -470,6 +470,7 @@ const NewMessageScreen = () => {
       ? connectedWalletAccountAddress
       : me?.walletAddress;
 
+  const containerRef = React.useRef();
   const recipientInputRef = React.useRef();
   const messageInputRef = React.useRef();
 
@@ -543,7 +544,7 @@ const NewMessageScreen = () => {
 
   React.useEffect(() => {
     // Don’t auto focus if we’re hidden
-    if (recipientInputRef.current.closest('[aria-hidden="true"]')) return;
+    if (containerRef.current.closest('[aria-hidden="true"]')) return;
 
     if (selectedChannelId != null) {
       if (!enableMessageInput) return;
@@ -565,6 +566,7 @@ const NewMessageScreen = () => {
   return (
     <>
       <div
+        ref={containerRef}
         css={(t) =>
           css({
             position: "relative",

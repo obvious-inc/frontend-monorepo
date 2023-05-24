@@ -33,8 +33,11 @@ const UserAvatar = React.forwardRef(
 
     const { data: fetchedEnsAvatarUrl, isLoading: isLoadingEnsAvatar } =
       useWagmiEnsAvatar({
-        addressOrName: walletAddress,
-        enabled: userCustomAvatarUrl == null && cachedEnsAvatarUrl == null,
+        name: user?.ensName,
+        enabled:
+          userCustomAvatarUrl == null &&
+          cachedEnsAvatarUrl == null &&
+          user?.ensName != null,
       });
 
     const ensAvatarUrl = fetchedEnsAvatarUrl ?? cachedEnsAvatarUrl;

@@ -1051,7 +1051,7 @@ export default ({
 
       const entriesByAddress = Object.fromEntries(
         Object.entries(namesByAddress).map(([address, name]) => [
-          address,
+          address.toLowerCase(),
           { name, avatar: avatarsByAddress[address] },
         ])
       );
