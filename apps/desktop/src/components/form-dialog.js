@@ -67,7 +67,16 @@ const FormDialog = ({
     >
       <DialogHeader title={title} titleProps={titleProps} dismiss={dismiss} />
 
-      <main css={css({ flex: 1, minHeight: 0, overflow: "auto" })}>
+      <main
+        css={css({
+          flex: 1,
+          minHeight: 0,
+          overflow: "auto",
+          // Offset of make the focus box shadow visible
+          margin: "-0.3rem",
+          padding: "0.3rem",
+        })}
+      >
         <form id="dialog-form" onSubmit={handleSubmit}>
           {controls.map((c, i) => (
             <div key={c.key} css={css({ "& + &": { marginTop: "2rem" } })}>
