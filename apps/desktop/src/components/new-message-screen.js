@@ -542,6 +542,9 @@ const NewMessageScreen = () => {
     (matchType === "channel" ? canPostChannelMessages : true);
 
   React.useEffect(() => {
+    // Don’t auto focus if we’re hidden
+    if (recipientInputRef.current.closest('[aria-hidden="true"]')) return;
+
     if (selectedChannelId != null) {
       if (!enableMessageInput) return;
       messageInputRef.current.focus();

@@ -11,6 +11,9 @@ const MessageList = React.forwardRef(
     const { inputDeviceCanHover } = useGlobalMediaQueries();
     const [touchFocusedMessageId, setTouchFocusedMessageId] =
       React.useState(null);
+
+    if (messageIds.length === 0) return <div style={{ height: "2rem" }} />;
+
     return (
       <div
         ref={ref}
@@ -48,6 +51,7 @@ const MessageList = React.forwardRef(
           })
         }
       >
+        <div css={css({ height: "1.3rem" })} />
         {messageIds.map((messageId, i, messageIds) => (
           <ChannelMessage
             key={messageId}

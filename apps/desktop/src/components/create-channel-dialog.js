@@ -1,26 +1,36 @@
 import React from "react";
 import { useNavigate } from "react-router-dom";
 import { css } from "@emotion/react";
-import {
-  ethereum as ethereumUtils,
-  message as messageUtils,
-} from "@shades/common/utils";
+import { message as messageUtils } from "@shades/common/utils";
 import { useActions, useAuth } from "@shades/common/app";
 import { useWallet, useWalletLogin } from "@shades/common/wallet";
 import Button from "@shades/ui-web/button";
 import { AddUser as AddUserIcon } from "@shades/ui-web/icons";
 import { isNodeEmpty as isSlateNodeEmpty } from "../slate/utils.js";
+import { useDialog } from "../hooks/dialogs.js";
 import RichTextInput from "./rich-text-input.js";
 import Select from "./select.js";
 
-const { truncateAddress } = ethereumUtils;
 const { createEmptyParagraphElement } = messageUtils;
 
 const CreateChannelDialogContent = ({
   // titleProps,
-  close,
   createChannel,
 }) => {
+  const { status: authenticationStatus } = useAuth();
+  const {
+    connect: connectWallet,
+    accountAddress: connectedWalletAccountAddress,
+  } = useWallet();
+  const {
+    login: initAccountVerification,
+    status: pendingAccountVerificationState,
+  } = useWalletLogin();
+  const {
+    open: openAccountAuthenticationDialog,
+    dismiss: dismissAccountAuthenticationDialog,
+  } = useDialog("account-authentication");
+
   const [isPrivate, setPrivate] = React.useState(false);
   const [hasOpenWriteAccess, setOpenWriteAccess] = React.useState(true);
 
@@ -41,15 +51,10 @@ const CreateChannelDialogContent = ({
       : "closed";
 
     createChannel({ name, body, permissionType })
-      .then(
-        () => {
-          close();
-        },
-        (e) => {
-          alert("Ops, looks like something went wrong!");
-          throw e;
-        }
-      )
+      .catch((e) => {
+        alert("Ops, looks like something went wrong!");
+        throw e;
+      })
       .finally(() => {
         setPendingRequest(false);
       });
@@ -222,22 +227,81 @@ const CreateChannelDialogContent = ({
             gridAutoFlow: "column",
             gridGap: "1rem",
             justifyContent: "flex-end",
+            alignItems: "center",
             padding: "1rem",
           })}
         >
-          <Button type="button" size="medium" disabled>
-            Save draft
-          </Button>
-          <Button
-            type="submit"
-            form="create-channel-form"
-            size="medium"
-            variant="primary"
-            isLoading={hasPendingRequest}
-            disabled={!hasRequiredInput || hasPendingRequest}
-          >
-            Create topic
-          </Button>
+          {authenticationStatus === "authenticated" ? (
+            <>
+              <Button type="button" size="medium" disabled>
+                Save draft
+              </Button>
+              <Button
+                type="submit"
+                form="create-channel-form"
+                size="medium"
+                variant="primary"
+                isLoading={hasPendingRequest}
+                disabled={!hasRequiredInput || hasPendingRequest}
+              >
+                Create topic
+              </Button>
+            </>
+          ) : (
+            <>
+              <div
+                css={(t) =>
+                  css({
+                    fontSize: t.text.sizes.small,
+                    color: t.colors.textDimmed,
+                    padding: "0 0.6rem",
+                    "@media (min-width: 600px)": {
+                      paddingRight: "1rem",
+                      fontSize: t.text.sizes.base,
+                    },
+                  })
+                }
+              >
+                Account verification required to create topics
+              </div>
+              {connectedWalletAccountAddress == null ? (
+                <Button
+                  type="button"
+                  size="medium"
+                  variant="primary"
+                  onClick={async () => {
+                    const connectResponse = await connectWallet();
+                    if (connectResponse == null) return;
+                    openAccountAuthenticationDialog();
+                    await initAccountVerification(connectResponse.account);
+                    dismissAccountAuthenticationDialog();
+                  }}
+                >
+                  Connect wallet
+                </Button>
+              ) : (
+                <Button
+                  type="button"
+                  size="medium"
+                  variant="primary"
+                  onClick={async () => {
+                    openAccountAuthenticationDialog();
+                    try {
+                      await initAccountVerification(
+                        connectedWalletAccountAddress
+                      );
+                    } finally {
+                      dismissAccountAuthenticationDialog();
+                    }
+                  }}
+                  isLoading={pendingAccountVerificationState !== "idle"}
+                  disabled={pendingAccountVerificationState !== "idle"}
+                >
+                  Verify account
+                </Button>
+              )}
+            </>
+          )}
         </footer>
       </form>
     </div>
@@ -246,35 +310,11 @@ const CreateChannelDialogContent = ({
 
 const CreateChannelDialog = ({ dismiss, titleProps }) => {
   const actions = useActions();
-  const { status: authenticationStatus } = useAuth();
   const navigate = useNavigate();
-  const { accountAddress: walletAccountAddress } = useWallet();
-  const { login } = useWalletLogin();
-
   return (
     <CreateChannelDialogContent
       titleProps={titleProps}
-      close={dismiss}
       createChannel={async ({ name, description, body, permissionType }) => {
-        if (authenticationStatus !== "authenticated") {
-          if (walletAccountAddress == null) {
-            alert(
-              "You need to connect and verify your account to create channels."
-            );
-            return;
-          }
-          if (
-            !confirm(
-              `You need to verify your account to create channels. Press ok to verify "${truncateAddress(
-                walletAccountAddress
-              )}" with wallet signature.`
-            )
-          )
-            return;
-
-          await login(walletAccountAddress);
-        }
-
         const params = { name, description, body };
 
         const create = () => {
@@ -291,7 +331,7 @@ const CreateChannelDialog = ({ dismiss, titleProps }) => {
         };
 
         const channel = await create();
-
+        dismiss();
         navigate(`/channels/${channel.id}`);
       }}
     />

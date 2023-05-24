@@ -405,10 +405,6 @@ const ChannelIntro = ({ channelId }) => {
 
     return (
       <div style={{ paddingTop: "1rem" }}>
-        {/* <Link css={css({ display: "inline-flex", alignItems: "center" })}> */}
-        {/*   <AddUserIcon style={{ width: "1.6rem", marginRight: "0.3rem" }} /> */}
-        {/*   Add members */}
-        {/* </Link> */}
         <Button
           size="medium"
           align="left"
@@ -471,7 +467,7 @@ const PostIntro = ({ channelId }) => {
   if (channel == null) return null;
 
   return (
-    <div css={css({ padding: "6rem 1.6rem 1rem", userSelect: "text" })}>
+    <div css={css({ padding: "6rem 1.6rem 0", userSelect: "text" })}>
       <div
         css={(t) =>
           css({
