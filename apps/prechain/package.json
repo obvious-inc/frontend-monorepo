@@ -1,5 +1,5 @@
 {
-  "name": "pre-chain",
+  "name": "prechain",
   "private": true,
   "scripts": {
     "dev": "webpack serve --mode=development",
