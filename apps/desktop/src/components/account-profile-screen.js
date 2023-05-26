@@ -21,6 +21,7 @@ import {
   usePublicClient as usePublicEthereumClient,
 } from "wagmi";
 import { ethereum as ethereumUtils } from "@shades/common/utils";
+import { useFetch } from "@shades/common/react";
 import { useWallet, useWalletLogin } from "@shades/common/wallet";
 import {
   useSelectors,
@@ -36,7 +37,8 @@ import {
   Duplicate as DuplicateIcon,
   DotsHorizontal as DotsHorizontalIcon,
 } from "@shades/ui-web/icons";
-import useFetch from "../hooks/fetch.js";
+import AccountAvatar from "@shades/ui-web/account-avatar";
+import ChannelAvatar from "@shades/ui-web/channel-avatar";
 import { useDialog } from "../hooks/dialogs.js";
 import useAccountDisplayName from "../hooks/account-display-name.js";
 import * as Tooltip from "./tooltip.js";
@@ -47,8 +49,6 @@ import FormattedDate from "./formatted-date.js";
 import Spinner from "./spinner.js";
 import NavBar from "./nav-bar.js";
 import Heading from "./heading.js";
-import UserAvatar from "./user-avatar.js";
-import ChannelAvatar from "./channel-avatar.js";
 // import ChannelMessage from "./channel-message.js";
 
 const { truncateAddress } = ethereumUtils;
@@ -367,8 +367,8 @@ const AccountProfile = ({ accountAddress }) => {
         <div css={css({ padding: "0 1.6rem 3rem" })}>
           <div style={{ display: "flex", alignItems: "center" }}>
             <div style={{ marginRight: "1.2rem" }}>
-              <UserAvatar
-                walletAddress={accountAddress}
+              <AccountAvatar
+                address={accountAddress}
                 transparent
                 highRes
                 size="6.6rem"
@@ -952,8 +952,8 @@ const AccountLink = ({ contract, address }) => {
           data-tag
           style={{ paddingLeft: "0.3rem" }}
         >
-          <UserAvatar
-            walletAddress={address}
+          <AccountAvatar
+            address={address}
             transparent
             size="2rem"
             css={(t) =>

@@ -9,9 +9,9 @@ import {
 } from "@shades/common/utils";
 import { useLatestCallback } from "@shades/common/react";
 import { useChannel, useAllChannels, useEmojis } from "@shades/common/app";
+import AccountAvatar from "@shades/ui-web/account-avatar";
+import ChannelAvatar from "@shades/ui-web/channel-avatar";
 import RichTextInput from "./rich-text-input.js";
-import UserAvatar from "./user-avatar.js";
-import ChannelAvatar from "./channel-avatar.js";
 
 const { sort } = arrayUtils;
 const {
@@ -86,9 +86,9 @@ const MessageInput = React.forwardRef(
           label,
           description: hasCustomDisplayName ? truncatedAddress : undefined,
           image: (
-            <UserAvatar
+            <AccountAvatar
               transparent
-              walletAddress={m.walletAddress}
+              address={m.walletAddress}
               size="3.2rem"
             />
           ),

@@ -13,11 +13,11 @@ import {
 } from "@shades/common/app";
 import theme from "@shades/ui-web/theme";
 import Button from "@shades/ui-web/button";
+import AccountAvatar from "@shades/ui-web/account-avatar";
 import IconButton from "@shades/ui-web/icon-button";
 import MainHeader from "./main-header.js";
 import HeaderItem from "./header-item.js";
 import FormattedDate from "./formatted-date.js";
-import UserAvatar from "./user-avatar.js";
 
 const Channel = () => {
   const params = useParams();
@@ -270,8 +270,8 @@ const ReplyForm = ({ messageId, sendReply, isLastMessage }) => {
     >
       <div style={{ display: "flex", alignItems: "center" }}>
         <div style={{ flex: 1, display: "flex", alignItems: "center" }}>
-          <UserAvatar
-            walletAddress={message?.author?.walletAddress}
+          <AccountAvatar
+            address={message?.author?.walletAddress}
             size="2.6rem"
             background={theme.colors.backgroundTertiary}
           />
@@ -426,8 +426,8 @@ const MessageItem = ({ id, onClick }) => {
         })}
       >
         <div className="sender" css={css({ alignItems: "center" })}>
-          <UserAvatar
-            walletAddress={message.author?.walletAddress}
+          <AccountAvatar
+            address={message.author?.walletAddress}
             size="2.6rem"
             background={theme.colors.backgroundTertiary}
           />

@@ -1,5 +1,5 @@
 import React from "react";
-import { useActions } from "@shades/common/app";
+import { useActions } from "../store.js";
 
 const pendingPromisesByQueryKey = {};
 

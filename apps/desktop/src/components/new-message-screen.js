@@ -29,7 +29,8 @@ import {
   useChannelName,
   useChannelPermissions,
   useDmChannelWithMember,
-  useSortedChannelMessageIds,
+  useChannelMessagesFetcher,
+  useChannelFetchEffects,
 } from "@shades/common/app";
 import { useWallet, useWalletLogin } from "@shades/common/wallet";
 import {
@@ -38,7 +39,6 @@ import {
   ethereum as ethereumUtils,
   array as arrayUtils,
 } from "@shades/common/utils";
-import { useLatestCallback } from "@shades/common/react";
 import { useState as useSidebarState } from "@shades/ui-web/sidebar-layout";
 import {
   CrossSmall as CrossSmallIcon,
@@ -46,24 +46,25 @@ import {
 } from "@shades/ui-web/icons";
 import Button from "@shades/ui-web/button";
 import IconButton from "@shades/ui-web/icon-button";
+import AccountAvatar from "@shades/ui-web/account-avatar";
+import ChannelAvatar from "@shades/ui-web/channel-avatar";
+import AccountAvatarStack from "@shades/ui-web/account-avatar-stack";
+import ChannelMessagesScrollView from "@shades/ui-web/channel-messages-scroll-view";
 import { useDialog } from "../hooks/dialogs.js";
+import useLayoutSetting from "../hooks/layout-setting.js";
 import useAccountDisplayName from "../hooks/account-display-name.js";
-import useChannelFetchEffects from "../hooks/channel-fetch-effects.js";
-import useChannelMessagesFetcher from "../hooks/channel-messages-fetcher.js";
 import Combobox, {
   Item as ComboboxItem,
   Section as ComboboxSection,
 } from "./combobox";
 import { Grid as FlexGrid, Item as FlexGridItem } from "./flex-grid.js";
 import NavBar from "./nav-bar.js";
-import UserAvatar from "./user-avatar.js";
-import UserAvatarStack from "./user-avatar-stack.js";
-import ChannelAvatar from "./channel-avatar.js";
 import NewChannelMessageInput from "./new-channel-message-input.js";
-import ChannelMessagesScrollView from "./channel-messages-scroll-view.js";
 import ChannelPrologue, {
   PersonalDMChannelPrologue,
 } from "./channel-prologue.js";
+import ChannelMessagesScrollViewHeader from "./channel-messages-scroll-view-header.js";
+import ChannelMessage from "./channel-message.js";
 import InlineUserButtonWithProfilePopover from "./inline-user-button-with-profile-popover.js";
 import InlineChannelButton from "./inline-channel-button.js";
 import Emoji from "./emoji.js";
@@ -799,12 +800,8 @@ const NewMessageScreen = () => {
 };
 
 const ChannelMessages = ({ channelId, initReply, replyTargetMessageId }) => {
-  const didScrollToBottomRef = React.useRef(false);
-  const messageIds = useSortedChannelMessageIds(channelId, { threads: true });
+  const layout = useLayoutSetting();
   const fetchMessages = useChannelMessagesFetcher(channelId);
-  const fetchMoreMessages = useLatestCallback((args) =>
-    fetchMessages({ beforeMessageId: messageIds[0], limit: 30, ...args })
-  );
 
   React.useEffect(() => {
     fetchMessages({ limit: 30 });
@@ -812,13 +809,32 @@ const ChannelMessages = ({ channelId, initReply, replyTargetMessageId }) => {
 
   useChannelFetchEffects(channelId);
 
+  const renderHeader = React.useCallback(
+    () => <ChannelMessagesScrollViewHeader channelId={channelId} />,
+    [channelId]
+  );
+
+  const renderMessage = React.useCallback(
+    (messageId, i, messageIds, props) => (
+      <ChannelMessage
+        key={messageId}
+        messageId={messageId}
+        previousMessageId={messageIds[i - 1]}
+        hasPendingReply={replyTargetMessageId === messageId}
+        initReply={initReply}
+        layout={layout}
+        {...props}
+      />
+    ),
+    [layout, initReply, replyTargetMessageId]
+  );
+
   return (
     <ChannelMessagesScrollView
       channelId={channelId}
-      fetchMoreMessages={fetchMoreMessages}
-      didScrollToBottomRef={didScrollToBottomRef}
-      initReply={initReply}
-      replyTargetMessageId={replyTargetMessageId}
+      layout={layout}
+      renderHeader={renderHeader}
+      renderMessage={renderMessage}
     />
   );
 };
@@ -1404,7 +1420,7 @@ const MessageRecipientComboboxAccountOption = ({
       isSelected={isSelected}
       label={displayName}
       description={description}
-      icon={<UserAvatar size="2.4rem" walletAddress={user.walletAddress} />}
+      icon={<AccountAvatar size="2.4rem" address={user.walletAddress} />}
     />
   );
 };
@@ -1470,9 +1486,9 @@ const ChannelIntro = ({ walletAddresses: walletAddresses_ }) => {
         ))}
       subtitle={<>{walletAddresses.length + 1} participants</>}
       image={
-        <UserAvatarStack
+        <AccountAvatarStack
           count={3}
-          accounts={walletAddresses.map((a) => ({ walletAddress: a }))}
+          addresses={walletAddresses}
           highRes
           transparent
           size="6.6rem"
@@ -1507,7 +1523,7 @@ const DMChannelIntro = ({ walletAddress }) => {
   return (
     <ChannelPrologue
       image={
-        <UserAvatar walletAddress={walletAddress} size="6.6rem" transparent />
+        <AccountAvatar address={walletAddress} size="6.6rem" transparent />
       }
       title={
         <InlineUserButtonWithProfilePopover

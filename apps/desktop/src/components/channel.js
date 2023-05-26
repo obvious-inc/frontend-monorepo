@@ -13,23 +13,26 @@ import {
   useChannelTypingMembers,
   useSortedChannelMessageIds,
   useHasFetchedChannelMessages,
+  useChannelMessagesFetcher,
+  useChannelFetchEffects,
 } from "@shades/common/app";
 import { useWalletLogin } from "@shades/common/wallet";
-import { useLatestCallback } from "@shades/common/react";
+import {
+  useLatestCallback,
+  useWindowFocusOrDocumentVisibleListener,
+  useWindowOnlineListener,
+  useMatchMedia,
+} from "@shades/common/react";
+import ChannelMessagesScrollView from "@shades/ui-web/channel-messages-scroll-view";
 import { isNodeEmpty } from "../slate/utils.js";
-import useGlobalMediaQueries from "../hooks/global-media-queries.js";
-import useWindowFocusOrDocumentVisibleListener from "../hooks/window-focus-or-document-visible-listener.js";
-import useOnlineListener from "../hooks/window-online-listener.js";
 import useLayoutSetting from "../hooks/layout-setting.js";
-import useChannelFetchEffects from "../hooks/channel-fetch-effects.js";
-// import useScrollAwareChannelMessagesFetcher from "../hooks/scroll-aware-channel-messages-fetcher.js";
-import useChannelMessagesFetcher from "../hooks/channel-messages-fetcher.js";
 import useMessageInputPlaceholder from "../hooks/channel-message-input-placeholder.js";
 import Delay from "./delay.js";
 import Spinner from "./spinner.js";
-import ChannelMessagesScrollView from "./channel-messages-scroll-view.js";
+import ChannelMessagesScrollViewHeader from "./channel-messages-scroll-view-header.js";
 import NewChannelMessageInput from "./new-channel-message-input.js";
 import ChannelNavBar from "./channel-nav-bar.js";
+import ChannelMessage from "./channel-message.js";
 import ErrorBoundary from "./error-boundary.js";
 
 const LazyLoginScreen = React.lazy(() => import("./login-screen"));
@@ -69,7 +72,7 @@ const useMarkChannelReadEffects = (channelId, { didScrollToBottomRef }) => {
       markChannelRead(channelId);
   });
 
-  useOnlineListener(
+  useWindowOnlineListener(
     () => {
       if (channelHasUnread && didScrollToBottomRef.current)
         markChannelRead(channelId);
@@ -90,7 +93,9 @@ const ChannelContent = ({ channelId }) => {
   const channel = useChannel(channelId, { name: true, members: true });
   const channelAccessLevel = useChannelAccessLevel(channelId);
 
-  const { inputDeviceCanHover } = useGlobalMediaQueries();
+  const layout = useLayoutSetting();
+
+  const inputDeviceCanHover = useMatchMedia("(hover: hover)");
 
   const inputRef = React.useRef();
   const didScrollToBottomRef = React.useRef(false);
@@ -98,10 +103,6 @@ const ChannelContent = ({ channelId }) => {
   const messageIds = useSortedChannelMessageIds(channelId);
 
   const fetchMessages = useChannelMessagesFetcher(channelId);
-
-  const fetchMoreMessages = useLatestCallback((args) =>
-    fetchMessages({ beforeMessageId: messageIds[0], limit: 30, ...args })
-  );
 
   const inputPlaceholder = useMessageInputPlaceholder(channelId);
 
@@ -134,7 +135,7 @@ const ChannelContent = ({ channelId }) => {
     fetchMessages({ limit: 30 });
   });
 
-  useOnlineListener(
+  useWindowOnlineListener(
     () => {
       fetchMessages({ limit: 30 });
     },
@@ -200,14 +201,33 @@ const ChannelContent = ({ channelId }) => {
     inputRef.current.focus();
   }, []);
 
+  const renderScrollViewHeader = React.useCallback(
+    () => <ChannelMessagesScrollViewHeader channelId={channelId} />,
+    [channelId]
+  );
+
+  const renderMessage = React.useCallback(
+    (messageId, i, messageIds, props) => (
+      <ChannelMessage
+        key={messageId}
+        messageId={messageId}
+        previousMessageId={messageIds[i - 1]}
+        hasPendingReply={replyTargetMessageId === messageId}
+        initReply={initReply}
+        layout={layout}
+        {...props}
+      />
+    ),
+    [layout, initReply, replyTargetMessageId]
+  );
+
   return (
     <>
       <ChannelMessagesScrollView
         channelId={channelId}
         didScrollToBottomRef={didScrollToBottomRef}
-        fetchMoreMessages={fetchMoreMessages}
-        initReply={initReply}
-        replyTargetMessageId={replyTargetMessageId}
+        renderHeader={renderScrollViewHeader}
+        renderMessage={renderMessage}
       />
 
       <div css={css({ padding: "0 1.6rem" })}>

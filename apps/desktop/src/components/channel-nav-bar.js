@@ -22,12 +22,12 @@ import {
   StrokedStar as StrokedStarIcon,
   Globe as GlobeIcon,
 } from "@shades/ui-web/icons";
+import AccountAvatar from "@shades/ui-web/account-avatar";
+import ChannelAvatar from "@shades/ui-web/channel-avatar";
 import { useDialog } from "../hooks/dialogs";
 import Spinner from "./spinner";
 import NavBar from "./nav-bar";
 import Heading from "./heading";
-import UserAvatar from "./user-avatar";
-import ChannelAvatar from "./channel-avatar";
 import * as Tooltip from "./tooltip";
 import ErrorBoundary from "./error-boundary.js";
 import RichText from "./rich-text.js";
@@ -306,10 +306,10 @@ const ChannelNavBar = ({ noSideMenu, channelId }) => {
                       ) : (
                         <>({truncateAddress(walletAccountAddress)})</>
                       )}
-                      <UserAvatar
+                      <AccountAvatar
                         data-avatar
                         transparent
-                        walletAddress={walletAccountAddress}
+                        address={walletAccountAddress}
                         size="2.6rem"
                         style={{ marginLeft: "0.5rem" }}
                       />
@@ -491,11 +491,11 @@ const MembersDisplayButton = React.forwardRef(({ onClick, members }, ref) => {
           }
         >
           {membersToDisplay.map((user, i) => (
-            <UserAvatar
+            <AccountAvatar
               key={user.id}
               transparent
               background={theme.colors.backgroundTertiary}
-              walletAddress={user?.walletAddress}
+              address={user?.walletAddress}
               size="2rem"
               css={(theme) =>
                 css({

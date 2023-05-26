@@ -23,6 +23,8 @@ export {
 export { default as useRecentEmojis } from "./hooks/recent-emojis.js";
 export { default as useMessageEmbeds } from "./hooks/message-embeds.js";
 export { default as useMessageReactions } from "./hooks/message-reactions.js";
+export { default as useChannelMessagesFetcher } from "./hooks/channel-messages-fetcher.js";
+export { default as useChannelFetchEffects } from "./hooks/channel-fetch-effects.js";
 export * from "./hooks/ens.js";
 export * from "./hooks/me.js";
 export * from "./hooks/user.js";

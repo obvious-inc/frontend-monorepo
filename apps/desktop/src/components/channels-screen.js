@@ -3,8 +3,8 @@ import { Link as RouterLink } from "react-router-dom";
 import { css } from "@emotion/react";
 import { useActions, usePublicChannels } from "@shades/common/app";
 import { channel as channelUtils } from "@shades/common/utils";
-import useFetch from "../hooks/fetch.js";
-import ChannelAvatar from "./channel-avatar.js";
+import { useFetch } from "@shades/common/react";
+import ChannelAvatar from "@shades/ui-web/channel-avatar";
 import NavBar from "./nav-bar.js";
 import Input from "./input.js";
 

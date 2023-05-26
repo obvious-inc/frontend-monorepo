@@ -1,5 +1,5 @@
 import React from "react";
-import { useLatestCallback } from "@shades/common/react";
+import useLatestCallback from "./latest-callback.js";
 import useWindowFocusOrDocumentVisibleListener from "./window-focus-or-document-visible-listener";
 import useOnlineListener from "./window-online-listener";
 

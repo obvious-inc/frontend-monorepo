@@ -3,9 +3,9 @@ import { useWallet, useWalletLogin } from "@shades/common/wallet";
 import React from "react";
 import { css } from "@emotion/react";
 import Button from "@shades/ui-web/button";
+import AccountAvatar from "@shades/ui-web/account-avatar";
 import * as Tooltip from "./tooltip";
 import Spinner from "./spinner";
-import UserAvatar from "./user-avatar";
 
 const { truncateAddress } = ethereumUtils;
 
@@ -293,10 +293,10 @@ const LoginScreen = ({ mobileAppLogin, onSuccess, onError }) => {
             </div>
           ) : (
             <>
-              <UserAvatar
+              <AccountAvatar
                 transparent
                 highRes
-                walletAddress={accountAddress}
+                address={accountAddress}
                 size="9.2rem"
                 css={(t) =>
                   css({

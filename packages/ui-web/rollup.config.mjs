@@ -46,6 +46,48 @@ const entrypoints = [
   },
   { file: "icon-button.js", dependencies: ["react", ...emotionDeps] },
   { file: "avatar.js", dependencies: ["react", ...emotionDeps] },
+  {
+    file: "account-avatar.js",
+    dependencies: [
+      "react",
+      "wagmi",
+      "@shades/common/app",
+      "@shades/common/nouns",
+      ...emotionDeps,
+    ],
+  },
+  {
+    file: "account-avatar-stack.js",
+    dependencies: [
+      "react",
+      "wagmi",
+      "@shades/common/app",
+      "@shades/common/nouns",
+      "@shades/common/utils",
+      ...emotionDeps,
+    ],
+  },
+  {
+    file: "channel-avatar.js",
+    dependencies: [
+      "react",
+      "wagmi",
+      "@shades/common/app",
+      "@shades/common/nouns",
+      "@shades/common/utils",
+      ...emotionDeps,
+    ],
+  },
+  {
+    file: "channel-messages-scroll-view.js",
+    dependencies: [
+      "react",
+      "@shades/common/app",
+      "@shades/common/react",
+      "@shades/common/nouns",
+      ...emotionDeps,
+    ],
+  },
 ];
 
 export default [

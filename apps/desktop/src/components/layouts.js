@@ -27,6 +27,7 @@ import {
   array as arrayUtils,
   ethereum as ethereumUtils,
 } from "@shades/common/utils";
+import { useFetch } from "@shades/common/react";
 import {
   useState as useSidebarState,
   useToggle as useSidebarToggle,
@@ -39,12 +40,11 @@ import {
   Triangle as TriangleIcon,
   Pen as PenIcon,
 } from "@shades/ui-web/icons";
-import useFetch from "../hooks/fetch";
+import AccountAvatar from "@shades/ui-web/account-avatar";
+import ChannelAvatar from "@shades/ui-web/channel-avatar";
 import useCommandCenter from "../hooks/command-center";
 import { useDialog } from "../hooks/dialogs";
 import useSetting from "../hooks/setting";
-import UserAvatar from "./user-avatar";
-import ChannelAvatar from "./channel-avatar";
 import * as DropdownMenu from "./dropdown-menu";
 import NotificationBadge from "./notification-badge";
 import Spinner from "./spinner";
@@ -472,7 +472,7 @@ const Layout = () => {
                           : channels;
 
                       return (
-                        <CollapsableSection
+                        <CollapsibleSection
                           key={key}
                           title={title}
                           expanded={!collapsedIds.includes(key)}
@@ -504,7 +504,7 @@ const Layout = () => {
                               {...channelItemProps}
                             />
                           ))}
-                        </CollapsableSection>
+                        </CollapsibleSection>
                       );
                     })}
 
@@ -616,9 +616,9 @@ const ProfileDropdownTrigger = React.forwardRef(
                 css={(t) => css({ color: t.colors.textMuted })}
               />
             ) : (
-              <UserAvatar
+              <AccountAvatar
                 transparent
-                walletAddress={user?.walletAddress}
+                address={user?.walletAddress}
                 size="1.8rem"
               />
             )}
@@ -734,7 +734,7 @@ const ProfileDropdownTrigger = React.forwardRef(
   }
 );
 
-const CollapsableSection = ({
+const CollapsibleSection = ({
   title,
   expanded,
   truncatedCount = 0,

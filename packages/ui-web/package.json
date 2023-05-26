@@ -16,7 +16,11 @@
     "./dialog": "./dist/dialog.js",
     "./button": "./dist/button.js",
     "./icon-button": "./dist/icon-button.js",
-    "./avatar": "./dist/avatar.js"
+    "./avatar": "./dist/avatar.js",
+    "./account-avatar": "./dist/account-avatar.js",
+    "./account-avatar-stack": "./dist/account-avatar-stack.js",
+    "./channel-avatar": "./dist/channel-avatar.js",
+    "./channel-messages-scroll-view": "./dist/channel-messages-scroll-view.js"
   },
   "peerDependencies": {
     "@emotion/css": "*",

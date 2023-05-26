@@ -64,12 +64,15 @@ export const Layout = ({
   const { isFloating, isCollapsed } = useState();
   const toggle = useToggle();
 
-  const headerContent = header?.({
-    toggle,
-    isFloating,
-    isCollapsed,
-    isHoveringSidebar,
-  });
+  const headerContent =
+    typeof header === "function"
+      ? header({
+          toggle,
+          isFloating,
+          isCollapsed,
+          isHoveringSidebar,
+        })
+      : header;
 
   return (
     <div

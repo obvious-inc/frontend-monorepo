@@ -33,10 +33,10 @@ import {
   EyeOff as EyeOffIcon,
   AtSign as AtSignIcon,
 } from "@shades/ui-web/icons";
+import AccountAvatar from "@shades/ui-web/account-avatar";
+import ChannelAvatar from "@shades/ui-web/channel-avatar";
 import { useDialog } from "../hooks/dialogs";
 import Input from "./input";
-import UserAvatar from "./user-avatar";
-import ChannelAvatar from "./channel-avatar";
 import Select from "./select";
 import * as Tooltip from "./tooltip";
 import * as Tabs from "./tabs";
@@ -889,9 +889,9 @@ const MembersDirectoryTab = ({ dismiss, channelId, addMember }) => {
                     );
                   }}
                 >
-                  <UserAvatar
+                  <AccountAvatar
                     transparent
-                    walletAddress={member.walletAddress}
+                    address={member.walletAddress}
                     size="3.6rem"
                   />
                   <div>

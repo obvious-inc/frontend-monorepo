@@ -24,7 +24,11 @@ import {
   message as messageUtils,
   emoji as emojiUtils,
 } from "@shades/common/utils";
-import { useLatestCallback, useHover } from "@shades/common/react";
+import {
+  useLatestCallback,
+  useMatchMedia,
+  useHover,
+} from "@shades/common/react";
 import Button from "@shades/ui-web/button";
 import Dialog from "@shades/ui-web/dialog";
 import {
@@ -34,18 +38,17 @@ import {
   EmojiFace as EmojiFaceIcon,
   JoinArrowRight as JoinArrowRightIcon,
 } from "@shades/ui-web/icons";
+import AccountAvatar from "@shades/ui-web/account-avatar";
 import {
   isNodeEmpty,
   parseMessageBlocks,
   toMessageBlocks,
 } from "../slate/utils";
-import useGlobalMediaQueries from "../hooks/global-media-queries";
 import FormattedDate from "./formatted-date";
 import MessageInput from "./message-input";
 import RichText from "./rich-text";
 import Input from "./input";
 import Link from "./link";
-import UserAvatar from "./user-avatar";
 import InlineUserButton from "./inline-user-button";
 import * as Popover from "./popover";
 import * as DropdownMenu from "./dropdown-menu";
@@ -65,8 +68,8 @@ const ChannelMessage = React.memo(function ChannelMessage_({
   previousMessageId,
   hasPendingReply,
   initReply: initReply_,
-  hasTouchFocus,
-  giveTouchFocus,
+  isTouchFocused,
+  setTouchFocused,
   layout,
   scrollToMessage,
   showLeftColumn = true,
@@ -100,7 +103,7 @@ const ChannelMessage = React.memo(function ChannelMessage_({
   const compact = layout === "compact";
 
   const showAsFocused =
-    !isEditing && (hasTouchFocus || isHovering || isEmojiPickerOpen);
+    !isEditing && (isTouchFocused || isHovering || isEmojiPickerOpen);
 
   const isDirectMessage = channel != null && channel.kind === "dm";
   const isOwnMessage = me?.id === message.authorUserId;
@@ -291,11 +294,11 @@ const ChannelMessage = React.memo(function ChannelMessage_({
         "--color": message.isOptimistic ? "var(--color-optimistic)" : undefined,
       }}
       className="channel-message-container"
-      {...(giveTouchFocus == null
+      {...(setTouchFocused == null
         ? hoverHandlers
         : {
             onClick: () => {
-              giveTouchFocus(messageId);
+              setTouchFocused(messageId);
             },
           })}
       {...containerProps}
@@ -427,7 +430,7 @@ const ChannelMessage = React.memo(function ChannelMessage_({
             <Reactions
               messageId={messageId}
               addReaction={addReaction}
-              hideAddButton={!isHovering && !hasTouchFocus}
+              hideAddButton={!isHovering && !isTouchFocused}
               layout={layout}
             />
           )}
@@ -555,9 +558,9 @@ const Thread = ({ messageId, layout, initReply }) => {
             />
           </div>
         ) : (
-          <UserAvatar
+          <AccountAvatar
             transparent
-            walletAddress={lastReplyAuthorUser?.walletAddress}
+            address={lastReplyAuthorUser?.walletAddress}
             size="2rem"
           />
         )}
@@ -940,7 +943,7 @@ const Reactions = ({ messageId, addReaction, hideAddButton, layout }) => {
 
   const isAuthorMe = me != null && me.id === message.authorUserId;
 
-  const { inputDeviceCanHover } = useGlobalMediaQueries();
+  const inputDeviceCanHover = useMatchMedia("(hover: hover)");
   const [isInlineEmojiPickerOpen, setInlineEmojiPickerOpen] =
     React.useState(false);
 
@@ -1321,9 +1324,9 @@ const MessageHeader = ({ layout, messageId }) => {
               },
             })}
           >
-            <UserAvatar
+            <AccountAvatar
               transparent
-              walletAddress={message.author?.walletAddress}
+              address={message.author?.walletAddress}
               size="2rem"
               style={{
                 display: "inline-flex",
@@ -1708,7 +1711,7 @@ const MessageToolbar = React.memo(
     onEmojiPickerOpenChange,
   }) => {
     const toolbarRef = React.useRef();
-    const { inputDeviceCanHover } = useGlobalMediaQueries();
+    const inputDeviceCanHover = useMatchMedia("(hover: hover)");
     const dropdownMenuItems = dropdownMenuSections.flatMap((i) => i.children);
     return (
       <Toolbar.Root ref={toolbarRef}>
@@ -1966,9 +1969,9 @@ const ReplyTargetMessage = ({ messageId, layout, onClickMessage }) => {
         })}
       >
         {showAvatar && (
-          <UserAvatar
+          <AccountAvatar
             transparent
-            walletAddress={authorMember?.walletAddress}
+            address={authorMember?.walletAddress}
             size="1.4rem"
           />
         )}
@@ -2186,9 +2189,9 @@ const MessageLeftColumn = ({ messageId, simplified, layout, isHovering }) => {
                 : "0 0 0 0.2rem var(--regular-color)",
             }}
           >
-            <UserAvatar
+            <AccountAvatar
               transparent
-              walletAddress={message.author?.walletAddress}
+              address={message.author?.walletAddress}
               size="3.8rem"
             />
           </button>

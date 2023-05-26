@@ -44,7 +44,6 @@ import defaultTheme, {
 } from "@shades/ui-web/theme";
 import { Provider as SidebarProvider } from "@shades/ui-web/sidebar-layout";
 import { IFrameEthereumProvider } from "@newshades/iframe-provider";
-import { Provider as GlobalMediaQueriesProvider } from "./hooks/global-media-queries.js";
 import { Provider as DialogsProvider } from "./hooks/dialogs.js";
 import { send as sendNotification } from "./utils/notifications.js";
 import useCommandCenter, {
@@ -496,23 +495,21 @@ export default function LazyRoot() {
               <Tooltip.Provider delayDuration={300}>
                 <SidebarProvider>
                   <DialogsProvider>
-                    <GlobalMediaQueriesProvider>
-                      <CommandCenterProvider>
-                        <EmojiProvider
-                          loader={() =>
-                            import("@shades/common/emoji").then((m) =>
-                              m.default.filter(
-                                (e) =>
-                                  e.unicode_version === "" ||
-                                  parseFloat(e.unicode_version) <= 12
-                              )
+                    <CommandCenterProvider>
+                      <EmojiProvider
+                        loader={() =>
+                          import("@shades/common/emoji").then((m) =>
+                            m.default.filter(
+                              (e) =>
+                                e.unicode_version === "" ||
+                                parseFloat(e.unicode_version) <= 12
                             )
-                          }
-                        >
-                          <App />
-                        </EmojiProvider>
-                      </CommandCenterProvider>
-                    </GlobalMediaQueriesProvider>
+                          )
+                        }
+                      >
+                        <App />
+                      </EmojiProvider>
+                    </CommandCenterProvider>
                   </DialogsProvider>
                 </SidebarProvider>
               </Tooltip.Provider>

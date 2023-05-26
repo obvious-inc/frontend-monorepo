@@ -19,8 +19,8 @@ import { channel as channelUtils } from "@shades/common/utils";
 import { MagnificationGlass as SearchIcon } from "@shades/ui-web/icons";
 import { useLatestCallback } from "@shades/common/react";
 import Dialog from "@shades/ui-web/dialog";
+import ChannelAvatar from "@shades/ui-web/channel-avatar";
 import Input from "./input";
-import ChannelAvatar from "./channel-avatar";
 
 const MAX_CHANNEL_COUNT = 12;
 

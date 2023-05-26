@@ -51,17 +51,17 @@ import {
 import Button from "@shades/ui-web/button";
 import IconButton from "@shades/ui-web/icon-button";
 import Avatar from "@shades/ui-web/avatar";
+import AccountAvatar from "@shades/ui-web/account-avatar";
 import {
   Checkmark as CheckmarkIcon,
   Compose as ComposeIcon,
   DotsHorizontal as DotsHorizontalIcon,
   DoubleChevronLeft as DoubleChevronLeftIcon,
 } from "@shades/ui-web/icons";
-import NewMessageDialog from "./components/new-messaage-dialog.js";
+import NewMessageDialog from "./components/new-message-dialog.js";
 import MainHeader from "./components/main-header.js";
 import HeaderItem from "./components/header-item.js";
 import FormattedDate from "./components/formatted-date.js";
-import UserAvatar from "./components/user-avatar.js";
 
 const Channel = React.lazy(() => import("./components/channel.js"));
 
@@ -82,7 +82,7 @@ const ChannelMembersAvatar = ({ id, ...props }) => {
 
   if (memberUsersExcludingMe.length <= 1) {
     const member = memberUsersExcludingMe[0] ?? memberUsers[0];
-    return <UserAvatar walletAddress={member.walletAddress} {...props} />;
+    return <AccountAvatar address={member.walletAddress} {...props} />;
   }
 
   const avatarOffset = `calc(${props.size} / 5)`;
@@ -97,9 +97,9 @@ const ChannelMembersAvatar = ({ id, ...props }) => {
       }}
     >
       {reverse(memberUsersExcludingMe.slice(0, 2)).map((user, i) => (
-        <UserAvatar
+        <AccountAvatar
           key={user.walletAddress}
-          walletAddress={user.walletAddress}
+          address={user.walletAddress}
           {...props}
           css={css({
             position: "absolute",
@@ -576,8 +576,8 @@ const RootLayout = () => {
               justifyContent: "center",
             })}
           >
-            <UserAvatar
-              walletAddress={me.walletAddress}
+            <AccountAvatar
+              address={me.walletAddress}
               size="3rem"
               background={theme.colors.backgroundModifierHover}
             />

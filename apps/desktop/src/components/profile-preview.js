@@ -10,9 +10,9 @@ import {
 } from "@shades/common/app";
 import { ethereum as ethereumUtils } from "@shades/common/utils";
 import Button from "@shades/ui-web/button";
+import AccountAvatar from "@shades/ui-web/account-avatar";
 import useAccountDisplayName from "../hooks/account-display-name";
 import { useDialog } from "../hooks/dialogs";
-import UserAvatar from "./user-avatar";
 import * as Tooltip from "./tooltip";
 import { useNavigate, useLocation } from "react-router-dom";
 
@@ -96,10 +96,10 @@ const ProfilePreview = React.forwardRef(
         <div
           style={{ display: "flex", alignItems: "center", padding: "1.2rem" }}
         >
-          <UserAvatar
+          <AccountAvatar
             highRes
             transparent
-            walletAddress={user.walletAddress}
+            address={user.walletAddress}
             size="6.6rem"
             // borderRadius="0.5rem"
             style={{ marginRight: "1.2rem" }}

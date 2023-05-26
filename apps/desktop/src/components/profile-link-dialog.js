@@ -6,12 +6,12 @@ import { ethereum as ethereumUtils } from "@shades/common/utils";
 import { useMe } from "@shades/common/app";
 import { Checkmark as CheckmarkIcon } from "@shades/ui-web/icons";
 import Button from "@shades/ui-web/button";
+import AccountAvatar from "@shades/ui-web/account-avatar";
 import useAccountDisplayName from "../hooks/account-display-name.js";
 import Input from "./input";
 import DialogHeader from "./dialog-header.js";
 import DialogFooter from "./dialog-footer.js";
 import QRCode from "./qr-code.js";
-import UserAvatar from "./user-avatar.js";
 import Emoji from "./emoji.js";
 
 const { truncateAddress } = ethereumUtils;
@@ -80,8 +80,8 @@ const ProfileLinkDialog = ({ accountAddress, titleProps, dismiss }) => {
             }
             uri={accountLink}
             image={
-              <UserAvatar
-                walletAddress={walletAddress}
+              <AccountAvatar
+                address={walletAddress}
                 highRes
                 transparent
                 background={

@@ -1,7 +1,10 @@
 import React from "react";
-import { useAuth, useActions, useMe, useChannel } from "@shades/common/app";
-import useInterval from "./interval";
-import useFetch from "./fetch";
+import { useAuth } from "../auth.js";
+import { useActions } from "../store.js";
+import useFetch from "../react/hooks/fetch.js";
+import useInterval from "../react/hooks/interval.js";
+import { useMe } from "./me.js";
+import { useChannel } from "./channel.js";
 import useChannelMessagesFetcher from "./channel-messages-fetcher.js";
 
 const useChannelFetchEffects = (channelId) => {

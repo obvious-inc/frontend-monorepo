@@ -7,6 +7,12 @@ const plugins = [
         syntax: "ecmascript",
         jsx: true,
       },
+      transform: {
+        react: {
+          runtime: "automatic",
+          importSource: "@emotion/react",
+        },
+      },
     },
   }),
 ];
@@ -35,7 +41,15 @@ const entrypoints = [
     ],
   },
   { file: "utils.js" },
-  { file: "react.js", dependencies: ["react", "react-aria"] },
+  {
+    file: "react.js",
+    dependencies: [
+      "react",
+      "react-aria",
+      "@emotion/react",
+      "@emotion/react/jsx-runtime",
+    ],
+  },
   { file: "nouns.js", dependencies: ["viem", "@nouns/assets", "@nouns/sdk"] },
   { file: "emoji.js" },
 ];

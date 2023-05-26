@@ -4,7 +4,7 @@
   "main": "dist/index.js",
   "private": true,
   "scripts": {
-    "start": "rollup -c -w",
+    "dev": "rollup -c -w",
     "build": "rollup -c",
     "format": "prettier . --write",
     "lint": "eslint . && prettier . --check"

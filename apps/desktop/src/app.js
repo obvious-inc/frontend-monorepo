@@ -7,8 +7,10 @@ import {
   useActions,
   useAfterActionListener,
 } from "@shades/common/app";
-import useWindowFocusOrDocumentVisibleListener from "./hooks/window-focus-or-document-visible-listener.js";
-import useOnlineListener from "./hooks/window-online-listener.js";
+import {
+  useWindowFocusOrDocumentVisibleListener,
+  useWindowOnlineListener,
+} from "@shades/common/react";
 import ErrorBoundary from "./components/error-boundary.js";
 
 const LazyApp = React.lazy(() => import("./app-lazy"));
@@ -55,7 +57,7 @@ const App = () => {
     fetchStarredItems();
   });
 
-  useOnlineListener(
+  useWindowOnlineListener(
     () => {
       if (authStatus !== "authenticated") return;
       fetchUserChannels();
