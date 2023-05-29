@@ -45,6 +45,7 @@ import {
   Checkmark as CheckmarkIcon,
 } from "@shades/ui-web/icons";
 import Button from "@shades/ui-web/button";
+import Emoji from "@shades/ui-web/emoji";
 import IconButton from "@shades/ui-web/icon-button";
 import AccountAvatar from "@shades/ui-web/account-avatar";
 import ChannelAvatar from "@shades/ui-web/channel-avatar";
@@ -67,7 +68,6 @@ import ChannelMessagesScrollViewHeader from "./channel-messages-scroll-view-head
 import ChannelMessage from "./channel-message.js";
 import InlineUserButtonWithProfilePopover from "./inline-user-button-with-profile-popover.js";
 import InlineChannelButton from "./inline-channel-button.js";
-import Emoji from "./emoji.js";
 
 const INTRO_CHANNEL_ID = "625806ed89bff47879344a9c";
 

@@ -7,12 +7,12 @@ import { useMe } from "@shades/common/app";
 import { Checkmark as CheckmarkIcon } from "@shades/ui-web/icons";
 import Button from "@shades/ui-web/button";
 import AccountAvatar from "@shades/ui-web/account-avatar";
+import Emoji from "@shades/ui-web/emoji";
 import useAccountDisplayName from "../hooks/account-display-name.js";
 import Input from "./input";
 import DialogHeader from "./dialog-header.js";
 import DialogFooter from "./dialog-footer.js";
 import QRCode from "./qr-code.js";
-import Emoji from "./emoji.js";
 
 const { truncateAddress } = ethereumUtils;
 

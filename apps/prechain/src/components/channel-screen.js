@@ -27,6 +27,7 @@ import {
 } from "@shades/common/react";
 import Button from "@shades/ui-web/button";
 import ChannelMessagesScrollView from "@shades/ui-web/channel-messages-scroll-view";
+import RichText from "./rich-text.js";
 // import { isNodeEmpty } from "../slate/utils.js";
 // import useLayoutSetting from "../hooks/layout-setting.js";
 // import useMessageInputPlaceholder from "../hooks/channel-message-input-placeholder.js";
@@ -259,7 +260,7 @@ const ChannelContent = ({ channelId }) => {
           >
             Reply to:{" "}
             <i>
-              <StringifiedMessageContent messageId={replyTargetMessageId} />
+              <MessageContent inline messageId={replyTargetMessageId} />
             </i>
           </div>
         )}
@@ -293,6 +294,16 @@ const ChannelContent = ({ channelId }) => {
   );
 };
 
+const MessageContent = ({ inline, messageId }) => {
+  const message = useMessage(messageId);
+
+  return message.isSystemMessage ? (
+    <StringifiedMessageContent messageId={messageId} />
+  ) : (
+    <RichText inline={inline} blocks={message.content} />
+  );
+};
+
 const ChannelMessage = ({ messageId, initReply, hasPendingReply }) => {
   const message = useMessage(messageId);
   const user = useUser(message.authorUserId);
@@ -306,7 +317,11 @@ const ChannelMessage = ({ messageId, initReply, hasPendingReply }) => {
       css={css({ display: "block", width: "100%", padding: "0.5rem 1.5rem" })}
       style={{ background: hasPendingReply ? "lightgray" : undefined }}
     >
-      <div style={{ fontSize: "0.75em" }}>{user.computedDisplayName}</div>
+      {message.isSystemMessage ? null : message.isAppMessage ? null : (
+        <div style={{ fontSize: "0.75em" }}>
+          {user?.computedDisplayName ?? <>&nbsp;</>}
+        </div>
+      )}
       {replyTargetMessage != null && (
         <div
           style={{
@@ -318,13 +333,11 @@ const ChannelMessage = ({ messageId, initReply, hasPendingReply }) => {
         >
           {"> "}
           <i>
-            <StringifiedMessageContent
-              messageId={message.replyTargetMessageId}
-            />
+            <MessageContent inline messageId={message.replyTargetMessageId} />
           </i>
         </div>
       )}
-      <StringifiedMessageContent messageId={messageId} />
+      <MessageContent messageId={messageId} />
     </button>
   );
 };

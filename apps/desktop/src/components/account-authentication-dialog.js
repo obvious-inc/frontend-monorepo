@@ -1,9 +1,9 @@
 import { css } from "@emotion/react";
 import { useAuth } from "@shades/common/app";
+import Emoji from "@shades/ui-web/emoji";
 import DialogHeader from "./dialog-header.js";
 import DialogFooter from "./dialog-footer.js";
 import LoginScreen from "./login-screen.js";
-import Emoji from "./emoji.js";
 
 const AccountAuthenticationDialog = ({
   title,

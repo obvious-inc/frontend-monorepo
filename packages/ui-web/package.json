@@ -16,6 +16,8 @@
     "./dialog": "./dist/dialog.js",
     "./button": "./dist/button.js",
     "./icon-button": "./dist/icon-button.js",
+    "./rich-text": "./dist/rich-text.js",
+    "./emoji": "./dist/emoji.js",
     "./avatar": "./dist/avatar.js",
     "./account-avatar": "./dist/account-avatar.js",
     "./account-avatar-stack": "./dist/account-avatar-stack.js",

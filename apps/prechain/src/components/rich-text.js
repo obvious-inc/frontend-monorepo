@@ -1,26 +1,25 @@
 import { Link } from "react-router-dom";
-import { useUser } from "@shades/common/app";
+import { useUser, useChannel } from "@shades/common/app";
 import RichTextBase from "@shades/ui-web/rich-text";
 import Emoji from "@shades/ui-web/emoji";
-import InlineUserButton from "./inline-user-button.js";
-import InlineChannelButton from "./inline-channel-button.js";
-import * as Popover from "./popover.js";
-import ProfilePreview from "./profile-preview.js";
 
-const UserMention = ({ id }) => {
-  const user = useUser(id);
+const UserMention = ({ userId }) => {
+  const user = useUser(userId);
 
-  if (user == null) return null;
+  if (user == null) return <>user:{userId}</>;
 
+  const displayName =
+    user == null || user.deleted || user.unknown
+      ? `user:${userId}`
+      : `@${user.computedDisplayName}`;
+
+  return <span>{displayName}</span>;
+};
+
+const ChannelLink = ({ channelId }) => {
+  const channel = useChannel(channelId, { name: true });
   return (
-    <Popover.Root placement="right">
-      <Popover.Trigger asChild disabled={user.deleted}>
-        <InlineUserButton variant="button" userId={user.id} />
-      </Popover.Trigger>
-      <Popover.Content>
-        <ProfilePreview userId={id} />
-      </Popover.Content>
-    </Popover.Root>
+    <Link to={`/${channelId}`}>#{channel?.name ?? `channel:${channelId}`}</Link>
   );
 };
 
@@ -50,17 +49,10 @@ const RichText = ({ blocks, ...props }) => {
             return <Emoji key={i} emoji={el.emoji} />;
 
           case "channel-link":
-            return (
-              <InlineChannelButton
-                key={i}
-                channelId={el.ref}
-                component={Link}
-                to={`/channels/${el.ref}`}
-              />
-            );
+            return <ChannelLink key={i} channelId={el.ref} />;
 
           case "user":
-            return <UserMention key={i} id={el.ref} />;
+            return <UserMention key={i} userId={el.ref} />;
 
           default:
             return null;
