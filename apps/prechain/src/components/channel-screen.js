@@ -222,6 +222,25 @@ const ChannelContent = ({ channelId }) => {
       <ChannelMessagesScrollView
         channelId={channelId}
         didScrollToBottomRef={didScrollToBottomRef}
+        renderHeader={
+          channel?.body == null
+            ? null
+            : () => (
+              <div css={css({ padding: "1.5rem 1.5rem 0" })}>
+                <div
+                  css={(t) =>
+                    css({
+                      paddingBottom: "1.5rem",
+                      borderBottom: "0.1rem solid",
+                      borderColor: t.colors.borderLight,
+                    })
+                  }
+                >
+                  <RichText blocks={channel.body} />
+                </div>
+              </div>
+            )
+        }
         renderMessage={renderMessage}
       />
 
