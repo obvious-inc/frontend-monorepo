@@ -23,7 +23,7 @@ import {
   useMatchMedia,
 } from "@shades/common/react";
 import ChannelMessagesScrollView from "@shades/ui-web/channel-messages-scroll-view";
-import { isNodeEmpty } from "../slate/utils.js";
+import { isNodeEmpty } from "@shades/ui-web/rich-text-editor";
 import useLayoutSetting from "../hooks/layout-setting.js";
 import useMessageInputPlaceholder from "../hooks/channel-message-input-placeholder.js";
 import Delay from "./delay.js";

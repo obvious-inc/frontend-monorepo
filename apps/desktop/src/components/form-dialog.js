@@ -1,9 +1,9 @@
 import React from "react";
 import { css } from "@emotion/react";
 import Input from "@shades/ui-web/input";
+import RichTextEditor from "@shades/ui-web/rich-text-editor";
 import DialogHeader from "./dialog-header.js";
 import DialogFooter from "./dialog-footer.js";
-import RichTextInput from "./rich-text-input.js";
 import Select from "./select.js";
 
 const FormDialog = ({
@@ -101,7 +101,7 @@ const FormDialog = ({
                   contrast
                   size={c.size ?? "large"}
                   multiline={c.type === "multiline-text"}
-                  component={c.type === "rich-text" ? RichTextInput : undefined}
+                  component={c.type === "rich-text" ? RichTextEditor : undefined}
                   value={c.value === undefined ? state[c.key] : c.value}
                   disabled={hasPendingSubmit}
                   onChange={(e) => {

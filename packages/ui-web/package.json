@@ -23,6 +23,7 @@
     "./tooltip": "./dist/tooltip.js",
     "./toolbar": "./dist/toolbar.js",
     "./rich-text": "./dist/rich-text.js",
+    "./rich-text-editor": "./dist/rich-text-editor.js",
     "./emoji": "./dist/emoji.js",
     "./emoji-picker": "./dist/emoji-picker.js",
     "./avatar": "./dist/avatar.js",

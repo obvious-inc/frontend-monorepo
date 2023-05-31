@@ -14,7 +14,7 @@ import {
   PlusCircle as PlusCircleIcon,
 } from "@shades/ui-web/icons";
 import IconButton from "@shades/ui-web/icon-button";
-import { isNodeEmpty, toMessageBlocks } from "../slate/utils";
+import { isNodeEmpty, toMessageBlocks } from "@shades/ui-web/rich-text-editor";
 import useCommands from "../hooks/commands";
 import InlineUserButtonWithProfilePopover from "./inline-user-button-with-profile-popover.js";
 import MessageInput from "./message-input.js";

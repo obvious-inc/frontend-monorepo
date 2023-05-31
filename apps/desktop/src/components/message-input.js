@@ -11,7 +11,7 @@ import { useLatestCallback } from "@shades/common/react";
 import { useChannel, useAllChannels, useEmojis } from "@shades/common/app";
 import AccountAvatar from "@shades/ui-web/account-avatar";
 import ChannelAvatar from "@shades/ui-web/channel-avatar";
-import RichTextInput from "./rich-text-input.js";
+import RichTextEditor from "@shades/ui-web/rich-text-editor";
 
 const { sort } = arrayUtils;
 const {
@@ -340,7 +340,7 @@ const MessageInput = React.forwardRef(
 
     return (
       <>
-        <RichTextInput
+        <RichTextEditor
           ref={editorRef}
           {...autoCompleteInputAccesibilityProps}
           inline

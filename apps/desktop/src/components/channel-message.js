@@ -41,9 +41,9 @@ import * as Tooltip from "@shades/ui-web/tooltip";
 import EmojiPicker from "@shades/ui-web/emoji-picker";
 import {
   isNodeEmpty,
-  parseMessageBlocks,
+  fromMessageBlocks,
   toMessageBlocks,
-} from "../slate/utils";
+} from "@shades/ui-web/rich-text-editor";
 import FormattedDate from "./formatted-date";
 import MessageInput from "./message-input";
 import RichText from "./rich-text";
@@ -1406,7 +1406,7 @@ const MessageToolbar = React.memo(
 const EditMessageInput = React.forwardRef(
   ({ blocks, save, requestRemove, onCancel, ...props }, editorRef) => {
     const [pendingSlateNodes, setPendingSlateNodes] = React.useState(() =>
-      parseMessageBlocks(withoutAttachments(blocks))
+      fromMessageBlocks(withoutAttachments(blocks))
     );
 
     const [isSaving, setSaving] = React.useState(false);

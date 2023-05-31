@@ -80,6 +80,19 @@ const entrypoints = [
     dependencies: ["react", ...emotionDeps, "@radix-ui/react-toolbar"],
   },
   { file: "rich-text.js", dependencies: ["react", ...emotionDeps] },
+  {
+    file: "rich-text-editor.js",
+    dependencies: [
+      '@shades/common/utils',
+      '@shades/common/app',
+      "react",
+      ...emotionDeps,
+      "slate",
+      "slate-react",
+      "slate-history",
+      "is-hotkey",
+    ],
+  },
   { file: "emoji.js", dependencies: ["react", ...emotionDeps] },
   {
     file: "emoji-picker.js",

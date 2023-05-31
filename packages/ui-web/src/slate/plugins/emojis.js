@@ -2,8 +2,8 @@ import { isKeyHotkey } from "is-hotkey";
 import { Transforms, Text, Editor, Range } from "slate";
 import { useSelected, useFocused } from "slate-react";
 import { emoji as emojiUtils } from "@shades/common/utils";
-import Emoji from "@shades/ui-web/emoji";
 import { getCharacters } from "../utils.js";
+import Emoji from "../../emoji.js";
 
 const { isEmoji } = emojiUtils;
 

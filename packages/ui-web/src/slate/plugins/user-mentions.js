@@ -1,6 +1,6 @@
 import { Transforms } from "slate";
 import { useSelected, useFocused } from "slate-react";
-import InlineUserButton from "@shades/ui-web/inline-user-button";
+import InlineUserButton from "../../inline-user-button.js";
 
 const middleware = (editor) => {
   const { isInline, isVoid } = editor;

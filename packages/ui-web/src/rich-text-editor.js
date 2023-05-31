@@ -10,17 +10,23 @@ import { Slate, Editable, withReact, ReactEditor } from "slate-react";
 import { withHistory } from "slate-history";
 import isHotkey from "is-hotkey";
 import { function as functionUtils } from "@shades/common/utils";
-import { createCss as createRichTextCss } from "@shades/ui-web/rich-text";
-import createControlledParagraphLineBreaksPlugin from "../slate/plugins/controlled-paragraph-line-breaks";
-import createListsPlugin from "../slate/plugins/lists";
-import createQuotesPlugin from "../slate/plugins/quotes";
-import createCalloutsPlugin from "../slate/plugins/callouts";
-import createEmojiPlugin from "../slate/plugins/emojis";
-import createInlineLinksPlugin from "../slate/plugins/inline-links";
-import createHeadingsPlugin from "../slate/plugins/headings";
-import createUserMentionsPlugin from "../slate/plugins/user-mentions";
-import createChannelLinksPlugin from "../slate/plugins/channel-link";
-import { search, mergePlugins } from "../slate/utils";
+import { createCss as createRichTextCss } from "./rich-text.js";
+import createControlledParagraphLineBreaksPlugin from "./slate/plugins/controlled-paragraph-line-breaks.js";
+import createListsPlugin from "./slate/plugins/lists.js";
+import createQuotesPlugin from "./slate/plugins/quotes.js";
+import createCalloutsPlugin from "./slate/plugins/callouts.js";
+import createEmojiPlugin from "./slate/plugins/emojis.js";
+import createInlineLinksPlugin from "./slate/plugins/inline-links.js";
+import createHeadingsPlugin from "./slate/plugins/headings.js";
+import createUserMentionsPlugin from "./slate/plugins/user-mentions.js";
+import createChannelLinksPlugin from "./slate/plugins/channel-link.js";
+import { search, mergePlugins } from "./slate/utils.js";
+
+export {
+  isNodeEmpty,
+  toMessageBlocks,
+  fromMessageBlocks,
+} from "./slate/utils.js";
 
 const { compose } = functionUtils;
 
@@ -129,7 +135,7 @@ const withEditorCommands = (editor) => {
   return editor;
 };
 
-const RichTextInput = React.forwardRef(
+const RichTextEditor = React.forwardRef(
   (
     {
       value,
@@ -322,4 +328,4 @@ const Leaf = ({ attributes, children, leaf }) => {
   return <span {...attributes}>{children}</span>;
 };
 
-export default RichTextInput;
+export default RichTextEditor;

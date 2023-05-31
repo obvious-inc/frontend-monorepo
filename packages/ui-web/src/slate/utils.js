@@ -52,7 +52,7 @@ export const toMessageBlocks = (nodes) =>
     return { ...n, children: toMessageBlocks(n.children) };
   });
 
-export const parseMessageBlocks = (blocks) =>
+export const fromMessageBlocks = (blocks) =>
   blocks.reduce((acc, n) => {
     if (n.type === "link")
       return [
@@ -79,7 +79,7 @@ export const parseMessageBlocks = (blocks) =>
     if (n.children == null && n.text == null)
       return [...acc, { ...n, text: "" }];
     if (n.children == null) return [...acc, n];
-    return [...acc, { ...n, children: parseMessageBlocks(n.children) }];
+    return [...acc, { ...n, children: fromMessageBlocks(n.children) }];
   }, []);
 
 export const search = (editor, query, options = {}) => {

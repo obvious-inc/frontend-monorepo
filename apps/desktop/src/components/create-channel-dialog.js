@@ -6,9 +6,10 @@ import { useActions, useAuth } from "@shades/common/app";
 import { useWallet, useWalletLogin } from "@shades/common/wallet";
 import Button from "@shades/ui-web/button";
 import { AddUser as AddUserIcon } from "@shades/ui-web/icons";
-import { isNodeEmpty as isSlateNodeEmpty } from "../slate/utils.js";
+import RichTextEditor, {
+  isNodeEmpty as isSlateNodeEmpty,
+} from "@shades/ui-web/rich-text-editor";
 import { useDialog } from "../hooks/dialogs.js";
-import RichTextInput from "./rich-text-input.js";
 import Select from "./select.js";
 
 const { createEmptyParagraphElement } = messageUtils;
@@ -201,7 +202,7 @@ const CreateChannelDialogContent = ({
                 })
               }
             />
-            <RichTextInput
+            <RichTextEditor
               value={body}
               onChange={(e) => {
                 setBody(e);
