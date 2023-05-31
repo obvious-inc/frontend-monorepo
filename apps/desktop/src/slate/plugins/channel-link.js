@@ -1,7 +1,7 @@
 import { Transforms, Text, Editor } from "slate";
 import { useSelected, useFocused } from "slate-react";
+import InlineChannelButton from "@shades/ui-web/inline-channel-button";
 import { getWords } from "../utils.js";
-import InlineChannelButton from "../../components/inline-channel-button.js";
 
 const ELEMENT_TYPE = "channel-link";
 

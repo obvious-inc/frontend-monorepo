@@ -27,10 +27,10 @@ import {
   useSelectors,
   useActions,
   useAuth,
-  // useMe,
   useUserWithWalletAddress,
   useIsUserStarred,
   useChannelsWithMembers,
+  useAccountDisplayName,
 } from "@shades/common/app";
 import Button from "@shades/ui-web/button";
 import {
@@ -39,17 +39,15 @@ import {
 } from "@shades/ui-web/icons";
 import AccountAvatar from "@shades/ui-web/account-avatar";
 import ChannelAvatar from "@shades/ui-web/channel-avatar";
+import * as Tooltip from "@shades/ui-web/tooltip";
+import * as DropdownMenu from "@shades/ui-web/dropdown-menu";
 import { useDialog } from "../hooks/dialogs.js";
-import useAccountDisplayName from "../hooks/account-display-name.js";
-import * as Tooltip from "./tooltip.js";
 import * as Tabs from "./tabs.js";
-import * as DropdownMenu from "./dropdown-menu.js";
 import Delay from "./delay.js";
 import FormattedDate from "./formatted-date.js";
 import Spinner from "./spinner.js";
 import NavBar from "./nav-bar.js";
 import Heading from "./heading.js";
-// import ChannelMessage from "./channel-message.js";
 
 const { truncateAddress } = ethereumUtils;
 

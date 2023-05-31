@@ -1,20 +1,13 @@
 import { css } from "@emotion/react";
 import React from "react";
 import { Item, useSelectState } from "react-stately";
-import {
-  HiddenSelect,
-  useSelect,
-  useListBox,
-  useOption,
-  // useFocusRing,
-  // mergeProps,
-} from "react-aria";
+import { HiddenSelect, useSelect, useListBox, useOption } from "react-aria";
 import Button from "@shades/ui-web/button";
+import * as Popover from "@shades/ui-web/popover";
 import {
   CaretDown as CaretDownIcon,
   Checkmark as CheckmarkIcon,
 } from "@shades/ui-web/icons";
-import * as Popover from "./popover";
 
 const Select = React.forwardRef(
   (

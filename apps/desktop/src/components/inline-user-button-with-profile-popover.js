@@ -1,7 +1,7 @@
 import React from "react";
 import { useUser, useUserWithWalletAddress } from "@shades/common/app";
-import * as Popover from "./popover";
-import InlineUserButton from "./inline-user-button";
+import InlineUserButton from "@shades/ui-web/inline-user-button";
+import * as Popover from "@shades/ui-web/popover";
 import ProfilePreview from "./profile-preview";
 
 const InlineUserButtonWithProfilePopover = React.forwardRef(

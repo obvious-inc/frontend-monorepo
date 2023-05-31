@@ -24,11 +24,11 @@ import {
 } from "@shades/ui-web/icons";
 import AccountAvatar from "@shades/ui-web/account-avatar";
 import ChannelAvatar from "@shades/ui-web/channel-avatar";
+import * as Tooltip from "@shades/ui-web/tooltip";
 import { useDialog } from "../hooks/dialogs";
 import Spinner from "./spinner";
 import NavBar from "./nav-bar";
 import Heading from "./heading";
-import * as Tooltip from "./tooltip";
 import ErrorBoundary from "./error-boundary.js";
 import RichText from "./rich-text.js";
 import AddChannelMemberDialog from "./add-channel-member-dialog.js";

@@ -2,10 +2,13 @@ import { getAddress as checksumEncodeAddress } from "viem";
 import { useAccount } from "wagmi";
 import { css } from "@emotion/react";
 import { ethereum as ethereumUtils } from "@shades/common/utils";
-import { useMe, useDmChannelWithMember } from "@shades/common/app";
+import {
+  useMe,
+  useDmChannelWithMember,
+  useAccountDisplayName,
+} from "@shades/common/app";
 import AccountAvatar from "@shades/ui-web/account-avatar";
 import ChannelAvatar from "@shades/ui-web/channel-avatar";
-import useAccountDisplayName from "../hooks/account-display-name.js";
 
 const { truncateAddress } = ethereumUtils;
 

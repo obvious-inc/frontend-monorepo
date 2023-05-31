@@ -43,6 +43,7 @@ import defaultTheme, {
   light as lightTheme,
 } from "@shades/ui-web/theme";
 import { Provider as SidebarProvider } from "@shades/ui-web/sidebar-layout";
+import * as Tooltip from "@shades/ui-web/tooltip";
 import { IFrameEthereumProvider } from "@newshades/iframe-provider";
 import { Provider as DialogsProvider } from "./hooks/dialogs.js";
 import { send as sendNotification } from "./utils/notifications.js";
@@ -55,7 +56,6 @@ import GlobalDialogs from "./components/global-dialogs.js";
 import LoginScreen from "./components/login-screen.js";
 import Layout from "./components/layouts.js";
 import TitleBar from "./components/title-bar.js";
-import * as Tooltip from "./components/tooltip.js";
 import { nounsTv as nounsTvTheme } from "./themes.js";
 
 const AccountProfileScreen = React.lazy(() =>

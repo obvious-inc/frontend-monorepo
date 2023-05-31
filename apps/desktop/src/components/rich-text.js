@@ -2,9 +2,9 @@ import { Link } from "react-router-dom";
 import { useUser } from "@shades/common/app";
 import RichTextBase from "@shades/ui-web/rich-text";
 import Emoji from "@shades/ui-web/emoji";
-import InlineUserButton from "./inline-user-button.js";
-import InlineChannelButton from "./inline-channel-button.js";
-import * as Popover from "./popover.js";
+import InlineUserButton from "@shades/ui-web/inline-user-button";
+import InlineChannelButton from "@shades/ui-web/inline-channel-button";
+import * as Popover from "@shades/ui-web/popover";
 import ProfilePreview from "./profile-preview.js";
 
 const UserMention = ({ id }) => {

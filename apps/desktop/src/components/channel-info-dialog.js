@@ -21,6 +21,7 @@ import {
 } from "@shades/common/utils";
 import Button from "@shades/ui-web/button";
 import Dialog from "@shades/ui-web/dialog";
+import Input from "@shades/ui-web/input";
 import {
   Cross as CrossIcon,
   Star as StarIcon,
@@ -35,10 +36,9 @@ import {
 } from "@shades/ui-web/icons";
 import AccountAvatar from "@shades/ui-web/account-avatar";
 import ChannelAvatar from "@shades/ui-web/channel-avatar";
+import * as Tooltip from "@shades/ui-web/tooltip";
 import { useDialog } from "../hooks/dialogs";
-import Input from "./input";
 import Select from "./select";
-import * as Tooltip from "./tooltip";
 import * as Tabs from "./tabs";
 import RichText from "./rich-text";
 import FormDialog from "./form-dialog";

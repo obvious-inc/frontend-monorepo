@@ -5,12 +5,25 @@ const AutoAdjustingHeightTextarea = React.forwardRef((props, externalRef) => {
   const ref = externalRef ?? internalRef;
 
   React.useEffect(() => {
-    ref.current.style.height = "inherit";
-    ref.current.style.height = `${ref.current.scrollHeight}px`;
-  }, [props.value, ref]);
+    const el = ref.current;
+
+    const handler = () => {
+      el.style.height = "inherit";
+      el.style.height = `${el.scrollHeight}px`;
+    };
+
+    el.addEventListener("input", handler);
+
+    handler();
+
+    return () => {
+      el.removeEventListener("input", handler);
+    };
+  }, [ref]);
 
   return (
     <textarea
+      rows={1}
       {...props}
       ref={ref}
       style={{ resize: "none", overflow: "hidden", ...props.style }}

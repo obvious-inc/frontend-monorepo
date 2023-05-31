@@ -23,6 +23,7 @@ import { ethereum as ethereumUtils } from "@shades/common/utils";
 import {
   useCachedState,
   ServerConnectionProvider,
+  EmojiProvider,
   useAuth,
   useMe,
   useChannelName,
@@ -45,6 +46,7 @@ import {
 } from "@shades/ui-web/sidebar-layout";
 import {} from "@shades/ui-web/button";
 import Button from "@shades/ui-web/button";
+import * as Tooltip from "@shades/ui-web/tooltip";
 import ChannelAvatar from "@shades/ui-web/channel-avatar";
 
 const { truncateAddress } = ethereumUtils;
@@ -582,29 +584,50 @@ const App = () => {
             <WalletLoginProvider authenticate={login}>
               <ThemeProvider theme={theme}>
                 <SidebarProvider>
-                  <RequireAuth>
-                    <Global
-                      styles={(theme) =>
-                        css({
-                          body: {
-                            color: theme.colors.textNormal,
-                            background: theme.colors.backgroundPrimary,
-                            fontFamily: theme.fontStacks.default,
-                            "::selection": {
-                              background: theme.colors.textSelectionBackground,
-                            },
-                          },
-                        })
-                      }
-                    />
-                    <Routes>
-                      <Route path="/" element={<RootLayout />}>
-                        <Route index element={<Index />} />
-                        <Route path="/:channelId" element={<ChannelScreen />} />
-                      </Route>
-                      <Route path="*" element={<Navigate to="/" replace />} />
-                    </Routes>
-                  </RequireAuth>
+                  <EmojiProvider
+                    loader={() =>
+                      import("@shades/common/emoji").then((m) =>
+                        m.default.filter(
+                          (e) =>
+                            e.unicode_version === "" ||
+                            parseFloat(e.unicode_version) <= 12
+                        )
+                      )
+                    }
+                  >
+                    <Tooltip.Provider delayDuration={300}>
+                      <RequireAuth>
+                        <Global
+                          styles={(theme) =>
+                            css({
+                              body: {
+                                color: theme.colors.textNormal,
+                                background: theme.colors.backgroundPrimary,
+                                fontFamily: theme.fontStacks.default,
+                                "::selection": {
+                                  background:
+                                    theme.colors.textSelectionBackground,
+                                },
+                              },
+                            })
+                          }
+                        />
+                        <Routes>
+                          <Route path="/" element={<RootLayout />}>
+                            <Route index element={<Index />} />
+                            <Route
+                              path="/:channelId"
+                              element={<ChannelScreen />}
+                            />
+                          </Route>
+                          <Route
+                            path="*"
+                            element={<Navigate to="/" replace />}
+                          />
+                        </Routes>
+                      </RequireAuth>
+                    </Tooltip.Provider>
+                  </EmojiProvider>
                 </SidebarProvider>
               </ThemeProvider>
             </WalletLoginProvider>

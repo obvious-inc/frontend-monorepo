@@ -1,6 +1,9 @@
 import React from "react";
-import { useUser, useUserWithWalletAddress } from "@shades/common/app";
-import useAccountDisplayName from "../hooks/account-display-name.js";
+import {
+  useUser,
+  useUserWithWalletAddress,
+  useAccountDisplayName,
+} from "@shades/common/app";
 import InlineButton from "./inline-button.js";
 
 const InlineUserButton = React.forwardRef(

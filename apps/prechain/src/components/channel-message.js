@@ -2,56 +2,56 @@ import getDayOfTheMonth from "date-fns/getDate";
 import isDateToday from "date-fns/isToday";
 import isDateYesterday from "date-fns/isYesterday";
 import React from "react";
-import { useNavigate } from "react-router-dom";
 import { css } from "@emotion/react";
+import { useDateFormatter } from "react-aria";
 import {
   useActions,
-  useSelectors,
   useMessageEmbeds,
   useMe,
   useUsers,
   useMessage,
   useUser,
-  useChannel,
+  useUserWithWalletAddress,
   useChannelMembers,
   useHasReactedWithEmoji,
   useMessageReactions,
   useSortedMessageReplies,
+  useAccountDisplayName,
 } from "@shades/common/app";
 import { message as messageUtils } from "@shades/common/utils";
 import {
-  useLatestCallback,
-  useMatchMedia,
   useHover,
+  AutoAdjustingHeightTextarea as Textarea,
 } from "@shades/common/react";
 import Button from "@shades/ui-web/button";
+import EmojiPicker from "@shades/ui-web/emoji-picker";
 import {
   DotsHorizontal as DotsHorizontalIcon,
   EditPen as EditPenIcon,
+  TrashCan as TrashCanIcon,
   ReplyArrow as ReplyArrowIcon,
   EmojiFace as EmojiFaceIcon,
   JoinArrowRight as JoinArrowRightIcon,
 } from "@shades/ui-web/icons";
 import AccountAvatar from "@shades/ui-web/account-avatar";
 import InlineUserButton from "@shades/ui-web/inline-user-button";
-import * as Popover from "@shades/ui-web/popover";
 import * as DropdownMenu from "@shades/ui-web/dropdown-menu";
 import * as Toolbar from "@shades/ui-web/toolbar";
 import * as Tooltip from "@shades/ui-web/tooltip";
-import EmojiPicker from "@shades/ui-web/emoji-picker";
-import {
-  isNodeEmpty,
-  parseMessageBlocks,
-  toMessageBlocks,
-} from "../slate/utils";
-import FormattedDate from "./formatted-date";
-import MessageInput from "./message-input";
-import RichText from "./rich-text";
-import Link from "./link";
-import ProfilePreview from "./profile-preview";
-import InlineUserButtonWithProfilePopover from "./inline-user-button-with-profile-popover";
+import * as Popover from "@shades/ui-web/popover";
+import RichText from "./rich-text.js";
+// import {
+//   isNodeEmpty,
+//   parseMessageBlocks,
+//   toMessageBlocks,
+// } from "../slate/utils";
+// import MessageInput from "./message-input";
 
-const { withoutAttachments } = messageUtils;
+const {
+  // withoutAttachments,
+  parseString: messageBlocksFromString,
+  stringifyBlocks: stringifyMessageBlocks,
+} = messageUtils;
 
 const ONE_MINUTE_IN_MILLIS = 1000 * 60;
 
@@ -62,7 +62,6 @@ const ChannelMessage = React.memo(function ChannelMessage_({
   initReply: initReply_,
   isTouchFocused,
   setTouchFocused,
-  layout,
   scrollToMessage,
   showLeftColumn = true,
   showReplyTargetMessages = true,
@@ -73,31 +72,20 @@ const ChannelMessage = React.memo(function ChannelMessage_({
   const containerRef = React.useRef();
 
   const actions = useActions();
-  const selectors = useSelectors();
 
   const { addMessageReaction } = actions;
 
-  const navigate = useNavigate();
-
   const me = useMe();
   const message = useMessage(messageId, { replies: true });
-  const channel = useChannel(message?.channelId);
   const previousMessage = useMessage(previousMessageId);
   const members = useChannelMembers(message?.channelId);
-
-  const isAdmin =
-    me != null && channel != null && me.id === channel.ownerUserId;
 
   const [isHovering, hoverHandlers] = useHover();
   const [isEmojiPickerOpen, setEmojiPickerOpen] = React.useState(false);
   const [isEditing, setEditingMessage] = React.useState(false);
 
-  const compact = layout === "compact";
+  const showAsFocused = !isEditing && (isTouchFocused || isHovering);
 
-  const showAsFocused =
-    !isEditing && (isTouchFocused || isHovering || isEmojiPickerOpen);
-
-  const isDirectMessage = channel != null && channel.kind === "dm";
   const isOwnMessage = me?.id === message.authorUserId;
 
   const allowEdit =
@@ -105,21 +93,10 @@ const ChannelMessage = React.memo(function ChannelMessage_({
     !message.isAppMessage &&
     me?.id === message.authorUserId;
 
-  const allowDirectMessages = me != null;
-
   const createdAtDate = React.useMemo(
     () => new Date(message.createdAt),
     [message.createdAt]
   );
-
-  const initReply = React.useCallback(
-    () => initReply_(messageId),
-    [messageId, initReply_]
-  );
-
-  const initEdit = React.useCallback(() => {
-    setEditingMessage(true);
-  }, []);
 
   const showSimplifiedMessage =
     !message.isReply &&
@@ -135,25 +112,23 @@ const ChannelMessage = React.memo(function ChannelMessage_({
     [actions, messageId]
   );
 
-  const sendDirectMessageToAuthor = useLatestCallback(() => {
-    const redirect = (c) => navigate(`/channels/${c.id}`);
-
-    const dmChannel = selectors.selectDmChannelFromUserId(message.authorUserId);
-
-    if (dmChannel != null) {
-      redirect(dmChannel);
-      return;
-    }
-
-    actions
-      .createDmChannel({ memberUserIds: [message.authorUserId] })
-      .then(redirect);
-  });
-
   const remove = React.useCallback(
     () => actions.removeMessage(messageId),
     [actions, messageId]
   );
+
+  const initReply = React.useCallback(
+    () => initReply_(messageId),
+    [messageId, initReply_]
+  );
+
+  const initEdit = React.useCallback(() => {
+    setEditingMessage(true);
+  }, []);
+
+  const initDelete = React.useCallback(() => {
+    if (confirm("Are you sure you want to remove this message?")) remove();
+  }, [remove]);
 
   const addReaction = React.useCallback(
     (emoji) => {
@@ -165,82 +140,6 @@ const ChannelMessage = React.memo(function ChannelMessage_({
       setEmojiPickerOpen(false);
     },
     [messageId, reactions, addMessageReaction, me?.id]
-  );
-
-  const toolbarDropdownItems = React.useMemo(
-    () =>
-      message.isSystemMessage || message.isAppMessage
-        ? []
-        : [
-            {
-              key: "message",
-              children: [
-                { key: "reply", onSelect: initReply, label: "Reply" },
-                { key: "mark-unread", disabled: true, label: "Mark unread" },
-                {
-                  key: "edit-message",
-                  onSelect: () => {
-                    setEditingMessage(true);
-                  },
-                  label: "Edit message",
-                  visible: allowEdit,
-                },
-                {
-                  key: "delete-message",
-                  onSelect: () => {
-                    if (
-                      confirm("Are you sure you want to remove this message?")
-                    )
-                      remove();
-                  },
-                  label: allowEdit ? "Delete message" : "Admin delete",
-                  visible: allowEdit || isAdmin,
-                  danger: true,
-                },
-              ],
-            },
-            {
-              key: "user",
-              children: [
-                {
-                  key: "send-message",
-                  onSelect: sendDirectMessageToAuthor,
-                  label: "Send direct message",
-                  disabled: !allowDirectMessages,
-                  visible:
-                    !isOwnMessage &&
-                    !(isDirectMessage && channel?.memberUserIds.length <= 2),
-                },
-                {
-                  key: "copy-account-address",
-                  onSelect: () => {
-                    navigator.clipboard.writeText(message.author.walletAddress);
-                  },
-                  label: "Copy user wallet address",
-                  visible: message.author?.walletAddress != null,
-                },
-              ],
-            },
-          ].map((section) => ({
-            ...section,
-            children: section.children.filter(
-              (i) => i.visible == null || i.visible
-            ),
-          })),
-    [
-      allowEdit,
-      allowDirectMessages,
-      isAdmin,
-      isDirectMessage,
-      isOwnMessage,
-      channel?.memberUserIds.length,
-      initReply,
-      message.author?.walletAddress,
-      message.isSystemMessage,
-      message.isAppMessage,
-      remove,
-      sendDirectMessageToAuthor,
-    ]
   );
 
   React.useEffect(() => {
@@ -261,7 +160,6 @@ const ChannelMessage = React.memo(function ChannelMessage_({
     message.isReply && (
       <ReplyTargetMessage
         messageId={message.replyTargetMessageId}
-        layout={layout}
         onClickMessage={() => {
           scrollToMessage(message.replyTargetMessageId);
         }}
@@ -279,10 +177,9 @@ const ChannelMessage = React.memo(function ChannelMessage_({
           : showAsFocused
           ? "var(--bg-focus)"
           : undefined,
-        "--padding":
-          showSimplifiedMessage || compact
-            ? `0.5rem ${horizontalPadding}`
-            : `0.7rem ${horizontalPadding} 0.3rem`,
+        "--padding": showSimplifiedMessage
+          ? `0.5rem ${horizontalPadding}`
+          : `0.7rem ${horizontalPadding} 0.3rem`,
         "--color": message.isOptimistic ? "var(--color-optimistic)" : undefined,
       }}
       className="channel-message-container"
@@ -291,6 +188,7 @@ const ChannelMessage = React.memo(function ChannelMessage_({
         : {
             onClick: () => {
               setTouchFocused(messageId);
+              initEdit();
             },
           })}
       {...containerProps}
@@ -309,18 +207,15 @@ const ChannelMessage = React.memo(function ChannelMessage_({
             allowReactions={me != null}
             initReply={initReply}
             initEdit={initEdit}
+            initDelete={initDelete}
             addReaction={addReaction}
             isEmojiPickerOpen={isEmojiPickerOpen}
             onEmojiPickerOpenChange={onEmojiPickerOpenChange}
-            dropdownMenuSections={toolbarDropdownItems}
           />
         </div>
       )}
 
-      {message.isReply &&
-        layout !== "bubbles" &&
-        showReplyTargetMessages &&
-        replyTargetMessageElement}
+      {message.isReply && showReplyTargetMessages && replyTargetMessageElement}
 
       <div
         className="main-container"
@@ -328,61 +223,22 @@ const ChannelMessage = React.memo(function ChannelMessage_({
           gridTemplateColumns: showLeftColumn
             ? "var(--avatar-size) minmax(0,1fr)"
             : "minmax(0,1fr)",
-          gridGap: compact
-            ? "var(--gutter-size-compact)"
-            : "var(--gutter-size)",
+          gridGap: "var(--gutter-size)",
         }}
       >
         {showLeftColumn && (
           <MessageLeftColumn
             messageId={messageId}
-            layout={layout}
             simplified={showSimplifiedMessage}
             isHovering={isHovering}
           />
         )}
 
-        <div
-          style={{
-            display: layout === "bubbles" ? "flex" : "block",
-            flexDirection: "column",
-          }}
-        >
-          {!showSimplifiedMessage && (
-            <MessageHeader messageId={messageId} layout={layout} />
-          )}
-
-          {message.isReply && layout === "bubbles" && (
-            <Bubble
-              small
-              align={isOwnMessage ? "right" : "left"}
-              css={(t) =>
-                css({
-                  background: t.colors.backgroundTertiary,
-                  margin: "0 0 0.5rem",
-                })
-              }
-            >
-              {replyTargetMessageElement}
-            </Bubble>
-          )}
+        <div style={{ display: "block", flexDirection: "column" }}>
+          {!showSimplifiedMessage && <MessageHeader messageId={messageId} />}
 
           {message.isSystemMessage ? (
-            layout === "bubbles" ? (
-              <div
-                css={(t) =>
-                  css({
-                    color: t.colors.textDimmed,
-                    fontSize: t.text.sizes.small,
-                    padding: "0 0.5rem",
-                  })
-                }
-              >
-                <SystemMessageContent messageId={messageId} minimal />
-              </div>
-            ) : (
-              <SystemMessageContent messageId={messageId} />
-            )
+            <SystemMessageContent messageId={messageId} />
           ) : isEditing ? (
             <EditMessageInput
               ref={editInputRef}
@@ -411,10 +267,8 @@ const ChannelMessage = React.memo(function ChannelMessage_({
             />
           ) : (
             <>
-              <MessageBody messageId={messageId} layout={layout} />
-              {message.embeds?.length > 0 && (
-                <Embeds messageId={messageId} layout={layout} />
-              )}
+              <MessageBody messageId={messageId} />
+              {message.embeds?.length > 0 && <Embeds messageId={messageId} />}
             </>
           )}
 
@@ -423,21 +277,17 @@ const ChannelMessage = React.memo(function ChannelMessage_({
               messageId={messageId}
               addReaction={addReaction}
               hideAddButton={!isHovering && !isTouchFocused}
-              layout={layout}
             />
           )}
 
-          {layout !== "bubbles" && message.replyMessageIds?.length >= 2 && (
-            <Thread
-              messageId={messageId}
-              layout={layout}
-              initReply={initReply}
-            />
+          {message.replyMessageIds?.length >= 2 && (
+            <Thread messageId={messageId} initReply={initReply} />
           )}
         </div>
       </div>
     </div>
   );
+
   const createdAt = new Date(message.createdAt);
 
   if (
@@ -491,13 +341,13 @@ const ChannelMessage = React.memo(function ChannelMessage_({
   return messageElement;
 });
 
-const Thread = ({ messageId, layout, initReply }) => {
+const Thread = ({ messageId, initReply }) => {
   const [isExpanded, setExpanded] = React.useState(true);
   const replyMessages = useSortedMessageReplies(messageId) ?? [];
   const lastReply = replyMessages.slice(-1)[0];
   const lastReplyAuthorUser = useUser(lastReply?.authorUserId);
   return (
-    <div style={{ paddingLeft: layout === "compact" ? "2.7rem" : 0 }}>
+    <div>
       <button
         onClick={() => {
           setExpanded((s) => !s);
@@ -587,7 +437,6 @@ const Thread = ({ messageId, layout, initReply }) => {
               key={m.id}
               messageId={m.id}
               previousMessageId={ms[i - 1]}
-              layout="compact"
               showLeftColumn={false}
               showReplyTargetMessages={false}
               initReply={initReply}
@@ -665,8 +514,7 @@ const Thread = ({ messageId, layout, initReply }) => {
   );
 };
 
-const MessageBody = React.memo(({ messageId, layout }) => {
-  const me = useMe();
+const MessageBody = React.memo(({ messageId }) => {
   const message = useMessage(messageId);
 
   const onClickInteractiveElement = React.useCallback((el) => {
@@ -682,7 +530,6 @@ const MessageBody = React.memo(({ messageId, layout }) => {
 
   const richText = (
     <RichText
-      compact={layout === "compact"}
       blocks={message.content}
       onClickInteractiveElement={onClickInteractiveElement}
       suffix={
@@ -703,40 +550,10 @@ const MessageBody = React.memo(({ messageId, layout }) => {
     />
   );
 
-  if (layout === "bubbles") {
-    const isAuthorMe = me != null && message.authorUserId === me.id;
-    return <Bubble align={isAuthorMe ? "right" : "left"}>{richText}</Bubble>;
-  }
-
   return richText;
 });
 
-const Bubble = ({ align, small, maxWidth = "64rem", children, ...props }) => (
-  <div
-    css={(t) =>
-      css({
-        "--bg-regular": t.colors.backgroundTertiary,
-        "--bg-me": t.colors.primaryTransparentSoft,
-        background: "var(--background)",
-      })
-    }
-    style={{
-      "--background": align === "right" ? "var(--bg-me)" : "var(--bg-regular)",
-      alignSelf: align === "right" ? "flex-end" : "flex-start",
-      padding: small ? "0.4rem 0.6rem" : "0.7rem 1.4rem",
-      borderRadius: small ? "1.35rem" : "1.9rem",
-      minHeight: small ? 0 : "3.8rem",
-      maxWidth: `min(calc(100% - 3.2rem), ${maxWidth})`,
-    }}
-    {...props}
-  >
-    {children}
-  </div>
-);
-
-const Embeds = React.memo(({ messageId, layout }) => {
-  const me = useMe();
-  const message = useMessage(messageId);
+const Embeds = React.memo(({ messageId }) => {
   const embeds = useMessageEmbeds(messageId);
   const maxWidth = "60rem";
 
@@ -748,27 +565,14 @@ const Embeds = React.memo(({ messageId, layout }) => {
         marginTop: "0.5rem",
         "li + li": { marginTop: "1rem" },
       })}
-      style={{
-        maxWidth: layout === "bubbles" ? undefined : maxWidth,
-      }}
+      style={{ maxWidth }}
     >
       {embeds.map((embed, i) => {
         const key = `${embed.url}-${i}`;
 
         const embedContent = <Embed key={key} {...embed} />;
 
-        if (layout !== "bubbles") return embedContent;
-
-        const isAuthorMe = me != null && message.authorUserId === me.id;
-        return (
-          <Bubble
-            key={key}
-            align={isAuthorMe ? "right" : "left"}
-            maxWidth={maxWidth}
-          >
-            {embedContent}
-          </Bubble>
-        );
+        return embedContent;
       })}
     </ul>
   );
@@ -928,56 +732,11 @@ const Embed = ({
   </li>
 );
 
-const Reactions = ({ messageId, addReaction, hideAddButton, layout }) => {
-  const me = useMe();
-  const message = useMessage(messageId);
+const Reactions = ({ messageId, addReaction, hideAddButton }) => {
   const items = useMessageReactions(messageId);
 
-  const isAuthorMe = me != null && me.id === message.authorUserId;
-
-  const inputDeviceCanHover = useMatchMedia("(hover: hover)");
   const [isInlineEmojiPickerOpen, setInlineEmojiPickerOpen] =
     React.useState(false);
-
-  const align =
-    layout !== "bubbles" ? undefined : isAuthorMe ? "right" : "left";
-
-  const emojiPickerTrigger = (
-    <EmojiPicker
-      width="31.6rem"
-      height="28.4rem"
-      placement="top"
-      isOpen={isInlineEmojiPickerOpen}
-      onOpenChange={(open) => {
-        setInlineEmojiPickerOpen(open);
-      }}
-      onSelect={(emoji) => {
-        addReaction(emoji);
-      }}
-      trigger={
-        <button
-          data-fader
-          onClick={() => {
-            setInlineEmojiPickerOpen(true);
-          }}
-          css={(t) =>
-            css({
-              color: t.textNormal,
-              transition: "0.1s opacity ease-out",
-              outline: "none",
-              svg: { width: "1.6rem", height: "auto" },
-            })
-          }
-        >
-          <EmojiFaceIcon style={{ width: "1.6rem", height: "auto" }} />
-        </button>
-      }
-    />
-  );
-
-  const reactionList = items.map((r) => (
-    <Reaction key={r.emoji} messageId={messageId} {...r} />
-  ));
 
   return (
     <>
@@ -1027,27 +786,43 @@ const Reactions = ({ messageId, addReaction, hideAddButton, layout }) => {
         }
         style={{
           "--fader-opacity": hideAddButton ? 0 : 1,
-          "--border-radius": layout === "bubbles" ? "1.25rem" : "0.7rem",
-          padding: layout === "bubbles" ? "0 0.5rem" : undefined,
-          alignSelf:
-            align === "left"
-              ? "flex-start"
-              : align === "right"
-              ? "flex-end"
-              : undefined,
+          "--border-radius": "0.7rem",
         }}
       >
-        {layout !== "bubbles" || align === "left" || !inputDeviceCanHover ? (
-          <>
-            {reactionList}
-            {emojiPickerTrigger}
-          </>
-        ) : (
-          <>
-            {emojiPickerTrigger}
-            {reactionList}
-          </>
-        )}
+        {items.map((r) => (
+          <Reaction key={r.emoji} messageId={messageId} {...r} />
+        ))}
+
+        <EmojiPicker
+          width="31.6rem"
+          height="28.4rem"
+          placement="top"
+          isOpen={isInlineEmojiPickerOpen}
+          onOpenChange={(open) => {
+            setInlineEmojiPickerOpen(open);
+          }}
+          onSelect={(emoji) => {
+            addReaction(emoji);
+          }}
+          trigger={
+            <button
+              data-fader
+              onClick={() => {
+                setInlineEmojiPickerOpen(true);
+              }}
+              css={(t) =>
+                css({
+                  color: t.textNormal,
+                  transition: "0.1s opacity ease-out",
+                  outline: "none",
+                  svg: { width: "1.6rem", height: "auto" },
+                })
+              }
+            >
+              <EmojiFaceIcon style={{ width: "1.6rem", height: "auto" }} />
+            </button>
+          }
+        />
       </div>
     </>
   );
@@ -1124,10 +899,8 @@ const Reaction = ({ messageId, emoji, count, users: userIds }) => {
   );
 };
 
-const MessageHeader = ({ layout, messageId }) => {
+const MessageHeader = ({ messageId }) => {
   const message = useMessage(messageId);
-  const authorUser = useUser(message?.authorUserId);
-  const me = useMe();
 
   if (message.isSystemMessage) return null;
 
@@ -1144,10 +917,7 @@ const MessageHeader = ({ layout, messageId }) => {
             alignItems: "center",
           })
         }
-        style={{
-          opacity: isWaitingForApp ? 0 : 1,
-          marginRight: layout === "compact" ? "1rem" : 0,
-        }}
+        style={{ opacity: isWaitingForApp ? 0 : 1 }}
       >
         {message.app?.name ?? "..."}
         <span
@@ -1172,78 +942,6 @@ const MessageHeader = ({ layout, messageId }) => {
       </div>
     );
   }
-
-  if (layout === "bubbles") {
-    const isAuthorMe = me != null && message.authorUserId === me.id;
-    return (
-      <div
-        style={{
-          height: "2rem",
-          display: "flex",
-          alignItems: "flex-end",
-          alignSelf: isAuthorMe ? "flex-end" : "flex-start",
-          padding: "0.2rem 0",
-          paddingLeft: isAuthorMe ? 0 : "1.4rem",
-          paddingRight: isAuthorMe ? "1.4rem" : 0,
-        }}
-      >
-        <InlineUserButtonWithProfilePopover
-          userId={message.authorUserId}
-          css={(t) =>
-            css({
-              display: "block",
-              fontSize: t.text.sizes.small,
-              fontWeight: t.text.weights.normal,
-              color: t.colors.textDimmed,
-            })
-          }
-        />
-      </div>
-    );
-  }
-
-  if (layout === "compact")
-    return (
-      <Popover.Root placement="right">
-        <Popover.Trigger
-          asChild
-          disabled={message.author == null || message.author.deleted}
-        >
-          <div
-            css={css({
-              display: "inline",
-              cursor: "pointer",
-              "@media(hover: hover)": {
-                ":hover [data-name]": {
-                  textDecoration: "underline",
-                },
-              },
-            })}
-          >
-            <AccountAvatar
-              transparent
-              address={message.author?.walletAddress}
-              size="2rem"
-              style={{
-                display: "inline-flex",
-                verticalAlign: "sub",
-                marginRight: "0.7rem",
-                transform: "translateY(0.1rem)",
-              }}
-            />
-            <InlineUserButton
-              variant="link"
-              data-name
-              userId={message.authorUserId}
-              style={{ marginRight: "1rem" }}
-            />
-          </div>
-        </Popover.Trigger>
-        <Popover.Content>
-          <ProfilePreview userId={message.authorUserId} />
-        </Popover.Content>
-      </Popover.Root>
-    );
 
   return (
     <div
@@ -1276,28 +974,6 @@ const MessageHeader = ({ layout, messageId }) => {
           </TinyMutedText>
         </>
       )}
-
-      {authorUser?.onlineStatus === "online" && (
-        <Tooltip.Root>
-          <Tooltip.Trigger asChild>
-            <div css={css({ padding: "0.5rem 0.2rem" })}>
-              <div
-                css={(theme) =>
-                  css({
-                    width: "0.6rem",
-                    height: "0.6rem",
-                    borderRadius: "50%",
-                    background: theme.colors.onlineIndicator,
-                  })
-                }
-              />
-            </div>
-          </Tooltip.Trigger>
-          <Tooltip.Content side="top" align="center" sideOffset={6}>
-            User online
-          </Tooltip.Content>
-        </Tooltip.Root>
-      )}
     </div>
   );
 };
@@ -1310,12 +986,14 @@ const MessageToolbar = React.memo(
     allowReactions,
     initReply,
     initEdit,
+    initDelete,
     addReaction,
     isEmojiPickerOpen,
     onEmojiPickerOpenChange,
   }) => {
     const toolbarRef = React.useRef();
     const dropdownMenuItems = dropdownMenuSections.flatMap((i) => i.children);
+
     return (
       <Toolbar.Root ref={toolbarRef}>
         <EmojiPicker
@@ -1354,14 +1032,24 @@ const MessageToolbar = React.memo(
         )}
 
         {allowEdit && (
-          <Toolbar.Button
-            onClick={() => {
-              initEdit();
-            }}
-            aria-label="Edit"
-          >
-            <EditPenIcon style={{ width: "1.6rem", height: "auto" }} />
-          </Toolbar.Button>
+          <>
+            <Toolbar.Button
+              onClick={() => {
+                initEdit();
+              }}
+              aria-label="Edit"
+            >
+              <EditPenIcon style={{ width: "1.6rem", height: "auto" }} />
+            </Toolbar.Button>
+            <Toolbar.Button
+              onClick={() => {
+                initDelete();
+              }}
+              aria-label="Delete"
+            >
+              <TrashCanIcon style={{ width: "1.4rem", height: "auto" }} />
+            </Toolbar.Button>
+          </>
         )}
 
         {dropdownMenuSections.length > 0 && (
@@ -1405,8 +1093,11 @@ const MessageToolbar = React.memo(
 
 const EditMessageInput = React.forwardRef(
   ({ blocks, save, requestRemove, onCancel, ...props }, editorRef) => {
-    const [pendingSlateNodes, setPendingSlateNodes] = React.useState(() =>
-      parseMessageBlocks(withoutAttachments(blocks))
+    // const [pendingSlateNodes, setPendingSlateNodes] = React.useState(() =>
+    //   parseMessageBlocks(withoutAttachments(blocks))
+    // );
+    const [pendingContent, setPendingContent] = React.useState(() =>
+      stringifyMessageBlocks(blocks)
     );
 
     const [isSaving, setSaving] = React.useState(false);
@@ -1417,9 +1108,11 @@ const EditMessageInput = React.forwardRef(
     const submit = async () => {
       if (!allowSubmit) return;
 
-      const blocks = toMessageBlocks(pendingSlateNodes);
+      const blocks = messageBlocksFromString(pendingContent);
+      const isEmpty = pendingContent.trim() === "";
 
-      const isEmpty = blocks.every(isNodeEmpty);
+      // const blocks = toMessageBlocks(pendingSlateNodes);
+      // const isEmpty = blocks.every(isNodeEmpty);
 
       setSaving(true);
       try {
@@ -1454,11 +1147,11 @@ const EditMessageInput = React.forwardRef(
           })
         }
       >
-        <MessageInput
+        <Textarea
           ref={editorRef}
-          initialValue={pendingSlateNodes}
-          onChange={(nodes) => {
-            setPendingSlateNodes(nodes);
+          value={pendingContent}
+          onChange={(e) => {
+            setPendingContent(e.target.value);
           }}
           placeholder={`Press "Enter" to delete message`}
           onKeyDown={(e) => {
@@ -1473,9 +1166,38 @@ const EditMessageInput = React.forwardRef(
             }
           }}
           disabled={isDisabled}
-          disableCommands
+          style={{
+            background: "none",
+            width: "100%",
+            display: "block",
+            border: 0,
+            outline: "none",
+          }}
+          // disableCommands
           {...props}
         />
+        {/* <MessageInput */}
+        {/*   ref={editorRef} */}
+        {/*   initialValue={pendingSlateNodes} */}
+        {/*   onChange={(nodes) => { */}
+        {/*     setPendingSlateNodes(nodes); */}
+        {/*   }} */}
+        {/*   placeholder={`Press "Enter" to delete message`} */}
+        {/*   onKeyDown={(e) => { */}
+        {/*     if (e.key === "Escape") { */}
+        {/*       onCancel(); */}
+        {/*       return; */}
+        {/*     } */}
+
+        {/*     if (!e.isDefaultPrevented() && !e.shiftKey && e.key === "Enter") { */}
+        {/*       e.preventDefault(); */}
+        {/*       submit(); */}
+        {/*     } */}
+        {/*   }} */}
+        {/*   disabled={isDisabled} */}
+        {/*   disableCommands */}
+        {/*   {...props} */}
+        {/* /> */}
         <div css={css({ display: "flex", justifyContent: "flex-end" })}>
           <div
             css={css({
@@ -1504,7 +1226,7 @@ const EditMessageInput = React.forwardRef(
   }
 );
 
-const ReplyTargetMessage = ({ messageId, layout, onClickMessage }) => {
+const ReplyTargetMessage = ({ messageId, onClickMessage }) => {
   const message = useMessage(messageId);
   const authorMember = useUser(message?.authorUserId);
 
@@ -1516,7 +1238,7 @@ const ReplyTargetMessage = ({ messageId, layout, onClickMessage }) => {
         css({
           position: "relative",
           ":before": {
-            display: "var(--path-display)",
+            display: "block",
             content: '""',
             position: "absolute",
             right: "calc(100% - 5rem + 0.5rem)",
@@ -1531,11 +1253,7 @@ const ReplyTargetMessage = ({ messageId, layout, onClickMessage }) => {
           },
         })
       }
-      style={{
-        "--path-display": layout === "bubbles" ? "none" : "block",
-        paddingLeft: layout !== "bubbles" ? "5rem" : undefined,
-        marginBottom: layout === "bubbles" ? 0 : "0.5rem",
-      }}
+      style={{ paddingLeft: "5rem", marginBottom: "0.5rem" }}
     >
       <div
         css={css({
@@ -1636,8 +1354,7 @@ const ReplyTargetMessage = ({ messageId, layout, onClickMessage }) => {
   );
 };
 
-const MessageLeftColumn = ({ messageId, simplified, layout, isHovering }) => {
-  const me = useMe();
+const MessageLeftColumn = ({ messageId, simplified, isHovering }) => {
   const message = useMessage(messageId);
 
   if (simplified)
@@ -1657,6 +1374,7 @@ const MessageLeftColumn = ({ messageId, simplified, layout, isHovering }) => {
             minute="numeric"
             tooltipSideOffset={7}
             disableRelative
+            // Tooltips are slow
             disableTooltip={!isHovering}
           />
         </TinyMutedText>
@@ -1664,9 +1382,7 @@ const MessageLeftColumn = ({ messageId, simplified, layout, isHovering }) => {
     );
 
   if (message.isSystemMessage || message.isAppMessage)
-    return layout === "bubbles" ? (
-      <div />
-    ) : isHovering ? (
+    return isHovering ? (
       <div
         css={css({
           transition: "0.15s opacity",
@@ -1697,38 +1413,11 @@ const MessageLeftColumn = ({ messageId, simplified, layout, isHovering }) => {
       </div>
     );
 
-  if (layout === "compact")
-    return (
-      <div
-        css={css({
-          transition: "0.15s opacity",
-          cursor: "default",
-          transform: "translateY(0.4rem)",
-        })}
-        // style={{ opacity: isHovering ? 1 : 0 }}
-      >
-        <TinyMutedText nowrap style={{ float: "right" }}>
-          <FormattedDateWithTooltip
-            value={new Date(message.createdAt)}
-            hour="numeric"
-            minute="numeric"
-            tooltipSideOffset={7}
-            disableRelative
-            disableTooltip={!isHovering}
-          />
-        </TinyMutedText>
-      </div>
-    );
-
-  const isAuthorMe = me != null && message.authorUserId === me.id;
-
-  if (layout === "bubbles" && isAuthorMe) return <div />;
-
   const hasVerfifiedProfilePicture =
     message.author?.profilePicture?.isVerified ?? false;
 
   return (
-    <div style={{ padding: layout === "bubbles" ? "2rem 0 0" : "0.2rem 0 0" }}>
+    <div style={{ padding: "0.2rem 0 0" }}>
       <Popover.Root placement="top">
         <Popover.Trigger
           asChild
@@ -1748,7 +1437,7 @@ const MessageLeftColumn = ({ messageId, simplified, layout, isHovering }) => {
                   boxShadow: t.shadows.focus,
                 },
                 "@media (hover: hover)": {
-                  ":not:disabled": {
+                  ":not(:disabled)": {
                     cursor: "pointer",
                     ":hover": {
                       boxShadow: "var(--hover-box-shadow)",
@@ -1789,10 +1478,8 @@ const SystemMessageContent = ({ messageId }) => {
 
       return (
         <span style={{ opacity: isMissingData ? 0 : 1 }}>
-          <InlineUserButtonWithProfilePopover userId={message.inviterUserId} />{" "}
-          added{" "}
-          <InlineUserButtonWithProfilePopover userId={message.authorUserId} />{" "}
-          to the channel.
+          <InlineUserButton userId={message.inviterUserId} /> added{" "}
+          <InlineUserButton userId={message.authorUserId} /> to the channel.
         </span>
       );
     }
@@ -1803,8 +1490,8 @@ const SystemMessageContent = ({ messageId }) => {
         message.author?.walletAddress == null;
       return (
         <span style={{ opacity: isMissingData ? 0 : 1 }}>
-          <InlineUserButtonWithProfilePopover userId={message.authorUserId} />{" "}
-          joined the channel. Welcome!
+          <InlineUserButton userId={message.authorUserId} /> joined the channel.
+          Welcome!
         </span>
       );
     }
@@ -1814,8 +1501,8 @@ const SystemMessageContent = ({ messageId }) => {
       if (updates.length == 0 || updates.length > 1) {
         return (
           <>
-            <InlineUserButtonWithProfilePopover userId={message.authorUserId} />{" "}
-            updated the channel.
+            <InlineUserButton userId={message.authorUserId} /> updated the
+            channel.
           </>
         );
       }
@@ -1827,9 +1514,7 @@ const SystemMessageContent = ({ messageId }) => {
         case "description":
           return (
             <>
-              <InlineUserButtonWithProfilePopover
-                userId={message.authorUserId}
-              />{" "}
+              <InlineUserButton userId={message.authorUserId} />{" "}
               {(value ?? "") === "" ? (
                 "cleared the topic description."
               ) : (
@@ -1843,9 +1528,7 @@ const SystemMessageContent = ({ messageId }) => {
         case "name":
           return (
             <>
-              <InlineUserButtonWithProfilePopover
-                userId={message.authorUserId}
-              />{" "}
+              <InlineUserButton userId={message.authorUserId} />{" "}
               {(value ?? "") === "" ? (
                 <>cleared the topic {field}.</>
               ) : (
@@ -1858,10 +1541,8 @@ const SystemMessageContent = ({ messageId }) => {
         default:
           return (
             <>
-              <InlineUserButtonWithProfilePopover
-                userId={message.authorUserId}
-              />{" "}
-              updated the topic {field}.
+              <InlineUserButton userId={message.authorUserId} /> updated the
+              topic {field}.
             </>
           );
       }
@@ -1875,10 +1556,8 @@ const SystemMessageContent = ({ messageId }) => {
 
       return (
         <span style={{ opacity: isMissingData ? 0 : undefined }}>
-          <InlineUserButtonWithProfilePopover
-            userId={message.installerUserId}
-          />{" "}
-          installed a new app:{" "}
+          <InlineUserButton userId={message.installerUserId} /> installed a new
+          app:{" "}
           <span
             css={(t) =>
               css({
@@ -1952,6 +1631,85 @@ const FormattedDateWithTooltip = React.memo(
           />
         </Tooltip.Content>
       </Tooltip.Root>
+    );
+  }
+);
+
+// ==========================================================================
+
+const FormattedDate = ({ value, ...options }) => {
+  const formatter = useDateFormatter(options);
+  return formatter.format(typeof value === "string" ? new Date(value) : value);
+};
+
+const Link = ({
+  underline,
+  component: Component = "button",
+  style,
+  ...props
+}) => (
+  <Component
+    css={(t) =>
+      css({
+        color: t.colors.link,
+        textDecoration: "var(--text-decoration, none)",
+        outline: "none",
+        ":focus-visible": {
+          textDecoration: "underline",
+          color: t.colors.linkModifierHover,
+        },
+        "@media(hover: hover)": {
+          cursor: "pointer",
+          ":hover": {
+            textDecoration: "underline",
+            color: t.colors.linkModifierHover,
+          },
+        },
+      })
+    }
+    style={{
+      "--text-decoration": underline ? "underline" : undefined,
+      ...style,
+    }}
+    {...props}
+  />
+);
+
+const ProfilePreview = ({ userId }) => {
+  const user = useUser(userId);
+  const { displayName } = useAccountDisplayName(user?.walletAddress);
+  return <div css={css({ padding: "1rem" })}>{displayName}</div>;
+};
+
+const InlineUserButtonWithProfilePopover = React.forwardRef(
+  (
+    { walletAddress, userId: userId_, user: user_, popoverProps, ...props },
+    ref
+  ) => {
+    const walletUser = useUserWithWalletAddress(walletAddress);
+
+    const userId = userId_ ?? user_?.id ?? walletUser?.id;
+
+    const user = useUser(userId);
+
+    if (userId == null && walletAddress == null) return null;
+
+    const disabled = user?.deleted || user?.unknown;
+
+    return (
+      <Popover.Root placement="top" {...popoverProps}>
+        <Popover.Trigger asChild disabled={disabled} {...props}>
+          <InlineUserButton
+            ref={ref}
+            userId={userId}
+            walletAddress={walletAddress}
+            variant="link"
+          />
+        </Popover.Trigger>
+        <Popover.Content>
+          <ProfilePreview userId={userId} walletAddress={walletAddress} />
+        </Popover.Content>
+      </Popover.Root>
     );
   }
 );

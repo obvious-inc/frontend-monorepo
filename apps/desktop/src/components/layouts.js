@@ -45,7 +45,7 @@ import ChannelAvatar from "@shades/ui-web/channel-avatar";
 import useCommandCenter from "../hooks/command-center";
 import { useDialog } from "../hooks/dialogs";
 import useSetting from "../hooks/setting";
-import * as DropdownMenu from "./dropdown-menu";
+import * as DropdownMenu from "@shades/ui-web/dropdown-menu";
 import NotificationBadge from "./notification-badge";
 import Spinner from "./spinner";
 import ErrorBoundary from "./error-boundary";

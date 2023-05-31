@@ -3,10 +3,8 @@ import {
   isAddress as isEthereumAccountAddress,
 } from "viem";
 import { useEnsName } from "wagmi";
-import { useUserWithWalletAddress } from "@shades/common/app";
-import { ethereum as ethereumUtils } from "@shades/common/utils";
-
-const { truncateAddress } = ethereumUtils;
+import { useUserWithWalletAddress } from "./user.js";
+import { truncateAddress } from "../utils/ethereum.js";
 
 const useAccountDisplayName = (
   walletAddress,

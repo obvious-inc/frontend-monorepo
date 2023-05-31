@@ -7,7 +7,7 @@ import { useActions } from "@shades/common/app";
 import Dialog from "@shades/ui-web/dialog";
 import Button from "@shades/ui-web/button";
 import { Cross as CrossIcon } from "@shades/ui-web/icons";
-import Input from "./input.js";
+import Input from "@shades/ui-web/input";
 
 const AddChannelMemberDialog = ({ channelId, isOpen, onRequestClose }) => {
   const ethereumClient = usePublicEthereumClient();

@@ -1,88 +1,35 @@
-// import throttle from "lodash.throttle";
 import React from "react";
 import { useParams } from "react-router-dom";
-// import { useAccount } from "wagmi";
 import { css } from "@emotion/react";
 import {
   useAuth,
   useActions,
   useMe,
-  useUser,
   useMessage,
   useChannel,
   useChannelAccessLevel,
-  useChannelHasUnread,
   useSortedChannelMessageIds,
-  useHasFetchedChannelMessages,
   useChannelMessagesFetcher,
   useChannelFetchEffects,
+  useMarkChannelReadEffects,
   useStringifiedMessageContent,
 } from "@shades/common/app";
-// import { useWalletLogin } from "@shades/common/wallet";
 import {
   useLatestCallback,
   useWindowFocusOrDocumentVisibleListener,
   useWindowOnlineListener,
   useMatchMedia,
 } from "@shades/common/react";
+import { message as messageUtils } from "@shades/common/utils";
 import Button from "@shades/ui-web/button";
+import Input from "@shades/ui-web/input";
 import ChannelMessagesScrollView from "@shades/ui-web/channel-messages-scroll-view";
+import ChannelMessage from "./channel-message.js";
 import RichText from "./rich-text.js";
 // import { isNodeEmpty } from "../slate/utils.js";
-// import useLayoutSetting from "../hooks/layout-setting.js";
-// import useMessageInputPlaceholder from "../hooks/channel-message-input-placeholder.js";
-// import ChannelMessagesScrollViewHeader from "./channel-messages-scroll-view-header.js";
 // import NewChannelMessageInput from "./new-channel-message-input.js";
-// import ChannelNavBar from "./channel-nav-bar.js";
-// import ChannelMessage from "./channel-message.js";
-
-const useMarkChannelReadEffects = (channelId, { didScrollToBottomRef }) => {
-  const { markChannelRead } = useActions();
-
-  const channelHasUnread = useChannelHasUnread(channelId);
-  const hasFetchedChannelMessagesAtLeastOnce =
-    useHasFetchedChannelMessages(channelId);
-
-  // Mark channel as read when new messages arrive and when switching channels
-  React.useEffect(() => {
-    if (
-      // Only mark as read when the page has focus
-      !document.hasFocus() ||
-      // Wait until the initial message batch is fetched
-      !hasFetchedChannelMessagesAtLeastOnce ||
-      // Only mark as read when scrolled to the bottom
-      !didScrollToBottomRef.current ||
-      // Don’t bother if the channel is already marked as read
-      !channelHasUnread
-    )
-      return;
-
-    markChannelRead(channelId);
-  }, [
-    channelId,
-    channelHasUnread,
-    hasFetchedChannelMessagesAtLeastOnce,
-    didScrollToBottomRef,
-    markChannelRead,
-  ]);
-
-  useWindowFocusOrDocumentVisibleListener(() => {
-    if (channelHasUnread && didScrollToBottomRef.current)
-      markChannelRead(channelId);
-  });
-
-  useWindowOnlineListener(
-    () => {
-      if (channelHasUnread && didScrollToBottomRef.current)
-        markChannelRead(channelId);
-    },
-    { requireFocus: true }
-  );
-};
 
 const ChannelContent = ({ channelId }) => {
-  // const { address: walletAccountAddress } = useAccount();
-  // const { login } = useWalletLogin();
   const { status: authenticationStatus } = useAuth();
 
   const actions = useActions();
@@ -99,8 +46,6 @@ const ChannelContent = ({ channelId }) => {
   const messageIds = useSortedChannelMessageIds(channelId);
 
   const fetchMessages = useChannelMessagesFetcher(channelId);
-
-  const inputPlaceholder = "..."; // useMessageInputPlaceholder(channelId);
 
   const [replyTargetMessageId, setReplyTargetMessageId] = React.useState(null);
 
@@ -201,6 +146,9 @@ const ChannelContent = ({ channelId }) => {
   //   [channelId]
   // );
 
+  const [touchFocusedMessageId, setTouchFocusedMessageId] =
+    React.useState(null);
+
   const renderMessage = React.useCallback(
     (messageId, i, messageIds, props) => (
       <ChannelMessage
@@ -208,11 +156,16 @@ const ChannelContent = ({ channelId }) => {
         messageId={messageId}
         previousMessageId={messageIds[i - 1]}
         hasPendingReply={replyTargetMessageId === messageId}
-        initReply={() => initReply(messageId)}
+        initReply={initReply}
+        isTouchFocused={messageId === touchFocusedMessageId}
+        setTouchFocused={setTouchFocusedMessageId}
+        scrollToMessage={() => {
+          //
+        }}
         {...props}
       />
     ),
-    [initReply, replyTargetMessageId]
+    [initReply, replyTargetMessageId, touchFocusedMessageId]
   );
 
   const replyTargetMessage = useMessage(replyTargetMessageId);
@@ -226,20 +179,20 @@ const ChannelContent = ({ channelId }) => {
           channel?.body == null
             ? null
             : () => (
-              <div css={css({ padding: "1.5rem 1.5rem 0" })}>
-                <div
-                  css={(t) =>
-                    css({
-                      paddingBottom: "1.5rem",
-                      borderBottom: "0.1rem solid",
-                      borderColor: t.colors.borderLight,
-                    })
-                  }
-                >
-                  <RichText blocks={channel.body} />
+                <div css={css({ padding: "1.5rem 1.5rem 0" })}>
+                  <div
+                    css={(t) =>
+                      css({
+                        paddingBottom: "1.5rem",
+                        borderBottom: "0.1rem solid",
+                        borderColor: t.colors.borderLight,
+                      })
+                    }
+                  >
+                    <RichText blocks={channel.body} />
+                  </div>
                 </div>
-              </div>
-            )
+              )
         }
         renderMessage={renderMessage}
       />
@@ -257,12 +210,11 @@ const ChannelContent = ({ channelId }) => {
 
           actions.createMessage({
             channel: channelId,
-            blocks: [
-              { type: "paragraph", children: [{ text: inputElement.value }] },
-            ],
+            blocks: messageUtils.parseString(inputElement.value),
             replyToMessageId: replyTargetMessageId,
           });
           inputElement.value = "";
+          inputElement.style.height = "inherit";
           inputElement.focus();
         }}
         style={{ width: "100%", padding: "0 1.5rem 1.5rem" }}
@@ -283,13 +235,14 @@ const ChannelContent = ({ channelId }) => {
             </i>
           </div>
         )}
-        <div style={{ display: "flex" }}>
-          <input
+        <div style={{ display: "flex", alignItems: "flex-start" }}>
+          <Input
             ref={inputRef}
+            multiline
             name="message-content"
             disabled={disableInput}
-            placeholder={inputPlaceholder}
-            style={{ padding: "0 0.5rem", flex: 1, marginRight: "0.5rem" }}
+            placeholder="..."
+            css={css({ flex: 1, marginRight: "0.5rem" })}
           />
           {/* <NewChannelMessageInput */}
           {/*   ref={inputRef} */}
@@ -304,7 +257,12 @@ const ChannelContent = ({ channelId }) => {
           {/*   members={channel?.members ?? []} */}
           {/*   onInputChange={handleInputChange} */}
           {/* /> */}
-          <Button type="submit" size="small" disabled={disableInput}>
+          <Button
+            type="submit"
+            size="medium"
+            disabled={disableInput}
+            style={{ height: "3.7rem" }}
+          >
             Send
           </Button>
         </div>
@@ -320,44 +278,6 @@ const MessageContent = ({ inline, messageId }) => {
     <StringifiedMessageContent messageId={messageId} />
   ) : (
     <RichText inline={inline} blocks={message.content} />
-  );
-};
-
-const ChannelMessage = ({ messageId, initReply, hasPendingReply }) => {
-  const message = useMessage(messageId);
-  const user = useUser(message.authorUserId);
-  const replyTargetMessage = useMessage(message.replyTargetMessageId);
-
-  return (
-    <button
-      onClick={() => {
-        initReply();
-      }}
-      css={css({ display: "block", width: "100%", padding: "0.5rem 1.5rem" })}
-      style={{ background: hasPendingReply ? "lightgray" : undefined }}
-    >
-      {message.isSystemMessage ? null : message.isAppMessage ? null : (
-        <div style={{ fontSize: "0.75em" }}>
-          {user?.computedDisplayName ?? <>&nbsp;</>}
-        </div>
-      )}
-      {replyTargetMessage != null && (
-        <div
-          style={{
-            fontSize: "0.75em",
-            whiteSpace: "nowrap",
-            overflow: "hidden",
-            textOverflow: "ellipsis",
-          }}
-        >
-          {"> "}
-          <i>
-            <MessageContent inline messageId={message.replyTargetMessageId} />
-          </i>
-        </div>
-      )}
-      <MessageContent messageId={messageId} />
-    </button>
   );
 };
 

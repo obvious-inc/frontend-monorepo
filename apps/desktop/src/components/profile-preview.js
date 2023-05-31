@@ -1,5 +1,6 @@
 import { getAddress as checksumEncodeAddress } from "viem";
 import React from "react";
+import { useNavigate, useLocation } from "react-router-dom";
 import { useAccount, useEnsName } from "wagmi";
 import { css } from "@emotion/react";
 import {
@@ -7,14 +8,13 @@ import {
   useMe,
   useUser,
   useUserWithWalletAddress,
+  useAccountDisplayName,
 } from "@shades/common/app";
 import { ethereum as ethereumUtils } from "@shades/common/utils";
 import Button from "@shades/ui-web/button";
 import AccountAvatar from "@shades/ui-web/account-avatar";
-import useAccountDisplayName from "../hooks/account-display-name";
+import * as Tooltip from "@shades/ui-web/tooltip";
 import { useDialog } from "../hooks/dialogs";
-import * as Tooltip from "./tooltip";
-import { useNavigate, useLocation } from "react-router-dom";
 
 const ProfilePreview = React.forwardRef(
   ({ userId, walletAddress, close: dismiss }, ref) => {

@@ -20,7 +20,7 @@ import { MagnificationGlass as SearchIcon } from "@shades/ui-web/icons";
 import { useLatestCallback } from "@shades/common/react";
 import Dialog from "@shades/ui-web/dialog";
 import ChannelAvatar from "@shades/ui-web/channel-avatar";
-import Input from "./input";
+import Input from "@shades/ui-web/input";
 
 const MAX_CHANNEL_COUNT = 12;
 

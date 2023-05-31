@@ -1,7 +1,11 @@
 import React from "react";
 import { css } from "@emotion/react";
-import { useMe, useActions, useAuth } from "@shades/common/app";
-import useAccountDisplayName from "../hooks/account-display-name.js";
+import {
+  useMe,
+  useActions,
+  useAuth,
+  useAccountDisplayName,
+} from "@shades/common/app";
 import FormDialog from "./form-dialog.js";
 import DialogHeader from "./dialog-header.js";
 

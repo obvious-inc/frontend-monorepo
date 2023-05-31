@@ -1,5 +1,5 @@
+import * as Popover from "@shades/ui-web/popover";
 import useCombobox from "../hooks/combobox";
-import * as Popover from "./popover";
 
 export { Item, Section } from "../hooks/combobox.js";
 
