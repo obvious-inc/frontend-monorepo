@@ -832,7 +832,7 @@ const ChannelMessages = ({ channelId, initReply, replyTargetMessageId }) => {
   return (
     <ChannelMessagesScrollView
       channelId={channelId}
-      layout={layout}
+      // threads={layout !== "bubbles"}
       renderHeader={renderHeader}
       renderMessage={renderMessage}
     />

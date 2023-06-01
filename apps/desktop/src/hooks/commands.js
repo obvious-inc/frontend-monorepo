@@ -38,7 +38,7 @@ const useCommands = ({ context, channelId } = {}) => {
     ]
   );
 
-  const commands = React.useMemo(() => {
+  return React.useMemo(() => {
     if (user == null || commandDependencies.channelId == null)
       return textCommands;
 
@@ -60,21 +60,6 @@ const useCommands = ({ context, channelId } = {}) => {
       commandsWithDependeciesInjected
     );
   }, [user, commandDependencies]);
-
-  const isCommand = React.useCallback(
-    (name) => Object.keys(commands).includes(name),
-    [commands]
-  );
-
-  const execute = React.useCallback(
-    (commandName, ...args) => {
-      if (!isCommand(commandName)) throw new Error();
-      return commands[commandName].execute(...args);
-    },
-    [isCommand, commands]
-  );
-
-  return { commands, isCommand, execute };
 };
 
 export default useCommands;

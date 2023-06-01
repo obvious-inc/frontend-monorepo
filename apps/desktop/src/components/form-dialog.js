@@ -101,7 +101,9 @@ const FormDialog = ({
                   contrast
                   size={c.size ?? "large"}
                   multiline={c.type === "multiline-text"}
-                  component={c.type === "rich-text" ? RichTextEditor : undefined}
+                  component={
+                    c.type === "rich-text" ? RichTextEditor : undefined
+                  }
                   value={c.value === undefined ? state[c.key] : c.value}
                   disabled={hasPendingSubmit}
                   onChange={(e) => {

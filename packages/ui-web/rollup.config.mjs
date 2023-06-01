@@ -83,8 +83,8 @@ const entrypoints = [
   {
     file: "rich-text-editor.js",
     dependencies: [
-      '@shades/common/utils',
-      '@shades/common/app',
+      "@shades/common/utils",
+      "@shades/common/app",
       "react",
       ...emotionDeps,
       "slate",

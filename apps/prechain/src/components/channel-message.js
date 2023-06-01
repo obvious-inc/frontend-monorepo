@@ -15,7 +15,6 @@ import {
   useChannelMembers,
   useHasReactedWithEmoji,
   useMessageReactions,
-  useSortedMessageReplies,
   useAccountDisplayName,
 } from "@shades/common/app";
 import { message as messageUtils } from "@shades/common/utils";
@@ -40,12 +39,6 @@ import * as Toolbar from "@shades/ui-web/toolbar";
 import * as Tooltip from "@shades/ui-web/tooltip";
 import * as Popover from "@shades/ui-web/popover";
 import RichText from "./rich-text.js";
-// import {
-//   isNodeEmpty,
-//   parseMessageBlocks,
-//   toMessageBlocks,
-// } from "../slate/utils";
-// import MessageInput from "./message-input";
 
 const {
   // withoutAttachments,
@@ -85,8 +78,6 @@ const ChannelMessage = React.memo(function ChannelMessage_({
   const [isEditing, setEditingMessage] = React.useState(false);
 
   const showAsFocused = !isEditing && (isTouchFocused || isHovering);
-
-  const isOwnMessage = me?.id === message.authorUserId;
 
   const allowEdit =
     !message.isSystemMessage &&
@@ -202,7 +193,6 @@ const ChannelMessage = React.memo(function ChannelMessage_({
           }}
         >
           <MessageToolbar
-            allowReplies={!isOwnMessage && !message.isSystemMessage}
             allowEdit={allowEdit}
             allowReactions={me != null}
             initReply={initReply}
@@ -279,10 +269,6 @@ const ChannelMessage = React.memo(function ChannelMessage_({
               hideAddButton={!isHovering && !isTouchFocused}
             />
           )}
-
-          {message.replyMessageIds?.length >= 2 && (
-            <Thread messageId={messageId} initReply={initReply} />
-          )}
         </div>
       </div>
     </div>
@@ -340,179 +326,6 @@ const ChannelMessage = React.memo(function ChannelMessage_({
 
   return messageElement;
 });
-
-const Thread = ({ messageId, initReply }) => {
-  const [isExpanded, setExpanded] = React.useState(true);
-  const replyMessages = useSortedMessageReplies(messageId) ?? [];
-  const lastReply = replyMessages.slice(-1)[0];
-  const lastReplyAuthorUser = useUser(lastReply?.authorUserId);
-  return (
-    <div>
-      <button
-        onClick={() => {
-          setExpanded((s) => !s);
-        }}
-        css={(t) =>
-          css({
-            outline: "none",
-            display: "flex",
-            alignItems: "center",
-            padding: "0.4rem",
-            width: "calc(100% + 0.4rem)",
-            position: "relative",
-            left: "-0.4rem",
-            marginTop: "0.2rem",
-            borderRadius: "0.5rem",
-            "[data-view-replies]": { display: "none" },
-            "@media(hover: hover)": {
-              cursor: "pointer",
-              ":hover": {
-                background: t.colors.backgroundModifierHover,
-                // boxShadow: t.shadows.elevationLow,
-                "[data-link]": {
-                  color: t.colors.linkModifierHover,
-                  textDecoration: "underline",
-                },
-                "[data-last-reply-at]": { display: "none" },
-                "[data-view-replies]": { display: "inline" },
-              },
-            },
-          })
-        }
-      >
-        {isExpanded ? (
-          <div style={{ width: "2rem", height: "2rem", position: "relative" }}>
-            <div
-              css={(t) =>
-                css({
-                  position: "absolute",
-                  bottom: "-0.4rem",
-                  right: 0,
-                  border: "0.2rem solid",
-                  borderColor: t.colors.borderLight,
-                  width: "1.1rem",
-                  height: "1.5rem",
-                  borderRight: 0,
-                  borderBottom: 0,
-                  borderTopLeftRadius: "0.4rem",
-                })
-              }
-            />
-          </div>
-        ) : (
-          <AccountAvatar
-            transparent
-            address={lastReplyAuthorUser?.walletAddress}
-            size="2rem"
-          />
-        )}
-        <Link
-          data-link
-          component="div"
-          css={(t) => css({ fontSize: t.text.sizes.small, margin: "0 0.7rem" })}
-        >
-          {replyMessages.length} replies
-        </Link>
-        <div
-          css={(t) =>
-            css({ color: t.colors.textDimmed, fontSize: t.text.sizes.small })
-          }
-        >
-          <span data-last-reply-at>
-            Last reply{" "}
-            <FormattedDateWithTooltip
-              capitalize={false}
-              value={lastReply.createdAt}
-            />
-          </span>
-          <span data-view-replies>
-            {isExpanded ? "Hide replies" : "View replies"}
-          </span>
-        </div>
-      </button>
-      {isExpanded && (
-        <div>
-          {replyMessages.map((m, i, ms) => (
-            <ChannelMessage
-              key={m.id}
-              messageId={m.id}
-              previousMessageId={ms[i - 1]}
-              showLeftColumn={false}
-              showReplyTargetMessages={false}
-              initReply={initReply}
-              horizontalPadding={0}
-              style={{ "--padding": "0.6rem 0", "--border-radius": "0.5rem" }}
-            />
-          ))}
-          <button
-            onClick={() => {
-              initReply(lastReply.id);
-            }}
-            css={(t) =>
-              css({
-                outline: "none",
-                padding: "0.4rem 0",
-                marginTop: "0.2rem",
-                width: "100%",
-                display: "flex",
-                alignItems: "center",
-                borderRadius: "0.5rem",
-                "@media(hover: hover)": {
-                  cursor: "pointer",
-                  ":hover": {
-                    background: t.colors.backgroundModifierHover,
-                    // boxShadow: t.shadows.elevationLow,
-                    "[data-link]": {
-                      color: t.colors.linkModifierHover,
-                      textDecoration: "underline",
-                    },
-                  },
-                },
-              })
-            }
-          >
-            <div
-              style={{ width: "2rem", height: "2rem", position: "relative" }}
-            >
-              <div
-                css={(t) =>
-                  css({
-                    position: "absolute",
-                    top: "-0.4rem",
-                    right: 0,
-                    border: "0.2rem solid",
-                    borderColor: t.colors.borderLight,
-                    width: "1.1rem",
-                    height: "1.5rem",
-                    borderRight: 0,
-                    borderTop: 0,
-                    borderBottomLeftRadius: "0.4rem",
-                  })
-                }
-              />
-            </div>
-            <Link
-              data-link
-              component="div"
-              css={(t) =>
-                css({
-                  fontSize: t.text.sizes.small,
-                  margin: "0 0.7rem",
-                  display: "inline-flex",
-                })
-              }
-            >
-              Add reply
-              <ReplyArrowIcon
-                style={{ width: "1.2rem", marginLeft: "0.5rem" }}
-              />
-            </Link>
-          </button>
-        </div>
-      )}
-    </div>
-  );
-};
 
 const MessageBody = React.memo(({ messageId }) => {
   const message = useMessage(messageId);
@@ -981,7 +794,6 @@ const MessageHeader = ({ messageId }) => {
 const MessageToolbar = React.memo(
   ({
     dropdownMenuSections = [],
-    allowReplies,
     allowEdit,
     allowReactions,
     initReply,
@@ -1020,16 +832,14 @@ const MessageToolbar = React.memo(
           }
         />
 
-        {allowReplies && (
-          <Toolbar.Button
-            onClick={() => {
-              initReply();
-            }}
-            aria-label="Reply"
-          >
-            <ReplyArrowIcon css={css({ width: "1.6rem", height: "auto" })} />
-          </Toolbar.Button>
-        )}
+        <Toolbar.Button
+          onClick={() => {
+            initReply();
+          }}
+          aria-label="Reply"
+        >
+          <ReplyArrowIcon css={css({ width: "1.6rem", height: "auto" })} />
+        </Toolbar.Button>
 
         {allowEdit && (
           <>
@@ -1641,39 +1451,6 @@ const FormattedDate = ({ value, ...options }) => {
   const formatter = useDateFormatter(options);
   return formatter.format(typeof value === "string" ? new Date(value) : value);
 };
-
-const Link = ({
-  underline,
-  component: Component = "button",
-  style,
-  ...props
-}) => (
-  <Component
-    css={(t) =>
-      css({
-        color: t.colors.link,
-        textDecoration: "var(--text-decoration, none)",
-        outline: "none",
-        ":focus-visible": {
-          textDecoration: "underline",
-          color: t.colors.linkModifierHover,
-        },
-        "@media(hover: hover)": {
-          cursor: "pointer",
-          ":hover": {
-            textDecoration: "underline",
-            color: t.colors.linkModifierHover,
-          },
-        },
-      })
-    }
-    style={{
-      "--text-decoration": underline ? "underline" : undefined,
-      ...style,
-    }}
-    {...props}
-  />
-);
 
 const ProfilePreview = ({ userId }) => {
   const user = useUser(userId);

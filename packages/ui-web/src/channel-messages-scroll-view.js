@@ -20,7 +20,7 @@ const ChannelMessagesScrollView = ({
   renderHeader,
   renderMessage,
   didScrollToBottomRef: didScrollToBottomRefExternal,
-  layout,
+  threads = false,
 }) => {
   const scrollViewRef = React.useRef();
   const messagesContainerRef = React.useRef();
@@ -32,7 +32,7 @@ const ChannelMessagesScrollView = ({
   const { markChannelRead } = useActions();
 
   const messageIds = useSortedChannelMessageIds(channelId, {
-    threads: layout !== "bubbles",
+    threads,
   });
   const hasAllMessages = useHasAllChannelMessages(channelId);
   const hasFetchedChannelMessagesAtLeastOnce =
@@ -222,6 +222,7 @@ const ChannelMessagesScrollView = ({
         <div css={css({ height: "1.3rem" })} />
         {messageIds.map((id, index, ids) =>
           renderMessage(id, index, ids, {
+            threads,
             scrollToMessage,
             isTouchFocused: touchFocusedMessageId === id,
             setTouchFocused: inputDeviceCanHover

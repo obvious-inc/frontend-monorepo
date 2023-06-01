@@ -22,112 +22,6 @@ import Spinner from "./spinner.js";
 
 const { createEmptyParagraphElement } = messageUtils;
 
-const AttachmentList = ({ items, remove }) => (
-  <div
-    css={(theme) =>
-      css({
-        display: "grid",
-        gridAutoColumns: "max-content",
-        gridAutoFlow: "column",
-        justifyContent: "flex-start",
-        gridGap: "1rem",
-        img: {
-          display: "block",
-          width: "6rem",
-          height: "6rem",
-          borderRadius: "0.5rem",
-          objectFit: "cover",
-          background: theme.colors.backgroundSecondary,
-        },
-      })
-    }
-  >
-    {items.map(({ id, url, previewUrl }) => (
-      <div
-        key={url}
-        css={css({
-          position: "relative",
-          ".delete-button": { opacity: 0 },
-          "@media (hover: hover)": {
-            ":hover .delete-button": { opacity: 1 },
-          },
-        })}
-      >
-        <button
-          type="button"
-          onClick={() => {
-            window.open(url, "_blank");
-          }}
-          css={css({
-            display: "block",
-            cursor: "pointer",
-          })}
-        >
-          <img
-            src={url}
-            style={{
-              transition: "0.1s opacity",
-              opacity: id == null ? 0.7 : 1,
-              background: previewUrl == null ? undefined : `url(${previewUrl})`,
-              backgroundSize: "cover",
-              backgroundPosition: "center",
-            }}
-          />
-        </button>
-
-        {id == null && (
-          <div
-            style={{
-              pointerEvents: "none",
-              position: "absolute",
-              top: "50%",
-              left: "50%",
-              transform: "translateX(-50%) translateY(-50%)",
-            }}
-            css={(theme) => css({ color: theme.colors.interactiveNormal })}
-          >
-            <Spinner />
-          </div>
-        )}
-
-        <button
-          type="button"
-          className="delete-button"
-          css={(theme) =>
-            css({
-              position: "absolute",
-              top: 0,
-              right: 0,
-              transform: "translateX(50%) translateY(-50%)",
-              cursor: "pointer",
-              background: theme.colors.inputBackground,
-              borderRadius: "50%",
-              boxShadow: `0 0 0 0.2rem ${theme.colors.inputBackground}`,
-              color: theme.colors.textDimmed,
-              "@media (hover: hover)": {
-                ":hover": {
-                  color: theme.colors.textDimmedModifierHover,
-                },
-              },
-            })
-          }
-          onClick={() => {
-            remove({ url });
-          }}
-        >
-          <PlusCircleIcon
-            style={{
-              width: "2.2rem",
-              height: "auto",
-              transform: "rotate(45deg",
-            }}
-          />
-        </button>
-      </div>
-    ))}
-  </div>
-);
-
 const NewChannelMessageInput = React.memo(
   React.forwardRef(function NewMessageInput_(
     {
@@ -144,10 +38,10 @@ const NewChannelMessageInput = React.memo(
       submitArea,
       ...props
     },
-    editorRef_
+    forwardedEditorRef
   ) {
-    const ref = React.useRef();
-    const editorRef = editorRef_ ?? ref;
+    const fallbackEditorRef = React.useRef();
+    const editorRef = forwardedEditorRef ?? fallbackEditorRef;
 
     const replyTargetMessage = useMessage(replyTargetMessageId);
 
@@ -173,16 +67,13 @@ const NewChannelMessageInput = React.memo(
       previousPendingSlateNodesRef.current = pendingSlateNodes;
     }, [pendingSlateNodes, onInputChange]);
 
-    const {
-      execute: executeCommand_,
-      isCommand,
-      commands,
-    } = useCommands({ context, channelId });
+    const commandsByName = useCommands({ context, channelId });
 
     const executeCommand = async (commandName, args) => {
       setPending(true);
       try {
-        return await executeCommand_(commandName, {
+        const command = commandsByName[commandName];
+        return await command.execute({
           submit,
           args,
           editor: editorRef.current,
@@ -216,7 +107,7 @@ const NewChannelMessageInput = React.memo(
           .map((s) => s.trim())
           .filter(Boolean);
 
-        if (isCommand(commandName)) {
+        if (Object.keys(commandsByName).includes(commandName)) {
           await executeCommand(commandName, args);
           return;
         }
@@ -254,7 +145,7 @@ const NewChannelMessageInput = React.memo(
       try {
         setPending(true);
         const attachments = await uploadPromiseRef.current.then();
-        // Skippping `await` here to make sure we only mark as pending during
+        // Skipping `await` here to make sure we only mark as pending during
         // the upload phase. We don’t want to wait for the message creation to
         // complete since the UI is optimistic and adds the message right away
         submitWithAttachments(attachments);
@@ -281,7 +172,6 @@ const NewChannelMessageInput = React.memo(
                 background: t.light
                   ? t.colors.backgroundQuarternary
                   : t.colors.backgroundSecondary,
-                // filter: t.light ? "brightness(0.925)" : "brightness(0.875)",
                 borderTopLeftRadius: "0.7rem",
                 borderTopRightRadius: "0.7rem",
                 padding: "0.6rem 1rem 0.6rem 1.1rem",
@@ -378,7 +268,7 @@ const NewChannelMessageInput = React.memo(
               }
             }}
             executeCommand={executeCommand}
-            commands={commands}
+            commands={commandsByName}
             disabled={disabled || isPending}
             data-message-input-root
             {...props}
@@ -564,6 +454,112 @@ const NewChannelMessageInput = React.memo(
       </div>
     );
   })
+);
+
+const AttachmentList = ({ items, remove }) => (
+  <div
+    css={(theme) =>
+      css({
+        display: "grid",
+        gridAutoColumns: "max-content",
+        gridAutoFlow: "column",
+        justifyContent: "flex-start",
+        gridGap: "1rem",
+        img: {
+          display: "block",
+          width: "6rem",
+          height: "6rem",
+          borderRadius: "0.5rem",
+          objectFit: "cover",
+          background: theme.colors.backgroundSecondary,
+        },
+      })
+    }
+  >
+    {items.map(({ id, url, previewUrl }) => (
+      <div
+        key={url}
+        css={css({
+          position: "relative",
+          ".delete-button": { opacity: 0 },
+          "@media (hover: hover)": {
+            ":hover .delete-button": { opacity: 1 },
+          },
+        })}
+      >
+        <button
+          type="button"
+          onClick={() => {
+            window.open(url, "_blank");
+          }}
+          css={css({
+            display: "block",
+            cursor: "pointer",
+          })}
+        >
+          <img
+            src={url}
+            style={{
+              transition: "0.1s opacity",
+              opacity: id == null ? 0.7 : 1,
+              background: previewUrl == null ? undefined : `url(${previewUrl})`,
+              backgroundSize: "cover",
+              backgroundPosition: "center",
+            }}
+          />
+        </button>
+
+        {id == null && (
+          <div
+            style={{
+              pointerEvents: "none",
+              position: "absolute",
+              top: "50%",
+              left: "50%",
+              transform: "translateX(-50%) translateY(-50%)",
+            }}
+            css={(theme) => css({ color: theme.colors.interactiveNormal })}
+          >
+            <Spinner />
+          </div>
+        )}
+
+        <button
+          type="button"
+          className="delete-button"
+          css={(theme) =>
+            css({
+              position: "absolute",
+              top: 0,
+              right: 0,
+              transform: "translateX(50%) translateY(-50%)",
+              cursor: "pointer",
+              background: theme.colors.inputBackground,
+              borderRadius: "50%",
+              boxShadow: `0 0 0 0.2rem ${theme.colors.inputBackground}`,
+              color: theme.colors.textDimmed,
+              "@media (hover: hover)": {
+                ":hover": {
+                  color: theme.colors.textDimmedModifierHover,
+                },
+              },
+            })
+          }
+          onClick={() => {
+            remove({ url });
+          }}
+        >
+          <PlusCircleIcon
+            style={{
+              width: "2.2rem",
+              height: "auto",
+              transform: "rotate(45deg",
+            }}
+          />
+        </button>
+      </div>
+    ))}
+  </div>
 );
 
 export default NewChannelMessageInput;

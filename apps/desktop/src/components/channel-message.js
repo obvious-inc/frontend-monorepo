@@ -64,6 +64,7 @@ const ChannelMessage = React.memo(function ChannelMessage_({
   setTouchFocused,
   layout,
   scrollToMessage,
+  threads = false,
   showLeftColumn = true,
   showReplyTargetMessages = true,
   horizontalPadding = "1.6rem",
@@ -427,7 +428,7 @@ const ChannelMessage = React.memo(function ChannelMessage_({
             />
           )}
 
-          {layout !== "bubbles" && message.replyMessageIds?.length >= 2 && (
+          {threads && message.replyMessageIds?.length >= 2 && (
             <Thread
               messageId={messageId}
               layout={layout}
@@ -438,6 +439,7 @@ const ChannelMessage = React.memo(function ChannelMessage_({
       </div>
     </div>
   );
+
   const createdAt = new Date(message.createdAt);
 
   if (

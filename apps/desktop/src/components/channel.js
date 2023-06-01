@@ -183,6 +183,7 @@ const ChannelContent = ({ channelId }) => {
         didScrollToBottomRef={didScrollToBottomRef}
         renderHeader={renderScrollViewHeader}
         renderMessage={renderMessage}
+        // threads={layout !== "bubbles"}
       />
 
       <div css={css({ padding: "0 1.6rem" })}>

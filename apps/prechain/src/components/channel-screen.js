@@ -26,8 +26,6 @@ import Input from "@shades/ui-web/input";
 import ChannelMessagesScrollView from "@shades/ui-web/channel-messages-scroll-view";
 import ChannelMessage from "./channel-message.js";
 import RichText from "./rich-text.js";
-// import { isNodeEmpty } from "../slate/utils.js";
-// import NewChannelMessageInput from "./new-channel-message-input.js";
 
 const ChannelContent = ({ channelId }) => {
   const { status: authenticationStatus } = useAuth();
