@@ -19,6 +19,7 @@ import {
   useActions,
   useAuth,
   useMe,
+  useMessage,
   useUsers,
   useAllUsers,
   useMemberChannels,
@@ -44,6 +45,7 @@ import { useState as useSidebarState } from "@shades/ui-web/sidebar-layout";
 import {
   CrossSmall as CrossSmallIcon,
   Checkmark as CheckmarkIcon,
+  CrossCircle as CrossCircleIcon,
 } from "@shades/ui-web/icons";
 import Button from "@shades/ui-web/button";
 import Emoji from "@shades/ui-web/emoji";
@@ -55,19 +57,20 @@ import InlineChannelButton from "@shades/ui-web/inline-channel-button";
 import ChannelMessagesScrollView from "@shades/ui-web/channel-messages-scroll-view";
 import { useDialog } from "../hooks/dialogs.js";
 import useLayoutSetting from "../hooks/layout-setting.js";
+import useCommands from "../hooks/commands";
 import Combobox, {
   Item as ComboboxItem,
   Section as ComboboxSection,
 } from "./combobox";
 import { Grid as FlexGrid, Item as FlexGridItem } from "./flex-grid.js";
 import NavBar from "./nav-bar.js";
-import NewChannelMessageInput from "./new-channel-message-input.js";
+import NewMessageInput from "./new-channel-message-input.js";
 import ChannelPrologue, {
   PersonalDMChannelPrologue,
 } from "./channel-prologue.js";
 import ChannelMessagesScrollViewHeader from "./channel-messages-scroll-view-header.js";
 import ChannelMessage from "./channel-message.js";
-import InlineUserButtonWithProfilePopover from "./inline-user-button-with-profile-popover.js";
+import AccountPreviewPopoverTrigger from "./account-preview-popover-trigger.js";
 
 const INTRO_CHANNEL_ID = "625806ed89bff47879344a9c";
 
@@ -506,6 +509,7 @@ const NewMessageScreen = () => {
       ? "dm"
       : "group";
 
+  const messageInputCommands = useCommands({ channelId });
   const channelMembers = useChannelMembers(channelId);
   const { canPostMessages: canPostChannelMessages } =
     useChannelPermissions(channelId);
@@ -521,6 +525,7 @@ const NewMessageScreen = () => {
   const [hasPendingMessageSubmit, setHasPendingMessageSubmit] =
     React.useState(false);
   const [replyTargetMessageId, setReplyTargetMessageId] = React.useState(null);
+  const replyTargetMessage = useMessage(replyTargetMessageId);
 
   const {
     open: openAccountAuthenticationDialog,
@@ -676,9 +681,13 @@ const NewMessageScreen = () => {
         )}
 
         <div style={{ padding: "0 1.6rem 2rem" }}>
-          <NewChannelMessageInput
+          <NewMessageInput
             ref={messageInputRef}
-            uploadImage={actions.uploadImage}
+            disabled={!enableMessageInput}
+            submitDisabled={
+              matchType == null || authenticationStatus !== "authenticated"
+            }
+            placeholder="Type your message..."
             submit={async (message) => {
               if (channelId != null) {
                 actions.createMessage({
@@ -712,17 +721,60 @@ const NewMessageScreen = () => {
                 setHasPendingMessageSubmit(false);
               }
             }}
-            placeholder="Type your message..."
+            uploadImage={actions.uploadImage}
             // @mentions require user ids for now, so we can’t pass `selectedAccounts`
             members={matchType === "channel" ? channelMembers : selectedUsers}
-            disabled={!enableMessageInput}
-            submitDisabled={
-              matchType == null || authenticationStatus !== "authenticated"
-            }
+            commands={messageInputCommands}
             fileUploadDisabled={authenticationStatus !== "authenticated"}
-            channelId={channelId}
-            replyTargetMessageId={replyTargetMessageId}
-            cancelReply={cancelReply}
+            onKeyDown={(e) => {
+              if (!e.isDefaultPrevented() && e.key === "Escape") {
+                e.preventDefault();
+                cancelReply?.();
+              }
+            }}
+            header={
+              replyTargetMessageId == null ? null : (
+                <div css={css({ display: "flex", alignItems: "center" })}>
+                  <div css={css({ flex: 1, paddingRight: "1rem" })}>
+                    Replying to{" "}
+                    <AccountPreviewPopoverTrigger
+                      userId={replyTargetMessage.authorUserId}
+                      variant="link"
+                      css={(t) =>
+                        css({
+                          color: t.colors.textDimmed,
+                          ":disabled": { color: t.colors.textMuted },
+                        })
+                      }
+                    />
+                  </div>
+                  <button
+                    onClick={cancelReply}
+                    css={(t) =>
+                      css({
+                        color: t.colors.textDimmed,
+                        outline: "none",
+                        borderRadius: "50%",
+                        marginRight: "-0.2rem",
+                        ":focus-visible": {
+                          boxShadow: `0 0 0 0.2rem ${t.colors.primary}`,
+                        },
+                        "@media (hover: hover)": {
+                          cursor: "pointer",
+                          ":hover": {
+                            color: t.colors.textDimmedModifierHover,
+                          },
+                        },
+                      })
+                    }
+                  >
+                    <CrossCircleIcon
+                      style={{ width: "1.6rem", height: "auto" }}
+                    />
+                  </button>
+                </div>
+              )
+            }
             submitArea={
               authenticationStatus === "not-authenticated" &&
               matchType != null ? (
@@ -1470,13 +1522,9 @@ const ChannelIntro = ({ walletAddresses: walletAddresses_ }) => {
         .slice(0, 3)
         .map((a, i, as) => (
           <React.Fragment key={a}>
-            <InlineUserButtonWithProfilePopover
-              walletAddress={a}
-              css={(t) =>
-                css({
-                  color: t.colors.textHeader,
-                })
-              }
+            <AccountPreviewPopoverTrigger
+              accountAddress={a}
+              css={(t) => css({ color: t.colors.textHeader })}
             />
             {i !== as.length - 1 && ", "}
             {i === as.length - 1 &&
@@ -1499,8 +1547,8 @@ const ChannelIntro = ({ walletAddresses: walletAddresses_ }) => {
           This conversation is between{" "}
           {walletAddresses.map((a, i, as) => (
             <React.Fragment key={a}>
-              <InlineUserButtonWithProfilePopover
-                walletAddress={a}
+              <AccountPreviewPopoverTrigger
+                accountAddress={a}
                 css={(t) => css({ color: t.colors.textNormal })}
               />
               {i !== as.length - 1 ? ", " : null}
@@ -1526,8 +1574,8 @@ const DMChannelIntro = ({ walletAddress }) => {
         <AccountAvatar address={walletAddress} size="6.6rem" transparent />
       }
       title={
-        <InlineUserButtonWithProfilePopover
-          walletAddress={walletAddress}
+        <AccountPreviewPopoverTrigger
+          accountAddress={walletAddress}
           css={(t) => css({ color: t.colors.textHeader })}
         />
       }
@@ -1535,8 +1583,8 @@ const DMChannelIntro = ({ walletAddress }) => {
       body={
         <>
           This conversation is just between{" "}
-          <InlineUserButtonWithProfilePopover
-            walletAddress={walletAddress}
+          <AccountPreviewPopoverTrigger
+            accountAddress={walletAddress}
             css={(t) => css({ color: t.colors.textNormal })}
           />{" "}
           and you.
@@ -1617,9 +1665,9 @@ const Onboarding = ({ selectChannel }) => {
         }}
       >
         Hi{" "}
-        <InlineUserButtonWithProfilePopover
+        <AccountPreviewPopoverTrigger
           variant="button"
-          walletAddress={me?.walletAddress ?? connectedWalletAccountAddress}
+          accountAddress={me?.walletAddress ?? connectedWalletAccountAddress}
         />
         !
       </motion.p>

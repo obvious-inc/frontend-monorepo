@@ -1,9 +1,13 @@
 export const omitKey = (key, obj) => omitKeys([key], obj);
 
-export const omitKeys = (keys, obj) =>
-  Object.fromEntries(
-    Object.entries(obj).filter(([key_]) => !keys.includes(key_))
-  );
+export const omitKeys = (keysOrPredicate, obj) => {
+  const predicate =
+    typeof keysOrPredicate === "function"
+      ? (entry) => !keysOrPredicate(entry)
+      : ([key_]) => !keysOrPredicate.includes(key_);
+
+  return Object.fromEntries(Object.entries(obj).filter(predicate));
+};
 
 export const pickKeys = (keys, obj) =>
   Object.fromEntries(

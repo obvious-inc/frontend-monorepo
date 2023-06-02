@@ -183,7 +183,7 @@ const ContentInner = React.forwardRef(
             })
           }
           {...containerProps}
-          style={{ ...containerProps.style, ...props.style }}
+          style={{ ...containerProps.style, zIndex: 10, ...props.style }}
         >
           {dismissButtonElement}
           {isDialog ? (

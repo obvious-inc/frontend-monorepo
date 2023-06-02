@@ -13,10 +13,10 @@ import ChannelAvatar from "@shades/ui-web/channel-avatar";
 import { AddUser as AddUserIcon } from "@shades/ui-web/icons";
 import useLayoutSetting from "../hooks/layout-setting.js";
 import { useDialog } from "../hooks/dialogs.js";
+import AccountPreviewPopoverTrigger from "./account-preview-popover-trigger.js";
 import ChannelPrologue, {
   PersonalDMChannelPrologue,
 } from "./channel-prologue.js";
-import InlineUserButtonWithProfilePopover from "./inline-user-button-with-profile-popover.js";
 import FormattedDate from "./formatted-date.js";
 import RichText from "./rich-text.js";
 
@@ -47,7 +47,7 @@ const ChannelMessagesScrollViewHeader = ({ channelId }) => {
             .map((m, i, ms) => {
               return (
                 <React.Fragment key={m.walletAddress}>
-                  <InlineUserButtonWithProfilePopover
+                  <AccountPreviewPopoverTrigger
                     userId={m.id}
                     css={(t) => css({ color: t.colors.textNormal })}
                   />
@@ -109,7 +109,7 @@ const ChannelMessagesScrollViewHeader = ({ channelId }) => {
       subtitle={
         <>
           Created by{" "}
-          <InlineUserButtonWithProfilePopover userId={channel.ownerUserId} /> on{" "}
+          <AccountPreviewPopoverTrigger userId={channel.ownerUserId} /> on{" "}
           <FormattedDate value={channel.createdAt} day="numeric" month="long" />
         </>
       }
@@ -176,8 +176,7 @@ const ChannelWithBodyHeader = ({ channelId }) => {
             }
           >
             Created by{" "}
-            <InlineUserButtonWithProfilePopover userId={channel.ownerUserId} />{" "}
-            on{" "}
+            <AccountPreviewPopoverTrigger userId={channel.ownerUserId} /> on{" "}
             <FormattedDate
               value={channel.createdAt}
               day="numeric"
@@ -245,7 +244,7 @@ const DMChannelHeader = ({ channelId }) => {
           This conversation is just between{" "}
           {membersExcludingMe.map((m, i, ms) => (
             <React.Fragment key={m.id}>
-              <InlineUserButtonWithProfilePopover
+              <AccountPreviewPopoverTrigger
                 userId={m.id}
                 css={(t) => css({ color: t.colors.textNormal })}
               />

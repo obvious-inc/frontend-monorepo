@@ -34,7 +34,6 @@ import {
 } from "@shades/ui-web/icons";
 import AccountAvatar from "@shades/ui-web/account-avatar";
 import InlineUserButton from "@shades/ui-web/inline-user-button";
-import * as Popover from "@shades/ui-web/popover";
 import * as DropdownMenu from "@shades/ui-web/dropdown-menu";
 import * as Toolbar from "@shades/ui-web/toolbar";
 import * as Tooltip from "@shades/ui-web/tooltip";
@@ -44,12 +43,11 @@ import {
   fromMessageBlocks,
   toMessageBlocks,
 } from "@shades/ui-web/rich-text-editor";
+import AccountPreviewPopoverTrigger from "./account-preview-popover-trigger.js";
 import FormattedDate from "./formatted-date";
 import MessageInput from "./message-input";
 import RichText from "./rich-text";
 import Link from "./link";
-import ProfilePreview from "./profile-preview";
-import InlineUserButtonWithProfilePopover from "./inline-user-button-with-profile-popover";
 
 const { withoutAttachments } = messageUtils;
 
@@ -1189,7 +1187,7 @@ const MessageHeader = ({ layout, messageId }) => {
           paddingRight: isAuthorMe ? "1.4rem" : 0,
         }}
       >
-        <InlineUserButtonWithProfilePopover
+        <AccountPreviewPopoverTrigger
           userId={message.authorUserId}
           css={(t) =>
             css({
@@ -1206,45 +1204,43 @@ const MessageHeader = ({ layout, messageId }) => {
 
   if (layout === "compact")
     return (
-      <Popover.Root placement="right">
-        <Popover.Trigger
-          asChild
-          disabled={message.author == null || message.author.deleted}
-        >
-          <div
-            css={css({
+      <AccountPreviewPopoverTrigger userId={message.authorUserId}>
+        <button
+          css={(t) =>
+            css({
+              outline: "none",
               display: "inline",
-              cursor: "pointer",
+              borderRadius: "0.3rem",
+              marginRight: "0.5rem",
+              ":focus-visible": { boxShadow: t.shadows.focus },
               "@media(hover: hover)": {
+                cursor: "pointer",
                 ":hover [data-name]": {
                   textDecoration: "underline",
                 },
               },
-            })}
-          >
-            <AccountAvatar
-              transparent
-              address={message.author?.walletAddress}
-              size="2rem"
-              style={{
-                display: "inline-flex",
-                verticalAlign: "sub",
-                marginRight: "0.7rem",
-                transform: "translateY(0.1rem)",
-              }}
-            />
-            <InlineUserButton
-              variant="link"
-              data-name
-              userId={message.authorUserId}
-              style={{ marginRight: "1rem" }}
-            />
-          </div>
-        </Popover.Trigger>
-        <Popover.Content>
-          <ProfilePreview userId={message.authorUserId} />
-        </Popover.Content>
-      </Popover.Root>
+            })
+          }
+        >
+          <AccountAvatar
+            transparent
+            address={message.author?.walletAddress}
+            size="2rem"
+            style={{
+              display: "inline-flex",
+              verticalAlign: "sub",
+              marginRight: "0.7rem",
+              transform: "translateY(0.1rem)",
+            }}
+          />
+          <InlineUserButton
+            component="span"
+            variant="link"
+            data-name
+            userId={message.authorUserId}
+          />
+        </button>
+      </AccountPreviewPopoverTrigger>
     );
 
   return (
@@ -1264,7 +1260,7 @@ const MessageHeader = ({ layout, messageId }) => {
     >
       {message.authorUserId != null && (
         <>
-          <InlineUserButtonWithProfilePopover userId={message.authorUserId} />
+          <AccountPreviewPopoverTrigger userId={message.authorUserId} />
 
           <TinyMutedText style={{ lineHeight: 1.5 }}>
             <FormattedDateWithTooltip
@@ -1576,44 +1572,36 @@ const ReplyTargetMessage = ({ messageId, layout, onClickMessage }) => {
             </span>
           ) : (
             <>
-              <Popover.Root placement="top">
-                <Popover.Trigger
-                  asChild
-                  disabled={authorMember == null || authorMember.deleted}
-                >
-                  <span
-                    role="button"
-                    tabIndex={0}
-                    css={(t) =>
-                      css({
-                        color: authorMember?.deleted
-                          ? t.colors.textDimmed
-                          : undefined,
-                        fontWeight: "500",
-                        "@media(hover: hover)": {
-                          ":not(:disabled)": {
-                            cursor: "pointer",
-                            ":hover": {
-                              textDecoration: "underline",
-                            },
+              <AccountPreviewPopoverTrigger userId={message?.authorUserId}>
+                <span
+                  role="button"
+                  tabIndex={0}
+                  css={(t) =>
+                    css({
+                      color: authorMember?.deleted
+                        ? t.colors.textDimmed
+                        : undefined,
+                      fontWeight: "500",
+                      "@media(hover: hover)": {
+                        ":not(:disabled)": {
+                          cursor: "pointer",
+                          ":hover": {
+                            textDecoration: "underline",
                           },
                         },
-                      })
-                    }
-                  >
-                    {authorMember == null ? (
-                      <wbr />
-                    ) : authorMember.deleted ? (
-                      "Deleted user"
-                    ) : (
-                      authorMember.displayName
-                    )}
-                  </span>
-                </Popover.Trigger>
-                <Popover.Content>
-                  <ProfilePreview userId={message?.authorUserId} />
-                </Popover.Content>
-              </Popover.Root>
+                      },
+                    })
+                  }
+                >
+                  {authorMember == null ? (
+                    <wbr />
+                  ) : authorMember.deleted ? (
+                    "Deleted user"
+                  ) : (
+                    authorMember.displayName
+                  )}
+                </span>
+              </AccountPreviewPopoverTrigger>
               {": "}
               <span
                 role="button"
@@ -1731,51 +1719,43 @@ const MessageLeftColumn = ({ messageId, simplified, layout, isHovering }) => {
 
   return (
     <div style={{ padding: layout === "bubbles" ? "2rem 0 0" : "0.2rem 0 0" }}>
-      <Popover.Root placement="top">
-        <Popover.Trigger
-          asChild
-          disabled={message.author == null || message.author.deleted}
-        >
-          <button
-            css={(t) =>
-              css({
-                "--regular-color": t.colors.borderLight,
-                "--verified-color": t.colors.primary,
-                display: "block",
-                position: "relative",
-                borderRadius: t.avatars.borderRadius,
-                overflow: "hidden",
-                outline: "none",
-                ":focus-visible": {
-                  boxShadow: t.shadows.focus,
-                },
-                "@media (hover: hover)": {
-                  ":not:disabled": {
-                    cursor: "pointer",
-                    ":hover": {
-                      boxShadow: "var(--hover-box-shadow)",
-                    },
+      <AccountPreviewPopoverTrigger userId={message.authorUserId}>
+        <button
+          css={(t) =>
+            css({
+              "--regular-color": t.colors.borderLight,
+              "--verified-color": t.colors.primary,
+              display: "block",
+              position: "relative",
+              borderRadius: t.avatars.borderRadius,
+              overflow: "hidden",
+              outline: "none",
+              ":focus-visible": {
+                boxShadow: t.shadows.focus,
+              },
+              "@media (hover: hover)": {
+                ":not(:disabled)": {
+                  cursor: "pointer",
+                  ":hover": {
+                    boxShadow: "var(--hover-box-shadow)",
                   },
                 },
-              })
-            }
-            style={{
-              "--hover-box-shadow": hasVerfifiedProfilePicture
-                ? "0 0 0 0.2rem var(--verified-color)"
-                : "0 0 0 0.2rem var(--regular-color)",
-            }}
-          >
-            <AccountAvatar
-              transparent
-              address={message.author?.walletAddress}
-              size="3.8rem"
-            />
-          </button>
-        </Popover.Trigger>
-        <Popover.Content>
-          <ProfilePreview userId={message.authorUserId} />
-        </Popover.Content>
-      </Popover.Root>
+              },
+            })
+          }
+          style={{
+            "--hover-box-shadow": hasVerfifiedProfilePicture
+              ? "0 0 0 0.2rem var(--verified-color)"
+              : "0 0 0 0.2rem var(--regular-color)",
+          }}
+        >
+          <AccountAvatar
+            transparent
+            address={message.author?.walletAddress}
+            size="3.8rem"
+          />
+        </button>
+      </AccountPreviewPopoverTrigger>
     </div>
   );
 };
@@ -1791,10 +1771,9 @@ const SystemMessageContent = ({ messageId }) => {
 
       return (
         <span style={{ opacity: isMissingData ? 0 : 1 }}>
-          <InlineUserButtonWithProfilePopover userId={message.inviterUserId} />{" "}
-          added{" "}
-          <InlineUserButtonWithProfilePopover userId={message.authorUserId} />{" "}
-          to the channel.
+          <AccountPreviewPopoverTrigger userId={message.inviterUserId} /> added{" "}
+          <AccountPreviewPopoverTrigger userId={message.authorUserId} /> to the
+          channel.
         </span>
       );
     }
@@ -1805,8 +1784,8 @@ const SystemMessageContent = ({ messageId }) => {
         message.author?.walletAddress == null;
       return (
         <span style={{ opacity: isMissingData ? 0 : 1 }}>
-          <InlineUserButtonWithProfilePopover userId={message.authorUserId} />{" "}
-          joined the channel. Welcome!
+          <AccountPreviewPopoverTrigger userId={message.authorUserId} /> joined
+          the channel. Welcome!
         </span>
       );
     }
@@ -1816,7 +1795,7 @@ const SystemMessageContent = ({ messageId }) => {
       if (updates.length == 0 || updates.length > 1) {
         return (
           <>
-            <InlineUserButtonWithProfilePopover userId={message.authorUserId} />{" "}
+            <AccountPreviewPopoverTrigger userId={message.authorUserId} />{" "}
             updated the channel.
           </>
         );
@@ -1829,9 +1808,7 @@ const SystemMessageContent = ({ messageId }) => {
         case "description":
           return (
             <>
-              <InlineUserButtonWithProfilePopover
-                userId={message.authorUserId}
-              />{" "}
+              <AccountPreviewPopoverTrigger userId={message.authorUserId} />{" "}
               {(value ?? "") === "" ? (
                 "cleared the topic description."
               ) : (
@@ -1845,9 +1822,7 @@ const SystemMessageContent = ({ messageId }) => {
         case "name":
           return (
             <>
-              <InlineUserButtonWithProfilePopover
-                userId={message.authorUserId}
-              />{" "}
+              <AccountPreviewPopoverTrigger userId={message.authorUserId} />{" "}
               {(value ?? "") === "" ? (
                 <>cleared the topic {field}.</>
               ) : (
@@ -1860,9 +1835,7 @@ const SystemMessageContent = ({ messageId }) => {
         default:
           return (
             <>
-              <InlineUserButtonWithProfilePopover
-                userId={message.authorUserId}
-              />{" "}
+              <AccountPreviewPopoverTrigger userId={message.authorUserId} />{" "}
               updated the topic {field}.
             </>
           );
@@ -1877,9 +1850,7 @@ const SystemMessageContent = ({ messageId }) => {
 
       return (
         <span style={{ opacity: isMissingData ? 0 : undefined }}>
-          <InlineUserButtonWithProfilePopover
-            userId={message.installerUserId}
-          />{" "}
+          <AccountPreviewPopoverTrigger userId={message.installerUserId} />{" "}
           installed a new app:{" "}
           <span
             css={(t) =>

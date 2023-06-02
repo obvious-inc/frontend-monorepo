@@ -4,10 +4,8 @@ import {
   getImageFileDimensions,
   message as messageUtils,
 } from "@shades/common/utils";
-import { useMessage } from "@shades/common/app";
 import {
   AtSign as AtSignIcon,
-  CrossCircle as CrossCircleIcon,
   EmojiFace as EmojiFaceIcon,
   Gif as GifIcon,
   PaperClip as PaperClipIcon,
@@ -15,8 +13,6 @@ import {
 } from "@shades/ui-web/icons";
 import IconButton from "@shades/ui-web/icon-button";
 import { isNodeEmpty, toMessageBlocks } from "@shades/ui-web/rich-text-editor";
-import useCommands from "../hooks/commands";
-import InlineUserButtonWithProfilePopover from "./inline-user-button-with-profile-popover.js";
 import MessageInput from "./message-input.js";
 import Spinner from "./spinner.js";
 
@@ -25,25 +21,22 @@ const { createEmptyParagraphElement } = messageUtils;
 const NewChannelMessageInput = React.memo(
   React.forwardRef(function NewMessageInput_(
     {
-      context,
       submit,
       uploadImage,
       disabled = false,
       submitDisabled = false,
       fileUploadDisabled = false,
-      cancelReply,
-      channelId,
-      replyTargetMessageId,
-      onInputChange,
+      commands: commandsByName = {},
+      onChange,
+      onKeyDown,
       submitArea,
+      header,
       ...props
     },
     forwardedEditorRef
   ) {
     const fallbackEditorRef = React.useRef();
     const editorRef = forwardedEditorRef ?? fallbackEditorRef;
-
-    const replyTargetMessage = useMessage(replyTargetMessageId);
 
     const [pendingSlateNodes, setPendingSlateNodes] = React.useState(() => [
       createEmptyParagraphElement(),
@@ -62,12 +55,10 @@ const NewChannelMessageInput = React.memo(
 
     React.useEffect(() => {
       if (previousPendingSlateNodesRef.current !== pendingSlateNodes) {
-        onInputChange?.(pendingSlateNodes);
+        onChange?.(pendingSlateNodes);
       }
       previousPendingSlateNodesRef.current = pendingSlateNodes;
-    }, [pendingSlateNodes, onInputChange]);
-
-    const commandsByName = useCommands({ context, channelId });
+    }, [pendingSlateNodes, onChange]);
 
     const executeCommand = async (commandName, args) => {
       setPending(true);
@@ -159,7 +150,7 @@ const NewChannelMessageInput = React.memo(
 
     return (
       <div css={css({ position: "relative" })}>
-        {replyTargetMessage != null && (
+        {header != null && (
           <div
             css={(t) =>
               css({
@@ -167,8 +158,6 @@ const NewChannelMessageInput = React.memo(
                 bottom: "100%",
                 left: 0,
                 width: "100%",
-                display: "flex",
-                alignItems: "center",
                 background: t.light
                   ? t.colors.backgroundQuarternary
                   : t.colors.backgroundSecondary,
@@ -180,41 +169,9 @@ const NewChannelMessageInput = React.memo(
               })
             }
           >
-            <div css={css({ flex: 1, paddingTop: "0.2rem" })}>
-              Replying to{" "}
-              <InlineUserButtonWithProfilePopover
-                userId={replyTargetMessage.authorUserId}
-                variant="link"
-                css={(t) =>
-                  css({
-                    color: t.colors.textDimmed,
-                    ":disabled": { color: t.colors.textMuted },
-                  })
-                }
-              />
-            </div>
-            <button
-              onClick={cancelReply}
-              css={(t) =>
-                css({
-                  color: t.colors.textDimmed,
-                  cursor: "pointer",
-                  outline: "none",
-                  borderRadius: "50%",
-                  ":focus-visible": {
-                    boxShadow: `0 0 0 0.2rem ${t.colors.primary}`,
-                  },
-                  "@media (hover: hover)": {
-                    ":hover": { color: t.colors.textDimmedModifierHover },
-                  },
-                })
-              }
-            >
-              <CrossCircleIcon style={{ width: "1.6rem", height: "auto" }} />
-            </button>
+            {header}
           </div>
         )}
-
         <form
           onSubmit={(e) => {
             e.preventDefault();
@@ -229,8 +186,6 @@ const NewChannelMessageInput = React.memo(
               overflow: "auto",
               background: t.colors.backgroundTertiary,
               borderRadius: "0.6rem",
-              borderTopLeftRadius: replyTargetMessage ? 0 : undefined,
-              borderTopRightRadius: replyTargetMessage ? 0 : undefined,
               fontSize: t.text.sizes.large,
               ":has([data-message-input-root][data-disabled])": {
                 color: t.colors.textMuted,
@@ -249,6 +204,10 @@ const NewChannelMessageInput = React.memo(
               },
             })
           }
+          style={{
+            borderTopLeftRadius: header != null ? 0 : undefined,
+            borderTopRightRadius: header != null ? 0 : undefined,
+          }}
         >
           <MessageInput
             ref={editorRef}
@@ -262,10 +221,7 @@ const NewChannelMessageInput = React.memo(
                 executeMessage();
               }
 
-              if (!e.isDefaultPrevented() && e.key === "Escape") {
-                e.preventDefault();
-                cancelReply?.();
-              }
+              onKeyDown?.(e);
             }}
             executeCommand={executeCommand}
             commands={commandsByName}

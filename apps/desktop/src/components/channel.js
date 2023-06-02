@@ -7,6 +7,7 @@ import {
   useActions,
   useSelectors,
   useMe,
+  useMessage,
   useChannel,
   useChannelAccessLevel,
   useChannelTypingMembers,
@@ -24,12 +25,15 @@ import {
 } from "@shades/common/react";
 import ChannelMessagesScrollView from "@shades/ui-web/channel-messages-scroll-view";
 import { isNodeEmpty } from "@shades/ui-web/rich-text-editor";
+import AccountPreviewPopoverTrigger from "@shades/ui-web/account-preview-popover-trigger";
+import { CrossCircle as CrossCircleIcon } from "@shades/ui-web/icons";
 import useLayoutSetting from "../hooks/layout-setting.js";
 import useMessageInputPlaceholder from "../hooks/channel-message-input-placeholder.js";
+import useCommands from "../hooks/commands";
 import Delay from "./delay.js";
 import Spinner from "./spinner.js";
 import ChannelMessagesScrollViewHeader from "./channel-messages-scroll-view-header.js";
-import NewChannelMessageInput from "./new-channel-message-input.js";
+import NewMessageInput from "./new-channel-message-input.js";
 import ChannelNavBar from "./channel-nav-bar.js";
 import ChannelMessage from "./channel-message.js";
 import ErrorBoundary from "./error-boundary.js";
@@ -62,9 +66,15 @@ const ChannelContent = ({ channelId }) => {
   const inputPlaceholder = useMessageInputPlaceholder(channelId);
 
   const [replyTargetMessageId, setReplyTargetMessageId] = React.useState(null);
+  const replyTargetMessage = useMessage(replyTargetMessageId);
 
   const isMember =
     me != null && channel != null && channel.memberUserIds.includes(me.id);
+
+  const messageInputCommands = useCommands({
+    context: channel?.kind,
+    channelId,
+  });
 
   const canPost =
     channelAccessLevel === "open"
@@ -187,18 +197,64 @@ const ChannelContent = ({ channelId }) => {
       />
 
       <div css={css({ padding: "0 1.6rem" })}>
-        <NewChannelMessageInput
+        <NewMessageInput
           ref={inputRef}
           disabled={disableInput}
-          context={channel?.kind}
-          channelId={channelId}
-          replyTargetMessageId={replyTargetMessageId}
-          cancelReply={cancelReply}
-          uploadImage={actions.uploadImage}
-          submit={submitMessage}
           placeholder={inputPlaceholder}
+          submit={submitMessage}
+          uploadImage={actions.uploadImage}
           members={channel?.members ?? []}
-          onInputChange={handleInputChange}
+          commands={messageInputCommands}
+          onChange={handleInputChange}
+          onKeyDown={(e) => {
+            if (!e.isDefaultPrevented() && e.key === "Escape") {
+              e.preventDefault();
+              cancelReply?.();
+            }
+          }}
+          header={
+            replyTargetMessageId == null ? null : (
+              <div css={css({ display: "flex", alignItems: "center" })}>
+                <div css={css({ flex: 1, paddingRight: "1rem" })}>
+                  Replying to{" "}
+                  <AccountPreviewPopoverTrigger
+                    userId={replyTargetMessage.authorUserId}
+                    variant="link"
+                    css={(t) =>
+                      css({
+                        color: t.colors.textDimmed,
+                        ":disabled": { color: t.colors.textMuted },
+                      })
+                    }
+                  />
+                </div>
+                <button
+                  onClick={cancelReply}
+                  css={(t) =>
+                    css({
+                      color: t.colors.textDimmed,
+                      outline: "none",
+                      borderRadius: "50%",
+                      marginRight: "-0.2rem",
+                      ":focus-visible": {
+                        boxShadow: `0 0 0 0.2rem ${t.colors.primary}`,
+                      },
+                      "@media (hover: hover)": {
+                        cursor: "pointer",
+                        ":hover": {
+                          color: t.colors.textDimmedModifierHover,
+                        },
+                      },
+                    })
+                  }
+                >
+                  <CrossCircleIcon
+                    style={{ width: "1.6rem", height: "auto" }}
+                  />
+                </button>
+              </div>
+            )
+          }
         />
 
         <TypingIndicator channelId={channelId} />

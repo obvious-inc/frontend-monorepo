@@ -295,12 +295,17 @@ const NavBar = ({ channelId }) => {
   const channel = useChannel(channelId, { name: true });
   return (
     <div
-      style={{
-        padding: "1rem 1.5rem",
-        height: "4.4rem",
-        display: "flex",
-        alignItems: "center",
-      }}
+      css={(t) =>
+        css({
+          fontSize: t.fontSizes.header,
+          fontWeight: t.text.weights.header,
+          color: t.colors.textHeader,
+          padding: "1rem 1.5rem",
+          height: "4.4rem",
+          display: "flex",
+          alignItems: "center",
+        })
+      }
     >
       {channel?.name}
     </div>

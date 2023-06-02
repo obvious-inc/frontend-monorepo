@@ -1,28 +1,12 @@
 import { Link } from "react-router-dom";
-import { useUser } from "@shades/common/app";
 import RichTextBase from "@shades/ui-web/rich-text";
 import Emoji from "@shades/ui-web/emoji";
-import InlineUserButton from "@shades/ui-web/inline-user-button";
 import InlineChannelButton from "@shades/ui-web/inline-channel-button";
-import * as Popover from "@shades/ui-web/popover";
-import ProfilePreview from "./profile-preview.js";
+import AccountPreviewPopoverTrigger from "./account-preview-popover-trigger.js";
 
-const UserMention = ({ id }) => {
-  const user = useUser(id);
-
-  if (user == null) return null;
-
-  return (
-    <Popover.Root placement="right">
-      <Popover.Trigger asChild disabled={user.deleted}>
-        <InlineUserButton variant="button" userId={user.id} />
-      </Popover.Trigger>
-      <Popover.Content>
-        <ProfilePreview userId={id} />
-      </Popover.Content>
-    </Popover.Root>
-  );
-};
+const UserMention = ({ id }) => (
+  <AccountPreviewPopoverTrigger userId={id} variant="button" />
+);
 
 const RichText = ({ blocks, ...props }) => {
   // Special "large emoji" case
