@@ -9,9 +9,9 @@ import {
 } from "@shades/common/utils";
 import { useLatestCallback } from "@shades/common/react";
 import { useChannel, useAllChannels, useEmojis } from "@shades/common/app";
-import AccountAvatar from "@shades/ui-web/account-avatar";
-import ChannelAvatar from "@shades/ui-web/channel-avatar";
-import RichTextEditor from "@shades/ui-web/rich-text-editor";
+import AccountAvatar from "./account-avatar.js";
+import ChannelAvatar from "./channel-avatar.js";
+import RichTextEditor from "./rich-text-editor.js";
 
 const { sort } = arrayUtils;
 const {
@@ -33,6 +33,7 @@ const MessageInput = React.forwardRef(
       disabled,
       commands,
       executeCommand: executeCommand_,
+      inline = false,
       disableCommands = false,
       members = [],
       ...props
@@ -343,7 +344,7 @@ const MessageInput = React.forwardRef(
         <RichTextEditor
           ref={editorRef}
           {...autoCompleteInputAccesibilityProps}
-          inline
+          inline={inline}
           value={initialValue}
           onChange={onChange}
           disabled={disabled}

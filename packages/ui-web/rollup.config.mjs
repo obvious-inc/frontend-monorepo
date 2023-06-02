@@ -41,6 +41,10 @@ const entrypoints = [
     dependencies: ["react", "react-aria", ...emotionDeps],
   },
   {
+    file: "spinner.js",
+    dependencies: ["react", ...emotionDeps],
+  },
+  {
     file: "button.js",
     dependencies: ["react", "react-aria", ...emotionDeps],
   },
@@ -86,6 +90,22 @@ const entrypoints = [
       "@shades/common/utils",
       "@shades/common/app",
       "react",
+      "slate",
+      "slate-react",
+      "slate-history",
+      "is-hotkey",
+      ...emotionDeps,
+    ],
+  },
+  {
+    file: "message-editor.js",
+    dependencies: [
+      "@shades/common/utils",
+      "@shades/common/react",
+      "@shades/common/nouns",
+      "@shades/common/app",
+      "react",
+      "wagmi",
       "slate",
       "slate-react",
       "slate-history",

@@ -43,9 +43,9 @@ import {
   fromMessageBlocks,
   toMessageBlocks,
 } from "@shades/ui-web/rich-text-editor";
+import { BaseMessageEditor } from "@shades/ui-web/message-editor";
 import AccountPreviewPopoverTrigger from "./account-preview-popover-trigger.js";
 import FormattedDate from "./formatted-date";
-import MessageInput from "./message-input";
 import RichText from "./rich-text";
 import Link from "./link";
 
@@ -1452,7 +1452,7 @@ const EditMessageInput = React.forwardRef(
           })
         }
       >
-        <MessageInput
+        <BaseMessageEditor
           ref={editorRef}
           initialValue={pendingSlateNodes}
           onChange={(nodes) => {

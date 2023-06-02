@@ -55,6 +55,7 @@ import ChannelAvatar from "@shades/ui-web/channel-avatar";
 import AccountAvatarStack from "@shades/ui-web/account-avatar-stack";
 import InlineChannelButton from "@shades/ui-web/inline-channel-button";
 import ChannelMessagesScrollView from "@shades/ui-web/channel-messages-scroll-view";
+import MessageEditor from "@shades/ui-web/message-editor";
 import { useDialog } from "../hooks/dialogs.js";
 import useLayoutSetting from "../hooks/layout-setting.js";
 import useCommands from "../hooks/commands";
@@ -64,7 +65,6 @@ import Combobox, {
 } from "./combobox";
 import { Grid as FlexGrid, Item as FlexGridItem } from "./flex-grid.js";
 import NavBar from "./nav-bar.js";
-import NewMessageInput from "./new-channel-message-input.js";
 import ChannelPrologue, {
   PersonalDMChannelPrologue,
 } from "./channel-prologue.js";
@@ -681,7 +681,8 @@ const NewMessageScreen = () => {
         )}
 
         <div style={{ padding: "0 1.6rem 2rem" }}>
-          <NewMessageInput
+          <MessageEditor
+            inline
             ref={messageInputRef}
             disabled={!enableMessageInput}
             submitDisabled={

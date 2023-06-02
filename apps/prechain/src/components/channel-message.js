@@ -59,7 +59,6 @@ const ChannelMessage = React.memo(function ChannelMessage_({
   showLeftColumn = true,
   showReplyTargetMessages = true,
   horizontalPadding = "1.6rem",
-  ...containerProps
 }) {
   const editInputRef = React.useRef();
   const containerRef = React.useRef();
@@ -182,7 +181,6 @@ const ChannelMessage = React.memo(function ChannelMessage_({
               initEdit();
             },
           })}
-      {...containerProps}
     >
       {!message.isOptimistic && (
         <div

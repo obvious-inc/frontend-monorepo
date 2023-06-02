@@ -42,12 +42,12 @@ import {
 } from "@shades/ui-web/icons";
 import AccountAvatar from "@shades/ui-web/account-avatar";
 import ChannelAvatar from "@shades/ui-web/channel-avatar";
+import Spinner from "@shades/ui-web/spinner";
+import * as DropdownMenu from "@shades/ui-web/dropdown-menu";
 import useCommandCenter from "../hooks/command-center";
 import { useDialog } from "../hooks/dialogs";
 import useSetting from "../hooks/setting";
-import * as DropdownMenu from "@shades/ui-web/dropdown-menu";
 import NotificationBadge from "./notification-badge";
-import Spinner from "./spinner";
 import ErrorBoundary from "./error-boundary";
 
 const { sort, comparator } = arrayUtils;

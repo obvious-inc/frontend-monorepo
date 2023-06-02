@@ -25,8 +25,8 @@ import {
 import AccountAvatar from "@shades/ui-web/account-avatar";
 import ChannelAvatar from "@shades/ui-web/channel-avatar";
 import * as Tooltip from "@shades/ui-web/tooltip";
+import Spinner from "@shades/ui-web/spinner";
 import { useDialog } from "../hooks/dialogs";
-import Spinner from "./spinner";
 import NavBar from "./nav-bar";
 import Heading from "./heading";
 import ErrorBoundary from "./error-boundary.js";

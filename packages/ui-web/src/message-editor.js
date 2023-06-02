@@ -10,19 +10,24 @@ import {
   Gif as GifIcon,
   PaperClip as PaperClipIcon,
   PlusCircle as PlusCircleIcon,
-} from "@shades/ui-web/icons";
-import IconButton from "@shades/ui-web/icon-button";
-import { isNodeEmpty, toMessageBlocks } from "@shades/ui-web/rich-text-editor";
-import MessageInput from "./message-input.js";
+} from "./icons.js";
+import IconButton from "./icon-button.js";
+import { isNodeEmpty, toMessageBlocks } from "./rich-text-editor.js";
+import BaseMessageEditor from "./base-message-editor.js";
 import Spinner from "./spinner.js";
+
+// Temporary
+export { BaseMessageEditor };
 
 const { createEmptyParagraphElement } = messageUtils;
 
-const NewChannelMessageInput = React.memo(
+const MessageEditor = React.memo(
   React.forwardRef(function NewMessageInput_(
     {
+      initialValue,
       submit,
       uploadImage,
+      inline = false,
       disabled = false,
       submitDisabled = false,
       fileUploadDisabled = false,
@@ -38,9 +43,9 @@ const NewChannelMessageInput = React.memo(
     const fallbackEditorRef = React.useRef();
     const editorRef = forwardedEditorRef ?? fallbackEditorRef;
 
-    const [pendingSlateNodes, setPendingSlateNodes] = React.useState(() => [
-      createEmptyParagraphElement(),
-    ]);
+    const [pendingSlateNodes, setPendingSlateNodes] = React.useState(
+      () => initialValue ?? [createEmptyParagraphElement()]
+    );
 
     const [isPending, setPending] = React.useState(false);
 
@@ -209,8 +214,9 @@ const NewChannelMessageInput = React.memo(
             borderTopRightRadius: header != null ? 0 : undefined,
           }}
         >
-          <MessageInput
+          <BaseMessageEditor
             ref={editorRef}
+            inline={inline}
             initialValue={pendingSlateNodes}
             onChange={(nodes) => {
               setPendingSlateNodes(nodes);
@@ -518,4 +524,4 @@ const AttachmentList = ({ items, remove }) => (
   </div>
 );
 
-export default NewChannelMessageInput;
+export default MessageEditor;

@@ -41,11 +41,11 @@ import AccountAvatar from "@shades/ui-web/account-avatar";
 import ChannelAvatar from "@shades/ui-web/channel-avatar";
 import * as Tooltip from "@shades/ui-web/tooltip";
 import * as DropdownMenu from "@shades/ui-web/dropdown-menu";
+import Spinner from "@shades/ui-web/spinner";
 import { useDialog } from "../hooks/dialogs.js";
 import * as Tabs from "./tabs.js";
 import Delay from "./delay.js";
 import FormattedDate from "./formatted-date.js";
-import Spinner from "./spinner.js";
 import NavBar from "./nav-bar.js";
 import Heading from "./heading.js";
 

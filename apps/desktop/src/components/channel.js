@@ -27,13 +27,13 @@ import ChannelMessagesScrollView from "@shades/ui-web/channel-messages-scroll-vi
 import { isNodeEmpty } from "@shades/ui-web/rich-text-editor";
 import AccountPreviewPopoverTrigger from "@shades/ui-web/account-preview-popover-trigger";
 import { CrossCircle as CrossCircleIcon } from "@shades/ui-web/icons";
+import MessageEditor from "@shades/ui-web/message-editor";
+import Spinner from "@shades/ui-web/spinner";
 import useLayoutSetting from "../hooks/layout-setting.js";
 import useMessageInputPlaceholder from "../hooks/channel-message-input-placeholder.js";
 import useCommands from "../hooks/commands";
 import Delay from "./delay.js";
-import Spinner from "./spinner.js";
 import ChannelMessagesScrollViewHeader from "./channel-messages-scroll-view-header.js";
-import NewMessageInput from "./new-channel-message-input.js";
 import ChannelNavBar from "./channel-nav-bar.js";
 import ChannelMessage from "./channel-message.js";
 import ErrorBoundary from "./error-boundary.js";
@@ -197,8 +197,9 @@ const ChannelContent = ({ channelId }) => {
       />
 
       <div css={css({ padding: "0 1.6rem" })}>
-        <NewMessageInput
+        <MessageEditor
           ref={inputRef}
+          inline
           disabled={disableInput}
           placeholder={inputPlaceholder}
           submit={submitMessage}

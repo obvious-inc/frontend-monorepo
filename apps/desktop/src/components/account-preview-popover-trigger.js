@@ -30,7 +30,7 @@ const useActions = ({ userId, accountAddress }) => {
   const isMe =
     user != null &&
     meWalletAddress != null &&
-    meWalletAddress.toLowerCase() === user.walletAddress.toLowerCase();
+    meWalletAddress.toLowerCase() === user?.walletAddress?.toLowerCase();
 
   const [textCopied, setTextCopied] = React.useState(false);
   const { open: openEditProfileDialog } = useDialog("edit-profile");

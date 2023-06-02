@@ -5,7 +5,7 @@ import { css } from "@emotion/react";
 import Button from "@shades/ui-web/button";
 import AccountAvatar from "@shades/ui-web/account-avatar";
 import * as Tooltip from "@shades/ui-web/tooltip";
-import Spinner from "./spinner";
+import Spinner from "@shades/ui-web/spinner";
 
 const { truncateAddress } = ethereumUtils;
 
