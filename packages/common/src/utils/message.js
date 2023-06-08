@@ -23,7 +23,8 @@ export const filter = (predicate, nodes) => {
   const filteredNodes = [];
 
   for (let [index, node] of nodes.entries()) {
-    if (node.children != null) node.children = filter(predicate, node.children);
+    if (node.children != null)
+      node = { ...node, children: filter(predicate, node.children) };
     if (!predicate(node, index)) continue;
     filteredNodes.push(node);
   }

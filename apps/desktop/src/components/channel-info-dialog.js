@@ -209,7 +209,12 @@ const ChannelInfoDialog = ({
                           </>
                         )}
                   </Tooltip.Trigger>
-                  <Tooltip.Content side="top" align="center" sideOffset={6}>
+                  <Tooltip.Content
+                    side="top"
+                    align="center"
+                    sideOffset={6}
+                    portal={false}
+                  >
                     {channel.kind === "dm" ? (
                       <>
                         DMs are reserved for private 1-to-1
@@ -938,6 +943,7 @@ const MembersDirectoryTab = ({ dismiss, channelId, addMember }) => {
                             </div>
                           </Tooltip.Trigger>
                           <Tooltip.Content
+                            portal={false}
                             side="top"
                             align="center"
                             sideOffset={6}

@@ -55,7 +55,7 @@ import ChannelAvatar from "@shades/ui-web/channel-avatar";
 import AccountAvatarStack from "@shades/ui-web/account-avatar-stack";
 import InlineChannelButton from "@shades/ui-web/inline-channel-button";
 import ChannelMessagesScrollView from "@shades/ui-web/channel-messages-scroll-view";
-import MessageEditor from "@shades/ui-web/message-editor";
+import MessageEditorForm from "@shades/ui-web/message-editor-form";
 import { useDialog } from "../hooks/dialogs.js";
 import useLayoutSetting from "../hooks/layout-setting.js";
 import useCommands from "../hooks/commands";
@@ -681,7 +681,7 @@ const NewMessageScreen = () => {
         )}
 
         <div style={{ padding: "0 1.6rem 2rem" }}>
-          <MessageEditor
+          <MessageEditorForm
             inline
             ref={messageInputRef}
             disabled={!enableMessageInput}
@@ -689,11 +689,11 @@ const NewMessageScreen = () => {
               matchType == null || authenticationStatus !== "authenticated"
             }
             placeholder="Type your message..."
-            submit={async (message) => {
+            submit={async (messageBlocks) => {
               if (channelId != null) {
                 actions.createMessage({
                   channel: channelId,
-                  blocks: message,
+                  blocks: messageBlocks,
                 });
                 navigate(`/channels/${channelId}`);
                 return;
@@ -713,7 +713,7 @@ const NewMessageScreen = () => {
                 });
                 actions.createMessage({
                   channel: channel.id,
-                  blocks: message,
+                  blocks: messageBlocks,
                 });
                 navigate(`/channels/${channel.id}`);
               } catch (e) {
@@ -776,74 +776,75 @@ const NewMessageScreen = () => {
                 </div>
               )
             }
-            submitArea={
-              authenticationStatus === "not-authenticated" &&
-              matchType != null ? (
-                <div
-                  style={{
-                    alignSelf: "flex-end",
-                    display: "flex",
-                    height: 0,
-                  }}
-                >
-                  <div
-                    style={{
-                      alignSelf: "flex-end",
-                      display: "grid",
-                      gridAutoFlow: "column",
-                      gridAutoColumns: "auto",
-                      gridGap: "1.6rem",
-                      alignItems: "center",
-                    }}
-                  >
+            renderSubmitArea={
+              authenticationStatus === "not-authenticated" && matchType != null
+                ? () => (
                     <div
-                      css={(t) =>
-                        css({
-                          fontSize: t.text.sizes.small,
-                          color: t.colors.textDimmed,
-                          "@media(max-width: 600px)": {
-                            display: "none",
-                          },
-                        })
-                      }
+                      style={{
+                        alignSelf: "flex-end",
+                        display: "flex",
+                        height: 0,
+                      }}
                     >
-                      Account verification required
+                      <div
+                        style={{
+                          alignSelf: "flex-end",
+                          display: "grid",
+                          gridAutoFlow: "column",
+                          gridAutoColumns: "auto",
+                          gridGap: "1.6rem",
+                          alignItems: "center",
+                        }}
+                      >
+                        <div
+                          css={(t) =>
+                            css({
+                              fontSize: t.text.sizes.small,
+                              color: t.colors.textDimmed,
+                              "@media(max-width: 600px)": {
+                                display: "none",
+                              },
+                            })
+                          }
+                        >
+                          Account verification required
+                        </div>
+                        {connectedWalletAccountAddress == null ? (
+                          <Button
+                            size="small"
+                            variant="primary"
+                            isLoading={isConnectingWallet}
+                            disabled={isConnectingWallet}
+                            onClick={() => {
+                              connectWallet();
+                              openAccountAuthenticationDialog();
+                            }}
+                          >
+                            Connect wallet
+                          </Button>
+                        ) : (
+                          <Button
+                            size="small"
+                            variant="primary"
+                            isLoading={accountVerificationStatus !== "idle"}
+                            disabled={accountVerificationStatus !== "idle"}
+                            onClick={() => {
+                              initAccountVerification(
+                                connectedWalletAccountAddress
+                              ).then(() => {
+                                dismissAccountAuthenticationDialog();
+                                messageInputRef.current.focus();
+                              });
+                              openAccountAuthenticationDialog();
+                            }}
+                          >
+                            Verify account
+                          </Button>
+                        )}
+                      </div>
                     </div>
-                    {connectedWalletAccountAddress == null ? (
-                      <Button
-                        size="small"
-                        variant="primary"
-                        isLoading={isConnectingWallet}
-                        disabled={isConnectingWallet}
-                        onClick={() => {
-                          connectWallet();
-                          openAccountAuthenticationDialog();
-                        }}
-                      >
-                        Connect wallet
-                      </Button>
-                    ) : (
-                      <Button
-                        size="small"
-                        variant="primary"
-                        isLoading={accountVerificationStatus !== "idle"}
-                        disabled={accountVerificationStatus !== "idle"}
-                        onClick={() => {
-                          initAccountVerification(
-                            connectedWalletAccountAddress
-                          ).then(() => {
-                            dismissAccountAuthenticationDialog();
-                            messageInputRef.current.focus();
-                          });
-                          openAccountAuthenticationDialog();
-                        }}
-                      >
-                        Verify account
-                      </Button>
-                    )}
-                  </div>
-                </div>
-              ) : null
+                  )
+                : null
             }
           />
         </div>

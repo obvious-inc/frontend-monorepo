@@ -38,18 +38,12 @@ import * as DropdownMenu from "@shades/ui-web/dropdown-menu";
 import * as Toolbar from "@shades/ui-web/toolbar";
 import * as Tooltip from "@shades/ui-web/tooltip";
 import EmojiPicker from "@shades/ui-web/emoji-picker";
-import {
-  isNodeEmpty,
-  fromMessageBlocks,
-  toMessageBlocks,
-} from "@shades/ui-web/rich-text-editor";
-import { BaseMessageEditor } from "@shades/ui-web/message-editor";
+import { isNodeEmpty } from "@shades/ui-web/rich-text-editor";
+import MessageEditorForm from "@shades/ui-web/message-editor-form";
 import AccountPreviewPopoverTrigger from "./account-preview-popover-trigger.js";
 import FormattedDate from "./formatted-date";
 import RichText from "./rich-text";
 import Link from "./link";
-
-const { withoutAttachments } = messageUtils;
 
 const ONE_MINUTE_IN_MILLIS = 1000 * 60;
 
@@ -386,7 +380,7 @@ const ChannelMessage = React.memo(function ChannelMessage_({
             <EditMessageInput
               ref={editInputRef}
               blocks={message.content}
-              onCancel={() => {
+              cancel={() => {
                 setEditingMessage(false);
               }}
               requestRemove={() =>
@@ -394,7 +388,7 @@ const ChannelMessage = React.memo(function ChannelMessage_({
                   if (
                     !confirm("Are you sure you want to remove this message?")
                   ) {
-                    reject(new Error());
+                    resolve();
                     return;
                   }
 
@@ -1402,102 +1396,64 @@ const MessageToolbar = React.memo(
 );
 
 const EditMessageInput = React.forwardRef(
-  ({ blocks, save, requestRemove, onCancel, ...props }, editorRef) => {
-    const [pendingSlateNodes, setPendingSlateNodes] = React.useState(() =>
-      fromMessageBlocks(withoutAttachments(blocks))
-    );
-
-    const [isSaving, setSaving] = React.useState(false);
-
-    const allowSubmit = !isSaving;
-    const isDisabled = !allowSubmit;
-
-    const submit = async () => {
-      if (!allowSubmit) return;
-
-      const blocks = toMessageBlocks(pendingSlateNodes);
-
-      const isEmpty = blocks.every(isNodeEmpty);
-
-      setSaving(true);
-      try {
-        if (isEmpty) {
-          await requestRemove();
-          return;
-        }
-
-        await save(blocks);
-      } catch (e) {
-        console.error(e);
-        setSaving(false);
-      }
-    };
+  ({ blocks, save, requestRemove, cancel, ...props }, editorRef) => {
+    const { uploadImage } = useActions();
 
     return (
-      <form
-        onSubmit={(e) => {
-          e.preventDefault();
-          submit();
+      <MessageEditorForm
+        ref={editorRef}
+        inline
+        allowEmptySubmit
+        initialValue={blocks}
+        placeholder="..."
+        onKeyDown={(e) => {
+          if (!e.isDefaultPrevented() && e.key === "Escape") {
+            e.preventDefault();
+            cancel();
+          }
         }}
-        css={(theme) =>
-          css({
-            position: "relative",
-            background: theme.colors.inputBackground,
-            padding: "0.6rem 0.8rem 0.8rem",
-            borderRadius: "0.7rem",
-            // Prevents iOS zooming in on input fields
-            "@supports (-webkit-touch-callout: none)": {
-              "[role=textbox]": { fontSize: "1.6rem" },
-            },
-          })
-        }
-      >
-        <BaseMessageEditor
-          ref={editorRef}
-          initialValue={pendingSlateNodes}
-          onChange={(nodes) => {
-            setPendingSlateNodes(nodes);
-          }}
-          placeholder={`Press "Enter" to delete message`}
-          onKeyDown={(e) => {
-            if (e.key === "Escape") {
-              onCancel();
-              return;
-            }
+        uploadImage={uploadImage}
+        submit={async (blocks) => {
+          const isEmpty = blocks.every(isNodeEmpty);
 
-            if (!e.isDefaultPrevented() && !e.shiftKey && e.key === "Enter") {
-              e.preventDefault();
-              submit();
-            }
-          }}
-          disabled={isDisabled}
-          disableCommands
-          {...props}
-        />
-        <div css={css({ display: "flex", justifyContent: "flex-end" })}>
+          if (isEmpty) {
+            await requestRemove();
+            return;
+          }
+
+          await save(blocks);
+        }}
+        containerProps={{ css: css({ padding: "0.6rem 0.8rem 0.8rem" }) }}
+        renderSubmitArea={({ isPending }) => (
           <div
             css={css({
               display: "grid",
               gridTemplateColumns: "repeat(2, minmax(max-content, 1fr))",
               justifyContent: "flex-end",
               gridGap: "0.8rem",
-              padding: "0.5rem 0 0",
             })}
           >
-            <Button size="small" onClick={onCancel} disabled={!allowSubmit}>
+            <Button
+              type="button"
+              size="small"
+              onClick={cancel}
+              disabled={isPending}
+            >
               Cancel
             </Button>
             <Button
               variant="primary"
               size="small"
               type="submit"
-              disabled={!allowSubmit}
+              isLoading={isPending}
+              disabled={isPending}
             >
               Save
             </Button>
           </div>
-        </div>
-      </form>
+        )}
+        {...props}
+      />
     );
   }
 );

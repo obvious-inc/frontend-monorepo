@@ -27,7 +27,7 @@ import ChannelMessagesScrollView from "@shades/ui-web/channel-messages-scroll-vi
 import { isNodeEmpty } from "@shades/ui-web/rich-text-editor";
 import AccountPreviewPopoverTrigger from "@shades/ui-web/account-preview-popover-trigger";
 import { CrossCircle as CrossCircleIcon } from "@shades/ui-web/icons";
-import MessageEditor from "@shades/ui-web/message-editor";
+import MessageEditorForm from "@shades/ui-web/message-editor-form";
 import Spinner from "@shades/ui-web/spinner";
 import useLayoutSetting from "../hooks/layout-setting.js";
 import useMessageInputPlaceholder from "../hooks/channel-message-input-placeholder.js";
@@ -132,7 +132,7 @@ const ChannelContent = ({ channelId }) => {
     if (channel.memberUserIds != null && !channel.memberUserIds.includes(me.id))
       await actions.joinChannel(channelId);
 
-    return actions.createMessage({
+    actions.createMessage({
       channel: channelId,
       blocks,
       replyToMessageId: replyTargetMessageId,
@@ -147,9 +147,10 @@ const ChannelContent = ({ channelId }) => {
     [actions, channelId]
   );
 
-  const handleInputChange = useLatestCallback((blocks) => {
+  const handleInputChange = useLatestCallback(({ rawRichTextNodes }) => {
     if (me == null) return;
-    if (blocks.length === 0 || isNodeEmpty(blocks[0])) return;
+    if (rawRichTextNodes.length === 0 || isNodeEmpty(rawRichTextNodes[0]))
+      return;
     throttledRegisterTypingActivity();
   });
 
@@ -197,7 +198,7 @@ const ChannelContent = ({ channelId }) => {
       />
 
       <div css={css({ padding: "0 1.6rem" })}>
-        <MessageEditor
+        <MessageEditorForm
           ref={inputRef}
           inline
           disabled={disableInput}
@@ -284,37 +285,41 @@ const TypingIndicator = ({ channelId }) => {
           whiteSpace: "nowrap",
           lineHeight: 1.8,
           color: t.colors.textDimmed,
-          fontSize: t.fontSizes.tiny,
-          strong: { fontWeight: "600" },
+          fontSize: t.text.sizes.tiny,
+          strong: { fontWeight: t.text.weights.emphasis },
         })
       }
     >
       {members.length === 1 ? (
-        <strong>{members[0].displayName}</strong>
+        <>
+          <strong>{members[0].displayName}</strong> is typing...
+        </>
       ) : members.length === 2 ? (
         <>
-          {members[0].displayName} and {members[1].displayName}
+          {members[0].displayName} and {members[1].displayName} are typing...
         </>
       ) : (
-        members.map((m, i, ms) => {
-          if (i === 0) return <strong key={m.id}>{m.displayName}</strong>;
-          const isLast = i === ms.length - 1;
-          if (isLast)
+        <>
+          {members.map((m, i, ms) => {
+            if (i === 0) return <strong key={m.id}>{m.displayName}</strong>;
+            const isLast = i === ms.length - 1;
+            if (isLast)
+              return (
+                <React.Fragment key={m.id}>
+                  {" "}
+                  , and <strong>{m.displayName}</strong>
+                </React.Fragment>
+              );
             return (
               <React.Fragment key={m.id}>
                 {" "}
-                , and <strong>{m.displayName}</strong>
+                , <strong>{m.displayName}</strong>
               </React.Fragment>
             );
-          return (
-            <React.Fragment key={m.id}>
-              {" "}
-              , <strong>{m.displayName}</strong>
-            </React.Fragment>
-          );
-        })
-      )}{" "}
-      is typing...
+          })}{" "}
+          are typing...
+        </>
+      )}
     </div>
   );
 };

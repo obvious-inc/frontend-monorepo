@@ -1,198 +1,429 @@
 import React from "react";
-import { css } from "@emotion/react";
+import { css, useTheme } from "@emotion/react";
 import {
-  getImageFileDimensions,
-  message as messageUtils,
+  array as arrayUtils,
+  emoji as emojiUtils,
+  ethereum as ethereumUtils,
+  user as userUtils,
+  channel as channelUtils,
 } from "@shades/common/utils";
-import {
-  AtSign as AtSignIcon,
-  EmojiFace as EmojiFaceIcon,
-  Gif as GifIcon,
-  PaperClip as PaperClipIcon,
-  PlusCircle as PlusCircleIcon,
-} from "./icons.js";
-import IconButton from "./icon-button.js";
-import { isNodeEmpty, toMessageBlocks } from "./rich-text-editor.js";
-import BaseMessageEditor from "./base-message-editor.js";
-import Spinner from "./spinner.js";
+import { useLatestCallback } from "@shades/common/react";
+import { useChannel, useAllChannels, useEmojis } from "@shades/common/app";
+import AccountAvatar from "./account-avatar.js";
+import ChannelAvatar from "./channel-avatar.js";
+import RichTextEditor from "./rich-text-editor.js";
 
-// Temporary
-export { BaseMessageEditor };
+const { sort } = arrayUtils;
+const {
+  search: searchUsers,
+  createDefaultComparator: createUserDefaultComparator,
+} = userUtils;
+const {
+  search: searchChannels,
+  createDefaultComparator: createChannelDefaultComparator,
+} = channelUtils;
 
-const { createEmptyParagraphElement } = messageUtils;
-
-const MessageEditor = React.memo(
-  React.forwardRef(function NewMessageInput_(
+const MessageEditor = React.forwardRef(
+  (
     {
       initialValue,
-      submit,
-      uploadImage,
-      inline = false,
-      disabled = false,
-      submitDisabled = false,
-      fileUploadDisabled = false,
-      commands: commandsByName = {},
       onChange,
+      placeholder,
       onKeyDown,
-      submitArea,
-      header,
+      disabled,
+      commands,
+      executeCommand: executeCommand_,
+      inline = false,
+      members = [],
       ...props
     },
-    forwardedEditorRef
-  ) {
-    const fallbackEditorRef = React.useRef();
-    const editorRef = forwardedEditorRef ?? fallbackEditorRef;
+    editorRef
+  ) => {
+    const channels = useAllChannels({ name: true });
 
-    const [pendingSlateNodes, setPendingSlateNodes] = React.useState(
-      () => initialValue ?? [createEmptyParagraphElement()]
+    const preventInputBlurRef = React.useRef();
+    const mentionQueryRangeRef = React.useRef();
+    const channelQueryRangeRef = React.useRef();
+    const emojiQueryRangeRef = React.useRef();
+
+    const [mentionQuery, setMentionQuery] = React.useState(null);
+    const [channelQuery, setChannelQuery] = React.useState(null);
+    const [emojiQuery, setEmojiQuery] = React.useState(null);
+    const [commandQuery, setCommandQuery] = React.useState(null);
+    const [commandArgumentsQuery, setCommandArgumentsQuery] =
+      React.useState(null);
+    const [selectedAutoCompleteIndex, setSelectedAutoCompleteIndex] =
+      React.useState(-1);
+
+    const autoCompleteMode = (() => {
+      if (commandQuery != null) return "commands";
+      if (mentionQuery != null) return "mentions";
+      if (channelQuery != null) return "channels";
+      if (emojiQuery != null) return "emojis";
+      return null;
+    })();
+
+    const { allEntries: emojis, recentlyUsedEntries: recentEmojis } = useEmojis(
+      { enabled: autoCompleteMode === "emojis" }
     );
 
-    const [isPending, setPending] = React.useState(false);
+    const isAutoCompleteMenuOpen = autoCompleteMode != null;
 
-    const [imageUploads, setImageUploads] = React.useState([]);
+    const filteredMentionOptions = React.useMemo(() => {
+      if (autoCompleteMode !== "mentions") return [];
 
-    const isEmptyMessage =
-      imageUploads.length === 0 && pendingSlateNodes.every(isNodeEmpty);
+      const filteredMembers =
+        mentionQuery.trim() === ""
+          ? sort(createUserDefaultComparator(), members)
+          : searchUsers(members, mentionQuery);
 
-    const fileInputRef = React.useRef();
-    const uploadPromiseRef = React.useRef();
-    const previousPendingSlateNodesRef = React.useRef(pendingSlateNodes);
-
-    React.useEffect(() => {
-      if (previousPendingSlateNodesRef.current !== pendingSlateNodes) {
-        onChange?.(pendingSlateNodes);
-      }
-      previousPendingSlateNodesRef.current = pendingSlateNodes;
-    }, [pendingSlateNodes, onChange]);
-
-    const executeCommand = async (commandName, args) => {
-      setPending(true);
-      try {
-        const command = commandsByName[commandName];
-        return await command.execute({
-          submit,
-          args,
-          editor: editorRef.current,
-        });
-      } catch (e) {
-        alert(e.message);
-      } finally {
-        setPending(false);
-        editorRef.current.focus();
-      }
-    };
-
-    const executeMessage = async () => {
-      const blocks = toMessageBlocks(pendingSlateNodes);
-
-      const isEmpty = blocks.every(isNodeEmpty);
-
-      if (
-        isEmpty &&
-        // We want to allow "empty" messages if it has attachements
-        imageUploads.length === 0
-      )
-        return;
-
-      const messageString = editorRef.current.string();
-
-      if (messageString.startsWith("/")) {
-        const [commandName, ...args] = messageString
-          .slice(1)
-          .split(" ")
-          .map((s) => s.trim())
-          .filter(Boolean);
-
-        if (Object.keys(commandsByName).includes(commandName)) {
-          await executeCommand(commandName, args);
-          return;
-        }
-      }
-
-      if (submitDisabled) return;
-
-      // Regular submit if we don’t have pending file uploads
-      if (imageUploads.length === 0 && uploadPromiseRef.current == null) {
-        editorRef.current.clear();
-        return submit(blocks);
-      }
-
-      const submitWithAttachments = (attachments) => {
-        editorRef.current.clear();
-        setImageUploads([]);
-
-        const attachmentsBlock = {
-          type: "attachments",
-          children: attachments.map((u) => ({
-            type: "image-attachment",
-            url: u.url,
-            width: u.width,
-            height: u.height,
-          })),
+      return filteredMembers.slice(0, 10).map((m) => {
+        const label = m.displayName;
+        const truncatedAddress = ethereumUtils.truncateAddress(m.walletAddress);
+        const hasCustomDisplayName = label !== truncatedAddress;
+        return {
+          value: m.id,
+          label,
+          description: hasCustomDisplayName ? truncatedAddress : undefined,
+          image: (
+            <AccountAvatar
+              transparent
+              address={m.walletAddress}
+              size="3.2rem"
+            />
+          ),
         };
+      });
+    }, [autoCompleteMode, mentionQuery, members]);
 
-        return submit([...blocks, attachmentsBlock]);
-      };
+    const filteredChannelOptions = React.useMemo(() => {
+      if (autoCompleteMode !== "channels") return [];
 
-      if (uploadPromiseRef.current == null)
-        return submitWithAttachments(imageUploads);
+      const filteredChannels =
+        channelQuery.trim() === ""
+          ? sort(createChannelDefaultComparator(), channels)
+          : searchChannels(channels, channelQuery);
 
-      // Craziness otherwise
-      try {
-        setPending(true);
-        const attachments = await uploadPromiseRef.current.then();
-        // Skipping `await` here to make sure we only mark as pending during
-        // the upload phase. We don’t want to wait for the message creation to
-        // complete since the UI is optimistic and adds the message right away
-        submitWithAttachments(attachments);
-      } catch (e) {
-        return Promise.reject(e);
-      } finally {
-        setPending(false);
-        editorRef.current.focus();
-      }
+      return filteredChannels.slice(0, 10).map((c) => {
+        return {
+          value: c.id,
+          render: () => <ChannelAutoCompleteItem id={c.id} />,
+        };
+      });
+    }, [autoCompleteMode, channelQuery, channels]);
+
+    const filteredEmojiOptions = React.useMemo(() => {
+      if (autoCompleteMode !== "emojis") return [];
+
+      const query = emojiQuery ?? null;
+
+      const lowerCaseQuery = emojiQuery?.trim().toLowerCase();
+
+      const getDefaultSet = () =>
+        recentEmojis.length === 0 ? emojis : recentEmojis;
+
+      const orderedFilteredEmojis =
+        emojiQuery.trim() === ""
+          ? getDefaultSet()
+          : emojiUtils.search(emojis, query);
+
+      return orderedFilteredEmojis.slice(0, 10).map((e) => {
+        const [firstAlias, ...otherAliases] = [...e.aliases, ...e.tags];
+        const visibleAliases = [
+          firstAlias,
+          ...otherAliases.filter(
+            (a) => lowerCaseQuery !== "" && a.includes(lowerCaseQuery)
+          ),
+        ];
+        return {
+          value: e.emoji,
+          label: (
+            <span>
+              <span
+                style={{
+                  display: "inline-flex",
+                  transform: "scale(1.35)",
+                  marginRight: "0.5rem",
+                }}
+              >
+                {e.emoji}
+              </span>{" "}
+              {visibleAliases.map((a, i) => {
+                const isMatch = a.includes(lowerCaseQuery);
+                const matchStartIndex = isMatch && a.indexOf(lowerCaseQuery);
+                const matchEndIndex =
+                  isMatch && a.indexOf(lowerCaseQuery) + lowerCaseQuery.length;
+                return (
+                  <React.Fragment key={a}>
+                    {i !== 0 && " "}:
+                    {isMatch ? (
+                      <>
+                        {a.slice(0, matchStartIndex)}
+                        <span data-matching-text="true">
+                          {a.slice(matchStartIndex, matchEndIndex)}
+                        </span>
+                        {a.slice(matchEndIndex)}
+                      </>
+                    ) : (
+                      a
+                    )}
+                    :
+                  </React.Fragment>
+                );
+              })}
+            </span>
+          ),
+        };
+      });
+    }, [emojis, recentEmojis, autoCompleteMode, emojiQuery]);
+
+    const filteredCommandOptions = React.useMemo(() => {
+      if (autoCompleteMode !== "commands") return [];
+
+      const lowerCaseQuery = commandQuery?.toLowerCase() ?? null;
+
+      const unorderedCommands = Object.keys(commands).filter(
+        (command) => lowerCaseQuery != null && command.includes(lowerCaseQuery)
+      );
+
+      const orderedCommands = sort((o1, o2) => {
+        const [i1, i2] = [o1, o2].map((command) =>
+          command.toLowerCase().indexOf(lowerCaseQuery)
+        );
+
+        if (i1 < i2) return -1;
+        if (i1 > i2) return 1;
+        if (o1.length < o2.length) return -1;
+        if (o1.length > o2.length) return 1;
+        return 0;
+      }, unorderedCommands);
+
+      return orderedCommands.slice(0, 10).map((c) => {
+        const command = commands[c];
+        return {
+          value: c,
+          label: (
+            <span>
+              /{c}
+              {command.arguments != null && (
+                <>
+                  {" "}
+                  <span css={(t) => css({ color: t.colors.textMuted })}>
+                    {command.arguments.map((a) => `<${a}>`).join(" ")}
+                  </span>
+                </>
+              )}
+            </span>
+          ),
+          description: command.description,
+        };
+      });
+    }, [commands, autoCompleteMode, commandQuery]);
+
+    const autoCompleteOptions = {
+      commands: filteredCommandOptions,
+      mentions: filteredMentionOptions,
+      channels: filteredChannelOptions,
+      emojis: filteredEmojiOptions,
+    }[autoCompleteMode];
+
+    const executeCommand = useLatestCallback(executeCommand_);
+
+    const selectAutoCompleteOption = React.useCallback(
+      (option) => {
+        switch (autoCompleteMode) {
+          case "mentions":
+            editorRef.current.insertMention(option.value, {
+              at: mentionQueryRangeRef.current,
+            });
+            setMentionQuery(null);
+            break;
+
+          case "channels":
+            editorRef.current.insertChannelLink(option.value, {
+              at: channelQueryRangeRef.current,
+            });
+            setChannelQuery(null);
+            break;
+
+          case "emojis":
+            editorRef.current.insertEmoji(option.value, {
+              at: emojiQueryRangeRef.current,
+            });
+            setEmojiQuery(null);
+            break;
+
+          case "commands": {
+            if (commandQuery === option.value) {
+              // if (commandArgumentsQuery == null) {
+              //   editorRef.current.replaceAll(`/${option.value} `);
+              //   break;
+              // }
+
+              executeCommand(
+                commandQuery,
+                commandArgumentsQuery?.split(" ") ?? []
+              );
+              setCommandQuery(null);
+              break;
+            }
+
+            editorRef.current.replaceFirstWord(`/${option.value} `);
+            break;
+          }
+
+          default:
+            throw new Error();
+        }
+      },
+      [
+        autoCompleteMode,
+        editorRef,
+        mentionQueryRangeRef,
+        channelQueryRangeRef,
+        commandQuery,
+        commandArgumentsQuery,
+        executeCommand,
+      ]
+    );
+
+    const autoCompleteInputKeyDownHandler = React.useCallback(
+      (event) => {
+        if (!isAutoCompleteMenuOpen || autoCompleteOptions.length === 0) return;
+
+        switch (event.key) {
+          case "ArrowDown": {
+            event.preventDefault();
+            setSelectedAutoCompleteIndex((i) =>
+              i >= autoCompleteOptions.length - 1 ? 0 : i + 1
+            );
+            break;
+          }
+          case "ArrowUp": {
+            event.preventDefault();
+            setSelectedAutoCompleteIndex((i) =>
+              i <= 0 ? autoCompleteOptions.length - 1 : i - 1
+            );
+            break;
+          }
+          case "Tab":
+          case "Enter": {
+            const option = autoCompleteOptions[selectedAutoCompleteIndex];
+            event.preventDefault();
+            selectAutoCompleteOption(option);
+            break;
+          }
+          case "Escape":
+            event.preventDefault();
+            setMentionQuery(null);
+            setEmojiQuery(null);
+            setCommandQuery(null);
+            break;
+        }
+      },
+      [
+        isAutoCompleteMenuOpen,
+        autoCompleteOptions,
+        selectedAutoCompleteIndex,
+        selectAutoCompleteOption,
+      ]
+    );
+
+    const autoCompleteInputAccesibilityProps = {
+      "aria-expanded": isAutoCompleteMenuOpen ? "true" : "false",
+      "aria-haspopup": "listbox",
+      "aria-autocomplete": "list",
+      "aria-owns": "autocomplete-listbox",
+      "aria-controls": "autocomplete-listbox",
+      "aria-activedescendant": `autocomplete-listbox-option-${selectedAutoCompleteIndex}`,
     };
 
     return (
-      <div css={css({ position: "relative" })}>
-        {header != null && (
-          <div
-            css={(t) =>
-              css({
-                position: "absolute",
-                bottom: "100%",
-                left: 0,
-                width: "100%",
-                background: t.light
-                  ? t.colors.backgroundQuarternary
-                  : t.colors.backgroundSecondary,
-                borderTopLeftRadius: "0.7rem",
-                borderTopRightRadius: "0.7rem",
-                padding: "0.6rem 1rem 0.6rem 1.1rem",
-                fontSize: "1.2rem",
-                color: t.colors.textDimmed,
-              })
+      <>
+        <RichTextEditor
+          ref={editorRef}
+          {...autoCompleteInputAccesibilityProps}
+          inline={inline}
+          value={initialValue}
+          onChange={onChange}
+          disabled={disabled}
+          placeholder={placeholder}
+          triggers={[
+            {
+              type: "word",
+              handler: (word, range) => {
+                if (word.startsWith("@")) {
+                  setMentionQuery(word.slice(1));
+                  setSelectedAutoCompleteIndex(0);
+                  mentionQueryRangeRef.current = range;
+                  return;
+                }
+
+                setMentionQuery(null);
+              },
+            },
+            {
+              type: "word",
+              handler: (word, range) => {
+                if (word.startsWith("#")) {
+                  setChannelQuery(word.slice(1));
+                  setSelectedAutoCompleteIndex(0);
+                  channelQueryRangeRef.current = range;
+                  return;
+                }
+
+                setChannelQuery(null);
+              },
+            },
+            {
+              type: "word",
+              handler: (word, range) => {
+                if (word.startsWith(":")) {
+                  setEmojiQuery(word.slice(1));
+                  setSelectedAutoCompleteIndex(0);
+                  emojiQueryRangeRef.current = range;
+                  return;
+                }
+
+                setEmojiQuery(null);
+              },
+            },
+            commands != null && {
+              type: "command",
+              handler: (command, args) => {
+                if (command == null) {
+                  setCommandQuery(null);
+                  return;
+                }
+
+                setCommandQuery(command);
+                setCommandArgumentsQuery(
+                  args.length === 0 ? null : args.join(" ")
+                );
+                setSelectedAutoCompleteIndex(0);
+              },
+            },
+          ].filter(Boolean)}
+          onKeyDown={(e) => {
+            autoCompleteInputKeyDownHandler(e);
+
+            if (onKeyDown) onKeyDown(e);
+          }}
+          onBlur={() => {
+            if (preventInputBlurRef.current) {
+              preventInputBlurRef.current = false;
+              editorRef.current.focus();
+              return;
             }
-          >
-            {header}
-          </div>
-        )}
-        <form
-          onSubmit={(e) => {
-            e.preventDefault();
-            executeMessage();
-            editorRef.current.focus();
+
+            setMentionQuery(null);
+            setEmojiQuery(null);
+            setCommandQuery(null);
           }}
           css={(t) =>
             css({
-              padding: "1rem 1rem 1rem 1.6rem",
-              maxHeight: "60vh",
-              minHeight: "4.5rem",
-              overflow: "auto",
-              background: t.colors.backgroundTertiary,
-              borderRadius: "0.6rem",
-              fontSize: t.text.sizes.large,
-              ":has([data-message-input-root][data-disabled])": {
+              color: t.colors.textNormal,
+              "&[data-disabled]": {
                 color: t.colors.textMuted,
                 cursor: "not-allowed",
                 "[data-slate-placeholder]": {
@@ -209,319 +440,162 @@ const MessageEditor = React.memo(
               },
             })
           }
-          style={{
-            borderTopLeftRadius: header != null ? 0 : undefined,
-            borderTopRightRadius: header != null ? 0 : undefined,
-          }}
-        >
-          <BaseMessageEditor
-            ref={editorRef}
-            inline={inline}
-            initialValue={pendingSlateNodes}
-            onChange={(nodes) => {
-              setPendingSlateNodes(nodes);
+          {...props}
+        />
+
+        {isAutoCompleteMenuOpen && autoCompleteOptions.length !== 0 && (
+          <AutoCompleteListbox
+            items={autoCompleteOptions}
+            selectedIndex={selectedAutoCompleteIndex}
+            onItemClick={(item) => {
+              selectAutoCompleteOption(item);
             }}
-            onKeyDown={(e) => {
-              if (!e.isDefaultPrevented() && !e.shiftKey && e.key === "Enter") {
-                e.preventDefault();
-                executeMessage();
-              }
-
-              onKeyDown?.(e);
-            }}
-            executeCommand={executeCommand}
-            commands={commandsByName}
-            disabled={disabled || isPending}
-            data-message-input-root
-            {...props}
-          />
-
-          {imageUploads.length !== 0 && (
-            <div
-              css={css({
-                overflow: "auto",
-                paddingTop: "1.2rem",
-                pointerEvents: isPending ? "none" : "all",
-              })}
-            >
-              <AttachmentList
-                items={imageUploads}
-                remove={({ url }) => {
-                  setImageUploads((fs) => fs.filter((f) => f.url !== url));
-                }}
-              />
-            </div>
-          )}
-
-          <div
-            style={{ display: "flex", alignItems: "center", marginTop: "1rem" }}
-          >
-            <div style={{ flex: 1, minWidth: 0 }}>
-              <div
-                style={{
-                  display: "grid",
-                  gridAutoColumns: "auto",
-                  gridAutoFlow: "column",
-                  gridGap: "0.5rem",
-                  justifyContent: "flex-start",
-                  alignItems: "center",
-                }}
-              >
-                <IconButton
-                  dimmed
-                  type="button"
-                  onClick={() => {
-                    fileInputRef.current.click();
-                  }}
-                  disabled={disabled || isPending || fileUploadDisabled}
-                >
-                  <PaperClipIcon style={{ width: "1.6rem", height: "auto" }} />
-                </IconButton>
-                <IconButton
-                  type="button"
-                  dimmed
-                  onClick={() => {
-                    editorRef.current.insertText(":");
-                    editorRef.current.focus();
-                  }}
-                  disabled={disabled || isPending}
-                >
-                  <EmojiFaceIcon style={{ width: "1.7rem", height: "auto" }} />
-                </IconButton>
-                <IconButton
-                  type="button"
-                  dimmed
-                  // onClick={() => {}}
-                  // disabled={disabled || isPending}
-                  disabled
-                >
-                  <GifIcon style={{ width: "1.6rem", height: "auto" }} />
-                </IconButton>
-                <div
-                  css={(t) =>
-                    css({
-                      width: "0.1rem",
-                      margin: "0 0.3rem",
-                      height: "1.3rem",
-                      background: t.colors.borderLight,
-                    })
-                  }
-                />
-                <IconButton
-                  type="button"
-                  dimmed
-                  onClick={() => {
-                    editorRef.current.insertText("@");
-                    editorRef.current.focus();
-                  }}
-                  disabled={disabled || isPending || props.members.length === 0}
-                >
-                  <AtSignIcon style={{ width: "1.6rem", height: "auto" }} />
-                </IconButton>
-              </div>
-            </div>
-
-            {submitArea ?? (
-              <IconButton
-                disabled={
-                  disabled || submitDisabled || isEmptyMessage || isPending
-                }
-                css={(t) => css({ color: t.colors.primary })}
-                type="submit"
-              >
-                <svg width="20" height="20" viewBox="0 0 20 20">
-                  <path
-                    fill="currentColor"
-                    stroke="currentColor"
-                    strokeLinejoin="round"
-                    strokeWidth="1.5"
-                    d="M2.25 2.25 17.75 10l-15.5 7.75v-4.539a1.5 1.5 0 0 1 1.46-1.5l6.54-.171a1.54 1.54 0 0 0 0-3.08l-6.54-.172a1.5 1.5 0 0 1-1.46-1.5V2.25Z"
-                  />
-                </svg>
-              </IconButton>
-            )}
-          </div>
-
-          <input
-            ref={fileInputRef}
-            type="file"
-            multiple
-            accept="image/*"
-            onChange={(e) => {
-              editorRef.current.focus();
-
-              const filesToUpload = [...e.target.files];
-
-              setImageUploads((fs) => [
-                ...fs,
-                ...filesToUpload.map((f) => ({
-                  name: encodeURIComponent(f.name),
-                  url: URL.createObjectURL(f),
-                })),
-              ]);
-
-              fileInputRef.current.value = "";
-
-              let lastImageUploads = imageUploads;
-
-              // Buckle up!
-              uploadPromiseRef.current = Promise.all([
-                uploadPromiseRef.current ?? Promise.resolve(),
-                ...filesToUpload.map((file) =>
-                  Promise.all([
-                    getImageFileDimensions(file),
-                    uploadImage({ files: [file] }).catch(() => {
-                      setImageUploads((fs) => {
-                        const newImageUploads = fs.filter(
-                          (f) => f.name !== file.name
-                        );
-                        lastImageUploads = newImageUploads;
-                        return newImageUploads;
-                      });
-                      const error = new Error(
-                        `Could not upload file "${file.name}"`
-                      );
-                      alert(error.message);
-                      return Promise.reject(error);
-                    }),
-                  ]).then(([dimensions, [uploadedFile]]) => {
-                    setImageUploads((fs) => {
-                      const newImageUploads = fs.map((f) => {
-                        if (!uploadedFile.filename.endsWith(f.name)) return f;
-                        return {
-                          id: uploadedFile.id,
-                          name: uploadedFile.filename,
-                          url: uploadedFile.variants.find((url) =>
-                            url.endsWith("/public")
-                          ),
-                          previewUrl: f.url,
-                          ...dimensions,
-                        };
-                      });
-
-                      lastImageUploads = newImageUploads;
-                      return newImageUploads;
-                    });
-                  })
-                ),
-              ]).then(() => {
-                uploadPromiseRef.current = null;
-                return lastImageUploads;
-              });
-            }}
-            hidden
-          />
-          <input type="submit" hidden />
-        </form>
-      </div>
-    );
-  })
-);
-
-const AttachmentList = ({ items, remove }) => (
-  <div
-    css={(theme) =>
-      css({
-        display: "grid",
-        gridAutoColumns: "max-content",
-        gridAutoFlow: "column",
-        justifyContent: "flex-start",
-        gridGap: "1rem",
-        img: {
-          display: "block",
-          width: "6rem",
-          height: "6rem",
-          borderRadius: "0.5rem",
-          objectFit: "cover",
-          background: theme.colors.backgroundSecondary,
-        },
-      })
-    }
-  >
-    {items.map(({ id, url, previewUrl }) => (
-      <div
-        key={url}
-        css={css({
-          position: "relative",
-          ".delete-button": { opacity: 0 },
-          "@media (hover: hover)": {
-            ":hover .delete-button": { opacity: 1 },
-          },
-        })}
-      >
-        <button
-          type="button"
-          onClick={() => {
-            window.open(url, "_blank");
-          }}
-          css={css({
-            display: "block",
-            cursor: "pointer",
-          })}
-        >
-          <img
-            src={url}
-            style={{
-              transition: "0.1s opacity",
-              opacity: id == null ? 0.7 : 1,
-              background: previewUrl == null ? undefined : `url(${previewUrl})`,
-              backgroundSize: "cover",
-              backgroundPosition: "center",
+            onListboxMouseDown={() => {
+              preventInputBlurRef.current = true;
             }}
           />
-        </button>
-
-        {id == null && (
-          <div
-            style={{
-              pointerEvents: "none",
-              position: "absolute",
-              top: "50%",
-              left: "50%",
-              transform: "translateX(-50%) translateY(-50%)",
-            }}
-            css={(theme) => css({ color: theme.colors.interactiveNormal })}
-          >
-            <Spinner />
-          </div>
         )}
+      </>
+    );
+  }
+);
 
-        <button
-          type="button"
-          className="delete-button"
-          css={(theme) =>
-            css({
-              position: "absolute",
-              top: 0,
-              right: 0,
-              transform: "translateX(50%) translateY(-50%)",
-              cursor: "pointer",
-              background: theme.colors.inputBackground,
+const AutoCompleteListbox = ({
+  selectedIndex = -1,
+  onItemClick,
+  items = [],
+  onListboxMouseDown,
+}) => {
+  return (
+    <ul
+      onMouseDown={onListboxMouseDown}
+      id="autocomplete-listbox"
+      role="listbox"
+      css={(theme) =>
+        css({
+          position: "absolute",
+          bottom: "calc(100% + 0.5rem)",
+          left: 0,
+          width: "100%",
+          zIndex: 1,
+          background: theme.colors.popoverBackground,
+          borderRadius: "0.7rem",
+          padding: "0.5rem 0",
+          boxShadow: theme.shadows.elevationLow,
+          "[role=option]": {
+            display: "flex",
+            alignItems: "center",
+            width: "100%",
+            padding: "0.8rem 1.2rem 0.6rem",
+            lineHeight: 1.3,
+            fontWeight: "400",
+            cursor: "pointer",
+            outline: "none",
+            ".image": {
+              width: "3.2rem",
+              height: "3.2rem",
               borderRadius: "50%",
-              boxShadow: `0 0 0 0.2rem ${theme.colors.inputBackground}`,
+              overflow: "hidden",
+              marginRight: "1rem",
+            },
+            ".label": {
+              display: "inline-flex",
+              alignItems: "center",
+              justifyContent: "flex-start",
+              height: "1.8rem",
+              color: theme.colors.textNormal,
+            },
+            ".description": {
               color: theme.colors.textDimmed,
-              "@media (hover: hover)": {
-                ":hover": {
-                  color: theme.colors.textDimmedModifierHover,
-                },
+              fontSize: "1.2rem",
+              whiteSpace: "pre-line",
+            },
+            '[data-matching-text="true"]': {
+              color: theme.colors.textHeader,
+              background: theme.colors.textHighlightBackground,
+            },
+            '&:hover, &:focus, &[data-selected="true"]': {
+              background: theme.colors.backgroundModifierHover,
+              ".label": {
+                color: theme.colors.textHeader,
               },
-            })
-          }
+            },
+          },
+        })
+      }
+    >
+      {items.map((item, i) => (
+        <li
+          key={item.value}
+          role="option"
+          id={`autocomplete-listbox-option-${selectedIndex}`}
+          aria-selected={`${i === selectedIndex}`}
+          data-selected={`${i === selectedIndex}`}
           onClick={() => {
-            remove({ url });
+            onItemClick(item, i);
           }}
         >
-          <PlusCircleIcon
-            style={{
-              width: "2.2rem",
-              height: "auto",
-              transform: "rotate(45deg",
-            }}
-          />
-        </button>
+          {typeof item.render === "function" ? (
+            item.render({})
+          ) : (
+            <>
+              {item.image && <div className="image">{item.image}</div>}
+              <div>
+                <div className="label">{item.label}</div>
+                {item.description && (
+                  <div className="description">{item.description}</div>
+                )}
+              </div>
+            </>
+          )}
+        </li>
+      ))}
+    </ul>
+  );
+};
+
+const ChannelAutoCompleteItem = ({ id }) => {
+  const channel = useChannel(id, { name: true });
+  const theme = useTheme();
+
+  return (
+    <div
+      css={css({
+        display: "flex",
+        alignItems: "center",
+        ".image": {
+          width: "3.2rem",
+          height: "3.2rem",
+          borderRadius: "50%",
+          overflow: "hidden",
+          marginRight: "1rem",
+        },
+      })}
+    >
+      <div css={css({ marginRight: "1rem" })}>
+        <ChannelAvatar
+          id={id}
+          transparent
+          size="2.2rem"
+          borderRadius={theme.avatars.borderRadius}
+          background={theme.colors.backgroundModifierHover}
+        />
       </div>
-    ))}
-  </div>
-);
+      <div
+        css={(t) =>
+          css({
+            flex: 1,
+            minWidth: 0,
+            color: t.colors.textNormal,
+            fontSize: t.text.sizes.large,
+            fontWeight: t.text.weights.default,
+          })
+        }
+      >
+        {channel.name}
+      </div>
+    </div>
+  );
+};
 
 export default MessageEditor;

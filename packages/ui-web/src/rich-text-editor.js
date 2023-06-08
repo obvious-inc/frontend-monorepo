@@ -201,7 +201,7 @@ const RichTextEditor = React.forwardRef(
         value={value}
         onChange={(value) => {
           handlers.onChange(value, editor);
-          onChange(value);
+          onChange?.(value);
 
           for (let trigger of triggers) {
             switch (trigger.type) {
