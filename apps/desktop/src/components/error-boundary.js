@@ -15,10 +15,12 @@ export default class ErrorBoundary extends React.Component {
   }
 
   render() {
+    const { fallback, children } = this.props;
+
     if (this.state.hasError) {
-      return this.props.fallback;
+      return typeof fallback === "function" ? fallback() : fallback;
     }
 
-    return this.props.children;
+    return children;
   }
 }
