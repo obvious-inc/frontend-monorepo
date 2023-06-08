@@ -17,7 +17,7 @@ import {
   toMessageBlocks,
   fromMessageBlocks,
 } from "./rich-text-editor.js";
-import MessageEditor from "./message-editor.js";
+import RichTextEditorWithAutoComplete from "./rich-text-editor-with-auto-complete.js";
 import Spinner from "./spinner.js";
 
 const {
@@ -224,7 +224,7 @@ const MessageEditorForm = React.memo(
           </div>
         )}
 
-        <MessageEditor
+        <RichTextEditorWithAutoComplete
           ref={editorRef}
           inline={inline}
           initialValue={pendingSlateNodes}

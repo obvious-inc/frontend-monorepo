@@ -98,22 +98,6 @@ const entrypoints = [
     ],
   },
   {
-    file: "message-editor.js",
-    dependencies: [
-      "@shades/common/utils",
-      "@shades/common/react",
-      "@shades/common/nouns",
-      "@shades/common/app",
-      "react",
-      "wagmi",
-      "slate",
-      "slate-react",
-      "slate-history",
-      "is-hotkey",
-      ...emotionDeps,
-    ],
-  },
-  {
     file: "message-editor-form.js",
     dependencies: [
       "@shades/common/utils",

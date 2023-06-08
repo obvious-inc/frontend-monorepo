@@ -23,7 +23,7 @@ const {
   createDefaultComparator: createChannelDefaultComparator,
 } = channelUtils;
 
-const MessageEditor = React.forwardRef(
+const RichTextEditorWithAutoComplete = React.forwardRef(
   (
     {
       initialValue,
@@ -598,4 +598,4 @@ const ChannelAutoCompleteItem = ({ id }) => {
   );
 };
 
-export default MessageEditor;
+export default RichTextEditorWithAutoComplete;

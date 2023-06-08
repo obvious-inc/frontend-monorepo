@@ -42,6 +42,10 @@ const executePrependTextCommand = (editor, text, command) => {
 const executeAppendTextCommand = (editor, text, command) => {
   removeCommandString(editor, command);
   editor.appendText(Editor.string(editor, []) === "" ? text : ` ${text}`);
+  // No idea why this is needed
+  window.requestAnimationFrame(() => {
+    editor.focus();
+  });
 };
 
 export default {

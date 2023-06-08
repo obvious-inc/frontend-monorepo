@@ -25,7 +25,6 @@
     "./toolbar": "./dist/toolbar.js",
     "./rich-text": "./dist/rich-text.js",
     "./rich-text-editor": "./dist/rich-text-editor.js",
-    "./message-editor": "./dist/message-editor.js",
     "./message-editor-form": "./dist/message-editor-form.js",
     "./emoji": "./dist/emoji.js",
     "./emoji-picker": "./dist/emoji-picker.js",

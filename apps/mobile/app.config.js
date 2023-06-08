@@ -2,8 +2,8 @@ if (!process.env.CI) require("dotenv").config();
 
 module.exports = {
   name: "NOM",
-  slug: "nom",
-  owner: "nom",
+  slug: "newshades",
+  owner: "newshades",
   version: "1.0.0",
   orientation: "portrait",
   icon: "./assets/icon.png",
