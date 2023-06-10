@@ -13,17 +13,19 @@ import {
   WagmiConfig,
   createConfig as createWagmiConfig,
   configureChains as configureWagmiChains,
+  useAccount,
 } from "wagmi";
 import { mainnet } from "wagmi/chains";
 import { infuraProvider } from "wagmi/providers/infura";
 import { publicProvider } from "wagmi/providers/public";
 import { InjectedConnector } from "wagmi/connectors/injected";
 import { WalletConnectLegacyConnector } from "wagmi/connectors/walletConnectLegacy";
-import { ethereum as ethereumUtils } from "@shades/common/utils";
+// import { ethereum as ethereumUtils } from "@shades/common/utils";
 import {
   useCachedState,
   ServerConnectionProvider,
   EmojiProvider,
+  useActions,
   useAuth,
   useMe,
   useChannelName,
@@ -31,9 +33,10 @@ import {
   usePublicChannels,
   useChannelHasUnread,
   useChannelMentionCount,
+  useAccountDisplayName,
 } from "@shades/common/app";
 import {
-  useWallet,
+  // useWallet,
   useWalletLogin,
   WalletLoginProvider,
 } from "@shades/common/wallet";
@@ -44,15 +47,24 @@ import {
   useState as useSidebarState,
   useToggle as useSidebarToggle,
 } from "@shades/ui-web/sidebar-layout";
-import {} from "@shades/ui-web/button";
-import Button from "@shades/ui-web/button";
+// import Button from "@shades/ui-web/button";
+import * as DropdownMenu from "@shades/ui-web/dropdown-menu";
 import * as Tooltip from "@shades/ui-web/tooltip";
+import AccountAvatar from "@shades/ui-web/account-avatar";
 import ChannelAvatar from "@shades/ui-web/channel-avatar";
+import {
+  Pen as PenIcon,
+  MagnificationGlass as MagnificationGlassIcon,
+} from "@shades/ui-web/icons";
 
-const { truncateAddress } = ethereumUtils;
+// const { truncateAddress } = ethereumUtils;
 
 const ChannelScreen = React.lazy(() =>
   import("./components/channel-screen.js")
+);
+
+const ChannelsScreen = React.lazy(() =>
+  import("./components/channels-screen.js")
 );
 
 const TRUNCATION_THRESHOLD = 8;
@@ -61,8 +73,138 @@ const Index = () => {
   return <div />;
 };
 
-const RootLayout = () => {
+const ProfileDropdownTrigger = React.forwardRef((props, ref) => {
+  const { status: authenticationStatus } = useAuth();
+
   const me = useMe();
+  const { address: connectedWalletAccountAddress } = useAccount();
+
+  const accountAddress =
+    authenticationStatus === "authenticated"
+      ? me?.walletAddress
+      : connectedWalletAccountAddress;
+
+  const { displayName, ensName, truncatedAddress } =
+    useAccountDisplayName(accountAddress);
+
+  return (
+    <button
+      ref={ref}
+      css={(t) =>
+        css({
+          width: "100%",
+          display: "grid",
+          gridTemplateColumns: "auto minmax(0,1fr) auto",
+          gridGap: "0.8rem",
+          alignItems: "center",
+          padding: "0.2rem 1.4rem",
+          height: "100%",
+          transition: "20ms ease-in",
+          outline: "none",
+          ":focus-visible": {
+            boxShadow: `${t.shadows.focus} inset`,
+          },
+          "@media (hover: hover)": {
+            cursor: "pointer",
+            ":hover": {
+              background: t.colors.backgroundModifierHover,
+            },
+          },
+        })
+      }
+      {...props}
+    >
+      <div
+        css={css({
+          width: "2.2rem",
+          height: "2.2rem",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          marginTop: "1px",
+        })}
+      >
+        <div
+          style={{
+            userSelect: "none",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            height: "2rem",
+            width: "2rem",
+            marginTop: "1px",
+          }}
+        >
+          {/* {isConnecting ? ( */}
+          {/*   <Spinner */}
+          {/*     size="1.8rem" */}
+          {/*     css={(t) => css({ color: t.colors.textMuted })} */}
+          {/*   /> */}
+          {/* ) : ( */}
+          <AccountAvatar transparent address={accountAddress} size="1.8rem" />
+          {/* )} */}
+        </div>
+      </div>
+      <div>
+        <div
+          css={(t) =>
+            css({
+              color: t.colors.textNormal,
+              fontSize: t.text.sizes.base,
+              fontWeight: t.text.weights.emphasis,
+              lineHeight: "2rem",
+              whiteSpace: "nowrap",
+              overflow: "hidden",
+              textOverflow: "ellipsis",
+            })
+          }
+        >
+          {displayName}
+        </div>
+
+        {(displayName !== truncatedAddress ||
+          authenticationStatus === "not-authenticated") && (
+          <div
+            css={(t) =>
+              css({
+                color: t.colors.textDimmed,
+                fontSize: t.text.sizes.small,
+                fontWeight: "400",
+                lineHeight: "1.2rem",
+                whiteSpace: "nowrap",
+                overflow: "hidden",
+                textOverflow: "ellipsis",
+              })
+            }
+          >
+            {authenticationStatus === "not-authenticated"
+              ? "Unverified account"
+              : ensName == null || ensName === displayName
+              ? truncatedAddress
+              : `${ensName} (${truncatedAddress})`}
+          </div>
+        )}
+      </div>
+      <div css={css({ width: "1.2rem", height: "1.2rem" })}>
+        <svg
+          viewBox="-1 -1 9 11"
+          style={{ width: "100%", height: "100%" }}
+          css={(theme) => css({ fill: theme.colors.textMuted })}
+        >
+          <path d="M 3.5 0L 3.98809 -0.569442L 3.5 -0.987808L 3.01191 -0.569442L 3.5 0ZM 3.5 9L 3.01191 9.56944L 3.5 9.98781L 3.98809 9.56944L 3.5 9ZM 0.488094 3.56944L 3.98809 0.569442L 3.01191 -0.569442L -0.488094 2.43056L 0.488094 3.56944ZM 3.01191 0.569442L 6.51191 3.56944L 7.48809 2.43056L 3.98809 -0.569442L 3.01191 0.569442ZM -0.488094 6.56944L 3.01191 9.56944L 3.98809 8.43056L 0.488094 5.43056L -0.488094 6.56944ZM 3.98809 9.56944L 7.48809 6.56944L 6.51191 5.43056L 3.01191 8.43056L 3.98809 9.56944Z" />
+        </svg>
+      </div>
+    </button>
+  );
+});
+
+const RootLayout = () => {
+  const actions = useActions();
+
+  const me = useMe();
+  const { address: connectedWalletAccountAddress } = useAccount();
+  const { login: initAccountVerification } = useWalletLogin();
+  const { status: authenticationStatus } = useAuth();
   const starredChannels = useStarredChannels({ name: true, readStates: true });
   const publicChannels = usePublicChannels({ name: true, readStates: true });
 
@@ -76,96 +218,213 @@ const RootLayout = () => {
     "recent",
   ]);
 
-  if (me == null) return null;
+  const isAuthenticated = authenticationStatus === "authenticated";
+
+  const showAccountProfile =
+    isAuthenticated || connectedWalletAccountAddress != null;
+
+  // if (me == null) return null;
 
   return (
     <SidebarLayout
-      header={
-        <div
-          css={(t) =>
-            css({
-              height: t.mainHeader.height,
-              display: "flex",
-              alignItems: "center",
-              padding: `0 calc(${t.mainMenu.itemHorizontalPadding} + ${t.mainMenu.containerHorizontalPadding})`,
-            })
-          }
-        >
-          <div
-            css={(t) =>
-              css({
-                fontSize: t.text.sizes.large,
-                fontWeight: t.text.weights.header,
-              })
-            }
-          >
-            Prechain
-          </div>
-        </div>
+      // header={
+      //   <div
+      //     css={(t) =>
+      //       css({
+      //         height: t.mainHeader.height,
+      //         display: "flex",
+      //         alignItems: "center",
+      //         padding: `0 calc(${t.mainMenu.itemHorizontalPadding} + ${t.mainMenu.containerHorizontalPadding})`,
+      //       })
+      //     }
+      //   >
+      //     <div
+      //       css={(t) =>
+      //         css({
+      //           fontSize: t.text.sizes.large,
+      //           fontWeight: t.text.weights.header,
+      //         })
+      //       }
+      //     >
+      //       Prechain
+      //     </div>
+      //   </div>
+      // }
+      header={() =>
+        authenticationStatus === "not-authenticated" &&
+        connectedWalletAccountAddress == null ? null : (
+          <DropdownMenu.Root placement="bottom">
+            <DropdownMenu.Trigger>
+              <ProfileDropdownTrigger />
+            </DropdownMenu.Trigger>
+            <DropdownMenu.Content
+              css={(t) => css({ width: `calc(${t.sidebarWidth} - 2rem)` })}
+              disabledKeys={["edit-profile"]}
+              items={[
+                !isAuthenticated && {
+                  id: "verify-account",
+                  children: [
+                    {
+                      id: "verify-account",
+                      label: "Verify account",
+                      primary: true,
+                    },
+                  ],
+                },
+                {
+                  id: "main",
+                  children: [
+                    // { id: "settings", label: "Settings" },
+                    { id: "edit-profile", label: "Edit profile" },
+                    {
+                      id: "copy-account-address",
+                      label: "Copy account address",
+                    },
+                  ],
+                },
+                isAuthenticated && {
+                  id: "log-out",
+                  children: [{ id: "log-out", label: "Log out" }],
+                },
+              ].filter(Boolean)}
+              onAction={(key) => {
+                switch (key) {
+                  case "verify-account":
+                    initAccountVerification(connectedWalletAccountAddress);
+                    // .then(
+                    // () => {
+                    // dismissAccountAuthenticationDialog();
+                    // }
+                    // );
+                    // openAccountAuthenticationDialog();
+                    break;
+
+                  // case "settings":
+                  //   openSettingsDialog();
+                  //   break;
+
+                  // case "edit-profile":
+                  //   openEditProfileDialog();
+                  //   break;
+
+                  // case "share-profile":
+                  //   openProfileLinkDialog();
+                  //   break;
+
+                  // case "switch-account":
+                  //   alert("Just switch account from your wallet!");
+                  //   break;
+
+                  case "copy-account-address":
+                    navigator.clipboard.writeText(me.walletAddress);
+                    break;
+
+                  case "log-out":
+                    actions.logout();
+                    break;
+                }
+              }}
+            >
+              {(item) => (
+                <DropdownMenu.Section items={item.children}>
+                  {(item) => (
+                    <DropdownMenu.Item primary={item.primary}>
+                      {item.label}
+                    </DropdownMenu.Item>
+                  )}
+                </DropdownMenu.Section>
+              )}
+            </DropdownMenu.Content>
+          </DropdownMenu.Root>
+        )
       }
       sidebarContent={
-        <SectionedMenu
-          collapsedKeys={collapsedKeys ?? []}
-          toggleCollapsed={(key) =>
-            setCollapsedKeys((keys) =>
-              keys.includes(key)
-                ? keys.filter((k) => k !== key)
-                : [...keys, key]
-            )
-          }
-          toggleTruncated={(key) =>
-            setTruncatedSectionKeys((keys) =>
-              keys.includes(key)
-                ? keys.filter((k) => k !== key)
-                : [...keys, key]
-            )
-          }
-          items={[
-            {
-              title: "Following",
-              key: "following",
-              channels: starredChannels,
-            },
-            {
-              title: "Recent",
-              key: "recent",
-              channels: publicChannels,
-            },
-          ].map((section) => {
-            const isTruncated = truncatedSectionKeys.includes(section.key);
+        <>
+          <div style={{ height: "1rem" }} />
 
-            const deriveTruncationCount = () => {
-              if (!isTruncated) return 0;
+          <ListItem
+            compact={false}
+            icon={<PenIcon style={{ width: "1.9rem", height: "auto" }} />}
+            component={NavLink}
+            to="/new"
+            title="New topic"
+          />
 
-              const defaultTruncationCount =
-                section.channels.length - TRUNCATION_THRESHOLD;
-              const readCount = section.channels.filter(
-                (c) => !c.hasUnread
-              ).length;
+          <ListItem
+            compact={false}
+            icon={<MagnificationGlassIcon style={{ width: "1.4rem" }} />}
+            component={NavLink}
+            to="/topics"
+            title="Browse"
+          />
 
-              return Math.min(defaultTruncationCount, readCount);
-            };
+          <div style={{ marginBottom: "1.5rem" }} />
 
-            const truncationCount = deriveTruncationCount();
+          <SectionedMenu
+            collapsedKeys={collapsedKeys ?? []}
+            toggleCollapsed={(key) =>
+              setCollapsedKeys((keys) =>
+                keys.includes(key)
+                  ? keys.filter((k) => k !== key)
+                  : [...keys, key]
+              )
+            }
+            toggleTruncated={(key) =>
+              setTruncatedSectionKeys((keys) =>
+                keys.includes(key)
+                  ? keys.filter((k) => k !== key)
+                  : [...keys, key]
+              )
+            }
+            items={[
+              {
+                title: "Following",
+                key: "following",
+                channels: starredChannels,
+              },
+              {
+                title: "Recent",
+                key: "recent",
+                channels: publicChannels,
+              },
+            ]
+              .filter((section) => section.channels.length > 0)
+              .map((section) => {
+                const isTruncated = truncatedSectionKeys.includes(section.key);
 
-            const visibleChannels =
-              isTruncated && truncationCount > 1
-                ? section.channels.slice(
-                    0,
-                    section.channels.length - truncationCount
-                  )
-                : section.channels;
+                const deriveTruncationCount = () => {
+                  if (!isTruncated) return 0;
 
-            return {
-              ...section,
-              hiddenCount: truncationCount,
-              children: visibleChannels.map((c) => ({
-                title: c.name,
-                key: c.id,
-              })),
-            };
-          })}
-        />
+                  const defaultTruncationCount =
+                    section.channels.length - TRUNCATION_THRESHOLD;
+                  const readCount = section.channels.filter(
+                    (c) => !c.hasUnread
+                  ).length;
+
+                  return Math.min(defaultTruncationCount, readCount);
+                };
+
+                const truncationCount = deriveTruncationCount();
+
+                const visibleChannels =
+                  isTruncated && truncationCount > 1
+                    ? section.channels.slice(
+                        0,
+                        section.channels.length - truncationCount
+                      )
+                    : section.channels;
+
+                return {
+                  ...section,
+                  hiddenCount: truncationCount,
+                  children: visibleChannels.map((c) => ({
+                    title: c.name,
+                    key: c.id,
+                  })),
+                };
+              })}
+          />
+        </>
       }
     >
       <Outlet />
@@ -468,88 +727,78 @@ const SmallText = ({ component: Component = "div", ...props }) => (
   />
 );
 
-const LoginScreen = () => {
-  const {
-    connect: connectWallet,
-    cancel: cancelWalletConnectionAttempt,
-    canConnect: canConnectWallet,
-    accountAddress,
-    isConnecting,
-  } = useWallet();
+// const LoginScreen = () => {
+//   const {
+//     connect: connectWallet,
+//     cancel: cancelWalletConnectionAttempt,
+//     canConnect: canConnectWallet,
+//     accountAddress,
+//     isConnecting,
+//   } = useWallet();
 
-  const { login, status: loginStatus } = useWalletLogin();
+//   const { login, status: loginStatus } = useWalletLogin();
 
-  return (
-    <div
-      css={(t) =>
-        css({
-          height: "100%",
-          width: "100%",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          color: t.colors.textDimmed,
-        })
-      }
-    >
-      <div>
-        {accountAddress == null && isConnecting ? (
-          <>
-            <div style={{ textAlign: "center" }}>
-              Requesting wallet address...
-            </div>
-            <Button
-              onClick={cancelWalletConnectionAttempt}
-              style={{ display: "block", margin: "2rem auto 0" }}
-            >
-              Cancel
-            </Button>
-          </>
-        ) : loginStatus === "requesting-signature" ? (
-          <>Requesting signature from {truncateAddress(accountAddress)}</>
-        ) : loginStatus === "requesting-access-token" ? (
-          <>Logging in...</>
-        ) : (
-          <>
-            {accountAddress == null ? (
-              <Button
-                variant="primary"
-                disabled={!canConnectWallet}
-                onClick={connectWallet}
-              >
-                Connect wallet
-              </Button>
-            ) : (
-              <>
-                <div style={{ marginBottom: "2rem", textAlign: "center" }}>
-                  Connected as {truncateAddress(accountAddress)}
-                </div>
-                <Button
-                  variant="primary"
-                  onClick={() => {
-                    login(accountAddress);
-                  }}
-                >
-                  Verify with wallet signature
-                </Button>
-              </>
-            )}
-          </>
-        )}
-      </div>
-    </div>
-  );
-};
-
-const RequireAuth = ({ children }) => {
-  const { status: authStatus } = useAuth();
-
-  if (authStatus === "not-authenticated") return <LoginScreen />;
-
-  if (authStatus !== "authenticated") return null; // Spinner
-
-  return children;
-};
+//   return (
+//     <div
+//       css={(t) =>
+//         css({
+//           height: "100%",
+//           width: "100%",
+//           display: "flex",
+//           alignItems: "center",
+//           justifyContent: "center",
+//           color: t.colors.textDimmed,
+//         })
+//       }
+//     >
+//       <div>
+//         {accountAddress == null && isConnecting ? (
+//           <>
+//             <div style={{ textAlign: "center" }}>
+//               Requesting wallet address...
+//             </div>
+//             <Button
+//               onClick={cancelWalletConnectionAttempt}
+//               style={{ display: "block", margin: "2rem auto 0" }}
+//             >
+//               Cancel
+//             </Button>
+//           </>
+//         ) : loginStatus === "requesting-signature" ? (
+//           <>Requesting signature from {truncateAddress(accountAddress)}</>
+//         ) : loginStatus === "requesting-access-token" ? (
+//           <>Logging in...</>
+//         ) : (
+//           <>
+//             {accountAddress == null ? (
+//               <Button
+//                 variant="primary"
+//                 disabled={!canConnectWallet}
+//                 onClick={connectWallet}
+//               >
+//                 Connect wallet
+//               </Button>
+//             ) : (
+//               <>
+//                 <div style={{ marginBottom: "2rem", textAlign: "center" }}>
+//                   Connected as {truncateAddress(accountAddress)}
+//                 </div>
+//                 <Button
+//                   variant="primary"
+//                   onClick={() => {
+//                     login(accountAddress);
+//                   }}
+//                 >
+//                   Verify with wallet signature
+//                 </Button>
+//               </>
+//             )}
+//           </>
+//         )}
+//       </div>
+//     </div>
+//   );
+// };
 
 const { chains, publicClient } = configureWagmiChains(
   [mainnet],
@@ -571,6 +820,8 @@ const wagmiConfig = createWagmiConfig({
   ],
 });
 
+const customTheme = { ...theme, sidebarWidth: "28rem" };
+
 const App = () => {
   const { login } = useAuth();
   return (
@@ -582,7 +833,7 @@ const App = () => {
             pusherKey={process.env.PUSHER_KEY}
           >
             <WalletLoginProvider authenticate={login}>
-              <ThemeProvider theme={theme}>
+              <ThemeProvider theme={customTheme}>
                 <SidebarProvider>
                   <EmojiProvider
                     loader={() =>
@@ -596,36 +847,47 @@ const App = () => {
                     }
                   >
                     <Tooltip.Provider delayDuration={300}>
-                      <RequireAuth>
-                        <Global
-                          styles={(theme) =>
-                            css({
-                              body: {
-                                color: theme.colors.textNormal,
-                                background: theme.colors.backgroundPrimary,
-                                fontFamily: theme.fontStacks.default,
-                                "::selection": {
-                                  background:
-                                    theme.colors.textSelectionBackground,
-                                },
+                      <Global
+                        styles={(theme) =>
+                          css({
+                            body: {
+                              color: theme.colors.textNormal,
+                              background: theme.colors.backgroundPrimary,
+                              fontFamily: theme.fontStacks.default,
+                              "::selection": {
+                                background:
+                                  theme.colors.textSelectionBackground,
                               },
-                            })
-                          }
-                        />
-                        <Routes>
-                          <Route path="/" element={<RootLayout />}>
-                            <Route index element={<Index />} />
-                            <Route
-                              path="/:channelId"
-                              element={<ChannelScreen />}
-                            />
-                          </Route>
+                            },
+                          })
+                        }
+                      />
+                      <Routes>
+                        <Route path="/" element={<RootLayout />}>
+                          <Route index element={<Index />} />
                           <Route
-                            path="*"
-                            element={<Navigate to="/" replace />}
+                            path="/new"
+                            element={
+                              <div
+                                style={{
+                                  flex: 1,
+                                  display: "flex",
+                                  alignItems: "center",
+                                  justifyContent: "center",
+                                }}
+                              >
+                                New
+                              </div>
+                            }
                           />
-                        </Routes>
-                      </RequireAuth>
+                          <Route path="/topics" element={<ChannelsScreen />} />
+                          <Route
+                            path="/:channelId"
+                            element={<ChannelScreen />}
+                          />
+                        </Route>
+                        <Route path="*" element={<Navigate to="/" replace />} />
+                      </Routes>
                     </Tooltip.Provider>
                   </EmojiProvider>
                 </SidebarProvider>

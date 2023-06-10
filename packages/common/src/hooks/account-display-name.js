@@ -7,38 +7,45 @@ import { useUserWithWalletAddress } from "./user.js";
 import { truncateAddress } from "../utils/ethereum.js";
 
 const useAccountDisplayName = (
-  walletAddress,
+  accountAddress,
   { customDisplayName = true } = {}
 ) => {
-  const user = useUserWithWalletAddress(walletAddress);
+  const user = useUserWithWalletAddress(accountAddress);
 
   const { data: ensName } = useEnsName({
-    address: walletAddress,
-    enabled: user == null && walletAddress != null && customDisplayName,
+    address: accountAddress,
+    enabled: user == null && accountAddress != null && customDisplayName,
   });
 
-  const isAddress = isEthereumAccountAddress(walletAddress);
+  const isAddress = isEthereumAccountAddress(accountAddress);
 
-  if (walletAddress != null && !isAddress)
-    console.warn(`Invalid address "${walletAddress}`);
+  if (accountAddress != null && !isAddress)
+    console.warn(`Invalid address "${accountAddress}`);
 
-  const names = { ensName, userDisplayName: user?.displayName };
+  const checksumEncodedAddress = isAddress
+    ? checksumEncodeAddress(accountAddress)
+    : null;
+
+  const truncatedAddress =
+    checksumEncodedAddress != null
+      ? truncateAddress(checksumEncodedAddress)
+      : null;
+
+  const names = {
+    address: checksumEncodedAddress,
+    truncatedAddress,
+    ensName,
+    userDisplayName: user?.displayName,
+  };
 
   if (!customDisplayName) {
-    const displayName =
-      ensName ??
-      (isAddress
-        ? truncateAddress(checksumEncodeAddress(walletAddress))
-        : null);
+    const displayName = ensName ?? truncatedAddress;
     return { displayName, ...names };
   }
 
-  const displayName =
-    user?.displayName ??
-    ensName ??
-    (isAddress ? truncateAddress(checksumEncodeAddress(walletAddress)) : null);
+  const primaryName = user?.displayName ?? ensName ?? truncatedAddress;
 
-  return { displayName, ...names };
+  return { displayName: primaryName, ...names };
 };
 
 export default useAccountDisplayName;
