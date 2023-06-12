@@ -219,7 +219,7 @@ const ChannelMessagesScrollView = ({
           })
         }
       >
-        <div css={css({ height: "1.3rem" })} />
+        {messageIds.length > 0 && <div css={css({ height: "1.3rem" })} />}
         {messageIds.map((id, index, ids) =>
           renderMessage(id, index, ids, {
             threads,

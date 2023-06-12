@@ -3,7 +3,6 @@ import isDateToday from "date-fns/isToday";
 import isDateYesterday from "date-fns/isYesterday";
 import React from "react";
 import { css } from "@emotion/react";
-import { useDateFormatter } from "react-aria";
 import {
   useActions,
   useMessageEmbeds,
@@ -11,12 +10,11 @@ import {
   useUsers,
   useMessage,
   useUser,
-  useUserWithWalletAddress,
   useHasReactedWithEmoji,
   useMessageReactions,
-  useAccountDisplayName,
 } from "@shades/common/app";
 import { useHover } from "@shades/common/react";
+import { message as messageUtils } from "@shades/common/utils";
 import Button from "@shades/ui-web/button";
 import EmojiPicker from "@shades/ui-web/emoji-picker";
 import {
@@ -28,14 +26,14 @@ import {
   JoinArrowRight as JoinArrowRightIcon,
 } from "@shades/ui-web/icons";
 import AccountAvatar from "@shades/ui-web/account-avatar";
-import InlineUserButton from "@shades/ui-web/inline-user-button";
 import * as DropdownMenu from "@shades/ui-web/dropdown-menu";
 import * as Toolbar from "@shades/ui-web/toolbar";
 import * as Tooltip from "@shades/ui-web/tooltip";
-import * as Popover from "@shades/ui-web/popover";
 import MessageEditorForm from "@shades/ui-web/message-editor-form";
 import { isNodeEmpty } from "@shades/ui-web/rich-text-editor";
+import AccountPreviewPopoverTrigger from "./account-preview-popover-trigger.js";
 import RichText from "./rich-text.js";
+import FormattedDate from "./formatted-date.js";
 
 const ONE_MINUTE_IN_MILLIS = 1000 * 60;
 
@@ -760,7 +758,7 @@ const MessageHeader = ({ messageId }) => {
     >
       {message.authorUserId != null && (
         <>
-          <InlineUserButtonWithProfilePopover userId={message.authorUserId} />
+          <AccountPreviewPopoverTrigger userId={message.authorUserId} />
 
           <TinyMutedText style={{ lineHeight: 1.5 }}>
             <FormattedDateWithTooltip
@@ -1017,44 +1015,36 @@ const ReplyTargetMessage = ({ messageId, onClickMessage }) => {
             </span>
           ) : (
             <>
-              <Popover.Root placement="top">
-                <Popover.Trigger
-                  asChild
-                  disabled={authorMember == null || authorMember.deleted}
-                >
-                  <span
-                    role="button"
-                    tabIndex={0}
-                    css={(t) =>
-                      css({
-                        color: authorMember?.deleted
-                          ? t.colors.textDimmed
-                          : undefined,
-                        fontWeight: "500",
-                        "@media(hover: hover)": {
-                          ":not(:disabled)": {
-                            cursor: "pointer",
-                            ":hover": {
-                              textDecoration: "underline",
-                            },
+              <AccountPreviewPopoverTrigger userId={message?.authorUserId}>
+                <span
+                  role="button"
+                  tabIndex={0}
+                  css={(t) =>
+                    css({
+                      color: authorMember?.deleted
+                        ? t.colors.textDimmed
+                        : undefined,
+                      fontWeight: "500",
+                      "@media(hover: hover)": {
+                        ":not(:disabled)": {
+                          cursor: "pointer",
+                          ":hover": {
+                            textDecoration: "underline",
                           },
                         },
-                      })
-                    }
-                  >
-                    {authorMember == null ? (
-                      <wbr />
-                    ) : authorMember.deleted ? (
-                      "Deleted user"
-                    ) : (
-                      authorMember.displayName
-                    )}
-                  </span>
-                </Popover.Trigger>
-                <Popover.Content>
-                  <ProfilePreview userId={message?.authorUserId} />
-                </Popover.Content>
-              </Popover.Root>
+                      },
+                    })
+                  }
+                >
+                  {authorMember == null ? (
+                    <wbr />
+                  ) : authorMember.deleted ? (
+                    "Deleted user"
+                  ) : (
+                    authorMember.displayName
+                  )}
+                </span>
+              </AccountPreviewPopoverTrigger>
               {": "}
               <span
                 role="button"
@@ -1143,51 +1133,43 @@ const MessageLeftColumn = ({ messageId, simplified, isHovering }) => {
 
   return (
     <div style={{ padding: "0.2rem 0 0" }}>
-      <Popover.Root placement="top">
-        <Popover.Trigger
-          asChild
-          disabled={message.author == null || message.author.deleted}
-        >
-          <button
-            css={(t) =>
-              css({
-                "--regular-color": t.colors.borderLight,
-                "--verified-color": t.colors.primary,
-                display: "block",
-                position: "relative",
-                borderRadius: t.avatars.borderRadius,
-                overflow: "hidden",
-                outline: "none",
-                ":focus-visible": {
-                  boxShadow: t.shadows.focus,
-                },
-                "@media (hover: hover)": {
-                  ":not(:disabled)": {
-                    cursor: "pointer",
-                    ":hover": {
-                      boxShadow: "var(--hover-box-shadow)",
-                    },
+      <AccountPreviewPopoverTrigger userId={message.authorUserId}>
+        <button
+          css={(t) =>
+            css({
+              "--regular-color": t.colors.borderLight,
+              "--verified-color": t.colors.primary,
+              display: "block",
+              position: "relative",
+              borderRadius: t.avatars.borderRadius,
+              overflow: "hidden",
+              outline: "none",
+              ":focus-visible": {
+                boxShadow: t.shadows.focus,
+              },
+              "@media (hover: hover)": {
+                ":not(:disabled)": {
+                  cursor: "pointer",
+                  ":hover": {
+                    boxShadow: "var(--hover-box-shadow)",
                   },
                 },
-              })
-            }
-            style={{
-              "--hover-box-shadow": hasVerfifiedProfilePicture
-                ? "0 0 0 0.2rem var(--verified-color)"
-                : "0 0 0 0.2rem var(--regular-color)",
-            }}
-          >
-            <AccountAvatar
-              transparent
-              address={message.author?.walletAddress}
-              size="3.8rem"
-            />
-          </button>
-        </Popover.Trigger>
-        <Popover.Content>
-          <ProfilePreview userId={message.authorUserId} />
-        </Popover.Content>
-      </Popover.Root>
+              },
+            })
+          }
+          style={{
+            "--hover-box-shadow": hasVerfifiedProfilePicture
+              ? "0 0 0 0.2rem var(--verified-color)"
+              : "0 0 0 0.2rem var(--regular-color)",
+          }}
+        >
+          <AccountAvatar
+            transparent
+            address={message.author?.walletAddress}
+            size="3.8rem"
+          />
+        </button>
+      </AccountPreviewPopoverTrigger>
     </div>
   );
 };
@@ -1204,7 +1186,7 @@ const SystemMessageContent = ({ messageId }) => {
       return (
         <span style={{ opacity: isMissingData ? 0 : 1 }}>
           <InlineUserButton userId={message.inviterUserId} /> added{" "}
-          <InlineUserButton userId={message.authorUserId} /> to the channel.
+          <InlineUserButton userId={message.authorUserId} /> to the topic.
         </span>
       );
     }
@@ -1215,7 +1197,7 @@ const SystemMessageContent = ({ messageId }) => {
         message.author?.walletAddress == null;
       return (
         <span style={{ opacity: isMissingData ? 0 : 1 }}>
-          <InlineUserButton userId={message.authorUserId} /> joined the channel.
+          <InlineUserButton userId={message.authorUserId} /> joined the topic.
           Welcome!
         </span>
       );
@@ -1227,7 +1209,7 @@ const SystemMessageContent = ({ messageId }) => {
         return (
           <>
             <InlineUserButton userId={message.authorUserId} /> updated the
-            channel.
+            topic.
           </>
         );
       }
@@ -1244,7 +1226,7 @@ const SystemMessageContent = ({ messageId }) => {
                 "cleared the topic description."
               ) : (
                 <>
-                  set the channel description:{" "}
+                  set the topic description:
                   <RichText compact blocks={messageUtils.parseString(value)} />
                 </>
               )}
@@ -1360,50 +1342,8 @@ const FormattedDateWithTooltip = React.memo(
   }
 );
 
-// ==========================================================================
-
-const FormattedDate = ({ value, ...options }) => {
-  const formatter = useDateFormatter(options);
-  return formatter.format(typeof value === "string" ? new Date(value) : value);
-};
-
-const ProfilePreview = ({ userId }) => {
-  const user = useUser(userId);
-  const { displayName } = useAccountDisplayName(user?.walletAddress);
-  return <div css={css({ padding: "1rem" })}>{displayName}</div>;
-};
-
-const InlineUserButtonWithProfilePopover = React.forwardRef(
-  (
-    { walletAddress, userId: userId_, user: user_, popoverProps, ...props },
-    ref
-  ) => {
-    const walletUser = useUserWithWalletAddress(walletAddress);
-
-    const userId = userId_ ?? user_?.id ?? walletUser?.id;
-
-    const user = useUser(userId);
-
-    if (userId == null && walletAddress == null) return null;
-
-    const disabled = user?.deleted || user?.unknown;
-
-    return (
-      <Popover.Root placement="top" {...popoverProps}>
-        <Popover.Trigger asChild disabled={disabled} {...props}>
-          <InlineUserButton
-            ref={ref}
-            userId={userId}
-            walletAddress={walletAddress}
-            variant="link"
-          />
-        </Popover.Trigger>
-        <Popover.Content>
-          <ProfilePreview userId={userId} walletAddress={walletAddress} />
-        </Popover.Content>
-      </Popover.Root>
-    );
-  }
+const InlineUserButton = ({ userId }) => (
+  <AccountPreviewPopoverTrigger userId={userId} variant="button" />
 );
 
 export default ChannelMessage;

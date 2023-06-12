@@ -13,7 +13,6 @@ import {
   useChannelMessagesFetcher,
   useChannelFetchEffects,
   useMarkChannelReadEffects,
-  // useStringifiedMessageContent,
 } from "@shades/common/app";
 import { useWallet, useWalletLogin } from "@shades/common/wallet";
 import {
@@ -24,11 +23,12 @@ import {
 } from "@shades/common/react";
 import Button from "@shades/ui-web/button";
 import { CrossCircle as CrossCircleIcon } from "@shades/ui-web/icons";
-import AccountPreviewPopoverTrigger from "@shades/ui-web/account-preview-popover-trigger";
 import MessageEditorForm from "@shades/ui-web/message-editor-form";
 import ChannelMessagesScrollView from "@shades/ui-web/channel-messages-scroll-view";
+import AccountPreviewPopoverTrigger from "./account-preview-popover-trigger.js";
 import ChannelMessage from "./channel-message.js";
 import RichText from "./rich-text.js";
+import FormattedDate from "./formatted-date.js";
 
 const ChannelContent = ({ channelId }) => {
   const { address: connectedWalletAccountAddress } = useAccount();
@@ -141,21 +141,7 @@ const ChannelContent = ({ channelId }) => {
         renderHeader={
           channel?.body == null
             ? null
-            : () => (
-                <div css={css({ padding: "1.5rem 1.5rem 0" })}>
-                  <div
-                    css={(t) =>
-                      css({
-                        paddingBottom: "1.5rem",
-                        borderBottom: "0.1rem solid",
-                        borderColor: t.colors.borderLight,
-                      })
-                    }
-                  >
-                    <RichText blocks={channel.body} />
-                  </div>
-                </div>
-              )
+            : () => <ChannelHeader channelId={channelId} />
         }
         renderMessage={renderMessage}
       />
@@ -261,7 +247,7 @@ const ChannelContent = ({ channelId }) => {
             replyTargetMessageId == null ? null : (
               <div css={css({ display: "flex", alignItems: "center" })}>
                 <div css={css({ flex: 1, paddingRight: "1rem" })}>
-                  Replying to{" "}
+                  Replying to {}
                   <AccountPreviewPopoverTrigger
                     userId={replyTargetMessage.authorUserId}
                     variant="link"
@@ -349,9 +335,58 @@ const NavBar = ({ channelId }) => {
   );
 };
 
-// const StringifiedMessageContent = React.memo(({ messageId }) =>
-//   useStringifiedMessageContent(messageId)
-// );
+const ChannelHeader = ({ channelId }) => {
+  const channel = useChannel(channelId);
+
+  if (channel == null) return null;
+
+  return (
+    <div css={css({ padding: "6rem 1.6rem 0", userSelect: "text" })}>
+      <div
+        css={(t) =>
+          css({
+            borderBottom: "0.1rem solid",
+            borderColor: t.colors.borderLighter,
+            padding: "0 0 3.2rem",
+            "@media (min-width: 600px)": {
+              padding: `calc(${t.messages.avatarSize} + ${t.messages.gutterSize})`,
+              paddingTop: 0,
+            },
+          })
+        }
+      >
+        <div>
+          <h1 css={css({ lineHeight: 1.15, margin: "0 0 0.3rem" })}>
+            {channel.name}
+          </h1>
+          <div
+            css={(t) =>
+              css({
+                color: t.colors.textDimmed,
+                fontSize: t.text.sizes.base,
+                margin: "0 0 2.6rem",
+              })
+            }
+          >
+            Created by{" "}
+            <AccountPreviewPopoverTrigger userId={channel.ownerUserId} /> on{" "}
+            <FormattedDate
+              value={channel.createdAt}
+              day="numeric"
+              month="long"
+            />
+          </div>
+        </div>
+        <RichText
+          blocks={channel.body}
+          css={(t) =>
+            css({ color: t.colors.textNormal, fontSize: t.text.sizes.large })
+          }
+        />
+      </div>
+    </div>
+  );
+};
 
 const Layout = ({ channelId, children }) => (
   <div

@@ -28,13 +28,18 @@ import {
   useActions,
   useAuth,
   useMe,
-  useChannelName,
+  useUser,
+  useMessage,
   useStarredChannels,
   usePublicChannels,
+  useChannelName,
   useChannelHasUnread,
   useChannelMentionCount,
+  useSortedChannelMessageIds,
   useAccountDisplayName,
+  useStringifiedMessageContent,
 } from "@shades/common/app";
+import { useFetch } from "@shades/common/react";
 import {
   // useWallet,
   useWalletLogin,
@@ -44,8 +49,6 @@ import { light as theme } from "@shades/ui-web/theme";
 import {
   Provider as SidebarProvider,
   Layout as SidebarLayout,
-  useState as useSidebarState,
-  useToggle as useSidebarToggle,
 } from "@shades/ui-web/sidebar-layout";
 // import Button from "@shades/ui-web/button";
 import * as DropdownMenu from "@shades/ui-web/dropdown-menu";
@@ -56,8 +59,26 @@ import {
   Pen as PenIcon,
   MagnificationGlass as MagnificationGlassIcon,
 } from "@shades/ui-web/icons";
+import {
+  useCollection as useChannelDrafts,
+  useSingleItem as useChannelDraft,
+} from "./hooks/channel-drafts.js";
 
-// const { truncateAddress } = ethereumUtils;
+const useLastMessage = (channelId) => {
+  const { fetchLastChannelMessage } = useActions();
+  const messageIds = useSortedChannelMessageIds(channelId);
+  const message = useMessage(messageIds?.slice(-1)[0]);
+
+  // Fetch the most recent message if non exist in cache
+  useFetch(
+    channelId == null || message != null
+      ? null
+      : () => fetchLastChannelMessage(channelId),
+    [channelId, message]
+  );
+
+  return message;
+};
 
 const ChannelScreen = React.lazy(() =>
   import("./components/channel-screen.js")
@@ -65,6 +86,10 @@ const ChannelScreen = React.lazy(() =>
 
 const ChannelsScreen = React.lazy(() =>
   import("./components/channels-screen.js")
+);
+
+const CreateChannelScreen = React.lazy(() =>
+  import("./components/create-channel-screen.js")
 );
 
 const TRUNCATION_THRESHOLD = 8;
@@ -208,6 +233,8 @@ const RootLayout = () => {
   const starredChannels = useStarredChannels({ name: true, readStates: true });
   const publicChannels = usePublicChannels({ name: true, readStates: true });
 
+  const { items: channelDrafts } = useChannelDrafts();
+
   const [collapsedKeys, setCollapsedKeys] = useCachedState(
     "main-menu:collapsed",
     []
@@ -251,8 +278,7 @@ const RootLayout = () => {
       //   </div>
       // }
       header={() =>
-        authenticationStatus === "not-authenticated" &&
-        connectedWalletAccountAddress == null ? null : (
+        showAccountProfile ? (
           <DropdownMenu.Root placement="bottom">
             <DropdownMenu.Trigger>
               <ProfileDropdownTrigger />
@@ -336,7 +362,7 @@ const RootLayout = () => {
               )}
             </DropdownMenu.Content>
           </DropdownMenu.Root>
-        )
+        ) : null
       }
       sidebarContent={
         <>
@@ -347,6 +373,7 @@ const RootLayout = () => {
             icon={<PenIcon style={{ width: "1.9rem", height: "auto" }} />}
             component={NavLink}
             to="/new"
+            end
             title="New topic"
           />
 
@@ -378,17 +405,27 @@ const RootLayout = () => {
             }
             items={[
               {
+                title: "Drafts",
+                key: "channel-drafts",
+                items: channelDrafts ?? [],
+                itemType: "channel-draft",
+              },
+              {
                 title: "Following",
                 key: "following",
-                channels: starredChannels,
+                items: starredChannels,
+                itemType: "channel",
+                itemSize: "large",
               },
               {
                 title: "Recent",
                 key: "recent",
-                channels: publicChannels,
+                items: publicChannels,
+                itemType: "channel",
+                itemSize: "large",
               },
             ]
-              .filter((section) => section.channels.length > 0)
+              .filter((section) => section.items.length > 0)
               .map((section) => {
                 const isTruncated = truncatedSectionKeys.includes(section.key);
 
@@ -396,9 +433,13 @@ const RootLayout = () => {
                   if (!isTruncated) return 0;
 
                   const defaultTruncationCount =
-                    section.channels.length - TRUNCATION_THRESHOLD;
-                  const readCount = section.channels.filter(
-                    (c) => !c.hasUnread
+                    section.items.length - TRUNCATION_THRESHOLD;
+
+                  if (section.itemType !== "channel")
+                    return defaultTruncationCount;
+
+                  const readCount = section.items.filter(
+                    (i) => !i.hasUnread
                   ).length;
 
                   return Math.min(defaultTruncationCount, readCount);
@@ -406,21 +447,18 @@ const RootLayout = () => {
 
                 const truncationCount = deriveTruncationCount();
 
-                const visibleChannels =
+                const visibleItems =
                   isTruncated && truncationCount > 1
-                    ? section.channels.slice(
+                    ? section.items.slice(
                         0,
-                        section.channels.length - truncationCount
+                        section.items.length - truncationCount
                       )
-                    : section.channels;
+                    : section.items;
 
                 return {
                   ...section,
                   hiddenCount: truncationCount,
-                  children: visibleChannels.map((c) => ({
-                    title: c.name,
-                    key: c.id,
-                  })),
+                  children: visibleItems.map((i) => ({ key: i.id })),
                 };
               })}
           />
@@ -438,10 +476,13 @@ const SectionedMenu = ({
   toggleCollapsed,
   toggleTruncated,
 }) =>
-  items.map((item) => {
-    const expanded = !collapsedKeys.includes(item.key);
+  items.map((sectionItem) => {
+    const expanded = !collapsedKeys.includes(sectionItem.key);
     return (
-      <section key={item.key} style={{ marginBottom: expanded ? "1.8rem" : 0 }}>
+      <section
+        key={sectionItem.key}
+        style={{ marginBottom: expanded ? "1.8rem" : 0 }}
+      >
         <div
           css={(t) =>
             css({
@@ -456,7 +497,7 @@ const SectionedMenu = ({
           }
         >
           <button
-            onClick={() => toggleCollapsed(item.key)}
+            onClick={() => toggleCollapsed(sectionItem.key)}
             css={(t) =>
               css({
                 lineHeight: 1,
@@ -479,23 +520,36 @@ const SectionedMenu = ({
               })
             }
           >
-            <SmallText>{item.title}</SmallText>
+            <SmallText>{sectionItem.title}</SmallText>
           </button>
         </div>
 
         {expanded && (
           <>
-            {item.children.map((item) => (
-              <ChannelItem key={item.key} id={item.key} />
-            ))}
+            {sectionItem.children.map((item) => {
+              switch (sectionItem.itemType) {
+                case "channel":
+                  return (
+                    <ChannelItem
+                      key={item.key}
+                      id={item.key}
+                      size={sectionItem.itemSize}
+                    />
+                  );
+                case "channel-draft":
+                  return <ChannelDraftItem key={item.key} id={item.key} />;
+                default:
+                  throw new Error();
+              }
+            })}
 
-            {item.hiddenCount > 0 && (
+            {sectionItem.hiddenCount > 0 && (
               <ListItem
                 component="button"
-                onClick={() => toggleTruncated(item.key)}
+                onClick={() => toggleTruncated(sectionItem.key)}
                 title={
                   <SmallText css={css({ padding: "0 0.4rem" })}>
-                    {item.hiddenCount} more...
+                    {sectionItem.hiddenCount} more...
                   </SmallText>
                 }
               />
@@ -506,34 +560,37 @@ const SectionedMenu = ({
     );
   });
 
-const ChannelItem = ({ id, expandable, size = "normal" }) => {
+const StringifiedMessageContent = React.memo(({ messageId }) =>
+  useStringifiedMessageContent(messageId)
+);
+
+const ChannelItem = ({ id, size }) => {
   const theme = useTheme();
   const name = useChannelName(id);
   const hasUnread = useChannelHasUnread(id);
   const notificationCount = useChannelMentionCount(id);
 
-  const { isFloating: isFloatingMenuEnabled } = useSidebarState();
-  const toggleMenu = useSidebarToggle();
-
-  const closeMenu = () => {
-    if (isFloatingMenuEnabled) toggleMenu();
-  };
+  const lastMessage = useLastMessage(size === "large" ? id : null);
+  const lastMessageAuthorUser = useUser(lastMessage?.authorUserId);
 
   const avatarProps = {
     transparent: true,
-    size: theme.avatars.size,
+    size: size === "large" ? "3rem" : theme.avatars.size,
     borderRadius: theme.avatars.borderRadius,
     background: theme.colors.backgroundModifierHover,
   };
 
   return (
     <ListItem
-      expandable={expandable}
+      size={size}
       component={NavLink}
       to={`/${id}`}
-      className={({ isActive }) => (isActive ? "active" : "")}
-      onClick={closeMenu}
       notificationCount={notificationCount}
+      icon={
+        <span>
+          <ChannelAvatar id={id} {...avatarProps} />
+        </span>
+      }
       title={
         <div
           className="title"
@@ -549,12 +606,43 @@ const ChannelItem = ({ id, expandable, size = "normal" }) => {
           {name}
         </div>
       }
-      icon={
-        <span>
-          <ChannelAvatar id={id} {...avatarProps} />
-        </span>
+      subtitle={
+        lastMessage == null ? null : (
+          <div
+            style={{ color: hasUnread ? theme.colors.textDimmed : undefined }}
+          >
+            {lastMessageAuthorUser?.displayName != null && (
+              <>{lastMessageAuthorUser.displayName}: </>
+            )}
+            <StringifiedMessageContent messageId={lastMessage.id} />
+          </div>
+        )
       }
-      size={size}
+    />
+  );
+};
+
+const ChannelDraftItem = ({ id }) => {
+  const [draft] = useChannelDraft(id);
+
+  const name =
+    draft?.name == null || draft?.name.trim() === ""
+      ? "Untitled topic"
+      : draft.name;
+
+  return (
+    <ListItem
+      component={NavLink}
+      to={`/new/${id}`}
+      // className={({ isActive }) => (isActive ? "active" : "")}
+      title={
+        <div
+          className="title"
+          css={css({ overflow: "hidden", textOverflow: "ellipsis" })}
+        >
+          {name}
+        </div>
+      }
     />
   );
 };
@@ -592,7 +680,7 @@ const ListItem = React.forwardRef(
           aria-disabled={disabled}
           css={(t) =>
             css({
-              height: t.mainMenu.itemHeight,
+              height: `var(--item-height, ${t.mainMenu.itemHeight})`,
               display: "flex",
               alignItems: "center",
               width: "100%",
@@ -635,6 +723,13 @@ const ListItem = React.forwardRef(
                 overflow: "hidden",
                 textOverflow: "ellipsis",
               },
+              ".subtitle-container": {
+                color: t.colors.textMuted,
+                fontSize: t.text.sizes.small,
+                fontWeight: t.text.weights.normal,
+                overflow: "hidden",
+                textOverflow: "ellipsis",
+              },
               ":focus-visible": {
                 boxShadow: t.shadows.focus,
               },
@@ -649,6 +744,10 @@ const ListItem = React.forwardRef(
             })
           }
           {...props}
+          style={{
+            ...props.style,
+            "--item-height": size === "large" ? "4.4rem" : undefined,
+          }}
         >
           {icon != null && (
             <div
@@ -866,19 +965,8 @@ const App = () => {
                         <Route path="/" element={<RootLayout />}>
                           <Route index element={<Index />} />
                           <Route
-                            path="/new"
-                            element={
-                              <div
-                                style={{
-                                  flex: 1,
-                                  display: "flex",
-                                  alignItems: "center",
-                                  justifyContent: "center",
-                                }}
-                              >
-                                New
-                              </div>
-                            }
+                            path="/new/:draftId?"
+                            element={<CreateChannelScreen />}
                           />
                           <Route path="/topics" element={<ChannelsScreen />} />
                           <Route

@@ -1,0 +1,192 @@
+import React from "react";
+import { useParams, useNavigate } from "react-router-dom";
+import { css } from "@emotion/react";
+import { useActions } from "@shades/common/app";
+import { useLatestCallback } from "@shades/common/react";
+import Button from "@shades/ui-web/button";
+import RichTextEditor, {
+  isNodeEmpty as isSlateNodeEmpty,
+} from "@shades/ui-web/rich-text-editor";
+import {
+  useCollection as useDrafts,
+  useSingleItem as useDraft,
+} from "../hooks/channel-drafts.js";
+
+const CreateChannelScreen = () => {
+  const { draftId } = useParams();
+  const navigate = useNavigate();
+
+  const { createOpenChannel } = useActions();
+
+  const {
+    items: drafts,
+    createItem: createDraft,
+    deleteItem: deleteDraft,
+  } = useDrafts();
+  const [draft, { setName, setBody }] = useDraft(draftId);
+
+  const [hasPendingRequest, setPendingRequest] = React.useState(false);
+
+  const isNameEmpty = draft == null || draft.name.trim() === "";
+  const isBodyEmpty =
+    draft == null ||
+    (draft.body.length <= 1 && draft.body.every(isSlateNodeEmpty));
+
+  const hasRequiredInput = !isNameEmpty && !isBodyEmpty;
+
+  const submit = () => {
+    setPendingRequest(true);
+
+    deleteDraft(draftId)
+      .then(() => createOpenChannel({ name: draft.name, body: draft.body }))
+      .then((channel) => {
+        navigate(`/${channel.id}`);
+      })
+      .catch((e) => {
+        alert("Ops, looks like something went wrong!");
+        throw e;
+      })
+      .finally(() => {
+        setPendingRequest(false);
+      });
+  };
+
+  const getFirstEmptyDraft = useLatestCallback(() =>
+    drafts.find((draft) => {
+      const isEmpty =
+        draft.name.trim() === "" &&
+        draft.body.length === 1 &&
+        isSlateNodeEmpty(draft.body[0]);
+
+      return isEmpty;
+    })
+  );
+
+  React.useEffect(() => {
+    if (draftId != null) return;
+
+    const emptyDraft = getFirstEmptyDraft();
+
+    if (emptyDraft) {
+      navigate(`/new/${emptyDraft.id}`, { replace: true });
+      return;
+    }
+
+    createDraft().then((d) => {
+      navigate(d.id, { replace: true });
+    });
+  }, [draftId, createDraft, getFirstEmptyDraft, navigate]);
+
+  if (draft == null) return null;
+
+  return (
+    <form
+      onSubmit={(e) => {
+        e.preventDefault();
+        submit();
+      }}
+      css={css({
+        flex: 1,
+        minHeight: 0,
+        display: "flex",
+        flexDirection: "column",
+      })}
+    >
+      <main
+        css={css({
+          flex: 1,
+          minHeight: 0,
+          width: "100%",
+          overflow: "auto",
+        })}
+      >
+        <div
+          css={css({
+            maxWidth: "92rem",
+            margin: "0 auto",
+            padding: "1.5rem",
+            "@media (min-width: 600px)": {
+              padding: "7rem 9.5rem 6rem",
+            },
+          })}
+        >
+          <input
+            value={draft.name}
+            onChange={(e) => setName(e.target.value)}
+            autoFocus
+            disabled={hasPendingRequest}
+            placeholder="Untitled topic"
+            css={(t) =>
+              css({
+                background: "none",
+                fontSize: t.text.sizes.huge,
+                width: "100%",
+                outline: "none",
+                fontWeight: t.text.weights.header,
+                border: 0,
+                padding: 0,
+                margin: "0 0 1rem",
+                color: t.colors.textNormal,
+                "::placeholder": { color: t.colors.textMuted },
+              })
+            }
+          />
+          <RichTextEditor
+            value={draft.body}
+            onChange={(e) => {
+              setBody(e);
+            }}
+            placeholder={`Use markdown shortcuts like "# " and "1. " to create headings and lists.`}
+            css={(t) =>
+              css({
+                fontSize: t.text.sizes.large,
+                "[data-slate-placeholder]": {
+                  opacity: "1 !important",
+                  color: t.colors.textMuted,
+                },
+              })
+            }
+            style={{ minHeight: "13.8rem" }}
+          />
+        </div>
+      </main>
+      <footer
+        css={css({
+          display: "grid",
+          gridTemplateColumns: "minmax(0,1fr) auto auto",
+          gridGap: "1rem",
+          alignItems: "center",
+          padding: "1rem",
+        })}
+      >
+        <div>
+          <Button
+            type="button"
+            size="medium"
+            onClick={() => {
+              deleteDraft(draftId).then(() => {
+                navigate("/", { replace: true });
+              });
+            }}
+          >
+            Discard draft
+          </Button>
+        </div>
+        <Button type="button" size="medium" disabled>
+          {isBodyEmpty ? "Save draft" : "Draft saved"}
+        </Button>
+        <Button
+          type="submit"
+          size="medium"
+          variant="primary"
+          isLoading={hasPendingRequest}
+          disabled={!hasRequiredInput || hasPendingRequest}
+        >
+          Create topic
+        </Button>
+      </footer>
+    </form>
+  );
+};
+
+export default CreateChannelScreen;

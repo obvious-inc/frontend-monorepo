@@ -1729,7 +1729,7 @@ const SystemMessageContent = ({ messageId }) => {
         <span style={{ opacity: isMissingData ? 0 : 1 }}>
           <AccountPreviewPopoverTrigger userId={message.inviterUserId} /> added{" "}
           <AccountPreviewPopoverTrigger userId={message.authorUserId} /> to the
-          channel.
+          topic.
         </span>
       );
     }
@@ -1741,7 +1741,7 @@ const SystemMessageContent = ({ messageId }) => {
       return (
         <span style={{ opacity: isMissingData ? 0 : 1 }}>
           <AccountPreviewPopoverTrigger userId={message.authorUserId} /> joined
-          the channel. Welcome!
+          the topic. Welcome!
         </span>
       );
     }
@@ -1752,7 +1752,7 @@ const SystemMessageContent = ({ messageId }) => {
         return (
           <>
             <AccountPreviewPopoverTrigger userId={message.authorUserId} />{" "}
-            updated the channel.
+            updated the topic.
           </>
         );
       }
@@ -1769,7 +1769,7 @@ const SystemMessageContent = ({ messageId }) => {
                 "cleared the topic description."
               ) : (
                 <>
-                  set the channel description:{" "}
+                  set the topic description:{" "}
                   <RichText compact blocks={messageUtils.parseString(value)} />
                 </>
               )}

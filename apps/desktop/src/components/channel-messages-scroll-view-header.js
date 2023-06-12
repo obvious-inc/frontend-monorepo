@@ -133,8 +133,6 @@ const ChannelWithBodyHeader = ({ channelId }) => {
 
   const { open: openAddMemberDialog } = useDialog("add-member-dialog");
 
-  if (channel == null) return null;
-
   const showAddMembersButton =
     channel.kind === "topic" &&
     !hasMembers &&
