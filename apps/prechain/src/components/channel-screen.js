@@ -3,12 +3,10 @@ import { useParams } from "react-router-dom";
 import { css } from "@emotion/react";
 import { useAccount } from "wagmi";
 import {
-  useAuth,
   useActions,
   useMe,
   useMessage,
   useChannel,
-  useChannelAccessLevel,
   useSortedChannelMessageIds,
   useChannelMessagesFetcher,
   useChannelFetchEffects,
@@ -25,6 +23,7 @@ import Button from "@shades/ui-web/button";
 import { CrossCircle as CrossCircleIcon } from "@shades/ui-web/icons";
 import MessageEditorForm from "@shades/ui-web/message-editor-form";
 import ChannelMessagesScrollView from "@shades/ui-web/channel-messages-scroll-view";
+import { useWriteAccess } from "../hooks/write-access-scope.js";
 import AccountPreviewPopoverTrigger from "./account-preview-popover-trigger.js";
 import ChannelMessage from "./channel-message.js";
 import RichText from "./rich-text.js";
@@ -37,13 +36,10 @@ const ChannelContent = ({ channelId }) => {
   const { login: initAccountVerification, status: accountVerificationStatus } =
     useWalletLogin();
 
-  const { status: authenticationStatus } = useAuth();
-
   const actions = useActions();
 
   const me = useMe();
   const channel = useChannel(channelId, { name: true, members: true });
-  const channelAccessLevel = useChannelAccessLevel(channelId);
 
   const inputDeviceCanHover = useMatchMedia("(hover: hover)");
 
@@ -56,15 +52,12 @@ const ChannelContent = ({ channelId }) => {
 
   const [replyTargetMessageId, setReplyTargetMessageId] = React.useState(null);
 
-  const isMember =
-    me != null && channel != null && channel.memberUserIds.includes(me.id);
+  const writeAccessState = useWriteAccess();
 
-  const canPost =
-    channelAccessLevel === "open"
-      ? authenticationStatus === "authenticated"
-      : isMember;
+  const hasVerifiedWriteAccess = writeAccessState === "authorized";
+  const hasUnverifiedWriteAccess = writeAccessState === "authorized-unverified";
 
-  const disableInput = !canPost;
+  const disableInput = !hasVerifiedWriteAccess && !hasUnverifiedWriteAccess;
 
   React.useEffect(() => {
     if (!inputDeviceCanHover || disableInput) return;
@@ -150,8 +143,10 @@ const ChannelContent = ({ channelId }) => {
         <MessageEditorForm
           ref={inputRef}
           inline
-          disabled={authenticationStatus !== "authenticated"}
-          placeholder={channel == null ? "..." : `Message ${channel.name}`}
+          disabled={!hasVerifiedWriteAccess && !hasUnverifiedWriteAccess}
+          placeholder={
+            channel?.name == null ? "..." : `Message ${channel.name}`
+          }
           submit={async (blocks) => {
             setReplyTargetMessageId(null);
 
@@ -177,71 +172,92 @@ const ChannelContent = ({ channelId }) => {
             }
           }}
           renderSubmitArea={
-            authenticationStatus === "authenticated"
-              ? null
-              : () => (
+            writeAccessState === "authorized" ? null : writeAccessState ===
+              "loading" ? (
+              <div />
+            ) : (
+              () => (
+                <div
+                  style={{
+                    alignSelf: "flex-end",
+                    display: "flex",
+                    height: 0,
+                  }}
+                >
                   <div
                     style={{
                       alignSelf: "flex-end",
-                      display: "flex",
-                      height: 0,
+                      display: "grid",
+                      gridAutoFlow: "column",
+                      gridAutoColumns: "auto",
+                      gridGap: "1.6rem",
+                      alignItems: "center",
                     }}
                   >
-                    <div
-                      style={{
-                        alignSelf: "flex-end",
-                        display: "grid",
-                        gridAutoFlow: "column",
-                        gridAutoColumns: "auto",
-                        gridGap: "1.6rem",
-                        alignItems: "center",
-                      }}
-                    >
+                    {writeAccessState === "unauthorized" ||
+                    writeAccessState === "unauthorized-unverified" ? (
                       <div
                         css={(t) =>
                           css({
                             fontSize: t.text.sizes.small,
                             color: t.colors.textDimmed,
-                            "@media(max-width: 600px)": {
-                              display: "none",
-                            },
                           })
                         }
                       >
-                        Account verification required
+                        Only noun holders and delegates can post
                       </div>
-                      {connectedWalletAccountAddress == null ? (
-                        <Button
-                          size="small"
-                          variant="primary"
-                          isLoading={isConnectingWallet}
-                          disabled={isConnectingWallet}
-                          onClick={() => {
-                            connectWallet();
-                          }}
+                    ) : (
+                      <>
+                        <div
+                          css={(t) =>
+                            css({
+                              fontSize: t.text.sizes.small,
+                              color: t.colors.textDimmed,
+                              "@media(max-width: 600px)": {
+                                display: "none",
+                              },
+                            })
+                          }
                         >
-                          Connect wallet
-                        </Button>
-                      ) : (
-                        <Button
-                          size="small"
-                          variant="primary"
-                          isLoading={accountVerificationStatus !== "idle"}
-                          disabled={accountVerificationStatus !== "idle"}
-                          onClick={() => {
-                            initAccountVerification(
-                              connectedWalletAccountAddress
-                            ).then(() => {
-                              inputRef.current.focus();
-                            });
-                          }}
-                        >
-                          Verify account
-                        </Button>
-                      )}
-                    </div>
+                          Account verification required
+                        </div>
+
+                        {writeAccessState === "unknown" ? (
+                          <Button
+                            size="small"
+                            variant="primary"
+                            isLoading={isConnectingWallet}
+                            disabled={isConnectingWallet}
+                            onClick={() => {
+                              connectWallet();
+                            }}
+                          >
+                            Connect wallet
+                          </Button>
+                        ) : (
+                          // Write access state is "authorized-unverfified"
+                          <Button
+                            size="small"
+                            variant="primary"
+                            isLoading={accountVerificationStatus !== "idle"}
+                            disabled={accountVerificationStatus !== "idle"}
+                            onClick={() => {
+                              initAccountVerification(
+                                connectedWalletAccountAddress
+                              ).then(() => {
+                                inputRef.current.focus();
+                              });
+                            }}
+                          >
+                            Verify account
+                          </Button>
+                        )}
+                      </>
+                    )}
                   </div>
-                )
+                </div>
+              )
+            )
           }
           header={
             replyTargetMessageId == null ? null : (
@@ -291,16 +307,6 @@ const ChannelContent = ({ channelId }) => {
     </>
   );
 };
-
-// const MessageContent = ({ inline, messageId }) => {
-//   const message = useMessage(messageId);
-
-//   return message.isSystemMessage ? (
-//     <StringifiedMessageContent messageId={messageId} />
-//   ) : (
-//     <RichText inline={inline} blocks={message.content} />
-//   );
-// };
 
 const ChannelScreen = () => {
   const { channelId } = useParams();

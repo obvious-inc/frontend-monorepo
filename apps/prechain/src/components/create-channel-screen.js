@@ -102,6 +102,9 @@ const CreateChannelScreen = () => {
       >
         <div
           css={css({
+            minHeight: "100%",
+            display: "flex",
+            flexDirection: "column",
             maxWidth: "92rem",
             margin: "0 auto",
             padding: "1.5rem",
@@ -146,7 +149,7 @@ const CreateChannelScreen = () => {
                 },
               })
             }
-            style={{ minHeight: "13.8rem" }}
+            style={{ flex: 1, minHeight: 0 }}
           />
         </div>
       </main>
@@ -173,7 +176,7 @@ const CreateChannelScreen = () => {
           </Button>
         </div>
         <Button type="button" size="medium" disabled>
-          {isBodyEmpty ? "Save draft" : "Draft saved"}
+          Draft saved
         </Button>
         <Button
           type="submit"

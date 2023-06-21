@@ -125,7 +125,7 @@ const ChannelsScreen = () => {
             >
               {filteredChannels.map((c) => (
                 <li key={c.id}>
-                  <RouterLink to={`/channels/${c.id}`}>
+                  <RouterLink to={`/${c.id}`}>
                     <ChannelAvatar id={c.id} transparent size="3.6rem" />
                     <div>
                       <div className="name">{c.name}</div>

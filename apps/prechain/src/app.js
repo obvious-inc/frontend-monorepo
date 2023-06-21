@@ -20,7 +20,6 @@ import { infuraProvider } from "wagmi/providers/infura";
 import { publicProvider } from "wagmi/providers/public";
 import { InjectedConnector } from "wagmi/connectors/injected";
 import { WalletConnectLegacyConnector } from "wagmi/connectors/walletConnectLegacy";
-// import { ethereum as ethereumUtils } from "@shades/common/utils";
 import {
   useCachedState,
   ServerConnectionProvider,
@@ -40,17 +39,12 @@ import {
   useStringifiedMessageContent,
 } from "@shades/common/app";
 import { useFetch } from "@shades/common/react";
-import {
-  // useWallet,
-  useWalletLogin,
-  WalletLoginProvider,
-} from "@shades/common/wallet";
+import { useWalletLogin, WalletLoginProvider } from "@shades/common/wallet";
 import { light as theme } from "@shades/ui-web/theme";
 import {
   Provider as SidebarProvider,
   Layout as SidebarLayout,
 } from "@shades/ui-web/sidebar-layout";
-// import Button from "@shades/ui-web/button";
 import * as DropdownMenu from "@shades/ui-web/dropdown-menu";
 import * as Tooltip from "@shades/ui-web/tooltip";
 import AccountAvatar from "@shades/ui-web/account-avatar";
@@ -63,6 +57,7 @@ import {
   useCollection as useChannelDrafts,
   useSingleItem as useChannelDraft,
 } from "./hooks/channel-drafts.js";
+import { Provider as WriteAccessProvider } from "./hooks/write-access-scope.js";
 
 const useLastMessage = (channelId) => {
   const { fetchLastChannelMessage } = useActions();
@@ -160,14 +155,7 @@ const ProfileDropdownTrigger = React.forwardRef((props, ref) => {
             marginTop: "1px",
           }}
         >
-          {/* {isConnecting ? ( */}
-          {/*   <Spinner */}
-          {/*     size="1.8rem" */}
-          {/*     css={(t) => css({ color: t.colors.textMuted })} */}
-          {/*   /> */}
-          {/* ) : ( */}
           <AccountAvatar transparent address={accountAddress} size="1.8rem" />
-          {/* )} */}
         </div>
       </div>
       <div>
@@ -250,33 +238,8 @@ const RootLayout = () => {
   const showAccountProfile =
     isAuthenticated || connectedWalletAccountAddress != null;
 
-  // if (me == null) return null;
-
   return (
     <SidebarLayout
-      // header={
-      //   <div
-      //     css={(t) =>
-      //       css({
-      //         height: t.mainHeader.height,
-      //         display: "flex",
-      //         alignItems: "center",
-      //         padding: `0 calc(${t.mainMenu.itemHorizontalPadding} + ${t.mainMenu.containerHorizontalPadding})`,
-      //       })
-      //     }
-      //   >
-      //     <div
-      //       css={(t) =>
-      //         css({
-      //           fontSize: t.text.sizes.large,
-      //           fontWeight: t.text.weights.header,
-      //         })
-      //       }
-      //     >
-      //       Prechain
-      //     </div>
-      //   </div>
-      // }
       header={() =>
         showAccountProfile ? (
           <DropdownMenu.Root placement="bottom">
@@ -503,18 +466,18 @@ const SectionedMenu = ({
                 lineHeight: 1,
                 padding: "0.2rem 0.4rem",
                 marginLeft: "-0.4rem",
-                color: "rgb(255 255 255 / 28.2%)",
+                color: t.colors.textMutedAlpha,
                 transition: "background 20ms ease-in, color 100ms ease-out",
                 borderRadius: "0.3rem",
                 cursor: "pointer",
                 justifySelf: "flex-start",
                 outline: "none",
                 ":hover": {
-                  color: "rgb(255 255 255 / 56.5%)",
+                  color: t.colors.textDimmmed,
                   background: t.colors.backgroundModifierHover,
                 },
                 ":focus-visible": {
-                  color: "rgb(255 255 255 / 56.5%)",
+                  color: t.colors.textDimmmed,
                   boxShadow: `0 0 0 0.2rem ${t.colors.primary} inset`,
                 },
               })
@@ -634,7 +597,6 @@ const ChannelDraftItem = ({ id }) => {
     <ListItem
       component={NavLink}
       to={`/new/${id}`}
-      // className={({ isActive }) => (isActive ? "active" : "")}
       title={
         <div
           className="title"
@@ -927,61 +889,69 @@ const App = () => {
     <>
       <BrowserRouter>
         <WagmiConfig config={wagmiConfig}>
-          <ServerConnectionProvider
-            Pusher={Pusher}
-            pusherKey={process.env.PUSHER_KEY}
-          >
-            <WalletLoginProvider authenticate={login}>
-              <ThemeProvider theme={customTheme}>
-                <SidebarProvider>
-                  <EmojiProvider
-                    loader={() =>
-                      import("@shades/common/emoji").then((m) =>
-                        m.default.filter(
-                          (e) =>
-                            e.unicode_version === "" ||
-                            parseFloat(e.unicode_version) <= 12
+          <WriteAccessProvider>
+            <ServerConnectionProvider
+              Pusher={Pusher}
+              pusherKey={process.env.PUSHER_KEY}
+            >
+              <WalletLoginProvider authenticate={login}>
+                <ThemeProvider theme={customTheme}>
+                  <SidebarProvider>
+                    <EmojiProvider
+                      loader={() =>
+                        import("@shades/common/emoji").then((m) =>
+                          m.default.filter(
+                            (e) =>
+                              e.unicode_version === "" ||
+                              parseFloat(e.unicode_version) <= 12
+                          )
                         )
-                      )
-                    }
-                  >
-                    <Tooltip.Provider delayDuration={300}>
-                      <Global
-                        styles={(theme) =>
-                          css({
-                            body: {
-                              color: theme.colors.textNormal,
-                              background: theme.colors.backgroundPrimary,
-                              fontFamily: theme.fontStacks.default,
-                              "::selection": {
-                                background:
-                                  theme.colors.textSelectionBackground,
+                      }
+                    >
+                      <Tooltip.Provider delayDuration={300}>
+                        <Global
+                          styles={(theme) =>
+                            css({
+                              body: {
+                                color: theme.colors.textNormal,
+                                background: theme.colors.backgroundPrimary,
+                                fontFamily: theme.fontStacks.default,
+                                "::selection": {
+                                  background:
+                                    theme.colors.textSelectionBackground,
+                                },
                               },
-                            },
-                          })
-                        }
-                      />
-                      <Routes>
-                        <Route path="/" element={<RootLayout />}>
-                          <Route index element={<Index />} />
+                            })
+                          }
+                        />
+                        <Routes>
+                          <Route path="/" element={<RootLayout />}>
+                            <Route index element={<Index />} />
+                            <Route
+                              path="/new/:draftId?"
+                              element={<CreateChannelScreen />}
+                            />
+                            <Route
+                              path="/topics"
+                              element={<ChannelsScreen />}
+                            />
+                            <Route
+                              path="/:channelId"
+                              element={<ChannelScreen />}
+                            />
+                          </Route>
                           <Route
-                            path="/new/:draftId?"
-                            element={<CreateChannelScreen />}
+                            path="*"
+                            element={<Navigate to="/" replace />}
                           />
-                          <Route path="/topics" element={<ChannelsScreen />} />
-                          <Route
-                            path="/:channelId"
-                            element={<ChannelScreen />}
-                          />
-                        </Route>
-                        <Route path="*" element={<Navigate to="/" replace />} />
-                      </Routes>
-                    </Tooltip.Provider>
-                  </EmojiProvider>
-                </SidebarProvider>
-              </ThemeProvider>
-            </WalletLoginProvider>
-          </ServerConnectionProvider>
+                        </Routes>
+                      </Tooltip.Provider>
+                    </EmojiProvider>
+                  </SidebarProvider>
+                </ThemeProvider>
+              </WalletLoginProvider>
+            </ServerConnectionProvider>
+          </WriteAccessProvider>
         </WagmiConfig>
       </BrowserRouter>
     </>
