@@ -12,10 +12,12 @@ const useAccountDisplayName = (
 ) => {
   const user = useUserWithWalletAddress(accountAddress);
 
-  const { data: ensName } = useEnsName({
+  const { data: wagmiEnsName } = useEnsName({
     address: accountAddress,
-    enabled: user == null && accountAddress != null && customDisplayName,
+    enabled: user?.ensName == null && accountAddress != null,
   });
+
+  const ensName = wagmiEnsName ?? user?.ensName;
 
   const isAddress = isEthereumAccountAddress(accountAddress);
 
