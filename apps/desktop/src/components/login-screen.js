@@ -383,7 +383,7 @@ const LoginScreen = ({ mobileAppLogin, onSuccess, onError }) => {
                 <p>
                   The curious may give{" "}
                   <a
-                    href="https://learn.rainbow.me/what-is-a-cryptoweb3-wallet-actually"
+                    href="https://eips.ethereum.org/EIPS/eip-4361"
                     rel="noreferrer"
                     target="_blank"
                     css={(theme) =>

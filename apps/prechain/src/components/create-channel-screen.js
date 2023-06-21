@@ -109,7 +109,7 @@ const CreateChannelScreen = () => {
             margin: "0 auto",
             padding: "1.5rem",
             "@media (min-width: 600px)": {
-              padding: "7rem 9.5rem 6rem",
+              padding: "12rem 9.5rem 6rem",
             },
           })}
         >
