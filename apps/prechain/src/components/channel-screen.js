@@ -52,7 +52,7 @@ const ChannelContent = ({ channelId }) => {
 
   const [replyTargetMessageId, setReplyTargetMessageId] = React.useState(null);
 
-  const writeAccessState = useWriteAccess();
+  const writeAccessState = useWriteAccess(channelId);
 
   const hasVerifiedWriteAccess = writeAccessState === "authorized";
   const hasUnverifiedWriteAccess = writeAccessState === "authorized-unverified";
