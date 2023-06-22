@@ -25,7 +25,8 @@ export const useActions = () => {
 export const useChannels = (options) => {
   const channels = usePublicChannels(options);
   return React.useMemo(
-    () => channels.filter((c) => c.tags.includes(PROPOSALS_TAG)),
+    () =>
+      channels.filter((c) => c.tags != null && c.tags.includes(PROPOSALS_TAG)),
     [channels]
   );
 };
