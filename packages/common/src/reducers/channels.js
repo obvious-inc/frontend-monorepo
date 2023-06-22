@@ -168,8 +168,21 @@ const starsByChannelId = (state = {}, action) => {
 
 const publicChannelIds = (state = [], action) => {
   switch (action.type) {
-    case "fetch-publicly-readable-channels-request-successful":
-      return action.channels.map((c) => c.id);
+    case "fetch-publicly-readable-channels-request-successful": {
+      const channelIds = action.channels.map((c) => c.id);
+      return unique([...state, ...channelIds]);
+    }
+
+    case "fetch-channel-public-permissions-request-successful": {
+      const openChannelPublicPermissions =
+        Permissions.openChannelPermissionOverrides.find(
+          (o) => o.group === "@public"
+        )?.permissions ?? [];
+      const isPublic = openChannelPublicPermissions.every((p) =>
+        action.permissions.includes(p)
+      );
+      return isPublic ? unique([...state, action.channelId]) : state;
+    }
 
     case "logout":
       return [];

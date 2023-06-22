@@ -12,6 +12,7 @@ const useChannelFetchEffects = (channelId) => {
   const actions = useActions();
 
   const {
+    fetchChannel,
     fetchChannelMembers,
     fetchChannelPermissions,
     fetchChannelPublicPermissions,
@@ -28,6 +29,15 @@ const useChannelFetchEffects = (channelId) => {
 
   const fetchMessages = useChannelMessagesFetcher(channelId);
 
+  useFetch(
+    channel != null
+      ? null
+      : () =>
+          fetchChannel(channelId).catch(() => {
+            // Ignore
+          }),
+    [channelId, fetchChannel, authenticationStatus]
+  );
   useFetch(
     () =>
       fetchChannelMembers(channelId).catch(() => {

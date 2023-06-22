@@ -121,6 +121,7 @@ export default ({
     name,
     description,
     body,
+    tags,
     memberUserIds,
     memberWalletAddresses,
     permissionOverwrites,
@@ -133,14 +134,18 @@ export default ({
         name,
         description,
         body,
+        tags,
         members: memberWalletAddresses ?? memberUserIds,
         permission_overwrites: permissionOverwrites,
       }),
-    }).then((res) => {
+    }).then((rawChannel) => {
+      const channel = parseChannel(rawChannel);
+
       // TODO
+      // dispatch({ type: "create-channel:request-successful", channel });
+
       fetchUserChannels();
-      // fetchInitialData();
-      return res;
+      return channel;
     });
 
   const fetchChannelMembers = (id) =>
@@ -716,8 +721,12 @@ export default ({
     fetchChannel,
     fetchUserChannels,
     fetchUserPrivateChannels,
-    fetchPubliclyReadableChannels() {
-      return authorizedFetch("/channels/@public", {
+    fetchPubliclyReadableChannels(query) {
+      const searchParams = new URLSearchParams({
+        scope: "discovery",
+        ...query,
+      });
+      return authorizedFetch(`/channels?${searchParams}`, {
         allowUnauthorized: true,
       }).then((rawChannels) => {
         const channels = rawChannels.map(parseChannel);
@@ -755,11 +764,12 @@ export default ({
         return res;
       });
     },
-    createOpenChannel({ name, description, body }) {
+    createOpenChannel({ name, description, body, tags }) {
       return createChannel({
         name,
         description,
         body,
+        tags,
         permissionOverwrites: openChannelPermissionOverrides,
       });
     },

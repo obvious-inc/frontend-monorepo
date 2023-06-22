@@ -30,7 +30,6 @@ import {
   useUser,
   useMessage,
   useStarredChannels,
-  usePublicChannels,
   useChannelName,
   useChannelHasUnread,
   useChannelMentionCount,
@@ -64,6 +63,7 @@ import {
   useCollection as useChannelDrafts,
   useSingleItem as useChannelDraft,
 } from "./hooks/channel-drafts.js";
+import { useChannels as usePrechainChannels } from "./hooks/prechain.js";
 import { Provider as WriteAccessProvider } from "./hooks/write-access-scope.js";
 
 const { truncateAddress } = ethereumUtils;
@@ -227,8 +227,22 @@ const RootLayout = () => {
   const { address: connectedWalletAccountAddress } = useAccount();
   const { login: initAccountVerification } = useWalletLogin();
   const { status: authenticationStatus } = useAuth();
-  const starredChannels = useStarredChannels({ name: true, readStates: true });
-  const publicChannels = usePublicChannels({ name: true, readStates: true });
+
+  const allStarredChannels = useStarredChannels();
+  const channels = usePrechainChannels({ name: true, readStates: true });
+
+  const [starredChannels, notStarredChannels] = React.useMemo(() => {
+    const starredChannelIds = allStarredChannels.map((c) => c.id);
+
+    return channels.reduce(
+      ([starred, notStarred], c) => {
+        const isStarred = starredChannelIds.includes(c.id);
+        if (isStarred) return [[...starred, c], notStarred];
+        return [starred, [...notStarred, c]];
+      },
+      [[], []]
+    );
+  }, [channels, allStarredChannels]);
 
   const { items: channelDrafts } = useChannelDrafts();
 
@@ -434,7 +448,7 @@ const RootLayout = () => {
               {
                 title: "Recent",
                 key: "recent",
-                items: publicChannels,
+                items: notStarredChannels,
                 itemType: "channel",
                 itemSize: "large",
               },

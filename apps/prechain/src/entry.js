@@ -8,6 +8,7 @@ import {
   useActions,
 } from "@shades/common/app";
 import { useFetch } from "@shades/common/react";
+import { useActions as usePrechainActions } from "./hooks/prechain.js";
 import "./reset.css";
 import "./index.css";
 
@@ -15,19 +16,16 @@ const LazyApp = React.lazy(() => import("./app"));
 
 const App = () => {
   const { status: authStatus } = useAuth();
-  const actions = useActions();
 
-  const { fetchClientBootData, fetchPubliclyReadableChannels } = actions;
+  const { fetchClientBootData } = useActions();
+  const { fetchChannels: fetchPrechainChannels } = usePrechainActions();
 
   React.useEffect(() => {
     if (authStatus !== "authenticated") return;
     fetchClientBootData();
   }, [authStatus, fetchClientBootData]);
 
-  useFetch(
-    () => fetchPubliclyReadableChannels(),
-    [fetchPubliclyReadableChannels]
-  );
+  useFetch(() => fetchPrechainChannels(), [fetchPrechainChannels]);
 
   return (
     <React.Suspense fallback={null}>

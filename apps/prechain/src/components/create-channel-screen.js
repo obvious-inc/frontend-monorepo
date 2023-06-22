@@ -1,7 +1,6 @@
 import React from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { css } from "@emotion/react";
-import { useActions } from "@shades/common/app";
 import { useLatestCallback } from "@shades/common/react";
 import Button from "@shades/ui-web/button";
 import RichTextEditor, {
@@ -11,12 +10,13 @@ import {
   useCollection as useDrafts,
   useSingleItem as useDraft,
 } from "../hooks/channel-drafts.js";
+import { useActions } from "../hooks/prechain.js";
 
 const CreateChannelScreen = () => {
   const { draftId } = useParams();
   const navigate = useNavigate();
 
-  const { createOpenChannel } = useActions();
+  const { createChannel } = useActions();
 
   const {
     items: drafts,
@@ -38,7 +38,7 @@ const CreateChannelScreen = () => {
     setPendingRequest(true);
 
     deleteDraft(draftId)
-      .then(() => createOpenChannel({ name: draft.name, body: draft.body }))
+      .then(() => createChannel({ name: draft.name, body: draft.body }))
       .then((channel) => {
         navigate(`/${channel.id}`);
       })

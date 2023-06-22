@@ -173,6 +173,7 @@ const createApiParsers = ({ buildCloudflareImageUrl }) => ({
       kind: rawChannel.kind,
       createdAt: rawChannel.created_at,
       lastMessageAt: rawChannel.last_message_at,
+      tags: rawChannel.tags,
       memberUserIds:
         rawChannel.members == null
           ? undefined
@@ -180,6 +181,8 @@ const createApiParsers = ({ buildCloudflareImageUrl }) => ({
       ownerUserId: rawChannel.owner,
       isDeleted: rawChannel.deleted,
     };
+
+    if (rawChannel.tags != null) channel.tags = rawChannel.tags;
 
     if (normalizeString(rawChannel.avatar) == null) return channel;
 

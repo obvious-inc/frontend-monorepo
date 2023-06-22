@@ -1,23 +1,23 @@
 import React from "react";
 import { Link as RouterLink } from "react-router-dom";
 import { css } from "@emotion/react";
-import { useActions, usePublicChannels } from "@shades/common/app";
 import { channel as channelUtils } from "@shades/common/utils";
 import { useFetch } from "@shades/common/react";
 import ChannelAvatar from "@shades/ui-web/channel-avatar";
 import Input from "@shades/ui-web/input";
+import {
+  useActions,
+  useChannels as usePrechainChannels,
+} from "../hooks/prechain.js";
 import NavBar from "./nav-bar.js";
 
 const { search: searchChannels } = channelUtils;
 
 const useChannels = () => {
-  const { fetchPubliclyReadableChannels } = useActions();
-  const channels = usePublicChannels();
+  const { fetchChannels } = useActions();
+  const channels = usePrechainChannels();
 
-  useFetch(
-    () => fetchPubliclyReadableChannels(),
-    [fetchPubliclyReadableChannels]
-  );
+  useFetch(() => fetchChannels(), [fetchChannels]);
 
   return channels;
 };
