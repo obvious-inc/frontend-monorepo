@@ -157,7 +157,7 @@ const createRenderer = ({
             className="link"
             onClick={(e) => onClickInteractiveElement?.(e)}
           >
-            {el.url}
+            {el.text ?? el.url}
           </a>
         );
 

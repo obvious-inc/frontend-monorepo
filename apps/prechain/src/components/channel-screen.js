@@ -1,5 +1,5 @@
 import React from "react";
-import { useParams } from "react-router-dom";
+import { useParams, useNavigate } from "react-router-dom";
 import { css } from "@emotion/react";
 import { useAccount } from "wagmi";
 import {
@@ -20,11 +20,13 @@ import {
   useMatchMedia,
   ErrorBoundary,
 } from "@shades/common/react";
+import { message as messageUtils } from "@shades/common/utils";
 import Button from "@shades/ui-web/button";
 import { CrossCircle as CrossCircleIcon } from "@shades/ui-web/icons";
 import MessageEditorForm from "@shades/ui-web/message-editor-form";
 import ChannelMessagesScrollView from "@shades/ui-web/channel-messages-scroll-view";
 import Dialog from "@shades/ui-web/dialog";
+import RichTextEditor from "@shades/ui-web/rich-text-editor";
 import { useWriteAccess } from "../hooks/write-access-scope.js";
 import AccountPreviewPopoverTrigger from "./account-preview-popover-trigger.js";
 import ChannelMessage from "./channel-message.js";
@@ -335,7 +337,7 @@ const ChannelScreen = () => {
         <Dialog
           isOpen={isDialogOpen}
           onRequestClose={closeDialog}
-          width="82rem"
+          width="76rem"
         >
           {({ titleProps }) => (
             <ErrorBoundary
@@ -358,10 +360,16 @@ const ChannelScreen = () => {
   );
 };
 
-const ChannelDialog = ({ channelId, titleProps }) => {
+const ChannelDialog = ({ channelId, titleProps, dismiss }) => {
+  const me = useMe();
   const channel = useChannel(channelId);
 
+  const isAdmin = me != null && channel?.ownerUserId === me.id;
+
   if (channel == null) return null;
+
+  if (isAdmin)
+    return <AdminChannelDialog channelId={channelId} dismiss={dismiss} />;
 
   return (
     <div
@@ -375,18 +383,187 @@ const ChannelDialog = ({ channelId, titleProps }) => {
     >
       <h1
         {...titleProps}
-        css={css({
-          display: "inline-flex",
-          alignItems: "center",
-          fontSize: "2.6rem",
-          lineHeight: 1.15,
-          margin: "0 0 3rem",
-        })}
+        css={(t) =>
+          css({
+            display: "inline-flex",
+            alignItems: "center",
+            color: t.colors.textNormal,
+            fontSize: "2.6rem",
+            fontWeight: t.text.weights.header,
+            lineHeight: 1.15,
+            margin: "0 0 3rem",
+          })
+        }
       >
         {channel.name}
       </h1>
       <RichText blocks={channel.body ?? channel.descriptionBlocks} />
     </div>
+  );
+};
+
+const AdminChannelDialog = ({ channelId, dismiss }) => {
+  const navigate = useNavigate();
+
+  const { updateChannel, deleteChannel } = useActions();
+  const channel = useChannel(channelId);
+
+  const persistedName = channel.name;
+  const persistedBody = channel.body;
+
+  const [name, setName] = React.useState(persistedName);
+  const [body, setBody] = React.useState(persistedBody);
+
+  const [hasPendingDelete, setPendingDelete] = React.useState(false);
+  const [hasPendingSubmit, setPendingSubmit] = React.useState(false);
+
+  const deferredBody = React.useDeferredValue(body);
+
+  const hasRequiredInput = true;
+
+  const hasChanges = React.useMemo(() => {
+    if (persistedName.trim() !== name.trim()) return false;
+
+    const [persistedBodyString, editedBodyString] = [
+      persistedBody,
+      deferredBody,
+    ].map(messageUtils.stringifyBlocks);
+
+    return persistedBodyString !== editedBodyString;
+  }, [name, deferredBody, persistedName, persistedBody]);
+
+  const submit = async () => {
+    setPendingSubmit(true);
+    try {
+      await updateChannel(channelId, { name, body });
+      dismiss();
+    } catch (e) {
+      alert("Something went wrong");
+    } finally {
+      setPendingSubmit(false);
+    }
+  };
+
+  return (
+    <form
+      onSubmit={(e) => {
+        e.preventDefault();
+        submit();
+      }}
+      css={css({
+        flex: 1,
+        minHeight: 0,
+        display: "flex",
+        flexDirection: "column",
+      })}
+    >
+      <main
+        css={css({
+          flex: 1,
+          minHeight: 0,
+          width: "100%",
+          overflow: "auto",
+        })}
+      >
+        <div
+          css={css({
+            minHeight: "100%",
+            display: "flex",
+            flexDirection: "column",
+            margin: "0 auto",
+            padding: "1.5rem",
+            "@media (min-width: 600px)": {
+              padding: "3rem",
+            },
+          })}
+        >
+          <input
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            autoFocus
+            disabled={hasPendingSubmit}
+            placeholder="Untitled topic"
+            css={(t) =>
+              css({
+                background: "none",
+                fontSize: "2.6rem",
+                width: "100%",
+                outline: "none",
+                fontWeight: t.text.weights.header,
+                border: 0,
+                padding: 0,
+                lineHeight: 1.15,
+                margin: "0 0 3rem",
+                color: t.colors.textNormal,
+                "::placeholder": { color: t.colors.textMuted },
+              })
+            }
+          />
+          <RichTextEditor
+            value={body}
+            onChange={(e) => {
+              setBody(e);
+            }}
+            placeholder={`Use markdown shortcuts like "# " and "1. " to create headings and lists.`}
+            css={(t) =>
+              css({
+                fontSize: t.text.sizes.base,
+                "[data-slate-placeholder]": {
+                  opacity: "1 !important",
+                  color: t.colors.textMuted,
+                },
+              })
+            }
+            // style={{ flex: 1, minHeight: 0 }}
+          />
+        </div>
+      </main>
+      <footer
+        css={css({
+          display: "grid",
+          justifyContent: "flex-end",
+          gridTemplateColumns: "minmax(0,1fr) auto auto",
+          gridGap: "1rem",
+          alignItems: "center",
+          padding: "1rem",
+        })}
+      >
+        <div>
+          <Button
+            danger
+            onClick={async () => {
+              setPendingDelete(true);
+              try {
+                await deleteChannel(channelId);
+                navigate("/");
+              } finally {
+                setPendingDelete(false);
+              }
+            }}
+            isLoading={hasPendingDelete}
+            disabled={hasPendingDelete || hasPendingSubmit}
+          >
+            Delete topic
+          </Button>
+        </div>
+        <Button type="button" onClick={dismiss}>
+          Cancel
+        </Button>
+        <Button
+          type="submit"
+          variant="primary"
+          isLoading={hasPendingSubmit}
+          disabled={
+            !hasRequiredInput ||
+            !hasChanges ||
+            hasPendingSubmit ||
+            hasPendingDelete
+          }
+        >
+          {hasChanges ? "Save changes" : "No changes"}
+        </Button>
+      </footer>
+    </form>
   );
 };
 
