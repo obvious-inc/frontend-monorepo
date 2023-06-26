@@ -26,9 +26,8 @@ import { useWalletLogin } from "@shades/common/wallet";
 import {
   array as arrayUtils,
   ethereum as ethereumUtils,
-  ErrorBoundary,
 } from "@shades/common/utils";
-import { useFetch } from "@shades/common/react";
+import { useFetch, ErrorBoundary } from "@shades/common/react";
 import {
   useState as useSidebarState,
   useToggle as useSidebarToggle,
@@ -107,10 +106,10 @@ const Layout = () => {
   const listedChannels =
     authenticationStatus === "authenticated"
       ? [
-          ...starredChannels,
-          ...memberChannelsExcludingStarredAndTopChannels,
-          ...(memberChannels.length <= 1 ? popularNonMemberPublicChannels : []),
-        ]
+        ...starredChannels,
+        ...memberChannelsExcludingStarredAndTopChannels,
+        ...(memberChannels.length <= 1 ? popularNonMemberPublicChannels : []),
+      ]
       : popularNonMemberPublicChannels;
 
   const selectedChannel = useChannel(params.channelId);
@@ -155,9 +154,9 @@ const Layout = () => {
         width={menuWidthOverride}
         header={({ isHoveringSidebar }) =>
           authenticationStatus === "not-authenticated" &&
-          connectedWalletAccountAddress == null ? null : isLoadingUser ? (
-            <div />
-          ) : (
+            connectedWalletAccountAddress == null ? null : isLoadingUser ? (
+              <div />
+            ) : (
             <DropdownMenu.Root placement="bottom">
               <DropdownMenu.Trigger>
                 <ProfileDropdownTrigger
@@ -349,7 +348,7 @@ const Layout = () => {
                 style={{
                   height:
                     authenticationStatus === "not-authenticated" &&
-                    connectedWalletAccountAddress == null
+                      connectedWalletAccountAddress == null
                       ? "2rem"
                       : "1rem",
                 }}
@@ -388,129 +387,129 @@ const Layout = () => {
 
               {(authenticationStatus === "not-authenticated" ||
                 hasFetchedMenuData) && (
-                <>
-                  <div style={{ marginBottom: "1.5rem" }} />
-                  {selectedChannel != null && !selectedChannelIsListed && (
-                    <>
-                      <ChannelItem
-                        id={selectedChannel.id}
-                        {...channelItemProps}
-                      />
-
-                      <div style={{ marginBottom: "1.5rem" }} />
-                    </>
-                  )}
-
-                  {topChannels.length !== 0 && (
-                    <>
-                      {topChannels.map((c) => (
+                  <>
+                    <div style={{ marginBottom: "1.5rem" }} />
+                    {selectedChannel != null && !selectedChannelIsListed && (
+                      <>
                         <ChannelItem
-                          key={c.id}
-                          id={c.id}
+                          id={selectedChannel.id}
                           {...channelItemProps}
                         />
-                      ))}
 
-                      <div style={{ marginBottom: "1.5rem" }} />
-                    </>
-                  )}
+                        <div style={{ marginBottom: "1.5rem" }} />
+                      </>
+                    )}
 
-                  {[
-                    {
-                      key: "starred",
-                      title: "Following",
-                      channels: starredChannels,
-                      isHidden: starredChannels.length === 0,
-                    },
-                    {
-                      key: "member-channels",
-                      title: "Recent",
-                      channels: memberChannelsExcludingStarredAndTopChannels,
-                      isHidden:
-                        memberChannelsExcludingStarredAndTopChannels.length ===
-                        0,
-                    },
-                    {
-                      key: "public",
-                      title: "Popular",
-                      channels: sort(
-                        comparator(
-                          {
-                            value: (c) => c.memberUserIds.length,
-                            order: "desc",
-                          },
-                          { value: (c) => c.name.toLowerCase() }
+                    {topChannels.length !== 0 && (
+                      <>
+                        {topChannels.map((c) => (
+                          <ChannelItem
+                            key={c.id}
+                            id={c.id}
+                            {...channelItemProps}
+                          />
+                        ))}
+
+                        <div style={{ marginBottom: "1.5rem" }} />
+                      </>
+                    )}
+
+                    {[
+                      {
+                        key: "starred",
+                        title: "Following",
+                        channels: starredChannels,
+                        isHidden: starredChannels.length === 0,
+                      },
+                      {
+                        key: "member-channels",
+                        title: "Recent",
+                        channels: memberChannelsExcludingStarredAndTopChannels,
+                        isHidden:
+                          memberChannelsExcludingStarredAndTopChannels.length ===
+                          0,
+                      },
+                      {
+                        key: "public",
+                        title: "Popular",
+                        channels: sort(
+                          comparator(
+                            {
+                              value: (c) => c.memberUserIds.length,
+                              order: "desc",
+                            },
+                            { value: (c) => c.name.toLowerCase() }
+                          ),
+                          popularNonMemberPublicChannels
                         ),
-                        popularNonMemberPublicChannels
-                      ),
-                      isHidden:
-                        memberChannels.length > 1 ||
-                        popularNonMemberPublicChannels.length === 0,
-                    },
-                  ]
-                    .filter((s) => !s.isHidden)
-                    .map(({ key, title, channels }) => {
-                      const isTruncated = truncatedSections.includes(key);
+                        isHidden:
+                          memberChannels.length > 1 ||
+                          popularNonMemberPublicChannels.length === 0,
+                      },
+                    ]
+                      .filter((s) => !s.isHidden)
+                      .map(({ key, title, channels }) => {
+                        const isTruncated = truncatedSections.includes(key);
 
-                      const deriveTruncationCount = () => {
-                        if (!isTruncated) return 0;
+                        const deriveTruncationCount = () => {
+                          if (!isTruncated) return 0;
 
-                        const defaultTruncationCount =
-                          channels.length - TRUNCATION_THRESHOLD;
-                        const readCount = channels.filter(
-                          (c) => !c.hasUnread
-                        ).length;
+                          const defaultTruncationCount =
+                            channels.length - TRUNCATION_THRESHOLD;
+                          const readCount = channels.filter(
+                            (c) => !c.hasUnread
+                          ).length;
 
-                        return Math.min(defaultTruncationCount, readCount);
-                      };
+                          return Math.min(defaultTruncationCount, readCount);
+                        };
 
-                      const truncationCount = deriveTruncationCount();
+                        const truncationCount = deriveTruncationCount();
 
-                      const visibleChannels =
-                        isTruncated && truncationCount > 1
-                          ? channels.slice(0, channels.length - truncationCount)
-                          : channels;
+                        const visibleChannels =
+                          isTruncated && truncationCount > 1
+                            ? channels.slice(0, channels.length - truncationCount)
+                            : channels;
 
-                      return (
-                        <CollapsibleSection
-                          key={key}
-                          title={title}
-                          expanded={!collapsedIds.includes(key)}
-                          truncatedCount={
-                            channels.length - visibleChannels.length
-                          }
-                          onToggleExpanded={() => {
-                            setCollapsedIds((ids) =>
-                              ids.includes(key)
-                                ? ids.filter((id) => id !== key)
-                                : [...ids, key]
-                            );
-                            setTruncatedSections((ids) =>
-                              ids.includes(key) ? ids : [...ids, key]
-                            );
-                          }}
-                          onToggleTruncated={() => {
-                            setTruncatedSections((ids) =>
-                              ids.includes(key)
-                                ? ids.filter((id) => id !== key)
-                                : [...ids, key]
-                            );
-                          }}
-                        >
-                          {visibleChannels.map((c) => (
-                            <ChannelItem
-                              key={c.id}
-                              id={c.id}
-                              {...channelItemProps}
-                            />
-                          ))}
-                        </CollapsibleSection>
-                      );
-                    })}
+                        return (
+                          <CollapsibleSection
+                            key={key}
+                            title={title}
+                            expanded={!collapsedIds.includes(key)}
+                            truncatedCount={
+                              channels.length - visibleChannels.length
+                            }
+                            onToggleExpanded={() => {
+                              setCollapsedIds((ids) =>
+                                ids.includes(key)
+                                  ? ids.filter((id) => id !== key)
+                                  : [...ids, key]
+                              );
+                              setTruncatedSections((ids) =>
+                                ids.includes(key) ? ids : [...ids, key]
+                              );
+                            }}
+                            onToggleTruncated={() => {
+                              setTruncatedSections((ids) =>
+                                ids.includes(key)
+                                  ? ids.filter((id) => id !== key)
+                                  : [...ids, key]
+                              );
+                            }}
+                          >
+                            {visibleChannels.map((c) => (
+                              <ChannelItem
+                                key={c.id}
+                                id={c.id}
+                                {...channelItemProps}
+                              />
+                            ))}
+                          </CollapsibleSection>
+                        );
+                      })}
 
-                  <div style={{ height: "0.1rem" }} />
-                </>
-              )}
+                    <div style={{ height: "0.1rem" }} />
+                  </>
+                )}
             </div>
           )
         }
@@ -544,8 +543,8 @@ const ProfileDropdownTrigger = React.forwardRef(
       user == null
         ? null
         : user.hasCustomDisplayName
-        ? user.displayName
-        : userEnsName ?? truncatedAddress;
+          ? user.displayName
+          : userEnsName ?? truncatedAddress;
 
     const showAccountDescription = userDisplayName !== truncatedAddress;
     const accountDescription =
@@ -994,8 +993,8 @@ const ListItem = React.forwardRef(
                   size === "large"
                     ? "0.88888888rem"
                     : compact
-                    ? "0.4rem"
-                    : "0.8rem",
+                      ? "0.4rem"
+                      : "0.8rem",
                 width: `calc(${iconSize} + 0.2rem)`,
               }}
             >
