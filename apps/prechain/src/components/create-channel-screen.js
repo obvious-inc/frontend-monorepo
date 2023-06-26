@@ -118,7 +118,7 @@ const CreateChannelScreen = () => {
             onChange={(e) => setName(e.target.value)}
             autoFocus
             disabled={hasPendingRequest}
-            placeholder="Untitled topic"
+            placeholder="Untitled proposal"
             css={(t) =>
               css({
                 background: "none",
@@ -185,7 +185,7 @@ const CreateChannelScreen = () => {
           isLoading={hasPendingRequest}
           disabled={!hasRequiredInput || hasPendingRequest}
         >
-          Create topic
+          Create proposal
         </Button>
       </footer>
     </form>

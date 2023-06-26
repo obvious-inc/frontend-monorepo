@@ -98,10 +98,6 @@ const CreateChannelScreen = React.lazy(() =>
 
 const TRUNCATION_THRESHOLD = 8;
 
-const Index = () => {
-  return <div />;
-};
-
 const ProfileDropdownTrigger = React.forwardRef((props, ref) => {
   const { status: authenticationStatus } = useAuth();
 
@@ -402,14 +398,14 @@ const RootLayout = () => {
             component={NavLink}
             to="/new"
             end
-            title="New topic"
+            title="New proposal"
           />
 
           <ListItem
             compact={false}
             icon={<MagnificationGlassIcon style={{ width: "1.4rem" }} />}
             component={NavLink}
-            to="/topics"
+            to="/proposals"
             title="Browse"
           />
 
@@ -1216,7 +1212,7 @@ const App = () => {
                         />
                         <Routes>
                           <Route path="/" element={<RootLayout />}>
-                            <Route index element={<Index />} />
+                            <Route index element={<ChannelsScreen />} />
                             <Route
                               path="/new/:draftId?"
                               element={
@@ -1226,7 +1222,7 @@ const App = () => {
                               }
                             />
                             <Route
-                              path="/topics"
+                              path="/proposals"
                               element={<ChannelsScreen />}
                             />
                             <Route

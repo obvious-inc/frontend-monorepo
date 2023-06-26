@@ -1,6 +1,7 @@
 import React from "react";
 import { Link as RouterLink } from "react-router-dom";
 import { css } from "@emotion/react";
+import { useUser, useChannel, useAccountDisplayName } from "@shades/common/app";
 import { channel as channelUtils } from "@shades/common/utils";
 import { useFetch } from "@shades/common/react";
 import ChannelAvatar from "@shades/ui-web/channel-avatar";
@@ -9,6 +10,7 @@ import {
   useActions,
   useChannels as usePrechainChannels,
 } from "../hooks/prechain.js";
+import FormattedDate from "./formatted-date.js";
 import NavBar from "./nav-bar.js";
 
 const { search: searchChannels } = channelUtils;
@@ -61,7 +63,7 @@ const ChannelsScreen = () => {
               })
             }
           >
-            Topics
+            Proposals
           </div>
         </NavBar>
         <div css={css({ padding: "0 1.5rem 1rem" })}>
@@ -93,9 +95,10 @@ const ChannelsScreen = () => {
               css={(t) =>
                 css({
                   listStyle: "none",
+                  "li + li": { marginTop: "0.4rem" },
                   a: {
                     textDecoration: "none",
-                    padding: "0.6rem",
+                    padding: "0.8rem 0.6rem",
                     color: t.colors.textNormal,
                     borderRadius: "0.5rem",
                     display: "grid",
@@ -125,15 +128,7 @@ const ChannelsScreen = () => {
             >
               {filteredChannels.map((c) => (
                 <li key={c.id}>
-                  <RouterLink to={`/${c.id}`}>
-                    <ChannelAvatar id={c.id} transparent size="3.6rem" />
-                    <div>
-                      <div className="name">{c.name}</div>
-                      {c.description != null && (
-                        <div className="description">{c.description}</div>
-                      )}
-                    </div>
-                  </RouterLink>
+                  <ChannelItem channelId={c.id} />
                 </li>
               ))}
             </ul>
@@ -141,6 +136,34 @@ const ChannelsScreen = () => {
         </div>
       </div>
     </>
+  );
+};
+
+const ChannelItem = ({ channelId }) => {
+  const channel = useChannel(channelId);
+  const authorUser = useUser(channel.ownerUserId);
+  const { displayName: authorAccountDisplayName } = useAccountDisplayName(
+    authorUser?.walletAddress
+  );
+  return (
+    <RouterLink to={`/${channelId}`}>
+      <ChannelAvatar id={channelId} transparent size="3.2rem" />
+      <div>
+        <div className="name">{channel.name}</div>
+        <div className="description">
+          By{" "}
+          <em
+            css={(t) =>
+              css({ fontWeight: t.text.weights.emphasis, fontStyle: "normal" })
+            }
+          >
+            {authorAccountDisplayName ?? "..."}
+          </em>{" "}
+          on{" "}
+          <FormattedDate value={channel.createdAt} day="numeric" month="long" />
+        </div>
+      </div>
+    </RouterLink>
   );
 };
 
