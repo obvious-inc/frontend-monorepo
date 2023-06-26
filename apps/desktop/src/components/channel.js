@@ -22,6 +22,7 @@ import {
   useWindowFocusOrDocumentVisibleListener,
   useWindowOnlineListener,
   useMatchMedia,
+  ErrorBoundary,
 } from "@shades/common/react";
 import ChannelMessagesScrollView from "@shades/ui-web/channel-messages-scroll-view";
 import { isNodeEmpty } from "@shades/ui-web/rich-text-editor";
@@ -36,7 +37,6 @@ import Delay from "./delay.js";
 import ChannelMessagesScrollViewHeader from "./channel-messages-scroll-view-header.js";
 import ChannelNavBar from "./channel-nav-bar.js";
 import ChannelMessage from "./channel-message.js";
-import ErrorBoundary from "./error-boundary.js";
 
 const LazyLoginScreen = React.lazy(() => import("./login-screen"));
 

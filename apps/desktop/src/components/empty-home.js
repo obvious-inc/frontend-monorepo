@@ -1,9 +1,9 @@
 import React from "react";
 import { css } from "@emotion/react";
 import { useAuth } from "@shades/common/app";
+import { ErrorBoundary } from "@shades/common/react";
 import { Home as HomeIcon } from "@shades/ui-web/icons";
 import NavBar from "./nav-bar.js";
-import ErrorBoundary from "./error-boundary.js";
 
 const LoginScreen = React.lazy(() => import("./login-screen"));
 

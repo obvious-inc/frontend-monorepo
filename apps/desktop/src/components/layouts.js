@@ -26,6 +26,7 @@ import { useWalletLogin } from "@shades/common/wallet";
 import {
   array as arrayUtils,
   ethereum as ethereumUtils,
+  ErrorBoundary,
 } from "@shades/common/utils";
 import { useFetch } from "@shades/common/react";
 import {
@@ -48,7 +49,6 @@ import useCommandCenter from "../hooks/command-center";
 import { useDialog } from "../hooks/dialogs";
 import useSetting from "../hooks/setting";
 import NotificationBadge from "./notification-badge";
-import ErrorBoundary from "./error-boundary";
 
 const { sort, comparator } = arrayUtils;
 const { truncateAddress } = ethereumUtils;

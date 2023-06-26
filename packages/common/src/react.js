@@ -11,3 +11,4 @@ export { default as useScrollListener } from "./react/hooks/scroll-listener.js";
 export { default as useMutationObserver } from "./react/hooks/mutation-observer.js";
 export { default as AutoAdjustingHeightTextarea } from "./react/components/auto-adjusting-height-textarea.js";
 export { default as ReverseVerticalScrollView } from "./react/components/reverse-vertical-scroll-view.js";
+export { default as ErrorBoundary } from "./react/components/error-boundary.js";

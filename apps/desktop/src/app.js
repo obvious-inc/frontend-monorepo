@@ -10,8 +10,8 @@ import {
 import {
   useWindowFocusOrDocumentVisibleListener,
   useWindowOnlineListener,
+  ErrorBoundary,
 } from "@shades/common/react";
-import ErrorBoundary from "./components/error-boundary.js";
 
 const LazyApp = React.lazy(() => import("./app-lazy"));
 

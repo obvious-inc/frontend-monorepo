@@ -15,6 +15,7 @@ import {
   ethereum as ethereumUtils,
   user as userUtils,
 } from "@shades/common/utils";
+import { ErrorBoundary } from "@shades/common/react";
 import Button from "@shades/ui-web/button";
 import Dialog from "@shades/ui-web/dialog";
 import {
@@ -29,7 +30,6 @@ import Spinner from "@shades/ui-web/spinner";
 import { useDialog } from "../hooks/dialogs";
 import NavBar from "./nav-bar";
 import Heading from "./heading";
-import ErrorBoundary from "./error-boundary.js";
 import RichText from "./rich-text.js";
 import AddChannelMemberDialog from "./add-channel-member-dialog.js";
 

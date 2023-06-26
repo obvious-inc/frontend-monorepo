@@ -18,11 +18,13 @@ import {
   useWindowFocusOrDocumentVisibleListener,
   useWindowOnlineListener,
   useMatchMedia,
+  ErrorBoundary,
 } from "@shades/common/react";
 import Button from "@shades/ui-web/button";
 import { CrossCircle as CrossCircleIcon } from "@shades/ui-web/icons";
 import MessageEditorForm from "@shades/ui-web/message-editor-form";
 import ChannelMessagesScrollView from "@shades/ui-web/channel-messages-scroll-view";
+import Dialog from "@shades/ui-web/dialog";
 import { useWriteAccess } from "../hooks/write-access-scope.js";
 import AccountPreviewPopoverTrigger from "./account-preview-popover-trigger.js";
 import ChannelMessage from "./channel-message.js";
@@ -311,32 +313,137 @@ const ChannelContent = ({ channelId }) => {
 const ChannelScreen = () => {
   const { channelId } = useParams();
 
+  const [isDialogOpen, setDialogOpen] = React.useState(false);
+
+  const openDialog = React.useCallback(() => {
+    setDialogOpen(true);
+  }, []);
+
+  const closeDialog = React.useCallback(() => {
+    setDialogOpen(false);
+  }, []);
+
   useChannelFetchEffects(channelId);
 
   return (
-    <Layout channelId={channelId}>
-      <ChannelContent channelId={channelId} />
-    </Layout>
+    <>
+      <Layout channelId={channelId} openChannelDialog={openDialog}>
+        <ChannelContent channelId={channelId} />
+      </Layout>
+
+      {isDialogOpen && (
+        <Dialog
+          isOpen={isDialogOpen}
+          onRequestClose={closeDialog}
+          width="82rem"
+        >
+          {({ titleProps }) => (
+            <ErrorBoundary
+              fallback={() => {
+                window.location.reload();
+              }}
+            >
+              <React.Suspense fallback={null}>
+                <ChannelDialog
+                  channelId={channelId}
+                  titleProps={titleProps}
+                  dismiss={closeDialog}
+                />
+              </React.Suspense>
+            </ErrorBoundary>
+          )}
+        </Dialog>
+      )}
+    </>
   );
 };
 
-const NavBar = ({ channelId }) => {
+const ChannelDialog = ({ channelId, titleProps }) => {
+  const channel = useChannel(channelId);
+
+  if (channel == null) return null;
+
+  return (
+    <div
+      css={css({
+        overflow: "auto",
+        padding: "1.5rem",
+        "@media (min-width: 600px)": {
+          padding: "3rem",
+        },
+      })}
+    >
+      <h1
+        {...titleProps}
+        css={css({
+          display: "inline-flex",
+          alignItems: "center",
+          fontSize: "2.6rem",
+          lineHeight: 1.15,
+          margin: "0 0 3rem",
+        })}
+      >
+        {channel.name}
+      </h1>
+      <RichText blocks={channel.body ?? channel.descriptionBlocks} />
+    </div>
+  );
+};
+
+const NavBar = ({ channelId, openChannelDialog }) => {
   const channel = useChannel(channelId, { name: true });
   return (
     <div
-      css={(t) =>
-        css({
-          fontSize: t.fontSizes.header,
-          fontWeight: t.text.weights.header,
-          color: t.colors.textHeader,
-          padding: "1rem 1.5rem",
-          height: "4.4rem",
-          display: "flex",
-          alignItems: "center",
-        })
-      }
+      css={css({
+        display: "flex",
+        justifyContent: "flex-start",
+        whiteSpace: "nowrap",
+      })}
     >
-      {channel?.name}
+      <button
+        css={(t) =>
+          css({
+            display: "grid",
+            alignItems: "center",
+            fontSize: t.fontSizes.header,
+            fontWeight: t.text.weights.header,
+            color: t.colors.textHeader,
+            padding: "1rem 1.5rem",
+            height: "4.4rem",
+            ".dialog-icon": { display: "none" },
+            "@media(hover: hover)": {
+              cursor: "pointer",
+              gridTemplateColumns: "minmax(0,1fr) auto",
+              gridGap: "0.4rem",
+              ".dialog-icon": {
+                display: "block",
+                opacity: 0,
+                transform: "translateX(-0.25rem)",
+                transition: "0.15s all ease-out",
+              },
+              ":hover": {
+                color: t.colors.textDimmed,
+                ".dialog-icon": { opacity: 1, transform: "translateX(0)" },
+              },
+            },
+          })
+        }
+        onClick={openChannelDialog}
+      >
+        <div style={{ overflow: "hidden", textOverflow: "ellipsis" }}>
+          {channel?.name}
+        </div>
+        <svg
+          viewBox="0 0 20 20"
+          className="dialog-icon"
+          style={{ width: "2.2rem" }}
+        >
+          <path
+            fill="currentColor"
+            d="M16.492 3.922C15.695 3.125 14.57 3 13.234 3H7.148c-1.312 0-2.437.125-3.234.922C3.117 4.719 3 5.836 3 7.14v6.03c0 1.337.117 2.446.914 3.243.797.797 1.922.922 3.25.922h6.07c1.336 0 2.461-.125 3.258-.922.797-.797.914-1.906.914-3.242V7.164c0-1.336-.117-2.453-.914-3.242zm-.344 3.023v6.438c0 .812-.101 1.64-.578 2.117-.468.469-1.312.578-2.117.578h-6.5c-.805 0-1.648-.11-2.125-.578-.469-.477-.57-1.305-.57-2.117V6.969c0-.82.101-1.664.57-2.133.477-.477 1.328-.578 2.149-.578h6.476c.805 0 1.649.11 2.117.578.477.476.578 1.305.578 2.11zm-3.492 5.149c.344 0 .57-.266.57-.625V7.78c0-.46-.25-.64-.648-.64h-3.71c-.368 0-.602.226-.602.57s.242.57.617.57h1.422l1.156-.125-1.219 1.133-2.875 2.883a.62.62 0 00-.187.422c0 .351.226.578.57.578.188 0 .336-.07.445-.18l2.875-2.875 1.125-1.203-.117 1.219v1.351c0 .368.227.61.578.61z"
+          />
+        </svg>
+      </button>
     </div>
   );
 };
@@ -362,7 +469,15 @@ const ChannelHeader = ({ channelId }) => {
         }
       >
         <div>
-          <h1 css={css({ lineHeight: 1.15, margin: "0 0 0.3rem" })}>
+          <h1
+            css={(t) =>
+              css({
+                fontSize: t.text.sizes.huge,
+                lineHeight: 1.15,
+                margin: "0 0 0.3rem",
+              })
+            }
+          >
             {channel.name}
           </h1>
           <div
@@ -394,7 +509,7 @@ const ChannelHeader = ({ channelId }) => {
   );
 };
 
-const Layout = ({ channelId, children }) => (
+const Layout = ({ channelId, openChannelDialog, children }) => (
   <div
     css={(t) =>
       css({
@@ -409,7 +524,7 @@ const Layout = ({ channelId, children }) => (
       })
     }
   >
-    <NavBar channelId={channelId} />
+    <NavBar channelId={channelId} openChannelDialog={openChannelDialog} />
     {children}
   </div>
 );

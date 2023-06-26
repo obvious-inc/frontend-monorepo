@@ -1,9 +1,9 @@
 import React from "react";
 import { useConnect } from "wagmi";
 import { useWalletLogin } from "@shades/common/wallet";
+import { ErrorBoundary } from "@shades/common/react";
 import Dialog from "@shades/ui-web/dialog";
 import { useDialog } from "../hooks/dialogs";
-import ErrorBoundary from "./error-boundary";
 
 const LazyEditProfileDialog = React.lazy(() =>
   import("./edit-user-profile-dialog.js")
