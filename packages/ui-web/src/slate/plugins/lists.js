@@ -29,25 +29,48 @@ const middleware = (editor) => {
       return;
     }
 
-    Transforms.unwrapNodes(editor, {
-      at: matchingNodePath,
-      match: (n) => listNodeTypes.includes(n.type),
-      split: true,
+    Editor.withoutNormalizing(editor, () => {
+      Transforms.setNodes(editor, { type: "paragraph" });
+      Transforms.unwrapNodes(editor, {
+        at: matchingNodePath,
+        match: (n) => listNodeTypes.includes(n.type),
+        split: true,
+      });
     });
-    Transforms.setNodes(editor, { type: "paragraph" });
   };
 
   editor.normalizeNode = ([node, path]) => {
-    if (node.type == null || !listNodeTypes.includes(node.type)) {
-      normalizeNode([node, path]);
-      return;
+    if (node.type === "list-item") {
+      // Unwrap list items that lack a parent list
+      const parentNode = Node.parent(editor, path);
+      if (parentNode == null || !listNodeTypes.includes(parentNode.type)) {
+        Transforms.unwrapNodes(editor, { at: path });
+        return;
+      }
+
+      // Remove nested block elements
+      for (const [childNode, childPath] of Node.children(editor, path)) {
+        if (childNode.text == null && !editor.isInline(childNode)) {
+          Transforms.unwrapNodes(editor, { at: childPath });
+          return;
+        }
+      }
     }
 
-    // Assert all children are of type "list-item"
-    for (const [childNode, childNodePath] of Node.children(editor, path)) {
-      if (childNode.type === "list-item") continue;
-      Transforms.setNodes(editor, { type: "list-item" }, { at: childNodePath });
+    if (listNodeTypes.includes(node.type)) {
+      // Assert all children are of type "list-item"
+      for (const [childNode, childNodePath] of Node.children(editor, path)) {
+        if (childNode.type === "list-item") continue;
+        Transforms.wrapNodes(
+          editor,
+          { type: "list-item", children: [] },
+          { at: childNodePath }
+        );
+        return;
+      }
     }
+
+    normalizeNode([node, path]);
   };
 
   return withBlockPrefixShortcut(
@@ -85,16 +108,21 @@ export default ({ inline = false } = {}) => ({
 
       const [node, path] = matchEntry;
 
-      // Non-empty list item
-      if (node.children.length !== 1 || node.children[0].text.trim() !== "")
-        return;
+      const isEmpty = node.children.every(
+        (n) => n.text != null && n.text.trim() === ""
+      );
 
-      Transforms.unwrapNodes(editor, {
-        at: path,
-        match: (n) => listNodeTypes.includes(n.type),
-        split: true,
+      // Only break out of non-empty list items
+      if (!isEmpty) return;
+
+      Editor.withoutNormalizing(editor, () => {
+        Transforms.setNodes(editor, { type: "paragraph", at: path });
+        Transforms.unwrapNodes(editor, {
+          at: path,
+          match: (n) => listNodeTypes.includes(n.type),
+          split: true,
+        });
       });
-      Transforms.setNodes(editor, { type: "paragraph" });
 
       e.preventDefault();
       // editor.insertText("\n");
