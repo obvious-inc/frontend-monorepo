@@ -267,7 +267,7 @@ const ChannelContent = ({ channelId }) => {
             replyTargetMessageId == null ? null : (
               <div css={css({ display: "flex", alignItems: "center" })}>
                 <div css={css({ flex: 1, paddingRight: "1rem" })}>
-                  Replying to {}
+                  Replying to{" "}
                   <AccountPreviewPopoverTrigger
                     userId={replyTargetMessage.authorUserId}
                     variant="link"
@@ -568,30 +568,39 @@ const AdminChannelDialog = ({ channelId, dismiss }) => {
 };
 
 const NavBar = ({ channelId, openChannelDialog }) => {
-  const channel = useChannel(channelId, { name: true });
+  const channel = useChannel(channelId);
   return (
     <div
       css={css({
         display: "flex",
+        alignItems: "center",
         justifyContent: "flex-start",
         whiteSpace: "nowrap",
       })}
     >
       <button
+        onClick={openChannelDialog}
         css={(t) =>
           css({
-            display: "grid",
+            outline: "none",
+            flex: 1,
+            minWidth: 0,
+            display: "flex",
+            justifyContent: "flex-start",
             alignItems: "center",
+            padding: "1rem 1.5rem",
+            height: "4.4rem",
             fontSize: t.fontSizes.header,
             fontWeight: t.text.weights.header,
             color: t.colors.textHeader,
-            padding: "1rem 1.5rem",
-            height: "4.4rem",
+            "& > *": { display: "grid", alignItems: "center" },
             ".dialog-icon": { display: "none" },
             "@media(hover: hover)": {
               cursor: "pointer",
-              gridTemplateColumns: "minmax(0,1fr) auto",
-              gridGap: "0.4rem",
+              "& > *": {
+                gridTemplateColumns: "minmax(0,1fr) auto",
+                gridGap: "0.4rem",
+              },
               ".dialog-icon": {
                 display: "block",
                 opacity: 0,
@@ -605,22 +614,33 @@ const NavBar = ({ channelId, openChannelDialog }) => {
             },
           })
         }
-        onClick={openChannelDialog}
       >
-        <div style={{ overflow: "hidden", textOverflow: "ellipsis" }}>
-          {channel?.name}
+        <div>
+          <div style={{ overflow: "hidden", textOverflow: "ellipsis" }}>
+            {channel?.name}
+          </div>
+          <svg
+            viewBox="0 0 20 20"
+            className="dialog-icon"
+            style={{ width: "2.2rem" }}
+          >
+            <path
+              fill="currentColor"
+              d="M16.492 3.922C15.695 3.125 14.57 3 13.234 3H7.148c-1.312 0-2.437.125-3.234.922C3.117 4.719 3 5.836 3 7.14v6.03c0 1.337.117 2.446.914 3.243.797.797 1.922.922 3.25.922h6.07c1.336 0 2.461-.125 3.258-.922.797-.797.914-1.906.914-3.242V7.164c0-1.336-.117-2.453-.914-3.242zm-.344 3.023v6.438c0 .812-.101 1.64-.578 2.117-.468.469-1.312.578-2.117.578h-6.5c-.805 0-1.648-.11-2.125-.578-.469-.477-.57-1.305-.57-2.117V6.969c0-.82.101-1.664.57-2.133.477-.477 1.328-.578 2.149-.578h6.476c.805 0 1.649.11 2.117.578.477.476.578 1.305.578 2.11zm-3.492 5.149c.344 0 .57-.266.57-.625V7.78c0-.46-.25-.64-.648-.64h-3.71c-.368 0-.602.226-.602.57s.242.57.617.57h1.422l1.156-.125-1.219 1.133-2.875 2.883a.62.62 0 00-.187.422c0 .351.226.578.57.578.188 0 .336-.07.445-.18l2.875-2.875 1.125-1.203-.117 1.219v1.351c0 .368.227.61.578.61z"
+            />
+          </svg>
         </div>
-        <svg
-          viewBox="0 0 20 20"
-          className="dialog-icon"
-          style={{ width: "2.2rem" }}
-        >
-          <path
-            fill="currentColor"
-            d="M16.492 3.922C15.695 3.125 14.57 3 13.234 3H7.148c-1.312 0-2.437.125-3.234.922C3.117 4.719 3 5.836 3 7.14v6.03c0 1.337.117 2.446.914 3.243.797.797 1.922.922 3.25.922h6.07c1.336 0 2.461-.125 3.258-.922.797-.797.914-1.906.914-3.242V7.164c0-1.336-.117-2.453-.914-3.242zm-.344 3.023v6.438c0 .812-.101 1.64-.578 2.117-.468.469-1.312.578-2.117.578h-6.5c-.805 0-1.648-.11-2.125-.578-.469-.477-.57-1.305-.57-2.117V6.969c0-.82.101-1.664.57-2.133.477-.477 1.328-.578 2.149-.578h6.476c.805 0 1.649.11 2.117.578.477.476.578 1.305.578 2.11zm-3.492 5.149c.344 0 .57-.266.57-.625V7.78c0-.46-.25-.64-.648-.64h-3.71c-.368 0-.602.226-.602.57s.242.57.617.57h1.422l1.156-.125-1.219 1.133-2.875 2.883a.62.62 0 00-.187.422c0 .351.226.578.57.578.188 0 .336-.07.445-.18l2.875-2.875 1.125-1.203-.117 1.219v1.351c0 .368.227.61.578.61z"
-          />
-        </svg>
       </button>
+      <div
+        css={(t) =>
+          css({
+            fontSize: t.text.sizes.base,
+            padding: "0 1.5rem",
+          })
+        }
+      >
+        By <AccountPreviewPopoverTrigger userId={channel?.ownerUserId} />
+      </div>
     </div>
   );
 };
