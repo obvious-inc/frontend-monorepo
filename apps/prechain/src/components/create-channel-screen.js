@@ -4,6 +4,7 @@ import { css } from "@emotion/react";
 import { useLatestCallback } from "@shades/common/react";
 import Button from "@shades/ui-web/button";
 import RichTextEditor, {
+  Toolbar as EditorToolbar,
   isNodeEmpty as isSlateNodeEmpty,
 } from "@shades/ui-web/rich-text-editor";
 import {
@@ -18,12 +19,16 @@ const CreateChannelScreen = () => {
 
   const { createChannel } = useActions();
 
+  const editorRef = React.useRef();
+
   const {
     items: drafts,
     createItem: createDraft,
     deleteItem: deleteDraft,
   } = useDrafts();
   const [draft, { setName, setBody }] = useDraft(draftId);
+
+  const [activeMarks, setActiveMarks] = React.useState([]);
 
   const [hasPendingRequest, setPendingRequest] = React.useState(false);
 
@@ -135,9 +140,11 @@ const CreateChannelScreen = () => {
             }
           />
           <RichTextEditor
+            ref={editorRef}
             value={draft.body}
-            onChange={(e) => {
+            onChange={(e, editor) => {
               setBody(e);
+              setActiveMarks(Object.keys(editor.getMarks()));
             }}
             placeholder={`Use markdown shortcuts like "# " and "1. " to create headings and lists.`}
             css={(t) =>
@@ -153,40 +160,45 @@ const CreateChannelScreen = () => {
           />
         </div>
       </main>
-      <footer
-        css={css({
-          display: "grid",
-          gridTemplateColumns: "minmax(0,1fr) auto auto",
-          gridGap: "1rem",
-          alignItems: "center",
-          padding: "1rem",
-        })}
-      >
-        <div>
+      <footer>
+        <div css={css({ padding: "1rem 1rem 0" })}>
+          <EditorToolbar editorRef={editorRef} activeMarks={activeMarks} />
+        </div>
+        <div
+          css={css({
+            display: "grid",
+            gridTemplateColumns: "minmax(0,1fr) auto auto",
+            gridGap: "1rem",
+            alignItems: "center",
+            padding: "1rem",
+          })}
+        >
+          <div>
+            <Button
+              type="button"
+              size="medium"
+              onClick={() => {
+                deleteDraft(draftId).then(() => {
+                  navigate("/", { replace: true });
+                });
+              }}
+            >
+              Discard draft
+            </Button>
+          </div>
+          <Button type="button" size="medium" disabled>
+            Draft saved
+          </Button>
           <Button
-            type="button"
+            type="submit"
             size="medium"
-            onClick={() => {
-              deleteDraft(draftId).then(() => {
-                navigate("/", { replace: true });
-              });
-            }}
+            variant="primary"
+            isLoading={hasPendingRequest}
+            disabled={!hasRequiredInput || hasPendingRequest}
           >
-            Discard draft
+            Create proposal
           </Button>
         </div>
-        <Button type="button" size="medium" disabled>
-          Draft saved
-        </Button>
-        <Button
-          type="submit"
-          size="medium"
-          variant="primary"
-          isLoading={hasPendingRequest}
-          disabled={!hasRequiredInput || hasPendingRequest}
-        >
-          Create proposal
-        </Button>
       </footer>
     </form>
   );

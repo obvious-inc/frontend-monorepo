@@ -201,7 +201,7 @@ const RichTextEditor = React.forwardRef(
         value={value}
         onChange={(value) => {
           handlers.onChange(value, editor);
-          onChange?.(value);
+          onChange?.(value, editor);
 
           for (let trigger of triggers) {
             switch (trigger.type) {
@@ -326,6 +326,181 @@ const Leaf = ({ attributes, children, leaf }) => {
   if (leaf.strikethrough) children = <s>{children}</s>;
 
   return <span {...attributes}>{children}</span>;
+};
+
+export const Toolbar = ({ editorRef, activeMarks }) => {
+  return (
+    <div
+      css={(t) =>
+        css({
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "flex-start",
+          '[role="separator"]': {
+            width: "1px",
+            height: "2rem",
+            background: t.colors.borderLight,
+            margin: "0 0.5rem",
+          },
+          button: {
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            width: "2.6rem",
+            height: "2.6rem",
+            borderRadius: "0.3rem",
+            ":disabled": { color: t.colors.textMuted },
+            "@media(hover: hover)": {
+              ":not(:disabled)": {
+                cursor: "pointer",
+                ":hover": {
+                  background: t.colors.backgroundModifierHover,
+                },
+              },
+            },
+            '&[data-active="true"]': { color: t.colors.textPrimary },
+          },
+        })
+      }
+    >
+      {[
+        [
+          {
+            key: "bold",
+            icon: "B",
+            isActive: activeMarks.includes("bold"),
+            props: {
+              "data-active": activeMarks.includes("bold"),
+              style: { fontWeight: "700" },
+              onMouseDown: (e) => {
+                e.preventDefault();
+                editorRef.current.toggleMark("bold");
+              },
+            },
+          },
+          {
+            key: "italic",
+            icon: "i",
+            props: {
+              "data-active": activeMarks.includes("italic"),
+              style: { fontStyle: "italic" },
+              onMouseDown: (e) => {
+                e.preventDefault();
+                editorRef.current.toggleMark("italic");
+              },
+            },
+          },
+          {
+            key: "strikethrough",
+            icon: "S",
+            props: {
+              "data-active": activeMarks.includes("strikethrough"),
+              style: { TextDecoration: "line-through" },
+              onMouseDown: (e) => {
+                e.preventDefault();
+                editorRef.current.toggleMark("strikethrough");
+              },
+            },
+          },
+        ],
+        [
+          {
+            key: "bulleted-list",
+            icon: (
+              <svg viewBox="0 0 20 20" style={{ width: "1.4rem" }}>
+                <path
+                  fill="currentColor"
+                  fillRule="evenodd"
+                  clipRule="evenodd"
+                  d="M4 3a1 1 0 1 1-2 0 1 1 0 0 1 2 0Zm3 0a.75.75 0 0 1 .75-.75h10a.75.75 0 0 1 0 1.5h-10A.75.75 0 0 1 7 3Zm.75 6.25a.75.75 0 0 0 0 1.5h10a.75.75 0 0 0 0-1.5h-10Zm0 7a.75.75 0 0 0 0 1.5h10a.75.75 0 0 0 0-1.5h-10ZM3 11a1 1 0 1 0 0-2 1 1 0 0 0 0 2Zm0 7a1 1 0 1 0 0-2 1 1 0 0 0 0 2Z"
+                />
+              </svg>
+            ),
+            props: {
+              disabled: true,
+              onMouseDown: (e) => {
+                e.preventDefault();
+                // openLinkDialog()
+              },
+            },
+          },
+          {
+            key: "numbered-list",
+            icon: (
+              <svg viewBox="0 0 20 20" style={{ width: "1.5rem" }}>
+                <path
+                  fill="currentColor"
+                  fillRule="evenodd"
+                  clipRule="evenodd"
+                  d="M3.792 2.094A.5.5 0 0 1 4 2.5V6h1a.5.5 0 1 1 0 1H2a.5.5 0 1 1 0-1h1V3.194l-.842.28a.5.5 0 0 1-.316-.948l1.5-.5a.5.5 0 0 1 .45.068ZM7.75 3.5a.75.75 0 0 0 0 1.5h10a.75.75 0 0 0 0-1.5h-10ZM7 10.75a.75.75 0 0 1 .75-.75h10a.75.75 0 0 1 0 1.5h-10a.75.75 0 0 1-.75-.75Zm0 6.5a.75.75 0 0 1 .75-.75h10a.75.75 0 0 1 0 1.5h-10a.75.75 0 0 1-.75-.75Zm-4.293-3.36a.997.997 0 0 1 .793-.39c.49 0 .75.38.75.75 0 .064-.033.194-.173.409a5.146 5.146 0 0 1-.594.711c-.256.267-.552.548-.87.848l-.088.084a41.6 41.6 0 0 0-.879.845A.5.5 0 0 0 2 18h3a.5.5 0 0 0 0-1H3.242l.058-.055c.316-.298.629-.595.904-.882a6.1 6.1 0 0 0 .711-.859c.18-.277.335-.604.335-.954 0-.787-.582-1.75-1.75-1.75a1.998 1.998 0 0 0-1.81 1.147.5.5 0 1 0 .905.427.996.996 0 0 1 .112-.184Z"
+                />
+              </svg>
+            ),
+            props: {
+              disabled: true,
+              onMouseDown: (e) => {
+                e.preventDefault();
+                // openLinkDialog()
+              },
+            },
+          },
+        ],
+        [
+          {
+            key: "link",
+            icon: (
+              <svg viewBox="0 0 64 64" style={{ width: "1.6rem" }}>
+                <path
+                  d="m27.75,44.73l4.24,4.24-3.51,3.51c-2.34,2.34-5.41,3.51-8.49,3.51-6.63,0-12-5.37-12-12,0-3.07,1.17-6.14,3.51-8.49l10-10c2.34-2.34,5.41-3.51,8.49-3.51s6.14,1.17,8.49,3.51l1.41,1.41-4.24,4.24-1.41-1.41c-1.13-1.13-2.64-1.76-4.24-1.76s-5.11,2.62-6.24,3.76l-8,8c-1.13,1.13-1.76,2.64-1.76,4.24,0,3.31,2.69,6,6,6,1.6,0,3.11-.62,4.24-1.76l3.51-3.51ZM44,8c-3.07,0-6.14,1.17-8.49,3.51l-3.51,3.51,4.24,4.24,3.51-3.51c1.13-1.13,2.64-1.76,4.24-1.76,3.31,0,6,2.69,6,6,0,1.6-.62,3.11-1.76,4.24l-10,10c-1.13,1.13-2.64,1.76-4.24,1.76s-3.11-.62-4.24-1.76l-1.41-1.41-4.24,4.24,1.41,1.41c2.34,2.34,5.41,3.51,8.49,3.51s6.14-1.17,8.49-3.51l10-10c2.34-2.34,3.51-5.41,3.51-8.49,0-6.63-5.37-12-12-12Z"
+                  fill="currentColor"
+                />
+              </svg>
+            ),
+            props: {
+              disabled: true,
+              onMouseDown: (e) => {
+                e.preventDefault();
+                // openLinkDialog()
+              },
+            },
+          },
+          {
+            key: "image",
+            icon: (
+              <svg viewBox="0 0 64 64" style={{ width: "1.8rem" }}>
+                <path
+                  d="m38,27c0-2.76,2.24-5,5-5s5,2.24,5,5-2.24,5-5,5-5-2.24-5-5Zm20-15v40H6V12h52Zm-6,6H12v26l14-14h4l16,16h6v-28Z"
+                  fill="currentColor"
+                />
+              </svg>
+            ),
+            props: {
+              disabled: true,
+              onMouseDown: (e) => {
+                e.preventDefault();
+                // openImageDialog()
+              },
+            },
+          },
+        ],
+      ].map((sectionActions, i) => {
+        const sectionButtons = sectionActions.map((action) => (
+          <button key={action.key} type="button" {...action.props}>
+            {action.icon}
+          </button>
+        ));
+
+        if (i === 0) return sectionButtons;
+
+        return (
+          <>
+            <div role="separator" aria-orientation="vertical" />
+            {sectionButtons}
+          </>
+        );
+      })}
+    </div>
+  );
 };
 
 export default RichTextEditor;

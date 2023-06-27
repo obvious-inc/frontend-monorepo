@@ -1,5 +1,5 @@
 import React from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams, useNavigate, useSearchParams } from "react-router-dom";
 import { css } from "@emotion/react";
 import { useAccount } from "wagmi";
 import {
@@ -26,7 +26,9 @@ import { CrossCircle as CrossCircleIcon } from "@shades/ui-web/icons";
 import MessageEditorForm from "@shades/ui-web/message-editor-form";
 import ChannelMessagesScrollView from "@shades/ui-web/channel-messages-scroll-view";
 import Dialog from "@shades/ui-web/dialog";
-import RichTextEditor from "@shades/ui-web/rich-text-editor";
+import RichTextEditor, {
+  Toolbar as EditorToolbar,
+} from "@shades/ui-web/rich-text-editor";
 import { useWriteAccess } from "../hooks/write-access-scope.js";
 import AccountPreviewPopoverTrigger from "./account-preview-popover-trigger.js";
 import ChannelMessage from "./channel-message.js";
@@ -312,54 +314,6 @@ const ChannelContent = ({ channelId }) => {
   );
 };
 
-const ChannelScreen = () => {
-  const { channelId } = useParams();
-
-  const [isDialogOpen, setDialogOpen] = React.useState(false);
-
-  const openDialog = React.useCallback(() => {
-    setDialogOpen(true);
-  }, []);
-
-  const closeDialog = React.useCallback(() => {
-    setDialogOpen(false);
-  }, []);
-
-  useChannelFetchEffects(channelId);
-
-  return (
-    <>
-      <Layout channelId={channelId} openChannelDialog={openDialog}>
-        <ChannelContent channelId={channelId} />
-      </Layout>
-
-      {isDialogOpen && (
-        <Dialog
-          isOpen={isDialogOpen}
-          onRequestClose={closeDialog}
-          width="76rem"
-        >
-          {({ titleProps }) => (
-            <ErrorBoundary
-              fallback={() => {
-                window.location.reload();
-              }}
-            >
-              <React.Suspense fallback={null}>
-                <ChannelDialog
-                  channelId={channelId}
-                  titleProps={titleProps}
-                  dismiss={closeDialog}
-                />
-              </React.Suspense>
-            </ErrorBoundary>
-          )}
-        </Dialog>
-      )}
-    </>
-  );
-};
-
 const ChannelDialog = ({ channelId, titleProps, dismiss }) => {
   const me = useMe();
   const channel = useChannel(channelId);
@@ -404,12 +358,15 @@ const ChannelDialog = ({ channelId, titleProps, dismiss }) => {
 
 const AdminChannelDialog = ({ channelId, dismiss }) => {
   const navigate = useNavigate();
+  const editorRef = React.useRef();
 
   const { updateChannel, deleteChannel } = useActions();
   const channel = useChannel(channelId);
 
   const persistedName = channel.name;
   const persistedBody = channel.body;
+
+  const [activeMarks, setActiveMarks] = React.useState([]);
 
   const [name, setName] = React.useState(persistedName);
   const [body, setBody] = React.useState(persistedBody);
@@ -500,9 +457,11 @@ const AdminChannelDialog = ({ channelId, dismiss }) => {
             }
           />
           <RichTextEditor
+            ref={editorRef}
             value={body}
-            onChange={(e) => {
+            onChange={(e, editor) => {
               setBody(e);
+              setActiveMarks(Object.keys(editor.getMarks()));
             }}
             placeholder={`Use markdown shortcuts like "# " and "1. " to create headings and lists.`}
             css={(t) =>
@@ -514,54 +473,58 @@ const AdminChannelDialog = ({ channelId, dismiss }) => {
                 },
               })
             }
-            // style={{ flex: 1, minHeight: 0 }}
           />
         </div>
       </main>
-      <footer
-        css={css({
-          display: "grid",
-          justifyContent: "flex-end",
-          gridTemplateColumns: "minmax(0,1fr) auto auto",
-          gridGap: "1rem",
-          alignItems: "center",
-          padding: "1rem",
-        })}
-      >
-        <div>
+      <footer>
+        <div style={{ padding: "1rem 1rem 0" }}>
+          <EditorToolbar editorRef={editorRef} activeMarks={activeMarks} />
+        </div>
+        <div
+          css={css({
+            display: "grid",
+            justifyContent: "flex-end",
+            gridTemplateColumns: "minmax(0,1fr) auto auto",
+            gridGap: "1rem",
+            alignItems: "center",
+            padding: "1rem",
+          })}
+        >
+          <div>
+            <Button
+              danger
+              onClick={async () => {
+                setPendingDelete(true);
+                try {
+                  await deleteChannel(channelId);
+                  navigate("/");
+                } finally {
+                  setPendingDelete(false);
+                }
+              }}
+              isLoading={hasPendingDelete}
+              disabled={hasPendingDelete || hasPendingSubmit}
+            >
+              Delete topic
+            </Button>
+          </div>
+          <Button type="button" onClick={dismiss}>
+            Cancel
+          </Button>
           <Button
-            danger
-            onClick={async () => {
-              setPendingDelete(true);
-              try {
-                await deleteChannel(channelId);
-                navigate("/");
-              } finally {
-                setPendingDelete(false);
-              }
-            }}
-            isLoading={hasPendingDelete}
-            disabled={hasPendingDelete || hasPendingSubmit}
+            type="submit"
+            variant="primary"
+            isLoading={hasPendingSubmit}
+            disabled={
+              !hasRequiredInput ||
+              !hasChanges ||
+              hasPendingSubmit ||
+              hasPendingDelete
+            }
           >
-            Delete topic
+            {hasChanges ? "Save changes" : "No changes"}
           </Button>
         </div>
-        <Button type="button" onClick={dismiss}>
-          Cancel
-        </Button>
-        <Button
-          type="submit"
-          variant="primary"
-          isLoading={hasPendingSubmit}
-          disabled={
-            !hasRequiredInput ||
-            !hasChanges ||
-            hasPendingSubmit ||
-            hasPendingDelete
-          }
-        >
-          {hasChanges ? "Save changes" : "No changes"}
-        </Button>
       </footer>
     </form>
   );
@@ -725,5 +688,59 @@ const Layout = ({ channelId, openChannelDialog, children }) => (
     {children}
   </div>
 );
+
+const ChannelScreen = () => {
+  const { channelId } = useParams();
+
+  const [searchParams, setSearchParams] = useSearchParams();
+
+  const isDialogOpen = searchParams.get("proposal-dialog") != null;
+
+  const openDialog = React.useCallback(() => {
+    setSearchParams({ "proposal-dialog": 1 });
+  }, [setSearchParams]);
+
+  const closeDialog = React.useCallback(() => {
+    setSearchParams((params) => {
+      const newParams = new URLSearchParams(params);
+      newParams.delete("proposal-dialog");
+      return newParams;
+    });
+  }, [setSearchParams]);
+
+  useChannelFetchEffects(channelId);
+
+  return (
+    <>
+      <Layout channelId={channelId} openChannelDialog={openDialog}>
+        <ChannelContent channelId={channelId} />
+      </Layout>
+
+      {isDialogOpen && (
+        <Dialog
+          isOpen={isDialogOpen}
+          onRequestClose={closeDialog}
+          width="76rem"
+        >
+          {({ titleProps }) => (
+            <ErrorBoundary
+              fallback={() => {
+                window.location.reload();
+              }}
+            >
+              <React.Suspense fallback={null}>
+                <ChannelDialog
+                  channelId={channelId}
+                  titleProps={titleProps}
+                  dismiss={closeDialog}
+                />
+              </React.Suspense>
+            </ErrorBoundary>
+          )}
+        </Dialog>
+      )}
+    </>
+  );
+};
 
 export default ChannelScreen;
