@@ -9,8 +9,8 @@ import Button from "@shades/ui-web/button";
 import AccountAvatar from "@shades/ui-web/account-avatar";
 import Emoji from "@shades/ui-web/emoji";
 import Input from "@shades/ui-web/input";
-import DialogHeader from "./dialog-header.js";
-import DialogFooter from "./dialog-footer.js";
+import DialogHeader from "@shades/ui-web/dialog-header";
+import DialogFooter from "@shades/ui-web/dialog-footer";
 import QRCode from "./qr-code.js";
 
 const { truncateAddress } = ethereumUtils;

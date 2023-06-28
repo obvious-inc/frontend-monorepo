@@ -37,11 +37,11 @@ import {
 import AccountAvatar from "@shades/ui-web/account-avatar";
 import ChannelAvatar from "@shades/ui-web/channel-avatar";
 import * as Tooltip from "@shades/ui-web/tooltip";
+import FormDialog from "@shades/ui-web/form-dialog";
+import Select from "@shades/ui-web/select";
 import { useDialog } from "../hooks/dialogs";
-import Select from "./select";
 import * as Tabs from "./tabs";
 import RichText from "./rich-text";
-import FormDialog from "./form-dialog";
 
 const { sort } = arrayUtils;
 const {

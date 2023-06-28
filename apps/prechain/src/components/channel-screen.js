@@ -27,6 +27,7 @@ import MessageEditorForm from "@shades/ui-web/message-editor-form";
 import ChannelMessagesScrollView from "@shades/ui-web/channel-messages-scroll-view";
 import Dialog from "@shades/ui-web/dialog";
 import RichTextEditor, {
+  Provider as EditorProvider,
   Toolbar as EditorToolbar,
 } from "@shades/ui-web/rich-text-editor";
 import { useWriteAccess } from "../hooks/write-access-scope.js";
@@ -366,8 +367,6 @@ const AdminChannelDialog = ({ channelId, dismiss }) => {
   const persistedName = channel.name;
   const persistedBody = channel.body;
 
-  const [activeMarks, setActiveMarks] = React.useState([]);
-
   const [name, setName] = React.useState(persistedName);
   const [body, setBody] = React.useState(persistedBody);
 
@@ -379,7 +378,7 @@ const AdminChannelDialog = ({ channelId, dismiss }) => {
   const hasRequiredInput = true;
 
   const hasChanges = React.useMemo(() => {
-    if (persistedName.trim() !== name.trim()) return false;
+    if (persistedName?.trim() !== name?.trim()) return true;
 
     const [persistedBodyString, editedBodyString] = [
       persistedBody,
@@ -402,131 +401,137 @@ const AdminChannelDialog = ({ channelId, dismiss }) => {
   };
 
   return (
-    <form
-      onSubmit={(e) => {
-        e.preventDefault();
-        submit();
-      }}
-      css={css({
-        flex: 1,
-        minHeight: 0,
-        display: "flex",
-        flexDirection: "column",
-      })}
-    >
-      <main
+    <EditorProvider>
+      <form
+        onSubmit={(e) => {
+          e.preventDefault();
+          submit();
+        }}
         css={css({
           flex: 1,
           minHeight: 0,
-          width: "100%",
-          overflow: "auto",
+          display: "flex",
+          flexDirection: "column",
         })}
       >
-        <div
+        <main
           css={css({
-            minHeight: "100%",
-            display: "flex",
-            flexDirection: "column",
-            margin: "0 auto",
-            padding: "1.5rem",
-            "@media (min-width: 600px)": {
-              padding: "3rem",
-            },
+            flex: 1,
+            minHeight: 0,
+            width: "100%",
+            overflow: "auto",
           })}
         >
-          <input
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            autoFocus
-            disabled={hasPendingSubmit}
-            placeholder="Untitled topic"
-            css={(t) =>
-              css({
-                background: "none",
-                fontSize: "2.6rem",
-                width: "100%",
-                outline: "none",
-                fontWeight: t.text.weights.header,
-                border: 0,
-                padding: 0,
-                lineHeight: 1.15,
-                margin: "0 0 3rem",
-                color: t.colors.textNormal,
-                "::placeholder": { color: t.colors.textMuted },
-              })
-            }
-          />
-          <RichTextEditor
-            ref={editorRef}
-            value={body}
-            onChange={(e, editor) => {
-              setBody(e);
-              setActiveMarks(Object.keys(editor.getMarks()));
-            }}
-            placeholder={`Use markdown shortcuts like "# " and "1. " to create headings and lists.`}
-            css={(t) =>
-              css({
-                fontSize: t.text.sizes.base,
-                "[data-slate-placeholder]": {
-                  opacity: "1 !important",
-                  color: t.colors.textMuted,
-                },
-              })
-            }
-          />
-        </div>
-      </main>
-      <footer>
-        <div style={{ padding: "1rem 1rem 0" }}>
-          <EditorToolbar editorRef={editorRef} activeMarks={activeMarks} />
-        </div>
-        <div
-          css={css({
-            display: "grid",
-            justifyContent: "flex-end",
-            gridTemplateColumns: "minmax(0,1fr) auto auto",
-            gridGap: "1rem",
-            alignItems: "center",
-            padding: "1rem",
-          })}
-        >
-          <div>
-            <Button
-              danger
-              onClick={async () => {
-                setPendingDelete(true);
-                try {
-                  await deleteChannel(channelId);
-                  navigate("/");
-                } finally {
-                  setPendingDelete(false);
-                }
+          <div
+            css={css({
+              minHeight: "100%",
+              display: "flex",
+              flexDirection: "column",
+              margin: "0 auto",
+              padding: "1.5rem",
+              "@media (min-width: 600px)": {
+                padding: "3rem",
+              },
+            })}
+          >
+            <input
+              value={name ?? ""}
+              onChange={(e) => setName(e.target.value)}
+              autoFocus
+              disabled={hasPendingSubmit}
+              placeholder="Untitled topic"
+              css={(t) =>
+                css({
+                  background: "none",
+                  fontSize: "2.6rem",
+                  width: "100%",
+                  outline: "none",
+                  fontWeight: t.text.weights.header,
+                  border: 0,
+                  padding: 0,
+                  lineHeight: 1.15,
+                  margin: "0 0 3rem",
+                  color: t.colors.textNormal,
+                  "::placeholder": { color: t.colors.textMuted },
+                })
+              }
+            />
+            <RichTextEditor
+              ref={editorRef}
+              value={body}
+              onChange={(e) => {
+                setBody(e);
               }}
-              isLoading={hasPendingDelete}
-              disabled={hasPendingDelete || hasPendingSubmit}
+              placeholder={`Use markdown shortcuts like "# " and "1. " to create headings and lists.`}
+              css={(t) =>
+                css({
+                  fontSize: t.text.sizes.base,
+                  "[data-slate-placeholder]": {
+                    opacity: "1 !important",
+                    color: t.colors.textMuted,
+                  },
+                })
+              }
+            />
+          </div>
+        </main>
+        <footer>
+          <div style={{ padding: "1rem 1rem 0" }}>
+            <EditorToolbar />
+          </div>
+          <div
+            css={css({
+              display: "grid",
+              justifyContent: "flex-end",
+              gridTemplateColumns: "minmax(0,1fr) auto auto",
+              gridGap: "1rem",
+              alignItems: "center",
+              padding: "1rem",
+            })}
+          >
+            <div>
+              <Button
+                danger
+                onClick={async () => {
+                  if (
+                    !confirm("Are you sure you want to delete this proposal?")
+                  )
+                    return;
+
+                  setPendingDelete(true);
+                  try {
+                    await deleteChannel(channelId);
+                    navigate("/");
+                  } finally {
+                    setPendingDelete(false);
+                  }
+                }}
+                isLoading={hasPendingDelete}
+                disabled={hasPendingDelete || hasPendingSubmit}
+              >
+                Delete proposal
+              </Button>
+            </div>
+            <Button type="button" onClick={dismiss}>
+              Cancel
+            </Button>
+            <Button
+              type="submit"
+              variant="primary"
+              isLoading={hasPendingSubmit}
+              disabled={
+                !hasRequiredInput ||
+                !hasChanges ||
+                hasPendingSubmit ||
+                hasPendingDelete
+              }
             >
-              Delete topic
+              {hasChanges ? "Save changes" : "No changes"}
             </Button>
           </div>
-          <Button type="button" onClick={dismiss}>
-            Cancel
-          </Button>
-          <Button
-            type="submit"
-            variant="primary"
-            isLoading={hasPendingSubmit}
-            disabled={
-              !hasRequiredInput ||
-              !hasChanges ||
-              hasPendingSubmit ||
-              hasPendingDelete
-            }
-          >
-            {hasChanges ? "Save changes" : "No changes"}
-          </Button>
-        </div>
-      </footer>
-    </form>
+        </footer>
+      </form>
+    </EditorProvider>
   );
 };
 
@@ -725,7 +730,7 @@ const ChannelScreen = () => {
           {({ titleProps }) => (
             <ErrorBoundary
               fallback={() => {
-                window.location.reload();
+                // window.location.reload();
               }}
             >
               <React.Suspense fallback={null}>

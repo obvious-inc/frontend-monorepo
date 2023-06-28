@@ -6,8 +6,8 @@ import {
   useAuth,
   useAccountDisplayName,
 } from "@shades/common/app";
-import FormDialog from "./form-dialog.js";
-import DialogHeader from "./dialog-header.js";
+import FormDialog from "@shades/ui-web/form-dialog";
+import DialogHeader from "@shades/ui-web/dialog-header";
 
 const LazyLoginScreen = React.lazy(() => import("./login-screen.js"));
 

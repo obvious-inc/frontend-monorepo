@@ -1,7 +1,7 @@
 import React from "react";
 import { css } from "@emotion/react";
-import Input from "@shades/ui-web/input";
-import RichTextEditor from "@shades/ui-web/rich-text-editor";
+import Input from "./input.js";
+import RichTextEditor from "./rich-text-editor.js";
 import DialogHeader from "./dialog-header.js";
 import DialogFooter from "./dialog-footer.js";
 import Select from "./select.js";
@@ -31,6 +31,7 @@ const FormDialog = ({
   });
 
   const handleSubmit = async (e) => {
+    e.stopPropagation();
     e.preventDefault();
 
     if (submit == null) return;

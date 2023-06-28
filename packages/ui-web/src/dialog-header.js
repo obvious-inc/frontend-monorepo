@@ -1,6 +1,6 @@
 import { css } from "@emotion/react";
-import { Cross as CrossIcon } from "@shades/ui-web/icons";
-import Button from "@shades/ui-web/button";
+import { Cross as CrossIcon } from "./icons.js";
+import Button from "./button.js";
 
 const DialogHeader = ({ title, subtitle, titleProps, dismiss }) => (
   <header

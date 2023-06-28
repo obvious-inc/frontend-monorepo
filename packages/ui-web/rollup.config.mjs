@@ -17,11 +17,12 @@ const plugins = [
   }),
 ];
 
-const createConfig = ({ file, dependencies = [] }) => ({
+const createConfig = ({ file, dynamicImports, dependencies = [] }) => ({
   input: `src/${file}`,
   output: {
-    file: `dist/${file}`,
-    format: "esm",
+    file: dynamicImports ? undefined : `dist/${file}`,
+    dir: dynamicImports ? `dist/${file.split(".js")[0]}` : undefined,
+    format: "es",
   },
   external: dependencies,
   plugins,
@@ -41,6 +42,32 @@ const entrypoints = [
     dependencies: ["react", "react-aria", ...emotionDeps],
   },
   {
+    file: "dialog-header.js",
+    dependencies: ["react", ...emotionDeps, "react-aria"],
+  },
+  {
+    file: "dialog-footer.js",
+    dependencies: ["react", ...emotionDeps, "react-aria"],
+  },
+  {
+    file: "form-dialog.js",
+    dynamicImports: true,
+    dependencies: [
+      "react",
+      ...emotionDeps,
+      "@shades/common/app",
+      "@shades/common/utils",
+      "@shades/common/react",
+      "slate",
+      "slate-history",
+      "slate-react",
+      "is-hotkey",
+      "react-aria",
+      "react-stately",
+      "@react-stately/overlays",
+    ],
+  },
+  {
     file: "spinner.js",
     dependencies: ["react", ...emotionDeps],
   },
@@ -53,6 +80,17 @@ const entrypoints = [
   {
     file: "input.js",
     dependencies: ["react", "@shades/common/react", ...emotionDeps],
+  },
+  {
+    file: "select.js",
+    dependencies: [
+      "react",
+      "@shades/common/react",
+      ...emotionDeps,
+      "react-stately",
+      "react-aria",
+      "@react-stately/overlays",
+    ],
   },
   {
     file: "popover.js",
@@ -86,19 +124,25 @@ const entrypoints = [
   { file: "rich-text.js", dependencies: ["react", ...emotionDeps] },
   {
     file: "rich-text-editor.js",
+    dynamicImports: true,
     dependencies: [
       "@shades/common/utils",
       "@shades/common/app",
+      "@shades/common/react",
       "react",
       "slate",
       "slate-react",
       "slate-history",
       "is-hotkey",
+      "react-aria",
+      "react-stately",
+      "@react-stately/overlays",
       ...emotionDeps,
     ],
   },
   {
     file: "message-editor-form.js",
+    dynamicImports: true,
     dependencies: [
       "@shades/common/utils",
       "@shades/common/react",
@@ -110,6 +154,9 @@ const entrypoints = [
       "slate-react",
       "slate-history",
       "is-hotkey",
+      "react-aria",
+      "react-stately",
+      "@react-stately/overlays",
       ...emotionDeps,
     ],
   },

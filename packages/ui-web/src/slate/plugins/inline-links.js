@@ -1,50 +1,101 @@
 import { url as urlUtils } from "@shades/common/utils";
-import { Editor, Transforms, Point, Text } from "slate";
+import { Editor, Transforms, Point, Text, Node } from "slate";
 import { getWords } from "../utils.js";
 
 const wrapLink = (editor, url, { at } = {}) => {
   const parsedUrl = new URL(url);
-  const link = { type: "link", url: parsedUrl.href, children: [] };
-  Transforms.wrapNodes(editor, link, { at, split: true });
+  const link = {
+    type: "link",
+    url: parsedUrl.href,
+    label: parsedUrl.href,
+    children: [{ text: parsedUrl.href }],
+  };
+  Transforms.insertNodes(editor, link, { at, split: true });
+};
+
+const createUrl = (url) => {
+  const urlWithProtocol = url.match(/^https?:\/\/*/) ? url : "http://" + url;
+  return new URL(urlWithProtocol).href;
 };
 
 const createMiddleware = ({ isUrl }) => {
+  const isUrlWithOptionalProtocol = (url) => {
+    const urlWithProtocol = url.match(/^https?:\/\/*/) ? url : "http://" + url;
+    return isUrl(urlWithProtocol);
+  };
+
   return (editor) => {
     const { isInline, insertText, normalizeNode } = editor;
 
-    const normalizeLinkChildren = () => {
-      // TODO
-    };
-
     const normalizeLinkNode = ([node, path]) => {
-      const linkStringContent = Editor.string(
-        editor,
-        Editor.range(editor, ...Editor.edges(editor, path))
-      );
+      for (const [childNode, childPath] of Node.children(editor, path)) {
+        // Element children aren’t allowed
+        if (childNode.children != null) {
+          Transforms.unwrapNodes(editor, { at: childPath });
+          return;
+        }
 
-      if (!isUrl(linkStringContent)) {
-        Transforms.unwrapNodes(editor, {
-          at: path,
-          match: (n) => n.type === "link",
-          split: true,
-        });
+        // We only allow a single child
+        const childLeafIndex = childPath.slice(-1)[0];
+        if (childLeafIndex !== 0) {
+          Transforms.mergeNodes(editor, { at: childPath });
+          return;
+        }
+      }
+
+      // Unwrap empty links
+      if (node.children[0].text === "") {
+        Transforms.unwrapNodes(editor, { at: path });
         return;
       }
 
-      const url = new URL(linkStringContent);
-
-      if (url.href !== node.url) {
-        Transforms.setNodes(editor, { url: url.href }, { at: path });
+      // Make sure `label` always mirror the visible link content
+      if (node.children[0].text !== node.label) {
+        editor.setNodes({ label: node.children[0].text }, { at: path });
         return;
       }
-
-      normalizeLinkChildren([node, path]);
 
       normalizeNode([node, path]);
       return;
     };
 
     editor.isInline = (element) => element.type === "link" || isInline(element);
+
+    editor.insertLink = (
+      { label: maybeLabel, url },
+      { at = editor.selection } = {}
+    ) => {
+      const linkMatch = editor.above({ at, match: (n) => n.type === "link" });
+
+      const hasLabel = maybeLabel != null && maybeLabel.trim() !== "";
+      const label = hasLabel ? maybeLabel : url;
+
+      if (linkMatch == null) {
+        editor.insertNodes(
+          { type: "link", url, label, children: [{ text: label }] },
+          { at }
+        );
+        setTimeout(() => {
+          const after = editor.after(at);
+          editor.select(after);
+          console.log(after, editor);
+        }, 100);
+        return;
+      }
+
+      const linkNodePath = linkMatch[1];
+      const linkNodeFirstChildPath = [...linkNodePath, 0];
+
+      // Pretty sure I’m doing something wrong here
+      editor.withoutNormalizing(() => {
+        editor.setNodes({ url, label }, { at: linkNodePath });
+        editor.removeNodes({ at: linkNodeFirstChildPath });
+        editor.insertNodes(
+          { children: [{ text: label }] },
+          { at: linkNodeFirstChildPath }
+        );
+      });
+    };
 
     editor.normalizeNode = ([node, path]) => {
       if (node.type === "link") {
@@ -87,22 +138,43 @@ const createMiddleware = ({ isUrl }) => {
         return;
       }
 
-      const linkEndPoint = Editor.end(editor, match[1]);
+      const [linkNode, linkNodePath] = match;
+
+      const linkEndPoint = Editor.end(editor, linkNodePath);
 
       // Move cursor out of the node when pressing "space" at the end of a link
-      if (text === " " && Point.equals(selection.anchor, linkEndPoint))
+      if (text === " " && Point.equals(selection.anchor, linkEndPoint)) {
         Transforms.move(editor, { distance: 1, unit: "offset" });
+        insertText(text);
+        return;
+      }
 
-      insertText(text);
+      const linkLabel = linkNode.children[0].text + text;
+
+      editor.withoutNormalizing(() => {
+        editor.setNodes(
+          {
+            // Force update the url if the new label is a valid URL
+            url: isUrlWithOptionalProtocol(linkLabel)
+              ? createUrl(linkLabel)
+              : linkNode.url,
+            label: linkLabel,
+          },
+          { at: linkNodePath }
+        );
+        insertText(text);
+      });
     };
 
     return editor;
   };
+
+  // TODO deleteBackward, deleteForward, insertBreak, insertSoftBreak
 };
 
-const LinkComponent = ({ attributes, children, element }) => {
+const LinkComponent = ({ attributes, children, element, ...props }) => {
   return (
-    <a {...attributes} href={element.url} className="link">
+    <a {...attributes} href={element.url} className="link" {...props}>
       {children}
     </a>
   );
