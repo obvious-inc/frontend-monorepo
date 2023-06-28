@@ -109,11 +109,7 @@ const useLinkDialog = ({ editorRef }) => {
 
   return React.useMemo(
     () => [
-      {
-        isOpen: state != null,
-        label: state?.label,
-        url: state?.url,
-      },
+      { ...state, isOpen: state != null },
       { open, close },
     ],
     [state, open, close]
@@ -203,9 +199,14 @@ const withEditorCommands = (editor) => {
   const { string } = editor;
 
   editor.focus = (location) => {
-    // Focus doesn’t always work without this for some reason
-    Transforms.select(editor, location ?? Editor.end(editor, []));
-    ReactEditor.focus(editor);
+    return new Promise((resolve) => {
+      // Whatever works
+      window.requestIdleCallback(() => {
+        Transforms.select(editor, location ?? Editor.end(editor, []));
+        ReactEditor.focus(editor);
+        resolve();
+      });
+    });
   };
 
   editor.clear = () => {
@@ -409,15 +410,25 @@ const RichTextEditor = React.forwardRef(
             }}
           >
             <React.Suspense fallback={null}>
-              <Dialog isOpen onRequestClose={linkDialogActions.close}>
+              <Dialog
+                isOpen
+                onRequestClose={() => {
+                  linkDialogActions.close();
+                  editor.focus(linkDialogState.selection);
+                }}
+              >
                 {({ titleProps }) => (
                   <ImageDialog
                     titleProps={titleProps}
-                    dismiss={linkDialogActions.close}
+                    dismiss={() => {
+                      linkDialogActions.close();
+                      editor.focus(linkDialogState.selection);
+                    }}
                     initialLabel={linkDialogState.label}
                     initialUrl={linkDialogState.url}
-                    onSubmit={({ label, url }) => {
+                    onSubmit={async ({ label, url }) => {
                       linkDialogActions.close();
+                      await editor.focus(linkDialogState.selection);
                       editor.insertLink(
                         { label, url },
                         { at: linkDialogState.selection }
@@ -636,7 +647,7 @@ export const Toolbar = ({ disabled: disabled_, ...props }) => {
               </svg>
             ),
             props: {
-              disabled,
+              disabled: true,
               onMouseDown: (e) => {
                 e.preventDefault();
                 // onSelect("image");
