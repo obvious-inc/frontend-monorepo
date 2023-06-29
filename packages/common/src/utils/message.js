@@ -42,7 +42,7 @@ const isNodeEmpty = (node, options = {}) => {
 };
 
 export const isEmpty = (nodes, options) =>
-  nodes.every((n) => isEmpty(n, options));
+  nodes.every((n) => isNodeEmpty(n, options));
 
 const isNodeEqual = (n1, n2) => {
   if (n1.type !== n2.type) return false;
