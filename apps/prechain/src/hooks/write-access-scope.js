@@ -2,7 +2,7 @@ import React from "react";
 import { useAccount } from "wagmi";
 import { useFetch } from "@shades/common/react";
 import { array as arrayUtils } from "@shades/common/utils";
-import { useAuth, useMe, useChannel } from "@shades/common/app";
+import { useAuth, useMe, useChannel, useUsers } from "@shades/common/app";
 
 const SUBGRAPH_GRAPHQL_QUERY = `{
   nouns {
@@ -80,14 +80,27 @@ export const Provider = ({ children }) => {
 
 export const useWriteAccess = (channelId) => {
   const nounerAccessState = React.useContext(Context);
+  const { address: connectedAccountAddress } = useAccount();
 
   const me = useMe();
   const channel = useChannel(channelId);
+  const memberUsers = useUsers(channel?.memberUserIds);
 
   const isMember =
     me != null && channel != null && channel.memberUserIds.includes(me.id);
 
   if (isMember) return "authorized";
+
+  const isUnverifiedMember =
+    me == null &&
+    connectedAccountAddress != null &&
+    memberUsers.some(
+      (u) =>
+        u.walletAddress != null &&
+        u.walletAddress.toLowerCase() === connectedAccountAddress.toLowerCase()
+    );
+
+  if (isUnverifiedMember) return "authorized-unverified";
 
   return nounerAccessState;
 };

@@ -1,5 +1,10 @@
 import React from "react";
-import { useParams, useNavigate, useSearchParams } from "react-router-dom";
+import {
+  useParams,
+  useNavigate,
+  useSearchParams,
+  Link as RouterLink,
+} from "react-router-dom";
 import { css } from "@emotion/react";
 import { useAccount } from "wagmi";
 import {
@@ -22,7 +27,10 @@ import {
 } from "@shades/common/react";
 import { message as messageUtils } from "@shades/common/utils";
 import Button from "@shades/ui-web/button";
-import { CrossCircle as CrossCircleIcon } from "@shades/ui-web/icons";
+import {
+  CrossCircle as CrossCircleIcon,
+  ArrowDown as ArrowDownIcon,
+} from "@shades/ui-web/icons";
 import MessageEditorForm from "@shades/ui-web/message-editor-form";
 import ChannelMessagesScrollView from "@shades/ui-web/channel-messages-scroll-view";
 import Dialog from "@shades/ui-web/dialog";
@@ -30,6 +38,7 @@ import RichTextEditor, {
   Provider as EditorProvider,
   Toolbar as EditorToolbar,
 } from "@shades/ui-web/rich-text-editor";
+import { useState as useSidebarState } from "@shades/ui-web/sidebar-layout";
 import { useWriteAccess } from "../hooks/write-access-scope.js";
 import AccountPreviewPopoverTrigger from "./account-preview-popover-trigger.js";
 import ChannelMessage from "./channel-message.js";
@@ -533,6 +542,7 @@ const AdminChannelDialog = ({ channelId, dismiss }) => {
 
 const NavBar = ({ channelId, openChannelDialog }) => {
   const channel = useChannel(channelId);
+  const sidebarState = useSidebarState();
   return (
     <div
       css={css({
@@ -542,6 +552,24 @@ const NavBar = ({ channelId, openChannelDialog }) => {
         whiteSpace: "nowrap",
       })}
     >
+      <div style={{ padding: "0 0.8rem" }}>
+        {sidebarState.isCollapsed && (
+          <Button
+            variant="transparent"
+            component={RouterLink}
+            to="/"
+            css={css({ padding: 0, width: "2.8rem", height: "2.8rem" })}
+          >
+            <ArrowDownIcon
+              style={{
+                width: "1.4rem",
+                transform: "rotate(90deg)",
+                margin: "auto",
+              }}
+            />
+          </Button>
+        )}
+      </div>
       <button
         onClick={openChannelDialog}
         css={(t) =>
@@ -552,7 +580,7 @@ const NavBar = ({ channelId, openChannelDialog }) => {
             display: "flex",
             justifyContent: "flex-start",
             alignItems: "center",
-            padding: "1rem 1.5rem",
+            padding: "1rem 0",
             height: "4.4rem",
             fontSize: t.fontSizes.header,
             fontWeight: t.text.weights.header,
@@ -568,12 +596,11 @@ const NavBar = ({ channelId, openChannelDialog }) => {
               ".dialog-icon": {
                 display: "block",
                 opacity: 0,
-                transform: "translateX(-0.25rem)",
-                transition: "0.15s all ease-out",
+                transition: "0.15s opacity ease-out",
               },
               ":hover": {
                 color: t.colors.textDimmed,
-                ".dialog-icon": { opacity: 1, transform: "translateX(0)" },
+                ".dialog-icon": { opacity: 1 },
               },
             },
           })

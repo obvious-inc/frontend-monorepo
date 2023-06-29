@@ -405,7 +405,7 @@ const RootLayout = () => {
             compact={false}
             icon={<MagnificationGlassIcon style={{ width: "1.4rem" }} />}
             component={NavLink}
-            to="/proposals"
+            to="/"
             title="Browse"
           />
 
@@ -1220,10 +1220,10 @@ const App = () => {
                                 </RequireAuth>
                               }
                             />
-                            <Route
-                              path="/proposals"
-                              element={<ChannelsScreen />}
-                            />
+                            {/* <Route */}
+                            {/*   path="/proposals" */}
+                            {/*   element={<ChannelsScreen />} */}
+                            {/* /> */}
                             <Route
                               path="/:channelId"
                               element={<ChannelScreen />}
