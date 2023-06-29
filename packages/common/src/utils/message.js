@@ -32,6 +32,68 @@ export const filter = (predicate, nodes) => {
   return filteredNodes;
 };
 
+const isNodeEmpty = (node, options = {}) => {
+  const { trim = false } = options;
+
+  if (node.text != null)
+    return trim ? node.text.trim() === "" : node.text === "";
+
+  return node.children.every((n) => isNodeEmpty(n, options));
+};
+
+export const isEmpty = (nodes, options) =>
+  nodes.every((n) => isEmpty(n, options));
+
+const isNodeEqual = (n1, n2) => {
+  if (n1.type !== n2.type) return false;
+
+  // Text nodes
+  if (n1.text != null)
+    return ["text", "bold", "italic", "strikethrough"].every(
+      (p) => n1[p] === n2[p]
+    );
+
+  // The rest is for element nodes
+
+  const baseEqual = () => {
+    const [cs1, cs2] = [n1, n2].map((n) =>
+      n.children.filter((n) => !isNodeEmpty(n))
+    );
+
+    if (cs1.length !== cs2.length) return false;
+
+    return cs1.every((node1, i) => {
+      const node2 = cs2[i];
+      return isNodeEqual(node1, node2);
+    });
+  };
+
+  const propertiesEqual = (ps) => ps.every((p) => n1[p] === n2[p]);
+
+  switch (n1.type) {
+    case "link":
+      return propertiesEqual(["url", "label"]) && baseEqual();
+
+    case "user":
+      return propertiesEqual(["ref"]);
+
+    case "channel-link":
+      return propertiesEqual(["ref"]);
+
+    case "emoji":
+      return propertiesEqual(["emoji"]);
+
+    case "image-attachment":
+      return propertiesEqual(["url"]);
+
+    default:
+      return baseEqual();
+  }
+};
+
+export const isEqual = (ns1, ns2) =>
+  isNodeEqual({ type: "root", children: ns1 }, { type: "root", children: ns2 });
+
 export const getMentions = (nodes) => {
   const mentions = [];
 

@@ -32,19 +32,28 @@ export const mergePlugins = (plugins) => {
   return { middleware, elements, handlers };
 };
 
-export const isNodeEmpty = (el) => {
-  if (el.type === "user") return false;
-  if (el.type === "channel-link") return false;
-  if (el.type === "attachments") return false;
-  if (el.type === "link") return false;
-  if (el.type === "emoji") return false;
-  if (el.children != null) return el.children.every(isNodeEmpty);
-  return el.text.trim() === "";
+export const isNodeEmpty = (el, options = {}) => {
+  const { trim = true } = options;
+
+  switch (el.type) {
+    case "user":
+    case "channel-link":
+    case "attachments":
+    case "image-attachment":
+    case "link":
+    case "emoji":
+      return false;
+
+    default: {
+      if (el.text != null) return trim ? el.text.trim() === "" : el.text === "";
+      return el.children.every((n) => isNodeEmpty(n, options));
+    }
+  }
 };
 
 export const toMessageBlocks = (nodes) =>
   nodes.map((n) => {
-    if (n.type === "link") return { type: "link", url: n.url };
+    if (n.type === "link") return { type: "link", url: n.url, label: n.label };
     if (n.type === "emoji") return { type: "emoji", emoji: n.emoji };
     if (n.type === "user") return { type: "user", ref: n.ref };
     if (n.type === "channel-link") return { type: "channel-link", ref: n.ref };
@@ -58,7 +67,7 @@ export const fromMessageBlocks = (blocks) =>
       return [
         ...acc,
         { text: "" },
-        { ...n, children: [{ text: n.url }] },
+        { ...n, children: [{ text: n.label ?? n.url }] },
         { text: "" },
       ];
     if (n.type === "emoji")

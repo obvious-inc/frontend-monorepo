@@ -51,9 +51,15 @@ const FormDialog = ({
     firstInputRef.current.focus();
   }, []);
 
-  const hasChanges = controls.some(
-    (c) => c.initialValue === undefined || state[c.key] !== c.initialValue
-  );
+  const hasChanges = controls.some((c) => {
+    switch (c.type) {
+      case "rich-text":
+        return message;
+
+      default:
+        return c.initialValue === undefined || state[c.key] !== c.initialValue;
+    }
+  });
 
   return (
     <div

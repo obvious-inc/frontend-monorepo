@@ -6,7 +6,7 @@ import Button from "@shades/ui-web/button";
 import RichTextEditor, {
   Provider as EditorProvider,
   Toolbar as EditorToolbar,
-  isNodeEmpty as isSlateNodeEmpty,
+  isNodeEmpty as isRichTextEditorNodeEmpty,
 } from "@shades/ui-web/rich-text-editor";
 import {
   useCollection as useDrafts,
@@ -33,8 +33,7 @@ const CreateChannelScreen = () => {
 
   const isNameEmpty = draft == null || draft.name.trim() === "";
   const isBodyEmpty =
-    draft == null ||
-    (draft.body.length <= 1 && draft.body.every(isSlateNodeEmpty));
+    draft == null || draft.body.every(isRichTextEditorNodeEmpty);
 
   const hasRequiredInput = !isNameEmpty && !isBodyEmpty;
 
@@ -60,7 +59,7 @@ const CreateChannelScreen = () => {
       const isEmpty =
         draft.name.trim() === "" &&
         draft.body.length === 1 &&
-        isSlateNodeEmpty(draft.body[0]);
+        isRichTextEditorNodeEmpty(draft.body[0]);
 
       return isEmpty;
     })

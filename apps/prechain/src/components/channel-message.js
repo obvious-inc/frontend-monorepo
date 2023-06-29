@@ -30,7 +30,6 @@ import * as DropdownMenu from "@shades/ui-web/dropdown-menu";
 import * as Toolbar from "@shades/ui-web/toolbar";
 import * as Tooltip from "@shades/ui-web/tooltip";
 import MessageEditorForm from "@shades/ui-web/message-editor-form";
-import { isNodeEmpty } from "@shades/ui-web/rich-text-editor";
 import AccountPreviewPopoverTrigger from "./account-preview-popover-trigger.js";
 import RichText from "./rich-text.js";
 import FormattedDate from "./formatted-date.js";
@@ -905,7 +904,7 @@ const EditMessageInput = React.forwardRef(
         }}
         uploadImage={uploadImage}
         submit={async (blocks) => {
-          const isEmpty = blocks.every(isNodeEmpty);
+          const isEmpty = messageUtils.isEmpty(blocks, { trim: true });
 
           if (isEmpty) {
             await requestRemove();

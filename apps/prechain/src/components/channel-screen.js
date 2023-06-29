@@ -381,13 +381,7 @@ const AdminChannelDialog = ({ channelId, dismiss }) => {
 
   const hasChanges = React.useMemo(() => {
     if (persistedName?.trim() !== name?.trim()) return true;
-
-    const [persistedBodyString, editedBodyString] = [
-      persistedBody,
-      deferredBody,
-    ].map(messageUtils.stringifyBlocks);
-
-    return persistedBodyString !== editedBodyString;
+    return !messageUtils.isEqual(persistedBody, deferredBody);
   }, [name, deferredBody, persistedName, persistedBody]);
 
   const submit = async () => {
