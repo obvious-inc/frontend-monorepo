@@ -10,8 +10,7 @@ import {
 import { infuraProvider } from "wagmi/providers/infura";
 import { publicProvider } from "wagmi/providers/public";
 import { InjectedConnector } from "wagmi/connectors/injected";
-// import { WalletConnectConnector } from "wagmi/connectors/walletConnect";
-import { WalletConnectLegacyConnector } from "wagmi/connectors/walletConnectLegacy";
+import { WalletConnectConnector } from "wagmi/connectors/walletConnect";
 import React from "react";
 import { css } from "@emotion/react";
 import {
@@ -103,10 +102,9 @@ const wagmiConfig = createWagmiConfig({
       chains,
       options: { isIFrame },
     }),
-    new WalletConnectLegacyConnector({
+    new WalletConnectConnector({
       chains,
       options: {
-        qrcode: true,
         projectId: process.env.WALLET_CONNECT_PROJECT_ID,
       },
     }),
