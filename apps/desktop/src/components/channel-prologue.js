@@ -37,7 +37,7 @@ const ChannelPrologue = ({ title, subtitle, body, image, info, ...props }) => {
           {image != null && (
             <div style={{ marginRight: "1.2rem" }}>{image}</div>
           )}
-          <div>
+          <div style={{ flex: 1, minWidth: 0 }}>
             <div
               css={(t) =>
                 css({

@@ -918,29 +918,37 @@ const EditMessageInput = React.forwardRef(
         renderSubmitArea={({ isPending }) => (
           <div
             css={css({
-              display: "grid",
-              gridTemplateColumns: "repeat(2, minmax(max-content, 1fr))",
+              flex: "1 1 auto",
+              display: "flex",
               justifyContent: "flex-end",
-              gridGap: "0.8rem",
             })}
           >
-            <Button
-              type="button"
-              size="small"
-              onClick={cancel}
-              disabled={isPending}
+            <div
+              css={css({
+                display: "grid",
+                gridTemplateColumns: "repeat(2, minmax(max-content, 1fr))",
+                justifyContent: "flex-end",
+                gridGap: "0.8rem",
+              })}
             >
-              Cancel
-            </Button>
-            <Button
-              variant="primary"
-              size="small"
-              type="submit"
-              isLoading={isPending}
-              disabled={isPending}
-            >
-              Save
-            </Button>
+              <Button
+                type="button"
+                size="small"
+                onClick={cancel}
+                disabled={isPending}
+              >
+                Cancel
+              </Button>
+              <Button
+                variant="primary"
+                size="small"
+                type="submit"
+                isLoading={isPending}
+                disabled={isPending}
+              >
+                Save
+              </Button>
+            </div>
           </div>
         )}
         {...props}

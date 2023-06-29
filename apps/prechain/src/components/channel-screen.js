@@ -186,9 +186,10 @@ const ChannelContent = ({ channelId }) => {
               () => (
                 <div
                   style={{
-                    alignSelf: "flex-end",
+                    flex: "1 1 auto",
                     display: "flex",
-                    height: 0,
+                    alignItems: "flex-end",
+                    justifyContent: "flex-end",
                   }}
                 >
                   <div
@@ -208,6 +209,7 @@ const ChannelContent = ({ channelId }) => {
                           css({
                             fontSize: t.text.sizes.small,
                             color: t.colors.textDimmed,
+                            lineHeight: 1.2,
                           })
                         }
                       >
@@ -220,9 +222,7 @@ const ChannelContent = ({ channelId }) => {
                             css({
                               fontSize: t.text.sizes.small,
                               color: t.colors.textDimmed,
-                              "@media(max-width: 600px)": {
-                                display: "none",
-                              },
+                              lineHeight: 1.2,
                             })
                           }
                         >
@@ -238,6 +238,7 @@ const ChannelContent = ({ channelId }) => {
                             onClick={() => {
                               connectWallet();
                             }}
+                            style={{ overflow: "visible" }}
                           >
                             Connect wallet
                           </Button>
@@ -255,6 +256,7 @@ const ChannelContent = ({ channelId }) => {
                                 inputRef.current.focus();
                               });
                             }}
+                            style={{ overflow: "visible" }}
                           >
                             Verify account
                           </Button>
