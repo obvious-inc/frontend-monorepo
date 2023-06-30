@@ -145,6 +145,8 @@ const CreateChannelScreen = () => {
                 setBody(e);
               }}
               placeholder={`Use markdown shortcuts like "# " and "1. " to create headings and lists.`}
+              imagesMaxWidth={null}
+              imagesMaxHeight={window.innerHeight / 2}
               css={(t) =>
                 css({
                   fontSize: t.text.sizes.large,

@@ -316,6 +316,7 @@ const MessageBody = React.memo(({ messageId }) => {
 
   const onClickInteractiveElement = React.useCallback((el) => {
     switch (el.type) {
+      case "image":
       case "image-attachment":
         window.open(el.url, "_blank");
         break;

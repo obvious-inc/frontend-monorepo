@@ -177,9 +177,19 @@ const createMiddleware = ({ isUrl }) => {
   // TODO deleteBackward, deleteForward, insertBreak, insertSoftBreak
 };
 
-const LinkComponent = ({ attributes, children, element, ...props }) => {
+const LinkComponent = ({ attributes, children, element, openEditDialog }) => {
   return (
-    <a {...attributes} href={element.url} className="link" {...props}>
+    <a
+      {...attributes}
+      href={element.url}
+      className="link"
+      onClick={(e) => {
+        if (openEditDialog != null) {
+          e.preventDefault();
+          openEditDialog();
+        }
+      }}
+    >
       {children}
     </a>
   );

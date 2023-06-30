@@ -363,7 +363,17 @@ const ChannelDialog = ({ channelId, titleProps, dismiss }) => {
       >
         {channel.name}
       </h1>
-      <RichText blocks={channel.body ?? channel.descriptionBlocks} />
+      <RichText
+        blocks={channel.body ?? channel.descriptionBlocks}
+        onClickInteractiveElement={(el) => {
+          switch (el.type) {
+            case "image":
+              window.open(el.url, "_blank");
+              break;
+            default: // Ignore
+          }
+        }}
+      />
     </div>
   );
 };
@@ -468,6 +478,8 @@ const AdminChannelDialog = ({ channelId, dismiss }) => {
                 setBody(e);
               }}
               placeholder={`Use markdown shortcuts like "# " and "1. " to create headings and lists.`}
+              imagesMaxWidth={null}
+              imagesMaxHeight={window.innerHeight * 0.5}
               css={(t) =>
                 css({
                   fontSize: t.text.sizes.base,
@@ -688,9 +700,19 @@ const ChannelHeader = ({ channelId }) => {
         </div>
         <RichText
           blocks={channel.body}
+          imagesMaxWidth={null}
+          imagesMaxHeight={window.innerHeight / 2}
           css={(t) =>
             css({ color: t.colors.textNormal, fontSize: t.text.sizes.large })
           }
+          onClickInteractiveElement={(el) => {
+            switch (el.type) {
+              case "image":
+                window.open(el.url, "_blank");
+                break;
+              default: // Ignore
+            }
+          }}
         />
       </div>
     </div>

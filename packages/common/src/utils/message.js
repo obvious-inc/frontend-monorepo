@@ -38,7 +38,15 @@ const isNodeEmpty = (node, options = {}) => {
   if (node.text != null)
     return trim ? node.text.trim() === "" : node.text === "";
 
-  return node.children.every((n) => isNodeEmpty(n, options));
+  switch (node.type) {
+    case "user":
+    case "channel-link":
+    case "image":
+      return false;
+
+    default:
+      return node.children.every((n) => isNodeEmpty(n, options));
+  }
 };
 
 export const isEmpty = (nodes, options) =>
@@ -83,6 +91,7 @@ const isNodeEqual = (n1, n2) => {
     case "emoji":
       return propertiesEqual(["emoji"]);
 
+    case "image":
     case "image-attachment":
       return propertiesEqual(["url"]);
 

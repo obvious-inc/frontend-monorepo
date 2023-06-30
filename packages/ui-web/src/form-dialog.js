@@ -1,5 +1,6 @@
 import React from "react";
 import { css } from "@emotion/react";
+import { message as messageUtils } from "@shades/common/utils";
 import Input from "./input.js";
 import RichTextEditor from "./rich-text-editor.js";
 import DialogHeader from "./dialog-header.js";
@@ -52,12 +53,17 @@ const FormDialog = ({
   }, []);
 
   const hasChanges = controls.some((c) => {
+    const value = state[c.key];
+
     switch (c.type) {
       case "rich-text":
-        return message;
+        return (
+          c.initialValue === undefined ||
+          messageUtils.isEqual(value, c.initialValue)
+        );
 
       default:
-        return c.initialValue === undefined || state[c.key] !== c.initialValue;
+        return c.initialValue === undefined || value !== c.initialValue;
     }
   });
 

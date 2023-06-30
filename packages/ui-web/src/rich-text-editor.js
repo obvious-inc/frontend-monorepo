@@ -12,6 +12,7 @@ import isHotkey from "is-hotkey";
 import {
   function as functionUtils,
   url as urlUtils,
+  getImageDimensionsFromUrl,
 } from "@shades/common/utils";
 import { ErrorBoundary } from "@shades/common/react";
 import { createCss as createRichTextCss } from "./rich-text.js";
@@ -21,6 +22,7 @@ import createQuotesPlugin from "./slate/plugins/quotes.js";
 import createCalloutsPlugin from "./slate/plugins/callouts.js";
 import createEmojiPlugin from "./slate/plugins/emojis.js";
 import createInlineLinksPlugin from "./slate/plugins/inline-links.js";
+import createImagePlugin from "./slate/plugins/images.js";
 import createHeadingsPlugin from "./slate/plugins/headings.js";
 import createUserMentionsPlugin from "./slate/plugins/user-mentions.js";
 import createChannelLinksPlugin from "./slate/plugins/channel-link.js";
@@ -48,6 +50,7 @@ const Context = React.createContext();
 export const Provider = ({ children }) => {
   const editorRef = React.useRef();
   const [linkDialogState, linkDialogActions] = useLinkDialog({ editorRef });
+  const [imageDialogState, imageDialogActions] = useImageDialog({ editorRef });
   const [selection, setSelection] = React.useState(null);
   const [activeMarks, setActiveMarks] = React.useState([]);
 
@@ -56,6 +59,8 @@ export const Provider = ({ children }) => {
       editorRef,
       linkDialogState,
       linkDialogActions,
+      imageDialogState,
+      imageDialogActions,
       selection,
       setSelection,
       activeMarks,
@@ -64,6 +69,8 @@ export const Provider = ({ children }) => {
     [
       linkDialogState,
       linkDialogActions,
+      imageDialogState,
+      imageDialogActions,
       editorRef,
       selection,
       setSelection,
@@ -83,9 +90,10 @@ const useLinkDialog = ({ editorRef }) => {
     const linkMatch = editor.above({ match: (n) => n.type === "link" });
 
     if (linkMatch == null) {
-      const selectedText = editor.isSelectionCollapsed()
-        ? null
-        : editor.string(editor.selection).trim();
+      const selectedText =
+        editor.selection == null || Range.isCollapsed(editor.selection)
+          ? null
+          : editor.string(editor.selection).trim();
       setState({
         label: selectedText,
         url: null,
@@ -102,6 +110,36 @@ const useLinkDialog = ({ editorRef }) => {
       selection: editor.selection,
     });
   }, [editorRef]);
+
+  const close = React.useCallback(() => {
+    setState(null);
+  }, []);
+
+  return React.useMemo(
+    () => [
+      { ...state, isOpen: state != null },
+      { open, close },
+    ],
+    [state, open, close]
+  );
+};
+
+const useImageDialog = ({ editorRef }) => {
+  const [state, setState] = React.useState(null);
+
+  const open = React.useCallback(
+    (at_) => {
+      const editor = editorRef.current;
+      const at = at_ ?? editor.selection;
+
+      if (at == null) throw new Error();
+
+      const [node] = editor.node(at) ?? [];
+
+      setState({ url: node?.url, at });
+    },
+    [editorRef]
+  );
 
   const close = React.useCallback(() => {
     setState(null);
@@ -217,9 +255,6 @@ const withEditorCommands = (editor) => {
 
   editor.string = (location = [], options) => string(location, options);
 
-  editor.isSelectionCollapsed = () =>
-    editor.selection != null && Range.isCollapsed(editor.selection);
-
   return editor;
 };
 
@@ -233,6 +268,8 @@ const RichTextEditor = React.forwardRef(
       disabled = false,
       inline = false,
       triggers = [],
+      imagesMaxWidth,
+      imagesMaxHeight,
       ...props
     },
     ref
@@ -241,6 +278,8 @@ const RichTextEditor = React.forwardRef(
       editorRef: internalEditorRef,
       linkDialogState,
       linkDialogActions,
+      imageDialogState,
+      imageDialogActions,
       setSelection,
       setActiveMarks,
     } = React.useContext(Context);
@@ -260,6 +299,7 @@ const RichTextEditor = React.forwardRef(
         createQuotesPlugin({ inline }),
         createCalloutsPlugin({ inline }),
         createHeadingsPlugin({ inline }),
+        createImagePlugin(),
         createUserMentionsPlugin(),
         createChannelLinksPlugin(),
         createInlineLinksPlugin(),
@@ -273,29 +313,35 @@ const RichTextEditor = React.forwardRef(
       };
     }, [inline]);
 
-    const renderElement = React.useCallback(
-      (props_) => {
-        const props =
-          props_.element.type === "link"
-            ? {
-                ...props_,
-                onClick: (e) => {
-                  e.preventDefault();
-                  linkDialogActions.open();
-                },
-              }
-            : props_;
+    const renderElement = (props_) => {
+      const props =
+        props_.element.type === "link"
+          ? {
+              ...props_,
+              openEditDialog: () => {
+                linkDialogActions.open();
+              },
+            }
+          : props_.element.type === "image"
+          ? {
+              ...props_,
+              maxWidth: imagesMaxWidth,
+              maxHeight: imagesMaxHeight,
+              openEditDialog: () => {
+                const nodePath = ReactEditor.findPath(editor, props_.element);
+                imageDialogActions.open(nodePath);
+              },
+            }
+          : props_;
 
-        const CustomComponent = customElementsByNodeType[props.element.type];
+      const CustomComponent = customElementsByNodeType[props.element.type];
 
-        return CustomComponent == null ? (
-          <Element {...props} />
-        ) : (
-          <CustomComponent {...props} />
-        );
-      },
-      [linkDialogActions, customElementsByNodeType]
-    );
+      return CustomComponent == null ? (
+        <Element {...props} />
+      ) : (
+        <CustomComponent {...props} />
+      );
+    };
 
     const renderLeaf = React.useCallback((props) => <Leaf {...props} />, []);
 
@@ -418,7 +464,7 @@ const RichTextEditor = React.forwardRef(
                 }}
               >
                 {({ titleProps }) => (
-                  <ImageDialog
+                  <LinkDialog
                     titleProps={titleProps}
                     dismiss={() => {
                       linkDialogActions.close();
@@ -432,6 +478,46 @@ const RichTextEditor = React.forwardRef(
                       editor.insertLink(
                         { label, url },
                         { at: linkDialogState.selection }
+                      );
+                    }}
+                  />
+                )}
+              </Dialog>
+            </React.Suspense>
+          </ErrorBoundary>
+        )}
+
+        {imageDialogState.isOpen && (
+          <ErrorBoundary
+            fallback={() => {
+              window.location.reload();
+            }}
+          >
+            <React.Suspense fallback={null}>
+              <Dialog
+                isOpen
+                onRequestClose={() => {
+                  imageDialogActions.close();
+                  editor.focus(imageDialogState.at);
+                }}
+              >
+                {({ titleProps }) => (
+                  <ImageDialog
+                    titleProps={titleProps}
+                    dismiss={() => {
+                      imageDialogActions.close();
+                      editor.focus(imageDialogState.at);
+                    }}
+                    initialUrl={imageDialogState.url}
+                    onSubmit={async ({ url }) => {
+                      imageDialogActions.close();
+                      const [{ width, height }] = await Promise.all([
+                        getImageDimensionsFromUrl(url),
+                        editor.focus(imageDialogState.at),
+                      ]);
+                      editor.insertImage(
+                        { url, width, height },
+                        { at: imageDialogState.at }
                       );
                     }}
                   />
@@ -493,7 +579,13 @@ export const Toolbar = ({ disabled: disabled_, ...props }) => {
   if (context == null)
     throw new Error("`Toolbar` rendered without a parent `EditorProvider`");
 
-  const { editorRef, selection, activeMarks, linkDialogActions } = context;
+  const {
+    editorRef,
+    selection,
+    activeMarks,
+    linkDialogActions,
+    imageDialogActions,
+  } = context;
 
   const disabled = disabled_ || selection == null;
 
@@ -592,7 +684,6 @@ export const Toolbar = ({ disabled: disabled_, ...props }) => {
               disabled: true,
               onMouseDown: (e) => {
                 e.preventDefault();
-                // openLinkDialog()
               },
             },
           },
@@ -612,7 +703,6 @@ export const Toolbar = ({ disabled: disabled_, ...props }) => {
               disabled: true,
               onMouseDown: (e) => {
                 e.preventDefault();
-                // openLinkDialog()
               },
             },
           },
@@ -647,10 +737,10 @@ export const Toolbar = ({ disabled: disabled_, ...props }) => {
               </svg>
             ),
             props: {
-              disabled: true,
+              disabled,
               onMouseDown: (e) => {
                 e.preventDefault();
-                // onSelect("image");
+                imageDialogActions.open();
               },
             },
           },
@@ -675,7 +765,7 @@ export const Toolbar = ({ disabled: disabled_, ...props }) => {
   );
 };
 
-const ImageDialog = ({
+const LinkDialog = ({
   titleProps,
   dismiss,
   initialLabel,
@@ -702,16 +792,37 @@ const ImageDialog = ({
         type: "text",
         validate: urlUtils.validate,
       },
-    ].map(({ key, type, initialValue, label, onChange, validate }) => ({
+    ].map(({ key, type, initialValue, label, validate }) => ({
       key,
       initialValue,
-      onChange,
       type,
       label,
       required: validate != null,
       validate,
       size: "medium",
     }))}
+    cancelLabel="Close"
+  />
+);
+
+const ImageDialog = ({ titleProps, dismiss, initialUrl, onSubmit }) => (
+  <FormDialog
+    titleProps={titleProps}
+    dismiss={dismiss}
+    title={initialUrl == null ? "Insert image" : "Edit image"}
+    submitLabel={initialUrl == null ? "Insert image" : "Save changes"}
+    submit={onSubmit}
+    controls={[
+      {
+        key: "url",
+        initialValue: initialUrl,
+        label: "URL",
+        type: "text",
+        required: true,
+        validate: urlUtils.validate,
+        size: "medium",
+      },
+    ]}
     cancelLabel="Close"
   />
 );
