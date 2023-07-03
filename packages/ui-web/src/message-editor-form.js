@@ -272,9 +272,15 @@ const MessageEditorForm = React.memo(
         )}
 
         <div
-          style={{ display: "flex", alignItems: "center", marginTop: "1rem" }}
+          style={{
+            display: "flex",
+            alignItems: "center",
+            flexWrap: "wrap",
+            gap: "1rem",
+            marginTop: "1rem",
+          }}
         >
-          <div style={{ flex: 1, minWidth: 0 }}>
+          <div style={{ maxWidth: "100%", overflow: "auto" }}>
             <div
               style={{
                 display: "grid",
@@ -306,13 +312,7 @@ const MessageEditorForm = React.memo(
               >
                 <EmojiFaceIcon style={{ width: "1.7rem", height: "auto" }} />
               </IconButton>
-              <IconButton
-                type="button"
-                dimmed
-                // onClick={() => {}}
-                // disabled={disabled || isPending}
-                disabled
-              >
+              <IconButton type="button" dimmed disabled>
                 <GifIcon style={{ width: "1.6rem", height: "auto" }} />
               </IconButton>
               <div
@@ -347,26 +347,30 @@ const MessageEditorForm = React.memo(
           {typeof renderSubmitArea === "function" ? (
             renderSubmitArea({ isPending })
           ) : (
-            <IconButton
-              disabled={
-                disabled ||
-                submitDisabled ||
-                (!allowEmptySubmit && isEmptyMessage) ||
-                isPending
-              }
-              css={(t) => css({ color: t.colors.primary })}
-              type="submit"
+            <div
+              style={{ flex: 1, display: "flex", justifyContent: "flex-end" }}
             >
-              <svg width="20" height="20" viewBox="0 0 20 20">
-                <path
-                  fill="currentColor"
-                  stroke="currentColor"
-                  strokeLinejoin="round"
-                  strokeWidth="1.5"
-                  d="M2.25 2.25 17.75 10l-15.5 7.75v-4.539a1.5 1.5 0 0 1 1.46-1.5l6.54-.171a1.54 1.54 0 0 0 0-3.08l-6.54-.172a1.5 1.5 0 0 1-1.46-1.5V2.25Z"
-                />
-              </svg>
-            </IconButton>
+              <IconButton
+                disabled={
+                  disabled ||
+                  submitDisabled ||
+                  (!allowEmptySubmit && isEmptyMessage) ||
+                  isPending
+                }
+                css={(t) => css({ color: t.colors.primary })}
+                type="submit"
+              >
+                <svg width="20" height="20" viewBox="0 0 20 20">
+                  <path
+                    fill="currentColor"
+                    stroke="currentColor"
+                    strokeLinejoin="round"
+                    strokeWidth="1.5"
+                    d="M2.25 2.25 17.75 10l-15.5 7.75v-4.539a1.5 1.5 0 0 1 1.46-1.5l6.54-.171a1.54 1.54 0 0 0 0-3.08l-6.54-.172a1.5 1.5 0 0 1-1.46-1.5V2.25Z"
+                  />
+                </svg>
+              </IconButton>
+            </div>
           )}
         </div>
 

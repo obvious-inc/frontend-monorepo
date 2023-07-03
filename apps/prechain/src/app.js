@@ -19,7 +19,7 @@ import { mainnet } from "wagmi/chains";
 import { infuraProvider } from "wagmi/providers/infura";
 import { publicProvider } from "wagmi/providers/public";
 import { InjectedConnector } from "wagmi/connectors/injected";
-import { WalletConnectLegacyConnector } from "wagmi/connectors/walletConnectLegacy";
+import { WalletConnectConnector } from "wagmi/connectors/walletConnect";
 import {
   useCachedState,
   ServerConnectionProvider,
@@ -405,7 +405,7 @@ const RootLayout = () => {
             compact={false}
             icon={<MagnificationGlassIcon style={{ width: "1.4rem" }} />}
             component={NavLink}
-            to="/proposals"
+            to="/"
             title="Browse"
           />
 
@@ -1157,10 +1157,9 @@ const wagmiConfig = createWagmiConfig({
   publicClient,
   connectors: [
     new InjectedConnector({ chains }),
-    new WalletConnectLegacyConnector({
+    new WalletConnectConnector({
       chains,
       options: {
-        qrcode: true,
         projectId: process.env.WALLET_CONNECT_PROJECT_ID,
       },
     }),
@@ -1221,10 +1220,10 @@ const App = () => {
                                 </RequireAuth>
                               }
                             />
-                            <Route
-                              path="/proposals"
-                              element={<ChannelsScreen />}
-                            />
+                            {/* <Route */}
+                            {/*   path="/proposals" */}
+                            {/*   element={<ChannelsScreen />} */}
+                            {/* /> */}
                             <Route
                               path="/:channelId"
                               element={<ChannelScreen />}

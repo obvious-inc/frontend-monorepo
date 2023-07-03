@@ -9,8 +9,8 @@ import { AddUser as AddUserIcon } from "@shades/ui-web/icons";
 import RichTextEditor, {
   isNodeEmpty as isSlateNodeEmpty,
 } from "@shades/ui-web/rich-text-editor";
+import Select from "@shades/ui-web/select";
 import { useDialog } from "../hooks/dialogs.js";
-import Select from "./select.js";
 
 const { createEmptyParagraphElement } = messageUtils;
 

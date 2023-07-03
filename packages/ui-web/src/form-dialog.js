@@ -1,7 +1,8 @@
 import React from "react";
 import { css } from "@emotion/react";
-import Input from "@shades/ui-web/input";
-import RichTextEditor from "@shades/ui-web/rich-text-editor";
+import { message as messageUtils } from "@shades/common/utils";
+import Input from "./input.js";
+import RichTextEditor from "./rich-text-editor.js";
 import DialogHeader from "./dialog-header.js";
 import DialogFooter from "./dialog-footer.js";
 import Select from "./select.js";
@@ -31,6 +32,7 @@ const FormDialog = ({
   });
 
   const handleSubmit = async (e) => {
+    e.stopPropagation();
     e.preventDefault();
 
     if (submit == null) return;
@@ -50,9 +52,20 @@ const FormDialog = ({
     firstInputRef.current.focus();
   }, []);
 
-  const hasChanges = controls.some(
-    (c) => c.initialValue === undefined || state[c.key] !== c.initialValue
-  );
+  const hasChanges = controls.some((c) => {
+    const value = state[c.key];
+
+    switch (c.type) {
+      case "rich-text":
+        return (
+          c.initialValue === undefined ||
+          messageUtils.isEqual(value, c.initialValue)
+        );
+
+      default:
+        return c.initialValue === undefined || value !== c.initialValue;
+    }
+  });
 
   return (
     <div

@@ -781,14 +781,13 @@ const NewMessageScreen = () => {
                 ? () => (
                     <div
                       style={{
-                        alignSelf: "flex-end",
+                        flex: "1 1 auto",
                         display: "flex",
-                        height: 0,
+                        justifyContent: "flex-end",
                       }}
                     >
                       <div
                         style={{
-                          alignSelf: "flex-end",
                           display: "grid",
                           gridAutoFlow: "column",
                           gridAutoColumns: "auto",
@@ -801,9 +800,7 @@ const NewMessageScreen = () => {
                             css({
                               fontSize: t.text.sizes.small,
                               color: t.colors.textDimmed,
-                              "@media(max-width: 600px)": {
-                                display: "none",
-                              },
+                              lineHeight: 1.2,
                             })
                           }
                         >
@@ -819,6 +816,7 @@ const NewMessageScreen = () => {
                               connectWallet();
                               openAccountAuthenticationDialog();
                             }}
+                            style={{ overflow: "visible" }}
                           >
                             Connect wallet
                           </Button>
@@ -837,6 +835,7 @@ const NewMessageScreen = () => {
                               });
                               openAccountAuthenticationDialog();
                             }}
+                            style={{ overflow: "visible" }}
                           >
                             Verify account
                           </Button>

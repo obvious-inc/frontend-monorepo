@@ -30,7 +30,6 @@ import * as DropdownMenu from "@shades/ui-web/dropdown-menu";
 import * as Toolbar from "@shades/ui-web/toolbar";
 import * as Tooltip from "@shades/ui-web/tooltip";
 import MessageEditorForm from "@shades/ui-web/message-editor-form";
-import { isNodeEmpty } from "@shades/ui-web/rich-text-editor";
 import AccountPreviewPopoverTrigger from "./account-preview-popover-trigger.js";
 import RichText from "./rich-text.js";
 import FormattedDate from "./formatted-date.js";
@@ -317,6 +316,7 @@ const MessageBody = React.memo(({ messageId }) => {
 
   const onClickInteractiveElement = React.useCallback((el) => {
     switch (el.type) {
+      case "image":
       case "image-attachment":
         window.open(el.url, "_blank");
         break;
@@ -905,7 +905,7 @@ const EditMessageInput = React.forwardRef(
         }}
         uploadImage={uploadImage}
         submit={async (blocks) => {
-          const isEmpty = blocks.every(isNodeEmpty);
+          const isEmpty = messageUtils.isEmpty(blocks, { trim: true });
 
           if (isEmpty) {
             await requestRemove();
@@ -918,29 +918,37 @@ const EditMessageInput = React.forwardRef(
         renderSubmitArea={({ isPending }) => (
           <div
             css={css({
-              display: "grid",
-              gridTemplateColumns: "repeat(2, minmax(max-content, 1fr))",
+              flex: "1 1 auto",
+              display: "flex",
               justifyContent: "flex-end",
-              gridGap: "0.8rem",
             })}
           >
-            <Button
-              type="button"
-              size="small"
-              onClick={cancel}
-              disabled={isPending}
+            <div
+              css={css({
+                display: "grid",
+                gridTemplateColumns: "repeat(2, minmax(max-content, 1fr))",
+                justifyContent: "flex-end",
+                gridGap: "0.8rem",
+              })}
             >
-              Cancel
-            </Button>
-            <Button
-              variant="primary"
-              size="small"
-              type="submit"
-              isLoading={isPending}
-              disabled={isPending}
-            >
-              Save
-            </Button>
+              <Button
+                type="button"
+                size="small"
+                onClick={cancel}
+                disabled={isPending}
+              >
+                Cancel
+              </Button>
+              <Button
+                variant="primary"
+                size="small"
+                type="submit"
+                isLoading={isPending}
+                disabled={isPending}
+              >
+                Save
+              </Button>
+            </div>
           </div>
         )}
         {...props}

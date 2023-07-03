@@ -1,5 +1,10 @@
 import React from "react";
-import { useParams, useNavigate, useSearchParams } from "react-router-dom";
+import {
+  useParams,
+  useNavigate,
+  useSearchParams,
+  Link as RouterLink,
+} from "react-router-dom";
 import { css } from "@emotion/react";
 import { useAccount } from "wagmi";
 import {
@@ -22,13 +27,18 @@ import {
 } from "@shades/common/react";
 import { message as messageUtils } from "@shades/common/utils";
 import Button from "@shades/ui-web/button";
-import { CrossCircle as CrossCircleIcon } from "@shades/ui-web/icons";
+import {
+  CrossCircle as CrossCircleIcon,
+  ArrowDown as ArrowDownIcon,
+} from "@shades/ui-web/icons";
 import MessageEditorForm from "@shades/ui-web/message-editor-form";
 import ChannelMessagesScrollView from "@shades/ui-web/channel-messages-scroll-view";
 import Dialog from "@shades/ui-web/dialog";
 import RichTextEditor, {
+  Provider as EditorProvider,
   Toolbar as EditorToolbar,
 } from "@shades/ui-web/rich-text-editor";
+import { useState as useSidebarState } from "@shades/ui-web/sidebar-layout";
 import { useWriteAccess } from "../hooks/write-access-scope.js";
 import AccountPreviewPopoverTrigger from "./account-preview-popover-trigger.js";
 import ChannelMessage from "./channel-message.js";
@@ -185,9 +195,10 @@ const ChannelContent = ({ channelId }) => {
               () => (
                 <div
                   style={{
-                    alignSelf: "flex-end",
+                    flex: "1 1 auto",
                     display: "flex",
-                    height: 0,
+                    alignItems: "flex-end",
+                    justifyContent: "flex-end",
                   }}
                 >
                   <div
@@ -207,6 +218,7 @@ const ChannelContent = ({ channelId }) => {
                           css({
                             fontSize: t.text.sizes.small,
                             color: t.colors.textDimmed,
+                            lineHeight: 1.2,
                           })
                         }
                       >
@@ -219,9 +231,7 @@ const ChannelContent = ({ channelId }) => {
                             css({
                               fontSize: t.text.sizes.small,
                               color: t.colors.textDimmed,
-                              "@media(max-width: 600px)": {
-                                display: "none",
-                              },
+                              lineHeight: 1.2,
                             })
                           }
                         >
@@ -237,6 +247,7 @@ const ChannelContent = ({ channelId }) => {
                             onClick={() => {
                               connectWallet();
                             }}
+                            style={{ overflow: "visible" }}
                           >
                             Connect wallet
                           </Button>
@@ -254,6 +265,7 @@ const ChannelContent = ({ channelId }) => {
                                 inputRef.current.focus();
                               });
                             }}
+                            style={{ overflow: "visible" }}
                           >
                             Verify account
                           </Button>
@@ -351,7 +363,17 @@ const ChannelDialog = ({ channelId, titleProps, dismiss }) => {
       >
         {channel.name}
       </h1>
-      <RichText blocks={channel.body ?? channel.descriptionBlocks} />
+      <RichText
+        blocks={channel.body ?? channel.descriptionBlocks}
+        onClickInteractiveElement={(el) => {
+          switch (el.type) {
+            case "image":
+              window.open(el.url, "_blank");
+              break;
+            default: // Ignore
+          }
+        }}
+      />
     </div>
   );
 };
@@ -366,8 +388,6 @@ const AdminChannelDialog = ({ channelId, dismiss }) => {
   const persistedName = channel.name;
   const persistedBody = channel.body;
 
-  const [activeMarks, setActiveMarks] = React.useState([]);
-
   const [name, setName] = React.useState(persistedName);
   const [body, setBody] = React.useState(persistedBody);
 
@@ -379,14 +399,8 @@ const AdminChannelDialog = ({ channelId, dismiss }) => {
   const hasRequiredInput = true;
 
   const hasChanges = React.useMemo(() => {
-    if (persistedName.trim() !== name.trim()) return false;
-
-    const [persistedBodyString, editedBodyString] = [
-      persistedBody,
-      deferredBody,
-    ].map(messageUtils.stringifyBlocks);
-
-    return persistedBodyString !== editedBodyString;
+    if (persistedName?.trim() !== name?.trim()) return true;
+    return !messageUtils.isEqual(persistedBody, deferredBody);
   }, [name, deferredBody, persistedName, persistedBody]);
 
   const submit = async () => {
@@ -402,136 +416,145 @@ const AdminChannelDialog = ({ channelId, dismiss }) => {
   };
 
   return (
-    <form
-      onSubmit={(e) => {
-        e.preventDefault();
-        submit();
-      }}
-      css={css({
-        flex: 1,
-        minHeight: 0,
-        display: "flex",
-        flexDirection: "column",
-      })}
-    >
-      <main
+    <EditorProvider>
+      <form
+        onSubmit={(e) => {
+          e.preventDefault();
+          submit();
+        }}
         css={css({
           flex: 1,
           minHeight: 0,
-          width: "100%",
-          overflow: "auto",
+          display: "flex",
+          flexDirection: "column",
         })}
       >
-        <div
+        <main
           css={css({
-            minHeight: "100%",
-            display: "flex",
-            flexDirection: "column",
-            margin: "0 auto",
-            padding: "1.5rem",
-            "@media (min-width: 600px)": {
-              padding: "3rem",
-            },
+            flex: 1,
+            minHeight: 0,
+            width: "100%",
+            overflow: "auto",
           })}
         >
-          <input
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            autoFocus
-            disabled={hasPendingSubmit}
-            placeholder="Untitled topic"
-            css={(t) =>
-              css({
-                background: "none",
-                fontSize: "2.6rem",
-                width: "100%",
-                outline: "none",
-                fontWeight: t.text.weights.header,
-                border: 0,
-                padding: 0,
-                lineHeight: 1.15,
-                margin: "0 0 3rem",
-                color: t.colors.textNormal,
-                "::placeholder": { color: t.colors.textMuted },
-              })
-            }
-          />
-          <RichTextEditor
-            ref={editorRef}
-            value={body}
-            onChange={(e, editor) => {
-              setBody(e);
-              setActiveMarks(Object.keys(editor.getMarks()));
-            }}
-            placeholder={`Use markdown shortcuts like "# " and "1. " to create headings and lists.`}
-            css={(t) =>
-              css({
-                fontSize: t.text.sizes.base,
-                "[data-slate-placeholder]": {
-                  opacity: "1 !important",
-                  color: t.colors.textMuted,
-                },
-              })
-            }
-          />
-        </div>
-      </main>
-      <footer>
-        <div style={{ padding: "1rem 1rem 0" }}>
-          <EditorToolbar editorRef={editorRef} activeMarks={activeMarks} />
-        </div>
-        <div
-          css={css({
-            display: "grid",
-            justifyContent: "flex-end",
-            gridTemplateColumns: "minmax(0,1fr) auto auto",
-            gridGap: "1rem",
-            alignItems: "center",
-            padding: "1rem",
-          })}
-        >
-          <div>
-            <Button
-              danger
-              onClick={async () => {
-                setPendingDelete(true);
-                try {
-                  await deleteChannel(channelId);
-                  navigate("/");
-                } finally {
-                  setPendingDelete(false);
-                }
+          <div
+            css={css({
+              minHeight: "100%",
+              display: "flex",
+              flexDirection: "column",
+              margin: "0 auto",
+              padding: "1.5rem",
+              "@media (min-width: 600px)": {
+                padding: "3rem",
+              },
+            })}
+          >
+            <input
+              value={name ?? ""}
+              onChange={(e) => setName(e.target.value)}
+              autoFocus
+              disabled={hasPendingSubmit}
+              placeholder="Untitled topic"
+              css={(t) =>
+                css({
+                  background: "none",
+                  fontSize: "2.6rem",
+                  width: "100%",
+                  outline: "none",
+                  fontWeight: t.text.weights.header,
+                  border: 0,
+                  padding: 0,
+                  lineHeight: 1.15,
+                  margin: "0 0 3rem",
+                  color: t.colors.textNormal,
+                  "::placeholder": { color: t.colors.textMuted },
+                })
+              }
+            />
+            <RichTextEditor
+              ref={editorRef}
+              value={body}
+              onChange={(e) => {
+                setBody(e);
               }}
-              isLoading={hasPendingDelete}
-              disabled={hasPendingDelete || hasPendingSubmit}
+              placeholder={`Use markdown shortcuts like "# " and "1. " to create headings and lists.`}
+              imagesMaxWidth={null}
+              imagesMaxHeight={window.innerHeight * 0.5}
+              css={(t) =>
+                css({
+                  fontSize: t.text.sizes.base,
+                  "[data-slate-placeholder]": {
+                    opacity: "1 !important",
+                    color: t.colors.textMuted,
+                  },
+                })
+              }
+            />
+          </div>
+        </main>
+        <footer>
+          <div style={{ padding: "1rem 1rem 0" }}>
+            <EditorToolbar />
+          </div>
+          <div
+            css={css({
+              display: "grid",
+              justifyContent: "flex-end",
+              gridTemplateColumns: "minmax(0,1fr) auto auto",
+              gridGap: "1rem",
+              alignItems: "center",
+              padding: "1rem",
+            })}
+          >
+            <div>
+              <Button
+                danger
+                onClick={async () => {
+                  if (
+                    !confirm("Are you sure you want to delete this proposal?")
+                  )
+                    return;
+
+                  setPendingDelete(true);
+                  try {
+                    await deleteChannel(channelId);
+                    navigate("/");
+                  } finally {
+                    setPendingDelete(false);
+                  }
+                }}
+                isLoading={hasPendingDelete}
+                disabled={hasPendingDelete || hasPendingSubmit}
+              >
+                Delete proposal
+              </Button>
+            </div>
+            <Button type="button" onClick={dismiss}>
+              Cancel
+            </Button>
+            <Button
+              type="submit"
+              variant="primary"
+              isLoading={hasPendingSubmit}
+              disabled={
+                !hasRequiredInput ||
+                !hasChanges ||
+                hasPendingSubmit ||
+                hasPendingDelete
+              }
             >
-              Delete topic
+              {hasChanges ? "Save changes" : "No changes"}
             </Button>
           </div>
-          <Button type="button" onClick={dismiss}>
-            Cancel
-          </Button>
-          <Button
-            type="submit"
-            variant="primary"
-            isLoading={hasPendingSubmit}
-            disabled={
-              !hasRequiredInput ||
-              !hasChanges ||
-              hasPendingSubmit ||
-              hasPendingDelete
-            }
-          >
-            {hasChanges ? "Save changes" : "No changes"}
-          </Button>
-        </div>
-      </footer>
-    </form>
+        </footer>
+      </form>
+    </EditorProvider>
   );
 };
 
 const NavBar = ({ channelId, openChannelDialog }) => {
   const channel = useChannel(channelId);
+  const sidebarState = useSidebarState();
   return (
     <div
       css={css({
@@ -541,6 +564,24 @@ const NavBar = ({ channelId, openChannelDialog }) => {
         whiteSpace: "nowrap",
       })}
     >
+      <div style={{ padding: "0 0.8rem" }}>
+        {sidebarState.isCollapsed && (
+          <Button
+            variant="transparent"
+            component={RouterLink}
+            to="/"
+            css={css({ padding: 0, width: "2.8rem", height: "2.8rem" })}
+          >
+            <ArrowDownIcon
+              style={{
+                width: "1.4rem",
+                transform: "rotate(90deg)",
+                margin: "auto",
+              }}
+            />
+          </Button>
+        )}
+      </div>
       <button
         onClick={openChannelDialog}
         css={(t) =>
@@ -551,7 +592,7 @@ const NavBar = ({ channelId, openChannelDialog }) => {
             display: "flex",
             justifyContent: "flex-start",
             alignItems: "center",
-            padding: "1rem 1.5rem",
+            padding: "1rem 0",
             height: "4.4rem",
             fontSize: t.fontSizes.header,
             fontWeight: t.text.weights.header,
@@ -567,12 +608,11 @@ const NavBar = ({ channelId, openChannelDialog }) => {
               ".dialog-icon": {
                 display: "block",
                 opacity: 0,
-                transform: "translateX(-0.25rem)",
-                transition: "0.15s all ease-out",
+                transition: "0.15s opacity ease-out",
               },
               ":hover": {
                 color: t.colors.textDimmed,
-                ".dialog-icon": { opacity: 1, transform: "translateX(0)" },
+                ".dialog-icon": { opacity: 1 },
               },
             },
           })
@@ -660,9 +700,19 @@ const ChannelHeader = ({ channelId }) => {
         </div>
         <RichText
           blocks={channel.body}
+          imagesMaxWidth={null}
+          imagesMaxHeight={window.innerHeight / 2}
           css={(t) =>
             css({ color: t.colors.textNormal, fontSize: t.text.sizes.large })
           }
+          onClickInteractiveElement={(el) => {
+            switch (el.type) {
+              case "image":
+                window.open(el.url, "_blank");
+                break;
+              default: // Ignore
+            }
+          }}
         />
       </div>
     </div>
@@ -725,7 +775,7 @@ const ChannelScreen = () => {
           {({ titleProps }) => (
             <ErrorBoundary
               fallback={() => {
-                window.location.reload();
+                // window.location.reload();
               }}
             >
               <React.Suspense fallback={null}>

@@ -23,6 +23,7 @@ export const useUsers = (userIdsOrWalletAddresses) =>
   useStore(
     React.useCallback(
       (state) =>
+        userIdsOrWalletAddresses == null ||
         userIdsOrWalletAddresses.length === 0
           ? []
           : selectUsers(state, userIdsOrWalletAddresses),

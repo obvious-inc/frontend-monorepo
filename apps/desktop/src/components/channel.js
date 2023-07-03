@@ -25,7 +25,7 @@ import {
   ErrorBoundary,
 } from "@shades/common/react";
 import ChannelMessagesScrollView from "@shades/ui-web/channel-messages-scroll-view";
-import { isNodeEmpty } from "@shades/ui-web/rich-text-editor";
+import { isNodeEmpty as isRichTextNodeEmpty } from "@shades/ui-web/rich-text-editor";
 import AccountPreviewPopoverTrigger from "@shades/ui-web/account-preview-popover-trigger";
 import { CrossCircle as CrossCircleIcon } from "@shades/ui-web/icons";
 import MessageEditorForm from "@shades/ui-web/message-editor-form";
@@ -149,8 +149,7 @@ const ChannelContent = ({ channelId }) => {
 
   const handleInputChange = useLatestCallback(({ rawRichTextNodes }) => {
     if (me == null) return;
-    if (rawRichTextNodes.length === 0 || isNodeEmpty(rawRichTextNodes[0]))
-      return;
+    if (rawRichTextNodes.every((n) => isRichTextNodeEmpty(n))) return;
     throttledRegisterTypingActivity();
   });
 

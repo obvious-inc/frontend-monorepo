@@ -1,12 +1,14 @@
 import React from "react";
 import { css } from "@emotion/react";
+import { dimension as dimensionUtils } from "@shades/common/utils";
+import Image from "./image.js";
 
-const SINGLE_IMAGE_ATTACHMENT_MAX_WIDTH = 560;
-const SINGLE_IMAGE_ATTACHMENT_MAX_HEIGHT = 280;
-const MULTI_IMAGE_ATTACHMENT_MAX_WIDTH = 280;
-const MULTI_IMAGE_ATTACHMENT_MAX_HEIGHT = 240;
+export const SINGLE_IMAGE_ATTACHMENT_MAX_WIDTH = 560;
+export const SINGLE_IMAGE_ATTACHMENT_MAX_HEIGHT = 280;
+export const MULTI_IMAGE_ATTACHMENT_MAX_WIDTH = 280;
+export const MULTI_IMAGE_ATTACHMENT_MAX_HEIGHT = 240;
 
-export const createCss = (theme) => ({
+export const createCss = (t) => ({
   // Paragraphs
   p: {
     margin: "0",
@@ -38,7 +40,7 @@ export const createCss = (theme) => ({
   // Quotes
   blockquote: {
     borderLeft: "0.3rem solid",
-    borderColor: theme.colors.borderLight,
+    borderColor: t.colors.borderLight,
     paddingLeft: "1rem",
     fontStyle: "italic",
   },
@@ -46,7 +48,7 @@ export const createCss = (theme) => ({
 
   // Callouts
   aside: {
-    background: theme.colors.backgroundModifierHover,
+    background: t.colors.backgroundModifierHover,
     padding: "1.6rem",
     paddingLeft: "1.2rem",
     borderRadius: "0.3rem",
@@ -65,25 +67,41 @@ export const createCss = (theme) => ({
 
   // Links
   "a.link, a.link:active, a.link:visited": {
-    color: theme.colors.link,
+    color: t.colors.link,
     textDecoration: "none",
     outline: "none",
   },
   "a.link:focus-visible": {
     textDecoration: "underline",
-    color: theme.colors.linkModifierHover,
+    color: t.colors.linkModifierHover,
   },
   "@media(hover: hover)": {
     "a.link:hover": {
       textDecoration: "underline",
-      color: theme.colors.linkModifierHover,
+      color: t.colors.linkModifierHover,
     },
+  },
+
+  // Images
+  "button.image": {
+    borderRadius: "0.3rem",
+    overflow: "hidden",
+    background: t.colors.backgroundSecondary,
+    '&[data-focused="true"], &:focus-visible': {
+      boxShadow: t.shadows.focus,
+    },
+    "@media(hover: hover)": {
+      cursor: "zoom-in",
+      "&[data-editable]": { cursor: "pointer" },
+      ":hover": { filter: "brightness(1.05)" },
+    },
+    "& > img": { display: "block" },
   },
 
   // Misc
   wordBreak: "break-word",
   em: { fontStyle: "italic" },
-  strong: { fontWeight: "600" },
+  strong: { fontWeight: t.text.weights.emphasis },
 });
 
 const blockComponentsByElementType = {
@@ -107,6 +125,8 @@ const renderLeaf = (l, i) => {
 const createRenderer = ({
   inline,
   suffix,
+  imagesMaxWidth,
+  imagesMaxHeight,
   onClickInteractiveElement,
   renderElement: customRenderElement,
 }) => {
@@ -157,7 +177,7 @@ const createRenderer = ({
             className="link"
             onClick={(e) => onClickInteractiveElement?.(e)}
           >
-            {el.text ?? el.url}
+            {el.label ?? el.url}
           </a>
         );
 
@@ -182,40 +202,31 @@ const createRenderer = ({
         return (
           <div
             key={i}
-            css={(theme) =>
-              css({
-                paddingTop: "0.5rem",
-                display: "flex",
-                alignItems: "flex-start",
-                justifyContent: "flex-start",
-                flexWrap: "wrap",
-                margin: "-1rem 0 0 -1rem",
-                button: {
-                  borderRadius: "0.3rem",
-                  overflow: "hidden",
-                  background: theme.colors.backgroundSecondary,
-                  margin: "1rem 0 0 1rem",
-                  cursor: "zoom-in",
-                  transition: "0.14s all ease-out",
-                  ":hover": {
-                    filter: "brightness(1.05)",
-                    transform: "scale(1.02)",
-                  },
-                },
-                img: { display: "block" },
-              })
-            }
+            css={css({
+              paddingTop: "0.5rem",
+              display: "flex",
+              alignItems: "flex-start",
+              justifyContent: "flex-start",
+              flexWrap: "wrap",
+              margin: "-1rem 0 0 -1rem",
+              "& > button": {
+                margin: "1rem 0 0 1rem",
+              },
+            })}
           >
             {children()}
           </div>
         );
       }
 
+      case "image":
       case "image-attachment": {
         if (inline) return null;
+
         const attachmentCount = els.length;
-        const [maxWidth, maxHeight] =
-          attachmentCount === 1
+
+        const [defaultMaxWidth, defaultMaxHeight] =
+          el.type === "image" || attachmentCount === 1
             ? [
                 SINGLE_IMAGE_ATTACHMENT_MAX_WIDTH,
                 SINGLE_IMAGE_ATTACHMENT_MAX_HEIGHT,
@@ -225,30 +236,36 @@ const createRenderer = ({
                 MULTI_IMAGE_ATTACHMENT_MAX_HEIGHT,
               ];
 
-        const calculateWidth = () => {
-          const aspectRatio = el.width / el.height;
-
-          // When max width is 100%
-          if (maxWidth == null)
-            return maxHeight > el.height ? el.width : maxHeight * aspectRatio;
-
-          const widthAfterHeightAdjustment =
-            Math.min(el.height, maxHeight) * aspectRatio;
-
-          return Math.min(widthAfterHeightAdjustment, maxWidth);
-        };
+        const fittedWidth =
+          // Skip fitting step if both max dimensions are explicitly set to `null`
+          imagesMaxWidth === null && imagesMaxHeight === null
+            ? el.width
+            : dimensionUtils.fitInsideBounds(
+                { width: el.width, height: el.height },
+                {
+                  width:
+                    imagesMaxWidth === undefined
+                      ? defaultMaxWidth
+                      : imagesMaxWidth,
+                  height:
+                    imagesMaxHeight === undefined
+                      ? defaultMaxHeight
+                      : imagesMaxHeight,
+                }
+              ).width;
 
         return (
           <button
             key={i}
+            className="image"
             onClick={() => {
-              onClickInteractiveElement(el);
+              onClickInteractiveElement?.(el);
             }}
           >
             <Image
               src={el.url}
               loading="lazy"
-              width={calculateWidth()}
+              width={fittedWidth}
               style={{
                 maxWidth: "100%",
                 aspectRatio: `${el.width} / ${el.height}`,
@@ -257,22 +274,6 @@ const createRenderer = ({
           </button>
         );
       }
-
-      // case "emoji":
-      //   return <Emoji key={i} emoji={el.emoji} />;
-
-      // case "channel-link":
-      //   return (
-      //     <InlineChannelButton
-      //       key={i}
-      //       channelId={el.ref}
-      //       component={Link}
-      //       to={`/channels/${el.ref}`}
-      //     />
-      //   );
-
-      // case "user":
-      //   return <UserMention key={i} id={el.ref} />;
 
       default:
         return (
@@ -298,40 +299,6 @@ const createRenderer = ({
     blocks.map((b, i, bs) => renderElement(b, i, bs, { root: true }));
 };
 
-const Image = (props) => {
-  const ref = React.useRef();
-
-  const [error, setError] = React.useState(null);
-
-  React.useEffect(() => {
-    setError(null);
-    ref.current.onerror = (error) => {
-      setError(error);
-    };
-  }, [props.src]);
-
-  if (error != null)
-    return (
-      <div
-        style={{ width: props.width, ...props.style }}
-        css={(t) =>
-          css({
-            userSelect: "none",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            color: t.colors.textMuted,
-            fontSize: t.fontSizes.default,
-          })
-        }
-      >
-        Error loading image
-      </div>
-    );
-
-  return <img ref={ref} {...props} />;
-};
-
 const RichText = ({
   inline = false,
   compact = false,
@@ -339,12 +306,16 @@ const RichText = ({
   onClickInteractiveElement,
   renderElement,
   suffix,
+  imagesMaxWidth,
+  imagesMaxHeight,
   style,
   ...props
 }) => {
   const render = createRenderer({
     inline,
     suffix,
+    imagesMaxWidth,
+    imagesMaxHeight,
     renderElement,
     onClickInteractiveElement,
   });

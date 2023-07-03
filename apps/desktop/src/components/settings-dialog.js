@@ -1,6 +1,6 @@
 import { invariant } from "@shades/common/utils";
 import useSetting, { getConfig as getSettingConfig } from "../hooks/setting.js";
-import FormDialog from "./form-dialog.js";
+import FormDialog from "@shades/ui-web/form-dialog";
 
 const settingInputConfigByKey = {
   theme: {

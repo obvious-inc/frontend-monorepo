@@ -1,5 +1,5 @@
 import { css } from "@emotion/react";
-import Button from "@shades/ui-web/button";
+import Button from "./button.js";
 
 const DialogFooter = ({
   cancel,
@@ -27,7 +27,7 @@ const DialogFooter = ({
       })}
     >
       {cancel != null && (
-        <Button size="medium" onClick={cancel}>
+        <Button type="button" size="medium" onClick={cancel}>
           {cancelButtonLabel}
         </Button>
       )}
