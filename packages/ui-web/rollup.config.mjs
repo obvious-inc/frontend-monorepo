@@ -121,7 +121,10 @@ const entrypoints = [
     file: "toolbar.js",
     dependencies: ["react", ...emotionDeps, "@radix-ui/react-toolbar"],
   },
-  { file: "rich-text.js", dependencies: ["react", ...emotionDeps] },
+  {
+    file: "rich-text.js",
+    dependencies: ["react", ...emotionDeps, "@shades/common/utils"],
+  },
   {
     file: "rich-text-editor.js",
     dynamicImports: true,

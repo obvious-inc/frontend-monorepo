@@ -245,19 +245,21 @@ export const withBlockPrefixShortcut = (
       return;
     }
 
-    Transforms.select(editor, range);
+    editor.withoutNormalizing(() => {
+      Transforms.select(editor, range);
 
-    if (!Range.isCollapsed(range)) {
-      Transforms.delete(editor);
-    }
+      if (!Range.isCollapsed(range)) {
+        Transforms.delete(editor);
+      }
 
-    Transforms.setNodes(
-      editor,
-      { type: elementType },
-      { match: (n) => Element.isElement(n) && Editor.isBlock(editor, n) }
-    );
+      Transforms.setNodes(
+        editor,
+        { type: elementType },
+        { match: (n) => Element.isElement(n) && Editor.isBlock(editor, n) }
+      );
 
-    afterTransform?.({ prefix: prefixText });
+      afterTransform?.({ prefix: prefixText });
+    });
   };
 
   return editor;

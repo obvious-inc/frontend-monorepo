@@ -101,7 +101,7 @@ export const createCss = (t) => ({
   // Misc
   wordBreak: "break-word",
   em: { fontStyle: "italic" },
-  strong: { fontWeight: "600" },
+  strong: { fontWeight: t.text.weights.emphasis },
 });
 
 const blockComponentsByElementType = {
