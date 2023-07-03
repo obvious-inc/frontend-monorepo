@@ -15,6 +15,7 @@ import createControlledParagraphLineBreaksPlugin from "./slate/plugins/controlle
 import createListsPlugin from "./slate/plugins/lists.js";
 import createQuotesPlugin from "./slate/plugins/quotes.js";
 import createCalloutsPlugin from "./slate/plugins/callouts.js";
+import createHorizontalDividerPlugin from "./slate/plugins/horizontal-divider.js";
 import createEmojiPlugin from "./slate/plugins/emojis.js";
 import createInlineLinksPlugin from "./slate/plugins/inline-links.js";
 import createHeadingsPlugin from "./slate/plugins/headings.js";
@@ -163,6 +164,7 @@ const RichTextEditor = React.forwardRef(
         createQuotesPlugin({ inline }),
         createCalloutsPlugin({ inline }),
         createHeadingsPlugin({ inline }),
+        createHorizontalDividerPlugin(),
         createUserMentionsPlugin(),
         createChannelLinksPlugin(),
         createInlineLinksPlugin(),
@@ -310,6 +312,20 @@ const Element = (props) => {
 
     case "callout":
       return <aside {...attributes}>{children}</aside>;
+
+    case "horizontal-divider":
+      return (
+        <div
+          css={css({
+            padding: "1rem 0",
+          })}
+          {...attributes}
+          contentEditable={false}
+        >
+          {children}
+          <hr />
+        </div>
+      );
 
     case "paragraph":
       return <p {...attributes}>{children}</p>;

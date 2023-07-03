@@ -144,6 +144,9 @@ export const stringifyBlocks = (
       case "image-attachment":
         return humanReadable ? el.url : "";
 
+      case "horizontal-divider":
+        return "\n---\n";
+
       default:
         throw new Error();
     }

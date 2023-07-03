@@ -161,6 +161,13 @@ const createRenderer = ({
           </a>
         );
 
+      case "horizontal-divider":
+        return (
+          <div key={i}>
+            <hr />
+          </div>
+        );
+
       case "attachments": {
         if (inline) {
           if (root && i === 0)
