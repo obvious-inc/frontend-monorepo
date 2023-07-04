@@ -59,7 +59,7 @@ const FormDialog = ({
       case "rich-text":
         return (
           c.initialValue === undefined ||
-          messageUtils.isEqual(value, c.initialValue)
+          !messageUtils.isEqual(value, c.initialValue)
         );
 
       default:

@@ -70,6 +70,7 @@ export const fromMessageBlocks = (blocks) =>
         { ...n, children: [{ text: n.label ?? n.url }] },
         { text: "" },
       ];
+
     if (n.type === "emoji")
       return [
         ...acc,
@@ -77,17 +78,22 @@ export const fromMessageBlocks = (blocks) =>
         { ...n, children: [{ text: n.emoji }] },
         { text: "" },
       ];
-    if (n.type === "user" || n.type === "channel-link")
+
+    // Voids
+    if (["user", "channel-link"].includes(n.type))
       return [
         ...acc,
         { text: "" },
         { ...n, children: [{ text: "" }] },
         { text: "" },
       ];
+
     // TODO implement plugin "unsupported-element"
     if (n.children == null && n.text == null)
       return [...acc, { ...n, text: "" }];
+
     if (n.children == null) return [...acc, n];
+
     return [...acc, { ...n, children: fromMessageBlocks(n.children) }];
   }, []);
 
@@ -207,7 +213,7 @@ export const intersectsSelection = (editor, nodePath) => {
 };
 
 export const withBlockPrefixShortcut = (
-  { prefix, elementType, afterTransform },
+  { prefix, elementType, transform, afterTransform },
   editor
 ) => {
   const { insertText } = editor;
@@ -229,12 +235,12 @@ export const withBlockPrefixShortcut = (
       return;
     }
 
-    const range = {
+    const prefixRange = {
       anchor: selection.anchor,
       focus: Editor.start(editor, blockEntry[1]),
     };
     const prefixText =
-      Editor.string(editor, range, { voids: true }) + text.slice(0, -1);
+      Editor.string(editor, prefixRange, { voids: true }) + text.slice(0, -1);
 
     const isMatch = Array.isArray(prefix)
       ? prefix.includes(prefixText)
@@ -246,19 +252,29 @@ export const withBlockPrefixShortcut = (
     }
 
     editor.withoutNormalizing(() => {
-      Transforms.select(editor, range);
+      Transforms.select(editor, prefixRange);
 
-      if (!Range.isCollapsed(range)) {
-        Transforms.delete(editor);
+      if (!Range.isCollapsed(prefixRange)) {
+        Transforms.delete(editor, { at: prefixRange });
       }
 
-      Transforms.setNodes(
-        editor,
-        { type: elementType },
-        { match: (n) => Element.isElement(n) && Editor.isBlock(editor, n) }
-      );
+      if (transform == null) {
+        // Apply default transform
+        Transforms.setNodes(
+          editor,
+          { type: elementType },
+          { at: blockEntry[1] }
+        );
+      }
 
-      afterTransform?.({ prefix: prefixText });
+      const data = {
+        prefix: prefixText,
+        node: blockEntry[0],
+        path: blockEntry[1],
+      };
+
+      transform?.(data);
+      afterTransform?.(data);
     });
   };
 
