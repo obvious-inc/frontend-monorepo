@@ -1,95 +1,92 @@
-import isHotkey from "is-hotkey";
-import { Editor, Node, Transforms } from "slate";
+import { Node, Range, Path } from "slate";
+import { useSelected, useFocused } from "slate-react";
 import { function as functionUtils } from "@shades/common/utils";
-import {
-  withBlockPrefixShortcut,
-  withEmptyBlockBackwardDeleteTransform,
-} from "../utils.js";
+import { withBlockPrefixShortcut } from "../utils.js";
 
 const { compose } = functionUtils;
 
 const ELEMENT_TYPE = "horizontal-divider";
 
-const findAbove = (editor, at = editor.selection) =>
-  Editor.above(editor, {
-    at,
-    match: (n) => n.type === ELEMENT_TYPE,
-  });
-
 const middleware = (editor) => {
-  const { isVoid, normalizeNode } = editor;
+  const { isVoid } = editor;
 
   editor.isVoid = (element) => {
     return element.type === ELEMENT_TYPE || isVoid(element);
   };
 
-  editor.normalizeNode = ([node, path]) => {
-    if (node.type !== ELEMENT_TYPE) {
-      normalizeNode([node, path]);
-      return;
-    }
+  return compose((editor) =>
+    withBlockPrefixShortcut(
+      {
+        prefix: "---",
+        elementType: ELEMENT_TYPE,
+        transform: ({ node, path }) => {
+          const childText = Node.string(node);
 
-    const nodeString = Node.string(node);
+          // If the node is empty we can simply change the node type
+          if (childText.trim() === "") {
+            editor.setNodes({ type: ELEMENT_TYPE }, { at: path });
+            return;
+          }
 
-    // If the node is not empty, move text to new paragraph and insert divider above
-    if (nodeString.trim() !== "") {
-      const nodeStartPoint = Editor.start(editor, path);
-
-      Transforms.delete(editor, {
-        at: {
-          anchor: nodeStartPoint,
-          focus:
-            Editor.after(editor, nodeStartPoint) || Editor.end(editor, path),
+          // If we have text content we can let the paragraph be and insert the
+          // divider above it
+          editor.insertNodes(
+            { type: ELEMENT_TYPE, children: [{ text: "" }] },
+            { at: path }
+          );
         },
-      });
+        afterTransform: () => {
+          const selectedBlockNodePath = editor.above({
+            match: (n) => editor.isBlock(n),
+          })?.[1];
 
-      Transforms.insertNodes(editor, {
-        type: ELEMENT_TYPE,
-        children: [{ text: "" }],
-      });
+          const nextSelectableBlockNodePath = editor.next({
+            at: selectedBlockNodePath,
+            // Only match at the top level
+            match: (node, path) => path.length === 1 && !editor.isVoid(node),
+          })?.[1];
 
-      Transforms.insertNodes(editor, {
-        type: "paragraph",
-        children: [{ text: nodeString }],
-      });
+          // If the next sibling isn’t selectable, we insert an empty paragraph
+          // below the divider to have somewhere to place the editor selection
+          if (nextSelectableBlockNodePath == null) {
+            const at = Path.next(selectedBlockNodePath);
+            editor.insertNodes(
+              { type: "paragraph", children: [{ text: "" }] },
+              { at }
+            );
+            editor.select(editor.start(at));
+            return;
+          }
 
-      Transforms.select(editor, Editor.start(editor, path));
-
-      return;
-    }
-  };
-
-  return compose(
-    (e) =>
-      withBlockPrefixShortcut({ prefix: "---", elementType: ELEMENT_TYPE }, e),
-    (e) =>
-      withEmptyBlockBackwardDeleteTransform(
-        { fromElementType: ELEMENT_TYPE, toElementType: "paragraph" },
-        e
-      )
+          const selectableStartPoint = editor.start(
+            nextSelectableBlockNodePath
+          );
+          editor.select(selectableStartPoint);
+        },
+      },
+      editor
+    )
   )(editor);
 };
 
-const onChange = (_, editor) => {
-  if (findAbove(editor)) {
-    Transforms.move(editor, { unit: "offset", distance: 1 });
-  }
-};
+const Component = ({ attributes, children }) => {
+  const selected = useSelected();
+  const focused = useFocused();
+  const isFocused = selected && focused;
 
-const onKeyDown = (e, editor) => {
-  if (!isHotkey("enter", e)) return;
-
-  const matchEntry = Editor.above(editor, {
-    match: (node) => node.type === ELEMENT_TYPE,
-  });
-
-  if (matchEntry == null) return;
-
-  e.preventDefault();
-  editor.insertNodes({ type: "paragraph", children: [{ text: "" }] });
+  return (
+    <div
+      {...attributes}
+      role="separator"
+      contentEditable={false}
+      data-focused={isFocused ? "true" : undefined}
+    >
+      {children}
+    </div>
+  );
 };
 
 export default () => ({
   middleware,
-  handlers: { onChange, onKeyDown },
+  elements: { [ELEMENT_TYPE]: Component },
 });

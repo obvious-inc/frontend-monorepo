@@ -42,6 +42,7 @@ const isNodeEmpty = (node, options = {}) => {
     case "user":
     case "channel-link":
     case "image":
+    case "horizontal-divider":
       return false;
 
     default:
@@ -94,6 +95,9 @@ const isNodeEqual = (n1, n2) => {
     case "image":
     case "image-attachment":
       return propertiesEqual(["url"]);
+
+    case "horizontal-divider":
+      return n1.type === n2.type;
 
     default:
       return baseEqual();

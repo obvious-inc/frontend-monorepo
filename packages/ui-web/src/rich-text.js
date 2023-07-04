@@ -98,6 +98,23 @@ export const createCss = (t) => ({
     "& > img": { display: "block" },
   },
 
+  // Horizontal dividers
+  '[role="separator"], hr': {
+    border: 0,
+    padding: "1rem 0",
+    borderRadius: "0.3rem",
+    ":after": {
+      content: '""',
+      display: "block",
+      height: "0.1rem",
+      width: "100%",
+      background: t.colors.borderLight,
+    },
+    '&[data-focused="true"]': {
+      background: t.colors.primaryTransparentSoft,
+    },
+  },
+
   // Misc
   wordBreak: "break-word",
   em: { fontStyle: "italic" },

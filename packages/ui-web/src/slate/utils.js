@@ -57,6 +57,7 @@ export const toMessageBlocks = (nodes) =>
     if (n.type === "emoji") return { type: "emoji", emoji: n.emoji };
     if (n.type === "user") return { type: "user", ref: n.ref };
     if (n.type === "channel-link") return { type: "channel-link", ref: n.ref };
+    if (n.type === "horizontal-divider") return { type: n.type };
     if (n.children == null) return n;
     return { ...n, children: toMessageBlocks(n.children) };
   });
@@ -80,7 +81,7 @@ export const fromMessageBlocks = (blocks) =>
       ];
 
     // Voids
-    if (["user", "channel-link"].includes(n.type))
+    if (["user", "channel-link", "horizontal-divider"].includes(n.type))
       return [
         ...acc,
         { text: "" },

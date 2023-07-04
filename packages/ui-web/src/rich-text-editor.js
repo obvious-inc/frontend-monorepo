@@ -558,20 +558,6 @@ const Element = (props) => {
     case "callout":
       return <aside {...attributes}>{children}</aside>;
 
-    case "horizontal-divider":
-      return (
-        <div
-          css={css({
-            padding: "1rem 0",
-          })}
-          {...attributes}
-          contentEditable={false}
-        >
-          {children}
-          <hr />
-        </div>
-      );
-
     case "paragraph":
       return <p {...attributes}>{children}</p>;
 
