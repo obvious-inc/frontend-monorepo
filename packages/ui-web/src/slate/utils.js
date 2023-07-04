@@ -267,10 +267,13 @@ export const withBlockPrefixShortcut = (
         );
       }
 
+      // Re-select the node since we deleted the prefix text
+      const [node] = editor.node(blockEntry[1]);
+
       const data = {
         prefix: prefixText,
-        node: blockEntry[0],
         path: blockEntry[1],
+        node,
       };
 
       transform?.(data);
