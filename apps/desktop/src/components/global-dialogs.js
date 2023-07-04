@@ -63,6 +63,7 @@ const GlobalDialogs = () => {
           dismiss: dismissSettingsDialog,
           width: "38rem",
           component: LazySettingsDialog,
+          dialogProps: { "aria-label": "Settings" },
         },
         {
           key: "edit-profile",
@@ -70,6 +71,7 @@ const GlobalDialogs = () => {
           dismiss: dismissEditProfileDialog,
           width: "52rem",
           component: LazyEditProfileDialog,
+          dialogProps: { "aria-label": "Edit profile" },
         },
         {
           key: "profile-link",
@@ -78,6 +80,7 @@ const GlobalDialogs = () => {
           width: "38rem",
           component: LazyProfileLinkDialog,
           componentProps: { accountAddress: profileLinkData?.accountAddress },
+          dialogProps: { "aria-label": "Share profile link" },
         },
         {
           key: "create-channel",
@@ -86,6 +89,7 @@ const GlobalDialogs = () => {
           width: "90rem",
           height: "min(calc(100% - 3rem), 82rem)",
           component: LazyCreateChannelDialog,
+          dialogProps: { "aria-label": "Create channel" },
         },
       ].map(
         ({
@@ -97,6 +101,7 @@ const GlobalDialogs = () => {
           title,
           subtitle,
           component: Component,
+          dialogProps,
           componentProps,
         }) => (
           <Dialog
@@ -105,6 +110,7 @@ const GlobalDialogs = () => {
             onRequestClose={dismiss}
             width={width}
             height={height}
+            {...dialogProps}
           >
             {({ titleProps }) => (
               <ErrorBoundary fallback={() => window.location.reload()}>

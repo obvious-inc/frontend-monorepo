@@ -81,6 +81,7 @@ const CreateChannelDialogContent = ({
         }}
       >
         <Select
+          aria-label="Select topic visibility"
           value={isPrivate ? "private" : "public"}
           width="max-content"
           size="small"
@@ -113,6 +114,7 @@ const CreateChannelDialogContent = ({
         />
         {!isPrivate && (
           <Select
+            aria-label="Select who can post"
             value={hasOpenWriteAccess ? "open" : "members-only"}
             size="small"
             width="max-content"
