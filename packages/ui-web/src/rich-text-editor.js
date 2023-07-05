@@ -20,6 +20,7 @@ import createControlledParagraphLineBreaksPlugin from "./slate/plugins/controlle
 import createListsPlugin from "./slate/plugins/lists.js";
 import createQuotesPlugin from "./slate/plugins/quotes.js";
 import createCalloutsPlugin from "./slate/plugins/callouts.js";
+import createHorizontalDividerPlugin from "./slate/plugins/horizontal-divider.js";
 import createEmojiPlugin from "./slate/plugins/emojis.js";
 import createInlineLinksPlugin from "./slate/plugins/inline-links.js";
 import createImagePlugin from "./slate/plugins/images.js";
@@ -299,6 +300,7 @@ const RichTextEditor = React.forwardRef(
         createQuotesPlugin({ inline }),
         createCalloutsPlugin({ inline }),
         createHeadingsPlugin({ inline }),
+        createHorizontalDividerPlugin(),
         createImagePlugin(),
         createUserMentionsPlugin(),
         createChannelLinksPlugin(),
