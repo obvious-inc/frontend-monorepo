@@ -15,7 +15,8 @@ import {
   configureChains as configureWagmiChains,
   useAccount,
 } from "wagmi";
-import { mainnet } from "wagmi/chains";
+// import { mainnet } from "wagmi/chains";
+import { sepolia } from "wagmi/chains";
 import { infuraProvider } from "wagmi/providers/infura";
 import { publicProvider } from "wagmi/providers/public";
 import { InjectedConnector } from "wagmi/connectors/injected";
@@ -29,7 +30,7 @@ import {
   useMe,
   useUser,
   useMessage,
-  useStarredChannels,
+  // useStarredChannels,
   useChannelName,
   useChannelHasUnread,
   useChannelMentionCount,
@@ -37,7 +38,10 @@ import {
   useAccountDisplayName,
   useStringifiedMessageContent,
 } from "@shades/common/app";
-import { ethereum as ethereumUtils } from "@shades/common/utils";
+import {
+  ethereum as ethereumUtils,
+  array as arrayUtils,
+} from "@shades/common/utils";
 import { useFetch } from "@shades/common/react";
 import {
   useWallet,
@@ -56,14 +60,19 @@ import {
 import * as DropdownMenu from "@shades/ui-web/dropdown-menu";
 import * as Tooltip from "@shades/ui-web/tooltip";
 import Button from "@shades/ui-web/button";
+import Avatar from "@shades/ui-web/avatar";
 import AccountAvatar from "@shades/ui-web/account-avatar";
 import ChannelAvatar from "@shades/ui-web/channel-avatar";
 import Spinner from "@shades/ui-web/spinner";
 import {
-  useCollection as useChannelDrafts,
+  // useCollection as useChannelDrafts,
   useSingleItem as useChannelDraft,
 } from "./hooks/channel-drafts.js";
-import { useChannels as usePrechainChannels } from "./hooks/prechain.js";
+import {
+  // useChannels as usePrechainChannels,
+  useProposals,
+  useProposal,
+} from "./hooks/prechain.js";
 import { Provider as WriteAccessProvider } from "./hooks/write-access-scope.js";
 
 const { truncateAddress } = ethereumUtils;
@@ -224,23 +233,53 @@ const RootLayout = () => {
   const { login: initAccountVerification } = useWalletLogin();
   const { status: authenticationStatus } = useAuth();
 
-  const allStarredChannels = useStarredChannels();
-  const channels = usePrechainChannels({ name: true, readStates: true });
+  // const allStarredChannels = useStarredChannels();
+  // const channels = usePrechainChannels({ name: true, readStates: true });
 
-  const [starredChannels, notStarredChannels] = React.useMemo(() => {
-    const starredChannelIds = allStarredChannels.map((c) => c.id);
+  // const [starredChannels, notStarredChannels] = React.useMemo(() => {
+  //   const starredChannelIds = allStarredChannels.map((c) => c.id);
 
-    return channels.reduce(
-      ([starred, notStarred], c) => {
-        const isStarred = starredChannelIds.includes(c.id);
-        if (isStarred) return [[...starred, c], notStarred];
-        return [starred, [...notStarred, c]];
-      },
-      [[], []]
-    );
-  }, [channels, allStarredChannels]);
+  //   return channels.reduce(
+  //     ([starred, notStarred], c) => {
+  //       const isStarred = starredChannelIds.includes(c.id);
+  //       if (isStarred) return [[...starred, c], notStarred];
+  //       return [starred, [...notStarred, c]];
+  //     },
+  //     [[], []]
+  //   );
+  // }, [channels, allStarredChannels]);
 
-  const { items: channelDrafts } = useChannelDrafts();
+  // const { items: channelDrafts } = useChannelDrafts();
+  const proposals = useProposals();
+
+  const proposalsByStatus = React.useMemo(
+    () =>
+      arrayUtils.groupBy((p) => {
+        const status = p.status.toLowerCase();
+
+        switch (status) {
+          case "updatable":
+          case "pending":
+          case "active":
+          case "objectionperiod":
+          case "queued":
+          case "succeeded":
+            return "recent";
+
+          // Final states
+          case "cancelled":
+          case "defeated":
+          case "expired":
+          case "executed":
+          case "vetoed":
+            return "previous";
+
+          default:
+            throw new Error(`Unknown status: "${status}"`);
+        }
+      }, arrayUtils.reverse(proposals)),
+    [proposals]
+  );
 
   const [collapsedKeys, setCollapsedKeys] = useCachedState(
     "main-menu:collapsed",
@@ -248,8 +287,8 @@ const RootLayout = () => {
   );
 
   const [truncatedSectionKeys, setTruncatedSectionKeys] = React.useState([
-    "following",
     "recent",
+    "previous",
   ]);
 
   const isAuthenticated = authenticationStatus === "authenticated";
@@ -399,6 +438,7 @@ const RootLayout = () => {
             to="/new"
             end
             title="New proposal"
+            disabled
           />
 
           <ListItem
@@ -428,25 +468,37 @@ const RootLayout = () => {
               )
             }
             items={[
-              {
-                title: "Drafts",
-                key: "channel-drafts",
-                items: channelDrafts ?? [],
-                itemType: "channel-draft",
-              },
-              {
-                title: "Following",
-                key: "following",
-                items: starredChannels,
-                itemType: "channel",
-                itemSize: "large",
-              },
+              // {
+              //   title: "Drafts",
+              //   key: "channel-drafts",
+              //   items: channelDrafts ?? [],
+              //   itemType: "channel-draft",
+              // },
+              // {
+              //   title: "Following",
+              //   key: "following",
+              //   items: starredChannels,
+              //   itemType: "channel",
+              //   itemSize: "large",
+              // },
+              // {
+              //   title: "Recent",
+              //   key: "recent",
+              //   items: notStarredChannels,
+              //   itemType: "channel",
+              //   itemSize: "large",
+              // },
               {
                 title: "Recent",
                 key: "recent",
-                items: notStarredChannels,
-                itemType: "channel",
-                itemSize: "large",
+                items: proposalsByStatus.recent ?? [],
+                itemType: "proposal",
+              },
+              {
+                title: "Previous",
+                key: "previous",
+                items: proposalsByStatus.previous ?? [],
+                itemType: "proposal",
               },
             ]
               .filter((section) => section.items.length > 0)
@@ -562,6 +614,8 @@ const SectionedMenu = ({
                   );
                 case "channel-draft":
                   return <ChannelDraftItem key={item.key} id={item.key} />;
+                case "proposal":
+                  return <ProposalItem key={item.key} id={item.key} />;
                 default:
                   throw new Error();
               }
@@ -587,6 +641,32 @@ const SectionedMenu = ({
 const StringifiedMessageContent = React.memo(({ messageId }) =>
   useStringifiedMessageContent(messageId)
 );
+
+const ProposalItem = ({ id }) => {
+  const proposal = useProposal(id);
+
+  return (
+    <ListItem
+      component={NavLink}
+      to={`/${id}`}
+      size="large"
+      title={
+        <div
+          className="title"
+          css={css({ overflow: "hidden", textOverflow: "ellipsis" })}
+        >
+          {proposal.title}
+        </div>
+      }
+      icon={
+        <span>
+          <Avatar size="3rem" signature={proposal.id} />
+        </span>
+      }
+      subtitle={proposal.status}
+    />
+  );
+};
 
 const ChannelItem = ({ id, size }) => {
   const theme = useTheme();
@@ -739,6 +819,9 @@ const ListItem = React.forwardRef(
                 alignItems: "center",
                 justifyContent: "center",
               },
+              "&[aria-disabled] .icon-container > *": {
+                opacity: 0.65, // TODO: add theme color
+              },
               ".title-container": {
                 flex: 1,
                 minWidth: 0,
@@ -785,15 +868,7 @@ const ListItem = React.forwardRef(
                 width: `calc(${iconSize} + 0.2rem)`,
               }}
             >
-              <div
-                style={{
-                  color: disabled ? "rgb(255 255 255 / 22%)" : undefined,
-                  width: iconSize,
-                  height: iconSize,
-                }}
-              >
-                {icon}
-              </div>
+              <div style={{ width: iconSize, height: iconSize }}>{icon}</div>
             </div>
           )}
           <div className="title-container">
@@ -1148,7 +1223,8 @@ const Small = (props) => (
 );
 
 const { chains, publicClient } = configureWagmiChains(
-  [mainnet],
+  // [mainnet],
+  [sepolia],
   [infuraProvider({ apiKey: process.env.INFURA_PROJECT_ID }), publicProvider()]
 );
 
@@ -1225,7 +1301,7 @@ const App = () => {
                             {/*   element={<ChannelsScreen />} */}
                             {/* /> */}
                             <Route
-                              path="/:channelId"
+                              path="/:proposalId"
                               element={<ChannelScreen />}
                             />
                           </Route>

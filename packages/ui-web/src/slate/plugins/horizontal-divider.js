@@ -1,4 +1,4 @@
-import { Node, Range, Path } from "slate";
+import { Node, Path } from "slate";
 import { useSelected, useFocused } from "slate-react";
 import { function as functionUtils } from "@shades/common/utils";
 import { withBlockPrefixShortcut } from "../utils.js";

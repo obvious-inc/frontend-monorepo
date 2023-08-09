@@ -1,39 +1,39 @@
 import React from "react";
 import { Link as RouterLink } from "react-router-dom";
 import { css } from "@emotion/react";
-import { useUser, useChannel, useAccountDisplayName } from "@shades/common/app";
-import { channel as channelUtils } from "@shades/common/utils";
-import { useFetch } from "@shades/common/react";
-import ChannelAvatar from "@shades/ui-web/channel-avatar";
+import { useAccountDisplayName } from "@shades/common/app";
+import { array as arrayUtils } from "@shades/common/utils";
+import Avatar from "@shades/ui-web/avatar";
 import Input from "@shades/ui-web/input";
-import {
-  useActions,
-  useChannels as usePrechainChannels,
-} from "../hooks/prechain.js";
+import { useProposals, useProposal } from "../hooks/prechain.js";
 import FormattedDate from "./formatted-date.js";
 import NavBar from "./nav-bar.js";
 
-const { search: searchChannels } = channelUtils;
+const searchProposals = (items, rawQuery) => {
+  const query = rawQuery.trim().toLowerCase();
 
-const useChannels = () => {
-  const { fetchChannels } = useActions();
-  const channels = usePrechainChannels();
+  const filteredItems = items
+    .map((i) => ({ ...i, index: i.title.toLowerCase().indexOf(query) }))
+    .filter((i) => i.index !== -1);
 
-  useFetch(() => fetchChannels(), [fetchChannels]);
-
-  return channels;
+  return arrayUtils.sortBy(
+    { value: (i) => i.index, type: "index" },
+    filteredItems
+  );
 };
 
-const ChannelsScreen = () => {
+const ProposalsScreen = () => {
   const [query, setQuery] = React.useState("");
   const deferredQuery = React.useDeferredValue(query.trim());
 
-  const channels = useChannels();
+  const proposals = useProposals();
 
-  const filteredChannels = React.useMemo(
+  const filteredProposals = React.useMemo(
     () =>
-      deferredQuery === "" ? channels : searchChannels(channels, deferredQuery),
-    [deferredQuery, channels]
+      deferredQuery === ""
+        ? proposals
+        : searchProposals(proposals, deferredQuery),
+    [deferredQuery, proposals]
   );
 
   return (
@@ -126,9 +126,9 @@ const ChannelsScreen = () => {
                 })
               }
             >
-              {filteredChannels.map((c) => (
-                <li key={c.id}>
-                  <ChannelItem channelId={c.id} />
+              {filteredProposals.map((p) => (
+                <li key={p.id}>
+                  <ProposalItem proposalId={p.id} />
                 </li>
               ))}
             </ul>
@@ -139,17 +139,17 @@ const ChannelsScreen = () => {
   );
 };
 
-const ChannelItem = ({ channelId }) => {
-  const channel = useChannel(channelId);
-  const authorUser = useUser(channel.ownerUserId);
+const ProposalItem = ({ proposalId }) => {
+  const proposal = useProposal(proposalId);
   const { displayName: authorAccountDisplayName } = useAccountDisplayName(
-    authorUser?.walletAddress
+    proposal.proposer?.id
   );
+
   return (
-    <RouterLink to={`/${channelId}`}>
-      <ChannelAvatar id={channelId} transparent size="3.2rem" />
+    <RouterLink to={`/${proposalId}`}>
+      <Avatar signature={proposalId} transparent size="3.2rem" />
       <div>
-        <div className="name">{channel.name}</div>
+        <div className="name">{proposal.title}</div>
         <div className="description">
           By{" "}
           <em
@@ -160,11 +160,15 @@ const ChannelItem = ({ channelId }) => {
             {authorAccountDisplayName ?? "..."}
           </em>{" "}
           on{" "}
-          <FormattedDate value={channel.createdAt} day="numeric" month="long" />
+          <FormattedDate
+            value={proposal.createdTimestamp}
+            day="numeric"
+            month="long"
+          />
         </div>
       </div>
     </RouterLink>
   );
 };
 
-export default ChannelsScreen;
+export default ProposalsScreen;

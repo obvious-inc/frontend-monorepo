@@ -16,16 +16,7 @@ export const unique = (list) => [...new Set(list)];
 
 export const reverse = (list) => [...list].reverse();
 
-const indexComparator = (e1_, e2_) => {
-  // Make sure the arguments are all -1, 0, or 1. If not, default to -1.
-  const [e1, e2] = [e1_, e2_].map((e) => {
-    for (const n of [-1, 0, 1]) {
-      if (e === n) return e;
-    }
-
-    return -1;
-  });
-
+const indexComparator = (e1, e2) => {
   if (e1 === -1 && e2 === -1) return 0;
 
   // Single match
@@ -86,7 +77,7 @@ export const sort = (comparator, list) => [...list].sort(comparator);
 export const sortBy = (...args) => {
   const sortValueExtractors = args.slice(0, -1);
   const list = args.slice(-1)[0];
-  return sort(comparator(sortValueExtractors), list);
+  return sort(comparator(...sortValueExtractors), list);
 };
 
 export const partition = (size, list) => {

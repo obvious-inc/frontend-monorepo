@@ -61,7 +61,7 @@ const Avatar = React.forwardRef(
           >
             {
               // Emojis: https://dev.to/acanimal/how-to-slice-or-get-symbols-from-a-unicode-string-with-emojis-in-javascript-lets-learn-how-javascript-represent-strings-h3a
-              [...signature][0]
+              [...signature].slice(0, 3)
             }
           </div>
         )}

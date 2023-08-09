@@ -1,7 +1,13 @@
+import React from "react";
+import { css } from "@emotion/react";
 import { Link } from "react-router-dom";
 import { useUser, useChannel } from "@shades/common/app";
-import RichTextBase from "@shades/ui-web/rich-text";
+import RichTextBase, {
+  createCss as createRichTextCss,
+} from "@shades/ui-web/rich-text";
 import Emoji from "@shades/ui-web/emoji";
+
+const MarkdownHtml = React.lazy(() => import("./markdown-html.js"));
 
 const UserMention = ({ userId }) => {
   const user = useUser(userId);
@@ -23,7 +29,18 @@ const ChannelLink = ({ channelId }) => {
   );
 };
 
-const RichText = ({ blocks, ...props }) => {
+const RichText = ({ blocks, markdownText, ...props }) => {
+  if (markdownText != null)
+    return (
+      <MarkdownHtml
+        text={markdownText}
+        css={(t) => [
+          createRichTextCss(t),
+          css({ img: { borderRadius: "0.3rem" } }),
+        ]}
+      />
+    );
+
   // Special "large emoji" case
   const renderLargeEmoji =
     !props.inline &&

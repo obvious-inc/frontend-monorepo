@@ -8,7 +8,10 @@ import {
   useActions,
 } from "@shades/common/app";
 import { useFetch } from "@shades/common/react";
-import { useActions as usePrechainActions } from "./hooks/prechain.js";
+import {
+  useActions as usePrechainActions,
+  ChainDataCacheContextProvider,
+} from "./hooks/prechain.js";
 import "./reset.css";
 import "./index.css";
 
@@ -44,14 +47,16 @@ try {
 
 createRoot(document.getElementById("app-mount")).render(
   <React.StrictMode>
-    <CacheStoreProvider syncStorage={cacheStoreStorage}>
-      <AuthProvider apiOrigin="/api">
-        <AppStoreProvider
-          cloudflareAccountHash={process.env.CLOUDFLARE_ACCT_HASH}
-        >
-          <App />
-        </AppStoreProvider>
-      </AuthProvider>
-    </CacheStoreProvider>
+    <ChainDataCacheContextProvider>
+      <CacheStoreProvider syncStorage={cacheStoreStorage}>
+        <AuthProvider apiOrigin="/api">
+          <AppStoreProvider
+            cloudflareAccountHash={process.env.CLOUDFLARE_ACCT_HASH}
+          >
+            <App />
+          </AppStoreProvider>
+        </AuthProvider>
+      </CacheStoreProvider>
+    </ChainDataCacheContextProvider>
   </React.StrictMode>
 );
