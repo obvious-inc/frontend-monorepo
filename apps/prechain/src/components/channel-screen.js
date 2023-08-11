@@ -27,6 +27,7 @@ import {
 } from "@shades/common/react";
 import { array as arrayUtils } from "@shades/common/utils";
 import Button from "@shades/ui-web/button";
+import Input from "@shades/ui-web/input";
 import {
   // CrossCircle as CrossCircleIcon,
   ArrowDown as ArrowDownIcon,
@@ -40,7 +41,11 @@ import Dialog from "@shades/ui-web/dialog";
 // } from "@shades/ui-web/rich-text-editor";
 import { useState as useSidebarState } from "@shades/ui-web/sidebar-layout";
 import AccountAvatar from "@shades/ui-web/account-avatar";
-import { useProposal, useProposalFetch } from "../hooks/prechain.js";
+import {
+  useProposal,
+  useProposalFetch,
+  useSendProposalFeedback,
+} from "../hooks/prechain.js";
 // import { useWriteAccess } from "../hooks/write-access-scope.js";
 import AccountPreviewPopoverTrigger from "./account-preview-popover-trigger.js";
 // import ChannelMessage from "./channel-message.js";
@@ -92,6 +97,12 @@ const ProposalContent = ({ proposalId }) => {
 
   // const [replyTargetMessageId, setReplyTargetMessageId] = React.useState(null);
   const proposal = useProposal(proposalId);
+
+  const [pendingFeedback, setPendingFeedback] = React.useState("");
+  const sendProposalFeedback = useSendProposalFeedback(proposalId, {
+    support: 0,
+    reason: pendingFeedback.trim(),
+  });
 
   if (proposal == null) return null;
 
@@ -209,6 +220,25 @@ const ProposalContent = ({ proposalId }) => {
             <ProposalFeed proposalId={proposalId} />
           </div>
         </div>
+      </div>
+      <div css={css({ padding: "0 1.6rem 2rem" })}>
+        <form
+          onSubmit={(e) => {
+            e.preventDefault();
+
+            sendProposalFeedback().then(() => {
+              setPendingFeedback("");
+            });
+          }}
+        >
+          <Input
+            value={pendingFeedback}
+            onChange={(e) => {
+              setPendingFeedback(e.target.value);
+            }}
+          />
+          <Button type="submit">Send</Button>
+        </form>
       </div>
 
       {/* <ChannelMessagesScrollView */}

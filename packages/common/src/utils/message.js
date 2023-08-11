@@ -241,6 +241,80 @@ export const stringifyBlocks = (
   );
 };
 
+export const toMarkdown = (blockElements) => {
+  const renderTextNode = (l) => {
+    let text = l.text;
+
+    if (l.bold) text = `**${text}**`;
+    if (l.italic) text = `*${text}*`;
+    if (l.strikethrough) text = `~~${text}~~`;
+    return text;
+  };
+
+  const renderElement = (el) => {
+    const renderChildren = () => el.children.map(renderNode).join("");
+
+    switch (el.type) {
+      case "paragraph":
+      case "list-item":
+        return `\n${renderChildren()}\n`;
+
+      case "heading-1":
+        return `\n# ${renderChildren()}\n`;
+      case "heading-2":
+        return `\n## ${renderChildren()}\n`;
+      case "heading-3":
+        return `\n### ${renderChildren()}\n`;
+      case "heading-4":
+        return `\n#### ${renderChildren()}\n`;
+
+      case "quote":
+      case "callout":
+        return `\n> ${renderChildren()}\n`;
+
+      case "bulleted-list":
+      case "numbered-list": {
+        const children = el.children.map((el, i) => {
+          const prefix = el.type === "bulleted-list" ? "-" : `${i + 1}.`;
+          return `${prefix} ${renderNode(el)}`;
+        });
+        return `\n${children.join("\n")}\n`;
+      }
+
+      case "link":
+        return `[${el.text ?? el.url}](${el.url})`;
+
+      case "emoji":
+        return el.emoji;
+
+      case "attachments":
+        return `\n${renderChildren()}\n`;
+
+      case "image-attachment":
+        return `![](${el.url})`;
+
+      case "horizontal-divider":
+        return "\n---\n";
+
+      default:
+        throw new Error();
+    }
+  };
+
+  const renderNode = (n) => {
+    if (n.text != null) return renderTextNode(n);
+    return renderElement(n);
+  };
+
+  return (
+    blockElements
+      .map(renderElement)
+      .join("")
+      // Gets rid of the the outer paragraph line breaks, I dunno
+      .replace(/^[\n]|[\n]$/g, "")
+  );
+};
+
 export const createParagraphElement = (content = "") => ({
   type: "paragraph",
   children: typeof content === "string" ? [{ text: content }] : content,

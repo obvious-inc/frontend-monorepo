@@ -71,7 +71,9 @@ import {
 import {
   // useChannels as usePrechainChannels,
   useProposals,
+  useProposalCandidates,
   useProposal,
+  useProposalCandidate,
 } from "./hooks/prechain.js";
 import { Provider as WriteAccessProvider } from "./hooks/write-access-scope.js";
 
@@ -95,6 +97,10 @@ const useLastMessage = (channelId) => {
 
 const ChannelScreen = React.lazy(() =>
   import("./components/channel-screen.js")
+);
+
+const ProposalCandidateScreen = React.lazy(() =>
+  import("./components/proposal-candidate-screen.js")
 );
 
 const ChannelsScreen = React.lazy(() =>
@@ -251,6 +257,7 @@ const RootLayout = () => {
 
   // const { items: channelDrafts } = useChannelDrafts();
   const proposals = useProposals();
+  const proposalCandidates = useProposalCandidates();
 
   const proposalsByStatus = React.useMemo(
     () =>
@@ -287,6 +294,7 @@ const RootLayout = () => {
   );
 
   const [truncatedSectionKeys, setTruncatedSectionKeys] = React.useState([
+    "candidates",
     "recent",
     "previous",
   ]);
@@ -438,7 +446,6 @@ const RootLayout = () => {
             to="/new"
             end
             title="New proposal"
-            disabled
           />
 
           <ListItem
@@ -488,6 +495,12 @@ const RootLayout = () => {
               //   itemType: "channel",
               //   itemSize: "large",
               // },
+              {
+                title: "Candidates",
+                key: "candidates",
+                items: proposalCandidates ?? [],
+                itemType: "proposal-candidate",
+              },
               {
                 title: "Recent",
                 key: "recent",
@@ -616,6 +629,8 @@ const SectionedMenu = ({
                   return <ChannelDraftItem key={item.key} id={item.key} />;
                 case "proposal":
                   return <ProposalItem key={item.key} id={item.key} />;
+                case "proposal-candidate":
+                  return <ProposalCandidateItem key={item.key} id={item.key} />;
                 default:
                   throw new Error();
               }
@@ -660,10 +675,35 @@ const ProposalItem = ({ id }) => {
       }
       icon={
         <span>
-          <Avatar size="3rem" signature={proposal.id} />
+          <Avatar size="3rem" signature={proposal.id} signatureLength={3} />
         </span>
       }
       subtitle={proposal.status}
+    />
+  );
+};
+
+const ProposalCandidateItem = ({ id }) => {
+  const candidate = useProposalCandidate(id);
+
+  return (
+    <ListItem
+      component={NavLink}
+      to={`/candidates/${id}`}
+      size="large"
+      title={
+        <div
+          className="title"
+          css={css({ overflow: "hidden", textOverflow: "ellipsis" })}
+        >
+          {candidate.latestVersion.title}
+        </div>
+      }
+      icon={
+        <span>
+          <Avatar size="3rem" signature={candidate.slug} signatureLength={2} />
+        </span>
+      }
     />
   );
 };
@@ -1290,16 +1330,16 @@ const App = () => {
                             <Route index element={<ChannelsScreen />} />
                             <Route
                               path="/new/:draftId?"
-                              element={
-                                <RequireAuth>
-                                  <CreateChannelScreen />
-                                </RequireAuth>
-                              }
+                              element={<CreateChannelScreen />}
                             />
                             {/* <Route */}
                             {/*   path="/proposals" */}
                             {/*   element={<ChannelsScreen />} */}
                             {/* /> */}
+                            <Route
+                              path="/candidates/:candidateId"
+                              element={<ProposalCandidateScreen />}
+                            />
                             <Route
                               path="/:proposalId"
                               element={<ChannelScreen />}
@@ -1370,14 +1410,14 @@ const LogoSymbol = (props) => (
   </svg>
 );
 
-const RequireAuth = ({ children }) => {
-  const { status: authStatus } = useAuth();
+// const RequireAuth = ({ children }) => {
+//   const { status: authStatus } = useAuth();
 
-  if (authStatus === "not-authenticated") return <LoginScreen />;
+//   if (authStatus === "not-authenticated") return <LoginScreen />;
 
-  if (authStatus !== "authenticated") return null; // Spinner
+//   if (authStatus !== "authenticated") return null; // Spinner
 
-  return children;
-};
+//   return children;
+// };
 
 export default App;

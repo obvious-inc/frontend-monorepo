@@ -5,7 +5,12 @@ import { useAccountDisplayName } from "@shades/common/app";
 import { array as arrayUtils } from "@shades/common/utils";
 import Avatar from "@shades/ui-web/avatar";
 import Input from "@shades/ui-web/input";
-import { useProposals, useProposal } from "../hooks/prechain.js";
+import {
+  useProposals,
+  useProposalCandidates,
+  useProposal,
+  useProposalCandidate,
+} from "../hooks/prechain.js";
 import FormattedDate from "./formatted-date.js";
 import NavBar from "./nav-bar.js";
 
@@ -13,7 +18,10 @@ const searchProposals = (items, rawQuery) => {
   const query = rawQuery.trim().toLowerCase();
 
   const filteredItems = items
-    .map((i) => ({ ...i, index: i.title.toLowerCase().indexOf(query) }))
+    .map((i) => {
+      const title = i.title ?? i.latestVersion?.title;
+      return { ...i, index: title.toLowerCase().indexOf(query) };
+    })
     .filter((i) => i.index !== -1);
 
   return arrayUtils.sortBy(
@@ -27,14 +35,12 @@ const ProposalsScreen = () => {
   const deferredQuery = React.useDeferredValue(query.trim());
 
   const proposals = useProposals();
+  const proposalCandidates = useProposalCandidates();
 
-  const filteredProposals = React.useMemo(
-    () =>
-      deferredQuery === ""
-        ? proposals
-        : searchProposals(proposals, deferredQuery),
-    [deferredQuery, proposals]
-  );
+  const filteredItems = React.useMemo(() => {
+    const items = [...proposalCandidates, ...proposals];
+    return deferredQuery === "" ? items : searchProposals(items, deferredQuery);
+  }, [deferredQuery, proposals, proposalCandidates]);
 
   return (
     <>
@@ -63,7 +69,7 @@ const ProposalsScreen = () => {
               })
             }
           >
-            Proposals
+            Proposals & Candidates
           </div>
         </NavBar>
         <div css={css({ padding: "0 1.5rem 1rem" })}>
@@ -126,9 +132,13 @@ const ProposalsScreen = () => {
                 })
               }
             >
-              {filteredProposals.map((p) => (
-                <li key={p.id}>
-                  <ProposalItem proposalId={p.id} />
+              {filteredItems.map((i) => (
+                <li key={i.id}>
+                  {i.slug == null ? (
+                    <ProposalItem proposalId={i.id} />
+                  ) : (
+                    <ProposalCandidateItem candidateId={i.id} />
+                  )}
                 </li>
               ))}
             </ul>
@@ -147,7 +157,12 @@ const ProposalItem = ({ proposalId }) => {
 
   return (
     <RouterLink to={`/${proposalId}`}>
-      <Avatar signature={proposalId} transparent size="3.2rem" />
+      <Avatar
+        signature={proposalId}
+        signatureLength={3}
+        transparent
+        size="3.2rem"
+      />
       <div>
         <div className="name">{proposal.title}</div>
         <div className="description">
@@ -165,6 +180,55 @@ const ProposalItem = ({ proposalId }) => {
             day="numeric"
             month="long"
           />
+        </div>
+      </div>
+    </RouterLink>
+  );
+};
+
+const ProposalCandidateItem = ({ candidateId }) => {
+  const candidate = useProposalCandidate(candidateId);
+  const { displayName: authorAccountDisplayName } = useAccountDisplayName(
+    candidate.proposer
+  );
+
+  return (
+    <RouterLink to={`/candidates/${candidateId}`}>
+      <Avatar
+        signature={candidate.slug}
+        signatureLength={2}
+        transparent
+        size="3.2rem"
+      />
+      <div>
+        <div className="name">{candidate.latestVersion.title}</div>
+        <div className="description">
+          By{" "}
+          <em
+            css={(t) =>
+              css({ fontWeight: t.text.weights.emphasis, fontStyle: "normal" })
+            }
+          >
+            {authorAccountDisplayName ?? "..."}
+          </em>
+          <span
+            css={(t) =>
+              css({
+                display: "inline-flex",
+                background: t.colors.backgroundModifierHover,
+                color: t.colors.textDimmed,
+                fontSize: t.text.sizes.tiny,
+                fontWeight: "400",
+                textTransform: "uppercase",
+                padding: "0.1rem 0.3rem",
+                borderRadius: "0.2rem",
+                marginLeft: "0.6rem",
+                lineHeight: 1.2,
+              })
+            }
+          >
+            Candidate
+          </span>
         </div>
       </div>
     </RouterLink>

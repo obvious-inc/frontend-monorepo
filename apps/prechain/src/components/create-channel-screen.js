@@ -1,7 +1,9 @@
 import React from "react";
 import { useParams, useNavigate } from "react-router-dom";
+import { useAccount } from "wagmi";
 import { css } from "@emotion/react";
 import { useLatestCallback } from "@shades/common/react";
+import { message as messageUtils } from "@shades/common/utils";
 import Button from "@shades/ui-web/button";
 import RichTextEditor, {
   Provider as EditorProvider,
@@ -12,13 +14,13 @@ import {
   useCollection as useDrafts,
   useSingleItem as useDraft,
 } from "../hooks/channel-drafts.js";
-import { useActions } from "../hooks/prechain.js";
+import { useCreateProposalCandidate } from "../hooks/prechain.js";
 
-const CreateChannelScreen = () => {
+const CreateProposalScreen = () => {
   const { draftId } = useParams();
   const navigate = useNavigate();
 
-  const { createChannel } = useActions();
+  const { address: connectedAccountAddress } = useAccount();
 
   const editorRef = React.useRef();
 
@@ -35,15 +37,26 @@ const CreateChannelScreen = () => {
   const isBodyEmpty =
     draft == null || draft.body.every(isRichTextEditorNodeEmpty);
 
+  const createProposalCandidate = useCreateProposalCandidate({
+    slug: draft?.name,
+    description: draft == null ? null : messageUtils.toMarkdown(draft.body),
+  });
+
   const hasRequiredInput = !isNameEmpty && !isBodyEmpty;
 
   const submit = () => {
     setPendingRequest(true);
 
+    const slug = draft?.name;
+
     deleteDraft(draftId)
-      .then(() => createChannel({ name: draft.name, body: draft.body }))
-      .then((channel) => {
-        navigate(`/${channel.id}`);
+      .then(() => createProposalCandidate())
+      .then(() => {
+        navigate(
+          `/candidates/${encodeURIComponent(
+            connectedAccountAddress
+          )}-${encodeURIComponent(slug)}`
+        );
       })
       .catch((e) => {
         alert("Ops, looks like something went wrong!");
@@ -205,4 +218,4 @@ const CreateChannelScreen = () => {
   );
 };
 
-export default CreateChannelScreen;
+export default CreateProposalScreen;
