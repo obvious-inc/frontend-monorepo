@@ -19,7 +19,7 @@ const AutoAdjustingHeightTextarea = React.forwardRef((props, externalRef) => {
     return () => {
       el.removeEventListener("input", handler);
     };
-  }, [ref]);
+  }, [props.value, ref]);
 
   return (
     <textarea

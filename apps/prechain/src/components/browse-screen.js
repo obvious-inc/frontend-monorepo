@@ -1,5 +1,9 @@
 import React from "react";
-import { Link as RouterLink } from "react-router-dom";
+import {
+  Link as RouterLink,
+  useNavigate,
+  useSearchParams,
+} from "react-router-dom";
 import { css } from "@emotion/react";
 import { useAccountDisplayName } from "@shades/common/app";
 import { array as arrayUtils } from "@shades/common/utils";
@@ -12,14 +16,14 @@ import {
   useProposalCandidate,
 } from "../hooks/prechain.js";
 import FormattedDate from "./formatted-date.js";
-import NavBar from "./nav-bar.js";
+import { Layout, MainContentContainer } from "./proposal-screen.js";
 
 const searchProposals = (items, rawQuery) => {
   const query = rawQuery.trim().toLowerCase();
 
   const filteredItems = items
     .map((i) => {
-      const title = i.title ?? i.latestVersion?.title;
+      const title = i.title ?? i.latestVersion?.content.title;
       return { ...i, index: title.toLowerCase().indexOf(query) };
     })
     .filter((i) => i.index !== -1);
@@ -31,7 +35,10 @@ const searchProposals = (items, rawQuery) => {
 };
 
 const ProposalsScreen = () => {
-  const [query, setQuery] = React.useState("");
+  const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
+
+  const query = searchParams.get("q") ?? "";
   const deferredQuery = React.useDeferredValue(query.trim());
 
   const proposals = useProposals();
@@ -39,113 +46,107 @@ const ProposalsScreen = () => {
 
   const filteredItems = React.useMemo(() => {
     const items = [...proposalCandidates, ...proposals];
-    return deferredQuery === "" ? items : searchProposals(items, deferredQuery);
+
+    return deferredQuery === ""
+      ? arrayUtils.sortBy(
+          { value: (i) => i.lastUpdatedTimestamp, order: "desc" },
+          items
+        )
+      : searchProposals(items, deferredQuery);
   }, [deferredQuery, proposals, proposalCandidates]);
 
   return (
-    <>
-      <div
-        css={(t) =>
-          css({
-            position: "relative",
-            zIndex: 0,
-            flex: 1,
-            minWidth: 0,
-            display: "flex",
-            flexDirection: "column",
-            alignItems: "stretch",
-            height: "100%",
-            background: t.colors.backgroundPrimary,
-          })
-        }
-      >
-        <NavBar>
-          <div
-            css={(t) =>
-              css({
-                fontSize: t.text.sizes.header,
-                fontWeight: t.text.weights.header,
-                color: t.colors.textHeader,
-              })
-            }
-          >
-            Proposals & Candidates
-          </div>
-        </NavBar>
-        <div css={css({ padding: "0 1.5rem 1rem" })}>
+    <Layout
+      // navigationStack={[{ to: "/", label: "Proposals" }]}
+      actions={[
+        {
+          onSelect: () => {
+            navigate("/new");
+          },
+          label: "Propose",
+        },
+      ]}
+    >
+      <MainContentContainer>
+        <div
+          css={css({
+            padding: "1rem 1.6rem 3.2rem",
+            "@media (min-width: 600px)": {
+              padding: "6rem 1.6rem 8rem",
+            },
+          })}
+        >
           <Input
             placeholder="Search..."
             value={query}
             onChange={(e) => {
-              setQuery(e.target.value);
-            }}
-          />
-        </div>
-        <div
-          css={(t) =>
-            css({
-              flex: 1,
-              display: "flex",
-              flexDirection: "column",
-              alignItems: "stretch",
-              justifyContent: "flex-start",
-              color: t.colors.textNormal,
-              fontSize: t.text.sizes.large,
-              overflowY: "scroll",
-              overflowX: "hidden",
-            })
-          }
-        >
-          <div style={{ padding: "0 1rem 1rem" }}>
-            <ul
-              css={(t) =>
-                css({
-                  listStyle: "none",
-                  "li + li": { marginTop: "0.4rem" },
-                  a: {
-                    textDecoration: "none",
-                    padding: "0.8rem 0.6rem",
-                    color: t.colors.textNormal,
-                    borderRadius: "0.5rem",
-                    display: "grid",
-                    gridTemplateColumns: "auto minmax(0,1fr)",
-                    alignItems: "center",
-                    gridGap: "1rem",
-                  },
-                  ".name": {
-                    fontSize: t.text.sizes.large,
-                    fontWeight: t.text.weights.header,
-                    lineHeight: 1.2,
-                  },
-                  ".description": {
-                    color: t.colors.textDimmed,
-                    fontSize: t.text.sizes.small,
-                    lineHeight: 1.35,
-                    marginTop: "0.1rem",
-                    whiteSpace: "nowrap",
-                    overflow: "hidden",
-                    textOverflow: "ellipsis",
-                  },
-                  "@media(hover: hover)": {
-                    "a:hover": { background: t.colors.backgroundModifierHover },
-                  },
-                })
+              // Clear search from path if query is empty
+              if (e.target.value.trim() === "") {
+                setSearchParams({});
+                return;
               }
-            >
-              {filteredItems.map((i) => (
-                <li key={i.id}>
-                  {i.slug == null ? (
-                    <ProposalItem proposalId={i.id} />
-                  ) : (
-                    <ProposalCandidateItem candidateId={i.id} />
-                  )}
-                </li>
-              ))}
-            </ul>
-          </div>
+
+              setSearchParams({ q: e.target.value });
+            }}
+            css={css({
+              marginBottom: "1.6rem",
+              "@media (min-width: 600px)": {
+                marginBottom: "3.2rem",
+              },
+            })}
+          />
+          <ul
+            css={(t) => {
+              const hoverColor = t.colors.backgroundTertiary;
+              return css({
+                listStyle: "none",
+                "li + li": { marginTop: "0.4rem" },
+                a: {
+                  textDecoration: "none",
+                  padding: "0.8rem 0",
+                  color: t.colors.textNormal,
+                  borderRadius: "0.5rem",
+                  display: "grid",
+                  gridTemplateColumns: "auto minmax(0,1fr)",
+                  alignItems: "center",
+                  gridGap: "1rem",
+                },
+                ".name": {
+                  fontSize: t.text.sizes.large,
+                  fontWeight: t.text.weights.header,
+                  lineHeight: 1.2,
+                },
+                ".description": {
+                  color: t.colors.textDimmed,
+                  fontSize: t.text.sizes.small,
+                  lineHeight: 1.35,
+                  marginTop: "0.1rem",
+                  whiteSpace: "nowrap",
+                  overflow: "hidden",
+                  textOverflow: "ellipsis",
+                },
+                "@media(hover: hover)": {
+                  "a:hover": {
+                    // background: t.colors.backgroundModifierHover,
+                    background: `linear-gradient(90deg, transparent 0%, ${hoverColor} 20%, ${hoverColor} 80%, transparent 100%)`,
+                  },
+                },
+              });
+            }}
+          >
+            {filteredItems.map((i) => (
+              <li key={i.id}>
+                {i.slug == null ? (
+                  <ProposalItem proposalId={i.id} />
+                ) : (
+                  <ProposalCandidateItem candidateId={i.id} />
+                )}
+              </li>
+            ))}
+          </ul>
         </div>
-      </div>
-    </>
+      </MainContentContainer>
+    </Layout>
   );
 };
 
@@ -201,7 +202,7 @@ const ProposalCandidateItem = ({ candidateId }) => {
         size="3.2rem"
       />
       <div>
-        <div className="name">{candidate.latestVersion.title}</div>
+        <div className="name">{candidate.latestVersion.content.title}</div>
         <div className="description">
           By{" "}
           <em
@@ -227,7 +228,9 @@ const ProposalCandidateItem = ({ candidateId }) => {
               })
             }
           >
-            Candidate
+            {candidate.latestVersion.targetProposalId == null
+              ? "Candidate"
+              : "Update candidate"}
           </span>
         </div>
       </div>

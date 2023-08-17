@@ -257,7 +257,7 @@ export const toMarkdown = (blockElements) => {
     switch (el.type) {
       case "paragraph":
       case "list-item":
-        return `\n${renderChildren()}\n`;
+        return `${renderChildren()}`;
 
       case "heading-1":
         return `\n# ${renderChildren()}\n`;
@@ -274,8 +274,9 @@ export const toMarkdown = (blockElements) => {
 
       case "bulleted-list":
       case "numbered-list": {
+        const isBulletList = el.type === "bulleted-list";
         const children = el.children.map((el, i) => {
-          const prefix = el.type === "bulleted-list" ? "-" : `${i + 1}.`;
+          const prefix = isBulletList ? "-" : `${i + 1}.`;
           return `${prefix} ${renderNode(el)}`;
         });
         return `\n${children.join("\n")}\n`;

@@ -1,12 +1,12 @@
 import React from "react";
 import {
+  Link as RouterLink,
   useParams,
   // useNavigate,
   useSearchParams,
-  Link as RouterLink,
 } from "react-router-dom";
 import { css } from "@emotion/react";
-import { useBlockNumber } from "wagmi";
+import { useAccount, useBlockNumber } from "wagmi";
 // import {
 //   useActions,
 //   useMe,
@@ -28,10 +28,6 @@ import {
 import { array as arrayUtils } from "@shades/common/utils";
 import Button from "@shades/ui-web/button";
 import Input from "@shades/ui-web/input";
-import {
-  // CrossCircle as CrossCircleIcon,
-  ArrowDown as ArrowDownIcon,
-} from "@shades/ui-web/icons";
 // import MessageEditorForm from "@shades/ui-web/message-editor-form";
 // import ChannelMessagesScrollView from "@shades/ui-web/channel-messages-scroll-view";
 import Dialog from "@shades/ui-web/dialog";
@@ -39,7 +35,6 @@ import Dialog from "@shades/ui-web/dialog";
 //   Provider as EditorProvider,
 //   Toolbar as EditorToolbar,
 // } from "@shades/ui-web/rich-text-editor";
-import { useState as useSidebarState } from "@shades/ui-web/sidebar-layout";
 import AccountAvatar from "@shades/ui-web/account-avatar";
 import {
   useProposal,
@@ -50,7 +45,6 @@ import {
 import AccountPreviewPopoverTrigger from "./account-preview-popover-trigger.js";
 // import ChannelMessage from "./channel-message.js";
 import RichText from "./rich-text.js";
-import FormattedDate from "./formatted-date.js";
 import FormattedDateWithTooltip from "./formatted-date-with-tooltip.js";
 
 const useApproximateBlockTimeStampCalculator = () => {
@@ -74,8 +68,8 @@ const useApproximateBlockTimeStampCalculator = () => {
   );
 };
 
-const ProposalContent = ({ proposalId }) => {
-  // const { address: connectedWalletAccountAddress } = useAccount();
+const ProposalMainSection = ({ proposalId }) => {
+  const { address: connectedWalletAccountAddress } = useAccount();
   // const { connect: connectWallet, isConnecting: isConnectingWallet } =
   //   useWallet();
   // const { login: initAccountVerification, status: accountVerificationStatus } =
@@ -184,241 +178,55 @@ const ProposalContent = ({ proposalId }) => {
     <>
       <div
         css={css({
-          position: "relative",
-          flex: 1,
-          display: "flex",
-          minHeight: 0,
-          minWidth: 0,
+          padding: "2rem 1.6rem 3.2rem",
+          "@media (min-width: 600px)": {
+            padding: "6rem 1.6rem 8rem",
+          },
         })}
       >
-        <div
-          // ref={scrollContainerRef}
-          css={css({
-            position: "absolute",
-            top: 0,
-            left: 0,
-            right: 0,
-            bottom: 0,
-            overflowY: "scroll",
-            overflowX: "hidden",
-            minHeight: 0,
-            flex: 1,
-            overflowAnchor: "none",
-          })}
-        >
-          <div
-            css={css({
-              display: "flex",
-              flexDirection: "column",
-              justifyContent: "flex-start",
-              // justifyContent: "flex-end",
-              alignItems: "stretch",
-              minHeight: "100%",
-            })}
-          >
-            <ProposalHeader proposalId={proposalId} />
-            <ProposalFeed proposalId={proposalId} />
-          </div>
-        </div>
+        <MainContentContainer>
+          <ProposalHeader proposalId={proposalId} />
+          <ProposalFeed proposalId={proposalId} />
+          {connectedWalletAccountAddress != null && (
+            <div
+              css={css({
+                padding: "0 0 2rem",
+                display: "grid",
+                gridTemplateColumns: "3.8rem minmax(0,1fr)",
+                gridGap: "1.2rem",
+              })}
+            >
+              <AccountAvatar
+                address={connectedWalletAccountAddress}
+                size="3.8rem"
+                transparent
+              />
+              <form
+                onSubmit={(e) => {
+                  e.preventDefault();
+
+                  sendProposalFeedback().then(() => {
+                    setPendingFeedback("");
+                  });
+                }}
+              >
+                <Input
+                  multiline
+                  rows={3}
+                  placeholder="I believe..."
+                  value={pendingFeedback}
+                  onChange={(e) => {
+                    setPendingFeedback(e.target.value);
+                  }}
+                />
+                <Button type="submit" style={{ marginTop: "1rem" }}>
+                  Send feedback
+                </Button>
+              </form>
+            </div>
+          )}
+        </MainContentContainer>
       </div>
-      <div css={css({ padding: "0 1.6rem 2rem" })}>
-        <form
-          onSubmit={(e) => {
-            e.preventDefault();
-
-            sendProposalFeedback().then(() => {
-              setPendingFeedback("");
-            });
-          }}
-        >
-          <Input
-            value={pendingFeedback}
-            onChange={(e) => {
-              setPendingFeedback(e.target.value);
-            }}
-          />
-          <Button type="submit">Send</Button>
-        </form>
-      </div>
-
-      {/* <ChannelMessagesScrollView */}
-      {/*   channelId={channelId} */}
-      {/*   didScrollToBottomRef={didScrollToBottomRef} */}
-      {/*   renderHeader={ */}
-      {/*     channel?.body == null */}
-      {/*       ? null */}
-      {/*       : () => <ChannelHeader channelId={channelId} /> */}
-      {/*   } */}
-      {/*   renderMessage={renderMessage} */}
-      {/* /> */}
-
-      {/* <div css={css({ padding: "0 1.6rem 2rem" })}> */}
-      {/*   <MessageEditorForm */}
-      {/*     ref={inputRef} */}
-      {/*     inline */}
-      {/*     disabled={!hasVerifiedWriteAccess && !hasUnverifiedWriteAccess} */}
-      {/*     placeholder={ */}
-      {/*       channel?.name == null ? "..." : `Message ${channel.name}` */}
-      {/*     } */}
-      {/*     submit={async (blocks) => { */}
-      {/*       setReplyTargetMessageId(null); */}
-
-      {/*       if ( */}
-      {/*         channel.memberUserIds != null && */}
-      {/*         !channel.memberUserIds.includes(me.id) */}
-      {/*       ) */}
-      {/*         await actions.joinChannel(channelId); */}
-
-      {/*       actions.createMessage({ */}
-      {/*         channel: channelId, */}
-      {/*         blocks, */}
-      {/*         replyToMessageId: replyTargetMessageId, */}
-      {/*       }); */}
-      {/*     }} */}
-      {/*     uploadImage={actions.uploadImage} */}
-      {/*     // members={channel?.members ?? []} */}
-      {/*     // commands={messageInputCommands} */}
-      {/*     onKeyDown={(e) => { */}
-      {/*       if (!e.isDefaultPrevented() && e.key === "Escape") { */}
-      {/*         e.preventDefault(); */}
-      {/*         cancelReply?.(); */}
-      {/*       } */}
-      {/*     }} */}
-      {/*     renderSubmitArea={ */}
-      {/*       writeAccessState === "authorized" ? null : writeAccessState === */}
-      {/*         "loading" ? ( */}
-      {/*         <div /> */}
-      {/*       ) : ( */}
-      {/*         () => ( */}
-      {/*           <div */}
-      {/*             style={{ */}
-      {/*               flex: "1 1 auto", */}
-      {/*               display: "flex", */}
-      {/*               alignItems: "flex-end", */}
-      {/*               justifyContent: "flex-end", */}
-      {/*             }} */}
-      {/*           > */}
-      {/*             <div */}
-      {/*               style={{ */}
-      {/*                 alignSelf: "flex-end", */}
-      {/*                 display: "grid", */}
-      {/*                 gridAutoFlow: "column", */}
-      {/*                 gridAutoColumns: "auto", */}
-      {/*                 gridGap: "1.6rem", */}
-      {/*                 alignItems: "center", */}
-      {/*               }} */}
-      {/*             > */}
-      {/*               {writeAccessState === "unauthorized" || */}
-      {/*                 writeAccessState === "unauthorized-unverified" ? ( */}
-      {/*                 <div */}
-      {/*                   css={(t) => */}
-      {/*                     css({ */}
-      {/*                       fontSize: t.text.sizes.small, */}
-      {/*                       color: t.colors.textDimmed, */}
-      {/*                       lineHeight: 1.2, */}
-      {/*                     }) */}
-      {/*                   } */}
-      {/*                 > */}
-      {/*                   Only noun holders and delegates can post */}
-      {/*                 </div> */}
-      {/*               ) : ( */}
-      {/*                 <> */}
-      {/*                   <div */}
-      {/*                     css={(t) => */}
-      {/*                       css({ */}
-      {/*                         fontSize: t.text.sizes.small, */}
-      {/*                         color: t.colors.textDimmed, */}
-      {/*                         lineHeight: 1.2, */}
-      {/*                       }) */}
-      {/*                     } */}
-      {/*                   > */}
-      {/*                     Account verification required */}
-      {/*                   </div> */}
-
-      {/*                   {writeAccessState === "unknown" ? ( */}
-      {/*                     <Button */}
-      {/*                       size="small" */}
-      {/*                       variant="primary" */}
-      {/*                       isLoading={isConnectingWallet} */}
-      {/*                       disabled={isConnectingWallet} */}
-      {/*                       onClick={() => { */}
-      {/*                         connectWallet(); */}
-      {/*                       }} */}
-      {/*                       style={{ overflow: "visible" }} */}
-      {/*                     > */}
-      {/*                       Connect wallet */}
-      {/*                     </Button> */}
-      {/*                   ) : ( */}
-      {/*                     // Write access state is "authorized-unverfified" */}
-      {/*                     <Button */}
-      {/*                       size="small" */}
-      {/*                       variant="primary" */}
-      {/*                       isLoading={accountVerificationStatus !== "idle"} */}
-      {/*                       disabled={accountVerificationStatus !== "idle"} */}
-      {/*                       onClick={() => { */}
-      {/*                         initAccountVerification( */}
-      {/*                           connectedWalletAccountAddress */}
-      {/*                         ).then(() => { */}
-      {/*                           inputRef.current.focus(); */}
-      {/*                         }); */}
-      {/*                       }} */}
-      {/*                       style={{ overflow: "visible" }} */}
-      {/*                     > */}
-      {/*                       Verify account */}
-      {/*                     </Button> */}
-      {/*                   )} */}
-      {/*                 </> */}
-      {/*               )} */}
-      {/*             </div> */}
-      {/*           </div> */}
-      {/*         ) */}
-      {/*       ) */}
-      {/*     } */}
-      {/*     header={ */}
-      {/*       replyTargetMessageId == null ? null : ( */}
-      {/*         <div css={css({ display: "flex", alignItems: "center" })}> */}
-      {/*           <div css={css({ flex: 1, paddingRight: "1rem" })}> */}
-      {/*             Replying to{" "} */}
-      {/*             <AccountPreviewPopoverTrigger */}
-      {/*               userId={replyTargetMessage.authorUserId} */}
-      {/*               variant="link" */}
-      {/*               css={(t) => */}
-      {/*                 css({ */}
-      {/*                   color: t.colors.textDimmed, */}
-      {/*                   ":disabled": { color: t.colors.textMuted }, */}
-      {/*                 }) */}
-      {/*               } */}
-      {/*             /> */}
-      {/*           </div> */}
-      {/*           <button */}
-      {/*             onClick={cancelReply} */}
-      {/*             css={(t) => */}
-      {/*               css({ */}
-      {/*                 color: t.colors.textDimmed, */}
-      {/*                 outline: "none", */}
-      {/*                 borderRadius: "50%", */}
-      {/*                 marginRight: "-0.2rem", */}
-      {/*                 ":focus-visible": { */}
-      {/*                   boxShadow: `0 0 0 0.2rem ${t.colors.primary}`, */}
-      {/*                 }, */}
-      {/*                 "@media (hover: hover)": { */}
-      {/*                   cursor: "pointer", */}
-      {/*                   ":hover": { */}
-      {/*                     color: t.colors.textDimmedModifierHover, */}
-      {/*                   }, */}
-      {/*                 }, */}
-      {/*               }) */}
-      {/*             } */}
-      {/*           > */}
-      {/*             <CrossCircleIcon */}
-      {/*               style={{ width: "1.6rem", height: "auto" }} */}
-      {/*             /> */}
-      {/*           </button> */}
-      {/*         </div> */}
-      {/*       ) */}
-      {/*     } */}
-      {/*   /> */}
-      {/* </div> */}
     </>
   );
 };
@@ -474,11 +282,11 @@ const ProposalDialog = ({
   );
 };
 
-// const AdminChannelDialog = ({ proposalId, dismiss }) => {
+// const AdminChannelDialog = ({proposalId, dismiss}) => {
 //   const navigate = useNavigate();
 //   const editorRef = React.useRef();
 
-//   const { updateChannel, deleteChannel } = useActions();
+//   const {updateChannel, deleteChannel} = useActions();
 //   const proposal = useProposal(proposalId);
 
 //   const persistedName = channel.name;
@@ -502,7 +310,7 @@ const ProposalDialog = ({
 //   const submit = async () => {
 //     setPendingSubmit(true);
 //     try {
-//       await updateChannel(channelId, { name, body });
+//       await updateChannel(channelId, {name, body});
 //       dismiss();
 //     } catch (e) {
 //       alert("Something went wrong");
@@ -648,9 +456,7 @@ const ProposalDialog = ({
 //   );
 // };
 
-const NavBar = ({ proposalId, openProposalDialog }) => {
-  const proposal = useProposal(proposalId);
-  const sidebarState = useSidebarState();
+const NavBar = ({ navigationStack, actions }) => {
   return (
     <div
       css={css({
@@ -658,88 +464,73 @@ const NavBar = ({ proposalId, openProposalDialog }) => {
         alignItems: "center",
         justifyContent: "flex-start",
         whiteSpace: "nowrap",
+        minHeight: "4.25rem",
       })}
     >
-      <div style={{ padding: "0 0.8rem" }}>
-        {sidebarState.isCollapsed && (
-          <Button
-            variant="transparent"
-            component={RouterLink}
-            to="/"
-            css={css({ padding: 0, width: "2.8rem", height: "2.8rem" })}
-          >
-            <ArrowDownIcon
-              style={{
-                width: "1.4rem",
-                transform: "rotate(90deg)",
-                margin: "auto",
-              }}
-            />
-          </Button>
-        )}
-      </div>
-      <button
-        onClick={openProposalDialog}
-        css={(t) =>
-          css({
-            outline: "none",
-            flex: 1,
-            minWidth: 0,
-            display: "flex",
-            justifyContent: "flex-start",
-            alignItems: "center",
-            padding: "1rem 0",
-            height: "4.4rem",
-            fontSize: t.fontSizes.header,
-            fontWeight: t.text.weights.header,
-            color: t.colors.textHeader,
-            "& > *": { display: "grid", alignItems: "center" },
-            ".dialog-icon": { display: "none" },
-            "@media(hover: hover)": {
-              cursor: "pointer",
-              "& > *": {
-                gridTemplateColumns: "minmax(0,1fr) auto",
-                gridGap: "0.4rem",
-              },
-              ".dialog-icon": {
-                display: "block",
-                opacity: 0,
-                transition: "0.15s opacity ease-out",
-              },
-              ":hover": {
-                color: t.colors.textDimmed,
-                ".dialog-icon": { opacity: 1 },
-              },
-            },
-          })
-        }
+      <div
+        style={{
+          flex: 1,
+          minWidth: 0,
+          padding: "1rem",
+        }}
       >
-        <div>
-          <div style={{ overflow: "hidden", textOverflow: "ellipsis" }}>
-            {proposal?.title}
-          </div>
-          <svg
-            viewBox="0 0 20 20"
-            className="dialog-icon"
-            style={{ width: "2.2rem" }}
-          >
-            <path
-              fill="currentColor"
-              d="M16.492 3.922C15.695 3.125 14.57 3 13.234 3H7.148c-1.312 0-2.437.125-3.234.922C3.117 4.719 3 5.836 3 7.14v6.03c0 1.337.117 2.446.914 3.243.797.797 1.922.922 3.25.922h6.07c1.336 0 2.461-.125 3.258-.922.797-.797.914-1.906.914-3.242V7.164c0-1.336-.117-2.453-.914-3.242zm-.344 3.023v6.438c0 .812-.101 1.64-.578 2.117-.468.469-1.312.578-2.117.578h-6.5c-.805 0-1.648-.11-2.125-.578-.469-.477-.57-1.305-.57-2.117V6.969c0-.82.101-1.664.57-2.133.477-.477 1.328-.578 2.149-.578h6.476c.805 0 1.649.11 2.117.578.477.476.578 1.305.578 2.11zm-3.492 5.149c.344 0 .57-.266.57-.625V7.78c0-.46-.25-.64-.648-.64h-3.71c-.368 0-.602.226-.602.57s.242.57.617.57h1.422l1.156-.125-1.219 1.133-2.875 2.883a.62.62 0 00-.187.422c0 .351.226.578.57.578.188 0 .336-.07.445-.18l2.875-2.875 1.125-1.203-.117 1.219v1.351c0 .368.227.61.578.61z"
-            />
-          </svg>
-        </div>
-      </button>
+        {navigationStack.map((item, index) => (
+          <React.Fragment key={item.to}>
+            {index !== 0 && (
+              <span
+                css={(t) =>
+                  css({
+                    color: t.colors.textMuted,
+                    fontSize: t.text.sizes.base,
+                    margin: "0 0.2rem",
+                  })
+                }
+              >
+                {"/"}
+              </span>
+            )}
+            <RouterLink
+              to={item.to}
+              css={(t) =>
+                css({
+                  fontSize: t.fontSizes.base,
+                  color: t.colors.textNormal,
+                  padding: "0.3rem 0.5rem",
+                  borderRadius: "0.2rem",
+                  textDecoration: "none",
+                  "@media(hover: hover)": {
+                    cursor: "pointer",
+                    ":hover": {
+                      background: t.colors.backgroundModifierHover,
+                    },
+                  },
+                })
+              }
+            >
+              {item.label}
+            </RouterLink>
+          </React.Fragment>
+        ))}
+      </div>
       <div
         css={(t) =>
           css({
             fontSize: t.text.sizes.base,
-            padding: "0 1.5rem",
+            padding: "0 1rem",
+            ul: { display: "grid", gridAutoFlow: "column", gridGap: "0.5rem" },
+            li: { listStyle: "none" },
           })
         }
       >
-        By{" "}
-        <AccountPreviewPopoverTrigger accountAddress={proposal?.proposer.id} />
+        <ul>
+          {actions.map((a) => (
+            <li key={a.label}>
+              <Button variant="transparent" size="small" onClick={a.onSelect}>
+                {a.label}
+              </Button>
+            </li>
+          ))}
+        </ul>
       </div>
     </div>
   );
@@ -785,7 +576,7 @@ const ProposalFeed = ({ proposalId }) => {
   if (proposal == null) return null;
 
   return (
-    <div css={css({ padding: " 2rem 1.6rem" })}>
+    <div css={css({ padding: "3.2rem 0" })}>
       {feedItems.length !== 0 && (
         <ul>
           {feedItems.map((item) => (
@@ -793,7 +584,7 @@ const ProposalFeed = ({ proposalId }) => {
               key={item.id}
               role="listitem"
               css={css({
-                ":not(:first-of-type)": { marginTop: "2rem" },
+                ":not(:first-of-type)": { marginTop: "3.2rem" },
               })}
             >
               <div
@@ -895,7 +686,7 @@ const ProposalFeed = ({ proposalId }) => {
                       />
                     </div>
                   </div>
-                  <div>{item.body}</div>
+                  <div style={{ whiteSpace: "pre-line" }}>{item.body}</div>
                 </div>
               </div>
             </div>
@@ -906,72 +697,105 @@ const ProposalFeed = ({ proposalId }) => {
   );
 };
 
+export const MainContentContainer = ({ children, ...props }) => (
+  <div
+    css={(t) =>
+      css({
+        "@media (min-width: 600px)": {
+          padding: `0 calc(${t.messages.avatarSize} + ${t.messages.gutterSize})`,
+          margin: "0 auto",
+          maxWidth: "100%",
+          width: "102rem",
+        },
+      })
+    }
+    {...props}
+  >
+    {children}
+  </div>
+);
+
+export const ProposalContent = ({
+  title,
+  description,
+  createdAt,
+  updatedAt,
+  proposerId,
+}) => (
+  <div css={css({ userSelect: "text" })}>
+    <h1
+      css={(t) =>
+        css({
+          fontSize: t.text.sizes.huge,
+          lineHeight: 1.15,
+          margin: "0 0 0.3rem",
+        })
+      }
+    >
+      {title}
+    </h1>
+    <div
+      css={(t) =>
+        css({
+          color: t.colors.textDimmed,
+          fontSize: t.text.sizes.base,
+          margin: "0 0 2.6rem",
+        })
+      }
+    >
+      Created by <AccountPreviewPopoverTrigger accountAddress={proposerId} /> on{" "}
+      <FormattedDateWithTooltip value={createdAt} day="numeric" month="long" />
+      {updatedAt != null && (
+        <>
+          , last edited{" "}
+          <FormattedDateWithTooltip
+            capitalize={false}
+            value={updatedAt}
+            day="numeric"
+            month="long"
+          />
+        </>
+      )}
+    </div>
+
+    <RichText markdownText={description} />
+    <hr
+      css={(t) =>
+        css({
+          marginTop: "4rem",
+          border: 0,
+          borderBottom: "0.1rem solid",
+          borderColor: t.colors.borderLighter,
+        })
+      }
+    />
+  </div>
+);
+
 const ProposalHeader = ({ proposalId }) => {
   const proposal = useProposal(proposalId);
 
   if (proposal == null) return null;
 
   return (
-    <div css={css({ padding: "6rem 1.6rem 0", userSelect: "text" })}>
-      <div
-        css={(t) =>
-          css({
-            borderBottom: "0.1rem solid",
-            borderColor: t.colors.borderLighter,
-            padding: "0 0 3.2rem",
-            "@media (min-width: 600px)": {
-              padding: `calc(${t.messages.avatarSize} + ${t.messages.gutterSize})`,
-              paddingTop: 0,
-            },
-          })
-        }
-      >
-        <div>
-          <h1
-            css={(t) =>
-              css({
-                fontSize: t.text.sizes.huge,
-                lineHeight: 1.15,
-                margin: "0 0 0.3rem",
-              })
-            }
-          >
-            {proposal.title}
-          </h1>
-          <div
-            css={(t) =>
-              css({
-                color: t.colors.textDimmed,
-                fontSize: t.text.sizes.base,
-                margin: "0 0 2.6rem",
-              })
-            }
-          >
-            Created by{" "}
-            <AccountPreviewPopoverTrigger
-              accountAddress={proposal.proposer.id}
-            />{" "}
-            on{" "}
-            <FormattedDate
-              value={proposal.createdTimestamp}
-              day="numeric"
-              month="long"
-            />
-          </div>
-        </div>
-
-        <RichText
-          // Slice off the title
-          markdownText={proposal.description.slice(
-            proposal.description.search(/\n/)
-          )}
-        />
-      </div>
-    </div>
+    <ProposalContent
+      title={proposal.title}
+      // Slice off the title
+      description={proposal.description.slice(
+        proposal.description.search(/\n/)
+      )}
+      proposerId={proposal.proposerId}
+      createdAt={proposal.createdTimestamp}
+    />
   );
 };
 
-const Layout = ({ proposalId, openProposalDialog, children }) => (
+export const Layout = ({
+  navigationStack = [],
+  actions = [],
+  scrollView = true,
+  children,
+}) => (
   <div
     css={(t) =>
       css({
@@ -986,13 +810,61 @@ const Layout = ({ proposalId, openProposalDialog, children }) => (
       })
     }
   >
-    <NavBar proposalId={proposalId} openProposalDialog={openProposalDialog} />
-    {children}
+    <NavBar navigationStack={navigationStack} actions={actions} />
+    <div
+      css={css({
+        position: "relative",
+        flex: 1,
+        display: "flex",
+        minHeight: 0,
+        minWidth: 0,
+      })}
+    >
+      {scrollView ? (
+        <div
+          // ref={scrollContainerRef}
+          css={css({
+            position: "absolute",
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            overflowY: "scroll",
+            overflowX: "hidden",
+            minHeight: 0,
+            flex: 1,
+            overflowAnchor: "none",
+          })}
+        >
+          <div
+            css={css({
+              display: "flex",
+              flexDirection: "column",
+              justifyContent: "flex-start",
+              // justifyContent: "flex-end",
+              alignItems: "stretch",
+              minHeight: "100%",
+            })}
+          >
+            {children}
+          </div>
+        </div>
+      ) : (
+        children
+      )}
+    </div>
   </div>
 );
 
-const ChannelScreen = () => {
+const ProposalScreen = () => {
   const { proposalId } = useParams();
+  const proposal = useProposal(proposalId);
+
+  const { address: connectedWalletAccountAddress } = useAccount();
+  const isProposer =
+    connectedWalletAccountAddress != null &&
+    connectedWalletAccountAddress.toLowerCase() ===
+      proposal.proposerId.toLowerCase();
 
   const [searchParams, setSearchParams] = useSearchParams();
 
@@ -1014,8 +886,14 @@ const ChannelScreen = () => {
 
   return (
     <>
-      <Layout proposalId={proposalId} openProposalDialog={openDialog}>
-        <ProposalContent proposalId={proposalId} />
+      <Layout
+        navigationStack={[
+          { to: "/", label: "Home" },
+          { to: `/${proposalId}`, label: `Proposal #${proposalId}` },
+        ]}
+        actions={isProposer ? [{ onSelect: openDialog, label: "Edit" }] : []}
+      >
+        <ProposalMainSection proposalId={proposalId} />
       </Layout>
 
       {isDialogOpen && (
@@ -1045,4 +923,4 @@ const ChannelScreen = () => {
   );
 };
 
-export default ChannelScreen;
+export default ProposalScreen;

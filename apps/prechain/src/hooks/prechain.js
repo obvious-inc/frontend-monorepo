@@ -22,7 +22,7 @@ const { mapValues } = objectUtils;
 const SEPOLIA_NOUNS_DATA_CONTACT = "0x9040f720AA8A693F950B9cF94764b4b06079D002";
 
 const SUBGRAPH_ENDPOINT =
-  "https://api.studio.thegraph.com/proxy/49498/nouns-v3-sepolia/v0.0.1";
+  "https://api.studio.thegraph.com/proxy/49498/nouns-v3-sepolia/version/latest";
 
 const PROPOSALS_TAG = "prechain/1/proposal";
 
@@ -58,6 +58,7 @@ const PROPOSALS_QUERY = `{
     title
     status
     createdTimestamp
+    lastUpdatedTimestamp
     proposer {
       id
     }
@@ -69,9 +70,16 @@ const PROPOSAL_CANDIDATES_QUERY = `{
     id
     slug
     proposer
+    canceledTimestamp
+    createdTimestamp
+    lastUpdatedTimestamp
     latestVersion {
-      title
-      createdTimestamp
+      id
+      content {
+        title
+        matchingProposalIds
+        proposalIdToUpdate
+      }
     }
   }
 }`;
@@ -115,14 +123,21 @@ const createProposalCandidateQuery = (id) => `{
     id
     slug
     proposer
+    canceledTimestamp
+    createdTimestamp
+    lastUpdatedTimestamp
     latestVersion {
-      title
-      description
-      createdTimestamp
-      targets
-      values
-      signatures
-      calldatas
+      id
+      content {
+        title
+        description
+        targets
+        values
+        signatures
+        calldatas
+        matchingProposalIds
+        proposalIdToUpdate
+      }
     }
     versions {
       id
@@ -147,15 +162,13 @@ const subgraphFetch = (query) =>
 const parseProposal = (data) => {
   const parsedData = { ...data };
 
-  if (data.createdTimestamp != null)
-    parsedData.createdTimestamp = new Date(
-      parseInt(data.createdTimestamp) * 1000
-    );
+  parsedData.createdTimestamp = new Date(
+    parseInt(data.createdTimestamp) * 1000
+  );
 
-  if (data.lastUpdatedTimestamp != null)
-    parsedData.lastUpdatedTimestamp = new Date(
-      parseInt(data.lastUpdatedTimestamp) * 1000
-    );
+  parsedData.lastUpdatedTimestamp = new Date(
+    parseInt(data.lastUpdatedTimestamp) * 1000
+  );
 
   if (data.feedbackPosts != null)
     parsedData.feedbackPosts = sortBy(
@@ -166,18 +179,53 @@ const parseProposal = (data) => {
       }))
     );
 
+  if (data.proposer?.id != null) parsedData.proposerId = data.proposer.id;
+
   return parsedData;
 };
 
 const parseProposalCandidate = (data) => {
   const parsedData = { ...data };
 
-  if (data.latestVersion != null)
-    parsedData.latestVersion.createdTimestamp = new Date(
-      parseInt(data.latestVersion.createdTimestamp) * 1000
+  parsedData.createdTimestamp = new Date(
+    parseInt(data.createdTimestamp) * 1000
+  );
+  parsedData.lastUpdatedTimestamp = new Date(
+    parseInt(data.lastUpdatedTimestamp) * 1000
+  );
+
+  if (data.canceledTimestamp != null)
+    parsedData.canceledTimestamp = new Date(
+      parseInt(data.canceledTimestamp) * 1000
     );
 
+  if (data.latestVersion.content.matchingProposalIds != null)
+    parsedData.latestVersion.proposalId =
+      data.latestVersion.content.matchingProposalIds[0];
+
+  if ((data.latestVersion.content.proposalIdToUpdate ?? "0") !== "0")
+    parsedData.latestVersion.targetProposalId =
+      data.latestVersion.content.proposalIdToUpdate;
+
+  parsedData.proposerId = data.proposer;
+
   return parsedData;
+};
+
+const mergeProposalCandidates = (p1, p2) => {
+  const mergedCandidate = { ...p1, ...p2 };
+  if (p2.latestVersion == null) return mergedCandidate;
+
+  mergedCandidate.latestVersion = { ...p1.latestVersion, ...p2.latestVersion };
+
+  if (p2.latestVersion.content == null) return mergedCandidate;
+
+  mergedCandidate.latestVersion.content = {
+    ...p1.latestVersion.content,
+    ...p2.latestVersion.content,
+  };
+
+  return mergedCandidate;
 };
 
 export const ChainDataCacheContextProvider = ({ children }) => {
@@ -216,11 +264,14 @@ export const ChainDataCacheContextProvider = ({ children }) => {
         const parsedCandidates = data.proposalCandidates.map(
           parseProposalCandidate
         );
-        const fetchedCandidatesById = indexBy((p) => p.id, parsedCandidates);
+        const fetchedCandidatesById = indexBy(
+          (p) => p.id.toLowerCase(),
+          parsedCandidates
+        );
 
         setState((s) => {
           const mergedExistingCandidatesById = mapValues(
-            (c) => ({ ...c, ...fetchedCandidatesById[c.id] }),
+            (c) => mergeProposalCandidates(c, fetchedCandidatesById[c.id]),
             s.proposalCandidatesById
           );
 
@@ -258,27 +309,27 @@ export const ChainDataCacheContextProvider = ({ children }) => {
     []
   );
 
-  const fetchProposalCandidate = React.useCallback(
-    (id) =>
-      subgraphFetch(createProposalCandidateQuery(id)).then((data) => {
-        if (data.proposalCandidate == null)
-          return Promise.reject(new Error("not-found"));
+  const fetchProposalCandidate = React.useCallback((rawId) => {
+    const id = rawId.toLowerCase();
+    return subgraphFetch(createProposalCandidateQuery(id)).then((data) => {
+      if (data.proposalCandidate == null)
+        return Promise.reject(new Error("not-found"));
 
-        const fetchedCandidate = parseProposalCandidate(data.proposalCandidate);
-
-        setState((s) => {
-          const existingCandidate = s.proposalCandidatesById[id];
-          return {
-            ...s,
-            proposalCandidatesById: {
-              ...s.proposalCandidatesById,
-              [id]: { ...existingCandidate, ...fetchedCandidate },
-            },
-          };
-        });
-      }),
-    []
-  );
+      setState((s) => {
+        const updatedCandidate = mergeProposalCandidates(
+          s.proposalCandidatesById[id],
+          parseProposalCandidate(data.proposalCandidate)
+        );
+        return {
+          ...s,
+          proposalCandidatesById: {
+            ...s.proposalCandidatesById,
+            [id]: updatedCandidate,
+          },
+        };
+      });
+    });
+  }, []);
 
   const contextValue = React.useMemo(
     () => ({ state, actions: { fetchProposal, fetchProposalCandidate } }),
@@ -298,7 +349,7 @@ export const useProposals = () => {
   } = React.useContext(ChainDataCacheContext);
 
   return React.useMemo(
-    () => sortBy((p) => parseInt(p.id), Object.values(proposalsById)),
+    () => sortBy((p) => p.lastUpdatedTimestamp, Object.values(proposalsById)),
     [proposalsById]
   );
 };
@@ -308,11 +359,17 @@ export const useProposalCandidates = () => {
     state: { proposalCandidatesById },
   } = React.useContext(ChainDataCacheContext);
 
-  return React.useMemo(
-    () =>
-      sortBy((p) => p.createdTimestamp, Object.values(proposalCandidatesById)),
-    [proposalCandidatesById]
-  );
+  return React.useMemo(() => {
+    const candidates = Object.values(proposalCandidatesById);
+    // Exclude canceled candidates as well as those with a matching proposal
+    const filteredCandidates = candidates.filter(
+      (c) => c.canceledTimestamp == null && c.latestVersion.proposalId == null
+    );
+    return sortBy(
+      { value: (p) => p.lastUpdatedTimestamp, order: "desc" },
+      filteredCandidates
+    );
+  }, [proposalCandidatesById]);
 };
 
 export const useProposalFetch = (id) => {
@@ -335,7 +392,7 @@ export const useProposalCandidate = (id) => {
   const {
     state: { proposalCandidatesById },
   } = React.useContext(ChainDataCacheContext);
-  return proposalCandidatesById[id];
+  return proposalCandidatesById[id.toLowerCase()];
 };
 
 export const useProposal = (id) => {
@@ -375,13 +432,70 @@ export const useCreateProposalCandidate = ({ slug, description }) => {
       ["0"],
       // Function signatures
       [""],
-      // Calldataas
+      // Calldatas
       ["0x"],
       description,
       slug,
       0,
     ],
     value: parseEther("0.01"),
+  });
+  const { writeAsync: write } = useContractWrite(config);
+
+  return write == null
+    ? null
+    : () =>
+        write().then(({ hash }) =>
+          publicClient.waitForTransactionReceipt({ hash })
+        );
+};
+
+export const useUpdateProposalCandidate = (slug, { description, reason }) => {
+  const publicClient = usePublicClient();
+
+  const { config } = usePrepareContractWrite({
+    address: SEPOLIA_NOUNS_DATA_CONTACT,
+    abi: parseAbi([
+      "function updateProposalCandidate(address[] memory targets, uint256[] memory values, string[] memory signatures, bytes[] memory calldatas, string memory description, string memory slug, uint256 proposalIdToUpdate, string memory reason) external payable",
+    ]),
+    functionName: "updateProposalCandidate",
+    args: [
+      // Target addresses
+      ["0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266"],
+      // Values
+      ["0"],
+      // Function signatures
+      [""],
+      // Calldatas
+      ["0x"],
+      description,
+      slug,
+      0,
+      reason,
+    ],
+    value: parseEther("0.01"),
+  });
+  const { writeAsync: write } = useContractWrite(config);
+
+  return write == null
+    ? null
+    : () =>
+        write().then(({ hash }) =>
+          publicClient.waitForTransactionReceipt({ hash })
+        );
+};
+
+export const useCancelProposalCandidate = (slug) => {
+  const publicClient = usePublicClient();
+
+  const { config } = usePrepareContractWrite({
+    address: SEPOLIA_NOUNS_DATA_CONTACT,
+    abi: parseAbi([
+      "function cancelProposalCandidate(string memory slug) external",
+    ]),
+    functionName: "cancelProposalCandidate",
+    args: [slug],
+    // value: parseEther("0.01"),
   });
   const { writeAsync: write } = useContractWrite(config);
 
