@@ -100,7 +100,7 @@ const createProposalQuery = (id) => `{
       id
       blockNumber
       reason
-      support
+      supportDetailed
       votes
       voter {
         id
@@ -109,6 +109,7 @@ const createProposalQuery = (id) => `{
     feedbackPosts {
       id
       reason
+      supportDetailed
       createdTimestamp
       votes
       voter {
@@ -140,6 +141,22 @@ const createProposalCandidateQuery = (id) => `{
       }
     }
     versions {
+      id
+    }
+  }
+}`;
+
+const createProposalCandidateFeedbackPostsQuery = (candidateId) => `{
+  candidateFeedbacks(where: {candidate_:{id: "${candidateId}"}}) {
+    id
+    reason
+    supportDetailed
+    createdTimestamp
+    votes
+    voter {
+      id
+    }
+    candidate {
       id
     }
   }
@@ -234,6 +251,7 @@ export const ChainDataCacheContextProvider = ({ children }) => {
     proposalCandidatesById: {},
   });
 
+  // Fetch proposals
   useFetch(
     () =>
       subgraphFetch(PROPOSALS_QUERY).then((data) => {
@@ -258,6 +276,7 @@ export const ChainDataCacheContextProvider = ({ children }) => {
     []
   );
 
+  // Fetch candidates
   useFetch(
     () =>
       subgraphFetch(PROPOSAL_CANDIDATES_QUERY).then((data) => {
@@ -309,26 +328,53 @@ export const ChainDataCacheContextProvider = ({ children }) => {
     []
   );
 
-  const fetchProposalCandidate = React.useCallback((rawId) => {
+  const fetchProposalCandidate = React.useCallback(async (rawId) => {
     const id = rawId.toLowerCase();
-    return subgraphFetch(createProposalCandidateQuery(id)).then((data) => {
-      if (data.proposalCandidate == null)
-        return Promise.reject(new Error("not-found"));
+    return Promise.all([
+      subgraphFetch(createProposalCandidateQuery(id)).then((data) => {
+        if (data.proposalCandidate == null)
+          return Promise.reject(new Error("not-found"));
 
-      setState((s) => {
-        const updatedCandidate = mergeProposalCandidates(
-          s.proposalCandidatesById[id],
-          parseProposalCandidate(data.proposalCandidate)
-        );
-        return {
-          ...s,
-          proposalCandidatesById: {
-            ...s.proposalCandidatesById,
-            [id]: updatedCandidate,
-          },
-        };
-      });
-    });
+        setState((s) => {
+          const updatedCandidate = mergeProposalCandidates(
+            s.proposalCandidatesById[id],
+            parseProposalCandidate(data.proposalCandidate)
+          );
+          return {
+            ...s,
+            proposalCandidatesById: {
+              ...s.proposalCandidatesById,
+              [id]: updatedCandidate,
+            },
+          };
+        });
+      }),
+      subgraphFetch(createProposalCandidateFeedbackPostsQuery(id)).then(
+        (data) => {
+          if (data.candidateFeedbacks == null)
+            return Promise.reject(new Error("not-found"));
+
+          const feedbackPosts = data.candidateFeedbacks.map((p) => ({
+            ...p,
+            createdTimestamp: new Date(parseInt(p.createdTimestamp) * 1000),
+          }));
+
+          setState((s) => {
+            const updatedCandidate = mergeProposalCandidates(
+              s.proposalCandidatesById[id],
+              { id, feedbackPosts }
+            );
+            return {
+              ...s,
+              proposalCandidatesById: {
+                ...s.proposalCandidatesById,
+                [id]: updatedCandidate,
+              },
+            };
+          });
+        }
+      ),
+    ]);
   }, []);
 
   const contextValue = React.useMemo(
@@ -410,6 +456,24 @@ export const useSendProposalFeedback = (proposalId, { support, reason }) => {
     ]),
     functionName: "sendFeedback",
     args: [parseInt(proposalId), support, reason],
+  });
+  const { writeAsync: write } = useContractWrite(config);
+
+  return write;
+};
+
+export const useSendProposalCandidateFeedback = (
+  proposerId,
+  slug,
+  { support, reason }
+) => {
+  const { config } = usePrepareContractWrite({
+    address: SEPOLIA_NOUNS_DATA_CONTACT,
+    abi: parseAbi([
+      "function sendCandidateFeedback(address proposer, string memory slug, uint8 support, string memory reason) external",
+    ]),
+    functionName: "sendCandidateFeedback",
+    args: [proposerId, slug, support, reason],
   });
   const { writeAsync: write } = useContractWrite(config);
 

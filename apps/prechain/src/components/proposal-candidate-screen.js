@@ -7,6 +7,7 @@ import {
 } from "react-router-dom";
 import { css } from "@emotion/react";
 import { useAccount } from "wagmi";
+import { array as arrayUtils } from "@shades/common/utils";
 import { ErrorBoundary } from "@shades/common/react";
 import Dialog from "@shades/ui-web/dialog";
 import Button from "@shades/ui-web/button";
@@ -16,19 +17,38 @@ import {
   useProposalCandidateFetch,
   useUpdateProposalCandidate,
   useCancelProposalCandidate,
+  useSendProposalCandidateFeedback,
 } from "../hooks/prechain.js";
 import RichText from "./rich-text.js";
 import {
   Layout,
   MainContentContainer,
   ProposalContent,
+  ProposalFeed,
+  ProposalFeedbackForm,
 } from "./proposal-screen.js";
 
 const ProposalCandidateScreen = () => {
   const { candidateId } = useParams();
-  const candidate = useProposalCandidate(candidateId);
+  const [proposerId, ...slugParts] = candidateId.split("-");
+  const slug = slugParts.join("-");
 
   const { address: connectedWalletAccountAddress } = useAccount();
+
+  const candidate = useProposalCandidate(candidateId);
+  const feedItems = useFeedItems(candidateId);
+
+  const [pendingFeedback, setPendingFeedback] = React.useState("");
+  const [pendingSupport, setPendingSupport] = React.useState(2);
+  const sendProposalFeedback = useSendProposalCandidateFeedback(
+    proposerId,
+    slug,
+    {
+      support: pendingSupport,
+      reason: pendingFeedback.trim(),
+    }
+  );
+
   const isProposer =
     connectedWalletAccountAddress != null &&
     connectedWalletAccountAddress.toLowerCase() ===
@@ -53,6 +73,12 @@ const ProposalCandidateScreen = () => {
   }, [setSearchParams]);
 
   if (candidate?.latestVersion.content.description == null) return null;
+
+  const { description } = candidate.latestVersion.content;
+
+  const firstBreakIndex = description.search(/\n/);
+  const descriptionWithoutTitle =
+    firstBreakIndex === -1 ? "" : description.slice(firstBreakIndex);
 
   return (
     <>
@@ -84,13 +110,22 @@ const ProposalCandidateScreen = () => {
             )}
             <ProposalContent
               title={candidate.latestVersion.content.title}
-              // Slice off the title
-              description={candidate.latestVersion.content.description.slice(
-                candidate.latestVersion.content.description.search(/\n/)
-              )}
+              description={descriptionWithoutTitle}
               proposerId={candidate.proposerId}
               createdAt={candidate.createdTimestamp}
               updatedAt={candidate.lastUpdatedTimestamp}
+            />
+            <ProposalFeed items={feedItems} />
+            <ProposalFeedbackForm
+              pendingFeedback={pendingFeedback}
+              setPendingFeedback={setPendingFeedback}
+              pendingSupport={pendingSupport}
+              setPendingSupport={setPendingSupport}
+              onSubmit={() =>
+                sendProposalFeedback().then(() => {
+                  setPendingFeedback("");
+                })
+              }
             />
           </MainContentContainer>
         </div>
@@ -121,6 +156,28 @@ const ProposalCandidateScreen = () => {
       )}
     </>
   );
+};
+
+const useFeedItems = (candidateId) => {
+  const candidate = useProposalCandidate(candidateId);
+
+  return React.useMemo(() => {
+    if (candidate == null) return [];
+
+    const feedbackPostItems =
+      candidate.feedbackPosts?.map((p) => ({
+        type: "feedback-post",
+        id: p.id,
+        title: "Feedback",
+        body: p.reason,
+        support: p.supportDetailed,
+        authorAccount: p.voter.id,
+        timestamp: p.createdTimestamp,
+        voteCount: p.votes,
+      })) ?? [];
+
+    return arrayUtils.sortBy((i) => i.timestamp, feedbackPostItems);
+  }, [candidate]);
 };
 
 const ProposalCandidateDialog = ({ candidateId, titleProps, dismiss }) => {

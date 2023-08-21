@@ -6,7 +6,7 @@ import {
   useSearchParams,
 } from "react-router-dom";
 import { css } from "@emotion/react";
-import { useAccount, useBlockNumber } from "wagmi";
+import { useAccount } from "wagmi";
 // import {
 //   useActions,
 //   useMe,
@@ -28,6 +28,7 @@ import {
 import { array as arrayUtils } from "@shades/common/utils";
 import Button from "@shades/ui-web/button";
 import Input from "@shades/ui-web/input";
+import Select from "@shades/ui-web/select";
 // import MessageEditorForm from "@shades/ui-web/message-editor-form";
 // import ChannelMessagesScrollView from "@shades/ui-web/channel-messages-scroll-view";
 import Dialog from "@shades/ui-web/dialog";
@@ -41,138 +42,28 @@ import {
   useProposalFetch,
   useSendProposalFeedback,
 } from "../hooks/prechain.js";
+import useApproximateBlockTimestampCalculator from "../hooks/approximate-block-timestamp-calculator.js";
 // import { useWriteAccess } from "../hooks/write-access-scope.js";
 import AccountPreviewPopoverTrigger from "./account-preview-popover-trigger.js";
 // import ChannelMessage from "./channel-message.js";
 import RichText from "./rich-text.js";
 import FormattedDateWithTooltip from "./formatted-date-with-tooltip.js";
 
-const useApproximateBlockTimeStampCalculator = () => {
-  const { data: latestBlockNumber } = useBlockNumber();
-
-  return React.useCallback(
-    (blockNumber) => {
-      if (latestBlockNumber == null) return null;
-
-      const secondsPerBlock = 12; // Copied from agora
-
-      const nowSeconds = new Date().getTime() / 1000;
-
-      const timestampSeconds =
-        nowSeconds +
-        secondsPerBlock * (parseInt(blockNumber) - Number(latestBlockNumber));
-
-      return new Date(timestampSeconds * 1000);
-    },
-    [latestBlockNumber]
-  );
-};
-
 const ProposalMainSection = ({ proposalId }) => {
   const { address: connectedWalletAccountAddress } = useAccount();
-  // const { connect: connectWallet, isConnecting: isConnectingWallet } =
-  //   useWallet();
-  // const { login: initAccountVerification, status: accountVerificationStatus } =
-  //   useWalletLogin();
 
-  // const actions = useActions();
-
-  // const me = useMe();
-  // const channel = useChannel(channelId, { name: true, members: true });
-
-  // const inputDeviceCanHover = useMatchMedia("(hover: hover)");
-
-  // const inputRef = React.useRef();
-  // const didScrollToBottomRef = React.useRef(false);
-
-  // const messageIds = useSortedChannelMessageIds(channelId);
-
-  // const fetchMessages = useChannelMessagesFetcher(channelId);
-
-  // const [replyTargetMessageId, setReplyTargetMessageId] = React.useState(null);
   const proposal = useProposal(proposalId);
 
   const [pendingFeedback, setPendingFeedback] = React.useState("");
+  const [pendingSupport, setPendingSupport] = React.useState(2);
   const sendProposalFeedback = useSendProposalFeedback(proposalId, {
-    support: 0,
+    support: pendingSupport,
     reason: pendingFeedback.trim(),
   });
 
+  const feedItems = useFeedItems(proposalId);
+
   if (proposal == null) return null;
-
-  // const writeAccessState = useWriteAccess(channelId);
-
-  // const hasVerifiedWriteAccess = writeAccessState === "authorized";
-  // const hasUnverifiedWriteAccess = writeAccessState === "authorized-unverified";
-
-  // const disableInput = !hasVerifiedWriteAccess && !hasUnverifiedWriteAccess;
-
-  // React.useEffect(() => {
-  //   if (!inputDeviceCanHover || disableInput) return;
-  //   inputRef.current.focus();
-  // }, [inputRef, inputDeviceCanHover, disableInput, proposalId]);
-
-  // React.useEffect(() => {
-  //   if (messageIds.length !== 0) return;
-
-  //   // This should be called after the first render, and when navigating to
-  //   // emply channels
-  //   fetchMessages({ limit: 30 });
-  // }, [fetchMessages, messageIds.length]);
-
-  // useWindowFocusOrDocumentVisibleListener(() => {
-  //   fetchMessages({ limit: 30 });
-  // });
-
-  // useWindowOnlineListener(
-  //   () => {
-  //     fetchMessages({ limit: 30 });
-  //   },
-  //   { requireFocus: true }
-  // );
-
-  // useMarkChannelReadEffects(channelId, { didScrollToBottomRef });
-
-  // const initReply = useLatestCallback((targetMessageId) => {
-  //   setReplyTargetMessageId(
-  //     targetMessageId === replyTargetMessageId ? null : targetMessageId
-  //   );
-  //   inputRef.current.focus();
-  // });
-
-  // const cancelReply = React.useCallback(() => {
-  //   setReplyTargetMessageId(null);
-  //   inputRef.current.focus();
-  // }, []);
-
-  // const renderScrollViewHeader = React.useCallback(
-  //   () => <ChannelMessagesScrollViewHeader channelId={channelId} />,
-  //   [channelId]
-  // );
-
-  // const [touchFocusedMessageId, setTouchFocusedMessageId] =
-  //   React.useState(null);
-
-  // const renderMessage = React.useCallback(
-  //   (messageId, i, messageIds, props) => (
-  //     <ChannelMessage
-  //       key={messageId}
-  //       messageId={messageId}
-  //       previousMessageId={messageIds[i - 1]}
-  //       hasPendingReply={replyTargetMessageId === messageId}
-  //       initReply={initReply}
-  //       isTouchFocused={messageId === touchFocusedMessageId}
-  //       setTouchFocused={setTouchFocusedMessageId}
-  //       scrollToMessage={() => {
-  //         // TODO
-  //       }}
-  //       {...props}
-  //     />
-  //   ),
-  //   [initReply, replyTargetMessageId, touchFocusedMessageId]
-  // );
-
-  // const replyTargetMessage = useMessage(replyTargetMessageId);
 
   return (
     <>
@@ -186,44 +77,19 @@ const ProposalMainSection = ({ proposalId }) => {
       >
         <MainContentContainer>
           <ProposalHeader proposalId={proposalId} />
-          <ProposalFeed proposalId={proposalId} />
+          <ProposalFeed items={feedItems} />
           {connectedWalletAccountAddress != null && (
-            <div
-              css={css({
-                padding: "0 0 2rem",
-                display: "grid",
-                gridTemplateColumns: "3.8rem minmax(0,1fr)",
-                gridGap: "1.2rem",
-              })}
-            >
-              <AccountAvatar
-                address={connectedWalletAccountAddress}
-                size="3.8rem"
-                transparent
-              />
-              <form
-                onSubmit={(e) => {
-                  e.preventDefault();
-
-                  sendProposalFeedback().then(() => {
-                    setPendingFeedback("");
-                  });
-                }}
-              >
-                <Input
-                  multiline
-                  rows={3}
-                  placeholder="I believe..."
-                  value={pendingFeedback}
-                  onChange={(e) => {
-                    setPendingFeedback(e.target.value);
-                  }}
-                />
-                <Button type="submit" style={{ marginTop: "1rem" }}>
-                  Send feedback
-                </Button>
-              </form>
-            </div>
+            <ProposalFeedbackForm
+              pendingFeedback={pendingFeedback}
+              setPendingFeedback={setPendingFeedback}
+              pendingSupport={pendingSupport}
+              setPendingSupport={setPendingSupport}
+              onSubmit={() =>
+                sendProposalFeedback().then(() => {
+                  setPendingFeedback("");
+                })
+              }
+            />
           )}
         </MainContentContainer>
       </div>
@@ -231,9 +97,79 @@ const ProposalMainSection = ({ proposalId }) => {
   );
 };
 
+export const ProposalFeedbackForm = ({
+  pendingFeedback,
+  setPendingFeedback,
+  pendingSupport,
+  setPendingSupport,
+  onSubmit,
+}) => {
+  const { address: connectedWalletAccountAddress } = useAccount();
+  return (
+    <div
+      css={css({
+        padding: "0 0 2rem",
+        display: "grid",
+        gridTemplateColumns: "3.8rem minmax(0,1fr)",
+        gridGap: "1.2rem",
+      })}
+    >
+      <AccountAvatar
+        address={connectedWalletAccountAddress}
+        size="3.8rem"
+        transparent
+      />
+      <form
+        onSubmit={(e) => {
+          e.preventDefault();
+          onSubmit();
+        }}
+      >
+        <Input
+          multiline
+          rows={3}
+          placeholder="I believe..."
+          value={pendingFeedback}
+          onChange={(e) => {
+            setPendingFeedback(e.target.value);
+            setPendingSupport(2);
+          }}
+        />
+        <div
+          style={{
+            display: "grid",
+            justifyContent: "flex-end",
+            gridAutoFlow: "column",
+            gridGap: "1rem",
+            marginTop: "1rem",
+          }}
+        >
+          <Select
+            aria-label="Signal support"
+            width="15rem"
+            size="medium"
+            value={pendingSupport}
+            onChange={(value) => {
+              setPendingSupport(value);
+            }}
+            options={[
+              { value: 1, label: "Signal for" },
+              { value: 0, label: "Signal against" },
+              { value: 2, label: "Abstain" },
+            ]}
+          />
+          <Button type="submit" variant="primary">
+            Send feedback
+          </Button>
+        </div>
+      </form>
+    </div>
+  );
+};
+
 const ProposalDialog = ({
   proposalId,
-  titleProps,
+  // titleProps,
   // dismiss
 }) => {
   // const me = useMe();
@@ -256,28 +192,29 @@ const ProposalDialog = ({
         },
       })}
     >
-      <h1
-        {...titleProps}
-        css={(t) =>
-          css({
-            display: "inline-flex",
-            alignItems: "center",
-            color: t.colors.textNormal,
-            fontSize: "2.6rem",
-            fontWeight: t.text.weights.header,
-            lineHeight: 1.15,
-            margin: "0 0 3rem",
-          })
-        }
-      >
-        {proposal.title}
-      </h1>
-      <RichText
-        // Slice off the title
-        markdownText={proposal.description.slice(
-          proposal.description.search(/\n/)
-        )}
-      />
+      THOON
+      {/* <h1 */}
+      {/*   {...titleProps} */}
+      {/*   css={(t) => */}
+      {/*     css({ */}
+      {/*       display: "inline-flex", */}
+      {/*       alignItems: "center", */}
+      {/*       color: t.colors.textNormal, */}
+      {/*       fontSize: "2.6rem", */}
+      {/*       fontWeight: t.text.weights.header, */}
+      {/*       lineHeight: 1.15, */}
+      {/*       margin: "0 0 3rem", */}
+      {/*     }) */}
+      {/*   } */}
+      {/* > */}
+      {/*   {proposal.title} */}
+      {/* </h1> */}
+      {/* <RichText */}
+      {/*   // Slice off the title */}
+      {/*   markdownText={proposal.description.slice( */}
+      {/*     proposal.description.search(/\n/) */}
+      {/*   )} */}
+      {/* /> */}
     </div>
   );
 };
@@ -536,32 +473,31 @@ const NavBar = ({ navigationStack, actions }) => {
   );
 };
 
-const ProposalFeed = ({ proposalId }) => {
+const useFeedItems = (proposalId) => {
   const proposal = useProposal(proposalId);
 
-  const calculateBlockTimestamp = useApproximateBlockTimeStampCalculator();
+  const calculateBlockTimestamp = useApproximateBlockTimestampCalculator();
 
-  const feedItems = React.useMemo(() => {
+  return React.useMemo(() => {
     if (proposal == null) return [];
 
     const feedbackPostItems =
       proposal.feedbackPosts?.map((p) => ({
         type: "feedback-post",
         id: p.id,
-        title: "Feedback",
         body: p.reason,
-        supportive: p.support,
+        support: p.supportDetailed,
         authorAccount: p.voter.id,
         timestamp: p.createdTimestamp,
+        voteCount: p.votes,
       })) ?? [];
 
     const voteItems =
       proposal.votes?.map((v) => ({
         type: "vote",
         id: v.id,
-        title: "Vite",
         body: v.reason,
-        supportive: v.support,
+        support: v.supportDetailed,
         authorAccount: v.voter.id,
         timestamp: calculateBlockTimestamp(v.blockNumber),
         voteCount: v.votes,
@@ -572,14 +508,14 @@ const ProposalFeed = ({ proposalId }) => {
       [...feedbackPostItems, ...voteItems]
     );
   }, [proposal, calculateBlockTimestamp]);
+};
 
-  if (proposal == null) return null;
-
+export const ProposalFeed = ({ items = [] }) => {
   return (
     <div css={css({ padding: "3.2rem 0" })}>
-      {feedItems.length !== 0 && (
+      {items.length !== 0 && (
         <ul>
-          {feedItems.map((item) => (
+          {items.map((item) => (
             <div
               key={item.id}
               role="listitem"
@@ -645,46 +581,46 @@ const ProposalFeed = ({ proposalId }) => {
                       lineHeight: 1.2,
                     })}
                   >
-                    {item.type === "feedback-post" ? (
-                      <AccountPreviewPopoverTrigger
-                        accountAddress={item.authorAccount}
-                      />
-                    ) : item.type === "vote" ? (
-                      <>
-                        <AccountPreviewPopoverTrigger
-                          accountAddress={item.authorAccount}
-                        />{" "}
-                        <span
-                          style={{
-                            color: item.supportive ? "#099b36" : "#db2932",
-                            fontWeight: "600",
-                          }}
-                        >
-                          voted {item.supportive ? "for" : "against"}
-                        </span>{" "}
-                        ({item.voteCount}{" "}
-                        {item.voteCount === 1 ? "vote" : "votes"})
-                      </>
-                    ) : null}
-
-                    <div
-                      css={(t) =>
-                        css({
-                          color: t.colors.textDimmed,
-                          fontSize: t.fontSizes.small,
-                          lineHeight: 1.5,
-                        })
-                      }
+                    <AccountPreviewPopoverTrigger
+                      accountAddress={item.authorAccount}
+                    />{" "}
+                    <span
+                      style={{
+                        color:
+                          item.support === 0
+                            ? "#db2932"
+                            : item.support === 1
+                            ? "#099b36"
+                            : undefined,
+                        fontWeight: "600",
+                      }}
                     >
-                      <FormattedDateWithTooltip
-                        value={item.timestamp}
-                        hour="numeric"
-                        minute="numeric"
-                        day="numeric"
-                        month="short"
-                        tooltipSideOffset={8}
-                      />
-                    </div>
+                      {item.type === "feedback-post" ? "feedbacked" : "voted"}
+                      {item.support !== 2 && (
+                        <> {item.support === 0 ? "against" : "for"}</>
+                      )}
+                    </span>{" "}
+                    ({item.voteCount} {item.voteCount === 1 ? "vote" : "votes"}){" "}
+                    {item.timestamp != null && (
+                      <div
+                        css={(t) =>
+                          css({
+                            color: t.colors.textDimmed,
+                            fontSize: t.fontSizes.small,
+                            lineHeight: 1.5,
+                          })
+                        }
+                      >
+                        <FormattedDateWithTooltip
+                          value={item.timestamp}
+                          hour="numeric"
+                          minute="numeric"
+                          day="numeric"
+                          month="short"
+                          tooltipSideOffset={8}
+                        />
+                      </div>
+                    )}
                   </div>
                   <div style={{ whiteSpace: "pre-line" }}>{item.body}</div>
                 </div>
@@ -864,7 +800,7 @@ const ProposalScreen = () => {
   const isProposer =
     connectedWalletAccountAddress != null &&
     connectedWalletAccountAddress.toLowerCase() ===
-      proposal.proposerId.toLowerCase();
+      proposal?.proposerId.toLowerCase();
 
   const [searchParams, setSearchParams] = useSearchParams();
 

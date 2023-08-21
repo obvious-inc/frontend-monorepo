@@ -17,7 +17,7 @@ const FormattedDateWithTooltip = React.memo(
 
     const formattedDate =
       !disableRelative &&
-        (isDateToday(new Date(value)) || isDateYesterday(new Date(value))) ? (
+      (isDateToday(new Date(value)) || isDateYesterday(new Date(value))) ? (
         <span>
           <span style={{ textTransform: capitalize ? "capitalize" : "none" }}>
             {isDateToday(new Date(value)) ? "today" : "yesterday"}

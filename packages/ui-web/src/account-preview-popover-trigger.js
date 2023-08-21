@@ -118,34 +118,36 @@ const AccountPreview = React.forwardRef(
                 {displayName}
               </h2>
 
-              <Tooltip.Root>
-                <Tooltip.Trigger asChild>
-                  <div
-                    css={(t) =>
-                      css({
-                        marginLeft: "0.8rem",
-                        width: "0.7rem",
-                        height: "0.7rem",
-                        borderRadius: "50%",
-                        background: isOnline
-                          ? t.colors.onlineIndicator
-                          : "none",
-                        boxShadow: isOnline
-                          ? "none"
-                          : `0 0 0 0.2rem ${t.colors.textMuted} inset`,
-                      })
-                    }
-                  />
-                </Tooltip.Trigger>
-                <Tooltip.Content
-                  portal={false}
-                  side="top"
-                  align="center"
-                  sideOffset={6}
-                >
-                  User {user.onlineStatus === "online" ? "online" : "offline"}
-                </Tooltip.Content>
-              </Tooltip.Root>
+              {user?.id != null && (
+                <Tooltip.Root>
+                  <Tooltip.Trigger asChild>
+                    <div
+                      css={(t) =>
+                        css({
+                          marginLeft: "0.8rem",
+                          width: "0.7rem",
+                          height: "0.7rem",
+                          borderRadius: "50%",
+                          background: isOnline
+                            ? t.colors.onlineIndicator
+                            : "none",
+                          boxShadow: isOnline
+                            ? "none"
+                            : `0 0 0 0.2rem ${t.colors.textMuted} inset`,
+                        })
+                      }
+                    />
+                  </Tooltip.Trigger>
+                  <Tooltip.Content
+                    portal={false}
+                    side="top"
+                    align="center"
+                    sideOffset={6}
+                  >
+                    User {user.onlineStatus === "online" ? "online" : "offline"}
+                  </Tooltip.Content>
+                </Tooltip.Root>
+              )}
             </div>
             <div
               css={(t) =>
