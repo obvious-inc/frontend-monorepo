@@ -2,57 +2,38 @@ import React from "react";
 import {
   Link as RouterLink,
   useParams,
-  // useNavigate,
   useSearchParams,
 } from "react-router-dom";
 import { css } from "@emotion/react";
-import { useAccount } from "wagmi";
-// import {
-//   useActions,
-//   useMe,
-//   useMessage,
-//   useChannel,
-//   useSortedChannelMessageIds,
-//   useChannelMessagesFetcher,
-//   useChannelFetchEffects,
-//   useMarkChannelReadEffects,
-// } from "@shades/common/app";
-// import { useWallet, useWalletLogin } from "@shades/common/wallet";
 import {
-  // useLatestCallback,
-  // useWindowFocusOrDocumentVisibleListener,
-  // useWindowOnlineListener,
-  // useMatchMedia,
   ErrorBoundary,
+  AutoAdjustingHeightTextarea,
 } from "@shades/common/react";
 import { array as arrayUtils } from "@shades/common/utils";
 import Button from "@shades/ui-web/button";
-import Input from "@shades/ui-web/input";
+// import { Label } from "@shades/ui-web/input";
 import Select from "@shades/ui-web/select";
-// import MessageEditorForm from "@shades/ui-web/message-editor-form";
-// import ChannelMessagesScrollView from "@shades/ui-web/channel-messages-scroll-view";
 import Dialog from "@shades/ui-web/dialog";
-// import RichTextEditor, {
-//   Provider as EditorProvider,
-//   Toolbar as EditorToolbar,
-// } from "@shades/ui-web/rich-text-editor";
 import AccountAvatar from "@shades/ui-web/account-avatar";
 import {
   useProposal,
   useProposalFetch,
+  useCancelProposal,
+  // useProposalState,
   useSendProposalFeedback,
 } from "../hooks/prechain.js";
 import useApproximateBlockTimestampCalculator from "../hooks/approximate-block-timestamp-calculator.js";
-// import { useWriteAccess } from "../hooks/write-access-scope.js";
+import { useWallet } from "../hooks/wallet.js";
+// import { Tag } from "./browse-screen.js";
 import AccountPreviewPopoverTrigger from "./account-preview-popover-trigger.js";
-// import ChannelMessage from "./channel-message.js";
 import RichText from "./rich-text.js";
 import FormattedDateWithTooltip from "./formatted-date-with-tooltip.js";
 
 const ProposalMainSection = ({ proposalId }) => {
-  const { address: connectedWalletAccountAddress } = useAccount();
+  const { address: connectedWalletAccountAddress } = useWallet();
 
   const proposal = useProposal(proposalId);
+  // const state = useProposalState(proposalId);
 
   const [pendingFeedback, setPendingFeedback] = React.useState("");
   const [pendingSupport, setPendingSupport] = React.useState(2);
@@ -75,22 +56,30 @@ const ProposalMainSection = ({ proposalId }) => {
           },
         })}
       >
-        <MainContentContainer>
+        <MainContentContainer
+          sidebar={
+            <div
+              style={{ display: "flex", flexDirection: "column", gap: "2rem" }}
+            >
+              {feedItems.length !== 0 && <ProposalFeed items={feedItems} />}
+
+              {connectedWalletAccountAddress != null && (
+                <ProposalFeedbackForm
+                  pendingFeedback={pendingFeedback}
+                  setPendingFeedback={setPendingFeedback}
+                  pendingSupport={pendingSupport}
+                  setPendingSupport={setPendingSupport}
+                  onSubmit={() =>
+                    sendProposalFeedback().then(() => {
+                      setPendingFeedback("");
+                    })
+                  }
+                />
+              )}
+            </div>
+          }
+        >
           <ProposalHeader proposalId={proposalId} />
-          <ProposalFeed items={feedItems} />
-          {connectedWalletAccountAddress != null && (
-            <ProposalFeedbackForm
-              pendingFeedback={pendingFeedback}
-              setPendingFeedback={setPendingFeedback}
-              pendingSupport={pendingSupport}
-              setPendingSupport={setPendingSupport}
-              onSubmit={() =>
-                sendProposalFeedback().then(() => {
-                  setPendingFeedback("");
-                })
-              }
-            />
-          )}
         </MainContentContainer>
       </div>
     </>
@@ -104,36 +93,52 @@ export const ProposalFeedbackForm = ({
   setPendingSupport,
   onSubmit,
 }) => {
-  const { address: connectedWalletAccountAddress } = useAccount();
   return (
-    <div
-      css={css({
-        padding: "0 0 2rem",
-        display: "grid",
-        gridTemplateColumns: "3.8rem minmax(0,1fr)",
-        gridGap: "1.2rem",
-      })}
-    >
-      <AccountAvatar
-        address={connectedWalletAccountAddress}
-        size="3.8rem"
-        transparent
-      />
+    <>
       <form
         onSubmit={(e) => {
           e.preventDefault();
           onSubmit();
         }}
+        css={(t) =>
+          css({
+            borderRadius: "0.5rem",
+            background: t.colors.inputBackground,
+            padding: "1rem",
+            "&:focus-within": { boxShadow: t.shadows.focus },
+          })
+        }
       >
-        <Input
-          multiline
-          rows={3}
+        <AutoAdjustingHeightTextarea
+          rows={1}
           placeholder="I believe..."
           value={pendingFeedback}
           onChange={(e) => {
             setPendingFeedback(e.target.value);
             setPendingSupport(2);
           }}
+          css={(t) =>
+            css({
+              // "--bg-regular": t.colors.inputBackground,
+              // "--bg-contrast": t.colors.inputBackgroundContrast,
+              // "--text-size-normal": t.text.sizes.input,
+              // "--text-size-large": t.text.sizes.large,
+              background: t.colors.inputBackground,
+              fontSize: t.text.sizes.input,
+              display: "block",
+              color: t.colors.textNormal,
+              fontWeight: "400",
+              width: "100%",
+              maxWidth: "100%",
+              outline: "none",
+              border: 0,
+              padding: "0.5rem 0.7rem",
+              "::placeholder": { color: t.colors.inputPlaceholder },
+              "&:disabled": { color: t.colors.textMuted },
+              // Prevents iOS zooming in on input fields
+              "@supports (-webkit-touch-callout: none)": { fontSize: "1.6rem" },
+            })
+          }
         />
         <div
           style={{
@@ -147,6 +152,7 @@ export const ProposalFeedbackForm = ({
           <Select
             aria-label="Signal support"
             width="15rem"
+            variant="default"
             size="medium"
             value={pendingSupport}
             onChange={(value) => {
@@ -155,32 +161,30 @@ export const ProposalFeedbackForm = ({
             options={[
               { value: 1, label: "Signal for" },
               { value: 0, label: "Signal against" },
-              { value: 2, label: "Abstain" },
+              { value: 2, label: "No signal" },
             ]}
           />
           <Button type="submit" variant="primary">
-            Send feedback
+            Feedback
           </Button>
         </div>
       </form>
-    </div>
+    </>
   );
 };
 
 const ProposalDialog = ({
   proposalId,
-  // titleProps,
+  titleProps,
   // dismiss
 }) => {
   // const me = useMe();
   const proposal = useProposal(proposalId);
+  const cancelProposal = useCancelProposal(proposalId);
 
   // const isAdmin = me != null && proposal?.proposer.id === me.walletAddress;
 
   if (proposal == null) return null;
-
-  // if (isAdmin)
-  //   return <AdminChannelDialog proposalId={proposalId} dismiss={dismiss} />;
 
   return (
     <div
@@ -192,29 +196,30 @@ const ProposalDialog = ({
         },
       })}
     >
-      THOON
-      {/* <h1 */}
-      {/*   {...titleProps} */}
-      {/*   css={(t) => */}
-      {/*     css({ */}
-      {/*       display: "inline-flex", */}
-      {/*       alignItems: "center", */}
-      {/*       color: t.colors.textNormal, */}
-      {/*       fontSize: "2.6rem", */}
-      {/*       fontWeight: t.text.weights.header, */}
-      {/*       lineHeight: 1.15, */}
-      {/*       margin: "0 0 3rem", */}
-      {/*     }) */}
-      {/*   } */}
-      {/* > */}
-      {/*   {proposal.title} */}
-      {/* </h1> */}
-      {/* <RichText */}
-      {/*   // Slice off the title */}
-      {/*   markdownText={proposal.description.slice( */}
-      {/*     proposal.description.search(/\n/) */}
-      {/*   )} */}
-      {/* /> */}
+      <h1
+        {...titleProps}
+        css={(t) =>
+          css({
+            color: t.colors.textNormal,
+            fontSize: t.text.sizes.headerLarge,
+            fontWeight: t.text.weights.header,
+            lineHeight: 1.15,
+            margin: "0 0 2rem",
+          })
+        }
+      >
+        Edit proposal
+      </h1>
+      <main>
+        <Button
+          danger
+          onClick={() => {
+            cancelProposal();
+          }}
+        >
+          Cancel proposal
+        </Button>
+      </main>
     </div>
   );
 };
@@ -512,142 +517,166 @@ const useFeedItems = (proposalId) => {
 
 export const ProposalFeed = ({ items = [] }) => {
   return (
-    <div css={css({ padding: "3.2rem 0" })}>
-      {items.length !== 0 && (
-        <ul>
-          {items.map((item) => (
-            <div
-              key={item.id}
-              role="listitem"
-              css={css({
-                ":not(:first-of-type)": { marginTop: "3.2rem" },
-              })}
-            >
+    <ul>
+      {items.map((item) => (
+        <div
+          key={item.id}
+          role="listitem"
+          css={(t) =>
+            css({
+              fontSize: t.text.sizes.small,
+              ":not(:first-of-type)": { marginTop: "1.6rem" },
+            })
+          }
+        >
+          <div
+            css={css({
+              display: "grid",
+              gridTemplateColumns: "auto minmax(0,1fr)",
+              gridGap: "0.6rem",
+              alignItems: "center",
+            })}
+          >
+            <div>
+              <AccountPreviewPopoverTrigger accountAddress={item.authorAccount}>
+                <button
+                  css={(t) =>
+                    css({
+                      display: "block",
+                      borderRadius: t.avatars.borderRadius,
+                      overflow: "hidden",
+                      outline: "none",
+                      ":focus-visible": {
+                        boxShadow: t.shadows.focus,
+                      },
+                      "@media (hover: hover)": {
+                        ":not(:disabled)": {
+                          cursor: "pointer",
+                          ":hover": {
+                            boxShadow: `0 0 0 0.2rem ${t.colors.borderLight}`,
+                          },
+                        },
+                      },
+                    })
+                  }
+                >
+                  <AccountAvatar
+                    transparent
+                    address={item.authorAccount}
+                    size="2rem"
+                  />
+                </button>
+              </AccountPreviewPopoverTrigger>
+            </div>
+            <div>
               <div
                 css={css({
-                  display: "grid",
-                  gridTemplateColumns: "3.8rem minmax(0,1fr)",
-                  gridGap: "1.2rem",
+                  cursor: "default",
+                  lineHeight: 1.2,
                 })}
-                style={{
-                  alignItems: item.body == null ? "center" : "flex-start",
-                }}
               >
-                <div style={{ padding: "0.2rem 0 0" }}>
-                  <AccountPreviewPopoverTrigger
-                    accountAddress={item.authorAccount}
+                <AccountPreviewPopoverTrigger
+                  accountAddress={item.authorAccount}
+                />{" "}
+                {item.type !== "signature" && (
+                  <span
+                    style={{
+                      color:
+                        item.support === 0
+                          ? "#db2932"
+                          : item.support === 1
+                          ? "#099b36"
+                          : undefined,
+                      fontWeight: "600",
+                    }}
                   >
-                    <button
-                      css={(t) =>
-                        css({
-                          display: "block",
-                          borderRadius: t.avatars.borderRadius,
-                          overflow: "hidden",
-                          outline: "none",
-                          ":focus-visible": {
-                            boxShadow: t.shadows.focus,
-                          },
-                          "@media (hover: hover)": {
-                            ":not(:disabled)": {
-                              cursor: "pointer",
-                              ":hover": {
-                                boxShadow: `0 0 0 0.2rem ${t.colors.borderLight}`,
-                              },
-                            },
-                          },
-                        })
-                      }
-                    >
-                      <AccountAvatar
-                        transparent
-                        address={item.authorAccount}
-                        size="3.8rem"
-                      />
-                    </button>
-                  </AccountPreviewPopoverTrigger>
-                </div>
-                <div>
-                  <div
-                    css={css({
-                      display: "grid",
-                      gridAutoFlow: "column",
-                      gridAutoColumns: "minmax(0, auto)",
-                      justifyContent: "flex-start",
-                      alignItems: "flex-end",
-                      gridGap: "0.6rem",
-                      margin: "0 0 0.2rem",
-                      cursor: "default",
-                      minHeight: "1.9rem",
-                      lineHeight: 1.2,
-                    })}
-                  >
-                    <AccountPreviewPopoverTrigger
-                      accountAddress={item.authorAccount}
-                    />{" "}
-                    <span
-                      style={{
-                        color:
-                          item.support === 0
-                            ? "#db2932"
-                            : item.support === 1
-                            ? "#099b36"
-                            : undefined,
-                        fontWeight: "600",
-                      }}
-                    >
-                      {item.type === "feedback-post" ? "feedbacked" : "voted"}
-                      {item.support !== 2 && (
-                        <> {item.support === 0 ? "against" : "for"}</>
-                      )}
-                    </span>{" "}
-                    ({item.voteCount} {item.voteCount === 1 ? "vote" : "votes"}){" "}
-                    {item.timestamp != null && (
-                      <div
-                        css={(t) =>
-                          css({
-                            color: t.colors.textDimmed,
-                            fontSize: t.fontSizes.small,
-                            lineHeight: 1.5,
-                          })
-                        }
-                      >
-                        <FormattedDateWithTooltip
-                          value={item.timestamp}
-                          hour="numeric"
-                          minute="numeric"
-                          day="numeric"
-                          month="short"
-                          tooltipSideOffset={8}
-                        />
-                      </div>
+                    {item.type === "feedback-post"
+                      ? item.support === 2
+                        ? null
+                        : "signaled"
+                      : "voted"}
+                    {item.support !== 2 && (
+                      <> {item.support === 0 ? "against" : "for"}</>
                     )}
-                  </div>
-                  <div style={{ whiteSpace: "pre-line" }}>{item.body}</div>
-                </div>
+                  </span>
+                )}{" "}
+                ({item.voteCount} {item.voteCount === 1 ? "vote" : "votes"}){" "}
+                {/* {item.timestamp != null && ( */}
+                {/*   <span */}
+                {/*     css={(t) => */}
+                {/*       css({ */}
+                {/*         color: t.colors.textDimmed, */}
+                {/*         fontSize: t.fontSizes.small, */}
+                {/*         lineHeight: 1.5, */}
+                {/*       }) */}
+                {/*     } */}
+                {/*   > */}
+                {/*     <FormattedDateWithTooltip */}
+                {/*       value={item.timestamp} */}
+                {/*       hour="numeric" */}
+                {/*       minute="numeric" */}
+                {/*       day="numeric" */}
+                {/*       month="short" */}
+                {/*       tooltipSideOffset={8} */}
+                {/*     /> */}
+                {/*   </span> */}
+                {/* )} */}
               </div>
             </div>
-          ))}
-        </ul>
-      )}
-    </div>
+          </div>
+          <div
+            css={(t) =>
+              css({
+                fontSize: t.text.sizes.base,
+                whiteSpace: "pre-line",
+                marginTop: "0.5rem",
+              })
+            }
+          >
+            {item.body}
+          </div>
+        </div>
+      ))}
+    </ul>
   );
 };
 
-export const MainContentContainer = ({ children, ...props }) => (
+export const MainContentContainer = ({
+  sidebar = null,
+  narrow = false,
+  children,
+  ...props
+}) => (
   <div
-    css={(t) =>
-      css({
-        "@media (min-width: 600px)": {
-          padding: `0 calc(${t.messages.avatarSize} + ${t.messages.gutterSize})`,
-          margin: "0 auto",
-          maxWidth: "100%",
-          width: "102rem",
-        },
-      })
-    }
+    css={css({
+      "@media (min-width: 600px)": {
+        margin: "0 auto",
+        maxWidth: "100%",
+        width: "var(--width)",
+      },
+    })}
+    style={{ "--width": narrow ? "72rem" : "108rem" }}
     {...props}
   >
-    {children}
+    {sidebar == null ? (
+      children
+    ) : (
+      <div
+        css={css({
+          "@media (min-width: 800px)": {
+            padding: "0 4rem",
+            display: "grid",
+            gridTemplateColumns: "minmax(0,1fr) 32rem",
+            gridGap: "4rem",
+          },
+        })}
+      >
+        <div>{children}</div>
+        <div>
+          <div style={{ position: "sticky", top: 0 }}>{sidebar}</div>
+        </div>
+      </div>
+    )}
   </div>
 );
 
@@ -657,6 +686,7 @@ export const ProposalContent = ({
   createdAt,
   updatedAt,
   proposerId,
+  sponsorIds = [],
 }) => (
   <div css={css({ userSelect: "text" })}>
     <h1
@@ -679,9 +709,14 @@ export const ProposalContent = ({
         })
       }
     >
-      Created by <AccountPreviewPopoverTrigger accountAddress={proposerId} /> on{" "}
-      <FormattedDateWithTooltip value={createdAt} day="numeric" month="long" />
-      {updatedAt != null && (
+      Proposed by <AccountPreviewPopoverTrigger accountAddress={proposerId} />{" "}
+      <FormattedDateWithTooltip
+        capitalize={false}
+        value={createdAt}
+        day="numeric"
+        month="long"
+      />
+      {updatedAt != null && updatedAt.getTime() !== createdAt.getTime() && (
         <>
           , last edited{" "}
           <FormattedDateWithTooltip
@@ -692,19 +727,21 @@ export const ProposalContent = ({
           />
         </>
       )}
+      {sponsorIds.length !== 0 && (
+        <>
+          <br />
+          Sponsored by{" "}
+          {sponsorIds.map((id, i) => (
+            <React.Fragment key={id}>
+              {i !== 0 && <>, </>}
+              <AccountPreviewPopoverTrigger accountAddress={id} />
+            </React.Fragment>
+          ))}
+        </>
+      )}
     </div>
 
     <RichText markdownText={description} />
-    <hr
-      css={(t) =>
-        css({
-          marginTop: "4rem",
-          border: 0,
-          borderBottom: "0.1rem solid",
-          borderColor: t.colors.borderLighter,
-        })
-      }
-    />
   </div>
 );
 
@@ -721,6 +758,7 @@ const ProposalHeader = ({ proposalId }) => {
         proposal.description.search(/\n/)
       )}
       proposerId={proposal.proposerId}
+      sponsorIds={proposal.signers?.map((s) => s.id)}
       createdAt={proposal.createdTimestamp}
     />
   );
@@ -796,7 +834,11 @@ const ProposalScreen = () => {
   const { proposalId } = useParams();
   const proposal = useProposal(proposalId);
 
-  const { address: connectedWalletAccountAddress } = useAccount();
+  const {
+    address: connectedWalletAccountAddress,
+    requestAccess: requestWalletAccess,
+  } = useWallet();
+
   const isProposer =
     connectedWalletAccountAddress != null &&
     connectedWalletAccountAddress.toLowerCase() ===
@@ -825,9 +867,28 @@ const ProposalScreen = () => {
       <Layout
         navigationStack={[
           { to: "/", label: "Home" },
-          { to: `/${proposalId}`, label: `Proposal #${proposalId}` },
+          {
+            to: `/${proposalId}`,
+            label: (
+              <>
+                Proposal #{proposalId}
+                {/* {proposal != null && ( */}
+                {/*   <> */}
+                {/*     {" "} */}
+                {/*     <Tag>{proposal.status}</Tag> */}
+                {/*   </> */}
+                {/* )} */}
+              </>
+            ),
+          },
         ]}
-        actions={isProposer ? [{ onSelect: openDialog, label: "Edit" }] : []}
+        actions={
+          connectedWalletAccountAddress == null
+            ? [{ onSelect: requestWalletAccess, label: "Connect wallet" }]
+            : isProposer
+            ? [{ onSelect: openDialog, label: "Edit" }]
+            : []
+        }
       >
         <ProposalMainSection proposalId={proposalId} />
       </Layout>

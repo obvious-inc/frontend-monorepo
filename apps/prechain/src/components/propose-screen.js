@@ -1,5 +1,5 @@
 import React from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams, useNavigate, useSearchParams } from "react-router-dom";
 import { useAccount } from "wagmi";
 import { css } from "@emotion/react";
 import { useLatestCallback } from "@shades/common/react";
@@ -14,14 +14,24 @@ import {
   useCollection as useDrafts,
   useSingleItem as useDraft,
 } from "../hooks/channel-drafts.js";
-import { useCreateProposalCandidate } from "../hooks/prechain.js";
+import { useCanCreateProposal } from "../hooks/dao.js";
+import {
+  useCreateProposal,
+  useCreateProposalCandidate,
+} from "../hooks/prechain.js";
 import { Layout, MainContentContainer } from "./proposal-screen.js";
 
 const ProposeScreen = () => {
   const { draftId } = useParams();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
 
   const { address: connectedAccountAddress } = useAccount();
+
+  const canCreateProposal = useCanCreateProposal();
+
+  const isCandidateMode =
+    !canCreateProposal || searchParams.get("candidate") != null;
 
   const editorRef = React.useRef();
 
@@ -38,33 +48,44 @@ const ProposeScreen = () => {
   const isBodyEmpty =
     draft == null || draft.body.every(isRichTextEditorNodeEmpty);
 
-  const slug = draft?.name.toLowerCase().replace(/\s+/g, "-");
-
-  const createProposalCandidate = useCreateProposalCandidate({
-    slug,
-    description:
-      draft == null
-        ? null
-        : `# ${draft.name}\n\n${messageUtils.toMarkdown(draft.body)}`,
-  });
-
   const hasRequiredInput = !isNameEmpty && !isBodyEmpty;
 
-  const submit = () => {
+  const description = hasRequiredInput
+    ? `# ${draft.name}\n\n${messageUtils.toMarkdown(draft.body)}`
+    : null;
+
+  const createProposalCandidate = useCreateProposalCandidate({
+    slug: draft?.name.toLowerCase().replace(/\s+/g, "-"),
+    description,
+  });
+
+  const createProposal = useCreateProposal({
+    description,
+  });
+
+  const submit = async () => {
     setPendingRequest(true);
 
-    deleteDraft(draftId)
-      .then(() => createProposalCandidate())
+    return Promise.resolve()
+      .then(() =>
+        isCandidateMode
+          ? createProposalCandidate().then((candidate) => {
+              const candidateId = [
+                connectedAccountAddress,
+                encodeURIComponent(candidate.slug),
+              ].join("-");
+              navigate(`/candidates/${candidateId}`, { replace: true });
+            })
+          : createProposal().then((proposal) => {
+              navigate(`/${proposal.id}`, { replace: true });
+            })
+      )
       .then(() => {
-        navigate(
-          `/candidates/${encodeURIComponent(
-            connectedAccountAddress
-          )}-${encodeURIComponent(slug)}`
-        );
+        deleteDraft(draftId);
       })
       .catch((e) => {
         alert("Ops, looks like something went wrong!");
-        throw e;
+        return Promise.reject(e);
       })
       .finally(() => {
         setPendingRequest(false);
@@ -88,14 +109,14 @@ const ProposeScreen = () => {
     const emptyDraft = getFirstEmptyDraft();
 
     if (emptyDraft) {
-      navigate(`/new/${emptyDraft.id}`, { replace: true });
+      navigate(`/new/${emptyDraft.id}?${searchParams}`, { replace: true });
       return;
     }
 
     createDraft().then((d) => {
-      navigate(d.id, { replace: true });
+      navigate(`/new/${d.id}?${searchParams}`, { replace: true });
     });
-  }, [draftId, createDraft, getFirstEmptyDraft, navigate]);
+  }, [draftId, createDraft, getFirstEmptyDraft, navigate, searchParams]);
 
   if (draft == null) return null;
 
@@ -116,7 +137,7 @@ const ProposeScreen = () => {
           }}
           css={css({
             flex: 1,
-            minHeight: 0,
+            minWidth: 0,
             display: "flex",
             flexDirection: "column",
           })}
@@ -129,13 +150,14 @@ const ProposeScreen = () => {
               flexDirection: "column",
               width: "100%",
               overflow: "auto",
-              padding: "1.5rem 0",
+              padding: "1.5rem 1.6rem",
               "@media (min-width: 600px)": {
-                padding: "12rem 0 10rem",
+                padding: "12rem 6rem 10rem",
               },
             })}
           >
             <MainContentContainer
+              narrow
               css={css({
                 flex: 1,
                 display: "flex",
@@ -214,6 +236,7 @@ const ProposeScreen = () => {
               <Button type="button" size="medium" disabled>
                 Draft saved
               </Button>
+
               <Button
                 type="submit"
                 size="medium"
@@ -221,7 +244,9 @@ const ProposeScreen = () => {
                 isLoading={hasPendingRequest}
                 disabled={!hasRequiredInput || hasPendingRequest}
               >
-                Create proposal candidate
+                {isCandidateMode
+                  ? "Create proposal candidate"
+                  : "Create proposal"}
               </Button>
             </div>
           </footer>

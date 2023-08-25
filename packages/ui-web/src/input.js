@@ -85,21 +85,9 @@ const Input = React.forwardRef(
     return (
       <div {...containerProps}>
         {label != null && (
-          <label
-            htmlFor={id}
-            css={(t) =>
-              css({
-                display: "inline-block",
-                color: t.colors.textDimmed,
-                fontSize: t.text.sizes.base,
-                lineHeight: 1.2,
-                margin: "0 0 0.8rem",
-              })
-            }
-            {...labelProps}
-          >
+          <Label htmlFor={id} {...labelProps}>
             {label}
-          </label>
+          </Label>
         )}
         {renderInput({ id })}
         {hint != null && (
@@ -118,6 +106,21 @@ const Input = React.forwardRef(
       </div>
     );
   }
+);
+
+export const Label = (props) => (
+  <label
+    css={(t) =>
+      css({
+        display: "inline-block",
+        color: t.colors.textDimmed,
+        fontSize: t.text.sizes.base,
+        lineHeight: 1.2,
+        margin: "0 0 0.8rem",
+      })
+    }
+    {...props}
+  />
 );
 
 export default Input;

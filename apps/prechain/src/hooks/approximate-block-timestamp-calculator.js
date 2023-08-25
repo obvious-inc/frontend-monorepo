@@ -6,6 +6,7 @@ const useApproximateBlockTimestampCalculator = () => {
 
   return React.useCallback(
     (blockNumber) => {
+      if (blockNumber == null) return null;
       if (latestBlockNumber == null) return null;
 
       const secondsPerBlock = 12; // Copied from agora

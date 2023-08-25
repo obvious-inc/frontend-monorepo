@@ -216,6 +216,7 @@ export const stringifyBlocks = (
       case "attachments":
         return `\n${stringifyChildren()}\n`;
 
+      case "image":
       case "image-attachment":
         return humanReadable ? el.url : "";
 
@@ -256,30 +257,30 @@ export const toMarkdown = (blockElements) => {
 
     switch (el.type) {
       case "paragraph":
-      case "list-item":
-        return `${renderChildren()}`;
+        return `\n\n${renderChildren()}`;
 
       case "heading-1":
-        return `\n# ${renderChildren()}\n`;
+        return `\n\n# ${renderChildren()}`;
       case "heading-2":
-        return `\n## ${renderChildren()}\n`;
+        return `\n\n## ${renderChildren()}`;
       case "heading-3":
-        return `\n### ${renderChildren()}\n`;
+        return `\n\n### ${renderChildren()}`;
       case "heading-4":
-        return `\n#### ${renderChildren()}\n`;
+        return `\n\n#### ${renderChildren()}`;
 
       case "quote":
       case "callout":
-        return `\n> ${renderChildren()}\n`;
+        return `\n\n> ${renderChildren()}`;
 
       case "bulleted-list":
       case "numbered-list": {
         const isBulletList = el.type === "bulleted-list";
         const children = el.children.map((el, i) => {
           const prefix = isBulletList ? "-" : `${i + 1}.`;
-          return `${prefix} ${renderNode(el)}`;
+          const children = el.children.map(renderNode).join("");
+          return `${prefix} ${children}`;
         });
-        return `\n${children.join("\n")}\n`;
+        return `\n\n${children.join("\n")}`;
       }
 
       case "link":
@@ -288,31 +289,35 @@ export const toMarkdown = (blockElements) => {
       case "emoji":
         return el.emoji;
 
-      case "attachments":
-        return `\n${renderChildren()}\n`;
+      case "attachments": {
+        const children = el.children.map(
+          (el) => `![${el.text ?? el.url}](${el.url})`
+        );
+        return `\n\n${children.join("\n\n")()}`;
+      }
 
-      case "image-attachment":
-        return `![](${el.url})`;
+      case "image":
+        return `\n\n![${el.text ?? el.url}](${el.url})`;
 
       case "horizontal-divider":
-        return "\n---\n";
+        return "\n\n---";
 
       default:
-        throw new Error();
+        throw new Error(`Unknown element type: "${el.type}"`);
     }
   };
 
-  const renderNode = (n) => {
+  const renderNode = (n, i) => {
     if (n.text != null) return renderTextNode(n);
-    return renderElement(n);
+    return renderElement(n, i);
   };
 
   return (
     blockElements
       .map(renderElement)
       .join("")
-      // Gets rid of the the outer paragraph line breaks, I dunno
-      .replace(/^[\n]|[\n]$/g, "")
+      // Gets rid of the the outer paragraph line breaks
+      .trim()
   );
 };
 

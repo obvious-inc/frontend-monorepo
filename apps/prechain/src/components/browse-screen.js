@@ -4,7 +4,8 @@ import {
   useNavigate,
   useSearchParams,
 } from "react-router-dom";
-import { css } from "@emotion/react";
+import { css, useTheme } from "@emotion/react";
+import { useBlockNumber } from "wagmi";
 import { useAccountDisplayName } from "@shades/common/app";
 import { array as arrayUtils } from "@shades/common/utils";
 import Avatar from "@shades/ui-web/avatar";
@@ -13,9 +14,11 @@ import {
   useProposals,
   useProposalCandidates,
   useProposal,
+  useProposalState,
   useProposalCandidate,
 } from "../hooks/prechain.js";
-import FormattedDate from "./formatted-date.js";
+import useApproximateBlockTimestampCalculator from "../hooks/approximate-block-timestamp-calculator.js";
+import FormattedDateWithTooltip from "./formatted-date-with-tooltip.js";
 import { Layout, MainContentContainer } from "./proposal-screen.js";
 
 const searchProposals = (items, rawQuery) => {
@@ -107,7 +110,7 @@ const ProposalsScreen = () => {
                   color: t.colors.textNormal,
                   borderRadius: "0.5rem",
                   display: "grid",
-                  gridTemplateColumns: "auto minmax(0,1fr)",
+                  gridTemplateColumns: "auto minmax(0,1fr) auto",
                   alignItems: "center",
                   gridGap: "1rem",
                 },
@@ -116,7 +119,7 @@ const ProposalsScreen = () => {
                   fontWeight: t.text.weights.header,
                   lineHeight: 1.2,
                 },
-                ".description": {
+                ".description, .status": {
                   color: t.colors.textDimmed,
                   fontSize: t.text.sizes.small,
                   lineHeight: 1.35,
@@ -124,6 +127,13 @@ const ProposalsScreen = () => {
                   whiteSpace: "nowrap",
                   overflow: "hidden",
                   textOverflow: "ellipsis",
+                },
+                ".status": { textAlign: "right" },
+                '[data-dimmed="true"]': {
+                  color: t.colors.textMuted,
+                  ".description, .status": {
+                    color: t.colors.textMuted,
+                  },
                 },
                 "@media(hover: hover)": {
                   "a:hover": {
@@ -151,40 +161,186 @@ const ProposalsScreen = () => {
 };
 
 const ProposalItem = ({ proposalId }) => {
+  const theme = useTheme();
   const proposal = useProposal(proposalId);
   const { displayName: authorAccountDisplayName } = useAccountDisplayName(
     proposal.proposer?.id
   );
 
+  const state = useProposalState(proposalId);
+
+  const isDimmed =
+    state != null &&
+    ["cancelled", "expired", "defeated", "vetoed", "executed"].includes(state);
+
   return (
-    <RouterLink to={`/${proposalId}`}>
+    <RouterLink to={`/${proposalId}`} data-dimmed={isDimmed}>
       <Avatar
         signature={proposalId}
         signatureLength={3}
-        transparent
         size="3.2rem"
+        background={isDimmed ? theme.colors.backgroundModifierHover : undefined}
       />
       <div>
         <div className="name">{proposal.title}</div>
         <div className="description">
-          By{" "}
+          Prop {proposalId} by{" "}
           <em
             css={(t) =>
               css({ fontWeight: t.text.weights.emphasis, fontStyle: "normal" })
             }
           >
             {authorAccountDisplayName ?? "..."}
-          </em>{" "}
-          on{" "}
-          <FormattedDate
+          </em>
+          {/* on{" "} */}
+          {/* <FormattedDate */}
+          {/*   value={proposal.createdTimestamp} */}
+          {/*   day="numeric" */}
+          {/*   month="long" */}
+          {/* /> */}
+          {/* <Tag>{proposal.status}</Tag> */}
+        </div>
+      </div>
+      <div className="status">
+        <PropStatusText proposalId={proposalId} />
+      </div>
+    </RouterLink>
+  );
+};
+
+const PropStatusText = ({ proposalId }) => {
+  const proposal = useProposal(proposalId);
+
+  const { data: latestBlockNumber } = useBlockNumber();
+  const calculateBlockTimestamp = useApproximateBlockTimestampCalculator();
+
+  const startDate = calculateBlockTimestamp(proposal.startBlock);
+  const endDate = calculateBlockTimestamp(proposal.endBlock);
+  const objectionPeriodEndDate = calculateBlockTimestamp(
+    proposal.objectionPeriodEndBlock
+  );
+
+  //   if (status === ProposalState.PENDING || status === ProposalState.ACTIVE) {
+  //     if (!blockNumber) {
+  //       return ProposalState.UNDETERMINED;
+  //     }
+  //     if (isDaoGteV3 && proposal.updatePeriodEndBlock && blockNumber <= parseInt(proposal.updatePeriodEndBlock)) {
+  //       return ProposalState.UPDATABLE;
+  //     }
+
+  //     if (blockNumber <= parseInt(proposal.startBlock)) {
+  //       return ProposalState.PENDING;
+  //     }
+
+  //     if (
+  //       isDaoGteV3 &&
+  //       blockNumber > +proposal.endBlock &&
+  //       parseInt(proposal.objectionPeriodEndBlock) > 0 &&
+  //       blockNumber <= parseInt(proposal.objectionPeriodEndBlock)
+  //     ) {
+  //       return ProposalState.OBJECTION_PERIOD;
+  //     }
+
+  //     // if past endblock, but onchain status hasn't been changed
+  //     if (
+  //       blockNumber > parseInt(proposal.endBlock) &&
+  //       blockNumber > parseInt(proposal.objectionPeriodEndBlock)
+  //     ) {
+  //       const forVotes = new BigNumber(proposal.forVotes);
+  //       if (forVotes.lte(proposal.againstVotes) || forVotes.lt(proposal.quorumVotes)) {
+  //         return ProposalState.DEFEATED;
+  //       }
+  //       if (!proposal.executionETA) {
+  //         return ProposalState.SUCCEEDED;
+  //       }
+  //     }
+  //     return ProposalState.ACTIVE;
+  //   }
+
+  switch (proposal.status) {
+    case "PENDING":
+    case "ACTIVE": {
+      if (latestBlockNumber == null || startDate == null || endDate == null)
+        return null;
+
+      if (latestBlockNumber <= parseInt(proposal.startBlock))
+        return (
+          <>
+            Starts{" "}
+            <FormattedDateWithTooltip
+              capitalize={false}
+              value={startDate}
+              day="numeric"
+              month="long"
+            />
+          </>
+        );
+
+      if (
+        parseInt(proposal.objectionPeriodEndBlock) > 0 &&
+        latestBlockNumber <= parseInt(proposal.objectionPeriodEndBlock)
+      )
+        return (
+          <>
+            Objection period ends{" "}
+            <FormattedDateWithTooltip
+              capitalize={false}
+              value={objectionPeriodEndDate}
+              day="numeric"
+              month="long"
+            />
+          </>
+        );
+
+      if (latestBlockNumber <= parseInt(proposal.endBlock))
+        return (
+          <>
+            Voting ends{" "}
+            <FormattedDateWithTooltip
+              capitalize={false}
+              value={endDate}
+              day="numeric"
+              month="long"
+            />
+          </>
+        );
+
+      if (
+        proposal.forVotes <= proposal.againstVotes ||
+        proposal.forVotes < proposal.quorumVotes
+      )
+        return "Defeated";
+
+      // if (!proposal.executionETA) {
+      //   return ProposalState.SUCCEEDED;
+      // }
+
+      return "Succeeded";
+    }
+
+    case "VETOED":
+      return "Vetoed";
+    case "CANCELLED":
+      return "Cancelled";
+    case "QUEUED":
+      return "Queued";
+    case "EXECUTED":
+      return "Executed";
+
+    default:
+      return (
+        <>
+          Proposed{" "}
+          <FormattedDateWithTooltip
+            capitalize={false}
             value={proposal.createdTimestamp}
             day="numeric"
             month="long"
           />
-        </div>
-      </div>
-    </RouterLink>
-  );
+        </>
+      );
+    // throw new Error();
+  }
 };
 
 const ProposalCandidateItem = ({ candidateId }) => {
@@ -212,30 +368,39 @@ const ProposalCandidateItem = ({ candidateId }) => {
           >
             {authorAccountDisplayName ?? "..."}
           </em>
-          <span
-            css={(t) =>
-              css({
-                display: "inline-flex",
-                background: t.colors.backgroundModifierHover,
-                color: t.colors.textDimmed,
-                fontSize: t.text.sizes.tiny,
-                fontWeight: "400",
-                textTransform: "uppercase",
-                padding: "0.1rem 0.3rem",
-                borderRadius: "0.2rem",
-                marginLeft: "0.6rem",
-                lineHeight: 1.2,
-              })
-            }
-          >
-            {candidate.latestVersion.targetProposalId == null
-              ? "Candidate"
-              : "Update candidate"}
-          </span>
+          <Tag>
+            {candidate.canceledTimestamp != null
+              ? "Canceled candidarte"
+              : candidate.latestVersion.targetProposalId != null
+              ? "Update candidate"
+              : "Candidate"}
+          </Tag>
         </div>
       </div>
+      <div />
     </RouterLink>
   );
 };
+
+export const Tag = ({ children }) => (
+  <span
+    css={(t) =>
+      css({
+        display: "inline-flex",
+        background: t.colors.backgroundModifierHover,
+        color: t.colors.textDimmed,
+        fontSize: t.text.sizes.tiny,
+        fontWeight: "400",
+        textTransform: "uppercase",
+        padding: "0.1rem 0.3rem",
+        borderRadius: "0.2rem",
+        marginLeft: "0.6rem",
+        lineHeight: 1.2,
+      })
+    }
+  >
+    {children}
+  </span>
+);
 
 export default ProposalsScreen;
