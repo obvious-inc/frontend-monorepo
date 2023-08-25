@@ -155,9 +155,9 @@ const ProposalCandidateScreen = () => {
     <>
       <Layout
         navigationStack={[
-          { to: "/", label: "Proposals" },
+          { to: "/", label: "Candidates" },
           {
-            to: `/candidates/${candidateId}`,
+            to: `/candidates/${encodeURIComponent(candidateId)}`,
             label: candidate.latestVersion.content.title,
           },
         ]}
@@ -183,7 +183,7 @@ const ProposalCandidateScreen = () => {
                 style={{
                   display: "flex",
                   flexDirection: "column",
-                  gap: "2rem",
+                  gap: "4rem",
                 }}
               >
                 {sponsorFeedItems.length !== 0 && (
@@ -203,36 +203,44 @@ const ProposalCandidateScreen = () => {
                   </div>
                 )}
 
-                {regularFeedItems.length !== 0 && (
-                  <div>
-                    <div
-                      css={(t) =>
-                        css({
-                          fontSize: t.text.sizes.base,
-                          fontWeight: t.text.weights.header,
-                          margin: "0 0 1rem",
+                <div
+                  style={{
+                    display: "flex",
+                    flexDirection: "column",
+                    gap: "2rem",
+                  }}
+                >
+                  {regularFeedItems.length !== 0 && (
+                    <div>
+                      <div
+                        css={(t) =>
+                          css({
+                            fontSize: t.text.sizes.base,
+                            fontWeight: t.text.weights.header,
+                            margin: "0 0 1rem",
+                          })
+                        }
+                      >
+                        Feedback
+                      </div>
+                      <ProposalFeed items={regularFeedItems} />
+                    </div>
+                  )}
+
+                  {connectedWalletAccountAddress != null && (
+                    <ProposalFeedbackForm
+                      pendingFeedback={pendingFeedback}
+                      setPendingFeedback={setPendingFeedback}
+                      pendingSupport={pendingSupport}
+                      setPendingSupport={setPendingSupport}
+                      onSubmit={() =>
+                        sendProposalFeedback().then(() => {
+                          setPendingFeedback("");
                         })
                       }
-                    >
-                      Feedback
-                    </div>
-                    <ProposalFeed items={regularFeedItems} />
-                  </div>
-                )}
-
-                {connectedWalletAccountAddress != null && (
-                  <ProposalFeedbackForm
-                    pendingFeedback={pendingFeedback}
-                    setPendingFeedback={setPendingFeedback}
-                    pendingSupport={pendingSupport}
-                    setPendingSupport={setPendingSupport}
-                    onSubmit={() =>
-                      sendProposalFeedback().then(() => {
-                        setPendingFeedback("");
-                      })
-                    }
-                  />
-                )}
+                    />
+                  )}
+                </div>
               </div>
             }
           >

@@ -28,6 +28,7 @@ import { useWallet } from "../hooks/wallet.js";
 import AccountPreviewPopoverTrigger from "./account-preview-popover-trigger.js";
 import RichText from "./rich-text.js";
 import FormattedDateWithTooltip from "./formatted-date-with-tooltip.js";
+import LogoSymbol from "./logo-symbol.js";
 
 const ProposalMainSection = ({ proposalId }) => {
   const { address: connectedWalletAccountAddress } = useWallet();
@@ -414,17 +415,25 @@ const NavBar = ({ navigationStack, actions }) => {
           flex: 1,
           minWidth: 0,
           padding: "1rem",
+          display: "flex",
+          alignItems: "center",
+          gap: "0.2rem",
         }}
       >
-        {navigationStack.map((item, index) => (
+        {[
+          {
+            to: "/",
+            label: <LogoSymbol style={{ width: "2.4rem", height: "auto" }} />,
+          },
+          ...navigationStack,
+        ].map((item, index) => (
           <React.Fragment key={item.to}>
-            {index !== 0 && (
+            {index > 0 && (
               <span
                 css={(t) =>
                   css({
                     color: t.colors.textMuted,
                     fontSize: t.text.sizes.base,
-                    margin: "0 0.2rem",
                   })
                 }
               >
@@ -435,6 +444,9 @@ const NavBar = ({ navigationStack, actions }) => {
               to={item.to}
               css={(t) =>
                 css({
+                  display: "inline-flex",
+                  alignItems: "center",
+                  height: "2.7rem",
                   fontSize: t.fontSizes.base,
                   color: t.colors.textNormal,
                   padding: "0.3rem 0.5rem",
@@ -569,12 +581,7 @@ export const ProposalFeed = ({ items = [] }) => {
               </AccountPreviewPopoverTrigger>
             </div>
             <div>
-              <div
-                css={css({
-                  cursor: "default",
-                  lineHeight: 1.2,
-                })}
-              >
+              <div css={css({ cursor: "default", lineHeight: 1.2 })}>
                 <AccountPreviewPopoverTrigger
                   accountAddress={item.authorAccount}
                 />{" "}
@@ -624,17 +631,19 @@ export const ProposalFeed = ({ items = [] }) => {
               </div>
             </div>
           </div>
-          <div
-            css={(t) =>
-              css({
-                fontSize: t.text.sizes.base,
-                whiteSpace: "pre-line",
-                marginTop: "0.5rem",
-              })
-            }
-          >
-            {item.body}
-          </div>
+          {item.body != null && (
+            <div
+              css={(t) =>
+                css({
+                  fontSize: t.text.sizes.small,
+                  whiteSpace: "pre-line",
+                  marginTop: "0.35rem",
+                })
+              }
+            >
+              {item.body}
+            </div>
+          )}
         </div>
       ))}
     </ul>
@@ -866,7 +875,7 @@ const ProposalScreen = () => {
     <>
       <Layout
         navigationStack={[
-          { to: "/", label: "Home" },
+          { to: "/", label: "Proposals" },
           {
             to: `/${proposalId}`,
             label: (

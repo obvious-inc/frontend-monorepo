@@ -1,35 +1,23 @@
 import React from "react";
 import { createRoot } from "react-dom/client";
 import {
-  AuthProvider,
-  AppStoreProvider,
-  CacheStoreProvider,
-  useAuth,
-  useActions,
-} from "@shades/common/app";
-import { useFetch } from "@shades/common/react";
-import {
-  useActions as usePrechainActions,
-  ChainDataCacheContextProvider,
-} from "./hooks/prechain.js";
+  WagmiConfig,
+  createConfig as createWagmiConfig,
+  configureChains as configureWagmiChains,
+} from "wagmi";
+import { mainnet, sepolia } from "wagmi/chains";
+import { infuraProvider } from "wagmi/providers/infura";
+import { publicProvider } from "wagmi/providers/public";
+import { InjectedConnector } from "wagmi/connectors/injected";
+import { WalletConnectConnector } from "wagmi/connectors/walletConnect";
+import { CacheStoreProvider } from "@shades/common/app";
+import { ChainDataCacheContextProvider } from "./hooks/prechain.js";
 import "./reset.css";
 import "./index.css";
 
 const LazyApp = React.lazy(() => import("./app"));
 
 const App = () => {
-  const { status: authStatus } = useAuth();
-
-  const { fetchClientBootData } = useActions();
-  const { fetchChannels: fetchPrechainChannels } = usePrechainActions();
-
-  React.useEffect(() => {
-    if (authStatus !== "authenticated") return;
-    fetchClientBootData();
-  }, [authStatus, fetchClientBootData]);
-
-  useFetch(() => fetchPrechainChannels(), [fetchPrechainChannels]);
-
   return (
     <React.Suspense fallback={null}>
       <LazyApp />
@@ -45,18 +33,33 @@ try {
   console.warn(e);
 }
 
+const { chains, publicClient } = configureWagmiChains(
+  [mainnet, sepolia],
+  [infuraProvider({ apiKey: process.env.INFURA_PROJECT_ID }), publicProvider()]
+);
+
+const wagmiConfig = createWagmiConfig({
+  autoConnect: true,
+  publicClient,
+  connectors: [
+    new InjectedConnector({ chains }),
+    new WalletConnectConnector({
+      chains,
+      options: {
+        projectId: process.env.WALLET_CONNECT_PROJECT_ID,
+      },
+    }),
+  ],
+});
+
 createRoot(document.getElementById("app-mount")).render(
   <React.StrictMode>
-    <ChainDataCacheContextProvider>
-      <CacheStoreProvider syncStorage={cacheStoreStorage}>
-        <AuthProvider apiOrigin="/api">
-          <AppStoreProvider
-            cloudflareAccountHash={process.env.CLOUDFLARE_ACCT_HASH}
-          >
-            <App />
-          </AppStoreProvider>
-        </AuthProvider>
-      </CacheStoreProvider>
-    </ChainDataCacheContextProvider>
+    <WagmiConfig config={wagmiConfig}>
+      <ChainDataCacheContextProvider>
+        <CacheStoreProvider syncStorage={cacheStoreStorage}>
+          <App />
+        </CacheStoreProvider>
+      </ChainDataCacheContextProvider>
+    </WagmiConfig>
   </React.StrictMode>
 );

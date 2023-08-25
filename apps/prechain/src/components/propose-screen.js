@@ -124,8 +124,8 @@ const ProposeScreen = () => {
     <Layout
       scrollView={false}
       navigationStack={[
-        { to: "/", label: "Home" },
-        { to: `/new/${draftId}`, label: "Propose" },
+        { to: "/", label: "Drafts" },
+        { to: `/new/${draftId}`, label: draft?.name || "Untitled draft" },
       ]}
       // actions={isProposer ? [{ onSelect: openDialog, label: "Edit" }] : []}
     >

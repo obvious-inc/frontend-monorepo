@@ -14,6 +14,7 @@ import {
   usePrepareContractWrite,
   useSignTypedData,
   useBlockNumber,
+  useNetwork,
 } from "wagmi";
 import { sepolia } from "wagmi/chains";
 import {
@@ -29,14 +30,24 @@ import {
 const { indexBy, sortBy } = arrayUtils;
 const { mapValues } = objectUtils;
 
-export const SEPOLIA_NOUNS_DAO_CONTRACT =
-  "0x35d2670d7C8931AACdd37C89Ddcb0638c3c44A57";
-export const SEPOLIA_NOUNS_TOKEN_CONTRACT =
-  "0x4C4674bb72a096855496a7204962297bd7e12b85";
-const SEPOLIA_NOUNS_DATA_CONTACT = "0x9040f720AA8A693F950B9cF94764b4b06079D002";
+export const contractAddressesByChainId = {
+  1: {
+    dao: "0x6f3E6272A167e8AcCb32072d08E0957F9c79223d",
+    data: "0xf790A5f59678dd733fb3De93493A91f472ca1365",
+    token: "0x9C8fF314C9Bc7F6e59A9d9225Fb22946427eDC03",
+  },
+  11155111: {
+    dao: "0x35d2670d7C8931AACdd37C89Ddcb0638c3c44A57",
+    data: "0x9040f720AA8A693F950B9cF94764b4b06079D002",
+    token: "0x4C4674bb72a096855496a7204962297bd7e12b85",
+  },
+};
 
-const SUBGRAPH_ENDPOINT =
-  "https://api.studio.thegraph.com/proxy/49498/nouns-v3-sepolia/version/latest";
+const subgraphEndpointByChainId = {
+  1: "https://thegraph.com/hosted-service/subgraph/nounsdao/nouns-subgraph",
+  11155111:
+    "https://api.studio.thegraph.com/proxy/49498/nouns-v3-sepolia/version/latest",
+};
 
 const PROPOSALS_TAG = "prechain/1/proposal";
 
@@ -209,8 +220,8 @@ const createProposalCandidateFeedbackPostsQuery = (candidateId) => `{
 
 const ChainDataCacheContext = React.createContext();
 
-const subgraphFetch = (query) =>
-  fetch(SUBGRAPH_ENDPOINT, {
+const subgraphFetch = ({ chainId, query }) =>
+  fetch(subgraphEndpointByChainId[chainId], {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ query }),
@@ -305,15 +316,24 @@ const mergeProposalCandidates = (p1, p2) => {
 };
 
 export const ChainDataCacheContextProvider = ({ children }) => {
+  const { chain } = useNetwork();
+
+  const chainId = chain.id;
+
   const [state, setState] = React.useState({
     proposalsById: {},
     proposalCandidatesById: {},
   });
 
+  const querySubgraph = React.useCallback(
+    (query) => subgraphFetch({ chainId, query }),
+    [chainId]
+  );
+
   // Fetch proposals
   useFetch(
     () =>
-      subgraphFetch(PROPOSALS_QUERY).then((data) => {
+      querySubgraph(PROPOSALS_QUERY).then((data) => {
         const parsedProposals = data.proposals.map(parseProposal);
         const fetchedProposalsById = indexBy((p) => p.id, parsedProposals);
 
@@ -332,13 +352,13 @@ export const ChainDataCacheContextProvider = ({ children }) => {
           };
         });
       }),
-    []
+    [querySubgraph]
   );
 
   // Fetch candidates
   useFetch(
     () =>
-      subgraphFetch(PROPOSAL_CANDIDATES_QUERY).then((data) => {
+      querySubgraph(PROPOSAL_CANDIDATES_QUERY).then((data) => {
         const parsedCandidates = data.proposalCandidates.map(
           parseProposalCandidate
         );
@@ -362,12 +382,12 @@ export const ChainDataCacheContextProvider = ({ children }) => {
           };
         });
       }),
-    []
+    [querySubgraph]
   );
 
   const fetchProposal = React.useCallback(
     (id) =>
-      subgraphFetch(createProposalQuery(id)).then((data) => {
+      querySubgraph(createProposalQuery(id)).then((data) => {
         if (data.proposal == null)
           return Promise.reject(new Error("not-found"));
 
@@ -384,47 +404,50 @@ export const ChainDataCacheContextProvider = ({ children }) => {
           };
         });
       }),
-    []
+    [querySubgraph]
   );
 
-  const fetchProposalCandidate = React.useCallback(async (rawId) => {
-    const id = rawId.toLowerCase();
-    return Promise.all([
-      subgraphFetch(createProposalCandidateQuery(id)).then((data) => {
-        if (data.proposalCandidate == null)
-          return Promise.reject(new Error("not-found"));
-
-        return parseProposalCandidate(data.proposalCandidate);
-      }),
-      subgraphFetch(createProposalCandidateFeedbackPostsQuery(id)).then(
-        (data) => {
-          if (data.candidateFeedbacks == null)
+  const fetchProposalCandidate = React.useCallback(
+    async (rawId) => {
+      const id = rawId.toLowerCase();
+      return Promise.all([
+        querySubgraph(createProposalCandidateQuery(id)).then((data) => {
+          if (data.proposalCandidate == null)
             return Promise.reject(new Error("not-found"));
 
-          const feedbackPosts = data.candidateFeedbacks.map((p) => ({
-            ...p,
-            createdTimestamp: new Date(parseInt(p.createdTimestamp) * 1000),
-          }));
+          return parseProposalCandidate(data.proposalCandidate);
+        }),
+        querySubgraph(createProposalCandidateFeedbackPostsQuery(id)).then(
+          (data) => {
+            if (data.candidateFeedbacks == null)
+              return Promise.reject(new Error("not-found"));
 
-          return feedbackPosts;
-        }
-      ),
-    ]).then(([candidate, feedbackPosts]) => {
-      setState((s) => {
-        const updatedCandidate = mergeProposalCandidates(
-          s.proposalCandidatesById[id],
-          { ...candidate, feedbackPosts }
-        );
-        return {
-          ...s,
-          proposalCandidatesById: {
-            ...s.proposalCandidatesById,
-            [id]: updatedCandidate,
-          },
-        };
+            const feedbackPosts = data.candidateFeedbacks.map((p) => ({
+              ...p,
+              createdTimestamp: new Date(parseInt(p.createdTimestamp) * 1000),
+            }));
+
+            return feedbackPosts;
+          }
+        ),
+      ]).then(([candidate, feedbackPosts]) => {
+        setState((s) => {
+          const updatedCandidate = mergeProposalCandidates(
+            s.proposalCandidatesById[id],
+            { ...candidate, feedbackPosts }
+          );
+          return {
+            ...s,
+            proposalCandidatesById: {
+              ...s.proposalCandidatesById,
+              [id]: updatedCandidate,
+            },
+          };
+        });
       });
-    });
-  }, []);
+    },
+    [querySubgraph]
+  );
 
   const contextValue = React.useMemo(
     () => ({ state, actions: { fetchProposal, fetchProposalCandidate } }),
@@ -536,8 +559,10 @@ export const useProposalState = (proposalId) => {
 };
 
 export const useSendProposalFeedback = (proposalId, { support, reason }) => {
+  const { chain } = useNetwork();
+
   const { config } = usePrepareContractWrite({
-    address: SEPOLIA_NOUNS_DATA_CONTACT,
+    address: contractAddressesByChainId[chain.id].data,
     abi: parseAbi([
       "function sendFeedback(uint256 proposalId, uint8 support, string memory reason) external",
     ]),
@@ -554,8 +579,10 @@ export const useSendProposalCandidateFeedback = (
   slug,
   { support, reason }
 ) => {
+  const { chain } = useNetwork();
+
   const { config } = usePrepareContractWrite({
-    address: SEPOLIA_NOUNS_DATA_CONTACT,
+    address: contractAddressesByChainId[chain.id].data,
     abi: parseAbi([
       "function sendCandidateFeedback(address proposer, string memory slug, uint8 support, string memory reason) external",
     ]),
@@ -569,9 +596,10 @@ export const useSendProposalCandidateFeedback = (
 
 export const useCreateProposalCandidate = ({ slug, description }) => {
   const publicClient = usePublicClient();
+  const { chain } = useNetwork();
 
   const { config } = usePrepareContractWrite({
-    address: SEPOLIA_NOUNS_DATA_CONTACT,
+    address: contractAddressesByChainId[chain.id].data,
     abi: parseAbi([
       "function createProposalCandidate(address[] memory targets, uint256[] memory values, string[] memory signatures, bytes[] memory calldatas, string memory description, string memory slug, uint256 proposalIdToUpdate) external payable",
     ]),
@@ -614,9 +642,10 @@ export const useCreateProposalCandidate = ({ slug, description }) => {
 
 export const useUpdateProposalCandidate = (slug, { description, reason }) => {
   const publicClient = usePublicClient();
+  const { chain } = useNetwork();
 
   const { config } = usePrepareContractWrite({
-    address: SEPOLIA_NOUNS_DATA_CONTACT,
+    address: contractAddressesByChainId[chain.id].data,
     abi: parseAbi([
       "function updateProposalCandidate(address[] memory targets, uint256[] memory values, string[] memory signatures, bytes[] memory calldatas, string memory description, string memory slug, uint256 proposalIdToUpdate, string memory reason) external payable",
     ]),
@@ -649,9 +678,10 @@ export const useUpdateProposalCandidate = (slug, { description, reason }) => {
 
 export const useCancelProposalCandidate = (slug) => {
   const publicClient = usePublicClient();
+  const { chain } = useNetwork();
 
   const { config } = usePrepareContractWrite({
-    address: SEPOLIA_NOUNS_DATA_CONTACT,
+    address: contractAddressesByChainId[chain.id].data,
     abi: parseAbi([
       "function cancelProposalCandidate(string memory slug) external",
     ]),
@@ -674,11 +704,13 @@ export const useSignProposalCandidate = (
   { description, targets, values, signatures, calldatas },
   { expirationTimestamp }
 ) => {
+  const { chain } = useNetwork();
+
   const { signTypedDataAsync } = useSignTypedData({
     domain: {
       name: "Nouns DAO",
       chainId: sepolia.id,
-      verifyingContract: SEPOLIA_NOUNS_DAO_CONTRACT,
+      verifyingContract: contractAddressesByChainId[chain.id].dao,
     },
     types: {
       Proposal: [
@@ -742,8 +774,10 @@ export const useAddSignatureToProposalCandidate = (
   slug,
   { description, targets, values, signatures, calldatas }
 ) => {
+  const { chain } = useNetwork();
+
   const { writeAsync } = useContractWrite({
-    address: SEPOLIA_NOUNS_DATA_CONTACT,
+    address: contractAddressesByChainId[chain.id].data,
     abi: parseAbi([
       "function addSignature(bytes memory sig, uint256 expirationTimestamp, address proposer, string memory slug, uint256 proposalIdToUpdate, bytes memory encodedProp, string memory reason) external",
     ]),
@@ -779,9 +813,10 @@ export const useCreateProposal = ({
   description,
 }) => {
   const publicClient = usePublicClient();
+  const { chain } = useNetwork();
 
   const { config } = usePrepareContractWrite({
-    address: SEPOLIA_NOUNS_DAO_CONTRACT,
+    address: contractAddressesByChainId[chain.id].dao,
     abi: parseAbi([
       "function propose(address[] memory targets, uint256[] memory values, string[] memory signatures, bytes[] memory calldatas, string memory description) public returns (uint256)",
     ]),
@@ -822,9 +857,10 @@ export const useCreateProposal = ({
 
 export const useCancelProposal = (proposalId) => {
   const publicClient = usePublicClient();
+  const { chain } = useNetwork();
 
   const { config } = usePrepareContractWrite({
-    address: SEPOLIA_NOUNS_DAO_CONTRACT,
+    address: contractAddressesByChainId[chain.id].dao,
     abi: parseAbi(["function cancel(uint256 proposalId) external"]),
     functionName: "cancel",
     args: [proposalId],

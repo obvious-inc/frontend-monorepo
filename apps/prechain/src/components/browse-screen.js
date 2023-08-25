@@ -9,7 +9,9 @@ import { useBlockNumber } from "wagmi";
 import { useAccountDisplayName } from "@shades/common/app";
 import { array as arrayUtils } from "@shades/common/utils";
 import Avatar from "@shades/ui-web/avatar";
+import AccountAvatar from "@shades/ui-web/account-avatar";
 import Input from "@shades/ui-web/input";
+import Button from "@shades/ui-web/button";
 import {
   useProposals,
   useProposalCandidates,
@@ -18,6 +20,7 @@ import {
   useProposalCandidate,
 } from "../hooks/prechain.js";
 import useApproximateBlockTimestampCalculator from "../hooks/approximate-block-timestamp-calculator.js";
+import { useWallet } from "../hooks/wallet.js";
 import FormattedDateWithTooltip from "./formatted-date-with-tooltip.js";
 import { Layout, MainContentContainer } from "./proposal-screen.js";
 
@@ -39,6 +42,13 @@ const searchProposals = (items, rawQuery) => {
 
 const ProposalsScreen = () => {
   const navigate = useNavigate();
+  const {
+    address: connectedAccountAddress,
+    requestAccess: requestWalletAccess,
+  } = useWallet();
+  const { displayName: connectedAccountDisplayName } = useAccountDisplayName(
+    connectedAccountAddress
+  );
   const [searchParams, setSearchParams] = useSearchParams();
 
   const query = searchParams.get("q") ?? "";
@@ -62,12 +72,26 @@ const ProposalsScreen = () => {
     <Layout
       // navigationStack={[{ to: "/", label: "Proposals" }]}
       actions={[
-        {
-          onSelect: () => {
-            navigate("/new");
-          },
-          label: "Propose",
-        },
+        connectedAccountAddress == null
+          ? { onSelect: requestWalletAccess, label: "Connect Wallet" }
+          : {
+              onSelect: () => {},
+              label: (
+                <div
+                  css={css({
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "0.8rem",
+                  })}
+                >
+                  <div>{connectedAccountDisplayName}</div>
+                  <AccountAvatar
+                    address={connectedAccountAddress}
+                    size="2rem"
+                  />
+                </div>
+              ),
+            },
       ]}
     >
       <MainContentContainer>
@@ -75,29 +99,52 @@ const ProposalsScreen = () => {
           css={css({
             padding: "1rem 1.6rem 3.2rem",
             "@media (min-width: 600px)": {
-              padding: "6rem 1.6rem 8rem",
+              padding: "8rem 1.6rem",
             },
           })}
         >
-          <Input
-            placeholder="Search..."
-            value={query}
-            onChange={(e) => {
-              // Clear search from path if query is empty
-              if (e.target.value.trim() === "") {
-                setSearchParams({});
-                return;
-              }
+          <div
+            css={(t) =>
+              css({
+                background: t.colors.backgroundPrimary,
+                position: "sticky",
+                top: 0,
+                display: "flex",
+                alignItems: "center",
+                gap: "1.6rem",
+                "@media (min-width: 600px)": {
+                  marginBottom: "4.8rem",
+                },
+              })
+            }
+          >
+            <Input
+              placeholder="Search..."
+              value={query}
+              onChange={(e) => {
+                // Clear search from path if query is empty
+                if (e.target.value.trim() === "") {
+                  setSearchParams({});
+                  return;
+                }
 
-              setSearchParams({ q: e.target.value });
-            }}
-            css={css({
-              marginBottom: "1.6rem",
-              "@media (min-width: 600px)": {
-                marginBottom: "3.2rem",
-              },
-            })}
-          />
+                setSearchParams({ q: e.target.value });
+              }}
+              css={css({
+                flex: 1,
+                minWidth: 0,
+              })}
+            />
+
+            <Button
+              onClick={() => {
+                navigate("/new");
+              }}
+            >
+              New proposal
+            </Button>
+          </div>
+
           <ul
             css={(t) => {
               const hoverColor = t.colors.backgroundTertiary;
@@ -350,7 +397,7 @@ const ProposalCandidateItem = ({ candidateId }) => {
   );
 
   return (
-    <RouterLink to={`/candidates/${candidateId}`}>
+    <RouterLink to={`/candidates/${encodeURIComponent(candidateId)}`}>
       <Avatar
         signature={candidate.slug}
         signatureLength={2}

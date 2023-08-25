@@ -1,15 +1,13 @@
 import { parseAbi } from "viem";
-import { useContractRead } from "wagmi";
+import { useContractRead, useNetwork } from "wagmi";
 import { useWallet } from "./wallet.js";
-import {
-  SEPOLIA_NOUNS_DAO_CONTRACT,
-  SEPOLIA_NOUNS_TOKEN_CONTRACT,
-  useProposalState,
-} from "./prechain.js";
+import { contractAddressesByChainId, useProposalState } from "./prechain.js";
 
 export const useProposalThreshold = () => {
+  const { chain } = useNetwork();
+
   const { data } = useContractRead({
-    address: SEPOLIA_NOUNS_DAO_CONTRACT,
+    address: contractAddressesByChainId[chain.id].dao,
     abi: parseAbi([
       "function proposalThreshold() public view returns (uint256)",
     ]),
@@ -20,8 +18,10 @@ export const useProposalThreshold = () => {
 };
 
 const useLatestProposalId = (accountAddress) => {
+  const { chain } = useNetwork();
+
   const { data, isSuccess } = useContractRead({
-    address: SEPOLIA_NOUNS_DAO_CONTRACT,
+    address: contractAddressesByChainId[chain.id].dao,
     abi: parseAbi([
       "function latestProposalIds(address account) public view returns (uint256)",
     ]),
@@ -36,8 +36,10 @@ const useLatestProposalId = (accountAddress) => {
 };
 
 const useCurrentVotes = (accountAddress) => {
+  const { chain } = useNetwork();
+
   const { data, isSuccess } = useContractRead({
-    address: SEPOLIA_NOUNS_TOKEN_CONTRACT,
+    address: contractAddressesByChainId[chain.id].token,
     abi: parseAbi([
       "function getCurrentVotes(address account) external view returns (uint96)",
     ]),
