@@ -159,7 +159,7 @@ const ProposalMainSection = ({ proposalId }) => {
 
   const delegateVotes = getDelegateVotes(proposal);
 
-  const renderEndStateText = () => {
+  const renderProposalStateText = () => {
     switch (proposal.state) {
       case "vetoed":
       case "canceled":
@@ -170,6 +170,21 @@ const ProposalMainSection = ({ proposalId }) => {
       case "expired":
       case "succeeded":
         return `Proposal ${proposalId} has ${proposal.state}`;
+      case "active":
+      case "objection-period":
+        return (
+          <>
+            Voting for Proposal {proposalId} ends{" "}
+            <FormattedDateWithTooltip
+              capitalize={false}
+              relativeDayThreshold={5}
+              value={endDate}
+              day="numeric"
+              month="short"
+            />
+            .
+          </>
+        );
       default:
         throw new Error();
     }
@@ -188,7 +203,7 @@ const ProposalMainSection = ({ proposalId }) => {
                 },
               })}
             >
-              {hasVotingEnded && (
+              {hasVotingStarted && (
                 <Callout
                   css={(t) =>
                     css({
@@ -197,7 +212,7 @@ const ProposalMainSection = ({ proposalId }) => {
                     })
                   }
                 >
-                  {renderEndStateText()}
+                  {renderProposalStateText()}
                 </Callout>
               )}
               {hasVotingStarted ? (

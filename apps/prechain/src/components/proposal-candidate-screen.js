@@ -230,6 +230,67 @@ const ProposalCandidateScreenContent = ({ candidateId }) => {
               },
             })}
           >
+            <div style={{ padding: "0 0 1.6rem" }}>
+              <span
+                css={(t) =>
+                  css({
+                    fontSize: t.text.sizes.base,
+                    fontWeight: "400",
+                    lineHeight: 1.5,
+                  })
+                }
+              >
+                <span
+                  css={(t) =>
+                    css({
+                      fontSize: t.text.sizes.headerLarge,
+                      fontWeight: t.text.weights.header,
+                    })
+                  }
+                >
+                  {sponsoringNounIds.length}
+                </span>{" "}
+                sponsoring {sponsoringNounIds.length === 1 ? "noun" : "nouns"}
+                {validSignatures.length > 1 && (
+                  <>
+                    {" "}
+                    across{" "}
+                    <span
+                      css={(t) => css({ fontWeight: t.text.weights.emphasis })}
+                    >
+                      {validSignatures.length}
+                    </span>{" "}
+                    {validSignatures.length === 1 ? "delegate" : "delegates"}
+                  </>
+                )}
+              </span>
+            </div>
+            <Callout
+              css={(t) =>
+                css({
+                  fontSize: t.text.sizes.small,
+                  marginBottom: "4.8rem",
+                  em: {
+                    fontStyle: "normal",
+                    fontWeight: t.text.weights.emphasis,
+                  },
+                })
+              }
+            >
+              {isProposalThresholdMet ? (
+                <>
+                  This candidate has met the required sponsor threshold, but
+                  votes can continue to add their support until the proposal is
+                  put onchain.
+                </>
+              ) : (
+                <>
+                  This candidate requires <em>{missingSponsorCount} more</em>{" "}
+                  sponsoring {missingSponsorCount === 1 ? "noun" : "nouns"} to
+                  be proposed onchain.
+                </>
+              )}
+            </Callout>
             {feedbackVoteCountExcludingAbstained > 0 && (
               <Tooltip.Root>
                 <Tooltip.Trigger asChild>
@@ -292,67 +353,6 @@ const ProposalCandidateScreenContent = ({ candidateId }) => {
                 </Tooltip.Content>
               </Tooltip.Root>
             )}
-            <div style={{ padding: "0 0 1.6rem" }}>
-              <span
-                css={(t) =>
-                  css({
-                    fontSize: t.text.sizes.base,
-                    fontWeight: "400",
-                    lineHeight: 1.5,
-                  })
-                }
-              >
-                <span
-                  css={(t) =>
-                    css({
-                      fontSize: t.text.sizes.headerLarge,
-                      fontWeight: t.text.weights.header,
-                    })
-                  }
-                >
-                  {sponsoringNounIds.length}
-                </span>{" "}
-                sponsoring {sponsoringNounIds.length === 1 ? "noun" : "nouns"}
-                {validSignatures.length > 1 && (
-                  <>
-                    {" "}
-                    across{" "}
-                    <span
-                      css={(t) => css({ fontWeight: t.text.weights.emphasis })}
-                    >
-                      {validSignatures.length}
-                    </span>{" "}
-                    {validSignatures.length === 1 ? "delegate" : "delegates"}
-                  </>
-                )}
-              </span>
-            </div>
-            <Callout
-              css={(t) =>
-                css({
-                  fontSize: t.text.sizes.small,
-                  marginBottom: "3.2rem",
-                  em: {
-                    fontStyle: "normal",
-                    fontWeight: t.text.weights.emphasis,
-                  },
-                })
-              }
-            >
-              {isProposalThresholdMet ? (
-                <>
-                  This candidate has met the required sponsor threshold, but
-                  votes can continue to add their support until the proposal is
-                  put onchain.
-                </>
-              ) : (
-                <>
-                  This candidate requires <em>{missingSponsorCount} more</em>{" "}
-                  sponsoring {missingSponsorCount === 1 ? "noun" : "nouns"} to
-                  be proposed onchain.
-                </>
-              )}
-            </Callout>
             <Tabs.Root
               aria-label="Candidate info"
               defaultSelectedKey="activity"
