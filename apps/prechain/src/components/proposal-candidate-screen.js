@@ -274,7 +274,7 @@ const ProposalCandidateScreenContent = ({ candidateId }) => {
                 </Tooltip.Trigger>
                 <Tooltip.Content
                   side="top"
-                  sideOffset={5}
+                  sideOffset={-10}
                   css={css({ padding: 0 })}
                 >
                   <VoteDistributionToolTipContent

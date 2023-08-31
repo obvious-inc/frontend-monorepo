@@ -75,16 +75,20 @@ const useFeedItems = (proposalId) => {
   }, [proposal, calculateBlockTimestamp]);
 };
 
-const getDelegateVotes = (proposal) =>
-  proposal.votes?.reduce(
-    (acc, v) => {
-      const voteGroup = { 0: "against", 1: "for", 2: "abstain" }[
-        v.supportDetailed
-      ];
-      return { ...acc, [voteGroup]: acc[voteGroup] + 1 };
-    },
-    { for: 0, against: 0, abstain: 0 }
-  );
+const getDelegateVotes = (proposal) => {
+  if (proposal.votes == null) return null;
+  return proposal.votes
+    .filter((v) => Number(v.votes) > 0)
+    .reduce(
+      (acc, v) => {
+        const voteGroup = { 0: "against", 1: "for", 2: "abstain" }[
+          v.supportDetailed
+        ];
+        return { ...acc, [voteGroup]: acc[voteGroup] + 1 };
+      },
+      { for: 0, against: 0, abstain: 0 }
+    );
+};
 
 const ProposalMainSection = ({ proposalId }) => {
   const { data: latestBlockNumer } = useBlockNumber();
@@ -226,11 +230,16 @@ const ProposalMainSection = ({ proposalId }) => {
                   </Tooltip.Trigger>
                   <Tooltip.Content
                     side="top"
-                    sideOffset={5}
+                    sideOffset={-10}
                     css={css({ padding: 0 })}
                   >
-                    <ProposalVoteDistributionToolTipContent
-                      proposalId={proposalId}
+                    <VoteDistributionToolTipContent
+                      votes={{
+                        for: Number(proposal.forVotes),
+                        against: Number(proposal.againstVotes),
+                        abstain: Number(proposal.abstainVotes),
+                      }}
+                      delegates={getDelegateVotes(proposal)}
                     />
                   </Tooltip.Content>
                 </Tooltip.Root>
@@ -1247,21 +1256,6 @@ export const VotingBar = ({
   );
 };
 
-const ProposalVoteDistributionToolTipContent = ({ proposalId }) => {
-  const proposal = useProposal(proposalId);
-
-  return (
-    <VoteDistributionToolTipContent
-      votes={{
-        for: Number(proposal.forVotes),
-        against: Number(proposal.againstVotes),
-        abstain: Number(proposal.abstainVotes),
-      }}
-      delegates={getDelegateVotes(proposal)}
-    />
-  );
-};
-
 export const VoteDistributionToolTipContent = ({ votes, delegates }) => {
   const formatPercentage = (number, total) => {
     if (Number(number) === 0) return "0%";
@@ -1279,11 +1273,11 @@ export const VoteDistributionToolTipContent = ({ votes, delegates }) => {
     <div
       css={(t) =>
         css({
-          padding: "1.2rem 1.4rem",
+          padding: "1.2rem 1.6rem",
           display: "grid",
           gridAutoFlow: "column",
           gridAutoColumns: "auto",
-          gridGap: "2rem",
+          gridGap: "2.4rem",
           h1: {
             fontWeight: t.text.weights.emphasis,
             fontSize: t.text.sizes.small,
