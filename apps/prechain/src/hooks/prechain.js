@@ -1,7 +1,6 @@
 import React from "react";
 import {
   parseAbi,
-  parseEther,
   stringToBytes,
   keccak256,
   encodePacked,
@@ -10,18 +9,14 @@ import {
 } from "viem";
 import {
   usePublicClient,
+  useContractRead,
   useContractWrite,
   usePrepareContractWrite,
   useSignTypedData,
-  useBlockNumber,
   useNetwork,
 } from "wagmi";
 import { sepolia } from "wagmi/chains";
-import {
-  useActions as useNomActions,
-  usePublicChannels,
-} from "@shades/common/app";
-import { useFetch } from "@shades/common/react";
+import { useFetch, useLatestCallback } from "@shades/common/react";
 import {
   array as arrayUtils,
   object as objectUtils,
@@ -44,42 +39,48 @@ export const contractAddressesByChainId = {
 };
 
 const subgraphEndpointByChainId = {
-  1: "https://thegraph.com/hosted-service/subgraph/nounsdao/nouns-subgraph",
+  // 1: "https://api.thegraph.com/subgraphs/name/nounsdao/nouns-subgraph",
+  1: "https://api.studio.thegraph.com/query/49498/nouns-v3-mainnet/version/latest",
   11155111:
     "https://api.studio.thegraph.com/proxy/49498/nouns-v3-sepolia/version/latest",
 };
 
-const PROPOSALS_TAG = "prechain/1/proposal";
+const DEFAULT_CHAIN_ID = 1;
 
-const EXECUTION_GRACE_PERIOD_IN_MILLIS = 1000 * 60 * 60 * 24 * 21; // 21 days
+// const PROPOSALS_TAG = "prechain/1/proposal";
 
-export const useActions = () => {
-  const { fetchPubliclyReadableChannels, createOpenChannel } = useNomActions();
+// export const useActions = () => {
+//   const { fetchPubliclyReadableChannels, createOpenChannel } = useNomActions();
 
-  const fetchChannels = React.useCallback(
-    () => fetchPubliclyReadableChannels({ tags: [PROPOSALS_TAG] }),
-    [fetchPubliclyReadableChannels]
-  );
+//   const fetchChannels = React.useCallback(
+//     () => fetchPubliclyReadableChannels({ tags: [PROPOSALS_TAG] }),
+//     [fetchPubliclyReadableChannels]
+//   );
 
-  const createChannel = React.useCallback(
-    (properties) => createOpenChannel({ ...properties, tags: [PROPOSALS_TAG] }),
-    [createOpenChannel]
-  );
+//   const createChannel = React.useCallback(
+//     (properties) => createOpenChannel({ ...properties, tags: [PROPOSALS_TAG] }),
+//     [createOpenChannel]
+//   );
 
-  return { fetchChannels, createChannel };
+//   return { fetchChannels, createChannel };
+// };
+
+// export const useChannels = (options) => {
+//   const channels = usePublicChannels(options);
+//   return React.useMemo(
+//     () =>
+//       channels.filter((c) => c.tags != null && c.tags.includes(PROPOSALS_TAG)),
+//     [channels]
+//   );
+// };
+
+export const useChainId = () => {
+  const { chain } = useNetwork();
+  return chain?.id ?? DEFAULT_CHAIN_ID;
 };
 
-export const useChannels = (options) => {
-  const channels = usePublicChannels(options);
-  return React.useMemo(
-    () =>
-      channels.filter((c) => c.tags != null && c.tags.includes(PROPOSALS_TAG)),
-    [channels]
-  );
-};
-
-const PROPOSALS_QUERY = `{
-  proposals {
+const createProposalsQuery = ({ skip = 0 } = {}) => `{
+  proposals(orderBy: createdBlock, orderDirectiom: desc, skip: ${skip}, first: 500) {
     id
     description
     title
@@ -92,6 +93,9 @@ const PROPOSALS_QUERY = `{
     objectionPeriodEndBlock
     forVotes
     againstVotes
+    abstainVotes
+    quorumVotes
+    executionETA
     proposer {
       id
     }
@@ -135,6 +139,9 @@ const createProposalQuery = (id) => `{
     values
     forVotes
     againstVotes
+    abstainVotes
+    executionETA
+    quorumVotes
     proposer {
       id
     }
@@ -159,6 +166,9 @@ const createProposalQuery = (id) => `{
       votes
       voter {
         id
+        nounsRepresented {
+          id
+        }
       }
     }
   }
@@ -211,6 +221,9 @@ const createProposalCandidateFeedbackPostsQuery = (candidateId) => `{
     votes
     voter {
       id
+      nounsRepresented {
+        id
+      }
     }
     candidate {
       id
@@ -218,7 +231,7 @@ const createProposalCandidateFeedbackPostsQuery = (candidateId) => `{
   }
 }`;
 
-const ChainDataCacheContext = React.createContext();
+export const ChainDataCacheContext = React.createContext();
 
 const subgraphFetch = ({ chainId, query }) =>
   fetch(subgraphEndpointByChainId[chainId], {
@@ -242,6 +255,9 @@ const parseProposal = (data) => {
   parsedData.lastUpdatedTimestamp = new Date(
     parseInt(data.lastUpdatedTimestamp) * 1000
   );
+
+  if (data.objectionPeriodEndBlock === "0")
+    parsedData.objectionPeriodEndBlock = null;
 
   if (data.feedbackPosts != null)
     parsedData.feedbackPosts = sortBy(
@@ -316,9 +332,7 @@ const mergeProposalCandidates = (p1, p2) => {
 };
 
 export const ChainDataCacheContextProvider = ({ children }) => {
-  const { chain } = useNetwork();
-
-  const chainId = chain.id;
+  const chainId = useChainId();
 
   const [state, setState] = React.useState({
     proposalsById: {},
@@ -333,7 +347,7 @@ export const ChainDataCacheContextProvider = ({ children }) => {
   // Fetch proposals
   useFetch(
     () =>
-      querySubgraph(PROPOSALS_QUERY).then((data) => {
+      querySubgraph(createProposalsQuery({ skip: 0 })).then((data) => {
         const parsedProposals = data.proposals.map(parseProposal);
         const fetchedProposalsById = indexBy((p) => p.id, parsedProposals);
 
@@ -461,17 +475,6 @@ export const ChainDataCacheContextProvider = ({ children }) => {
   );
 };
 
-export const useProposals = () => {
-  const {
-    state: { proposalsById },
-  } = React.useContext(ChainDataCacheContext);
-
-  return React.useMemo(
-    () => sortBy((p) => p.lastUpdatedTimestamp, Object.values(proposalsById)),
-    [proposalsById]
-  );
-};
-
 export const useProposalCandidates = () => {
   const {
     state: { proposalCandidatesById },
@@ -490,20 +493,21 @@ export const useProposalCandidates = () => {
   }, [proposalCandidatesById]);
 };
 
-export const useProposalFetch = (id) => {
-  const {
-    actions: { fetchProposal },
-  } = React.useContext(ChainDataCacheContext);
+export const useProposalCandidateFetch = (id, options) => {
+  const onError = useLatestCallback(options?.onError);
 
-  useFetch(() => fetchProposal(id), [fetchProposal, id]);
-};
-
-export const useProposalCandidateFetch = (id) => {
   const {
     actions: { fetchProposalCandidate },
   } = React.useContext(ChainDataCacheContext);
 
-  useFetch(() => fetchProposalCandidate(id), [fetchProposalCandidate, id]);
+  useFetch(
+    () =>
+      fetchProposalCandidate(id).catch((e) => {
+        if (onError == null) return Promise.reject(e);
+        onError(e);
+      }),
+    [fetchProposalCandidate, id, onError]
+  );
 };
 
 export const useProposalCandidate = (id) => {
@@ -513,76 +517,15 @@ export const useProposalCandidate = (id) => {
   return proposalCandidatesById[id.toLowerCase()];
 };
 
-export const useProposal = (id) => {
-  const {
-    state: { proposalsById },
-  } = React.useContext(ChainDataCacheContext);
-  return proposalsById[id];
-};
-
-export const isPropsalDefeated = (proposal) =>
-  proposal.forVotes <= proposal.againstVotes ||
-  proposal.forVotes < proposal.quorumVotes;
-
-export const getProposalState = (proposal, { blockNumber }) => {
-  if (proposal.status === "VETOED") return "vetoed";
-  if (proposal.status === "CANCELLED") return "cancelled";
-  if (blockNumber <= proposal.updatePeriodEndBlock) return "updatable";
-  if (blockNumber <= proposal.startBlock) return "pending";
-  if (blockNumber <= proposal.endBlock) return "active";
-  if (blockNumber <= proposal.objectionPeriodEndBlock)
-    return "objection-period";
-
-  if (isPropsalDefeated(proposal)) return "defeated";
-
-  if (proposal.executionETA == null) return "succeeded"; // Not yet queued
-
-  if (proposal.status === "EXECUTED") return "executed";
-
-  if (
-    new Date().getTime() >=
-    parseInt(proposal.executionETA) * 1000 + EXECUTION_GRACE_PERIOD_IN_MILLIS
-  )
-    return "expired";
-
-  return "queued";
-};
-
-export const useProposalState = (proposalId) => {
-  const { data: blockNumber } = useBlockNumber();
-
-  const proposal = useProposal(proposalId);
-
-  if (proposal == null || blockNumber == null) return null;
-
-  return getProposalState(proposal, { blockNumber });
-};
-
-export const useSendProposalFeedback = (proposalId, { support, reason }) => {
-  const { chain } = useNetwork();
-
-  const { config } = usePrepareContractWrite({
-    address: contractAddressesByChainId[chain.id].data,
-    abi: parseAbi([
-      "function sendFeedback(uint256 proposalId, uint8 support, string memory reason) external",
-    ]),
-    functionName: "sendFeedback",
-    args: [parseInt(proposalId), support, reason],
-  });
-  const { writeAsync: write } = useContractWrite(config);
-
-  return write;
-};
-
 export const useSendProposalCandidateFeedback = (
   proposerId,
   slug,
   { support, reason }
 ) => {
-  const { chain } = useNetwork();
+  const chainId = useChainId();
 
   const { config } = usePrepareContractWrite({
-    address: contractAddressesByChainId[chain.id].data,
+    address: contractAddressesByChainId[chainId].data,
     abi: parseAbi([
       "function sendCandidateFeedback(address proposer, string memory slug, uint8 support, string memory reason) external",
     ]),
@@ -594,38 +537,37 @@ export const useSendProposalCandidateFeedback = (
   return write;
 };
 
-export const useCreateProposalCandidate = ({ slug, description }) => {
+export const useCreateProposalCandidate = ({ enabled = true } = {}) => {
   const publicClient = usePublicClient();
-  const { chain } = useNetwork();
+  const chainId = useChainId();
 
-  const { config } = usePrepareContractWrite({
-    address: contractAddressesByChainId[chain.id].data,
+  const createCost = useProposalCandidateCreateCost();
+
+  const { writeAsync } = useContractWrite({
+    address: contractAddressesByChainId[chainId].data,
     abi: parseAbi([
       "function createProposalCandidate(address[] memory targets, uint256[] memory values, string[] memory signatures, bytes[] memory calldatas, string memory description, string memory slug, uint256 proposalIdToUpdate) external payable",
     ]),
     functionName: "createProposalCandidate",
-    args: [
-      // Target addresses
-      ["0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266"],
-      // Values
-      ["0"],
-      // Function signatures
-      [""],
-      // Calldatas
-      ["0x"],
-      description,
-      slug,
-      0,
-    ],
-    value: parseEther("0.01"),
-    enabled: description != null,
+    value: createCost,
+    enabled: enabled && createCost != null,
   });
-  const { writeAsync } = useContractWrite(config);
 
-  if (writeAsync == null) return null;
-
-  return () =>
-    writeAsync()
+  return ({
+    slug,
+    description,
+    // Target addresses
+    targets = ["0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266"],
+    // Values
+    values = ["0"],
+    // Function signatures
+    signatures = [""],
+    // Calldatas
+    calldatas = ["0x"],
+  }) =>
+    writeAsync({
+      args: [targets, values, signatures, calldatas, description, slug, 0],
+    })
       .then(({ hash }) => publicClient.waitForTransactionReceipt({ hash }))
       .then((receipt) => {
         const eventLog = receipt.logs[0];
@@ -640,12 +582,42 @@ export const useCreateProposalCandidate = ({ slug, description }) => {
       });
 };
 
+export const useProposalCandidateCreateCost = () => {
+  const chainId = useChainId();
+
+  const { data } = useContractRead({
+    address: contractAddressesByChainId[chainId].data,
+    abi: parseAbi([
+      "function createCandidateCost() public view returns (uint256)",
+    ]),
+    functionName: "createCandidateCost",
+  });
+
+  return data;
+};
+
+export const useProposalCandidateUpdateCost = () => {
+  const chainId = useChainId();
+
+  const { data } = useContractRead({
+    address: contractAddressesByChainId[chainId].data,
+    abi: parseAbi([
+      "function updateCandidateCost() public view returns (uint256)",
+    ]),
+    functionName: "updateCandidateCost",
+  });
+
+  return data;
+};
+
 export const useUpdateProposalCandidate = (slug, { description, reason }) => {
   const publicClient = usePublicClient();
-  const { chain } = useNetwork();
+  const chainId = useChainId();
+
+  const updateCost = useProposalCandidateUpdateCost();
 
   const { config } = usePrepareContractWrite({
-    address: contractAddressesByChainId[chain.id].data,
+    address: contractAddressesByChainId[chainId].data,
     abi: parseAbi([
       "function updateProposalCandidate(address[] memory targets, uint256[] memory values, string[] memory signatures, bytes[] memory calldatas, string memory description, string memory slug, uint256 proposalIdToUpdate, string memory reason) external payable",
     ]),
@@ -664,24 +636,25 @@ export const useUpdateProposalCandidate = (slug, { description, reason }) => {
       0,
       reason,
     ],
-    value: parseEther("0.01"),
+    value: updateCost,
+    enabled: description != null && updateCost != null,
   });
-  const { writeAsync: write } = useContractWrite(config);
+  const { writeAsync } = useContractWrite(config);
 
-  return write == null
+  return writeAsync == null
     ? null
     : () =>
-        write().then(({ hash }) =>
+        writeAsync().then(({ hash }) =>
           publicClient.waitForTransactionReceipt({ hash })
         );
 };
 
 export const useCancelProposalCandidate = (slug) => {
   const publicClient = usePublicClient();
-  const { chain } = useNetwork();
+  const chainId = useChainId();
 
   const { config } = usePrepareContractWrite({
-    address: contractAddressesByChainId[chain.id].data,
+    address: contractAddressesByChainId[chainId].data,
     abi: parseAbi([
       "function cancelProposalCandidate(string memory slug) external",
     ]),
@@ -704,13 +677,13 @@ export const useSignProposalCandidate = (
   { description, targets, values, signatures, calldatas },
   { expirationTimestamp }
 ) => {
-  const { chain } = useNetwork();
+  const chainId = useChainId();
 
   const { signTypedDataAsync } = useSignTypedData({
     domain: {
       name: "Nouns DAO",
       chainId: sepolia.id,
-      verifyingContract: contractAddressesByChainId[chain.id].dao,
+      verifyingContract: contractAddressesByChainId[chainId].dao,
     },
     types: {
       Proposal: [
@@ -774,10 +747,10 @@ export const useAddSignatureToProposalCandidate = (
   slug,
   { description, targets, values, signatures, calldatas }
 ) => {
-  const { chain } = useNetwork();
+  const chainId = useChainId();
 
   const { writeAsync } = useContractWrite({
-    address: contractAddressesByChainId[chain.id].data,
+    address: contractAddressesByChainId[chainId].data,
     abi: parseAbi([
       "function addSignature(bytes memory sig, uint256 expirationTimestamp, address proposer, string memory slug, uint256 proposalIdToUpdate, bytes memory encodedProp, string memory reason) external",
     ]),
@@ -803,74 +776,4 @@ export const useAddSignatureToProposalCandidate = (
         reason,
       ],
     });
-};
-
-export const useCreateProposal = ({
-  // targets,
-  // values,
-  // signatures,
-  // calldatas,
-  description,
-}) => {
-  const publicClient = usePublicClient();
-  const { chain } = useNetwork();
-
-  const { config } = usePrepareContractWrite({
-    address: contractAddressesByChainId[chain.id].dao,
-    abi: parseAbi([
-      "function propose(address[] memory targets, uint256[] memory values, string[] memory signatures, bytes[] memory calldatas, string memory description) public returns (uint256)",
-    ]),
-    functionName: "propose",
-    args: [
-      // Target addresses
-      ["0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266"],
-      // Values
-      ["0"],
-      // Function signatures
-      [""],
-      // Calldatas
-      ["0x"],
-      description,
-    ],
-    enabled: description != null,
-  });
-
-  const { writeAsync } = useContractWrite(config);
-
-  if (writeAsync == null) return null;
-
-  return () =>
-    writeAsync()
-      .then(({ hash }) => publicClient.waitForTransactionReceipt({ hash }))
-      .then((receipt) => {
-        const eventLog = receipt.logs[1];
-        const decodedEvent = decodeEventLog({
-          abi: parseAbi([
-            "event ProposalCreatedWithRequirements(uint256 id, address proposer, address[] signers, address[] targets, uint256[] values, string[] signatures, bytes[] calldatas, uint256 startBlock, uint256 endBlock, uint256 updatePeriodEndBlock, uint256 proposalThreshold, uint256 quorumVotes, string description)",
-          ]),
-          data: eventLog.data,
-          topics: eventLog.topics,
-        });
-        return decodedEvent.args;
-      });
-};
-
-export const useCancelProposal = (proposalId) => {
-  const publicClient = usePublicClient();
-  const { chain } = useNetwork();
-
-  const { config } = usePrepareContractWrite({
-    address: contractAddressesByChainId[chain.id].dao,
-    abi: parseAbi(["function cancel(uint256 proposalId) external"]),
-    functionName: "cancel",
-    args: [proposalId],
-  });
-  const { writeAsync: write } = useContractWrite(config);
-
-  return write == null
-    ? null
-    : () =>
-        write().then(({ hash }) =>
-          publicClient.waitForTransactionReceipt({ hash })
-        );
 };

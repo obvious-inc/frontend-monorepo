@@ -5,22 +5,29 @@ import {
   useSearchParams,
 } from "react-router-dom";
 import { css, useTheme } from "@emotion/react";
-import { useBlockNumber } from "wagmi";
+import { useAccount } from "wagmi";
 import { useAccountDisplayName } from "@shades/common/app";
-import { array as arrayUtils } from "@shades/common/utils";
+import {
+  array as arrayUtils,
+  message as messageUtils,
+} from "@shades/common/utils";
 import Avatar from "@shades/ui-web/avatar";
-import AccountAvatar from "@shades/ui-web/account-avatar";
 import Input from "@shades/ui-web/input";
 import Button from "@shades/ui-web/button";
 import {
-  useProposals,
-  useProposalCandidates,
   useProposal,
-  useProposalState,
+  useProposals,
+  isFinalProposalState,
+} from "../hooks/dao.js";
+import {
+  useProposalCandidates,
   useProposalCandidate,
 } from "../hooks/prechain.js";
 import useApproximateBlockTimestampCalculator from "../hooks/approximate-block-timestamp-calculator.js";
-import { useWallet } from "../hooks/wallet.js";
+import {
+  useCollection as useDrafts,
+  useSingleItem as useDraft,
+} from "../hooks/channel-drafts.js";
 import FormattedDateWithTooltip from "./formatted-date-with-tooltip.js";
 import { Layout, MainContentContainer } from "./proposal-screen.js";
 
@@ -29,7 +36,7 @@ const searchProposals = (items, rawQuery) => {
 
   const filteredItems = items
     .map((i) => {
-      const title = i.title ?? i.latestVersion?.content.title;
+      const title = i.title ?? i.latestVersion?.content.title ?? i.name;
       return { ...i, index: title.toLowerCase().indexOf(query) };
     })
     .filter((i) => i.index !== -1);
@@ -42,13 +49,6 @@ const searchProposals = (items, rawQuery) => {
 
 const ProposalsScreen = () => {
   const navigate = useNavigate();
-  const {
-    address: connectedAccountAddress,
-    requestAccess: requestWalletAccess,
-  } = useWallet();
-  const { displayName: connectedAccountDisplayName } = useAccountDisplayName(
-    connectedAccountAddress
-  );
   const [searchParams, setSearchParams] = useSearchParams();
 
   const query = searchParams.get("q") ?? "";
@@ -56,44 +56,35 @@ const ProposalsScreen = () => {
 
   const proposals = useProposals();
   const proposalCandidates = useProposalCandidates();
+  const { items: proposalDrafts } = useDrafts();
 
   const filteredItems = React.useMemo(() => {
-    const items = [...proposalCandidates, ...proposals];
+    const filteredProposalDrafts = proposalDrafts.filter(
+      (d) =>
+        d.name.trim() !== "" || !messageUtils.isEmpty(d.body, { trim: true })
+    );
 
-    return deferredQuery === ""
-      ? arrayUtils.sortBy(
-          { value: (i) => i.lastUpdatedTimestamp, order: "desc" },
-          items
-        )
-      : searchProposals(items, deferredQuery);
-  }, [deferredQuery, proposals, proposalCandidates]);
+    const items = [
+      ...filteredProposalDrafts,
+      ...proposalCandidates,
+      ...proposals,
+    ];
+
+    return deferredQuery === "" ? items : searchProposals(items, deferredQuery);
+  }, [deferredQuery, proposals, proposalCandidates, proposalDrafts]);
+
+  const groupedItemsByName = arrayUtils.groupBy((i) => {
+    if (i.proposerId == null) return "drafts";
+    // Candidates
+    if (i.slug != null) return "ongoing";
+
+    if (isFinalProposalState(i.state)) return "past";
+
+    return "ongoing";
+  }, filteredItems);
 
   return (
-    <Layout
-      // navigationStack={[{ to: "/", label: "Proposals" }]}
-      actions={[
-        connectedAccountAddress == null
-          ? { onSelect: requestWalletAccess, label: "Connect Wallet" }
-          : {
-              onSelect: () => {},
-              label: (
-                <div
-                  css={css({
-                    display: "flex",
-                    alignItems: "center",
-                    gap: "0.8rem",
-                  })}
-                >
-                  <div>{connectedAccountDisplayName}</div>
-                  <AccountAvatar
-                    address={connectedAccountAddress}
-                    size="2rem"
-                  />
-                </div>
-              ),
-            },
-      ]}
-    >
+    <Layout>
       <MainContentContainer>
         <div
           css={css({
@@ -109,11 +100,14 @@ const ProposalsScreen = () => {
                 background: t.colors.backgroundPrimary,
                 position: "sticky",
                 top: 0,
+                zIndex: 1,
                 display: "flex",
                 alignItems: "center",
                 gap: "1.6rem",
+                paddingTop: "0.3rem", // To offset the focus box shadow
+                marginBottom: "1.6rem",
                 "@media (min-width: 600px)": {
-                  marginBottom: "4.8rem",
+                  marginBottom: "3.2rem",
                 },
               })
             }
@@ -133,16 +127,19 @@ const ProposalsScreen = () => {
               css={css({
                 flex: 1,
                 minWidth: 0,
+                padding: "0.9rem 1.2rem",
               })}
             />
 
-            <Button
-              onClick={() => {
-                navigate("/new");
-              }}
-            >
-              New proposal
-            </Button>
+            {searchParams.get("beta") != null && (
+              <Button
+                onClick={() => {
+                  navigate("/new");
+                }}
+              >
+                New proposal
+              </Button>
+            )}
           </div>
 
           <ul
@@ -150,7 +147,19 @@ const ProposalsScreen = () => {
               const hoverColor = t.colors.backgroundTertiary;
               return css({
                 listStyle: "none",
-                "li + li": { marginTop: "0.4rem" },
+                "li + li": { marginTop: "2.4rem" },
+                ul: { listStyle: "none" },
+                "[data-group] li + li": { marginTop: "0.4rem" },
+                "[data-group-title]": {
+                  position: "sticky",
+                  top: "4.35rem",
+                  padding: "0.5rem 0",
+                  background: t.colors.backgroundPrimary,
+                  textTransform: "uppercase",
+                  fontSize: t.text.sizes.small,
+                  fontWeight: t.text.weights.emphasis,
+                  color: t.colors.textMuted,
+                },
                 a: {
                   textDecoration: "none",
                   padding: "0.8rem 0",
@@ -163,7 +172,7 @@ const ProposalsScreen = () => {
                 },
                 ".name": {
                   fontSize: t.text.sizes.large,
-                  fontWeight: t.text.weights.header,
+                  fontWeight: t.text.weights.emphasis,
                   lineHeight: 1.2,
                 },
                 ".description, .status": {
@@ -191,15 +200,78 @@ const ProposalsScreen = () => {
               });
             }}
           >
-            {filteredItems.map((i) => (
-              <li key={i.id}>
-                {i.slug == null ? (
-                  <ProposalItem proposalId={i.id} />
-                ) : (
-                  <ProposalCandidateItem candidateId={i.id} />
-                )}
-              </li>
-            ))}
+            {["drafts", "ongoing", "past"]
+              .map((groupName) => ({
+                name: groupName,
+                items: groupedItemsByName[groupName],
+              }))
+              .filter(({ items }) => items != null && items.length !== 0)
+              .map(({ name: groupName, items }) => {
+                const getSortedItems = () => {
+                  // Keep order from search result
+                  if (deferredQuery !== "") return items;
+
+                  switch (groupName) {
+                    case "drafts":
+                      return arrayUtils.sortBy(
+                        { value: (i) => Number(i.id), order: "desc" },
+                        items
+                      );
+
+                    case "past":
+                      return arrayUtils.sortBy(
+                        {
+                          value: (i) => Number(i.startBlock),
+                          order: "desc",
+                        },
+                        items
+                      );
+
+                    case "ongoing":
+                      return arrayUtils.sortBy(
+                        // First the active ones
+                        (i) =>
+                          ["active", "objection-period"].includes(i.state)
+                            ? Number(i.objectionPeriodEndBlock ?? i.endBlock)
+                            : Infinity,
+                        // The the ones that hasn’t started yet
+                        (i) =>
+                          ["updatable", "pending"].includes(i.state)
+                            ? Number(i.startBlock)
+                            : Infinity,
+                        // Then the succeeded but not yet executed
+                        {
+                          value: (i) =>
+                            i.slug != null
+                              ? 0
+                              : Number(i.objectionPeriodEndBlock ?? i.endBlock),
+                          order: "desc",
+                        },
+                        // And last the candidates
+                        { value: (i) => i.lastUpdatedTimestamp, order: "desc" },
+                        items
+                      );
+                  }
+                };
+                return (
+                  <li data-group key={groupName}>
+                    <div data-group-title>{groupName}</div>
+                    <ul>
+                      {getSortedItems().map((i) => (
+                        <li key={i.id}>
+                          {i.slug != null ? (
+                            <ProposalCandidateItem candidateId={i.id} />
+                          ) : i.startBlock != null ? (
+                            <ProposalItem proposalId={i.id} />
+                          ) : (
+                            <ProposalDraftItem draftId={i.id} />
+                          )}
+                        </li>
+                      ))}
+                    </ul>
+                  </li>
+                );
+              })}
           </ul>
         </div>
       </MainContentContainer>
@@ -214,11 +286,9 @@ const ProposalItem = ({ proposalId }) => {
     proposal.proposer?.id
   );
 
-  const state = useProposalState(proposalId);
-
   const isDimmed =
-    state != null &&
-    ["cancelled", "expired", "defeated", "vetoed", "executed"].includes(state);
+    proposal.state != null &&
+    ["canceled", "expired", "defeated", "vetoed"].includes(proposal.state);
 
   return (
     <RouterLink to={`/${proposalId}`} data-dimmed={isDimmed}>
@@ -258,7 +328,6 @@ const ProposalItem = ({ proposalId }) => {
 const PropStatusText = ({ proposalId }) => {
   const proposal = useProposal(proposalId);
 
-  const { data: latestBlockNumber } = useBlockNumber();
   const calculateBlockTimestamp = useApproximateBlockTimestampCalculator();
 
   const startDate = calculateBlockTimestamp(proposal.startBlock);
@@ -267,126 +336,71 @@ const PropStatusText = ({ proposalId }) => {
     proposal.objectionPeriodEndBlock
   );
 
-  //   if (status === ProposalState.PENDING || status === ProposalState.ACTIVE) {
-  //     if (!blockNumber) {
-  //       return ProposalState.UNDETERMINED;
-  //     }
-  //     if (isDaoGteV3 && proposal.updatePeriodEndBlock && blockNumber <= parseInt(proposal.updatePeriodEndBlock)) {
-  //       return ProposalState.UPDATABLE;
-  //     }
-
-  //     if (blockNumber <= parseInt(proposal.startBlock)) {
-  //       return ProposalState.PENDING;
-  //     }
-
-  //     if (
-  //       isDaoGteV3 &&
-  //       blockNumber > +proposal.endBlock &&
-  //       parseInt(proposal.objectionPeriodEndBlock) > 0 &&
-  //       blockNumber <= parseInt(proposal.objectionPeriodEndBlock)
-  //     ) {
-  //       return ProposalState.OBJECTION_PERIOD;
-  //     }
-
-  //     // if past endblock, but onchain status hasn't been changed
-  //     if (
-  //       blockNumber > parseInt(proposal.endBlock) &&
-  //       blockNumber > parseInt(proposal.objectionPeriodEndBlock)
-  //     ) {
-  //       const forVotes = new BigNumber(proposal.forVotes);
-  //       if (forVotes.lte(proposal.againstVotes) || forVotes.lt(proposal.quorumVotes)) {
-  //         return ProposalState.DEFEATED;
-  //       }
-  //       if (!proposal.executionETA) {
-  //         return ProposalState.SUCCEEDED;
-  //       }
-  //     }
-  //     return ProposalState.ACTIVE;
-  //   }
-
-  switch (proposal.status) {
-    case "PENDING":
-    case "ACTIVE": {
-      if (latestBlockNumber == null || startDate == null || endDate == null)
-        return null;
-
-      if (latestBlockNumber <= parseInt(proposal.startBlock))
-        return (
-          <>
-            Starts{" "}
-            <FormattedDateWithTooltip
-              capitalize={false}
-              value={startDate}
-              day="numeric"
-              month="long"
-            />
-          </>
-        );
-
-      if (
-        parseInt(proposal.objectionPeriodEndBlock) > 0 &&
-        latestBlockNumber <= parseInt(proposal.objectionPeriodEndBlock)
-      )
-        return (
-          <>
-            Objection period ends{" "}
-            <FormattedDateWithTooltip
-              capitalize={false}
-              value={objectionPeriodEndDate}
-              day="numeric"
-              month="long"
-            />
-          </>
-        );
-
-      if (latestBlockNumber <= parseInt(proposal.endBlock))
-        return (
-          <>
-            Voting ends{" "}
-            <FormattedDateWithTooltip
-              capitalize={false}
-              value={endDate}
-              day="numeric"
-              month="long"
-            />
-          </>
-        );
-
-      if (
-        proposal.forVotes <= proposal.againstVotes ||
-        proposal.forVotes < proposal.quorumVotes
-      )
-        return "Defeated";
-
-      // if (!proposal.executionETA) {
-      //   return ProposalState.SUCCEEDED;
-      // }
-
-      return "Succeeded";
-    }
-
-    case "VETOED":
-      return "Vetoed";
-    case "CANCELLED":
-      return "Cancelled";
-    case "QUEUED":
-      return "Queued";
-    case "EXECUTED":
-      return "Executed";
-
-    default:
+  switch (proposal.state) {
+    case "updatable":
+    case "pending":
       return (
         <>
-          Proposed{" "}
+          Starts{" "}
           <FormattedDateWithTooltip
+            relativeDayThreshold={5}
             capitalize={false}
-            value={proposal.createdTimestamp}
+            value={startDate}
             day="numeric"
             month="long"
           />
         </>
       );
-    // throw new Error();
+
+    case "active":
+      return (
+        <>
+          Voting ends{" "}
+          <FormattedDateWithTooltip
+            relativeDayThreshold={5}
+            capitalize={false}
+            value={endDate}
+            day="numeric"
+            month="long"
+          />
+        </>
+      );
+
+    case "objection-period":
+      return (
+        <>
+          Objection period ends{" "}
+          <FormattedDateWithTooltip
+            relativeDayThreshold={5}
+            capitalize={false}
+            value={objectionPeriodEndDate}
+            day="numeric"
+            month="long"
+          />
+        </>
+      );
+
+    case "defeated":
+    case "vetoed":
+    case "canceled":
+    case "expired":
+      return (
+        <Tag css={(t) => css({ color: t.colors.textNegative })}>
+          {proposal.state}
+        </Tag>
+      );
+
+    case "succeeded":
+    case "queued":
+    case "executed":
+      return (
+        <Tag css={(t) => css({ color: t.colors.textPositive })}>
+          {proposal.state}
+        </Tag>
+      );
+
+    default:
+      return null;
   }
 };
 
@@ -398,12 +412,7 @@ const ProposalCandidateItem = ({ candidateId }) => {
 
   return (
     <RouterLink to={`/candidates/${encodeURIComponent(candidateId)}`}>
-      <Avatar
-        signature={candidate.slug}
-        signatureLength={2}
-        transparent
-        size="3.2rem"
-      />
+      <Avatar signature={candidate.slug} signatureLength={2} size="3.2rem" />
       <div>
         <div className="name">{candidate.latestVersion.content.title}</div>
         <div className="description">
@@ -417,11 +426,44 @@ const ProposalCandidateItem = ({ candidateId }) => {
           </em>
           <Tag>
             {candidate.canceledTimestamp != null
-              ? "Canceled candidarte"
+              ? "Canceled candidate"
               : candidate.latestVersion.targetProposalId != null
               ? "Update candidate"
               : "Candidate"}
           </Tag>
+        </div>
+      </div>
+      <div />
+    </RouterLink>
+  );
+};
+
+const ProposalDraftItem = ({ draftId }) => {
+  const [draft] = useDraft(draftId);
+  const { address: connectedAccountAddress } = useAccount();
+  const { displayName: authorAccountDisplayName } = useAccountDisplayName(
+    connectedAccountAddress
+  );
+
+  return (
+    <RouterLink to={`/new/${draftId}`}>
+      <Avatar
+        signature={draft.name || "Untitled draft"}
+        signatureLength={2}
+        size="3.2rem"
+      />
+      <div>
+        <div className="name">{draft.name || "Untitled draft"}</div>
+        <div className="description">
+          By{" "}
+          <em
+            css={(t) =>
+              css({ fontWeight: t.text.weights.emphasis, fontStyle: "normal" })
+            }
+          >
+            {authorAccountDisplayName ?? "..."}
+          </em>
+          <Tag>Draft</Tag>
         </div>
       </div>
       <div />

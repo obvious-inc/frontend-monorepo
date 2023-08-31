@@ -134,10 +134,24 @@ export const parseString = (string) => {
         const lineElements = line.split(/\s+/).reduce((els, word) => {
           const prev = els[els.length - 1];
 
-          if (validateUrl(word)) {
+          const isValidUrl = validateUrl(word);
+
+          if (isValidUrl) {
+            const disalloedEndCharacters = [".", ",", ";", ")"];
+            let cleanedUrl = word;
+            let trailingPart = "";
+            while (
+              disalloedEndCharacters.includes(cleanedUrl[cleanedUrl.length - 1])
+            ) {
+              trailingPart = cleanedUrl[cleanedUrl.length - 1] + trailingPart;
+              cleanedUrl = cleanedUrl.slice(0, -1);
+            }
+
             if (prev != null) prev.text = `${prev.text} `;
-            const url = new URL(word);
-            return [...els, { type: "link", url: url.href }];
+            const url = new URL(cleanedUrl);
+            const linkEl = { type: "link", url: url.href };
+            if (trailingPart === "") return [...els, linkEl];
+            return [...els, linkEl, { text: trailingPart }];
           }
 
           if (prev == null || prev.type === "link")

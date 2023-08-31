@@ -1,4 +1,5 @@
 import React from "react";
+import { useAccount } from "wagmi";
 import { useCachedState } from "@shades/common/app";
 import {
   message as messageUtils,
@@ -8,7 +9,8 @@ import {
 const { omitKey } = objectUtils;
 const { createEmptyParagraphElement } = messageUtils;
 
-const CACHE_KEY = "channel-drafts";
+const createCacheKey = (address) =>
+  [address?.toLowerCase(), "proposal-drafts"].filter(Boolean).join("-");
 
 const createEmptyItem = () => ({
   id: String(Date.now()),
@@ -16,8 +18,12 @@ const createEmptyItem = () => ({
   body: [createEmptyParagraphElement()],
 });
 
-const createCollectionHook = (cacheKey) => () => {
-  const [entriesById, setEntries] = useCachedState(cacheKey);
+export const useCollection = () => {
+  const { address: connectedAccountAddress } = useAccount();
+
+  const [entriesById, setEntries] = useCachedState(
+    createCacheKey(connectedAccountAddress)
+  );
   const items = entriesById == null ? [] : Object.values(entriesById);
 
   const createItem = React.useCallback(async () => {
@@ -37,8 +43,12 @@ const createCollectionHook = (cacheKey) => () => {
   return { items, createItem, deleteItem };
 };
 
-const createSingleItemHook = (cacheKey) => (id) => {
-  const [entriesById, setEntries] = useCachedState(cacheKey);
+export const useSingleItem = (id) => {
+  const { address: connectedAccountAddress } = useAccount();
+
+  const [entriesById, setEntries] = useCachedState(
+    createCacheKey(connectedAccountAddress)
+  );
   const item = entriesById == null ? null : entriesById[id];
 
   const setName = React.useCallback(
@@ -61,7 +71,3 @@ const createSingleItemHook = (cacheKey) => (id) => {
 
   return [item, { setName, setBody }];
 };
-
-export const useCollection = createCollectionHook(CACHE_KEY);
-
-export const useSingleItem = createSingleItemHook(CACHE_KEY);

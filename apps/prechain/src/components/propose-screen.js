@@ -14,11 +14,8 @@ import {
   useCollection as useDrafts,
   useSingleItem as useDraft,
 } from "../hooks/channel-drafts.js";
-import { useCanCreateProposal } from "../hooks/dao.js";
-import {
-  useCreateProposal,
-  useCreateProposalCandidate,
-} from "../hooks/prechain.js";
+import { useCreateProposal, useCanCreateProposal } from "../hooks/dao.js";
+import { useCreateProposalCandidate } from "../hooks/prechain.js";
 import { Layout, MainContentContainer } from "./proposal-screen.js";
 
 const ProposeScreen = () => {
@@ -50,33 +47,34 @@ const ProposeScreen = () => {
 
   const hasRequiredInput = !isNameEmpty && !isBodyEmpty;
 
-  const description = hasRequiredInput
-    ? `# ${draft.name}\n\n${messageUtils.toMarkdown(draft.body)}`
-    : null;
+  const slug = draft?.name.trim().toLowerCase().replace(/\s+/g, "-");
 
   const createProposalCandidate = useCreateProposalCandidate({
-    slug: draft?.name.toLowerCase().replace(/\s+/g, "-"),
-    description,
+    enabled: hasRequiredInput && isCandidateMode,
   });
 
   const createProposal = useCreateProposal({
-    description,
+    enabled: hasRequiredInput && !isCandidateMode,
   });
 
   const submit = async () => {
     setPendingRequest(true);
 
+    const description = `# ${draft.name.trim()}\n\n${messageUtils.toMarkdown(
+      draft.body
+    )}`;
+
     return Promise.resolve()
       .then(() =>
         isCandidateMode
-          ? createProposalCandidate().then((candidate) => {
+          ? createProposalCandidate({ slug, description }).then((candidate) => {
               const candidateId = [
                 connectedAccountAddress,
                 encodeURIComponent(candidate.slug),
               ].join("-");
               navigate(`/candidates/${candidateId}`, { replace: true });
             })
-          : createProposal().then((proposal) => {
+          : createProposal({ description }).then((proposal) => {
               navigate(`/${proposal.id}`, { replace: true });
             })
       )
@@ -124,7 +122,7 @@ const ProposeScreen = () => {
     <Layout
       scrollView={false}
       navigationStack={[
-        { to: "/", label: "Drafts" },
+        { to: "/?tab=drafts", label: "Drafts" },
         { to: `/new/${draftId}`, label: draft?.name || "Untitled draft" },
       ]}
       // actions={isProposer ? [{ onSelect: openDialog, label: "Edit" }] : []}

@@ -40,6 +40,7 @@ const textSizes = {
   huge: "3.2rem",
   header: largeText,
   headerLarge: "2rem",
+  headerLarger: "2.4rem",
   menus: normalTextSize,
   button: "1.5rem",
   input: "1.5rem",

@@ -14,8 +14,7 @@ export const createCss = (t) => ({
     margin: "0",
     display: "var(--paragraph-display, block)",
   },
-  "* + p": { marginTop: "1rem" },
-  "p + *": { marginTop: "1rem" },
+  "* + p, p + *": { marginTop: "1rem" },
   "p + *:before, * + p:before": {
     display: "var(--paragraph-display-before, none)",
     content: '""',
@@ -25,10 +24,13 @@ export const createCss = (t) => ({
   // Headings
   h1: { fontSize: "1.375em" },
   h2: { fontSize: "1.125em" },
+  h3: { fontSize: "1em" },
   "* + h1": { marginTop: "3rem" },
   "h1 + *": { marginTop: "1rem" },
   "* + h2": { marginTop: "2.4rem" },
   "h2 + *": { marginTop: "0.5rem" },
+  "* + h3": { marginTop: "2.4rem" },
+  "h3 + *": { marginTop: "0.5rem" },
 
   // Lists
   "ul, ol": {
@@ -63,6 +65,12 @@ export const createCss = (t) => ({
     height: "2.4rem",
     marginRight: "0.8rem",
     content: '"💡"',
+  },
+
+  // Code
+  code: {
+    fontSize: "0.875em",
+    fontFamily: t.fontStacks.monospace,
   },
 
   // Links

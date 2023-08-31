@@ -1,5 +1,8 @@
 import React from "react";
-import { useEnsAvatar as useWagmiEnsAvatar } from "wagmi";
+import {
+  useEnsAvatar as useWagmiEnsAvatar,
+  useEnsName as useWagmiEnsName,
+} from "wagmi";
 import { useEnsAvatar, useUserWithWalletAddress } from "@shades/common/app";
 import Avatar from "./avatar.js";
 
@@ -27,17 +30,22 @@ const usePlaceholderAvatar = (
 const AccountAvatar = React.forwardRef(
   ({ address: accountAddress, highRes, transparent, ...props }, ref) => {
     const user = useUserWithWalletAddress(accountAddress);
+    const { data: wagmiEnsName } = useWagmiEnsName({
+      address: accountAddress,
+      enabled: user?.ensName == null,
+    });
     const userCustomAvatarUrl =
       user?.profilePicture?.[highRes ? "large" : "small"];
     const cachedEnsAvatarUrl = useEnsAvatar(accountAddress);
+    const ensName = wagmiEnsName ?? user?.ensName;
 
     const { data: fetchedEnsAvatarUrl, isLoading: isLoadingEnsAvatar } =
       useWagmiEnsAvatar({
-        name: user?.ensName,
+        name: ensName,
         enabled:
           userCustomAvatarUrl == null &&
           cachedEnsAvatarUrl == null &&
-          user?.ensName != null,
+          ensName != null,
       });
 
     const ensAvatarUrl = fetchedEnsAvatarUrl ?? cachedEnsAvatarUrl;

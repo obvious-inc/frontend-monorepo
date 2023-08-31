@@ -37,6 +37,7 @@ const RichText = ({ blocks, markdownText, ...props }) => {
         css={(t) => [
           createRichTextCss(t),
           css({
+            "* + p, p + *": { marginTop: "1em" },
             img: {
               borderRadius: "0.3rem",
             },

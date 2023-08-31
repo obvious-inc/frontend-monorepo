@@ -1,6 +1,5 @@
 import React from "react";
-import isDateToday from "date-fns/isToday";
-import isDateYesterday from "date-fns/isYesterday";
+import datesDifferenceInDays from "date-fns/differenceInCalendarDays";
 import * as Tooltip from "@shades/ui-web/tooltip";
 import FormattedDate from "./formatted-date.js";
 
@@ -8,6 +7,7 @@ const FormattedDateWithTooltip = React.memo(
   ({
     value,
     tooltipSideOffset = 5,
+    relativeDayThreshold = 1,
     disableRelative,
     disableTooltip,
     capitalize = true,
@@ -15,25 +15,51 @@ const FormattedDateWithTooltip = React.memo(
   }) => {
     if (value == null) throw new Error();
 
-    const formattedDate =
-      !disableRelative &&
-      (isDateToday(new Date(value)) || isDateYesterday(new Date(value))) ? (
+    const format = () => {
+      const valueDate = new Date(value);
+
+      if (
+        disableRelative ||
+        datesDifferenceInDays(valueDate, new Date()) > relativeDayThreshold
+      )
+        return <FormattedDate value={valueDate} {...props} />;
+
+      const dayDifference = datesDifferenceInDays(valueDate, new Date());
+
+      return (
         <span>
           <span style={{ textTransform: capitalize ? "capitalize" : "none" }}>
-            {isDateToday(new Date(value)) ? "today" : "yesterday"}
-          </span>{" "}
-          at <FormattedDate value={value} hour="numeric" minute="numeric" />
+            {dayDifference === 0
+              ? "today"
+              : dayDifference === 1
+              ? "tomorrow"
+              : dayDifference === -1
+              ? "yesterday"
+              : dayDifference > 0
+              ? `in ${dayDifference} days`
+              : `${Math.abs(dayDifference)} days ago`}
+          </span>
+          {Math.abs(dayDifference) <= 1 && (
+            <>
+              {" "}
+              at{" "}
+              <FormattedDate
+                value={valueDate}
+                hour="numeric"
+                minute="numeric"
+              />
+            </>
+          )}
         </span>
-      ) : (
-        <FormattedDate value={value} {...props} />
       );
+    };
 
-    if (disableTooltip) return formattedDate;
+    if (disableTooltip) return format();
 
     return (
       <Tooltip.Root>
         <Tooltip.Trigger asChild>
-          <span>{formattedDate}</span>
+          <span>{format()}</span>
         </Tooltip.Trigger>
         <Tooltip.Content side="top" sideOffset={tooltipSideOffset}>
           <FormattedDate

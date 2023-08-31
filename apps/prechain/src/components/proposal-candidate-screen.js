@@ -1,12 +1,22 @@
 import formatDate from "date-fns/format";
 import React from "react";
-import { useParams, useSearchParams, useNavigate } from "react-router-dom";
+import {
+  useParams,
+  useSearchParams,
+  useNavigate,
+  Link as RouterLink,
+} from "react-router-dom";
 import { css } from "@emotion/react";
-import { array as arrayUtils } from "@shades/common/utils";
+import {
+  array as arrayUtils,
+  message as messageUtils,
+} from "@shades/common/utils";
 import { ErrorBoundary } from "@shades/common/react";
 import Dialog from "@shades/ui-web/dialog";
 import Button from "@shades/ui-web/button";
 import Input from "@shades/ui-web/input";
+import Spinner from "@shades/ui-web/spinner";
+import * as Tooltip from "@shades/ui-web/tooltip";
 import {
   useProposalCandidate,
   useProposalCandidateFetch,
@@ -16,14 +26,19 @@ import {
   useSignProposalCandidate,
   useAddSignatureToProposalCandidate,
 } from "../hooks/prechain.js";
+import { useProposalThreshold } from "../hooks/dao.js";
 import { useWallet } from "../hooks/wallet.js";
 import {
   Layout,
   MainContentContainer,
-  ProposalContent,
+  ProposalLikeContent,
   ProposalFeed,
-  ProposalFeedbackForm,
+  ProposalActionForm,
+  VotingBar,
+  VoteDistributionToolTipContent,
 } from "./proposal-screen.js";
+import AccountPreviewPopoverTrigger from "./account-preview-popover-trigger.js";
+import * as Tabs from "./tabs.js";
 
 const useSearchParamToggleState = (key) => {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -62,7 +77,8 @@ const useFeedItems = (candidateId) => {
       type: "signature",
       id: `${s.signer.id}-${s.expirationTimestamp.getTime()}`,
       authorAccount: s.signer.id,
-      body: s.reason,
+      bodyRichText:
+        s.reason == null ? null : messageUtils.parseString(s.reason),
       voteCount: s.signer.nounsRepresented.length,
     }));
 
@@ -71,7 +87,8 @@ const useFeedItems = (candidateId) => {
         type: "feedback-post",
         id: p.id,
         authorAccount: p.voter.id,
-        body: p.reason,
+        bodyRichText:
+          p.reason == null ? null : messageUtils.parseString(p.reason),
         support: p.supportDetailed,
         timestamp: p.createdTimestamp,
         voteCount: p.votes,
@@ -90,15 +107,71 @@ const useFeedItems = (candidateId) => {
   }, [candidate]);
 };
 
-const ProposalCandidateScreen = () => {
-  const { candidateId } = useParams();
+const getValidSponsorSignatures = (candidate) =>
+  candidate?.latestVersion.content.contentSignatures?.filter(
+    // TODO: exclude signers who have an active or pending proposal
+    (s) => !s.canceled && s.expirationTimestamp > new Date()
+  ) ?? [];
+
+const getCandidateSignals = (candidate) => {
+  const signatures = getValidSponsorSignatures(candidate);
+
+  const sponsoringNounIds = arrayUtils.unique(
+    signatures.flatMap((s) => s.signer.nounsRepresented.map((n) => n.id))
+  );
+
+  // Sort first to make sure we pick the most recent feedback from per voter
+  const sortedFeedbackPosts = arrayUtils.sortBy(
+    { value: (c) => c.createdTimestamp, order: "desc" },
+    candidate.feedbackPosts
+  );
+
+  const supportByNounId = sortedFeedbackPosts.reduce(
+    (supportByNounId, post) => {
+      const nounIds = post.voter.nounsRepresented.map((n) => n.id);
+      const newSupportByNounId = {};
+
+      for (const nounId of nounIds) {
+        if (supportByNounId[nounId] != null) continue;
+        newSupportByNounId[nounId] = post.supportDetailed;
+      }
+
+      return { ...supportByNounId, ...newSupportByNounId };
+    },
+    // Assume that the sponsors will vote for
+    sponsoringNounIds.reduce((acc, id) => ({ ...acc, [id]: 1 }), {})
+  );
+
+  const supportByDelegateId = sortedFeedbackPosts.reduce(
+    (supportByDelegateId, post) => {
+      if (supportByDelegateId[post.voter.id] != null)
+        return supportByDelegateId;
+      return { ...supportByDelegateId, [post.voter.id]: post.supportDetailed };
+    },
+    // Assume that the sponsors will vote for
+    signatures.reduce((acc, s) => ({ ...acc, [s.signer.id]: 1 }), {})
+  );
+
+  const countSignals = (supportList) =>
+    supportList.reduce(
+      (acc, support) => {
+        const signalGroup = { 0: "against", 1: "for", 2: "abstain" }[support];
+        return { ...acc, [signalGroup]: acc[signalGroup] + 1 };
+      },
+      { for: 0, against: 0, abstain: 0 }
+    );
+
+  return {
+    votes: countSignals(Object.values(supportByNounId)),
+    delegates: countSignals(Object.values(supportByDelegateId)),
+  };
+};
+
+const ProposalCandidateScreenContent = ({ candidateId }) => {
   const [proposerId, ...slugParts] = candidateId.split("-");
   const slug = slugParts.join("-");
 
-  const {
-    address: connectedWalletAccountAddress,
-    requestAccess: requestWalletAccess,
-  } = useWallet();
+  const proposalThreshold = useProposalThreshold();
 
   const candidate = useProposalCandidate(candidateId);
 
@@ -115,197 +188,272 @@ const ProposalCandidateScreen = () => {
     }
   );
 
-  const isProposer =
-    connectedWalletAccountAddress != null &&
-    connectedWalletAccountAddress.toLowerCase() ===
-      candidate?.proposerId.toLowerCase();
-
   useProposalCandidateFetch(candidateId);
-
-  const [isEditDialogOpen, toggleEditDialog] =
-    useSearchParamToggleState("edit");
-  const [isSponsorDialogOpen, toggleSponsorDialog] =
-    useSearchParamToggleState("sponsor");
 
   if (candidate?.latestVersion.content.description == null) return null;
 
-  const { description } = candidate.latestVersion.content;
+  const validSignatures = getValidSponsorSignatures(candidate);
 
+  const sponsoringNounIds = arrayUtils.unique(
+    validSignatures.flatMap((s) => s.signer.nounsRepresented.map((n) => n.id))
+  );
+
+  const isProposalThresholdMet = sponsoringNounIds.length > proposalThreshold;
+  // TODO: Include poposer voting power in calculation
+  const missingSponsorCount = isProposalThresholdMet
+    ? 0
+    : proposalThreshold - sponsoringNounIds.length + 1;
+
+  const { description } = candidate.latestVersion.content;
   const firstBreakIndex = description.search(/\n/);
   const descriptionWithoutTitle =
     firstBreakIndex === -1 ? "" : description.slice(firstBreakIndex);
 
-  // const validSignatures =
-  //   candidate.latestVersion.content.contentSignatures.filter(
-  //     (s) => !s.canceled && s.expirationTimestamp > new Date()
-  //   );
-
-  // const sponsoringNounIds = arrayUtils.unique(
-  //   validSignatures.flatMap((s) => {
-  //     // don't count votes from signers who have active or pending proposals
-  //     // if (!activePendingProposers.includes(signature.signer.id)) {
-  //     return s.signer.nounsRepresented.map((n) => n.id);
-  //   })
-  // );
-
   const sponsorFeedItems = feedItems.filter((i) => i.type === "signature");
   const regularFeedItems = feedItems.filter((i) => i.type !== "signature");
 
+  const signals = getCandidateSignals(candidate);
+
+  const feedbackVoteCountExcludingAbstained =
+    signals.votes.for + signals.votes.against;
+
   return (
-    <>
-      <Layout
-        navigationStack={[
-          { to: "/", label: "Candidates" },
-          {
-            to: `/candidates/${encodeURIComponent(candidateId)}`,
-            label: candidate.latestVersion.content.title,
-          },
-        ]}
-        actions={
-          connectedWalletAccountAddress == null
-            ? [{ onSelect: requestWalletAccess, label: "Connect wallet" }]
-            : isProposer
-            ? [{ onSelect: toggleEditDialog, label: "Edit" }]
-            : [{ onSelect: toggleSponsorDialog, label: "Sponsor" }]
-        }
-      >
-        <div
-          css={css({
-            padding: "2rem 1.6rem 3.2rem",
-            "@media (min-width: 600px)": {
-              padding: "6rem 1.6rem 8rem",
-            },
-          })}
-        >
-          <MainContentContainer
-            sidebar={
-              <div
-                style={{
-                  display: "flex",
-                  flexDirection: "column",
-                  gap: "4rem",
-                }}
-              >
-                {sponsorFeedItems.length !== 0 && (
-                  <div>
+    <div css={css({ padding: "0 1.6rem" })}>
+      <MainContentContainer
+        sidebar={
+          <div
+            css={css({
+              padding: "2rem 0 6rem",
+              "@media (min-width: 600px)": {
+                padding: "6rem 0",
+              },
+            })}
+          >
+            {feedbackVoteCountExcludingAbstained > 0 && (
+              <Tooltip.Root>
+                <Tooltip.Trigger asChild>
+                  <div
+                    css={css({
+                      display: "flex",
+                      flexDirection: "column",
+                      gap: "0.5rem",
+                      marginBottom: "4rem",
+                    })}
+                  >
                     <div
                       css={(t) =>
                         css({
-                          fontSize: t.text.sizes.base,
-                          fontWeight: t.text.weights.header,
-                          margin: "0 0 1rem",
+                          display: "flex",
+                          justifyContent: "space-between",
+                          fontSize: t.text.sizes.small,
+                          fontWeight: t.text.weights.emphasis,
+                          "[data-for]": { color: t.colors.textPositive },
+                          "[data-against]": { color: t.colors.textNegative },
                         })
                       }
                     >
-                      Sponsors
+                      <div data-for>For {signals.votes.for}</div>
+                      <div data-against>Against {signals.votes.against}</div>
                     </div>
-                    <ProposalFeed items={sponsorFeedItems} />
-                  </div>
-                )}
-
-                <div
-                  style={{
-                    display: "flex",
-                    flexDirection: "column",
-                    gap: "2rem",
-                  }}
-                >
-                  {regularFeedItems.length !== 0 && (
-                    <div>
-                      <div
-                        css={(t) =>
-                          css({
-                            fontSize: t.text.sizes.base,
-                            fontWeight: t.text.weights.header,
-                            margin: "0 0 1rem",
-                          })
-                        }
-                      >
-                        Feedback
-                      </div>
-                      <ProposalFeed items={regularFeedItems} />
-                    </div>
-                  )}
-
-                  {connectedWalletAccountAddress != null && (
-                    <ProposalFeedbackForm
-                      pendingFeedback={pendingFeedback}
-                      setPendingFeedback={setPendingFeedback}
-                      pendingSupport={pendingSupport}
-                      setPendingSupport={setPendingSupport}
-                      onSubmit={() =>
-                        sendProposalFeedback().then(() => {
-                          setPendingFeedback("");
+                    <VotingBar
+                      forVotes={signals.votes.for}
+                      againstVotes={signals.votes.against}
+                      abstainVotes={signals.votes.abstain}
+                    />
+                    <div
+                      css={(t) =>
+                        css({
+                          textAlign: "right",
+                          fontSize: t.text.sizes.small,
                         })
                       }
-                    />
+                    >
+                      Feedback signals are not binding votes
+                    </div>
+                  </div>
+                </Tooltip.Trigger>
+                <Tooltip.Content
+                  side="top"
+                  sideOffset={5}
+                  css={css({ padding: 0 })}
+                >
+                  <VoteDistributionToolTipContent
+                    votes={signals.votes}
+                    delegates={signals.delegates}
+                  />
+                </Tooltip.Content>
+              </Tooltip.Root>
+            )}
+            <div style={{ padding: "0 0 1.6rem" }}>
+              <span
+                css={(t) =>
+                  css({
+                    fontSize: t.text.sizes.base,
+                    fontWeight: "400",
+                    lineHeight: 1.5,
+                  })
+                }
+              >
+                <span
+                  css={(t) =>
+                    css({
+                      fontSize: t.text.sizes.headerLarge,
+                      fontWeight: t.text.weights.header,
+                    })
+                  }
+                >
+                  {sponsoringNounIds.length}
+                </span>{" "}
+                sponsoring {sponsoringNounIds.length === 1 ? "noun" : "nouns"}
+                {validSignatures.length > 1 && (
+                  <>
+                    {" "}
+                    across{" "}
+                    <span
+                      css={(t) => css({ fontWeight: t.text.weights.emphasis })}
+                    >
+                      {validSignatures.length}
+                    </span>{" "}
+                    {validSignatures.length === 1 ? "delegate" : "delegates"}
+                  </>
+                )}
+              </span>
+            </div>
+            <div
+              css={(t) =>
+                css({
+                  fontSize: t.text.sizes.small,
+                  background: t.colors.backgroundSecondary,
+                  padding: "1.6rem",
+                  borderRadius: "0.3rem",
+                  marginBottom: "3.2rem",
+                  em: {
+                    fontStyle: "normal",
+                    fontWeight: t.text.weights.emphasis,
+                  },
+                })
+              }
+            >
+              {isProposalThresholdMet ? (
+                <>
+                  This candidate has met the required sponsor threshold, but
+                  votes can continue to add their support until the proposal is
+                  put onchain.
+                </>
+              ) : (
+                <>
+                  This candidate requires <em>{missingSponsorCount} more</em>{" "}
+                  sponsoring {missingSponsorCount === 1 ? "noun" : "nouns"} to
+                  be proposed onchain.
+                </>
+              )}
+            </div>
+            <Tabs.Root
+              aria-label="Candidate info"
+              defaultSelectedKey={
+                sponsorFeedItems.length > 0 ? "sponsors" : "feedback"
+              }
+              css={(t) =>
+                css({
+                  position: "sticky",
+                  top: 0,
+                  background: t.colors.backgroundPrimary,
+                  "[role=tab]": { fontSize: t.text.sizes.base },
+                })
+              }
+            >
+              <Tabs.Item key="sponsors" title="Sponsors" disabled>
+                <div style={{ padding: "1.6rem 0" }}>
+                  {sponsorFeedItems.length === 0 ? (
+                    <div
+                      css={(t) =>
+                        css({
+                          textAlign: "center",
+                          fontSize: t.text.sizes.small,
+                          color: t.colors.textDimmed,
+                          paddingTop: "1.6rem",
+                        })
+                      }
+                    >
+                      No sponsors
+                    </div>
+                  ) : (
+                    <ProposalFeed items={sponsorFeedItems} />
                   )}
                 </div>
-              </div>
-            }
-          >
-            {/* {candidate.latestVersion.proposalId != null && ( */}
-            {/*   <> */}
-            {/*     <br /> */}
-            {/*     Proposal:{" "} */}
-            {/*     <RouterLink to={`/${candidate.latestVersion.proposalId}`}> */}
-            {/*       {candidate.latestVersion.proposalId} */}
-            {/*     </RouterLink> */}
-            {/*     <br /> */}
-            {/*   </> */}
-            {/* )} */}
+              </Tabs.Item>
+              <Tabs.Item key="feedback" title="Feedback">
+                <div
+                  style={{
+                    paddingTop: "1.6rem",
+                    display: "flex",
+                    flexDirection: "column",
+                    gap: "3.2rem",
+                  }}
+                >
+                  {regularFeedItems.length == 0 ? (
+                    <div
+                      css={(t) =>
+                        css({
+                          textAlign: "center",
+                          fontSize: t.text.sizes.small,
+                          color: t.colors.textDimmed,
+                          paddingTop: "1.6rem",
+                        })
+                      }
+                    >
+                      No feedback posted
+                    </div>
+                  ) : (
+                    <ProposalFeed items={regularFeedItems} />
+                  )}
+                  <ProposalActionForm
+                    mode="feedback"
+                    reason={pendingFeedback}
+                    setReason={setPendingFeedback}
+                    support={pendingSupport}
+                    setSupport={setPendingSupport}
+                    onSubmit={() =>
+                      sendProposalFeedback().then(() => {
+                        setPendingFeedback("");
+                      })
+                    }
+                  />
+                </div>
+              </Tabs.Item>
+            </Tabs.Root>
+          </div>
+        }
+      >
+        {/* {candidate.latestVersion.proposalId != null && ( */}
+        {/*   <> */}
+        {/*     <br /> */}
+        {/*     Proposal:{" "} */}
+        {/*     <RouterLink to={`/${candidate.latestVersion.proposalId}`}> */}
+        {/*       {candidate.latestVersion.proposalId} */}
+        {/*     </RouterLink> */}
+        {/*     <br /> */}
+        {/*   </> */}
+        {/* )} */}
 
-            <ProposalContent
-              title={candidate.latestVersion.content.title}
-              description={descriptionWithoutTitle}
-              proposerId={candidate.proposerId}
-              createdAt={candidate.createdTimestamp}
-              updatedAt={candidate.lastUpdatedTimestamp}
-            />
-          </MainContentContainer>
+        <div
+          css={css({
+            padding: "2rem 0 3.2rem",
+            "@media (min-width: 600px)": {
+              padding: "6rem 0 12rem",
+            },
+          })}
+        >
+          <ProposalLikeContent
+            title={candidate.latestVersion.content.title}
+            description={descriptionWithoutTitle}
+            proposerId={candidate.proposerId}
+            createdAt={candidate.createdTimestamp}
+            updatedAt={candidate.lastUpdatedTimestamp}
+          />
         </div>
-      </Layout>
-
-      {isEditDialogOpen && isProposer && candidate != null && (
-        <Dialog isOpen onRequestClose={toggleEditDialog} width="76rem">
-          {({ titleProps }) => (
-            <ErrorBoundary
-              fallback={() => {
-                // window.location.reload();
-              }}
-            >
-              <React.Suspense fallback={null}>
-                <ProposalCandidateEditDialog
-                  candidateId={candidateId}
-                  titleProps={titleProps}
-                  dismiss={toggleEditDialog}
-                />
-              </React.Suspense>
-            </ErrorBoundary>
-          )}
-        </Dialog>
-      )}
-
-      {isSponsorDialogOpen && candidate != null && (
-        <Dialog isOpen onRequestClose={toggleSponsorDialog} width="52rem">
-          {({ titleProps }) => (
-            <ErrorBoundary
-              fallback={() => {
-                // window.location.reload();
-              }}
-            >
-              <React.Suspense fallback={null}>
-                <SponsorDialog
-                  candidateId={candidateId}
-                  titleProps={titleProps}
-                  dismiss={toggleSponsorDialog}
-                />
-              </React.Suspense>
-            </ErrorBoundary>
-          )}
-        </Dialog>
-      )}
-    </>
+      </MainContentContainer>
+    </div>
   );
 };
 
@@ -410,9 +558,9 @@ const SponsorDialog = ({ candidateId, titleProps, dismiss }) => {
           disabled={hasPendingSubmit}
         />
         <div>
-          Once a signed proposal is onchain, signers will need to wait until the
-          proposal is queued or defeated before putting another proposal
-          onchain.
+          Note that once a signed proposal is onchain, signers will need to wait
+          until the proposal is queued or defeated before putting another
+          proposal onchain.
         </div>
         <div
           style={{ display: "flex", justifyContent: "flex-end", gap: "1rem" }}
@@ -432,6 +580,129 @@ const SponsorDialog = ({ candidateId, titleProps, dismiss }) => {
       </form>
     </div>
   );
+};
+const ProposeDialog = ({
+  candidateId,
+  // titleProps, dismiss
+}) => {
+  return candidateId;
+  // const candidate = useProposalCandidate(candidateId);
+
+  // const [selectedSignerIds, setSelectedSignerIds] = React.useState([]);
+
+  // const [submitState, setSubmitState] = React.useState("idle");
+
+  // const hasPendingSubmit = submitState !== "idle";
+
+  // const signCandidate = useSignProposalCandidate(
+  //   candidate.proposerId,
+  //   candidate.latestVersion.content,
+  //   {
+  //     expirationTimestamp: Math.floor(expirationDate.getTime() / 1000),
+  //   }
+  // );
+
+  // const addSignatureToCandidate = useAddSignatureToProposalCandidate(
+  //   candidate.proposerId,
+  //   candidate.slug,
+  //   candidate.latestVersion.content
+  // );
+
+  // return (
+  //   <div
+  //     css={css({
+  //       overflow: "auto",
+  //       padding: "1.5rem",
+  //       "@media (min-width: 600px)": {
+  //         padding: "2rem",
+  //       },
+  //     })}
+  //   >
+  //     <form
+  //       style={{ display: "flex", flexDirection: "column", gap: "2rem" }}
+  //       onSubmit={(e) => {
+  //         e.preventDefault();
+  //         setSubmitState("signing");
+  //         signCandidate()
+  //           .then((signature) => {
+  //             setSubmitState("adding-signature");
+  //             return addSignatureToCandidate({
+  //               signature,
+  //               expirationTimestamp: Math.floor(
+  //                 expirationDate.getTime() / 1000
+  //               ),
+  //               reason,
+  //             });
+  //           })
+  //           .then(() => {
+  //             dismiss();
+  //           })
+  //           .finally(() => {
+  //             setSubmitState("idle");
+  //           });
+  //       }}
+  //     >
+  //       <h1
+  //         {...titleProps}
+  //         css={(t) =>
+  //           css({
+  //             color: t.colors.textNormal,
+  //             fontSize: t.text.sizes.headerLarge,
+  //             fontWeight: t.text.weights.header,
+  //             lineHeight: 1.15,
+  //           })
+  //         }
+  //       >
+  //         Sponsor candidate
+  //       </h1>
+  //       {submitState === "adding-signature" && (
+  //         <div css={(t) => css({ color: t.colors.textPrimary })}>
+  //           Candidate signed. Confirm again in your wallet to submit.
+  //         </div>
+  //       )}
+  //       <Input
+  //         type="date"
+  //         label="Signature expiration date"
+  //         value={formatDate(expirationDate, "yyyy-MM-dd")}
+  //         onChange={(e) => {
+  //           setExpirationDate(new Date(e.target.valueAsNumber));
+  //         }}
+  //         disabled={hasPendingSubmit}
+  //       />
+  //       <Input
+  //         label="Optional message"
+  //         multiline
+  //         rows={3}
+  //         placeholder="..."
+  //         value={reason}
+  //         onChange={(e) => {
+  //           setReason(e.target.value);
+  //         }}
+  //         disabled={hasPendingSubmit}
+  //       />
+  //       <div>
+  //         Once a signed proposal is onchain, signers will need to wait until the
+  //         proposal is queued or defeated before putting another proposal
+  //         onchain.
+  //       </div>
+  //       <div
+  //         style={{ display: "flex", justifyContent: "flex-end", gap: "1rem" }}
+  //       >
+  //         <Button type="button" onClick={dismiss}>
+  //           Close
+  //         </Button>
+  //         <Button
+  //           type="submit"
+  //           variant="primary"
+  //           isLoading={hasPendingSubmit}
+  //           disabled={hasPendingSubmit}
+  //         >
+  //           Submit signature
+  //         </Button>
+  //       </div>
+  //     </form>
+  //   </div>
+  // );
 };
 
 const ProposalCandidateEditDialog = ({ candidateId, titleProps, dismiss }) => {
@@ -461,6 +732,7 @@ const ProposalCandidateEditDialog = ({ candidateId, titleProps, dismiss }) => {
       await updateProposalCandidate();
       dismiss();
     } catch (e) {
+      console.log(e);
       alert("Something went wrong");
     } finally {
       setPendingSubmit(false);
@@ -606,6 +878,211 @@ const ProposalCandidateEditDialog = ({ candidateId, titleProps, dismiss }) => {
       </footer>
     </form>
     // </EditorProvider>
+  );
+};
+
+const ProposalCandidateScreen = () => {
+  const { candidateId } = useParams();
+  const [proposerId, ...slugParts] = candidateId.split("-");
+  const slug = slugParts.join("-");
+
+  const [notFound, setNotFound] = React.useState(false);
+  const [fetchError, setFetchError] = React.useState(null);
+
+  const proposalThreshold = useProposalThreshold();
+
+  const { address: connectedWalletAccountAddress } = useWallet();
+
+  const candidate = useProposalCandidate(candidateId);
+
+  const isProposer =
+    connectedWalletAccountAddress != null &&
+    connectedWalletAccountAddress.toLowerCase() ===
+      candidate?.proposerId.toLowerCase();
+
+  useProposalCandidateFetch(candidateId, {
+    onError: (e) => {
+      if (e.message === "not-found") {
+        setNotFound(true);
+        return;
+      }
+
+      setFetchError(e);
+    },
+  });
+
+  const [isEditDialogOpen, toggleEditDialog] =
+    useSearchParamToggleState("edit");
+  const [isSponsorDialogOpen, toggleSponsorDialog] =
+    useSearchParamToggleState("sponsor");
+  const [isProposeDialogOpen, toggleProposeDialog] =
+    useSearchParamToggleState("propose");
+
+  const { contentSignatures = [] } = candidate?.latestVersion.content ?? {};
+
+  const validSignatures = contentSignatures.filter(
+    (s) => !s.canceled && s.expirationTimestamp > new Date()
+  );
+
+  const sponsoringNounIds = arrayUtils.unique(
+    validSignatures.flatMap((s) => {
+      // don't count votes from signers who have active or pending proposals
+      // if (!activePendingProposers.includes(signature.signer.id)) {
+      return s.signer.nounsRepresented.map((n) => n.id);
+    })
+  );
+
+  const isProposalThresholdMet = sponsoringNounIds.length > proposalThreshold;
+
+  return (
+    <>
+      <Layout
+        navigationStack={[
+          { to: "/?tab=candidates", label: "Candidates" },
+          {
+            to: `/candidates/${encodeURIComponent(candidateId)}`,
+            label: candidate?.latestVersion.content.title ?? "...",
+          },
+        ]}
+        actions={
+          candidate == null ||
+          candidate.canceledTimestamp != null ||
+          connectedWalletAccountAddress == null
+            ? []
+            : isProposer
+            ? [
+                { onSelect: toggleEditDialog, label: "Edit candidate" },
+                isProposalThresholdMet && {
+                  onSelect: toggleProposeDialog,
+                  label: "Put on chain",
+                },
+              ].filter(Boolean)
+            : [{ onSelect: toggleSponsorDialog, label: "Sponsor candidate" }]
+        }
+      >
+        {candidate == null ? (
+          <div
+            style={{
+              flex: 1,
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              textAlign: "center",
+              paddingBottom: "10vh",
+            }}
+          >
+            {notFound ? (
+              <div style={{ width: "38rem", maxWidth: "100%" }}>
+                <div
+                  css={(t) =>
+                    css({
+                      fontSize: t.text.sizes.headerLarger,
+                      fontWeight: t.text.weights.header,
+                      margin: "0 0 1.6rem",
+                      lineHeight: 1.3,
+                    })
+                  }
+                >
+                  Not found
+                </div>
+                <div
+                  css={(t) =>
+                    css({
+                      fontSize: t.text.sizes.large,
+                      wordBreak: "break-word",
+                      margin: "0 0 4.8rem",
+                    })
+                  }
+                >
+                  Found no candidate with slug{" "}
+                  <span
+                    css={(t) => css({ fontWeight: t.text.weights.emphasis })}
+                  >
+                    {slug}
+                  </span>{" "}
+                  from account{" "}
+                  <AccountPreviewPopoverTrigger accountAddress={proposerId} />.
+                </div>
+                <Button
+                  component={RouterLink}
+                  to="/"
+                  variant="primary"
+                  size="large"
+                >
+                  Go back
+                </Button>
+              </div>
+            ) : fetchError != null ? (
+              "Something went wrong"
+            ) : (
+              <Spinner size="2rem" />
+            )}
+          </div>
+        ) : (
+          <ProposalCandidateScreenContent candidateId={candidateId} />
+        )}
+      </Layout>
+
+      {isEditDialogOpen && isProposer && candidate != null && (
+        <Dialog isOpen onRequestClose={toggleEditDialog} width="76rem">
+          {({ titleProps }) => (
+            <ErrorBoundary
+              fallback={() => {
+                // window.location.reload();
+              }}
+            >
+              <React.Suspense fallback={null}>
+                <ProposalCandidateEditDialog
+                  candidateId={candidateId}
+                  titleProps={titleProps}
+                  dismiss={toggleEditDialog}
+                />
+              </React.Suspense>
+            </ErrorBoundary>
+          )}
+        </Dialog>
+      )}
+
+      {isSponsorDialogOpen && candidate != null && (
+        <Dialog isOpen onRequestClose={toggleSponsorDialog} width="52rem">
+          {({ titleProps }) => (
+            <ErrorBoundary
+              fallback={() => {
+                // window.location.reload();
+              }}
+            >
+              <React.Suspense fallback={null}>
+                <SponsorDialog
+                  candidateId={candidateId}
+                  titleProps={titleProps}
+                  dismiss={toggleSponsorDialog}
+                />
+              </React.Suspense>
+            </ErrorBoundary>
+          )}
+        </Dialog>
+      )}
+
+      {isProposeDialogOpen && candidate != null && (
+        <Dialog isOpen onRequestClose={toggleProposeDialog} width="52rem">
+          {({ titleProps }) => (
+            <ErrorBoundary
+              fallback={() => {
+                // window.location.reload();
+              }}
+            >
+              <React.Suspense fallback={null}>
+                <ProposeDialog
+                  candidateId={candidateId}
+                  titleProps={titleProps}
+                  dismiss={toggleProposeDialog}
+                />
+              </React.Suspense>
+            </ErrorBoundary>
+          )}
+        </Dialog>
+      )}
+    </>
   );
 };
 
