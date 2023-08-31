@@ -85,6 +85,7 @@ const createProposalsQuery = ({ skip = 0 } = {}) => `{
     description
     title
     status
+    createdBlock
     createdTimestamp
     lastUpdatedTimestamp
     startBlock
@@ -127,6 +128,7 @@ const createProposalQuery = (id) => `{
     status
     title
     description
+    createdBlock
     createdTimestamp
     lastUpdatedTimestamp
     startBlock

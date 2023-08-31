@@ -176,10 +176,10 @@ const AccountPreview = React.forwardRef(
                     {displayName === ensName
                       ? truncatedAddress
                       : displayName === truncatedAddress
-                      ? ensName
-                      : ensName == null
-                      ? truncatedAddress
-                      : `${ensName} (${truncatedAddress})`}
+                        ? ensName
+                        : ensName == null
+                          ? truncatedAddress
+                          : `${ensName} (${truncatedAddress})`}
                   </a>
                 </Tooltip.Trigger>
                 <Tooltip.Content portal={false} side="top" sideOffset={4}>

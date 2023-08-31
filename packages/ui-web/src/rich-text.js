@@ -14,30 +14,39 @@ export const createCss = (t) => ({
     margin: "0",
     display: "var(--paragraph-display, block)",
   },
-  "* + p, p + *": { marginTop: "1rem" },
-  "p + *:before, * + p:before": {
+  "* + p": { marginTop: "1rem" },
+  "p:has(+ *)": { marginBottom: "1rem" },
+  // Fancy compact mode behavior
+  "* + p:before, p:has(+ *):after": {
     display: "var(--paragraph-display-before, none)",
     content: '""',
-    marginTop: "1rem",
   },
-
-  // Headings
-  h1: { fontSize: "1.375em" },
-  h2: { fontSize: "1.125em" },
-  h3: { fontSize: "1em" },
-  "* + h1": { marginTop: "3rem" },
-  "h1 + *": { marginTop: "1rem" },
-  "* + h2": { marginTop: "2.4rem" },
-  "h2 + *": { marginTop: "0.5rem" },
-  "* + h3": { marginTop: "2.4rem" },
-  "h3 + *": { marginTop: "0.5rem" },
+  "* + p:before": { marginTop: "1rem" },
+  "p:has(+ *):after": { marginBottom: "1rem" },
 
   // Lists
   "ul, ol": {
     paddingLeft: "3rem",
     margin: 0,
   },
-  "* + ul, ul + *, * + ol, ol + *": { marginTop: "2rem" },
+  "* + ul, * + ol": { marginTop: "2rem" },
+  "ul:has(+ *), ol:has(+ *)": { marginBottom: "2rem" },
+
+  // Headings
+  h1: { fontSize: "1.375em" },
+  h2: { fontSize: "1.125em" },
+  h3: { fontSize: "1em" },
+  "* + h1": { marginTop: "3rem" },
+  "h1:has(+ *)": { marginBottom: "1rem" },
+  "* + h2": { marginTop: "2.4rem" },
+  "h2:has(+ *)": { marginBottom: "0.5rem" },
+  "* + h3": { marginTop: "2.4rem" },
+  "h3:has(+ *)": { marginBottom: "0.5rem" },
+
+  // Heading overrides some other block elements’ top spacing
+  [["p", "ul", "ol"]
+    .map((el) => `h1 + ${el}, h2 + ${el}, h3 + ${el}`)
+    .join(", ")]: { marginTop: 0 },
 
   // Quotes
   blockquote: {
@@ -46,7 +55,8 @@ export const createCss = (t) => ({
     paddingLeft: "1rem",
     fontStyle: "italic",
   },
-  "* + blockquote, blockquote + *": { marginTop: "2rem" },
+  "* + blockquote": { marginTop: "2rem" },
+  "blockquote:has(+ *)": { marginBottom: "2rem" },
 
   // Callouts
   aside: {
@@ -56,7 +66,8 @@ export const createCss = (t) => ({
     borderRadius: "0.3rem",
     display: "flex",
   },
-  "* + aside, aside + *": { marginTop: "2rem" },
+  "* + aside": { marginTop: "2rem" },
+  "aside:has(+ *)": { marginBottom: "2rem" },
   "aside:before": {
     fontSize: "1.35em",
     lineHeight: "1em",
@@ -253,31 +264,31 @@ const createRenderer = ({
         const [defaultMaxWidth, defaultMaxHeight] =
           el.type === "image" || attachmentCount === 1
             ? [
-                SINGLE_IMAGE_ATTACHMENT_MAX_WIDTH,
-                SINGLE_IMAGE_ATTACHMENT_MAX_HEIGHT,
-              ]
+              SINGLE_IMAGE_ATTACHMENT_MAX_WIDTH,
+              SINGLE_IMAGE_ATTACHMENT_MAX_HEIGHT,
+            ]
             : [
-                MULTI_IMAGE_ATTACHMENT_MAX_WIDTH,
-                MULTI_IMAGE_ATTACHMENT_MAX_HEIGHT,
-              ];
+              MULTI_IMAGE_ATTACHMENT_MAX_WIDTH,
+              MULTI_IMAGE_ATTACHMENT_MAX_HEIGHT,
+            ];
 
         const fittedWidth =
           // Skip fitting step if both max dimensions are explicitly set to `null`
           imagesMaxWidth === null && imagesMaxHeight === null
             ? el.width
             : dimensionUtils.fitInsideBounds(
-                { width: el.width, height: el.height },
-                {
-                  width:
-                    imagesMaxWidth === undefined
-                      ? defaultMaxWidth
-                      : imagesMaxWidth,
-                  height:
-                    imagesMaxHeight === undefined
-                      ? defaultMaxHeight
-                      : imagesMaxHeight,
-                }
-              ).width;
+              { width: el.width, height: el.height },
+              {
+                width:
+                  imagesMaxWidth === undefined
+                    ? defaultMaxWidth
+                    : imagesMaxWidth,
+                height:
+                  imagesMaxHeight === undefined
+                    ? defaultMaxHeight
+                    : imagesMaxHeight,
+              }
+            ).width;
 
         return (
           <button

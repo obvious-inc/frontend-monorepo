@@ -38,6 +38,7 @@ import {
   VoteDistributionToolTipContent,
 } from "./proposal-screen.js";
 import AccountPreviewPopoverTrigger from "./account-preview-popover-trigger.js";
+import Callout from "./callout.js";
 import * as Tabs from "./tabs.js";
 
 const useSearchParamToggleState = (key) => {
@@ -260,6 +261,13 @@ const ProposalCandidateScreenContent = ({ candidateId }) => {
                       againstVotes={signals.votes.against}
                       abstainVotes={signals.votes.abstain}
                     />
+                    <VotingBar
+                      forVotes={signals.delegates.for}
+                      againstVotes={signals.delegates.against}
+                      abstainVotes={signals.delegates.abstain}
+                      height="0.3rem"
+                      css={css({ filter: "brightness(0.9)" })}
+                    />
                     <div
                       css={(t) =>
                         css({
@@ -319,13 +327,10 @@ const ProposalCandidateScreenContent = ({ candidateId }) => {
                 )}
               </span>
             </div>
-            <div
+            <Callout
               css={(t) =>
                 css({
                   fontSize: t.text.sizes.small,
-                  background: t.colors.backgroundSecondary,
-                  padding: "1.6rem",
-                  borderRadius: "0.3rem",
                   marginBottom: "3.2rem",
                   em: {
                     fontStyle: "normal",
@@ -347,12 +352,10 @@ const ProposalCandidateScreenContent = ({ candidateId }) => {
                   be proposed onchain.
                 </>
               )}
-            </div>
+            </Callout>
             <Tabs.Root
               aria-label="Candidate info"
-              defaultSelectedKey={
-                sponsorFeedItems.length > 0 ? "sponsors" : "feedback"
-              }
+              defaultSelectedKey="activity"
               css={(t) =>
                 css({
                   position: "sticky",
@@ -362,6 +365,45 @@ const ProposalCandidateScreenContent = ({ candidateId }) => {
                 })
               }
             >
+              <Tabs.Item key="activity" title="Activity">
+                <div
+                  style={{
+                    display: "flex",
+                    flexDirection: "column",
+                    gap: "3.2rem",
+                    paddingTop: "3.2rem",
+                  }}
+                >
+                  {regularFeedItems.length == 0 ? (
+                    <div
+                      css={(t) =>
+                        css({
+                          textAlign: "center",
+                          fontSize: t.text.sizes.small,
+                          color: t.colors.textDimmed,
+                          paddingTop: "1.6rem",
+                        })
+                      }
+                    >
+                      No activity
+                    </div>
+                  ) : (
+                    <ProposalFeed items={regularFeedItems} />
+                  )}
+                  <ProposalActionForm
+                    mode="feedback"
+                    reason={pendingFeedback}
+                    setReason={setPendingFeedback}
+                    support={pendingSupport}
+                    setSupport={setPendingSupport}
+                    onSubmit={() =>
+                      sendProposalFeedback().then(() => {
+                        setPendingFeedback("");
+                      })
+                    }
+                  />
+                </div>
+              </Tabs.Item>
               <Tabs.Item key="sponsors" title="Sponsors" disabled>
                 <div style={{ padding: "1.6rem 0" }}>
                   {sponsorFeedItems.length === 0 ? (
@@ -380,45 +422,6 @@ const ProposalCandidateScreenContent = ({ candidateId }) => {
                   ) : (
                     <ProposalFeed items={sponsorFeedItems} />
                   )}
-                </div>
-              </Tabs.Item>
-              <Tabs.Item key="feedback" title="Feedback">
-                <div
-                  style={{
-                    paddingTop: "1.6rem",
-                    display: "flex",
-                    flexDirection: "column",
-                    gap: "3.2rem",
-                  }}
-                >
-                  {regularFeedItems.length == 0 ? (
-                    <div
-                      css={(t) =>
-                        css({
-                          textAlign: "center",
-                          fontSize: t.text.sizes.small,
-                          color: t.colors.textDimmed,
-                          paddingTop: "1.6rem",
-                        })
-                      }
-                    >
-                      No feedback posted
-                    </div>
-                  ) : (
-                    <ProposalFeed items={regularFeedItems} />
-                  )}
-                  <ProposalActionForm
-                    mode="feedback"
-                    reason={pendingFeedback}
-                    setReason={setPendingFeedback}
-                    support={pendingSupport}
-                    setSupport={setPendingSupport}
-                    onSubmit={() =>
-                      sendProposalFeedback().then(() => {
-                        setPendingFeedback("");
-                      })
-                    }
-                  />
                 </div>
               </Tabs.Item>
             </Tabs.Root>

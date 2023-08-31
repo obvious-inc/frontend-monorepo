@@ -34,15 +34,24 @@ import { Tag } from "./browse-screen.js";
 import AccountPreviewPopoverTrigger from "./account-preview-popover-trigger.js";
 import RichText from "./rich-text.js";
 import FormattedDateWithTooltip from "./formatted-date-with-tooltip.js";
+import Callout from "./callout.js";
 import LogoSymbol from "./logo-symbol.js";
+import * as Tabs from "./tabs.js";
 
 const useFeedItems = (proposalId) => {
+  const { data: latestBlockNumber } = useBlockNumber();
   const proposal = useProposal(proposalId);
 
   const calculateBlockTimestamp = useApproximateBlockTimestampCalculator();
 
   return React.useMemo(() => {
     if (proposal == null) return [];
+
+    const createdEventItem = {
+      type: "event",
+      id: "create",
+      timestamp: proposal.createdTimestamp,
+    };
 
     const feedbackPostItems =
       proposal.feedbackPosts?.map((p) => ({
@@ -68,11 +77,37 @@ const useFeedItems = (proposalId) => {
         voteCount: v.votes,
       })) ?? [];
 
-    return arrayUtils.sortBy(
-      (i) => i.timestamp,
-      [...feedbackPostItems, ...voteItems]
-    );
-  }, [proposal, calculateBlockTimestamp]);
+    const items = [...feedbackPostItems, ...voteItems, createdEventItem];
+
+    if (latestBlockNumber > proposal.startBlock) {
+      items.push({
+        type: "event",
+        id: "start",
+        timestamp: calculateBlockTimestamp(proposal.startBlock),
+      });
+    }
+
+    const actualEndBlock =
+      proposal.objectionPeriodEndBlock ?? proposal.endBlock;
+
+    if (latestBlockNumber > actualEndBlock) {
+      items.push({
+        type: "event",
+        id: "end",
+        timestamp: calculateBlockTimestamp(actualEndBlock),
+      });
+    }
+
+    if (proposal.objectionPeriodEndBlock != null) {
+      items.push({
+        type: "event",
+        id: "objection-period-start",
+        timestamp: calculateBlockTimestamp(proposal.endBlock),
+      });
+    }
+
+    return arrayUtils.sortBy((i) => i.timestamp, items);
+  }, [proposal, calculateBlockTimestamp, latestBlockNumber]);
 };
 
 const getDelegateVotes = (proposal) => {
@@ -124,6 +159,22 @@ const ProposalMainSection = ({ proposalId }) => {
 
   const delegateVotes = getDelegateVotes(proposal);
 
+  const renderEndStateText = () => {
+    switch (proposal.state) {
+      case "vetoed":
+      case "canceled":
+      case "queued":
+      case "executed":
+      case "defeated":
+        return `Proposal ${proposalId} has been ${proposal.state}`;
+      case "expired":
+      case "succeeded":
+        return `Proposal ${proposalId} has ${proposal.state}`;
+      default:
+        throw new Error();
+    }
+  };
+
   return (
     <>
       <div css={css({ padding: "0 1.6rem" })}>
@@ -131,15 +182,24 @@ const ProposalMainSection = ({ proposalId }) => {
           sidebar={
             <div
               css={css({
-                display: "flex",
-                flexDirection: "column",
-                gap: "2rem",
                 padding: "2rem 0 6rem",
                 "@media (min-width: 600px)": {
                   padding: "6rem 0",
                 },
               })}
             >
+              {hasVotingEnded && (
+                <Callout
+                  css={(t) =>
+                    css({
+                      fontSize: t.text.sizes.base,
+                      marginBottom: "4.8rem",
+                    })
+                  }
+                >
+                  {renderEndStateText()}
+                </Callout>
+              )}
               {hasVotingStarted ? (
                 <Tooltip.Root>
                   <Tooltip.Trigger asChild>
@@ -148,7 +208,7 @@ const ProposalMainSection = ({ proposalId }) => {
                         display: "flex",
                         flexDirection: "column",
                         gap: "0.5rem",
-                        marginBottom: "2rem",
+                        marginBottom: "4rem",
                       })}
                     >
                       <div
@@ -244,7 +304,14 @@ const ProposalMainSection = ({ proposalId }) => {
                   </Tooltip.Content>
                 </Tooltip.Root>
               ) : (
-                <div css={(t) => css({ fontSize: t.text.sizes.base })}>
+                <Callout
+                  css={(t) =>
+                    css({
+                      fontSize: t.text.sizes.base,
+                      marginBottom: "3.2rem",
+                    })
+                  }
+                >
                   Voting starts{" "}
                   <FormattedDateWithTooltip
                     capitalize={false}
@@ -253,28 +320,70 @@ const ProposalMainSection = ({ proposalId }) => {
                     day="numeric"
                     month="short"
                   />
-                </div>
+                </Callout>
               )}
+              <Tabs.Root
+                aria-label="Proposal info"
+                defaultSelectedKey="activity"
+                disabledKeys={["transactions"]}
+                css={(t) =>
+                  css({
+                    position: "sticky",
+                    top: 0,
+                    background: t.colors.backgroundPrimary,
+                    "[role=tab]": { fontSize: t.text.sizes.base },
+                  })
+                }
+              >
+                <Tabs.Item key="activity" title="Activity" disabled>
+                  <div
+                    style={{
+                      display: "flex",
+                      flexDirection: "column",
+                      gap: "3.2rem",
+                      paddingTop: "3.2rem",
+                    }}
+                  >
+                    {feedItems.length === 0 ? (
+                      <div
+                        css={(t) =>
+                          css({
+                            textAlign: "center",
+                            fontSize: t.text.sizes.small,
+                            color: t.colors.textDimmed,
+                            paddingTop: "1.6rem",
+                          })
+                        }
+                      >
+                        No activity
+                      </div>
+                    ) : (
+                      <ProposalFeed items={feedItems} />
+                    )}
 
-              {feedItems.length !== 0 && <ProposalFeed items={feedItems} />}
+                    <ProposalActionForm
+                      mode={isVotingOngoing ? "vote" : "feedback"}
+                      reason={pendingFeedback}
+                      setReason={setPendingFeedback}
+                      support={pendingSupport}
+                      setSupport={setPendingSupport}
+                      onSubmit={async () => {
+                        const submit = isVotingOngoing
+                          ? castProposalVote
+                          : sendProposalFeedback;
 
-              <ProposalActionForm
-                mode={isVotingOngoing ? "vote" : "feedback"}
-                reason={pendingFeedback}
-                setReason={setPendingFeedback}
-                support={pendingSupport}
-                setSupport={setPendingSupport}
-                onSubmit={async () => {
-                  const submit = isVotingOngoing
-                    ? castProposalVote
-                    : sendProposalFeedback;
+                        await submit();
 
-                  await submit();
-
-                  setPendingFeedback("");
-                  setPendingSupport(2);
-                }}
-              />
+                        setPendingFeedback("");
+                        setPendingSupport(2);
+                      }}
+                    />
+                  </div>
+                </Tabs.Item>
+                <Tabs.Item key="transactions" title="Transactions">
+                  TODO
+                </Tabs.Item>
+              </Tabs.Root>
             </div>
           }
         >
@@ -641,8 +750,128 @@ const NavBar = ({ navigationStack, actions }) => {
 };
 
 export const ProposalFeed = ({ items = [] }) => {
+  const renderTitle = (item) => {
+    const accountName = (
+      <AccountPreviewPopoverTrigger accountAddress={item.authorAccount} />
+    );
+
+    switch (item.type) {
+      case "signature":
+        return accountName;
+
+      case "event": {
+        switch (item.id) {
+          case "create":
+            return (
+              <span
+                css={(t) =>
+                  css({
+                    color: t.colors.textDimmed,
+                  })
+                }
+              >
+                Proposal created on{" "}
+                <FormattedDateWithTooltip
+                  capitalize={false}
+                  value={item.timestamp}
+                  disableRelative
+                  month="long"
+                  day="numeric"
+                />
+              </span>
+            );
+
+          case "start":
+          case "end":
+            return (
+              <span
+                css={(t) =>
+                  css({
+                    color: t.colors.textDimmed,
+                  })
+                }
+              >
+                Voting {item.id === "end" ? "ended" : "started"} on{" "}
+                <FormattedDateWithTooltip
+                  capitalize={false}
+                  value={item.timestamp}
+                  disableRelative
+                  month="long"
+                  day="numeric"
+                  hour="numeric"
+                  minute="numeric"
+                />
+              </span>
+            );
+
+          case "objection-period-start":
+            return (
+              <span
+                css={(t) =>
+                  css({
+                    color: t.colors.textDimmed,
+                  })
+                }
+              >
+                Proposal entered objection period
+              </span>
+            );
+
+          default:
+            throw new Error();
+        }
+      }
+
+      case "vote":
+      case "feedback-post": {
+        const signalWord = item.type === "vote" ? "voted" : "signaled";
+        return (
+          <>
+            {accountName}{" "}
+            <span
+              css={(t) =>
+                css({
+                  color:
+                    item.support === 0
+                      ? t.colors.textNegative
+                      : item.support === 1
+                      ? t.colors.textPositive
+                      : t.colors.textDimmed,
+                  fontWeight: t.text.weights.emphasis,
+                })
+              }
+            >
+              {item.support === 0
+                ? `${signalWord} against`
+                : item.support === 1
+                ? `${signalWord} for`
+                : "abstained"}
+            </span>
+          </>
+        );
+      }
+    }
+  };
   return (
-    <ul>
+    <ul
+    // css={(t) =>
+    //   css({
+    //     position: "relative",
+    //     ":before": {
+    //       content: '""',
+    //       position: "absolute",
+
+    //       width: "0.1rem",
+    //       // height: "100%",
+    //       background: t.colors.borderLight,
+    //       top: '0.95rem',
+    //       bottom: '0.95rem',
+    //       left: "0.95rem",
+    //       borderRadius: "0.1rem",
+    //     },
+    //   })
+    // }
+    >
       {items.map((item) => (
         <div
           key={item.id}
@@ -657,41 +886,70 @@ export const ProposalFeed = ({ items = [] }) => {
           <div
             css={css({
               display: "grid",
-              gridTemplateColumns: "auto minmax(0,1fr)",
+              gridTemplateColumns: "2rem minmax(0,1fr)",
               gridGap: "0.6rem",
               alignItems: "center",
             })}
           >
             <div>
-              <AccountPreviewPopoverTrigger accountAddress={item.authorAccount}>
-                <button
+              {item.authorAccount == null ? (
+                <div
                   css={(t) =>
                     css({
-                      display: "block",
-                      borderRadius: t.avatars.borderRadius,
-                      overflow: "hidden",
-                      outline: "none",
-                      ":focus-visible": {
-                        boxShadow: t.shadows.focus,
-                      },
-                      "@media (hover: hover)": {
-                        ":not(:disabled)": {
-                          cursor: "pointer",
-                          ":hover": {
-                            boxShadow: `0 0 0 0.2rem ${t.colors.borderLight}`,
-                          },
-                        },
+                      position: "relative",
+                      height: "2rem",
+                      width: "0.1rem",
+                      background: t.colors.borderLight,
+                      margin: "auto",
+                      ":after": {
+                        content: '""',
+                        position: "absolute",
+                        width: "0.7rem",
+                        height: "0.7rem",
+                        background: t.colors.textMuted,
+                        top: "50%",
+                        left: "50%",
+                        transform: "translateY(-50%) translateX(-50%)",
+                        borderRadius: "50%",
+                        border: "0.1rem solid",
+                        borderColor: t.colors.backgroundPrimary,
                       },
                     })
                   }
+                />
+              ) : (
+                <AccountPreviewPopoverTrigger
+                  accountAddress={item.authorAccount}
                 >
-                  <AccountAvatar
-                    transparent
-                    address={item.authorAccount}
-                    size="2rem"
-                  />
-                </button>
-              </AccountPreviewPopoverTrigger>
+                  <button
+                    css={(t) =>
+                      css({
+                        display: "block",
+                        borderRadius: t.avatars.borderRadius,
+                        overflow: "hidden",
+                        outline: "none",
+                        ":focus-visible": {
+                          boxShadow: t.shadows.focus,
+                        },
+                        "@media (hover: hover)": {
+                          ":not(:disabled)": {
+                            cursor: "pointer",
+                            ":hover": {
+                              boxShadow: `0 0 0 0.2rem ${t.colors.borderLight}`,
+                            },
+                          },
+                        },
+                      })
+                    }
+                  >
+                    <AccountAvatar
+                      transparent
+                      address={item.authorAccount}
+                      size="2rem"
+                    />
+                  </button>
+                </AccountPreviewPopoverTrigger>
+              )}
             </div>
             <div>
               <div
@@ -709,84 +967,58 @@ export const ProposalFeed = ({ items = [] }) => {
                     overflow: "hidden",
                   }}
                 >
-                  <AccountPreviewPopoverTrigger
-                    accountAddress={item.authorAccount}
-                  />{" "}
-                  {item.type !== "signature" && (
-                    <span
-                      css={(t) =>
-                        css({
-                          color:
-                            item.support === 0
-                              ? t.colors.textNegative
-                              : item.support === 1
-                              ? t.colors.textPositive
-                              : undefined,
-                          fontWeight: "600",
-                        })
-                      }
-                    >
-                      {item.type === "feedback-post"
-                        ? item.support === 2
-                          ? null
-                          : "signaled"
-                        : item.support === 2
-                        ? "abstained"
-                        : "voted"}
-                      {item.support !== 2 && (
-                        <> {item.support === 0 ? "against" : "for"}</>
-                      )}
-                    </span>
-                  )}
+                  {renderTitle(item)}
                 </div>
-                <Tooltip.Root>
-                  <Tooltip.Trigger asChild>
-                    <span
-                      css={(t) =>
-                        css({
-                          display: "inline-flex",
-                          alignItems: "center",
-                          gap: "0.5rem",
-                          fontSize: t.text.sizes.tiny,
-                          color: t.colors.textDimmed,
-                        })
-                      }
-                    >
-                      {item.voteCount}
-                      <svg
-                        width="170"
-                        height="60"
-                        viewBox="0 0 170 60"
-                        fill="none"
-                        style={{
-                          display: "inline-flex",
-                          width: "1.7rem",
-                          height: "auto",
-                        }}
+                {item.voteCount != null && (
+                  <Tooltip.Root>
+                    <Tooltip.Trigger asChild>
+                      <span
+                        css={(t) =>
+                          css({
+                            display: "inline-flex",
+                            alignItems: "center",
+                            gap: "0.5rem",
+                            fontSize: t.text.sizes.tiny,
+                            color: t.colors.textDimmed,
+                          })
+                        }
                       >
-                        <path
-                          data-glas
-                          fillRule="evenodd"
-                          clipRule="evenodd"
-                          d="M80 10H60V50H80V10ZM140 10H160V50H140V10Z"
-                          fill="currentColor"
-                          // fillOpacity="100%"
-                        />
-                        <path
-                          fillRule="evenodd"
-                          clipRule="evenodd"
-                          d="M90 0H30V10V20H0V30V40V50H10V40V30H30V40V50V60H90V50V40V30H110V40V50V60H170V50V40V30V20V10V0H110V10V20H90V10V0ZM160 50V40V30V20V10H120V20V30V40V50H160ZM80 50H40V40V30V20V10H80V20V30V40V50Z"
-                          fill="currentColor"
-                        />
-                      </svg>
-                    </span>
-                  </Tooltip.Trigger>
-                  <Tooltip.Content side="top" sideOffset={5}>
-                    {item.voteCount}{" "}
-                    {Number(item.voteCount) === 1 ? "noun" : "nouns"}{" "}
-                    represented
-                  </Tooltip.Content>
-                </Tooltip.Root>
+                        {item.voteCount}
+                        <svg
+                          width="170"
+                          height="60"
+                          viewBox="0 0 170 60"
+                          fill="none"
+                          style={{
+                            display: "inline-flex",
+                            width: "1.7rem",
+                            height: "auto",
+                          }}
+                        >
+                          <path
+                            data-glas
+                            fillRule="evenodd"
+                            clipRule="evenodd"
+                            d="M80 10H60V50H80V10ZM140 10H160V50H140V10Z"
+                            fill="currentColor"
+                            // fillOpacity="100%"
+                          />
+                          <path
+                            fillRule="evenodd"
+                            clipRule="evenodd"
+                            d="M90 0H30V10V20H0V30V40V50H10V40V30H30V40V50V60H90V50V40V30H110V40V50V60H170V50V40V30V20V10V0H110V10V20H90V10V0ZM160 50V40V30V20V10H120V20V30V40V50H160ZM80 50H40V40V30V20V10H80V20V30V40V50Z"
+                            fill="currentColor"
+                          />
+                        </svg>
+                      </span>
+                    </Tooltip.Trigger>
+                    <Tooltip.Content side="top" sideOffset={5}>
+                      {item.voteCount}{" "}
+                      {Number(item.voteCount) === 1 ? "noun" : "nouns"}{" "}
+                      represented
+                    </Tooltip.Content>
+                  </Tooltip.Root>
+                )}
                 {/* {item.timestamp != null && ( */}
                 {/*   <span */}
                 {/*     css={(t) => */}
@@ -818,6 +1050,7 @@ export const ProposalFeed = ({ items = [] }) => {
                   fontSize: t.text.sizes.base,
                   marginTop: "0.35rem",
                   paddingLeft: "2.6rem",
+                  userSelect: "text",
                 })
               }
             />

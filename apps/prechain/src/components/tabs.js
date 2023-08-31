@@ -48,8 +48,9 @@ export const Root = ({ className, ...props }) => {
                 boxShadow: t.shadows.focus,
               },
               "@media(hover: hover)": {
+                cursor: "pointer",
+                "&[aria-disabled]": { cursor: "not-allowed" },
                 ":not([aria-disabled])": {
-                  cursor: "pointer",
                   ":hover": { color: t.colors.textNormal },
                 },
               },

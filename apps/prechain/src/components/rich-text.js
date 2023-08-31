@@ -37,11 +37,13 @@ const RichText = ({ blocks, markdownText, ...props }) => {
         css={(t) => [
           createRichTextCss(t),
           css({
-            "* + p, p + *": { marginTop: "1em" },
+            "* + p": { marginTop: "1em" },
+            "p:has(+ *)": { marginBottom: "1em" },
             img: {
               borderRadius: "0.3rem",
             },
-            "* + p:has(img), p:has(img) + *": { marginTop: "2rem" },
+            "* + p:has(img)": { marginTop: "2rem" },
+            "p:has(img):has(+ *)": { marginBottom: "2rem" },
           }),
         ]}
       />
