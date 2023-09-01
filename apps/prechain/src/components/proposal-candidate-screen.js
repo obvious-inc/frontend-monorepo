@@ -19,12 +19,15 @@ import Spinner from "@shades/ui-web/spinner";
 import * as Tooltip from "@shades/ui-web/tooltip";
 import {
   useProposalCandidate,
+  useProposalCandidateVotingPower,
   useProposalCandidateFetch,
   useUpdateProposalCandidate,
   useCancelProposalCandidate,
   useSendProposalCandidateFeedback,
   useSignProposalCandidate,
   useAddSignatureToProposalCandidate,
+  useDelegate,
+  getValidSponsorSignatures,
 } from "../hooks/prechain.js";
 import { useProposalThreshold } from "../hooks/dao.js";
 import { useWallet } from "../hooks/wallet.js";
@@ -104,30 +107,25 @@ const useFeedItems = (candidateId) => {
   }, [candidate]);
 };
 
-const getValidSponsorSignatures = (candidate) => {
-  const signatures = candidate?.latestVersion.content.contentSignatures ?? [];
-  return arrayUtils
-    .sortBy({ value: (i) => i.expirationTimestamp, order: "desc" }, signatures)
-    .reduce((validSignatures, s) => {
-      if (
-        // Exclude canceled ones...
-        s.canceled ||
-        // ...expires ones
-        s.expirationTimestamp <= new Date() ||
-        // ...multiple ones from the same signer with shorter expiration
-        validSignatures.some((s_) => s_.signer.id === s.signer.id)
-      )
-        // TODO: exclude signers who have an active or pending proposal
-        return validSignatures;
-      return [...validSignatures, s];
-    }, []);
-};
-
-const getCandidateSignals = (candidate) => {
+const getCandidateSignals = ({ candidate, proposerDelegate }) => {
   const signatures = getValidSponsorSignatures(candidate);
 
-  const sponsoringNounIds = arrayUtils.unique(
-    signatures.flatMap((s) => s.signer.nounsRepresented.map((n) => n.id))
+  const proposerDelegateNounIds =
+    proposerDelegate?.nounsRepresented.map((n) => n.id) ?? [];
+
+  const sponsorNounIds = signatures.flatMap((s) =>
+    s.signer.nounsRepresented.map((n) => n.id)
+  );
+
+  const sponsoringNounIds = arrayUtils.unique([
+    ...sponsorNounIds,
+    ...proposerDelegateNounIds,
+  ]);
+  const sponsorIds = arrayUtils.unique(
+    [
+      ...signatures.map((s) => s.signer.id),
+      proposerDelegateNounIds.length === 0 ? null : proposerDelegate.id,
+    ].filter(Boolean)
   );
 
   // Sort first to make sure we pick the most recent feedback from per voter
@@ -158,8 +156,8 @@ const getCandidateSignals = (candidate) => {
         return supportByDelegateId;
       return { ...supportByDelegateId, [post.voter.id]: post.supportDetailed };
     },
-    // Assume that the sponsors will vote for
-    signatures.reduce((acc, s) => ({ ...acc, [s.signer.id]: 1 }), {})
+    // Assume that sponsors will vote for
+    sponsorIds.reduce((acc, id) => ({ ...acc, [id]: 1 }), {})
   );
 
   const countSignals = (supportList) =>
@@ -198,9 +196,16 @@ const ProposalCandidateScreenContent = ({ candidateId }) => {
     }
   );
 
+  const proposerDelegate = useDelegate(candidate.proposerId);
+  const candidateVotingPower = useProposalCandidateVotingPower(candidateId);
+
   useProposalCandidateFetch(candidateId);
 
   if (candidate?.latestVersion.content.description == null) return null;
+
+  const proposerDelegateNounIds =
+    proposerDelegate?.nounsRepresented.map((n) => n.id) ?? [];
+  const proposerVoteCount = proposerDelegateNounIds.length;
 
   const validSignatures = getValidSponsorSignatures(candidate);
 
@@ -208,11 +213,10 @@ const ProposalCandidateScreenContent = ({ candidateId }) => {
     validSignatures.flatMap((s) => s.signer.nounsRepresented.map((n) => n.id))
   );
 
-  const isProposalThresholdMet = sponsoringNounIds.length > proposalThreshold;
-  // TODO: Include poposer voting power in calculation
+  const isProposalThresholdMet = candidateVotingPower > proposalThreshold;
   const missingSponsorCount = isProposalThresholdMet
     ? 0
-    : proposalThreshold - sponsoringNounIds.length + 1;
+    : proposalThreshold + 1 - candidateVotingPower;
 
   const { description } = candidate.latestVersion.content;
   const firstBreakIndex = description.search(/\n/);
@@ -222,7 +226,7 @@ const ProposalCandidateScreenContent = ({ candidateId }) => {
   const sponsorFeedItems = feedItems.filter((i) => i.type === "signature");
   const regularFeedItems = feedItems.filter((i) => i.type !== "signature");
 
-  const signals = getCandidateSignals(candidate);
+  const signals = getCandidateSignals({ candidate, proposerDelegate });
 
   const feedbackVoteCountExcludingAbstained =
     signals.votes.for + signals.votes.against;
@@ -246,20 +250,16 @@ const ProposalCandidateScreenContent = ({ candidateId }) => {
                     fontSize: t.text.sizes.base,
                     fontWeight: "400",
                     lineHeight: 1.5,
+                    em: {
+                      fontStyle: "normal",
+                      fontSize: t.text.sizes.headerLarge,
+                      fontWeight: t.text.weights.header,
+                    },
                   })
                 }
               >
-                <span
-                  css={(t) =>
-                    css({
-                      fontSize: t.text.sizes.headerLarge,
-                      fontWeight: t.text.weights.header,
-                    })
-                  }
-                >
-                  {sponsoringNounIds.length}
-                </span>{" "}
-                sponsoring {sponsoringNounIds.length === 1 ? "noun" : "nouns"}
+                <em>{sponsoringNounIds.length}</em> sponsoring{" "}
+                {sponsoringNounIds.length === 1 ? "noun" : "nouns"}
                 {validSignatures.length > 1 && (
                   <>
                     {" "}
@@ -270,6 +270,14 @@ const ProposalCandidateScreenContent = ({ candidateId }) => {
                       {validSignatures.length}
                     </span>{" "}
                     {validSignatures.length === 1 ? "delegate" : "delegates"}
+                  </>
+                )}
+                {proposerVoteCount > 0 && (
+                  <>
+                    <br />
+                    <em>{proposerVoteCount}</em>{" "}
+                    {proposerVoteCount === 1 ? "noun" : "nouns"} controlled by
+                    proposer
                   </>
                 )}
               </span>
@@ -283,20 +291,37 @@ const ProposalCandidateScreenContent = ({ candidateId }) => {
                     fontStyle: "normal",
                     fontWeight: t.text.weights.emphasis,
                   },
+                  "p + p": { marginTop: "1em" },
                 })
               }
             >
               {isProposalThresholdMet ? (
                 <>
-                  This candidate has met the required sponsor threshold. Votes
-                  can continue to add their support until the proposal is put
-                  onchain.
+                  <p>
+                    This candidate has met the sponsor threshold (
+                    {candidateVotingPower}/{proposalThreshold + 1}).
+                  </p>
+                  <p>
+                    Voters can continue to add their support until the proposal
+                    is put onchain.
+                  </p>
                 </>
               ) : (
                 <>
-                  This candidate requires <em>{missingSponsorCount} more</em>{" "}
-                  sponsoring {missingSponsorCount === 1 ? "noun" : "nouns"} to
-                  be proposed onchain.
+                  {candidateVotingPower === 0 ? (
+                    <>
+                      {proposalThreshold + 1} sponsoring nouns required to put
+                      proposal onchain.
+                    </>
+                  ) : (
+                    <>
+                      This candidate requires{" "}
+                      <em>{missingSponsorCount} more</em> sponsoring{" "}
+                      {missingSponsorCount === 1 ? "noun" : "nouns"} (
+                      {candidateVotingPower} / {proposalThreshold + 1}) to be
+                      proposed onchain.
+                    </>
+                  )}
                 </>
               )}
             </Callout>

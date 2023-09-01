@@ -304,6 +304,25 @@ export const OpenLock = (props) => (
   </svg>
 );
 
+export const Noggles = (props) => (
+  <svg width="170" height="60" viewBox="0 0 170 60" fill="none" {...props}>
+    <path
+      data-glas
+      fillRule="evenodd"
+      clipRule="evenodd"
+      d="M80 10H60V50H80V10ZM140 10H160V50H140V10Z"
+      fill="currentColor"
+      // fillOpacity="100%"
+    />
+    <path
+      fillRule="evenodd"
+      clipRule="evenodd"
+      d="M90 0H30V10V20H0V30V40V50H10V40V30H30V40V50V60H90V50V40V30H110V40V50V60H170V50V40V30V20V10V0H110V10V20H90V10V0ZM160 50V40V30V20V10H120V20V30V40V50H160ZM80 50H40V40V30V20V10H80V20V30V40V50Z"
+      fill="currentColor"
+    />
+  </svg>
+);
+
 export const PaperClip = (props) => (
   <svg viewBox="0 0 20 20" {...props}>
     <path

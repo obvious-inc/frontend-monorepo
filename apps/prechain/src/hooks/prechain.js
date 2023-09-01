@@ -79,6 +79,15 @@ export const useChainId = () => {
   return chain?.id ?? DEFAULT_CHAIN_ID;
 };
 
+const DELEGATES_QUERY = `{
+  delegates(first: 1000) {
+    id
+    nounsRepresented {
+      id
+    }
+  }
+}`;
+
 const createProposalsQuery = ({ skip = 0 } = {}) => `{
   proposals(orderBy: createdBlock, orderDirectiom: desc, skip: ${skip}, first: 500) {
     id
@@ -337,6 +346,7 @@ export const ChainDataCacheContextProvider = ({ children }) => {
   const chainId = useChainId();
 
   const [state, setState] = React.useState({
+    delegatesById: {},
     proposalsById: {},
     proposalCandidatesById: {},
   });
@@ -395,6 +405,20 @@ export const ChainDataCacheContextProvider = ({ children }) => {
               ...fetchedCandidatesById,
               ...mergedExistingCandidatesById,
             },
+          };
+        });
+      }),
+    [querySubgraph]
+  );
+
+  // Fetch delegates
+  useFetch(
+    () =>
+      querySubgraph(DELEGATES_QUERY).then((data) => {
+        setState((s) => {
+          return {
+            ...s,
+            delegatesById: arrayUtils.indexBy((d) => d.id, data.delegates),
           };
         });
       }),
@@ -477,6 +501,33 @@ export const ChainDataCacheContextProvider = ({ children }) => {
   );
 };
 
+export const getValidSponsorSignatures = (candidate) => {
+  const signatures = candidate?.latestVersion.content.contentSignatures ?? [];
+  return arrayUtils
+    .sortBy({ value: (i) => i.expirationTimestamp, order: "desc" }, signatures)
+    .reduce((validSignatures, s) => {
+      if (
+        // Exclude canceled ones...
+        s.canceled ||
+        // ...expires ones
+        s.expirationTimestamp <= new Date() ||
+        // ...multiple ones from the same signer with shorter expiration
+        validSignatures.some((s_) => s_.signer.id === s.signer.id)
+      )
+        // TODO: exclude signers who have an active or pending proposal
+        return validSignatures;
+      return [...validSignatures, s];
+    }, []);
+};
+
+export const useDelegate = (id) => {
+  const {
+    state: { delegatesById },
+  } = React.useContext(ChainDataCacheContext);
+
+  return delegatesById[id];
+};
+
 export const useProposalCandidates = () => {
   const {
     state: { proposalCandidatesById },
@@ -537,6 +588,27 @@ export const useSendProposalCandidateFeedback = (
   const { writeAsync: write } = useContractWrite(config);
 
   return write;
+};
+
+export const useProposalCandidateVotingPower = (candidateId) => {
+  const candidate = useProposalCandidate(candidateId);
+  const proposerDelegate = useDelegate(candidate.proposerId);
+
+  const proposerDelegateNounIds =
+    proposerDelegate?.nounsRepresented.map((n) => n.id) ?? [];
+
+  const validSignatures = getValidSponsorSignatures(candidate);
+
+  const sponsoringNounIds = arrayUtils.unique(
+    validSignatures.flatMap((s) => s.signer.nounsRepresented.map((n) => n.id))
+  );
+
+  const candidateVotingPower = arrayUtils.unique([
+    ...sponsoringNounIds,
+    ...proposerDelegateNounIds,
+  ]).length;
+
+  return candidateVotingPower;
 };
 
 export const useCreateProposalCandidate = ({ enabled = true } = {}) => {

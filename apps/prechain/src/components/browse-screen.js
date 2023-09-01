@@ -11,6 +11,7 @@ import {
   array as arrayUtils,
   message as messageUtils,
 } from "@shades/common/utils";
+import { Noggles as NogglesIcon } from "@shades/ui-web/icons";
 import Avatar from "@shades/ui-web/avatar";
 import Input from "@shades/ui-web/input";
 import Button from "@shades/ui-web/button";
@@ -18,10 +19,12 @@ import {
   useProposal,
   useProposals,
   isFinalProposalState,
+  useProposalThreshold,
 } from "../hooks/dao.js";
 import {
   useProposalCandidates,
   useProposalCandidate,
+  useProposalCandidateVotingPower,
 } from "../hooks/prechain.js";
 import useApproximateBlockTimestampCalculator from "../hooks/approximate-block-timestamp-calculator.js";
 import {
@@ -409,6 +412,8 @@ const ProposalCandidateItem = ({ candidateId }) => {
   const { displayName: authorAccountDisplayName } = useAccountDisplayName(
     candidate.proposer
   );
+  const votingPower = useProposalCandidateVotingPower(candidateId);
+  const proposalThreshold = useProposalThreshold();
 
   return (
     <RouterLink to={`/candidates/${encodeURIComponent(candidateId)}`}>
@@ -433,7 +438,23 @@ const ProposalCandidateItem = ({ candidateId }) => {
           </Tag>
         </div>
       </div>
-      <div />
+      {votingPower > proposalThreshold ? (
+        <Tag>Sponsor threshold met</Tag>
+      ) : (
+        <div className="status">
+          {votingPower} / {proposalThreshold + 1}
+          <NogglesIcon
+            style={{
+              display: "inline-flex",
+              width: "1.7rem",
+              height: "auto",
+              position: "relative",
+              top: "-0.1rem",
+              marginLeft: "0.5rem",
+            }}
+          />
+        </div>
+      )}
     </RouterLink>
   );
 };
