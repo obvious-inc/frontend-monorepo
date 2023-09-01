@@ -69,18 +69,14 @@ const useFeedItems = (candidateId) => {
   return React.useMemo(() => {
     if (candidate == null) return [];
 
-    const validSignatures =
-      candidate.latestVersion.content.contentSignatures?.filter(
-        (s) => !s.canceled && s.expirationTimestamp > new Date()
-      ) ?? [];
-
-    const signatureItems = validSignatures.map((s) => ({
+    const signatureItems = getValidSponsorSignatures(candidate).map((s) => ({
       type: "signature",
       id: `${s.signer.id}-${s.expirationTimestamp.getTime()}`,
       authorAccount: s.signer.id,
       bodyRichText:
         s.reason == null ? null : messageUtils.parseString(s.reason),
       voteCount: s.signer.nounsRepresented.length,
+      expiresAt: s.expirationTimestamp,
     }));
 
     const feedbackPostItems =
@@ -96,7 +92,7 @@ const useFeedItems = (candidateId) => {
       })) ?? [];
 
     const sortedSignatureItems = arrayUtils.sortBy(
-      (i) => ({ value: i.voteCount, order: "desc" }),
+      { value: (i) => i.voteCount, order: "desc" },
       signatureItems
     );
     const sortedFeedbackItems = arrayUtils.sortBy(
@@ -108,11 +104,24 @@ const useFeedItems = (candidateId) => {
   }, [candidate]);
 };
 
-const getValidSponsorSignatures = (candidate) =>
-  candidate?.latestVersion.content.contentSignatures?.filter(
-    // TODO: exclude signers who have an active or pending proposal
-    (s) => !s.canceled && s.expirationTimestamp > new Date()
-  ) ?? [];
+const getValidSponsorSignatures = (candidate) => {
+  const signatures = candidate?.latestVersion.content.contentSignatures ?? [];
+  return arrayUtils
+    .sortBy({ value: (i) => i.expirationTimestamp, order: "desc" }, signatures)
+    .reduce((validSignatures, s) => {
+      if (
+        // Exclude canceled ones...
+        s.canceled ||
+        // ...expires ones
+        s.expirationTimestamp <= new Date() ||
+        // ...multiple ones from the same signer with shorter expiration
+        validSignatures.some((s_) => s_.signer.id === s.signer.id)
+      )
+        // TODO: exclude signers who have an active or pending proposal
+        return validSignatures;
+      return [...validSignatures, s];
+    }, []);
+};
 
 const getCandidateSignals = (candidate) => {
   const signatures = getValidSponsorSignatures(candidate);
@@ -279,9 +288,9 @@ const ProposalCandidateScreenContent = ({ candidateId }) => {
             >
               {isProposalThresholdMet ? (
                 <>
-                  This candidate has met the required sponsor threshold, but
-                  votes can continue to add their support until the proposal is
-                  put onchain.
+                  This candidate has met the required sponsor threshold. Votes
+                  can continue to add their support until the proposal is put
+                  onchain.
                 </>
               ) : (
                 <>
@@ -356,6 +365,7 @@ const ProposalCandidateScreenContent = ({ candidateId }) => {
             <Tabs.Root
               aria-label="Candidate info"
               defaultSelectedKey="activity"
+              disabledKeys={["transactions"]}
               css={(t) =>
                 css({
                   position: "sticky",
@@ -404,8 +414,11 @@ const ProposalCandidateScreenContent = ({ candidateId }) => {
                   />
                 </div>
               </Tabs.Item>
-              <Tabs.Item key="sponsors" title="Sponsors" disabled>
-                <div style={{ padding: "1.6rem 0" }}>
+              <Tabs.Item key="transactions" title="Transactions">
+                TODO
+              </Tabs.Item>
+              <Tabs.Item key="sponsors" title="Sponsors">
+                <div style={{ padding: "3.2rem 0 1.6rem" }}>
                   {sponsorFeedItems.length === 0 ? (
                     <div
                       css={(t) =>

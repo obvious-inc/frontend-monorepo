@@ -1,3 +1,4 @@
+import datesDifferenceInDays from "date-fns/differenceInCalendarDays";
 import React from "react";
 import { useBlockNumber } from "wagmi";
 import {
@@ -350,7 +351,7 @@ const ProposalMainSection = ({ proposalId }) => {
                   })
                 }
               >
-                <Tabs.Item key="activity" title="Activity" disabled>
+                <Tabs.Item key="activity" title="Activity">
                   <div
                     style={{
                       display: "flex",
@@ -860,13 +861,16 @@ export const ProposalFeed = ({ items = [] }) => {
                 ? `${signalWord} against`
                 : item.support === 1
                 ? `${signalWord} for`
-                : "abstained"}
+                : item.type === "vote"
+                ? "abstained"
+                : null}
             </span>
           </>
         );
       }
     }
   };
+
   return (
     <ul
     // css={(t) =>
@@ -887,191 +891,223 @@ export const ProposalFeed = ({ items = [] }) => {
     //   })
     // }
     >
-      {items.map((item) => (
-        <div
-          key={item.id}
-          role="listitem"
-          css={(t) =>
-            css({
-              fontSize: t.text.sizes.base,
-              ":not(:first-of-type)": { marginTop: "1.6rem" },
-            })
-          }
-        >
+      {items.map((item) => {
+        const body =
+          item.bodyRichText == null ? null : (
+            <RichText blocks={item.bodyRichText} />
+          );
+
+        return (
           <div
-            css={css({
-              display: "grid",
-              gridTemplateColumns: "2rem minmax(0,1fr)",
-              gridGap: "0.6rem",
-              alignItems: "center",
-            })}
+            key={item.id}
+            role="listitem"
+            css={(t) =>
+              css({
+                fontSize: t.text.sizes.base,
+                ":not(:first-of-type)": { marginTop: "1.6rem" },
+              })
+            }
           >
-            <div>
-              {item.authorAccount == null ? (
-                <div
-                  css={(t) =>
-                    css({
-                      position: "relative",
-                      height: "2rem",
-                      width: "0.1rem",
-                      background: t.colors.borderLight,
-                      margin: "auto",
-                      ":after": {
-                        content: '""',
-                        position: "absolute",
-                        width: "0.7rem",
-                        height: "0.7rem",
-                        background: t.colors.textMuted,
-                        top: "50%",
-                        left: "50%",
-                        transform: "translateY(-50%) translateX(-50%)",
-                        borderRadius: "50%",
-                        border: "0.1rem solid",
-                        borderColor: t.colors.backgroundPrimary,
-                      },
-                    })
-                  }
-                />
-              ) : (
-                <AccountPreviewPopoverTrigger
-                  accountAddress={item.authorAccount}
-                >
-                  <button
+            <div
+              css={css({
+                display: "grid",
+                gridTemplateColumns: "2rem minmax(0,1fr)",
+                gridGap: "0.6rem",
+                alignItems: "center",
+              })}
+            >
+              <div>
+                {item.authorAccount == null ? (
+                  <div
                     css={(t) =>
                       css({
-                        display: "block",
-                        borderRadius: t.avatars.borderRadius,
-                        overflow: "hidden",
-                        outline: "none",
-                        ":focus-visible": {
-                          boxShadow: t.shadows.focus,
-                        },
-                        "@media (hover: hover)": {
-                          ":not(:disabled)": {
-                            cursor: "pointer",
-                            ":hover": {
-                              boxShadow: `0 0 0 0.2rem ${t.colors.borderLight}`,
-                            },
-                          },
+                        position: "relative",
+                        height: "2rem",
+                        width: "0.1rem",
+                        background: t.colors.borderLight,
+                        margin: "auto",
+                        ":after": {
+                          content: '""',
+                          position: "absolute",
+                          width: "0.7rem",
+                          height: "0.7rem",
+                          background: t.colors.textMuted,
+                          top: "50%",
+                          left: "50%",
+                          transform: "translateY(-50%) translateX(-50%)",
+                          borderRadius: "50%",
+                          border: "0.1rem solid",
+                          borderColor: t.colors.backgroundPrimary,
                         },
                       })
                     }
+                  />
+                ) : (
+                  <AccountPreviewPopoverTrigger
+                    accountAddress={item.authorAccount}
                   >
-                    <AccountAvatar
-                      transparent
-                      address={item.authorAccount}
-                      size="2rem"
-                    />
-                  </button>
-                </AccountPreviewPopoverTrigger>
-              )}
-            </div>
-            <div>
-              <div
-                css={css({
-                  display: "flex",
-                  cursor: "default",
-                  lineHeight: 1.2,
-                })}
-              >
-                <div
-                  style={{
-                    flex: 1,
-                    minWidth: 0,
-                    whiteSpace: "nowrap",
-                    overflow: "hidden",
-                  }}
-                >
-                  {renderTitle(item)}
-                </div>
-                {item.voteCount != null && (
-                  <Tooltip.Root>
-                    <Tooltip.Trigger asChild>
-                      <span
-                        css={(t) =>
-                          css({
-                            display: "inline-flex",
-                            alignItems: "center",
-                            gap: "0.5rem",
-                            fontSize: t.text.sizes.tiny,
-                            color: t.colors.textDimmed,
-                          })
-                        }
-                      >
-                        {item.voteCount}
-                        <svg
-                          width="170"
-                          height="60"
-                          viewBox="0 0 170 60"
-                          fill="none"
-                          style={{
-                            display: "inline-flex",
-                            width: "1.7rem",
-                            height: "auto",
-                          }}
-                        >
-                          <path
-                            data-glas
-                            fillRule="evenodd"
-                            clipRule="evenodd"
-                            d="M80 10H60V50H80V10ZM140 10H160V50H140V10Z"
-                            fill="currentColor"
-                            // fillOpacity="100%"
-                          />
-                          <path
-                            fillRule="evenodd"
-                            clipRule="evenodd"
-                            d="M90 0H30V10V20H0V30V40V50H10V40V30H30V40V50V60H90V50V40V30H110V40V50V60H170V50V40V30V20V10V0H110V10V20H90V10V0ZM160 50V40V30V20V10H120V20V30V40V50H160ZM80 50H40V40V30V20V10H80V20V30V40V50Z"
-                            fill="currentColor"
-                          />
-                        </svg>
-                      </span>
-                    </Tooltip.Trigger>
-                    <Tooltip.Content side="top" sideOffset={5}>
-                      {item.voteCount}{" "}
-                      {Number(item.voteCount) === 1 ? "noun" : "nouns"}{" "}
-                      represented
-                    </Tooltip.Content>
-                  </Tooltip.Root>
+                    <button
+                      css={(t) =>
+                        css({
+                          display: "block",
+                          borderRadius: t.avatars.borderRadius,
+                          overflow: "hidden",
+                          outline: "none",
+                          ":focus-visible": {
+                            boxShadow: t.shadows.focus,
+                          },
+                          "@media (hover: hover)": {
+                            ":not(:disabled)": {
+                              cursor: "pointer",
+                              ":hover": {
+                                boxShadow: `0 0 0 0.2rem ${t.colors.borderLight}`,
+                              },
+                            },
+                          },
+                        })
+                      }
+                    >
+                      <AccountAvatar
+                        transparent
+                        address={item.authorAccount}
+                        size="2rem"
+                      />
+                    </button>
+                  </AccountPreviewPopoverTrigger>
                 )}
-                {/* {item.timestamp != null && ( */}
-                {/*   <span */}
-                {/*     css={(t) => */}
-                {/*       css({ */}
-                {/*         color: t.colors.textDimmed, */}
-                {/*         fontSize: t.fontSizes.small, */}
-                {/*         lineHeight: 1.5, */}
-                {/*       }) */}
-                {/*     } */}
-                {/*   > */}
-                {/*     <FormattedDateWithTooltip */}
-                {/*       value={item.timestamp} */}
-                {/*       hour="numeric" */}
-                {/*       minute="numeric" */}
-                {/*       day="numeric" */}
-                {/*       month="short" */}
-                {/*       tooltipSideOffset={8} */}
-                {/*     /> */}
-                {/*   </span> */}
-                {/* )} */}
+              </div>
+              <div>
+                <div
+                  css={css({
+                    display: "flex",
+                    cursor: "default",
+                    lineHeight: 1.2,
+                  })}
+                >
+                  <div
+                    style={{
+                      flex: 1,
+                      minWidth: 0,
+                      whiteSpace: "nowrap",
+                      overflow: "hidden",
+                    }}
+                  >
+                    {renderTitle(item)}
+                  </div>
+                  {item.voteCount != null && (
+                    <Tooltip.Root>
+                      <Tooltip.Trigger asChild>
+                        <span
+                          css={(t) =>
+                            css({
+                              display: "inline-flex",
+                              alignItems: "center",
+                              gap: "0.5rem",
+                              fontSize: t.text.sizes.tiny,
+                              color: t.colors.textDimmed,
+                            })
+                          }
+                        >
+                          {item.voteCount}
+                          <svg
+                            width="170"
+                            height="60"
+                            viewBox="0 0 170 60"
+                            fill="none"
+                            style={{
+                              display: "inline-flex",
+                              width: "1.7rem",
+                              height: "auto",
+                            }}
+                          >
+                            <path
+                              data-glas
+                              fillRule="evenodd"
+                              clipRule="evenodd"
+                              d="M80 10H60V50H80V10ZM140 10H160V50H140V10Z"
+                              fill="currentColor"
+                              // fillOpacity="100%"
+                            />
+                            <path
+                              fillRule="evenodd"
+                              clipRule="evenodd"
+                              d="M90 0H30V10V20H0V30V40V50H10V40V30H30V40V50V60H90V50V40V30H110V40V50V60H170V50V40V30V20V10V0H110V10V20H90V10V0ZM160 50V40V30V20V10H120V20V30V40V50H160ZM80 50H40V40V30V20V10H80V20V30V40V50Z"
+                              fill="currentColor"
+                            />
+                          </svg>
+                        </span>
+                      </Tooltip.Trigger>
+                      <Tooltip.Content side="top" sideOffset={5}>
+                        {item.voteCount}{" "}
+                        {Number(item.voteCount) === 1 ? "noun" : "nouns"}{" "}
+                        represented
+                      </Tooltip.Content>
+                    </Tooltip.Root>
+                  )}
+                  {/* {item.timestamp != null && ( */}
+                  {/*   <span */}
+                  {/*     css={(t) => */}
+                  {/*       css({ */}
+                  {/*         color: t.colors.textDimmed, */}
+                  {/*         fontSize: t.fontSizes.small, */}
+                  {/*         lineHeight: 1.5, */}
+                  {/*       }) */}
+                  {/*     } */}
+                  {/*   > */}
+                  {/*     <FormattedDateWithTooltip */}
+                  {/*       value={item.timestamp} */}
+                  {/*       hour="numeric" */}
+                  {/*       minute="numeric" */}
+                  {/*       day="numeric" */}
+                  {/*       month="short" */}
+                  {/*       tooltipSideOffset={8} */}
+                  {/*     /> */}
+                  {/*   </span> */}
+                  {/* )} */}
+                </div>
               </div>
             </div>
-          </div>
-          {item.bodyRichText != null && (
-            <RichText
-              blocks={item.bodyRichText}
+            <div
               css={(t) =>
-                css({
-                  fontSize: t.text.sizes.base,
-                  marginTop: "0.35rem",
-                  paddingLeft: "2.6rem",
-                  userSelect: "text",
-                })
+                css({ fontSize: t.text.sizes.base, paddingLeft: "2.6rem" })
               }
-            />
-          )}
-        </div>
-      ))}
+            >
+              {item.bodyRichText != null && (
+                <RichText
+                  blocks={item.bodyRichText}
+                  css={css({
+                    margin: "0.35rem 0",
+                    userSelect: "text",
+                  })}
+                />
+              )}
+              {item.type === "signature" && (
+                <div
+                  css={(t) =>
+                    css({
+                      fontSize: t.text.sizes.small,
+                      color: t.colors.textDimmed,
+                    })
+                  }
+                >
+                  Expires{" "}
+                  {datesDifferenceInDays(item.expiresAt, new Date()) > 100 ? (
+                    "in >100 days"
+                  ) : (
+                    <FormattedDateWithTooltip
+                      capitalize={false}
+                      relativeDayThreshold={Infinity}
+                      value={item.expiresAt}
+                      month="short"
+                      day="numeric"
+                    />
+                  )}
+                </div>
+              )}
+            </div>
+          </div>
+        );
+      })}
     </ul>
   );
 };

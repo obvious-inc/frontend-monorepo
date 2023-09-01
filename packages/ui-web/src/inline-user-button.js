@@ -1,4 +1,5 @@
 import React from "react";
+import { css } from "@emotion/react";
 import {
   useUser,
   useUserWithWalletAddress,
@@ -34,6 +35,7 @@ const InlineUserButton = React.forwardRef(
         variant={variant}
         {...props}
         disabled={props.disabled ?? disabled}
+        css={css({ userSelect: "text" })}
       >
         {variant === "button" && "@"}
         {label}

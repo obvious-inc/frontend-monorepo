@@ -264,31 +264,31 @@ const createRenderer = ({
         const [defaultMaxWidth, defaultMaxHeight] =
           el.type === "image" || attachmentCount === 1
             ? [
-              SINGLE_IMAGE_ATTACHMENT_MAX_WIDTH,
-              SINGLE_IMAGE_ATTACHMENT_MAX_HEIGHT,
-            ]
+                SINGLE_IMAGE_ATTACHMENT_MAX_WIDTH,
+                SINGLE_IMAGE_ATTACHMENT_MAX_HEIGHT,
+              ]
             : [
-              MULTI_IMAGE_ATTACHMENT_MAX_WIDTH,
-              MULTI_IMAGE_ATTACHMENT_MAX_HEIGHT,
-            ];
+                MULTI_IMAGE_ATTACHMENT_MAX_WIDTH,
+                MULTI_IMAGE_ATTACHMENT_MAX_HEIGHT,
+              ];
 
         const fittedWidth =
           // Skip fitting step if both max dimensions are explicitly set to `null`
           imagesMaxWidth === null && imagesMaxHeight === null
             ? el.width
             : dimensionUtils.fitInsideBounds(
-              { width: el.width, height: el.height },
-              {
-                width:
-                  imagesMaxWidth === undefined
-                    ? defaultMaxWidth
-                    : imagesMaxWidth,
-                height:
-                  imagesMaxHeight === undefined
-                    ? defaultMaxHeight
-                    : imagesMaxHeight,
-              }
-            ).width;
+                { width: el.width, height: el.height },
+                {
+                  width:
+                    imagesMaxWidth === undefined
+                      ? defaultMaxWidth
+                      : imagesMaxWidth,
+                  height:
+                    imagesMaxHeight === undefined
+                      ? defaultMaxHeight
+                      : imagesMaxHeight,
+                }
+              ).width;
 
         return (
           <button

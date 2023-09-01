@@ -41,9 +41,8 @@ const RichText = ({ blocks, markdownText, ...props }) => {
             "p:has(+ *)": { marginBottom: "1em" },
             img: {
               borderRadius: "0.3rem",
+              margin: "2rem 0",
             },
-            "* + p:has(img)": { marginTop: "2rem" },
-            "p:has(img):has(+ *)": { marginBottom: "2rem" },
           }),
         ]}
       />
