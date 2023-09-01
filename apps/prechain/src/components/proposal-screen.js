@@ -1014,9 +1014,8 @@ export const ProposalFeed = ({ items = [] }) => {
                       </span>
                     </Tooltip.Trigger>
                     <Tooltip.Content side="top" sideOffset={5}>
-                      {item.voteCount}{" "}
-                      {Number(item.voteCount) === 1 ? "noun" : "nouns"}{" "}
-                      represented
+                      Represents {item.voteCount}{" "}
+                      {Number(item.voteCount) === 1 ? "noun" : "nouns"}
                     </Tooltip.Content>
                   </Tooltip.Root>
                 )}
@@ -1580,20 +1579,20 @@ export const VoteDistributionToolTipContent = ({ votes, delegates }) => {
         />
         <div>
           <h1>
-            {voteCount} {voteCount === 1 ? "vote" : "votes"}
+            {voteCount} {voteCount === 1 ? "Noun" : "Nouns"}
           </h1>
           <div data-vote-grid>
             <span>{formatPercentage(votes.for, voteCount)}</span>
             <span>({votes.for})</span>
-            <span data-positive>for</span>
+            <span data-positive>For</span>
             <span>{formatPercentage(votes.against, voteCount)}</span>
             <span>({votes.against})</span>
-            <span data-negative>against</span>
+            <span data-negative>Against</span>
             {votes.abstain > 0 && (
               <>
                 <span>{formatPercentage(votes.abstain, voteCount)}</span>
                 <span>({votes.abstain})</span>
-                <span data-neutral>abstain</span>
+                <span data-neutral>Abstain</span>
               </>
             )}
           </div>
@@ -1613,22 +1612,22 @@ export const VoteDistributionToolTipContent = ({ votes, delegates }) => {
           />
           <div>
             <h1>
-              {delegateCount} {delegateCount === 1 ? "delegate" : "delegates"}
+              {delegateCount} {delegateCount === 1 ? "Wallet" : "Wallets"}
             </h1>
             <div data-vote-grid>
               <span>{formatPercentage(delegates.for, delegateCount)}</span>
               <span>({delegates.for})</span>
-              <span data-positive>for</span>
+              <span data-positive>For</span>
               <span>{formatPercentage(delegates.against, delegateCount)}</span>
               <span>({delegates.against})</span>
-              <span data-negative>against</span>
+              <span data-negative>Against</span>
               {delegates.abstain > 0 && (
                 <>
                   <span>
                     {formatPercentage(delegates.abstain, delegateCount)}
                   </span>
                   <span>({delegates.abstain})</span>
-                  <span data-neutral>abstain</span>
+                  <span data-neutral>Abstain</span>
                 </>
               )}
             </div>

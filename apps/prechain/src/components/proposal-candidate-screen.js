@@ -318,7 +318,7 @@ const ProposalCandidateScreenContent = ({ candidateId }) => {
                       This candidate requires{" "}
                       <em>{missingSponsorCount} more</em> sponsoring{" "}
                       {missingSponsorCount === 1 ? "noun" : "nouns"} (
-                      {candidateVotingPower} / {proposalThreshold + 1}) to be
+                      {candidateVotingPower}/{proposalThreshold + 1}) to be
                       proposed onchain.
                     </>
                   )}
