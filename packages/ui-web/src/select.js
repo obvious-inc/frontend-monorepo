@@ -32,7 +32,7 @@ const Select = React.forwardRef(
       disabledKeys: options.filter((o) => o.disabled).map((o) => o.value),
       onSelectionChange: (key) => onChange(key),
       items: options.map((o) => ({ ...o, key: o.value })),
-      children: (o) => <Item textValue={o.label} />,
+      children: (o) => <Item textValue={o.textValue ?? o.label} />,
       isDisabled: props.disabled,
     };
 
@@ -96,7 +96,7 @@ const Select = React.forwardRef(
             >
               <span {...valueProps}>
                 {renderTriggerContent != null ? (
-                  renderTriggerContent(state.selectedItem?.key)
+                  renderTriggerContent(state.selectedItem?.key, options)
                 ) : state.selectedItem == null ? (
                   placeholder
                 ) : (

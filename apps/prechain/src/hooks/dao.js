@@ -197,7 +197,6 @@ export const useCastProposalVote = (
   proposalId,
   { support, reason, enabled = true }
 ) => {
-  const publicClient = usePublicClient();
   const chainId = useChainId();
 
   const hasReason = reason != null && reason.trim() !== "";
@@ -229,12 +228,7 @@ export const useCastProposalVote = (
 
   const write = hasReason ? writeCastVoteWithReason : writeCastVote;
 
-  if (write == null) return null;
-
-  return () =>
-    write().then(({ hash }) =>
-      publicClient.waitForTransactionReceipt({ hash })
-    );
+  return write;
 };
 
 export const useSendProposalFeedback = (proposalId, { support, reason }) => {

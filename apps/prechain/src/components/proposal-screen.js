@@ -157,11 +157,24 @@ const getDelegateVotes = (proposal) => {
 const ProposalMainSection = ({ proposalId }) => {
   const { data: latestBlockNumer } = useBlockNumber();
   const calculateBlockTimestamp = useApproximateBlockTimestampCalculator();
+  const { address: connectedWalletAccountAddress } = useWallet();
 
   const proposal = useProposal(proposalId);
 
   const [pendingFeedback, setPendingFeedback] = React.useState("");
   const [pendingSupport, setPendingSupport] = React.useState(2);
+  const [castVoteCallSuccessful, setCastVoteCallSuccessful] =
+    React.useState(false);
+
+  const hasCastVote =
+    castVoteCallSuccessful ||
+    (connectedWalletAccountAddress != null &&
+      proposal?.votes != null &&
+      proposal.votes.some(
+        (v) =>
+          v.voter.id.toLowerCase() ===
+          connectedWalletAccountAddress.toLowerCase()
+      ));
 
   const endBlock = proposal?.objectionPeriodEndBlock ?? proposal?.endBlock;
 
@@ -200,22 +213,23 @@ const ProposalMainSection = ({ proposalId }) => {
       case "succeeded":
         return `Proposal ${proposalId} has ${proposal.state}`;
       case "active":
-      case "objection-period": {
-        if (endDate == null) return "...";
+      case "objection-period":
         return (
           <>
             Voting for Proposal {proposalId} ends{" "}
-            <FormattedDateWithTooltip
-              capitalize={false}
-              relativeDayThreshold={5}
-              value={endDate}
-              day="numeric"
-              month="short"
-            />
-            .
+            {endDate == null ? (
+              "..."
+            ) : (
+              <FormattedDateWithTooltip
+                capitalize={false}
+                relativeDayThreshold={5}
+                value={endDate}
+                day="numeric"
+                month="short"
+              />
+            )}
           </>
         );
-      }
       default:
         throw new Error();
     }
@@ -234,18 +248,32 @@ const ProposalMainSection = ({ proposalId }) => {
                 },
               })}
             >
-              {hasVotingStarted && (
-                <Callout
-                  css={(t) =>
-                    css({
-                      fontSize: t.text.sizes.base,
-                      marginBottom: "4.8rem",
-                    })
-                  }
-                >
-                  {renderProposalStateText()}
-                </Callout>
-              )}
+              <div
+                style={{
+                  display: "flex",
+                  flexDirection: "column",
+                  gap: "1rem",
+                  marginBottom: "4.8rem",
+                }}
+              >
+                {isVotingOngoing && hasCastVote && (
+                  <Callout
+                    css={(t) =>
+                      css({
+                        fontSize: t.text.sizes.base,
+                        color: t.colors.textPositive,
+                      })
+                    }
+                  >
+                    You voted for this proposal
+                  </Callout>
+                )}
+                {hasVotingStarted && (
+                  <Callout css={(t) => css({ fontSize: t.text.sizes.base })}>
+                    {renderProposalStateText()}
+                  </Callout>
+                )}
+              </div>
               {hasVotingStarted ? (
                 <Tooltip.Root>
                   <Tooltip.Trigger asChild>
@@ -359,13 +387,17 @@ const ProposalMainSection = ({ proposalId }) => {
                   }
                 >
                   Voting starts{" "}
-                  <FormattedDateWithTooltip
-                    capitalize={false}
-                    relativeDayThreshold={5}
-                    value={startDate}
-                    day="numeric"
-                    month="short"
-                  />
+                  {startDate == null ? (
+                    "..."
+                  ) : (
+                    <FormattedDateWithTooltip
+                      capitalize={false}
+                      relativeDayThreshold={5}
+                      value={startDate}
+                      day="numeric"
+                      month="short"
+                    />
+                  )}
                 </Callout>
               )}
               <Tabs.Root
@@ -408,14 +440,20 @@ const ProposalMainSection = ({ proposalId }) => {
 
                     <ProposalActionForm
                       proposalId={proposalId}
-                      mode={isVotingOngoing ? "vote" : "feedback"}
+                      mode={
+                        !hasCastVote && isVotingOngoing ? "vote" : "feedback"
+                      }
                       reason={pendingFeedback}
                       setReason={setPendingFeedback}
                       support={pendingSupport}
                       setSupport={setPendingSupport}
                       onSubmit={async () => {
                         const submit = isVotingOngoing
-                          ? castProposalVote
+                          ? () =>
+                              castProposalVote().then((res) => {
+                                setCastVoteCallSuccessful(true);
+                                return res;
+                              })
                           : sendProposalFeedback;
 
                         await submit();
@@ -540,18 +578,22 @@ export const TransactionList = ({ transactions }) => {
                     </a>
                     <div data-indent>
                       .<span data-function-name>{t.functionName}</span>(
-                      <div data-indent>
-                        {t.functionInputs.map((input, i, inputs) => (
-                          <React.Fragment key={i}>
-                            <span data-argument>{input.value.toString()}</span>
-                            {i !== inputs.length - 1 && (
-                              <>
-                                ,<br />
-                              </>
-                            )}
-                          </React.Fragment>
-                        ))}
-                      </div>
+                      {t.functionInputs.length > 0 && (
+                        <div data-indent>
+                          {t.functionInputs.map((input, i, inputs) => (
+                            <React.Fragment key={i}>
+                              <span data-argument>
+                                {input.value.toString()}
+                              </span>
+                              {i !== inputs.length - 1 && (
+                                <>
+                                  ,<br />
+                                </>
+                              )}
+                            </React.Fragment>
+                          ))}
+                        </div>
+                      )}
                       )
                     </div>
                   </>
@@ -709,16 +751,67 @@ export const ProposalActionForm = ({
                   onChange={(value) => {
                     setSupport(value);
                   }}
+                  renderTriggerContent={(key, options) =>
+                    options.find((o) => o.value === key).label
+                  }
                   options={
                     mode === "vote"
                       ? [
-                          { value: 1, label: "For" },
-                          { value: 0, label: "Against" },
+                          {
+                            value: 1,
+                            textValue: "For",
+                            label: (
+                              <span
+                                css={(t) =>
+                                  css({ color: t.colors.textPositive })
+                                }
+                              >
+                                For
+                              </span>
+                            ),
+                          },
+                          {
+                            value: 0,
+                            textValue: "Against",
+                            label: (
+                              <span
+                                css={(t) =>
+                                  css({ color: t.colors.textNegative })
+                                }
+                              >
+                                Against
+                              </span>
+                            ),
+                          },
                           { value: 2, label: "Abstain" },
                         ]
                       : [
-                          { value: 1, label: "Signal for" },
-                          { value: 0, label: "Signal against" },
+                          {
+                            value: 1,
+                            textValue: "Signal for",
+                            label: (
+                              <span
+                                css={(t) =>
+                                  css({ color: t.colors.textPositive })
+                                }
+                              >
+                                Signal for
+                              </span>
+                            ),
+                          },
+                          {
+                            value: 0,
+                            textValue: "Signal against",
+                            label: (
+                              <span
+                                css={(t) =>
+                                  css({ color: t.colors.textNegative })
+                                }
+                              >
+                                Signal against
+                              </span>
+                            ),
+                          },
                           { value: 2, label: "No signal" },
                         ]
                   }
