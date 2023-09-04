@@ -32,6 +32,7 @@ import {
 import { useProposalThreshold } from "../hooks/dao.js";
 import { useWallet } from "../hooks/wallet.js";
 import {
+  parseTransaction,
   Layout,
   MainContentContainer,
   ProposalLikeContent,
@@ -39,6 +40,7 @@ import {
   ProposalActionForm,
   VotingBar,
   VoteDistributionToolTipContent,
+  TransactionList,
 } from "./proposal-screen.js";
 import AccountPreviewPopoverTrigger from "./account-preview-popover-trigger.js";
 import Callout from "./callout.js";
@@ -390,7 +392,6 @@ const ProposalCandidateScreenContent = ({ candidateId }) => {
             <Tabs.Root
               aria-label="Candidate info"
               defaultSelectedKey="activity"
-              disabledKeys={["transactions"]}
               css={(t) =>
                 css({
                   position: "sticky",
@@ -440,7 +441,23 @@ const ProposalCandidateScreenContent = ({ candidateId }) => {
                 </div>
               </Tabs.Item>
               <Tabs.Item key="transactions" title="Transactions">
-                TODO
+                <div style={{ paddingTop: "3.2rem" }}>
+                  {candidate.latestVersion.content.targets != null && (
+                    <TransactionList
+                      transactions={candidate.latestVersion.content.targets.map(
+                        (target, i) =>
+                          parseTransaction({
+                            target,
+                            signature:
+                              candidate.latestVersion.content.signatures[i],
+                            calldata:
+                              candidate.latestVersion.content.calldatas[i],
+                            value: candidate.latestVersion.content.values[i],
+                          })
+                      )}
+                    />
+                  )}
+                </div>
               </Tabs.Item>
               <Tabs.Item key="sponsors" title="Sponsors">
                 <div style={{ padding: "3.2rem 0 1.6rem" }}>
@@ -934,7 +951,8 @@ const ProposalCandidateScreen = () => {
 
   const { address: connectedWalletAccountAddress } = useWallet();
   const connectedDelegate = useDelegate(connectedWalletAccountAddress);
-  console.log(connectedDelegate);
+  const connectedDelegateHasVotes =
+    connectedDelegate != null && connectedDelegate.nounsRepresented.length > 0;
 
   const candidate = useProposalCandidate(candidateId);
 
@@ -1000,7 +1018,9 @@ const ProposalCandidateScreen = () => {
                   label: "Put on chain",
                 },
               ].filter(Boolean)
-            : [{ onSelect: toggleSponsorDialog, label: "Sponsor candidate" }]
+            : connectedDelegateHasVotes
+            ? [{ onSelect: toggleSponsorDialog, label: "Sponsor candidate" }]
+            : []
         }
       >
         {candidate == null ? (

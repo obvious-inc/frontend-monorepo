@@ -47,6 +47,15 @@ const textSizes = {
   tab: "1.5rem",
 };
 
+const fontStacks = {
+  default:
+    'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif',
+  headers:
+    'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif',
+  monospace:
+    'ui-monospace, "Cascadia Mono", "Segoe UI Mono", "Ubuntu Mono", "Roboto Mono", Menlo, Monaco, Consolas, monospace',
+};
+
 export default {
   name: "dark",
   sidebarWidth: "25rem",
@@ -152,15 +161,9 @@ export default {
       emphasis: "600",
       notificationBadge: "500",
     },
+    fontStacks,
   },
-  fontStacks: {
-    default:
-      'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif',
-    headers:
-      'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif',
-    monospace:
-      'ui-monospace, "Cascadia Mono", "Segoe UI Mono", "Ubuntu Mono", "Roboto Mono", Menlo, Monaco, Consolas, monospace',
-  },
+  fontStacks,
   shadows: {
     focus: `0 0 0 0.1rem ${primary}, 0 0 0 0.3rem ${createPrimary({
       opacity: 0.4,

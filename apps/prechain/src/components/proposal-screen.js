@@ -1,4 +1,5 @@
 import datesDifferenceInDays from "date-fns/differenceInCalendarDays";
+import { decodeAbiParameters, parseAbiItem } from "viem";
 import React from "react";
 import { useBlockNumber } from "wagmi";
 import {
@@ -41,6 +42,30 @@ import FormattedDateWithTooltip from "./formatted-date-with-tooltip.js";
 import Callout from "./callout.js";
 import LogoSymbol from "./logo-symbol.js";
 import * as Tabs from "./tabs.js";
+
+export const parseTransaction = ({ target, signature, calldata, value }) => {
+  if ((signature || null) == null) {
+    if (calldata !== "0x") throw new Error();
+    return { type: "transfer", target, value };
+  }
+
+  const { name: functionName, inputs: functionInputTypes } = parseAbiItem(
+    `function ${signature}`
+  );
+  const functionInputs = decodeAbiParameters(functionInputTypes, calldata);
+
+  if (value !== "0") throw new Error();
+
+  return {
+    target,
+    type: "function-call",
+    functionName,
+    functionInputs: functionInputs.map((value, i) => ({
+      value,
+      type: functionInputTypes[i]?.type,
+    })),
+  };
+};
 
 const useFeedItems = (proposalId) => {
   const { data: latestBlockNumber } = useBlockNumber();
@@ -175,7 +200,8 @@ const ProposalMainSection = ({ proposalId }) => {
       case "succeeded":
         return `Proposal ${proposalId} has ${proposal.state}`;
       case "active":
-      case "objection-period":
+      case "objection-period": {
+        if (endDate == null) return "...";
         return (
           <>
             Voting for Proposal {proposalId} ends{" "}
@@ -189,6 +215,7 @@ const ProposalMainSection = ({ proposalId }) => {
             .
           </>
         );
+      }
       default:
         throw new Error();
     }
@@ -344,7 +371,6 @@ const ProposalMainSection = ({ proposalId }) => {
               <Tabs.Root
                 aria-label="Proposal info"
                 defaultSelectedKey="activity"
-                disabledKeys={["transactions"]}
                 css={(t) =>
                   css({
                     position: "sticky",
@@ -401,7 +427,20 @@ const ProposalMainSection = ({ proposalId }) => {
                   </div>
                 </Tabs.Item>
                 <Tabs.Item key="transactions" title="Transactions">
-                  TODO
+                  <div style={{ paddingTop: "3.2rem" }}>
+                    {proposal.targets != null && (
+                      <TransactionList
+                        transactions={proposal.targets.map((target, i) =>
+                          parseTransaction({
+                            target,
+                            signature: proposal.signatures[i],
+                            calldata: proposal.calldatas[i],
+                            value: proposal.values[i],
+                          })
+                        )}
+                      />
+                    )}
+                  </div>
                 </Tabs.Item>
               </Tabs.Root>
             </div>
@@ -419,6 +458,119 @@ const ProposalMainSection = ({ proposalId }) => {
           </div>
         </MainContentContainer>
       </div>
+    </>
+  );
+};
+
+export const TransactionList = ({ transactions }) => {
+  return (
+    <>
+      <ul
+        css={(t) =>
+          css({
+            li: { listStyle: "none" },
+            "li + li": { marginTop: "1rem" },
+            "pre code": {
+              display: "block",
+              padding: "0.8rem 1rem",
+              overflow: "auto",
+              userSelect: "text",
+              fontFamily: t.text.fontStacks.monospace,
+              fontSize: t.text.sizes.tiny,
+              color: t.colors.textDimmed,
+              background: t.colors.backgroundSecondary,
+              borderRadius: "0.3rem",
+              "[data-indent]": { paddingLeft: "1rem" },
+              "[data-comment]": { color: t.colors.textMuted },
+              "[data-target]": { color: t.colors.textDimmed },
+              "a[data-target]": {
+                textDecoration: "none",
+                "@media(hover: hover)": {
+                  ":hover": { textDecoration: "underline" },
+                },
+              },
+              "[data-function-name]": {
+                color: t.colors.textPrimary,
+                fontWeight: t.text.weights.emphasis,
+              },
+              "[data-argument]": { color: t.colors.textNormal },
+            },
+          })
+        }
+      >
+        {transactions.map((t, i) => {
+          const renderContent = () => {
+            const createEtherscanAddressUrl = (address) =>
+              `https://etherscan.io/address/${address}`;
+            switch (t.type) {
+              case "transfer":
+                return (
+                  <>
+                    <a
+                      data-target
+                      href={createEtherscanAddressUrl(t.target)}
+                      target="_blank"
+                      rel="noreferrer"
+                    >
+                      {t.target}
+                    </a>
+                    <div data-indent>
+                      .<span data-function-name>transfer</span>(
+                      <div data-indent>
+                        {/* <div data-comment> */}
+                        {/*   {"//"} {formatEther(t.value)} ETH */}
+                        {/* </div> */}
+                        <span data-argument>{t.value.toString()}</span>
+                      </div>
+                      )
+                    </div>
+                  </>
+                );
+
+              case "function-call":
+                return (
+                  <>
+                    <a
+                      data-target
+                      href={createEtherscanAddressUrl(t.target)}
+                      target="_blank"
+                      rel="noreferrer"
+                    >
+                      {t.target}
+                    </a>
+                    <div data-indent>
+                      .<span data-function-name>{t.functionName}</span>(
+                      <div data-indent>
+                        {t.functionInputs.map((input, i, inputs) => (
+                          <React.Fragment key={i}>
+                            <span data-argument>{input.value.toString()}</span>
+                            {i !== inputs.length - 1 && (
+                              <>
+                                ,<br />
+                              </>
+                            )}
+                          </React.Fragment>
+                        ))}
+                      </div>
+                      )
+                    </div>
+                  </>
+                );
+
+              default:
+                throw new Error();
+            }
+          };
+
+          return (
+            <li key={i}>
+              <pre>
+                <code>{renderContent()}</code>
+              </pre>
+            </li>
+          );
+        })}
+      </ul>
     </>
   );
 };
