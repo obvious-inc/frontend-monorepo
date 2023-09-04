@@ -525,7 +525,7 @@ export const useDelegate = (id) => {
     state: { delegatesById },
   } = React.useContext(ChainDataCacheContext);
 
-  return delegatesById[id];
+  return delegatesById[id.toLowerCase()];
 };
 
 export const useProposalCandidates = () => {

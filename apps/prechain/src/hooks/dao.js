@@ -313,3 +313,19 @@ export const useCancelProposal = (proposalId) => {
           publicClient.waitForTransactionReceipt({ hash })
         );
 };
+
+export const usePriorVotes = ({ account, blockNumber }) => {
+  const chainId = useChainId();
+
+  const { data } = useContractRead({
+    address: contractAddressesByChainId[chainId].token,
+    abi: parseAbi([
+      "function getPriorVotes(address account, uint256 block) public view returns (uint256)",
+    ]),
+    functionName: "getPriorVotes",
+    args: [account, blockNumber],
+    enabled: account != null && blockNumber != null,
+  });
+
+  return data == null ? null : Number(data);
+};

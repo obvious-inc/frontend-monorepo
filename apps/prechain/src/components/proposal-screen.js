@@ -29,7 +29,9 @@ import {
   useCancelProposal,
   useCastProposalVote,
   useSendProposalFeedback,
+  usePriorVotes,
 } from "../hooks/dao.js";
+import { useDelegate } from "../hooks/prechain.js";
 import useApproximateBlockTimestampCalculator from "../hooks/approximate-block-timestamp-calculator.js";
 import { useWallet } from "../hooks/wallet.js";
 import { Tag } from "./browse-screen.js";
@@ -379,6 +381,7 @@ const ProposalMainSection = ({ proposalId }) => {
                     )}
 
                     <ProposalActionForm
+                      proposalId={proposalId}
                       mode={isVotingOngoing ? "vote" : "feedback"}
                       reason={pendingFeedback}
                       setReason={setPendingFeedback}
@@ -421,6 +424,7 @@ const ProposalMainSection = ({ proposalId }) => {
 };
 
 export const ProposalActionForm = ({
+  proposalId,
   mode,
   reason,
   setReason,
@@ -434,8 +438,43 @@ export const ProposalActionForm = ({
     address: connectedWalletAccountAddress,
     requestAccess: requestWalletAccess,
   } = useWallet();
+  const connectedDelegate = useDelegate(connectedWalletAccountAddress);
+
+  const proposal = useProposal(proposalId, { enabled: mode === "vote" });
+
+  const proposalVoteCount = usePriorVotes({
+    account: connectedWalletAccountAddress,
+    blockNumber: proposal?.startBlock,
+  });
+  const currentVoteCount = connectedDelegate?.nounsRepresented.length ?? 0;
 
   if (mode == null) throw new Error();
+
+  const renderHelpText = () => {
+    if (mode === "feedback")
+      return "By giving feedback voters can signal their voting intentions to influence and help guide proposers.";
+
+    if (currentVoteCount > 0 && proposalVoteCount === 0)
+      return (
+        <>
+          <p>
+            Although you currently control <em>{currentVoteCount}</em>{" "}
+            {currentVoteCount === 1 ? "vote" : "votes"}, your voting power on
+            this proposal is <em>0</em>, which represents your voting power at
+            this proposal’s vote snapshot block.
+          </p>
+          <p>
+            You may still vote with <em>0</em> votes, but gas spent will not be
+            refunded.
+          </p>
+        </>
+      );
+
+    if (proposalVoteCount === 0)
+      return "Note that althouth you may vote without any delegated nouns, gas spent will not be refunded.";
+
+    return "Gas spent on voting will be refunded.";
+  };
 
   return (
     <>
@@ -539,7 +578,13 @@ export const ProposalActionForm = ({
                   disabled={isPending}
                   isLoading={isPending}
                 >
-                  {mode === "vote" ? "Cast vote" : "Submit feedback"}
+                  {mode === "vote"
+                    ? `Cast ${
+                        proposalVoteCount > 1
+                          ? `${proposalVoteCount} votes`
+                          : "vote"
+                      }`
+                    : "Submit feedback"}
                 </Button>
               </>
             )}
@@ -552,12 +597,15 @@ export const ProposalActionForm = ({
               marginTop: "1.6rem",
               fontSize: t.text.sizes.tiny,
               color: t.colors.textDimmed,
+              "p + p": { marginTop: "1em" },
+              em: {
+                fontStyle: "normal",
+                fontWeight: t.text.weights.emphasis,
+              },
             })
           }
         >
-          {mode === "feedback"
-            ? "By giving feedback voters can signal their voting intentions to influence and help guide proposers."
-            : "Gas spent on voting will be refunded."}
+          {renderHelpText()}
         </div>
       </div>
     </>
@@ -920,6 +968,7 @@ export const ProposalFeed = ({ items = [] }) => {
                       height: "2rem",
                       width: "0.1rem",
                       background: t.colors.borderLight,
+                      zIndex: -1,
                       margin: "auto",
                       ":after": {
                         content: '""',

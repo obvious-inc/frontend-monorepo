@@ -933,6 +933,8 @@ const ProposalCandidateScreen = () => {
   const proposalThreshold = useProposalThreshold();
 
   const { address: connectedWalletAccountAddress } = useWallet();
+  const connectedDelegate = useDelegate(connectedWalletAccountAddress);
+  console.log(connectedDelegate);
 
   const candidate = useProposalCandidate(candidateId);
 
