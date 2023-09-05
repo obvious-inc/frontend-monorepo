@@ -1,5 +1,11 @@
 import datesDifferenceInDays from "date-fns/differenceInCalendarDays";
-import { decodeAbiParameters, parseAbiItem } from "viem";
+import {
+  getAbiItem,
+  decodeAbiParameters,
+  parseAbiItem,
+  formatEther,
+  decodeFunctionData,
+} from "viem";
 import React from "react";
 import { useBlockNumber } from "wagmi";
 import {
@@ -45,8 +51,27 @@ import * as Tabs from "./tabs.js";
 
 export const parseTransaction = ({ target, signature, calldata, value }) => {
   if ((signature || null) == null) {
-    if (calldata !== "0x") throw new Error();
-    return { type: "transfer", target, value };
+    if (calldata == "0x") return { type: "transfer", target, value };
+
+    // TODO
+    return { target, type: "unparsed-function-call", calldata };
+
+    // const abi = await // TODO
+    // const { functionName, args } = decodeFunctionData({
+    //   abi,
+    //   data: calldata,
+    // });
+    // const { inputs: functionInputTypes } = getAbiItem({ abi, name: functionName }));
+    // const functionInputs = decodeAbiParameters(functionInputTypes, calldata);
+    // return {
+    //   target,
+    //   type: "function-call",
+    //   functionName,
+    //   functionInputs: functionInputs.map((value, i) => ({
+    //     value,
+    //     type: functionInputTypes[i]?.type,
+    //   })),
+    // };
   }
 
   const { name: functionName, inputs: functionInputTypes } = parseAbiItem(
@@ -500,14 +525,31 @@ const ProposalMainSection = ({ proposalId }) => {
   );
 };
 
+const createEtherscanAddressUrl = (address) =>
+  `https://etherscan.io/address/${address}`;
+
 export const TransactionList = ({ transactions }) => {
   return (
     <>
-      <ul
+      <ol
+        data-count={transactions.length}
         css={(t) =>
           css({
+            margin: 0,
+            padding: 0,
+            fontSize: t.text.sizes.base,
             li: { listStyle: "none" },
+            '&:not([data-count="1"])': {
+              paddingLeft: "2rem",
+              li: { listStyle: "decimal" },
+            },
             "li + li": { marginTop: "1rem" },
+            "li:has(pre code) + li": {
+              marginTop: "2.6rem",
+            },
+            "pre:has(code)": {
+              marginTop: "0.8rem",
+            },
             "pre code": {
               display: "block",
               padding: "0.8rem 1rem",
@@ -520,32 +562,31 @@ export const TransactionList = ({ transactions }) => {
               borderRadius: "0.3rem",
               "[data-indent]": { paddingLeft: "1rem" },
               "[data-comment]": { color: t.colors.textMuted },
-              "[data-target]": { color: t.colors.textDimmed },
-              "a[data-target]": {
-                textDecoration: "none",
-                "@media(hover: hover)": {
-                  ":hover": { textDecoration: "underline" },
-                },
-              },
+              "[data-indentifier]": { color: t.colors.textDimmed },
               "[data-function-name]": {
                 color: t.colors.textPrimary,
                 fontWeight: t.text.weights.emphasis,
               },
               "[data-argument]": { color: t.colors.textNormal },
+              a: {
+                textDecoration: "none",
+                color: "currentColor",
+                "@media(hover: hover)": {
+                  ":hover": { textDecoration: "underline" },
+                },
+              },
             },
           })
         }
       >
-        {transactions.map((t, i) => {
-          const renderContent = () => {
-            const createEtherscanAddressUrl = (address) =>
-              `https://etherscan.io/address/${address}`;
+        {transactions.map((t, transactionIndex) => {
+          const renderCode = () => {
             switch (t.type) {
               case "transfer":
                 return (
                   <>
                     <a
-                      data-target
+                      data-identifier
                       href={createEtherscanAddressUrl(t.target)}
                       target="_blank"
                       rel="noreferrer"
@@ -554,13 +595,10 @@ export const TransactionList = ({ transactions }) => {
                     </a>
                     <div data-indent>
                       .<span data-function-name>transfer</span>(
-                      <div data-indent>
-                        {/* <div data-comment> */}
-                        {/*   {"//"} {formatEther(t.value)} ETH */}
-                        {/* </div> */}
-                        <span data-argument>{t.value.toString()}</span>
-                      </div>
-                      )
+                      {/* <div data-comment> */}
+                      {/*   {"//"} {formatEther(t.value)} ETH */}
+                      {/* </div> */}
+                      <span data-argument>{t.value.toString()}</span>)
                     </div>
                   </>
                 );
@@ -569,33 +607,54 @@ export const TransactionList = ({ transactions }) => {
                 return (
                   <>
                     <a
-                      data-target
+                      data-identifier
                       href={createEtherscanAddressUrl(t.target)}
                       target="_blank"
                       rel="noreferrer"
                     >
-                      {t.target}
+                      contract
+                      {/* {t.target} */}
                     </a>
-                    <div data-indent>
-                      .<span data-function-name>{t.functionName}</span>(
-                      {t.functionInputs.length > 0 && (
-                        <div data-indent>
-                          {t.functionInputs.map((input, i, inputs) => (
-                            <React.Fragment key={i}>
-                              <span data-argument>
-                                {input.value.toString()}
-                              </span>
-                              {i !== inputs.length - 1 && (
-                                <>
-                                  ,<br />
-                                </>
+                    {/* <div data-indent> */}.
+                    <span data-function-name>{t.functionName}</span>(
+                    {t.functionInputs.length > 0 && (
+                      <div data-indent>
+                        {t.functionInputs.map((input, i, inputs) => (
+                          <React.Fragment key={i}>
+                            <span data-argument>
+                              {input.type === "address" ? (
+                                <a
+                                  href={createEtherscanAddressUrl(input.value)}
+                                  target="_blank"
+                                  rel="noreferrer"
+                                >
+                                  {input.value}
+                                </a>
+                              ) : (
+                                input.value.toString()
                               )}
-                            </React.Fragment>
-                          ))}
-                        </div>
-                      )}
-                      )
-                    </div>
+                            </span>
+                            {i !== inputs.length - 1 && (
+                              <>
+                                ,<br />
+                              </>
+                            )}
+                          </React.Fragment>
+                        ))}
+                      </div>
+                    )}
+                    ){/* </div> */}
+                  </>
+                );
+
+              case "unparsed-function-call":
+                return (
+                  <>
+                    <span data-identifier>contract</span>:{" "}
+                    <span data-argument>{t.target}</span>
+                    <br />
+                    <span data-identifier>calldata</span>:{" "}
+                    <span data-argument>{t.calldata}</span>
                   </>
                 );
 
@@ -603,18 +662,112 @@ export const TransactionList = ({ transactions }) => {
                 throw new Error();
             }
           };
+          const explanation = <TransactionExplanation parsedTransaction={t} />;
 
           return (
-            <li key={i}>
-              <pre>
-                <code>{renderContent()}</code>
-              </pre>
+            <li key={transactionIndex}>
+              <div
+                css={(t) =>
+                  css({
+                    a: { color: t.colors.textDimmed },
+                    em: {
+                      color: t.colors.textDimmed,
+                      fontStyle: "normal",
+                      fontWeight: t.text.weights.emphasis,
+                    },
+                  })
+                }
+              >
+                {explanation}
+              </div>
+              {t.type !== "transfer" && (
+                <>
+                  <pre>
+                    <code>{renderCode()}</code>
+                  </pre>
+                  {t.type === "unparsed-function-call" && (
+                    <div
+                      css={(t) =>
+                        css({
+                          fontSize: t.text.sizes.small,
+                          color: t.colors.textDimmed,
+                          marginTop: "0.8rem",
+                        })
+                      }
+                    >
+                      Displaying the raw calldata because of missing ABI
+                    </div>
+                  )}
+                </>
+              )}
             </li>
           );
         })}
-      </ul>
+      </ol>
     </>
   );
+};
+
+const TransactionExplanation = ({ parsedTransaction: t }) => {
+  const { displayName: targetDisplayName } = useAccountDisplayName(t.target);
+
+  const targetDisplayNameLinkWithTooltip = (
+    <Tooltip.Root>
+      <Tooltip.Trigger asChild>
+        <em>
+          <a
+            href={createEtherscanAddressUrl(t.target)}
+            target="_blank"
+            rel="noreferrer"
+          >
+            {targetDisplayName}
+          </a>
+        </em>
+      </Tooltip.Trigger>
+      <Tooltip.Content side="top" sideOffset={6}>
+        {t.target}
+      </Tooltip.Content>
+    </Tooltip.Root>
+  );
+
+  switch (t.type) {
+    case "transfer": {
+      const ethString = formatEther(t.value);
+      const [ethValue, ethDecimals] = ethString.split(".");
+      const trimDecimals = ethDecimals != null && ethDecimals.length > 3;
+      const trimmedEthString = [
+        ethValue,
+        trimDecimals ? `${ethDecimals.slice(0, 3)}...` : ethDecimals,
+      ]
+        .filter(Boolean)
+        .join(".");
+
+      return (
+        <>
+          {trimDecimals ? (
+            <Tooltip.Root>
+              <Tooltip.Trigger asChild>
+                <em>{trimmedEthString} ETH</em>
+              </Tooltip.Trigger>
+              <Tooltip.Content side="top" sideOffset={6}>
+                {ethString} ETH
+              </Tooltip.Content>
+            </Tooltip.Root>
+          ) : (
+            <em>{ethString} ETH</em>
+          )}{" "}
+          transfer to {targetDisplayNameLinkWithTooltip}
+        </>
+      );
+    }
+
+    case "function-call":
+    case "unparsed-function-call":
+      return <>Function call to contract {targetDisplayNameLinkWithTooltip}</>;
+
+    default:
+      throw new Error();
+  }
 };
 
 export const ProposalActionForm = ({
