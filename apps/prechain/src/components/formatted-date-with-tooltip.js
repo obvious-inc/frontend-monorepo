@@ -50,11 +50,13 @@ const FormattedDateWithTooltip = React.memo(
             <>
               {" "}
               at{" "}
-              <FormattedDate
-                value={valueDate}
-                hour="numeric"
-                minute="numeric"
-              />
+              <span style={{ whiteSpace: "nowrap" }}>
+                <FormattedDate
+                  value={valueDate}
+                  hour="numeric"
+                  minute="numeric"
+                />
+              </span>
             </>
           )}
         </span>

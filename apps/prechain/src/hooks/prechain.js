@@ -281,6 +281,14 @@ const parseProposal = (data) => {
 
   if (data.proposer?.id != null) parsedData.proposerId = data.proposer.id;
 
+  if (data.targets != null)
+    parsedData.transactions = data.targets.map((target, i) => ({
+      target,
+      signature: data.signatures[i],
+      calldata: data.calldatas[i],
+      value: data.values[i],
+    }));
+
   return parsedData;
 };
 
@@ -321,6 +329,16 @@ const parseProposalCandidate = (data) => {
         ...s,
         expirationTimestamp: new Date(parseInt(s.expirationTimestamp) * 1000),
       }));
+
+  if (data.latestVersion.targets != null)
+    parsedData.latestVersion.transactions = data.latestVersion.targets.map(
+      (target, i) => ({
+        target,
+        signature: data.latestVersion.signatures[i],
+        calldata: data.latestVersion.calldatas[i],
+        value: data.latestVersion.values[i],
+      })
+    );
 
   return parsedData;
 };
@@ -525,7 +543,7 @@ export const useDelegate = (id) => {
     state: { delegatesById },
   } = React.useContext(ChainDataCacheContext);
 
-  return delegatesById[id.toLowerCase()];
+  return delegatesById[id?.toLowerCase()];
 };
 
 export const useProposalCandidates = () => {

@@ -5,9 +5,11 @@ import {
   parseAbiItem,
   formatEther,
   decodeFunctionData,
+  trim as trimHexOrBytes,
+  formatUnits,
 } from "viem";
 import React from "react";
-import { useBlockNumber } from "wagmi";
+import { useBlockNumber, useContractRead, usePublicClient } from "wagmi";
 import {
   Link as RouterLink,
   useParams,
@@ -17,6 +19,7 @@ import { css } from "@emotion/react";
 import {
   ErrorBoundary,
   AutoAdjustingHeightTextarea,
+  useFetch,
 } from "@shades/common/react";
 import {
   array as arrayUtils,
@@ -49,46 +52,199 @@ import Callout from "./callout.js";
 import LogoSymbol from "./logo-symbol.js";
 import * as Tabs from "./tabs.js";
 
-export const parseTransaction = ({ target, signature, calldata, value }) => {
-  if ((signature || null) == null) {
-    if (calldata == "0x") return { type: "transfer", target, value };
+const nameBySupportDetailed = { 0: "against", 1: "for", 2: "abstain" };
 
-    // TODO
-    return { target, type: "unparsed-function-call", calldata };
+const supportDetailedToString = (n) => {
+  if (nameBySupportDetailed[n] == null) throw new Error();
+  return nameBySupportDetailed[n];
+};
 
-    // const abi = await // TODO
-    // const { functionName, args } = decodeFunctionData({
-    //   abi,
-    //   data: calldata,
-    // });
-    // const { inputs: functionInputTypes } = getAbiItem({ abi, name: functionName }));
-    // const functionInputs = decodeAbiParameters(functionInputTypes, calldata);
-    // return {
-    //   target,
-    //   type: "function-call",
-    //   functionName,
-    //   functionInputs: functionInputs.map((value, i) => ({
-    //     value,
-    //     type: functionInputTypes[i]?.type,
-    //   })),
-    // };
+// https://eips.ethereum.org/EIPS/eip-1967#logic-contract-address
+const IMPLEMENTATION_CONTRACT_ADDRESS_STORAGE_SLOT =
+  "0x360894a13ba1a3210667c828492db98dca3e2076cc3735a920a3ca505d382bbc";
+
+const useAbi = (address, { enabled = true } = {}) => {
+  const publicClient = usePublicClient();
+
+  const [abi, setAbi] = React.useState(null);
+  const [proxyImplementationAbi, setProxyImplementationAbi] =
+    React.useState(null);
+
+  const [proxyImplementationAddressFromStorage, setProxyImplmentationAddress] =
+    React.useState(null);
+
+  const implementationAbiItem =
+    abi != null && getAbiItem({ abi, name: "implementation" });
+
+  const { data: proxyImplementationAddressFromContract } = useContractRead({
+    address,
+    abi,
+    functionName: "implementation",
+    enabled: implementationAbiItem != null,
+    onError: () => {
+      publicClient
+        .getStorageAt({
+          address,
+          slot: IMPLEMENTATION_CONTRACT_ADDRESS_STORAGE_SLOT,
+        })
+        .then((data) => {
+          const address = trimHexOrBytes(data);
+          if (address === "0x00") return;
+          setProxyImplmentationAddress(address);
+        });
+    },
+  });
+
+  const proxyImplementationAddress =
+    proxyImplementationAddressFromContract ??
+    proxyImplementationAddressFromStorage;
+
+  const fetchAbi = React.useCallback(
+    (address) =>
+      fetch(
+        `${process.env.EDGE_API_BASE_URL}/contract-abi?address=${address}`
+      ).then(async (res) => {
+        if (!res.ok) return Promise.reject();
+        const body = await res.json();
+        return body.data;
+      }),
+    []
+  );
+
+  useFetch(
+    !enabled
+      ? undefined
+      : () =>
+          fetchAbi(address).then((abi) => {
+            setAbi(abi);
+          }),
+    [address]
+  );
+
+  useFetch(
+    proxyImplementationAddress == null
+      ? undefined
+      : () =>
+          fetchAbi(proxyImplementationAddress).then((abi) => {
+            setProxyImplementationAbi(abi);
+          }),
+    [proxyImplementationAddress]
+  );
+
+  return { abi, proxyImplementationAbi, proxyImplementationAddress };
+};
+
+const decodeCalldataWithSignature = ({ signature, calldata }) => {
+  const { name, inputs: inputTypes } = parseAbiItem(`function ${signature}`);
+  const inputs = decodeAbiParameters(inputTypes, calldata);
+
+  return {
+    name,
+    inputs: inputs.map((value, i) => ({
+      value,
+      type: inputTypes[i]?.type,
+    })),
+  };
+};
+
+const decodeCalldataWithAbi = ({ abi, calldata }) => {
+  try {
+    const { functionName, args } = decodeFunctionData({
+      abi,
+      data: calldata,
+    });
+
+    if (args == null) return { name: functionName, inputs: [] };
+
+    const { inputs: functionInputTypes } = getAbiItem({
+      abi,
+      name: functionName,
+    });
+
+    return {
+      name: functionName,
+      inputs: args.map((value, i) => ({
+        value,
+        type: functionInputTypes[i].type,
+      })),
+    };
+  } catch (e) {
+    return null;
+  }
+};
+
+const useAsyncDecodedFunctionData = (
+  { target, calldata },
+  { enabled = false } = {}
+) => {
+  const { abi, proxyImplementationAbi, proxyImplementationAddress } = useAbi(
+    target,
+    { enabled }
+  );
+
+  const decodedFunctionData =
+    abi == null ? null : decodeCalldataWithAbi({ abi, calldata });
+
+  if (decodedFunctionData != null) return decodedFunctionData;
+
+  if (proxyImplementationAbi == null) return null;
+
+  const decodedFunctionDataFromProxy = decodeCalldataWithAbi({
+    abi: proxyImplementationAbi,
+    calldata,
+  });
+
+  if (decodedFunctionDataFromProxy == null) return null;
+
+  return {
+    proxy: true,
+    proxyImplementationAddress,
+    ...decodedFunctionDataFromProxy,
+  };
+};
+
+const DAO_PAYER_CONTRACT = "0xd97bcd9f47cee35c0a9ec1dc40c1269afc9e8e1d";
+
+const useParsedTransaction = ({ target, signature, calldata, value }) => {
+  const hasSignature = (signature || null) != null;
+  const isEthTransfer = !hasSignature && calldata === "0x";
+
+  const isMissingSignature = !hasSignature && !isEthTransfer;
+
+  const decodedFunctionData = useAsyncDecodedFunctionData(
+    { target, calldata },
+    { enabled: isMissingSignature }
+  );
+
+  if (isEthTransfer) return { type: "transfer", target, value };
+
+  if (hasSignature) {
+    const { name: functionName, inputs: functionInputs } =
+      decodeCalldataWithSignature({ signature, calldata });
+
+    if (
+      target === DAO_PAYER_CONTRACT &&
+      signature === "sendOrRegisterDebt(address,uint256)"
+    )
+      return { target, type: "usdc-transfer", functionName, functionInputs };
+
+    return {
+      target,
+      type: "function-call",
+      functionName,
+      functionInputs,
+    };
   }
 
-  const { name: functionName, inputs: functionInputTypes } = parseAbiItem(
-    `function ${signature}`
-  );
-  const functionInputs = decodeAbiParameters(functionInputTypes, calldata);
-
-  if (value !== "0") throw new Error();
+  if (decodedFunctionData == null)
+    return { target, type: "unparsed-function-call", calldata };
 
   return {
     target,
-    type: "function-call",
-    functionName,
-    functionInputs: functionInputs.map((value, i) => ({
-      value,
-      type: functionInputTypes[i]?.type,
-    })),
+    proxyImplementationAddress: decodedFunctionData.proxyImplementationAddress,
+    type: decodedFunctionData.proxy ? "proxied-function-call" : "function-call",
+    functionName: decodedFunctionData.name,
+    functionInputs: decodedFunctionData.inputs,
   };
 };
 
@@ -188,18 +344,22 @@ const ProposalMainSection = ({ proposalId }) => {
 
   const [pendingFeedback, setPendingFeedback] = React.useState("");
   const [pendingSupport, setPendingSupport] = React.useState(2);
-  const [castVoteCallSuccessful, setCastVoteCallSuccessful] =
-    React.useState(false);
+  const [castVoteCallSupportDetailed, setCastVoteCallSupportDetailed] =
+    React.useState(null);
+
+  const connectedWalletVote =
+    castVoteCallSupportDetailed != null
+      ? { supportDetailed: castVoteCallSupportDetailed }
+      : connectedWalletAccountAddress == null
+      ? null
+      : proposal?.votes?.find(
+          (v) =>
+            v.voter.id.toLowerCase() ===
+            connectedWalletAccountAddress.toLowerCase()
+        );
 
   const hasCastVote =
-    castVoteCallSuccessful ||
-    (connectedWalletAccountAddress != null &&
-      proposal?.votes != null &&
-      proposal.votes.some(
-        (v) =>
-          v.voter.id.toLowerCase() ===
-          connectedWalletAccountAddress.toLowerCase()
-      ));
+    castVoteCallSupportDetailed != null || connectedWalletVote != null;
 
   const endBlock = proposal?.objectionPeriodEndBlock ?? proposal?.endBlock;
 
@@ -282,15 +442,28 @@ const ProposalMainSection = ({ proposalId }) => {
                 }}
               >
                 {isVotingOngoing && hasCastVote && (
-                  <Callout
-                    css={(t) =>
-                      css({
-                        fontSize: t.text.sizes.base,
-                        color: t.colors.textPositive,
-                      })
-                    }
-                  >
-                    You voted for this proposal
+                  <Callout css={(t) => css({ fontSize: t.text.sizes.base })}>
+                    You voted{" "}
+                    <span
+                      css={(t) =>
+                        css({
+                          textTransform: "uppercase",
+                          fontWeight: t.text.weights.emphasis,
+                          "--color-for": t.colors.textPositive,
+                          "--color-against": t.colors.textNegative,
+                          "--color-abstain": t.colors.textMuted,
+                        })
+                      }
+                      style={{
+                        color: `var(--color-${supportDetailedToString(
+                          connectedWalletVote.supportDetailed
+                        )})`,
+                      }}
+                    >
+                      {supportDetailedToString(
+                        connectedWalletVote.supportDetailed
+                      )}
+                    </span>
                   </Callout>
                 )}
                 {hasVotingStarted && (
@@ -476,7 +649,7 @@ const ProposalMainSection = ({ proposalId }) => {
                         const submit = isVotingOngoing
                           ? () =>
                               castProposalVote().then((res) => {
-                                setCastVoteCallSuccessful(true);
+                                setCastVoteCallSupportDetailed(pendingSupport);
                                 return res;
                               })
                           : sendProposalFeedback;
@@ -491,17 +664,8 @@ const ProposalMainSection = ({ proposalId }) => {
                 </Tabs.Item>
                 <Tabs.Item key="transactions" title="Transactions">
                   <div style={{ paddingTop: "3.2rem" }}>
-                    {proposal.targets != null && (
-                      <TransactionList
-                        transactions={proposal.targets.map((target, i) =>
-                          parseTransaction({
-                            target,
-                            signature: proposal.signatures[i],
-                            calldata: proposal.calldatas[i],
-                            value: proposal.values[i],
-                          })
-                        )}
-                      />
+                    {proposal.transactions != null && (
+                      <TransactionList transactions={proposal.transactions} />
                     )}
                   </div>
                 </Tabs.Item>
@@ -579,157 +743,143 @@ export const TransactionList = ({ transactions }) => {
           })
         }
       >
-        {transactions.map((t, transactionIndex) => {
-          const renderCode = () => {
-            switch (t.type) {
-              case "transfer":
-                return (
-                  <>
-                    <a
-                      data-identifier
-                      href={createEtherscanAddressUrl(t.target)}
-                      target="_blank"
-                      rel="noreferrer"
-                    >
-                      {t.target}
-                    </a>
-                    <div data-indent>
-                      .<span data-function-name>transfer</span>(
-                      {/* <div data-comment> */}
-                      {/*   {"//"} {formatEther(t.value)} ETH */}
-                      {/* </div> */}
-                      <span data-argument>{t.value.toString()}</span>)
-                    </div>
-                  </>
-                );
-
-              case "function-call":
-                return (
-                  <>
-                    <a
-                      data-identifier
-                      href={createEtherscanAddressUrl(t.target)}
-                      target="_blank"
-                      rel="noreferrer"
-                    >
-                      contract
-                      {/* {t.target} */}
-                    </a>
-                    {/* <div data-indent> */}.
-                    <span data-function-name>{t.functionName}</span>(
-                    {t.functionInputs.length > 0 && (
-                      <div data-indent>
-                        {t.functionInputs.map((input, i, inputs) => (
-                          <React.Fragment key={i}>
-                            <span data-argument>
-                              {input.type === "address" ? (
-                                <a
-                                  href={createEtherscanAddressUrl(input.value)}
-                                  target="_blank"
-                                  rel="noreferrer"
-                                >
-                                  {input.value}
-                                </a>
-                              ) : (
-                                input.value.toString()
-                              )}
-                            </span>
-                            {i !== inputs.length - 1 && (
-                              <>
-                                ,<br />
-                              </>
-                            )}
-                          </React.Fragment>
-                        ))}
-                      </div>
-                    )}
-                    ){/* </div> */}
-                  </>
-                );
-
-              case "unparsed-function-call":
-                return (
-                  <>
-                    <span data-identifier>contract</span>:{" "}
-                    <span data-argument>{t.target}</span>
-                    <br />
-                    <span data-identifier>calldata</span>:{" "}
-                    <span data-argument>{t.calldata}</span>
-                  </>
-                );
-
-              default:
-                throw new Error();
-            }
-          };
-          const explanation = <TransactionExplanation parsedTransaction={t} />;
-
-          return (
-            <li key={transactionIndex}>
-              <div
-                css={(t) =>
-                  css({
-                    a: { color: t.colors.textDimmed },
-                    em: {
-                      color: t.colors.textDimmed,
-                      fontStyle: "normal",
-                      fontWeight: t.text.weights.emphasis,
-                    },
-                  })
-                }
-              >
-                {explanation}
-              </div>
-              {t.type !== "transfer" && (
-                <>
-                  <pre>
-                    <code>{renderCode()}</code>
-                  </pre>
-                  {t.type === "unparsed-function-call" && (
-                    <div
-                      css={(t) =>
-                        css({
-                          fontSize: t.text.sizes.small,
-                          color: t.colors.textDimmed,
-                          marginTop: "0.8rem",
-                        })
-                      }
-                    >
-                      Displaying the raw calldata because of missing ABI
-                    </div>
-                  )}
-                </>
-              )}
-            </li>
-          );
-        })}
+        {transactions.map((t, i) => (
+          <li key={i}>
+            <TransactionListItem {...t} />
+          </li>
+        ))}
       </ol>
     </>
   );
 };
 
-const TransactionExplanation = ({ parsedTransaction: t }) => {
-  const { displayName: targetDisplayName } = useAccountDisplayName(t.target);
+const TransactionListItem = ({ target, signature, calldata, value }) => {
+  const t = useParsedTransaction({ target, signature, calldata, value });
 
-  const targetDisplayNameLinkWithTooltip = (
-    <Tooltip.Root>
-      <Tooltip.Trigger asChild>
-        <em>
-          <a
-            href={createEtherscanAddressUrl(t.target)}
-            target="_blank"
-            rel="noreferrer"
-          >
-            {targetDisplayName}
-          </a>
-        </em>
-      </Tooltip.Trigger>
-      <Tooltip.Content side="top" sideOffset={6}>
-        {t.target}
-      </Tooltip.Content>
-    </Tooltip.Root>
+  const renderCode = () => {
+    switch (t.type) {
+      case "function-call":
+      case "proxied-function-call":
+        return (
+          <pre>
+            <code>
+              <a
+                data-identifier
+                href={createEtherscanAddressUrl(t.target)}
+                target="_blank"
+                rel="noreferrer"
+              >
+                contract
+              </a>
+              .<span data-function-name>{t.functionName}</span>(
+              {t.functionInputs.length > 0 && (
+                <div data-indent>
+                  {t.functionInputs.map((input, i, inputs) => (
+                    <React.Fragment key={i}>
+                      <span data-argument>
+                        {input.type === "address" ? (
+                          <a
+                            href={createEtherscanAddressUrl(input.value)}
+                            target="_blank"
+                            rel="noreferrer"
+                          >
+                            {input.value}
+                          </a>
+                        ) : (
+                          input.value.toString()
+                        )}
+                      </span>
+                      {i !== inputs.length - 1 && (
+                        <>
+                          ,<br />
+                        </>
+                      )}
+                    </React.Fragment>
+                  ))}
+                </div>
+              )}
+              )
+            </code>
+          </pre>
+        );
+
+      case "unparsed-function-call":
+        return (
+          <pre>
+            <code>
+              <span data-identifier>contract</span>:{" "}
+              <span data-argument>{t.target}</span>
+              <br />
+              <span data-identifier>calldata</span>:{" "}
+              <span data-argument>{t.calldata}</span>
+            </code>
+          </pre>
+        );
+
+      case "transfer":
+      case "usdc-transfer":
+        return null;
+
+      default:
+        throw new Error();
+    }
+  };
+
+  const explanation = <TransactionExplanation parsedTransaction={t} />;
+
+  return (
+    <>
+      <div
+        css={(t) =>
+          css({
+            a: { color: t.colors.textDimmed },
+            em: {
+              color: t.colors.textDimmed,
+              fontStyle: "normal",
+              fontWeight: t.text.weights.emphasis,
+            },
+          })
+        }
+      >
+        {explanation}
+      </div>
+      {renderCode()}
+      {t.type === "unparsed-function-call" && (
+        <div
+          css={(t) =>
+            css({
+              fontSize: t.text.sizes.small,
+              color: t.colors.textDimmed,
+              marginTop: "0.8rem",
+            })
+          }
+        >
+          Displaying the raw calldata as the contract ABI cound not be fetched
+          from Etherscan.
+        </div>
+      )}
+      {t.type === "proxied-function-call" && (
+        <div
+          css={(t) =>
+            css({
+              a: { color: "currentcolor" },
+              fontSize: t.text.sizes.small,
+              color: t.colors.textDimmed,
+              marginTop: "0.8rem",
+            })
+          }
+        >
+          Implementation contract{" "}
+          <AddressDisplayNameWithTooltip
+            address={t.proxyImplementationAddress}
+          />
+        </div>
+      )}
+    </>
   );
+};
 
+const TransactionExplanation = ({ parsedTransaction: t }) => {
   switch (t.type) {
     case "transfer": {
       const ethString = formatEther(t.value);
@@ -756,18 +906,70 @@ const TransactionExplanation = ({ parsedTransaction: t }) => {
           ) : (
             <em>{ethString} ETH</em>
           )}{" "}
-          transfer to {targetDisplayNameLinkWithTooltip}
+          transfer to{" "}
+          <em>
+            <AddressDisplayNameWithTooltip address={t.target} />
+          </em>
         </>
       );
     }
 
+    case "usdc-transfer":
+      return (
+        <>
+          <em>{formatUnits(t.functionInputs[1].value, 6)} USDC</em> transfer to{" "}
+          <em>
+            <AddressDisplayNameWithTooltip
+              address={t.functionInputs[0].value}
+            />
+          </em>
+        </>
+      );
+
     case "function-call":
     case "unparsed-function-call":
-      return <>Function call to contract {targetDisplayNameLinkWithTooltip}</>;
+      return (
+        <>
+          Function call to contract{" "}
+          <em>
+            <AddressDisplayNameWithTooltip address={t.target} />
+          </em>
+        </>
+      );
+
+    case "proxied-function-call":
+      return (
+        <>
+          Function call to proxy contract{" "}
+          <em>
+            <AddressDisplayNameWithTooltip address={t.target} />
+          </em>
+        </>
+      );
 
     default:
       throw new Error();
   }
+};
+
+const AddressDisplayNameWithTooltip = ({ address }) => {
+  const { displayName } = useAccountDisplayName(address);
+  return (
+    <Tooltip.Root>
+      <Tooltip.Trigger asChild>
+        <a
+          href={createEtherscanAddressUrl(address)}
+          target="_blank"
+          rel="noreferrer"
+        >
+          {displayName}
+        </a>
+      </Tooltip.Trigger>
+      <Tooltip.Content side="top" sideOffset={6}>
+        {address}
+      </Tooltip.Content>
+    </Tooltip.Root>
+  );
 };
 
 export const ProposalActionForm = ({

@@ -32,7 +32,6 @@ import {
 import { useProposalThreshold } from "../hooks/dao.js";
 import { useWallet } from "../hooks/wallet.js";
 import {
-  parseTransaction,
   Layout,
   MainContentContainer,
   ProposalLikeContent,
@@ -444,17 +443,7 @@ const ProposalCandidateScreenContent = ({ candidateId }) => {
                 <div style={{ paddingTop: "3.2rem" }}>
                   {candidate.latestVersion.content.targets != null && (
                     <TransactionList
-                      transactions={candidate.latestVersion.content.targets.map(
-                        (target, i) =>
-                          parseTransaction({
-                            target,
-                            signature:
-                              candidate.latestVersion.content.signatures[i],
-                            calldata:
-                              candidate.latestVersion.content.calldatas[i],
-                            value: candidate.latestVersion.content.values[i],
-                          })
-                      )}
+                      transactions={candidate.latestVersion.transactions}
                     />
                   )}
                 </div>
