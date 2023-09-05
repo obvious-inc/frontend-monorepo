@@ -258,7 +258,9 @@ const ProposalsScreen = () => {
                 };
                 return (
                   <li data-group key={groupName}>
-                    <div data-group-title>{groupName}</div>
+                    <div data-group-title>
+                      {groupName === "ongoing" ? "Current" : groupName}
+                    </div>
                     <ul>
                       {getSortedItems().map((i) => (
                         <li key={i.id}>
@@ -290,8 +292,7 @@ const ProposalItem = ({ proposalId }) => {
   );
 
   const isDimmed =
-    proposal.state != null &&
-    ["canceled", "expired", "defeated", "vetoed"].includes(proposal.state);
+    proposal.state != null && ["canceled", "expired"].includes(proposal.state);
 
   return (
     <RouterLink to={`/${proposalId}`} data-dimmed={isDimmed}>
@@ -352,6 +353,7 @@ const PropStatusText = ({ proposalId }) => {
             day="numeric"
             month="long"
           />
+          <Tag style={{ marginLeft: "1.6rem" }}>Pending</Tag>
         </>
       );
 
@@ -366,6 +368,9 @@ const PropStatusText = ({ proposalId }) => {
             day="numeric"
             month="long"
           />
+          <Tag variant="active" style={{ marginLeft: "1.6rem" }}>
+            Ongoing
+          </Tag>
         </>
       );
 
@@ -380,26 +385,32 @@ const PropStatusText = ({ proposalId }) => {
             day="numeric"
             month="long"
           />
+          <Tag variant="warning" style={{ marginLeft: "1.6rem" }}>
+            Objection period
+          </Tag>
         </>
       );
 
-    case "defeated":
-    case "vetoed":
     case "canceled":
     case "expired":
-      return (
-        <Tag css={(t) => css({ color: t.colors.textNegative })}>
-          {proposal.state}
-        </Tag>
-      );
+      return <Tag>{proposal.state}</Tag>;
+
+    case "defeated":
+    case "vetoed":
+      return <Tag variant="error">{proposal.state}</Tag>;
 
     case "succeeded":
-    case "queued":
     case "executed":
+      return <Tag variant="success">{proposal.state}</Tag>;
+
+    case "queued":
       return (
-        <Tag css={(t) => css({ color: t.colors.textPositive })}>
-          {proposal.state}
-        </Tag>
+        <>
+          Queued
+          <Tag variant="success" style={{ marginLeft: "1.6rem" }}>
+            Succeeded
+          </Tag>
+        </>
       );
 
     default:
@@ -414,6 +425,7 @@ const ProposalCandidateItem = ({ candidateId }) => {
   );
   const votingPower = useProposalCandidateVotingPower(candidateId);
   const proposalThreshold = useProposalThreshold();
+  const isCanceled = candidate.canceledTimestamp != null;
 
   return (
     <RouterLink to={`/candidates/${encodeURIComponent(candidateId)}`}>
@@ -429,32 +441,38 @@ const ProposalCandidateItem = ({ candidateId }) => {
           >
             {authorAccountDisplayName ?? "..."}
           </em>
-          <Tag>
-            {candidate.canceledTimestamp != null
-              ? "Canceled candidate"
-              : candidate.latestVersion.targetProposalId != null
-              ? "Update candidate"
-              : "Candidate"}
-          </Tag>
         </div>
       </div>
-      {votingPower > proposalThreshold ? (
-        <Tag>Sponsor threshold met</Tag>
-      ) : (
-        <div className="status">
-          {votingPower} / {proposalThreshold + 1}
-          <NogglesIcon
-            style={{
-              display: "inline-flex",
-              width: "1.7rem",
-              height: "auto",
-              position: "relative",
-              top: "-0.1rem",
-              marginLeft: "0.5rem",
-            }}
-          />
-        </div>
-      )}
+
+      <div className="status">
+        {votingPower > proposalThreshold ? (
+          <>Sponsor threshold met</>
+        ) : (
+          <>
+            {votingPower} / {proposalThreshold + 1}
+            <NogglesIcon
+              style={{
+                display: "inline-flex",
+                width: "1.7rem",
+                height: "auto",
+                position: "relative",
+                top: "-0.1rem",
+                marginLeft: "0.5rem",
+              }}
+            />
+          </>
+        )}
+        <Tag
+          variant={isCanceled ? "error" : "special"}
+          style={{ marginLeft: "1.6rem" }}
+        >
+          {isCanceled
+            ? "Canceled candidate"
+            : candidate.latestVersion.targetProposalId != null
+            ? "Update candidate"
+            : "Candidate"}
+        </Tag>
+      </div>
     </RouterLink>
   );
 };
@@ -484,16 +502,18 @@ const ProposalDraftItem = ({ draftId }) => {
           >
             {authorAccountDisplayName ?? "..."}
           </em>
-          <Tag>Draft</Tag>
         </div>
       </div>
-      <div />
+      <div className="status">
+        <Tag>Draft</Tag>
+      </div>
     </RouterLink>
   );
 };
 
-export const Tag = ({ children }) => (
+export const Tag = ({ variant, ...props }) => (
   <span
+    data-variant={variant}
     css={(t) =>
       css({
         display: "inline-flex",
@@ -504,13 +524,27 @@ export const Tag = ({ children }) => (
         textTransform: "uppercase",
         padding: "0.1rem 0.3rem",
         borderRadius: "0.2rem",
-        marginLeft: "0.6rem",
         lineHeight: 1.2,
+        '&[data-variant="active"]': {
+          color: t.colors.textPrimary,
+          background: "#deedfd",
+        },
+        '&[data-variant="success"]': {
+          color: "#097045",
+          background: "#e0f1e1",
+        },
+        '&[data-variant="error"]': {
+          color: t.colors.textNegative,
+          background: "#fbe9e9",
+        },
+        '&[data-variant="special"]': {
+          color: "#8e1dad",
+          background: "#f4e5fc",
+        },
       })
     }
-  >
-    {children}
-  </span>
+    {...props}
+  />
 );
 
 export default ProposalsScreen;
