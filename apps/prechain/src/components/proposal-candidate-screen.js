@@ -441,9 +441,11 @@ const ProposalCandidateScreenContent = ({ candidateId }) => {
               </Tabs.Item>
               <Tabs.Item key="transactions" title="Transactions">
                 <div style={{ paddingTop: "3.2rem" }}>
-                  {candidate.latestVersion.content.targets != null && (
+                  {candidate.latestVersion.content.transactions != null && (
                     <TransactionList
-                      transactions={candidate.latestVersion.transactions}
+                      transactions={
+                        candidate.latestVersion.content.transactions
+                      }
                     />
                   )}
                 </div>

@@ -330,15 +330,14 @@ const parseProposalCandidate = (data) => {
         expirationTimestamp: new Date(parseInt(s.expirationTimestamp) * 1000),
       }));
 
-  if (data.latestVersion.targets != null)
-    parsedData.latestVersion.transactions = data.latestVersion.targets.map(
-      (target, i) => ({
+  if (data.latestVersion.content.targets != null)
+    parsedData.latestVersion.content.transactions =
+      data.latestVersion.content.targets.map((target, i) => ({
         target,
-        signature: data.latestVersion.signatures[i],
-        calldata: data.latestVersion.calldatas[i],
-        value: data.latestVersion.values[i],
-      })
-    );
+        signature: data.latestVersion.content.signatures[i],
+        calldata: data.latestVersion.content.calldatas[i],
+        value: data.latestVersion.content.values[i],
+      }));
 
   return parsedData;
 };
