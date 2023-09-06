@@ -2166,8 +2166,26 @@ export const VotingBar = ({
 export const VoteDistributionToolTipContent = ({ votes, delegates }) => {
   const formatPercentage = (number, total) => {
     if (Number(number) === 0) return "0%";
-    const fraction = number / total;
-    return `${Math.round(fraction * 100)}%`;
+    const percentage = (number * 100) / total;
+
+    const isLessThanOne = percentage < 1;
+
+    const hasDecimals = Math.round(percentage) !== percentage;
+
+    return (
+      <span
+        css={css({
+          position: "relative",
+          ":before": {
+            position: "absolute",
+            right: "100%",
+            content: isLessThanOne ? '"<"' : hasDecimals ? '"~"' : undefined,
+          },
+        })}
+      >
+        {isLessThanOne ? "1" : Math.round(percentage)}%
+      </span>
+    );
   };
 
   const voteCount = votes.for + votes.against + votes.abstain;

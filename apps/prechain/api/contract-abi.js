@@ -54,7 +54,7 @@ export default async (req) => {
 
   if (abi == null)
     return new Response(JSON.stringify({ code: "not-found" }), {
-      status: 401,
+      status: 404,
       headers: {
         "content-type": "application/json",
       },
