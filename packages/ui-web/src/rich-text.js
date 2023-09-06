@@ -12,17 +12,9 @@ export const createCss = (t) => ({
   // Paragraphs
   p: {
     margin: "0",
-    display: "var(--paragraph-display, block)",
   },
   "* + p": { marginTop: "1rem" },
   "p:has(+ *)": { marginBottom: "1rem" },
-  // Fancy compact mode behavior
-  "* + p:before, p:has(+ *):after": {
-    display: "var(--paragraph-display-before, none)",
-    content: '""',
-  },
-  "* + p:before": { marginTop: "1rem" },
-  "p:has(+ *):after": { marginBottom: "1rem" },
 
   // Lists
   "ul, ol": {
@@ -138,6 +130,27 @@ export const createCss = (t) => ({
   wordBreak: "break-word",
   em: { fontStyle: "italic" },
   strong: { fontWeight: t.text.weights.emphasis },
+
+  // Inline mode
+  '&[data-inline="true"]': {
+    // All block elements
+    'p, ul, ol, li, h1, h2, h3, blockquote, aside, code, button.image, [role="separator"], hr':
+      {
+        display: "inline",
+        padding: 0,
+      },
+  },
+
+  // Compact mode
+  '&[data-compact="true"]': {
+    p: { display: "inline" },
+    "* + p:before, p:has(+ *):after": {
+      display: "inline",
+      content: '""',
+    },
+    "* + p:before": { marginTop: "1rem" },
+    "p:has(+ *):after": { marginBottom: "1rem" },
+  },
 });
 
 const blockComponentsByElementType = {
@@ -362,17 +375,18 @@ const RichText = ({
     inlineStyle.whiteSpace = "pre-wrap";
   }
 
-  if (compact) {
-    inlineStyle["--paragraph-display-before"] = "block";
-  }
-
   if (inline || compact) {
     inlineStyle.display = "inline";
-    inlineStyle["--paragraph-display"] = "inline";
   }
 
   return (
-    <div css={(theme) => css(createCss(theme))} style={inlineStyle} {...props}>
+    <div
+      data-inline={inline}
+      data-compact={compact}
+      css={(theme) => css(createCss(theme))}
+      style={inlineStyle}
+      {...props}
+    >
       {render(blocks)}
     </div>
   );

@@ -201,7 +201,7 @@ const ChannelMessagesScrollView = ({
               background: "var(--background, transparent)",
               padding: "var(--padding)",
               borderRadius: "var(--border-radius, 0)",
-              color: "var(--color, ${t.colors.textNormal})",
+              color: `var(--color, ${t.colors.textNormal})`,
               position: "relative",
               lineHeight: 1.46668,
               userSelect: "text",
