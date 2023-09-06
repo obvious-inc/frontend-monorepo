@@ -1992,16 +1992,9 @@ const ProposalScreen = () => {
                 Proposal #{proposalId}
                 {proposal?.state != null && (
                   <>
-                    {" "}
-                    <Tag>{proposal.state}</Tag>
+                    <Tag style={{ marginLeft: "0.6rem" }}>{proposal.state}</Tag>
                   </>
                 )}
-                {/* {proposal != null && ( */}
-                {/*   <> */}
-                {/*     {" "} */}
-                {/*     <Tag>{proposal.status}</Tag> */}
-                {/*   </> */}
-                {/* )} */}
               </>
             ),
           },
