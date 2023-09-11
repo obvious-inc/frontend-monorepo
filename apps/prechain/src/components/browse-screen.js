@@ -152,7 +152,7 @@ const ProposalsScreen = () => {
                 listStyle: "none",
                 "li + li": { marginTop: "2.4rem" },
                 ul: { listStyle: "none" },
-                "[data-group] li + li": { marginTop: "0.4rem" },
+                "[data-group] li + li": { marginTop: "1.6rem" },
                 "[data-group-title]": {
                   position: "sticky",
                   top: "4.35rem",
@@ -168,35 +168,54 @@ const ProposalsScreen = () => {
                   padding: "0.8rem 0",
                   color: t.colors.textNormal,
                   borderRadius: "0.5rem",
-                  display: "grid",
-                  gridTemplateColumns: "auto minmax(0,1fr) auto",
-                  alignItems: "center",
-                  gridGap: "1rem",
                 },
-                ".name": {
+                "[data-title]": {
                   fontSize: t.text.sizes.large,
                   fontWeight: t.text.weights.emphasis,
-                  lineHeight: 1.2,
-                },
-                ".description, .status": {
-                  color: t.colors.textDimmed,
-                  fontSize: t.text.sizes.small,
-                  lineHeight: 1.35,
-                  marginTop: "0.1rem",
+                  lineHeight: 1.25,
                   whiteSpace: "nowrap",
                   overflow: "hidden",
                   textOverflow: "ellipsis",
                 },
-                ".status": { textAlign: "right" },
+                "[data-small]": {
+                  color: t.colors.textDimmed,
+                  fontSize: t.text.sizes.small,
+                  lineHeight: 1.4,
+                  whiteSpace: "nowrap",
+                  overflow: "hidden",
+                  textOverflow: "ellipsis",
+                },
                 '[data-dimmed="true"]': {
                   color: t.colors.textMuted,
-                  ".description, .status": {
+                  "[data-small]": {
                     color: t.colors.textMuted,
                   },
                 },
+                // Mobile-only
+                "@media(max-width: 800px)": {
+                  "[data-desktop-only]": {
+                    display: "none",
+                  },
+                },
+                // Desktop-only
+                "@media(min-width: 800px)": {
+                  "[data-mobile-only]": {
+                    display: "none",
+                  },
+                  "[data-group] li + li": { marginTop: "0.4rem" },
+                  a: {
+                    display: "grid",
+                    alignItems: "center",
+                    gridTemplateColumns: "auto minmax(0,1fr)",
+                    gridGap: "1rem",
+                  },
+                  "[data-title]": {
+                    whiteSpace: "default",
+                  },
+                },
+                // Hover enhancement
                 "@media(hover: hover)": {
                   "a:hover": {
-                    // background: t.colors.backgroundModifierHover,
                     background: `linear-gradient(90deg, transparent 0%, ${hoverColor} 20%, ${hoverColor} 80%, transparent 100%)`,
                   },
                 },
@@ -294,6 +313,8 @@ const ProposalItem = ({ proposalId }) => {
   const isDimmed =
     proposal.state != null && ["canceled", "expired"].includes(proposal.state);
 
+  const tagWithStatusText = <PropTagWithStatusText proposalId={proposalId} />;
+
   return (
     <RouterLink to={`/${proposalId}`} data-dimmed={isDimmed}>
       <Avatar
@@ -301,29 +322,36 @@ const ProposalItem = ({ proposalId }) => {
         signatureLength={3}
         size="3.2rem"
         background={isDimmed ? theme.colors.backgroundModifierHover : undefined}
+        data-desktop-only
       />
-      <div>
-        <div className="name">{proposal.title}</div>
-        <div className="description">
-          Prop {proposalId} by{" "}
-          <em
-            css={(t) =>
-              css({ fontWeight: t.text.weights.emphasis, fontStyle: "normal" })
-            }
-          >
-            {authorAccountDisplayName ?? "..."}
-          </em>
-          {/* on{" "} */}
-          {/* <FormattedDate */}
-          {/*   value={proposal.createdTimestamp} */}
-          {/*   day="numeric" */}
-          {/*   month="long" */}
-          {/* /> */}
-          {/* <Tag>{proposal.status}</Tag> */}
+      <div
+        css={css({
+          display: "grid",
+          gridTemplateColumns: "minmax(0,1fr) auto",
+          gridGap: "1.6rem",
+          alignItems: "center",
+        })}
+      >
+        <div>
+          <div data-small>
+            Prop {proposalId} by{" "}
+            <em
+              css={(t) =>
+                css({
+                  fontWeight: t.text.weights.emphasis,
+                  fontStyle: "normal",
+                })
+              }
+            >
+              {authorAccountDisplayName ?? "..."}
+            </em>
+          </div>
+          <div data-title>{proposal.title}</div>
+          <div data-small data-mobile-only css={css({ marginTop: "0.2rem" })}>
+            <PropStatusText proposalId={proposalId} />
+          </div>
         </div>
-      </div>
-      <div className="status">
-        <PropStatusText proposalId={proposalId} />
+        <div data-small>{tagWithStatusText}</div>
       </div>
     </RouterLink>
   );
@@ -353,24 +381,35 @@ const PropStatusText = ({ proposalId }) => {
             day="numeric"
             month="long"
           />
-          <Tag style={{ marginLeft: "1.6rem" }}>Pending</Tag>
         </>
       );
 
     case "active":
       return (
         <>
-          Voting ends{" "}
-          <FormattedDateWithTooltip
-            relativeDayThreshold={5}
-            capitalize={false}
-            value={endDate}
-            day="numeric"
-            month="long"
-          />
-          <Tag variant="active" style={{ marginLeft: "1.6rem" }}>
-            Ongoing
-          </Tag>
+          <div>
+            <span
+              css={(t) =>
+                css({
+                  fontSize: t.text.sizes.base,
+                  color: t.colors.textNormal,
+                })
+              }
+            >
+              {proposal.forVotes} For {"-"} {proposal.againstVotes} Against
+            </span>
+            <br />
+            <span>
+              Voting ends{" "}
+              <FormattedDateWithTooltip
+                relativeDayThreshold={5}
+                capitalize={false}
+                value={endDate}
+                day="numeric"
+                month="long"
+              />
+            </span>
+          </div>
         </>
       );
 
@@ -385,32 +424,93 @@ const PropStatusText = ({ proposalId }) => {
             day="numeric"
             month="long"
           />
-          <Tag variant="warning" style={{ marginLeft: "1.6rem" }}>
-            Objection period
-          </Tag>
         </>
+      );
+
+    case "queued":
+      return "Queued for execution";
+
+    case "canceled":
+    case "expired":
+    case "defeated":
+    case "vetoed":
+    case "succeeded":
+    case "executed":
+      return null;
+
+    default:
+      return null;
+  }
+};
+
+const PropTagWithStatusText = ({ proposalId }) => {
+  const statusText = <PropStatusText proposalId={proposalId} />;
+
+  return (
+    <div css={css({ display: "flex", alignItems: "center", gap: "1.6rem" })}>
+      {statusText != null && (
+        <div
+          css={css({
+            "@media(max-width: 800px)": {
+              display: "none",
+            },
+          })}
+        >
+          {statusText}
+        </div>
+      )}
+      <PropStatusTag proposalId={proposalId} />
+    </div>
+  );
+};
+
+const PropStatusTag = ({ proposalId }) => {
+  const proposal = useProposal(proposalId);
+
+  switch (proposal.state) {
+    case "updatable":
+    case "pending":
+      return <Tag size="large">Pending</Tag>;
+
+    case "active":
+      return (
+        <Tag variant="active" size="large">
+          Ongoing
+        </Tag>
+      );
+
+    case "objection-period":
+      return (
+        <Tag variant="warning" size="large">
+          Objection period
+        </Tag>
       );
 
     case "canceled":
     case "expired":
-      return <Tag>{proposal.state}</Tag>;
+      return <Tag size="large">{proposal.state}</Tag>;
 
     case "defeated":
     case "vetoed":
-      return <Tag variant="error">{proposal.state}</Tag>;
+      return (
+        <Tag variant="error" size="large">
+          {proposal.state}
+        </Tag>
+      );
 
     case "succeeded":
     case "executed":
-      return <Tag variant="success">{proposal.state}</Tag>;
+      return (
+        <Tag variant="success" size="large">
+          {proposal.state}
+        </Tag>
+      );
 
     case "queued":
       return (
-        <>
-          Queued
-          <Tag variant="success" style={{ marginLeft: "1.6rem" }}>
-            Succeeded
-          </Tag>
-        </>
+        <Tag variant="success" size="large">
+          Succeeded
+        </Tag>
       );
 
     default:
@@ -427,51 +527,73 @@ const ProposalCandidateItem = ({ candidateId }) => {
   const proposalThreshold = useProposalThreshold();
   const isCanceled = candidate.canceledTimestamp != null;
 
+  const statusText =
+    votingPower > proposalThreshold ? (
+      <>Sponsor threshold met</>
+    ) : (
+      <>
+        {votingPower} / {proposalThreshold + 1}
+        <NogglesIcon
+          style={{
+            display: "inline-flex",
+            width: "1.7rem",
+            height: "auto",
+            position: "relative",
+            top: "-0.1rem",
+            marginLeft: "0.5rem",
+          }}
+        />
+      </>
+    );
+
   return (
     <RouterLink to={`/candidates/${encodeURIComponent(candidateId)}`}>
-      <Avatar signature={candidate.slug} signatureLength={2} size="3.2rem" />
-      <div>
-        <div className="name">{candidate.latestVersion.content.title}</div>
-        <div className="description">
-          By{" "}
-          <em
-            css={(t) =>
-              css({ fontWeight: t.text.weights.emphasis, fontStyle: "normal" })
-            }
-          >
-            {authorAccountDisplayName ?? "..."}
-          </em>
+      <Avatar
+        signature={candidate.slug}
+        signatureLength={2}
+        size="3.2rem"
+        data-desktop-only
+      />
+      <div
+        css={css({
+          display: "grid",
+          gridTemplateColumns: "minmax(0,1fr) auto",
+          gridGap: "1.6rem",
+          alignItems: "center",
+        })}
+      >
+        <div>
+          <div data-small>
+            Candidate by{" "}
+            <em
+              css={(t) =>
+                css({
+                  fontWeight: t.text.weights.emphasis,
+                  fontStyle: "normal",
+                })
+              }
+            >
+              {authorAccountDisplayName ?? "..."}
+            </em>
+          </div>
+          <div data-title>{candidate.latestVersion.content.title}</div>
+          <div data-mobile-only data-small css={css({ marginTop: "0.2rem" })}>
+            {statusText}
+          </div>
         </div>
-      </div>
-
-      <div className="status">
-        {votingPower > proposalThreshold ? (
-          <>Sponsor threshold met</>
-        ) : (
-          <>
-            {votingPower} / {proposalThreshold + 1}
-            <NogglesIcon
-              style={{
-                display: "inline-flex",
-                width: "1.7rem",
-                height: "auto",
-                position: "relative",
-                top: "-0.1rem",
-                marginLeft: "0.5rem",
-              }}
-            />
-          </>
-        )}
-        <Tag
-          variant={isCanceled ? "error" : "special"}
-          style={{ marginLeft: "1.6rem" }}
+        <div
+          data-small
+          css={css({ display: "flex", gap: "1.6rem", alignItems: "center" })}
         >
-          {isCanceled
-            ? "Canceled candidate"
-            : candidate.latestVersion.targetProposalId != null
-            ? "Update candidate"
-            : "Candidate"}
-        </Tag>
+          <div data-desktop-only>{statusText}</div>
+          <Tag variant={isCanceled ? "error" : "special"} size="large">
+            {isCanceled
+              ? "Canceled candidate"
+              : candidate.latestVersion.targetProposalId != null
+              ? "Update candidate"
+              : "Candidate"}
+          </Tag>
+        </div>
       </div>
     </RouterLink>
   );
@@ -490,30 +612,42 @@ const ProposalDraftItem = ({ draftId }) => {
         signature={draft.name || "Untitled draft"}
         signatureLength={2}
         size="3.2rem"
+        data-desktop-only
       />
-      <div>
-        <div className="name">{draft.name || "Untitled draft"}</div>
-        <div className="description">
-          By{" "}
-          <em
-            css={(t) =>
-              css({ fontWeight: t.text.weights.emphasis, fontStyle: "normal" })
-            }
-          >
-            {authorAccountDisplayName ?? "..."}
-          </em>
+      <div
+        css={css({
+          display: "grid",
+          gridTemplateColumns: "minmax(0,1fr) auto",
+          gridGap: "1.6rem",
+          alignItems: "center",
+        })}
+      >
+        <div>
+          <div data-small>
+            By{" "}
+            <em
+              css={(t) =>
+                css({
+                  fontWeight: t.text.weights.emphasis,
+                  fontStyle: "normal",
+                })
+              }
+            >
+              {authorAccountDisplayName ?? "..."}
+            </em>
+          </div>
+          <div data-title>{draft.name || "Untitled draft"}</div>
         </div>
-      </div>
-      <div className="status">
-        <Tag>Draft</Tag>
+        <Tag size="large">Draft</Tag>
       </div>
     </RouterLink>
   );
 };
 
-export const Tag = ({ variant, ...props }) => (
+export const Tag = ({ variant, size = "normal", ...props }) => (
   <span
     data-variant={variant}
+    data-size={size}
     css={(t) =>
       css({
         display: "inline-flex",
@@ -525,6 +659,7 @@ export const Tag = ({ variant, ...props }) => (
         padding: "0.1rem 0.3rem",
         borderRadius: "0.2rem",
         lineHeight: 1.2,
+        '&[data-size="large"]': { padding: "0.3rem 0.5rem" },
         '&[data-variant="active"]': {
           color: t.colors.textPrimary,
           background: "#deedfd",
@@ -538,8 +673,8 @@ export const Tag = ({ variant, ...props }) => (
           background: "#fbe9e9",
         },
         '&[data-variant="special"]': {
-          color: "#8e1dad",
-          background: "#f4e5fc",
+          color: "#8d519d",
+          background: "#f2dff7",
         },
       })
     }

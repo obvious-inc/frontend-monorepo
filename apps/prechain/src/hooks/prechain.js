@@ -39,8 +39,8 @@ export const contractAddressesByChainId = {
 };
 
 const subgraphEndpointByChainId = {
-  // 1: "https://api.thegraph.com/subgraphs/name/nounsdao/nouns-subgraph",
-  1: "https://api.studio.thegraph.com/query/49498/nouns-v3-mainnet/version/latest",
+  1: "https://api.thegraph.com/subgraphs/name/nounsdao/nouns-subgraph",
+  // 1: "https://api.studio.thegraph.com/query/49498/nouns-v3-mainnet/version/latest",
   11155111:
     "https://api.studio.thegraph.com/proxy/49498/nouns-v3-sepolia/version/latest",
 };
@@ -126,6 +126,17 @@ const PROPOSAL_CANDIDATES_QUERY = `{
         title
         matchingProposalIds
         proposalIdToUpdate
+        contentSignatures {
+          reason
+          canceled
+          expirationTimestamp
+          signer {
+            id
+            nounsRepresented {
+              id
+            }
+          }
+        }
       }
     }
   }
