@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { useFarcasterChannel } from "./farcord";
+import { message as messageUtils } from "@shades/common/utils";
 
 const NEYNAR_V1_ENDPOINT = "https://api.neynar.com/v1/farcaster";
 const NEYNAR_V2_ENDPOINT = "https://api.neynar.com/v2/farcaster";
@@ -31,8 +32,16 @@ export const useNeynarChannelCasts = (channelId) => {
           return result.json();
         })
         .then((data) => {
-          setCasts(data.casts.reverse());
           setNextCursor(data.next.cursor);
+          return data.casts?.map((cast) => {
+            return {
+              ...cast,
+              richText: cast.text ? messageUtils.parseString(cast.text) : null,
+            };
+          });
+        })
+        .then((parsedCasts) => {
+          setCasts(parsedCasts.reverse());
         })
         .catch((err) => {
           throw err;
@@ -72,8 +81,16 @@ export const useNeynarRecentCasts = ({ cursor, fid }) => {
           return result.json();
         })
         .then((data) => {
-          setCasts(data.result.casts.reverse());
           setNextCursor(data.result.next.cursor);
+          return data.result.casts?.map((cast) => {
+            return {
+              ...cast,
+              richText: cast.text ? messageUtils.parseString(cast.text) : null,
+            };
+          });
+        })
+        .then((parsedCasts) => {
+          setCasts(parsedCasts.reverse());
         })
         .catch((err) => {
           throw err;
@@ -101,7 +118,12 @@ export const useNeynarCast = (castHash) => {
           return result.json();
         })
         .then((data) => {
-          setCast(data.result.cast);
+          setCast({
+            ...data.result.cast,
+            richText: data.result.cast.text
+              ? messageUtils.parseString(data.result.cast.text)
+              : null,
+          });
         })
         .catch((err) => {
           throw err;
@@ -129,7 +151,15 @@ export const useNeynarThreadCasts = (castHash) => {
           return result.json();
         })
         .then((data) => {
-          setCasts(data.result.casts.slice(1));
+          return data.result.casts?.map((cast) => {
+            return {
+              ...cast,
+              richText: cast.text ? messageUtils.parseString(cast.text) : null,
+            };
+          });
+        })
+        .then((parsedCasts) => {
+          setCasts(parsedCasts.slice(1));
         })
         .catch((err) => {
           throw err;
@@ -140,43 +170,6 @@ export const useNeynarThreadCasts = (castHash) => {
   }, [castHash]);
 
   return casts;
-};
-
-export const useNeynarRootCast = (castHash) => {
-  const [rootCast, setRootCast] = useState(null);
-
-  useEffect(() => {
-    if (!castHash) return;
-
-    async function fetchCast(hash) {
-      const params = new URLSearchParams({
-        api_key: process.env.NEYNAR_API_KEY,
-        hash: hash,
-      });
-      fetch(NEYNAR_V1_ENDPOINT + "/cast?" + params)
-        .then((result) => {
-          return result.json();
-        })
-        .then((data) => {
-          const cast = data.result.cast;
-          if (cast?.parentHash) {
-            return fetchCast(cast.parentHash);
-          } else {
-            return cast;
-          }
-        })
-        .then((cast) => {
-          setRootCast(cast);
-        })
-        .catch((err) => {
-          throw err;
-        });
-    }
-
-    fetchCast(castHash);
-  }, [castHash]);
-
-  return rootCast;
 };
 
 export const useNeynarUser = (fid) => {

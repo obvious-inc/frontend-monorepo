@@ -13,6 +13,7 @@ import {
   ChatBubble as ChatBubbleIcon,
 } from "@shades/ui-web/icons";
 import { array as arrayUtils } from "@shades/common/utils";
+import RichText from "./rich-text";
 
 const IMAGE_ENDINGS = ["jpg", "jpeg", "png", "gif", "webp", "svg"];
 
@@ -50,6 +51,8 @@ export const CastAuthor = ({ cast }) => {
 
 const CastBody = ({ cast }) => {
   if (cast == null) return null;
+  if (cast.richText) return <RichText blocks={cast.richText} />;
+
   return (
     <p style={{ whiteSpace: "pre-wrap", wordWrap: "break-word" }}>
       {cast.text}
@@ -195,7 +198,24 @@ export const CastHeader = ({ cast }) => {
     >
       <CastAuthor cast={cast} />
 
-      <CastDate date={parseISO(cast.timestamp)} />
+      <Link
+        to={`?cast=${cast.hash}`}
+        css={css({
+          color: "inherit",
+          textDecoration: "none",
+          ":focus-visible": {
+            textDecoration: "underline",
+          },
+          "@media(hover: hover)": {
+            cursor: "pointer",
+            ":hover": {
+              textDecoration: "underline",
+            },
+          },
+        })}
+      >
+        <CastDate date={parseISO(cast.timestamp)} />
+      </Link>
 
       <>
         <Link
@@ -315,17 +335,7 @@ export const CastItem = ({ cast, horizontalPadding = "1.6rem" }) => {
         >
           <CastHeader cast={cast} />
           <>
-            <Link
-              component="div"
-              to={`?cast=${cast.hash}`}
-              key={cast.hash}
-              css={css({
-                color: "inherit",
-                textDecoration: "none",
-              })}
-            >
-              <CastBody cast={cast} />
-            </Link>
+            <CastBody cast={cast} />
             <CastEmbeds cast={cast} />
           </>
         </div>

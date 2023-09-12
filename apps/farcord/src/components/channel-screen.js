@@ -6,16 +6,13 @@ import {
   ReverseVerticalScrollView,
   useLatestCallback,
 } from "@shades/common/react";
-import { useNeynarChannelCasts, useNeynarRootCast } from "../hooks/neynar.js";
+import { useNeynarChannelCasts } from "../hooks/neynar.js";
 import MessageEditorForm from "@shades/ui-web/message-editor-form";
 import Spinner from "@shades/ui-web/spinner";
 import { CastItem } from "./cast.js";
 import ChannelNavBar from "./channel-navbar.js";
 import { ThreadScreen } from "./cast-screen.js";
-import {
-  useFarcasterChannel,
-  useFarcasterChannelByUrl,
-} from "../hooks/farcord.js";
+import { useFarcasterChannel } from "../hooks/farcord.js";
 import { message } from "@shades/common/utils";
 import useSigner from "./signer";
 import { addCast } from "../hooks/hub.js";

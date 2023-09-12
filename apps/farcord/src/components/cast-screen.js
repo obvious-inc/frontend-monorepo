@@ -1,18 +1,9 @@
 import React from "react";
-import { MainLayout } from "./layouts.js";
-import { useParams } from "react-router-dom";
 import { css } from "@emotion/react";
-import {
-  useNeynarCast,
-  useNeynarRootCast,
-  useNeynarThreadCasts,
-} from "../hooks/neynar.js";
+import { useNeynarCast, useNeynarThreadCasts } from "../hooks/neynar.js";
 import MessageEditorForm from "@shades/ui-web/message-editor-form";
 import Spinner from "@shades/ui-web/spinner";
-import ChannelNavBar from "./channel-navbar.js";
-import { ChannelCastsScrollView } from "./channel-screen.js";
 import { CastItem } from "./cast.js";
-import { useFarcasterChannelByUrl } from "../hooks/farcord.js";
 import useSigner from "./signer.js";
 import { message } from "@shades/common/utils";
 import { addCast } from "../hooks/hub.js";
@@ -150,83 +141,6 @@ const ThreadScrollView = ({ castHash }) => {
   );
 };
 
-const CastScreen = () => {
-  let { channelId, castHash } = useParams();
-
-  const rootCast = useNeynarRootCast(castHash);
-  const channel = useFarcasterChannelByUrl(rootCast?.parentUrl);
-
-  const inputRef = React.useRef();
-
-  return (
-    <MainLayout>
-      {channel && (
-        <div
-          css={(t) =>
-            css({
-              position: "relative",
-              zIndex: 0,
-              flex: 1,
-              minWidth: "min(30.6rem, 100vw)",
-              background: t.colors.backgroundPrimary,
-              display: "flex",
-              flexDirection: "column",
-              height: "100%",
-            })
-          }
-        >
-          <ChannelNavBar channelId={channel.id} />
-          <ChannelCastsScrollView channelId={channel.id} />
-
-          <div css={css({ padding: "0 1.6rem" })}>
-            <MessageEditorForm
-              ref={inputRef}
-              inline
-              disabled={true}
-              placeholder={"Compose your cast..."}
-              // submit={submitMessage}
-            />
-          </div>
-
-          <div css={css({ height: "2rem" })}></div>
-        </div>
-      )}
-
-      <div
-        css={(t) =>
-          css({
-            position: "relative",
-            zIndex: 0,
-            flex: 1,
-            minWidth: "min(30.6rem, 100vw)",
-            background: t.colors.backgroundPrimary,
-            display: "flex",
-            flexDirection: "column",
-            height: "100%",
-            borderLeftWidth: "1px",
-            borderLeftStyle: "solid",
-            borderLeftColor: t.colors.backgroundQuarternary,
-          })
-        }
-      >
-        <ThreadScrollView channelId={channelId} castHash={castHash} />
-
-        <div css={css({ padding: "0 1.6rem" })}>
-          <MessageEditorForm
-            ref={inputRef}
-            inline
-            disabled={true}
-            placeholder={"Reply..."}
-            // submit={submitMessage}
-          />
-        </div>
-
-        <div css={css({ height: "2rem" })}></div>
-      </div>
-    </MainLayout>
-  );
-};
-
 export const ThreadScreen = ({ castHash }) => {
   const inputRef = React.useRef();
   const { fid, signer, broadcasted } = useSigner();
@@ -286,5 +200,3 @@ export const ThreadScreen = ({ castHash }) => {
     </div>
   );
 };
-
-export default CastScreen;
