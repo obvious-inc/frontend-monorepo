@@ -1,28 +1,21 @@
 import React from "react";
 import { MainLayout } from "./layouts.js";
-import { useParams, useSearchParams } from "react-router-dom";
+import { useSearchParams } from "react-router-dom";
 import { css } from "@emotion/react";
 import {
   ReverseVerticalScrollView,
   useLatestCallback,
 } from "@shades/common/react";
-import { useNeynarChannelCasts, useNeynarRootCast } from "../hooks/neynar.js";
+import { useNeynarRecentCasts } from "../hooks/neynar.js";
 import MessageEditorForm from "@shades/ui-web/message-editor-form";
 import Spinner from "@shades/ui-web/spinner";
 import { CastItem } from "./cast.js";
-import ChannelNavBar from "./channel-navbar.js";
 import { ThreadScreen } from "./cast-screen.js";
-import {
-  useFarcasterChannel,
-  useFarcasterChannelByUrl,
-} from "../hooks/farcord.js";
 import { message } from "@shades/common/utils";
 import useSigner from "./signer";
 import { addCast } from "../hooks/hub.js";
-import useChannelCastsFetcher from "../hooks/channel-casts-fetcher.js";
 
-export const ChannelCastsScrollView = ({
-  channelId,
+export const FeedScrollView = ({
   didScrollToBottomRef: didScrollToBottomRefExternal,
 }) => {
   const scrollViewRef = React.useRef();
@@ -32,11 +25,8 @@ export const ChannelCastsScrollView = ({
   const didScrollToBottomRef =
     didScrollToBottomRefExternal ?? didScrollToBottomRefInternal;
 
-  const {
-    casts,
-    nextCursor,
-    pending: pendingCasts,
-  } = useNeynarChannelCasts(channelId);
+  const { fid } = useSigner();
+  const { casts, nextCursor } = useNeynarRecentCasts({ fid });
 
   const [pendingMessagesBeforeCount, setPendingMessagesBeforeCount] =
     React.useState(0);
@@ -46,20 +36,16 @@ export const ChannelCastsScrollView = ({
   const castHashes = casts?.map((cast) => cast.hash) ?? [];
   const hasAllCasts = false;
 
-  const fetchMessages = useChannelCastsFetcher(channelId);
+  const fetchMessages = ({ cursor }) => {
+    console.log("fetching new casts", cursor);
+  };
 
-  const fetchMoreCasts = useLatestCallback(async (query) => {
-    const count = 30;
-    setPendingMessagesBeforeCount(count);
-    return fetchMessages({
-      cursor: nextCursor,
-      ...query,
-    }).finally(() => {
-      setPendingMessagesBeforeCount(0);
-    });
+  const fetchMoreCasts = useLatestCallback(() => {
+    if (casts.length === 0) return;
+    return fetchMessages(nextCursor);
   });
 
-  if (pendingCasts) {
+  if (!casts || casts.length === 0) {
     return (
       <div
         css={(t) =>
@@ -79,11 +65,10 @@ export const ChannelCastsScrollView = ({
 
   return (
     <>
-      <ChannelNavBar channelId={channelId} />
       <ReverseVerticalScrollView
         ref={scrollViewRef}
         didScrollToBottomRef={didScrollToBottomRef}
-        scrollCacheKey={channelId}
+        scrollCacheKey={fid}
         onScroll={(e, { direction }) => {
           const el = e.target;
 
@@ -115,7 +100,7 @@ export const ChannelCastsScrollView = ({
 
           if (!isCloseToTop) return;
 
-          // fetchMoreCasts();
+          fetchMoreCasts(nextCursor);
         }}
       >
         <div
@@ -170,10 +155,9 @@ export const ChannelCastsScrollView = ({
   );
 };
 
-const ChannelView = ({ channelId }) => {
+const FeedView = () => {
   const inputRef = React.useRef();
   const { fid, signer, broadcasted } = useSigner();
-  const channel = useFarcasterChannel(channelId);
 
   const placeholderText =
     fid && signer
@@ -186,7 +170,7 @@ const ChannelView = ({ channelId }) => {
 
   const onSubmit = async (blocks) => {
     const text = message.stringifyBlocks(blocks);
-    addCast({ fid, signer, text, parentUrl: channel.parentUrl });
+    addCast({ fid, signer, text });
   };
 
   return (
@@ -204,7 +188,7 @@ const ChannelView = ({ channelId }) => {
         })
       }
     >
-      <ChannelCastsScrollView channelId={channelId} />
+      <FeedScrollView />
 
       <div css={css({ padding: "0 1.6rem" })}>
         <MessageEditorForm
@@ -222,17 +206,16 @@ const ChannelView = ({ channelId }) => {
   );
 };
 
-const ChannelScreen = () => {
-  const { channelId } = useParams();
+const FeedScreen = () => {
   const [searchParams] = useSearchParams();
   const castHash = searchParams.get("cast");
 
   return (
     <MainLayout>
-      <ChannelView channelId={channelId} />
+      <FeedView />
       {castHash && <ThreadScreen castHash={castHash} />}
     </MainLayout>
   );
 };
 
-export default ChannelScreen;
+export default FeedScreen;

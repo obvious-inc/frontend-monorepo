@@ -1,12 +1,8 @@
-import { css, useTheme } from "@emotion/react";
-import Button from "@shades/ui-web/button";
-import Avatar from "@shades/ui-web/avatar";
+import { css } from "@emotion/react";
 import Heading from "./heading.js";
 import NavBar from "./navbar";
 
-const ThreadNavBar = ({ castHash }) => {
-  const theme = useTheme();
-
+const ThreadNavBar = () => {
   return (
     <NavBar>
       <div

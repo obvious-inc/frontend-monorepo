@@ -13,6 +13,10 @@ import ChannelNavBar from "./channel-navbar.js";
 import { ChannelCastsScrollView } from "./channel-screen.js";
 import { CastItem } from "./cast.js";
 import { useFarcasterChannelByUrl } from "../hooks/farcord.js";
+import useSigner from "./signer.js";
+import { message } from "@shades/common/utils";
+import { addCast } from "../hooks/hub.js";
+import { hexToBytes } from "viem";
 
 const ThreadScrollView = ({ castHash }) => {
   const castsContainerRef = React.useRef();
@@ -225,6 +229,27 @@ const CastScreen = () => {
 
 export const ThreadScreen = ({ castHash }) => {
   const inputRef = React.useRef();
+  const { fid, signer, broadcasted } = useSigner();
+  const cast = useNeynarCast(castHash);
+
+  const placeholderText =
+    fid && signer
+      ? "Compose your reply..."
+      : fid && !signer
+      ? "You need to create a Signer to cast"
+      : fid === 0 && !signer
+      ? "You need to connect your Farcaster wallet"
+      : "Connect wallet to cast";
+
+  const onSubmit = async (blocks) => {
+    const text = message.stringifyBlocks(blocks);
+    addCast({
+      fid,
+      signer,
+      text,
+      parentCastId: { hash: hexToBytes(cast.hash), fid: cast.author.fid },
+    });
+  };
 
   return (
     <div
@@ -250,9 +275,10 @@ export const ThreadScreen = ({ castHash }) => {
         <MessageEditorForm
           ref={inputRef}
           inline
-          disabled={true}
-          placeholder={"Reply..."}
-          // submit={submitMessage}
+          fileUploadDisabled
+          disabled={!fid && !signer && !broadcasted}
+          placeholder={placeholderText}
+          submit={onSubmit}
         />
       </div>
 

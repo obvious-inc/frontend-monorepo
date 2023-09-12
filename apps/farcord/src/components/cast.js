@@ -1,9 +1,18 @@
-import { css, useTheme } from "@emotion/react";
+import { css } from "@emotion/react";
 import { isToday, isYesterday, parseISO } from "date-fns";
 import FormattedDate from "./formatted-date";
 import React, { useEffect } from "react";
 import Avatar from "@shades/ui-web/avatar";
 import { Link } from "react-router-dom";
+import { REACTION_TYPE, addReaction, removeReaction } from "../hooks/hub";
+import useSigner from "./signer";
+import {
+  Retweet as RetweetIcon,
+  Heart as HeartRegularIcon,
+  HeartSolid as HeartSolidIcon,
+  ChatBubble as ChatBubbleIcon,
+} from "@shades/ui-web/icons";
+import { array as arrayUtils } from "@shades/common/utils";
 
 const IMAGE_ENDINGS = ["jpg", "jpeg", "png", "gif", "webp", "svg"];
 
@@ -90,6 +99,85 @@ const CastDate = ({ date }) => {
 export const CastHeader = ({ cast }) => {
   const replyCount = cast.replies.count;
 
+  const { fid, signer } = useSigner();
+  const [liked, setLiked] = React.useState(false);
+  const [recasted, setRecasted] = React.useState(false);
+  const [likesCount, setLikesCount] = React.useState(0);
+  const [recastsCount, setRecastsCount] = React.useState(0);
+
+  React.useEffect(() => {
+    if (!fid) return;
+
+    let uniqueLikes = [];
+    let uniqueRecasts = [];
+
+    // v1 Vs. v2 neynar apis...
+    if ("recasts" in cast) {
+      uniqueLikes = arrayUtils.unique(cast.reactions?.fids || []);
+      uniqueRecasts = arrayUtils.unique(cast.recasts?.fids || []);
+    } else {
+      uniqueLikes = arrayUtils.unique(
+        cast.reactions?.likes.map((r) => r.fid) || []
+      );
+      uniqueRecasts = arrayUtils.unique(
+        cast.reactions?.recasts.map((r) => r.fid) || []
+      );
+    }
+
+    setLiked(uniqueLikes.includes(Number(fid)));
+    setLikesCount(uniqueLikes.length);
+    setRecasted(uniqueRecasts.includes(Number(fid)));
+    setRecastsCount(uniqueRecasts.length);
+  }, [cast, fid]);
+
+  const handleLikeClick = async () => {
+    if (liked) {
+      removeReaction({
+        fid,
+        signer,
+        cast: { fid: cast.author.fid, hash: cast.hash },
+        reactionType: REACTION_TYPE.LIKE,
+      }).then(() => {
+        setLiked(false);
+        setLikesCount(likesCount - 1);
+      });
+    } else {
+      addReaction({
+        fid,
+        signer,
+        cast: { fid: cast.author.fid, hash: cast.hash },
+        reactionType: REACTION_TYPE.LIKE,
+      }).then(() => {
+        setLiked(true);
+        setLikesCount(likesCount + 1);
+      });
+    }
+  };
+
+  const handleRecastClick = async () => {
+    if (recasted) {
+      removeReaction({
+        fid,
+        signer,
+        cast: { fid: cast.author.fid, hash: cast.hash },
+        reactionType: REACTION_TYPE.RECAST,
+      }).then(() => {
+        setRecasted(false);
+        setRecastsCount(recastsCount - 1);
+      });
+    } else {
+      addReaction({
+        fid,
+        signer,
+        cast: { fid: cast.author.fid, hash: cast.hash },
+        reactionType: REACTION_TYPE.RECAST,
+      }).then(() => {
+        setRecasted(true);
+        setRecastsCount(recastsCount + 1);
+      });
+    }
+  };
+
   return (
     <div
       css={css`
@@ -105,16 +193,48 @@ export const CastHeader = ({ cast }) => {
         line-height: 1.2;
       `}
     >
+      <CastAuthor cast={cast} />
+
+      <CastDate date={parseISO(cast.timestamp)} />
+
       <>
-        <CastAuthor cast={cast} />
+        <Link
+          to={`?cast=${cast.hash}`}
+          css={css({
+            cursor: "pointer",
+            textDecoration: "none",
+            color: "inherit",
+          })}
+        >
+          <ChatBubbleIcon css={css({ width: "auto", height: "1.6rem" })} />
+        </Link>
+        <TinyMutedText style={{ lineHeight: 1.5 }}>{replyCount}</TinyMutedText>
+      </>
 
-        <CastDate date={parseISO(cast.timestamp)} />
+      <>
+        <button css={css({ cursor: "pointer" })} onClick={handleLikeClick}>
+          {liked ? (
+            <HeartSolidIcon css={css({ width: "auto", height: "1.6rem" })} />
+          ) : (
+            <HeartRegularIcon css={css({ width: "auto", height: "1.6rem" })} />
+          )}
+        </button>
+        <TinyMutedText style={{ lineHeight: 1.5 }}>{likesCount}</TinyMutedText>
+      </>
 
-        {replyCount > 0 && (
-          <TinyMutedText style={{ lineHeight: 1.5 }}>
-            {replyCount == 1 ? "1 reply" : `${replyCount} replies`}
-          </TinyMutedText>
-        )}
+      <>
+        <button css={css({ cursor: "pointer" })} onClick={handleRecastClick}>
+          {recasted ? (
+            <RetweetIcon
+              css={css({ width: "auto", height: "1.6rem", fill: "green" })}
+            />
+          ) : (
+            <RetweetIcon css={css({ width: "auto", height: "1.6rem" })} />
+          )}
+        </button>
+        <TinyMutedText style={{ lineHeight: 1.5 }}>
+          {recastsCount}
+        </TinyMutedText>
       </>
     </div>
   );
@@ -136,13 +256,13 @@ const Embed = ({ embed }) => {
       <div
         css={css({
           padding: "1rem 0 1rem 0",
-          maxWidth: "25rem",
         })}
       >
         <img
-          css={css({ borderRadius: "0.5rem" })}
+          css={css({ borderRadius: "0.5rem", width: "auto", height: "25rem" })}
           src={embed.url}
           loading="lazy"
+          height="25rem"
         />
       </div>
     );
@@ -165,7 +285,6 @@ const CastEmbeds = ({ cast }) => {
 
 export const CastItem = ({ cast, horizontalPadding = "1.6rem" }) => {
   const containerRef = React.useRef();
-  const theme = useTheme();
 
   return (
     <div
@@ -198,7 +317,7 @@ export const CastItem = ({ cast, horizontalPadding = "1.6rem" }) => {
           <>
             <Link
               component="div"
-              to={`/casts/${cast.hash}`}
+              to={`?cast=${cast.hash}`}
               key={cast.hash}
               css={css({
                 color: "inherit",

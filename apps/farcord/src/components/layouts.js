@@ -1,14 +1,12 @@
 import React from "react";
 import { Triangle as TriangleIcon } from "@shades/ui-web/icons";
-import { css, useTheme } from "@emotion/react";
+import { css } from "@emotion/react";
 import { NavLink, Outlet } from "react-router-dom";
-import {
-  useFarcasterChannels,
-  useFarcasterChannelsFetch,
-} from "../hooks/farcord";
+import { useFarcasterChannels } from "../hooks/farcord";
 import { Layout as SidebarLayout } from "@shades/ui-web/sidebar-layout";
 import { ErrorBoundary } from "@shades/common/react";
 import Avatar from "@shades/ui-web/avatar";
+import FarcasterAccount from "./farcaster-account";
 
 const ListItem = React.forwardRef(
   (
@@ -122,16 +120,8 @@ const ListItem = React.forwardRef(
   }
 );
 
-export const ChannelItem = ({ channel, expandable, size = "normal" }) => {
-  const theme = useTheme();
+export const ChannelItem = ({ channel, expandable }) => {
   const link = `/channels/${channel.id}`;
-
-  const avatarProps = {
-    transparent: true,
-    size: "3rem",
-    // borderRadius: theme.avatars.borderRadius,
-    // background: theme.colors.backgroundModifierHover,
-  };
 
   return (
     <ListItem
@@ -163,6 +153,31 @@ export const ChannelItem = ({ channel, expandable, size = "normal" }) => {
         </span>
       }
       size={channel.description ? "large" : "normal"}
+    />
+  );
+};
+
+export const FeedItem = () => {
+  const link = `/feed`;
+
+  return (
+    <ListItem
+      component={NavLink}
+      to={link}
+      className={({ isActive }) => (isActive ? "active" : "")}
+      title={
+        <div
+          className="title"
+          css={css({
+            overflow: "hidden",
+            textOverflow: "ellipsis",
+          })}
+        >
+          Feed
+        </div>
+      }
+      subtitle={<div>Your feed</div>}
+      size="large"
     />
   );
 };
@@ -330,6 +345,22 @@ export const MainLayout = ({ children }) => {
               })
             }
           >
+            <div
+              style={{
+                height: "2rem",
+              }}
+            />
+
+            <FarcasterAccount />
+
+            <div
+              style={{
+                height: "2rem",
+              }}
+            />
+
+            <FeedItem />
+
             <div
               style={{
                 height: "2rem",

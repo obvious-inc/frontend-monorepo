@@ -14,6 +14,8 @@ module.exports = (...args) => {
         PUSHER_KEY: undefined,
         FARCASTER_HUB_RPC_ENDPOINT: undefined,
         NEYNAR_API_KEY: undefined,
+        INFURA_PROJECT_ID: null,
+        WALLET_CONNECT_PROJECT_ID: null,
       }),
     ],
   };
