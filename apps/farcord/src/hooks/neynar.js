@@ -5,7 +5,7 @@ import { message as messageUtils } from "@shades/common/utils";
 const NEYNAR_V1_ENDPOINT = "https://api.neynar.com/v1/farcaster";
 const NEYNAR_V2_ENDPOINT = "https://api.neynar.com/v2/farcaster";
 
-const DEFAULT_PAGE_SIZE = 100;
+const DEFAULT_PAGE_SIZE = 30;
 
 export const useNeynarChannelCasts = (channelId) => {
   const [casts, setCasts] = useState([]);
