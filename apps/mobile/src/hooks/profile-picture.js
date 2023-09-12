@@ -14,11 +14,10 @@ const usePlaceholderAvatarSvg = (
 
   React.useEffect(() => {
     if (!enabled || walletAddress == null) return;
-    generatePlaceholderAvatarSvgString(walletAddress, { transparent }).then(
-      (url) => {
-        setGeneratedPlaceholderAvatar(url);
-      }
-    );
+    const url = generatePlaceholderAvatarSvgString(walletAddress, {
+      transparent,
+    });
+    setGeneratedPlaceholderAvatar(url);
   }, [enabled, walletAddress, transparent]);
 
   return generatedPlaceholderAvatar;

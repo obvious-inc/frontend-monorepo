@@ -30,7 +30,6 @@ import { Noggles as NogglesIcon } from "@shades/ui-web/icons";
 import Button from "@shades/ui-web/button";
 import Select from "@shades/ui-web/select";
 import Dialog from "@shades/ui-web/dialog";
-import AccountAvatar from "@shades/ui-web/account-avatar";
 import * as Tooltip from "@shades/ui-web/tooltip";
 import Spinner from "@shades/ui-web/spinner";
 import {
@@ -51,6 +50,7 @@ import FormattedDateWithTooltip from "./formatted-date-with-tooltip.js";
 import Callout from "./callout.js";
 import LogoSymbol from "./logo-symbol.js";
 import * as Tabs from "./tabs.js";
+import AccountAvatar from "./account-avatar.js";
 
 const nameBySupportDetailed = { 0: "against", 1: "for", 2: "abstain" };
 
@@ -1599,23 +1599,21 @@ export const ProposalFeed = ({ items = [] }) => {
                         outline: "none",
                         ":focus-visible": {
                           boxShadow: t.shadows.focus,
+                          background: t.colors.backgroundModifierHover,
                         },
                         "@media (hover: hover)": {
                           ":not(:disabled)": {
                             cursor: "pointer",
                             ":hover": {
-                              boxShadow: `0 0 0 0.2rem ${t.colors.borderLight}`,
+                              boxShadow: `0 0 0 0.2rem ${t.colors.backgroundModifierHover}`,
+                              background: t.colors.backgroundModifierHover,
                             },
                           },
                         },
                       })
                     }
                   >
-                    <AccountAvatar
-                      transparent
-                      address={item.authorAccount}
-                      size="2rem"
-                    />
+                    <AccountAvatar address={item.authorAccount} size="2rem" />
                   </button>
                 </AccountPreviewPopoverTrigger>
               )}
@@ -1663,7 +1661,7 @@ export const ProposalFeed = ({ items = [] }) => {
                       </span>
                     </Tooltip.Trigger>
                     <Tooltip.Content side="top" sideOffset={5}>
-                      Represents {item.voteCount}{" "}
+                      {item.voteCount}{" "}
                       {Number(item.voteCount) === 1 ? "noun" : "nouns"}
                     </Tooltip.Content>
                   </Tooltip.Root>

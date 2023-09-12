@@ -50,7 +50,10 @@ const entrypoints = [
       "@emotion/react/jsx-runtime",
     ],
   },
-  { file: "nouns.js", dependencies: ["viem", "@nouns/assets", "@nouns/sdk"] },
+  {
+    file: "nouns/index.js",
+    dependencies: ["viem", "@nouns/assets", "@nouns/sdk"],
+  },
   { file: "emoji.js" },
 ];
 

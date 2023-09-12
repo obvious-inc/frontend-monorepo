@@ -15,13 +15,12 @@ const usePlaceholderAvatar = (
 
   React.useEffect(() => {
     if (!enabled || walletAddress == null) return;
-    import("@shades/common/nouns").then((module) =>
-      module
-        .generatePlaceholderAvatarDataUri(walletAddress, { transparent })
-        .then((url) => {
-          setGeneratedPlaceholderAvatarUrl(url);
-        })
-    );
+    import("@shades/common/nouns").then((module) => {
+      const url = module.generatePlaceholderAvatarDataUri(walletAddress, {
+        transparent,
+      });
+      setGeneratedPlaceholderAvatarUrl(url);
+    });
   }, [enabled, transparent, walletAddress]);
 
   return generatedPlaceholderAvatarUrl;

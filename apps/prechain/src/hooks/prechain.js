@@ -80,10 +80,17 @@ export const useChainId = () => {
 };
 
 const DELEGATES_QUERY = `{
-  delegates(first: 1000) {
+  delegates(first: 1000, where: {nounsRepresented_: {}}) {
     id
     nounsRepresented {
       id
+      seed {
+        head
+        glasses
+        body
+        background
+        accessory
+      }
     }
   }
 }`;
@@ -353,6 +360,20 @@ const parseProposalCandidate = (data) => {
   return parsedData;
 };
 
+const parseDelegate = (data) => {
+  const parsedData = { ...data };
+
+  parsedData.nounsRepresented = arrayUtils.sortBy(
+    (n) => parseInt(n.id),
+    data.nounsRepresented.map((n) => ({
+      ...n,
+      seed: objectUtils.mapValues((v) => parseInt(v), n.seed),
+    }))
+  );
+
+  return parsedData;
+};
+
 const mergeProposalCandidates = (p1, p2) => {
   const mergedCandidate = { ...p1, ...p2 };
   if (p1?.latestVersion == null || p2?.latestVersion == null)
@@ -443,10 +464,11 @@ export const ChainDataCacheContextProvider = ({ children }) => {
   useFetch(
     () =>
       querySubgraph(DELEGATES_QUERY).then((data) => {
+        const parsedDelegates = data.delegates.map(parseDelegate);
         setState((s) => {
           return {
             ...s,
-            delegatesById: arrayUtils.indexBy((d) => d.id, data.delegates),
+            delegatesById: arrayUtils.indexBy((d) => d.id, parsedDelegates),
           };
         });
       }),
