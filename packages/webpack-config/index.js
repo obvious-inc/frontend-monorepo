@@ -7,7 +7,7 @@ const WorkboxPlugin = require("workbox-webpack-plugin");
 
 require("dotenv").config();
 
-module.exports = (_, argv) => {
+module.exports = (_, argv, { htmlTitle } = {}) => {
   const isProduction = argv.mode === "production";
 
   const config = {
@@ -56,7 +56,7 @@ module.exports = (_, argv) => {
     plugins: [
       new HtmlWebpackPlugin({
         template: "src/index.web.html.ejs",
-        title: "NOM",
+        title: htmlTitle,
         manifestPath: isProduction ? "/app.webmanifest" : null,
       }),
       new webpack.EnvironmentPlugin({
