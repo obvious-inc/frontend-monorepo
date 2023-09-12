@@ -173,11 +173,10 @@ export const FeedItem = () => {
             textOverflow: "ellipsis",
           })}
         >
-          Feed
+          Recent casts
         </div>
       }
-      subtitle={<div>Your feed</div>}
-      size="large"
+      size="normal"
     />
   );
 };
@@ -366,8 +365,19 @@ export const MainLayout = ({ children }) => {
                 height: "2rem",
               }}
             />
+            <CollapsibleSection
+              key="star"
+              title="Starred Channels (soon)"
+              expanded={false}
+            ></CollapsibleSection>
 
-            <CollapsibleSection key="fc" title="Channels" expanded={true}>
+            <div
+              style={{
+                height: "2rem",
+              }}
+            />
+
+            <CollapsibleSection key="fc" title="All Channels" expanded={true}>
               {farcasterChannels.map((c) => (
                 <ChannelItem key={c.id} channel={c} />
               ))}
