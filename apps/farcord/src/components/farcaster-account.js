@@ -9,7 +9,7 @@ import Button from "@shades/ui-web/button";
 import { useWallet, useWalletLogin } from "@shades/common/wallet";
 import Spinner from "@shades/ui-web/spinner";
 import { useNeynarUser } from "../hooks/neynar";
-import { useNetwork, useSwitchNetwork } from "wagmi";
+import { useNetwork, useSwitchNetwork, useDisconnect } from "wagmi";
 import { getPublicKeyAsync, utils as EdDSAUtils } from "@noble/ed25519";
 import { bytesToHex } from "viem";
 import { ethereum as ethereumUtils } from "@shades/common/utils";
@@ -23,9 +23,16 @@ const DEFAULT_CHAIN_ID = 10;
 const FarcasterUser = ({ fid }) => {
   const { user: farcasterUser, isFetching: isFetchingNeynarUser } =
     useNeynarUser(fid);
-
+  const { disconnect } = useDisconnect();
   if (!fid) {
-    return <p>Connect your Farcaster custody wallet</p>;
+    return (
+      <div>
+        <p>Please re-connect or switch to your Farcaster custody wallet.</p>
+        <Button size="small" variant="default" onClick={disconnect}>
+          Disconnect wallet
+        </Button>
+      </div>
+    );
   }
 
   if (isFetchingNeynarUser) {
