@@ -4,7 +4,7 @@ import { useParams, useSearchParams } from "react-router-dom";
 import { css } from "@emotion/react";
 import {
   ReverseVerticalScrollView,
-  useLatestCallback,
+  // useLatestCallback,
 } from "@shades/common/react";
 import { useNeynarChannelCasts } from "../hooks/neynar.js";
 import MessageEditorForm from "@shades/ui-web/message-editor-form";
@@ -16,7 +16,7 @@ import { useFarcasterChannel } from "../hooks/farcord.js";
 import { message } from "@shades/common/utils";
 import useSigner from "./signer";
 import { addCast } from "../hooks/hub.js";
-import useChannelCastsFetcher from "../hooks/channel-casts-fetcher.js";
+// import useChannelCastsFetcher from "../hooks/channel-casts-fetcher.js";
 
 export const ChannelCastsScrollView = ({
   channelId,
@@ -31,30 +31,28 @@ export const ChannelCastsScrollView = ({
 
   const {
     casts,
-    nextCursor,
+    // nextCursor,
     pending: pendingCasts,
   } = useNeynarChannelCasts(channelId);
 
-  const [pendingMessagesBeforeCount, setPendingMessagesBeforeCount] =
-    React.useState(0);
-  const [averageMessageListItemHeight, setAverageMessageListItemHeight] =
-    React.useState(0);
+  const [pendingMessagesBeforeCount] = React.useState(0);
+  const [averageMessageListItemHeight] = React.useState(0);
 
   const castHashes = casts?.map((cast) => cast.hash) ?? [];
   const hasAllCasts = false;
 
-  const fetchMessages = useChannelCastsFetcher(channelId);
+  // const fetchMessages = useChannelCastsFetcher(channelId);
 
-  const fetchMoreCasts = useLatestCallback(async (query) => {
-    const count = 30;
-    setPendingMessagesBeforeCount(count);
-    return fetchMessages({
-      cursor: nextCursor,
-      ...query,
-    }).finally(() => {
-      setPendingMessagesBeforeCount(0);
-    });
-  });
+  // const fetchMoreCasts = useLatestCallback(async (query) => {
+  //   const count = 30;
+  //   setPendingMessagesBeforeCount(count);
+  //   return fetchMessages({
+  //     cursor: nextCursor,
+  //     ...query,
+  //   }).finally(() => {
+  //     setPendingMessagesBeforeCount(0);
+  //   });
+  // });
 
   if (pendingCasts) {
     return (

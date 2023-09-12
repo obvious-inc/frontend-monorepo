@@ -28,10 +28,8 @@ export const FeedScrollView = ({
   const { fid } = useSigner();
   const { casts, nextCursor } = useNeynarRecentCasts({ fid });
 
-  const [pendingMessagesBeforeCount, setPendingMessagesBeforeCount] =
-    React.useState(0);
-  const [averageMessageListItemHeight, setAverageMessageListItemHeight] =
-    React.useState(0);
+  const [pendingMessagesBeforeCount] = React.useState(0);
+  const [averageMessageListItemHeight] = React.useState(0);
 
   const castHashes = casts?.map((cast) => cast.hash) ?? [];
   const hasAllCasts = false;
