@@ -316,7 +316,7 @@ const ProposalItem = ({ proposalId }) => {
   const tagWithStatusText = <PropTagWithStatusText proposalId={proposalId} />;
 
   return (
-    <RouterLink to={`/${proposalId}`} data-dimmed={isDimmed}>
+    <RouterLink to={`/proposals/${proposalId}`} data-dimmed={isDimmed}>
       <Avatar
         signature={proposalId}
         signatureLength={3}

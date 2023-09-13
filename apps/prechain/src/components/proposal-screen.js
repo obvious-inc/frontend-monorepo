@@ -1594,26 +1594,27 @@ export const ProposalFeed = ({ items = [] }) => {
                     css={(t) =>
                       css({
                         display: "block",
-                        borderRadius: t.avatars.borderRadius,
-                        overflow: "hidden",
                         outline: "none",
-                        ":focus-visible": {
+                        ":focus-visible [data-avatar]": {
                           boxShadow: t.shadows.focus,
                           background: t.colors.backgroundModifierHover,
                         },
                         "@media (hover: hover)": {
                           ":not(:disabled)": {
                             cursor: "pointer",
-                            ":hover": {
+                            ":hover [data-avatar]": {
                               boxShadow: `0 0 0 0.2rem ${t.colors.backgroundModifierHover}`,
-                              background: t.colors.backgroundModifierHover,
                             },
                           },
                         },
                       })
                     }
                   >
-                    <AccountAvatar address={item.authorAccount} size="2rem" />
+                    <AccountAvatar
+                      data-avatar
+                      address={item.authorAccount}
+                      size="2rem"
+                    />
                   </button>
                 </AccountPreviewPopoverTrigger>
               )}

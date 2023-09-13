@@ -61,13 +61,17 @@ const NounsAccountAvatar = React.forwardRef(
         <AvatarStack urls={nounAvatarUrls} count={maxStackCount} {...props} />
       );
 
-    const imageUrl = ensAvatarUrl ?? nounAvatarUrls?.[0];
+    const nounAvatarUrl = nounAvatarUrls?.[0];
+    const imageUrl = ensAvatarUrl ?? nounAvatarUrl;
 
     return (
       <Avatar
         ref={ref}
         url={imageUrl}
+        borderRadius={nounAvatarUrl == null ? "0.3rem" : undefined}
         signature={ensName ?? accountAddress.slice(2)}
+        signatureLength={2}
+        signatureFontSize="0.95rem"
         {...props}
       />
     );

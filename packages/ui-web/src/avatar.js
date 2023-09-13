@@ -7,59 +7,60 @@ const Avatar = React.forwardRef(
       url,
       signature,
       signatureLength = 1,
+      signatureFontSize,
       size = "2rem",
       borderRadius,
       background,
       isLoading,
+      style,
       ...props
     },
     ref
   ) => {
-    if (url != null)
-      return (
-        <img
-          ref={ref}
-          src={url}
-          loading="lazy"
-          css={(t) =>
-            css({
-              borderRadius: borderRadius ?? t.avatars.borderRadius,
-              background: background ?? t.avatars.background,
-              height: size,
-              width: size,
-              objectFit: "cover",
-            })
-          }
-          {...props}
-        />
-      );
+    const sharedProps = {
+      ref,
+      css: (t) =>
+        css({
+          borderRadius: `var(--custom-border-radius, ${t.avatars.borderRadius})`,
+          background: `var(--custom-background, ${t.avatars.background})`,
+          width: "var(--size)",
+          height: "var(--size)",
+          objectFit: "cover",
+        }),
+      style: {
+        "--size": size,
+        "--custom-background": background,
+        "--custom-border-radius": borderRadius,
+        ...style,
+      },
+      ...props,
+    };
+
+    if (url != null) return <img src={url} loading="lazy" {...sharedProps} />;
 
     return (
       <div
-        ref={ref}
-        css={(t) =>
+        {...sharedProps}
+        css={[
+          sharedProps.css,
           css({
-            borderRadius: borderRadius ?? t.avatars.borderRadius,
-            background: background ?? t.avatars.background,
-            height: size,
-            width: size,
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
-            overflow: "hidden",
-          })
-        }
-        {...props}
+          }),
+        ]}
       >
         {!isLoading && signature != null && (
           <div
-            css={(theme) =>
+            css={(t) =>
               css({
                 textTransform: "uppercase",
-                fontSize: "1.1rem",
-                color: theme.colors.textDimmed,
+                fontSize: `var(--custom-signature-font-size, 1.1rem)`,
+                color: t.colors.textDimmed,
+                lineHeight: 1,
               })
             }
+            style={{ "--custom-signature-font-size": signatureFontSize }}
           >
             {
               // Emojis: https://dev.to/acanimal/how-to-slice-or-get-symbols-from-a-unicode-string-with-emojis-in-javascript-lets-learn-how-javascript-represent-strings-h3a
