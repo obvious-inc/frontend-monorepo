@@ -16,6 +16,7 @@ module.exports = (...args) => {
         NEYNAR_API_KEY: undefined,
         INFURA_PROJECT_ID: null,
         WALLET_CONNECT_PROJECT_ID: null,
+        WARPCAST_API_TOKEN: null,
       }),
     ],
   };

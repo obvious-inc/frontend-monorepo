@@ -13,8 +13,7 @@ export const useRecentCasts = (cursor, fid) => {
     });
 
     const headers = new Headers({
-      Authorization:
-        "MK-CokW0//eUrS2EoC2FJZGfliATGAT+uD3466PlOC+Zx51Q2g3yUwNTru1v3hF73tqNZPL1q8K4bqGlWO2v01xxg==",
+      Authorization: process.env.WARPCAST_API_TOKEN,
     });
 
     async function fetchCasts() {
@@ -35,4 +34,40 @@ export const useRecentCasts = (cursor, fid) => {
   }, [cursor, fid]);
 
   return { casts, nextCursor };
+};
+
+export const useFollowedChannels = (fid) => {
+  const [channels, setChannels] = React.useState(null);
+
+  React.useEffect(() => {
+    if (!fid) return;
+
+    const params = new URLSearchParams({
+      fid,
+      limit: WARPCAST_DEFAULT_LIMIT,
+    });
+
+    const headers = new Headers({
+      Authorization: process.env.WARPCAST_API_TOKEN,
+    });
+
+    async function fetchCasts() {
+      fetch(WARPCAST_API_ENDPOINT + "/user-following-channels?" + params, {
+        headers,
+      })
+        .then((result) => {
+          return result.json();
+        })
+        .then((data) => {
+          setChannels(data.result.channels);
+        })
+        .catch((err) => {
+          throw err;
+        });
+    }
+
+    fetchCasts();
+  }, [fid]);
+
+  return channels;
 };

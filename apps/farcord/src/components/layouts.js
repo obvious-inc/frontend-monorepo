@@ -7,6 +7,8 @@ import { Layout as SidebarLayout } from "@shades/ui-web/sidebar-layout";
 import { ErrorBoundary } from "@shades/common/react";
 import Avatar from "@shades/ui-web/avatar";
 import FarcasterAccount from "./farcaster-account";
+import { useFollowedChannels } from "../hooks/warpcast";
+import useSigner from "./signer";
 
 const ListItem = React.forwardRef(
   (
@@ -121,7 +123,7 @@ const ListItem = React.forwardRef(
 );
 
 export const ChannelItem = ({ channel, expandable }) => {
-  const link = `/channels/${channel.id}`;
+  const link = `/channels/${channel.id || channel.key}`;
 
   return (
     <ListItem
@@ -265,7 +267,14 @@ const SmallText = ({ component: Component = "div", ...props }) => (
 );
 
 export const MainLayout = ({ children }) => {
+  const { fid } = useSigner();
+  const followedChannels = useFollowedChannels(fid);
+  const followedChannelsIds = followedChannels?.map((c) => c.key);
   const farcasterChannels = useFarcasterChannels();
+
+  const remainingChannels = farcasterChannels.filter(
+    (channel) => !followedChannelsIds?.includes(channel.id)
+  );
 
   return (
     <>
@@ -367,9 +376,13 @@ export const MainLayout = ({ children }) => {
             />
             <CollapsibleSection
               key="star"
-              title="Starred Channels (soon)"
-              expanded={false}
-            ></CollapsibleSection>
+              title="Followed Channels"
+              expanded={true}
+            >
+              {followedChannels?.map((c) => (
+                <ChannelItem key={`star-${c.key}`} channel={c} />
+              ))}
+            </CollapsibleSection>
 
             <div
               style={{
@@ -378,8 +391,8 @@ export const MainLayout = ({ children }) => {
             />
 
             <CollapsibleSection key="fc" title="All Channels" expanded={true}>
-              {farcasterChannels.map((c) => (
-                <ChannelItem key={c.id} channel={c} />
+              {remainingChannels.map((c) => (
+                <ChannelItem key={`fc-${c.id}`} channel={c} />
               ))}
             </CollapsibleSection>
           </div>
