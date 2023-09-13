@@ -21,7 +21,10 @@ const FormattedDateWithTooltip = React.memo(
       if (disableRelative)
         return <FormattedDate value={valueDate} {...props} />;
 
-      if (datesDifferenceInDays(valueDate, new Date()) > relativeDayThreshold)
+      if (
+        Math.abs(datesDifferenceInDays(valueDate, new Date())) >
+        relativeDayThreshold
+      )
         return (
           <>
             <span style={{ textTransform: capitalize ? "capitalize" : "none" }}>

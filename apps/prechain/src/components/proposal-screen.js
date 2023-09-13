@@ -1,4 +1,5 @@
 import datesDifferenceInDays from "date-fns/differenceInCalendarDays";
+import datesDifferenceInMonths from "date-fns/differenceInCalendarMonths";
 import {
   getAbiItem,
   decodeAbiParameters,
@@ -62,6 +63,22 @@ const supportDetailedToString = (n) => {
 // https://eips.ethereum.org/EIPS/eip-1967#logic-contract-address
 const IMPLEMENTATION_CONTRACT_ADDRESS_STORAGE_SLOT =
   "0x360894a13ba1a3210667c828492db98dca3e2076cc3735a920a3ca505d382bbc";
+
+const ethToken = {
+  currency: "ETH",
+  decimals: 18,
+};
+const tokenContractsByAddress = {
+  "0x0000000000000000000000000000000000000000": ethToken,
+  "0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2": {
+    currency: "WETH",
+    decimals: 18,
+  },
+  "0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48": {
+    currency: "USDC",
+    decimals: 6,
+  },
+};
 
 const useAbi = (address, { enabled = true } = {}) => {
   const publicClient = usePublicClient();
@@ -204,29 +221,62 @@ const useAsyncDecodedFunctionData = (
 };
 
 const DAO_PAYER_CONTRACT = "0xd97bcd9f47cee35c0a9ec1dc40c1269afc9e8e1d";
+const TOKEN_BUYER_CONTRACT = "0x4f2acdc74f6941390d9b1804fabc3e780388cfe5";
+const CREATE_STREAM_SIGNATURE =
+  "createStream(address,uint256,address,uint256,uint256,uint8,address)";
 
-const useParsedTransaction = ({ target, signature, calldata, value }) => {
-  const hasSignature = (signature || null) != null;
-  const isEthTransfer = !hasSignature && calldata === "0x";
+const parseTransactions = (transactions) => {
+  const predictedStreamContractAddresses = transactions
+    .filter((t) => t.signature === CREATE_STREAM_SIGNATURE)
+    .map((t) => {
+      const { inputs } = decodeCalldataWithSignature({
+        signature: t.signature,
+        calldata: t.calldata,
+      });
+      return inputs[6].value.toLowerCase();
+    });
 
-  const isMissingSignature = !hasSignature && !isEthTransfer;
+  return transactions.map(({ target, signature, calldata, value }) => {
+    const hasSignature = (signature || null) != null;
+    const isEthTransfer = !hasSignature && calldata === "0x";
 
-  const decodedFunctionData = useAsyncDecodedFunctionData(
-    { target, calldata },
-    { enabled: isMissingSignature }
-  );
+    if (isEthTransfer)
+      return target.toLowerCase() === TOKEN_BUYER_CONTRACT
+        ? { type: "token-buyer-top-up", value }
+        : { type: "transfer", target, value };
 
-  if (isEthTransfer) return { type: "transfer", target, value };
+    if (!hasSignature)
+      return { type: "unparsed-function-call", target, calldata, value };
 
-  if (hasSignature) {
     const { name: functionName, inputs: functionInputs } =
       decodeCalldataWithSignature({ signature, calldata });
+
+    if (signature === CREATE_STREAM_SIGNATURE) {
+      return {
+        type: "stream",
+        receiverAddress: functionInputs[0].value.toLowerCase(),
+        tokenAmount: functionInputs[1].value,
+        tokenContractAddress: functionInputs[2].value.toLowerCase(),
+        startDate: new Date(Number(functionInputs[3].value) * 1000),
+        endDate: new Date(Number(functionInputs[4].value) * 1000),
+        streamContractAddress: functionInputs[6].value.toLowerCase(),
+      };
+    }
 
     if (
       target === DAO_PAYER_CONTRACT &&
       signature === "sendOrRegisterDebt(address,uint256)"
-    )
-      return { target, type: "usdc-transfer", functionName, functionInputs };
+    ) {
+      const receiverAddress = functionInputs[0].value.toLowerCase();
+      const isStreamFunding = predictedStreamContractAddresses.some(
+        (a) => a === receiverAddress
+      );
+      return {
+        type: isStreamFunding ? "stream-funding-via-payer" : "usdc-transfer",
+        functionName,
+        functionInputs,
+      };
+    }
 
     return {
       target,
@@ -234,10 +284,18 @@ const useParsedTransaction = ({ target, signature, calldata, value }) => {
       functionName,
       functionInputs,
     };
-  }
+  });
+};
 
-  if (decodedFunctionData == null)
-    return { target, type: "unparsed-function-call", calldata };
+const useEnhancedParsedTransaction = (parsedTransaction) => {
+  const { type, target, calldata } = parsedTransaction;
+
+  const decodedFunctionData = useAsyncDecodedFunctionData(
+    { target, calldata },
+    { enabled: type === "unparsed-function-call" }
+  );
+
+  if (decodedFunctionData == null) return parsedTransaction;
 
   return {
     target,
@@ -707,7 +765,7 @@ export const TransactionList = ({ transactions }) => {
               paddingLeft: "2rem",
               li: { listStyle: "decimal" },
             },
-            "li + li": { marginTop: "1rem" },
+            "li + li": { marginTop: "1.5rem" },
             "li:has(pre code) + li": {
               marginTop: "2.6rem",
             },
@@ -743,9 +801,9 @@ export const TransactionList = ({ transactions }) => {
           })
         }
       >
-        {transactions.map((t, i) => (
+        {parseTransactions(transactions).map((t, i) => (
           <li key={i}>
-            <TransactionListItem {...t} />
+            <TransactionListItem transaction={t} />
           </li>
         ))}
       </ol>
@@ -753,8 +811,8 @@ export const TransactionList = ({ transactions }) => {
   );
 };
 
-const TransactionListItem = ({ target, signature, calldata, value }) => {
-  const t = useParsedTransaction({ target, signature, calldata, value });
+const TransactionListItem = ({ transaction }) => {
+  const t = useEnhancedParsedTransaction(transaction);
 
   const renderCode = () => {
     switch (t.type) {
@@ -818,6 +876,9 @@ const TransactionListItem = ({ target, signature, calldata, value }) => {
 
       case "transfer":
       case "usdc-transfer":
+      case "token-buyer-top-up":
+      case "stream":
+      case "stream-funding-via-payer":
         return null;
 
       default:
@@ -875,38 +936,117 @@ const TransactionListItem = ({ target, signature, calldata, value }) => {
           />
         </div>
       )}
+      {t.type === "token-buyer-top-up" && (
+        <div
+          css={(t) =>
+            css({
+              a: { color: "currentcolor" },
+              fontSize: t.text.sizes.small,
+              color: t.colors.textDimmed,
+              marginTop: "0.2rem",
+            })
+          }
+        >
+          This transaction refills USDC to the{" "}
+          <Tooltip.Root>
+            <Tooltip.Trigger asChild>
+              <a
+                href={createEtherscanAddressUrl(DAO_PAYER_CONTRACT)}
+                target="_blank"
+                rel="noreferrer"
+              >
+                DAO Payer
+              </a>
+            </Tooltip.Trigger>
+            <Tooltip.Content side="top" sideOffset={6}>
+              {DAO_PAYER_CONTRACT}
+            </Tooltip.Content>
+          </Tooltip.Root>{" "}
+          contract via the{" "}
+          <Tooltip.Root>
+            <Tooltip.Trigger asChild>
+              <a
+                href={createEtherscanAddressUrl(TOKEN_BUYER_CONTRACT)}
+                target="_blank"
+                rel="noreferrer"
+              >
+                DAO Token Buyer
+              </a>
+            </Tooltip.Trigger>
+            <Tooltip.Content side="top" sideOffset={6}>
+              {TOKEN_BUYER_CONTRACT}
+            </Tooltip.Content>
+          </Tooltip.Root>{" "}
+          (
+          <FormattedEthWithConditionalTooltip value={t.value} />
+          ).
+        </div>
+      )}
+      {t.type === "stream-funding-via-payer" && (
+        <div
+          css={(t) =>
+            css({
+              a: { color: "currentcolor" },
+              fontSize: t.text.sizes.small,
+              color: t.colors.textDimmed,
+              marginTop: "0.2rem",
+            })
+          }
+        >
+          This transaction funds the stream with the required amount via the{" "}
+          <Tooltip.Root>
+            <Tooltip.Trigger asChild>
+              <a
+                href={createEtherscanAddressUrl(DAO_PAYER_CONTRACT)}
+                target="_blank"
+                rel="noreferrer"
+              >
+                DAO Payer
+              </a>
+            </Tooltip.Trigger>
+            <Tooltip.Content side="top" sideOffset={6}>
+              {DAO_PAYER_CONTRACT}
+            </Tooltip.Content>
+          </Tooltip.Root>
+          .
+        </div>
+      )}
     </>
+  );
+};
+const FormattedEthWithConditionalTooltip = ({ value }) => {
+  const ethString = formatEther(value);
+  const [ethValue, ethDecimals] = ethString.split(".");
+  const trimDecimals = ethDecimals != null && ethDecimals.length > 3;
+  const trimmedEthString = [
+    ethValue,
+    trimDecimals ? `${ethDecimals.slice(0, 3)}...` : ethDecimals,
+  ]
+    .filter(Boolean)
+    .join(".");
+
+  if (!trimDecimals) return `${ethString} ETH`;
+
+  return (
+    <Tooltip.Root>
+      <Tooltip.Trigger>{trimmedEthString} ETH</Tooltip.Trigger>
+      <Tooltip.Content side="top" sideOffset={6}>
+        {ethString} ETH
+      </Tooltip.Content>
+    </Tooltip.Root>
   );
 };
 
 const TransactionExplanation = ({ parsedTransaction: t }) => {
   switch (t.type) {
     case "transfer": {
-      const ethString = formatEther(t.value);
-      const [ethValue, ethDecimals] = ethString.split(".");
-      const trimDecimals = ethDecimals != null && ethDecimals.length > 3;
-      const trimmedEthString = [
-        ethValue,
-        trimDecimals ? `${ethDecimals.slice(0, 3)}...` : ethDecimals,
-      ]
-        .filter(Boolean)
-        .join(".");
-
       return (
         <>
-          {trimDecimals ? (
-            <Tooltip.Root>
-              <Tooltip.Trigger asChild>
-                <em>{trimmedEthString} ETH</em>
-              </Tooltip.Trigger>
-              <Tooltip.Content side="top" sideOffset={6}>
-                {ethString} ETH
-              </Tooltip.Content>
-            </Tooltip.Root>
-          ) : (
-            <em>{ethString} ETH</em>
-          )}{" "}
-          transfer to{" "}
+          Transfer{" "}
+          <em>
+            <FormattedEthWithConditionalTooltip value={t.value} />
+          </em>{" "}
+          to{" "}
           <em>
             <AddressDisplayNameWithTooltip address={t.target} />
           </em>
@@ -917,11 +1057,92 @@ const TransactionExplanation = ({ parsedTransaction: t }) => {
     case "usdc-transfer":
       return (
         <>
-          <em>{formatUnits(t.functionInputs[1].value, 6)} USDC</em> transfer to{" "}
+          Transfer <em>{formatUnits(t.functionInputs[1].value, 6)} USDC</em> to{" "}
           <em>
             <AddressDisplayNameWithTooltip
               address={t.functionInputs[0].value}
             />
+          </em>
+        </>
+      );
+
+    case "token-buyer-top-up":
+      return (
+        <>
+          Top up the{" "}
+          <em>
+            <Tooltip.Root>
+              <Tooltip.Trigger asChild>
+                <a
+                  href={createEtherscanAddressUrl(TOKEN_BUYER_CONTRACT)}
+                  target="_blank"
+                  rel="noreferrer"
+                >
+                  DAO Token Buyer
+                </a>
+              </Tooltip.Trigger>
+              <Tooltip.Content side="top" sideOffset={6}>
+                {TOKEN_BUYER_CONTRACT}
+              </Tooltip.Content>
+            </Tooltip.Root>
+          </em>
+        </>
+      );
+
+    case "stream": {
+      const { currency, decimals } =
+        tokenContractsByAddress[t.tokenContractAddress] ?? ethToken;
+
+      return (
+        <>
+          Stream{" "}
+          <em>
+            {formatUnits(t.tokenAmount, decimals)} {currency}
+          </em>{" "}
+          to{" "}
+          <em>
+            <AddressDisplayNameWithTooltip address={t.receiverAddress} />
+          </em>{" "}
+          between{" "}
+          <FormattedDateWithTooltip
+            disableRelative
+            day="numeric"
+            month="short"
+            year="numeric"
+            value={t.startDate}
+          />{" "}
+          and{" "}
+          <FormattedDateWithTooltip
+            disableRelative
+            day="numeric"
+            month="short"
+            year="numeric"
+            value={t.endDate}
+          />{" "}
+          ({datesDifferenceInMonths(t.endDate, t.startDate)} months)
+        </>
+      );
+    }
+
+    case "stream-funding-via-payer":
+      return (
+        <>
+          Fund the{" "}
+          <em>
+            <Tooltip.Root>
+              <Tooltip.Trigger asChild>
+                <a
+                  href={createEtherscanAddressUrl(t.functionInputs[0].value)}
+                  target="_blank"
+                  rel="noreferrer"
+                >
+                  Stream Contract
+                </a>
+              </Tooltip.Trigger>
+              <Tooltip.Content side="top" sideOffset={6}>
+                {t.functionInputs[0].value}
+              </Tooltip.Content>
+            </Tooltip.Root>
           </em>
         </>
       );
