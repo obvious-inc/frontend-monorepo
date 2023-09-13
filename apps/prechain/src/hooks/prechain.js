@@ -95,8 +95,8 @@ const DELEGATES_QUERY = `{
   }
 }`;
 
-const createProposalsQuery = ({ skip = 0 } = {}) => `{
-  proposals(orderBy: createdBlock, orderDirectiom: desc, skip: ${skip}, first: 500) {
+const createProposalsQuery = ({ skip = 0, first = 1000 } = {}) => `{
+  proposals(orderBy: createdBlock, orderDirection: desc, skip: ${skip}, first: ${first}) {
     id
     description
     title
@@ -119,8 +119,8 @@ const createProposalsQuery = ({ skip = 0 } = {}) => `{
   }
 }`;
 
-const PROPOSAL_CANDIDATES_QUERY = `{
-  proposalCandidates {
+const createProposalCandidatesQuery = ({ skip = 0, first = 1000 } = {}) => `{
+  proposalCandidates(orderBy: createdBlock, orderDirection: desc, skip: ${skip}, first: ${first}) {
     id
     slug
     proposer
@@ -405,10 +405,9 @@ export const ChainDataCacheContextProvider = ({ children }) => {
     [chainId]
   );
 
-  // Fetch proposals
-  useFetch(
-    () =>
-      querySubgraph(createProposalsQuery({ skip: 0 })).then((data) => {
+  const fetchProposals = React.useCallback(
+    (options) =>
+      querySubgraph(createProposalsQuery(options)).then((data) => {
         const parsedProposals = data.proposals.map(parseProposal);
         const fetchedProposalsById = indexBy((p) => p.id, parsedProposals);
 
@@ -430,10 +429,9 @@ export const ChainDataCacheContextProvider = ({ children }) => {
     [querySubgraph]
   );
 
-  // Fetch candidates
-  useFetch(
-    () =>
-      querySubgraph(PROPOSAL_CANDIDATES_QUERY).then((data) => {
+  const fetchProposalCandidates = React.useCallback(
+    (options) =>
+      querySubgraph(createProposalCandidatesQuery(options)).then((data) => {
         const parsedCandidates = data.proposalCandidates.map(
           parseProposalCandidate
         );
@@ -454,21 +452,6 @@ export const ChainDataCacheContextProvider = ({ children }) => {
               ...fetchedCandidatesById,
               ...mergedExistingCandidatesById,
             },
-          };
-        });
-      }),
-    [querySubgraph]
-  );
-
-  // Fetch delegates
-  useFetch(
-    () =>
-      querySubgraph(DELEGATES_QUERY).then((data) => {
-        const parsedDelegates = data.delegates.map(parseDelegate);
-        setState((s) => {
-          return {
-            ...s,
-            delegatesById: arrayUtils.indexBy((d) => d.id, parsedDelegates),
           };
         });
       }),
@@ -536,6 +519,39 @@ export const ChainDataCacheContextProvider = ({ children }) => {
         });
       });
     },
+    [querySubgraph]
+  );
+
+  // Fetch proposals
+  useFetch(
+    () =>
+      fetchProposals({ first: 15 }).then(() => {
+        fetchProposals({ skip: 15, first: 1000 });
+      }),
+    [fetchProposals]
+  );
+
+  // Fetch candidates
+  useFetch(
+    () =>
+      fetchProposalCandidates({ first: 15 }).then(() => {
+        fetchProposalCandidates({ skip: 15, first: 1000 });
+      }),
+    [fetchProposalCandidates]
+  );
+
+  // Fetch delegates
+  useFetch(
+    () =>
+      querySubgraph(DELEGATES_QUERY).then((data) => {
+        const parsedDelegates = data.delegates.map(parseDelegate);
+        setState((s) => {
+          return {
+            ...s,
+            delegatesById: arrayUtils.indexBy((d) => d.id, parsedDelegates),
+          };
+        });
+      }),
     [querySubgraph]
   );
 
