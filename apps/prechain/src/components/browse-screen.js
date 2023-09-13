@@ -387,20 +387,33 @@ const PropStatusText = ({ proposalId }) => {
     case "active":
       return (
         <>
-          <div>
-            <span
-              css={(t) =>
-                css({
-                  fontSize: t.text.sizes.base,
-                  color: t.colors.textNormal,
-                })
-              }
-            >
+          <div
+            css={(t) =>
+              css({
+                display: "inline-flex",
+                '[role="separator"]:before': {
+                  content: '",\u{00a0}"',
+                },
+                "@media(min-width: 800px)": {
+                  flexDirection: "row-reverse",
+                  '[role="separator"]:before': {
+                    content: '"|"',
+                    color: t.colors.borderLight,
+                    margin: "0 1rem",
+                  },
+                  "[data-description]::first-letter": {
+                    textTransform: "uppercase",
+                  },
+                },
+              })
+            }
+          >
+            <span data-votes>
               {proposal.forVotes} For {"-"} {proposal.againstVotes} Against
             </span>
-            <br />
-            <span>
-              Voting ends{" "}
+            <span role="separator" aria-orientation="vertical" />
+            <span data-description>
+              voting ends{" "}
               <FormattedDateWithTooltip
                 relativeDayThreshold={5}
                 capitalize={false}
@@ -447,7 +460,14 @@ const PropTagWithStatusText = ({ proposalId }) => {
   const statusText = <PropStatusText proposalId={proposalId} />;
 
   return (
-    <div css={css({ display: "flex", alignItems: "center", gap: "1.6rem" })}>
+    <div
+      css={css({
+        display: "flex",
+        alignItems: "center",
+        gap: "1.6rem",
+        textAlign: "right",
+      })}
+    >
       {statusText != null && (
         <div
           css={css({
