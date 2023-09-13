@@ -14,6 +14,7 @@ import { InjectedConnector } from "wagmi/connectors/injected";
 import { WalletConnectConnector } from "wagmi/connectors/walletConnect";
 import "./reset.css";
 import "./index.css";
+import { ChannelCacheContextProvider } from "./hooks/channel.js";
 
 const LazyApp = React.lazy(() => import("./app"));
 
@@ -56,9 +57,11 @@ createRoot(document.getElementById("app-mount")).render(
   <React.StrictMode>
     <WagmiConfig config={wagmiConfig}>
       <ChainDataCacheContextProvider>
-        <CacheStoreProvider syncStorage={cacheStoreStorage}>
-          <App />
-        </CacheStoreProvider>
+        <ChannelCacheContextProvider>
+          <CacheStoreProvider syncStorage={cacheStoreStorage}>
+            <App />
+          </CacheStoreProvider>
+        </ChannelCacheContextProvider>
       </ChainDataCacheContextProvider>
     </WagmiConfig>
   </React.StrictMode>

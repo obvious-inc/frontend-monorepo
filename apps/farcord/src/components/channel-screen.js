@@ -16,7 +16,8 @@ import { useFarcasterChannel } from "../hooks/farcord.js";
 import { message } from "@shades/common/utils";
 import useSigner from "./signer";
 import { addCast } from "../hooks/hub.js";
-// import useChannelCastsFetcher from "../hooks/channel-casts-fetcher.js";
+import { useChannelCasts, useChannelCastsFetch } from "../hooks/channel.js";
+import useChannelCastsFetcher from "../hooks/channel-casts-fetcher.js";
 
 export const ChannelCastsScrollView = ({
   channelId,
@@ -29,11 +30,9 @@ export const ChannelCastsScrollView = ({
   const didScrollToBottomRef =
     didScrollToBottomRefExternal ?? didScrollToBottomRefInternal;
 
-  const {
-    casts,
-    // nextCursor,
-    pending: pendingCasts,
-  } = useNeynarChannelCasts(channelId);
+  const channel = useFarcasterChannel(channelId);
+  useChannelCastsFetch({ channel, cursor: null });
+  const casts = useChannelCasts(channelId);
 
   const [pendingMessagesBeforeCount] = React.useState(0);
   const [averageMessageListItemHeight] = React.useState(0);
@@ -54,7 +53,15 @@ export const ChannelCastsScrollView = ({
   //   });
   // });
 
-  if (pendingCasts) {
+  // React.useEffect(() => {
+  //   if (casts?.length !== 0) return;
+
+  //   // This should be called after the first render, and when navigating to
+  //   // emply channels
+  //   fetchMessages({ limit: 30 });
+  // }, [fetchMessages, casts?.length]);
+
+  if (!casts || casts?.length === 0) {
     return (
       <div
         css={(t) =>

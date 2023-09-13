@@ -7,6 +7,37 @@ const NEYNAR_V2_ENDPOINT = "https://api.neynar.com/v2/farcaster";
 
 const DEFAULT_PAGE_SIZE = 30;
 
+export async function fetchNeynarCasts({ parentUrl, cursor }) {
+  let params = new URLSearchParams({
+    api_key: process.env.NEYNAR_API_KEY,
+    feed_type: "filter",
+    filter_type: "parent_url",
+    parent_url: parentUrl,
+    limit: DEFAULT_PAGE_SIZE,
+  });
+
+  if (cursor) params.set("cursor", cursor);
+
+  return fetch(NEYNAR_V2_ENDPOINT + "/feed?" + params)
+    .then((result) => {
+      return result.json();
+    })
+    .then((data) => {
+      return data.casts?.map((cast) => {
+        return {
+          ...cast,
+          richText: cast.text ? messageUtils.parseString(cast.text) : null,
+        };
+      });
+    })
+    .then((parsedCasts) => {
+      return parsedCasts.reverse();
+    })
+    .catch((err) => {
+      throw err;
+    });
+}
+
 export const useNeynarChannelCasts = (channelId) => {
   const [casts, setCasts] = useState([]);
   const [nextCursor, setNextCursor] = useState(null);
