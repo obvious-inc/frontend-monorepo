@@ -6,7 +6,7 @@ import {
   ReverseVerticalScrollView,
   // useLatestCallback,
 } from "@shades/common/react";
-import { useNeynarChannelCasts } from "../hooks/neynar.js";
+// import { useNeynarChannelCasts } from "../hooks/neynar.js";
 import MessageEditorForm from "@shades/ui-web/message-editor-form";
 import Spinner from "@shades/ui-web/spinner";
 import { CastItem } from "./cast.js";
@@ -17,7 +17,7 @@ import { message } from "@shades/common/utils";
 import useSigner from "./signer";
 import { addCast } from "../hooks/hub.js";
 import { useChannelCasts, useChannelCastsFetch } from "../hooks/channel.js";
-import useChannelCastsFetcher from "../hooks/channel-casts-fetcher.js";
+// import useChannelCastsFetcher from "../hooks/channel-casts-fetcher.js";
 
 export const ChannelCastsScrollView = ({
   channelId,
