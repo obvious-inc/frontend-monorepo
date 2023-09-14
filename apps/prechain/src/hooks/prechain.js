@@ -47,32 +47,53 @@ const subgraphEndpointByChainId = {
 
 const DEFAULT_CHAIN_ID = 1;
 
-// const PROPOSALS_TAG = "prechain/1/proposal";
+const VOTE_FIELDS = `
+fragment VoteFields on Vote {
+  id
+  blockNumber
+  reason
+  supportDetailed
+  votes
+  voter {
+    id
+  }
+}`;
 
-// export const useActions = () => {
-//   const { fetchPubliclyReadableChannels, createOpenChannel } = useNomActions();
+const CANDIDATE_FEEDBACK_FIELDS = `
+fragment CandidateFeedbackFields on CandidateFeedback {
+  id
+  reason
+  supportDetailed
+  createdTimestamp
+  votes
+  voter {
+    id
+    nounsRepresented {
+      id
+    }
+  }
+  candidate {
+    id
+  }
+}`;
 
-//   const fetchChannels = React.useCallback(
-//     () => fetchPubliclyReadableChannels({ tags: [PROPOSALS_TAG] }),
-//     [fetchPubliclyReadableChannels]
-//   );
-
-//   const createChannel = React.useCallback(
-//     (properties) => createOpenChannel({ ...properties, tags: [PROPOSALS_TAG] }),
-//     [createOpenChannel]
-//   );
-
-//   return { fetchChannels, createChannel };
-// };
-
-// export const useChannels = (options) => {
-//   const channels = usePublicChannels(options);
-//   return React.useMemo(
-//     () =>
-//       channels.filter((c) => c.tags != null && c.tags.includes(PROPOSALS_TAG)),
-//     [channels]
-//   );
-// };
+const PROPOSAL_FEEDBACK_FIELDS = `
+fragment ProposalFeedbackFields on ProposalFeedback {
+  id
+  reason
+  supportDetailed
+  createdTimestamp
+  votes
+  voter {
+    id
+    nounsRepresented {
+      id
+    }
+  }
+  proposal {
+    id
+  }
+}`;
 
 export const useChainId = () => {
   const { chain } = useNetwork();
@@ -95,7 +116,13 @@ const DELEGATES_QUERY = `{
   }
 }`;
 
-const createProposalsQuery = ({ skip = 0, first = 1000 } = {}) => `{
+const createProposalsQuery = ({
+  skip = 0,
+  first = 1000,
+  includeVotes = false,
+} = {}) => `
+${VOTE_FIELDS}
+query {
   proposals(orderBy: createdBlock, orderDirection: desc, skip: ${skip}, first: ${first}) {
     id
     description
@@ -115,6 +142,9 @@ const createProposalsQuery = ({ skip = 0, first = 1000 } = {}) => `{
     executionETA
     proposer {
       id
+    }
+    votes @skip(if: ${!includeVotes}) {
+      ...VoteFields
     }
   }
 }`;
@@ -149,7 +179,10 @@ const createProposalCandidatesQuery = ({ skip = 0, first = 1000 } = {}) => `{
   }
 }`;
 
-const createProposalQuery = (id) => `{
+const createProposalQuery = (id) => `
+${VOTE_FIELDS}
+${PROPOSAL_FEEDBACK_FIELDS}
+query {
   proposal(id: "${id}") {
     id
     status
@@ -178,27 +211,10 @@ const createProposalQuery = (id) => `{
       id
     }
     votes {
-      id
-      blockNumber
-      reason
-      supportDetailed
-      votes
-      voter {
-        id
-      }
+      ...VoteFields
     }
     feedbackPosts {
-      id
-      reason
-      supportDetailed
-      createdTimestamp
-      votes
-      voter {
-        id
-        nounsRepresented {
-          id
-        }
-      }
+      ...ProposalFeedbackFields
     }
   }
 }`;
@@ -241,22 +257,27 @@ const createProposalCandidateQuery = (id) => `{
   }
 }`;
 
-const createProposalCandidateFeedbackPostsQuery = (candidateId) => `{
+const createProposalCandidateFeedbackPostsByCandidateQuery = (candidateId) => `
+${CANDIDATE_FEEDBACK_FIELDS}
+query {
   candidateFeedbacks(where: {candidate_:{id: "${candidateId}"}}) {
-    id
-    reason
-    supportDetailed
-    createdTimestamp
-    votes
-    voter {
-      id
-      nounsRepresented {
-        id
-      }
-    }
-    candidate {
-      id
-    }
+    ...CandidateFeedbackFields
+  }
+}`;
+
+const createNounsActivityDataQuery = ({ startBlock, endBlock }) => `
+${CANDIDATE_FEEDBACK_FIELDS}
+${PROPOSAL_FEEDBACK_FIELDS}
+${VOTE_FIELDS}
+query {
+  candidateFeedbacks(where: {createdBlock_gte: ${startBlock}, createdBlock_lte: ${endBlock}}) {
+    ...CandidateFeedbackFields
+  }
+  proposalFeedbacks(where: {createdBlock_gte: ${startBlock}, createdBlock_lte: ${endBlock}}) {
+    ...ProposalFeedbackFields
+  }
+  votes(where: {blockNumber_gte: ${startBlock}, blockNumber_lte: ${endBlock}}) {
+    ...VoteFields
   }
 }`;
 
@@ -490,19 +511,19 @@ export const ChainDataCacheContextProvider = ({ children }) => {
 
           return parseProposalCandidate(data.proposalCandidate);
         }),
-        querySubgraph(createProposalCandidateFeedbackPostsQuery(id)).then(
-          (data) => {
-            if (data.candidateFeedbacks == null)
-              return Promise.reject(new Error("not-found"));
+        querySubgraph(
+          createProposalCandidateFeedbackPostsByCandidateQuery(id)
+        ).then((data) => {
+          if (data.candidateFeedbacks == null)
+            return Promise.reject(new Error("not-found"));
 
-            const feedbackPosts = data.candidateFeedbacks.map((p) => ({
-              ...p,
-              createdTimestamp: new Date(parseInt(p.createdTimestamp) * 1000),
-            }));
+          const feedbackPosts = data.candidateFeedbacks.map((p) => ({
+            ...p,
+            createdTimestamp: new Date(parseInt(p.createdTimestamp) * 1000),
+          }));
 
-            return feedbackPosts;
-          }
-        ),
+          return feedbackPosts;
+        }),
       ]).then(([candidate, feedbackPosts]) => {
         setState((s) => {
           const updatedCandidate = mergeProposalCandidates(
@@ -522,22 +543,70 @@ export const ChainDataCacheContextProvider = ({ children }) => {
     [querySubgraph]
   );
 
-  // Fetch proposals
-  useFetch(
-    () =>
-      fetchProposals({ first: 15 }).then(() => {
-        fetchProposals({ skip: 15, first: 1000 });
-      }),
-    [fetchProposals]
-  );
+  const fetchNounsActivity = React.useCallback(
+    async ({ startBlock, endBlock }) => {
+      return querySubgraph(
+        createNounsActivityDataQuery({
+          startBlock: startBlock.toString(),
+          endBlock: endBlock.toString(),
+        })
+      ).then((data) => {
+        // if (data.candidateFeedbacks == null)
+        //   return Promise.reject(new Error("not-found"));
 
-  // Fetch candidates
-  useFetch(
-    () =>
-      fetchProposalCandidates({ first: 15 }).then(() => {
-        fetchProposalCandidates({ skip: 15, first: 1000 });
-      }),
-    [fetchProposalCandidates]
+        const candidateFeedbackPosts = data.candidateFeedbacks.map((p) => ({
+          ...p,
+          createdTimestamp: new Date(parseInt(p.createdTimestamp) * 1000),
+        }));
+        const proposalFeedbackPosts = data.proposalFeedbacks.map((p) => ({
+          ...p,
+          createdTimestamp: new Date(parseInt(p.createdTimestamp) * 1000),
+        }));
+        const votes = data.votes;
+
+        setState((s) => {
+          const postsByCandidateId = arrayUtils.groupBy(
+            (p) => p.candidate.id,
+            candidateFeedbackPosts
+          );
+          const updatedCandidatesById = objectUtils.mapValues(
+            (feedbackPosts, candidateId) =>
+              mergeProposalCandidates(s.proposalCandidatesById[candidateId], {
+                id: candidateId,
+                slug: extractSlugFromCandidateId(candidateId),
+                feedbackPosts,
+              }),
+            postsByCandidateId
+          );
+
+          const postsByProposalId = arrayUtils.groupBy(
+            (p) => p.proposal.id,
+            proposalFeedbackPosts
+          );
+          const updatedProposalsById = objectUtils.mapValues(
+            (feedbackPosts, proposalId) => ({
+              ...s.proposalsById[proposalId],
+              id: proposalId,
+              votes,
+              feedbackPosts,
+            }),
+            postsByProposalId
+          );
+          return {
+            ...s,
+            proposalsById: {
+              ...s.proposalsById,
+              ...updatedProposalsById,
+            },
+            proposalCandidatesById: {
+              ...s.proposalCandidatesById,
+              ...updatedCandidatesById,
+            },
+          };
+        });
+      });
+    },
+    [querySubgraph]
   );
 
   // Fetch delegates
@@ -556,8 +625,24 @@ export const ChainDataCacheContextProvider = ({ children }) => {
   );
 
   const contextValue = React.useMemo(
-    () => ({ state, actions: { fetchProposal, fetchProposalCandidate } }),
-    [state, fetchProposal, fetchProposalCandidate]
+    () => ({
+      state,
+      actions: {
+        fetchProposal,
+        fetchProposalCandidate,
+        fetchProposals,
+        fetchProposalCandidates,
+        fetchNounsActivity,
+      },
+    }),
+    [
+      state,
+      fetchProposal,
+      fetchProposalCandidate,
+      fetchProposals,
+      fetchProposalCandidates,
+      fetchNounsActivity,
+    ]
   );
 
   return (
@@ -567,8 +652,13 @@ export const ChainDataCacheContextProvider = ({ children }) => {
   );
 };
 
+export const extractSlugFromCandidateId = (candidateId) => {
+  const slugParts = candidateId.split("-").slice(1);
+  return slugParts.join("-");
+};
+
 export const getValidSponsorSignatures = (candidate) => {
-  const signatures = candidate?.latestVersion.content.contentSignatures ?? [];
+  const signatures = candidate?.latestVersion?.content.contentSignatures ?? [];
   return arrayUtils
     .sortBy({ value: (i) => i.expirationTimestamp, order: "desc" }, signatures)
     .reduce((validSignatures, s) => {
@@ -603,13 +693,18 @@ export const useProposalCandidates = () => {
     const candidates = Object.values(proposalCandidatesById);
     // Exclude canceled candidates as well as those with a matching proposal
     const filteredCandidates = candidates.filter(
-      (c) => c.canceledTimestamp == null && c.latestVersion.proposalId == null
+      (c) => c.canceledTimestamp == null && c.latestVersion?.proposalId == null
     );
     return sortBy(
       { value: (p) => p.lastUpdatedTimestamp, order: "desc" },
       filteredCandidates
     );
   }, [proposalCandidatesById]);
+};
+
+export const useActions = () => {
+  const { actions } = React.useContext(ChainDataCacheContext);
+  return actions;
 };
 
 export const useProposalCandidateFetch = (id, options) => {

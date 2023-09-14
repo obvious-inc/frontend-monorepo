@@ -1,5 +1,6 @@
 import formatDate from "date-fns/format";
 import React from "react";
+import va from "@vercel/analytics";
 import {
   useParams,
   useSearchParams,
@@ -28,6 +29,7 @@ import {
   useAddSignatureToProposalCandidate,
   useDelegate,
   getValidSponsorSignatures,
+  extractSlugFromCandidateId,
 } from "../hooks/prechain.js";
 import { useProposalThreshold } from "../hooks/dao.js";
 import { useWallet } from "../hooks/wallet.js";
@@ -35,8 +37,8 @@ import {
   Layout,
   MainContentContainer,
   ProposalLikeContent,
-  ProposalFeed,
   ProposalActionForm,
+  ActivityFeed,
   VotingBar,
   VoteDistributionToolTipContent,
   TransactionList,
@@ -67,45 +69,48 @@ const useSearchParamToggleState = (key) => {
   return [isToggled, toggle];
 };
 
+export const buildCandidateFeed = (candidate) => {
+  if (candidate == null) return [];
+
+  const signatureItems = getValidSponsorSignatures(candidate).map((s) => ({
+    type: "signature",
+    id: `${s.signer.id}-${s.expirationTimestamp.getTime()}`,
+    authorAccount: s.signer.id,
+    bodyRichText: s.reason == null ? null : messageUtils.parseString(s.reason),
+    voteCount: s.signer.nounsRepresented.length,
+    expiresAt: s.expirationTimestamp,
+    candidateId: candidate.id,
+  }));
+
+  const feedbackPostItems =
+    candidate.feedbackPosts?.map((p) => ({
+      type: "feedback-post",
+      id: `${candidate.id}-${p.id}`,
+      authorAccount: p.voter.id,
+      bodyRichText:
+        p.reason == null ? null : messageUtils.parseString(p.reason),
+      support: p.supportDetailed,
+      timestamp: p.createdTimestamp,
+      voteCount: p.votes,
+      candidateId: candidate.id,
+    })) ?? [];
+
+  const sortedSignatureItems = arrayUtils.sortBy(
+    { value: (i) => i.voteCount, order: "desc" },
+    signatureItems
+  );
+  const sortedFeedbackItems = arrayUtils.sortBy(
+    (i) => i.timestamp,
+    feedbackPostItems
+  );
+
+  return [...sortedSignatureItems, ...sortedFeedbackItems];
+};
+
 const useFeedItems = (candidateId) => {
   const candidate = useProposalCandidate(candidateId);
 
-  return React.useMemo(() => {
-    if (candidate == null) return [];
-
-    const signatureItems = getValidSponsorSignatures(candidate).map((s) => ({
-      type: "signature",
-      id: `${s.signer.id}-${s.expirationTimestamp.getTime()}`,
-      authorAccount: s.signer.id,
-      bodyRichText:
-        s.reason == null ? null : messageUtils.parseString(s.reason),
-      voteCount: s.signer.nounsRepresented.length,
-      expiresAt: s.expirationTimestamp,
-    }));
-
-    const feedbackPostItems =
-      candidate.feedbackPosts?.map((p) => ({
-        type: "feedback-post",
-        id: p.id,
-        authorAccount: p.voter.id,
-        bodyRichText:
-          p.reason == null ? null : messageUtils.parseString(p.reason),
-        support: p.supportDetailed,
-        timestamp: p.createdTimestamp,
-        voteCount: p.votes,
-      })) ?? [];
-
-    const sortedSignatureItems = arrayUtils.sortBy(
-      { value: (i) => i.voteCount, order: "desc" },
-      signatureItems
-    );
-    const sortedFeedbackItems = arrayUtils.sortBy(
-      (i) => i.timestamp,
-      feedbackPostItems
-    );
-
-    return [...sortedSignatureItems, ...sortedFeedbackItems];
-  }, [candidate]);
+  return React.useMemo(() => buildCandidateFeed(candidate), [candidate]);
 };
 
 const getCandidateSignals = ({ candidate, proposerDelegate }) => {
@@ -177,8 +182,8 @@ const getCandidateSignals = ({ candidate, proposerDelegate }) => {
 };
 
 const ProposalCandidateScreenContent = ({ candidateId }) => {
-  const [proposerId, ...slugParts] = candidateId.split("-");
-  const slug = slugParts.join("-");
+  const proposerId = candidateId.split("-")[0];
+  const slug = extractSlugFromCandidateId(candidateId);
 
   const proposalThreshold = useProposalThreshold();
 
@@ -423,7 +428,7 @@ const ProposalCandidateScreenContent = ({ candidateId }) => {
                       No activity
                     </div>
                   ) : (
-                    <ProposalFeed items={regularFeedItems} />
+                    <ActivityFeed isolated items={regularFeedItems} />
                   )}
                   <ProposalActionForm
                     mode="feedback"
@@ -431,11 +436,12 @@ const ProposalCandidateScreenContent = ({ candidateId }) => {
                     setReason={setPendingFeedback}
                     support={pendingSupport}
                     setSupport={setPendingSupport}
-                    onSubmit={() =>
-                      sendProposalFeedback().then(() => {
+                    onSubmit={async () => {
+                      va.track("Feedback", { candidateId });
+                      return sendProposalFeedback().then(() => {
                         setPendingFeedback("");
-                      })
-                    }
+                      });
+                    }}
                   />
                 </div>
               </Tabs.Item>
@@ -466,7 +472,7 @@ const ProposalCandidateScreenContent = ({ candidateId }) => {
                       No sponsors
                     </div>
                   ) : (
-                    <ProposalFeed items={sponsorFeedItems} />
+                    <ActivityFeed isolated items={sponsorFeedItems} />
                   )}
                 </div>
               </Tabs.Item>
@@ -959,6 +965,7 @@ const ProposalCandidateScreen = () => {
         return;
       }
 
+      console.error(e);
       setFetchError(e);
     },
   });

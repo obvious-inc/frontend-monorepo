@@ -10,6 +10,7 @@ import {
   formatUnits,
 } from "viem";
 import React from "react";
+import va from "@vercel/analytics";
 import { useBlockNumber, useContractRead, usePublicClient } from "wagmi";
 import {
   Link as RouterLink,
@@ -41,7 +42,7 @@ import {
   useSendProposalFeedback,
   usePriorVotes,
 } from "../hooks/dao.js";
-import { useDelegate } from "../hooks/prechain.js";
+import { useDelegate, extractSlugFromCandidateId } from "../hooks/prechain.js";
 import useApproximateBlockTimestampCalculator from "../hooks/approximate-block-timestamp-calculator.js";
 import { useWallet } from "../hooks/wallet.js";
 import { Tag } from "./browse-screen.js";
@@ -306,76 +307,97 @@ const useEnhancedParsedTransaction = (parsedTransaction) => {
   };
 };
 
+export const buildProposalFeed = (
+  proposal,
+  { latestBlockNumber, calculateBlockTimestamp }
+) => {
+  if (proposal == null) return [];
+
+  const createdEventItem = {
+    type: "event",
+    eventType: "create",
+    id: `${proposal.id}-create`,
+    timestamp: proposal.createdTimestamp,
+    proposalId: proposal.id,
+  };
+
+  const feedbackPostItems =
+    proposal.feedbackPosts?.map((p) => ({
+      type: "feedback-post",
+      id: `${proposal.id}-${p.id}`,
+      bodyRichText:
+        p.reason == null ? null : messageUtils.parseString(p.reason),
+      support: p.supportDetailed,
+      authorAccount: p.voter.id,
+      timestamp: p.createdTimestamp,
+      voteCount: p.votes,
+      proposalId: proposal.id,
+    })) ?? [];
+
+  const voteItems =
+    proposal.votes?.map((v) => ({
+      type: "vote",
+      id: `${proposal.id}-${v.id}`,
+      bodyRichText:
+        v.reason == null ? null : messageUtils.parseString(v.reason),
+      support: v.supportDetailed,
+      authorAccount: v.voter.id,
+      timestamp: calculateBlockTimestamp(v.blockNumber),
+      voteCount: v.votes,
+      proposalId: proposal.id,
+    })) ?? [];
+
+  const items = [...feedbackPostItems, ...voteItems, createdEventItem];
+
+  if (latestBlockNumber > proposal.startBlock) {
+    items.push({
+      type: "event",
+      eventType: "start",
+      id: `${proposal.id}-start`,
+      timestamp: calculateBlockTimestamp(proposal.startBlock),
+      proposalId: proposal.id,
+    });
+  }
+
+  const actualEndBlock = proposal.objectionPeriodEndBlock ?? proposal.endBlock;
+
+  if (latestBlockNumber > actualEndBlock) {
+    items.push({
+      type: "event",
+      eventType: "end",
+      id: `${proposal.id}-end`,
+      timestamp: calculateBlockTimestamp(actualEndBlock),
+      proposalId: proposal.id,
+    });
+  }
+
+  if (proposal.objectionPeriodEndBlock != null) {
+    items.push({
+      type: "event",
+      eventType: "objection-period-start",
+      id: `${proposal.id}-objection-period-start`,
+      timestamp: calculateBlockTimestamp(proposal.endBlock),
+      proposalId: proposal.id,
+    });
+  }
+
+  return arrayUtils.sortBy((i) => i.timestamp, items);
+};
+
 const useFeedItems = (proposalId) => {
   const { data: latestBlockNumber } = useBlockNumber();
   const proposal = useProposal(proposalId);
 
   const calculateBlockTimestamp = useApproximateBlockTimestampCalculator();
 
-  return React.useMemo(() => {
-    if (proposal == null) return [];
-
-    const createdEventItem = {
-      type: "event",
-      id: "create",
-      timestamp: proposal.createdTimestamp,
-    };
-
-    const feedbackPostItems =
-      proposal.feedbackPosts?.map((p) => ({
-        type: "feedback-post",
-        id: p.id,
-        bodyRichText:
-          p.reason == null ? null : messageUtils.parseString(p.reason),
-        support: p.supportDetailed,
-        authorAccount: p.voter.id,
-        timestamp: p.createdTimestamp,
-        voteCount: p.votes,
-      })) ?? [];
-
-    const voteItems =
-      proposal.votes?.map((v) => ({
-        type: "vote",
-        id: v.id,
-        bodyRichText:
-          v.reason == null ? null : messageUtils.parseString(v.reason),
-        support: v.supportDetailed,
-        authorAccount: v.voter.id,
-        timestamp: calculateBlockTimestamp(v.blockNumber),
-        voteCount: v.votes,
-      })) ?? [];
-
-    const items = [...feedbackPostItems, ...voteItems, createdEventItem];
-
-    if (latestBlockNumber > proposal.startBlock) {
-      items.push({
-        type: "event",
-        id: "start",
-        timestamp: calculateBlockTimestamp(proposal.startBlock),
-      });
-    }
-
-    const actualEndBlock =
-      proposal.objectionPeriodEndBlock ?? proposal.endBlock;
-
-    if (latestBlockNumber > actualEndBlock) {
-      items.push({
-        type: "event",
-        id: "end",
-        timestamp: calculateBlockTimestamp(actualEndBlock),
-      });
-    }
-
-    if (proposal.objectionPeriodEndBlock != null) {
-      items.push({
-        type: "event",
-        id: "objection-period-start",
-        timestamp: calculateBlockTimestamp(proposal.endBlock),
-      });
-    }
-
-    return arrayUtils.sortBy((i) => i.timestamp, items);
-  }, [proposal, calculateBlockTimestamp, latestBlockNumber]);
+  return React.useMemo(
+    () =>
+      buildProposalFeed(proposal, {
+        latestBlockNumber,
+        calculateBlockTimestamp,
+      }),
+    [proposal, calculateBlockTimestamp, latestBlockNumber]
+  );
 };
 
 const getDelegateVotes = (proposal) => {
@@ -394,7 +416,7 @@ const getDelegateVotes = (proposal) => {
 };
 
 const ProposalMainSection = ({ proposalId }) => {
-  const { data: latestBlockNumer } = useBlockNumber();
+  const { data: latestBlockNumber } = useBlockNumber();
   const calculateBlockTimestamp = useApproximateBlockTimestampCalculator();
   const { address: connectedWalletAccountAddress } = useWallet();
 
@@ -421,8 +443,8 @@ const ProposalMainSection = ({ proposalId }) => {
 
   const endBlock = proposal?.objectionPeriodEndBlock ?? proposal?.endBlock;
 
-  const hasVotingEnded = latestBlockNumer > Number(endBlock);
-  const hasVotingStarted = latestBlockNumer > Number(proposal?.startBlock);
+  const hasVotingEnded = latestBlockNumber > Number(endBlock);
+  const hasVotingStarted = latestBlockNumber > Number(proposal?.startBlock);
   const isVotingOngoing = hasVotingStarted && !hasVotingEnded;
 
   const sendProposalFeedback = useSendProposalFeedback(proposalId, {
@@ -691,7 +713,7 @@ const ProposalMainSection = ({ proposalId }) => {
                         No activity
                       </div>
                     ) : (
-                      <ProposalFeed items={feedItems} />
+                      <ActivityFeed isolated items={feedItems} />
                     )}
 
                     <ProposalActionForm
@@ -704,15 +726,14 @@ const ProposalMainSection = ({ proposalId }) => {
                       support={pendingSupport}
                       setSupport={setPendingSupport}
                       onSubmit={async () => {
-                        const submit = isVotingOngoing
-                          ? () =>
-                              castProposalVote().then((res) => {
-                                setCastVoteCallSupportDetailed(pendingSupport);
-                                return res;
-                              })
-                          : sendProposalFeedback;
-
-                        await submit();
+                        if (isVotingOngoing) {
+                          va.track("Vote", { proposalId });
+                          await castProposalVote();
+                          setCastVoteCallSupportDetailed(pendingSupport);
+                        } else {
+                          va.track("Feedback", { proposalId });
+                          await sendProposalFeedback();
+                        }
 
                         setPendingFeedback("");
                         setPendingSupport(2);
@@ -1311,6 +1332,9 @@ export const ProposalActionForm = ({
               <Button
                 type="button"
                 onClick={() => {
+                  va.track("Connect Wallet", {
+                    location: "vote/feedback form",
+                  });
                   requestWalletAccess();
                 }}
               >
@@ -1582,7 +1606,13 @@ const NavBar = ({ navigationStack, actions }) => {
             ...actions,
             actions.length !== 0 && { type: "separator" },
             connectedWalletAccountAddress == null
-              ? { onSelect: requestWalletAccess, label: "Connect Wallet" }
+              ? {
+                  onSelect: () => {
+                    va.track("Connect Wallet", { location: "navbar" });
+                    requestWalletAccess();
+                  },
+                  label: "Connect Wallet",
+                }
               : {
                   onSelect: () => {},
                   label: (
@@ -1635,7 +1665,23 @@ const NavBar = ({ navigationStack, actions }) => {
   );
 };
 
-export const ProposalFeed = ({ items = [] }) => {
+export const ActivityFeed = ({ isolated, items = [], spacing = "1.6rem" }) => {
+  const ContextLink = ({ proposalId, candidateId }) => {
+    if (proposalId != null)
+      return (
+        <RouterLink to={`/proposals/${proposalId}`}>
+          Prop {proposalId}
+        </RouterLink>
+      );
+
+    if (candidateId != null) {
+      const slug = extractSlugFromCandidateId(candidateId);
+      return <RouterLink to={`/candidates/${candidateId}`}>{slug}</RouterLink>;
+    }
+
+    throw new Error();
+  };
+
   const renderTitle = (item) => {
     const accountName = (
       <AccountPreviewPopoverTrigger accountAddress={item.authorAccount} />
@@ -1646,7 +1692,7 @@ export const ProposalFeed = ({ items = [] }) => {
         return accountName;
 
       case "event": {
-        switch (item.id) {
+        switch (item.eventType) {
           case "create":
             return (
               <span
@@ -1656,12 +1702,12 @@ export const ProposalFeed = ({ items = [] }) => {
                   })
                 }
               >
-                Proposal created on{" "}
+                {isolated ? "Proposal" : <ContextLink {...item} />} created on{" "}
                 <FormattedDateWithTooltip
                   capitalize={false}
                   value={item.timestamp}
                   disableRelative
-                  month="long"
+                  month={isolated ? "long" : "short"}
                   day="numeric"
                 />
               </span>
@@ -1677,12 +1723,18 @@ export const ProposalFeed = ({ items = [] }) => {
                   })
                 }
               >
-                Voting {item.id === "end" ? "ended" : "started"} on{" "}
+                Voting{" "}
+                {!isolated && (
+                  <>
+                    for <ContextLink {...item} />
+                  </>
+                )}{" "}
+                {item.id === "end" ? "ended" : "started"} on{" "}
                 <FormattedDateWithTooltip
                   capitalize={false}
                   value={item.timestamp}
                   disableRelative
-                  month="long"
+                  month={isolated ? "long" : "short"}
                   day="numeric"
                   hour="numeric"
                   minute="numeric"
@@ -1699,7 +1751,8 @@ export const ProposalFeed = ({ items = [] }) => {
                   })
                 }
               >
-                Proposal entered objection period
+                {isolated ? "Proposal" : <ContextLink {...item} />} entered
+                objection period
               </span>
             );
 
@@ -1712,7 +1765,7 @@ export const ProposalFeed = ({ items = [] }) => {
       case "feedback-post": {
         const signalWord = item.type === "vote" ? "voted" : "signaled";
         return (
-          <>
+          <span data-nowrap>
             {accountName}{" "}
             <span
               css={(t) =>
@@ -1735,7 +1788,13 @@ export const ProposalFeed = ({ items = [] }) => {
                 ? "abstained"
                 : null}
             </span>
-          </>
+            {!isolated && (
+              <>
+                {" "}
+                <ContextLink {...item} />
+              </>
+            )}
+          </span>
         );
       }
     }
@@ -1743,94 +1802,80 @@ export const ProposalFeed = ({ items = [] }) => {
 
   return (
     <ul
-    // css={(t) =>
-    //   css({
-    //     position: "relative",
-    //     ":before": {
-    //       content: '""',
-    //       position: "absolute",
-
-    //       width: "0.1rem",
-    //       // height: "100%",
-    //       background: t.colors.borderLight,
-    //       top: '0.95rem',
-    //       bottom: '0.95rem',
-    //       left: "0.95rem",
-    //       borderRadius: "0.1rem",
-    //     },
-    //   })
-    // }
+      css={(t) =>
+        css({
+          fontSize: t.text.sizes.base,
+          '[role="listitem"] + [role="listitem"]': {
+            marginTop: "var(--vertical-spacing)",
+          },
+          a: {
+            color: t.colors.textDimmed,
+            fontWeight: t.text.weights.emphasis,
+            textDecoration: "none",
+            "@media(hover: hover)": {
+              ":hover": { textDecoration: "underline" },
+            },
+          },
+          "[data-nowrap]": { whiteSpace: "nowrap" },
+          "[data-container]": {
+            display: "grid",
+            gridTemplateColumns: "2rem minmax(0,1fr)",
+            gridGap: "0.6rem",
+            alignItems: "flex-start",
+          },
+          "[data-avatar-button]": {
+            display: "block",
+            outline: "none",
+            paddingTop: "0.1rem",
+            ":focus-visible [data-avatar]": {
+              boxShadow: t.shadows.focus,
+              background: t.colors.backgroundModifierHover,
+            },
+            "@media (hover: hover)": {
+              ":not(:disabled)": {
+                cursor: "pointer",
+                ":hover [data-avatar]": {
+                  boxShadow: `0 0 0 0.2rem ${t.colors.backgroundModifierHover}`,
+                },
+              },
+            },
+          },
+          "[data-timeline-symbol]": {
+            position: "relative",
+            height: "2rem",
+            width: "0.1rem",
+            background: t.colors.borderLight,
+            zIndex: -1,
+            margin: "auto",
+            ":after": {
+              content: '""',
+              position: "absolute",
+              width: "0.7rem",
+              height: "0.7rem",
+              background: t.colors.textMuted,
+              top: "50%",
+              left: "50%",
+              transform: "translateY(-50%) translateX(-50%)",
+              borderRadius: "50%",
+              border: "0.1rem solid",
+              borderColor: t.colors.backgroundPrimary,
+            },
+          },
+        })
+      }
+      style={{ "--vertical-spacing": spacing }}
     >
       {items.map((item) => (
-        <div
-          key={item.id}
-          role="listitem"
-          css={(t) =>
-            css({
-              fontSize: t.text.sizes.base,
-              ":not(:first-of-type)": { marginTop: "1.6rem" },
-            })
-          }
-        >
-          <div
-            css={css({
-              display: "grid",
-              gridTemplateColumns: "2rem minmax(0,1fr)",
-              gridGap: "0.6rem",
-              alignItems: "center",
-            })}
-          >
+        <div key={item.id} role="listitem">
+          <div data-container>
             <div>
               {item.authorAccount == null ? (
-                <div
-                  css={(t) =>
-                    css({
-                      position: "relative",
-                      height: "2rem",
-                      width: "0.1rem",
-                      background: t.colors.borderLight,
-                      zIndex: -1,
-                      margin: "auto",
-                      ":after": {
-                        content: '""',
-                        position: "absolute",
-                        width: "0.7rem",
-                        height: "0.7rem",
-                        background: t.colors.textMuted,
-                        top: "50%",
-                        left: "50%",
-                        transform: "translateY(-50%) translateX(-50%)",
-                        borderRadius: "50%",
-                        border: "0.1rem solid",
-                        borderColor: t.colors.backgroundPrimary,
-                      },
-                    })
-                  }
-                />
+                <div data-timeline-symbol />
               ) : (
                 <AccountPreviewPopoverTrigger
                   accountAddress={item.authorAccount}
                 >
-                  <button
-                    css={(t) =>
-                      css({
-                        display: "block",
-                        outline: "none",
-                        ":focus-visible [data-avatar]": {
-                          boxShadow: t.shadows.focus,
-                          background: t.colors.backgroundModifierHover,
-                        },
-                        "@media (hover: hover)": {
-                          ":not(:disabled)": {
-                            cursor: "pointer",
-                            ":hover [data-avatar]": {
-                              boxShadow: `0 0 0 0.2rem ${t.colors.backgroundModifierHover}`,
-                            },
-                          },
-                        },
-                      })
-                    }
-                  >
+                  <button data-avatar-button>
                     <AccountAvatar
                       data-avatar
                       address={item.authorAccount}
@@ -1845,16 +1890,16 @@ export const ProposalFeed = ({ items = [] }) => {
                 css={css({
                   display: "flex",
                   cursor: "default",
-                  lineHeight: 1.2,
+                  lineHeight: 1.5,
                 })}
               >
                 <div
-                  style={{
+                  css={css({
                     flex: 1,
                     minWidth: 0,
-                    whiteSpace: "nowrap",
                     overflow: "hidden",
-                  }}
+                    textOverflow: "ellipsis",
+                  })}
                 >
                   {renderTitle(item)}
                 </div>
@@ -1888,34 +1933,10 @@ export const ProposalFeed = ({ items = [] }) => {
                     </Tooltip.Content>
                   </Tooltip.Root>
                 )}
-                {/* {item.timestamp != null && ( */}
-                {/*   <span */}
-                {/*     css={(t) => */}
-                {/*       css({ */}
-                {/*         color: t.colors.textDimmed, */}
-                {/*         fontSize: t.fontSizes.small, */}
-                {/*         lineHeight: 1.5, */}
-                {/*       }) */}
-                {/*     } */}
-                {/*   > */}
-                {/*     <FormattedDateWithTooltip */}
-                {/*       value={item.timestamp} */}
-                {/*       hour="numeric" */}
-                {/*       minute="numeric" */}
-                {/*       day="numeric" */}
-                {/*       month="short" */}
-                {/*       tooltipSideOffset={8} */}
-                {/*     /> */}
-                {/*   </span> */}
-                {/* )} */}
               </div>
             </div>
           </div>
-          <div
-            css={(t) =>
-              css({ fontSize: t.text.sizes.base, paddingLeft: "2.6rem" })
-            }
-          >
+          <div css={css({ paddingLeft: "2.6rem" })}>
             {item.bodyRichText != null && (
               <RichText
                 blocks={item.bodyRichText}
@@ -1958,6 +1979,7 @@ export const ProposalFeed = ({ items = [] }) => {
 export const MainContentContainer = ({
   sidebar = null,
   narrow = false,
+  sidebarBreakpoint,
   children,
   ...props
 }) => (
@@ -1973,7 +1995,10 @@ export const MainContentContainer = ({
         padding: "0 6rem",
       },
     })}
-    style={{ "--width": narrow ? "72rem" : "128rem" }}
+    style={{
+      "--width": narrow ? "72rem" : "128rem",
+      "--sidebar-breakpoint": sidebarBreakpoint,
+    }}
     {...props}
   >
     {sidebar == null ? (

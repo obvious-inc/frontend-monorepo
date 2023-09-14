@@ -16,6 +16,8 @@ import { ChainDataCacheContextProvider } from "./hooks/prechain.js";
 import "./reset.css";
 import "./index.css";
 
+const isProduction = process.env.NODE_ENV === "production";
+
 const LazyApp = React.lazy(() => import("./app"));
 
 const App = () => {
@@ -59,7 +61,7 @@ createRoot(document.getElementById("app-mount")).render(
       <ChainDataCacheContextProvider>
         <CacheStoreProvider syncStorage={cacheStoreStorage}>
           <App />
-          <VercelAnalytics />
+          {isProduction && <VercelAnalytics />}
         </CacheStoreProvider>
       </ChainDataCacheContextProvider>
     </WagmiConfig>

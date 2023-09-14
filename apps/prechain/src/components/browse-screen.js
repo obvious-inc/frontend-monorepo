@@ -5,7 +5,8 @@ import {
   useSearchParams,
 } from "react-router-dom";
 import { css, useTheme } from "@emotion/react";
-import { useAccount } from "wagmi";
+import { useAccount, useBlockNumber } from "wagmi";
+import { useFetch } from "@shades/common/react";
 import { useAccountDisplayName } from "@shades/common/app";
 import {
   array as arrayUtils,
@@ -22,6 +23,7 @@ import {
   useProposalThreshold,
 } from "../hooks/dao.js";
 import {
+  useActions as usePrechainActions,
   useProposalCandidates,
   useProposalCandidate,
   useProposalCandidateVotingPower,
@@ -32,7 +34,18 @@ import {
   useSingleItem as useDraft,
 } from "../hooks/channel-drafts.js";
 import FormattedDateWithTooltip from "./formatted-date-with-tooltip.js";
-import { Layout, MainContentContainer } from "./proposal-screen.js";
+import {
+  Layout,
+  MainContentContainer,
+  ActivityFeed,
+  buildProposalFeed,
+} from "./proposal-screen.js";
+import { buildCandidateFeed } from "./proposal-candidate-screen.js";
+
+const ONE_DAY_IN_SECONDS = 60 * 60 * 24;
+const APPROXIMATE_SECONDS_PER_BLOCK = 12;
+const APPROXIMATE_BLOCKS_PER_DAY =
+  ONE_DAY_IN_SECONDS / APPROXIMATE_SECONDS_PER_BLOCK;
 
 const searchProposals = (items, rawQuery) => {
   const query = rawQuery.trim().toLowerCase();
@@ -48,6 +61,30 @@ const searchProposals = (items, rawQuery) => {
     { value: (i) => i.index, type: "index" },
     filteredItems
   );
+};
+
+const useFeedItems = () => {
+  const { data: latestBlockNumber } = useBlockNumber();
+  const proposals = useProposals();
+  const candidates = useProposalCandidates();
+
+  const calculateBlockTimestamp = useApproximateBlockTimestampCalculator();
+
+  return React.useMemo(() => {
+    const proposalItems = proposals.flatMap((p) =>
+      buildProposalFeed(p, {
+        latestBlockNumber,
+        calculateBlockTimestamp,
+      })
+    );
+
+    const candidateItems = candidates.flatMap((c) => buildCandidateFeed(c));
+
+    return arrayUtils.sortBy({ value: (i) => i.timestamp, order: "desc" }, [
+      ...proposalItems,
+      ...candidateItems,
+    ]);
+  }, [proposals, candidates, calculateBlockTimestamp, latestBlockNumber]);
 };
 
 const ProposalsScreen = () => {
@@ -67,9 +104,13 @@ const ProposalsScreen = () => {
         d.name.trim() !== "" || !messageUtils.isEmpty(d.body, { trim: true })
     );
 
+    const filteredProposalCandidates = proposalCandidates.filter(
+      (c) => c.latestVersion != null
+    );
+
     const items = [
       ...filteredProposalDrafts,
-      ...proposalCandidates,
+      ...filteredProposalCandidates,
       ...proposals,
     ];
 
@@ -86,220 +127,299 @@ const ProposalsScreen = () => {
     return "ongoing";
   }, filteredItems);
 
+  const { fetchProposals, fetchProposalCandidates } = usePrechainActions();
+
+  // Fetch proposals
+  useFetch(
+    () =>
+      fetchProposals({ first: 15 }).then(() => {
+        fetchProposals({ skip: 15, first: 1000 });
+      }),
+    [fetchProposals]
+  );
+
+  // Fetch candidates
+  useFetch(
+    () =>
+      fetchProposalCandidates({ first: 15 }).then(() => {
+        fetchProposalCandidates({ skip: 15, first: 1000 });
+      }),
+    [fetchProposalCandidates]
+  );
+
   return (
     <Layout>
-      <MainContentContainer>
-        <div
-          css={css({
-            padding: "1rem 1.6rem 3.2rem",
-            "@media (min-width: 600px)": {
-              padding: "8rem 1.6rem",
-            },
-          })}
-        >
+      <div css={css({ padding: "0 1.6rem" })}>
+        <MainContentContainer sidebar={<FeedSidebar />}>
           <div
-            css={(t) =>
-              css({
-                background: t.colors.backgroundPrimary,
-                position: "sticky",
-                top: 0,
-                zIndex: 1,
-                display: "flex",
-                alignItems: "center",
-                gap: "1.6rem",
-                paddingTop: "0.3rem", // To offset the focus box shadow
-                marginBottom: "1.6rem",
-                "@media (min-width: 600px)": {
-                  marginBottom: "3.2rem",
-                },
-              })
-            }
+            css={css({
+              padding: "1rem 0 3.2rem",
+              "@media (min-width: 600px)": {
+                padding: "6rem 0 8rem",
+              },
+            })}
           >
-            <Input
-              placeholder="Search..."
-              value={query}
-              onChange={(e) => {
-                // Clear search from path if query is empty
-                if (e.target.value.trim() === "") {
-                  setSearchParams({});
-                  return;
-                }
-
-                setSearchParams({ q: e.target.value });
-              }}
-              css={css({
-                flex: 1,
-                minWidth: 0,
-                padding: "0.9rem 1.2rem",
-              })}
-            />
-
-            {searchParams.get("beta") != null && (
-              <Button
-                onClick={() => {
-                  navigate("/new");
-                }}
-              >
-                New proposal
-              </Button>
-            )}
-          </div>
-
-          <ul
-            css={(t) => {
-              const hoverColor = t.colors.backgroundTertiary;
-              return css({
-                listStyle: "none",
-                "li + li": { marginTop: "2.4rem" },
-                ul: { listStyle: "none" },
-                "[data-group] li + li": { marginTop: "1.6rem" },
-                "[data-group-title]": {
-                  position: "sticky",
-                  top: "4.35rem",
-                  padding: "0.5rem 0",
+            <div
+              css={(t) =>
+                css({
                   background: t.colors.backgroundPrimary,
-                  textTransform: "uppercase",
-                  fontSize: t.text.sizes.small,
-                  fontWeight: t.text.weights.emphasis,
-                  color: t.colors.textMuted,
-                },
-                a: {
-                  textDecoration: "none",
-                  padding: "0.8rem 0",
-                  color: t.colors.textNormal,
-                  borderRadius: "0.5rem",
-                },
-                "[data-title]": {
-                  fontSize: t.text.sizes.large,
-                  fontWeight: t.text.weights.emphasis,
-                  lineHeight: 1.25,
-                  whiteSpace: "nowrap",
-                  overflow: "hidden",
-                  textOverflow: "ellipsis",
-                },
-                "[data-small]": {
-                  color: t.colors.textDimmed,
-                  fontSize: t.text.sizes.small,
-                  lineHeight: 1.4,
-                  whiteSpace: "nowrap",
-                  overflow: "hidden",
-                  textOverflow: "ellipsis",
-                },
-                '[data-dimmed="true"]': {
-                  color: t.colors.textMuted,
-                  "[data-small]": {
+                  position: "sticky",
+                  top: 0,
+                  zIndex: 1,
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "1.6rem",
+                  paddingTop: "0.3rem", // To offset the focus box shadow
+                  marginBottom: "1.6rem",
+                  "@media (min-width: 600px)": {
+                    marginBottom: "3.2rem",
+                  },
+                })
+              }
+            >
+              <Input
+                placeholder="Search..."
+                value={query}
+                onChange={(e) => {
+                  // Clear search from path if query is empty
+                  if (e.target.value.trim() === "") {
+                    setSearchParams({});
+                    return;
+                  }
+
+                  setSearchParams({ q: e.target.value });
+                }}
+                css={css({
+                  flex: 1,
+                  minWidth: 0,
+                  padding: "0.9rem 1.2rem",
+                })}
+              />
+
+              {searchParams.get("beta") != null && (
+                <Button
+                  onClick={() => {
+                    navigate("/new");
+                  }}
+                >
+                  New proposal
+                </Button>
+              )}
+            </div>
+
+            <ul
+              css={(t) => {
+                const hoverColor = t.colors.backgroundTertiary;
+                return css({
+                  listStyle: "none",
+                  containerType: "inline-size",
+                  "li + li": { marginTop: "2.4rem" },
+                  ul: { listStyle: "none" },
+                  "[data-group] li + li": { marginTop: "1.6rem" },
+                  "[data-group-title]": {
+                    position: "sticky",
+                    top: "4.35rem",
+                    padding: "0.5rem 0",
+                    background: t.colors.backgroundPrimary,
+                    textTransform: "uppercase",
+                    fontSize: t.text.sizes.small,
+                    fontWeight: t.text.weights.emphasis,
                     color: t.colors.textMuted,
                   },
-                },
-                // Mobile-only
-                "@media(max-width: 800px)": {
-                  "[data-desktop-only]": {
-                    display: "none",
-                  },
-                },
-                // Desktop-only
-                "@media(min-width: 800px)": {
-                  "[data-mobile-only]": {
-                    display: "none",
-                  },
-                  "[data-group] li + li": { marginTop: "0.4rem" },
                   a: {
-                    display: "grid",
-                    alignItems: "center",
-                    gridTemplateColumns: "auto minmax(0,1fr)",
-                    gridGap: "1rem",
+                    textDecoration: "none",
+                    padding: "0.8rem 0",
+                    color: t.colors.textNormal,
+                    borderRadius: "0.5rem",
                   },
                   "[data-title]": {
-                    whiteSpace: "default",
+                    fontSize: t.text.sizes.large,
+                    fontWeight: t.text.weights.emphasis,
+                    lineHeight: 1.25,
+                    whiteSpace: "nowrap",
+                    overflow: "hidden",
+                    textOverflow: "ellipsis",
                   },
-                },
-                // Hover enhancement
-                "@media(hover: hover)": {
-                  "a:hover": {
-                    background: `linear-gradient(90deg, transparent 0%, ${hoverColor} 20%, ${hoverColor} 80%, transparent 100%)`,
+                  "[data-small]": {
+                    color: t.colors.textDimmed,
+                    fontSize: t.text.sizes.small,
+                    lineHeight: 1.4,
+                    whiteSpace: "nowrap",
+                    overflow: "hidden",
+                    textOverflow: "ellipsis",
                   },
-                },
-              });
+                  '[data-dimmed="true"]': {
+                    color: t.colors.textMuted,
+                    "[data-small]": {
+                      color: t.colors.textMuted,
+                    },
+                  },
+                  // Mobile-only
+                  "@container(max-width: 600px)": {
+                    "[data-desktop-only]": {
+                      display: "none",
+                    },
+                  },
+                  // Desktop-only
+                  "@container(min-width: 600px)": {
+                    "[data-mobile-only]": {
+                      display: "none",
+                    },
+                    "[data-group] li + li": { marginTop: "0.4rem" },
+                    a: {
+                      display: "grid",
+                      alignItems: "center",
+                      gridTemplateColumns: "auto minmax(0,1fr)",
+                      gridGap: "1rem",
+                    },
+                    "[data-title]": {
+                      whiteSpace: "default",
+                    },
+                  },
+                  // Hover enhancement
+                  "@media(hover: hover)": {
+                    "a:hover": {
+                      background: `linear-gradient(90deg, transparent 0%, ${hoverColor} 20%, ${hoverColor} 80%, transparent 100%)`,
+                    },
+                  },
+                });
+              }}
+            >
+              {["drafts", "ongoing", "past"]
+                .map((groupName) => ({
+                  name: groupName,
+                  items: groupedItemsByName[groupName],
+                }))
+                .filter(({ items }) => items != null && items.length !== 0)
+                .map(({ name: groupName, items }) => {
+                  const getSortedItems = () => {
+                    // Keep order from search result
+                    if (deferredQuery !== "") return items;
+
+                    switch (groupName) {
+                      case "drafts":
+                        return arrayUtils.sortBy(
+                          { value: (i) => Number(i.id), order: "desc" },
+                          items
+                        );
+
+                      case "past":
+                        return arrayUtils.sortBy(
+                          {
+                            value: (i) => Number(i.startBlock),
+                            order: "desc",
+                          },
+                          items
+                        );
+
+                      case "ongoing":
+                        return arrayUtils.sortBy(
+                          // First the active ones
+                          (i) =>
+                            ["active", "objection-period"].includes(i.state)
+                              ? Number(i.objectionPeriodEndBlock ?? i.endBlock)
+                              : Infinity,
+                          // The the ones that hasn’t started yet
+                          (i) =>
+                            ["updatable", "pending"].includes(i.state)
+                              ? Number(i.startBlock)
+                              : Infinity,
+                          // Then the succeeded but not yet executed
+                          {
+                            value: (i) =>
+                              i.slug != null
+                                ? 0
+                                : Number(
+                                    i.objectionPeriodEndBlock ?? i.endBlock
+                                  ),
+                            order: "desc",
+                          },
+                          // And last the candidates
+                          {
+                            value: (i) => i.lastUpdatedTimestamp,
+                            order: "desc",
+                          },
+                          items
+                        );
+                    }
+                  };
+                  return (
+                    <li data-group key={groupName}>
+                      <div data-group-title>
+                        {groupName === "ongoing" ? "Current" : groupName}
+                      </div>
+                      <ul>
+                        {getSortedItems().map((i) => (
+                          <li key={i.id}>
+                            {i.slug != null ? (
+                              <ProposalCandidateItem candidateId={i.id} />
+                            ) : i.startBlock != null ? (
+                              <ProposalItem proposalId={i.id} />
+                            ) : (
+                              <ProposalDraftItem draftId={i.id} />
+                            )}
+                          </li>
+                        ))}
+                      </ul>
+                    </li>
+                  );
+                })}
+            </ul>
+          </div>
+        </MainContentContainer>
+      </div>
+    </Layout>
+  );
+};
+
+const FEED_PAGE_ITEM_COUNT = 30;
+const FeedSidebar = () => {
+  const { data: latestBlockNumber } = useBlockNumber();
+
+  const { fetchNounsActivity } = usePrechainActions();
+
+  const [page, setPage] = React.useState(2);
+  const feedItems = useFeedItems();
+  const visibleItems = feedItems.slice(0, FEED_PAGE_ITEM_COUNT * page);
+
+  // Fetch feed items
+  useFetch(
+    latestBlockNumber == null
+      ? null
+      : () =>
+          fetchNounsActivity({
+            startBlock:
+              latestBlockNumber - BigInt(APPROXIMATE_BLOCKS_PER_DAY * 30),
+            endBlock: latestBlockNumber,
+          }),
+    [latestBlockNumber, fetchNounsActivity]
+  );
+
+  if (visibleItems.length === 0) return null;
+
+  return (
+    <div
+      css={css({
+        padding: "1rem 0 3.2rem",
+        "@media (min-width: 600px)": {
+          padding: "6rem 0 8rem",
+        },
+      })}
+    >
+      <ActivityFeed items={visibleItems} />
+      {feedItems.length > visibleItems.length && (
+        <div css={{ textAlign: "center", padding: "3.2rem 0" }}>
+          <Button
+            size="small"
+            onClick={() => {
+              setPage((p) => p + 1);
             }}
           >
-            {["drafts", "ongoing", "past"]
-              .map((groupName) => ({
-                name: groupName,
-                items: groupedItemsByName[groupName],
-              }))
-              .filter(({ items }) => items != null && items.length !== 0)
-              .map(({ name: groupName, items }) => {
-                const getSortedItems = () => {
-                  // Keep order from search result
-                  if (deferredQuery !== "") return items;
-
-                  switch (groupName) {
-                    case "drafts":
-                      return arrayUtils.sortBy(
-                        { value: (i) => Number(i.id), order: "desc" },
-                        items
-                      );
-
-                    case "past":
-                      return arrayUtils.sortBy(
-                        {
-                          value: (i) => Number(i.startBlock),
-                          order: "desc",
-                        },
-                        items
-                      );
-
-                    case "ongoing":
-                      return arrayUtils.sortBy(
-                        // First the active ones
-                        (i) =>
-                          ["active", "objection-period"].includes(i.state)
-                            ? Number(i.objectionPeriodEndBlock ?? i.endBlock)
-                            : Infinity,
-                        // The the ones that hasn’t started yet
-                        (i) =>
-                          ["updatable", "pending"].includes(i.state)
-                            ? Number(i.startBlock)
-                            : Infinity,
-                        // Then the succeeded but not yet executed
-                        {
-                          value: (i) =>
-                            i.slug != null
-                              ? 0
-                              : Number(i.objectionPeriodEndBlock ?? i.endBlock),
-                          order: "desc",
-                        },
-                        // And last the candidates
-                        { value: (i) => i.lastUpdatedTimestamp, order: "desc" },
-                        items
-                      );
-                  }
-                };
-                return (
-                  <li data-group key={groupName}>
-                    <div data-group-title>
-                      {groupName === "ongoing" ? "Current" : groupName}
-                    </div>
-                    <ul>
-                      {getSortedItems().map((i) => (
-                        <li key={i.id}>
-                          {i.slug != null ? (
-                            <ProposalCandidateItem candidateId={i.id} />
-                          ) : i.startBlock != null ? (
-                            <ProposalItem proposalId={i.id} />
-                          ) : (
-                            <ProposalDraftItem draftId={i.id} />
-                          )}
-                        </li>
-                      ))}
-                    </ul>
-                  </li>
-                );
-              })}
-          </ul>
+            Show more
+          </Button>
         </div>
-      </MainContentContainer>
-    </Layout>
+      )}
+    </div>
   );
 };
 
@@ -327,7 +447,7 @@ const ProposalItem = ({ proposalId }) => {
       <div
         css={css({
           display: "grid",
-          gridTemplateColumns: "minmax(0,1fr) auto",
+          gridTemplateColumns: "minmax(0,auto) minmax(10rem,1fr)",
           gridGap: "1.6rem",
           alignItems: "center",
         })}
@@ -464,21 +584,12 @@ const PropTagWithStatusText = ({ proposalId }) => {
       css={css({
         display: "flex",
         alignItems: "center",
+        justifyContent: "flex-end",
         gap: "1.6rem",
         textAlign: "right",
       })}
     >
-      {statusText != null && (
-        <div
-          css={css({
-            "@media(max-width: 800px)": {
-              display: "none",
-            },
-          })}
-        >
-          {statusText}
-        </div>
-      )}
+      {statusText != null && <div data-desktop-only>{statusText}</div>}
       <PropStatusTag proposalId={proposalId} />
     </div>
   );
