@@ -15,14 +15,13 @@ const buildSvgStringFromSeed = (seed, { transparent = false } = {}) => {
     seed.accessory,
     seed.head,
     seed.glasses,
-  ].join("");
+  ].join("-");
 
-  if (transparent) cacheKey += "t";
+  if (transparent) cacheKey += "-t";
 
   if (svgCacheBySeed.has(cacheKey)) return svgCacheBySeed.get(cacheKey);
-  // if (seed.head === 249) debugger;
+
   const { parts, background } = getNounData(seed);
-  if (parts.some((p) => p == null)) console.log(seed, parts);
 
   return buildSVG(
     parts,
