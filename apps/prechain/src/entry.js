@@ -10,6 +10,7 @@ import { infuraProvider } from "wagmi/providers/infura";
 import { publicProvider } from "wagmi/providers/public";
 import { InjectedConnector } from "wagmi/connectors/injected";
 import { WalletConnectConnector } from "wagmi/connectors/walletConnect";
+import { Analytics as VercelAnalytics } from "@vercel/analytics/react";
 import { CacheStoreProvider } from "@shades/common/app";
 import { ChainDataCacheContextProvider } from "./hooks/prechain.js";
 import "./reset.css";
@@ -58,6 +59,7 @@ createRoot(document.getElementById("app-mount")).render(
       <ChainDataCacheContextProvider>
         <CacheStoreProvider syncStorage={cacheStoreStorage}>
           <App />
+          <VercelAnalytics />
         </CacheStoreProvider>
       </ChainDataCacheContextProvider>
     </WagmiConfig>
