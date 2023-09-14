@@ -278,6 +278,9 @@ query {
   }
   votes(where: {blockNumber_gte: ${startBlock}, blockNumber_lte: ${endBlock}}) {
     ...VoteFields
+    proposal {
+      id
+    }
   }
 }`;
 
@@ -583,11 +586,15 @@ export const ChainDataCacheContextProvider = ({ children }) => {
             (p) => p.proposal.id,
             proposalFeedbackPosts
           );
+          const votesByProposalId = arrayUtils.groupBy(
+            (v) => v.proposal.id,
+            votes
+          );
           const updatedProposalsById = objectUtils.mapValues(
             (feedbackPosts, proposalId) => ({
               ...s.proposalsById[proposalId],
               id: proposalId,
-              votes,
+              votes: votesByProposalId[proposalId],
               feedbackPosts,
             }),
             postsByProposalId

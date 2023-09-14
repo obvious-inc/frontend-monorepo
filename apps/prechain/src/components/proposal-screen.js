@@ -1729,7 +1729,7 @@ export const ActivityFeed = ({ isolated, items = [], spacing = "1.6rem" }) => {
                     for <ContextLink {...item} />
                   </>
                 )}{" "}
-                {item.id === "end" ? "ended" : "started"} on{" "}
+                {item.eventType === "end" ? "ended" : "started"} on{" "}
                 <FormattedDateWithTooltip
                   capitalize={false}
                   value={item.timestamp}
@@ -1786,7 +1786,9 @@ export const ActivityFeed = ({ isolated, items = [], spacing = "1.6rem" }) => {
                 ? `${signalWord} for`
                 : item.type === "vote"
                 ? "abstained"
-                : null}
+                : isolated
+                ? null
+                : "commented on"}
             </span>
             {!isolated && (
               <>
