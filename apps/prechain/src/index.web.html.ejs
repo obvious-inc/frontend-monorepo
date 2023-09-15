@@ -6,6 +6,9 @@
     <title><%= htmlWebpackPlugin.options.title %></title>
     <meta property="og:site_name" content="prechain" />
     <meta property="og:type" content="website" />
+    <% if (htmlWebpackPlugin.options.isProduction) { %>
+      <script src="https://cdn.usefathom.com/script.js" data-site="SSSJHJWF" defer></script>
+    <% } %>
   </head>
   <body>
     <div id="app-mount" />

@@ -58,6 +58,7 @@ module.exports = (_, argv, { htmlTitle } = {}) => {
         template: "src/index.web.html.ejs",
         title: htmlTitle,
         manifestPath: isProduction ? "/app.webmanifest" : null,
+        isProduction,
       }),
       new webpack.EnvironmentPlugin({
         PUSHER_KEY: undefined,
