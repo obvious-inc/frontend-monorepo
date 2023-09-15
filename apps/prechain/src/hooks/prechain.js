@@ -64,6 +64,7 @@ fragment CandidateFeedbackFields on CandidateFeedback {
   id
   reason
   supportDetailed
+  createdBlock
   createdTimestamp
   votes
   voter {
@@ -82,6 +83,7 @@ fragment ProposalFeedbackFields on ProposalFeedback {
   id
   reason
   supportDetailed
+  createdBlock
   createdTimestamp
   votes
   voter {
@@ -154,6 +156,9 @@ const createProposalCandidatesQuery = ({ skip = 0, first = 1000 } = {}) => `{
     id
     slug
     proposer
+    createdBlock
+    canceledBlock
+    lastUpdatedBlock
     canceledTimestamp
     createdTimestamp
     lastUpdatedTimestamp
@@ -227,6 +232,9 @@ const createProposalCandidateQuery = (id) => `{
     canceledTimestamp
     createdTimestamp
     lastUpdatedTimestamp
+    createdBlock
+    canceledBlock
+    lastUpdatedBlock
     latestVersion {
       id
       content {
@@ -270,13 +278,13 @@ ${CANDIDATE_FEEDBACK_FIELDS}
 ${PROPOSAL_FEEDBACK_FIELDS}
 ${VOTE_FIELDS}
 query {
-  candidateFeedbacks(where: {createdBlock_gte: ${startBlock}, createdBlock_lte: ${endBlock}}) {
+  candidateFeedbacks(where: {createdBlock_gte: ${startBlock}, createdBlock_lte: ${endBlock}}, first: 1000) {
     ...CandidateFeedbackFields
   }
-  proposalFeedbacks(where: {createdBlock_gte: ${startBlock}, createdBlock_lte: ${endBlock}}) {
+  proposalFeedbacks(where: {createdBlock_gte: ${startBlock}, createdBlock_lte: ${endBlock}}, first: 1000) {
     ...ProposalFeedbackFields
   }
-  votes(where: {blockNumber_gte: ${startBlock}, blockNumber_lte: ${endBlock}}) {
+  votes(where: {blockNumber_gte: ${startBlock}, blockNumber_lte: ${endBlock}}, orderBy: blockNumber, orderDirection: desc, first: 1000) {
     ...VoteFields
     proposal {
       id
@@ -298,28 +306,39 @@ const subgraphFetch = ({ chainId, query }) =>
     })
     .then((body) => body.data);
 
+const parseFeedbackPost = (post) => ({
+  ...post,
+  createdBlock: BigInt(post.createdBlock),
+  createdTimestamp: new Date(parseInt(post.createdTimestamp) * 1000),
+});
+
 const parseProposal = (data) => {
   const parsedData = { ...data };
 
-  parsedData.createdTimestamp = new Date(
-    parseInt(data.createdTimestamp) * 1000
-  );
+  // Block numbers
+  for (const prop of [
+    "createdBlock",
+    "startBlock",
+    "endBlock",
+    "updatePeriodEndBlock",
+    "objectionPeriodEndBlock",
+  ]) {
+    if (data[prop] === "0") {
+      parsedData[prop] = null;
+    } else if (data[prop] != null) {
+      parsedData[prop] = BigInt(data[prop]);
+    }
+  }
 
-  parsedData.lastUpdatedTimestamp = new Date(
-    parseInt(data.lastUpdatedTimestamp) * 1000
-  );
-
-  if (data.objectionPeriodEndBlock === "0")
-    parsedData.objectionPeriodEndBlock = null;
+  // Timestamps
+  for (const prop of ["createdTimestamp", "lastUpdatedTimestamp"]) {
+    if (data[prop] != null) {
+      parsedData[prop] = new Date(parseInt(data[prop]) * 1000);
+    }
+  }
 
   if (data.feedbackPosts != null)
-    parsedData.feedbackPosts = sortBy(
-      (p) => p.createdTimestamp,
-      data.feedbackPosts.map((p) => ({
-        ...p,
-        createdTimestamp: new Date(parseInt(p.createdTimestamp) * 1000),
-      }))
-    );
+    parsedData.feedbackPosts = data.feedbackPosts.map(parseFeedbackPost);
 
   if (data.proposer?.id != null) parsedData.proposerId = data.proposer.id;
 
@@ -345,17 +364,25 @@ const parseProposalCandidate = (data) => {
 
   parsedData.proposerId = data.proposer;
 
-  parsedData.createdTimestamp = new Date(
-    parseInt(data.createdTimestamp) * 1000
-  );
-  parsedData.lastUpdatedTimestamp = new Date(
-    parseInt(data.lastUpdatedTimestamp) * 1000
-  );
+  // Block numbers
+  for (const prop of ["createdBlock", "canceledBlock", "lastUpdatedBlock"]) {
+    if (data[prop] === "0") {
+      parsedData[prop] = null;
+    } else if (data[prop] != null) {
+      parsedData[prop] = BigInt(data[prop]);
+    }
+  }
 
-  if (data.canceledTimestamp != null)
-    parsedData.canceledTimestamp = new Date(
-      parseInt(data.canceledTimestamp) * 1000
-    );
+  // Timestamps
+  for (const prop of [
+    "createdTimestamp",
+    "lastUpdatedTimestamp",
+    "canceledTimestamp",
+  ]) {
+    if (data[prop] != null) {
+      parsedData[prop] = new Date(parseInt(data[prop]) * 1000);
+    }
+  }
 
   if (data.latestVersion.content.matchingProposalIds != null)
     parsedData.latestVersion.proposalId =
@@ -380,6 +407,9 @@ const parseProposalCandidate = (data) => {
         calldata: data.latestVersion.content.calldatas[i],
         value: data.latestVersion.content.values[i],
       }));
+
+  if (data.feedbackPosts != null)
+    parsedData.feedbackPosts = data.feedbackPosts.map(parseFeedbackPost);
 
   return parsedData;
 };
@@ -511,27 +541,20 @@ export const ChainDataCacheContextProvider = ({ children }) => {
         querySubgraph(createProposalCandidateQuery(id)).then((data) => {
           if (data.proposalCandidate == null)
             return Promise.reject(new Error("not-found"));
-
-          return parseProposalCandidate(data.proposalCandidate);
+          return data.proposalCandidate;
         }),
         querySubgraph(
           createProposalCandidateFeedbackPostsByCandidateQuery(id)
         ).then((data) => {
           if (data.candidateFeedbacks == null)
             return Promise.reject(new Error("not-found"));
-
-          const feedbackPosts = data.candidateFeedbacks.map((p) => ({
-            ...p,
-            createdTimestamp: new Date(parseInt(p.createdTimestamp) * 1000),
-          }));
-
-          return feedbackPosts;
+          return data.candidateFeedbacks;
         }),
       ]).then(([candidate, feedbackPosts]) => {
         setState((s) => {
           const updatedCandidate = mergeProposalCandidates(
             s.proposalCandidatesById[id],
-            { ...candidate, feedbackPosts }
+            parseProposalCandidate({ ...candidate, feedbackPosts })
           );
           return {
             ...s,
@@ -554,35 +577,30 @@ export const ChainDataCacheContextProvider = ({ children }) => {
           endBlock: endBlock.toString(),
         })
       ).then((data) => {
-        // if (data.candidateFeedbacks == null)
-        //   return Promise.reject(new Error("not-found"));
+        if (data.candidateFeedbacks == null)
+          return Promise.reject(new Error("not-found"));
 
-        const candidateFeedbackPosts = data.candidateFeedbacks.map((p) => ({
-          ...p,
-          createdTimestamp: new Date(parseInt(p.createdTimestamp) * 1000),
-        }));
-        const proposalFeedbackPosts = data.proposalFeedbacks.map((p) => ({
-          ...p,
-          createdTimestamp: new Date(parseInt(p.createdTimestamp) * 1000),
-        }));
-        const votes = data.votes;
+        const candidateFeedbackPosts =
+          data.candidateFeedbacks.map(parseFeedbackPost);
+        const proposalFeedbackPosts =
+          data.proposalFeedbacks.map(parseFeedbackPost);
+        const { votes } = data;
 
         setState((s) => {
           const postsByCandidateId = arrayUtils.groupBy(
             (p) => p.candidate.id,
             candidateFeedbackPosts
           );
-          const updatedCandidatesById = objectUtils.mapValues(
-            (feedbackPosts, candidateId) =>
-              mergeProposalCandidates(s.proposalCandidatesById[candidateId], {
-                id: candidateId,
-                slug: extractSlugFromCandidateId(candidateId),
-                feedbackPosts,
-              }),
+          const newCandidatesById = objectUtils.mapValues(
+            (feedbackPosts, candidateId) => ({
+              id: candidateId,
+              slug: extractSlugFromCandidateId(candidateId),
+              feedbackPosts,
+            }),
             postsByCandidateId
           );
 
-          const postsByProposalId = arrayUtils.groupBy(
+          const feedbackPostsByProposalId = arrayUtils.groupBy(
             (p) => p.proposal.id,
             proposalFeedbackPosts
           );
@@ -590,25 +608,57 @@ export const ChainDataCacheContextProvider = ({ children }) => {
             (v) => v.proposal.id,
             votes
           );
-          const updatedProposalsById = objectUtils.mapValues(
+
+          const proposalsWithNewFeedbackPostsById = objectUtils.mapValues(
             (feedbackPosts, proposalId) => ({
-              ...s.proposalsById[proposalId],
               id: proposalId,
-              votes: votesByProposalId[proposalId],
               feedbackPosts,
             }),
-            postsByProposalId
+            feedbackPostsByProposalId
           );
+          const proposalsWithNewVotesById = objectUtils.mapValues(
+            (votes, proposalId) => ({
+              id: proposalId,
+              votes,
+            }),
+            votesByProposalId
+          );
+
+          const merge = (mergingFn, ...objects_) => {
+            const objects =
+              typeof mergingFn === "function"
+                ? objects_
+                : [mergingFn, ...objects_];
+
+            return objects.reduce((result, o) => {
+              if (result == null) return o;
+
+              return {
+                ...result,
+                ...mapValues((value2, key) => {
+                  const value1 = result[key];
+
+                  if (typeof mergingFn === "function")
+                    return mergingFn(value1, value2, key);
+
+                  return { ...value1, ...value2 };
+                }, o),
+              };
+            }, null);
+          };
+
           return {
             ...s,
-            proposalsById: {
-              ...s.proposalsById,
-              ...updatedProposalsById,
-            },
-            proposalCandidatesById: {
-              ...s.proposalCandidatesById,
-              ...updatedCandidatesById,
-            },
+            proposalsById: merge(
+              s.proposalsById,
+              proposalsWithNewFeedbackPostsById,
+              proposalsWithNewVotesById
+            ),
+            proposalCandidatesById: merge(
+              mergeProposalCandidates,
+              s.proposalCandidatesById,
+              newCandidatesById
+            ),
           };
         });
       });

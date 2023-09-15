@@ -78,14 +78,18 @@ const useFeedItems = () => {
       })
     );
 
-    const candidateItems = candidates.flatMap((c) => buildCandidateFeed(c));
+    const candidateItems = candidates.flatMap((c) =>
+      buildCandidateFeed(c, { skipSignatures: true })
+    );
 
-    return arrayUtils.sortBy({ value: (i) => i.timestamp, order: "desc" }, [
+    return arrayUtils.sortBy({ value: (i) => i.blockNumber, order: "desc" }, [
       ...proposalItems,
       ...candidateItems,
     ]);
   }, [proposals, candidates, calculateBlockTimestamp, latestBlockNumber]);
 };
+
+const PROPOSALS_PAGE_ITEM_COUNT = 50;
 
 const ProposalsScreen = () => {
   const navigate = useNavigate();
@@ -98,11 +102,15 @@ const ProposalsScreen = () => {
   const proposalCandidates = useProposalCandidates();
   const { items: proposalDrafts } = useDrafts();
 
+  const [page, setPage] = React.useState(2);
+
   const filteredItems = React.useMemo(() => {
-    const filteredProposalDrafts = proposalDrafts.filter(
-      (d) =>
-        d.name.trim() !== "" || !messageUtils.isEmpty(d.body, { trim: true })
-    );
+    const filteredProposalDrafts = proposalDrafts
+      .filter(
+        (d) =>
+          d.name.trim() !== "" || !messageUtils.isEmpty(d.body, { trim: true })
+      )
+      .map((d) => ({ ...d, type: "draft" }));
 
     const filteredProposalCandidates = proposalCandidates.filter(
       (c) => c.latestVersion != null
@@ -118,7 +126,7 @@ const ProposalsScreen = () => {
   }, [deferredQuery, proposals, proposalCandidates, proposalDrafts]);
 
   const groupedItemsByName = arrayUtils.groupBy((i) => {
-    if (i.proposerId == null) return "drafts";
+    if (i.type === "draft") return "drafts";
     // Candidates
     if (i.slug != null) return "ongoing";
 
@@ -184,6 +192,7 @@ const ProposalsScreen = () => {
                   // Clear search from path if query is empty
                   if (e.target.value.trim() === "") {
                     setSearchParams({});
+                    setPage(2);
                     return;
                   }
 
@@ -215,7 +224,7 @@ const ProposalsScreen = () => {
                   containerType: "inline-size",
                   "li + li": { marginTop: "2.4rem" },
                   ul: { listStyle: "none" },
-                  "[data-group] li + li": { marginTop: "1.6rem" },
+                  "[data-group] li + li": { marginTop: "1rem" },
                   "[data-group-title]": {
                     position: "sticky",
                     top: "4.35rem",
@@ -227,6 +236,7 @@ const ProposalsScreen = () => {
                     color: t.colors.textMuted,
                   },
                   a: {
+                    display: "block",
                     textDecoration: "none",
                     padding: "0.8rem 0",
                     color: t.colors.textNormal,
@@ -236,9 +246,9 @@ const ProposalsScreen = () => {
                     fontSize: t.text.sizes.large,
                     fontWeight: t.text.weights.emphasis,
                     lineHeight: 1.25,
-                    whiteSpace: "nowrap",
-                    overflow: "hidden",
-                    textOverflow: "ellipsis",
+                    // whiteSpace: "nowrap",
+                    // overflow: "hidden",
+                    // textOverflow: "ellipsis",
                   },
                   "[data-small]": {
                     color: t.colors.textDimmed,
@@ -272,9 +282,9 @@ const ProposalsScreen = () => {
                       gridTemplateColumns: "auto minmax(0,1fr)",
                       gridGap: "1rem",
                     },
-                    "[data-title]": {
-                      whiteSpace: "default",
-                    },
+                    // "[data-title]": {
+                    //   whiteSpace: "normal",
+                    // },
                   },
                   // Hover enhancement
                   "@media(hover: hover)": {
@@ -303,14 +313,19 @@ const ProposalsScreen = () => {
                           items
                         );
 
-                      case "past":
-                        return arrayUtils.sortBy(
+                      case "past": {
+                        const sortedItems = arrayUtils.sortBy(
                           {
                             value: (i) => Number(i.startBlock),
                             order: "desc",
                           },
                           items
                         );
+                        return sortedItems.slice(
+                          0,
+                          PROPOSALS_PAGE_ITEM_COUNT * page
+                        );
+                      }
 
                       case "ongoing":
                         return arrayUtils.sortBy(
@@ -351,12 +366,12 @@ const ProposalsScreen = () => {
                       <ul>
                         {getSortedItems().map((i) => (
                           <li key={i.id}>
-                            {i.slug != null ? (
-                              <ProposalCandidateItem candidateId={i.id} />
-                            ) : i.startBlock != null ? (
-                              <ProposalItem proposalId={i.id} />
-                            ) : (
+                            {i.type === "draft" ? (
                               <ProposalDraftItem draftId={i.id} />
+                            ) : i.slug != null ? (
+                              <ProposalCandidateItem candidateId={i.id} />
+                            ) : (
+                              <ProposalItem proposalId={i.id} />
                             )}
                           </li>
                         ))}
@@ -365,6 +380,20 @@ const ProposalsScreen = () => {
                   );
                 })}
             </ul>
+            {groupedItemsByName.past != null &&
+              groupedItemsByName.past.length >
+                PROPOSALS_PAGE_ITEM_COUNT * page && (
+                <div css={{ textAlign: "center", padding: "3.2rem 0" }}>
+                  <Button
+                    size="small"
+                    onClick={() => {
+                      setPage((p) => p + 1);
+                    }}
+                  >
+                    Show more
+                  </Button>
+                </div>
+              )}
           </div>
         </MainContentContainer>
       </div>
@@ -373,6 +402,7 @@ const ProposalsScreen = () => {
 };
 
 const FEED_PAGE_ITEM_COUNT = 30;
+
 const FeedSidebar = () => {
   const { data: latestBlockNumber } = useBlockNumber();
 
@@ -423,7 +453,7 @@ const FeedSidebar = () => {
   );
 };
 
-const ProposalItem = ({ proposalId }) => {
+const ProposalItem = React.memo(({ proposalId }) => {
   const theme = useTheme();
   const proposal = useProposal(proposalId);
   const { displayName: authorAccountDisplayName } = useAccountDisplayName(
@@ -447,7 +477,7 @@ const ProposalItem = ({ proposalId }) => {
       <div
         css={css({
           display: "grid",
-          gridTemplateColumns: "minmax(0,auto) minmax(10rem,1fr)",
+          gridTemplateColumns: "minmax(0,auto) minmax(min-content,1fr)",
           gridGap: "1.6rem",
           alignItems: "center",
         })}
@@ -475,7 +505,7 @@ const ProposalItem = ({ proposalId }) => {
       </div>
     </RouterLink>
   );
-};
+});
 
 const PropStatusText = ({ proposalId }) => {
   const proposal = useProposal(proposalId);
@@ -649,7 +679,7 @@ const PropStatusTag = ({ proposalId }) => {
   }
 };
 
-const ProposalCandidateItem = ({ candidateId }) => {
+const ProposalCandidateItem = React.memo(({ candidateId }) => {
   const candidate = useProposalCandidate(candidateId);
   const { displayName: authorAccountDisplayName } = useAccountDisplayName(
     candidate.proposer
@@ -728,7 +758,7 @@ const ProposalCandidateItem = ({ candidateId }) => {
       </div>
     </RouterLink>
   );
-};
+});
 
 const ProposalDraftItem = ({ draftId }) => {
   const [draft] = useDraft(draftId);

@@ -69,18 +69,22 @@ const useSearchParamToggleState = (key) => {
   return [isToggled, toggle];
 };
 
-export const buildCandidateFeed = (candidate) => {
+export const buildCandidateFeed = (
+  candidate,
+  { skipSignatures = false } = {}
+) => {
   if (candidate == null) return [];
 
-  const signatureItems = getValidSponsorSignatures(candidate).map((s) => ({
-    type: "signature",
-    id: `${s.signer.id}-${s.expirationTimestamp.getTime()}`,
-    authorAccount: s.signer.id,
-    bodyRichText: s.reason == null ? null : messageUtils.parseString(s.reason),
-    voteCount: s.signer.nounsRepresented.length,
-    expiresAt: s.expirationTimestamp,
-    candidateId: candidate.id,
-  }));
+  const candidateId = candidate.id;
+
+  const createdEventItem = {
+    type: "event",
+    eventType: "candidate-created",
+    id: `${candidate.id}-created`,
+    timestamp: candidate.createdTimestamp,
+    blockNumber: candidate.createdBlock,
+    candidateId,
+  };
 
   const feedbackPostItems =
     candidate.feedbackPosts?.map((p) => ({
@@ -90,21 +94,44 @@ export const buildCandidateFeed = (candidate) => {
       bodyRichText:
         p.reason == null ? null : messageUtils.parseString(p.reason),
       support: p.supportDetailed,
-      timestamp: p.createdTimestamp,
       voteCount: p.votes,
-      candidateId: candidate.id,
+      timestamp: p.createdTimestamp,
+      blockNumber: BigInt(p.createdBlock),
+      candidateId,
     })) ?? [];
+
+  const items = [createdEventItem, ...feedbackPostItems];
+
+  if (candidate.canceledBlock != null)
+    items.push({
+      type: "event",
+      eventType: "candidate-canceled",
+      id: `${candidate.id}-canceled`,
+      timestamp: candidate.createdTimestamp,
+      blockNumber: candidate.canceledBlock,
+      candidateId,
+    });
+
+  const sortedItems = arrayUtils.sortBy((i) => i.blockNumber, items);
+
+  if (skipSignatures) return sortedItems;
+
+  const signatureItems = getValidSponsorSignatures(candidate).map((s) => ({
+    type: "signature",
+    id: `${s.signer.id}-${s.expirationTimestamp.getTime()}`,
+    authorAccount: s.signer.id,
+    bodyRichText: s.reason == null ? null : messageUtils.parseString(s.reason),
+    voteCount: s.signer.nounsRepresented.length,
+    expiresAt: s.expirationTimestamp,
+    candidateId,
+  }));
 
   const sortedSignatureItems = arrayUtils.sortBy(
     { value: (i) => i.voteCount, order: "desc" },
     signatureItems
   );
-  const sortedFeedbackItems = arrayUtils.sortBy(
-    (i) => i.timestamp,
-    feedbackPostItems
-  );
 
-  return [...sortedSignatureItems, ...sortedFeedbackItems];
+  return [...sortedSignatureItems, ...sortedItems];
 };
 
 const useFeedItems = (candidateId) => {

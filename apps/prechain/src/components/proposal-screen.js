@@ -315,9 +315,10 @@ export const buildProposalFeed = (
 
   const createdEventItem = {
     type: "event",
-    eventType: "create",
-    id: `${proposal.id}-create`,
+    eventType: "proposal-created",
+    id: `${proposal.id}-created`,
     timestamp: proposal.createdTimestamp,
+    blockNumber: proposal.createdBlock,
     proposalId: proposal.id,
   };
 
@@ -330,6 +331,7 @@ export const buildProposalFeed = (
       support: p.supportDetailed,
       authorAccount: p.voter.id,
       timestamp: p.createdTimestamp,
+      blockNumber: p.createdBlock,
       voteCount: p.votes,
       proposalId: proposal.id,
     })) ?? [];
@@ -343,6 +345,7 @@ export const buildProposalFeed = (
       support: v.supportDetailed,
       authorAccount: v.voter.id,
       timestamp: calculateBlockTimestamp(v.blockNumber),
+      blockNumber: v.blockNumber,
       voteCount: v.votes,
       proposalId: proposal.id,
     })) ?? [];
@@ -352,9 +355,10 @@ export const buildProposalFeed = (
   if (latestBlockNumber > proposal.startBlock) {
     items.push({
       type: "event",
-      eventType: "start",
-      id: `${proposal.id}-start`,
+      eventType: "proposal-started",
+      id: `${proposal.id}-started`,
       timestamp: calculateBlockTimestamp(proposal.startBlock),
+      blockNumber: proposal.startBlock,
       proposalId: proposal.id,
     });
   }
@@ -364,9 +368,10 @@ export const buildProposalFeed = (
   if (latestBlockNumber > actualEndBlock) {
     items.push({
       type: "event",
-      eventType: "end",
-      id: `${proposal.id}-end`,
+      eventType: "proposal-ended",
+      id: `${proposal.id}-ended`,
       timestamp: calculateBlockTimestamp(actualEndBlock),
+      blockNumber: actualEndBlock,
       proposalId: proposal.id,
     });
   }
@@ -374,14 +379,15 @@ export const buildProposalFeed = (
   if (proposal.objectionPeriodEndBlock != null) {
     items.push({
       type: "event",
-      eventType: "objection-period-start",
+      eventType: "proposal-objection-period-started",
       id: `${proposal.id}-objection-period-start`,
       timestamp: calculateBlockTimestamp(proposal.endBlock),
+      blockNumber: proposal.endBlock,
       proposalId: proposal.id,
     });
   }
 
-  return arrayUtils.sortBy((i) => i.timestamp, items);
+  return arrayUtils.sortBy((i) => i.blockNumber, items);
 };
 
 const useFeedItems = (proposalId) => {
@@ -1693,15 +1699,9 @@ export const ActivityFeed = ({ isolated, items = [], spacing = "1.6rem" }) => {
 
       case "event": {
         switch (item.eventType) {
-          case "create":
+          case "proposal-created":
             return (
-              <span
-                css={(t) =>
-                  css({
-                    color: t.colors.textDimmed,
-                  })
-                }
-              >
+              <span css={(t) => css({ color: t.colors.textDimmed })}>
                 {isolated ? "Proposal" : <ContextLink {...item} />} created on{" "}
                 <FormattedDateWithTooltip
                   capitalize={false}
@@ -1713,8 +1713,29 @@ export const ActivityFeed = ({ isolated, items = [], spacing = "1.6rem" }) => {
               </span>
             );
 
-          case "start":
-          case "end":
+          case "candidate-created":
+            return (
+              <span css={(t) => css({ color: t.colors.textDimmed })}>
+                {isolated ? (
+                  "Candidate"
+                ) : (
+                  <>
+                    Candidate <ContextLink {...item} />
+                  </>
+                )}{" "}
+                created on{" "}
+                <FormattedDateWithTooltip
+                  capitalize={false}
+                  value={item.timestamp}
+                  disableRelative
+                  month={isolated ? "long" : "short"}
+                  day="numeric"
+                />
+              </span>
+            );
+
+          case "proposal-started":
+          case "proposal-ended":
             return (
               <span
                 css={(t) =>
@@ -1742,7 +1763,7 @@ export const ActivityFeed = ({ isolated, items = [], spacing = "1.6rem" }) => {
               </span>
             );
 
-          case "objection-period-start":
+          case "proposal-objection-period-started":
             return (
               <span
                 css={(t) =>
@@ -1757,7 +1778,7 @@ export const ActivityFeed = ({ isolated, items = [], spacing = "1.6rem" }) => {
             );
 
           default:
-            throw new Error();
+            throw new Error(`Unknown event "${item.eventType}"`);
         }
       }
 
