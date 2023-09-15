@@ -1672,7 +1672,7 @@ const NavBar = ({ navigationStack, actions }) => {
 };
 
 export const ActivityFeed = ({ isolated, items = [], spacing = "1.6rem" }) => {
-  const ContextLink = ({ proposalId, candidateId }) => {
+  const ContextLink = ({ proposalId, candidateId, truncate }) => {
     if (proposalId != null)
       return (
         <RouterLink to={`/proposals/${proposalId}`}>
@@ -1682,7 +1682,9 @@ export const ActivityFeed = ({ isolated, items = [], spacing = "1.6rem" }) => {
 
     if (candidateId != null) {
       const slug = extractSlugFromCandidateId(candidateId);
-      return <RouterLink to={`/candidates/${candidateId}`}>{slug}</RouterLink>;
+      const title =
+        truncate && slug.length > 50 ? `${slug.slice(0, 50)}...` : slug;
+      return <RouterLink to={`/candidates/${candidateId}`}>{title}</RouterLink>;
     }
 
     throw new Error();
@@ -1713,14 +1715,14 @@ export const ActivityFeed = ({ isolated, items = [], spacing = "1.6rem" }) => {
               </span>
             );
 
-          case "candidate-created":
+          case "candidate-created": {
             return (
               <span css={(t) => css({ color: t.colors.textDimmed })}>
                 {isolated ? (
                   "Candidate"
                 ) : (
                   <>
-                    Candidate <ContextLink {...item} />
+                    Candidate <ContextLink truncate {...item} />
                   </>
                 )}{" "}
                 created on{" "}
@@ -1733,6 +1735,7 @@ export const ActivityFeed = ({ isolated, items = [], spacing = "1.6rem" }) => {
                 />
               </span>
             );
+          }
 
           case "proposal-started":
           case "proposal-ended":
