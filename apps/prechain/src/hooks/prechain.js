@@ -14,6 +14,7 @@ import {
   usePrepareContractWrite,
   useSignTypedData,
   useNetwork,
+  useBlockNumber,
 } from "wagmi";
 import { sepolia } from "wagmi/chains";
 import { useFetch, useLatestCallback } from "@shades/common/react";
@@ -765,6 +766,7 @@ export const useActions = () => {
 };
 
 export const useProposalCandidateFetch = (id, options) => {
+  const { data: blockNumber } = useBlockNumber({ watch: true });
   const onError = useLatestCallback(options?.onError);
 
   const {
@@ -777,7 +779,7 @@ export const useProposalCandidateFetch = (id, options) => {
         if (onError == null) return Promise.reject(e);
         onError(e);
       }),
-    [fetchProposalCandidate, id, onError]
+    [fetchProposalCandidate, id, onError, blockNumber]
   );
 };
 

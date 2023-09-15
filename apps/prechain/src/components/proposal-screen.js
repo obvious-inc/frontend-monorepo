@@ -391,7 +391,7 @@ export const buildProposalFeed = (
 };
 
 const useFeedItems = (proposalId) => {
-  const { data: latestBlockNumber } = useBlockNumber();
+  const { data: latestBlockNumber } = useBlockNumber({ watch: true });
   const proposal = useProposal(proposalId);
 
   const calculateBlockTimestamp = useApproximateBlockTimestampCalculator();

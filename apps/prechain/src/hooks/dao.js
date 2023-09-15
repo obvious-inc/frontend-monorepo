@@ -22,6 +22,7 @@ import {
 const EXECUTION_GRACE_PERIOD_IN_MILLIS = 1000 * 60 * 60 * 24 * 21; // 21 days
 
 export const useProposalFetch = (id, options) => {
+  const { data: blockNumber } = useBlockNumber({ watch: true });
   const onError = useLatestCallback(options?.onError);
 
   const {
@@ -34,12 +35,12 @@ export const useProposalFetch = (id, options) => {
         if (onError == null) return Promise.reject(e);
         onError(e);
       }),
-    [fetchProposal, id, onError]
+    [fetchProposal, id, onError, blockNumber]
   );
 };
 
 export const useProposals = () => {
-  const { data: blockNumber } = useBlockNumber();
+  const { data: blockNumber } = useBlockNumber({ watch: true });
 
   const {
     state: { proposalsById },
@@ -60,7 +61,7 @@ export const useProposals = () => {
 };
 
 export const useProposal = (id) => {
-  const { data: blockNumber } = useBlockNumber();
+  const { data: blockNumber } = useBlockNumber({ watch: true });
 
   const {
     state: { proposalsById },

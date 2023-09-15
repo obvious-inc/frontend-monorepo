@@ -343,8 +343,9 @@ const ProposalCandidateScreenContent = ({ candidateId }) => {
                 <>
                   {candidateVotingPower === 0 ? (
                     <>
-                      {proposalThreshold + 1} sponsoring nouns required to put
-                      proposal onchain.
+                      {proposalThreshold + 1} sponsoring{" "}
+                      {proposalThreshold + 1 === 1 ? "noun" : "nouns"} required
+                      to put proposal onchain.
                     </>
                   ) : (
                     <>
