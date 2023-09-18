@@ -22,6 +22,7 @@ import {
   array as arrayUtils,
   object as objectUtils,
 } from "@shades/common/utils";
+import { parse as parseTransactions } from "../utils/transactions.js";
 
 const { indexBy, sortBy } = arrayUtils;
 const { mapValues } = objectUtils;
@@ -343,13 +344,7 @@ const parseProposal = (data) => {
 
   if (data.proposer?.id != null) parsedData.proposerId = data.proposer.id;
 
-  if (data.targets != null)
-    parsedData.transactions = data.targets.map((target, i) => ({
-      target,
-      signature: data.signatures[i],
-      calldata: data.calldatas[i],
-      value: data.values[i],
-    }));
+  if (data.targets != null) parsedData.transactions = parseTransactions(data);
 
   return parsedData;
 };
@@ -401,13 +396,9 @@ const parseProposalCandidate = (data) => {
       }));
 
   if (data.latestVersion.content.targets != null)
-    parsedData.latestVersion.content.transactions =
-      data.latestVersion.content.targets.map((target, i) => ({
-        target,
-        signature: data.latestVersion.content.signatures[i],
-        calldata: data.latestVersion.content.calldatas[i],
-        value: data.latestVersion.content.values[i],
-      }));
+    parsedData.latestVersion.content.transactions = parseTransactions(
+      data.latestVersion.content
+    );
 
   if (data.feedbackPosts != null)
     parsedData.feedbackPosts = data.feedbackPosts.map(parseFeedbackPost);

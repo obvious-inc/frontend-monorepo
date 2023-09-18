@@ -2,51 +2,53 @@ import datesDifferenceInMonths from "date-fns/differenceInCalendarMonths";
 import { formatEther, formatUnits } from "viem";
 import React from "react";
 import { css } from "@emotion/react";
-import { parse as parseTransactions } from "../utils/transactions.js";
 import useDecodedFunctionData from "../hooks/decoded-function-data.js";
 import { useAccountDisplayName } from "@shades/common/app";
 import * as Tooltip from "@shades/ui-web/tooltip";
+import { WETH_TOKEN_CONTRACT_ADDRESS } from "../utils/transactions.js";
 import FormattedDateWithTooltip from "./formatted-date-with-tooltip.js";
 
 const TOKEN_BUYER_CONTRACT = "0x4f2acdc74f6941390d9b1804fabc3e780388cfe5";
 const DAO_PAYER_CONTRACT = "0xd97bcd9f47cee35c0a9ec1dc40c1269afc9e8e1d";
 
-const ethToken = {
-  currency: "ETH",
-  decimals: 18,
-};
-
-const tokenContractsByAddress = {
-  "0x0000000000000000000000000000000000000000": ethToken,
-  "0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2": {
-    currency: "WETH",
-    decimals: 18,
-  },
-  "0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48": {
-    currency: "USDC",
-    decimals: 6,
-  },
+const decimalsByCurrency = {
+  ETH: 18,
+  WETH: 18,
+  USDC: 6,
 };
 
 const createEtherscanAddressUrl = (address) =>
   `https://etherscan.io/address/${address}`;
 
-const useEnhancedParsedTransaction = (parsedTransaction) => {
-  const { type, target, calldata } = parsedTransaction;
+const useEnhancedParsedTransaction = (transaction) => {
+  const { type, target, calldata, value } = transaction;
+  const isUnparsed = [
+    "unparsed-function-call",
+    "unparsed-payable-function-call",
+  ].includes(type);
 
   const decodedFunctionData = useDecodedFunctionData(
     { target, calldata },
-    { enabled: type === "unparsed-function-call" }
+    { enabled: isUnparsed }
   );
 
-  if (decodedFunctionData == null) return parsedTransaction;
+  if (decodedFunctionData == null) return transaction;
+
+  const enhancedType = [
+    decodedFunctionData.proxy ? "proxied" : null,
+    type === "unparsed-payable-function-call" ? "payable" : null,
+    "function-call",
+  ]
+    .filter(Boolean)
+    .join("-");
 
   return {
     target,
     proxyImplementationAddress: decodedFunctionData.proxyImplementationAddress,
-    type: decodedFunctionData.proxy ? "proxied-function-call" : "function-call",
+    type: enhancedType,
     functionName: decodedFunctionData.name,
     functionInputs: decodedFunctionData.inputs,
+    value,
   };
 };
 
@@ -99,7 +101,7 @@ const TransactionList = ({ transactions }) => (
       })
     }
   >
-    {parseTransactions(transactions).map((t, i) => (
+    {transactions.map((t, i) => (
       <li key={i}>
         <ListItem transaction={t} />
       </li>
@@ -113,7 +115,9 @@ const ListItem = ({ transaction }) => {
   const renderCode = () => {
     switch (t.type) {
       case "function-call":
+      case "payable-function-call":
       case "proxied-function-call":
+      case "proxied-payable-function-call":
         return (
           <pre>
             <code>
@@ -126,7 +130,7 @@ const ListItem = ({ transaction }) => {
                 contract
               </a>
               .<span data-function-name>{t.functionName}</span>(
-              {t.functionInputs.length > 0 && (
+              {(t.functionInputs.length > 0 || t.value > 0) && (
                 <div data-indent>
                   {t.functionInputs.map((input, i, inputs) => (
                     <React.Fragment key={i}>
@@ -143,13 +147,16 @@ const ListItem = ({ transaction }) => {
                           input.value.toString()
                         )}
                       </span>
-                      {i !== inputs.length - 1 && (
+                      {(i !== inputs.length - 1 || t.value > 0) && (
                         <>
                           ,<br />
                         </>
                       )}
                     </React.Fragment>
                   ))}
+                  {t.value > 0 && (
+                    <span data-argument>{formatEther(t.value)} ETH</span>
+                  )}
                 </div>
               )}
               )
@@ -158,6 +165,7 @@ const ListItem = ({ transaction }) => {
         );
 
       case "unparsed-function-call":
+      case "unparsed-payable-function-call":
         return (
           <pre>
             <code>
@@ -166,19 +174,29 @@ const ListItem = ({ transaction }) => {
               <br />
               <span data-identifier>calldata</span>:{" "}
               <span data-argument>{t.calldata}</span>
+              {t.value > 0 && (
+                <>
+                  <br />
+                  <span data-identifier>ETH</span>:{" "}
+                  <span data-argument>{formatEther(t.value)}</span>
+                </>
+              )}
             </code>
           </pre>
         );
 
       case "transfer":
-      case "usdc-transfer":
+      case "weth-transfer":
+      case "usdc-transfer-via-payer":
+      case "weth-deposit":
+      case "weth-stream-funding":
+      case "usdc-stream-funding-via-payer":
       case "token-buyer-top-up":
       case "stream":
-      case "stream-funding-via-payer":
         return null;
 
       default:
-        throw new Error();
+        throw new Error(`Unknown transaction type: "${t.type}"`);
     }
   };
 
@@ -278,7 +296,7 @@ const ListItem = ({ transaction }) => {
           ).
         </div>
       )}
-      {t.type === "stream-funding-via-payer" && (
+      {t.type === "usdc-stream-funding-via-payer" && (
         <div
           css={(t) =>
             css({
@@ -307,13 +325,43 @@ const ListItem = ({ transaction }) => {
           .
         </div>
       )}
+
+      {t.type === "weth-stream-funding" && (
+        <div
+          css={(t) =>
+            css({
+              a: { color: "currentcolor" },
+              fontSize: t.text.sizes.small,
+              color: t.colors.textDimmed,
+              marginTop: "0.2rem",
+            })
+          }
+        >
+          This transaction funds the stream with the required amount via the{" "}
+          <Tooltip.Root>
+            <Tooltip.Trigger asChild>
+              <a
+                href={createEtherscanAddressUrl(WETH_TOKEN_CONTRACT_ADDRESS)}
+                target="_blank"
+                rel="noreferrer"
+              >
+                WETH Token Contract
+              </a>
+            </Tooltip.Trigger>
+            <Tooltip.Content side="top" sideOffset={6}>
+              {WETH_TOKEN_CONTRACT_ADDRESS}
+            </Tooltip.Content>
+          </Tooltip.Root>
+          .
+        </div>
+      )}
     </>
   );
 };
 
 const TransactionExplanation = ({ parsedTransaction: t }) => {
   switch (t.type) {
-    case "transfer": {
+    case "transfer":
       return (
         <>
           Transfer{" "}
@@ -326,16 +374,59 @@ const TransactionExplanation = ({ parsedTransaction: t }) => {
           </em>
         </>
       );
-    }
 
-    case "usdc-transfer":
+    case "weth-transfer":
       return (
         <>
-          Transfer <em>{formatUnits(t.functionInputs[1].value, 6)} USDC</em> to{" "}
+          Transfer{" "}
           <em>
-            <AddressDisplayNameWithTooltip
-              address={t.functionInputs[0].value}
+            <FormattedEthWithConditionalTooltip
+              value={t.value}
+              tokenSymbol="WETH"
             />
+          </em>{" "}
+          to{" "}
+          <em>
+            <AddressDisplayNameWithTooltip address={t.target} />
+          </em>
+        </>
+      );
+
+    case "usdc-transfer-via-payer":
+      return (
+        <>
+          Transfer{" "}
+          <em>{parseFloat(formatUnits(t.value, 6)).toLocaleString()} USDC</em>{" "}
+          to{" "}
+          <em>
+            <AddressDisplayNameWithTooltip address={t.target} />
+          </em>
+        </>
+      );
+
+    case "weth-deposit":
+      return (
+        <>
+          Deposit{" "}
+          <em>
+            <FormattedEthWithConditionalTooltip value={t.value} />
+          </em>{" "}
+          to the{" "}
+          <em>
+            <Tooltip.Root>
+              <Tooltip.Trigger asChild>
+                <a
+                  href={createEtherscanAddressUrl(WETH_TOKEN_CONTRACT_ADDRESS)}
+                  target="_blank"
+                  rel="noreferrer"
+                >
+                  WETH Token Contract
+                </a>
+              </Tooltip.Trigger>
+              <Tooltip.Content side="top" sideOffset={6}>
+                {WETH_TOKEN_CONTRACT_ADDRESS}
+              </Tooltip.Content>
+            </Tooltip.Root>
           </em>
         </>
       );
@@ -364,15 +455,24 @@ const TransactionExplanation = ({ parsedTransaction: t }) => {
       );
 
     case "stream": {
-      const { currency, decimals } =
-        tokenContractsByAddress[t.tokenContractAddress] ?? ethToken;
-
+      const formattedUnits = formatUnits(
+        t.tokenAmount,
+        decimalsByCurrency[t.token]
+      );
+      // TODO: handle unknown token contract
       return (
         <>
           Stream{" "}
-          <em>
-            {formatUnits(t.tokenAmount, decimals)} {currency}
-          </em>{" "}
+          {t.token != null && (
+            <>
+              <em>
+                {t.token === "USDC"
+                  ? parseFloat(formattedUnits).toLocaleString()
+                  : formattedUnits}{" "}
+                {t.token}
+              </em>{" "}
+            </>
+          )}
           to{" "}
           <em>
             <AddressDisplayNameWithTooltip address={t.receiverAddress} />
@@ -398,7 +498,8 @@ const TransactionExplanation = ({ parsedTransaction: t }) => {
       );
     }
 
-    case "stream-funding-via-payer":
+    case "usdc-stream-funding-via-payer":
+    case "weth-stream-funding":
       return (
         <>
           Fund the{" "}
@@ -406,7 +507,7 @@ const TransactionExplanation = ({ parsedTransaction: t }) => {
             <Tooltip.Root>
               <Tooltip.Trigger asChild>
                 <a
-                  href={createEtherscanAddressUrl(t.functionInputs[0].value)}
+                  href={createEtherscanAddressUrl(t.target)}
                   target="_blank"
                   rel="noreferrer"
                 >
@@ -414,7 +515,7 @@ const TransactionExplanation = ({ parsedTransaction: t }) => {
                 </a>
               </Tooltip.Trigger>
               <Tooltip.Content side="top" sideOffset={6}>
-                {t.functionInputs[0].value}
+                {t.target}
               </Tooltip.Content>
             </Tooltip.Root>
           </em>
@@ -423,19 +524,24 @@ const TransactionExplanation = ({ parsedTransaction: t }) => {
 
     case "function-call":
     case "unparsed-function-call":
-      return (
-        <>
-          Function call to contract{" "}
-          <em>
-            <AddressDisplayNameWithTooltip address={t.target} />
-          </em>
-        </>
-      );
-
+    case "payable-function-call":
+    case "unparsed-payable-function-call":
     case "proxied-function-call":
+    case "proxied-payable-function-call":
       return (
         <>
-          Function call to proxy contract{" "}
+          {t.value > 0 ? (
+            <>
+              <em>
+                <FormattedEthWithConditionalTooltip value={t.value} />
+              </em>{" "}
+              payable function call
+            </>
+          ) : (
+            "Function call"
+          )}{" "}
+          to{" "}
+          {t.proxyImplementationAddress != null ? "proxy contract" : "contract"}{" "}
           <em>
             <AddressDisplayNameWithTooltip address={t.target} />
           </em>
@@ -443,11 +549,14 @@ const TransactionExplanation = ({ parsedTransaction: t }) => {
       );
 
     default:
-      throw new Error();
+      throw new Error(`Unknown transaction type: "${t.type}"`);
   }
 };
 
-const FormattedEthWithConditionalTooltip = ({ value }) => {
+export const FormattedEthWithConditionalTooltip = ({
+  value,
+  tokenSymbol = "ETH",
+}) => {
   const ethString = formatEther(value);
   const [ethValue, ethDecimals] = ethString.split(".");
   const trimDecimals = ethDecimals != null && ethDecimals.length > 3;
@@ -458,13 +567,13 @@ const FormattedEthWithConditionalTooltip = ({ value }) => {
     .filter(Boolean)
     .join(".");
 
-  if (!trimDecimals) return `${ethString} ETH`;
+  if (!trimDecimals) return `${ethString} ${tokenSymbol}`;
 
   return (
     <Tooltip.Root>
       <Tooltip.Trigger>{trimmedEthString} ETH</Tooltip.Trigger>
       <Tooltip.Content side="top" sideOffset={6}>
-        {ethString} ETH
+        {ethString} {tokenSymbol}
       </Tooltip.Content>
     </Tooltip.Root>
   );

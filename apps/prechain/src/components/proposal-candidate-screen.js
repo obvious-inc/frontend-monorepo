@@ -533,6 +533,7 @@ const ProposalCandidateScreenContent = ({ candidateId }) => {
             proposerId={candidate.proposerId}
             createdAt={candidate.createdTimestamp}
             updatedAt={candidate.lastUpdatedTimestamp}
+            transactions={candidate.latestVersion.content.transactions}
           />
         </div>
       </MainContentContainer>

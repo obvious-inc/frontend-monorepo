@@ -1,6 +1,7 @@
 import datesDifferenceInDays from "date-fns/differenceInCalendarDays";
 import React from "react";
 import va from "@vercel/analytics";
+import { formatUnits } from "viem";
 import { useBlockNumber } from "wagmi";
 import {
   Link as RouterLink,
@@ -23,6 +24,7 @@ import Select from "@shades/ui-web/select";
 import Dialog from "@shades/ui-web/dialog";
 import * as Tooltip from "@shades/ui-web/tooltip";
 import Spinner from "@shades/ui-web/spinner";
+import { extractAmounts as extractAmountsFromTransactions } from "../utils/transactions.js";
 import {
   useProposal,
   useProposalFetch,
@@ -42,7 +44,9 @@ import Callout from "./callout.js";
 import LogoSymbol from "./logo-symbol.js";
 import * as Tabs from "./tabs.js";
 import AccountAvatar from "./account-avatar.js";
-import TransactionList from "./transaction-list.js";
+import TransactionList, {
+  FormattedEthWithConditionalTooltip,
+} from "./transaction-list.js";
 
 const nameBySupportDetailed = { 0: "against", 1: "for", 2: "abstain" };
 
@@ -1364,62 +1368,111 @@ export const ProposalLikeContent = ({
   updatedAt,
   proposerId,
   sponsorIds = [],
-}) => (
-  <div css={css({ userSelect: "text" })}>
-    <h1
-      css={(t) =>
-        css({
-          fontSize: t.text.sizes.huge,
-          lineHeight: 1.15,
-          margin: "0 0 0.3rem",
-        })
-      }
-    >
-      {title}
-    </h1>
-    <div
-      css={(t) =>
-        css({
-          color: t.colors.textDimmed,
-          fontSize: t.text.sizes.base,
-          margin: "0 0 2.6rem",
-        })
-      }
-    >
-      Proposed by <AccountPreviewPopoverTrigger accountAddress={proposerId} />{" "}
-      <FormattedDateWithTooltip
-        capitalize={false}
-        value={createdAt}
-        day="numeric"
-        month="long"
-      />
-      {updatedAt != null && updatedAt.getTime() !== createdAt.getTime() && (
-        <>
-          , last edited{" "}
-          <FormattedDateWithTooltip
-            capitalize={false}
-            value={updatedAt}
-            day="numeric"
-            month="long"
-          />
-        </>
-      )}
-      {sponsorIds.length !== 0 && (
-        <>
-          <br />
-          Sponsored by{" "}
-          {sponsorIds.map((id, i) => (
-            <React.Fragment key={id}>
-              {i !== 0 && <>, </>}
-              <AccountPreviewPopoverTrigger accountAddress={id} />
-            </React.Fragment>
-          ))}
-        </>
-      )}
-    </div>
+  transactions = [],
+}) => {
+  const requestedAmounts = extractAmountsFromTransactions(transactions);
+  return (
+    <div css={css({ userSelect: "text" })}>
+      <h1
+        css={(t) =>
+          css({
+            fontSize: t.text.sizes.huge,
+            lineHeight: 1.15,
+            margin: "0 0 0.3rem",
+          })
+        }
+      >
+        {title}
+      </h1>
+      <div
+        css={(t) =>
+          css({
+            color: t.colors.textDimmed,
+            fontSize: t.text.sizes.base,
+            margin: "0 0 4.8rem",
+          })
+        }
+        style={{
+          marginBottom: requestedAmounts.length === 0 ? "2.4rem" : "4.8rem",
+        }}
+      >
+        Proposed by <AccountPreviewPopoverTrigger accountAddress={proposerId} />
+        {sponsorIds.length !== 0 && (
+          <>
+            , sponsored by{" "}
+            {sponsorIds.map((id, i) => (
+              <React.Fragment key={id}>
+                {i !== 0 && <>, </>}
+                <AccountPreviewPopoverTrigger accountAddress={id} />
+              </React.Fragment>
+            ))}
+          </>
+        )}
+        {updatedAt != null && updatedAt.getTime() !== createdAt.getTime() && (
+          <>
+            , last edited{" "}
+            <FormattedDateWithTooltip
+              capitalize={false}
+              value={updatedAt}
+              day="numeric"
+              month="long"
+            />
+          </>
+        )}
+        {requestedAmounts.length !== 0 && (
+          <div style={{ marginTop: "1.6rem" }}>
+            <RequestedAmounts amounts={requestedAmounts} />
+          </div>
+        )}
+      </div>
 
-    <RichText markdownText={description} />
-  </div>
+      <RichText markdownText={description} />
+    </div>
+  );
+};
+
+const RequestedAmounts = ({ amounts }) => (
+  <Callout
+    css={(t) =>
+      css({
+        color: t.colors.textNormal,
+        em: { fontStyle: "normal", fontWeight: t.text.weights.emphasis },
+      })
+    }
+  >
+    Requesting{" "}
+    {amounts.map(({ currency, amount }, i) => {
+      const formattedAmount = () => {
+        switch (currency) {
+          case "eth":
+            return <FormattedEthWithConditionalTooltip value={amount} />;
+
+          case "weth":
+            return (
+              <FormattedEthWithConditionalTooltip
+                value={amount}
+                tokenSymbol="WETH"
+              />
+            );
+
+          case "usdc":
+            return (
+              <>{parseFloat(formatUnits(amount, 6)).toLocaleString()} USDC</>
+            );
+
+          default:
+            throw new Error();
+        }
+      };
+
+      return (
+        <React.Fragment key={currency}>
+          {i !== 0 && ` + `}
+          <em>{formattedAmount()}</em>
+        </React.Fragment>
+      );
+    })}
+  </Callout>
 );
 
 const ProposalContent = ({ proposalId }) => {
@@ -1437,6 +1490,7 @@ const ProposalContent = ({ proposalId }) => {
       proposerId={proposal.proposerId}
       sponsorIds={proposal.signers?.map((s) => s.id)}
       createdAt={proposal.createdTimestamp}
+      transactions={proposal.transactions}
     />
   );
 };
