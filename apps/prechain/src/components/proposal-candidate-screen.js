@@ -41,11 +41,11 @@ import {
   ActivityFeed,
   VotingBar,
   VoteDistributionToolTipContent,
-  TransactionList,
 } from "./proposal-screen.js";
 import AccountPreviewPopoverTrigger from "./account-preview-popover-trigger.js";
 import Callout from "./callout.js";
 import * as Tabs from "./tabs.js";
+import TransactionList from "./transaction-list.js";
 
 const useSearchParamToggleState = (key) => {
   const [searchParams, setSearchParams] = useSearchParams();
