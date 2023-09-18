@@ -5,7 +5,7 @@ import {
   useSearchParams,
 } from "react-router-dom";
 import { css, useTheme } from "@emotion/react";
-import { useAccount, useBlockNumber } from "wagmi";
+import { useBlockNumber } from "wagmi";
 import { useFetch } from "@shades/common/react";
 import { useAccountDisplayName } from "@shades/common/app";
 import {
@@ -20,8 +20,10 @@ import {
   useProposal,
   useProposals,
   isFinalProposalState,
+  isVotableProposalState,
   useProposalThreshold,
 } from "../hooks/dao.js";
+import { useWallet } from "../hooks/wallet.js";
 import {
   useActions as usePrechainActions,
   useProposalCandidates,
@@ -53,7 +55,10 @@ const searchProposals = (items, rawQuery) => {
   const filteredItems = items
     .map((i) => {
       const title = i.title ?? i.latestVersion?.content.title ?? i.name;
-      return { ...i, index: title.toLowerCase().indexOf(query) };
+      return {
+        ...i,
+        index: title == null ? -1 : title.toLowerCase().indexOf(query),
+      };
     })
     .filter((i) => i.index !== -1);
 
@@ -68,13 +73,13 @@ const useFeedItems = () => {
   const proposals = useProposals();
   const candidates = useProposalCandidates();
 
-  const calculateBlockTimestamp = useApproximateBlockTimestampCalculator();
+  // const calculateBlockTimestamp = useApproximateBlockTimestampCalculator();
 
   return React.useMemo(() => {
     const proposalItems = proposals.flatMap((p) =>
       buildProposalFeed(p, {
         latestBlockNumber,
-        calculateBlockTimestamp,
+        // calculateBlockTimestamp,
       })
     );
 
@@ -86,23 +91,30 @@ const useFeedItems = () => {
       ...proposalItems,
       ...candidateItems,
     ]);
-  }, [proposals, candidates, calculateBlockTimestamp, latestBlockNumber]);
+  }, [
+    proposals,
+    candidates,
+    // calculateBlockTimestamp,
+    latestBlockNumber,
+  ]);
 };
 
-const PROPOSALS_PAGE_ITEM_COUNT = 50;
+const PROPOSALS_PAGE_ITEM_COUNT = 20;
 
-const ProposalsScreen = () => {
+const BrowseScreen = () => {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
 
   const query = searchParams.get("q") ?? "";
   const deferredQuery = React.useDeferredValue(query.trim());
 
+  const { address: connectedWalletAccountAddress } = useWallet();
+
   const proposals = useProposals();
   const proposalCandidates = useProposalCandidates();
   const { items: proposalDrafts } = useDrafts();
 
-  const [page, setPage] = React.useState(2);
+  const [page, setPage] = React.useState(1);
 
   const filteredItems = React.useMemo(() => {
     const filteredProposalDrafts = proposalDrafts
@@ -132,27 +144,31 @@ const ProposalsScreen = () => {
 
     if (isFinalProposalState(i.state)) return "past";
 
+    if (
+      connectedWalletAccountAddress != null &&
+      isVotableProposalState(i.state) &&
+      i.votes != null &&
+      i.votes.every(
+        (v) =>
+          v.voter.id.toLowerCase() !==
+          connectedWalletAccountAddress.toLowerCase()
+      )
+    )
+      return "awaiting-vote";
+
     return "ongoing";
   }, filteredItems);
 
-  const { fetchProposals, fetchProposalCandidates } = usePrechainActions();
+  const { fetchBrowseScreenData } = usePrechainActions();
 
-  // Fetch proposals
   useFetch(
     () =>
-      fetchProposals({ first: 15 }).then(() => {
-        fetchProposals({ skip: 15, first: 1000 });
+      fetchBrowseScreenData({ first: 15 }).then(() => {
+        fetchBrowseScreenData({ skip: 30, first: 15 }).then(() => {
+          fetchBrowseScreenData({ skip: 30, first: 1000 });
+        });
       }),
-    [fetchProposals]
-  );
-
-  // Fetch candidates
-  useFetch(
-    () =>
-      fetchProposalCandidates({ first: 15 }).then(() => {
-        fetchProposalCandidates({ skip: 15, first: 1000 });
-      }),
-    [fetchProposalCandidates]
+    [fetchBrowseScreenData]
   );
 
   return (
@@ -217,6 +233,7 @@ const ProposalsScreen = () => {
             </div>
 
             <ul
+              role={filteredItems.length === 0 ? "presentation" : undefined}
               css={(t) => {
                 const hoverColor = t.colors.backgroundTertiary;
                 return css({
@@ -234,6 +251,22 @@ const ProposalsScreen = () => {
                     fontSize: t.text.sizes.small,
                     fontWeight: t.text.weights.emphasis,
                     color: t.colors.textMuted,
+                  },
+
+                  "[data-placeholder]": {
+                    background: hoverColor,
+                    borderRadius: "0.3rem",
+                  },
+                  "[data-group-title][data-placeholder]": {
+                    height: "2rem",
+                    width: "12rem",
+                    marginBottom: "1rem",
+                  },
+                  "[data-group] li[data-placeholder]": {
+                    height: "6.2rem",
+                  },
+                  "[data-group] li + li[data-placeholder]": {
+                    marginTop: "1rem",
                   },
                   a: {
                     display: "block",
@@ -295,90 +328,108 @@ const ProposalsScreen = () => {
                 });
               }}
             >
-              {["drafts", "ongoing", "past"]
-                .map((groupName) => ({
-                  name: groupName,
-                  items: groupedItemsByName[groupName],
-                }))
-                .filter(({ items }) => items != null && items.length !== 0)
-                .map(({ name: groupName, items }) => {
-                  const getSortedItems = () => {
-                    // Keep order from search result
-                    if (deferredQuery !== "") return items;
+              {filteredItems.length === 0 ? (
+                <li data-group key="placeholder">
+                  <div data-group-title data-placeholder />
+                  <ul>
+                    {Array.from({ length: 15 }).map((_, i) => (
+                      <li key={i} data-placeholder />
+                    ))}
+                  </ul>
+                </li>
+              ) : (
+                ["drafts", "awaiting-vote", "ongoing", "past"]
+                  .map((groupName) => ({
+                    name: groupName,
+                    items: groupedItemsByName[groupName],
+                  }))
+                  .filter(({ items }) => items != null && items.length !== 0)
+                  .map(({ name: groupName, items }) => {
+                    const getSortedItems = () => {
+                      // Keep order from search result
+                      if (deferredQuery !== "") return items;
 
-                    switch (groupName) {
-                      case "drafts":
-                        return arrayUtils.sortBy(
-                          { value: (i) => Number(i.id), order: "desc" },
-                          items
-                        );
+                      switch (groupName) {
+                        case "drafts":
+                          return arrayUtils.sortBy(
+                            { value: (i) => Number(i.id), order: "desc" },
+                            items
+                          );
 
-                      case "past": {
-                        const sortedItems = arrayUtils.sortBy(
-                          {
-                            value: (i) => Number(i.startBlock),
-                            order: "desc",
-                          },
-                          items
-                        );
-                        return sortedItems.slice(
-                          0,
-                          PROPOSALS_PAGE_ITEM_COUNT * page
-                        );
-                      }
+                        case "past": {
+                          const sortedItems = arrayUtils.sortBy(
+                            {
+                              value: (i) => Number(i.startBlock),
+                              order: "desc",
+                            },
+                            items
+                          );
+                          return sortedItems.slice(
+                            0,
+                            PROPOSALS_PAGE_ITEM_COUNT * page
+                          );
+                        }
 
-                      case "ongoing":
-                        return arrayUtils.sortBy(
-                          // First the active ones
-                          (i) =>
-                            ["active", "objection-period"].includes(i.state)
-                              ? Number(i.objectionPeriodEndBlock ?? i.endBlock)
-                              : Infinity,
-                          // The the ones that hasn’t started yet
-                          (i) =>
-                            ["updatable", "pending"].includes(i.state)
-                              ? Number(i.startBlock)
-                              : Infinity,
-                          // Then the succeeded but not yet executed
-                          {
-                            value: (i) =>
-                              i.slug != null
-                                ? 0
-                                : Number(
+                        case "ongoing":
+                        case "awaiting-vote":
+                          return arrayUtils.sortBy(
+                            // First the active ones
+                            (i) =>
+                              ["active", "objection-period"].includes(i.state)
+                                ? Number(
                                     i.objectionPeriodEndBlock ?? i.endBlock
-                                  ),
-                            order: "desc",
-                          },
-                          // And last the candidates
-                          {
-                            value: (i) => i.lastUpdatedTimestamp,
-                            order: "desc",
-                          },
-                          items
-                        );
-                    }
-                  };
-                  return (
-                    <li data-group key={groupName}>
-                      <div data-group-title>
-                        {groupName === "ongoing" ? "Current" : groupName}
-                      </div>
-                      <ul>
-                        {getSortedItems().map((i) => (
-                          <li key={i.id}>
-                            {i.type === "draft" ? (
-                              <ProposalDraftItem draftId={i.id} />
-                            ) : i.slug != null ? (
-                              <ProposalCandidateItem candidateId={i.id} />
-                            ) : (
-                              <ProposalItem proposalId={i.id} />
-                            )}
-                          </li>
-                        ))}
-                      </ul>
-                    </li>
-                  );
-                })}
+                                  )
+                                : Infinity,
+                            // The the ones that hasn’t started yet
+                            (i) =>
+                              ["updatable", "pending"].includes(i.state)
+                                ? Number(i.startBlock)
+                                : Infinity,
+                            // Then the succeeded but not yet executed
+                            {
+                              value: (i) =>
+                                i.slug != null
+                                  ? 0
+                                  : Number(
+                                      i.objectionPeriodEndBlock ?? i.endBlock
+                                    ),
+                              order: "desc",
+                            },
+                            // And last the candidates
+                            {
+                              value: (i) => i.lastUpdatedTimestamp,
+                              order: "desc",
+                            },
+                            items
+                          );
+                      }
+                    };
+                    const title =
+                      groupName === "ongoing"
+                        ? "Current"
+                        : groupName === "awaiting-vote"
+                        ? "Not yet voted"
+                        : groupName;
+                    return (
+                      <li data-group key={groupName}>
+                        <div data-group-title>{title}</div>
+                        <ul>
+                          {getSortedItems().map((i) => (
+                            <li key={i.id}>
+                              {i.type === "draft" ? (
+                                <ProposalDraftItem draftId={i.id} />
+                              ) : i.slug != null ? (
+                                <ProposalCandidateItem candidateId={i.id} />
+                              ) : (
+                                <ProposalItem proposalId={i.id} />
+                              )}
+                            </li>
+                          ))}
+                        </ul>
+                      </li>
+                    );
+                  })
+              )}
             </ul>
             {groupedItemsByName.past != null &&
               groupedItemsByName.past.length >
@@ -403,8 +454,11 @@ const ProposalsScreen = () => {
 
 const FEED_PAGE_ITEM_COUNT = 30;
 
-const FeedSidebar = () => {
-  const { data: latestBlockNumber } = useBlockNumber();
+const FeedSidebar = React.memo(() => {
+  const { data: latestBlockNumber } = useBlockNumber({
+    watch: true,
+    cache: 20_000,
+  });
 
   const { fetchNounsActivity } = usePrechainActions();
 
@@ -451,7 +505,7 @@ const FeedSidebar = () => {
       )}
     </div>
   );
-};
+});
 
 const ProposalItem = React.memo(({ proposalId }) => {
   const theme = useTheme();
@@ -762,7 +816,7 @@ const ProposalCandidateItem = React.memo(({ candidateId }) => {
 
 const ProposalDraftItem = ({ draftId }) => {
   const [draft] = useDraft(draftId);
-  const { address: connectedAccountAddress } = useAccount();
+  const { address: connectedAccountAddress } = useWallet();
   const { displayName: authorAccountDisplayName } = useAccountDisplayName(
     connectedAccountAddress
   );
@@ -843,4 +897,4 @@ export const Tag = ({ variant, size = "normal", ...props }) => (
   />
 );
 
-export default ProposalsScreen;
+export default BrowseScreen;

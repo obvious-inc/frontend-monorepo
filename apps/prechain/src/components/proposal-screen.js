@@ -57,7 +57,10 @@ const supportDetailedToString = (n) => {
 
 export const buildProposalFeed = (
   proposal,
-  { latestBlockNumber, calculateBlockTimestamp }
+  {
+    latestBlockNumber,
+    // calculateBlockTimestamp
+  }
 ) => {
   if (proposal == null) return [];
 
@@ -92,7 +95,7 @@ export const buildProposalFeed = (
         v.reason == null ? null : messageUtils.parseString(v.reason),
       support: v.supportDetailed,
       authorAccount: v.voter.id,
-      timestamp: calculateBlockTimestamp(v.blockNumber),
+      // timestamp: calculateBlockTimestamp(v.blockNumber),
       blockNumber: v.blockNumber,
       voteCount: v.votes,
       proposalId: proposal.id,
@@ -105,7 +108,7 @@ export const buildProposalFeed = (
       type: "event",
       eventType: "proposal-started",
       id: `${proposal.id}-started`,
-      timestamp: calculateBlockTimestamp(proposal.startBlock),
+      // timestamp: calculateBlockTimestamp(proposal.startBlock),
       blockNumber: proposal.startBlock,
       proposalId: proposal.id,
     });
@@ -118,7 +121,7 @@ export const buildProposalFeed = (
       type: "event",
       eventType: "proposal-ended",
       id: `${proposal.id}-ended`,
-      timestamp: calculateBlockTimestamp(actualEndBlock),
+      // timestamp: calculateBlockTimestamp(actualEndBlock),
       blockNumber: actualEndBlock,
       proposalId: proposal.id,
     });
@@ -129,7 +132,7 @@ export const buildProposalFeed = (
       type: "event",
       eventType: "proposal-objection-period-started",
       id: `${proposal.id}-objection-period-start`,
-      timestamp: calculateBlockTimestamp(proposal.endBlock),
+      // timestamp: calculateBlockTimestamp(proposal.endBlock),
       blockNumber: proposal.endBlock,
       proposalId: proposal.id,
     });
@@ -1023,14 +1026,19 @@ export const ActivityFeed = ({ isolated, items = [], spacing = "1.6rem" }) => {
           case "proposal-created":
             return (
               <span css={(t) => css({ color: t.colors.textDimmed })}>
-                {isolated ? "Proposal" : <ContextLink {...item} />} created on{" "}
-                <FormattedDateWithTooltip
-                  capitalize={false}
-                  value={item.timestamp}
-                  disableRelative
-                  month={isolated ? "long" : "short"}
-                  day="numeric"
-                />
+                {isolated ? "Proposal" : <ContextLink {...item} />} created{" "}
+                {item.timestamp != null && (
+                  <>
+                    on{" "}
+                    <FormattedDateWithTooltip
+                      capitalize={false}
+                      value={item.timestamp}
+                      disableRelative
+                      month={isolated ? "long" : "short"}
+                      day="numeric"
+                    />
+                  </>
+                )}
               </span>
             );
 
@@ -1044,14 +1052,19 @@ export const ActivityFeed = ({ isolated, items = [], spacing = "1.6rem" }) => {
                     Candidate <ContextLink truncate {...item} />
                   </>
                 )}{" "}
-                created on{" "}
-                <FormattedDateWithTooltip
-                  capitalize={false}
-                  value={item.timestamp}
-                  disableRelative
-                  month={isolated ? "long" : "short"}
-                  day="numeric"
-                />
+                created{" "}
+                {item.timestamp != null && (
+                  <>
+                    on{" "}
+                    <FormattedDateWithTooltip
+                      capitalize={false}
+                      value={item.timestamp}
+                      disableRelative
+                      month={isolated ? "long" : "short"}
+                      day="numeric"
+                    />
+                  </>
+                )}
               </span>
             );
           }
@@ -1072,16 +1085,21 @@ export const ActivityFeed = ({ isolated, items = [], spacing = "1.6rem" }) => {
                     for <ContextLink {...item} />
                   </>
                 )}{" "}
-                {item.eventType === "end" ? "ended" : "started"} on{" "}
-                <FormattedDateWithTooltip
-                  capitalize={false}
-                  value={item.timestamp}
-                  disableRelative
-                  month={isolated ? "long" : "short"}
-                  day="numeric"
-                  hour="numeric"
-                  minute="numeric"
-                />
+                {item.eventType === "end" ? "ended" : "started"}{" "}
+                {item.timestamp != null && (
+                  <>
+                    on{" "}
+                    <FormattedDateWithTooltip
+                      capitalize={false}
+                      value={item.timestamp}
+                      disableRelative
+                      month={isolated ? "long" : "short"}
+                      day="numeric"
+                      hour="numeric"
+                      minute="numeric"
+                    />
+                  </>
+                )}
               </span>
             );
 

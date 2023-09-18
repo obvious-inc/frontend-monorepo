@@ -120,11 +120,7 @@ const DELEGATES_QUERY = `{
   }
 }`;
 
-const createProposalsQuery = ({
-  skip = 0,
-  first = 1000,
-  includeVotes = false,
-} = {}) => `
+const createBrowseScreenQuery = ({ skip = 0, first = 1000 } = {}) => `
 ${VOTE_FIELDS}
 query {
   proposals(orderBy: createdBlock, orderDirection: desc, skip: ${skip}, first: ${first}) {
@@ -147,13 +143,11 @@ query {
     proposer {
       id
     }
-    votes @skip(if: ${!includeVotes}) {
+    votes {
       ...VoteFields
     }
   }
-}`;
 
-const createProposalCandidatesQuery = ({ skip = 0, first = 1000 } = {}) => `{
   proposalCandidates(orderBy: createdBlock, orderDirection: desc, skip: ${skip}, first: ${first}) {
     id
     slug
@@ -451,33 +445,12 @@ export const ChainDataCacheContextProvider = ({ children }) => {
     [chainId]
   );
 
-  const fetchProposals = React.useCallback(
+  const fetchBrowseScreenData = React.useCallback(
     (options) =>
-      querySubgraph(createProposalsQuery(options)).then((data) => {
+      querySubgraph(createBrowseScreenQuery(options)).then((data) => {
         const parsedProposals = data.proposals.map(parseProposal);
         const fetchedProposalsById = indexBy((p) => p.id, parsedProposals);
 
-        setState((s) => {
-          const mergedExistingProposalsById = mapValues(
-            (p) => ({ ...p, ...fetchedProposalsById[p.id] }),
-            s.proposalsById
-          );
-
-          return {
-            ...s,
-            proposalsById: {
-              ...fetchedProposalsById,
-              ...mergedExistingProposalsById,
-            },
-          };
-        });
-      }),
-    [querySubgraph]
-  );
-
-  const fetchProposalCandidates = React.useCallback(
-    (options) =>
-      querySubgraph(createProposalCandidatesQuery(options)).then((data) => {
         const parsedCandidates = data.proposalCandidates.map(
           parseProposalCandidate
         );
@@ -487,6 +460,11 @@ export const ChainDataCacheContextProvider = ({ children }) => {
         );
 
         setState((s) => {
+          const mergedExistingProposalsById = mapValues(
+            (p) => ({ ...p, ...fetchedProposalsById[p.id] }),
+            s.proposalsById
+          );
+
           const mergedExistingCandidatesById = mapValues(
             (c) => mergeProposalCandidates(c, fetchedCandidatesById[c.id]),
             s.proposalCandidatesById
@@ -494,6 +472,10 @@ export const ChainDataCacheContextProvider = ({ children }) => {
 
           return {
             ...s,
+            proposalsById: {
+              ...fetchedProposalsById,
+              ...mergedExistingProposalsById,
+            },
             proposalCandidatesById: {
               ...fetchedCandidatesById,
               ...mergedExistingCandidatesById,
@@ -679,18 +661,16 @@ export const ChainDataCacheContextProvider = ({ children }) => {
       actions: {
         fetchProposal,
         fetchProposalCandidate,
-        fetchProposals,
-        fetchProposalCandidates,
         fetchNounsActivity,
+        fetchBrowseScreenData,
       },
     }),
     [
       state,
       fetchProposal,
       fetchProposalCandidate,
-      fetchProposals,
-      fetchProposalCandidates,
       fetchNounsActivity,
+      fetchBrowseScreenData,
     ]
   );
 
