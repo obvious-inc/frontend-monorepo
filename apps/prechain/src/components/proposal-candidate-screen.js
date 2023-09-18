@@ -83,6 +83,7 @@ export const buildCandidateFeed = (
     id: `${candidate.id}-created`,
     timestamp: candidate.createdTimestamp,
     blockNumber: candidate.createdBlock,
+    authorAccount: candidate.proposerId,
     candidateId,
   };
 

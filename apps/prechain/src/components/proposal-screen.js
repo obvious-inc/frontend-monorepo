@@ -70,6 +70,7 @@ export const buildProposalFeed = (
     id: `${proposal.id}-created`,
     timestamp: proposal.createdTimestamp,
     blockNumber: proposal.createdBlock,
+    authorAccount: proposal.proposerId,
     proposalId: proposal.id,
   };
 
@@ -1026,9 +1027,19 @@ export const ActivityFeed = ({ isolated, items = [], spacing = "1.6rem" }) => {
           case "proposal-created":
             return (
               <span css={(t) => css({ color: t.colors.textDimmed })}>
-                {isolated ? "Proposal" : <ContextLink {...item} />} created{" "}
+                {isolated ? "Proposal" : <ContextLink {...item} />} created
+                {item.authorAccount != null && (
+                  <>
+                    {" "}
+                    by{" "}
+                    <AccountPreviewPopoverTrigger
+                      accountAddress={item.authorAccount}
+                    />
+                  </>
+                )}
                 {item.timestamp != null && (
                   <>
+                    {" "}
                     on{" "}
                     <FormattedDateWithTooltip
                       capitalize={false}
@@ -1052,9 +1063,19 @@ export const ActivityFeed = ({ isolated, items = [], spacing = "1.6rem" }) => {
                     Candidate <ContextLink truncate {...item} />
                   </>
                 )}{" "}
-                created{" "}
+                created
+                {item.authorAccount != null && (
+                  <>
+                    {" "}
+                    by{" "}
+                    <AccountPreviewPopoverTrigger
+                      accountAddress={item.authorAccount}
+                    />
+                  </>
+                )}
                 {item.timestamp != null && (
                   <>
+                    {" "}
                     on{" "}
                     <FormattedDateWithTooltip
                       capitalize={false}
