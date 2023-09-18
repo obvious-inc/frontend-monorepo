@@ -1513,7 +1513,7 @@ const RequestedAmounts = ({ amounts }) => (
 const ProposalContent = ({ proposalId }) => {
   const proposal = useProposal(proposalId);
 
-  if (proposal == null) return null;
+  if (proposal?.description == null) return null;
 
   return (
     <ProposalLikeContent
@@ -1609,7 +1609,7 @@ const ProposalScreen = () => {
   const isProposer =
     connectedWalletAccountAddress != null &&
     connectedWalletAccountAddress.toLowerCase() ===
-      proposal?.proposerId.toLowerCase();
+      proposal?.proposerId?.toLowerCase();
 
   const [searchParams, setSearchParams] = useSearchParams();
 

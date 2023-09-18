@@ -164,7 +164,7 @@ const BrowseScreen = () => {
   useFetch(
     () =>
       fetchBrowseScreenData({ first: 15 }).then(() => {
-        fetchBrowseScreenData({ skip: 30, first: 15 }).then(() => {
+        fetchBrowseScreenData({ skip: 15, first: 15 }).then(() => {
           fetchBrowseScreenData({ skip: 30, first: 1000 });
         });
       }),
