@@ -219,7 +219,7 @@ const ProposalCandidateScreenContent = ({ candidateId }) => {
   const feedItems = useFeedItems(candidateId);
 
   const [pendingFeedback, setPendingFeedback] = React.useState("");
-  const [pendingSupport, setPendingSupport] = React.useState(2);
+  const [pendingSupport, setPendingSupport] = React.useState(null);
   const sendProposalFeedback = useSendProposalCandidateFeedback(
     proposerId,
     slug,
@@ -434,14 +434,7 @@ const ProposalCandidateScreenContent = ({ candidateId }) => {
               }
             >
               <Tabs.Item key="activity" title="Activity">
-                <div
-                  style={{
-                    display: "flex",
-                    flexDirection: "column",
-                    gap: "3.2rem",
-                    paddingTop: "3.2rem",
-                  }}
-                >
+                <div style={{ paddingTop: "3.2rem" }}>
                   {regularFeedItems.length == 0 ? (
                     <div
                       css={(t) =>

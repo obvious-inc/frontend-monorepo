@@ -146,6 +146,7 @@ const ListBox = ({ state, ...props }) => {
             display: "block",
             padding: t.dropdownMenus.padding,
             listStyle: "none",
+            ":focus": { outline: "none" },
           })
         }
       >

@@ -177,7 +177,7 @@ const ProposalMainSection = ({ proposalId }) => {
   const proposal = useProposal(proposalId);
 
   const [pendingFeedback, setPendingFeedback] = React.useState("");
-  const [pendingSupport, setPendingSupport] = React.useState(2);
+  const [pendingSupport, setPendingSupport] = React.useState(null);
   const [castVoteCallSupportDetailed, setCastVoteCallSupportDetailed] =
     React.useState(null);
 
@@ -445,14 +445,7 @@ const ProposalMainSection = ({ proposalId }) => {
                 }
               >
                 <Tabs.Item key="activity" title="Activity">
-                  <div
-                    style={{
-                      display: "flex",
-                      flexDirection: "column",
-                      gap: "3.2rem",
-                      paddingTop: "3.2rem",
-                    }}
-                  >
+                  <div style={{ paddingTop: "3.2rem" }}>
                     {feedItems.length === 0 ? (
                       <div
                         css={(t) =>
@@ -490,7 +483,7 @@ const ProposalMainSection = ({ proposalId }) => {
                         }
 
                         setPendingFeedback("");
-                        setPendingSupport(2);
+                        setPendingSupport(null);
                       }}
                     />
                   </div>
@@ -547,6 +540,8 @@ export const ProposalActionForm = ({
   });
   const currentVoteCount = connectedDelegate?.nounsRepresented.length ?? 0;
 
+  const hasRequiredInputs = support != null;
+
   if (mode == null) throw new Error();
 
   const renderHelpText = () => {
@@ -577,189 +572,211 @@ export const ProposalActionForm = ({
 
   return (
     <>
-      <div>
-        <form
-          onSubmit={(e) => {
-            e.preventDefault();
-            setPending(true);
-            onSubmit().finally(() => {
-              setPending(false);
-            });
-          }}
-          css={(t) =>
-            css({
-              borderRadius: "0.5rem",
-              background: t.colors.inputBackground,
-              padding: "1rem",
-              "&:has(textarea:focus-visible)": { boxShadow: t.shadows.focus },
-            })
-          }
-        >
-          <AutoAdjustingHeightTextarea
-            rows={1}
-            placeholder="I believe..."
-            value={reason}
-            onChange={(e) => {
-              setReason(e.target.value);
-            }}
-            css={(t) =>
-              css({
-                background: t.colors.inputBackground,
-                fontSize: t.text.sizes.input,
-                display: "block",
-                color: t.colors.textNormal,
-                fontWeight: "400",
-                width: "100%",
-                maxWidth: "100%",
-                outline: "none",
-                border: 0,
-                padding: "0.5rem 0.7rem",
-                "::placeholder": { color: t.colors.inputPlaceholder },
-                "&:disabled": {
-                  color: t.colors.textMuted,
-                  cursor: "not-allowed",
-                },
-                // Prevents iOS zooming in on input fields
-                "@supports (-webkit-touch-callout: none)": {
-                  fontSize: "1.6rem",
-                },
-              })
-            }
-            disabled={isPending || connectedWalletAccountAddress == null}
-          />
-          <div
-            style={{
-              display: "grid",
-              justifyContent: "flex-end",
-              gridAutoFlow: "column",
-              gridGap: "1rem",
-              marginTop: "1rem",
-            }}
-          >
-            {connectedWalletAccountAddress == null ? (
-              <Button
-                type="button"
-                onClick={() => {
-                  va.track("Connect Wallet", {
-                    location: "vote/feedback form",
-                  });
-                  requestWalletAccess();
-                }}
-              >
-                Connect wallet to give feedback
-              </Button>
-            ) : (
-              <>
-                <Select
-                  aria-label="Select support"
-                  width="15rem"
-                  variant="default"
-                  size="medium"
-                  value={support}
-                  onChange={(value) => {
-                    setSupport(value);
-                  }}
-                  renderTriggerContent={(key, options) =>
-                    options.find((o) => o.value === key).label
-                  }
-                  options={
-                    mode === "vote"
-                      ? [
-                          {
-                            value: 1,
-                            textValue: "For",
-                            label: (
-                              <span
-                                css={(t) =>
-                                  css({ color: t.colors.textPositive })
-                                }
-                              >
-                                For
-                              </span>
-                            ),
-                          },
-                          {
-                            value: 0,
-                            textValue: "Against",
-                            label: (
-                              <span
-                                css={(t) =>
-                                  css({ color: t.colors.textNegative })
-                                }
-                              >
-                                Against
-                              </span>
-                            ),
-                          },
-                          { value: 2, label: "Abstain" },
-                        ]
-                      : [
-                          {
-                            value: 1,
-                            textValue: "Signal for",
-                            label: (
-                              <span
-                                css={(t) =>
-                                  css({ color: t.colors.textPositive })
-                                }
-                              >
-                                Signal for
-                              </span>
-                            ),
-                          },
-                          {
-                            value: 0,
-                            textValue: "Signal against",
-                            label: (
-                              <span
-                                css={(t) =>
-                                  css({ color: t.colors.textNegative })
-                                }
-                              >
-                                Signal against
-                              </span>
-                            ),
-                          },
-                          { value: 2, label: "No signal" },
-                        ]
-                  }
-                  disabled={isPending}
-                />
-                <Button
-                  type="submit"
-                  variant="primary"
-                  disabled={isPending}
-                  isLoading={isPending}
-                >
-                  {mode === "vote"
-                    ? `Cast ${
-                        proposalVoteCount > 1
-                          ? `${proposalVoteCount} votes`
-                          : "vote"
-                      }`
-                    : "Submit feedback"}
-                </Button>
-              </>
-            )}
-          </div>
-        </form>
-
+      <div css={css({ position: "sticky", bottom: 0 })}>
         <div
           css={(t) =>
             css({
-              marginTop: "1.6rem",
-              fontSize: t.text.sizes.tiny,
-              color: t.colors.textDimmed,
-              "p + p": { marginTop: "1em" },
-              em: {
-                fontStyle: "normal",
-                fontWeight: t.text.weights.emphasis,
-              },
+              paddingTop: "4rem",
+              background: `linear-gradient(0, ${t.colors.backgroundPrimary} 0%, transparent 100%)`,
+            })
+          }
+        />
+        <div
+          css={(t) =>
+            css({
+              padding: "0 0 1.6rem",
+              background: t.colors.backgroundPrimary,
             })
           }
         >
-          {renderHelpText()}
+          <form
+            onSubmit={(e) => {
+              e.preventDefault();
+              setPending(true);
+              onSubmit().finally(() => {
+                setPending(false);
+              });
+            }}
+            css={(t) =>
+              css({
+                borderRadius: "0.5rem",
+                background: t.colors.inputBackground,
+                padding: "1rem",
+                "&:has(textarea:focus-visible)": { boxShadow: t.shadows.focus },
+              })
+            }
+          >
+            <AutoAdjustingHeightTextarea
+              rows={1}
+              placeholder="I believe..."
+              value={reason}
+              onChange={(e) => {
+                setReason(e.target.value);
+              }}
+              css={(t) =>
+                css({
+                  background: t.colors.inputBackground,
+                  fontSize: t.text.sizes.input,
+                  display: "block",
+                  color: t.colors.textNormal,
+                  fontWeight: "400",
+                  width: "100%",
+                  maxWidth: "100%",
+                  outline: "none",
+                  border: 0,
+                  padding: "0.5rem 0.7rem",
+                  "::placeholder": { color: t.colors.inputPlaceholder },
+                  "&:disabled": {
+                    color: t.colors.textMuted,
+                    cursor: "not-allowed",
+                  },
+                  // Prevents iOS zooming in on input fields
+                  "@supports (-webkit-touch-callout: none)": {
+                    fontSize: "1.6rem",
+                  },
+                })
+              }
+              disabled={isPending || connectedWalletAccountAddress == null}
+            />
+            <div
+              style={{
+                display: "grid",
+                justifyContent: "flex-end",
+                gridAutoFlow: "column",
+                gridGap: "1rem",
+                marginTop: "1rem",
+              }}
+            >
+              {connectedWalletAccountAddress == null ? (
+                <Button
+                  type="button"
+                  onClick={() => {
+                    va.track("Connect Wallet", {
+                      location: "vote/feedback form",
+                    });
+                    requestWalletAccess();
+                  }}
+                >
+                  Connect wallet to{" "}
+                  {mode === "feedback" ? "give feedback" : "vote"}
+                </Button>
+              ) : (
+                <>
+                  <Select
+                    aria-label="Select support"
+                    width="15rem"
+                    variant="default"
+                    size="medium"
+                    value={support}
+                    onChange={(value) => {
+                      setSupport(value);
+                    }}
+                    renderTriggerContent={
+                      support == null
+                        ? null
+                        : (key, options) =>
+                            options.find((o) => o.value === key).label
+                    }
+                    placeholder={
+                      mode === "feedback" ? "Select signal" : "Select vote"
+                    }
+                    options={
+                      mode === "vote"
+                        ? [
+                            {
+                              value: 1,
+                              textValue: "For",
+                              label: (
+                                <span
+                                  css={(t) =>
+                                    css({ color: t.colors.textPositive })
+                                  }
+                                >
+                                  For
+                                </span>
+                              ),
+                            },
+                            {
+                              value: 0,
+                              textValue: "Against",
+                              label: (
+                                <span
+                                  css={(t) =>
+                                    css({ color: t.colors.textNegative })
+                                  }
+                                >
+                                  Against
+                                </span>
+                              ),
+                            },
+                            { value: 2, label: "Abstain" },
+                          ]
+                        : [
+                            {
+                              value: 1,
+                              textValue: "Signal for",
+                              label: (
+                                <span
+                                  css={(t) =>
+                                    css({ color: t.colors.textPositive })
+                                  }
+                                >
+                                  Signal for
+                                </span>
+                              ),
+                            },
+                            {
+                              value: 0,
+                              textValue: "Signal against",
+                              label: (
+                                <span
+                                  css={(t) =>
+                                    css({ color: t.colors.textNegative })
+                                  }
+                                >
+                                  Signal against
+                                </span>
+                              ),
+                            },
+                            { value: 2, label: "No signal" },
+                          ]
+                    }
+                    disabled={isPending}
+                  />
+                  <Button
+                    type="submit"
+                    variant="primary"
+                    disabled={isPending || !hasRequiredInputs}
+                    isLoading={isPending}
+                  >
+                    {mode === "vote"
+                      ? `Cast ${
+                          proposalVoteCount === 1
+                            ? "vote"
+                            : `${proposalVoteCount} votes`
+                        }`
+                      : "Submit feedback"}
+                  </Button>
+                </>
+              )}
+            </div>
+          </form>
         </div>
+      </div>
+      <div
+        css={(t) =>
+          css({
+            fontSize: t.text.sizes.tiny,
+            color: t.colors.textDimmed,
+            "p + p": { marginTop: "1em" },
+            em: {
+              fontStyle: "normal",
+              fontWeight: t.text.weights.emphasis,
+            },
+          })
+        }
+      >
+        {renderHelpText()}
       </div>
     </>
   );
