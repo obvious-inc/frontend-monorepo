@@ -7,10 +7,10 @@ import { Link } from "react-router-dom";
 import { REACTION_TYPE, addReaction, removeReaction } from "../hooks/hub";
 import useSigner from "./signer";
 import {
+  Comment as CommentIcon,
   Retweet as RetweetIcon,
   Heart as HeartRegularIcon,
   HeartSolid as HeartSolidIcon,
-  ChatBubble as ChatBubbleIcon,
 } from "@shades/ui-web/icons";
 import { array as arrayUtils } from "@shades/common/utils";
 import RichText from "./rich-text";
@@ -102,7 +102,7 @@ const CastDate = ({ date }) => {
 export const CastHeader = ({ cast }) => {
   const replyCount = cast.replies.count;
 
-  const { fid, signer } = useSigner();
+  const { fid, signer, broadcasted } = useSigner();
   const [liked, setLiked] = React.useState(false);
   const [recasted, setRecasted] = React.useState(false);
   const [likesCount, setLikesCount] = React.useState(0);
@@ -226,13 +226,17 @@ export const CastHeader = ({ cast }) => {
             color: "inherit",
           })}
         >
-          <ChatBubbleIcon css={css({ width: "auto", height: "1.6rem" })} />
+          <CommentIcon css={css({ width: "auto", height: "1.6rem" })} />
         </Link>
         <TinyMutedText style={{ lineHeight: 1.5 }}>{replyCount}</TinyMutedText>
       </>
 
       <>
-        <button css={css({ cursor: "pointer" })} onClick={handleLikeClick}>
+        <button
+          css={css({ cursor: "pointer" })}
+          onClick={handleLikeClick}
+          disabled={!broadcasted}
+        >
           {liked ? (
             <HeartSolidIcon css={css({ width: "auto", height: "1.6rem" })} />
           ) : (
@@ -243,7 +247,11 @@ export const CastHeader = ({ cast }) => {
       </>
 
       <>
-        <button css={css({ cursor: "pointer" })} onClick={handleRecastClick}>
+        <button
+          css={css({ cursor: "pointer" })}
+          onClick={handleRecastClick}
+          disabled={!broadcasted}
+        >
           {recasted ? (
             <RetweetIcon
               css={css({ width: "auto", height: "1.6rem", fill: "green" })}
@@ -273,18 +281,25 @@ const Embed = ({ embed }) => {
 
   if (isImage)
     return (
-      <div
+      <a
+        href={embed.url}
+        target="_blank"
+        rel="noreferrer"
         css={css({
+          display: "block",
           padding: "1rem 0 1rem 0",
+          maxWidth: "40rem",
+          height: "auto",
+          img: {
+            maxWidth: "40rem",
+            maxHeight: "30rem",
+            height: "auto",
+            borderRadius: "0.3rem",
+          },
         })}
       >
-        <img
-          css={css({ borderRadius: "0.5rem", width: "auto", height: "25rem" })}
-          src={embed.url}
-          loading="lazy"
-          height="25rem"
-        />
-      </div>
+        <img src={embed.url} loading="lazy" />
+      </a>
     );
 
   return null;

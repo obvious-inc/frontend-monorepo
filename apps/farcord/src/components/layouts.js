@@ -1,7 +1,7 @@
 import React from "react";
 import { Triangle as TriangleIcon } from "@shades/ui-web/icons";
 import { css } from "@emotion/react";
-import { NavLink, Outlet } from "react-router-dom";
+import { NavLink, Outlet, useSearchParams } from "react-router-dom";
 import { useFarcasterChannels } from "../hooks/farcord";
 import { Layout as SidebarLayout } from "@shades/ui-web/sidebar-layout";
 import { ErrorBoundary } from "@shades/common/react";
@@ -9,6 +9,10 @@ import Avatar from "@shades/ui-web/avatar";
 import FarcasterAccount from "./farcaster-account";
 import { useFollowedChannels } from "../hooks/warpcast";
 import useSigner from "./signer";
+import AuthScreen from "./auth-screen.js";
+import Dialog from "@shades/ui-web/dialog";
+
+const DEFAULT_TRUNCATED_COUNT = 10;
 
 const ListItem = React.forwardRef(
   (
@@ -266,15 +270,54 @@ const SmallText = ({ component: Component = "div", ...props }) => (
   />
 );
 
+const AuthDialog = () => {
+  return (
+    <div
+      css={css({
+        overflow: "auto",
+        padding: "1.5rem",
+        "@media (min-width: 600px)": {
+          padding: "3rem",
+        },
+      })}
+    >
+      <AuthScreen />
+    </div>
+  );
+};
+
 export const MainLayout = ({ children }) => {
   const { fid } = useSigner();
   const followedChannels = useFollowedChannels(fid);
-  const followedChannelsIds = followedChannels?.map((c) => c.key);
+
   const farcasterChannels = useFarcasterChannels();
 
-  const remainingChannels = farcasterChannels.filter(
-    (channel) => !followedChannelsIds?.includes(channel.id)
-  );
+  const [remainingChannels, setRemainingChannels] = React.useState([]);
+
+  const [allChannelsExpanded, setAllChannelsExpanded] = React.useState(true);
+  const [visibleAllChannels, setVisibleAllChannels] = React.useState([]);
+  const [searchParams, setSearchParams] = useSearchParams();
+
+  const isDialogOpen = searchParams.get("auth-dialog") != null;
+
+  const closeDialog = React.useCallback(() => {
+    setSearchParams((params) => {
+      const newParams = new URLSearchParams(params);
+      newParams.delete("auth-dialog");
+      return newParams;
+    });
+  }, [setSearchParams]);
+
+  React.useEffect(() => {
+    const followedChannelsIds = followedChannels?.map((c) => c.key);
+    setRemainingChannels(
+      farcasterChannels.filter(
+        (channel) => !followedChannelsIds?.includes(channel.id)
+      )
+    );
+
+    setVisibleAllChannels(farcasterChannels.slice(0, DEFAULT_TRUNCATED_COUNT));
+  }, [farcasterChannels, followedChannels]);
 
   return (
     <>
@@ -369,29 +412,44 @@ export const MainLayout = ({ children }) => {
 
             <FeedItem />
 
+            {fid && (
+              <>
+                <div
+                  style={{
+                    height: "2rem",
+                  }}
+                />
+                <CollapsibleSection
+                  key="star"
+                  title="Followed Channels"
+                  expanded={true}
+                >
+                  {followedChannels?.map((c) => (
+                    <ChannelItem key={`star-${c.key}`} channel={c} />
+                  ))}
+                </CollapsibleSection>
+              </>
+            )}
+
             <div
               style={{
                 height: "2rem",
               }}
             />
+
             <CollapsibleSection
-              key="star"
-              title="Followed Channels"
-              expanded={true}
+              key="fc"
+              title="All Channels"
+              expanded={allChannelsExpanded}
+              truncatedCount={
+                remainingChannels.length - visibleAllChannels.length
+              }
+              onToggleExpanded={() =>
+                setAllChannelsExpanded(!allChannelsExpanded)
+              }
+              onToggleTruncated={() => setVisibleAllChannels(remainingChannels)}
             >
-              {followedChannels?.map((c) => (
-                <ChannelItem key={`star-${c.key}`} channel={c} />
-              ))}
-            </CollapsibleSection>
-
-            <div
-              style={{
-                height: "2rem",
-              }}
-            />
-
-            <CollapsibleSection key="fc" title="All Channels" expanded={true}>
-              {remainingChannels.map((c) => (
+              {visibleAllChannels.map((c) => (
                 <ChannelItem key={`fc-${c.id}`} channel={c} />
               ))}
             </CollapsibleSection>
@@ -399,6 +457,25 @@ export const MainLayout = ({ children }) => {
         }
       >
         {children}
+        {isDialogOpen && (
+          <Dialog
+            isOpen={isDialogOpen}
+            onRequestClose={closeDialog}
+            width="76rem"
+          >
+            {({ titleProps }) => (
+              <ErrorBoundary
+                fallback={() => {
+                  // window.location.reload();
+                }}
+              >
+                <React.Suspense fallback={null}>
+                  <AuthDialog titleProps={titleProps} dismiss={closeDialog} />
+                </React.Suspense>
+              </ErrorBoundary>
+            )}
+          </Dialog>
+        )}
         <ErrorBoundary fallback={() => window.location.reload()}>
           <React.Suspense fallback={null}>
             <Outlet />

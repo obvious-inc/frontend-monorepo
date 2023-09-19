@@ -1,8 +1,23 @@
 import { css } from "@emotion/react";
 import Heading from "./heading.js";
 import NavBar from "./navbar";
+import { useSearchParams } from "react-router-dom";
+import Button from "@shades/ui-web/button";
+import { Cross as CrossIcon } from "@shades/ui-web/icons";
+import { useNeynarCast } from "../hooks/neynar.js";
 
-const ThreadNavBar = () => {
+const ThreadNavBar = ({ cast }) => {
+  const [searchParams, setSearchParams] = useSearchParams();
+  const parentHash = cast?.parentHash;
+  const parentCast = useNeynarCast(parentHash);
+
+  const threadAuthor = parentCast
+    ? parentCast.author?.displayName
+    : cast?.author?.displayName;
+
+  const threadText = parentCast ? parentCast.text : cast?.text;
+  const threadHash = parentCast ? parentCast.hash : cast?.hash;
+
   return (
     <NavBar>
       <div
@@ -31,7 +46,7 @@ const ThreadNavBar = () => {
             })
           }
         >
-          New Thread
+          {threadAuthor}
         </Heading>
 
         <>
@@ -69,9 +84,25 @@ const ThreadNavBar = () => {
                 },
               })
             }
+            onClick={() => {
+              setSearchParams({ cast: threadHash });
+            }}
           >
-            <p>Threa description?</p>
+            <p>{threadText}</p>
           </button>
+
+          <Button
+            size="small"
+            onClick={() => {
+              searchParams.delete("cast");
+              setSearchParams(searchParams);
+            }}
+            css={css({ width: "2.8rem", padding: 0 })}
+          >
+            <CrossIcon
+              style={{ width: "1.5rem", height: "auto", margin: "auto" }}
+            />
+          </Button>
         </>
       </div>
     </NavBar>

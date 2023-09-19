@@ -8,6 +8,7 @@ import useSigner from "./signer.js";
 import { message } from "@shades/common/utils";
 import { addCast } from "../hooks/hub.js";
 import { hexToBytes } from "viem";
+import ThreadNavBar from "./thread-navbar.js";
 
 const ThreadScrollView = ({ castHash }) => {
   const castsContainerRef = React.useRef();
@@ -146,14 +147,9 @@ export const ThreadScreen = ({ castHash }) => {
   const { fid, signer, broadcasted } = useSigner();
   const cast = useNeynarCast(castHash);
 
-  const placeholderText =
-    fid && signer
-      ? "Compose your reply..."
-      : fid && !signer
-      ? "You need to create a Signer to cast"
-      : fid === 0 && !signer
-      ? "You need to connect your Farcaster wallet"
-      : "Connect wallet to cast";
+  const placeholderText = broadcasted
+    ? "Compose your cast..."
+    : "Connect wallet and create signer to cast";
 
   const onSubmit = async (blocks) => {
     const text = message.stringifyBlocks(blocks);
@@ -183,6 +179,8 @@ export const ThreadScreen = ({ castHash }) => {
         })
       }
     >
+      <ThreadNavBar cast={cast} />
+
       <ThreadScrollView castHash={castHash} />
 
       <div css={css({ padding: "0 1.6rem" })}>
@@ -190,7 +188,7 @@ export const ThreadScreen = ({ castHash }) => {
           ref={inputRef}
           inline
           fileUploadDisabled
-          disabled={!fid && !signer && !broadcasted}
+          disabled={!broadcasted}
           placeholder={placeholderText}
           submit={onSubmit}
         />

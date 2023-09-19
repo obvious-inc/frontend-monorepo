@@ -18,11 +18,11 @@ export const ChannelCacheContextProvider = ({ children }) => {
             ...s,
             castsByChannelId: {
               ...s.castsByChannelId,
-              [channel.id]: casts,
+              [channel?.id]: casts,
             },
             castHashesByChannelId: {
               ...s.castHashesByChannelId,
-              [channel.id]: casts.map((cast) => cast.hash),
+              [channel?.id]: casts.map((cast) => cast.hash),
             },
           };
         });

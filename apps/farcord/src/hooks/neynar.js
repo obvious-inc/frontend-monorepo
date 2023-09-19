@@ -138,6 +138,8 @@ export const useNeynarCast = (castHash) => {
   const [cast, setCast] = useState(null);
 
   useEffect(() => {
+    if (!castHash) return;
+
     async function fetchCast() {
       const params = new URLSearchParams({
         api_key: process.env.NEYNAR_API_KEY,
@@ -237,4 +239,43 @@ export const useNeynarUser = (fid) => {
   }, [fid]);
 
   return { user, isFetching };
+};
+
+export const fetchUserByUsername = async (username) => {
+  const params = new URLSearchParams({
+    api_key: process.env.NEYNAR_API_KEY,
+    username,
+  });
+
+  return fetch(NEYNAR_V1_ENDPOINT + "/user-by-username?" + params)
+    .then((result) => {
+      return result.json();
+    })
+    .then((data) => {
+      return data.result.user;
+    })
+    .catch((err) => {
+      throw err;
+    });
+};
+
+export const fetchCustodyAddressByUsername = async (username) => {
+  const user = await fetchUserByUsername(username);
+  if (!user) return;
+
+  const params = new URLSearchParams({
+    api_key: process.env.NEYNAR_API_KEY,
+    fid: user.fid,
+  });
+
+  return fetch(NEYNAR_V1_ENDPOINT + "/custody-address?" + params)
+    .then((result) => {
+      return result.json();
+    })
+    .then((data) => {
+      return data.result;
+    })
+    .catch((err) => {
+      throw err;
+    });
 };

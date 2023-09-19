@@ -8,11 +8,9 @@ import { Provider as SidebarProvider } from "@shades/ui-web/sidebar-layout";
 import { Provider as SignerProvider } from "./components/signer.js";
 
 const customTheme = { ...theme, sidebarWidth: "28rem" };
-const HomeScreen = React.lazy(() => import("./components/home-screen.js"));
 const ChannelScreen = React.lazy(() =>
   import("./components/channel-screen.js")
 );
-const FeedScreen = React.lazy(() => import("./components/feed-screen.js"));
 
 const App = () => {
   return (
@@ -49,21 +47,14 @@ const App = () => {
                   />
                   <Routes>
                     <Route path="/">
-                      <Route index element={<HomeScreen />} />
+                      <Route
+                        path="channels/:channelId"
+                        element={<ChannelScreen />}
+                      />
+                      <Route path="feed" element={<ChannelScreen isFeed />} />
+                      <Route index element={<ChannelScreen isFeed />} />
                     </Route>
-                    <Route path="/channels/:channelId">
-                      <Route index element={<ChannelScreen />} />
-                    </Route>
-                    <Route path="/channels/:channelId/casts/:castHash">
-                      <Route index element={<ChannelScreen />} />
-                    </Route>
-                    <Route path="/casts/:castHash">
-                      <Route index element={<ChannelScreen />} />
-                    </Route>
-                    <Route path="/feed">
-                      <Route index element={<FeedScreen />} />
-                    </Route>
-                    <Route path="*" element={<Navigate to="/" replace />} />
+                    <Route path="*" element={<Navigate to="/feed" replace />} />
                   </Routes>
                 </Tooltip.Provider>
               </SidebarProvider>

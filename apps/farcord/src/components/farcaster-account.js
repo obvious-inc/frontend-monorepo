@@ -1,46 +1,38 @@
-import React from "react";
 import { css } from "@emotion/react";
-import {
-  useWalletFarcasterId,
-  useSignKeyRegistry,
-  useBroadcastKey,
-} from "../hooks/farcord";
 import Button from "@shades/ui-web/button";
-import { useWallet, useWalletLogin } from "@shades/common/wallet";
 import Spinner from "@shades/ui-web/spinner";
 import { useNeynarUser } from "../hooks/neynar";
-import { useNetwork, useSwitchNetwork, useDisconnect } from "wagmi";
-import { getPublicKeyAsync, utils as EdDSAUtils } from "@noble/ed25519";
-import { bytesToHex } from "viem";
-import { ethereum as ethereumUtils } from "@shades/common/utils";
 import useSigner from "./signer";
-import { useSignerByPublicKey } from "../hooks/hub";
-
-const { truncateAddress } = ethereumUtils;
-
-const DEFAULT_CHAIN_ID = 10;
+import { useSearchParams } from "react-router-dom";
+import { useWallet } from "@shades/common/wallet";
 
 const FarcasterUser = ({ fid }) => {
   const { user: farcasterUser, isFetching: isFetchingNeynarUser } =
     useNeynarUser(fid);
-  const { disconnect } = useDisconnect();
-  if (!fid) {
-    return (
-      <div>
-        <p>Please re-connect or switch to your Farcaster custody wallet.</p>
-        <Button size="small" variant="default" onClick={disconnect}>
-          Disconnect wallet
-        </Button>
-      </div>
-    );
-  }
+
+  const { broadcasted } = useSigner();
+  const [, setSearchParams] = useSearchParams();
 
   if (isFetchingNeynarUser) {
     return <Spinner size="1rem" />;
   }
 
   return (
-    <>
+    <Button
+      onClick={() => {
+        setSearchParams({ "auth-dialog": 1 });
+      }}
+      css={(theme) =>
+        css({
+          color: "inherit",
+          textDecoration: "none",
+          border: "none",
+          width: "100%",
+          ":hover": { color: theme.colors.linkModifierHover },
+          height: "5rem",
+        })
+      }
+    >
       <p
         css={(t) =>
           css({
@@ -59,94 +51,28 @@ const FarcasterUser = ({ fid }) => {
           (@{farcasterUser?.username})
         </span>
       </p>
-    </>
-  );
-};
-
-const FarcasterSigner = ({ fid, address }) => {
-  const { signer, addSigner, setBroadcasted } = useSigner();
-
-  const createSigner = async () => {
-    const signerPrivateKey = EdDSAUtils.randomPrivateKey();
-    getPublicKeyAsync(signerPrivateKey).then((publicKey) => {
-      addSigner({
-        privateKey: bytesToHex(signerPrivateKey),
-        publicKey: bytesToHex(publicKey),
-      });
-    });
-  };
-
-  const onchainSigner = useSignerByPublicKey(fid, signer?.publicKey);
-
-  const deadline = Math.floor(Date.now() / 1000) + 86400; // signature is valid for 1 day
-
-  const signKeyRegistrySigner = useSignKeyRegistry(
-    fid,
-    signer?.publicKey,
-    deadline
-  );
-  const broadcastSigner = useBroadcastKey();
-
-  React.useEffect(() => {
-    if (!onchainSigner) return;
-
-    setBroadcasted(true);
-  }, [onchainSigner, address, setBroadcasted]);
-
-  if (!signer) {
-    return <Button onClick={createSigner}>Create a Signer</Button>;
-  }
-
-  return (
-    <>
-      <p>{truncateAddress(signer?.publicKey)}</p>
-      {!onchainSigner && (
-        <Button
-          onClick={() => {
-            signKeyRegistrySigner().then((signature) => {
-              return broadcastSigner({
-                fid,
-                address,
-                deadline,
-                publicKey: signer?.publicKey,
-                signature,
-              });
-            });
-          }}
+      {!broadcasted && (
+        <p
+          css={(t) =>
+            css({
+              fontSize: t.text.sizes.small,
+              color: t.colors.pink,
+              textAlign: "center",
+              marginTop: "0.5rem",
+            })
+          }
         >
-          Broadcast
-        </Button>
+          read-only
+        </p>
       )}
-    </>
+    </Button>
   );
 };
 
 const FarcasterAccount = () => {
-  const {
-    connect: connectWallet,
-    accountAddress: walletAccountAddress,
-    isConnecting: isConnectingWallet,
-  } = useWallet();
-
-  const { chain } = useNetwork();
-  const { switchNetwork } = useSwitchNetwork();
-
-  const { status: loginStatus } = useWalletLogin();
-
-  const hasPendingWalletAction =
-    isConnectingWallet || loginStatus === "requesting-signature";
-
-  const { data: fid } = useWalletFarcasterId(walletAccountAddress);
-  const { login, reset } = useSigner();
-
-  React.useEffect(() => {
-    if (!fid) return;
-
-    login(fid);
-    return () => {
-      reset();
-    };
-  }, [fid, reset, login]);
+  const { accountAddress: walletAccountAddress } = useWallet();
+  const { fid } = useSigner();
+  const [, setSearchParams] = useSearchParams();
 
   return (
     <>
@@ -164,33 +90,18 @@ const FarcasterAccount = () => {
         }
       >
         {!walletAccountAddress ? (
-          <Button size="small" variant="default" onClick={connectWallet}>
+          <Button
+            size="small"
+            variant="default"
+            onClick={() => {
+              setSearchParams({ "auth-dialog": 1 });
+            }}
+          >
             Connect wallet
           </Button>
-        ) : chain?.id !== DEFAULT_CHAIN_ID ? (
-          <Button onClick={() => switchNetwork?.(DEFAULT_CHAIN_ID)}>
-            Switch to Optimism
-          </Button>
-        ) : hasPendingWalletAction ? (
-          <Spinner size="1rem" />
         ) : (
           <FarcasterUser fid={fid} />
         )}
-      </div>
-      <div
-        css={(t) =>
-          css({
-            margin: "0.6rem 0 0.2rem",
-            padding: `0 0.8rem 0 calc( ${t.mainMenu.itemHorizontalPadding} + ${t.mainMenu.containerHorizontalPadding})`,
-            minHeight: "2.4rem",
-            display: "grid",
-            alignItems: "center",
-            gridTemplateColumns: "minmax(0, 1fr) auto",
-            gridGap: "1rem",
-          })
-        }
-      >
-        {fid && <FarcasterSigner fid={fid} address={walletAccountAddress} />}
       </div>
     </>
   );

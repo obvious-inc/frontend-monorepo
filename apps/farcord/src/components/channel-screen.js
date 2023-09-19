@@ -2,11 +2,7 @@ import React from "react";
 import { MainLayout } from "./layouts.js";
 import { useParams, useSearchParams } from "react-router-dom";
 import { css } from "@emotion/react";
-import {
-  ReverseVerticalScrollView,
-  // useLatestCallback,
-} from "@shades/common/react";
-// import { useNeynarChannelCasts } from "../hooks/neynar.js";
+import { ReverseVerticalScrollView } from "@shades/common/react";
 import MessageEditorForm from "@shades/ui-web/message-editor-form";
 import Spinner from "@shades/ui-web/spinner";
 import { CastItem } from "./cast.js";
@@ -17,10 +13,11 @@ import { message } from "@shades/common/utils";
 import useSigner from "./signer";
 import { addCast } from "../hooks/hub.js";
 import { useChannelCasts, useChannelCastsFetch } from "../hooks/channel.js";
-// import useChannelCastsFetcher from "../hooks/channel-casts-fetcher.js";
+import { useNeynarRecentCasts } from "../hooks/neynar.js";
 
 export const ChannelCastsScrollView = ({
   channelId,
+  isFeed = false,
   didScrollToBottomRef: didScrollToBottomRefExternal,
 }) => {
   const scrollViewRef = React.useRef();
@@ -30,9 +27,14 @@ export const ChannelCastsScrollView = ({
   const didScrollToBottomRef =
     didScrollToBottomRefExternal ?? didScrollToBottomRefInternal;
 
+  const { fid } = useSigner();
+
   const channel = useFarcasterChannel(channelId);
   useChannelCastsFetch({ channel, cursor: null });
-  const casts = useChannelCasts(channelId);
+  const channelCasts = useChannelCasts(channelId);
+  const { casts: recentCasts } = useNeynarRecentCasts({ fid });
+
+  const casts = isFeed ? recentCasts : channelCasts;
 
   const [pendingMessagesBeforeCount] = React.useState(0);
   const [averageMessageListItemHeight] = React.useState(0);
@@ -81,7 +83,7 @@ export const ChannelCastsScrollView = ({
 
   return (
     <>
-      <ChannelNavBar channelId={channelId} />
+      {!isFeed && <ChannelNavBar channelId={channelId} />}
       <ReverseVerticalScrollView
         ref={scrollViewRef}
         didScrollToBottomRef={didScrollToBottomRef}
@@ -172,19 +174,14 @@ export const ChannelCastsScrollView = ({
   );
 };
 
-const ChannelView = ({ channelId }) => {
+const ChannelView = ({ channelId, isFeed }) => {
   const inputRef = React.useRef();
   const { fid, signer, broadcasted } = useSigner();
   const channel = useFarcasterChannel(channelId);
 
-  const placeholderText =
-    fid && signer
-      ? "Compose your cast..."
-      : fid && !signer
-      ? "You need to create a Signer to cast"
-      : fid === 0 && !signer
-      ? "You need to connect your Farcaster wallet"
-      : "Connect wallet to cast";
+  const placeholderText = broadcasted
+    ? "Compose your cast..."
+    : "Connect wallet and create signer to cast";
 
   const onSubmit = async (blocks) => {
     const text = message.stringifyBlocks(blocks);
@@ -206,14 +203,14 @@ const ChannelView = ({ channelId }) => {
         })
       }
     >
-      <ChannelCastsScrollView channelId={channelId} />
+      <ChannelCastsScrollView channelId={channelId} isFeed={isFeed} />
 
       <div css={css({ padding: "0 1.6rem" })}>
         <MessageEditorForm
           ref={inputRef}
           inline
           fileUploadDisabled
-          disabled={!fid && !signer && !broadcasted}
+          disabled={!broadcasted}
           placeholder={placeholderText}
           submit={onSubmit}
         />
@@ -224,14 +221,14 @@ const ChannelView = ({ channelId }) => {
   );
 };
 
-const ChannelScreen = () => {
+const ChannelScreen = ({ isFeed = false }) => {
   const { channelId } = useParams();
   const [searchParams] = useSearchParams();
   const castHash = searchParams.get("cast");
 
   return (
     <MainLayout>
-      <ChannelView channelId={channelId} />
+      <ChannelView channelId={channelId} isFeed={isFeed} />
       {castHash && <ThreadScreen castHash={castHash} />}
     </MainLayout>
   );

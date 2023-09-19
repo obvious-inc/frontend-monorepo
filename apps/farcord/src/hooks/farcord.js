@@ -1,13 +1,7 @@
 import React from "react";
 import { useFetch } from "@shades/common/react";
 import { array as arrayUtils } from "@shades/common/utils";
-import {
-  useContractRead,
-  useNetwork,
-  useSignTypedData,
-  useContractWrite,
-} from "wagmi";
-import { hexToBytes, encodeAbiParameters, parseAbi } from "viem";
+import { useContractRead, useNetwork } from "wagmi";
 
 const { indexBy, sortBy } = arrayUtils;
 
@@ -20,41 +14,9 @@ const WARPCAST_CHANNELS_INFO_ENDPOINT =
 const FARCASTER_ID_REGISTRY_CONTRACT_ADDRESS =
   "0x00000000FcAf86937e41bA038B4fA40BAA4B780A";
 
-const DEFAULT_CHAIN_ID = 10;
+export const DEFAULT_CHAIN_ID = 10;
 
 const ChainDataCacheContext = React.createContext();
-const DEFAULT_KEY_REGISTRY_ADDRESS =
-  "0x00000000fC9e66f1c6d86D750B4af47fF0Cc343d";
-
-const KEY_METADATA_TYPE = [
-  {
-    components: [
-      {
-        internalType: "uint256",
-        name: "requestFid",
-        type: "uint256",
-      },
-      {
-        internalType: "address",
-        name: "requestSigner",
-        type: "address",
-      },
-      {
-        internalType: "bytes",
-        name: "signature",
-        type: "bytes",
-      },
-      {
-        internalType: "uint256",
-        name: "deadline",
-        type: "uint256",
-      },
-    ],
-    internalType: "struct SignedKeyRequestValidator.SignedKeyRequestMetadata",
-    name: "metadata",
-    type: "tuple",
-  },
-];
 
 const farcasterChannelsFetch = () =>
   fetch(NEYNAR_FARCASTER_CHANNELS_STATIC_LIST)
@@ -158,6 +120,10 @@ export const useChainId = () => {
 };
 
 export const useWalletFarcasterId = (walletAddress) => {
+  React.useEffect(() => {
+    if (!walletAddress) return;
+  }, [walletAddress]);
+
   const { data, error } = useContractRead({
     address: FARCASTER_ID_REGISTRY_CONTRACT_ADDRESS,
     abi: [
@@ -187,91 +153,4 @@ export const useWalletFarcasterId = (walletAddress) => {
   });
 
   return { data, error };
-};
-
-export const useSignAddSigner = () => {
-  const hashedMessage = "0x1";
-
-  const { signTypedDataAsync } = useSignTypedData({
-    domain: {
-      name: "Farcaster Verify Ethereum Address",
-      version: "2.0.0",
-      chainId: useChainId(),
-      salt: "0xf2d857f4a3edcb9b78b4d503bfe733db1e3f6cdc2b7971ee739626c97e86a558",
-    },
-    types: {
-      MessageData: [
-        {
-          name: "hash",
-          type: "bytes",
-        },
-      ],
-    },
-    primaryType: "MessageData",
-    message: {
-      hash: hexToBytes(hashedMessage),
-    },
-  });
-
-  return signTypedDataAsync;
-};
-
-export const useSignKeyRegistry = (fid, publicKey, deadline) => {
-  const SIGNED_KEY_REQUEST_VALIDATOR_EIP_712_DOMAIN = {
-    name: "Farcaster SignedKeyRequestValidator",
-    version: "1",
-    chainId: 10,
-    verifyingContract: "0x00000000fc700472606ed4fa22623acf62c60553",
-  };
-
-  const SIGNED_KEY_REQUEST_TYPE = [
-    { name: "requestFid", type: "uint256" },
-    { name: "key", type: "bytes" },
-    { name: "deadline", type: "uint256" },
-  ];
-
-  const { signTypedDataAsync } = useSignTypedData({
-    domain: SIGNED_KEY_REQUEST_VALIDATOR_EIP_712_DOMAIN,
-    types: {
-      SignedKeyRequest: SIGNED_KEY_REQUEST_TYPE,
-    },
-    primaryType: "SignedKeyRequest",
-    message: {
-      requestFid: BigInt(fid),
-      key: publicKey,
-      deadline: BigInt(deadline),
-    },
-  });
-
-  return signTypedDataAsync;
-};
-
-export const useBroadcastKey = () => {
-  const { writeAsync } = useContractWrite({
-    address: DEFAULT_KEY_REGISTRY_ADDRESS,
-    abi: parseAbi([
-      "function add(uint32 keyType, bytes calldata key, uint8 metadataType, bytes calldata metadata) external",
-    ]),
-    chainId: 10,
-    functionName: "add",
-  });
-
-  return ({ fid, address, deadline, publicKey, signature }) => {
-    writeAsync({
-      args: [
-        1,
-        publicKey,
-        1,
-        encodeAbiParameters(KEY_METADATA_TYPE, [
-          {
-            requestFid: BigInt(fid),
-            requestSigner: address,
-            signature: signature,
-            deadline: BigInt(deadline),
-          },
-        ]),
-      ],
-      enabled: true,
-    });
-  };
 };

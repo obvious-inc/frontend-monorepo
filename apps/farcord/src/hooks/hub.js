@@ -3,7 +3,6 @@ import {
   NobleEd25519Signer,
   FarcasterNetwork,
   getHubRpcClient,
-  Message,
   makeCastAdd,
   makeReactionAdd,
   makeReactionRemove,
@@ -83,6 +82,10 @@ export const useSignerByPublicKey = (fid, publicKey) => {
           }
 
           setSigner(result.value);
+        })
+        .catch((err) => {
+          if (err.errCode == "not_found") return;
+          console.error(err);
         });
     }
 
@@ -121,19 +124,16 @@ export const useStorageLimitsByFid = (fid) => {
 export const submitHubMessage = async (message) => {
   return farcasterClient.submitMessage(message).then((result) => {
     if (result.isErr()) {
-      console.log("error submitting message to hub", message);
+      console.error("error submitting message to hub", message, result.error);
       throw result.error;
     }
 
-    console.log("successfully submitted new message", Message.toJSON(message));
     return result;
   });
 };
 
 export const addReaction = ({ fid, signer, cast, reactionType }) => {
-  const farcastSigner = new NobleEd25519Signer(
-    hexToBytes(signer?.privateKey.slice(2))
-  );
+  const farcastSigner = new NobleEd25519Signer(hexToBytes(signer?.privateKey));
 
   return makeReactionAdd(
     {
@@ -158,9 +158,7 @@ export const addReaction = ({ fid, signer, cast, reactionType }) => {
 };
 
 export const removeReaction = ({ fid, signer, cast, reactionType }) => {
-  const farcastSigner = new NobleEd25519Signer(
-    hexToBytes(signer?.privateKey.slice(2))
-  );
+  const farcastSigner = new NobleEd25519Signer(hexToBytes(signer?.privateKey));
 
   return makeReactionRemove(
     {
@@ -191,9 +189,7 @@ export const addCast = async ({
   parentUrl,
   parentCastId,
 }) => {
-  const farcastSigner = new NobleEd25519Signer(
-    hexToBytes(signer?.privateKey.slice(2))
-  );
+  const farcastSigner = new NobleEd25519Signer(hexToBytes(signer?.privateKey));
 
   return makeCastAdd(
     {
