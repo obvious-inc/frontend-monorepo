@@ -113,7 +113,10 @@ export const buildCandidateFeed = (
       candidateId,
     });
 
-  const sortedItems = arrayUtils.sortBy((i) => i.blockNumber, items);
+  const sortedItems = arrayUtils.sortBy(
+    { value: (i) => i.blockNumber, order: "desc" },
+    items
+  );
 
   if (skipSignatures) return sortedItems;
 
@@ -435,23 +438,7 @@ const ProposalCandidateScreenContent = ({ candidateId }) => {
               }
             >
               <Tabs.Item key="activity" title="Activity">
-                <div style={{ paddingTop: "3.2rem" }}>
-                  {regularFeedItems.length == 0 ? (
-                    <div
-                      css={(t) =>
-                        css({
-                          textAlign: "center",
-                          fontSize: t.text.sizes.small,
-                          color: t.colors.textDimmed,
-                          paddingTop: "1.6rem",
-                        })
-                      }
-                    >
-                      No activity
-                    </div>
-                  ) : (
-                    <ActivityFeed isolated items={regularFeedItems} />
-                  )}
+                <div style={{ padding: "3.2rem 0 4rem" }}>
                   <ProposalActionForm
                     mode="feedback"
                     reason={pendingFeedback}
@@ -466,6 +453,10 @@ const ProposalCandidateScreenContent = ({ candidateId }) => {
                     }}
                   />
                 </div>
+
+                {regularFeedItems.length !== 0 && (
+                  <ActivityFeed isolated items={regularFeedItems} />
+                )}
               </Tabs.Item>
               <Tabs.Item key="transactions" title="Transactions">
                 <div style={{ paddingTop: "3.2rem" }}>
@@ -1085,7 +1076,11 @@ const ProposalCandidateScreen = () => {
                     {slug}
                   </span>{" "}
                   from account{" "}
-                  <AccountPreviewPopoverTrigger accountAddress={proposerId} />.
+                  <AccountPreviewPopoverTrigger
+                    showAvatar
+                    accountAddress={proposerId}
+                  />
+                  .
                 </div>
                 <Button
                   component={RouterLink}

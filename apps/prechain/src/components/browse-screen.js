@@ -163,11 +163,10 @@ const BrowseScreen = () => {
 
   useFetch(
     () =>
-      fetchBrowseScreenData({ first: 15 }).then(() => {
-        fetchBrowseScreenData({ skip: 15, first: 15 }).then(() => {
-          fetchBrowseScreenData({ skip: 30, first: 1000 });
-        });
-      }),
+      Promise.all([
+        fetchBrowseScreenData({ first: 15 }),
+        fetchBrowseScreenData({ skip: 15, first: 1000 }),
+      ]),
     [fetchBrowseScreenData]
   );
 
@@ -471,12 +470,20 @@ const FeedSidebar = React.memo(() => {
     latestBlockNumber == null
       ? null
       : () =>
-          fetchNounsActivity({
-            startBlock:
-              latestBlockNumber - BigInt(APPROXIMATE_BLOCKS_PER_DAY * 30),
-            endBlock: latestBlockNumber,
-          }),
-    [latestBlockNumber, fetchNounsActivity]
+          Promise.all([
+            fetchNounsActivity({
+              startBlock:
+                latestBlockNumber - BigInt(APPROXIMATE_BLOCKS_PER_DAY * 3),
+              endBlock: latestBlockNumber,
+            }),
+            fetchNounsActivity({
+              startBlock:
+                latestBlockNumber - BigInt(APPROXIMATE_BLOCKS_PER_DAY * 30),
+              endBlock:
+                latestBlockNumber - BigInt(APPROXIMATE_BLOCKS_PER_DAY * 3) - 1n,
+            }),
+          ]),
+    [(latestBlockNumber, fetchNounsActivity)]
   );
 
   if (visibleItems.length === 0) return null;

@@ -6,12 +6,14 @@ import Button from "@shades/ui-web/button";
 import * as Popover from "@shades/ui-web/popover";
 import InlineUserButton from "@shades/ui-web/inline-user-button";
 import { useDelegate } from "../hooks/prechain.js";
+import AccountAvatar from "./account-avatar.js";
 import NounAvatar from "./noun-avatar.js";
 
 const AccountPreviewPopoverTrigger = React.forwardRef(
   (
     {
       accountAddress,
+      showAvatar = false,
       variant: buttonVariant = "link",
       popoverPlacement = "top",
       accountActions = [],
@@ -20,18 +22,60 @@ const AccountPreviewPopoverTrigger = React.forwardRef(
     },
     triggerRef
   ) => {
+    const avatar = showAvatar ? (
+      <AccountAvatar
+        address={accountAddress}
+        size="1.2em"
+        placeholder={false}
+        css={css({
+          display: "inline-block",
+          marginRight: "0.3em",
+          verticalAlign: "sub",
+        })}
+      />
+    ) : null;
+
+    const renderTrigger = () => {
+      if (children != null) return children;
+
+      if (avatar == null)
+        return (
+          <InlineUserButton
+            ref={triggerRef}
+            walletAddress={accountAddress}
+            variant={buttonVariant}
+            {...props}
+          />
+        );
+
+      return (
+        <button
+          ref={triggerRef}
+          css={css({
+            outline: "none",
+            "@media(hover: hover)": {
+              cursor: "pointer",
+              ":hover": {
+                "[data-display-name]": { textDecoration: "underline" },
+              },
+            },
+          })}
+        >
+          {avatar}
+          <InlineUserButton
+            data-display-name
+            component="div"
+            walletAddress={accountAddress}
+            variant={buttonVariant}
+            {...props}
+          />
+        </button>
+      );
+    };
+
     return (
       <Popover.Root placement={popoverPlacement} {...props}>
-        <Popover.Trigger asChild>
-          {children ?? (
-            <InlineUserButton
-              ref={triggerRef}
-              walletAddress={accountAddress}
-              variant={buttonVariant}
-              {...props}
-            />
-          )}
-        </Popover.Trigger>
+        <Popover.Trigger asChild>{renderTrigger()}</Popover.Trigger>
         <Popover.Content>
           <AccountPreview
             accountAddress={accountAddress}

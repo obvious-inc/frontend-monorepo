@@ -139,7 +139,10 @@ export const buildProposalFeed = (
     });
   }
 
-  return arrayUtils.sortBy((i) => i.blockNumber, items);
+  return arrayUtils.sortBy(
+    { value: (i) => i.blockNumber, order: "desc" },
+    items
+  );
 };
 
 const useFeedItems = (proposalId) => {
@@ -443,30 +446,14 @@ const ProposalMainSection = ({ proposalId }) => {
                   css({
                     position: "sticky",
                     top: 0,
+                    zIndex: 1,
                     background: t.colors.backgroundPrimary,
                     "[role=tab]": { fontSize: t.text.sizes.base },
                   })
                 }
               >
                 <Tabs.Item key="activity" title="Activity">
-                  <div style={{ paddingTop: "3.2rem" }}>
-                    {feedItems.length === 0 ? (
-                      <div
-                        css={(t) =>
-                          css({
-                            textAlign: "center",
-                            fontSize: t.text.sizes.small,
-                            color: t.colors.textDimmed,
-                            paddingTop: "1.6rem",
-                          })
-                        }
-                      >
-                        No activity
-                      </div>
-                    ) : (
-                      <ActivityFeed isolated items={feedItems} />
-                    )}
-
+                  <div style={{ padding: "3.2rem 0 4rem" }}>
                     <ProposalActionForm
                       proposalId={proposalId}
                       mode={
@@ -491,6 +478,10 @@ const ProposalMainSection = ({ proposalId }) => {
                       }}
                     />
                   </div>
+
+                  {feedItems.length !== 0 && (
+                    <ActivityFeed isolated items={feedItems} />
+                  )}
                 </Tabs.Item>
                 <Tabs.Item key="transactions" title="Transactions">
                   <div style={{ paddingTop: "3.2rem" }}>
@@ -550,7 +541,7 @@ export const ProposalActionForm = ({
 
   const renderHelpText = () => {
     if (mode === "feedback")
-      return "By giving feedback voters can signal their voting intentions to influence and help guide proposers.";
+      return "Signal your voting intentions to influence and guide proposers.";
 
     if (currentVoteCount > 0 && proposalVoteCount === 0)
       return (
@@ -576,22 +567,35 @@ export const ProposalActionForm = ({
 
   return (
     <>
-      <div css={css({ position: "sticky", bottom: 0 })}>
+      <div>
+        {/* <div */}
+        {/*   css={(t) => */}
+        {/*     css({ */}
+        {/*       paddingTop: "4rem", */}
+        {/*       background: `linear-gradient(0, ${t.colors.backgroundPrimary} 0%, transparent 100%)`, */}
+        {/*     }) */}
+        {/*   } */}
+        {/* /> */}
         <div
           css={(t) =>
             css({
-              paddingTop: "4rem",
-              background: `linear-gradient(0, ${t.colors.backgroundPrimary} 0%, transparent 100%)`,
+              fontSize: t.text.sizes.tiny,
+              color: t.colors.textDimmed,
+              "p + p": { marginTop: "1em" },
+              em: {
+                fontStyle: "normal",
+                fontWeight: t.text.weights.emphasis,
+              },
             })
           }
-        />
+        >
+          {renderHelpText()}
+        </div>
         <div
-          css={(t) =>
-            css({
-              padding: "0 0 1.6rem",
-              background: t.colors.backgroundPrimary,
-            })
-          }
+          css={css({
+            padding: "1.2rem 0 0",
+            // background: t.colors.backgroundPrimary,
+          })}
         >
           <form
             onSubmit={(e) => {
@@ -604,7 +608,7 @@ export const ProposalActionForm = ({
             css={(t) =>
               css({
                 borderRadius: "0.5rem",
-                background: t.colors.inputBackground,
+                background: t.colors.backgroundSecondary,
                 padding: "1rem",
                 "&:has(textarea:focus-visible)": { boxShadow: t.shadows.focus },
               })
@@ -619,8 +623,8 @@ export const ProposalActionForm = ({
               }}
               css={(t) =>
                 css({
-                  background: t.colors.inputBackground,
-                  fontSize: t.text.sizes.input,
+                  background: t.colors.backgroundSecondary,
+                  fontSize: t.text.sizes.base,
                   display: "block",
                   color: t.colors.textNormal,
                   fontWeight: "400",
@@ -628,7 +632,7 @@ export const ProposalActionForm = ({
                   maxWidth: "100%",
                   outline: "none",
                   border: 0,
-                  padding: "0.5rem 0.7rem",
+                  padding: "0.3rem 0.3rem",
                   "::placeholder": { color: t.colors.inputPlaceholder },
                   "&:disabled": {
                     color: t.colors.textMuted,
@@ -660,6 +664,7 @@ export const ProposalActionForm = ({
                     });
                     requestWalletAccess();
                   }}
+                  size="default"
                 >
                   Connect wallet to{" "}
                   {mode === "feedback" ? "give feedback" : "vote"}
@@ -670,7 +675,7 @@ export const ProposalActionForm = ({
                     aria-label="Select support"
                     width="15rem"
                     variant="default"
-                    size="medium"
+                    size="default"
                     value={support}
                     onChange={(value) => {
                       setSupport(value);
@@ -752,6 +757,7 @@ export const ProposalActionForm = ({
                     variant="primary"
                     disabled={isPending || !hasRequiredInputs}
                     isLoading={isPending}
+                    size="default"
                   >
                     {mode === "vote"
                       ? `Cast ${
@@ -766,21 +772,6 @@ export const ProposalActionForm = ({
             </div>
           </form>
         </div>
-      </div>
-      <div
-        css={(t) =>
-          css({
-            fontSize: t.text.sizes.tiny,
-            color: t.colors.textDimmed,
-            "p + p": { marginTop: "1em" },
-            em: {
-              fontStyle: "normal",
-              fontWeight: t.text.weights.emphasis,
-            },
-          })
-        }
-      >
-        {renderHelpText()}
       </div>
     </>
   );
@@ -1033,6 +1024,7 @@ export const ActivityFeed = ({ isolated, items = [], spacing = "1.6rem" }) => {
                     {" "}
                     by{" "}
                     <AccountPreviewPopoverTrigger
+                      showAvatar
                       accountAddress={item.authorAccount}
                     />
                   </>
@@ -1069,6 +1061,7 @@ export const ActivityFeed = ({ isolated, items = [], spacing = "1.6rem" }) => {
                     {" "}
                     by{" "}
                     <AccountPreviewPopoverTrigger
+                      showAvatar
                       accountAddress={item.authorAccount}
                     />
                   </>
@@ -1253,7 +1246,7 @@ export const ActivityFeed = ({ isolated, items = [], spacing = "1.6rem" }) => {
         <div key={item.id} role="listitem">
           <div data-container>
             <div>
-              {item.authorAccount == null ? (
+              {item.type === "event" || item.authorAccount == null ? (
                 <div data-timeline-symbol />
               ) : (
                 <AccountPreviewPopoverTrigger
@@ -1452,14 +1445,15 @@ export const ProposalLikeContent = ({
           marginBottom: requestedAmounts.length === 0 ? "2.4rem" : "4.8rem",
         }}
       >
-        Proposed by <AccountPreviewPopoverTrigger accountAddress={proposerId} />
+        Proposed by{" "}
+        <AccountPreviewPopoverTrigger showAvatar accountAddress={proposerId} />
         {sponsorIds.length !== 0 && (
           <>
             , sponsored by{" "}
             {sponsorIds.map((id, i) => (
               <React.Fragment key={id}>
                 {i !== 0 && <>, </>}
-                <AccountPreviewPopoverTrigger accountAddress={id} />
+                <AccountPreviewPopoverTrigger showAvatar accountAddress={id} />
               </React.Fragment>
             ))}
           </>

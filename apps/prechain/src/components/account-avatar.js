@@ -30,6 +30,7 @@ const NounsAccountAvatar = React.forwardRef(
   (
     {
       address: accountAddress,
+      placeholder = true,
       transparent = false,
       maxStackCount = 2,
       ...props
@@ -64,6 +65,8 @@ const NounsAccountAvatar = React.forwardRef(
     const nounAvatarUrl = nounAvatarUrls?.[0];
     const imageUrl = ensAvatarUrl ?? nounAvatarUrl;
 
+    if (!placeholder && imageUrl == null) return null;
+
     return (
       <Avatar
         ref={ref}
@@ -78,7 +81,14 @@ const NounsAccountAvatar = React.forwardRef(
   }
 );
 
-const AvatarStack = ({ urls = [], count: maxCount = 4, style, ...props }) => {
+const AvatarStack = ({
+  urls = [],
+  count: maxCount = 4,
+  style,
+  borderRadius,
+  background,
+  ...props
+}) => {
   const size = typeof props.size === "number" ? `${props.size}px` : props.size;
   const count = Math.min(urls.length, maxCount);
   const offset = `calc(${size} * (1 / (3 * ${count})))`;
@@ -89,14 +99,17 @@ const AvatarStack = ({ urls = [], count: maxCount = 4, style, ...props }) => {
         width: props.size,
         height: props.size,
         position: "relative",
+        zIndex: 0,
         ...style,
       }}
+      {...props}
     >
       {reverse(urls.slice(0, count)).map((url, i) => (
         <Avatar
           key={url}
           url={url}
-          {...props}
+          borderRadius={borderRadius}
+          background={background}
           css={css({
             position: "absolute",
             bottom: `calc(${offset} * ${i})`,
