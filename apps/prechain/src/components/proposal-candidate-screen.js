@@ -216,6 +216,8 @@ const ProposalCandidateScreenContent = ({ candidateId }) => {
   const proposerId = candidateId.split("-")[0];
   const slug = extractSlugFromCandidateId(candidateId);
 
+  const { address: connectedWalletAccountAddress } = useWallet();
+
   const proposalThreshold = useProposalThreshold();
 
   const candidate = useProposalCandidate(candidateId);
@@ -446,7 +448,10 @@ const ProposalCandidateScreenContent = ({ candidateId }) => {
                     support={pendingSupport}
                     setSupport={setPendingSupport}
                     onSubmit={async () => {
-                      va.track("Feedback", { candidateId });
+                      va.track("Feedback", {
+                        candidateId,
+                        account: connectedWalletAccountAddress,
+                      });
                       return sendProposalFeedback().then(() => {
                         setPendingFeedback("");
                       });

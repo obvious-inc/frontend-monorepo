@@ -465,11 +465,17 @@ const ProposalMainSection = ({ proposalId }) => {
                       setSupport={setPendingSupport}
                       onSubmit={async () => {
                         if (isVotingOngoing) {
-                          va.track("Vote", { proposalId });
+                          va.track("Vote", {
+                            proposalId,
+                            account: connectedWalletAccountAddress,
+                          });
                           await castProposalVote();
                           setCastVoteCallSupportDetailed(pendingSupport);
                         } else {
-                          va.track("Feedback", { proposalId });
+                          va.track("Feedback", {
+                            proposalId,
+                            account: connectedWalletAccountAddress,
+                          });
                           await sendProposalFeedback();
                         }
 
