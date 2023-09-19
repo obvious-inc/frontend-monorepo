@@ -77,9 +77,11 @@ const TinyMutedText = ({ children, nowrap = false, style }) => (
 const CastDate = ({ date }) => {
   return (
     <TinyMutedText style={{ lineHeight: 1.5 }}>
-      [
       {isToday(date) ? (
-        <FormattedDate value={date} hour="numeric" minute="numeric" />
+        <>
+          Today at{" "}
+          <FormattedDate value={date} hour="numeric" minute="numeric" />
+        </>
       ) : isYesterday(date) ? (
         <>
           Yesterday at{" "}
@@ -94,7 +96,6 @@ const CastDate = ({ date }) => {
           minute="numeric"
         />
       )}
-      ]
     </TinyMutedText>
   );
 };
