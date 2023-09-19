@@ -12,7 +12,20 @@ export const groupBy = (computeKey, list) =>
     return acc;
   }, {});
 
-export const unique = (list) => [...new Set(list)];
+export const unique = (...args) => {
+  if (typeof args[0] !== "function") return [...new Set(args[0])];
+
+  const [isEqual, list] = args;
+
+  const distinctItemList = [];
+
+  for (const item of list) {
+    const hasItem = distinctItemList.some((i) => isEqual(item, i));
+    if (!hasItem) distinctItemList.push(item);
+  }
+
+  return distinctItemList;
+};
 
 export const reverse = (list) => [...list].reverse();
 
@@ -43,10 +56,10 @@ export const comparator = (...sortValueExtractors) => {
         typeof sortValueExtractor === "string"
           ? (e) => e[sortValueExtractor]
           : typeof sortValueExtractor === "function"
-          ? sortValueExtractor
-          : typeof sortValueExtractor.value === "string"
-          ? (e) => e[sortValueExtractor.value]
-          : sortValueExtractor.value;
+            ? sortValueExtractor
+            : typeof sortValueExtractor.value === "string"
+              ? (e) => e[sortValueExtractor.value]
+              : sortValueExtractor.value;
 
       const desc = sortValueExtractor?.order === "desc";
       const type = sortValueExtractor?.type;

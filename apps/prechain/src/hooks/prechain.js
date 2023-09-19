@@ -414,10 +414,39 @@ const parseDelegate = (data) => {
   return parsedData;
 };
 
+const mergeProposals = (p1, p2) => {
+  if (p1 == null) return p2;
+
+  const mergedProposal = { ...p1, ...p2 };
+
+  if (p1.feedbackPosts != null && p2.feedbackPosts != null)
+    mergedProposal.feedbackPosts = arrayUtils.unique(
+      (p1, p2) => p1.id === p2.id,
+      [...p1.feedbackPosts, ...p2.feedbackPosts]
+    );
+
+  if (p1.votes != null && p2.votes != null)
+    mergedProposal.votes = arrayUtils.unique(
+      (v1, v2) => v1.id === v2.id,
+      [...p1.votes, ...p2.votes]
+    );
+
+  return mergedProposal;
+};
+
 const mergeProposalCandidates = (p1, p2) => {
+  if (p1 == null) return p2;
+
   const mergedCandidate = { ...p1, ...p2 };
+
   if (p1?.latestVersion == null || p2?.latestVersion == null)
     return mergedCandidate;
+
+  if (p1.feedbackPosts != null && p2.feedbackPosts != null)
+    mergedCandidate.feedbackPosts = arrayUtils.unique(
+      (p1, p2) => p1.id === p2.id,
+      [...p1.feedbackPosts, ...p2.feedbackPosts]
+    );
 
   mergedCandidate.latestVersion = { ...p1.latestVersion, ...p2.latestVersion };
 
@@ -459,29 +488,19 @@ export const ChainDataCacheContextProvider = ({ children }) => {
           parsedCandidates
         );
 
-        setState((s) => {
-          const mergedExistingProposalsById = mapValues(
-            (p) => ({ ...p, ...fetchedProposalsById[p.id] }),
-            s.proposalsById
-          );
-
-          const mergedExistingCandidatesById = mapValues(
-            (c) => mergeProposalCandidates(c, fetchedCandidatesById[c.id]),
-            s.proposalCandidatesById
-          );
-
-          return {
-            ...s,
-            proposalsById: {
-              ...fetchedProposalsById,
-              ...mergedExistingProposalsById,
-            },
-            proposalCandidatesById: {
-              ...fetchedCandidatesById,
-              ...mergedExistingCandidatesById,
-            },
-          };
-        });
+        setState((s) => ({
+          ...s,
+          proposalsById: objectUtils.merge(
+            mergeProposals,
+            s.proposalsById,
+            fetchedProposalsById
+          ),
+          proposalCandidatesById: objectUtils.merge(
+            mergeProposalCandidates,
+            s.proposalCandidatesById,
+            fetchedCandidatesById
+          ),
+        }));
       }),
     [querySubgraph]
   );
@@ -494,16 +513,13 @@ export const ChainDataCacheContextProvider = ({ children }) => {
 
         const fetchedProposal = parseProposal(data.proposal);
 
-        setState((s) => {
-          const existingProposal = s.proposalsById[id];
-          return {
-            ...s,
-            proposalsById: {
-              ...s.proposalsById,
-              [id]: { ...existingProposal, ...fetchedProposal },
-            },
-          };
-        });
+        setState((s) => ({
+          ...s,
+          proposalsById: {
+            ...s.proposalsById,
+            [id]: mergeProposals(s.proposalsById[id], fetchedProposal),
+          },
+        }));
       }),
     [querySubgraph]
   );
@@ -598,37 +614,15 @@ export const ChainDataCacheContextProvider = ({ children }) => {
             votesByProposalId
           );
 
-          const merge = (mergingFn, ...objects_) => {
-            const objects =
-              typeof mergingFn === "function"
-                ? objects_
-                : [mergingFn, ...objects_];
-
-            return objects.reduce((result, o) => {
-              if (result == null) return o;
-
-              return {
-                ...result,
-                ...mapValues((value2, key) => {
-                  const value1 = result[key];
-
-                  if (typeof mergingFn === "function")
-                    return mergingFn(value1, value2, key);
-
-                  return { ...value1, ...value2 };
-                }, o),
-              };
-            }, null);
-          };
-
           return {
             ...s,
-            proposalsById: merge(
+            proposalsById: objectUtils.merge(
+              mergeProposals,
               s.proposalsById,
               proposalsWithNewFeedbackPostsById,
               proposalsWithNewVotesById
             ),
-            proposalCandidatesById: merge(
+            proposalCandidatesById: objectUtils.merge(
               mergeProposalCandidates,
               s.proposalCandidatesById,
               newCandidatesById

@@ -21,3 +21,17 @@ export const mapValues = (mapper, obj) =>
 
 export const filter = (predicate, obj) =>
   Object.fromEntries(Object.entries(obj).filter(predicate));
+
+export const merge = (mergingFn, ...objects) => {
+  return objects.reduce((result, o) => {
+    if (result == null) return o;
+
+    return {
+      ...result,
+      ...mapValues((value2, key) => {
+        const value1 = result[key];
+        return mergingFn(value1, value2, key);
+      }, o),
+    };
+  }, null);
+};
