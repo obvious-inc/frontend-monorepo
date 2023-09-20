@@ -7,15 +7,24 @@ import { CastItem } from "./cast.js";
 import useSigner from "./signer.js";
 import { message } from "@shades/common/utils";
 import { addCast } from "../hooks/hub.js";
-import { hexToBytes } from "viem";
+import { hexToBytes, toHex } from "viem";
 import ThreadNavBar from "./thread-navbar.js";
+import {
+  useChannelCacheContext,
+  useThreadCasts,
+  useThreadCastsFetch,
+  useThreadCastsHashes,
+} from "../hooks/channel.js";
 
-const ThreadScrollView = ({ castHash }) => {
+const ThreadScrollView = ({ castHash, threadHashes }) => {
+  console.log("ThreadScrollView hashes", threadHashes);
   const castsContainerRef = React.useRef();
   const scrollContainerRef = React.useRef();
 
   const cast = useNeynarCast(castHash);
-  const threadCasts = useNeynarThreadCasts(castHash);
+  console.log("cast", cast);
+  const threadCasts = useThreadCasts(castHash);
+  const threadCastHashes = useThreadCastsHashes(castHash);
 
   if (!cast || !threadCasts) {
     return (
@@ -147,17 +156,29 @@ export const ThreadScreen = ({ castHash }) => {
   const { fid, signer, broadcasted } = useSigner();
   const cast = useNeynarCast(castHash);
 
+  const {
+    actions: { addCastHashToThreadCache },
+  } = useChannelCacheContext();
+
+  useThreadCastsFetch({ threadCast: castHash, cursor: null });
+  const threadCastHashes = useThreadCastsHashes(castHash);
+  console.log("thread hashes", threadCastHashes);
+
   const placeholderText = broadcasted
     ? "Compose your cast..."
     : "Connect wallet and create signer to cast";
 
   const onSubmit = async (blocks) => {
     const text = message.stringifyBlocks(blocks);
-    addCast({
+    await addCast({
       fid,
       signer,
       text,
       parentCastId: { hash: hexToBytes(cast.hash), fid: cast.author.fid },
+    }).then((result) => {
+      console.log("result", result.value);
+      const hexHash = toHex(result.value.hash);
+      addCastHashToThreadCache({ castHash: hexHash, threadHash: castHash });
     });
   };
 
@@ -179,9 +200,9 @@ export const ThreadScreen = ({ castHash }) => {
         })
       }
     >
-      <ThreadNavBar cast={cast} />
+      <ThreadNavBar castHash={castHash} />
 
-      <ThreadScrollView castHash={castHash} />
+      <ThreadScrollView castHash={castHash} threadHashes={threadCastHashes} />
 
       <div css={css({ padding: "0 1.6rem" })}>
         <MessageEditorForm

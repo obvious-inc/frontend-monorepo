@@ -1,6 +1,6 @@
 import React from "react";
 import { useFetch } from "@shades/common/react";
-import { fetchNeynarCasts } from "./neynar";
+import { fetchNeynarCasts, fetchNeynarThreadCasts } from "./neynar";
 
 export const ChannelCacheContext = React.createContext();
 
@@ -8,6 +8,8 @@ export const ChannelCacheContextProvider = ({ children }) => {
   const [state, setState] = React.useState({
     castsByChannelId: {},
     castHashesByChannelId: {},
+    castsByThreadHash: {},
+    castHashesByThreadHash: {},
   });
 
   const fetchChannelCasts = React.useCallback(async ({ channel, cursor }) => {
@@ -30,9 +32,51 @@ export const ChannelCacheContextProvider = ({ children }) => {
     );
   }, []);
 
+  const fetchThreadCasts = React.useCallback(async ({ threadHash, cursor }) => {
+    return fetchNeynarThreadCasts({ threadCastHash: threadHash, cursor }).then(
+      (casts) => {
+        setState((s) => {
+          return {
+            ...s,
+            castsByThreadHash: {
+              ...s.castsByThreadHash,
+              [threadHash]: casts,
+            },
+            castHashesByThreadHash: {
+              ...s.castHashesByThreadHash,
+              [threadHash]: casts.map((cast) => cast.hash),
+            },
+          };
+        });
+      }
+    );
+  }, []);
+
+  const addCastHashToThreadCache = React.useCallback(
+    async ({ castHash, threadHash }) => {
+      setState((s) => {
+        return {
+          ...s,
+          castHashesByThreadHash: {
+            ...s.castHashesByThreadHash,
+            [threadHash]: [...s.castHashesByThreadHash[threadHash], castHash],
+          },
+        };
+      });
+    },
+    []
+  );
+
   const contextValue = React.useMemo(
-    () => ({ state, actions: { fetchChannelCasts } }),
-    [state, fetchChannelCasts]
+    () => ({
+      state,
+      actions: {
+        fetchChannelCasts,
+        fetchThreadCasts,
+        addCastHashToThreadCache,
+      },
+    }),
+    [state, fetchChannelCasts, fetchThreadCasts, addCastHashToThreadCache]
   );
 
   return (
@@ -72,3 +116,38 @@ export const useReversedChannelCasts = (channelId) => {
     return casts.slice().reverse();
   }, [casts]);
 };
+
+export const useThreadCastsFetch = ({ threadCast, cursor }) => {
+  const {
+    actions: { fetchThreadCasts },
+  } = React.useContext(ChannelCacheContext);
+
+  useFetch(
+    () =>
+      fetchThreadCasts({ threadHash: threadCast, cursor }).catch((e) => {
+        throw e;
+      }),
+    [fetchThreadCasts, threadCast, cursor]
+  );
+};
+
+export const useThreadCasts = (threadHash) => {
+  const {
+    state: { castsByThreadHash },
+  } = React.useContext(ChannelCacheContext);
+
+  return castsByThreadHash[threadHash];
+};
+
+export const useThreadCastsHashes = (threadHash) => {
+  const {
+    state: { castHashesByThreadHash },
+  } = React.useContext(ChannelCacheContext);
+
+  return castHashesByThreadHash[threadHash];
+};
+
+export function useChannelCacheContext() {
+  const context = React.useContext(ChannelCacheContext);
+  return context;
+}

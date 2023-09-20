@@ -38,6 +38,36 @@ export async function fetchNeynarCasts({ parentUrl, cursor }) {
     });
 }
 
+export async function fetchNeynarThreadCasts({ threadCastHash, cursor }) {
+  if (!threadCastHash) return [];
+
+  const params = new URLSearchParams({
+    api_key: process.env.NEYNAR_API_KEY,
+    threadHash: threadCastHash,
+  });
+
+  if (cursor) params.set("cursor", cursor);
+
+  return fetch(NEYNAR_V1_ENDPOINT + "/all-casts-in-thread?" + params)
+    .then((result) => {
+      return result.json();
+    })
+    .then((data) => {
+      return data.result.casts?.map((cast) => {
+        return {
+          ...cast,
+          richText: cast.text ? messageUtils.parseString(cast.text) : null,
+        };
+      });
+    })
+    .then((parsedCasts) => {
+      return parsedCasts.slice(1);
+    })
+    .catch((err) => {
+      throw err;
+    });
+}
+
 export const useNeynarChannelCasts = (channelId) => {
   const [casts, setCasts] = useState([]);
   const [nextCursor, setNextCursor] = useState(null);
@@ -164,6 +194,10 @@ export const useNeynarCast = (castHash) => {
     }
 
     fetchCast();
+
+    return () => {
+      setCast(null);
+    };
   }, [castHash]);
 
   return cast;

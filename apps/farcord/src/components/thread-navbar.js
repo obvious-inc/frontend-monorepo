@@ -6,7 +6,8 @@ import Button from "@shades/ui-web/button";
 import { Cross as CrossIcon } from "@shades/ui-web/icons";
 import { useNeynarCast } from "../hooks/neynar.js";
 
-const ThreadNavBar = ({ cast }) => {
+const ThreadNavBar = ({ castHash }) => {
+  const cast = useNeynarCast(castHash);
   const [searchParams, setSearchParams] = useSearchParams();
   const parentHash = cast?.parentHash;
   const parentCast = useNeynarCast(parentHash);
