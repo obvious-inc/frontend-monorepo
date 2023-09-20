@@ -34,7 +34,6 @@
   },
   "dependencies": {
     "@emotion/react": "^11.10.6",
-    "@farcaster/hub-web": "^0.6.2",
     "@noble/ed25519": "^2.0.0",
     "@npmcli/arborist": "^6.2.8",
     "@radix-ui/react-toolbar": "^1.0.3",
