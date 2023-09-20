@@ -159,7 +159,7 @@ export const ThreadScreen = ({ castHash }) => {
   useThreadCastsFetch({ threadCast: castHash, cursor: null });
 
   const placeholderText = broadcasted
-    ? "Compose your cast..."
+    ? "Compose your reply..."
     : "Connect wallet and create signer to cast";
 
   const onSubmit = async (blocks) => {
