@@ -1,21 +1,26 @@
 import React from "react";
 import { css } from "@emotion/react";
-import { useNeynarCast, useNeynarThreadCasts } from "../hooks/neynar.js";
+import { useNeynarCast } from "../hooks/neynar.js";
 import MessageEditorForm from "@shades/ui-web/message-editor-form";
 import Spinner from "@shades/ui-web/spinner";
 import { CastItem } from "./cast.js";
 import useSigner from "./signer.js";
 import { message } from "@shades/common/utils";
 import { addCast } from "../hooks/hub.js";
-import { hexToBytes } from "viem";
+import { hexToBytes, toHex } from "viem";
 import ThreadNavBar from "./thread-navbar.js";
+import {
+  useChannelCacheContext,
+  useThreadCasts,
+  useThreadCastsFetch,
+} from "../hooks/channel.js";
 
 const ThreadScrollView = ({ castHash }) => {
   const castsContainerRef = React.useRef();
   const scrollContainerRef = React.useRef();
 
   const cast = useNeynarCast(castHash);
-  const threadCasts = useNeynarThreadCasts(castHash);
+  const threadCasts = useThreadCasts(castHash);
 
   if (!cast || !threadCasts) {
     return (
@@ -147,18 +152,30 @@ export const ThreadScreen = ({ castHash }) => {
   const { fid, signer, broadcasted } = useSigner();
   const cast = useNeynarCast(castHash);
 
+  const {
+    actions: { fetchThreadCasts },
+  } = useChannelCacheContext();
+
+  useThreadCastsFetch({ threadCast: castHash, cursor: null });
+
   const placeholderText = broadcasted
     ? "Compose your cast..."
     : "Connect wallet and create signer to cast";
 
   const onSubmit = async (blocks) => {
     const text = message.stringifyBlocks(blocks);
-    addCast({
+    return addCast({
       fid,
       signer,
       text,
       parentCastId: { hash: hexToBytes(cast.hash), fid: cast.author.fid },
-    });
+    })
+      .then((result) => {
+        return toHex(result.value.hash);
+      })
+      .then(() => {
+        return fetchThreadCasts({ threadHash: castHash });
+      });
   };
 
   return (
@@ -179,7 +196,7 @@ export const ThreadScreen = ({ castHash }) => {
         })
       }
     >
-      <ThreadNavBar cast={cast} />
+      <ThreadNavBar castHash={castHash} />
 
       <ThreadScrollView castHash={castHash} />
 
@@ -190,7 +207,9 @@ export const ThreadScreen = ({ castHash }) => {
           fileUploadDisabled
           disabled={!broadcasted}
           placeholder={placeholderText}
-          submit={onSubmit}
+          submit={async (blocks) => {
+            await onSubmit(blocks);
+          }}
         />
       </div>
 

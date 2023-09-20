@@ -77,9 +77,11 @@ const TinyMutedText = ({ children, nowrap = false, style }) => (
 const CastDate = ({ date }) => {
   return (
     <TinyMutedText style={{ lineHeight: 1.5 }}>
-      [
       {isToday(date) ? (
-        <FormattedDate value={date} hour="numeric" minute="numeric" />
+        <>
+          Today at{" "}
+          <FormattedDate value={date} hour="numeric" minute="numeric" />
+        </>
       ) : isYesterday(date) ? (
         <>
           Yesterday at{" "}
@@ -94,7 +96,6 @@ const CastDate = ({ date }) => {
           minute="numeric"
         />
       )}
-      ]
     </TinyMutedText>
   );
 };
@@ -217,53 +218,80 @@ export const CastHeader = ({ cast }) => {
         <CastDate date={parseISO(cast.timestamp)} />
       </Link>
 
-      <>
-        <Link
-          to={`?cast=${cast.hash}`}
-          css={css({
-            cursor: "pointer",
-            textDecoration: "none",
-            color: "inherit",
-          })}
-        >
-          <CommentIcon css={css({ width: "auto", height: "1.6rem" })} />
-        </Link>
-        <TinyMutedText style={{ lineHeight: 1.5 }}>{replyCount}</TinyMutedText>
-      </>
+      <div
+        css={() =>
+          css({
+            display: "grid",
+            gridAutoFlow: "column",
+            gridAutoColumns: "minmax(0, auto)",
+            alignSelf: "flex-end",
+            justifyContent: "flex-start",
+            alignItems: "flex-end",
+            gridGap: "0.6rem",
+            // cursor: broadcasted ? "default" : "not-allowed",
+          })
+        }
+      >
+        <>
+          <Link
+            to={`?cast=${cast.hash}`}
+            css={css({
+              cursor: "pointer",
+              textDecoration: "none",
+              color: "inherit",
+            })}
+          >
+            <CommentIcon css={css({ width: "auto", height: "1.6rem" })} />
+          </Link>
+          <TinyMutedText style={{ lineHeight: 1.5 }}>
+            {replyCount}
+          </TinyMutedText>
+        </>
 
-      <>
-        <button
-          css={css({ cursor: "pointer" })}
-          onClick={handleLikeClick}
-          disabled={!broadcasted}
-        >
-          {liked ? (
-            <HeartSolidIcon css={css({ width: "auto", height: "1.6rem" })} />
-          ) : (
-            <HeartRegularIcon css={css({ width: "auto", height: "1.6rem" })} />
-          )}
-        </button>
-        <TinyMutedText style={{ lineHeight: 1.5 }}>{likesCount}</TinyMutedText>
-      </>
+        <>
+          <button
+            css={css({ cursor: broadcasted ? "pointer" : "not-allowed" })}
+            onClick={handleLikeClick}
+            disabled={!broadcasted}
+          >
+            {liked ? (
+              <HeartSolidIcon
+                css={css({
+                  width: "auto",
+                  height: "1.6rem",
+                  fill: "rgb(213, 19, 56)",
+                })}
+              />
+            ) : (
+              <HeartRegularIcon
+                css={css({ width: "auto", height: "1.6rem" })}
+              />
+            )}
+          </button>
+          <TinyMutedText style={{ lineHeight: 1.5 }}>
+            {likesCount}
+          </TinyMutedText>
+        </>
 
-      <>
-        <button
-          css={css({ cursor: "pointer" })}
-          onClick={handleRecastClick}
-          disabled={!broadcasted}
-        >
-          {recasted ? (
-            <RetweetIcon
-              css={css({ width: "auto", height: "1.6rem", fill: "green" })}
-            />
-          ) : (
-            <RetweetIcon css={css({ width: "auto", height: "1.6rem" })} />
-          )}
-        </button>
-        <TinyMutedText style={{ lineHeight: 1.5 }}>
-          {recastsCount}
-        </TinyMutedText>
-      </>
+        <>
+          <button
+            css={css({ cursor: broadcasted ? "pointer" : "not-allowed" })}
+            onClick={handleRecastClick}
+            disabled={!broadcasted}
+          >
+            {recasted ? (
+              <RetweetIcon
+                css={css({ width: "auto", height: "1.6rem", fill: "green" })}
+              />
+            ) : (
+              <RetweetIcon css={css({ width: "auto", height: "1.6rem" })} />
+            )}
+          </button>
+          <TinyMutedText style={{ lineHeight: 1.5 }}>
+            {recastsCount}
+          </TinyMutedText>
+        </>
+      </div>
     </div>
   );
 };

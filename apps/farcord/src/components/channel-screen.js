@@ -12,8 +12,13 @@ import { useFarcasterChannel } from "../hooks/farcord.js";
 import { message } from "@shades/common/utils";
 import useSigner from "./signer";
 import { addCast } from "../hooks/hub.js";
-import { useChannelCasts, useChannelCastsFetch } from "../hooks/channel.js";
+import {
+  useChannelCacheContext,
+  useChannelCasts,
+  useChannelCastsFetch,
+} from "../hooks/channel.js";
 import { useNeynarRecentCasts } from "../hooks/neynar.js";
+import { toHex } from "viem";
 
 export const ChannelCastsScrollView = ({
   channelId,
@@ -177,15 +182,33 @@ export const ChannelCastsScrollView = ({
 const ChannelView = ({ channelId, isFeed }) => {
   const inputRef = React.useRef();
   const { fid, signer, broadcasted } = useSigner();
+
+  const {
+    actions: { fetchChannelCasts },
+  } = useChannelCacheContext();
+
   const channel = useFarcasterChannel(channelId);
 
-  const placeholderText = broadcasted
+  const placeholderText = isFeed
+    ? "No casting here yet"
+    : broadcasted
     ? "Compose your cast..."
     : "Connect wallet and create signer to cast";
 
   const onSubmit = async (blocks) => {
     const text = message.stringifyBlocks(blocks);
-    addCast({ fid, signer, text, parentUrl: channel.parentUrl });
+    return addCast({
+      fid,
+      signer,
+      text,
+      parentUrl: channel.parentUrl,
+    })
+      .then((result) => {
+        return toHex(result.value.hash);
+      })
+      .then(() => {
+        return fetchChannelCasts({ channel: channel });
+      });
   };
 
   return (
@@ -210,9 +233,11 @@ const ChannelView = ({ channelId, isFeed }) => {
           ref={inputRef}
           inline
           fileUploadDisabled
-          disabled={!broadcasted}
+          disabled={!broadcasted || isFeed}
           placeholder={placeholderText}
-          submit={onSubmit}
+          submit={async (blocks) => {
+            await onSubmit(blocks);
+          }}
         />
       </div>
 
