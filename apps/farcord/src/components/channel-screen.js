@@ -189,9 +189,7 @@ const ChannelView = ({ channelId, isFeed }) => {
 
   const channel = useFarcasterChannel(channelId);
 
-  const placeholderText = isFeed
-    ? "No casting here yet"
-    : broadcasted
+  const placeholderText = broadcasted
     ? "Compose your cast..."
     : "Connect wallet and create signer to cast";
 
@@ -201,7 +199,7 @@ const ChannelView = ({ channelId, isFeed }) => {
       fid,
       signer,
       text,
-      parentUrl: channel.parentUrl,
+      parentUrl: isFeed ? null : channel.parentUrl,
     })
       .then((result) => {
         return toHex(result.value.hash);
@@ -233,7 +231,7 @@ const ChannelView = ({ channelId, isFeed }) => {
           ref={inputRef}
           inline
           fileUploadDisabled
-          disabled={!broadcasted || isFeed}
+          disabled={!broadcasted}
           placeholder={placeholderText}
           submit={async (blocks) => {
             await onSubmit(blocks);

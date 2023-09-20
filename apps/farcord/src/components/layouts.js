@@ -179,7 +179,7 @@ export const FeedItem = () => {
             textOverflow: "ellipsis",
           })}
         >
-          Recent casts
+          Feed
         </div>
       }
       size="normal"

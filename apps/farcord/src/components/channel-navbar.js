@@ -8,6 +8,8 @@ const ChannelNavBar = ({ channelId }) => {
   const channel = useFarcasterChannel(channelId);
   if (!channel) return null;
 
+  let channelLink = channel?.parentUrl;
+
   return (
     <NavBar>
       {channel.imageUrl != null && (
@@ -40,7 +42,10 @@ const ChannelNavBar = ({ channelId }) => {
         }}
       >
         <Heading
-          component="button"
+          component="a"
+          href={channelLink}
+          target="_blank"
+          rel="noreferrer"
           css={(t) =>
             css({
               minWidth: 0,
@@ -48,6 +53,7 @@ const ChannelNavBar = ({ channelId }) => {
               textOverflow: "ellipsis",
               borderRadius: "0.3rem",
               outline: "none",
+              textDecoration: "none",
               "&:focus-visible": { boxShadow: t.shadows.focus },
               "@media (hover: hover)": {
                 cursor: "pointer",
@@ -73,7 +79,7 @@ const ChannelNavBar = ({ channelId }) => {
             }
           />
 
-          <button
+          <div
             css={(t) =>
               css({
                 flex: 1,
@@ -89,14 +95,14 @@ const ChannelNavBar = ({ channelId }) => {
                 outline: "none",
                 "&:focus-visible": { boxShadow: t.shadows.focus },
                 "@media (hover: hover)": {
-                  cursor: "pointer",
+                  // cursor: "pointer",
                   ":hover": { color: t.colors.textDimmedModifierHover },
                 },
               })
             }
           >
             <p>{channel.description}</p>
-          </button>
+          </div>
         </>
       </div>
     </NavBar>
