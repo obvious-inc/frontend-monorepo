@@ -130,6 +130,23 @@ const useCurrentVotes = (accountAddress) => {
   return Number(data);
 };
 
+export const useDynamicQuorum = (proposalId) => {
+  const chainId = useChainId();
+
+  const { data, isSuccess } = useContractRead({
+    address: contractAddressesByChainId[chainId].dao,
+    abi: parseAbi([
+      "function quorumVotes(uint256 proposalId) public view returns (uint256)",
+    ]),
+    functionName: "quorumVotes",
+    args: [proposalId],
+  });
+
+  if (!isSuccess) return undefined;
+
+  return Number(data);
+};
+
 export const useCanCreateProposal = () => {
   const { address: connectedAccountAddress } = useWallet();
 

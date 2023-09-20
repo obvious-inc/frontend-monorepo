@@ -32,6 +32,7 @@ import {
   useCastProposalVote,
   useSendProposalFeedback,
   usePriorVotes,
+  useDynamicQuorum,
 } from "../hooks/dao.js";
 import { useDelegate, extractSlugFromCandidateId } from "../hooks/prechain.js";
 import useApproximateBlockTimestampCalculator from "../hooks/approximate-block-timestamp-calculator.js";
@@ -178,6 +179,7 @@ const getDelegateVotes = (proposal) => {
 
 const ProposalMainSection = ({ proposalId }) => {
   const { data: latestBlockNumber } = useBlockNumber();
+  const quorumVotes = useDynamicQuorum(proposalId);
   const calculateBlockTimestamp = useApproximateBlockTimestampCalculator();
   const { address: connectedWalletAccountAddress } = useWallet();
 
@@ -361,7 +363,9 @@ const ProposalMainSection = ({ proposalId }) => {
                           })
                         }
                       >
-                        <div>Quorum {proposal.quorumVotes}</div>
+                        <div>
+                          {quorumVotes != null && <>Quorum {quorumVotes}</>}
+                        </div>
                         <div>
                           {hasVotingEnded ? (
                             <>
