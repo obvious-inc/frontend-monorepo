@@ -12,9 +12,12 @@ import { infuraProvider } from "wagmi/providers/infura";
 import { publicProvider } from "wagmi/providers/public";
 import { InjectedConnector } from "wagmi/connectors/injected";
 import { WalletConnectConnector } from "wagmi/connectors/walletConnect";
+import { ChannelCacheContextProvider } from "./hooks/channel.js";
+import { Analytics as VercelAnalytics } from "@vercel/analytics/react";
 import "./reset.css";
 import "./index.css";
-import { ChannelCacheContextProvider } from "./hooks/channel.js";
+
+const isProduction = process.env.NODE_ENV === "production";
 
 const LazyApp = React.lazy(() => import("./app"));
 
@@ -60,6 +63,7 @@ createRoot(document.getElementById("app-mount")).render(
         <ChannelCacheContextProvider>
           <CacheStoreProvider syncStorage={cacheStoreStorage}>
             <App />
+            {isProduction && <VercelAnalytics />}
           </CacheStoreProvider>
         </ChannelCacheContextProvider>
       </ChainDataCacheContextProvider>
