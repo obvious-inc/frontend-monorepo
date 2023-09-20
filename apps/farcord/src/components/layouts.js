@@ -142,14 +142,20 @@ export const ChannelItem = ({ channel, expandable }) => {
             overflow: "hidden",
             textOverflow: "ellipsis",
           })}
-          style={
-            {
-              // color: theme.colors.textNormal,
-              // fontWeight: theme.text.weights.emphasis,
-            }
-          }
+          style={{
+            display: "grid",
+            gridTemplateColumns: "1fr auto",
+            gridGap: "0.4rem",
+          }}
         >
-          {channel.name} <span>({channel.followerCount})</span>
+          <p>{channel.name}</p>
+          <p
+            css={(t) =>
+              css({ color: t.colors.textMuted, fontSize: t.fontSizes.tiny })
+            }
+          >
+            {channel.followerCount}
+          </p>
         </div>
       }
       subtitle={<div>{channel.description}</div>}
