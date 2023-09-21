@@ -56,6 +56,7 @@ const wagmiConfig = createWagmiConfig({
       },
     }),
     new CoinbaseWalletConnector({
+      chains,
       options: {
         appName: "Farcord",
       },
