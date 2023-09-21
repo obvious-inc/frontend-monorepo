@@ -34,7 +34,11 @@ import {
   usePriorVotes,
   useDynamicQuorum,
 } from "../hooks/dao.js";
-import { useDelegate, extractSlugFromCandidateId } from "../hooks/prechain.js";
+import {
+  useDelegate,
+  useProposalCandidate,
+  extractSlugFromCandidateId,
+} from "../hooks/prechain.js";
 import useApproximateBlockTimestampCalculator from "../hooks/approximate-block-timestamp-calculator.js";
 import { useWallet } from "../hooks/wallet.js";
 import { Tag } from "./browse-screen.js";
@@ -996,197 +1000,6 @@ const NavBar = ({ navigationStack, actions }) => {
 };
 
 export const ActivityFeed = ({ isolated, items = [], spacing = "1.6rem" }) => {
-  const ContextLink = ({ proposalId, candidateId, truncate }) => {
-    if (proposalId != null)
-      return (
-        <RouterLink to={`/proposals/${proposalId}`}>
-          Prop {proposalId}
-        </RouterLink>
-      );
-
-    if (candidateId != null) {
-      const slug = extractSlugFromCandidateId(candidateId);
-      const title =
-        truncate && slug.length > 50 ? `${slug.slice(0, 50)}...` : slug;
-      return <RouterLink to={`/candidates/${candidateId}`}>{title}</RouterLink>;
-    }
-
-    throw new Error();
-  };
-
-  const renderTitle = (item) => {
-    const accountName = (
-      <AccountPreviewPopoverTrigger accountAddress={item.authorAccount} />
-    );
-
-    switch (item.type) {
-      case "signature":
-        return accountName;
-
-      case "event": {
-        switch (item.eventType) {
-          case "proposal-created":
-            return (
-              <span css={(t) => css({ color: t.colors.textDimmed })}>
-                {isolated ? "Proposal" : <ContextLink {...item} />} created
-                {item.authorAccount != null && (
-                  <>
-                    {" "}
-                    by{" "}
-                    <AccountPreviewPopoverTrigger
-                      showAvatar
-                      accountAddress={item.authorAccount}
-                    />
-                  </>
-                )}
-                {item.timestamp != null && (
-                  <>
-                    {" "}
-                    on{" "}
-                    <FormattedDateWithTooltip
-                      capitalize={false}
-                      value={item.timestamp}
-                      disableRelative
-                      month={isolated ? "long" : "short"}
-                      day="numeric"
-                    />
-                  </>
-                )}
-              </span>
-            );
-
-          case "candidate-created": {
-            return (
-              <span css={(t) => css({ color: t.colors.textDimmed })}>
-                {isolated ? (
-                  "Candidate"
-                ) : (
-                  <>
-                    Candidate <ContextLink truncate {...item} />
-                  </>
-                )}{" "}
-                created
-                {item.authorAccount != null && (
-                  <>
-                    {" "}
-                    by{" "}
-                    <AccountPreviewPopoverTrigger
-                      showAvatar
-                      accountAddress={item.authorAccount}
-                    />
-                  </>
-                )}
-                {item.timestamp != null && (
-                  <>
-                    {" "}
-                    on{" "}
-                    <FormattedDateWithTooltip
-                      capitalize={false}
-                      value={item.timestamp}
-                      disableRelative
-                      month={isolated ? "long" : "short"}
-                      day="numeric"
-                    />
-                  </>
-                )}
-              </span>
-            );
-          }
-
-          case "proposal-started":
-          case "proposal-ended":
-            return (
-              <span
-                css={(t) =>
-                  css({
-                    color: t.colors.textDimmed,
-                  })
-                }
-              >
-                Voting{" "}
-                {!isolated && (
-                  <>
-                    for <ContextLink {...item} />
-                  </>
-                )}{" "}
-                {item.eventType === "end" ? "ended" : "started"}{" "}
-                {item.timestamp != null && (
-                  <>
-                    on{" "}
-                    <FormattedDateWithTooltip
-                      capitalize={false}
-                      value={item.timestamp}
-                      disableRelative
-                      month={isolated ? "long" : "short"}
-                      day="numeric"
-                      hour="numeric"
-                      minute="numeric"
-                    />
-                  </>
-                )}
-              </span>
-            );
-
-          case "proposal-objection-period-started":
-            return (
-              <span
-                css={(t) =>
-                  css({
-                    color: t.colors.textDimmed,
-                  })
-                }
-              >
-                {isolated ? "Proposal" : <ContextLink {...item} />} entered
-                objection period
-              </span>
-            );
-
-          default:
-            throw new Error(`Unknown event "${item.eventType}"`);
-        }
-      }
-
-      case "vote":
-      case "feedback-post": {
-        const signalWord = item.type === "vote" ? "voted" : "signaled";
-        return (
-          <span data-nowrap>
-            {accountName}{" "}
-            <span
-              css={(t) =>
-                css({
-                  color:
-                    item.support === 0
-                      ? t.colors.textNegative
-                      : item.support === 1
-                      ? t.colors.textPositive
-                      : t.colors.textDimmed,
-                  fontWeight: t.text.weights.emphasis,
-                })
-              }
-            >
-              {item.support === 0
-                ? `${signalWord} against`
-                : item.support === 1
-                ? `${signalWord} for`
-                : item.type === "vote"
-                ? "abstained"
-                : isolated
-                ? null
-                : "commented on"}
-            </span>
-            {!isolated && (
-              <>
-                {" "}
-                <ContextLink {...item} />
-              </>
-            )}
-          </span>
-        );
-      }
-    }
-  };
-
   return (
     <ul
       css={(t) =>
@@ -1288,7 +1101,7 @@ export const ActivityFeed = ({ isolated, items = [], spacing = "1.6rem" }) => {
                     textOverflow: "ellipsis",
                   })}
                 >
-                  {renderTitle(item)}
+                  <ActivityFeedItemTitle item={item} isolated={isolated} />
                 </div>
                 {item.voteCount != null && (
                   <Tooltip.Root>
@@ -1363,6 +1176,213 @@ export const ActivityFeed = ({ isolated, items = [], spacing = "1.6rem" }) => {
   );
 };
 
+const ActivityFeedItemTitle = ({ item, isolated }) => {
+  const proposal = useProposal(item.proposalId);
+  const candidate = useProposalCandidate(item.candidateId);
+
+  const truncatedLength = 30;
+
+  const truncateTitle = (s) =>
+    s.length <= truncatedLength
+      ? s
+      : `${s.slice(0, truncatedLength).trim()}...`;
+
+  const ContextLink = ({ proposalId, candidateId, truncate }) => {
+    if (proposalId != null)
+      return (
+        <RouterLink to={`/proposals/${proposalId}`}>
+          {proposal?.title == null
+            ? `Prop ${proposalId} `
+            : `${truncateTitle(proposal.title)} (Prop ${proposalId})`}
+        </RouterLink>
+      );
+
+    if (candidateId != null) {
+      const title =
+        candidate?.latestVersion?.content.title ??
+        extractSlugFromCandidateId(candidateId);
+      return (
+        <RouterLink to={`/candidates/${candidateId}`}>
+          {truncate ? truncateTitle(title) : title}
+        </RouterLink>
+      );
+    }
+
+    throw new Error();
+  };
+
+  const accountName = (
+    <AccountPreviewPopoverTrigger accountAddress={item.authorAccount} />
+  );
+
+  switch (item.type) {
+    case "signature":
+      return accountName;
+
+    case "event": {
+      switch (item.eventType) {
+        case "proposal-created":
+          return (
+            <span css={(t) => css({ color: t.colors.textDimmed })}>
+              {isolated ? "Proposal" : <ContextLink {...item} />} created
+              {item.authorAccount != null && (
+                <>
+                  {" "}
+                  by{" "}
+                  <AccountPreviewPopoverTrigger
+                    showAvatar
+                    accountAddress={item.authorAccount}
+                  />
+                </>
+              )}
+              {item.timestamp != null && (
+                <>
+                  {" "}
+                  on{" "}
+                  <FormattedDateWithTooltip
+                    capitalize={false}
+                    value={item.timestamp}
+                    disableRelative
+                    month={isolated ? "long" : "short"}
+                    day="numeric"
+                  />
+                </>
+              )}
+            </span>
+          );
+
+        case "candidate-created": {
+          return (
+            <span css={(t) => css({ color: t.colors.textDimmed })}>
+              {isolated ? (
+                "Candidate"
+              ) : (
+                <>
+                  Candidate <ContextLink truncate {...item} />
+                </>
+              )}{" "}
+              created
+              {item.authorAccount != null && (
+                <>
+                  {" "}
+                  by{" "}
+                  <AccountPreviewPopoverTrigger
+                    showAvatar
+                    accountAddress={item.authorAccount}
+                  />
+                </>
+              )}
+              {item.timestamp != null && (
+                <>
+                  {" "}
+                  on{" "}
+                  <FormattedDateWithTooltip
+                    capitalize={false}
+                    value={item.timestamp}
+                    disableRelative
+                    month={isolated ? "long" : "short"}
+                    day="numeric"
+                  />
+                </>
+              )}
+            </span>
+          );
+        }
+
+        case "proposal-started":
+        case "proposal-ended":
+          return (
+            <span
+              css={(t) =>
+                css({
+                  color: t.colors.textDimmed,
+                })
+              }
+            >
+              Voting{" "}
+              {!isolated && (
+                <>
+                  for <ContextLink {...item} />
+                </>
+              )}{" "}
+              {item.eventType === "end" ? "ended" : "started"}{" "}
+              {item.timestamp != null && (
+                <>
+                  on{" "}
+                  <FormattedDateWithTooltip
+                    capitalize={false}
+                    value={item.timestamp}
+                    disableRelative
+                    month={isolated ? "long" : "short"}
+                    day="numeric"
+                    hour="numeric"
+                    minute="numeric"
+                  />
+                </>
+              )}
+            </span>
+          );
+
+        case "proposal-objection-period-started":
+          return (
+            <span
+              css={(t) =>
+                css({
+                  color: t.colors.textDimmed,
+                })
+              }
+            >
+              {isolated ? "Proposal" : <ContextLink {...item} />} entered
+              objection period
+            </span>
+          );
+
+        default:
+          throw new Error(`Unknown event "${item.eventType}"`);
+      }
+    }
+
+    case "vote":
+    case "feedback-post": {
+      const signalWord = item.type === "vote" ? "voted" : "signaled";
+      return (
+        <span data-nowrap>
+          {accountName}{" "}
+          <span
+            css={(t) =>
+              css({
+                color:
+                  item.support === 0
+                    ? t.colors.textNegative
+                    : item.support === 1
+                    ? t.colors.textPositive
+                    : t.colors.textDimmed,
+                fontWeight: t.text.weights.emphasis,
+              })
+            }
+          >
+            {item.support === 0
+              ? `${signalWord} against`
+              : item.support === 1
+              ? `${signalWord} for`
+              : item.type === "vote"
+              ? "abstained"
+              : isolated
+              ? null
+              : "commented on"}
+          </span>
+          {!isolated && (
+            <>
+              {" "}
+              <ContextLink {...item} />
+            </>
+          )}
+        </span>
+      );
+    }
+  }
+};
+
 export const MainContentContainer = ({
   sidebar = null,
   narrow = false,
@@ -1396,7 +1416,7 @@ export const MainContentContainer = ({
           css({
             "@media (min-width: 952px)": {
               display: "grid",
-              gridTemplateColumns: `minmax(0,1fr) ${t.sidebarWidth}`,
+              gridTemplateColumns: `minmax(0, 1fr) ${t.sidebarWidth} `,
               gridGap: "8rem",
               "[data-sidebar-content]": {
                 position: "sticky",
@@ -1486,7 +1506,7 @@ export const ProposalLikeContent = ({
         )}
       </div>
 
-      <RichText markdownText={description} />
+      {description != null && <RichText markdownText={description} />}
     </div>
   );
 };
@@ -1669,7 +1689,7 @@ const ProposalScreen = () => {
         navigationStack={[
           { to: "/?tab=proposals", label: "Proposals" },
           {
-            to: `/${proposalId}`,
+            to: `/ ${proposalId} `,
             label: (
               <>
                 Proposal #{proposalId}
@@ -1833,7 +1853,7 @@ export const VotingBar = ({
 
         const signal = getSignal();
 
-        return <div data-vote={signal} key={`${i}-${signal}`} />;
+        return <div data-vote={signal} key={`${i} -${signal} `} />;
       })}
     </div>
   );

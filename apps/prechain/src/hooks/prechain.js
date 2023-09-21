@@ -442,14 +442,14 @@ const mergeProposalCandidates = (p1, p2) => {
 
   const mergedCandidate = { ...p1, ...p2 };
 
-  if (p1?.latestVersion == null || p2?.latestVersion == null)
-    return mergedCandidate;
-
   if (p1.feedbackPosts != null && p2.feedbackPosts != null)
     mergedCandidate.feedbackPosts = arrayUtils.unique(
       (p1, p2) => p1.id === p2.id,
       [...p1.feedbackPosts, ...p2.feedbackPosts]
     );
+
+  if (p1?.latestVersion == null || p2?.latestVersion == null)
+    return mergedCandidate;
 
   mergedCandidate.latestVersion = { ...p1.latestVersion, ...p2.latestVersion };
 
@@ -755,6 +755,7 @@ export const useProposalCandidate = (id) => {
   const {
     state: { proposalCandidatesById },
   } = React.useContext(ChainDataCacheContext);
+  if (id == null) return null;
   return proposalCandidatesById[id.toLowerCase()];
 };
 

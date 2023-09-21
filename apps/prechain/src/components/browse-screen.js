@@ -483,7 +483,7 @@ const FeedSidebar = React.memo(() => {
                 latestBlockNumber - BigInt(APPROXIMATE_BLOCKS_PER_DAY * 3) - 1n,
             }),
           ]),
-    [(latestBlockNumber, fetchNounsActivity)]
+    [latestBlockNumber, fetchNounsActivity]
   );
 
   if (visibleItems.length === 0) return null;
