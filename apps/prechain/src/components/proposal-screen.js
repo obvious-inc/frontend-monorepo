@@ -69,6 +69,7 @@ export const buildProposalFeed = (
   }
 ) => {
   if (proposal == null) return [];
+  console.log(proposal);
 
   const createdEventItem = {
     type: "event",
@@ -697,6 +698,7 @@ export const ProposalActionForm = ({
                     width="15rem"
                     variant="default"
                     size="default"
+                    multiline={false}
                     value={support}
                     onChange={(value) => {
                       setSupport(value);

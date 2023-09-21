@@ -110,7 +110,7 @@ const BrowseScreen = () => {
 
   const { address: connectedWalletAccountAddress } = useWallet();
 
-  const proposals = useProposals();
+  const proposals = useProposals({ state: true });
   const proposalCandidates = useProposalCandidates();
   const { items: proposalDrafts } = useDrafts();
 
@@ -568,7 +568,7 @@ const ProposalItem = React.memo(({ proposalId }) => {
   );
 });
 
-const PropStatusText = ({ proposalId }) => {
+const PropStatusText = React.memo(({ proposalId }) => {
   const proposal = useProposal(proposalId);
 
   const calculateBlockTimestamp = useApproximateBlockTimestampCalculator();
@@ -665,7 +665,7 @@ const PropStatusText = ({ proposalId }) => {
     default:
       return null;
   }
-};
+});
 
 const PropTagWithStatusText = ({ proposalId }) => {
   const statusText = <PropStatusText proposalId={proposalId} />;
@@ -771,7 +771,7 @@ const ProposalCandidateItem = React.memo(({ candidateId }) => {
   return (
     <RouterLink to={`/candidates/${encodeURIComponent(candidateId)}`}>
       <Avatar
-        signature={candidate.slug}
+        signature={candidate.slug.split("-")[0]}
         signatureLength={2}
         size="3.2rem"
         data-desktop-only
