@@ -378,7 +378,6 @@ const AuthScreen = () => {
                   (connector) =>
                     connector.ready && (
                       <Button
-                        variant="primary"
                         disabled={!connector.ready}
                         key={connector.id}
                         onClick={() => connect({ connector })}

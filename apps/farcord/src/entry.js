@@ -12,8 +12,10 @@ import { infuraProvider } from "wagmi/providers/infura";
 import { publicProvider } from "wagmi/providers/public";
 import { InjectedConnector } from "wagmi/connectors/injected";
 import { WalletConnectConnector } from "wagmi/connectors/walletConnect";
+import { CoinbaseWalletConnector } from "@wagmi/core/connectors/coinbaseWallet";
 import { ChannelCacheContextProvider } from "./hooks/channel.js";
 import { Analytics as VercelAnalytics } from "@vercel/analytics/react";
+
 import "./reset.css";
 import "./index.css";
 
@@ -51,6 +53,11 @@ const wagmiConfig = createWagmiConfig({
       chains,
       options: {
         projectId: process.env.WALLET_CONNECT_PROJECT_ID,
+      },
+    }),
+    new CoinbaseWalletConnector({
+      options: {
+        appName: "Farcord",
       },
     }),
   ],
