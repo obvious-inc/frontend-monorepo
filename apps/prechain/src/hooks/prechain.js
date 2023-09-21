@@ -22,7 +22,10 @@ import {
   array as arrayUtils,
   object as objectUtils,
 } from "@shades/common/utils";
-import { parse as parseTransactions } from "../utils/transactions.js";
+import {
+  parse as parseTransactions,
+  unparse as unparseTransactions,
+} from "../utils/transactions.js";
 
 const { indexBy, sortBy } = arrayUtils;
 
@@ -816,19 +819,11 @@ export const useCreateProposalCandidate = ({ enabled = true } = {}) => {
     enabled: enabled && createCost != null,
   });
 
-  return ({
-    slug,
-    description,
-    // Target addresses
-    targets = ["0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266"],
-    // Values
-    values = ["0"],
-    // Function signatures
-    signatures = [""],
-    // Calldatas
-    calldatas = ["0x"],
-  }) =>
-    writeAsync({
+  return async ({ slug, description, transactions }) => {
+    const { targets, values, signatures, calldatas } =
+      unparseTransactions(transactions);
+
+    return writeAsync({
       args: [targets, values, signatures, calldatas, description, slug, 0],
     })
       .then(({ hash }) => publicClient.waitForTransactionReceipt({ hash }))
@@ -843,6 +838,7 @@ export const useCreateProposalCandidate = ({ enabled = true } = {}) => {
         });
         return decodedEvent.args;
       });
+  };
 };
 
 export const useProposalCandidateCreateCost = () => {
@@ -873,11 +869,17 @@ export const useProposalCandidateUpdateCost = () => {
   return data;
 };
 
-export const useUpdateProposalCandidate = (slug, { description, reason }) => {
+export const useUpdateProposalCandidate = (
+  slug,
+  { description, reason, transactions }
+) => {
   const publicClient = usePublicClient();
   const chainId = useChainId();
 
   const updateCost = useProposalCandidateUpdateCost();
+
+  const { targets, values, signatures, calldatas } =
+    unparseTransactions(transactions);
 
   const { config } = usePrepareContractWrite({
     address: contractAddressesByChainId[chainId].data,
@@ -886,14 +888,10 @@ export const useUpdateProposalCandidate = (slug, { description, reason }) => {
     ]),
     functionName: "updateProposalCandidate",
     args: [
-      // Target addresses
-      ["0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266"],
-      // Values
-      ["0"],
-      // Function signatures
-      [""],
-      // Calldatas
-      ["0x"],
+      targets,
+      values,
+      signatures,
+      calldatas,
       description,
       slug,
       0,

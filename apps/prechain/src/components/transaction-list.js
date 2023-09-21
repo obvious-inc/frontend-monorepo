@@ -200,7 +200,7 @@ const ListItem = ({ transaction }) => {
     }
   };
 
-  const explanation = <TransactionExplanation parsedTransaction={t} />;
+  const explanation = <TransactionExplanation transaction={t} />;
 
   return (
     <>
@@ -359,7 +359,7 @@ const ListItem = ({ transaction }) => {
   );
 };
 
-const TransactionExplanation = ({ parsedTransaction: t }) => {
+export const TransactionExplanation = ({ transaction: t }) => {
   switch (t.type) {
     case "transfer":
       return (
@@ -571,7 +571,9 @@ export const FormattedEthWithConditionalTooltip = ({
 
   return (
     <Tooltip.Root>
-      <Tooltip.Trigger>{trimmedEthString} ETH</Tooltip.Trigger>
+      <Tooltip.Trigger asChild>
+        <span role="button">{trimmedEthString} ETH</span>
+      </Tooltip.Trigger>
       <Tooltip.Content side="top" sideOffset={6}>
         {ethString} {tokenSymbol}
       </Tooltip.Content>

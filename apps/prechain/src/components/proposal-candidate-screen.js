@@ -816,6 +816,7 @@ const ProposalCandidateEditDialog = ({ candidateId, titleProps, dismiss }) => {
   const updateProposalCandidate = useUpdateProposalCandidate(candidate.slug, {
     description: description?.trim() ?? "",
     reason: reason.trim(),
+    transactions: candidate.latestVersion.content.transactions,
   });
   const cancelProposalCandidate = useCancelProposalCandidate(candidate.slug);
 

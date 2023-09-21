@@ -131,6 +131,28 @@ export const parse = (data) => {
   });
 };
 
+export const unparse = (transactions) =>
+  transactions.reduce(
+    (acc, t) => {
+      switch (t.type) {
+        case "transfer": {
+          return {
+            targets: [...acc.targets, t.target],
+            values: [...acc.values, t.value],
+            signatures: [...acc.values, ""],
+            calldatas: [...acc.values, "0x"],
+          };
+        }
+
+        // TODO
+
+        default:
+          throw new Error();
+      }
+    },
+    { targets: [], values: [], signatures: [], calldatas: [] }
+  );
+
 export const extractAmounts = (parsedTransactions) => {
   const ethTransfers = parsedTransactions.filter((t) => t.type === "transfer");
   const payableFunctionCalls = parsedTransactions.filter(

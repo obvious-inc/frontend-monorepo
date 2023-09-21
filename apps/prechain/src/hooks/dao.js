@@ -18,6 +18,7 @@ import {
   contractAddressesByChainId,
   useChainId,
 } from "./prechain.js";
+import { unparse as unparseTransactions } from "../utils/transactions.js";
 
 const EXECUTION_GRACE_PERIOD_IN_MILLIS = 1000 * 60 * 60 * 24 * 21; // 21 days
 
@@ -278,18 +279,11 @@ export const useCreateProposal = ({ enabled = true } = {}) => {
     enabled,
   });
 
-  return ({
-    description,
-    // Target addresses
-    targets = ["0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266"],
-    // Values
-    values = ["0"],
-    // Function signatures
-    signatures = [""],
-    // Calldatas
-    calldatas = ["0x"],
-  }) =>
-    writeAsync({
+  return async ({ description, transactions }) => {
+    const { targets, values, signatures, calldatas } =
+      unparseTransactions(transactions);
+
+    return writeAsync({
       args: [targets, values, signatures, calldatas, description],
     })
       .then(({ hash }) => publicClient.waitForTransactionReceipt({ hash }))
@@ -304,6 +298,7 @@ export const useCreateProposal = ({ enabled = true } = {}) => {
         });
         return decodedEvent.args;
       });
+  };
 };
 
 export const useCancelProposal = (proposalId) => {

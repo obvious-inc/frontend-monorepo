@@ -1,5 +1,6 @@
 import datesDifferenceInDays from "date-fns/differenceInCalendarDays";
 import React from "react";
+import { useLocation } from "react-router-dom";
 import va from "@vercel/analytics";
 import { formatUnits } from "viem";
 import { useBlockNumber } from "wagmi";
@@ -849,6 +850,8 @@ const ProposalDialog = ({
 };
 
 const NavBar = ({ navigationStack, actions }) => {
+  const location = useLocation();
+
   const {
     address: connectedWalletAccountAddress,
     requestAccess: requestWalletAccess,
@@ -883,7 +886,22 @@ const NavBar = ({ navigationStack, actions }) => {
         {[
           {
             to: "/",
-            label: <LogoSymbol style={{ width: "2.4rem", height: "auto" }} />,
+            label: (
+              <>
+                <LogoSymbol
+                  style={{
+                    display: "inline-block",
+                    width: "2rem",
+                    height: "auto",
+                    verticalAlign: "sub",
+                    transform: "translateY(0.1rem)",
+                  }}
+                />
+                {location.pathname !== "/" && (
+                  <span style={{ marginLeft: "0.6rem" }}>Home</span>
+                )}
+              </>
+            ),
           },
           ...navigationStack,
         ].map((item, index) => (
@@ -902,16 +920,15 @@ const NavBar = ({ navigationStack, actions }) => {
             )}
             <RouterLink
               to={item.to}
+              data-disabled={location.pathname === item.to}
               css={(t) =>
                 css({
-                  display: "inline-flex",
-                  alignItems: "center",
-                  height: "2.7rem",
                   fontSize: t.fontSizes.base,
                   color: t.colors.textNormal,
                   padding: "0.3rem 0.5rem",
                   borderRadius: "0.2rem",
                   textDecoration: "none",
+                  '&[data-disabled="true"]': { pointerEvents: "none" },
                   "@media(hover: hover)": {
                     cursor: "pointer",
                     ":hover": {
@@ -1474,7 +1491,6 @@ export const ProposalLikeContent = ({
           css({
             color: t.colors.textDimmed,
             fontSize: t.text.sizes.base,
-            margin: "0 0 4.8rem",
           })
         }
         style={{
@@ -1666,9 +1682,9 @@ const ProposalScreen = () => {
 
   const isDialogOpen = searchParams.get("proposal-dialog") != null;
 
-  const openDialog = React.useCallback(() => {
-    setSearchParams({ "proposal-dialog": 1 });
-  }, [setSearchParams]);
+  // const openDialog = React.useCallback(() => {
+  //   setSearchParams({ "proposal-dialog": 1 });
+  // }, [setSearchParams]);
 
   const closeDialog = React.useCallback(() => {
     setSearchParams((params) => {
@@ -1695,7 +1711,7 @@ const ProposalScreen = () => {
         navigationStack={[
           { to: "/?tab=proposals", label: "Proposals" },
           {
-            to: `/ ${proposalId} `,
+            to: `/proposals/${proposalId} `,
             label: (
               <>
                 Proposal #{proposalId}
@@ -1710,7 +1726,7 @@ const ProposalScreen = () => {
         ]}
         actions={
           isProposer && proposal?.state === "updatable"
-            ? [{ onSelect: openDialog, label: "Edit proposal" }]
+            ? [] // [{ onSelect: openDialog, label: "Edit proposal" }]
             : []
         }
       >

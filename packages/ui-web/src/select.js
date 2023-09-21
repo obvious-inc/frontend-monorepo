@@ -22,6 +22,7 @@ const Select = React.forwardRef(
       size = "default",
       align = "left",
       width,
+      fullWidth = true,
       ...props
     },
     forwardedRef
@@ -82,7 +83,7 @@ const Select = React.forwardRef(
         >
           <Popover.Trigger asButtonChild {...triggerProps}>
             <Button
-              fullWidth
+              fullWidth={fullWidth}
               multiline
               size={size}
               variant={variant}

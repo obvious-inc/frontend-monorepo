@@ -16,6 +16,7 @@ const createEmptyItem = () => ({
   id: String(Date.now()),
   name: "",
   body: [createEmptyParagraphElement()],
+  transactions: [],
 });
 
 export const useCollection = () => {
@@ -68,6 +69,14 @@ export const useSingleItem = (id) => {
       }),
     [id, setEntries]
   );
+  const setTransactions = React.useCallback(
+    (transactions) =>
+      setEntries((entriesById) => {
+        const item = entriesById[id];
+        return { ...entriesById, [item.id]: { ...item, transactions } };
+      }),
+    [id, setEntries]
+  );
 
-  return [item, { setName, setBody }];
+  return [item, { setName, setBody, setTransactions }];
 };
