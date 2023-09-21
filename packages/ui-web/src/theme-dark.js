@@ -22,6 +22,7 @@ const backgroundNormal = "hsl(0 0% 13%)";
 const backgroundDark = "hsl(0 0% 10%)";
 const backgroundLight = "hsl(0 0% 15%)";
 const backgroundLighter = "hsl(0 0% 17%)";
+const backgroundLightest = "hsl(0 0% 23%)";
 
 const backgroundModifierLighter = "hsl(0 0% 100% / 1.5%)";
 const backgroundModifierHover = "hsl(0 0% 100% / 5.5%)";
@@ -125,6 +126,7 @@ export default {
     backgroundPrimary: backgroundDark,
     backgroundSecondary: backgroundNormal,
     backgroundTertiary: backgroundLight,
+    backgroundQuarternary: backgroundLightest,
     dialogBackground: backgroundNormal,
     popoverBackground: backgroundLight,
     backgroundTooltip: backgroundLighter,
