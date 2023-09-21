@@ -109,6 +109,12 @@ export const buildProposalFeed = (
 
   const items = [...feedbackPostItems, ...voteItems, createdEventItem];
 
+  if (proposal.state === "canceled")
+    return arrayUtils.sortBy(
+      { value: (i) => i.blockNumber, order: "desc" },
+      items
+    );
+
   if (latestBlockNumber > proposal.startBlock) {
     items.push({
       type: "event",
