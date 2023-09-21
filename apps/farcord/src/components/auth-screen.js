@@ -14,6 +14,7 @@ import { fetchCustodyAddressByUsername, useNeynarUser } from "../hooks/neynar";
 import useSigner from "./signer";
 import { DEFAULT_CHAIN_ID, useWalletFarcasterId } from "../hooks/farcord";
 import { useSignerByPublicKey } from "../hooks/hub";
+import { useConnect } from "wagmi";
 
 const { truncateAddress } = ethereumUtils;
 
@@ -88,15 +89,22 @@ const AuthScreen = () => {
   const [custodyWalletAddress, setCustodyWalletAddress] = React.useState("");
 
   const {
-    connect: connectWallet,
     cancel: cancelWalletConnectionAttempt,
     canConnect: canConnectWallet,
     accountAddress,
     accountEnsName,
     chain,
     isConnecting,
-    error: walletError,
+    // error: walletError,
   } = useWallet();
+
+  const {
+    connect,
+    connectors,
+    error: walletError,
+    isLoading,
+    pendingConnector,
+  } = useConnect();
 
   const { error: loginError } = useWalletLogin();
 
@@ -356,7 +364,7 @@ const AuthScreen = () => {
               <div
                 css={css({
                   display: "grid",
-                  gridAutoFlow: "row",
+                  gridAutoFlow: "column",
                   gridAutoColumns: "auto",
                   gridGap: "2rem",
                   justifyContent: "center",
@@ -365,20 +373,21 @@ const AuthScreen = () => {
                     gridAutoColumns: "minmax(0,1fr)",
                   },
                 })}
-                style={{
-                  display: "block",
-                }}
               >
-                <Button
-                  variant="primary"
-                  size="larger"
-                  disabled={!canConnectWallet}
-                  onClick={() => {
-                    connectWallet();
-                  }}
-                >
-                  Connect wallet
-                </Button>
+                {connectors.map((connector) => (
+                  <Button
+                    variant="primary"
+                    disabled={!connector.ready}
+                    key={connector.id}
+                    onClick={() => connect({ connector })}
+                  >
+                    {connector.name}
+                    {!connector.ready && " (unsupported)"}
+                    {isLoading &&
+                      connector.id === pendingConnector?.id &&
+                      " (connecting)"}
+                  </Button>
+                ))}
               </div>
               {custodyWalletAddress ? (
                 <>

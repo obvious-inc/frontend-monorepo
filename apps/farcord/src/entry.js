@@ -46,7 +46,7 @@ const wagmiConfig = createWagmiConfig({
   autoConnect: true,
   publicClient,
   connectors: [
-    // new InjectedConnector({ chains }),
+    new InjectedConnector({ chains }),
     new WalletConnectConnector({
       chains,
       options: {

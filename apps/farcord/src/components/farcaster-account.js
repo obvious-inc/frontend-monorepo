@@ -89,7 +89,7 @@ const FarcasterAccount = () => {
           })
         }
       >
-        {!walletAccountAddress ? (
+        {!walletAccountAddress || fid == 0 ? (
           <Button
             size="small"
             variant="default"
