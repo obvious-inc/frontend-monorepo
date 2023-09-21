@@ -374,20 +374,23 @@ const AuthScreen = () => {
                   },
                 })}
               >
-                {connectors.map((connector) => (
-                  <Button
-                    variant="primary"
-                    disabled={!connector.ready}
-                    key={connector.id}
-                    onClick={() => connect({ connector })}
-                  >
-                    {connector.name}
-                    {!connector.ready && " (unsupported)"}
-                    {isLoading &&
-                      connector.id === pendingConnector?.id &&
-                      " (connecting)"}
-                  </Button>
-                ))}
+                {connectors.map(
+                  (connector) =>
+                    connector.ready && (
+                      <Button
+                        variant="primary"
+                        disabled={!connector.ready}
+                        key={connector.id}
+                        onClick={() => connect({ connector })}
+                      >
+                        {connector.name}
+                        {!connector.ready && " (unsupported)"}
+                        {isLoading &&
+                          connector.id === pendingConnector?.id &&
+                          " (connecting)"}
+                      </Button>
+                    )
+                )}
               </div>
               {custodyWalletAddress ? (
                 <>
