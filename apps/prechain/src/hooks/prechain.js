@@ -25,7 +25,6 @@ import {
 import { parse as parseTransactions } from "../utils/transactions.js";
 
 const { indexBy, sortBy } = arrayUtils;
-const { mapValues } = objectUtils;
 
 export const contractAddressesByChainId = {
   1: {
@@ -40,9 +39,13 @@ export const contractAddressesByChainId = {
   },
 };
 
+const betaSubgraph =
+  new URLSearchParams(location.search).get("beta-subgraph") != null;
+
 const subgraphEndpointByChainId = {
-  1: "https://api.thegraph.com/subgraphs/name/nounsdao/nouns-subgraph",
-  // 1: "https://api.studio.thegraph.com/query/49498/nouns-v3-mainnet/version/latest",
+  1: betaSubgraph
+    ? "https://api.studio.thegraph.com/query/49498/nouns-v3-mainnet/version/latest"
+    : "https://api.thegraph.com/subgraphs/name/nounsdao/nouns-subgraph",
   11155111:
     "https://api.studio.thegraph.com/proxy/49498/nouns-v3-sepolia/version/latest",
 };
