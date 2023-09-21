@@ -517,6 +517,28 @@ const ProposalCandidateScreenContent = ({ candidateId }) => {
             },
           })}
         >
+          {candidate.latestVersion.proposalId != null && (
+            <Callout
+              css={(t) =>
+                css({
+                  marginBottom: "4.8rem",
+                  a: {
+                    color: t.colors.link,
+                    "@media(hover: hover)": {
+                      color: t.colors.linkModifierHover,
+                    },
+                  },
+                })
+              }
+            >
+              This candidate has been proposed onchain.{" "}
+              <RouterLink
+                to={`/proposals/${candidate.latestVersion.proposalId}`}
+              >
+                View the proposal here
+              </RouterLink>
+            </Callout>
+          )}
           <ProposalLikeContent
             title={candidate.latestVersion.content.title}
             description={descriptionWithoutTitle}
