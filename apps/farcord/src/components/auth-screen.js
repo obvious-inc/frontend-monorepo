@@ -679,6 +679,10 @@ const AuthScreen = () => {
                 </Button>
               </div>
 
+              <p style={{ marginTop: "2rem" }}>
+                Revoking the signer will remove all casts sent using Farcord.
+              </p>
+
               <Small
                 css={css({
                   width: "40rem",
@@ -688,8 +692,9 @@ const AuthScreen = () => {
                 })}
               >
                 <p>
-                  Revoking a signer will require an onchain transaction to
-                  remove the key and propagate to the remaining hubs.
+                  To revoke the signer, you will be required to submit an
+                  onchain transaction to remove the key and propagate to the
+                  remaining hubs.
                 </p>
 
                 <p>
