@@ -1,22 +1,34 @@
 import React from "react";
 import { Global, ThemeProvider, css } from "@emotion/react";
-import { Routes, Route, BrowserRouter, Navigate } from "react-router-dom";
+import { Routes, Route, BrowserRouter } from "react-router-dom";
 import { EmojiProvider } from "@shades/common/app";
-import { light as lightTeme, dark as darkTheme } from "@shades/ui-web/theme";
+import { dark as darkTheme, light as lightTheme } from "@shades/ui-web/theme";
 import * as Tooltip from "@shades/ui-web/tooltip";
 import { Provider as SidebarProvider } from "@shades/ui-web/sidebar-layout";
 import { Provider as SignerProvider } from "./components/signer.js";
+import { useMatchMedia } from "@shades/common/react";
 
-const customTheme = { ...lightTeme, sidebarWidth: "28rem" };
 const ChannelScreen = React.lazy(() =>
   import("./components/channel-screen.js")
 );
 
+const useTheme = () => {
+  const systemPrefersDarkTheme = useMatchMedia("(prefers-color-scheme: dark)");
+
+  const theme = React.useMemo(() => {
+    return systemPrefersDarkTheme ? darkTheme : lightTheme;
+  }, [systemPrefersDarkTheme]);
+
+  return theme;
+};
+
 const App = () => {
+  const theme = useTheme();
+
   return (
     <>
       <BrowserRouter>
-        <ThemeProvider theme={customTheme}>
+        <ThemeProvider theme={theme}>
           <SignerProvider>
             <EmojiProvider
               loader={() =>
