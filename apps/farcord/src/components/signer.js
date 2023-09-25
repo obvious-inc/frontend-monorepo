@@ -72,9 +72,6 @@ export const Provider = ({ children }) => {
   const [error, setError] = React.useState(null);
   const [status, setStatus] = React.useState("idle");
 
-  // backwards-compatible:
-  // if there's connected wallet, and locally stored signer, use that
-
   const { fid, address } = useFarcasterAccount();
   const cacheKey = createCacheKey(address ?? fid?.toString());
   const [signer, setCachedSigner] = useCachedState(cacheKey);
