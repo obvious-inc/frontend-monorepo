@@ -4,10 +4,17 @@ import WarpcastAuthScreen from "./warpcast-screen.js";
 import { css } from "@emotion/react";
 import { Small } from "./text.js";
 import Button from "@shades/ui-web/button";
+import { useSearchParams } from "react-router-dom";
 
 const AuthDialog = () => {
-  const [warpcastVisible, setWarpcastVisible] = React.useState(false);
-  const [custodyWalletVisible, setCustodyWalletVisible] = React.useState(false);
+  const [searchParams] = useSearchParams();
+  const provider = searchParams.get("provider");
+  const [warpcastVisible, setWarpcastVisible] = React.useState(
+    provider === "warpcast"
+  );
+  const [custodyWalletVisible, setCustodyWalletVisible] = React.useState(
+    provider === "wallet"
+  );
 
   return (
     <div

@@ -3,6 +3,7 @@ import { useWallet } from "@shades/common/wallet";
 import { useWalletFarcasterId } from "../hooks/farcord";
 import { useCachedState } from "@shades/common/app";
 import { useLatestCallback } from "@shades/common/react";
+import useWalletEvent from "../hooks/wallet-event.js";
 
 export const createCacheKey = (address) =>
   [address?.toLowerCase(), "account"].filter(Boolean).join("-");
@@ -19,6 +20,24 @@ export const Provider = ({ children }) => {
   const initAccount = useLatestCallback(async (accountData) => {
     setAccount(accountData);
   });
+
+  useWalletEvent("disconnect", () => {
+    if (!account) return;
+    if (account.provider === "warpcast") return;
+
+    setAccount(null);
+  });
+
+  React.useEffect(() => {
+    if (account) return;
+    if (address && walletFid) {
+      initAccount({
+        fid: walletFid.toString(),
+        address: address,
+        provider: "wallet",
+      });
+    }
+  }, [account, address, walletFid, initAccount]);
 
   const contextValue = React.useMemo(
     () => ({

@@ -67,10 +67,12 @@ export const useSignerByPublicKey = (fid, publicKey) => {
   const [signer, setSigner] = React.useState(null);
 
   React.useEffect(() => {
-    if (!fid) return;
-    if (!publicKey) return;
-
     async function fetchSigner() {
+      if (!fid || !publicKey) {
+        setSigner(null);
+        return;
+      }
+
       return farcasterClient
         .getOnChainSigner({
           fid: Number(fid),

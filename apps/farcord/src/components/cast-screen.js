@@ -14,6 +14,7 @@ import {
   useThreadCasts,
   useThreadCastsFetch,
 } from "../hooks/channel.js";
+import useFarcasterAccount from "./farcaster-account.js";
 
 const ThreadScrollView = ({ castHash }) => {
   const castsContainerRef = React.useRef();
@@ -149,7 +150,8 @@ const ThreadScrollView = ({ castHash }) => {
 
 export const ThreadScreen = ({ castHash }) => {
   const inputRef = React.useRef();
-  const { fid, signer, broadcasted } = useSigner();
+  const { fid } = useFarcasterAccount();
+  const { signer, broadcasted } = useSigner();
   const cast = useNeynarCast(castHash);
 
   const {

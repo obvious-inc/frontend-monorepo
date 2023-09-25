@@ -12,6 +12,7 @@ import { useFollowedChannels } from "../hooks/warpcast";
 import useSigner from "./signer";
 import Dialog from "@shades/ui-web/dialog";
 import AuthDialog from "./auth-dialog";
+import useFarcasterAccount from "./farcaster-account";
 
 const DEFAULT_TRUNCATED_COUNT = 10;
 
@@ -278,7 +279,7 @@ const SmallText = ({ component: Component = "div", ...props }) => (
 );
 
 export const MainLayout = ({ children }) => {
-  const { fid } = useSigner();
+  const { fid } = useFarcasterAccount();
   const followedChannels = useFollowedChannels(fid);
 
   const farcasterChannels = useFarcasterChannels();
@@ -295,6 +296,7 @@ export const MainLayout = ({ children }) => {
     setSearchParams((params) => {
       const newParams = new URLSearchParams(params);
       newParams.delete("auth-dialog");
+      newParams.delete("provider");
       return newParams;
     });
   }, [setSearchParams]);

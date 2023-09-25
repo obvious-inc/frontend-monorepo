@@ -19,10 +19,18 @@ const FarcasterUser = () => {
     return <Spinner size="1rem" />;
   }
 
+  const handleProfileClick = async () => {
+    if (!broadcasted) {
+      setSearchParams({ "auth-dialog": 1, provider: "wallet" });
+    }
+  };
+
   return (
     <Button
+      // todo: need a new screen for profile / logout / revoke signers
+      disabled={broadcasted}
       onClick={() => {
-        setSearchParams({ "auth-dialog": 1 });
+        handleProfileClick();
       }}
       css={(theme) =>
         css({

@@ -19,6 +19,7 @@ import {
 } from "../hooks/channel.js";
 import { useNeynarRecentCasts } from "../hooks/neynar.js";
 import { toHex } from "viem";
+import useFarcasterAccount from "./farcaster-account.js";
 
 export const ChannelCastsScrollView = ({
   channelId,
@@ -32,7 +33,7 @@ export const ChannelCastsScrollView = ({
   const didScrollToBottomRef =
     didScrollToBottomRefExternal ?? didScrollToBottomRefInternal;
 
-  const { fid } = useSigner();
+  const { fid } = useFarcasterAccount();
 
   const channel = useFarcasterChannel(channelId);
   useChannelCastsFetch({ channel, cursor: null });
@@ -181,7 +182,8 @@ export const ChannelCastsScrollView = ({
 
 const ChannelView = ({ channelId, isFeed }) => {
   const inputRef = React.useRef();
-  const { fid, signer, broadcasted } = useSigner();
+  const { fid } = useFarcasterAccount();
+  const { signer, broadcasted } = useSigner();
 
   const {
     actions: { fetchChannelCasts },

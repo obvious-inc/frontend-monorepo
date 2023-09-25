@@ -14,6 +14,7 @@ import {
 } from "@shades/ui-web/icons";
 import { array as arrayUtils } from "@shades/common/utils";
 import RichText from "./rich-text";
+import useFarcasterAccount from "./farcaster-account";
 
 const IMAGE_ENDINGS = ["jpg", "jpeg", "png", "gif", "webp", "svg"];
 
@@ -103,7 +104,8 @@ const CastDate = ({ date }) => {
 export const CastHeader = ({ cast }) => {
   const replyCount = cast.replies.count;
 
-  const { fid, signer, broadcasted } = useSigner();
+  const { fid } = useFarcasterAccount();
+  const { signer, broadcasted } = useSigner();
   const [liked, setLiked] = React.useState(false);
   const [recasted, setRecasted] = React.useState(false);
   const [likesCount, setLikesCount] = React.useState(0);

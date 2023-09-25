@@ -308,8 +308,8 @@ export const Provider = ({ children }) => {
   }, [isAddSignerPending, isAddSignerSuccess]);
 
   React.useEffect(() => {
-    if (!onChainSigner) return;
-    setBroadcasted(true);
+    if (!onChainSigner) setBroadcasted(false);
+    else setBroadcasted(true);
   }, [onChainSigner]);
 
   const contextValue = React.useMemo(
