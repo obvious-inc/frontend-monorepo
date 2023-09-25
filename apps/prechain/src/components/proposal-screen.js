@@ -69,7 +69,6 @@ export const buildProposalFeed = (
   }
 ) => {
   if (proposal == null) return [];
-  console.log(proposal);
 
   const createdEventItem = {
     type: "event",
@@ -1330,7 +1329,7 @@ const ActivityFeedItemTitle = ({ item, isolated }) => {
                   for <ContextLink {...item} />
                 </>
               )}{" "}
-              {item.eventType === "end" ? "ended" : "started"}{" "}
+              {item.eventType === "proposal-ended" ? "ended" : "started"}{" "}
               {item.timestamp != null && (
                 <>
                   on{" "}
