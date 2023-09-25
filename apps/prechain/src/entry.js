@@ -11,7 +11,7 @@ import { publicProvider } from "wagmi/providers/public";
 import { InjectedConnector } from "wagmi/connectors/injected";
 import { WalletConnectConnector } from "wagmi/connectors/walletConnect";
 import { Analytics as VercelAnalytics } from "@vercel/analytics/react";
-import { CacheStoreProvider } from "@shades/common/app";
+import { createCacheStore, CacheStoreProvider } from "@shades/common/app";
 import { ChainDataCacheContextProvider } from "./hooks/prechain.js";
 import "./reset.css";
 import "./index.css";
@@ -59,7 +59,9 @@ createRoot(document.getElementById("app-mount")).render(
   <React.StrictMode>
     <WagmiConfig config={wagmiConfig}>
       <ChainDataCacheContextProvider>
-        <CacheStoreProvider syncStorage={cacheStoreStorage}>
+        <CacheStoreProvider
+          store={createCacheStore({ storage: cacheStoreStorage })}
+        >
           <App />
           {isProduction && <VercelAnalytics />}
         </CacheStoreProvider>

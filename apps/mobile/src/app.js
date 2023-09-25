@@ -77,10 +77,9 @@ const { textBlue, background } = theme.colors;
 const prefix = Linking.createURL("/");
 
 const {
-  AuthProvider,
-  ServerConnectionProvider,
-  AppStoreProvider,
+  createCacheStore,
   CacheStoreProvider,
+  AppStoreProvider,
   EmojiProvider,
   useAuth,
   useActions,
@@ -115,6 +114,16 @@ Notifications.setNotificationHandler({
 
 const NativeStackNavigator = createNativeStackNavigator();
 
+const cacheStore = createCacheStore({ storage: AsyncStorage });
+
+const api = Shades.apis.nomLegacy({
+  apiOrigin: API_ENDPOINT,
+  cloudflareAccountHash: CLOUDFLARE_ACCOUNT_HASH,
+  cacheStore,
+  Pusher,
+  pusherKey: PUSHER_KEY,
+});
+
 const useFetch = (fetcher_, deps = []) => {
   const fetcher = useLatestCallback(fetcher_);
 
@@ -133,17 +142,20 @@ const useFetch = (fetcher_, deps = []) => {
 };
 
 const App = () => {
-  const { status: authStatus, tokenStore } = useAuth();
+  const { status: authStatus } = useAuth();
   const actions = useActions();
   const me = useMe();
 
   const {
+    login,
     fetchMe,
     fetchClientBootData,
     fetchUserChannels,
     fetchUserChannelsReadStates,
     fetchStarredItems,
     fetchPubliclyReadableChannels,
+    fetchPreferences,
+    fetchUsers,
     registerDevicePushToken,
   } = actions;
 
@@ -162,8 +174,21 @@ const App = () => {
 
   React.useEffect(() => {
     if (authStatus !== "authenticated") return;
-    fetchClientBootData();
-  }, [authStatus, fetchClientBootData]);
+    fetchClientBootData().then(({ user: me, channels }) => {
+      fetchPreferences();
+
+      // Fetch the first 3 users for each DM so that we can render avatars
+      fetchUsers(
+        Shades.utils.array.unique(
+          channels
+            .filter((c) => c.kind === "dm")
+            .flatMap((c) =>
+              c.memberUserIds.filter((id) => id !== me.id).slice(0, 3)
+            )
+        )
+      );
+    });
+  }, [authStatus, fetchClientBootData, fetchPreferences, fetchUsers]);
 
   useAppActiveListener(() => {
     if (authStatus !== "authenticated") return;
@@ -209,7 +234,7 @@ const App = () => {
     return (
       <SignInView
         onSuccess={({ accessToken, refreshToken }) => {
-          tokenStore.write({ accessToken, refreshToken });
+          login({ accessToken, refreshToken });
         }}
         onError={() => {
           // TODO
@@ -638,20 +663,11 @@ export default () => {
                   },
                 }}
               >
-                <AuthProvider apiOrigin={API_ENDPOINT}>
-                  <AppStoreProvider
-                    cloudflareAccountHash={CLOUDFLARE_ACCOUNT_HASH}
-                  >
-                    <ServerConnectionProvider
-                      Pusher={Pusher}
-                      pusherKey={PUSHER_KEY}
-                    >
-                      <EmojiProvider loader={() => emojis}>
-                        <App />
-                      </EmojiProvider>
-                    </ServerConnectionProvider>
-                  </AppStoreProvider>
-                </AuthProvider>
+                <AppStoreProvider api={api}>
+                  <EmojiProvider loader={() => emojis}>
+                    <App />
+                  </EmojiProvider>
+                </AppStoreProvider>
               </NavigationContainer>
             </WagmiConfig>
           </CacheStoreProvider>

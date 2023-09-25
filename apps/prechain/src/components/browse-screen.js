@@ -69,18 +69,18 @@ const searchProposals = (items, rawQuery) => {
 };
 
 const useFeedItems = () => {
-  const { data: latestBlockNumber } = useBlockNumber();
+  const { data: eagerLatestBlockNumber } = useBlockNumber({
+    watch: true,
+    cacheTime: 10_000,
+  });
+  const latestBlockNumber = React.useDeferredValue(eagerLatestBlockNumber);
+
   const proposals = useProposals();
   const candidates = useProposalCandidates();
 
-  // const calculateBlockTimestamp = useApproximateBlockTimestampCalculator();
-
   return React.useMemo(() => {
     const proposalItems = proposals.flatMap((p) =>
-      buildProposalFeed(p, {
-        latestBlockNumber,
-        // calculateBlockTimestamp,
-      })
+      buildProposalFeed(p, { latestBlockNumber })
     );
 
     const candidateItems = candidates.flatMap((c) =>
@@ -91,12 +91,7 @@ const useFeedItems = () => {
       ...proposalItems,
       ...candidateItems,
     ]);
-  }, [
-    proposals,
-    candidates,
-    // calculateBlockTimestamp,
-    latestBlockNumber,
-  ]);
+  }, [proposals, candidates, latestBlockNumber]);
 };
 
 const PROPOSALS_PAGE_ITEM_COUNT = 20;
@@ -110,11 +105,16 @@ const BrowseScreen = () => {
 
   const { address: connectedWalletAccountAddress } = useWallet();
 
-  const proposals = useProposals();
+  const proposals = useProposals({ state: true });
   const proposalCandidates = useProposalCandidates();
   const { items: proposalDrafts } = useDrafts();
 
   const [page, setPage] = React.useState(1);
+
+  const filteredProposals = React.useMemo(
+    () => proposals.filter((p) => p.startBlock != null),
+    [proposals]
+  );
 
   const filteredItems = React.useMemo(() => {
     const filteredProposalDrafts = proposalDrafts
@@ -131,14 +131,15 @@ const BrowseScreen = () => {
     const items = [
       ...filteredProposalDrafts,
       ...filteredProposalCandidates,
-      ...proposals,
+      ...filteredProposals,
     ];
 
     return deferredQuery === "" ? items : searchProposals(items, deferredQuery);
-  }, [deferredQuery, proposals, proposalCandidates, proposalDrafts]);
+  }, [deferredQuery, filteredProposals, proposalCandidates, proposalDrafts]);
 
   const groupedItemsByName = arrayUtils.groupBy((i) => {
     if (i.type === "draft") return "drafts";
+
     // Candidates
     if (i.slug != null) return "ongoing";
 
@@ -164,8 +165,8 @@ const BrowseScreen = () => {
   useFetch(
     () =>
       Promise.all([
-        fetchBrowseScreenData({ first: 15 }),
-        fetchBrowseScreenData({ skip: 15, first: 1000 }),
+        fetchBrowseScreenData({ first: 40 }),
+        fetchBrowseScreenData({ skip: 40, first: 1000 }),
       ]),
     [fetchBrowseScreenData]
   );
@@ -173,7 +174,9 @@ const BrowseScreen = () => {
   return (
     <Layout>
       <div css={css({ padding: "0 1.6rem" })}>
-        <MainContentContainer sidebar={<FeedSidebar />}>
+        <MainContentContainer
+          sidebar={<FeedSidebar visible={filteredProposals.length > 0} />}
+        >
           <div
             css={css({
               padding: "1rem 0 3.2rem",
@@ -327,7 +330,7 @@ const BrowseScreen = () => {
                 });
               }}
             >
-              {filteredItems.length === 0 ? (
+              {deferredQuery === "" && filteredItems.length === 0 ? (
                 <li data-group key="placeholder">
                   <div data-group-title data-placeholder />
                   <ul>
@@ -453,7 +456,7 @@ const BrowseScreen = () => {
 
 const FEED_PAGE_ITEM_COUNT = 30;
 
-const FeedSidebar = React.memo(() => {
+const FeedSidebar = React.memo(({ visible }) => {
   const { data: latestBlockNumber } = useBlockNumber({
     watch: true,
     cache: 20_000,
@@ -470,23 +473,22 @@ const FeedSidebar = React.memo(() => {
     latestBlockNumber == null
       ? null
       : () =>
-          Promise.all([
-            fetchNounsActivity({
-              startBlock:
-                latestBlockNumber - BigInt(APPROXIMATE_BLOCKS_PER_DAY * 3),
-              endBlock: latestBlockNumber,
-            }),
+          fetchNounsActivity({
+            startBlock:
+              latestBlockNumber - BigInt(APPROXIMATE_BLOCKS_PER_DAY * 3),
+            endBlock: latestBlockNumber,
+          }).then(() =>
             fetchNounsActivity({
               startBlock:
                 latestBlockNumber - BigInt(APPROXIMATE_BLOCKS_PER_DAY * 30),
               endBlock:
                 latestBlockNumber - BigInt(APPROXIMATE_BLOCKS_PER_DAY * 3) - 1n,
-            }),
-          ]),
-    [(latestBlockNumber, fetchNounsActivity)]
+            })
+          ),
+    [latestBlockNumber, fetchNounsActivity]
   );
 
-  if (visibleItems.length === 0) return null;
+  if (!visible || visibleItems.length === 0) return null;
 
   return (
     <div
@@ -568,7 +570,7 @@ const ProposalItem = React.memo(({ proposalId }) => {
   );
 });
 
-const PropStatusText = ({ proposalId }) => {
+const PropStatusText = React.memo(({ proposalId }) => {
   const proposal = useProposal(proposalId);
 
   const calculateBlockTimestamp = useApproximateBlockTimestampCalculator();
@@ -665,7 +667,7 @@ const PropStatusText = ({ proposalId }) => {
     default:
       return null;
   }
-};
+});
 
 const PropTagWithStatusText = ({ proposalId }) => {
   const statusText = <PropStatusText proposalId={proposalId} />;
@@ -771,7 +773,7 @@ const ProposalCandidateItem = React.memo(({ candidateId }) => {
   return (
     <RouterLink to={`/candidates/${encodeURIComponent(candidateId)}`}>
       <Avatar
-        signature={candidate.slug}
+        signature={candidate.slug.split("-")[0]}
         signatureLength={2}
         size="3.2rem"
         data-desktop-only

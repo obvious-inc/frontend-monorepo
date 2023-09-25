@@ -65,7 +65,7 @@ const stylesBySize = (theme, { multiline, align }) => {
   return {
     default: {
       fontSize: theme.fontSizes.base,
-      padding: "0 1.2rem",
+      padding: align === "left" ? "0.8rem" : "0 1.2rem",
       [heightProp]: "3.2rem",
     },
     small: {

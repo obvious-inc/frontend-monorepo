@@ -1,5 +1,6 @@
 import datesDifferenceInDays from "date-fns/differenceInCalendarDays";
 import React from "react";
+import { useLocation } from "react-router-dom";
 import va from "@vercel/analytics";
 import { formatUnits } from "viem";
 import { useBlockNumber } from "wagmi";
@@ -34,7 +35,11 @@ import {
   usePriorVotes,
   useDynamicQuorum,
 } from "../hooks/dao.js";
-import { useDelegate, extractSlugFromCandidateId } from "../hooks/prechain.js";
+import {
+  useDelegate,
+  useProposalCandidate,
+  extractSlugFromCandidateId,
+} from "../hooks/prechain.js";
 import useApproximateBlockTimestampCalculator from "../hooks/approximate-block-timestamp-calculator.js";
 import { useWallet } from "../hooks/wallet.js";
 import { Tag } from "./browse-screen.js";
@@ -56,13 +61,7 @@ const supportDetailedToString = (n) => {
   return nameBySupportDetailed[n];
 };
 
-export const buildProposalFeed = (
-  proposal,
-  {
-    latestBlockNumber,
-    // calculateBlockTimestamp
-  }
-) => {
+export const buildProposalFeed = (proposal, { latestBlockNumber }) => {
   if (proposal == null) return [];
 
   const createdEventItem = {
@@ -79,8 +78,7 @@ export const buildProposalFeed = (
     proposal.feedbackPosts?.map((p) => ({
       type: "feedback-post",
       id: `${proposal.id}-${p.id}`,
-      bodyRichText:
-        p.reason == null ? null : messageUtils.parseString(p.reason),
+      body: p.reason,
       support: p.supportDetailed,
       authorAccount: p.voter.id,
       timestamp: p.createdTimestamp,
@@ -93,11 +91,9 @@ export const buildProposalFeed = (
     proposal.votes?.map((v) => ({
       type: "vote",
       id: `${proposal.id}-${v.id}`,
-      bodyRichText:
-        v.reason == null ? null : messageUtils.parseString(v.reason),
+      body: v.reason,
       support: v.supportDetailed,
       authorAccount: v.voter.id,
-      // timestamp: calculateBlockTimestamp(v.blockNumber),
       blockNumber: v.blockNumber,
       voteCount: v.votes,
       proposalId: proposal.id,
@@ -105,12 +101,17 @@ export const buildProposalFeed = (
 
   const items = [...feedbackPostItems, ...voteItems, createdEventItem];
 
+  if (proposal.state === "canceled")
+    return arrayUtils.sortBy(
+      { value: (i) => i.blockNumber, order: "desc" },
+      items
+    );
+
   if (latestBlockNumber > proposal.startBlock) {
     items.push({
       type: "event",
       eventType: "proposal-started",
       id: `${proposal.id}-started`,
-      // timestamp: calculateBlockTimestamp(proposal.startBlock),
       blockNumber: proposal.startBlock,
       proposalId: proposal.id,
     });
@@ -123,7 +124,6 @@ export const buildProposalFeed = (
       type: "event",
       eventType: "proposal-ended",
       id: `${proposal.id}-ended`,
-      // timestamp: calculateBlockTimestamp(actualEndBlock),
       blockNumber: actualEndBlock,
       proposalId: proposal.id,
     });
@@ -134,7 +134,6 @@ export const buildProposalFeed = (
       type: "event",
       eventType: "proposal-objection-period-started",
       id: `${proposal.id}-objection-period-start`,
-      // timestamp: calculateBlockTimestamp(proposal.endBlock),
       blockNumber: proposal.endBlock,
       proposalId: proposal.id,
     });
@@ -147,18 +146,18 @@ export const buildProposalFeed = (
 };
 
 const useFeedItems = (proposalId) => {
-  const { data: latestBlockNumber } = useBlockNumber({ watch: true });
+  const { data: eagerLatestBlockNumber } = useBlockNumber({
+    watch: true,
+    cacheTime: 20_000,
+  });
+
+  const latestBlockNumber = React.useDeferredValue(eagerLatestBlockNumber);
+
   const proposal = useProposal(proposalId);
 
-  const calculateBlockTimestamp = useApproximateBlockTimestampCalculator();
-
   return React.useMemo(
-    () =>
-      buildProposalFeed(proposal, {
-        latestBlockNumber,
-        calculateBlockTimestamp,
-      }),
-    [proposal, calculateBlockTimestamp, latestBlockNumber]
+    () => buildProposalFeed(proposal, { latestBlockNumber }),
+    [proposal, latestBlockNumber]
   );
 };
 
@@ -686,6 +685,7 @@ export const ProposalActionForm = ({
                     width="15rem"
                     variant="default"
                     size="default"
+                    multiline={false}
                     value={support}
                     onChange={(value) => {
                       setSupport(value);
@@ -839,6 +839,8 @@ const ProposalDialog = ({
 };
 
 const NavBar = ({ navigationStack, actions }) => {
+  const location = useLocation();
+
   const {
     address: connectedWalletAccountAddress,
     requestAccess: requestWalletAccess,
@@ -873,7 +875,22 @@ const NavBar = ({ navigationStack, actions }) => {
         {[
           {
             to: "/",
-            label: <LogoSymbol style={{ width: "2.4rem", height: "auto" }} />,
+            label: (
+              <>
+                <LogoSymbol
+                  style={{
+                    display: "inline-block",
+                    width: "2rem",
+                    height: "auto",
+                    verticalAlign: "sub",
+                    transform: "translateY(0.1rem)",
+                  }}
+                />
+                {location.pathname !== "/" && (
+                  <span style={{ marginLeft: "0.6rem" }}>Home</span>
+                )}
+              </>
+            ),
           },
           ...navigationStack,
         ].map((item, index) => (
@@ -892,16 +909,15 @@ const NavBar = ({ navigationStack, actions }) => {
             )}
             <RouterLink
               to={item.to}
+              data-disabled={location.pathname === item.to}
               css={(t) =>
                 css({
-                  display: "inline-flex",
-                  alignItems: "center",
-                  height: "2.7rem",
                   fontSize: t.fontSizes.base,
                   color: t.colors.textNormal,
                   padding: "0.3rem 0.5rem",
                   borderRadius: "0.2rem",
                   textDecoration: "none",
+                  '&[data-disabled="true"]': { pointerEvents: "none" },
                   "@media(hover: hover)": {
                     cursor: "pointer",
                     ":hover": {
@@ -996,197 +1012,6 @@ const NavBar = ({ navigationStack, actions }) => {
 };
 
 export const ActivityFeed = ({ isolated, items = [], spacing = "1.6rem" }) => {
-  const ContextLink = ({ proposalId, candidateId, truncate }) => {
-    if (proposalId != null)
-      return (
-        <RouterLink to={`/proposals/${proposalId}`}>
-          Prop {proposalId}
-        </RouterLink>
-      );
-
-    if (candidateId != null) {
-      const slug = extractSlugFromCandidateId(candidateId);
-      const title =
-        truncate && slug.length > 50 ? `${slug.slice(0, 50)}...` : slug;
-      return <RouterLink to={`/candidates/${candidateId}`}>{title}</RouterLink>;
-    }
-
-    throw new Error();
-  };
-
-  const renderTitle = (item) => {
-    const accountName = (
-      <AccountPreviewPopoverTrigger accountAddress={item.authorAccount} />
-    );
-
-    switch (item.type) {
-      case "signature":
-        return accountName;
-
-      case "event": {
-        switch (item.eventType) {
-          case "proposal-created":
-            return (
-              <span css={(t) => css({ color: t.colors.textDimmed })}>
-                {isolated ? "Proposal" : <ContextLink {...item} />} created
-                {item.authorAccount != null && (
-                  <>
-                    {" "}
-                    by{" "}
-                    <AccountPreviewPopoverTrigger
-                      showAvatar
-                      accountAddress={item.authorAccount}
-                    />
-                  </>
-                )}
-                {item.timestamp != null && (
-                  <>
-                    {" "}
-                    on{" "}
-                    <FormattedDateWithTooltip
-                      capitalize={false}
-                      value={item.timestamp}
-                      disableRelative
-                      month={isolated ? "long" : "short"}
-                      day="numeric"
-                    />
-                  </>
-                )}
-              </span>
-            );
-
-          case "candidate-created": {
-            return (
-              <span css={(t) => css({ color: t.colors.textDimmed })}>
-                {isolated ? (
-                  "Candidate"
-                ) : (
-                  <>
-                    Candidate <ContextLink truncate {...item} />
-                  </>
-                )}{" "}
-                created
-                {item.authorAccount != null && (
-                  <>
-                    {" "}
-                    by{" "}
-                    <AccountPreviewPopoverTrigger
-                      showAvatar
-                      accountAddress={item.authorAccount}
-                    />
-                  </>
-                )}
-                {item.timestamp != null && (
-                  <>
-                    {" "}
-                    on{" "}
-                    <FormattedDateWithTooltip
-                      capitalize={false}
-                      value={item.timestamp}
-                      disableRelative
-                      month={isolated ? "long" : "short"}
-                      day="numeric"
-                    />
-                  </>
-                )}
-              </span>
-            );
-          }
-
-          case "proposal-started":
-          case "proposal-ended":
-            return (
-              <span
-                css={(t) =>
-                  css({
-                    color: t.colors.textDimmed,
-                  })
-                }
-              >
-                Voting{" "}
-                {!isolated && (
-                  <>
-                    for <ContextLink {...item} />
-                  </>
-                )}{" "}
-                {item.eventType === "end" ? "ended" : "started"}{" "}
-                {item.timestamp != null && (
-                  <>
-                    on{" "}
-                    <FormattedDateWithTooltip
-                      capitalize={false}
-                      value={item.timestamp}
-                      disableRelative
-                      month={isolated ? "long" : "short"}
-                      day="numeric"
-                      hour="numeric"
-                      minute="numeric"
-                    />
-                  </>
-                )}
-              </span>
-            );
-
-          case "proposal-objection-period-started":
-            return (
-              <span
-                css={(t) =>
-                  css({
-                    color: t.colors.textDimmed,
-                  })
-                }
-              >
-                {isolated ? "Proposal" : <ContextLink {...item} />} entered
-                objection period
-              </span>
-            );
-
-          default:
-            throw new Error(`Unknown event "${item.eventType}"`);
-        }
-      }
-
-      case "vote":
-      case "feedback-post": {
-        const signalWord = item.type === "vote" ? "voted" : "signaled";
-        return (
-          <span data-nowrap>
-            {accountName}{" "}
-            <span
-              css={(t) =>
-                css({
-                  color:
-                    item.support === 0
-                      ? t.colors.textNegative
-                      : item.support === 1
-                      ? t.colors.textPositive
-                      : t.colors.textDimmed,
-                  fontWeight: t.text.weights.emphasis,
-                })
-              }
-            >
-              {item.support === 0
-                ? `${signalWord} against`
-                : item.support === 1
-                ? `${signalWord} for`
-                : item.type === "vote"
-                ? "abstained"
-                : isolated
-                ? null
-                : "commented on"}
-            </span>
-            {!isolated && (
-              <>
-                {" "}
-                <ContextLink {...item} />
-              </>
-            )}
-          </span>
-        );
-      }
-    }
-  };
-
   return (
     <ul
       css={(t) =>
@@ -1288,7 +1113,7 @@ export const ActivityFeed = ({ isolated, items = [], spacing = "1.6rem" }) => {
                     textOverflow: "ellipsis",
                   })}
                 >
-                  {renderTitle(item)}
+                  <ActivityFeedItemTitle item={item} isolated={isolated} />
                 </div>
                 {item.voteCount != null && (
                   <Tooltip.Root>
@@ -1324,9 +1149,9 @@ export const ActivityFeed = ({ isolated, items = [], spacing = "1.6rem" }) => {
             </div>
           </div>
           <div css={css({ paddingLeft: "2.6rem" })}>
-            {item.bodyRichText != null && (
+            {item.body != null && (
               <RichText
-                blocks={item.bodyRichText}
+                blocks={messageUtils.parseString(item.body)}
                 css={css({
                   margin: "0.35rem 0",
                   userSelect: "text",
@@ -1363,6 +1188,213 @@ export const ActivityFeed = ({ isolated, items = [], spacing = "1.6rem" }) => {
   );
 };
 
+const ActivityFeedItemTitle = ({ item, isolated }) => {
+  const proposal = useProposal(item.proposalId);
+  const candidate = useProposalCandidate(item.candidateId);
+
+  const truncatedLength = 30;
+
+  const truncateTitle = (s) =>
+    s.length <= truncatedLength
+      ? s
+      : `${s.slice(0, truncatedLength).trim()}...`;
+
+  const ContextLink = ({ proposalId, candidateId, truncate }) => {
+    if (proposalId != null)
+      return (
+        <RouterLink to={`/proposals/${proposalId}`}>
+          {proposal?.title == null
+            ? `Prop ${proposalId} `
+            : `${truncateTitle(proposal.title)} (Prop ${proposalId})`}
+        </RouterLink>
+      );
+
+    if (candidateId != null) {
+      const title =
+        candidate?.latestVersion?.content.title ??
+        extractSlugFromCandidateId(candidateId);
+      return (
+        <RouterLink to={`/candidates/${candidateId}`}>
+          {truncate ? truncateTitle(title) : title}
+        </RouterLink>
+      );
+    }
+
+    throw new Error();
+  };
+
+  const accountName = (
+    <AccountPreviewPopoverTrigger accountAddress={item.authorAccount} />
+  );
+
+  switch (item.type) {
+    case "signature":
+      return accountName;
+
+    case "event": {
+      switch (item.eventType) {
+        case "proposal-created":
+          return (
+            <span css={(t) => css({ color: t.colors.textDimmed })}>
+              {isolated ? "Proposal" : <ContextLink {...item} />} created
+              {item.authorAccount != null && (
+                <>
+                  {" "}
+                  by{" "}
+                  <AccountPreviewPopoverTrigger
+                    showAvatar
+                    accountAddress={item.authorAccount}
+                  />
+                </>
+              )}
+              {item.timestamp != null && (
+                <>
+                  {" "}
+                  on{" "}
+                  <FormattedDateWithTooltip
+                    capitalize={false}
+                    value={item.timestamp}
+                    disableRelative
+                    month={isolated ? "long" : "short"}
+                    day="numeric"
+                  />
+                </>
+              )}
+            </span>
+          );
+
+        case "candidate-created": {
+          return (
+            <span css={(t) => css({ color: t.colors.textDimmed })}>
+              {isolated ? (
+                "Candidate"
+              ) : (
+                <>
+                  Candidate <ContextLink truncate {...item} />
+                </>
+              )}{" "}
+              created
+              {item.authorAccount != null && (
+                <>
+                  {" "}
+                  by{" "}
+                  <AccountPreviewPopoverTrigger
+                    showAvatar
+                    accountAddress={item.authorAccount}
+                  />
+                </>
+              )}
+              {item.timestamp != null && (
+                <>
+                  {" "}
+                  on{" "}
+                  <FormattedDateWithTooltip
+                    capitalize={false}
+                    value={item.timestamp}
+                    disableRelative
+                    month={isolated ? "long" : "short"}
+                    day="numeric"
+                  />
+                </>
+              )}
+            </span>
+          );
+        }
+
+        case "proposal-started":
+        case "proposal-ended":
+          return (
+            <span
+              css={(t) =>
+                css({
+                  color: t.colors.textDimmed,
+                })
+              }
+            >
+              Voting{" "}
+              {!isolated && (
+                <>
+                  for <ContextLink {...item} />
+                </>
+              )}{" "}
+              {item.eventType === "proposal-ended" ? "ended" : "started"}{" "}
+              {item.timestamp != null && (
+                <>
+                  on{" "}
+                  <FormattedDateWithTooltip
+                    capitalize={false}
+                    value={item.timestamp}
+                    disableRelative
+                    month={isolated ? "long" : "short"}
+                    day="numeric"
+                    hour="numeric"
+                    minute="numeric"
+                  />
+                </>
+              )}
+            </span>
+          );
+
+        case "proposal-objection-period-started":
+          return (
+            <span
+              css={(t) =>
+                css({
+                  color: t.colors.textDimmed,
+                })
+              }
+            >
+              {isolated ? "Proposal" : <ContextLink {...item} />} entered
+              objection period
+            </span>
+          );
+
+        default:
+          throw new Error(`Unknown event "${item.eventType}"`);
+      }
+    }
+
+    case "vote":
+    case "feedback-post": {
+      const signalWord = item.type === "vote" ? "voted" : "signaled";
+      return (
+        <span data-nowrap>
+          {accountName}{" "}
+          <span
+            css={(t) =>
+              css({
+                color:
+                  item.support === 0
+                    ? t.colors.textNegative
+                    : item.support === 1
+                    ? t.colors.textPositive
+                    : t.colors.textDimmed,
+                fontWeight: t.text.weights.emphasis,
+              })
+            }
+          >
+            {item.support === 0
+              ? `${signalWord} against`
+              : item.support === 1
+              ? `${signalWord} for`
+              : item.type === "vote"
+              ? "abstained"
+              : isolated
+              ? null
+              : "commented on"}
+          </span>
+          {!isolated && (
+            <>
+              {" "}
+              <ContextLink {...item} />
+            </>
+          )}
+        </span>
+      );
+    }
+  }
+};
+
 export const MainContentContainer = ({
   sidebar = null,
   narrow = false,
@@ -1396,7 +1428,7 @@ export const MainContentContainer = ({
           css({
             "@media (min-width: 952px)": {
               display: "grid",
-              gridTemplateColumns: `minmax(0,1fr) ${t.sidebarWidth}`,
+              gridTemplateColumns: `minmax(0, 1fr) ${t.sidebarWidth} `,
               gridGap: "8rem",
               "[data-sidebar-content]": {
                 position: "sticky",
@@ -1448,7 +1480,6 @@ export const ProposalLikeContent = ({
           css({
             color: t.colors.textDimmed,
             fontSize: t.text.sizes.base,
-            margin: "0 0 4.8rem",
           })
         }
         style={{
@@ -1486,7 +1517,7 @@ export const ProposalLikeContent = ({
         )}
       </div>
 
-      <RichText markdownText={description} />
+      {description != null && <RichText markdownText={description} />}
     </div>
   );
 };
@@ -1640,9 +1671,9 @@ const ProposalScreen = () => {
 
   const isDialogOpen = searchParams.get("proposal-dialog") != null;
 
-  const openDialog = React.useCallback(() => {
-    setSearchParams({ "proposal-dialog": 1 });
-  }, [setSearchParams]);
+  // const openDialog = React.useCallback(() => {
+  //   setSearchParams({ "proposal-dialog": 1 });
+  // }, [setSearchParams]);
 
   const closeDialog = React.useCallback(() => {
     setSearchParams((params) => {
@@ -1669,7 +1700,7 @@ const ProposalScreen = () => {
         navigationStack={[
           { to: "/?tab=proposals", label: "Proposals" },
           {
-            to: `/${proposalId}`,
+            to: `/proposals/${proposalId} `,
             label: (
               <>
                 Proposal #{proposalId}
@@ -1684,7 +1715,7 @@ const ProposalScreen = () => {
         ]}
         actions={
           isProposer && proposal?.state === "updatable"
-            ? [{ onSelect: openDialog, label: "Edit proposal" }]
+            ? [] // [{ onSelect: openDialog, label: "Edit proposal" }]
             : []
         }
       >
@@ -1833,7 +1864,7 @@ export const VotingBar = ({
 
         const signal = getSignal();
 
-        return <div data-vote={signal} key={`${i}-${signal}`} />;
+        return <div data-vote={signal} key={`${i} -${signal} `} />;
       })}
     </div>
   );

@@ -3,8 +3,6 @@ import { parseAbi, decodeEventLog } from "viem";
 import { array as arrayUtils } from "@shades/common/utils";
 import { useFetch, useLatestCallback } from "@shades/common/react";
 
-const { sortBy } = arrayUtils;
-
 import {
   useContractRead,
   useContractWrite,
@@ -14,20 +12,23 @@ import {
 } from "wagmi";
 import { useWallet } from "./wallet.js";
 import {
-  ChainDataCacheContext,
+  useStore,
+  useActions,
   contractAddressesByChainId,
   useChainId,
 } from "./prechain.js";
+import { unparse as unparseTransactions } from "../utils/transactions.js";
 
 const EXECUTION_GRACE_PERIOD_IN_MILLIS = 1000 * 60 * 60 * 24 * 21; // 21 days
 
 export const useProposalFetch = (id, options) => {
-  const { data: blockNumber } = useBlockNumber({ watch: true });
+  const { data: blockNumber } = useBlockNumber({
+    watch: true,
+    cacheTime: 10_000,
+  });
   const onError = useLatestCallback(options?.onError);
 
-  const {
-    actions: { fetchProposal },
-  } = React.useContext(ChainDataCacheContext);
+  const { fetchProposal } = useActions();
 
   useFetch(
     () =>
@@ -39,45 +40,54 @@ export const useProposalFetch = (id, options) => {
   );
 };
 
-export const useProposals = () => {
-  const { data: blockNumber } = useBlockNumber({ watch: true });
+export const useProposals = ({ state = false } = {}) => {
+  const { data: blockNumber } = useBlockNumber({
+    watch: true,
+    cacheTime: 20_000,
+  });
 
-  const {
-    state: { proposalsById },
-  } = React.useContext(ChainDataCacheContext);
-
-  return React.useMemo(
-    () =>
-      sortBy(
-        (p) => p.lastUpdatedTimestamp,
-        Object.values(proposalsById).map((p) => ({
+  return useStore(
+    React.useCallback(
+      (s) => {
+        const addState = (p) => ({
           ...p,
           state:
             blockNumber == null ? null : getProposalState(p, { blockNumber }),
-        }))
-      ),
-    [proposalsById, blockNumber]
+        });
+
+        const proposals = state
+          ? Object.values(s.proposalsById).map(addState)
+          : Object.values(s.proposalsById);
+
+        return arrayUtils.sortBy((p) => p.lastUpdatedTimestamp, proposals);
+      },
+      [state, blockNumber]
+    )
   );
 };
 
 export const useProposal = (id) => {
-  const { data: blockNumber } = useBlockNumber({ watch: true });
+  const { data: blockNumber } = useBlockNumber({
+    watch: true,
+    cacheTime: 30_000,
+  });
 
-  const {
-    state: { proposalsById },
-  } = React.useContext(ChainDataCacheContext);
+  return useStore(
+    React.useCallback(
+      (s) => {
+        const proposal = s.proposalsById[id];
 
-  const proposal = proposalsById[id];
+        if (proposal == null) return null;
+        if (blockNumber == null) return proposal;
 
-  return React.useMemo(() => {
-    if (proposal == null) return null;
-    if (blockNumber == null) return proposal;
-
-    return {
-      ...proposal,
-      state: getProposalState(proposal, { blockNumber }),
-    };
-  }, [proposal, blockNumber]);
+        return {
+          ...proposal,
+          state: getProposalState(proposal, { blockNumber }),
+        };
+      },
+      [id, blockNumber]
+    )
+  );
 };
 
 export const useProposalThreshold = () => {
@@ -278,18 +288,11 @@ export const useCreateProposal = ({ enabled = true } = {}) => {
     enabled,
   });
 
-  return ({
-    description,
-    // Target addresses
-    targets = ["0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266"],
-    // Values
-    values = ["0"],
-    // Function signatures
-    signatures = [""],
-    // Calldatas
-    calldatas = ["0x"],
-  }) =>
-    writeAsync({
+  return async ({ description, transactions }) => {
+    const { targets, values, signatures, calldatas } =
+      unparseTransactions(transactions);
+
+    return writeAsync({
       args: [targets, values, signatures, calldatas, description],
     })
       .then(({ hash }) => publicClient.waitForTransactionReceipt({ hash }))
@@ -304,6 +307,7 @@ export const useCreateProposal = ({ enabled = true } = {}) => {
         });
         return decodedEvent.args;
       });
+  };
 };
 
 export const useCancelProposal = (proposalId) => {

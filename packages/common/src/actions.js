@@ -1,6 +1,5 @@
 import { generateDummyId } from "./utils/misc.js";
 import { unique } from "./utils/array.js";
-import { pickKeys, mapValues } from "./utils/object.js";
 import invariant from "./utils/invariant.js";
 import {
   stringifyBlocks as stringifyMessageBlocks,
@@ -19,88 +18,42 @@ import {
   selectChannelStarId,
 } from "./reducers/channels.js";
 
-const cleanString = (s) => {
-  if (typeof s !== "string") return s;
-  return s.trim() === "" ? null : s.trim();
-};
-
 export default ({
+  api,
   dispatch,
   authStatus,
-  authorizedFetch,
   getStoreState,
   cacheStore,
-  parseUser,
-  parseChannel,
-  parseMessage,
-  buildCloudflareImageUrl,
-  authTokenStore,
+  setAuthenticated,
 }) => {
   const fetchMe = () =>
-    authorizedFetch("/users/me").then((me) => {
-      const user = parseUser(me);
+    api.fetchMe().then((user) => {
       dispatch({ type: "fetch-me-request-successful", user });
       return user;
     });
 
-  const updateMe = async ({
-    displayName,
-    description,
-    profilePicture,
-    pushTokens,
-  }) => {
-    const rawUser = await authorizedFetch("/users/me", {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        display_name: displayName,
-        description,
-        pfp: profilePicture,
-        push_tokens: pushTokens,
-      }),
-    });
-    const user = parseUser(rawUser);
-    dispatch({ type: "update-me:request-successful", user });
-    return user;
-  };
-
-  const fetchUsers = (userIds) =>
-    authorizedFetch("/users/info", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ user_ids: userIds }),
-    }).then((rawUsers) => {
-      // Assuming missing users are deleted here
-      // TODO: Make this less brittle
-      const users = userIds.map((id) => {
-        const rawUser = rawUsers.find((u) => u.id === id);
-        if (rawUser == null) return { id, deleted: true };
-        return parseUser(rawUser);
+  const updateMe = ({ displayName, description, profilePicture, pushTokens }) =>
+    api
+      .updateMe({ displayName, description, profilePicture, pushTokens })
+      .then((user) => {
+        dispatch({ type: "update-me:request-successful", user });
+        return user;
       });
 
+  const fetchUsers = (userIds) =>
+    api.fetchUsers(userIds).then((users) => {
       dispatch({ type: "fetch-users-request-successful", users });
       return users;
     });
 
-  const fetchUserChannels = (accountAddress) => {
-    if (accountAddress == null)
-      return authorizedFetch("/users/me/channels").then((rawChannels) => {
-        const channels = rawChannels.map(parseChannel);
-        dispatch({ type: "fetch-user-channels-request-successful", channels });
-        return channels;
-      });
-
-    return authorizedFetch(`/users/${accountAddress}/channels`, {
-      allowUnauthorized: true,
-    }).then((rawChannels) => {
-      const channels = rawChannels.map(parseChannel);
+  const fetchUserChannels = (accountAddress) =>
+    api.fetchUserChannels(accountAddress).then((channels) => {
       dispatch({ type: "fetch-user-channels-request-successful", channels });
       return channels;
     });
-  };
 
   const fetchUserChannelsReadStates = () =>
-    authorizedFetch("/users/me/read_states").then((readStates) => {
+    api.fetchUserChannelsReadStates().then((readStates) => {
       dispatch({
         type: "fetch-user-channels-read-states-request-successful",
         readStates,
@@ -109,10 +62,7 @@ export default ({
     });
 
   const fetchChannel = (id) =>
-    authorizedFetch(`/channels/${id}`, {
-      allowUnauthorized: true,
-    }).then((rawChannel) => {
-      const channel = parseChannel(rawChannel);
+    api.fetchChannel(id).then((channel) => {
       dispatch({ type: "fetch-channel-request-successful", channel });
       return channel;
     });
@@ -126,78 +76,59 @@ export default ({
     memberWalletAddresses,
     permissionOverwrites,
   }) =>
-    authorizedFetch("/channels", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        kind: "topic",
+    api
+      .createChannel({
         name,
         description,
         body,
         tags,
-        members: memberWalletAddresses ?? memberUserIds,
-        permission_overwrites: permissionOverwrites,
-      }),
-    }).then((rawChannel) => {
-      const channel = parseChannel(rawChannel);
+        memberUserIds,
+        memberWalletAddresses,
+        permissionOverwrites,
+      })
+      .then((channel) => {
+        // TODO
+        // dispatch({ type: "create-channel:request-successful", channel });
+        fetchUserChannels();
+        return channel;
+      });
 
-      // TODO
-      // dispatch({ type: "create-channel:request-successful", channel });
-
-      fetchUserChannels();
-      return channel;
-    });
-
-  const fetchChannelMembers = (id) =>
-    authorizedFetch(`/channels/${id}/members`, {
-      allowUnauthorized: true,
-    }).then((rawMembers) => {
-      const members = rawMembers.map(parseUser);
+  const fetchChannelMembers = (channelId) =>
+    api.fetchChannelMembers(channelId).then((users) => {
       dispatch({
         type: "fetch-channel-members-request-successful",
-        channelId: id,
-        members,
+        channelId,
+        members: users,
       });
-      return members;
+      return users;
     });
 
-  const fetchChannelPermissions = (id) =>
-    authorizedFetch(`/channels/${id}/permissions`, {
-      priority: "low",
-    }).then((res) => {
+  const fetchChannelPermissions = (channelId) =>
+    api.fetchChannelPermissions(channelId).then((res) => {
       dispatch({
         type: "fetch-channel-permissions:request-successful",
-        channelId: id,
+        channelId,
         permissions: res,
       });
       return res;
     });
 
   const fetchUserPrivateChannels = () =>
-    authorizedFetch("/channels?scope=private").then((rawChannels) => {
-      const channels = rawChannels.map(parseChannel);
+    api.fetchUserPrivateChannels().then((channels) => {
       // TODO handle this action
       dispatch({ type: "fetch-channels-request-successful", channels });
       return channels;
     });
 
-  const fetchChannelPublicPermissions = (id) =>
-    authorizedFetch(`/channels/${id}/permissions`, {
-      unauthorized: true,
-      priority: "low",
-    })
-      .catch((e) => {
-        if (e.code === 404) return [];
-        throw e;
-      })
-      .then((res) => {
-        dispatch({
-          type: "fetch-channel-public-permissions-request-successful",
-          channelId: id,
-          permissions: res,
-        });
-        return res;
+  const fetchChannelPublicPermissions = (channelId) =>
+    api.fetchChannelPublicPermissions(channelId).then((res) => {
+      dispatch({
+        type: "fetch-channel-public-permissions-request-successful",
+        channelId,
+        permissions: res,
       });
+      return res;
+    });
 
   const markChannelRead = (channelId) => {
     const lastMessageAt = selectChannelLastMessageAt(
@@ -211,19 +142,11 @@ export default ({
     // TODO: Undo if request fails
     dispatch({ type: "mark-channel-read:request-sent", channelId, readAt });
 
-    return authorizedFetch(`/channels/${channelId}/ack`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ last_read_at: readAt.toISOString() }),
-    });
+    return api.markChannelReadAt(channelId, { readAt });
   };
 
   const updateChannelPermissions = (channelId, permissions) =>
-    authorizedFetch(`/channels/${channelId}/permissions`, {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(permissions),
-    }).then((res) => {
+    api.updateChannelPermissions(channelId, permissions).then((res) => {
       // TODO permissions?
       fetchChannelPermissions(channelId);
       fetchChannelPublicPermissions(channelId);
@@ -232,164 +155,119 @@ export default ({
     });
 
   const fetchStarredItems = () =>
-    authorizedFetch("/stars", { priority: "low" }).then((res) => {
-      dispatch({
-        type: "fetch-starred-items:request-successful",
-        stars: res.map((s) => pickKeys(["id", "type", "reference"], s)),
-      });
-      return res;
+    api.fetchStarredItems().then((stars) => {
+      dispatch({ type: "fetch-starred-items:request-successful", stars });
+      return stars;
     });
 
   const fetchBlockedUsers = async () => {
-    const blocks = await authorizedFetch("/users/me/blocks");
-    const userIds = blocks.map((b) => b.user);
+    const userIds = await api.fetchBlockedUsers();
     dispatch({ type: "fetch-blocked-users:request-successful", userIds });
     return userIds;
   };
 
   const fetchPreferences = () =>
-    authorizedFetch("/users/me/preferences", { priority: "low" }).then(
-      (preferences) => {
-        const notificationSettingsByChannelId = mapValues(
-          (s) => (s.muted ? "off" : s.mentions ? "mentions" : "all"),
-          preferences?.channels ?? {}
-        );
-        dispatch({
-          type: "fetch-preferences:request-successful",
-          notificationSettingsByChannelId,
-        });
+    api.fetchPreferences().then(({ notificationSettingsByChannelId }) => {
+      dispatch({
+        type: "fetch-preferences:request-successful",
+        notificationSettingsByChannelId,
+      });
 
-        return preferences;
-      }
-    );
-
-  const starItem = ({ type, reference }) =>
-    authorizedFetch("/stars", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ type, reference }),
+      return { notificationSettingsByChannelId };
     });
 
-  const unstarItem = (starId) =>
-    authorizedFetch(`/stars/${starId}`, { method: "DELETE" });
+  const starItem = ({ type, reference }) => api.starItem({ type, reference });
 
-  const fetchClientBootDataFull = async () => {
-    const [
-      { user: rawMe, channels: rawChannels, read_states: readStates, apps },
-      starredItems,
-    ] = await Promise.all([
-      authorizedFetch("/ready"),
-      fetchStarredItems(),
-      fetchBlockedUsers(),
-    ]);
+  const unstarItem = (starId) => api.unstarItem(starId);
 
-    const me = parseUser(rawMe);
-    const channels = rawChannels.map(parseChannel);
+  const fetchClientBootDataFull = () =>
+    api
+      .fetchClientBootDataFull()
+      .then(
+        ({
+          user: me,
+          channels,
+          readStates,
+          apps,
+          starredItems,
+          blockedUserIds,
+        }) => {
+          dispatch({
+            type: "fetch-client-boot-data-request-successful",
+            user: me,
+            channels,
+            readStates,
+            apps,
+            // starredItems,
+          });
 
-    // TODO: Change this
-    const missingChannelStars = starredItems.filter(
-      (i) =>
-        i.type === "channel" && rawChannels.every((c) => c.id !== i.reference)
-    );
+          // TODO
+          dispatch({
+            type: "fetch-starred-items:request-successful",
+            stars: starredItems,
+          });
 
-    if (missingChannelStars.length !== 0)
-      await Promise.all(
-        missingChannelStars.map((s) =>
-          fetchChannel(s.reference).catch((e) => {
-            // 403 may happen if you have starred a channel you no longer have access to
-            if (e.code !== 403 && e.code !== 404) throw e;
-          })
-        )
+          // TODO
+          dispatch({
+            type: "fetch-blocked-users:request-successful",
+            userIds: blockedUserIds,
+          });
+
+          return { user: me, channels, readStates, starredItems };
+        }
       );
 
-    fetchPreferences();
+  const fetchClientBootDataPrivate = () =>
+    api
+      .fetchClientBootDataPrivate()
+      .then(({ user: me, channels, readStates, blockedUserIds }) => {
+        dispatch({
+          type: "fetch-client-boot-data-request-successful",
+          user: me,
+          channels,
+          readStates,
+          // starredItems,
+        });
 
-    fetchUsers(
-      unique(
-        channels
-          .filter((c) => c.kind === "dm")
-          .flatMap((c) =>
-            c.memberUserIds.filter((id) => id !== me.id).slice(0, 3)
-          )
-      )
-    );
+        // TODO
+        dispatch({
+          type: "fetch-blocked-users:request-successful",
+          userIds: blockedUserIds,
+        });
 
-    dispatch({
-      type: "fetch-client-boot-data-request-successful",
-      user: me,
-      channels,
-      readStates,
-      apps,
-      // starredItems,
-    });
-
-    return { user: me, channels, readStates, starredItems };
-  };
-
-  const fetchClientBootDataPrivate = async () => {
-    const [
-      rawChannels,
-      rawMe,
-      readStates,
-      // starredItems
-    ] = await Promise.all([
-      fetchUserPrivateChannels(),
-      fetchMe(),
-      fetchUserChannelsReadStates(),
-      // fetchStarredItems(),
-      fetchBlockedUsers(),
-    ]);
-
-    const me = parseUser(rawMe);
-    const channels = rawChannels.map((c) => ({
-      ...c,
-      memberUserIds: c.memberUserIds == null ? [me.id] : c.memberUserIds,
-    }));
-
-    // TODO: Change this
-    // const missingChannelStars = starredItems.filter(
-    //   (i) =>
-    //     i.type === "channel" && rawChannels.every((c) => c.id !== i.reference)
-    // );
-
-    // if (missingChannelStars.length !== 0)
-    //   await Promise.all(
-    //     missingChannelStars.map((s) =>
-    //       fetchChannel(s.reference).catch((e) => {
-    //         // 403 may happen if you have starred a channel you no longer have access to
-    //         if (e.code !== 403 && e.code !== 404) throw e;
-    //       })
-    //     )
-    //   );
-
-    fetchPreferences();
-
-    const dmChannelIds = unique(
-      channels.filter((c) => c.kind === "dm").map((c) => c.id)
-    );
-    for (const id of dmChannelIds) fetchChannelMembers(id);
-
-    dispatch({
-      type: "fetch-client-boot-data-request-successful",
-      user: me,
-      channels,
-      readStates,
-      // starredItems,
-    });
-
-    return { user: me, channels, readStates };
-  };
+        return { user: me, channels, readStates };
+      });
 
   return {
+    async login({
+      message,
+      signature,
+      address,
+      signedAt,
+      nonce,
+      accessToken,
+      refreshToken,
+    }) {
+      await api.authenticate({
+        message,
+        signature,
+        address,
+        signedAt,
+        nonce,
+        accessToken,
+        refreshToken,
+      });
+      setAuthenticated(true);
+    },
     logout() {
-      authTokenStore.clear();
+      setAuthenticated(false);
       cacheStore.clear();
       dispatch({ type: "logout" });
     },
     fetchMe,
     updateMe,
     deleteMe() {
-      return authorizedFetch("/users/me", { method: "DELETE" });
+      return api.deleteMe();
     },
     fetchBlockedUsers,
     fetchPreferences,
@@ -399,63 +277,25 @@ export default ({
         channelId,
         setting,
       });
-
-      const preferences = await authorizedFetch("/users/me/preferences");
-
-      return authorizedFetch("/users/me/preferences", {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          channels: {
-            ...preferences?.channels,
-            [channelId]:
-              setting === "off"
-                ? { muted: true }
-                : setting === "mentions"
-                ? { mentions: true }
-                : {},
-          },
-        }),
-      });
+      return api.setChannelNotificationSetting(channelId, setting);
     },
     async registerDevicePushToken(token) {
       const me = await fetchMe();
       return updateMe({ pushTokens: unique([...me.pushTokens, token]) });
     },
     async fetchUser({ accountAddress }) {
-      const rawUsers = await authorizedFetch("/users/info", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ wallet_addresses: [accountAddress] }),
-        allowUnauthorized: true,
-      });
-      const users = rawUsers.map(parseUser);
-      dispatch({ type: "fetch-users-request-successful", users });
-      return users[0];
+      const user = await api.fetchUser({ accountAddress });
+      dispatch({ type: "fetch-users-request-successful", users: [user] });
+      return user;
     },
     fetchUsers,
     fetchMessages(
       channelId,
       { limit = 50, beforeMessageId, afterMessageId, onSuccess } = {}
     ) {
-      if (limit == null) throw new Error(`Missing required "limit" argument`);
-
-      const searchParams = new URLSearchParams(
-        [
-          ["before", beforeMessageId],
-          ["after", afterMessageId],
-          ["limit", limit],
-        ].filter((e) => e[1] != null)
-      );
-
-      const url = [`/channels/${channelId}/messages`, searchParams.toString()]
-        .filter((s) => s !== "")
-        .join("?");
-
-      return authorizedFetch(url, { allowUnauthorized: true }).then(
-        (rawMessages) => {
-          const messages = rawMessages.map(parseMessage);
-
+      return api
+        .fetchMessages(channelId, { limit, beforeMessageId, afterMessageId })
+        .then((messages) => {
           onSuccess?.();
           dispatch({
             type: "fetch-messages:request-successful",
@@ -466,21 +306,8 @@ export default ({
             messages,
           });
 
-          const fetchMessage = (messageId) =>
-            authorizedFetch(`/channels/${channelId}/messages/${messageId}`, {
-              allowUnauthorized: true,
-            }).then((rawMessage) =>
-              rawMessage == null
-                ? {
-                    id: messageId,
-                    channelId,
-                    deleted: true,
-                  }
-                : parseMessage(rawMessage)
-            );
-
           const fetchReplyTargetChain = (messageId, prevChain = []) =>
-            fetchMessage(messageId).then((message) => {
+            api.fetchChannelMessage(channelId, messageId).then((message) => {
               const chain = [...prevChain, message];
               if (message.replyTargetMessageId == null) return chain;
               return fetchReplyTargetChain(message.replyTargetMessageId, chain);
@@ -530,13 +357,11 @@ export default ({
             });
 
           return messages;
-        }
-      );
+        });
     },
     markChannelRead,
     fetchMessage(id) {
-      return authorizedFetch(`/messages/${id}`).then((rawMessage) => {
-        const message = parseMessage(rawMessage);
+      return api.fetchMessage(id).then((message) => {
         dispatch({
           type: "fetch-message:request-successful",
           message,
@@ -545,38 +370,16 @@ export default ({
       });
     },
     async fetchLastChannelMessage(channelId) {
-      const [message] = await authorizedFetch(
-        `/channels/${channelId}/messages?limit=1`,
-        { allowUnauthorized: true }
-      ).then((ms) => ms.map(parseMessage));
+      const message = await api.fetchLastChannelMessage(channelId);
 
       if (message == null) return null;
 
-      if (message.replyTargetMessageId == null) {
-        dispatch({
-          type: "fetch-message:request-successful",
-          message,
-        });
-        return message;
-      }
-
-      const fetchLastNonReplyBeforeMessage = async (messageId) => {
-        const [message] = await authorizedFetch(
-          `/channels/${channelId}/messages?limit=1&before=${messageId}`,
-          { allowUnauthorized: true }
-        ).then((ms) => ms.map(parseMessage));
-        if (message.replyTargetMessageId == null) return message;
-        return fetchLastNonReplyBeforeMessage(message.id);
-      };
-
-      const lastNonReply = await fetchLastNonReplyBeforeMessage(message.id);
-
       dispatch({
         type: "fetch-message:request-successful",
-        message: lastNonReply,
+        message,
       });
 
-      return lastNonReply;
+      return message;
     },
     async createMessage(
       { channel: channelId, blocks, replyToMessageId: replyTargetMessageId },
@@ -607,70 +410,50 @@ export default ({
         });
       }
 
-      return authorizedFetch("/messages", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          channel: channelId,
+      return api
+        .createChannelMessage(channelId, {
           blocks,
-          content: stringContent,
-          reply_to: replyTargetMessageId,
-        }),
-      }).then(
-        (rawMessage) => {
-          const message = parseMessage(rawMessage);
-          dispatch({
-            type: "create-message:request-successful",
-            message,
-            optimisticEntryId: dummyId,
-          });
-          markChannelRead(message.channelId, {
-            readAt: new Date(message.createdAt),
-          });
-          return message;
-        },
-        (error) => {
-          dispatch({
-            type: "create-message:request-failed",
-            error,
-            channelId,
-            optimisticEntryId: dummyId,
-          });
-          return Promise.reject(error);
-        }
-      );
+          stringContent,
+          replyTargetMessageId,
+        })
+        .then(
+          (message) => {
+            dispatch({
+              type: "create-message:request-successful",
+              message,
+              optimisticEntryId: dummyId,
+            });
+            markChannelRead(message.channelId, {
+              readAt: new Date(message.createdAt),
+            });
+            return message;
+          },
+          (error) => {
+            dispatch({
+              type: "create-message:request-failed",
+              error,
+              channelId,
+              optimisticEntryId: dummyId,
+            });
+            return Promise.reject(error);
+          }
+        );
     },
-    updateMessage(messageId, { blocks }) {
-      return authorizedFetch(`/messages/${messageId}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          blocks,
-          content: stringifyMessageBlocks(blocks, { humanReadable: false }),
-        }),
-      }).then((rawMessage) => {
-        const message = parseMessage(rawMessage);
-        dispatch({
-          type: "message-update-request-successful",
-          message,
-        });
-        return rawMessage;
+    async updateMessage(messageId, { blocks }) {
+      const message = await api.updateMessage(messageId, { blocks });
+      dispatch({
+        type: "message-update-request-successful",
+        message,
       });
+      return message;
     },
-    removeMessage(messageId) {
-      return authorizedFetch(`/messages/${messageId}`, {
-        method: "DELETE",
-      }).then((message) => {
-        dispatch({ type: "message-delete-request-successful", messageId });
-        return message;
-      });
+    async removeMessage(messageId) {
+      const message = api.removeMessage(messageId);
+      dispatch({ type: "message-delete-request-successful", messageId });
+      return message;
     },
     reportMessage(messageId, { comment }) {
-      return authorizedFetch(`/messages/${messageId}/report`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ comment, reason: "other" }),
-      });
+      return api.reportMessage(messageId, { comment });
     },
     addMessageReaction(messageId, { emoji }) {
       invariant(isEmoji(emoji), "Only emojis allowed");
@@ -697,10 +480,7 @@ export default ({
       }
 
       // TODO: Undo the optimistic update if the request fails
-      return authorizedFetch(
-        `/messages/${messageId}/reactions/${encodeURIComponent(emoji)}`,
-        { method: "POST" }
-      );
+      return api.addMessageReaction(messageId, { emoji });
     },
     removeMessageReaction(messageId, { emoji }) {
       const me = selectMe(getStoreState());
@@ -713,56 +493,36 @@ export default ({
       });
 
       // TODO: Undo the optimistic update if the request fails
-      return authorizedFetch(
-        `/messages/${messageId}/reactions/${encodeURIComponent(emoji)}`,
-        { method: "DELETE" }
-      );
+      return api.removeMessageReaction(messageId, { emoji });
     },
     fetchChannel,
     fetchUserChannels,
     fetchUserPrivateChannels,
-    fetchPubliclyReadableChannels(query) {
-      const searchParams = new URLSearchParams({
-        scope: "discovery",
-        ...query,
+    async fetchPubliclyReadableChannels(query) {
+      const channels = await api.fetchPubliclyReadableChannels(query);
+      dispatch({
+        type: "fetch-publicly-readable-channels-request-successful",
+        channels,
       });
-      return authorizedFetch(`/channels?${searchParams}`, {
-        allowUnauthorized: true,
-      }).then((rawChannels) => {
-        const channels = rawChannels.map(parseChannel);
-        dispatch({
-          type: "fetch-publicly-readable-channels-request-successful",
-          channels,
-        });
-        return channels;
-      });
+      return channels;
     },
-    fetchUserMessages(userId) {
-      return authorizedFetch(`/users/${userId}/messages`).then(
-        (rawMessages) => {
-          const messages = rawMessages.map(parseMessage);
-          dispatch({ type: "fetch-messages:request-successful", messages });
-          return messages;
-        }
-      );
+    async fetchUserMessages(userId) {
+      const messages = await api.fetchUserMessages(userId);
+      dispatch({ type: "fetch-messages:request-successful", messages });
+      return messages;
     },
     fetchUserChannelsReadStates,
     createChannel,
-    createDmChannel({ name, memberUserIds, memberWalletAddresses }) {
-      return authorizedFetch("/channels", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          name,
-          kind: "dm",
-          members: memberWalletAddresses ?? memberUserIds,
-        }),
-      }).then((res) => {
-        // TODO
-        fetchUserChannels();
-        // fetchInitialData();
-        return res;
+    async createDmChannel({ name, memberUserIds, memberWalletAddresses }) {
+      const channel = await api.createDmChannel({
+        name,
+        memberUserIds,
+        memberWalletAddresses,
       });
+
+      // TODO: dispatch instead
+      fetchUserChannels();
+      return channel;
     },
     createOpenChannel({ name, description, body, tags }) {
       return createChannel({
@@ -808,44 +568,23 @@ export default ({
     fetchChannelMembers,
     fetchChannelPermissions,
     fetchChannelPublicPermissions,
-    addChannelMember(channelId, walletAddressOrUserId) {
-      return authorizedFetch(`/channels/${channelId}/invite`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          members: Array.isArray(walletAddressOrUserId)
-            ? walletAddressOrUserId
-            : [walletAddressOrUserId],
-        }),
-      }).then((res) => {
-        // TODO
-        fetchChannelMembers(channelId);
-        // fetchInitialData();
-        return res;
-      });
+    async addChannelMember(channelId, walletAddressOrUserId) {
+      await api.addChannelMember(channelId, walletAddressOrUserId);
+      // TODO: dispatch instead
+      fetchChannelMembers(channelId);
     },
-    removeChannelMember(channelId, userId) {
-      return authorizedFetch(`/channels/${channelId}/members/${userId}`, {
-        method: "DELETE",
-      }).then((res) => {
-        // TODO
-        fetchChannelMembers(channelId);
-        // fetchInitialData();
-        return res;
-      });
+    async removeChannelMember(channelId, userId) {
+      await api.removeChannelMember(channelId, userId);
+      // TODO: dispatch instead
+      fetchChannelMembers(channelId);
     },
-    joinChannel(channelId) {
-      return authorizedFetch(`/channels/${channelId}/join`, {
-        method: "POST",
-      }).then((res) => {
-        // TODO
-        fetchChannel(channelId);
-        fetchChannelMembers(channelId);
-        // fetchInitialData();
-        return res;
-      });
+    async joinChannel(channelId) {
+      await api.joinChannel(channelId);
+      // TODO: dispatch instead
+      fetchChannel(channelId);
+      fetchChannelMembers(channelId);
     },
-    leaveChannel(channelId) {
+    async leaveChannel(channelId) {
       const me = selectMe(getStoreState());
 
       dispatch({
@@ -854,37 +593,24 @@ export default ({
         userId: me.id,
       });
 
-      return authorizedFetch(`/channels/${channelId}/members/me`, {
-        method: "DELETE",
-      }).then((res) => {
-        // TODO
-        fetchChannelMembers(channelId);
-        // fetchInitialData();
-        return res;
-      });
+      await api.leaveChannel(channelId);
+      // TODO: dispatch instead
+      fetchChannelMembers(channelId);
     },
-    updateChannel(id, { name, description, avatar, body }) {
-      return authorizedFetch(`/channels/${id}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          name: cleanString(name),
-          description: cleanString(description),
-          avatar: cleanString(avatar),
-          body,
-        }),
-      }).then((res) => {
-        // TODO
-        fetchChannel(id);
-        // fetchInitialData();
-        return res;
+    async updateChannel(channelId, { name, description, avatar, body }) {
+      const channel = await api.updateChannel(channelId, {
+        name,
+        description,
+        avatar,
+        body,
       });
+      // TODO: dispatch instead
+      fetchChannel(channelId);
+      return channel;
     },
-    deleteChannel(id) {
-      authorizedFetch(`/channels/${id}`, { method: "DELETE" }).then((res) => {
-        dispatch({ type: "delete-channel-request-successful", id });
-        return res;
-      });
+    async deleteChannel(id) {
+      await api.deleteChannel(id);
+      dispatch({ type: "delete-channel-request-successful", id });
     },
     updateChannelPermissions,
     makeChannelOpen(channelId) {
@@ -903,14 +629,10 @@ export default ({
       updateChannelPermissions(channelId, privateChannelPermissionOverrides);
     },
     fetchStarredItems,
-    fetchApps() {
-      return authorizedFetch("/apps", {
-        allowUnauthorized: true,
-        priority: "low",
-      }).then((res) => {
-        dispatch({ type: "fetch-apps-request-successful", apps: res });
-        return res;
-      });
+    async fetchApps() {
+      const apps = await api.fetchApps();
+      dispatch({ type: "fetch-apps-request-successful", apps });
+      return apps;
     },
     fetchClientBootData(mode = "full") {
       switch (mode) {
@@ -963,68 +685,35 @@ export default ({
       });
     },
     reportUser(userId, { comment }) {
-      return authorizedFetch("/users/me/reports", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ user: userId, reason: "other", comment }),
-      });
+      return api.reportUser(userId, { comment });
     },
     async blockUser(userId) {
-      await authorizedFetch("/users/me/blocks", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ user: userId }),
-      });
+      await api.blockUser(userId);
+      // TODO: dispatch instead
       await fetchBlockedUsers();
     },
     async unblockUser(userId) {
-      await authorizedFetch(`/users/me/blocks/${userId}`, { method: "DELETE" });
+      await api.unblockUser(userId);
+      // TODO: dispatch instead
       await fetchBlockedUsers();
     },
     uploadImage({ files }) {
-      const formData = new FormData();
-      for (let file of files) formData.append("files", file);
-      return authorizedFetch("/media/images", {
-        method: "POST",
-        body: formData,
-      }).then((files) =>
-        files.map((f) => ({
-          ...f,
-          urls: {
-            small: buildCloudflareImageUrl(f.id, { size: "small" }),
-            large: buildCloudflareImageUrl(f.id, { size: "large" }),
-          },
-        }))
-      );
+      return api.uploadImage({ files });
     },
     uploadImageWithUrl(url) {
-      return authorizedFetch("/media/url", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ url }),
-      }).then(({ id }) => ({
-        url: buildCloudflareImageUrl(id, { size: "large" }),
-      }));
+      return api.uploadImageWithUrl(url);
     },
     registerChannelTypingActivity(channelId) {
-      return authorizedFetch(`/channels/${channelId}/typing`, {
-        method: "POST",
-      });
+      return api.registerChannelTypingActivity(channelId);
     },
     searchGifs(query) {
-      return authorizedFetch(`/integrations/tenor/search?q=${query}`);
+      return api.searchGifs(query);
     },
     promptDalle(prompt) {
-      return authorizedFetch(
-        `/integrations/dalle/generate?prompt=${encodeURIComponent(prompt)}`,
-        { method: "POST" }
-      );
+      return api.promptDalle(prompt);
     },
     promptChatGPT(prompt) {
-      return authorizedFetch(
-        `/integrations/chatgpt?message=${encodeURIComponent(prompt)}`,
-        { method: "POST" }
-      );
+      return api.promptChatGPT(prompt);
     },
     // This assumes the client is batching request
     async fetchEnsData(

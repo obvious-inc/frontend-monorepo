@@ -372,7 +372,7 @@ const LoginScreen = ({ mobileAppLogin, onSuccess, onError }) => {
                 css={css({
                   width: "40rem",
                   maxWidth: "100%",
-                  marginTop: "2.8rem",
+                  margin: "2.8rem auto 0",
                   "p + p": { marginTop: "1.4rem" },
                 })}
               >
