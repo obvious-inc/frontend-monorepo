@@ -171,7 +171,11 @@ const BrowseScreen = () => {
   return (
     <Layout>
       <div css={css({ padding: "0 1.6rem" })}>
-        <MainContentContainer sidebar={<FeedSidebar />}>
+        <MainContentContainer
+          sidebar={
+            <FeedSidebar visible={groupedItemsByName.past?.length > 0} />
+          }
+        >
           <div
             css={css({
               padding: "1rem 0 3.2rem",
@@ -451,7 +455,7 @@ const BrowseScreen = () => {
 
 const FEED_PAGE_ITEM_COUNT = 30;
 
-const FeedSidebar = React.memo(() => {
+const FeedSidebar = React.memo(({ visible }) => {
   const { data: latestBlockNumber } = useBlockNumber({
     watch: true,
     cache: 20_000,
@@ -468,23 +472,22 @@ const FeedSidebar = React.memo(() => {
     latestBlockNumber == null
       ? null
       : () =>
-          Promise.all([
-            fetchNounsActivity({
-              startBlock:
-                latestBlockNumber - BigInt(APPROXIMATE_BLOCKS_PER_DAY * 3),
-              endBlock: latestBlockNumber,
-            }),
+          fetchNounsActivity({
+            startBlock:
+              latestBlockNumber - BigInt(APPROXIMATE_BLOCKS_PER_DAY * 3),
+            endBlock: latestBlockNumber,
+          }).then(() =>
             fetchNounsActivity({
               startBlock:
                 latestBlockNumber - BigInt(APPROXIMATE_BLOCKS_PER_DAY * 30),
               endBlock:
                 latestBlockNumber - BigInt(APPROXIMATE_BLOCKS_PER_DAY * 3) - 1n,
-            }),
-          ]),
+            })
+          ),
     [latestBlockNumber, fetchNounsActivity]
   );
 
-  if (visibleItems.length === 0) return null;
+  if (!visible || visibleItems.length === 0) return null;
 
   return (
     <div
