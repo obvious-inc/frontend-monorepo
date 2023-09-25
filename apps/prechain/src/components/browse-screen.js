@@ -69,18 +69,18 @@ const searchProposals = (items, rawQuery) => {
 };
 
 const useFeedItems = () => {
-  const { data: latestBlockNumber } = useBlockNumber();
+  const { data: eagerLatestBlockNumber } = useBlockNumber({
+    watch: true,
+    cacheTime: 10_000,
+  });
+  const latestBlockNumber = React.useDeferredValue(eagerLatestBlockNumber);
+
   const proposals = useProposals();
   const candidates = useProposalCandidates();
 
-  // const calculateBlockTimestamp = useApproximateBlockTimestampCalculator();
-
   return React.useMemo(() => {
     const proposalItems = proposals.flatMap((p) =>
-      buildProposalFeed(p, {
-        latestBlockNumber,
-        // calculateBlockTimestamp,
-      })
+      buildProposalFeed(p, { latestBlockNumber })
     );
 
     const candidateItems = candidates.flatMap((c) =>
@@ -91,12 +91,7 @@ const useFeedItems = () => {
       ...proposalItems,
       ...candidateItems,
     ]);
-  }, [
-    proposals,
-    candidates,
-    // calculateBlockTimestamp,
-    latestBlockNumber,
-  ]);
+  }, [proposals, candidates, latestBlockNumber]);
 };
 
 const PROPOSALS_PAGE_ITEM_COUNT = 20;
@@ -128,10 +123,12 @@ const BrowseScreen = () => {
       (c) => c.latestVersion != null
     );
 
+    const filteredProposals = proposals.filter((p) => p.startBlock != null);
+
     const items = [
       ...filteredProposalDrafts,
       ...filteredProposalCandidates,
-      ...proposals,
+      ...filteredProposals,
     ];
 
     return deferredQuery === "" ? items : searchProposals(items, deferredQuery);
@@ -139,6 +136,7 @@ const BrowseScreen = () => {
 
   const groupedItemsByName = arrayUtils.groupBy((i) => {
     if (i.type === "draft") return "drafts";
+
     // Candidates
     if (i.slug != null) return "ongoing";
 
@@ -164,8 +162,8 @@ const BrowseScreen = () => {
   useFetch(
     () =>
       Promise.all([
-        fetchBrowseScreenData({ first: 15 }),
-        fetchBrowseScreenData({ skip: 15, first: 1000 }),
+        fetchBrowseScreenData({ first: 40 }),
+        fetchBrowseScreenData({ skip: 40, first: 1000 }),
       ]),
     [fetchBrowseScreenData]
   );

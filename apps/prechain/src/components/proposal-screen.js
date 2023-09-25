@@ -61,13 +61,7 @@ const supportDetailedToString = (n) => {
   return nameBySupportDetailed[n];
 };
 
-export const buildProposalFeed = (
-  proposal,
-  {
-    latestBlockNumber,
-    // calculateBlockTimestamp
-  }
-) => {
+export const buildProposalFeed = (proposal, { latestBlockNumber }) => {
   if (proposal == null) return [];
 
   const createdEventItem = {
@@ -84,8 +78,7 @@ export const buildProposalFeed = (
     proposal.feedbackPosts?.map((p) => ({
       type: "feedback-post",
       id: `${proposal.id}-${p.id}`,
-      bodyRichText:
-        p.reason == null ? null : messageUtils.parseString(p.reason),
+      body: p.reason,
       support: p.supportDetailed,
       authorAccount: p.voter.id,
       timestamp: p.createdTimestamp,
@@ -98,11 +91,9 @@ export const buildProposalFeed = (
     proposal.votes?.map((v) => ({
       type: "vote",
       id: `${proposal.id}-${v.id}`,
-      bodyRichText:
-        v.reason == null ? null : messageUtils.parseString(v.reason),
+      body: v.reason,
       support: v.supportDetailed,
       authorAccount: v.voter.id,
-      // timestamp: calculateBlockTimestamp(v.blockNumber),
       blockNumber: v.blockNumber,
       voteCount: v.votes,
       proposalId: proposal.id,
@@ -121,7 +112,6 @@ export const buildProposalFeed = (
       type: "event",
       eventType: "proposal-started",
       id: `${proposal.id}-started`,
-      // timestamp: calculateBlockTimestamp(proposal.startBlock),
       blockNumber: proposal.startBlock,
       proposalId: proposal.id,
     });
@@ -134,7 +124,6 @@ export const buildProposalFeed = (
       type: "event",
       eventType: "proposal-ended",
       id: `${proposal.id}-ended`,
-      // timestamp: calculateBlockTimestamp(actualEndBlock),
       blockNumber: actualEndBlock,
       proposalId: proposal.id,
     });
@@ -145,7 +134,6 @@ export const buildProposalFeed = (
       type: "event",
       eventType: "proposal-objection-period-started",
       id: `${proposal.id}-objection-period-start`,
-      // timestamp: calculateBlockTimestamp(proposal.endBlock),
       blockNumber: proposal.endBlock,
       proposalId: proposal.id,
     });
@@ -158,18 +146,18 @@ export const buildProposalFeed = (
 };
 
 const useFeedItems = (proposalId) => {
-  const { data: latestBlockNumber } = useBlockNumber({ watch: true });
+  const { data: eagerLatestBlockNumber } = useBlockNumber({
+    watch: true,
+    cacheTime: 20_000,
+  });
+
+  const latestBlockNumber = React.useDeferredValue(eagerLatestBlockNumber);
+
   const proposal = useProposal(proposalId);
 
-  const calculateBlockTimestamp = useApproximateBlockTimestampCalculator();
-
   return React.useMemo(
-    () =>
-      buildProposalFeed(proposal, {
-        latestBlockNumber,
-        calculateBlockTimestamp,
-      }),
-    [proposal, calculateBlockTimestamp, latestBlockNumber]
+    () => buildProposalFeed(proposal, { latestBlockNumber }),
+    [proposal, latestBlockNumber]
   );
 };
 
@@ -1161,9 +1149,9 @@ export const ActivityFeed = ({ isolated, items = [], spacing = "1.6rem" }) => {
             </div>
           </div>
           <div css={css({ paddingLeft: "2.6rem" })}>
-            {item.bodyRichText != null && (
+            {item.body != null && (
               <RichText
-                blocks={item.bodyRichText}
+                blocks={messageUtils.parseString(item.body)}
                 css={css({
                   margin: "0.35rem 0",
                   userSelect: "text",
