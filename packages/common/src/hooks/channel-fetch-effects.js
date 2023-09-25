@@ -1,6 +1,5 @@
 import React from "react";
-import { useAuth } from "../auth.js";
-import { useActions } from "../store.js";
+import { useAuth, useActions } from "../store.js";
 import useFetch from "../react/hooks/fetch.js";
 import useInterval from "../react/hooks/interval.js";
 import { useMe } from "./me.js";

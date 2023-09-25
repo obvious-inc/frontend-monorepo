@@ -11,6 +11,7 @@
   },
   "exports": {
     "./app": "./dist/app.js",
+    "./apis": "./dist/apis.js",
     "./wallet": "./dist/wallet.js",
     "./utils": "./dist/utils.js",
     "./react": "./dist/react.js",

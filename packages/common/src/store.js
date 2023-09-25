@@ -1,11 +1,9 @@
 import React from "react";
 import { create as createZustandStoreHook } from "zustand";
-import { useAuth, useAuthListener } from "./auth.js";
 import { useStore as useCacheStore } from "./cache-store.js";
 import rootReducer from "./root-reducer.js";
 import createActions from "./actions.js";
 import { mapValues } from "./utils/object.js";
-import { parseString as parseStringToMessageBlocks } from "./utils/message.js";
 import { selectMe } from "./reducers/me.js";
 import {
   selectUser,
@@ -26,9 +24,6 @@ import { selectMessage } from "./reducers/messages.js";
 import { selectEnsName } from "./reducers/ens.js";
 import { selectHasFetchedUserChannels } from "./reducers/ui.js";
 import useLatestCallback from "./react/hooks/latest-callback.js";
-
-const isTruncatedAddress = (s) =>
-  typeof s === "string" && s.startsWith("0x") && s.includes("...");
 
 const selectorFunctions = {
   selectMe,
@@ -101,207 +96,32 @@ export const useAfterActionListener = (listener_) => {
   }, [listener]);
 };
 
-const createApiParsers = ({ buildCloudflareImageUrl }) => ({
-  parseUser(u) {
-    if (u.id == null) throw new Error();
-
-    const normalizeString = (maybeString) => {
-      if (maybeString == null || maybeString.trim() === "") return null;
-      return maybeString.trim();
-    };
-
-    const createProfilePicture = () => {
-      if (u.pfp == null) return null;
-
-      if (normalizeString(u.pfp.cf_id) == null)
-        return {
-          small: u.pfp.input_image_url,
-          large: u.pfp.input_image_url,
-        };
-
-      return {
-        small: buildCloudflareImageUrl(u.pfp.cf_id, { size: "small" }),
-        large: buildCloudflareImageUrl(u.pfp.cf_id, { size: "large" }),
-        isVerified: u.pfp.verified,
-      };
-    };
-
-    const parsedData = { id: u.id };
-
-    // Static ish
-    if (u.wallet_address != null) parsedData.walletAddress = u.wallet_address;
-    if (u.push_tokens != null) parsedData.pushTokens = u.push_tokens;
-    if (u.created_at != null) parsedData.createdAt = u.created_at;
-
-    if (u.display_name !== undefined && !isTruncatedAddress(u.display_name))
-      parsedData.displayName = normalizeString(u.display_name);
-
-    if (u.description !== undefined)
-      parsedData.description = normalizeString(u.description);
-
-    if (u.status !== undefined) parsedData.status = normalizeString(u.status);
-
-    if (u.pfp !== undefined) parsedData.profilePicture = createProfilePicture();
-
-    return parsedData;
-  },
-  parseChannel(rawChannel) {
-    if (rawChannel.id == null) throw new Error();
-
-    const normalizeString = (s) => {
-      if (s == null) return null;
-      return s.trim() === "" ? null : s;
-    };
-
-    const description = normalizeString(rawChannel.description);
-    const body =
-      rawChannel.body == null || rawChannel.body.length === 0
-        ? null
-        : rawChannel.body;
-
-    const channel = {
-      id: rawChannel.id,
-      name: normalizeString(rawChannel.name),
-      description,
-      descriptionBlocks:
-        description != null
-          ? parseStringToMessageBlocks(description)
-          : body != null
-          ? body
-          : null,
-      body,
-      kind: rawChannel.kind,
-      createdAt: rawChannel.created_at,
-      lastMessageAt: rawChannel.last_message_at,
-      tags: rawChannel.tags,
-      memberUserIds:
-        rawChannel.members == null
-          ? undefined
-          : rawChannel.members.map((m) => (typeof m === "string" ? m : m.user)),
-      ownerUserId: rawChannel.owner,
-      isDeleted: rawChannel.deleted,
-    };
-
-    if (rawChannel.tags != null) channel.tags = rawChannel.tags;
-
-    if (normalizeString(rawChannel.avatar) == null) return channel;
-
-    if (rawChannel.avatar.match(/^https?:\/\//)) {
-      const url = rawChannel.avatar;
-      return { ...channel, image: url, imageLarge: url };
-    }
-
-    const image = buildCloudflareImageUrl(rawChannel.avatar, { size: "small" });
-    const imageLarge = buildCloudflareImageUrl(rawChannel.avatar, {
-      size: "large",
-    });
-
-    return { ...channel, image, imageLarge };
-  },
-  parseMessage(rawMessage) {
-    if (rawMessage.id == null) throw new Error();
-
-    if (rawMessage.deleted) return { id: rawMessage.id, deleted: true };
-
-    const systemMessageTypes = [
-      "member-joined",
-      "user-invited",
-      "channel-updated",
-      "app-installed",
-    ];
-
-    const appMessageTypes = ["webhook", "app"];
-
-    const deriveMessageType = (message) => {
-      switch (message.type) {
-        case undefined:
-        case 0:
-          return "regular";
-        case 1:
-          if (message.inviter) return "user-invited";
-          return "member-joined";
-        case 2:
-        case 3:
-          return "webhook";
-        case 5:
-          return "channel-updated";
-        case 6:
-          return "app-installed";
-        default:
-          console.warn(`Unknown message type "${message.type}"`);
-      }
-    };
-
-    const type = deriveMessageType(rawMessage);
-
-    const isSystemMessage = systemMessageTypes.includes(type);
-    const isAppMessage = appMessageTypes.includes(type);
-
-    const appId = rawMessage.app;
-    const authorUserId = rawMessage.author;
-
-    const content =
-      rawMessage.blocks?.length > 0
-        ? rawMessage.blocks
-        : [{ type: "paragraph", children: [{ text: rawMessage.content }] }];
-
-    const authorId = isSystemMessage
-      ? "system"
-      : isAppMessage
-      ? appId
-      : authorUserId;
-
-    return {
-      id: rawMessage.id,
-      deleted: rawMessage.deleted,
-      createdAt: rawMessage.created_at,
-      channelId: rawMessage.channel,
-      authorUserId,
-      authorId,
-      isEdited: rawMessage.edited_at != null,
-      type,
-      isSystemMessage,
-      isAppMessage,
-      installerUserId: rawMessage.installer,
-      inviterUserId: rawMessage.inviter,
-      content,
-      stringContent: rawMessage.content,
-      embeds: rawMessage.embeds,
-      reactions: rawMessage.reactions,
-      appId,
-      replyTargetMessageId: rawMessage.reply_to,
-      isReply: rawMessage.reply_to != null,
-      updates: rawMessage.updates,
-    };
-  },
-});
-
 const Context = React.createContext({});
 
-export const Provider = ({ cloudflareAccountHash, children }) => {
-  const {
-    status: authStatus,
-    authorizedFetch,
-    tokenStore: authTokenStore,
-  } = useAuth();
+export const Provider = ({ api, children }) => {
+  const [isAuthenticated, setAuthenticated] = React.useState(null);
+  const [isConnected, setConnected] = React.useState(null);
+
+  const user = useStore(selectMe);
+
+  const authStatus =
+    isAuthenticated == null
+      ? "loading"
+      : isAuthenticated
+      ? "authenticated"
+      : "not-authenticated";
+
+  React.useEffect(() => {
+    api.isAuthenticated().then((isAuthenticated) => {
+      setAuthenticated(isAuthenticated);
+    });
+  }, [api]);
 
   const dispatch = useActionDispatcher();
 
   const cacheStore = useCacheStore();
 
-  const buildCloudflareImageUrl = React.useCallback(
-    (cloudflareId, { size } = {}) => {
-      const variantNameBySizeName = { small: "avatar", large: "public" };
-      const variant = variantNameBySizeName[size];
-      if (variant == null) throw new Error();
-      return `https://imagedelivery.net/${cloudflareAccountHash}/${cloudflareId}/${variant}`;
-    },
-    [cloudflareAccountHash]
-  );
-
-  const { parseUser, parseChannel, parseMessage } = createApiParsers({
-    buildCloudflareImageUrl,
-  });
+  const { parseUser, parseChannel, parseMessage } = api.parsers;
 
   const selectors = mapValues(
     (selector) =>
@@ -314,22 +134,66 @@ export const Provider = ({ cloudflareAccountHash, children }) => {
     // eslint-disable-next-line
     (actionFn) => useLatestCallback(actionFn),
     createActions({
+      api,
       dispatch,
       authStatus,
-      authorizedFetch,
       getStoreState,
       cacheStore,
-      parseUser,
-      parseChannel,
-      parseMessage,
-      buildCloudflareImageUrl,
-      authTokenStore,
+      setAuthenticated,
     })
   );
 
-  useAuthListener((eventName) => {
-    if (eventName === "access-token-expired") actions.logout();
-  });
+  React.useEffect(() => {
+    let typingEndedTimeoutHandles = {};
+
+    const removeListener = api.addListener((eventName, payload) => {
+      const me = selectMe(getStoreState());
+
+      // Dispatch a 'user-typing-ended' action when a user+channel combo has
+      // been silent for a while
+      if (eventName === "server-event:user-typed") {
+        const id = [payload.channelId, payload.userId].join(":");
+
+        if (typingEndedTimeoutHandles[id]) {
+          clearTimeout(typingEndedTimeoutHandles[id]);
+          delete typingEndedTimeoutHandles[id];
+        }
+
+        typingEndedTimeoutHandles[id] = setTimeout(() => {
+          delete typingEndedTimeoutHandles[id];
+          dispatch({
+            type: "user-typing-ended",
+            channelId: payload.channelId,
+            userId: payload.userId,
+          });
+        }, 6000);
+      }
+
+      switch (eventName) {
+        case "user-authentication-expired":
+          actions();
+          setAuthenticated(false);
+          break;
+
+        case "connection-state-change":
+          setConnected(payload.connected === true);
+          break;
+
+        // Regular server event
+        default:
+          dispatch({ type: eventName, data: payload, user: me });
+      }
+    });
+
+    return () => {
+      removeListener();
+    };
+  }, [api, actions, dispatch]);
+
+  React.useEffect(() => {
+    if (!isAuthenticated || user?.id == null) return;
+    api.connect({ userId: user.id });
+  }, [isAuthenticated, user?.id, api]);
 
   const serverMessageHandler = useLatestCallback((name, data) => {
     const me = selectMe(getStoreState());
@@ -397,12 +261,16 @@ export const Provider = ({ cloudflareAccountHash, children }) => {
 
   const contextValue = React.useMemo(
     () => ({
+      isConnected,
+      authStatus,
       selectors,
       actions,
       serverMessageHandler,
     }),
     // eslint-disable-next-line
     [
+      isConnected,
+      authStatus,
       // eslint-disable-next-line
       ...Object.values(selectors),
       // eslint-disable-next-line
@@ -412,6 +280,11 @@ export const Provider = ({ cloudflareAccountHash, children }) => {
   );
 
   return <Context.Provider value={contextValue}>{children}</Context.Provider>;
+};
+
+export const useAuth = () => {
+  const { authStatus } = React.useContext(Context);
+  return { status: authStatus };
 };
 
 export const useSelectors = () => {
@@ -424,7 +297,7 @@ export const useActions = () => {
   return actions;
 };
 
-export const useServerMessageHandler = () => {
-  const { serverMessageHandler } = React.useContext(Context);
-  return serverMessageHandler;
+export const useServerConnectionState = () => {
+  const { isConnected } = React.useContext(Context);
+  return { isConnected };
 };

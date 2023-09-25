@@ -1,6 +1,6 @@
 import React from "react";
 import { createRoot } from "react-dom/client";
-import { CacheStoreProvider } from "@shades/common/app";
+import { CacheStoreProvider, createCacheStore } from "@shades/common/app";
 import { ChainDataCacheContextProvider } from "./hooks/farcord.js";
 import {
   WagmiConfig,
@@ -58,7 +58,9 @@ createRoot(document.getElementById("app-mount")).render(
     <WagmiConfig config={wagmiConfig}>
       <ChainDataCacheContextProvider>
         <ChannelCacheContextProvider>
-          <CacheStoreProvider syncStorage={cacheStoreStorage}>
+          <CacheStoreProvider
+            store={createCacheStore({ storage: cacheStoreStorage })}
+          >
             <App />
           </CacheStoreProvider>
         </ChannelCacheContextProvider>

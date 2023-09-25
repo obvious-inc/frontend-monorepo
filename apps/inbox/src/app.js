@@ -1,6 +1,5 @@
 import isToday from "date-fns/isToday";
 import isYesterday from "date-fns/isYesterday";
-import Pusher from "pusher-js";
 import React from "react";
 import {
   BrowserRouter,
@@ -27,7 +26,6 @@ import {
   ethereum as ethereumUtils,
 } from "@shades/common/utils";
 import {
-  ServerConnectionProvider,
   useActions,
   useAuth,
   useMe,
@@ -782,33 +780,28 @@ const customTheme = {
 };
 
 const App = () => {
-  const { login } = useAuth();
+  const { login } = useActions();
   return (
     <BrowserRouter>
       <WagmiConfig config={wagmiConfig}>
-        <ServerConnectionProvider
-          Pusher={Pusher}
-          pusherKey={process.env.PUSHER_KEY}
-        >
-          <WalletLoginProvider authenticate={login}>
-            <ThemeProvider theme={customTheme}>
-              <SidebarProvider initialIsOpen={false}>
-                <RequireAuth>
-                  <Routes>
-                    <Route path="/" element={<RootLayout />}>
-                      <Route element={<InboxLayout />}>
-                        <Route index element={<Inbox />} />
-                        <Route path="/archive" element={<Archive />} />
-                      </Route>
-                      <Route path="/c/:channelId" element={<Channel />} />
+        <WalletLoginProvider authenticate={login}>
+          <ThemeProvider theme={customTheme}>
+            <SidebarProvider initialIsOpen={false}>
+              <RequireAuth>
+                <Routes>
+                  <Route path="/" element={<RootLayout />}>
+                    <Route element={<InboxLayout />}>
+                      <Route index element={<Inbox />} />
+                      <Route path="/archive" element={<Archive />} />
                     </Route>
-                    <Route path="*" element={<Navigate to="/" replace />} />
-                  </Routes>
-                </RequireAuth>
-              </SidebarProvider>
-            </ThemeProvider>
-          </WalletLoginProvider>
-        </ServerConnectionProvider>
+                    <Route path="/c/:channelId" element={<Channel />} />
+                  </Route>
+                  <Route path="*" element={<Navigate to="/" replace />} />
+                </Routes>
+              </RequireAuth>
+            </SidebarProvider>
+          </ThemeProvider>
+        </WalletLoginProvider>
       </WagmiConfig>
     </BrowserRouter>
   );

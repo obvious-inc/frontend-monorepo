@@ -17,16 +17,13 @@ import {
   BrowserRouter,
   Routes,
   Route,
-  // Navigate,
   useNavigate,
   useParams,
   useLocation,
   matchPath,
 } from "react-router-dom";
 import { ThemeProvider, Global } from "@emotion/react";
-import Pusher from "pusher-js";
 import {
-  ServerConnectionProvider,
   EmojiProvider,
   useAuth,
   useSelectors,
@@ -217,6 +214,7 @@ const App = () => {
 
   useSystemNotifications();
   useUserEnsNames();
+  useChannelHistoryTracker();
 
   useWalletEvent("disconnect", () => {
     if (authStatus === "not-authenticated") return;
@@ -405,12 +403,33 @@ const usePageLoadEffect = (cb, deps) => {
 
 const CHANNEL_HISTORY_CACHE_KEY = "active-channel-id";
 
+const useChannelHistoryTracker = () => {
+  const location = useLocation();
+  const { status: authStatus } = useAuth();
+  const { writeAsync: cacheWrite, readAsync: cacheRead } = useCacheStore();
+
+  React.useEffect(() => {
+    if (authStatus !== "authenticated") return;
+    if (cacheWrite == null) return;
+
+    const match = matchPath(
+      { path: "/channels/:channelId" },
+      location.pathname
+    );
+
+    if (match == null) {
+      cacheWrite(CHANNEL_HISTORY_CACHE_KEY, null);
+    } else {
+      cacheWrite(CHANNEL_HISTORY_CACHE_KEY, match.params.channelId);
+    }
+  }, [location, authStatus, cacheRead, cacheWrite]);
+};
+
 const IndexRoute = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const { status: authStatus } = useAuth();
-  const { writeAsync: cacheWrite, readAsync: cacheRead } =
-    useCacheStore() ?? {};
+  const { readAsync: cacheRead } = useCacheStore();
 
   usePageLoadEffect(() => {
     const fallbackRedirect = () => navigate("/new", { replace: true });
@@ -435,22 +454,6 @@ const IndexRoute = () => {
     };
   }, [location, authStatus, navigate, cacheRead]);
 
-  React.useEffect(() => {
-    if (authStatus !== "authenticated") return;
-    if (cacheWrite == null) return;
-
-    const match = matchPath(
-      { path: "/channels/:channelId" },
-      location.pathname
-    );
-
-    if (match == null) {
-      cacheWrite(CHANNEL_HISTORY_CACHE_KEY, null);
-    } else {
-      cacheWrite(CHANNEL_HISTORY_CACHE_KEY, match.params.channelId);
-    }
-  }, [location, authStatus, cacheRead, cacheWrite]);
-
   return null;
 };
 
@@ -472,7 +475,8 @@ const useTheme = () => {
 };
 
 export default function LazyRoot() {
-  const { login, state: authState } = useAuth();
+  const { state: authState } = useAuth();
+  const { login } = useActions();
   const theme = useTheme();
 
   if (authState === "loading") return null;
@@ -480,40 +484,35 @@ export default function LazyRoot() {
   return (
     <BrowserRouter>
       <WagmiConfig config={wagmiConfig}>
-        <ServerConnectionProvider
-          Pusher={Pusher}
-          pusherKey={process.env.PUSHER_KEY}
+        <WalletLoginProvider
+          authenticate={({ message, signature, signedAt, address, nonce }) =>
+            login({ message, signature, signedAt, address, nonce })
+          }
         >
-          <WalletLoginProvider
-            authenticate={({ message, signature, signedAt, address, nonce }) =>
-              login({ message, signature, signedAt, address, nonce })
-            }
-          >
-            <ThemeProvider theme={theme}>
-              <Tooltip.Provider delayDuration={300}>
-                <SidebarProvider>
-                  <DialogsProvider>
-                    <CommandCenterProvider>
-                      <EmojiProvider
-                        loader={() =>
-                          import("@shades/common/emoji").then((m) =>
-                            m.default.filter(
-                              (e) =>
-                                e.unicode_version === "" ||
-                                parseFloat(e.unicode_version) <= 12
-                            )
+          <ThemeProvider theme={theme}>
+            <Tooltip.Provider delayDuration={300}>
+              <SidebarProvider>
+                <DialogsProvider>
+                  <CommandCenterProvider>
+                    <EmojiProvider
+                      loader={() =>
+                        import("@shades/common/emoji").then((m) =>
+                          m.default.filter(
+                            (e) =>
+                              e.unicode_version === "" ||
+                              parseFloat(e.unicode_version) <= 12
                           )
-                        }
-                      >
-                        <App />
-                      </EmojiProvider>
-                    </CommandCenterProvider>
-                  </DialogsProvider>
-                </SidebarProvider>
-              </Tooltip.Provider>
-            </ThemeProvider>
-          </WalletLoginProvider>
-        </ServerConnectionProvider>
+                        )
+                      }
+                    >
+                      <App />
+                    </EmojiProvider>
+                  </CommandCenterProvider>
+                </DialogsProvider>
+              </SidebarProvider>
+            </Tooltip.Provider>
+          </ThemeProvider>
+        </WalletLoginProvider>
       </WagmiConfig>
     </BrowserRouter>
   );

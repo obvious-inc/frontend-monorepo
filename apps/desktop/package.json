@@ -4,11 +4,11 @@
   "main": "src/main.js",
   "private": true,
   "scripts": {
-    "start-web": "webpack serve --mode=development",
-    "build-web": "webpack --mode=production",
-    "start-desktop": "electron-forge start",
-    "make-desktop": "electron-forge make",
-    "publish-desktop": "electron-forge publish",
+    "dev": "webpack serve --mode=development",
+    "build": "webpack --mode=production",
+    "electron-dev": "electron-forge start",
+    "electron-make": "electron-forge make",
+    "electron-publish": "electron-forge publish",
     "lint": "eslint . && prettier . --check",
     "format": "prettier . --write"
   },

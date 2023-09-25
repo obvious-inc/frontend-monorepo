@@ -717,6 +717,7 @@ export const selectPermissions = (state, channelId) => {
     ...(meta?.publicPermissions ?? []),
   ];
 
+  console.log(permissions);
   const canPostMessages =
     permissions.includes(Permissions.CHANNEL_WRITE_MESSAGES) ||
     permissions.includes(Permissions.CHANNEL_JOIN);

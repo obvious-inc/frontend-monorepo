@@ -1,11 +1,62 @@
 import React from "react";
 import useLatestCallback from "./react/hooks/latest-callback.js";
 
-const Context = React.createContext(null);
+const Context = React.createContext({});
 
 const buildKey = (key) => `ns:${key}`;
 
-export const Provider = ({ syncStorage, asyncStorage, children }) => {
+export const createStore = ({ isAsync, storage }) => {
+  const read = (key_) => {
+    const key = buildKey(key_);
+    const parse = (rawValue) => {
+      if (rawValue == null) return null;
+
+      try {
+        return JSON.parse(rawValue);
+      } catch (e) {
+        console.warn(e);
+        return null;
+      }
+    };
+
+    if (isAsync) return storage.getItem(key).then(parse);
+
+    return parse(storage.getItem(key));
+  };
+
+  const write = (key_, value) => {
+    const key = buildKey(key_);
+    if (value == null) return storage.removeItem(key);
+    return storage.setItem(key, JSON.stringify(value));
+  };
+
+  return {
+    isAsync,
+    read,
+    write,
+    clear(key_) {
+      if (key_ == null) return storage.clear();
+      const key = buildKey(key_);
+      return storage.removeItem(key);
+    },
+    readAsync(key) {
+      if (isAsync) return read(key);
+      return new Promise((resolve) => resolve(read(key)));
+    },
+    writeAsync(key, value) {
+      if (isAsync) return write(key, value);
+      return new Promise((resolve, reject) => {
+        try {
+          resolve(write(key, value));
+        } catch (e) {
+          reject(e);
+        }
+      });
+    },
+  };
+};
+
+export const Provider = ({ store, children }) => {
   const [cachedStateMap, setCachedStateMap] = React.useState(new Map());
 
   const getCachedState = React.useCallback(
@@ -24,73 +75,21 @@ export const Provider = ({ syncStorage, asyncStorage, children }) => {
   );
 
   const contextValue = React.useMemo(
-    () => ({ syncStorage, asyncStorage, getCachedState, setCachedState }),
-    [syncStorage, asyncStorage, getCachedState, setCachedState]
+    () => ({ store, getCachedState, setCachedState }),
+    [store, getCachedState, setCachedState]
   );
 
   return <Context.Provider value={contextValue}>{children}</Context.Provider>;
 };
 
 export const useStore = () => {
-  const { syncStorage, asyncStorage } = React.useContext(Context) ?? {};
-  const storage = asyncStorage ?? syncStorage;
-
-  if (storage == null) return null;
-
-  const isAsync = asyncStorage != null;
-
-  const read = (key_) => {
-    const key = buildKey(key_);
-    const parse = (rawValue) => {
-      if (rawValue == null) return null;
-
-      try {
-        return JSON.parse(rawValue);
-      } catch (e) {
-        console.warn(e);
-        return null;
-      }
-    };
-
-    if (asyncStorage == null) return parse(syncStorage.getItem(key));
-
-    return asyncStorage.getItem(key).then(parse);
-  };
-
-  const write = (key_, value) => {
-    const key = buildKey(key_);
-    if (value == null) return storage.removeItem(key);
-    return storage.setItem(key, JSON.stringify(value));
-  };
-
-  const clear = (key_) => {
-    if (key_ == null) return storage.clear();
-    const key = buildKey(key_);
-    return storage.removeItem(key);
-  };
-
-  const readAsync = (key) => {
-    if (isAsync) return read(key);
-    return new Promise((resolve) => resolve(read(key)));
-  };
-
-  const writeAsync = (key, value) => {
-    if (isAsync) return write(key, value);
-    return new Promise((resolve, reject) => {
-      try {
-        resolve(write(key, value));
-      } catch (e) {
-        reject(e);
-      }
-    });
-  };
-
-  return { read, write, readAsync, writeAsync, clear, isAsync };
+  const { store } = React.useContext(Context);
+  return store;
 };
 
 export const useCachedState = (key, initialState) => {
   const store = useStore();
-  const { getCachedState, setCachedState } = React.useContext(Context) ?? {};
+  const { getCachedState, setCachedState } = React.useContext(Context);
 
   const cachedState = getCachedState(key);
 

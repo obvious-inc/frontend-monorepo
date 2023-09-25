@@ -29,6 +29,7 @@ const createConfig = ({ file, dependencies = [] }) => ({
 
 const entrypoints = [
   { file: "app.js", dependencies: ["viem", "react", "reselect", "zustand"] },
+  { file: "apis.js" },
   {
     file: "wallet.js",
     dependencies: [
