@@ -111,6 +111,11 @@ const BrowseScreen = () => {
 
   const [page, setPage] = React.useState(1);
 
+  const filteredProposals = React.useMemo(
+    () => proposals.filter((p) => p.startBlock != null),
+    [proposals]
+  );
+
   const filteredItems = React.useMemo(() => {
     const filteredProposalDrafts = proposalDrafts
       .filter(
@@ -123,8 +128,6 @@ const BrowseScreen = () => {
       (c) => c.latestVersion != null
     );
 
-    const filteredProposals = proposals.filter((p) => p.startBlock != null);
-
     const items = [
       ...filteredProposalDrafts,
       ...filteredProposalCandidates,
@@ -132,7 +135,7 @@ const BrowseScreen = () => {
     ];
 
     return deferredQuery === "" ? items : searchProposals(items, deferredQuery);
-  }, [deferredQuery, proposals, proposalCandidates, proposalDrafts]);
+  }, [deferredQuery, filteredProposals, proposalCandidates, proposalDrafts]);
 
   const groupedItemsByName = arrayUtils.groupBy((i) => {
     if (i.type === "draft") return "drafts";
@@ -172,9 +175,7 @@ const BrowseScreen = () => {
     <Layout>
       <div css={css({ padding: "0 1.6rem" })}>
         <MainContentContainer
-          sidebar={
-            <FeedSidebar visible={groupedItemsByName.past?.length > 0} />
-          }
+          sidebar={<FeedSidebar visible={filteredProposals.length > 0} />}
         >
           <div
             css={css({
@@ -329,7 +330,7 @@ const BrowseScreen = () => {
                 });
               }}
             >
-              {filteredItems.length === 0 ? (
+              {deferredQuery === "" && filteredItems.length === 0 ? (
                 <li data-group key="placeholder">
                   <div data-group-title data-placeholder />
                   <ul>
