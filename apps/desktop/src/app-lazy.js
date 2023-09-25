@@ -291,7 +291,14 @@ const App = () => {
 
       <Routes>
         <Route path="/" element={<Layout />}>
-          <Route index element={<IndexRoute />} />
+          <Route
+            index
+            element={
+              <AwaitSettledAuthStatus>
+                <IndexRoute />
+              </AwaitSettledAuthStatus>
+            }
+          />
           <Route path="/new" element={<NewMessageScreen />} />
           <Route path="/topics" element={<ChannelsScreen />} />
           <Route path="/channels/:channelId" element={<ChannelScreen />} />
@@ -379,6 +386,12 @@ const RequireAuth = ({ children }) => {
 
   if (authStatus !== "authenticated") return null; // Spinner
 
+  return children;
+};
+
+const AwaitSettledAuthStatus = ({ children }) => {
+  const { status: authStatus } = useAuth();
+  if (authStatus === "loading") return null; // Spinner
   return children;
 };
 
