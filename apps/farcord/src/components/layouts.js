@@ -6,11 +6,12 @@ import { useFarcasterChannels } from "../hooks/farcord";
 import { Layout as SidebarLayout } from "@shades/ui-web/sidebar-layout";
 import { ErrorBoundary } from "@shades/common/react";
 import Avatar from "@shades/ui-web/avatar";
-import FarcasterAccount from "./farcaster-account";
+import FarcasterProfile from "./farcaster-profile";
+
 import { useFollowedChannels } from "../hooks/warpcast";
 import useSigner from "./signer";
-import AuthScreen from "./auth-screen.js";
 import Dialog from "@shades/ui-web/dialog";
+import AuthDialog from "./auth-dialog";
 
 const DEFAULT_TRUNCATED_COUNT = 10;
 
@@ -276,22 +277,6 @@ const SmallText = ({ component: Component = "div", ...props }) => (
   />
 );
 
-const AuthDialog = () => {
-  return (
-    <div
-      css={css({
-        overflow: "auto",
-        padding: "1.5rem",
-        "@media (min-width: 600px)": {
-          padding: "3rem",
-        },
-      })}
-    >
-      <AuthScreen />
-    </div>
-  );
-};
-
 export const MainLayout = ({ children }) => {
   const { fid } = useSigner();
   const followedChannels = useFollowedChannels(fid);
@@ -408,7 +393,7 @@ export const MainLayout = ({ children }) => {
               }}
             />
 
-            <FarcasterAccount />
+            <FarcasterProfile />
 
             <div
               style={{

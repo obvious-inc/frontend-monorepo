@@ -1,6 +1,5 @@
 import React from "react";
 import { useLatestCallback } from "@shades/common/react";
-import { useWallet } from "@shades/common/wallet";
 import { useCachedState } from "@shades/common/app";
 import { getPublicKeyAsync, utils as EdDSAUtils } from "@noble/ed25519";
 import { bytesToHex, encodeAbiParameters, parseAbi } from "viem";
@@ -10,8 +9,11 @@ import {
   usePrepareContractWrite,
   useWaitForTransaction,
 } from "wagmi";
-import { DEFAULT_CHAIN_ID, useWalletFarcasterId } from "../hooks/farcord";
+import { DEFAULT_CHAIN_ID } from "../hooks/farcord";
 import { mnemonicToAccount } from "viem/accounts";
+import useFarcasterAccount from "./farcaster-account";
+
+const warpcastApi = "https://api.warpcast.com";
 
 const DEFAULT_KEY_REGISTRY_ADDRESS =
   "0x00000000fC9e66f1c6d86D750B4af47fF0Cc343d";
@@ -67,15 +69,23 @@ export const createCacheKey = (address) =>
 export const SignerContext = React.createContext({});
 
 export const Provider = ({ children }) => {
-  const { accountAddress: address } = useWallet();
   const [error, setError] = React.useState(null);
-  const { data: fid } = useWalletFarcasterId(address);
-  const [signer, setSigner] = useCachedState(createCacheKey(address));
   const [status, setStatus] = React.useState("idle");
+
+  // backwards-compatible:
+  // if there's connected wallet, and locally stored signer, use that
+
+  const { fid, address } = useFarcasterAccount();
+  const cacheKey = createCacheKey(address ?? fid?.toString());
+  const [signer, setCachedSigner] = useCachedState(cacheKey);
   const onChainSigner = useSignerByPublicKey(fid, signer?.publicKey);
   const [broadcasted, setBroadcasted] = React.useState(onChainSigner != null);
   const [addSignerTx, setAddSignerTx] = React.useState(null);
   const [revokeSignerTx, setRevokeSignerTx] = React.useState(null);
+
+  const setSigner = useLatestCallback((keypair) => {
+    setCachedSigner(keypair);
+  });
 
   const reset = React.useCallback(() => {
     setError(null);
@@ -135,6 +145,56 @@ export const Provider = ({ children }) => {
     useWaitForTransaction({
       hash: revokeSignerTx,
     });
+
+  const createWarpcastSignKeyRequest = useLatestCallback(
+    async ({ publicKey }) => {
+      const deadline = Math.floor(Date.now() / 1000) + 86400; // signature is valid for 1 day
+      setError(null);
+      setStatus("requesting-signed-key-request");
+      try {
+        return await appAccount
+          .signTypedData({
+            domain: SIGNED_KEY_REQUEST_VALIDATOR_EIP_712_DOMAIN,
+            types: {
+              SignedKeyRequest: SIGNED_KEY_REQUEST_TYPE,
+            },
+            primaryType: "SignedKeyRequest",
+            message: {
+              requestFid: BigInt(process.env.FARCORD_APP_FID),
+              key: publicKey,
+              deadline: BigInt(deadline),
+            },
+          })
+          .then(async (signature) => {
+            return await fetch(`${warpcastApi}/v2/signed-key-requests`, {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+              },
+              body: JSON.stringify({
+                key: publicKey,
+                requestFid: process.env.FARCORD_APP_FID,
+                signature,
+                deadline,
+              }),
+            })
+              .then((response) => {
+                return response.json();
+              })
+              .then((response) => {
+                return response.result.signedKeyRequest;
+              });
+          });
+      } catch (e) {
+        console.error(e);
+        setError(e.message);
+        return Promise.reject(e);
+      } finally {
+        setStatus("idle");
+      }
+    },
+    [fid, signer]
+  );
 
   const broadcastSigner = useLatestCallback(
     async ({ publicKey }) => {
@@ -269,6 +329,7 @@ export const Provider = ({ children }) => {
       resetSigner,
       isAddSignerPending,
       isRevokeSignerPending,
+      createWarpcastSignKeyRequest,
     }),
     [
       address,
@@ -285,6 +346,7 @@ export const Provider = ({ children }) => {
       resetSigner,
       isAddSignerPending,
       isRevokeSignerPending,
+      createWarpcastSignKeyRequest,
     ]
   );
 

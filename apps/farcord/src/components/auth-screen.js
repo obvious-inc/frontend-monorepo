@@ -15,6 +15,7 @@ import useSigner from "./signer";
 import { DEFAULT_CHAIN_ID, useWalletFarcasterId } from "../hooks/farcord";
 import { useSignerByPublicKey } from "../hooks/hub";
 import { useConnect } from "wagmi";
+import { Small } from "./text";
 
 const { truncateAddress } = ethereumUtils;
 
@@ -722,18 +723,5 @@ const AuthScreen = () => {
     </div>
   );
 };
-
-const Small = (props) => (
-  <div
-    css={(theme) =>
-      css({
-        fontSize: theme.text.sizes.small,
-        color: theme.colors.textDimmed,
-        lineHeight: 1.3,
-      })
-    }
-    {...props}
-  />
-);
 
 export default AuthScreen;

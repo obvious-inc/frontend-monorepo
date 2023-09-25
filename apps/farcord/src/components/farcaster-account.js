@@ -1,110 +1,42 @@
-import { css } from "@emotion/react";
-import Button from "@shades/ui-web/button";
-import Spinner from "@shades/ui-web/spinner";
-import { useNeynarUser } from "../hooks/neynar";
-import useSigner from "./signer";
-import { useSearchParams } from "react-router-dom";
+import React from "react";
 import { useWallet } from "@shades/common/wallet";
+import { useWalletFarcasterId } from "../hooks/farcord";
+import { useCachedState } from "@shades/common/app";
+import { useLatestCallback } from "@shades/common/react";
 
-const FarcasterUser = ({ fid }) => {
-  const { user: farcasterUser, isFetching: isFetchingNeynarUser } =
-    useNeynarUser(fid);
+export const createCacheKey = (address) =>
+  [address?.toLowerCase(), "account"].filter(Boolean).join("-");
 
-  const { broadcasted } = useSigner();
-  const [, setSearchParams] = useSearchParams();
+export const FarcasterAccountContext = React.createContext({});
 
-  if (isFetchingNeynarUser) {
-    return <Spinner size="1rem" />;
-  }
+export const Provider = ({ children }) => {
+  const { accountAddress: address } = useWallet();
+  const { data: walletFid } = useWalletFarcasterId(address);
+  const [account, setAccount] = useCachedState("account");
+
+  const fid = walletFid ?? account?.fid;
+
+  const initAccount = useLatestCallback(async (accountData) => {
+    setAccount(accountData);
+  });
+
+  const contextValue = React.useMemo(
+    () => ({
+      fid,
+      address,
+      account,
+      initAccount,
+    }),
+    [fid, address, account, initAccount]
+  );
 
   return (
-    <Button
-      onClick={() => {
-        setSearchParams({ "auth-dialog": 1 });
-      }}
-      css={(theme) =>
-        css({
-          color: "inherit",
-          textDecoration: "none",
-          border: "none",
-          width: "100%",
-          ":hover": { color: theme.colors.linkModifierHover },
-          height: "5rem",
-        })
-      }
-    >
-      <p
-        css={(t) =>
-          css({
-            fontWeight: t.text.weights.emphasis,
-          })
-        }
-      >
-        {farcasterUser?.displayName}{" "}
-        <span
-          css={(t) =>
-            css({
-              color: t.colors.textMuted,
-            })
-          }
-        >
-          (@{farcasterUser?.username})
-        </span>
-      </p>
-      {!broadcasted && (
-        <p
-          css={(t) =>
-            css({
-              fontSize: t.text.sizes.small,
-              color: t.colors.pink,
-              textAlign: "center",
-              marginTop: "0.5rem",
-            })
-          }
-        >
-          read-only
-        </p>
-      )}
-    </Button>
+    <FarcasterAccountContext.Provider value={contextValue}>
+      {children}
+    </FarcasterAccountContext.Provider>
   );
 };
 
-const FarcasterAccount = () => {
-  const { accountAddress: walletAccountAddress } = useWallet();
-  const { fid } = useSigner();
-  const [, setSearchParams] = useSearchParams();
+const useFarcasterAccount = () => React.useContext(FarcasterAccountContext);
 
-  return (
-    <>
-      <div
-        css={(t) =>
-          css({
-            margin: "0.6rem 0 0.2rem",
-            padding: `0 0.8rem 0 calc( ${t.mainMenu.itemHorizontalPadding} + ${t.mainMenu.containerHorizontalPadding})`,
-            minHeight: "2.4rem",
-            display: "grid",
-            alignItems: "center",
-            gridTemplateColumns: "minmax(0, 1fr) auto",
-            gridGap: "1rem",
-          })
-        }
-      >
-        {!walletAccountAddress || fid == 0 ? (
-          <Button
-            size="small"
-            variant="default"
-            onClick={() => {
-              setSearchParams({ "auth-dialog": 1 });
-            }}
-          >
-            Connect wallet
-          </Button>
-        ) : (
-          <FarcasterUser fid={fid} />
-        )}
-      </div>
-    </>
-  );
-};
-
-export default FarcasterAccount;
+export default useFarcasterAccount;
