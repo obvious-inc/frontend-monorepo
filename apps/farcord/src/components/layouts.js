@@ -7,9 +7,7 @@ import { Layout as SidebarLayout } from "@shades/ui-web/sidebar-layout";
 import { ErrorBoundary } from "@shades/common/react";
 import Avatar from "@shades/ui-web/avatar";
 import FarcasterProfile from "./farcaster-profile";
-
 import { useFollowedChannels } from "../hooks/warpcast";
-import useSigner from "./signer";
 import Dialog from "@shades/ui-web/dialog";
 import AuthDialog from "./auth-dialog";
 import useFarcasterAccount from "./farcaster-account";

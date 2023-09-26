@@ -7,14 +7,21 @@ const NEYNAR_V2_ENDPOINT = "https://api.neynar.com/v2/farcaster";
 
 const DEFAULT_PAGE_SIZE = 30;
 
-export async function fetchNeynarCasts({ parentUrl, cursor }) {
+export async function fetchNeynarCasts({ parentUrl, fid, cursor }) {
+  if (!parentUrl && !fid) return [];
+
   let params = new URLSearchParams({
     api_key: process.env.NEYNAR_API_KEY,
-    feed_type: "filter",
-    filter_type: "parent_url",
-    parent_url: parentUrl,
     limit: DEFAULT_PAGE_SIZE,
   });
+
+  if (parentUrl) {
+    params.set("feed_type", "filter");
+    params.set("filter_type", "parent_url");
+    params.set("parent_url", parentUrl);
+  } else if (fid) {
+    params.set("fid", fid);
+  }
 
   if (cursor) params.set("cursor", cursor);
 
@@ -24,6 +31,34 @@ export async function fetchNeynarCasts({ parentUrl, cursor }) {
     })
     .then((data) => {
       return data.casts?.map((cast) => {
+        return {
+          ...cast,
+          richText: cast.text ? messageUtils.parseString(cast.text) : null,
+        };
+      });
+    })
+    .then((parsedCasts) => {
+      return parsedCasts.reverse();
+    })
+    .catch((err) => {
+      throw err;
+    });
+}
+
+export async function fetchNeynarRecentCasts({ cursor }) {
+  let params = new URLSearchParams({
+    api_key: process.env.NEYNAR_API_KEY,
+    limit: DEFAULT_PAGE_SIZE,
+  });
+
+  if (cursor) params.set("cursor", cursor);
+
+  return fetch(NEYNAR_V1_ENDPOINT + "/recent-casts?" + params)
+    .then((result) => {
+      return result.json();
+    })
+    .then((data) => {
+      return data.result.casts?.map((cast) => {
         return {
           ...cast,
           richText: cast.text ? messageUtils.parseString(cast.text) : null,

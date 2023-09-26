@@ -8,7 +8,10 @@ import Spinner from "@shades/ui-web/spinner";
 import { CastItem } from "./cast.js";
 import ChannelNavBar from "./channel-navbar.js";
 import { ThreadScreen } from "./cast-screen.js";
-import { useFarcasterChannel } from "../hooks/farcord.js";
+import {
+  ChainDataCacheDispatchContext,
+  useFarcasterChannel,
+} from "../hooks/farcord.js";
 import { message } from "@shades/common/utils";
 import useSigner from "./signer";
 import { addCast } from "../hooks/hub.js";
@@ -16,8 +19,9 @@ import {
   useChannelCacheContext,
   useChannelCasts,
   useChannelCastsFetch,
+  useFeedCasts,
+  useFeedCastsFetch,
 } from "../hooks/channel.js";
-import { useNeynarRecentCasts } from "../hooks/neynar.js";
 import { toHex } from "viem";
 import useFarcasterAccount from "./farcaster-account.js";
 
@@ -26,6 +30,7 @@ export const ChannelCastsScrollView = ({
   isFeed = false,
   didScrollToBottomRef: didScrollToBottomRefExternal,
 }) => {
+  const dispatch = React.useContext(ChainDataCacheDispatchContext);
   const scrollViewRef = React.useRef();
   const castsContainerRef = React.useRef();
   const didScrollToBottomRefInternal = React.useRef();
@@ -35,10 +40,13 @@ export const ChannelCastsScrollView = ({
 
   const { fid } = useFarcasterAccount();
 
-  const channel = useFarcasterChannel(channelId);
+  const channel = useFarcasterChannel(isFeed ? "feed" : channelId);
+
   useChannelCastsFetch({ channel, cursor: null });
   const channelCasts = useChannelCasts(channelId);
-  const { casts: recentCasts } = useNeynarRecentCasts({ fid });
+
+  useFeedCastsFetch({ fid, cursor: null });
+  const recentCasts = useFeedCasts(fid);
 
   const casts = isFeed ? recentCasts : channelCasts;
 
@@ -68,6 +76,15 @@ export const ChannelCastsScrollView = ({
   //   // emply channels
   //   fetchMessages({ limit: 30 });
   // }, [fetchMessages, casts?.length]);
+
+  React.useEffect(() => {
+    if (!channel && !isFeed)
+      dispatch({
+        type: "add-channel",
+        id: channelId,
+        value: { id: channelId, parentUrl: channelId, name: channelId },
+      });
+  }, [channelId, isFeed, channel, dispatch]);
 
   if (!casts || casts?.length === 0) {
     return (
@@ -169,7 +186,7 @@ export const ChannelCastsScrollView = ({
               <div css={css({ height: "1.3rem" })} />
 
               {casts.map((cast) => (
-                <CastItem key={cast.hash} cast={cast} />
+                <CastItem key={cast.hash} cast={cast} isFeed={isFeed} />
               ))}
             </>
           )}

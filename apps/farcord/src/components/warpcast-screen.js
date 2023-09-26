@@ -11,6 +11,7 @@ import Avatar from "@shades/ui-web/avatar";
 import { Small } from "./text";
 import useFarcasterAccount from "./farcaster-account";
 import { createKeyPair } from "../utils/crypto";
+import { toHex } from "viem";
 
 const { truncateAddress } = ethereumUtils;
 

@@ -68,14 +68,12 @@ createRoot(document.getElementById("app-mount")).render(
   <React.StrictMode>
     <WagmiConfig config={wagmiConfig}>
       <ChainDataCacheContextProvider>
-        <ChannelCacheContextProvider>
-          <CacheStoreProvider
-            store={createCacheStore({ storage: cacheStoreStorage })}
-          >
-            <App />
-            {isProduction && <VercelAnalytics />}
-          </CacheStoreProvider>
-        </ChannelCacheContextProvider>
+        <CacheStoreProvider
+          store={createCacheStore({ storage: cacheStoreStorage })}
+        >
+          <App />
+          {isProduction && <VercelAnalytics />}
+        </CacheStoreProvider>
       </ChainDataCacheContextProvider>
     </WagmiConfig>
   </React.StrictMode>

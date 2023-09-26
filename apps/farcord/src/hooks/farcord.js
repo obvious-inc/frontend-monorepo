@@ -2,6 +2,7 @@ import React from "react";
 import { useFetch } from "@shades/common/react";
 import { array as arrayUtils } from "@shades/common/utils";
 import { useContractRead, useNetwork } from "wagmi";
+import { channelsReducer } from "../reducers/channels";
 
 const { indexBy, sortBy } = arrayUtils;
 
@@ -16,7 +17,8 @@ const FARCASTER_ID_REGISTRY_CONTRACT_ADDRESS =
 
 export const DEFAULT_CHAIN_ID = 10;
 
-const ChainDataCacheContext = React.createContext();
+export const ChainDataCacheContext = React.createContext();
+export const ChainDataCacheDispatchContext = React.createContext();
 
 const farcasterChannelsFetch = () =>
   fetch(NEYNAR_FARCASTER_CHANNELS_STATIC_LIST)
@@ -50,7 +52,7 @@ const farcasterChannelsFetch = () =>
     });
 
 export const ChainDataCacheContextProvider = ({ children }) => {
-  const [state, setState] = React.useState({
+  const [state, dispatch] = React.useReducer(channelsReducer, {
     channelsById: {},
   });
 
@@ -60,15 +62,9 @@ export const ChainDataCacheContextProvider = ({ children }) => {
     () =>
       queryFarcaster().then((data) => {
         const fetchedChannelsById = indexBy((c) => c.id, data);
-
-        setState((s) => {
-          return {
-            ...s,
-            channelsById: {
-              ...s.channelsById,
-              ...fetchedChannelsById,
-            },
-          };
+        dispatch({
+          type: "add-initial-channels",
+          channelsById: fetchedChannelsById,
         });
       }),
     [queryFarcaster]
@@ -78,7 +74,9 @@ export const ChainDataCacheContextProvider = ({ children }) => {
 
   return (
     <ChainDataCacheContext.Provider value={contextValue}>
-      {children}
+      <ChainDataCacheDispatchContext.Provider value={dispatch}>
+        {children}
+      </ChainDataCacheDispatchContext.Provider>
     </ChainDataCacheContext.Provider>
   );
 };

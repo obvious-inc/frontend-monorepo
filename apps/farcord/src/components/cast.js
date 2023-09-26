@@ -15,6 +15,8 @@ import {
 import { array as arrayUtils } from "@shades/common/utils";
 import RichText from "./rich-text";
 import useFarcasterAccount from "./farcaster-account";
+import { useFarcasterChannelByUrl } from "../hooks/farcord";
+import { parseChannelFromUrl } from "../utils/channel";
 
 const IMAGE_ENDINGS = ["jpg", "jpeg", "png", "gif", "webp", "svg"];
 
@@ -348,7 +350,49 @@ const CastEmbeds = ({ cast }) => {
   );
 };
 
-export const CastItem = ({ cast, horizontalPadding = "1.6rem" }) => {
+const CastChannel = ({ cast }) => {
+  const parentUrl = cast.parentUrl || cast.parent_url;
+  const warpcastChannel = useFarcasterChannelByUrl(parentUrl);
+
+  if (!parentUrl) return;
+
+  const parsedChannel = warpcastChannel ?? parseChannelFromUrl(parentUrl);
+
+  const channelLink = `/channels/${
+    parsedChannel?.id ||
+    parsedChannel?.key ||
+    encodeURIComponent(parsedChannel.url)
+  }`;
+
+  const SLICE_LENGTH = 80;
+  const truncate = parentUrl > SLICE_LENGTH;
+  const truncatedParentUrl = truncate
+    ? parentUrl.slice(0, SLICE_LENGTH) + "..."
+    : parentUrl;
+
+  return (
+    <div css={css({ padding: "2rem 0" })}>
+      <Link
+        to={channelLink}
+        css={(t) =>
+          css({
+            cursor: "pointer",
+            textDecoration: "none",
+            color: t.colors.pink,
+            maxWidth: "10rem",
+            border: "1px dashed",
+            padding: "1rem",
+            borderColor: t.colors.borderLight,
+          })
+        }
+      >
+        {parsedChannel?.name || truncatedParentUrl}
+      </Link>
+    </div>
+  );
+};
+
+export const CastItem = ({ cast, isFeed, horizontalPadding = "1.6rem" }) => {
   const containerRef = React.useRef();
 
   return (
@@ -382,6 +426,7 @@ export const CastItem = ({ cast, horizontalPadding = "1.6rem" }) => {
           <>
             <CastBody cast={cast} />
             <CastEmbeds cast={cast} />
+            {isFeed && <CastChannel cast={cast} />}
           </>
         </div>
       </div>

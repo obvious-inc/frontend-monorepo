@@ -4,7 +4,6 @@ import Spinner from "@shades/ui-web/spinner";
 import { useNeynarUser } from "../hooks/neynar";
 import useSigner from "./signer";
 import { useSearchParams } from "react-router-dom";
-import { useWallet } from "@shades/common/wallet";
 import useFarcasterAccount from "./farcaster-account";
 
 const FarcasterUser = () => {

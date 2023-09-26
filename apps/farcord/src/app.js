@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useReducer } from "react";
 import { Global, ThemeProvider, css } from "@emotion/react";
 import { Routes, Route, BrowserRouter } from "react-router-dom";
 import { EmojiProvider } from "@shades/common/app";
@@ -8,6 +8,8 @@ import { Provider as SidebarProvider } from "@shades/ui-web/sidebar-layout";
 import { Provider as SignerProvider } from "./components/signer.js";
 import { useMatchMedia } from "@shades/common/react";
 import { Provider as FarcasterAccountProvider } from "./components/farcaster-account.js";
+import { channelsReducer } from "./reducers/channels.js";
+import { ChannelCacheContextProvider } from "./hooks/channel.js";
 const ChannelScreen = React.lazy(() =>
   import("./components/channel-screen.js")
 );
@@ -24,57 +26,64 @@ const useTheme = () => {
 
 const App = () => {
   const theme = useTheme();
+  const [, dispatch] = useReducer(channelsReducer, {});
 
   return (
     <>
       <BrowserRouter>
-        <ThemeProvider theme={theme}>
-          <FarcasterAccountProvider>
-            <SignerProvider>
-              <EmojiProvider
-                loader={() =>
-                  import("@shades/common/emoji").then((m) =>
-                    m.default.filter(
-                      (e) =>
-                        e.unicode_version === "" ||
-                        parseFloat(e.unicode_version) <= 12
+        <ChannelCacheContextProvider value={dispatch}>
+          <ThemeProvider theme={theme}>
+            <FarcasterAccountProvider>
+              <SignerProvider>
+                <EmojiProvider
+                  loader={() =>
+                    import("@shades/common/emoji").then((m) =>
+                      m.default.filter(
+                        (e) =>
+                          e.unicode_version === "" ||
+                          parseFloat(e.unicode_version) <= 12
+                      )
                     )
-                  )
-                }
-              >
-                <SidebarProvider>
-                  <Tooltip.Provider delayDuration={300}>
-                    <Global
-                      styles={(theme) =>
-                        css({
-                          body: {
-                            color: theme.colors.textNormal,
-                            background: theme.colors.backgroundPrimary,
-                            fontFamily: theme.fontStacks.default,
-                            "::selection": {
-                              background: theme.colors.textSelectionBackground,
+                  }
+                >
+                  <SidebarProvider>
+                    <Tooltip.Provider delayDuration={300}>
+                      <Global
+                        styles={(theme) =>
+                          css({
+                            body: {
+                              color: theme.colors.textNormal,
+                              background: theme.colors.backgroundPrimary,
+                              fontFamily: theme.fontStacks.default,
+                              "::selection": {
+                                background:
+                                  theme.colors.textSelectionBackground,
+                              },
                             },
-                          },
-                        })
-                      }
-                    />
-                    <Routes>
-                      <Route path="/">
-                        <Route
-                          path="channels/:channelId"
-                          element={<ChannelScreen />}
-                        />
-                        <Route path="feed" element={<ChannelScreen isFeed />} />
-                        <Route index element={<ChannelScreen isFeed />} />
-                      </Route>
-                      {/* <Route path="*" element={<Navigate to="/feed" replace />} /> */}
-                    </Routes>
-                  </Tooltip.Provider>
-                </SidebarProvider>
-              </EmojiProvider>
-            </SignerProvider>
-          </FarcasterAccountProvider>
-        </ThemeProvider>
+                          })
+                        }
+                      />
+                      <Routes>
+                        <Route path="/">
+                          <Route
+                            path="channels/:channelId"
+                            element={<ChannelScreen />}
+                          />
+                          <Route
+                            path="feed"
+                            element={<ChannelScreen isFeed />}
+                          />
+                          <Route index element={<ChannelScreen isFeed />} />
+                        </Route>
+                        {/* <Route path="*" element={<Navigate to="/feed" replace />} /> */}
+                      </Routes>
+                    </Tooltip.Provider>
+                  </SidebarProvider>
+                </EmojiProvider>
+              </SignerProvider>
+            </FarcasterAccountProvider>
+          </ThemeProvider>
+        </ChannelCacheContextProvider>
       </BrowserRouter>
     </>
   );
