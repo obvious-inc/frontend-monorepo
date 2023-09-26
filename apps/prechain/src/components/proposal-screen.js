@@ -862,15 +862,23 @@ const NavBar = ({ navigationStack, actions }) => {
       }
     >
       <div
-        style={{
+        css={css({
           flex: 1,
           minWidth: 0,
-          padding: "1rem",
           display: "flex",
           alignItems: "center",
           gap: "0.2rem",
           overflow: "hidden",
-        }}
+          padding: "1rem 1.6rem",
+          "@media (max-width: 600px)": {
+            '[data-desktop-only="true"]': {
+              display: "none",
+            },
+          },
+          "@media (min-width: 600px)": {
+            padding: "1rem",
+          },
+        })}
       >
         {[
           {
@@ -897,6 +905,7 @@ const NavBar = ({ navigationStack, actions }) => {
           <React.Fragment key={item.to}>
             {index > 0 && (
               <span
+                data-desktop-only={item.desktopOnly}
                 css={(t) =>
                   css({
                     color: t.colors.textMuted,
@@ -910,6 +919,7 @@ const NavBar = ({ navigationStack, actions }) => {
             <RouterLink
               to={item.to}
               data-disabled={location.pathname === item.to}
+              data-desktop-only={item.desktopOnly}
               css={(t) =>
                 css({
                   fontSize: t.fontSizes.base,
@@ -936,7 +946,7 @@ const NavBar = ({ navigationStack, actions }) => {
         css={(t) =>
           css({
             fontSize: t.text.sizes.base,
-            padding: "0 1rem",
+            padding: "0 1.6rem",
             ul: {
               display: "grid",
               gridAutoFlow: "column",
@@ -944,6 +954,9 @@ const NavBar = ({ navigationStack, actions }) => {
               alignItems: "center",
             },
             li: { listStyle: "none" },
+            "@media (min-width: 600px)": {
+              padding: "0 1rem",
+            },
           })
         }
       >
@@ -957,6 +970,7 @@ const NavBar = ({ navigationStack, actions }) => {
                     va.track("Connect Wallet", { location: "navbar" });
                     requestWalletAccess();
                   },
+                  buttonVariant: "default",
                   label: "Connect Wallet",
                 }
               : {
@@ -996,7 +1010,7 @@ const NavBar = ({ navigationStack, actions }) => {
               ) : (
                 <li key={a.label}>
                   <Button
-                    variant="transparent"
+                    variant={a.buttonVariant ?? "transparent"}
                     size="small"
                     onClick={a.onSelect}
                   >
@@ -1587,6 +1601,7 @@ const ProposalContent = ({ proposalId }) => {
 };
 
 export const Layout = ({
+  scrollContainerRef,
   navigationStack = [],
   actions = [],
   scrollView = true,
@@ -1618,7 +1633,7 @@ export const Layout = ({
     >
       {scrollView ? (
         <div
-          // ref={scrollContainerRef}
+          ref={scrollContainerRef}
           css={css({
             position: "absolute",
             top: 0,
@@ -1698,7 +1713,7 @@ const ProposalScreen = () => {
     <>
       <Layout
         navigationStack={[
-          { to: "/?tab=proposals", label: "Proposals" },
+          { to: "/?tab=proposals", label: "Proposals", desktopOnly: true },
           {
             to: `/proposals/${proposalId} `,
             label: (

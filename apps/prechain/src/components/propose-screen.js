@@ -47,11 +47,10 @@ const ProposeScreen = () => {
     createItem: createDraft,
     deleteItem: deleteDraft,
   } = useDrafts();
-  const [draft, { setName, setBody, setTransactions }] = useDraft(draftId);
+  const [draft, { setName, setBody, setActions }] = useDraft(draftId);
 
   const [hasPendingRequest, setPendingRequest] = React.useState(false);
-  const [selectedTransactionIndex, setSelectedTransactionIndex] =
-    React.useState(null);
+  const [selectedActionIndex, setSelectedActionIndex] = React.useState(null);
 
   const isNameEmpty = draft == null || draft.name.trim() === "";
   const isBodyEmpty =
@@ -76,7 +75,7 @@ const ProposeScreen = () => {
     const description = `# ${draft.name.trim()}\n\n${messageUtils.toMarkdown(
       draft.body
     )}`;
-    const transactions = draft.transactions;
+    const transactions = draft.actions; // TODO
 
     return Promise.resolve()
       .then(() =>
@@ -138,7 +137,7 @@ const ProposeScreen = () => {
     <>
       <Layout
         navigationStack={[
-          { to: "/?tab=drafts", label: "Drafts" },
+          { to: "/?tab=proposals", label: "Drafts", desktopOnly: true },
           { to: `/new/${draftId}`, label: draft?.name || "Untitled draft" },
         ]}
         // actions={isProposer ? [{ onSelect: openDialog, label: "Edit" }] : []}
@@ -187,7 +186,7 @@ const ProposeScreen = () => {
                     >
                       Transactions
                     </h2>
-                    {draft.transactions?.length > 0 && (
+                    {draft.actions?.length > 0 && (
                       <ol
                         css={(t) =>
                           css({
@@ -220,15 +219,15 @@ const ProposeScreen = () => {
                           })
                         }
                       >
-                        {draft.transactions
-                          .filter((t) => t.type != null)
-                          .map((t, i) => {
+                        {draft.actions
+                          .filter((a) => a.type != null)
+                          .map((a, i) => {
                             return (
                               <li key={i}>
                                 <button
                                   type="button"
                                   onClick={() => {
-                                    setSelectedTransactionIndex(i);
+                                    setSelectedActionIndex(i);
                                     // setTransactions(
                                     //   draft.transactions.filter(
                                     //     (_, index) => index !== i
@@ -236,7 +235,7 @@ const ProposeScreen = () => {
                                     // );
                                   }}
                                 >
-                                  <TransactionExplanation transaction={t} />
+                                  <TransactionExplanation transaction={a} />
                                 </button>
                               </li>
                             );
@@ -250,8 +249,8 @@ const ProposeScreen = () => {
                         size="default"
                         icon={<PlusIcon style={{ width: "0.9rem" }} />}
                         onClick={() => {
-                          setTransactions([
-                            ...(draft.transactions ?? []),
+                          setActions([
+                            ...(draft.actions ?? []),
                             {
                               type: "transfer",
                               target:
@@ -259,9 +258,7 @@ const ProposeScreen = () => {
                               value: "1",
                             },
                           ]);
-                          setSelectedTransactionIndex(
-                            draft.transactions.length
-                          );
+                          setSelectedActionIndex(draft.actions.length);
                         }}
                       >
                         Add transaction
@@ -427,35 +424,33 @@ const ProposeScreen = () => {
         </EditorProvider>
       </Layout>
 
-      {selectedTransactionIndex != null &&
-        draft.transactions[selectedTransactionIndex] != null && (
+      {selectedActionIndex != null &&
+        draft.actions[selectedActionIndex] != null && (
           <Dialog
             isOpen
             onRequestClose={() => {
-              setSelectedTransactionIndex(null);
+              setSelectedActionIndex(null);
             }}
             width="52rem"
           >
             {({ titleProps }) => (
               <EditTransactionDialog
-                transaction={draft.transactions[selectedTransactionIndex]}
-                submit={(t) => {
-                  setTransactions(
-                    draft.transactions.map((t_, i) =>
-                      i !== selectedTransactionIndex ? t_ : t
+                transaction={draft.actions[selectedActionIndex]}
+                submit={(a) => {
+                  setActions(
+                    draft.actions.map((a_, i) =>
+                      i !== selectedActionIndex ? a_ : a
                     )
                   );
                 }}
                 remove={() => {
-                  setTransactions(
-                    draft.transactions.filter(
-                      (_, i) => i !== selectedTransactionIndex
-                    )
+                  setActions(
+                    draft.actions.filter((_, i) => i !== selectedActionIndex)
                   );
                 }}
                 titleProps={titleProps}
                 dismiss={() => {
-                  setSelectedTransactionIndex(null);
+                  setSelectedActionIndex(null);
                 }}
               />
             )}

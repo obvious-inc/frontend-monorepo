@@ -1039,7 +1039,7 @@ const ProposalCandidateScreen = () => {
     <>
       <Layout
         navigationStack={[
-          { to: "/?tab=candidates", label: "Candidates" },
+          { to: "/?tab=candidates", label: "Candidates", desktopOnly: true },
           {
             to: `/candidates/${encodeURIComponent(candidateId)}`,
             label: candidate?.latestVersion.content.title ?? "...",

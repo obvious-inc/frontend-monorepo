@@ -31,6 +31,7 @@ const normalTextSize = "1.4rem";
 const largeText = "1.6rem";
 
 const textSizes = {
+  micro: "0.95rem",
   tiny: "1.05rem",
   small: "1.2rem",
   base: normalTextSize,
