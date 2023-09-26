@@ -3,7 +3,7 @@ import { isToday, isYesterday, parseISO } from "date-fns";
 import FormattedDate from "./formatted-date";
 import React, { useEffect } from "react";
 import Avatar from "@shades/ui-web/avatar";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { REACTION_TYPE, addReaction, removeReaction } from "../hooks/hub";
 import useSigner from "./signer";
 import {
@@ -17,6 +17,7 @@ import RichText from "./rich-text";
 import useFarcasterAccount from "./farcaster-account";
 import { useFarcasterChannelByUrl } from "../hooks/farcord";
 import { parseChannelFromUrl } from "../utils/channel";
+import { useNeynarCast } from "../hooks/neynar";
 
 const IMAGE_ENDINGS = ["jpg", "jpeg", "png", "gif", "webp", "svg"];
 
@@ -392,8 +393,101 @@ const CastChannel = ({ cast }) => {
   );
 };
 
-export const CastItem = ({ cast, isFeed, horizontalPadding = "1.6rem" }) => {
+const ReplyTargetCast = ({ castHash, layout, onClickMessage }) => {
+  const cast = useNeynarCast(castHash);
+
+  return (
+    <div
+      css={(t) =>
+        css({
+          position: "relative",
+          ":before": {
+            display: "var(--path-display)",
+            content: '""',
+            position: "absolute",
+            right: "calc(100% - 5rem + 0.5rem)",
+            top: "calc(50% - 1px)",
+            width: "2.7rem",
+            height: "1.2rem",
+            border: "0.2rem solid",
+            borderColor: t.colors.borderLight,
+            borderRight: 0,
+            borderBottom: 0,
+            borderTopLeftRadius: "0.4rem",
+          },
+        })
+      }
+      style={{
+        "--path-display": layout === "bubbles" ? "none" : "block",
+        paddingLeft: layout !== "bubbles" ? "5rem" : undefined,
+        marginBottom: layout === "bubbles" ? 0 : "0.5rem",
+      }}
+    >
+      <div
+        css={css({
+          display: "grid",
+          gridTemplateColumns: "1.4rem minmax(0,1fr)",
+          alignItems: "center",
+          gridGap: "0.5rem",
+        })}
+      >
+        <Avatar
+          url={cast?.author?.pfp_url || cast?.author?.pfp.url}
+          size="1.4rem"
+        />
+        <div
+          css={(t) =>
+            css({
+              fontSize: "1.3rem",
+              whiteSpace: "nowrap",
+              overflow: "hidden",
+              textOverflow: "ellipsis",
+              color: t.colors.textDimmed,
+            })
+          }
+        >
+          <>
+            {cast?.author?.display_name || cast?.author?.displayName}
+            {": "}
+            <span
+              role="button"
+              tabIndex={0}
+              onClick={onClickMessage}
+              css={(theme) =>
+                css({
+                  "@media(hover: hover)": {
+                    cursor: "pointer",
+                    ":hover": { color: theme.colors.textNormal },
+                  },
+                })
+              }
+            >
+              <RichText inline blocks={cast?.richText ?? []} />
+            </span>
+          </>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export const CastItem = ({
+  cast,
+  isFeed,
+  showReplies = false,
+  horizontalPadding = "1.6rem",
+}) => {
+  const navigate = useNavigate();
   const containerRef = React.useRef();
+
+  const replyTargetCastElement = showReplies && cast.parentHash && (
+    <ReplyTargetCast
+      castHash={cast.parentHash}
+      onClickMessage={() => {
+        navigate(`?cast=${cast.parentHash}`);
+      }}
+    />
+  );
 
   return (
     <div
@@ -405,6 +499,7 @@ export const CastItem = ({ cast, isFeed, horizontalPadding = "1.6rem" }) => {
       }}
       className="channel-message-container"
     >
+      {showReplies && replyTargetCastElement}
       <div
         className="main-container"
         style={{

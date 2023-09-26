@@ -186,7 +186,12 @@ export const ChannelCastsScrollView = ({
               <div css={css({ height: "1.3rem" })} />
 
               {casts.map((cast) => (
-                <CastItem key={cast.hash} cast={cast} isFeed={isFeed} />
+                <CastItem
+                  key={cast.hash}
+                  cast={cast}
+                  isFeed={isFeed}
+                  showReplies={true}
+                />
               ))}
             </>
           )}
