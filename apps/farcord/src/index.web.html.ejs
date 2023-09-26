@@ -12,6 +12,13 @@
     <title><%= htmlWebpackPlugin.options.title %></title>
     <meta property="og:site_name" content="farcord" />
     <meta property="og:type" content="website" />
+    <% if (htmlWebpackPlugin.options.isProduction) { %>
+    <script
+      src="https://cdn.usefathom.com/script.js"
+      data-site="RWRKCSHL"
+      defer
+    ></script>
+    <% } %>
   </head>
   <body>
     <div id="app-mount" />
