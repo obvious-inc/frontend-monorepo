@@ -1,13 +1,15 @@
 export const channelsReducer = (state, action) => {
   switch (action.type) {
-    case "add-channel": {
+    case "add-channel-by-parent-url": {
+      const channelId = action.id;
+      const data = { id: channelId, parentUrl: channelId, name: channelId };
       return {
         ...state,
         channelsById: {
           ...state.channelsById,
-          [action.id]: {
-            id: action.id,
-            ...action.value,
+          [channelId]: {
+            id: channelId,
+            ...data,
           },
         },
       };

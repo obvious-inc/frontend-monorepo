@@ -78,11 +78,11 @@ export const ChannelCastsScrollView = ({
   // }, [fetchMessages, casts?.length]);
 
   React.useEffect(() => {
-    if (!channel && !isFeed)
+    if (!channel && !isFeed && channelId)
       dispatch({
-        type: "add-channel",
+        type: "add-channel-by-parent-url",
         id: channelId,
-        value: { id: channelId, parentUrl: channelId, name: channelId },
+        value: channelId,
       });
   }, [channelId, isFeed, channel, dispatch]);
 
