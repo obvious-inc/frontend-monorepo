@@ -976,11 +976,18 @@ const NavBar = ({ navigationStack, actions }) => {
                     va.track("Connect Wallet", { location: "navbar" });
                     requestWalletAccess();
                   },
-                  buttonVariant: "default",
+                  buttonProps: { variant: "default" },
                   label: "Connect Wallet",
                 }
               : {
-                  onSelect: () => {},
+                  // onSelect: () => {},
+                  buttonProps: {
+                    component: "a",
+                    href: `https://etherscan.io/address/${connectedWalletAccountAddress}`,
+                    target: "_blank",
+                    rel: "noreferrer",
+                  },
+
                   label: (
                     <div
                       css={css({
@@ -1019,6 +1026,7 @@ const NavBar = ({ navigationStack, actions }) => {
                     variant={a.buttonVariant ?? "transparent"}
                     size="small"
                     onClick={a.onSelect}
+                    {...a.buttonProps}
                   >
                     {a.label}
                   </Button>
@@ -1320,6 +1328,19 @@ const ActivityFeedItemTitle = ({ item, isolated }) => {
             </span>
           );
         }
+
+        case "candidate-canceled":
+          return (
+            <span
+              css={(t) =>
+                css({
+                  color: t.colors.textDimmed,
+                })
+              }
+            >
+              {isolated ? "Candidate" : <ContextLink {...item} />} was canceled
+            </span>
+          );
 
         case "proposal-started":
         case "proposal-ended":

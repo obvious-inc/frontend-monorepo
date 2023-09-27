@@ -50,7 +50,7 @@ export const useSingleItem = (id) => {
   const [entriesById, setEntries] = useCachedState(
     createCacheKey(connectedAccountAddress)
   );
-  const item = entriesById == null ? null : entriesById[id];
+  const item = entriesById == null ? undefined : entriesById[id] ?? null;
 
   const setName = React.useCallback(
     (name) =>

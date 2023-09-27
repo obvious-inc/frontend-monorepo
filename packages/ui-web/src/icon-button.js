@@ -1,4 +1,5 @@
 import { css } from "@emotion/react";
+import { heightBySize } from "./button.js";
 
 const IconButton = ({
   component: Component = "button",
@@ -9,8 +10,8 @@ const IconButton = ({
   <Component
     css={(t) =>
       css({
-        width: size,
-        height: size,
+        width: heightBySize[size] ?? size,
+        height: heightBySize[size] ?? size,
         display: "flex",
         alignItems: "center",
         justifyContent: "center",

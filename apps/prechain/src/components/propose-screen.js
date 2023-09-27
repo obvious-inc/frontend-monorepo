@@ -1,16 +1,21 @@
 import React from "react";
 import { useParams, useNavigate, useSearchParams } from "react-router-dom";
-import { formatEther, isAddress } from "viem";
-import { useAccount } from "wagmi";
+import { isAddress, parseEther, parseUnits } from "viem";
+import { useAccount, useEnsName, useEnsAddress } from "wagmi";
 import { css } from "@emotion/react";
 import {
   useLatestCallback,
   AutoAdjustingHeightTextarea,
 } from "@shades/common/react";
 import { message as messageUtils } from "@shades/common/utils";
-import { Plus as PlusIcon } from "@shades/ui-web/icons";
+import { useAccountDisplayName } from "@shades/common/app";
+import { useFetch } from "@shades/common/react";
+import {
+  Plus as PlusIcon,
+  TrashCan as TrashCanIcon,
+} from "@shades/ui-web/icons";
 import Button from "@shades/ui-web/button";
-import Input from "@shades/ui-web/input";
+import Input, { Label } from "@shades/ui-web/input";
 import Select from "@shades/ui-web/select";
 import RichTextEditor, {
   Provider as EditorProvider,
@@ -23,8 +28,13 @@ import {
   useCollection as useDrafts,
   useSingleItem as useDraft,
 } from "../hooks/channel-drafts.js";
-import { useCreateProposal, useCanCreateProposal } from "../hooks/dao.js";
+import {
+  useCreateProposal,
+  useCanCreateProposal,
+  useTokenBuyerEthNeeded,
+} from "../hooks/dao.js";
 import { useCreateProposalCandidate } from "../hooks/prechain.js";
+import FormattedNumber from "./formatted-number.js";
 import AccountPreviewPopoverTrigger from "./account-preview-popover-trigger.js";
 import { TransactionExplanation } from "./transaction-list.js";
 import { Layout, MainContentContainer } from "./proposal-screen.js";
@@ -32,7 +42,6 @@ import { Layout, MainContentContainer } from "./proposal-screen.js";
 const ProposeScreen = () => {
   const { draftId } = useParams();
   const navigate = useNavigate();
-  const [searchParams] = useSearchParams();
 
   const { address: connectedAccountAddress } = useAccount();
 
@@ -42,15 +51,12 @@ const ProposeScreen = () => {
 
   const editorRef = React.useRef();
 
-  const {
-    items: drafts,
-    createItem: createDraft,
-    deleteItem: deleteDraft,
-  } = useDrafts();
+  const { deleteItem: deleteDraft } = useDrafts();
   const [draft, { setName, setBody, setActions }] = useDraft(draftId);
 
   const [hasPendingRequest, setPendingRequest] = React.useState(false);
   const [selectedActionIndex, setSelectedActionIndex] = React.useState(null);
+  const [showNewActionDialog, setShowNewActionDialog] = React.useState(false);
 
   const isNameEmpty = draft == null || draft.name.trim() === "";
   const isBodyEmpty =
@@ -69,13 +75,58 @@ const ProposeScreen = () => {
       hasRequiredInput && canCreateProposal && draftTargetType === "candidate",
   });
 
+  const usdcSumValue = draft.actions.reduce((sum, a) => {
+    switch (a.type) {
+      case "one-time-payment":
+        return a.currency !== "usdc"
+          ? sum
+          : sum + parseUnits(String(a.amount), 6);
+
+      default:
+        return sum;
+    }
+  }, BigInt(0));
+
+  const tokenBuyerTopUpValue = useTokenBuyerEthNeeded(usdcSumValue);
+
   const submit = async () => {
     setPendingRequest(true);
 
     const description = `# ${draft.name.trim()}\n\n${messageUtils.toMarkdown(
       draft.body
     )}`;
-    const transactions = draft.actions; // TODO
+    const transactions = draft.actions.flatMap((a) => {
+      switch (a.type) {
+        case "one-time-payment": {
+          if (a.currency === "eth")
+            return [
+              {
+                type: "transfer",
+                target: a.target,
+                value: parseEther(a.amount),
+              },
+            ];
+
+          if (a.currency === "usdc")
+            return [
+              {
+                type: "usdc-transfer-via-payer",
+                target: a.target,
+                value: parseUnits(String(a.amount), 6),
+              },
+              {
+                type: "token-buyer-top-up",
+                value: tokenBuyerTopUpValue ?? BigInt(1),
+              },
+            ];
+
+          throw new Error();
+        }
+
+        default:
+          throw new Error();
+      }
+    });
 
     return Promise.resolve()
       .then(() =>
@@ -105,33 +156,7 @@ const ProposeScreen = () => {
       });
   };
 
-  const getFirstEmptyDraft = useLatestCallback(() =>
-    drafts.find((draft) => {
-      const isEmpty =
-        draft.name.trim() === "" &&
-        draft.body.length === 1 &&
-        isRichTextEditorNodeEmpty(draft.body[0]);
-
-      return isEmpty;
-    })
-  );
-
-  React.useEffect(() => {
-    if (draftId != null) return;
-
-    const emptyDraft = getFirstEmptyDraft();
-
-    if (emptyDraft) {
-      navigate(`/new/${emptyDraft.id}?${searchParams}`, { replace: true });
-      return;
-    }
-
-    createDraft().then((d) => {
-      navigate(`/new/${d.id}?${searchParams}`, { replace: true });
-    });
-  }, [draftId, createDraft, getFirstEmptyDraft, navigate, searchParams]);
-
-  if (draft == null) return null;
+  const hasActions = draft.actions != null && draft.actions.length > 0;
 
   return (
     <>
@@ -173,19 +198,21 @@ const ProposeScreen = () => {
                       },
                     })}
                   >
-                    <h2
-                      css={(t) =>
-                        css({
-                          textTransform: "uppercase",
-                          fontSize: t.text.sizes.small,
-                          fontWeight: t.text.weights.emphasis,
-                          color: t.colors.textMuted,
-                          margin: "0 0 1.4rem",
-                        })
-                      }
-                    >
-                      Transactions
-                    </h2>
+                    {hasActions && (
+                      <h2
+                        css={(t) =>
+                          css({
+                            textTransform: "uppercase",
+                            fontSize: t.text.sizes.small,
+                            fontWeight: t.text.weights.emphasis,
+                            color: t.colors.textMuted,
+                            margin: "0 0 1.4rem",
+                          })
+                        }
+                      >
+                        Actions
+                      </h2>
+                    )}
                     {draft.actions?.length > 0 && (
                       <ol
                         css={(t) =>
@@ -235,7 +262,7 @@ const ProposeScreen = () => {
                                     // );
                                   }}
                                 >
-                                  <TransactionExplanation transaction={a} />
+                                  <ActionExplanation action={a} />
                                 </button>
                               </li>
                             );
@@ -243,25 +270,24 @@ const ProposeScreen = () => {
                       </ol>
                     )}
 
-                    <div css={css({ marginTop: "1.6rem" })}>
+                    <div
+                      style={{ marginTop: hasActions ? "1.6rem" : undefined }}
+                    >
                       <Button
                         type="button"
-                        size="default"
-                        icon={<PlusIcon style={{ width: "0.9rem" }} />}
+                        size={hasActions ? "default" : "large"}
+                        icon={
+                          hasActions ? (
+                            <PlusIcon style={{ width: "0.9rem" }} />
+                          ) : undefined
+                        }
                         onClick={() => {
-                          setActions([
-                            ...(draft.actions ?? []),
-                            {
-                              type: "transfer",
-                              target:
-                                "0x0000000000000000000000000000000000000000",
-                              value: "1",
-                            },
-                          ]);
-                          setSelectedActionIndex(draft.actions.length);
+                          setShowNewActionDialog(true);
                         }}
+                        fullWidth={!hasActions}
+                        style={{ height: hasActions ? undefined : "5.25rem" }}
                       >
-                        Add transaction
+                        {hasActions ? "Add action" : "Add a proposal action"}
                       </Button>
                     </div>
                   </div>
@@ -269,30 +295,31 @@ const ProposeScreen = () => {
                   <div
                     style={{
                       padding: "1.6rem 0",
+                      display: "flex",
                     }}
                   >
-                    <div
-                      style={{
-                        display: "flex",
-                        justifyContent: "flex-end",
-                        marginBottom: "1rem",
+                    <Button
+                      danger
+                      size="medium"
+                      type="button"
+                      onClick={() => {
+                        if (
+                          !confirm(
+                            "Are you sure you wish to discard this proposal?"
+                          )
+                        )
+                          return;
+
+                        deleteDraft(draftId).then(() => {
+                          navigate("/", { replace: true });
+                        });
                       }}
-                    >
-                      <Button
-                        type="button"
-                        size="medium"
-                        danger
-                        onClick={() => {
-                          deleteDraft(draftId).then(() => {
-                            navigate("/", { replace: true });
-                          });
-                        }}
-                      >
-                        Discard draft
-                      </Button>
-                    </div>
+                      icon={<TrashCanIcon />}
+                    />
                     <div
                       style={{
+                        flex: 1,
+                        minWidth: 0,
                         display: "flex",
                         gap: "1rem",
                         justifyContent: "flex-end",
@@ -302,28 +329,29 @@ const ProposeScreen = () => {
                         aria-label="Draft type"
                         value={draftTargetType}
                         options={[
-                          { value: "candidate", label: "Candidate" },
+                          { value: "candidate", label: "Create as candidate" },
                           {
                             value: "proposal",
-                            label: "Proposal",
+                            label: "Create as proposal",
                             disabled: !canCreateProposal,
                           },
                         ]}
                         onChange={(value) => {
                           setDraftTargetType(value);
                         }}
+                        size="medium"
+                        align="center"
                         width="max-content"
                         fullWidth={false}
                       />
                       <Button
                         type="submit"
                         variant="primary"
+                        size="medium"
                         isLoading={hasPendingRequest}
                         disabled={!hasRequiredInput || hasPendingRequest}
                       >
-                        {draftTargetType === "candidate"
-                          ? "Create candidate"
-                          : "Create proposal"}
+                        Submit
                       </Button>
                     </div>
                   </div>
@@ -431,57 +459,143 @@ const ProposeScreen = () => {
             onRequestClose={() => {
               setSelectedActionIndex(null);
             }}
-            width="52rem"
+            width="46rem"
           >
-            {({ titleProps }) => (
-              <EditTransactionDialog
-                transaction={draft.actions[selectedActionIndex]}
-                submit={(a) => {
-                  setActions(
-                    draft.actions.map((a_, i) =>
-                      i !== selectedActionIndex ? a_ : a
-                    )
-                  );
-                }}
-                remove={() => {
-                  setActions(
-                    draft.actions.filter((_, i) => i !== selectedActionIndex)
-                  );
-                }}
-                titleProps={titleProps}
-                dismiss={() => {
-                  setSelectedActionIndex(null);
-                }}
-              />
-            )}
+            {({ titleProps }) => {
+              const transaction = draft.actions[selectedActionIndex];
+              return (
+                <ActionDialog
+                  title="Edit action"
+                  initialType={transaction.type}
+                  initialCurrency={transaction.currency}
+                  initialAmount={transaction.amount}
+                  initialTarget={transaction.target}
+                  submit={(a) => {
+                    setActions(
+                      draft.actions.map((a_, i) =>
+                        i !== selectedActionIndex ? a_ : a
+                      )
+                    );
+                  }}
+                  remove={() => {
+                    setActions(
+                      draft.actions.filter((_, i) => i !== selectedActionIndex)
+                    );
+                  }}
+                  titleProps={titleProps}
+                  dismiss={() => {
+                    setSelectedActionIndex(null);
+                  }}
+                />
+              );
+            }}
           </Dialog>
         )}
+
+      {showNewActionDialog && (
+        <Dialog
+          isOpen
+          onRequestClose={() => {
+            setShowNewActionDialog(false);
+          }}
+          width="46rem"
+        >
+          {({ titleProps }) => (
+            <ActionDialog
+              title="Add action"
+              submit={(a) => {
+                console.log(draft);
+                setActions([...draft.actions, a]);
+              }}
+              titleProps={titleProps}
+              dismiss={() => {
+                setShowNewActionDialog(false);
+              }}
+              submitButtonLabel="Add"
+            />
+          )}
+        </Dialog>
+      )}
     </>
   );
 };
 
-const EditTransactionDialog = ({
+const ActionDialog = ({
+  title,
+  initialType,
+  initialCurrency,
+  initialAmount,
+  initialTarget,
   titleProps,
-  transaction,
-  submit,
   remove,
+  submit,
   dismiss,
+  submitButtonLabel = "Save",
 }) => {
-  // const isTransfer = [
-  //   "transfer",
-  //   "weth-transfer",
-  //   "usdc-transfer-via-payer",
-  // ].includes(transaction.type);
+  const [ethToUsdRate, setEthToUsdRate] = React.useState(null);
 
-  // const [type, setType] = React.useState(transaction.value);
-  const [target, setTarget] = React.useState(transaction.target);
-  const [amount, setAmount] = React.useState(transaction.value);
+  const [type, setType] = React.useState(initialType ?? "one-time-payment");
+  const [currency, setCurrency] = React.useState(initialCurrency ?? "eth");
+  const [amount, setAmount] = React.useState(initialAmount ?? 0);
+  const [receiverQuery, setReceiverQuery] = React.useState(initialTarget ?? "");
+
+  const { data: ensName } = useEnsName({
+    address: receiverQuery.trim(),
+    enabled: isAddress(receiverQuery.trim()),
+  });
+  const { data: ensAddress } = useEnsAddress({
+    name: receiverQuery.trim(),
+    enabled: receiverQuery.trim().split(".").slice(-1)[0] === "eth",
+  });
+
+  const target = isAddress(receiverQuery.trim())
+    ? receiverQuery.trim()
+    : ensAddress ?? "";
+
+  const convertedEthToUsdValue =
+    currency !== "eth" || ethToUsdRate == null || parseFloat(amount) === 0
+      ? null
+      : parseFloat(amount) * ethToUsdRate;
+
+  const convertedUsdcToEthValue =
+    currency !== "usdc" || ethToUsdRate == null || parseFloat(amount) === 0
+      ? null
+      : parseFloat(amount) / ethToUsdRate;
+
+  const hasRequiredInputs = (() => {
+    switch (type) {
+      case "one-time-payment":
+        return parseFloat(amount) > 0 && isAddress(target);
+
+      default:
+        throw new Error();
+    }
+  })();
+
+  useFetch(
+    () =>
+      fetch("https://api.coinbase.com/v2/exchange-rates?currency=ETH")
+        .then((res) => res.json())
+        .then((body) => {
+          const rate = body.data.rates["USD"];
+          if (rate == null) return;
+          setEthToUsdRate(parseFloat(rate));
+        }),
+    []
+  );
 
   return (
     <form
       onSubmit={(e) => {
+        if (!isAddress(target)) throw new Error();
+
         e.preventDefault();
-        submit({ ...transaction, target, value: amount });
+        submit({
+          type,
+          target,
+          amount,
+          currency,
+        });
         dismiss();
       }}
       css={css({
@@ -492,52 +606,165 @@ const EditTransactionDialog = ({
         },
       })}
     >
-      <DialogHeader
-        title="Edit transfer"
-        titleProps={titleProps}
-        dismiss={dismiss}
-      />
-      <main>
-        {/* <Select */}
-        {/*   value={type} */}
-        {/*   options={[ */}
-        {/*     { value: "transfer", label: "One-time ETH transfer" }, */}
-        {/*     { */}
-        {/*       value: "usdc-transfer-via-payer", */}
-        {/*       label: "One-time USDC transfer", */}
-        {/*     }, */}
-        {/*     { value: "stream", label: "Stream" }, */}
-        {/*   ]} */}
-        {/* /> */}
-        <Input
-          label="Receiver address"
-          value={target}
-          onChange={(e) => {
-            setTarget(e.target.value);
-          }}
-          placeholder="0x..."
-          hint={
-            target.trim() === "" || isAddress(target) ? null : "Invalid address"
-          }
-          containerProps={{ style: { marginBottom: "1.6rem" } }}
-        />
+      <DialogHeader title={title} titleProps={titleProps} dismiss={dismiss} />
+      <main style={{ display: "flex", flexDirection: "column", gap: "1.6rem" }}>
+        <div>
+          <Select
+            label="Type"
+            value={type}
+            size="medium"
+            options={[
+              { value: "one-time-payment", label: "One-time transfer" },
+              {
+                value: "monthly-payment",
+                label: "Monthly transfer",
+                disabled: true,
+              },
+              {
+                value: "custom-transaction",
+                label: "Custom transaction",
+                disabled: true,
+              },
+            ]}
+            onChange={(value) => {
+              setType(value);
+            }}
+          />
+        </div>
 
-        <Input
-          label="Amount (in Wei)"
-          value={amount}
-          type="number"
-          onChange={(e) => {
-            const { value } = e.target;
-            if (value.includes(".")) return;
+        <div>
+          <Label htmlFor="amount">Amount</Label>
+          <div
+            style={{
+              display: "grid",
+              gridTemplateColumns: "minmax(0,1fr) auto",
+              gap: "0.8rem",
+            }}
+          >
+            <Input
+              id="amount"
+              value={amount}
+              // type="number"
+              // step="0.01"
+              // min={0}
+              onBlur={() => {
+                setAmount(parseFloat(amount));
+              }}
+              onChange={(e) => {
+                const { value } = e.target;
+                if (value.trim() === "") {
+                  setAmount(0);
+                  return;
+                }
 
-            try {
-              const bigInt = BigInt(value);
-              setAmount(bigInt.toString());
-            } catch (e) {
-              // Do nothing
+                const n = parseFloat(value);
+
+                if (isNaN(n) || !/^[0-9]*.?[0-9]*$/.test(value)) return;
+
+                if (/^[0-9]*$/.test(value)) {
+                  setAmount(n);
+                  return;
+                }
+
+                setAmount(value);
+              }}
+              // hint={<>{formatEther(amount)} ETH</>}
+            />
+            <Select
+              aria-label="Currency token"
+              value={currency}
+              options={[
+                { value: "eth", label: "ETH" },
+                { value: "usdc", label: "USDC" },
+              ]}
+              onChange={(value) => {
+                setCurrency(value);
+              }}
+              width="max-content"
+              fullWidth={false}
+            />
+          </div>
+          <div
+            css={(t) =>
+              css({
+                fontSize: t.text.sizes.small,
+                color: t.colors.textDimmed,
+                marginTop: "0.7rem",
+              })
             }
+          >
+            {convertedEthToUsdValue != null && (
+              <>
+                {convertedEthToUsdValue < 0.01 ? (
+                  "<0.01 USD"
+                ) : (
+                  <>
+                    &asymp;{" "}
+                    <FormattedNumber
+                      value={convertedEthToUsdValue}
+                      minimumFractionDigits={2}
+                      maximumFractionDigits={2}
+                    />{" "}
+                    USD
+                  </>
+                )}
+              </>
+            )}
+            {convertedUsdcToEthValue != null && (
+              <>
+                {convertedUsdcToEthValue < 0.0001 ? (
+                  "<0.0001 ETH"
+                ) : (
+                  <>
+                    &asymp;{" "}
+                    <FormattedNumber
+                      value={convertedUsdcToEthValue}
+                      minimumFractionDigits={1}
+                      maximumFractionDigits={4}
+                    />{" "}
+                    ETH
+                  </>
+                )}
+              </>
+            )}
+            &nbsp;
+          </div>
+        </div>
+
+        <Input
+          label="Receiver account"
+          value={receiverQuery}
+          onBlur={() => {
+            if (!isAddress(receiverQuery) && ensAddress != null)
+              setReceiverQuery(ensAddress);
           }}
-          hint={<>{formatEther(amount)} ETH</>}
+          onChange={(e) => {
+            setReceiverQuery(e.target.value);
+          }}
+          placeholder="0x..., vitalik.eth"
+          hint={
+            !isAddress(receiverQuery) && ensAddress == null ? (
+              "Specify an Ethereum account address or ENS name"
+            ) : ensAddress != null ? (
+              ensAddress
+            ) : ensName != null ? (
+              <>
+                Primary ENS name:{" "}
+                <em
+                  css={(t) =>
+                    css({
+                      fontStyle: "normal",
+                      fontWeight: t.text.weights.emphasis,
+                    })
+                  }
+                >
+                  {ensName}
+                </em>
+              </>
+            ) : (
+              <>&nbsp;</>
+            )
+          }
         />
       </main>
       <footer
@@ -551,17 +778,20 @@ const EditTransactionDialog = ({
           },
         })}
       >
-        <Button
-          type="button"
-          danger
-          size="medium"
-          onClick={() => {
-            remove();
-            dismiss();
-          }}
-        >
-          Discard
-        </Button>
+        {remove == null ? (
+          <div />
+        ) : (
+          <Button
+            type="button"
+            danger
+            size="medium"
+            icon={<TrashCanIcon style={{ width: "1.5rem" }} />}
+            onClick={() => {
+              remove();
+              dismiss();
+            }}
+          />
+        )}
         <div
           css={css({
             display: "grid",
@@ -577,9 +807,9 @@ const EditTransactionDialog = ({
             type="submit"
             size="medium"
             variant="primary"
-            disabled={amount === "0" || !isAddress(target)}
+            disabled={!hasRequiredInputs}
           >
-            Save
+            {submitButtonLabel}
           </Button>
         </div>
       </footer>
@@ -587,4 +817,128 @@ const EditTransactionDialog = ({
   );
 };
 
-export default ProposeScreen;
+const currencyFractionDigits = {
+  eth: [1, 4],
+  usdc: [2, 2],
+};
+
+const ActionExplanation = ({ action: a }) => {
+  const { displayName: targetDisplayName } = useAccountDisplayName(a.target);
+
+  switch (a.type) {
+    case "one-time-payment": {
+      const [minimumFractionDigits, maximumFractionDigits] =
+        currencyFractionDigits[a.currency];
+
+      return (
+        <>
+          Transfer{" "}
+          <em>
+            <FormattedNumber
+              value={a.amount}
+              minimumFractionDigits={minimumFractionDigits}
+              maximumFractionDigits={maximumFractionDigits}
+            />{" "}
+            {a.currency.toUpperCase()}
+          </em>{" "}
+          to <em>{targetDisplayName}</em>
+        </>
+      );
+    }
+
+    // case "monthly-payment": {
+    //   const formattedUnits = formatUnits(
+    //     t.tokenAmount,
+    //     decimalsByCurrency[t.token]
+    //   );
+    //   // TODO: handle unknown token contract
+    //   return (
+    //     <>
+    //       Stream{" "}
+    //       {t.token != null && (
+    //         <>
+    //           <em>
+    //             {t.token === "USDC"
+    //               ? parseFloat(formattedUnits).toLocaleString()
+    //               : formattedUnits}{" "}
+    //             {t.token}
+    //           </em>{" "}
+    //         </>
+    //       )}
+    //       to{" "}
+    //       <em>
+    //         <AddressDisplayNameWithTooltip address={t.receiverAddress} />
+    //       </em>{" "}
+    //       between{" "}
+    //       <FormattedDateWithTooltip
+    //         disableRelative
+    //         day="numeric"
+    //         month="short"
+    //         year="numeric"
+    //         value={t.startDate}
+    //       />{" "}
+    //       and{" "}
+    //       <FormattedDateWithTooltip
+    //         disableRelative
+    //         day="numeric"
+    //         month="short"
+    //         year="numeric"
+    //         value={t.endDate}
+    //       />{" "}
+    //       ({datesDifferenceInMonths(t.endDate, t.startDate)} months)
+    //     </>
+    //   );
+    // }
+
+    case "custom":
+      return <TransactionExplanation transaction={a.transaction} />;
+
+    default:
+      throw new Error(`Unknown action type: "${a.type}"`);
+  }
+};
+
+export default () => {
+  const { draftId } = useParams();
+
+  const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+
+  const [draft] = useDraft(draftId);
+  const { items: drafts, createItem: createDraft } = useDrafts();
+
+  React.useEffect(() => {
+    if (draft === null) navigate("/", { replace: true });
+  }, [draft, navigate]);
+
+  const getFirstEmptyDraft = useLatestCallback(() =>
+    drafts.find((draft) => {
+      const isEmpty =
+        draft.name.trim() === "" &&
+        draft.actions.length === 0 &&
+        draft.body.length === 1 &&
+        isRichTextEditorNodeEmpty(draft.body[0]);
+
+      return isEmpty;
+    })
+  );
+
+  React.useEffect(() => {
+    if (draftId != null) return;
+
+    const emptyDraft = getFirstEmptyDraft();
+
+    if (emptyDraft) {
+      navigate(`/new/${emptyDraft.id}?${searchParams}`, { replace: true });
+      return;
+    }
+
+    createDraft().then((d) => {
+      navigate(`/new/${d.id}?${searchParams}`, { replace: true });
+    });
+  }, [draftId, createDraft, getFirstEmptyDraft, navigate, searchParams]);
+
+  if (draft == null) return null; // Spinner
+
+  return <ProposeScreen />;
+};

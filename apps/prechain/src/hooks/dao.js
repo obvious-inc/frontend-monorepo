@@ -289,8 +289,10 @@ export const useCreateProposal = ({ enabled = true } = {}) => {
   });
 
   return async ({ description, transactions }) => {
-    const { targets, values, signatures, calldatas } =
-      unparseTransactions(transactions);
+    const { targets, values, signatures, calldatas } = unparseTransactions(
+      transactions,
+      { chainId }
+    );
 
     return writeAsync({
       args: [targets, values, signatures, calldatas, description],
@@ -341,6 +343,22 @@ export const usePriorVotes = ({ account, blockNumber }) => {
     functionName: "getPriorVotes",
     args: [account, blockNumber],
     enabled: account != null && blockNumber != null,
+  });
+
+  return data == null ? null : Number(data);
+};
+
+export const useTokenBuyerEthNeeded = (additionalUsdcTokens) => {
+  const chainId = useChainId();
+
+  const { data } = useContractRead({
+    address: contractAddressesByChainId[chainId]["token-buyer"],
+    abi: parseAbi([
+      "function ethNeeded(uint256, uint256) public view returns (uint256)",
+    ]),
+    functionName: "ethNeeded",
+    args: [additionalUsdcTokens, 5_000],
+    enabled: additionalUsdcTokens != null,
   });
 
   return data == null ? null : Number(data);

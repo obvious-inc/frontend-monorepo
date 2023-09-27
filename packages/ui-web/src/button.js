@@ -60,29 +60,38 @@ const stylesByVariant = (t, { danger }) => ({
   },
 });
 
-const stylesBySize = (theme, { multiline, align }) => {
+export const heightBySize = {
+  default: "3.2rem",
+  small: "2.8rem",
+  medium: "3.6rem",
+};
+
+const stylesBySize = (theme, { multiline, align, icon }) => {
   const heightProp = multiline ? "minHeight" : "height";
   return {
     default: {
       fontSize: theme.fontSizes.base,
-      padding: align === "left" ? "0.8rem" : "0 1.2rem",
-      [heightProp]: "3.2rem",
+      padding: icon ? 0 : align === "left" ? "0 0.8rem" : "0 1.2rem",
+      [heightProp]: heightBySize.default,
+      width: icon ? heightBySize.default : undefined,
     },
     small: {
       fontSize: theme.fontSizes.base,
       padding: [
         multiline ? "0.5rem" : 0,
-        align === "left" ? "0.7rem" : "0.9rem",
+        icon ? 0 : align === "left" ? "0.7rem" : "0.9rem",
       ].join(" "),
-      [heightProp]: "2.8rem",
+      [heightProp]: heightBySize.small,
+      width: icon ? heightBySize.small : undefined,
     },
     medium: {
       fontSize: theme.text.sizes.button,
       padding: [
         multiline ? "0.7rem" : 0,
-        align === "left" ? "0.9rem" : "1.7rem",
+        icon ? 0 : align === "left" ? "0.9rem" : "1.7rem",
       ].join(" "),
-      [heightProp]: "3.6rem",
+      [heightProp]: heightBySize.medium,
+      width: icon ? heightBySize.medium : undefined,
     },
     large: {
       fontSize: theme.text.sizes.button,
@@ -128,6 +137,7 @@ const Button = React.forwardRef(
       onPressStart,
       component: Component = "button",
       children,
+      style,
       ...props
     },
     ref
@@ -154,13 +164,18 @@ const Button = React.forwardRef(
         css={(theme) =>
           css({
             ...baseStyles(theme, { align }),
-            ...stylesBySize(theme, { multiline, align })[size],
+            ...(stylesBySize(theme, {
+              multiline,
+              align,
+              icon: icon != null && children == null,
+            })[size] ?? { width: size, height: size }),
             ...stylesByVariant(theme, { danger })[variant],
           })
         }
         style={{
           pointerEvents: isLoading ? "none" : undefined,
           width: fullWidth ? "100%" : undefined,
+          ...style,
         }}
         {...mergeProps(props, buttonProps)}
       >
@@ -173,22 +188,24 @@ const Button = React.forwardRef(
               justifyContent: "center",
               minWidth: "1.5rem",
               maxWidth: iconLayout.size,
-              marginRight: iconLayout.gutter,
+              marginRight: children == null ? undefined : iconLayout.gutter,
             })}
           >
             {icon}
           </div>
         )}
-        <div
-          style={{
-            visibility: isLoading ? "hidden" : undefined,
-            overflow: "hidden",
-            textOverflow: "ellipsis",
-            flex: 1,
-          }}
-        >
-          {children}
-        </div>
+        {children != null && (
+          <div
+            style={{
+              visibility: isLoading ? "hidden" : undefined,
+              overflow: "hidden",
+              textOverflow: "ellipsis",
+              flex: 1,
+            }}
+          >
+            {children}
+          </div>
+        )}
         {iconRight != null && (
           <div
             aria-hidden="true"

@@ -1,7 +1,6 @@
-import { decodeAbiParameters, parseAbiItem } from "viem";
+import { decodeAbiParameters, encodeAbiParameters, parseAbiItem } from "viem";
+import { contractAddressesByChainId } from "../hooks/prechain.js";
 
-const DAO_PAYER_CONTRACT = "0xd97bcd9f47cee35c0a9ec1dc40c1269afc9e8e1d";
-const TOKEN_BUYER_CONTRACT = "0x4f2acdc74f6941390d9b1804fabc3e780388cfe5";
 const CREATE_STREAM_SIGNATURE =
   "createStream(address,uint256,address,uint256,uint256,uint8,address)";
 
@@ -27,7 +26,9 @@ const decodeCalldataWithSignature = ({ signature, calldata }) => {
   };
 };
 
-export const parse = (data) => {
+export const parse = (data, { chainId }) => {
+  const contractAddresses = contractAddressesByChainId[chainId];
+
   const transactions = data.targets.map((target, i) => ({
     target,
     signature: data.signatures[i] || null,
@@ -49,7 +50,8 @@ export const parse = (data) => {
     const isEthTransfer = signature == null && calldata === "0x";
 
     if (isEthTransfer)
-      return target.toLowerCase() === TOKEN_BUYER_CONTRACT
+      return target.toLowerCase() ===
+        contractAddresses["token-buyer"]?.toLowerCase()
         ? { type: "token-buyer-top-up", value }
         : { type: "transfer", target, value };
 
@@ -96,7 +98,7 @@ export const parse = (data) => {
     }
 
     if (
-      target === DAO_PAYER_CONTRACT &&
+      target.toLowerCase() === contractAddresses["payer"]?.toLowerCase() &&
       signature === "sendOrRegisterDebt(address,uint256)"
     ) {
       const receiverAddress = functionInputs[0].value.toLowerCase();
@@ -131,27 +133,68 @@ export const parse = (data) => {
   });
 };
 
-export const unparse = (transactions) =>
-  transactions.reduce(
+export const unparse = (transactions, { chainId }) => {
+  const contractAddresses = contractAddressesByChainId[chainId];
+  return transactions.reduce(
     (acc, t) => {
+      const append = (t) => ({
+        targets: [...acc.targets, t.target],
+        values: [...acc.values, t.value],
+        signatures: [...acc.signatures, t.signature],
+        calldatas: [...acc.calldatas, t.calldata],
+      });
+
       switch (t.type) {
         case "transfer": {
-          return {
-            targets: [...acc.targets, t.target],
-            values: [...acc.values, t.value],
-            signatures: [...acc.values, ""],
-            calldatas: [...acc.values, "0x"],
-          };
+          return append({
+            target: t.target,
+            value: t.value,
+            signature: "",
+            calldata: "0x",
+          });
         }
+
+        case "token-buyer-top-up":
+          return append({
+            target: contractAddresses["token-buyer"],
+            value: t.value.toString(),
+            signature: "",
+            calldata: "0x",
+          });
+
+        case "usdc-transfer-via-payer":
+          return append({
+            target: contractAddresses["payer"],
+            value: "0",
+            signature: "sendOrRegisterDebt(address,uint256)",
+            calldata: encodeAbiParameters(
+              [{ type: "address" }, { type: "uint256" }],
+              [t.target, t.value]
+            ),
+          });
+
+        case "function-call":
+          return append({
+            target: t.target,
+            value: "0",
+            signature: `${t.functionName}(${t.functionInputs
+              .map((i) => i.type)
+              .join(",")})`,
+            calldata: encodeAbiParameters(
+              t.functionInputs.map((i) => ({ type: i.type })),
+              t.functionInputs.map((i) => i.value)
+            ),
+          });
 
         // TODO
 
         default:
-          throw new Error();
+          throw new Error(`Unknown transaction type "${t.type}"`);
       }
     },
     { targets: [], values: [], signatures: [], calldatas: [] }
   );
+};
 
 export const extractAmounts = (parsedTransactions) => {
   const ethTransfers = parsedTransactions.filter((t) => t.type === "transfer");

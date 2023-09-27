@@ -35,11 +35,15 @@ export const contractAddressesByChainId = {
     dao: "0x6f3E6272A167e8AcCb32072d08E0957F9c79223d",
     data: "0xf790A5f59678dd733fb3De93493A91f472ca1365",
     token: "0x9C8fF314C9Bc7F6e59A9d9225Fb22946427eDC03",
+    payer: "0xd97bcd9f47cee35c0a9ec1dc40c1269afc9e8e1d",
+    "token-buyer": "0x4f2acdc74f6941390d9b1804fabc3e780388cfe5",
   },
   11155111: {
     dao: "0x35d2670d7C8931AACdd37C89Ddcb0638c3c44A57",
     data: "0x9040f720AA8A693F950B9cF94764b4b06079D002",
     token: "0x4C4674bb72a096855496a7204962297bd7e12b85",
+    // payer: "0x0000000000000000000000000000000000000000",
+    // "token-buyer": "0x0000000000000000000000000000000000000000",
   },
 };
 
@@ -116,7 +120,7 @@ export const useStore = createZustandStoreHook((set) => ({
     subgraphFetch({ chainId, query: createProposalQuery(id) }).then((data) => {
       if (data.proposal == null) return Promise.reject(new Error("not-found"));
 
-      const fetchedProposal = parseProposal(data.proposal);
+      const fetchedProposal = parseProposal(data.proposal, { chainId });
 
       set((s) => ({
         proposalsById: {
@@ -147,7 +151,7 @@ export const useStore = createZustandStoreHook((set) => ({
       set((s) => {
         const updatedCandidate = mergeProposalCandidates(
           s.proposalCandidatesById[id],
-          parseProposalCandidate({ ...candidate, feedbackPosts })
+          parseProposalCandidate({ ...candidate, feedbackPosts }, { chainId })
         );
         return {
           proposalCandidatesById: {
@@ -168,11 +172,13 @@ export const useStore = createZustandStoreHook((set) => ({
   fetchBrowseScreenData: (chainId, options) =>
     subgraphFetch({ chainId, query: createBrowseScreenQuery(options) }).then(
       (data) => {
-        const parsedProposals = data.proposals.map(parseProposal);
+        const parsedProposals = data.proposals.map((p) =>
+          parseProposal(p, { chainId })
+        );
         const fetchedProposalsById = indexBy((p) => p.id, parsedProposals);
 
-        const parsedCandidates = data.proposalCandidates.map(
-          parseProposalCandidate
+        const parsedCandidates = data.proposalCandidates.map((c) =>
+          parseProposalCandidate(c, { chainId })
         );
         const fetchedCandidatesById = indexBy(
           (p) => p.id.toLowerCase(),
@@ -268,6 +274,11 @@ export const useStore = createZustandStoreHook((set) => ({
 export const useChainId = () => {
   const { chain } = useNetwork();
   return chain?.id ?? DEFAULT_CHAIN_ID;
+};
+
+export const useContractAddress = (identifier) => {
+  const chainId = useChainId();
+  return contractAddressesByChainId[chainId][identifier];
 };
 
 const DELEGATES_QUERY = `{
@@ -474,7 +485,7 @@ const parseFeedbackPost = (post) => ({
   createdTimestamp: new Date(parseInt(post.createdTimestamp) * 1000),
 });
 
-const parseProposal = (data) => {
+const parseProposal = (data, { chainId }) => {
   const parsedData = { ...data };
 
   // Block numbers
@@ -504,12 +515,13 @@ const parseProposal = (data) => {
 
   if (data.proposer?.id != null) parsedData.proposerId = data.proposer.id;
 
-  if (data.targets != null) parsedData.transactions = parseTransactions(data);
+  if (data.targets != null)
+    parsedData.transactions = parseTransactions(data, { chainId });
 
   return parsedData;
 };
 
-const parseProposalCandidate = (data) => {
+const parseProposalCandidate = (data, { chainId }) => {
   const parsedData = {
     ...data,
     latestVersion: {
@@ -557,7 +569,8 @@ const parseProposalCandidate = (data) => {
 
   if (data.latestVersion.content.targets != null)
     parsedData.latestVersion.content.transactions = parseTransactions(
-      data.latestVersion.content
+      data.latestVersion.content,
+      { chainId }
     );
 
   if (data.feedbackPosts != null)
@@ -777,7 +790,8 @@ export const useCreateProposalCandidate = ({ enabled = true } = {}) => {
   const publicClient = usePublicClient();
   const chainId = useChainId();
 
-  const createCost = useProposalCandidateCreateCost();
+  // TODO: Only pay if account has no prior votes
+  const createCost = useProposalCandidateCreateCost({ enabled });
 
   const { writeAsync } = useContractWrite({
     address: contractAddressesByChainId[chainId].data,
@@ -786,12 +800,15 @@ export const useCreateProposalCandidate = ({ enabled = true } = {}) => {
     ]),
     functionName: "createProposalCandidate",
     value: createCost,
-    enabled: enabled && createCost != null,
   });
 
+  if (createCost == null) return null;
+
   return async ({ slug, description, transactions }) => {
-    const { targets, values, signatures, calldatas } =
-      unparseTransactions(transactions);
+    const { targets, values, signatures, calldatas } = unparseTransactions(
+      transactions,
+      { chainId }
+    );
 
     return writeAsync({
       args: [targets, values, signatures, calldatas, description, slug, 0],
@@ -811,7 +828,7 @@ export const useCreateProposalCandidate = ({ enabled = true } = {}) => {
   };
 };
 
-export const useProposalCandidateCreateCost = () => {
+export const useProposalCandidateCreateCost = ({ enabled = true } = {}) => {
   const chainId = useChainId();
 
   const { data } = useContractRead({
@@ -820,6 +837,7 @@ export const useProposalCandidateCreateCost = () => {
       "function createCandidateCost() public view returns (uint256)",
     ]),
     functionName: "createCandidateCost",
+    enabled,
   });
 
   return data;
@@ -848,8 +866,10 @@ export const useUpdateProposalCandidate = (
 
   const updateCost = useProposalCandidateUpdateCost();
 
-  const { targets, values, signatures, calldatas } =
-    unparseTransactions(transactions);
+  const { targets, values, signatures, calldatas } = unparseTransactions(
+    transactions,
+    { chainId }
+  );
 
   const { config } = usePrepareContractWrite({
     address: contractAddressesByChainId[chainId].data,
