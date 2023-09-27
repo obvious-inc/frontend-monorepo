@@ -13,6 +13,7 @@ module.exports = (...args) => {
       new webpack.EnvironmentPlugin({
         PUSHER_KEY: undefined,
         INFURA_PROJECT_ID: null,
+        ALCHEMY_API_KEY: null,
         CLOUDFLARE_ACCT_HASH: null,
         WALLET_CONNECT_PROJECT_ID: null,
         NOUNS_SUBGRAPH_URL: null,
