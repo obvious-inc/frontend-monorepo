@@ -10,11 +10,7 @@ import FarcasterProfile from "./farcaster-profile";
 import Dialog from "@shades/ui-web/dialog";
 import AuthDialog from "./auth-dialog";
 import useFarcasterAccount from "./farcaster-account";
-import {
-  useChannelHasUnread,
-  useFollowedChannels,
-  useFollowedChannelsFetch,
-} from "../hooks/channel";
+import { useChannelHasUnread, useFollowedChannels } from "../hooks/channel";
 
 const DEFAULT_TRUNCATED_COUNT = 10;
 
@@ -290,9 +286,7 @@ const SmallText = ({ component: Component = "div", ...props }) => (
 export const MainLayout = ({ children }) => {
   const { fid } = useFarcasterAccount();
 
-  useFollowedChannelsFetch({ fid });
   const followedChannels = useFollowedChannels(fid);
-
   const farcasterChannels = useFarcasterChannels();
 
   const [remainingChannels, setRemainingChannels] = React.useState([]);

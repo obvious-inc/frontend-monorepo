@@ -256,7 +256,7 @@ export function useChannelCacheContext() {
   return context;
 }
 
-export const useFollowedChannelsFetch = ({ fid }) => {
+const useFollowedChannelsFetch = ({ fid }) => {
   const {
     actions: { fetchFollowedChannels, fetchUnreadState },
   } = React.useContext(ChannelCacheContext);
@@ -289,6 +289,7 @@ export const useFollowedChannels = (fid) => {
     state: { followedChannelsByFid },
   } = React.useContext(ChannelCacheContext);
 
+  useFollowedChannelsFetch({ fid });
   return followedChannelsByFid[fid];
 };
 
