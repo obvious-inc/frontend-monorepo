@@ -428,17 +428,23 @@ const ProposalMainSection = ({ proposalId }) => {
                     })
                   }
                 >
-                  Voting starts{" "}
-                  {startDate == null ? (
-                    "..."
+                  {proposal.state === "canceled" ? (
+                    "Proposal canceled"
                   ) : (
-                    <FormattedDateWithTooltip
-                      capitalize={false}
-                      relativeDayThreshold={5}
-                      value={startDate}
-                      day="numeric"
-                      month="short"
-                    />
+                    <>
+                      Voting starts{" "}
+                      {startDate == null ? (
+                        "..."
+                      ) : (
+                        <FormattedDateWithTooltip
+                          capitalize={false}
+                          relativeDayThreshold={5}
+                          value={startDate}
+                          day="numeric"
+                          month="short"
+                        />
+                      )}
+                    </>
                   )}
                 </Callout>
               )}
