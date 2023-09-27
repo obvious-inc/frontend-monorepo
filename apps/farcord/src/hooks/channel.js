@@ -5,6 +5,7 @@ import {
   fetchNeynarRecentCasts,
   fetchNeynarThreadCasts,
 } from "./neynar";
+import { fetchWarpcastFollowedChannels } from "./warpcast";
 
 export const ChannelCacheContext = React.createContext();
 
@@ -14,6 +15,8 @@ export const ChannelCacheContextProvider = ({ children }) => {
     castsByThreadHash: {},
     recentCastsByFid: {},
     recentCasts: [],
+    followedChannelsByFid: {},
+    readStatesByChannelId: {},
   });
 
   const fetchChannelCasts = React.useCallback(async ({ channel, cursor }) => {
@@ -73,6 +76,20 @@ export const ChannelCacheContextProvider = ({ children }) => {
     );
   }, []);
 
+  const fetchFollowedChannels = React.useCallback(async ({ fid }) => {
+    return fetchWarpcastFollowedChannels({ fid }).then((channels) => {
+      setState((s) => {
+        return {
+          ...s,
+          followedChannelsByFid: {
+            ...s.followedChannelsByFid,
+            [fid]: channels,
+          },
+        };
+      });
+    });
+  }, []);
+
   const contextValue = React.useMemo(
     () => ({
       state,
@@ -80,9 +97,16 @@ export const ChannelCacheContextProvider = ({ children }) => {
         fetchChannelCasts,
         fetchThreadCasts,
         fetchFeedCasts,
+        fetchFollowedChannels,
       },
     }),
-    [state, fetchChannelCasts, fetchThreadCasts, fetchFeedCasts]
+    [
+      state,
+      fetchChannelCasts,
+      fetchThreadCasts,
+      fetchFeedCasts,
+      fetchFollowedChannels,
+    ]
   );
 
   return (
@@ -172,3 +196,25 @@ export function useChannelCacheContext() {
   const context = React.useContext(ChannelCacheContext);
   return context;
 }
+
+export const useFollowedChannelsFetch = ({ fid }) => {
+  const {
+    actions: { fetchFollowedChannels },
+  } = React.useContext(ChannelCacheContext);
+
+  useFetch(
+    () =>
+      fetchFollowedChannels({ fid }).catch((e) => {
+        throw e;
+      }),
+    [fetchFollowedChannels, fid]
+  );
+};
+
+export const useFollowedChannels = (fid) => {
+  const {
+    state: { followedChannelsByFid },
+  } = React.useContext(ChannelCacheContext);
+
+  return followedChannelsByFid[fid];
+};

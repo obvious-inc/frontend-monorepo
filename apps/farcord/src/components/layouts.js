@@ -7,10 +7,13 @@ import { Layout as SidebarLayout } from "@shades/ui-web/sidebar-layout";
 import { ErrorBoundary } from "@shades/common/react";
 import Avatar from "@shades/ui-web/avatar";
 import FarcasterProfile from "./farcaster-profile";
-import { useFollowedChannels } from "../hooks/warpcast";
 import Dialog from "@shades/ui-web/dialog";
 import AuthDialog from "./auth-dialog";
 import useFarcasterAccount from "./farcaster-account";
+import {
+  useFollowedChannels,
+  useFollowedChannelsFetch,
+} from "../hooks/channel";
 
 const DEFAULT_TRUNCATED_COUNT = 10;
 
@@ -278,6 +281,8 @@ const SmallText = ({ component: Component = "div", ...props }) => (
 
 export const MainLayout = ({ children }) => {
   const { fid } = useFarcasterAccount();
+
+  useFollowedChannelsFetch({ fid });
   const followedChannels = useFollowedChannels(fid);
 
   const farcasterChannels = useFarcasterChannels();
