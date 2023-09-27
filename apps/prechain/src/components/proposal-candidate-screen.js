@@ -92,8 +92,7 @@ export const buildCandidateFeed = (
       type: "feedback-post",
       id: `${candidate.id}-${p.id}`,
       authorAccount: p.voter.id,
-      bodyRichText:
-        p.reason == null ? null : messageUtils.parseString(p.reason),
+      body: p.reason,
       support: p.supportDetailed,
       voteCount: p.votes,
       timestamp: p.createdTimestamp,
