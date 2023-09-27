@@ -380,9 +380,8 @@ const CastChannel = ({ cast }) => {
             cursor: "pointer",
             textDecoration: "none",
             color: t.colors.pink,
-            maxWidth: "10rem",
             border: "1px dashed",
-            padding: "1rem",
+            padding: "0.5rem 2rem",
             borderColor: t.colors.borderLight,
           })
         }
