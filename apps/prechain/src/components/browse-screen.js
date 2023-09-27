@@ -175,8 +175,15 @@ const BrowseScreen = () => {
 
         case "ongoing":
         case "awaiting-vote":
+        case "proposed": {
+          const title = {
+            ongoing: "Current",
+            "awaiting-vote": "Not yet voted",
+            proposed: "Your proposals",
+          }[groupName];
+
           return {
-            title: groupName === "awaiting-vote" ? "Not yet voted" : "Current",
+            title,
             items: isSearch
               ? items
               : arrayUtils.sortBy(
@@ -201,6 +208,7 @@ const BrowseScreen = () => {
                   items
                 ),
           };
+        }
 
         case "candidates": {
           const sortedItems = isSearch
@@ -229,6 +237,13 @@ const BrowseScreen = () => {
       if (i.slug != null) return "candidates";
 
       if (isFinalProposalState(i.state)) return "past";
+
+      if (
+        connectedWalletAccountAddress != null &&
+        i.proposerId.toLowerCase() ===
+          connectedWalletAccountAddress.toLowerCase()
+      )
+        return "proposed";
 
       if (
         connectedWalletAccountAddress != null &&
@@ -338,6 +353,7 @@ const BrowseScreen = () => {
               <SectionedList
                 sections={[
                   "drafts",
+                  "proposed",
                   "awaiting-vote",
                   "ongoing",
                   "candidates",
@@ -391,7 +407,13 @@ const BrowseScreen = () => {
                   >
                     <SectionedList
                       showPlaceholder={filteredProposals.length === 0}
-                      sections={["drafts", "awaiting-vote", "ongoing", "past"]
+                      sections={[
+                        "drafts",
+                        "proposed",
+                        "awaiting-vote",
+                        "ongoing",
+                        "past",
+                      ]
                         .map((sectionName) => sectionsByName[sectionName] ?? {})
                         .filter(
                           ({ items }) => items != null && items.length !== 0
