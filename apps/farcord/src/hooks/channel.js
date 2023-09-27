@@ -15,14 +15,14 @@ const getInitialReadStates = () => {
 export const ChannelCacheContext = React.createContext();
 
 export const ChannelCacheContextProvider = ({ children }) => {
-  const [state, setState] = React.useState({
+  const [state, setState] = React.useState(() => ({
     castsByChannelId: {},
     castsByThreadHash: {},
     recentCastsByFid: {},
     recentCasts: [],
     followedChannelsByFid: {},
     readStatesByChannelId: getInitialReadStates(),
-  });
+  }));
 
   React.useEffect(() => {
     localStorage.setItem(
