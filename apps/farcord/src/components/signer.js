@@ -72,8 +72,10 @@ export const Provider = ({ children }) => {
   const [error, setError] = React.useState(null);
   const [status, setStatus] = React.useState("idle");
 
-  const { fid, address } = useFarcasterAccount();
-  const cacheKey = createCacheKey(address ?? fid?.toString());
+  const { fid, account, address } = useFarcasterAccount();
+  const cacheKey = createCacheKey(
+    account?.address ?? fid?.toString() ?? address
+  );
   const [signer, setCachedSigner] = useCachedState(cacheKey);
   const onChainSigner = useSignerByPublicKey(fid, signer?.publicKey);
   const [broadcasted, setBroadcasted] = React.useState(onChainSigner != null);
