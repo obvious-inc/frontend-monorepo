@@ -19,6 +19,7 @@ import {
   useChannelCacheContext,
   useChannelCasts,
   useChannelCastsFetch,
+  useChannelHasUnread,
   useFeedCasts,
   useFeedCastsFetch,
 } from "../hooks/channel.js";
@@ -56,6 +57,12 @@ export const ChannelCastsScrollView = ({
   const castHashes = casts?.map((cast) => cast.hash) ?? [];
   const hasAllCasts = false;
 
+  const channelHasUnread = useChannelHasUnread(channelId);
+
+  const {
+    actions: { markChannelRead },
+  } = useChannelCacheContext();
+
   // const fetchMessages = useChannelCastsFetcher(channelId);
 
   // const fetchMoreCasts = useLatestCallback(async (query) => {
@@ -85,6 +92,28 @@ export const ChannelCastsScrollView = ({
         value: channelId,
       });
   }, [channelId, isFeed, channel, dispatch]);
+
+  React.useEffect(() => {
+    if (
+      // Only mark as read when the page has focus
+      !document.hasFocus() ||
+      // Wait until the initial message batch is fetched
+      !channelCasts ||
+      // Only mark as read when scrolled to the bottom
+      !didScrollToBottomRef.current ||
+      // Don’t bother if the channel is already marked as read
+      !channelHasUnread
+    )
+      return;
+
+    markChannelRead(channelId);
+  }, [
+    channelId,
+    didScrollToBottomRef,
+    channelCasts,
+    channelHasUnread,
+    markChannelRead,
+  ]);
 
   if (!casts || casts?.length === 0) {
     return (

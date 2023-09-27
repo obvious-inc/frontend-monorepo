@@ -1,6 +1,6 @@
 import React from "react";
 import { Triangle as TriangleIcon } from "@shades/ui-web/icons";
-import { css } from "@emotion/react";
+import { css, useTheme } from "@emotion/react";
 import { NavLink, Outlet, useSearchParams } from "react-router-dom";
 import { useFarcasterChannels } from "../hooks/farcord";
 import { Layout as SidebarLayout } from "@shades/ui-web/sidebar-layout";
@@ -11,6 +11,7 @@ import Dialog from "@shades/ui-web/dialog";
 import AuthDialog from "./auth-dialog";
 import useFarcasterAccount from "./farcaster-account";
 import {
+  useChannelHasUnread,
   useFollowedChannels,
   useFollowedChannelsFetch,
 } from "../hooks/channel";
@@ -130,7 +131,9 @@ const ListItem = React.forwardRef(
 );
 
 export const ChannelItem = ({ channel, expandable }) => {
+  const theme = useTheme();
   const link = `/channels/${channel.id || channel.key}`;
+  const hasUnread = useChannelHasUnread(channel?.key);
 
   return (
     <ListItem
@@ -149,6 +152,11 @@ export const ChannelItem = ({ channel, expandable }) => {
             display: "grid",
             gridTemplateColumns: "1fr auto",
             gridGap: "0.4rem",
+            color: hasUnread ? theme.colors.textNormal : undefined,
+            fontWeight:
+              hasUnread && theme.light
+                ? theme.text.weights.emphasis
+                : undefined,
           }}
         >
           <p>{channel.name}</p>

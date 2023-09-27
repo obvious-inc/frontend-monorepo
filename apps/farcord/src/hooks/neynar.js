@@ -7,12 +7,17 @@ const NEYNAR_V2_ENDPOINT = "https://api.neynar.com/v2/farcaster";
 
 const DEFAULT_PAGE_SIZE = 30;
 
-export async function fetchNeynarCasts({ parentUrl, fid, cursor }) {
+export async function fetchNeynarCasts({
+  parentUrl,
+  fid,
+  cursor,
+  limit = DEFAULT_PAGE_SIZE,
+}) {
   if (!parentUrl && !fid) return [];
 
   let params = new URLSearchParams({
     api_key: process.env.NEYNAR_API_KEY,
-    limit: DEFAULT_PAGE_SIZE,
+    limit,
   });
 
   if (parentUrl) {

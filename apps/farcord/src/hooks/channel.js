@@ -6,6 +6,11 @@ import {
   fetchNeynarThreadCasts,
 } from "./neynar";
 import { fetchWarpcastFollowedChannels } from "./warpcast";
+import { ChainDataCacheContext } from "./farcord";
+
+const getInitialReadStates = () => {
+  return JSON.parse(localStorage.getItem("ns:read-states")) ?? {};
+};
 
 export const ChannelCacheContext = React.createContext();
 
@@ -16,8 +21,15 @@ export const ChannelCacheContextProvider = ({ children }) => {
     recentCastsByFid: {},
     recentCasts: [],
     followedChannelsByFid: {},
-    readStatesByChannelId: {},
+    readStatesByChannelId: getInitialReadStates(),
   });
+
+  React.useEffect(() => {
+    localStorage.setItem(
+      "ns:read-states",
+      JSON.stringify(state.readStatesByChannelId)
+    );
+  }, [state.readStatesByChannelId]);
 
   const fetchChannelCasts = React.useCallback(async ({ channel, cursor }) => {
     return fetchNeynarCasts({ parentUrl: channel?.parentUrl, cursor }).then(
@@ -87,6 +99,49 @@ export const ChannelCacheContextProvider = ({ children }) => {
           },
         };
       });
+
+      return channels;
+    });
+  }, []);
+
+  const fetchUnreadState = React.useCallback(async ({ channel }) => {
+    return fetchNeynarCasts({
+      parentUrl: channel?.parentUrl,
+      limit: 1,
+      reverse: true,
+    }).then((casts) => {
+      const lastCast = casts[0];
+      const lastCastAt = lastCast?.timestamp;
+
+      setState((s) => {
+        return {
+          ...s,
+          readStatesByChannelId: {
+            ...s.readStatesByChannelId,
+            [channel?.id]: {
+              ...s.readStatesByChannelId[channel?.id],
+              lastCastAt,
+              lastCastHash: lastCast?.hash,
+            },
+          },
+        };
+      });
+    });
+  }, []);
+
+  const markChannelRead = React.useCallback(async (channelId) => {
+    const readAt = new Date();
+    setState((s) => {
+      return {
+        ...s,
+        readStatesByChannelId: {
+          ...s.readStatesByChannelId,
+          [channelId]: {
+            ...s.readStatesByChannelId[channelId],
+            lastReadAt: readAt,
+          },
+        },
+      };
     });
   }, []);
 
@@ -98,6 +153,8 @@ export const ChannelCacheContextProvider = ({ children }) => {
         fetchThreadCasts,
         fetchFeedCasts,
         fetchFollowedChannels,
+        fetchUnreadState,
+        markChannelRead,
       },
     }),
     [
@@ -106,6 +163,8 @@ export const ChannelCacheContextProvider = ({ children }) => {
       fetchThreadCasts,
       fetchFeedCasts,
       fetchFollowedChannels,
+      fetchUnreadState,
+      markChannelRead,
     ]
   );
 
@@ -199,14 +258,28 @@ export function useChannelCacheContext() {
 
 export const useFollowedChannelsFetch = ({ fid }) => {
   const {
-    actions: { fetchFollowedChannels },
+    actions: { fetchFollowedChannels, fetchUnreadState },
   } = React.useContext(ChannelCacheContext);
+
+  const {
+    state: { channelsById },
+  } = React.useContext(ChainDataCacheContext);
 
   useFetch(
     () =>
-      fetchFollowedChannels({ fid }).catch((e) => {
-        throw e;
-      }),
+      fetchFollowedChannels({ fid })
+        .then((channels) => {
+          return Promise.all(
+            channels.map((channel) => {
+              const channelId = channel?.key;
+              const cachedChannel = channelsById[channelId];
+              return fetchUnreadState({ channel: cachedChannel });
+            })
+          );
+        })
+        .catch((e) => {
+          throw e;
+        }),
     [fetchFollowedChannels, fid]
   );
 };
@@ -217,4 +290,25 @@ export const useFollowedChannels = (fid) => {
   } = React.useContext(ChannelCacheContext);
 
   return followedChannelsByFid[fid];
+};
+
+export const useChannelHasUnread = (channelId) => {
+  const {
+    state: { readStatesByChannelId },
+  } = React.useContext(ChannelCacheContext);
+  if (!channelId) return;
+
+  const channelState = readStatesByChannelId[channelId];
+  if (channelState == null) return false;
+
+  const hasCasts = channelState.lastCastAt != null;
+  const hasSeen = channelState.lastReadAt != null;
+
+  if (!hasCasts) return !hasSeen;
+  if (!hasSeen) return true;
+
+  const lastReadTimestamp = new Date(channelState.lastReadAt).getTime();
+  const lastCastTimestamp = new Date(channelState.lastCastAt).getTime();
+
+  return lastReadTimestamp < lastCastTimestamp;
 };
