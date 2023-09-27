@@ -320,6 +320,9 @@ query {
     proposer {
       id
     }
+    signers {
+      id
+    }
     votes {
       ...VoteFields
     }

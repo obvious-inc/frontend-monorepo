@@ -240,8 +240,12 @@ const BrowseScreen = () => {
 
       if (
         connectedWalletAccountAddress != null &&
-        i.proposerId.toLowerCase() ===
-          connectedWalletAccountAddress.toLowerCase()
+        (i.proposerId.toLowerCase() ===
+          connectedWalletAccountAddress.toLowerCase() ||
+          i.signers.some(
+            (s) =>
+              s.id.toLowerCase() === connectedWalletAccountAddress.toLowerCase()
+          ))
       )
         return "proposed";
 
