@@ -2,7 +2,7 @@ import { css } from "@emotion/react";
 import Button from "@shades/ui-web/button";
 import Spinner from "@shades/ui-web/spinner";
 import { useWallet } from "../hooks/wallet.js";
-import { Layout } from "./proposal-screen.js";
+import Layout from "./layout.js";
 
 const ConnectWalletScreen = () => {
   const { requestAccess, isLoading, reset } = useWallet();

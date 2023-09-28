@@ -34,10 +34,10 @@ import {
   useTokenBuyerEthNeeded,
 } from "../hooks/dao.js";
 import { useCreateProposalCandidate } from "../hooks/prechain.js";
+import Layout, { MainContentContainer } from "./layout.js";
 import FormattedNumber from "./formatted-number.js";
 import AccountPreviewPopoverTrigger from "./account-preview-popover-trigger.js";
 import { TransactionExplanation } from "./transaction-list.js";
-import { Layout, MainContentContainer } from "./proposal-screen.js";
 
 const ProposeScreen = () => {
   const { draftId } = useParams();

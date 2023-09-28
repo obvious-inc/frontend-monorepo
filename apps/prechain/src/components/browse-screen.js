@@ -37,13 +37,9 @@ import {
   useSingleItem as useDraft,
 } from "../hooks/channel-drafts.js";
 import * as Tabs from "./tabs.js";
+import Layout, { MainContentContainer } from "./layout.js";
 import FormattedDateWithTooltip from "./formatted-date-with-tooltip.js";
-import {
-  Layout,
-  MainContentContainer,
-  ActivityFeed,
-  buildProposalFeed,
-} from "./proposal-screen.js";
+import { ActivityFeed, buildProposalFeed } from "./proposal-screen.js";
 import { buildCandidateFeed } from "./proposal-candidate-screen.js";
 
 const ONE_DAY_IN_SECONDS = 60 * 60 * 24;

@@ -34,8 +34,6 @@ import {
 import { useProposalThreshold } from "../hooks/dao.js";
 import { useWallet } from "../hooks/wallet.js";
 import {
-  Layout,
-  MainContentContainer,
   ProposalLikeContent,
   ProposalActionForm,
   ActivityFeed,
@@ -43,6 +41,7 @@ import {
   VoteDistributionToolTipContent,
 } from "./proposal-screen.js";
 import AccountPreviewPopoverTrigger from "./account-preview-popover-trigger.js";
+import Layout, { MainContentContainer } from "./layout.js";
 import Callout from "./callout.js";
 import * as Tabs from "./tabs.js";
 import TransactionList from "./transaction-list.js";

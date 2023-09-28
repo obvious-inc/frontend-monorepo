@@ -14,20 +14,11 @@ import { WalletConnectConnector } from "wagmi/connectors/walletConnect";
 import { Analytics as VercelAnalytics } from "@vercel/analytics/react";
 import { createCacheStore, CacheStoreProvider } from "@shades/common/app";
 import { ChainDataCacheContextProvider } from "./hooks/prechain.js";
+import App from "./app.js";
 import "./reset.css";
 import "./index.css";
 
 const isProduction = process.env.NODE_ENV === "production";
-
-const LazyApp = React.lazy(() => import("./app"));
-
-const App = () => {
-  return (
-    <React.Suspense fallback={null}>
-      <LazyApp />
-    </React.Suspense>
-  );
-};
 
 let cacheStoreStorage;
 try {

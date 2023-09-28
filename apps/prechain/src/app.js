@@ -1,10 +1,12 @@
 import React from "react";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { ThemeProvider, Global, css } from "@emotion/react";
-import { EmojiProvider } from "@shades/common/app";
 import { light as theme } from "@shades/ui-web/theme";
 import * as Tooltip from "@shades/ui-web/tooltip";
-import { useWallet } from "./hooks/wallet.js";
+import {
+  useWallet,
+  Provider as ConnectWalletDialogProvider,
+} from "./hooks/wallet.js";
 
 const ProposalScreen = React.lazy(() =>
   import("./components/proposal-screen.js")
@@ -37,20 +39,10 @@ const customTheme = {
 
 const App = () => {
   return (
-    <>
+    <React.Suspense fallback={null}>
       <BrowserRouter>
         <ThemeProvider theme={customTheme}>
-          <EmojiProvider
-            loader={() =>
-              import("@shades/common/emoji").then((m) =>
-                m.default.filter(
-                  (e) =>
-                    e.unicode_version === "" ||
-                    parseFloat(e.unicode_version) <= 12
-                )
-              )
-            }
-          >
+          <ConnectWalletDialogProvider>
             <Tooltip.Provider delayDuration={300}>
               <Global
                 styles={(theme) =>
@@ -90,10 +82,10 @@ const App = () => {
                 <Route path="*" element={<Navigate to="/" replace />} />
               </Routes>
             </Tooltip.Provider>
-          </EmojiProvider>
+          </ConnectWalletDialogProvider>
         </ThemeProvider>
       </BrowserRouter>
-    </>
+    </React.Suspense>
   );
 };
 
