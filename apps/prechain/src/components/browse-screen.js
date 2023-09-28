@@ -73,7 +73,7 @@ const useFeedItems = () => {
   });
   const latestBlockNumber = React.useDeferredValue(eagerLatestBlockNumber);
 
-  const proposals = useProposals();
+  const proposals = useProposals({ state: true });
   const candidates = useProposalCandidates();
 
   return React.useMemo(() => {
