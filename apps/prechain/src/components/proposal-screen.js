@@ -24,6 +24,7 @@ import Dialog from "@shades/ui-web/dialog";
 import * as Tooltip from "@shades/ui-web/tooltip";
 import Spinner from "@shades/ui-web/spinner";
 import { extractAmounts as extractAmountsFromTransactions } from "../utils/transactions.js";
+import usePageTitle from "../hooks/page-title.js";
 import {
   useProposal,
   useProposalFetch,
@@ -1414,6 +1415,8 @@ const ProposalScreen = () => {
       setFetchError(e);
     },
   });
+
+  usePageTitle(proposal?.title);
 
   return (
     <>

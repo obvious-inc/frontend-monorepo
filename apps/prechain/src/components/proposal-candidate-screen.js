@@ -18,6 +18,7 @@ import Button from "@shades/ui-web/button";
 import Input from "@shades/ui-web/input";
 import Spinner from "@shades/ui-web/spinner";
 import * as Tooltip from "@shades/ui-web/tooltip";
+import usePageTitle from "../hooks/page-title.js";
 import {
   useProposalCandidate,
   useProposalCandidateVotingPower,
@@ -1032,6 +1033,8 @@ const ProposalCandidateScreen = () => {
   );
 
   const isProposalThresholdMet = sponsoringNounIds.length > proposalThreshold;
+
+  usePageTitle(candidate?.latestVersion.content.title);
 
   return (
     <>
