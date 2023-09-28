@@ -513,6 +513,12 @@ const parseProposal = (data, { chainId }) => {
     }
   }
 
+  if (data.description != null) {
+    const firstLine = data.description.split("\n")[0];
+    const startIndex = [...firstLine].findIndex((c) => c !== "#");
+    parsedData.title = firstLine.slice(startIndex).trim();
+  }
+
   if (data.feedbackPosts != null)
     parsedData.feedbackPosts = data.feedbackPosts.map(parseFeedbackPost);
 
