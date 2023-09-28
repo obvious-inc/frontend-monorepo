@@ -123,13 +123,13 @@ const NavBar = ({ navigationStack, actions }) => {
             label: (
               <>
                 <LogoSymbol
-                  style={{
+                  css={css({
                     display: "inline-block",
-                    width: "2rem",
+                    width: "1.8rem",
                     height: "auto",
                     verticalAlign: "sub",
                     transform: "translateY(0.1rem)",
-                  }}
+                  })}
                 />
                 {location.pathname !== "/" && (
                   <span style={{ marginLeft: "0.6rem" }}>Home</span>
