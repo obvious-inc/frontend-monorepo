@@ -318,6 +318,7 @@ const BrowseScreen = () => {
 
           const description = {
             "candidates:new": "Candidates created within the last 3 days",
+            "candidates:feedback-missing": "Candidates that hasn’t received feedback from you",
           }[groupName];
 
           return {
