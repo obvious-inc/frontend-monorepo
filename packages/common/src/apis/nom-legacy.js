@@ -276,10 +276,7 @@ export default ({
 
     const emitServerEvent = (customData) => {
       const eventName = ["server-event", name].join(":");
-      emit(eventName, {
-        ...data,
-        ...customData,
-      });
+      emit(eventName, { ...data, ...customData });
     };
 
     switch (name) {
@@ -411,8 +408,7 @@ export default ({
           cacheStore.write(ACCESS_TOKEN_CACHE_KEY, null),
           cacheStore.write(REFRESH_TOKEN_CACHE_KEY, null),
         ]);
-        for (const listener of listeners)
-          listener("user-authentication-expired");
+        emit("user-authentication-expired");
         return Promise.reject(new Error("access-token-expired"));
       }
       const headers = new Headers(options?.headers);
@@ -733,8 +729,6 @@ export default ({
       for (let event of Object.keys(serverEventMap))
         channel.bind(event, (data) => {
           handleServerEvent(event, data);
-          // const clientEventName = serverEventMap[event];
-          // callback(clientEventName, data);
         });
 
       pusher.connection.bind("state_change", ({ current }) => {

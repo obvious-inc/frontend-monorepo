@@ -121,8 +121,6 @@ export const Provider = ({ api, children }) => {
 
   const cacheStore = useCacheStore();
 
-  const { parseUser, parseChannel, parseMessage } = api.parsers;
-
   const selectors = mapValues(
     (selector) =>
       // eslint-disable-next-line
@@ -195,77 +193,12 @@ export const Provider = ({ api, children }) => {
     api.connect({ userId: user.id });
   }, [isAuthenticated, user?.id, api]);
 
-  const serverMessageHandler = useLatestCallback((name, data) => {
-    const me = selectMe(getStoreState());
-
-    let typingEndedTimeoutHandles = {};
-
-    // Dispatch a 'user-typing-ended' action when a user+channel combo has
-    // been silent for a while
-    if (name === "user-typed") {
-      const id = [data.channel.id, data.user.id].join(":");
-
-      if (typingEndedTimeoutHandles[id]) {
-        clearTimeout(typingEndedTimeoutHandles[id]);
-        delete typingEndedTimeoutHandles[id];
-      }
-
-      typingEndedTimeoutHandles[id] = setTimeout(() => {
-        delete typingEndedTimeoutHandles[id];
-        dispatch({
-          type: "user-typing-ended",
-          channelId: data.channel.id,
-          userId: data.user.id,
-        });
-      }, 6000);
-    }
-
-    const dispatchEvent = (customData) =>
-      dispatch({
-        type: ["server-event", name].join(":"),
-        data: { ...data, ...customData },
-        user: me,
-      });
-
-    switch (name) {
-      case "channel-updated":
-      case "channel-user":
-        dispatchEvent({ channel: parseChannel(data.channel) });
-        break;
-
-      case "user-profile-updated":
-      case "user-presence-updated":
-      case "channel-user-joined":
-        dispatchEvent({ user: parseUser(data.user) });
-        break;
-
-      case "message-created":
-      case "message-updated":
-      case "message-removed":
-      case "message-reaction-added":
-      case "message-reaction-removed":
-        dispatchEvent({ message: parseMessage(data.message) });
-        break;
-
-      case "channel-user-invited":
-        dispatchEvent({
-          user: parseUser(data.user),
-          channel: parseChannel(data.channel),
-        });
-        break;
-
-      default:
-        dispatchEvent();
-    }
-  });
-
   const contextValue = React.useMemo(
     () => ({
       isConnected,
       authStatus,
       selectors,
       actions,
-      serverMessageHandler,
     }),
     // eslint-disable-next-line
     [
@@ -275,7 +208,6 @@ export const Provider = ({ api, children }) => {
       ...Object.values(selectors),
       // eslint-disable-next-line
       ...Object.values(actions),
-      serverMessageHandler,
     ]
   );
 
