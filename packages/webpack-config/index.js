@@ -1,4 +1,3 @@
-const path = require("path");
 const webpack = require("webpack");
 const HtmlWebpackPlugin = require("html-webpack-plugin");
 const CopyPlugin = require("copy-webpack-plugin");
@@ -99,22 +98,6 @@ module.exports = (_, argv, { htmlTitle } = {}) => {
     plugins: [
       ...config.plugins,
       new MiniCssExtractPlugin(),
-      new CopyPlugin({
-        patterns: [
-          {
-            from: path.resolve(
-              __dirname,
-              "../../apps/landing/public/favicon-32x32.png"
-            ),
-          },
-          {
-            from: path.resolve(
-              __dirname,
-              "../../apps/landing/public/favicon-192x192.png"
-            ),
-          },
-        ],
-      }),
       new CopyPlugin({ patterns: [{ from: "static" }] }),
       new WorkboxPlugin.GenerateSW({
         // these options encourage the ServiceWorkers to get in there fast
