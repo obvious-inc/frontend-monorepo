@@ -3,12 +3,80 @@ import { useFarcasterChannel } from "../hooks/farcord";
 import Avatar from "@shades/ui-web/avatar";
 import Heading from "./heading.js";
 import NavBar from "./navbar";
+import {
+  Star as StarIcon,
+  StrokedStar as StrokedStarIcon,
+} from "@shades/ui-web/icons";
+import useFarcasterAccount from "./farcaster-account";
+import useSigner from "./signer";
+import { useChannelCacheContext, useIsChannelFollowed } from "../hooks/channel";
 
 const ChannelNavBar = ({ channelId }) => {
   const channel = useFarcasterChannel(channelId);
+  const { fid } = useFarcasterAccount();
+  const { signer } = useSigner();
+  const isChannelFollowed = useIsChannelFollowed(channelId);
+  const {
+    actions: { followChannel, unfollowChannel },
+  } = useChannelCacheContext();
+
   if (!channel) return null;
 
   let channelLink = channel?.parentUrl;
+
+  const renderRightColumn = () => {
+    return (
+      <div>
+        <button
+          onClick={() => {
+            const tryFollowChannel = async () => {
+              if (!signer) {
+                alert("You need to connect your account to follow channels.");
+                return;
+              }
+
+              if (isChannelFollowed) {
+                await unfollowChannel({ fid, channel });
+                return;
+              }
+
+              await followChannel({ fid, channel });
+            };
+
+            tryFollowChannel();
+          }}
+          css={(t) =>
+            css({
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              borderRadius: "0.3rem",
+              width: "3.3rem",
+              height: "2.8rem",
+              padding: 0,
+              transition: "background 20ms ease-in",
+              outline: "none",
+              ":focus-visible": {
+                boxShadow: `0 0 0 0.2rem ${t.colors.primary}`,
+              },
+              "@media(hover: hover)": {
+                cursor: "pointer",
+                ":hover": {
+                  background: t.colors.backgroundModifierHover,
+                },
+              },
+            })
+          }
+        >
+          {isChannelFollowed ? (
+            <StarIcon css={(t) => css({ color: t.colors.backgroundYellow })} />
+          ) : (
+            <StrokedStarIcon />
+          )}
+        </button>
+      </div>
+    );
+  };
 
   return (
     <NavBar>
@@ -103,6 +171,8 @@ const ChannelNavBar = ({ channelId }) => {
           >
             <p>{channel.description}</p>
           </div>
+
+          {renderRightColumn()}
         </>
       </div>
     </NavBar>

@@ -22,6 +22,12 @@ export async function fetchWarpcastFollowedChannels({ fid }) {
     .then((data) => {
       return data.result.channels;
     })
+    .then((channels) => {
+      channels.forEach((c) => {
+        c.id = c.key;
+      });
+      return channels;
+    })
     .catch((err) => {
       throw err;
     });

@@ -7,9 +7,17 @@ import {
 } from "./neynar";
 import { fetchWarpcastFollowedChannels } from "./warpcast";
 import { ChainDataCacheContext } from "./farcord";
+import useFarcasterAccount from "../components/farcaster-account";
 
 const getInitialReadStates = () => {
   return JSON.parse(localStorage.getItem("ns:read-states")) ?? {};
+};
+
+const getInitialFollowedChannels = () => {
+  const fchannels =
+    JSON.parse(localStorage.getItem("ns:followed-channels")) ?? {};
+  console.log("getInitialFollowedChannels", fchannels);
+  return fchannels;
 };
 
 export const ChannelCacheContext = React.createContext();
@@ -20,7 +28,7 @@ export const ChannelCacheContextProvider = ({ children }) => {
     castsByThreadHash: {},
     recentCastsByFid: {},
     recentCasts: [],
-    followedChannelsByFid: {},
+    followedChannelsByFid: getInitialFollowedChannels(),
     readStatesByChannelId: getInitialReadStates(),
   }));
 
@@ -30,6 +38,13 @@ export const ChannelCacheContextProvider = ({ children }) => {
       JSON.stringify(state.readStatesByChannelId)
     );
   }, [state.readStatesByChannelId]);
+
+  React.useEffect(() => {
+    localStorage.setItem(
+      "ns:followed-channels",
+      JSON.stringify(state.followedChannelsByFid)
+    );
+  }, [state.followedChannelsByFid]);
 
   const fetchChannelCasts = React.useCallback(async ({ channel, cursor }) => {
     return fetchNeynarCasts({ parentUrl: channel?.parentUrl, cursor }).then(
@@ -89,13 +104,20 @@ export const ChannelCacheContextProvider = ({ children }) => {
   }, []);
 
   const fetchFollowedChannels = React.useCallback(async ({ fid }) => {
+    if (!fid) return [];
     return fetchWarpcastFollowedChannels({ fid }).then((channels) => {
       setState((s) => {
         return {
           ...s,
           followedChannelsByFid: {
             ...s.followedChannelsByFid,
-            [fid]: channels,
+            [fid]: [
+              ...s.followedChannelsByFid[fid],
+              ...channels.filter(
+                (c) =>
+                  !s.followedChannelsByFid[fid].some((cc) => cc.id === c.id)
+              ),
+            ],
           },
         };
       });
@@ -145,6 +167,32 @@ export const ChannelCacheContextProvider = ({ children }) => {
     });
   }, []);
 
+  const followChannel = React.useCallback(async ({ fid, channel }) => {
+    setState((s) => {
+      return {
+        ...s,
+        followedChannelsByFid: {
+          ...s.followedChannelsByFid,
+          [fid]: [...s.followedChannelsByFid[fid], channel],
+        },
+      };
+    });
+  }, []);
+
+  const unfollowChannel = React.useCallback(async ({ fid, channel }) => {
+    setState((s) => {
+      return {
+        ...s,
+        followedChannelsByFid: {
+          ...s.followedChannelsByFid,
+          [fid]: s.followedChannelsByFid[fid].filter(
+            (c) => c.id !== channel.id
+          ),
+        },
+      };
+    });
+  }, []);
+
   const contextValue = React.useMemo(
     () => ({
       state,
@@ -155,6 +203,8 @@ export const ChannelCacheContextProvider = ({ children }) => {
         fetchFollowedChannels,
         fetchUnreadState,
         markChannelRead,
+        followChannel,
+        unfollowChannel,
       },
     }),
     [
@@ -165,6 +215,8 @@ export const ChannelCacheContextProvider = ({ children }) => {
       fetchFollowedChannels,
       fetchUnreadState,
       markChannelRead,
+      followChannel,
+      unfollowChannel,
     ]
   );
 
@@ -269,9 +321,10 @@ const useFollowedChannelsFetch = ({ fid }) => {
     () =>
       fetchFollowedChannels({ fid })
         .then((channels) => {
+          if (!channels) return;
           return Promise.all(
             channels.map((channel) => {
-              const channelId = channel?.key;
+              const channelId = channel?.id;
               const cachedChannel = channelsById[channelId];
               return fetchUnreadState({ channel: cachedChannel });
             })
@@ -312,4 +365,14 @@ export const useChannelHasUnread = (channelId) => {
   const lastCastTimestamp = new Date(channelState.lastCastAt).getTime();
 
   return lastReadTimestamp < lastCastTimestamp;
+};
+
+export const useIsChannelFollowed = (channelId) => {
+  const {
+    state: { followedChannelsByFid },
+  } = React.useContext(ChannelCacheContext);
+
+  const { fid } = useFarcasterAccount();
+  const followedChannels = followedChannelsByFid[fid];
+  return followedChannels?.some((c) => c.id === channelId);
 };

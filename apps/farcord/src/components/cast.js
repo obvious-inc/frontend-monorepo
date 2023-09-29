@@ -360,9 +360,7 @@ const CastChannel = ({ cast }) => {
   const parsedChannel = warpcastChannel ?? parseChannelFromUrl(parentUrl);
 
   const channelLink = `/channels/${
-    parsedChannel?.id ||
-    parsedChannel?.key ||
-    encodeURIComponent(parsedChannel.url)
+    parsedChannel?.id || encodeURIComponent(parsedChannel.url)
   }`;
 
   const SLICE_LENGTH = 80;

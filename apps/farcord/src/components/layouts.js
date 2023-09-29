@@ -128,8 +128,8 @@ const ListItem = React.forwardRef(
 
 export const ChannelItem = ({ channel, expandable }) => {
   const theme = useTheme();
-  const link = `/channels/${channel.id || channel.key}`;
-  const hasUnread = useChannelHasUnread(channel?.key);
+  const link = `/channels/${channel.id}`;
+  const hasUnread = useChannelHasUnread(channel?.id);
 
   return (
     <ListItem
@@ -307,14 +307,13 @@ export const MainLayout = ({ children }) => {
   }, [setSearchParams]);
 
   React.useEffect(() => {
-    const followedChannelsIds = followedChannels?.map((c) => c.key);
-    setRemainingChannels(
-      farcasterChannels.filter(
-        (channel) => !followedChannelsIds?.includes(channel.id)
-      )
+    const followedChannelsIds = followedChannels?.map((c) => c.id);
+    const remainingChannels = farcasterChannels.filter(
+      (channel) => !followedChannelsIds?.includes(channel.id)
     );
 
-    setVisibleAllChannels(farcasterChannels.slice(0, DEFAULT_TRUNCATED_COUNT));
+    setRemainingChannels(remainingChannels);
+    setVisibleAllChannels(remainingChannels.slice(0, DEFAULT_TRUNCATED_COUNT));
   }, [farcasterChannels, followedChannels]);
 
   return (
@@ -423,7 +422,7 @@ export const MainLayout = ({ children }) => {
                   expanded={true}
                 >
                   {followedChannels?.map((c) => (
-                    <ChannelItem key={`star-${c.key}`} channel={c} />
+                    <ChannelItem key={`star-${c.id}`} channel={c} />
                   ))}
                 </CollapsibleSection>
               </>
