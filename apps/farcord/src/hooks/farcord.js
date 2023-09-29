@@ -32,9 +32,15 @@ const farcasterChannelsFetch = () =>
           fetch(WARPCAST_CHANNELS_INFO_ENDPOINT + "?key=" + channel.channel_id)
             .then((res) => {
               if (res.ok) return res.json();
-              return Promise.reject(new Error(res.statusText));
+              else {
+                console.error(
+                  "Error fetching channel info for " + channel.channel_id
+                );
+                return null;
+              }
             })
             .then((body) => {
+              if (!body) return;
               const warpcastChannel = body.result.channel;
               return {
                 id: channel.channel_id,
@@ -47,7 +53,8 @@ const farcasterChannelsFetch = () =>
             })
         )
       ).then((result) => {
-        return result;
+        // filter undefined keys
+        return result.filter((c) => c);
       });
     });
 
