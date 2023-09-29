@@ -1,5 +1,9 @@
 import React from "react";
-import { Triangle as TriangleIcon } from "@shades/ui-web/icons";
+import {
+  MagnificationGlass as MagnificationGlassIcon,
+  Triangle as TriangleIcon,
+  Pen as PenIcon,
+} from "@shades/ui-web/icons";
 import { css, useTheme } from "@emotion/react";
 import { NavLink, Outlet, useSearchParams } from "react-router-dom";
 import { useFarcasterChannels } from "../hooks/farcord";
@@ -12,6 +16,7 @@ import AuthDialog from "./auth-dialog";
 import useFarcasterAccount from "./farcaster-account";
 import { useChannelHasUnread, useFollowedChannels } from "../hooks/channel";
 import { getChannelLink } from "../utils/channel";
+import CreateChannelDialog from "./create-channel-dialog";
 
 const DEFAULT_TRUNCATED_COUNT = 10;
 
@@ -295,13 +300,22 @@ export const MainLayout = ({ children }) => {
   const [visibleAllChannels, setVisibleAllChannels] = React.useState([]);
   const [searchParams, setSearchParams] = useSearchParams();
 
-  const isDialogOpen = searchParams.get("auth-dialog") != null;
+  const isAuthDialogOpen = searchParams.get("auth-dialog") != null;
+  const isCreateChannelDialogOpen = searchParams.get("create-channel") != null;
 
-  const closeDialog = React.useCallback(() => {
+  const closeAuthDialog = React.useCallback(() => {
     setSearchParams((params) => {
       const newParams = new URLSearchParams(params);
       newParams.delete("auth-dialog");
       newParams.delete("provider");
+      return newParams;
+    });
+  }, [setSearchParams]);
+
+  const closeCreateChannelDialog = React.useCallback(() => {
+    setSearchParams((params) => {
+      const newParams = new URLSearchParams(params);
+      newParams.delete("create-channel");
       return newParams;
     });
   }, [setSearchParams]);
@@ -393,13 +407,32 @@ export const MainLayout = ({ children }) => {
               })
             }
           >
+            <FarcasterProfile />
+
             <div
               style={{
-                height: "2rem",
+                height: "1rem",
               }}
             />
 
-            <FarcasterProfile />
+            <ListItem
+              compact={false}
+              icon={<PenIcon style={{ width: "1.9rem", height: "auto" }} />}
+              title="Create channel"
+              onClick={() => {
+                setSearchParams((params) => {
+                  const newParams = new URLSearchParams(params);
+                  newParams.set("create-channel", "true");
+                  return newParams;
+                });
+              }}
+            />
+            <ListItem
+              compact={false}
+              disabled={true}
+              icon={<MagnificationGlassIcon style={{ width: "1.4rem" }} />}
+              title="Search"
+            />
 
             <div
               style={{
@@ -454,10 +487,10 @@ export const MainLayout = ({ children }) => {
         }
       >
         {children}
-        {isDialogOpen && (
+        {isAuthDialogOpen && (
           <Dialog
-            isOpen={isDialogOpen}
-            onRequestClose={closeDialog}
+            isOpen={isAuthDialogOpen}
+            onRequestClose={closeAuthDialog}
             width="76rem"
           >
             {({ titleProps }) => (
@@ -467,12 +500,39 @@ export const MainLayout = ({ children }) => {
                 }}
               >
                 <React.Suspense fallback={null}>
-                  <AuthDialog titleProps={titleProps} dismiss={closeDialog} />
+                  <AuthDialog
+                    titleProps={titleProps}
+                    dismiss={closeAuthDialog}
+                  />
                 </React.Suspense>
               </ErrorBoundary>
             )}
           </Dialog>
         )}
+
+        {isCreateChannelDialogOpen && (
+          <Dialog
+            isOpen={isCreateChannelDialogOpen}
+            onRequestClose={closeCreateChannelDialog}
+            width="76rem"
+          >
+            {({ titleProps }) => (
+              <ErrorBoundary
+                fallback={() => {
+                  // window.location.reload();
+                }}
+              >
+                <React.Suspense fallback={null}>
+                  <CreateChannelDialog
+                    titleProps={titleProps}
+                    dismiss={closeCreateChannelDialog}
+                  />
+                </React.Suspense>
+              </ErrorBoundary>
+            )}
+          </Dialog>
+        )}
+
         <ErrorBoundary fallback={() => window.location.reload()}>
           <React.Suspense fallback={null}>
             <Outlet />

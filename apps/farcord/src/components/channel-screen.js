@@ -115,7 +115,7 @@ export const ChannelCastsScrollView = ({
     markChannelRead,
   ]);
 
-  if (!casts || casts?.length === 0) {
+  if (!casts) {
     return (
       <div
         css={(t) =>
@@ -136,97 +136,113 @@ export const ChannelCastsScrollView = ({
   return (
     <>
       {!isFeed && <ChannelNavBar channelId={channelId} />}
-      <ReverseVerticalScrollView
-        ref={scrollViewRef}
-        didScrollToBottomRef={didScrollToBottomRef}
-        scrollCacheKey={channelId}
-        onScroll={(e, { direction }) => {
-          const el = e.target;
-
-          // Bounce back when scrolling to the top of the "loading" placeholder. Makes
-          // it feel like you keep scrolling like normal (ish).
-          if (el.scrollTop < 10 && pendingMessagesBeforeCount)
-            el.scrollTop =
-              pendingMessagesBeforeCount * averageMessageListItemHeight -
-              el.getBoundingClientRect().height;
-
-          // Fetch more messages when scrolling up
-          if (
-            // We only care about upward scroll
-            direction !== "up" ||
-            // Wait until we have fetched the initial batch of messages
-            castHashes.length === 0 ||
-            // No need to react if we’ve already fetched the full message history
-            hasAllCasts ||
-            // Wait for any pending fetch requests to finish before we fetch again
-            pendingMessagesBeforeCount !== 0 ||
-            // Skip if manually disabled
-            disableFetchMoreRef.current
-          )
-            return;
-
-          const isCloseToTop =
-            // ~4 viewport heights from top
-            el.scrollTop < el.getBoundingClientRect().height * 4;
-
-          if (!isCloseToTop) return;
-
-          // fetchMoreCasts();
-        }}
-      >
+      {casts.length == 0 ? (
         <div
-          ref={castsContainerRef}
-          role="list"
           css={(t) =>
             css({
-              minHeight: 0,
-              fontSize: t.text.sizes.large,
-              fontWeight: "400",
-              "--avatar-size": t.messages.avatarSize,
-              "--gutter-size": t.messages.gutterSize,
-              "--gutter-size-compact": t.messages.gutterSizeCompact,
-              ".channel-message-container": {
-                "--color-optimistic": t.colors.textMuted,
-                "--bg-highlight": t.colors.messageBackgroundModifierHighlight,
-                "--bg-focus": t.colors.messageBackgroundModifierFocus,
-                background: "var(--background, transparent)",
-                padding: "var(--padding)",
-                borderRadius: "var(--border-radius, 0)",
-                color: "var(--color, ${t.colors.textNormal})",
-                position: "relative",
-                lineHeight: 1.46668,
-                userSelect: "text",
-              },
-              ".channel-message-container .toolbar-container": {
-                position: "absolute",
-                top: 0,
-                transform: "translateY(-50%)",
-                zIndex: 1,
-              },
-              ".channel-message-container .main-container": {
-                display: "grid",
-                alignItems: "flex-start",
-              },
+              flex: 1,
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              paddingBottom: t.mainHeader.height,
             })
           }
         >
-          {casts && casts.length > 0 && (
-            <>
-              <div css={css({ height: "1.3rem" })} />
-
-              {casts.map((cast) => (
-                <CastItem
-                  key={cast.hash}
-                  cast={cast}
-                  isFeed={isFeed}
-                  showReplies={true}
-                />
-              ))}
-            </>
-          )}
-          <div css={css({ height: "1.6rem" })} />
+          No casts yet
         </div>
-      </ReverseVerticalScrollView>
+      ) : (
+        <ReverseVerticalScrollView
+          ref={scrollViewRef}
+          didScrollToBottomRef={didScrollToBottomRef}
+          scrollCacheKey={channelId}
+          onScroll={(e, { direction }) => {
+            const el = e.target;
+
+            // Bounce back when scrolling to the top of the "loading" placeholder. Makes
+            // it feel like you keep scrolling like normal (ish).
+            if (el.scrollTop < 10 && pendingMessagesBeforeCount)
+              el.scrollTop =
+                pendingMessagesBeforeCount * averageMessageListItemHeight -
+                el.getBoundingClientRect().height;
+
+            // Fetch more messages when scrolling up
+            if (
+              // We only care about upward scroll
+              direction !== "up" ||
+              // Wait until we have fetched the initial batch of messages
+              castHashes.length === 0 ||
+              // No need to react if we’ve already fetched the full message history
+              hasAllCasts ||
+              // Wait for any pending fetch requests to finish before we fetch again
+              pendingMessagesBeforeCount !== 0 ||
+              // Skip if manually disabled
+              disableFetchMoreRef.current
+            )
+              return;
+
+            const isCloseToTop =
+              // ~4 viewport heights from top
+              el.scrollTop < el.getBoundingClientRect().height * 4;
+
+            if (!isCloseToTop) return;
+
+            // fetchMoreCasts();
+          }}
+        >
+          <div
+            ref={castsContainerRef}
+            role="list"
+            css={(t) =>
+              css({
+                minHeight: 0,
+                fontSize: t.text.sizes.large,
+                fontWeight: "400",
+                "--avatar-size": t.messages.avatarSize,
+                "--gutter-size": t.messages.gutterSize,
+                "--gutter-size-compact": t.messages.gutterSizeCompact,
+                ".channel-message-container": {
+                  "--color-optimistic": t.colors.textMuted,
+                  "--bg-highlight": t.colors.messageBackgroundModifierHighlight,
+                  "--bg-focus": t.colors.messageBackgroundModifierFocus,
+                  background: "var(--background, transparent)",
+                  padding: "var(--padding)",
+                  borderRadius: "var(--border-radius, 0)",
+                  color: "var(--color, ${t.colors.textNormal})",
+                  position: "relative",
+                  lineHeight: 1.46668,
+                  userSelect: "text",
+                },
+                ".channel-message-container .toolbar-container": {
+                  position: "absolute",
+                  top: 0,
+                  transform: "translateY(-50%)",
+                  zIndex: 1,
+                },
+                ".channel-message-container .main-container": {
+                  display: "grid",
+                  alignItems: "flex-start",
+                },
+              })
+            }
+          >
+            {casts && casts.length > 0 && (
+              <>
+                <div css={css({ height: "1.3rem" })} />
+
+                {casts.map((cast) => (
+                  <CastItem
+                    key={cast.hash}
+                    cast={cast}
+                    isFeed={isFeed}
+                    showReplies={true}
+                  />
+                ))}
+              </>
+            )}
+            <div css={css({ height: "1.6rem" })} />
+          </div>
+        </ReverseVerticalScrollView>
+      )}
     </>
   );
 };
