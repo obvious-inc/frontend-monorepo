@@ -1,3 +1,4 @@
+import datesDifferenceInDays from "date-fns/differenceInCalendarDays";
 import React from "react";
 import {
   Link as RouterLink,
@@ -7,7 +8,7 @@ import {
 import { css, useTheme } from "@emotion/react";
 import { useBlockNumber } from "wagmi";
 import { useFetch } from "@shades/common/react";
-import { useAccountDisplayName } from "@shades/common/app";
+import { useAccountDisplayName, useCachedState } from "@shades/common/app";
 import {
   array as arrayUtils,
   object as objectUtils,
@@ -17,6 +18,7 @@ import {
 import Avatar from "@shades/ui-web/avatar";
 import Input from "@shades/ui-web/input";
 import Button from "@shades/ui-web/button";
+import Select from "@shades/ui-web/select";
 import {
   useProposal,
   useProposals,
@@ -105,14 +107,22 @@ const BrowseScreen = () => {
   const { address: connectedWalletAccountAddress } = useWallet();
 
   const proposals = useProposals({ state: true });
-  const proposalCandidates = useProposalCandidates();
+  const candidates = useProposalCandidates();
   const { items: proposalDrafts } = useDrafts();
 
   const [page, setPage] = React.useState(1);
+  const [candidateSortStrategy, setCandidateSortStrategy] = useCachedState(
+    "candidate-sorting-strategy",
+    "activity"
+  );
 
   const filteredProposals = React.useMemo(
     () => proposals.filter((p) => p.startBlock != null),
     [proposals]
+  );
+  const filteredCandidates = React.useMemo(
+    () => candidates.filter((c) => c.latestVersion != null),
+    [candidates]
   );
 
   const filteredItems = React.useMemo(() => {
@@ -123,20 +133,86 @@ const BrowseScreen = () => {
       )
       .map((d) => ({ ...d, type: "draft" }));
 
-    const filteredProposalCandidates = proposalCandidates.filter(
-      (c) => c.latestVersion != null
-    );
-
     const items = [
       ...filteredProposalDrafts,
-      ...filteredProposalCandidates,
+      ...filteredCandidates,
       ...filteredProposals,
     ];
 
     return deferredQuery === "" ? items : searchProposals(items, deferredQuery);
-  }, [deferredQuery, filteredProposals, proposalCandidates, proposalDrafts]);
+  }, [deferredQuery, filteredProposals, filteredCandidates, proposalDrafts]);
+
+  const groupProposal = (p) => {
+    const connectedAccount = connectedWalletAccountAddress.toLowerCase();
+
+    if (isFinalProposalState(p.state)) return "proposals:past";
+    if (connectedAccount == null) return "proposals:ongoing";
+
+    if (
+      p.proposerId.toLowerCase() === connectedAccount ||
+      p.signers.some((s) => s.id.toLowerCase() === connectedAccount)
+    )
+      return "proposals:authored";
+
+    if (
+      isVotableProposalState(p.state) &&
+      p.votes != null &&
+      !p.votes.some((v) => v.voter.id.toLowerCase() === connectedAccount)
+    )
+      return "proposals:awaiting-vote";
+
+    if (["pending", "updatable"].includes(p.state)) return "proposals:new";
+
+    return "proposals:ongoing";
+  };
+
+  const groupCandidate = (c) => {
+    const connectedAccount = connectedWalletAccountAddress.toLowerCase();
+    const { content } = c.latestVersion;
+
+    if (candidateSortStrategy === "feedback") {
+      // When feedback is loading
+      if (c.feedbackPosts == null) return "candidates:inactive";
+
+      if (
+        // Include authored candidates here for now
+        c.proposerId.toLowerCase() === connectedAccount ||
+        c.feedbackPosts.some(
+          (p) => p.voter.id.toLowerCase() === connectedAccount
+        )
+      )
+        return "candidates:feedback-given";
+
+      if (
+        // Only include candidates with activity within the last 5 days
+        datesDifferenceInDays(new Date(), c.lastUpdatedTimestamp) <= 5
+      )
+        return "candidates:feedback-missing";
+
+      return "candidates:inactive";
+    }
+
+    if (c.proposerId.toLowerCase() === connectedAccount)
+      return "candidates:authored";
+
+    if (
+      content.contentSignatures.some(
+        (s) => !s.canceled && s.signer.id.toLowerCase() === connectedAccount
+      )
+    )
+      return "candidates:sponsored";
+
+    if (datesDifferenceInDays(new Date(), c.createdTimestamp) <= 3)
+      return "candidates:new";
+
+    if (datesDifferenceInDays(new Date(), c.lastUpdatedTimestamp) <= 5)
+      return "candidates:recently-updated";
+
+    return "candidates:inactive";
+  };
 
   const sectionsByName = objectUtils.mapValues(
+    // Sort and slice sections
     (items, groupName) => {
       const isSearch = deferredQuery !== "";
 
@@ -152,7 +228,7 @@ const BrowseScreen = () => {
                 ),
           };
 
-        case "past": {
+        case "proposals:past": {
           const sortedItems = isSearch
             ? items
             : arrayUtils.sortBy(
@@ -169,13 +245,28 @@ const BrowseScreen = () => {
           };
         }
 
-        case "ongoing":
-        case "awaiting-vote":
-        case "proposed": {
+        // Pending and updatable proposals
+        case "proposals:new":
+          return {
+            title: "New",
+            items: isSearch
+              ? items
+              : arrayUtils.sortBy(
+                  {
+                    value: (i) => Number(i.createdBlock),
+                    order: "desc",
+                  },
+                  items
+                ),
+          };
+
+        case "proposals:ongoing":
+        case "proposals:awaiting-vote":
+        case "proposals:authored": {
           const title = {
-            ongoing: "Current",
-            "awaiting-vote": "Not yet voted",
-            proposed: "Your proposals",
+            "proposals:ongoing": "Ongoing",
+            "proposals:awaiting-vote": "Not yet voted",
+            "proposals:authored": "Authored",
           }[groupName];
 
           return {
@@ -188,17 +279,10 @@ const BrowseScreen = () => {
                     ["active", "objection-period"].includes(i.state)
                       ? Number(i.objectionPeriodEndBlock ?? i.endBlock)
                       : Infinity,
-                  // The the ones that hasn’t started yet
-                  (i) =>
-                    ["updatable", "pending"].includes(i.state)
-                      ? Number(i.startBlock)
-                      : Infinity,
                   // Then the succeeded but not yet executed
                   {
                     value: (i) =>
-                      i.slug != null
-                        ? 0
-                        : Number(i.objectionPeriodEndBlock ?? i.endBlock),
+                      Number(i.objectionPeriodEndBlock ?? i.endBlock),
                     order: "desc",
                   },
                   items
@@ -206,7 +290,44 @@ const BrowseScreen = () => {
           };
         }
 
-        case "candidates": {
+        case "candidates:authored":
+        case "candidates:sponsored":
+        case "candidates:new":
+        case "candidates:recently-updated":
+        case "candidates:feedback-given":
+        case "candidates:feedback-missing": {
+          const sortedItems = isSearch
+            ? items
+            : arrayUtils.sortBy(
+                {
+                  value: (i) => i.lastUpdatedTimestamp,
+                  order: "desc",
+                },
+                items
+              );
+
+          const title = {
+            "candidates:authored": "Authored",
+            "candidates:sponsored": "Sponsored",
+            "candidates:new": "New",
+            "candidates:recently-updated": "Recently updated",
+            "candidates:feedback-given": "Feedback given",
+            "candidates:feedback-missing": "Missing feedback",
+          }[groupName];
+
+          const description = {
+            "candidates:new": "Candidates created within the last 3 days",
+          }[groupName];
+
+          return {
+            title,
+            description,
+            count: sortedItems.length,
+            items: sortedItems,
+          };
+        }
+
+        case "candidates:inactive": {
           const sortedItems = isSearch
             ? items
             : arrayUtils.sortBy(
@@ -217,47 +338,25 @@ const BrowseScreen = () => {
                 items
               );
           return {
+            title: "Stale",
+            description: "No activity within the last 5 days",
             count: sortedItems.length,
             items: sortedItems.slice(0, BROWSE_LIST_PAGE_ITEM_COUNT * page),
           };
         }
 
+        case "hidden":
+          return null;
+
         default:
-          throw new Error();
+          throw new Error(`Unknown section "${groupName}"`);
       }
     },
+    // Group items
     arrayUtils.groupBy((i) => {
       if (i.type === "draft") return "drafts";
-
-      // Candidates
-      if (i.slug != null) return "candidates";
-
-      if (isFinalProposalState(i.state)) return "past";
-
-      if (
-        connectedWalletAccountAddress != null &&
-        (i.proposerId.toLowerCase() ===
-          connectedWalletAccountAddress.toLowerCase() ||
-          i.signers.some(
-            (s) =>
-              s.id.toLowerCase() === connectedWalletAccountAddress.toLowerCase()
-          ))
-      )
-        return "proposed";
-
-      if (
-        connectedWalletAccountAddress != null &&
-        isVotableProposalState(i.state) &&
-        i.votes != null &&
-        i.votes.every(
-          (v) =>
-            v.voter.id.toLowerCase() !==
-            connectedWalletAccountAddress.toLowerCase()
-        )
-      )
-        return "awaiting-vote";
-
-      return "ongoing";
+      if (i.slug != null) return groupCandidate(i);
+      return groupProposal(i);
     }, filteredItems)
   );
 
@@ -353,11 +452,18 @@ const BrowseScreen = () => {
               <SectionedList
                 sections={[
                   "drafts",
-                  "proposed",
-                  "awaiting-vote",
-                  "ongoing",
-                  "candidates",
-                  "past",
+                  "proposals:authored",
+                  "candidates:authored",
+                  "candidates:sponsored",
+                  "proposals:awaiting-vote",
+                  "proposals:new",
+                  "proposals:ongoing",
+                  "candidates:new",
+                  "candidates:recently-updated",
+                  "proposals:past",
+                  "candidates:feedback-given",
+                  "candidates:feedback-missing",
+                  "candidates:inactive",
                 ]
                   .map((sectionName) => sectionsByName[sectionName] ?? {})
                   .filter(({ items }) => items != null && items.length !== 0)}
@@ -409,18 +515,19 @@ const BrowseScreen = () => {
                       showPlaceholder={filteredProposals.length === 0}
                       sections={[
                         "drafts",
-                        "proposed",
-                        "awaiting-vote",
-                        "ongoing",
-                        "past",
+                        "proposals:authored",
+                        "proposals:awaiting-vote",
+                        "proposals:new",
+                        "proposals:ongoing",
+                        "proposals:past",
                       ]
                         .map((sectionName) => sectionsByName[sectionName] ?? {})
                         .filter(
                           ({ items }) => items != null && items.length !== 0
                         )}
                     />
-                    {sectionsByName.past != null &&
-                      sectionsByName.past.count >
+                    {sectionsByName["proposals:past"] != null &&
+                      sectionsByName["proposals:past"].count >
                         BROWSE_LIST_PAGE_ITEM_COUNT * page && (
                         <div css={{ textAlign: "center", padding: "3.2rem 0" }}>
                           <Button
@@ -436,20 +543,63 @@ const BrowseScreen = () => {
                   </div>
                 </Tabs.Item>
                 <Tabs.Item key="candidates" title="Candidates">
-                  <div style={{ paddingTop: "2.4rem" }}>
+                  <div
+                    css={css({
+                      paddingTop: "2rem",
+                      "@media (min-width: 600px)": {
+                        paddingTop: "2rem",
+                      },
+                    })}
+                  >
+                    <div style={{ marginBottom: "2.4rem" }}>
+                      <Select
+                        aria-label="Candidate sorting"
+                        value={candidateSortStrategy}
+                        options={[
+                          { value: "activity", label: "Activity" },
+                          { value: "feedback", label: "Feedback" },
+                        ]}
+                        onChange={(value) => {
+                          setCandidateSortStrategy(value);
+                        }}
+                        fullWidth={false}
+                        width="max-content"
+                        renderTriggerContent={(value) => (
+                          <>
+                            Sort by:{" "}
+                            <em
+                              css={(t) =>
+                                css({
+                                  fontStyle: "normal",
+                                  fontWeight: t.text.weights.emphasis,
+                                })
+                              }
+                            >
+                              {value === "activity" ? "Activity" : "Feedback"}
+                            </em>
+                          </>
+                        )}
+                      />
+                    </div>
+
                     <SectionedList
-                      showPlaceholder={
-                        sectionsByName.candidates == null ||
-                        sectionsByName.candidates.count === 0
-                      }
-                      sections={
-                        sectionsByName.candidates == null
-                          ? []
-                          : [sectionsByName.candidates]
-                      }
+                      showPlaceholder={filteredCandidates.length === 0}
+                      sections={[
+                        "candidates:authored",
+                        "candidates:sponsored",
+                        "candidates:feedback-missing",
+                        "candidates:feedback-given",
+                        "candidates:new",
+                        "candidates:recently-updated",
+                        "candidates:inactive",
+                      ]
+                        .map((sectionName) => sectionsByName[sectionName] ?? {})
+                        .filter(
+                          ({ items }) => items != null && items.length !== 0
+                        )}
                     />
-                    {sectionsByName.candidates != null &&
-                      sectionsByName.candidates.count >
+                    {sectionsByName["candidates:inactive"] != null &&
+                      sectionsByName["candidates:inactive"].count >
                         BROWSE_LIST_PAGE_ITEM_COUNT * page && (
                         <div css={{ textAlign: "center", padding: "3.2rem 0" }}>
                           <Button
@@ -482,20 +632,25 @@ const SectionedList = ({ sections, showPlaceholder = false }) => {
         return css({
           listStyle: "none",
           containerType: "inline-size",
-          "li + li": { marginTop: "2rem" },
+          "li + li": { marginTop: "2.8rem" },
           ul: { listStyle: "none" },
           "[data-group] li + li": { marginTop: "1rem" },
           "[data-group-title]": {
             // position: "sticky",
             // top: "8.4rem",
-            padding: "0.5rem 0",
+            padding: "1.1rem 0",
             background: t.colors.backgroundPrimary,
             textTransform: "uppercase",
             fontSize: t.text.sizes.small,
             fontWeight: t.text.weights.emphasis,
             color: t.colors.textMuted,
           },
-
+          "[data-group-description]": {
+            textTransform: "none",
+            fontSize: t.text.sizes.small,
+            fontWeight: t.text.weights.normal,
+            color: t.colors.textMuted,
+          },
           "[data-placeholder]": {
             background: hoverColor,
             borderRadius: "0.3rem",
@@ -584,10 +739,17 @@ const SectionedList = ({ sections, showPlaceholder = false }) => {
           </ul>
         </li>
       ) : (
-        sections.map(({ title, items }, i) => {
+        sections.map(({ title, description, items }, i) => {
           return (
             <li data-group key={title ?? i}>
-              {title != null && <div data-group-title>{title}</div>}
+              {title != null && (
+                <div data-group-title>
+                  {title}
+                  {description != null && (
+                    <span data-group-description> — {description}</span>
+                  )}
+                </div>
+              )}
               <ul>
                 {items.map((i) => (
                   <li key={i.id}>
@@ -785,7 +947,7 @@ const PropStatusText = React.memo(({ proposalId }) => {
             </span>
             <span role="separator" aria-orientation="vertical" />
             <span data-description>
-              voting ends{" "}
+              Ends{" "}
               <FormattedDateWithTooltip
                 relativeDayThreshold={5}
                 capitalize={false}
@@ -801,7 +963,7 @@ const PropStatusText = React.memo(({ proposalId }) => {
     case "objection-period":
       return (
         <>
-          Objection period ends{" "}
+          Ends{" "}
           <FormattedDateWithTooltip
             relativeDayThreshold={5}
             capitalize={false}

@@ -110,166 +110,215 @@ fragment ProposalFeedbackFields on ProposalFeedback {
   }
 }`;
 
-export const useStore = createZustandStoreHook((set) => ({
-  delegatesById: {},
-  proposalsById: {},
-  proposalCandidatesById: {},
-
-  // Actions
-  fetchProposal: (chainId, id) =>
-    subgraphFetch({ chainId, query: createProposalQuery(id) }).then((data) => {
-      if (data.proposal == null) return Promise.reject(new Error("not-found"));
-
-      const fetchedProposal = parseProposal(data.proposal, { chainId });
-
-      set((s) => ({
-        proposalsById: {
-          ...s.proposalsById,
-          [id]: mergeProposals(s.proposalsById[id], fetchedProposal),
-        },
-      }));
-    }),
-  fetchProposalCandidate: async (chainId, rawId) => {
-    const id = rawId.toLowerCase();
-    return Promise.all([
-      subgraphFetch({ chainId, query: createProposalCandidateQuery(id) }).then(
-        (data) => {
-          if (data.proposalCandidate == null)
-            return Promise.reject(new Error("not-found"));
-          return data.proposalCandidate;
-        }
-      ),
-      subgraphFetch({
-        chainId,
-        query: createProposalCandidateFeedbackPostsByCandidateQuery(id),
-      }).then((data) => {
+export const useStore = createZustandStoreHook((set) => {
+  const fetchProposalCandidatesFeedbackPosts = async (chainId, candidateIds) =>
+    subgraphFetch({
+      chainId,
+      query:
+        createProposalCandidateFeedbackPostsByCandidatesQuery(candidateIds),
+    })
+      .then((data) => {
         if (data.candidateFeedbacks == null)
           return Promise.reject(new Error("not-found"));
         return data.candidateFeedbacks;
-      }),
-    ]).then(([candidate, feedbackPosts]) => {
-      set((s) => {
-        const updatedCandidate = mergeProposalCandidates(
-          s.proposalCandidatesById[id],
-          parseProposalCandidate({ ...candidate, feedbackPosts }, { chainId })
-        );
-        return {
-          proposalCandidatesById: {
-            ...s.proposalCandidatesById,
-            [id]: updatedCandidate,
-          },
-        };
+      })
+      .then((feedbackPosts) => {
+        set((s) => {
+          const feedbackPostsByCandidateId = arrayUtils.groupBy(
+            (p) => p.candidate.id.toLowerCase(),
+            feedbackPosts
+          );
+          const fetchedCandidatesById = objectUtils.mapValues(
+            (feedbackPosts, id) => ({
+              id,
+              slug: extractSlugFromCandidateId(id),
+              feedbackPosts: feedbackPosts.map(parseFeedbackPost),
+            }),
+
+            feedbackPostsByCandidateId
+          );
+
+          return {
+            proposalCandidatesById: objectUtils.merge(
+              mergeProposalCandidates,
+              s.proposalCandidatesById,
+              fetchedCandidatesById
+            ),
+          };
+        });
       });
-    });
-  },
-  fetchDelegates: (chainId) =>
-    subgraphFetch({ chainId, query: DELEGATES_QUERY }).then((data) => {
-      const parsedDelegates = data.delegates.map(parseDelegate);
-      set(() => ({
-        delegatesById: arrayUtils.indexBy((d) => d.id, parsedDelegates),
-      }));
-    }),
-  fetchBrowseScreenData: (chainId, options) =>
-    subgraphFetch({ chainId, query: createBrowseScreenQuery(options) }).then(
-      (data) => {
-        const parsedProposals = data.proposals.map((p) =>
-          parseProposal(p, { chainId })
-        );
-        const fetchedProposalsById = indexBy((p) => p.id, parsedProposals);
 
-        const parsedCandidates = data.proposalCandidates.map((c) =>
-          parseProposalCandidate(c, { chainId })
-        );
-        const fetchedCandidatesById = indexBy(
-          (p) => p.id.toLowerCase(),
-          parsedCandidates
-        );
+  return {
+    delegatesById: {},
+    proposalsById: {},
+    proposalCandidatesById: {},
 
-        set((s) => ({
-          proposalsById: objectUtils.merge(
-            mergeProposals,
-            s.proposalsById,
-            fetchedProposalsById
-          ),
-          proposalCandidatesById: objectUtils.merge(
-            mergeProposalCandidates,
-            s.proposalCandidatesById,
-            fetchedCandidatesById
-          ),
+    // Actions
+    fetchProposal: (chainId, id) =>
+      subgraphFetch({ chainId, query: createProposalQuery(id) }).then(
+        (data) => {
+          if (data.proposal == null)
+            return Promise.reject(new Error("not-found"));
+
+          const fetchedProposal = parseProposal(data.proposal, { chainId });
+
+          set((s) => ({
+            proposalsById: {
+              ...s.proposalsById,
+              [id]: mergeProposals(s.proposalsById[id], fetchedProposal),
+            },
+          }));
+        }
+      ),
+    fetchProposalCandidate: async (chainId, rawId) => {
+      const id = rawId.toLowerCase();
+      return Promise.all([
+        subgraphFetch({
+          chainId,
+          query: createProposalCandidateQuery(id),
+        }).then((data) => {
+          if (data.proposalCandidate == null)
+            return Promise.reject(new Error("not-found"));
+          return data.proposalCandidate;
+        }),
+        subgraphFetch({
+          chainId,
+          query: createProposalCandidateFeedbackPostsByCandidateQuery(id),
+        }).then((data) => {
+          if (data.candidateFeedbacks == null)
+            return Promise.reject(new Error("not-found"));
+          return data.candidateFeedbacks;
+        }),
+      ]).then(([candidate, feedbackPosts]) => {
+        set((s) => {
+          const updatedCandidate = mergeProposalCandidates(
+            s.proposalCandidatesById[id],
+            parseProposalCandidate({ ...candidate, feedbackPosts }, { chainId })
+          );
+          return {
+            proposalCandidatesById: {
+              ...s.proposalCandidatesById,
+              [id]: updatedCandidate,
+            },
+          };
+        });
+      });
+    },
+    fetchDelegates: (chainId) =>
+      subgraphFetch({ chainId, query: DELEGATES_QUERY }).then((data) => {
+        const parsedDelegates = data.delegates.map(parseDelegate);
+        set(() => ({
+          delegatesById: arrayUtils.indexBy((d) => d.id, parsedDelegates),
         }));
-      }
-    ),
-  fetchNounsActivity: (chainId, { startBlock, endBlock }) =>
-    subgraphFetch({
-      chainId,
-      query: createNounsActivityDataQuery({
-        startBlock: startBlock.toString(),
-        endBlock: endBlock.toString(),
       }),
-    }).then((data) => {
-      if (data.candidateFeedbacks == null)
-        return Promise.reject(new Error("not-found"));
+    fetchBrowseScreenData: (chainId, options) =>
+      subgraphFetch({ chainId, query: createBrowseScreenQuery(options) }).then(
+        (data) => {
+          // Fetch feedback async
+          fetchProposalCandidatesFeedbackPosts(
+            chainId,
+            data.proposalCandidates.map((c) => c.id.toLowerCase())
+          );
 
-      const candidateFeedbackPosts =
-        data.candidateFeedbacks.map(parseFeedbackPost);
-      const proposalFeedbackPosts =
-        data.proposalFeedbacks.map(parseFeedbackPost);
-      const { votes } = data;
+          const parsedProposals = data.proposals.map((p) =>
+            parseProposal(p, { chainId })
+          );
+          const fetchedProposalsById = indexBy((p) => p.id, parsedProposals);
 
-      set((s) => {
-        const postsByCandidateId = arrayUtils.groupBy(
-          (p) => p.candidate.id,
-          candidateFeedbackPosts
-        );
-        const newCandidatesById = objectUtils.mapValues(
-          (feedbackPosts, candidateId) => ({
-            id: candidateId,
-            slug: extractSlugFromCandidateId(candidateId),
-            feedbackPosts,
-          }),
-          postsByCandidateId
-        );
+          const parsedCandidates = data.proposalCandidates.map((c) =>
+            parseProposalCandidate(c, { chainId })
+          );
+          const fetchedCandidatesById = indexBy(
+            (p) => p.id.toLowerCase(),
+            parsedCandidates
+          );
 
-        const feedbackPostsByProposalId = arrayUtils.groupBy(
-          (p) => p.proposal.id,
-          proposalFeedbackPosts
-        );
-        const votesByProposalId = arrayUtils.groupBy(
-          (v) => v.proposal.id,
-          votes
-        );
+          set((s) => ({
+            proposalsById: objectUtils.merge(
+              mergeProposals,
+              s.proposalsById,
+              fetchedProposalsById
+            ),
+            proposalCandidatesById: objectUtils.merge(
+              mergeProposalCandidates,
+              s.proposalCandidatesById,
+              fetchedCandidatesById
+            ),
+          }));
+        }
+      ),
+    fetchNounsActivity: (chainId, { startBlock, endBlock }) =>
+      subgraphFetch({
+        chainId,
+        query: createNounsActivityDataQuery({
+          startBlock: startBlock.toString(),
+          endBlock: endBlock.toString(),
+        }),
+      }).then((data) => {
+        if (data.candidateFeedbacks == null)
+          return Promise.reject(new Error("not-found"));
 
-        const proposalsWithNewFeedbackPostsById = objectUtils.mapValues(
-          (feedbackPosts, proposalId) => ({
-            id: proposalId,
-            feedbackPosts,
-          }),
-          feedbackPostsByProposalId
-        );
-        const proposalsWithNewVotesById = objectUtils.mapValues(
-          (votes, proposalId) => ({
-            id: proposalId,
-            votes,
-          }),
-          votesByProposalId
-        );
+        const candidateFeedbackPosts =
+          data.candidateFeedbacks.map(parseFeedbackPost);
+        const proposalFeedbackPosts =
+          data.proposalFeedbacks.map(parseFeedbackPost);
+        const { votes } = data;
 
-        return {
-          proposalsById: objectUtils.merge(
-            mergeProposals,
-            s.proposalsById,
-            proposalsWithNewFeedbackPostsById,
-            proposalsWithNewVotesById
-          ),
-          proposalCandidatesById: objectUtils.merge(
-            mergeProposalCandidates,
-            s.proposalCandidatesById,
-            newCandidatesById
-          ),
-        };
-      });
-    }),
-}));
+        set((s) => {
+          const postsByCandidateId = arrayUtils.groupBy(
+            (p) => p.candidate.id.toLowerCase(),
+            candidateFeedbackPosts
+          );
+          const newCandidatesById = objectUtils.mapValues(
+            (feedbackPosts, candidateId) => ({
+              id: candidateId,
+              slug: extractSlugFromCandidateId(candidateId),
+              feedbackPosts,
+            }),
+            postsByCandidateId
+          );
+
+          const feedbackPostsByProposalId = arrayUtils.groupBy(
+            (p) => p.proposal.id,
+            proposalFeedbackPosts
+          );
+          const votesByProposalId = arrayUtils.groupBy(
+            (v) => v.proposal.id,
+            votes
+          );
+
+          const proposalsWithNewFeedbackPostsById = objectUtils.mapValues(
+            (feedbackPosts, proposalId) => ({
+              id: proposalId,
+              feedbackPosts,
+            }),
+            feedbackPostsByProposalId
+          );
+          const proposalsWithNewVotesById = objectUtils.mapValues(
+            (votes, proposalId) => ({
+              id: proposalId,
+              votes,
+            }),
+            votesByProposalId
+          );
+
+          return {
+            proposalsById: objectUtils.merge(
+              mergeProposals,
+              s.proposalsById,
+              proposalsWithNewFeedbackPostsById,
+              proposalsWithNewVotesById
+            ),
+            proposalCandidatesById: objectUtils.merge(
+              mergeProposalCandidates,
+              s.proposalCandidatesById,
+              newCandidatesById
+            ),
+          };
+        });
+      }),
+  };
+});
 
 export const useChainId = () => {
   const { chain } = useNetwork();
@@ -445,6 +494,18 @@ const createProposalCandidateFeedbackPostsByCandidateQuery = (candidateId) => `
 ${CANDIDATE_FEEDBACK_FIELDS}
 query {
   candidateFeedbacks(where: {candidate_:{id: "${candidateId}"}}) {
+    ...CandidateFeedbackFields
+  }
+}`;
+
+const createProposalCandidateFeedbackPostsByCandidatesQuery = (
+  candidateIds
+) => `
+${CANDIDATE_FEEDBACK_FIELDS}
+query {
+  candidateFeedbacks(where: {candidate_in: [${candidateIds.map(
+    (id) => `"${id}"`
+  )}]}, first: 1000) {
     ...CandidateFeedbackFields
   }
 }`;
