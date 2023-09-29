@@ -5,7 +5,7 @@ import {
   useNavigate,
   useSearchParams,
 } from "react-router-dom";
-import { css, useTheme } from "@emotion/react";
+import { css } from "@emotion/react";
 import { useBlockNumber } from "wagmi";
 import { useFetch } from "@shades/common/react";
 import { useAccountDisplayName, useCachedState } from "@shades/common/app";
@@ -14,8 +14,6 @@ import {
   object as objectUtils,
   message as messageUtils,
 } from "@shades/common/utils";
-// import { Noggles as NogglesIcon } from "@shades/ui-web/icons";
-import Avatar from "@shades/ui-web/avatar";
 import Input from "@shades/ui-web/input";
 import Button from "@shades/ui-web/button";
 import Select from "@shades/ui-web/select";
@@ -111,10 +109,13 @@ const BrowseScreen = () => {
   const { items: proposalDrafts } = useDrafts();
 
   const [page, setPage] = React.useState(1);
-  const [candidateSortStrategy, setCandidateSortStrategy] = useCachedState(
+  const [candidateSortStrategy_, setCandidateSortStrategy] = useCachedState(
     "candidate-sorting-strategy",
     "activity"
   );
+
+  const candidateSortStrategy =
+    connectedWalletAccountAddress == null ? "activity" : candidateSortStrategy_;
 
   const filteredProposals = React.useMemo(
     () => proposals.filter((p) => p.startBlock != null),
@@ -145,7 +146,9 @@ const BrowseScreen = () => {
   const groupProposal = (p) => {
     const connectedAccount = connectedWalletAccountAddress?.toLowerCase();
 
+    if (["pending", "updatable"].includes(p.state)) return "proposals:new";
     if (isFinalProposalState(p.state)) return "proposals:past";
+
     if (connectedAccount == null) return "proposals:ongoing";
 
     if (
@@ -160,8 +163,6 @@ const BrowseScreen = () => {
       !p.votes.some((v) => v.voter.id.toLowerCase() === connectedAccount)
     )
       return "proposals:awaiting-vote";
-
-    if (["pending", "updatable"].includes(p.state)) return "proposals:new";
 
     return "proposals:ongoing";
   };
@@ -547,40 +548,42 @@ const BrowseScreen = () => {
                     css={css({
                       paddingTop: "2rem",
                       "@media (min-width: 600px)": {
-                        paddingTop: "2rem",
+                        paddingTop: "2.8rem",
                       },
                     })}
                   >
-                    <div style={{ marginBottom: "2.4rem" }}>
-                      <Select
-                        aria-label="Candidate sorting"
-                        value={candidateSortStrategy}
-                        options={[
-                          { value: "activity", label: "Activity" },
-                          { value: "feedback", label: "Feedback" },
-                        ]}
-                        onChange={(value) => {
-                          setCandidateSortStrategy(value);
-                        }}
-                        fullWidth={false}
-                        width="max-content"
-                        renderTriggerContent={(value) => (
-                          <>
-                            Sort by:{" "}
-                            <em
-                              css={(t) =>
-                                css({
-                                  fontStyle: "normal",
-                                  fontWeight: t.text.weights.emphasis,
-                                })
-                              }
-                            >
-                              {value === "activity" ? "Activity" : "Feedback"}
-                            </em>
-                          </>
-                        )}
-                      />
-                    </div>
+                    {connectedWalletAccountAddress != null && (
+                      <div style={{ margin: "-0.8rem 0 2.4rem" }}>
+                        <Select
+                          aria-label="Candidate sorting"
+                          value={candidateSortStrategy}
+                          options={[
+                            { value: "activity", label: "Activity" },
+                            { value: "feedback", label: "Feedback" },
+                          ]}
+                          onChange={(value) => {
+                            setCandidateSortStrategy(value);
+                          }}
+                          fullWidth={false}
+                          width="max-content"
+                          renderTriggerContent={(value) => (
+                            <>
+                              Sort by:{" "}
+                              <em
+                                css={(t) =>
+                                  css({
+                                    fontStyle: "normal",
+                                    fontWeight: t.text.weights.emphasis,
+                                  })
+                                }
+                              >
+                                {value === "activity" ? "Activity" : "Feedback"}
+                              </em>
+                            </>
+                          )}
+                        />
+                      </div>
+                    )}
 
                     <SectionedList
                       showPlaceholder={filteredCandidates.length === 0}
@@ -834,7 +837,7 @@ const FeedSidebar = React.memo(({ visible }) => {
 });
 
 const ProposalItem = React.memo(({ proposalId }) => {
-  const theme = useTheme();
+  // const theme = useTheme();
   const proposal = useProposal(proposalId);
   const { displayName: authorAccountDisplayName } = useAccountDisplayName(
     proposal.proposer?.id
@@ -849,15 +852,15 @@ const ProposalItem = React.memo(({ proposalId }) => {
     <RouterLink
       to={`/proposals/${proposalId}`}
       data-dimmed={isDimmed}
-      data-avatar-layout
+      // data-avatar-layout
     >
-      <Avatar
-        signature={proposalId}
-        signatureLength={3}
-        size="3.2rem"
-        background={isDimmed ? theme.colors.backgroundModifierHover : undefined}
-        data-desktop-only
-      />
+      {/* <Avatar */}
+      {/*   signature={proposalId} */}
+      {/*   signatureLength={3} */}
+      {/*   size="3.2rem" */}
+      {/*   background={isDimmed ? theme.colors.backgroundModifierHover : undefined} */}
+      {/*   data-desktop-only */}
+      {/* /> */}
       <div
         css={css({
           display: "grid",
@@ -1184,13 +1187,13 @@ const ProposalDraftItem = ({ draftId }) => {
   );
 
   return (
-    <RouterLink to={`/new/${draftId}`} data-avatar-layout>
-      <Avatar
-        signature={draft.name || "Untitled draft"}
-        signatureLength={2}
-        size="3.2rem"
-        data-desktop-only
-      />
+    <RouterLink to={`/new/${draftId}`}>
+      {/* <Avatar */}
+      {/*   signature={draft.name || "Untitled draft"} */}
+      {/*   signatureLength={2} */}
+      {/*   size="3.2rem" */}
+      {/*   data-desktop-only */}
+      {/* /> */}
       <div
         css={css({
           display: "grid",
