@@ -1,4 +1,6 @@
 import datesDifferenceInDays from "date-fns/differenceInCalendarDays";
+import dateSubtractDays from "date-fns/subDays";
+import dateStartOfDay from "date-fns/startOfDay";
 import React from "react";
 import {
   Link as RouterLink,
@@ -46,6 +48,8 @@ const ONE_DAY_IN_SECONDS = 60 * 60 * 24;
 const APPROXIMATE_SECONDS_PER_BLOCK = 12;
 const APPROXIMATE_BLOCKS_PER_DAY =
   ONE_DAY_IN_SECONDS / APPROXIMATE_SECONDS_PER_BLOCK;
+
+const CANDIDATE_ACTIVE_THRESHOLD_IN_DAYS = 5;
 
 const searchProposals = (items, rawQuery) => {
   const query = rawQuery.trim().toLowerCase();
@@ -167,6 +171,10 @@ const BrowseScreen = () => {
     return "proposals:ongoing";
   };
 
+  const candidateActiveThreshold = dateStartOfDay(
+    dateSubtractDays(new Date(), CANDIDATE_ACTIVE_THRESHOLD_IN_DAYS)
+  );
+
   const groupCandidate = (c) => {
     const connectedAccount = connectedWalletAccountAddress?.toLowerCase();
     const { content } = c.latestVersion;
@@ -174,6 +182,16 @@ const BrowseScreen = () => {
     if (candidateSortStrategy === "feedback") {
       // When feedback is loading
       if (c.feedbackPosts == null) return "candidates:inactive";
+
+      const isActive =
+        c.lastUpdatedTimestamp > candidateActiveThreshold ||
+        // `null` when feedback is loading
+        (c.feedbackPosts != null &&
+          c.feedbackPosts.some(
+            (p) => p.createdTimestamp > candidateActiveThreshold
+          ));
+
+      if (!isActive) return "candidates:inactive";
 
       if (
         // Include authored candidates here for now
@@ -184,13 +202,7 @@ const BrowseScreen = () => {
       )
         return "candidates:feedback-given";
 
-      if (
-        // Only include candidates with activity within the last 5 days
-        datesDifferenceInDays(new Date(), c.lastUpdatedTimestamp) <= 5
-      )
-        return "candidates:feedback-missing";
-
-      return "candidates:inactive";
+      return "candidates:feedback-missing";
     }
 
     if (c.proposerId.toLowerCase() === connectedAccount)
