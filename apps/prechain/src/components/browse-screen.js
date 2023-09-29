@@ -143,7 +143,7 @@ const BrowseScreen = () => {
   }, [deferredQuery, filteredProposals, filteredCandidates, proposalDrafts]);
 
   const groupProposal = (p) => {
-    const connectedAccount = connectedWalletAccountAddress.toLowerCase();
+    const connectedAccount = connectedWalletAccountAddress?.toLowerCase();
 
     if (isFinalProposalState(p.state)) return "proposals:past";
     if (connectedAccount == null) return "proposals:ongoing";
@@ -167,7 +167,7 @@ const BrowseScreen = () => {
   };
 
   const groupCandidate = (c) => {
-    const connectedAccount = connectedWalletAccountAddress.toLowerCase();
+    const connectedAccount = connectedWalletAccountAddress?.toLowerCase();
     const { content } = c.latestVersion;
 
     if (candidateSortStrategy === "feedback") {
