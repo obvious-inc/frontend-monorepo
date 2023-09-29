@@ -231,8 +231,6 @@ const emit = (eventName, payload) => {
   for (const listener of listeners) listener(eventName, payload);
 };
 
-let pusherInstance;
-
 export default ({
   apiOrigin,
   cloudflareAccountHash,
@@ -719,14 +717,6 @@ export default ({
         apiOrigin,
       });
 
-      // Teardown of any existing connection
-      if (pusherInstance != null) {
-        pusherInstance.connection.unbind("state_change");
-        pusherInstance.disconnect();
-      }
-
-      pusherInstance = pusher;
-
       const channel = pusher.subscribe(`private-${userId}`);
 
       for (let event of Object.keys(serverEventMap))
@@ -743,6 +733,12 @@ export default ({
       emit("connection-state-change", {
         connected: pusher.connection.state === "connected",
       });
+
+      return () => {
+        // Disconnect
+        pusher.connection.unbind("state_change");
+        pusher.disconnect();
+      };
     },
     fetchMe,
     updateMe,

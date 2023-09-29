@@ -190,7 +190,16 @@ export const Provider = ({ api, children }) => {
 
   React.useEffect(() => {
     if (authenticationData == null || user?.id == null) return;
-    api.connect({ userId: user.id, authenticationData });
+
+    let disconnect;
+
+    api.connect({ userId: user.id, authenticationData }).then((disconnect_) => {
+      disconnect = disconnect_;
+    });
+
+    return () => {
+      disconnect?.();
+    };
   }, [authenticationData, user?.id, api]);
 
   const contextValue = React.useMemo(
