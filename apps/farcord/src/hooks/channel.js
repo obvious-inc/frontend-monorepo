@@ -14,10 +14,7 @@ const getInitialReadStates = () => {
 };
 
 const getInitialFollowedChannels = () => {
-  const fchannels =
-    JSON.parse(localStorage.getItem("ns:followed-channels")) ?? {};
-  console.log("getInitialFollowedChannels", fchannels);
-  return fchannels;
+  return JSON.parse(localStorage.getItem("ns:followed-channels")) ?? {};
 };
 
 export const ChannelCacheContext = React.createContext();
