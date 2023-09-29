@@ -400,7 +400,6 @@ const BrowseScreen = () => {
                   gap: "1.6rem",
                   margin: "0 -1.6rem 0",
                   padding: "0.3rem 1.6rem 0", // Top padding to offset the focus box shadow
-                  // marginBottom: "1.6rem",
                   "@media (min-width: 600px)": {
                     marginBottom: "2.8rem",
                   },
@@ -411,6 +410,8 @@ const BrowseScreen = () => {
                 placeholder="Search..."
                 value={query}
                 onChange={(e) => {
+                  setPage(1);
+
                   // Clear search from path if query is empty
                   if (e.target.value.trim() === "") {
                     setSearchParams((p) => {
@@ -418,7 +419,6 @@ const BrowseScreen = () => {
                       newParams.delete("q");
                       return newParams;
                     });
-                    setPage(1);
                     return;
                   }
 
@@ -452,25 +452,30 @@ const BrowseScreen = () => {
             </div>
 
             {deferredQuery !== "" ? (
-              <SectionedList
-                sections={[
-                  "drafts",
-                  "proposals:authored",
-                  "candidates:authored",
-                  "candidates:sponsored",
-                  "proposals:awaiting-vote",
-                  "proposals:new",
-                  "proposals:ongoing",
-                  "candidates:new",
-                  "candidates:recently-updated",
-                  "proposals:past",
-                  "candidates:feedback-given",
-                  "candidates:feedback-missing",
-                  "candidates:inactive",
-                ]
-                  .map((sectionName) => sectionsByName[sectionName] ?? {})
-                  .filter(({ items }) => items != null && items.length !== 0)}
-              />
+              <>
+                <SectionedList
+                  sections={[
+                    {
+                      items: filteredItems.slice(
+                        0,
+                        BROWSE_LIST_PAGE_ITEM_COUNT * page
+                      ),
+                    },
+                  ]}
+                />
+                {filteredItems.length > BROWSE_LIST_PAGE_ITEM_COUNT * page && (
+                  <div css={{ textAlign: "center", padding: "3.2rem 0" }}>
+                    <Button
+                      size="small"
+                      onClick={() => {
+                        setPage((p) => p + 1);
+                      }}
+                    >
+                      Show more
+                    </Button>
+                  </div>
+                )}
+              </>
             ) : (
               <Tabs.Root
                 aria-label="Proposals and candidates"
