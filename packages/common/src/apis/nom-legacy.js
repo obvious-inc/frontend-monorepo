@@ -660,9 +660,12 @@ export default ({
 
   return {
     parsers,
-    isAuthenticated: async () => {
-      const token = await cacheStore.read(ACCESS_TOKEN_CACHE_KEY);
-      return token != null;
+    getAuthenticationData: async () => {
+      const [accessToken, refreshToken] = await Promise.all([
+        cacheStore.read(ACCESS_TOKEN_CACHE_KEY),
+        cacheStore.read(REFRESH_TOKEN_CACHE_KEY),
+      ]);
+      return { accessToken, refreshToken };
     },
     async authenticate({
       message,

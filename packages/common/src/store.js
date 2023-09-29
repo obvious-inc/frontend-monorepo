@@ -99,21 +99,21 @@ export const useAfterActionListener = (listener_) => {
 const Context = React.createContext({});
 
 export const Provider = ({ api, children }) => {
-  const [isAuthenticated, setAuthenticated] = React.useState(null);
+  const [authenticationData, setAuthenticationData] = React.useState(undefined);
   const [isConnected, setConnected] = React.useState(null);
 
   const user = useStore(selectMe);
 
   const authStatus =
-    isAuthenticated == null
+    authenticationData === undefined
       ? "loading"
-      : isAuthenticated
+      : authenticationData != null
       ? "authenticated"
       : "not-authenticated";
 
   React.useEffect(() => {
-    api.isAuthenticated().then((isAuthenticated) => {
-      setAuthenticated(isAuthenticated);
+    api.getAuthenticationData().then((authenticationData) => {
+      setAuthenticationData(authenticationData);
     });
   }, [api]);
 
@@ -137,7 +137,7 @@ export const Provider = ({ api, children }) => {
       authStatus,
       getStoreState,
       cacheStore,
-      setAuthenticated,
+      setAuthenticationData,
     })
   );
 
@@ -170,7 +170,7 @@ export const Provider = ({ api, children }) => {
       switch (eventName) {
         case "user-authentication-expired":
           actions();
-          setAuthenticated(false);
+          setAuthenticationData(null);
           break;
 
         case "connection-state-change":
@@ -189,9 +189,9 @@ export const Provider = ({ api, children }) => {
   }, [api, actions, dispatch]);
 
   React.useEffect(() => {
-    if (!isAuthenticated || user?.id == null) return;
-    api.connect({ userId: user.id });
-  }, [isAuthenticated, user?.id, api]);
+    if (authenticationData == null || user?.id == null) return;
+    api.connect({ userId: user.id, authenticationData });
+  }, [authenticationData, user?.id, api]);
 
   const contextValue = React.useMemo(
     () => ({

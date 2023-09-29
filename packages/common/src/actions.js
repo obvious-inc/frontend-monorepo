@@ -24,7 +24,7 @@ export default ({
   authStatus,
   getStoreState,
   cacheStore,
-  setAuthenticated,
+  setAuthenticationData,
 }) => {
   const fetchMe = () =>
     api.fetchMe().then((user) => {
@@ -248,7 +248,7 @@ export default ({
       accessToken,
       refreshToken,
     }) {
-      await api.authenticate({
+      const authenticationData = await api.authenticate({
         message,
         signature,
         address,
@@ -257,10 +257,10 @@ export default ({
         accessToken,
         refreshToken,
       });
-      setAuthenticated(true);
+      setAuthenticationData(authenticationData);
     },
     logout() {
-      setAuthenticated(false);
+      setAuthenticationData(null);
       cacheStore.clear();
       dispatch({ type: "logout" });
     },
