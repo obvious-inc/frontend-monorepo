@@ -11,6 +11,7 @@ import Dialog from "@shades/ui-web/dialog";
 import AuthDialog from "./auth-dialog";
 import useFarcasterAccount from "./farcaster-account";
 import { useChannelHasUnread, useFollowedChannels } from "../hooks/channel";
+import { getChannelLink } from "../utils/channel";
 
 const DEFAULT_TRUNCATED_COUNT = 10;
 
@@ -128,7 +129,7 @@ const ListItem = React.forwardRef(
 
 export const ChannelItem = ({ channel, expandable }) => {
   const theme = useTheme();
-  const link = `/channels/${channel.id}`;
+  const link = getChannelLink(channel);
   const hasUnread = useChannelHasUnread(channel?.id);
 
   return (

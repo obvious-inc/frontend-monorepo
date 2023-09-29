@@ -6,3 +6,14 @@ export const parseChannelFromUrl = (url) => {
 
   return { url };
 };
+
+export const getChannelLink = (channel) => {
+  if (!channel) return;
+
+  // the id for custom channels is the parentUrl
+  if (channel.id == channel.parentUrl) {
+    return `/channels/${encodeURIComponent(channel.parentUrl)}`;
+  }
+
+  return `/channels/${channel.id}`;
+};
