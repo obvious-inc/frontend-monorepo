@@ -180,12 +180,9 @@ const BrowseScreen = () => {
     const { content } = c.latestVersion;
 
     if (candidateSortStrategy === "feedback") {
-      // When feedback is loading
-      if (c.feedbackPosts == null) return "candidates:inactive";
-
       const isActive =
+        c.createdTimestamp > candidateActiveThreshold ||
         c.lastUpdatedTimestamp > candidateActiveThreshold ||
-        // `null` when feedback is loading
         (c.feedbackPosts != null &&
           c.feedbackPosts.some(
             (p) => p.createdTimestamp > candidateActiveThreshold
@@ -193,12 +190,16 @@ const BrowseScreen = () => {
 
       if (!isActive) return "candidates:inactive";
 
+      const hasFeedback =
+        c.feedbackPosts != null &&
+        c.feedbackPosts.some(
+          (p) => p.voter.id.toLowerCase() === connectedAccount
+        );
+
       if (
         // Include authored candidates here for now
         c.proposerId.toLowerCase() === connectedAccount ||
-        c.feedbackPosts.some(
-          (p) => p.voter.id.toLowerCase() === connectedAccount
-        )
+        hasFeedback
       )
         return "candidates:feedback-given";
 
