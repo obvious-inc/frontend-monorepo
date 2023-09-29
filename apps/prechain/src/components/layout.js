@@ -207,7 +207,11 @@ const NavBar = ({ navigationStack, actions }) => {
                     va.track("Connect Wallet", { location: "navbar" });
                     requestWalletAccess();
                   },
-                  buttonProps: { variant: "default" },
+                  buttonProps: {
+                    variant: "default",
+                    isLoading: requestWalletAccess == null,
+                    disabled: requestWalletAccess == null,
+                  },
                   label: "Connect Wallet",
                 }
               : {

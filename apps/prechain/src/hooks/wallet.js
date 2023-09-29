@@ -15,7 +15,9 @@ export const Provider = ({ children }) => {
   const [isOpen, setOpen] = React.useState(false);
 
   const openDialog = React.useCallback(() => setOpen(true), []);
-  const closeDialog = () => setOpen(false);
+  const closeDialog = () => {
+    setOpen(false);
+  };
 
   return (
     <Context.Provider value={{ openDialog }}>
@@ -132,6 +134,8 @@ export const useWallet = () => {
   const { address } = useAccount();
   const { connect, connectors, isLoading, reset } = useConnect();
 
+  const hasReadyConnector = connectors.some((c) => c.ready);
+
   const requestAccess = (connector) => {
     if (connector != null) {
       connect({ connector });
@@ -155,7 +159,7 @@ export const useWallet = () => {
 
   return {
     address: impersonationAddress ?? address,
-    requestAccess,
+    requestAccess: hasReadyConnector ? requestAccess : null,
     isLoading,
     reset,
   };
