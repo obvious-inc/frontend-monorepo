@@ -166,13 +166,12 @@ export const ChannelItem = ({ channel, expandable }) => {
           </p>
         </div>
       }
-      subtitle={<div>{channel.description}</div>}
       icon={
         <span>
           <Avatar url={channel.imageUrl} />
         </span>
       }
-      size={channel.description ? "large" : "normal"}
+      size="normal"
     />
   );
 };
