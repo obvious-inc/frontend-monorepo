@@ -279,6 +279,24 @@ export const useNeynarThreadCasts = (castHash) => {
   return casts;
 };
 
+export const fetchUserByFid = async (fid) => {
+  const params = new URLSearchParams({
+    api_key: process.env.NEYNAR_API_KEY,
+    fid,
+  });
+
+  return fetch(NEYNAR_V1_ENDPOINT + "/user?" + params)
+    .then((result) => {
+      return result.json();
+    })
+    .then((jsonResult) => {
+      return jsonResult.result.user;
+    })
+    .catch((err) => {
+      throw err;
+    });
+};
+
 export const useNeynarUser = (fid) => {
   const [user, setUser] = useState(null);
   const [isFetching, setIsFetching] = useState(false);

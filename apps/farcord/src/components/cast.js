@@ -1,9 +1,9 @@
 import { css } from "@emotion/react";
 import { isToday, isYesterday, parseISO } from "date-fns";
 import FormattedDate from "./formatted-date";
-import React, { useEffect } from "react";
+import React, { Suspense, useEffect } from "react";
 import Avatar from "@shades/ui-web/avatar";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { REACTION_TYPE, addReaction, removeReaction } from "../hooks/hub";
 import useSigner from "./signer";
 import {
@@ -18,6 +18,8 @@ import useFarcasterAccount from "./farcaster-account";
 import { useFarcasterChannelByUrl } from "../hooks/farcord";
 import { parseChannelFromUrl } from "../utils/channel";
 import { useNeynarCast } from "../hooks/neynar";
+import AppTag from "./app-tag";
+import TinyMutedText from "./tiny-muted-text";
 
 const IMAGE_ENDINGS = ["jpg", "jpeg", "png", "gif", "webp", "svg"];
 
@@ -64,20 +66,6 @@ const CastBody = ({ cast }) => {
   );
 };
 
-const TinyMutedText = ({ children, nowrap = false, style }) => (
-  <div
-    css={(theme) =>
-      css({
-        color: theme.colors.textDimmed,
-        fontSize: theme.fontSizes.tiny,
-      })
-    }
-    style={{ whiteSpace: nowrap ? "nowrap" : undefined, ...style }}
-  >
-    {children}
-  </div>
-);
-
 const CastDate = ({ date }) => {
   return (
     <TinyMutedText style={{ lineHeight: 1.5 }}>
@@ -113,6 +101,20 @@ export const CastHeader = ({ cast }) => {
   const [recasted, setRecasted] = React.useState(false);
   const [likesCount, setLikesCount] = React.useState(0);
   const [recastsCount, setRecastsCount] = React.useState(0);
+
+  const [searchParams] = useSearchParams();
+
+  const renderSignerInfo = () => {
+    if (searchParams.get("dev") || process.env.NODE_ENV === "development") {
+      return (
+        <>
+          <Suspense>
+            <AppTag cast={cast} fid={cast.author.fid} hash={cast.hash} />
+          </Suspense>
+        </>
+      );
+    }
+  };
 
   React.useEffect(() => {
     if (!fid) return;
@@ -296,6 +298,8 @@ export const CastHeader = ({ cast }) => {
             {recastsCount}
           </TinyMutedText>
         </>
+
+        <>{renderSignerInfo()}</>
       </div>
     </div>
   );

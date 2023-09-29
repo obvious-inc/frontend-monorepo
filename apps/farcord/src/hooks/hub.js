@@ -8,6 +8,7 @@ import {
   makeReactionRemove,
 } from "@farcaster/hub-web";
 import { hexToBytes } from "viem";
+import { decodeMetadata } from "../utils/farcaster";
 
 const farcasterClient = getHubRpcClient(
   process.env.FARCASTER_HUB_RPC_ENDPOINT,
@@ -20,6 +21,52 @@ const farcasterClient = getHubRpcClient(
 export const REACTION_TYPE = {
   LIKE: 1,
   RECAST: 2,
+};
+
+export const fetchSignerEvent = async ({ fid, publicKey }) => {
+  return farcasterClient
+    .getOnChainSigner({ fid, signer: publicKey })
+    .then((result) => {
+      if (result.isErr()) {
+        throw result.error;
+      }
+
+      return result.value;
+    })
+    .catch((err) => {
+      console.error(err);
+    });
+};
+
+export const fetchAppFid = async ({ fid, hash }) => {
+  return farcasterClient
+    .getCast({
+      fid: Number(fid),
+      hash: hexToBytes(hash),
+    })
+    .then((result) => {
+      if (result.isErr()) {
+        throw result.error;
+      }
+
+      return result.value;
+    })
+    .then((cast) => {
+      return fetchSignerEvent({
+        fid: Number(fid),
+        publicKey: cast.signer,
+      });
+    })
+    .then((result) => {
+      return result.signerEventBody?.metadata;
+    })
+    .then((metadata) => {
+      const parsedMetadata = decodeMetadata(metadata);
+      return parsedMetadata[0].requestFid;
+    })
+    .catch((e) => {
+      console.error(e);
+    });
 };
 
 export const useUserCasts = (fid) => {
