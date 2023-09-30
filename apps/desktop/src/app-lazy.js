@@ -12,7 +12,6 @@ import { publicProvider } from "wagmi/providers/public";
 import { InjectedConnector } from "wagmi/connectors/injected";
 import { WalletConnectConnector } from "wagmi/connectors/walletConnect";
 import React from "react";
-import { css } from "@emotion/react";
 import {
   BrowserRouter,
   Routes,
@@ -22,7 +21,7 @@ import {
   useLocation,
   matchPath,
 } from "react-router-dom";
-import { ThemeProvider, Global } from "@emotion/react";
+import { ThemeProvider, Global, css } from "@emotion/react";
 import {
   EmojiProvider,
   useAuth,
@@ -203,6 +202,7 @@ const useUserEnsNames = () => {
 };
 
 const App = () => {
+  const location = useLocation();
   const navigate = useNavigate();
 
   const { status: authStatus } = useAuth();
@@ -214,7 +214,28 @@ const App = () => {
 
   useSystemNotifications();
   useUserEnsNames();
-  useChannelHistoryTracker();
+
+  useLocationRestorer((restoredPathname) => {
+    console.log("restore");
+    if (location.pathname !== "/") return;
+
+    const fallbackRedirect = () => navigate("/new", { replace: true });
+
+    if (restoredPathname == null) {
+      fallbackRedirect();
+      return;
+    }
+
+    const match = matchPath({ path: "/channels/:channelId" }, restoredPathname);
+
+    if (match == null) {
+      fallbackRedirect();
+      return;
+    }
+
+    console.log("nav!", restoredPathname);
+    navigate(restoredPathname, { replace: true });
+  });
 
   useWalletEvent("disconnect", () => {
     if (authStatus === "not-authenticated") return;
@@ -291,14 +312,6 @@ const App = () => {
 
       <Routes>
         <Route path="/" element={<Layout />}>
-          <Route
-            index
-            element={
-              <AwaitSettledAuthStatus>
-                <IndexRoute />
-              </AwaitSettledAuthStatus>
-            }
-          />
           <Route path="/new" element={<NewMessageScreen />} />
           <Route path="/topics" element={<ChannelsScreen />} />
           <Route path="/channels/:channelId" element={<ChannelScreen />} />
@@ -389,12 +402,6 @@ const RequireAuth = ({ children }) => {
   return children;
 };
 
-const AwaitSettledAuthStatus = ({ children }) => {
-  const { status: authStatus } = useAuth();
-  if (authStatus === "loading") return null; // Spinner
-  return children;
-};
-
 const searchParams = new URLSearchParams(location.search);
 
 const themeMap = {
@@ -403,71 +410,31 @@ const themeMap = {
   "nouns-tv": nounsTvTheme,
 };
 
-const usePageLoadEffect = (cb, deps) => {
-  const isPageLoadRef = React.useRef(true);
+const useEffectOnce = (cb) => {
+  const didRunRef = React.useRef(false);
 
   React.useEffect(() => {
-    if (!isPageLoadRef.current) return;
-    isPageLoadRef.current = false;
+    if (didRunRef.current) return;
+    didRunRef.current = true;
     cb();
-    // eslint-disable-next-line
-  }, deps);
+  });
 };
 
-const CHANNEL_HISTORY_CACHE_KEY = "active-channel-id";
+const LAST_VISITED_PATHNAME_CACHE_KEY = "last-visited-pathname";
 
-const useChannelHistoryTracker = () => {
+const useLocationRestorer = (callback) => {
   const location = useLocation();
-  const { status: authStatus } = useAuth();
   const { writeAsync: cacheWrite, readAsync: cacheRead } = useCacheStore();
 
-  React.useEffect(() => {
-    if (authStatus !== "authenticated") return;
-    if (cacheWrite == null) return;
-
-    const match = matchPath(
-      { path: "/channels/:channelId" },
-      location.pathname
-    );
-
-    if (match == null) {
-      cacheWrite(CHANNEL_HISTORY_CACHE_KEY, null);
-    } else {
-      cacheWrite(CHANNEL_HISTORY_CACHE_KEY, match.params.channelId);
-    }
-  }, [location, authStatus, cacheRead, cacheWrite]);
-};
-
-const IndexRoute = () => {
-  const location = useLocation();
-  const navigate = useNavigate();
-  const { status: authStatus } = useAuth();
-  const { readAsync: cacheRead } = useCacheStore();
-
-  usePageLoadEffect(() => {
-    const fallbackRedirect = () => navigate("/new", { replace: true });
-
-    if (authStatus !== "authenticated" || cacheRead == null) {
-      fallbackRedirect();
-      return;
-    }
-
-    let cancelled = false;
-
-    cacheRead(CHANNEL_HISTORY_CACHE_KEY).then((channelId) => {
-      if (cancelled || channelId == null) {
-        fallbackRedirect();
-        return;
-      }
-      navigate(`/channels/${channelId}`, { replace: true });
+  useEffectOnce(() => {
+    cacheRead(LAST_VISITED_PATHNAME_CACHE_KEY).then((pathname) => {
+      callback(pathname);
     });
+  });
 
-    return () => {
-      cancelled = true;
-    };
-  }, [location, authStatus, navigate, cacheRead]);
-
-  return null;
+  React.useEffect(() => {
+    cacheWrite(LAST_VISITED_PATHNAME_CACHE_KEY, location.pathname);
+  }, [location, cacheWrite]);
 };
 
 const useTheme = () => {
