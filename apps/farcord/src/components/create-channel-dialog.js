@@ -21,7 +21,7 @@ import { getChannelLink } from "../utils/channel";
 
 const { createEmptyParagraphElement } = messageUtils;
 
-const CreateChannelDialogContent = ({ titleProps, createChannel }) => {
+const CreateChannelDialogContent = ({ createChannel }) => {
   const { fid } = useFarcasterAccount();
   const { signer, broadcasted } = useSigner();
 
