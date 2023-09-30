@@ -162,13 +162,6 @@ export const ChannelItem = ({ channel, expandable }) => {
           }}
         >
           <p>{channel.name}</p>
-          <p
-            css={(t) =>
-              css({ color: t.colors.textMuted, fontSize: t.fontSizes.tiny })
-            }
-          >
-            {channel.followerCount}
-          </p>
         </div>
       }
       icon={
