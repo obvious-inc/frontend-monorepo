@@ -216,7 +216,6 @@ const App = () => {
   useUserEnsNames();
 
   useLocationRestorer((restoredPathname) => {
-    console.log("restore");
     if (location.pathname !== "/") return;
 
     const fallbackRedirect = () => navigate("/new", { replace: true });
@@ -233,7 +232,6 @@ const App = () => {
       return;
     }
 
-    console.log("nav!", restoredPathname);
     navigate(restoredPathname, { replace: true });
   });
 

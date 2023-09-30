@@ -663,6 +663,7 @@ export default ({
         cacheStore.read(ACCESS_TOKEN_CACHE_KEY),
         cacheStore.read(REFRESH_TOKEN_CACHE_KEY),
       ]);
+      if (accessToken == null) return null;
       return { accessToken, refreshToken };
     },
     async authenticate({
