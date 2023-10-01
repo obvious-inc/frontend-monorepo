@@ -76,7 +76,7 @@ const Select = React.forwardRef(
         />
 
         <Popover.Root
-          placement="bottom left"
+          placement={`bottom ${align}`}
           offset={5}
           isOpen={state.isOpen}
           onOpenChange={state.setOpen}
@@ -220,11 +220,13 @@ const Option = ({ item, state }) => {
           {item.value.description}
         </div>
       </div>
-      {isSelected && (
-        <div css={css({ padding: "0 0.5rem", marginLeft: "1.2rem" })}>
+      <div css={css({ padding: "0 0.5rem", marginLeft: "1.2rem" })}>
+        {isSelected ? (
           <CheckmarkIcon style={{ width: "1.1rem" }} />
-        </div>
-      )}
+        ) : (
+          <div style={{ width: "1.1rem" }} />
+        )}
+      </div>
     </li>
   );
 };

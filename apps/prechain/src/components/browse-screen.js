@@ -70,7 +70,7 @@ const searchProposals = (items, rawQuery) => {
   );
 };
 
-const useFeedItems = () => {
+const useFeedItems = ({ filter }) => {
   const { data: eagerLatestBlockNumber } = useBlockNumber({
     watch: true,
     cacheTime: 10_000,
@@ -81,19 +81,23 @@ const useFeedItems = () => {
   const candidates = useProposalCandidates();
 
   return React.useMemo(() => {
-    const proposalItems = proposals.flatMap((p) =>
-      buildProposalFeed(p, { latestBlockNumber })
-    );
+    const proposalItems =
+      filter === "candidates"
+        ? []
+        : proposals.flatMap((p) => buildProposalFeed(p, { latestBlockNumber }));
 
-    const candidateItems = candidates.flatMap((c) =>
-      buildCandidateFeed(c, { skipSignatures: true })
-    );
+    const candidateItems =
+      filter === "proposals"
+        ? []
+        : candidates.flatMap((c) =>
+            buildCandidateFeed(c, { skipSignatures: true })
+          );
 
     return arrayUtils.sortBy({ value: (i) => i.blockNumber, order: "desc" }, [
       ...proposalItems,
       ...candidateItems,
     ]);
-  }, [proposals, candidates, latestBlockNumber]);
+  }, [proposals, candidates, filter, latestBlockNumber]);
 };
 
 const BROWSE_LIST_PAGE_ITEM_COUNT = 20;
@@ -411,7 +415,7 @@ const BrowseScreen = () => {
                   display: "flex",
                   alignItems: "center",
                   gap: "1.6rem",
-                  margin: "0 -1.6rem 0",
+                  margin: "-0.3rem -1.6rem 0",
                   padding: "0.3rem 1.6rem 0", // Top padding to offset the focus box shadow
                   "@media (min-width: 600px)": {
                     marginBottom: "2.8rem",
@@ -575,6 +579,7 @@ const BrowseScreen = () => {
                     {connectedWalletAccountAddress != null && (
                       <div style={{ margin: "-0.8rem 0 2.4rem" }}>
                         <Select
+                          size="small"
                           aria-label="Candidate sorting"
                           value={candidateSortStrategy}
                           options={[
@@ -805,7 +810,12 @@ const FeedSidebar = React.memo(({ visible }) => {
   const { fetchNounsActivity } = usePrechainActions();
 
   const [page, setPage] = React.useState(2);
-  const feedItems = useFeedItems();
+  const [filter, setFilter] = useCachedState(
+    "browse-screen:activity-filter",
+    "all"
+  );
+
+  const feedItems = useFeedItems({ filter });
   const visibleItems = feedItems.slice(0, FEED_PAGE_ITEM_COUNT * page);
 
   // Fetch feed items
@@ -839,7 +849,57 @@ const FeedSidebar = React.memo(({ visible }) => {
         },
       })}
     >
+      <div
+        css={css({
+          height: "4.05rem",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "flex-end",
+          margin: "0 0 2rem",
+        })}
+      >
+        <Select
+          size="small"
+          aria-label="Feed filter"
+          value={filter}
+          options={[
+            { value: "all", label: "Everything" },
+            { value: "proposals", label: "Proposal activity only" },
+            { value: "candidates", label: "Candidate activity only" },
+          ]}
+          onChange={(value) => {
+            setFilter(value);
+          }}
+          fullWidth={false}
+          align="right"
+          width="max-content"
+          renderTriggerContent={(value) => {
+            const filterLabel = {
+              all: "Everything",
+              proposals: "Proposal activity",
+              candidates: "Candidate activity",
+            }[value];
+            return (
+              <>
+                Show:{" "}
+                <em
+                  css={(t) =>
+                    css({
+                      fontStyle: "normal",
+                      fontWeight: t.text.weights.emphasis,
+                    })
+                  }
+                >
+                  {filterLabel}
+                </em>
+              </>
+            );
+          }}
+        />
+      </div>
+
       <ActivityFeed items={visibleItems} />
+
       {feedItems.length > visibleItems.length && (
         <div css={{ textAlign: "center", padding: "3.2rem 0" }}>
           <Button
