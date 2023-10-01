@@ -1,7 +1,6 @@
 import React from "react";
 import { css } from "@emotion/react";
 import { useNeynarCast } from "../hooks/neynar.js";
-import MessageEditorForm from "@shades/ui-web/message-editor-form";
 import Spinner from "@shades/ui-web/spinner";
 import { CastItem } from "./cast.js";
 import useSigner from "./signer.js";
@@ -15,6 +14,7 @@ import {
   useThreadCastsFetch,
 } from "../hooks/channel.js";
 import useFarcasterAccount from "./farcaster-account.js";
+import MessageEditorForm from "./message-editor-form.js";
 
 const ThreadScrollView = ({ castHash }) => {
   const castsContainerRef = React.useRef();

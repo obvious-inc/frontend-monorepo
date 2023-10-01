@@ -255,7 +255,6 @@ const CreateChannelDialog = ({ dismiss, titleProps }) => {
                 text,
                 parentUrl: url,
               }).then((result) => {
-                console.log("cast created", result.value.hash);
                 return toHex(result.value.hash);
               });
             })

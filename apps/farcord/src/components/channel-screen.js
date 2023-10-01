@@ -3,7 +3,6 @@ import { MainLayout } from "./layouts.js";
 import { useParams, useSearchParams } from "react-router-dom";
 import { css } from "@emotion/react";
 import { ReverseVerticalScrollView } from "@shades/common/react";
-import MessageEditorForm from "@shades/ui-web/message-editor-form";
 import Spinner from "@shades/ui-web/spinner";
 import { CastItem } from "./cast.js";
 import ChannelNavBar from "./channel-navbar.js";
@@ -25,6 +24,7 @@ import {
 } from "../hooks/channel.js";
 import { toHex } from "viem";
 import useFarcasterAccount from "./farcaster-account.js";
+import MessageEditorForm from "./message-editor-form.js";
 
 export const ChannelCastsScrollView = ({
   channelId,
