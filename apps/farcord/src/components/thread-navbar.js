@@ -20,7 +20,7 @@ const ThreadNavBar = ({ castHash }) => {
   const threadHash = parentCast ? parentCast.hash : cast?.hash;
 
   return (
-    <NavBar>
+    <NavBar noSideMenu={true}>
       <div
         style={{
           flex: 1,

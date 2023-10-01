@@ -14,7 +14,7 @@ import { useChannelCacheContext, useIsChannelFollowed } from "../hooks/channel";
 const ChannelNavBar = ({ channelId }) => {
   const channel = useFarcasterChannel(channelId);
   const { fid } = useFarcasterAccount();
-  const { signer } = useSigner();
+  const { broadcasted } = useSigner();
   const isChannelFollowed = useIsChannelFollowed(channelId);
   const {
     actions: { followChannel, unfollowChannel },
@@ -30,7 +30,7 @@ const ChannelNavBar = ({ channelId }) => {
         <button
           onClick={() => {
             const tryFollowChannel = async () => {
-              if (!signer) {
+              if (!broadcasted) {
                 alert("You need to connect your account to follow channels.");
                 return;
               }

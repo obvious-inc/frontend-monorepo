@@ -170,7 +170,7 @@ export const ChannelCacheContextProvider = ({ children }) => {
         ...s,
         followedChannelsByFid: {
           ...s.followedChannelsByFid,
-          [fid]: [...s.followedChannelsByFid[fid], channel],
+          [fid]: [...(s.followedChannelsByFid[fid] ?? []), channel],
         },
       };
     });
@@ -182,7 +182,7 @@ export const ChannelCacheContextProvider = ({ children }) => {
         ...s,
         followedChannelsByFid: {
           ...s.followedChannelsByFid,
-          [fid]: s.followedChannelsByFid[fid].filter(
+          [fid]: s.followedChannelsByFid[fid]?.filter(
             (c) => c.id !== channel.id
           ),
         },

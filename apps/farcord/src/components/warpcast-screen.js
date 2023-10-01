@@ -86,6 +86,7 @@ const WarpcastAuthScreen = () => {
   const [qrCodeURL, setQrCodeURL] = React.useState(null);
   const [warpcastToken, setWarpcastToken] = React.useState(null);
   const [warpcastStatus, setWarpcastStatus] = React.useState(null);
+  const [warpcastDeepLink, setWarpcastDeepLink] = React.useState(null);
   const [keypair, setKeypair] = React.useState(null);
 
   const { account, initAccount } = useFarcasterAccount();
@@ -140,6 +141,7 @@ const WarpcastAuthScreen = () => {
         }).then(({ token, deeplinkUrl, state }) => {
           setWarpcastStatus(state);
           setWarpcastToken(token);
+          setWarpcastDeepLink(deeplinkUrl);
           QRCode.toDataURL(deeplinkUrl)
             .then((url) => {
               setQrCodeURL(url);
@@ -219,6 +221,21 @@ const WarpcastAuthScreen = () => {
           <div style={{ marginTop: "2rem" }}>
             Scan QR code to open Warpcast and grant access...
           </div>
+          <p>
+            (or{" "}
+            <a
+              href={warpcastDeepLink}
+              css={(theme) =>
+                css({
+                  color: theme.colors.link,
+                  ":hover": { color: theme.colors.linkModifierHover },
+                })
+              }
+            >
+              click here
+            </a>{" "}
+            if on mobile)
+          </p>
         </div>
       ) : warpcastStatus === "approved" ? (
         <div>
