@@ -33,6 +33,7 @@ import {
   useSendProposalFeedback,
   usePriorVotes,
   useDynamicQuorum,
+  isSucceededProposalState,
 } from "../hooks/dao.js";
 import {
   useDelegate,
@@ -1147,22 +1148,39 @@ const ActivityFeedItemTitle = ({ item, isolated }) => {
           );
 
         case "proposal-started":
-        case "proposal-ended":
           return (
-            <span
-              css={(t) =>
-                css({
-                  color: t.colors.textDimmed,
-                })
-              }
-            >
+            <span css={(t) => css({ color: t.colors.textDimmed })}>
               Voting{" "}
               {!isolated && (
                 <>
                   for <ContextLink {...item} />
                 </>
               )}{" "}
-              {item.eventType === "proposal-ended" ? "ended" : "started"}{" "}
+              started{" "}
+              {item.timestamp != null && (
+                <>
+                  on{" "}
+                  <FormattedDateWithTooltip
+                    capitalize={false}
+                    value={item.timestamp}
+                    disableRelative
+                    month={isolated ? "long" : "short"}
+                    day="numeric"
+                    hour="numeric"
+                    minute="numeric"
+                  />
+                </>
+              )}
+            </span>
+          );
+
+        case "proposal-ended":
+          return (
+            <span css={(t) => css({ color: t.colors.textDimmed })}>
+              {isolated ? "Proposal" : <ContextLink {...item} />}{" "}
+              {isSucceededProposalState(proposal.state)
+                ? "succeeded"
+                : "was defeated"}
               {item.timestamp != null && (
                 <>
                   on{" "}
