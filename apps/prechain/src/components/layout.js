@@ -277,7 +277,6 @@ const NavBar = ({ navigationStack, actions }) => {
 export const MainContentContainer = ({
   sidebar = null,
   narrow = false,
-  sidebarBreakpoint,
   children,
   ...props
 }) => (
@@ -295,7 +294,6 @@ export const MainContentContainer = ({
     })}
     style={{
       "--width": narrow ? "72rem" : "128rem",
-      "--sidebar-breakpoint": sidebarBreakpoint,
     }}
     {...props}
   >

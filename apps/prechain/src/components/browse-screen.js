@@ -9,7 +9,7 @@ import {
 } from "react-router-dom";
 import { css } from "@emotion/react";
 import { useBlockNumber } from "wagmi";
-import { useFetch } from "@shades/common/react";
+import { useFetch, useMatchMedia } from "@shades/common/react";
 import { useAccountDisplayName, useCachedState } from "@shades/common/app";
 import {
   array as arrayUtils,
@@ -41,7 +41,10 @@ import {
 import * as Tabs from "./tabs.js";
 import Layout, { MainContentContainer } from "./layout.js";
 import FormattedDateWithTooltip from "./formatted-date-with-tooltip.js";
-import { ActivityFeed, buildProposalFeed } from "./proposal-screen.js";
+import {
+  ActivityFeed as ActivityList,
+  buildProposalFeed,
+} from "./proposal-screen.js";
 import { buildCandidateFeed } from "./proposal-candidate-screen.js";
 
 const ONE_DAY_IN_SECONDS = 60 * 60 * 24;
@@ -106,6 +109,8 @@ const BrowseScreen = () => {
   const scrollContainerRef = React.useRef();
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
+
+  const isDesktopLayout = useMatchMedia("(min-width: 952px)");
 
   const query = searchParams.get("q") ?? "";
   const deferredQuery = React.useDeferredValue(query.trim());
@@ -395,7 +400,14 @@ const BrowseScreen = () => {
     <Layout scrollContainerRef={scrollContainerRef}>
       <div css={css({ padding: "0 1.6rem" })}>
         <MainContentContainer
-          sidebar={<FeedSidebar visible={filteredProposals.length > 0} />}
+          sidebar={
+            isDesktopLayout ? (
+              <FeedSidebar
+                align="right"
+                visible={filteredProposals.length > 0}
+              />
+            ) : null
+          }
         >
           <div
             css={css({
@@ -527,6 +539,11 @@ const BrowseScreen = () => {
                   })
                 }
               >
+                {!isDesktopLayout && (
+                  <Tabs.Item key="activity" title="Activity">
+                    <FeedTabContent />
+                  </Tabs.Item>
+                )}
                 <Tabs.Item key="proposals" title="Proposals">
                   <div
                     css={css({
@@ -577,7 +594,14 @@ const BrowseScreen = () => {
                     })}
                   >
                     {connectedWalletAccountAddress != null && (
-                      <div style={{ margin: "-0.8rem 0 2.4rem" }}>
+                      <div
+                        css={css({
+                          margin: "0 0 1.4rem",
+                          "@media (min-width: 600px)": {
+                            margin: "-0.8rem 0 2.4rem",
+                          },
+                        })}
+                      >
                         <Select
                           size="small"
                           aria-label="Candidate sorting"
@@ -660,18 +684,31 @@ const SectionedList = ({ sections, showPlaceholder = false }) => {
         return css({
           listStyle: "none",
           containerType: "inline-size",
-          "li + li": { marginTop: "2.8rem" },
+          "li + li": {
+            marginTop: "1.6rem",
+            "@media(min-width: 600px)": {
+              marginTop: "2.8rem",
+            },
+          },
           ul: { listStyle: "none" },
-          "[data-group] li + li": { marginTop: "1rem" },
+          "[data-group] li + li": {
+            marginTop: "0.4rem",
+            "@media(min-width: 600px)": {
+              marginTop: "1rem",
+            },
+          },
           "[data-group-title]": {
             // position: "sticky",
             // top: "8.4rem",
-            padding: "1.1rem 0",
+            padding: "0.8rem 0",
             background: t.colors.backgroundPrimary,
             textTransform: "uppercase",
             fontSize: t.text.sizes.small,
             fontWeight: t.text.weights.emphasis,
             color: t.colors.textMuted,
+            "@media(min-width: 600px)": {
+              padding: "1.1rem 0",
+            },
           },
           "[data-group-description]": {
             textTransform: "none",
@@ -801,7 +838,7 @@ const SectionedList = ({ sections, showPlaceholder = false }) => {
 
 const FEED_PAGE_ITEM_COUNT = 30;
 
-const FeedSidebar = React.memo(({ visible }) => {
+const ActivityFeed = React.memo(({ filter = "all" }) => {
   const { data: latestBlockNumber } = useBlockNumber({
     watch: true,
     cache: 20_000,
@@ -810,10 +847,6 @@ const FeedSidebar = React.memo(({ visible }) => {
   const { fetchNounsActivity } = usePrechainActions();
 
   const [page, setPage] = React.useState(2);
-  const [filter, setFilter] = useCachedState(
-    "browse-screen:activity-filter",
-    "all"
-  );
 
   const feedItems = useFeedItems({ filter });
   const visibleItems = feedItems.slice(0, FEED_PAGE_ITEM_COUNT * page);
@@ -838,7 +871,35 @@ const FeedSidebar = React.memo(({ visible }) => {
     [latestBlockNumber, fetchNounsActivity]
   );
 
-  if (!visible || visibleItems.length === 0) return null;
+  if (visibleItems.length === 0) return null;
+
+  return (
+    <>
+      <ActivityList items={visibleItems} />
+
+      {feedItems.length > visibleItems.length && (
+        <div css={{ textAlign: "center", padding: "3.2rem 0" }}>
+          <Button
+            size="small"
+            onClick={() => {
+              setPage((p) => p + 1);
+            }}
+          >
+            Show more
+          </Button>
+        </div>
+      )}
+    </>
+  );
+});
+
+const FeedSidebar = React.memo(({ visible = true }) => {
+  const [filter, setFilter] = useCachedState(
+    "browse-screen:activity-filter",
+    "all"
+  );
+
+  if (!visible) return null;
 
   return (
     <div
@@ -898,20 +959,60 @@ const FeedSidebar = React.memo(({ visible }) => {
         />
       </div>
 
-      <ActivityFeed items={visibleItems} />
+      <ActivityFeed filter={filter} />
+    </div>
+  );
+});
 
-      {feedItems.length > visibleItems.length && (
-        <div css={{ textAlign: "center", padding: "3.2rem 0" }}>
-          <Button
-            size="small"
-            onClick={() => {
-              setPage((p) => p + 1);
-            }}
-          >
-            Show more
-          </Button>
-        </div>
-      )}
+const FeedTabContent = React.memo(() => {
+  const [filter, setFilter] = useCachedState(
+    "browse-screen:activity-filter",
+    "all"
+  );
+
+  return (
+    <div css={css({ padding: "2rem 0" })}>
+      <div css={css({ margin: "0 0 2rem" })}>
+        <Select
+          size="small"
+          aria-label="Feed filter"
+          value={filter}
+          options={[
+            { value: "all", label: "Everything" },
+            { value: "proposals", label: "Proposal activity only" },
+            { value: "candidates", label: "Candidate activity only" },
+          ]}
+          onChange={(value) => {
+            setFilter(value);
+          }}
+          fullWidth={false}
+          width="max-content"
+          renderTriggerContent={(value) => {
+            const filterLabel = {
+              all: "Everything",
+              proposals: "Proposal activity",
+              candidates: "Candidate activity",
+            }[value];
+            return (
+              <>
+                Show:{" "}
+                <em
+                  css={(t) =>
+                    css({
+                      fontStyle: "normal",
+                      fontWeight: t.text.weights.emphasis,
+                    })
+                  }
+                >
+                  {filterLabel}
+                </em>
+              </>
+            );
+          }}
+        />
+      </div>
+
+      <ActivityFeed filter={filter} />
     </div>
   );
 });
