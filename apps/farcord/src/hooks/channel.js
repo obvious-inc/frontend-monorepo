@@ -109,10 +109,10 @@ export const ChannelCacheContextProvider = ({ children }) => {
           followedChannelsByFid: {
             ...s.followedChannelsByFid,
             [fid]: [
-              ...s.followedChannelsByFid[fid],
+              ...(s.followedChannelsByFid[fid] ?? []),
               ...channels.filter(
                 (c) =>
-                  !s.followedChannelsByFid[fid].some((cc) => cc.id === c.id)
+                  !s.followedChannelsByFid[fid]?.some((cc) => cc.id === c.id)
               ),
             ],
           },
