@@ -1,6 +1,6 @@
 import React from "react";
 import { MainLayout } from "./layouts.js";
-import { useParams, useSearchParams } from "react-router-dom";
+import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { css } from "@emotion/react";
 import { ReverseVerticalScrollView } from "@shades/common/react";
 import Spinner from "@shades/ui-web/spinner";
@@ -314,9 +314,25 @@ const ChannelView = ({ channelId, isFeed }) => {
 };
 
 const ChannelScreen = ({ isFeed = false }) => {
+  const navigate = useNavigate();
   const { channelId } = useParams();
   const [searchParams] = useSearchParams();
+  const searchUrl = searchParams.get("url");
   const castHash = searchParams.get("cast");
+
+  React.useEffect(() => {
+    const gotoChannelUrl = (channelUrl) => {
+      searchParams.delete("url");
+      navigate({
+        pathname: `/channels/${encodeURIComponent(channelUrl)}`,
+        search: searchParams.toString(),
+      });
+    };
+
+    if (!channelId && searchUrl) {
+      gotoChannelUrl(searchUrl);
+    }
+  }, [channelId, searchParams, navigate, searchUrl]);
 
   return (
     <MainLayout>

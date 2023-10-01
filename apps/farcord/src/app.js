@@ -69,6 +69,7 @@ const App = () => {
                             path="channels/:channelId"
                             element={<ChannelScreen />}
                           />
+                          <Route path="channels" element={<ChannelScreen />} />
                           <Route
                             path="feed"
                             element={<ChannelScreen isFeed />}
