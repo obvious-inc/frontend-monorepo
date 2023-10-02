@@ -29,6 +29,7 @@ import MessageEditorForm from "./message-editor-form.js";
 export const ChannelCastsScrollView = ({
   channelId,
   isFeed = false,
+  isRecent = false,
   didScrollToBottomRef: didScrollToBottomRefExternal,
 }) => {
   const dispatch = React.useContext(ChainDataCacheDispatchContext);
@@ -41,15 +42,20 @@ export const ChannelCastsScrollView = ({
 
   const { fid } = useFarcasterAccount();
 
-  const channel = useFarcasterChannel(isFeed ? "feed" : channelId);
+  const channel = useFarcasterChannel(
+    isFeed ? "feed" : isRecent ? "recent" : channelId
+  );
 
   useChannelCastsFetch({ channel, cursor: null });
   const channelCasts = useChannelCasts(channelId);
 
   useFeedCastsFetch({ fid, cursor: null });
-  const recentCasts = useFeedCasts(fid);
+  const feedCasts = useFeedCasts(fid);
 
-  const casts = isFeed ? recentCasts : channelCasts;
+  useFeedCastsFetch({});
+  const recentCasts = useFeedCasts();
+
+  const casts = isFeed ? feedCasts : isRecent ? recentCasts : channelCasts;
 
   const [pendingMessagesBeforeCount] = React.useState(0);
   const [averageMessageListItemHeight] = React.useState(0);
@@ -85,13 +91,13 @@ export const ChannelCastsScrollView = ({
   // }, [fetchMessages, casts?.length]);
 
   React.useEffect(() => {
-    if (!channel && !isFeed && channelId)
+    if (!channel && !isFeed && !isRecent && channelId)
       dispatch({
         type: "add-channel-by-parent-url",
         id: channelId,
         value: channelId,
       });
-  }, [channelId, isFeed, channel, dispatch]);
+  }, [channelId, isFeed, isRecent, channel, dispatch]);
 
   React.useEffect(() => {
     if (
@@ -135,7 +141,7 @@ export const ChannelCastsScrollView = ({
 
   return (
     <>
-      {!isFeed && <ChannelNavBar channelId={channelId} />}
+      {(!isFeed || !isRecent) && <ChannelNavBar channelId={channelId} />}
       {casts.length == 0 ? (
         <div
           css={(t) =>
@@ -234,6 +240,7 @@ export const ChannelCastsScrollView = ({
                     key={cast.hash}
                     cast={cast}
                     isFeed={isFeed}
+                    isRecent={isRecent}
                     showReplies={true}
                   />
                 ))}
@@ -247,7 +254,7 @@ export const ChannelCastsScrollView = ({
   );
 };
 
-const ChannelView = ({ channelId, isFeed }) => {
+const ChannelView = ({ channelId, isFeed, isRecent }) => {
   const inputRef = React.useRef();
   const { fid } = useFarcasterAccount();
   const { signer, broadcasted } = useSigner();
@@ -268,7 +275,7 @@ const ChannelView = ({ channelId, isFeed }) => {
       fid,
       signer,
       text,
-      parentUrl: isFeed ? null : channel.parentUrl,
+      parentUrl: isFeed || isRecent ? null : channel.parentUrl,
     })
       .then((result) => {
         return toHex(result.value.hash);
@@ -293,7 +300,11 @@ const ChannelView = ({ channelId, isFeed }) => {
         })
       }
     >
-      <ChannelCastsScrollView channelId={channelId} isFeed={isFeed} />
+      <ChannelCastsScrollView
+        channelId={channelId}
+        isFeed={isFeed}
+        isRecent={isRecent}
+      />
 
       <div css={css({ padding: "0 1.6rem" })}>
         <MessageEditorForm
@@ -313,7 +324,7 @@ const ChannelView = ({ channelId, isFeed }) => {
   );
 };
 
-const ChannelScreen = ({ isFeed = false }) => {
+const ChannelScreen = ({ isFeed = false, isRecent = false }) => {
   const navigate = useNavigate();
   const { channelId } = useParams();
   const [searchParams] = useSearchParams();
@@ -336,7 +347,7 @@ const ChannelScreen = ({ isFeed = false }) => {
 
   return (
     <MainLayout>
-      <ChannelView channelId={channelId} isFeed={isFeed} />
+      <ChannelView channelId={channelId} isFeed={isFeed} isRecent={isRecent} />
       {castHash && <ThreadScreen castHash={castHash} />}
     </MainLayout>
   );

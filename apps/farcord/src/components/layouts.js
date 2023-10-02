@@ -198,6 +198,30 @@ export const FeedItem = () => {
   );
 };
 
+export const RecentItem = () => {
+  const link = `/recent`;
+
+  return (
+    <ListItem
+      component={NavLink}
+      to={link}
+      className={({ isActive }) => (isActive ? "active" : "")}
+      title={
+        <div
+          className="title"
+          css={css({
+            overflow: "hidden",
+            textOverflow: "ellipsis",
+          })}
+        >
+          Recent
+        </div>
+      }
+      size="normal"
+    />
+  );
+};
+
 const CollapsibleSection = ({
   title,
   expanded,
@@ -433,7 +457,8 @@ export const MainLayout = ({ children }) => {
               }}
             />
 
-            <FeedItem />
+            <RecentItem />
+            {fid && <FeedItem />}
 
             {fid && (
               <>

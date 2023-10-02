@@ -475,6 +475,7 @@ const ReplyTargetCast = ({ castHash, layout, onClickMessage }) => {
 export const CastItem = ({
   cast,
   isFeed,
+  isRecent,
   showReplies = false,
   horizontalPadding = "1.6rem",
 }) => {
@@ -522,7 +523,7 @@ export const CastItem = ({
           <>
             <CastBody cast={cast} />
             <CastEmbeds cast={cast} />
-            {isFeed && <CastChannel cast={cast} />}
+            {(isFeed || isRecent) && <CastChannel cast={cast} />}
           </>
         </div>
       </div>

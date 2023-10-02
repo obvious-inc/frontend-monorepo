@@ -74,6 +74,10 @@ const App = () => {
                             path="feed"
                             element={<ChannelScreen isFeed />}
                           />
+                          <Route
+                            path="recent"
+                            element={<ChannelScreen isRecent />}
+                          />
                           <Route index element={<ChannelScreen isFeed />} />
                         </Route>
                         {/* <Route path="*" element={<Navigate to="/feed" replace />} /> */}
