@@ -80,7 +80,7 @@ const useFeedItems = ({ filter }) => {
   });
   const latestBlockNumber = React.useDeferredValue(eagerLatestBlockNumber);
 
-  const proposals = useProposals({ state: true });
+  const proposals = useProposals({ state: true, propdates: true });
   const candidates = useProposalCandidates();
 
   return React.useMemo(() => {
@@ -508,8 +508,11 @@ const BrowseScreen = () => {
             ) : (
               <Tabs.Root
                 aria-label="Proposals and candidates"
-                defaultSelectedKey="proposals"
-                selectedKey={searchParams.get("tab") ?? "proposals"}
+                selectedKey={
+                  searchParams.get("tab") ?? isDesktopLayout
+                    ? "proposals"
+                    : "activity"
+                }
                 onSelectionChange={(key) => {
                   setSearchParams((p) => {
                     const newParams = new URLSearchParams(p);
@@ -541,7 +544,7 @@ const BrowseScreen = () => {
               >
                 {!isDesktopLayout && (
                   <Tabs.Item key="activity" title="Activity">
-                    <FeedTabContent />
+                    <FeedTabContent visible={filteredProposals.length > 0} />
                   </Tabs.Item>
                 )}
                 <Tabs.Item key="proposals" title="Proposals">
@@ -844,7 +847,7 @@ const ActivityFeed = React.memo(({ filter = "all" }) => {
     cache: 20_000,
   });
 
-  const { fetchNounsActivity } = usePrechainActions();
+  const { fetchNounsActivity, fetchPropdates } = usePrechainActions();
 
   const [page, setPage] = React.useState(2);
 
@@ -870,6 +873,8 @@ const ActivityFeed = React.memo(({ filter = "all" }) => {
           ),
     [latestBlockNumber, fetchNounsActivity]
   );
+
+  useFetch(() => fetchPropdates(), [fetchPropdates]);
 
   if (visibleItems.length === 0) return null;
 
@@ -964,11 +969,13 @@ const FeedSidebar = React.memo(({ visible = true }) => {
   );
 });
 
-const FeedTabContent = React.memo(() => {
+const FeedTabContent = React.memo(({ visible }) => {
   const [filter, setFilter] = useCachedState(
     "browse-screen:activity-filter",
     "all"
   );
+
+  if (!visible) return null;
 
   return (
     <div css={css({ padding: "2rem 0" })}>

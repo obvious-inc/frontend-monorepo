@@ -28,7 +28,7 @@ export const useProposalFetch = (id, options) => {
   });
   const onError = useLatestCallback(options?.onError);
 
-  const { fetchProposal } = useActions();
+  const { fetchProposal, fetchPropdates } = useActions();
 
   useFetch(
     () =>
@@ -38,9 +38,11 @@ export const useProposalFetch = (id, options) => {
       }),
     [fetchProposal, id, onError, blockNumber]
   );
+
+  useFetch(() => fetchPropdates(id), [fetchPropdates, id]);
 };
 
-export const useProposals = ({ state = false } = {}) => {
+export const useProposals = ({ state = false, propdates = false } = {}) => {
   const { data: blockNumber } = useBlockNumber({
     watch: true,
     cacheTime: 20_000,
@@ -49,19 +51,27 @@ export const useProposals = ({ state = false } = {}) => {
   return useStore(
     React.useCallback(
       (s) => {
-        const addState = (p) => ({
-          ...p,
-          state:
-            blockNumber == null ? null : getProposalState(p, { blockNumber }),
-        });
+        const useSelector = state || propdates;
 
-        const proposals = state
-          ? Object.values(s.proposalsById).map(addState)
+        const select = (p_) => {
+          const p = { ...p_ };
+
+          if (state)
+            p.state =
+              blockNumber == null ? null : getProposalState(p, { blockNumber });
+
+          if (propdates) p.propdates = s.propdatesByProposalId[p.id];
+
+          return p;
+        };
+
+        const proposals = useSelector
+          ? Object.values(s.proposalsById).map(select)
           : Object.values(s.proposalsById);
 
         return arrayUtils.sortBy((p) => p.lastUpdatedTimestamp, proposals);
       },
-      [state, blockNumber]
+      [state, blockNumber, propdates]
     )
   );
 };
@@ -83,6 +93,7 @@ export const useProposal = (id) => {
         return {
           ...proposal,
           state: getProposalState(proposal, { blockNumber }),
+          propdates: s.propdatesByProposalId[id],
         };
       },
       [id, blockNumber]

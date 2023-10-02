@@ -17,6 +17,7 @@ module.exports = (...args) => {
         CLOUDFLARE_ACCT_HASH: null,
         WALLET_CONNECT_PROJECT_ID: null,
         NOUNS_SUBGRAPH_URL: null,
+        PROPDATES_SUBGRAPH_URL: null,
       }),
     ],
   };

@@ -60,6 +60,30 @@ const subgraphEndpointByChainId = {
 
 const DEFAULT_CHAIN_ID = 1;
 
+const PROPDATES_QUERY = `{
+  propUpdates(orderBy: blockNumber, orderDirection: desc, first: 100) {
+    id
+    update
+    blockNumber
+    blockTimestamp
+    prop {
+      id
+    }
+  }
+}`;
+
+const createPropdatesQuery = (proposalId) => `{
+  propUpdates(where: { prop: "${proposalId}" }, orderBy: blockNumber, orderDirection: desc, first: 100) {
+    id
+    update
+    blockNumber
+    blockTimestamp
+    prop {
+      id
+    }
+  }
+}`;
+
 const VOTE_FIELDS = `
 fragment VoteFields on Vote {
   id
@@ -152,6 +176,7 @@ export const useStore = createZustandStoreHook((set) => {
     delegatesById: {},
     proposalsById: {},
     proposalCandidatesById: {},
+    propdatesByProposalId: {},
 
     // Actions
     fetchProposal: (chainId, id) =>
@@ -316,6 +341,30 @@ export const useStore = createZustandStoreHook((set) => {
             ),
           };
         });
+      }),
+    fetchPropdates: (proposalId) =>
+      subgraphFetch({
+        endpoint: process.env.PROPDATES_SUBGRAPH_URL,
+        query:
+          proposalId == null
+            ? PROPDATES_QUERY
+            : createPropdatesQuery(proposalId),
+      }).then((data) => {
+        if (data.propUpdates == null) throw new Error("not-found");
+        const parseUpdate = (u) => ({
+          id: u.id,
+          update: u.update,
+          blockNumber: BigInt(u.blockNumber),
+          blockTimestamp: new Date(parseInt(u.blockTimestamp) * 1000),
+          proposalId: u.prop.id,
+        });
+        const parsedPropdates = data.propUpdates.map(parseUpdate);
+        set(() => ({
+          propdatesByProposalId: arrayUtils.groupBy(
+            (d) => d.proposalId,
+            parsedPropdates
+          ),
+        }));
       }),
   };
 });
@@ -531,17 +580,28 @@ query {
 
 export const ChainDataCacheContext = React.createContext();
 
-const subgraphFetch = ({ chainId, query }) =>
-  fetch(subgraphEndpointByChainId[chainId], {
+const subgraphFetch = async ({
+  endpoint,
+  chainId,
+  operationName,
+  query,
+  variables,
+}) => {
+  const url = endpoint ?? subgraphEndpointByChainId[chainId];
+
+  if (url == null) throw new Error();
+
+  return fetch(url, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ query }),
+    body: JSON.stringify({ operationName, query, variables }),
   })
     .then((res) => {
       if (res.ok) return res.json();
       return Promise.reject(new Error(res.statusText));
     })
     .then((body) => body.data);
+};
 
 const parseFeedbackPost = (post) => ({
   ...post,
@@ -746,27 +806,13 @@ export const getValidSponsorSignatures = (candidate) => {
 export const useDelegate = (id) =>
   useStore(React.useCallback((s) => s.delegatesById[id], [id]));
 
-export const useProposalCandidates = () => {
-  const candidatesById = useStore((s) => s.proposalCandidatesById);
-  return React.useMemo(() => {
-    const candidates = Object.values(candidatesById);
-    // Exclude canceled candidates as well as those with a matching proposal
-    const filteredCandidates = candidates.filter(
-      (c) => c.canceledTimestamp == null && c.latestVersion?.proposalId == null
-    );
-    return sortBy(
-      { value: (p) => p.lastUpdatedTimestamp, order: "desc" },
-      filteredCandidates
-    );
-  }, [candidatesById]);
-};
-
 export const useActions = () => {
   const chainId = useChainId();
   const fetchProposal = useStore((s) => s.fetchProposal);
   const fetchProposalCandidate = useStore((s) => s.fetchProposalCandidate);
   const fetchNounsActivity = useStore((s) => s.fetchNounsActivity);
   const fetchBrowseScreenData = useStore((s) => s.fetchBrowseScreenData);
+  const fetchPropdates = useStore((s) => s.fetchPropdates);
 
   return {
     fetchProposal: React.useCallback(
@@ -785,6 +831,7 @@ export const useActions = () => {
       (...args) => fetchBrowseScreenData(chainId, ...args),
       [fetchBrowseScreenData, chainId]
     ),
+    fetchPropdates,
   };
 };
 
@@ -814,6 +861,21 @@ export const useProposalCandidate = (id) =>
       [id]
     )
   );
+
+export const useProposalCandidates = () => {
+  const candidatesById = useStore((s) => s.proposalCandidatesById);
+  return React.useMemo(() => {
+    const candidates = Object.values(candidatesById);
+    // Exclude canceled candidates as well as those with a matching proposal
+    const filteredCandidates = candidates.filter(
+      (c) => c.canceledTimestamp == null && c.latestVersion?.proposalId == null
+    );
+    return sortBy(
+      { value: (p) => p.lastUpdatedTimestamp, order: "desc" },
+      filteredCandidates
+    );
+  }, [candidatesById]);
+};
 
 export const useSendProposalCandidateFeedback = (
   proposerId,

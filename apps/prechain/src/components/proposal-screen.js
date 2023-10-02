@@ -99,7 +99,22 @@ export const buildProposalFeed = (proposal, { latestBlockNumber }) => {
       proposalId: proposal.id,
     })) ?? [];
 
-  const items = [...feedbackPostItems, ...voteItems, createdEventItem];
+  const propdateItems =
+    proposal.propdates?.map((p) => ({
+      type: "propdate",
+      id: `propdate-${p.id}`,
+      body: p.update,
+      blockNumber: p.blockNumber,
+      timestamp: p.blockTimestamp,
+      proposalId: proposal.id,
+    })) ?? [];
+
+  const items = [
+    ...feedbackPostItems,
+    ...voteItems,
+    ...propdateItems,
+    createdEventItem,
+  ];
 
   if (proposal.state === "canceled")
     return arrayUtils.sortBy(
@@ -1255,6 +1270,28 @@ const ActivityFeedItemTitle = ({ item, isolated }) => {
         </span>
       );
     }
+
+    case "propdate":
+      return (
+        <>
+          <a
+            href="https://propdates.wtf/about"
+            target="_blank"
+            rel="noreferrer"
+          >
+            Propdate
+          </a>
+          {!isolated && (
+            <>
+              {" "}
+              for <ContextLink {...item} />
+            </>
+          )}
+        </>
+      );
+
+    default:
+      throw new Error(`Unknown event type "${item.type}"`);
   }
 };
 
