@@ -60,9 +60,28 @@ const searchProposals = (items, rawQuery) => {
   const filteredItems = items
     .map((i) => {
       const title = i.title ?? i.latestVersion?.content.title ?? i.name;
+      const id = i.id;
+
+      const tokens = [title, id];
+
+      let bestIndex;
+
+      for (const token of tokens) {
+        if (token == null) continue;
+        const index = token.trim().toLowerCase().indexOf(query);
+        if (index === 0) {
+          bestIndex = 0;
+          break;
+        }
+        if (index === -1) continue;
+        if (bestIndex == null || index < bestIndex) {
+          bestIndex = index;
+        }
+      }
+
       return {
         ...i,
-        index: title == null ? -1 : title.toLowerCase().indexOf(query),
+        index: bestIndex ?? -1,
       };
     })
     .filter((i) => i.index !== -1);
