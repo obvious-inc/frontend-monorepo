@@ -34,7 +34,15 @@ const { chains, publicClient } = configureWagmiChains(
     alchemyProvider({ apiKey: process.env.ALCHEMY_API_KEY }),
     // infuraProvider({ apiKey: process.env.INFURA_PROJECT_ID }),
     publicProvider(),
-  ]
+  ],
+  {
+    batch: {
+      multicall: {
+        wait: 250,
+        batchSize: 1024 * 8, // 8kb seems to be the max size for cloudflare
+      },
+    },
+  }
 );
 
 const wagmiConfig = createWagmiConfig({
