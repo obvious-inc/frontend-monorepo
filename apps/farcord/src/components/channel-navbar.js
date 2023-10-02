@@ -11,7 +11,7 @@ import useFarcasterAccount from "./farcaster-account";
 import useSigner from "./signer";
 import { useChannelCacheContext, useIsChannelFollowed } from "../hooks/channel";
 
-const ChannelNavBar = ({ channelId }) => {
+const ChannelNavBar = ({ channelId, name, description }) => {
   const channel = useFarcasterChannel(channelId);
   const { fid } = useFarcasterAccount();
   const { broadcasted } = useSigner();
@@ -19,8 +19,6 @@ const ChannelNavBar = ({ channelId }) => {
   const {
     actions: { followChannel, unfollowChannel },
   } = useChannelCacheContext();
-
-  if (!channel) return null;
 
   let channelLink = channel?.parentUrl;
 
@@ -80,7 +78,7 @@ const ChannelNavBar = ({ channelId }) => {
 
   return (
     <NavBar>
-      {channel.imageUrl != null && (
+      {channel?.imageUrl != null && (
         <a
           href={channel.imageLarge}
           rel="noreferrer"
@@ -130,7 +128,7 @@ const ChannelNavBar = ({ channelId }) => {
             })
           }
         >
-          {channel.name}
+          {name}
         </Heading>
 
         <>
@@ -169,10 +167,10 @@ const ChannelNavBar = ({ channelId }) => {
               })
             }
           >
-            <p>{channel.description}</p>
+            <p>{description}</p>
           </div>
 
-          {renderRightColumn()}
+          {channel && renderRightColumn()}
         </>
       </div>
     </NavBar>

@@ -7,7 +7,11 @@ import {
 import { css, useTheme } from "@emotion/react";
 import { NavLink, Outlet, useSearchParams } from "react-router-dom";
 import { useFarcasterChannels } from "../hooks/farcord";
-import { Layout as SidebarLayout } from "@shades/ui-web/sidebar-layout";
+import {
+  useState as useSidebarState,
+  useToggle as useSidebarToggle,
+  Layout as SidebarLayout,
+} from "@shades/ui-web/sidebar-layout";
 import { ErrorBoundary } from "@shades/common/react";
 import Avatar from "@shades/ui-web/avatar";
 import FarcasterProfile from "./farcaster-profile";
@@ -136,12 +140,19 @@ export const ChannelItem = ({ channel, expandable }) => {
   const theme = useTheme();
   const link = getChannelLink(channel);
   const hasUnread = useChannelHasUnread(channel?.id);
+  const { isFloating: isFloatingMenuEnabled } = useSidebarState();
+  const toggleMenu = useSidebarToggle();
+
+  const closeMenu = () => {
+    if (isFloatingMenuEnabled) toggleMenu();
+  };
 
   return (
     <ListItem
       expandable={expandable}
       component={NavLink}
       to={link}
+      onClick={closeMenu}
       className={({ isActive }) => (isActive ? "active" : "")}
       title={
         <div
@@ -176,11 +187,18 @@ export const ChannelItem = ({ channel, expandable }) => {
 
 export const FeedItem = () => {
   const link = `/feed`;
+  const { isFloating: isFloatingMenuEnabled } = useSidebarState();
+  const toggleMenu = useSidebarToggle();
+
+  const closeMenu = () => {
+    if (isFloatingMenuEnabled) toggleMenu();
+  };
 
   return (
     <ListItem
       component={NavLink}
       to={link}
+      onClick={closeMenu}
       className={({ isActive }) => (isActive ? "active" : "")}
       title={
         <div
@@ -200,11 +218,18 @@ export const FeedItem = () => {
 
 export const RecentItem = () => {
   const link = `/recent`;
+  const { isFloating: isFloatingMenuEnabled } = useSidebarState();
+  const toggleMenu = useSidebarToggle();
+
+  const closeMenu = () => {
+    if (isFloatingMenuEnabled) toggleMenu();
+  };
 
   return (
     <ListItem
       component={NavLink}
       to={link}
+      onClick={closeMenu}
       className={({ isActive }) => (isActive ? "active" : "")}
       title={
         <div

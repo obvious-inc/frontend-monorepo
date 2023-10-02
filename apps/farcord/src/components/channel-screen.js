@@ -25,6 +25,7 @@ import {
 import { toHex } from "viem";
 import useFarcasterAccount from "./farcaster-account.js";
 import MessageEditorForm from "./message-editor-form.js";
+import { useMatchMedia } from "@shades/common/react";
 
 export const ChannelCastsScrollView = ({
   channelId,
@@ -141,7 +142,20 @@ export const ChannelCastsScrollView = ({
 
   return (
     <>
-      {(!isFeed || !isRecent) && <ChannelNavBar channelId={channelId} />}
+      {isFeed ? (
+        <ChannelNavBar name="Feed" description="A feed made just for you ❤️" />
+      ) : isRecent ? (
+        <ChannelNavBar
+          name="Recent"
+          description="Most recent protocol casts, unfiltered!"
+        />
+      ) : (
+        <ChannelNavBar
+          channelId={channelId}
+          name={channel?.name}
+          description={channel?.description}
+        />
+      )}
       {casts.length == 0 ? (
         <div
           css={(t) =>
@@ -330,6 +344,8 @@ const ChannelScreen = ({ isFeed = false, isRecent = false }) => {
   const [searchParams] = useSearchParams();
   const searchUrl = searchParams.get("url");
   const castHash = searchParams.get("cast");
+  const isSmallScreen = useMatchMedia("(max-width: 800px)");
+  const hideChannelView = isSmallScreen && castHash;
 
   React.useEffect(() => {
     const gotoChannelUrl = (channelUrl) => {
@@ -347,7 +363,13 @@ const ChannelScreen = ({ isFeed = false, isRecent = false }) => {
 
   return (
     <MainLayout>
-      <ChannelView channelId={channelId} isFeed={isFeed} isRecent={isRecent} />
+      {!hideChannelView && (
+        <ChannelView
+          channelId={channelId}
+          isFeed={isFeed}
+          isRecent={isRecent}
+        />
+      )}
       {castHash && <ThreadScreen castHash={castHash} />}
     </MainLayout>
   );
