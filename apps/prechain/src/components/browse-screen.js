@@ -111,6 +111,8 @@ const BrowseScreen = () => {
   const [searchParams, setSearchParams] = useSearchParams();
 
   const isDesktopLayout = useMatchMedia("(min-width: 952px)");
+  const tabAnchorRef = React.useRef();
+  const tabContainerRef = React.useRef();
 
   const query = searchParams.get("q") ?? "";
   const deferredQuery = React.useDeferredValue(query.trim());
@@ -506,169 +508,182 @@ const BrowseScreen = () => {
                 )}
               </>
             ) : (
-              <Tabs.Root
-                aria-label="Proposals and candidates"
-                selectedKey={
-                  searchParams.get("tab") ??
-                  (isDesktopLayout ? "proposals" : "activity")
-                }
-                onSelectionChange={(key) => {
-                  setSearchParams((p) => {
-                    const newParams = new URLSearchParams(p);
-                    newParams.set("tab", key);
-                    return newParams;
-                  });
-                  setPage(1);
+              <>
+                <div ref={tabAnchorRef} />
+                <Tabs.Root
+                  ref={tabContainerRef}
+                  aria-label="Proposals and candidates"
+                  selectedKey={
+                    searchParams.get("tab") ??
+                    (isDesktopLayout ? "proposals" : "activity")
+                  }
+                  onSelectionChange={(key) => {
+                    const tabAnchorRect =
+                      tabAnchorRef.current.getBoundingClientRect();
+                    const tabContainerRect =
+                      tabContainerRef.current.getBoundingClientRect();
+                    if (tabContainerRect.top > tabAnchorRect.top)
+                      scrollContainerRef.current.scrollTo({
+                        top: tabAnchorRef.current.offsetTop - 42,
+                      });
 
-                  const scrollAdjustmentThreshold = 100; // Scroll back up if the page is scolled beyond this threshold
-
-                  if (
-                    scrollContainerRef.current.scrollTop >
-                    scrollAdjustmentThreshold
-                  )
-                    scrollContainerRef.current.scrollTo({
-                      top: scrollAdjustmentThreshold,
+                    setSearchParams((p) => {
+                      const newParams = new URLSearchParams(p);
+                      newParams.set("tab", key);
+                      return newParams;
                     });
-                }}
-                css={(t) =>
-                  css({
-                    position: "sticky",
-                    top: "4.2rem",
-                    zIndex: 1,
-                    paddingTop: "1rem",
-                    background: t.colors.backgroundPrimary,
-                    "[role=tab]": { fontSize: t.text.sizes.base },
-                  })
-                }
-              >
-                {!isDesktopLayout && (
-                  <Tabs.Item key="activity" title="Activity">
-                    <FeedTabContent visible={filteredProposals.length > 0} />
-                  </Tabs.Item>
-                )}
-                <Tabs.Item key="proposals" title="Proposals">
-                  <div
-                    css={css({
-                      paddingTop: "2rem",
-                      "@media (min-width: 600px)": {
-                        paddingTop: "2.8rem",
-                      },
-                    })}
-                  >
-                    <SectionedList
-                      showPlaceholder={filteredProposals.length === 0}
-                      sections={[
-                        "drafts",
-                        "proposals:authored",
-                        "proposals:awaiting-vote",
-                        "proposals:new",
-                        "proposals:ongoing",
-                        "proposals:past",
-                      ]
-                        .map((sectionName) => sectionsByName[sectionName] ?? {})
-                        .filter(
-                          ({ items }) => items != null && items.length !== 0
-                        )}
-                    />
-                    {sectionsByName["proposals:past"] != null &&
-                      sectionsByName["proposals:past"].count >
-                        BROWSE_LIST_PAGE_ITEM_COUNT * page && (
-                        <div css={{ textAlign: "center", padding: "3.2rem 0" }}>
-                          <Button
-                            size="small"
-                            onClick={() => {
-                              setPage((p) => p + 1);
-                            }}
-                          >
-                            Show more
-                          </Button>
-                        </div>
-                      )}
-                  </div>
-                </Tabs.Item>
-                <Tabs.Item key="candidates" title="Candidates">
-                  <div
-                    css={css({
-                      paddingTop: "2rem",
-                      "@media (min-width: 600px)": {
-                        paddingTop: "2.8rem",
-                      },
-                    })}
-                  >
-                    {connectedWalletAccountAddress != null && (
-                      <div
-                        css={css({
-                          margin: "0 0 1.4rem",
-                          "@media (min-width: 600px)": {
-                            margin: "-0.8rem 0 2.4rem",
-                          },
-                        })}
-                      >
-                        <Select
-                          size="small"
-                          aria-label="Candidate sorting"
-                          value={candidateSortStrategy}
-                          options={[
-                            { value: "activity", label: "Activity" },
-                            { value: "feedback", label: "Feedback" },
-                          ]}
-                          onChange={(value) => {
-                            setCandidateSortStrategy(value);
-                          }}
-                          fullWidth={false}
-                          width="max-content"
-                          renderTriggerContent={(value) => (
-                            <>
-                              Sort by:{" "}
-                              <em
-                                css={(t) =>
-                                  css({
-                                    fontStyle: "normal",
-                                    fontWeight: t.text.weights.emphasis,
-                                  })
-                                }
-                              >
-                                {value === "activity" ? "Activity" : "Feedback"}
-                              </em>
-                            </>
+                    setPage(1);
+                  }}
+                  css={(t) =>
+                    css({
+                      position: "sticky",
+                      top: "4.2rem",
+                      zIndex: 1,
+                      paddingTop: "1rem",
+                      background: t.colors.backgroundPrimary,
+                      "[role=tab]": { fontSize: t.text.sizes.base },
+                    })
+                  }
+                >
+                  {!isDesktopLayout && (
+                    <Tabs.Item key="activity" title="Activity">
+                      <FeedTabContent visible={filteredProposals.length > 0} />
+                    </Tabs.Item>
+                  )}
+                  <Tabs.Item key="proposals" title="Proposals">
+                    <div
+                      css={css({
+                        paddingTop: "2rem",
+                        "@media (min-width: 600px)": {
+                          paddingTop: "2.8rem",
+                        },
+                      })}
+                    >
+                      <SectionedList
+                        showPlaceholder={filteredProposals.length === 0}
+                        sections={[
+                          "drafts",
+                          "proposals:authored",
+                          "proposals:awaiting-vote",
+                          "proposals:new",
+                          "proposals:ongoing",
+                          "proposals:past",
+                        ]
+                          .map(
+                            (sectionName) => sectionsByName[sectionName] ?? {}
+                          )
+                          .filter(
+                            ({ items }) => items != null && items.length !== 0
                           )}
-                        />
-                      </div>
-                    )}
-
-                    <SectionedList
-                      showPlaceholder={filteredCandidates.length === 0}
-                      sections={[
-                        "candidates:authored",
-                        "candidates:sponsored",
-                        "candidates:feedback-missing",
-                        "candidates:feedback-given",
-                        "candidates:new",
-                        "candidates:recently-updated",
-                        "candidates:inactive",
-                      ]
-                        .map((sectionName) => sectionsByName[sectionName] ?? {})
-                        .filter(
-                          ({ items }) => items != null && items.length !== 0
-                        )}
-                    />
-                    {sectionsByName["candidates:inactive"] != null &&
-                      sectionsByName["candidates:inactive"].count >
-                        BROWSE_LIST_PAGE_ITEM_COUNT * page && (
-                        <div css={{ textAlign: "center", padding: "3.2rem 0" }}>
-                          <Button
-                            size="small"
-                            onClick={() => {
-                              setPage((p) => p + 1);
-                            }}
+                      />
+                      {sectionsByName["proposals:past"] != null &&
+                        sectionsByName["proposals:past"].count >
+                          BROWSE_LIST_PAGE_ITEM_COUNT * page && (
+                          <div
+                            css={{ textAlign: "center", padding: "3.2rem 0" }}
                           >
-                            Show more
-                          </Button>
+                            <Button
+                              size="small"
+                              onClick={() => {
+                                setPage((p) => p + 1);
+                              }}
+                            >
+                              Show more
+                            </Button>
+                          </div>
+                        )}
+                    </div>
+                  </Tabs.Item>
+                  <Tabs.Item key="candidates" title="Candidates">
+                    <div
+                      css={css({
+                        paddingTop: "2rem",
+                        "@media (min-width: 600px)": {
+                          paddingTop: "2.8rem",
+                        },
+                      })}
+                    >
+                      {connectedWalletAccountAddress != null && (
+                        <div
+                          css={css({
+                            margin: "0 0 1.4rem",
+                            "@media (min-width: 600px)": {
+                              margin: "-0.8rem 0 2.4rem",
+                            },
+                          })}
+                        >
+                          <Select
+                            size="small"
+                            aria-label="Candidate sorting"
+                            value={candidateSortStrategy}
+                            options={[
+                              { value: "activity", label: "Activity" },
+                              { value: "feedback", label: "Feedback" },
+                            ]}
+                            onChange={(value) => {
+                              setCandidateSortStrategy(value);
+                            }}
+                            fullWidth={false}
+                            width="max-content"
+                            renderTriggerContent={(value) => (
+                              <>
+                                Sort by:{" "}
+                                <em
+                                  css={(t) =>
+                                    css({
+                                      fontStyle: "normal",
+                                      fontWeight: t.text.weights.emphasis,
+                                    })
+                                  }
+                                >
+                                  {value === "activity"
+                                    ? "Activity"
+                                    : "Feedback"}
+                                </em>
+                              </>
+                            )}
+                          />
                         </div>
                       )}
-                  </div>
-                </Tabs.Item>
-              </Tabs.Root>
+
+                      <SectionedList
+                        showPlaceholder={filteredCandidates.length === 0}
+                        sections={[
+                          "candidates:authored",
+                          "candidates:sponsored",
+                          "candidates:feedback-missing",
+                          "candidates:feedback-given",
+                          "candidates:new",
+                          "candidates:recently-updated",
+                          "candidates:inactive",
+                        ]
+                          .map(
+                            (sectionName) => sectionsByName[sectionName] ?? {}
+                          )
+                          .filter(
+                            ({ items }) => items != null && items.length !== 0
+                          )}
+                      />
+                      {sectionsByName["candidates:inactive"] != null &&
+                        sectionsByName["candidates:inactive"].count >
+                          BROWSE_LIST_PAGE_ITEM_COUNT * page && (
+                          <div
+                            css={{ textAlign: "center", padding: "3.2rem 0" }}
+                          >
+                            <Button
+                              size="small"
+                              onClick={() => {
+                                setPage((p) => p + 1);
+                              }}
+                            >
+                              Show more
+                            </Button>
+                          </div>
+                        )}
+                    </div>
+                  </Tabs.Item>
+                </Tabs.Root>
+              </>
             )}
           </div>
         </MainContentContainer>

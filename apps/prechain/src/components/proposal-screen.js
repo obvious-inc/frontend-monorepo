@@ -12,6 +12,7 @@ import { css } from "@emotion/react";
 import {
   ErrorBoundary,
   AutoAdjustingHeightTextarea,
+  useMatchMedia,
 } from "@shades/common/react";
 import {
   array as arrayUtils,
@@ -191,11 +192,17 @@ const getDelegateVotes = (proposal) => {
     );
 };
 
-const ProposalMainSection = ({ proposalId }) => {
+const ProposalMainSection = ({ proposalId, scrollContainerRef }) => {
   const { data: latestBlockNumber } = useBlockNumber();
-  const quorumVotes = useDynamicQuorum(proposalId);
   const calculateBlockTimestamp = useApproximateBlockTimestampCalculator();
-  const { address: connectedWalletAccountAddress } = useWallet();
+  const {
+    address: connectedWalletAccountAddress,
+    requestAccess: requestWalletAccess,
+  } = useWallet();
+
+  const isDesktopLayout = useMatchMedia("(min-width: 952px)");
+  const mobileTabAnchorRef = React.useRef();
+  const mobileTabContainerRef = React.useRef();
 
   const proposal = useProposal(proposalId);
 
@@ -221,7 +228,9 @@ const ProposalMainSection = ({ proposalId }) => {
   const endBlock = proposal?.objectionPeriodEndBlock ?? proposal?.endBlock;
 
   const hasVotingEnded = latestBlockNumber > Number(endBlock);
-  const hasVotingStarted = latestBlockNumber > Number(proposal?.startBlock);
+  const hasVotingStarted =
+    proposal?.startBlock != null &&
+    latestBlockNumber > Number(proposal.startBlock);
   const isVotingOngoing = hasVotingStarted && !hasVotingEnded;
 
   const sendProposalFeedback = useSendProposalFeedback(proposalId, {
@@ -240,8 +249,6 @@ const ProposalMainSection = ({ proposalId }) => {
 
   const startDate = calculateBlockTimestamp(proposal.startBlock);
   const endDate = calculateBlockTimestamp(endBlock);
-
-  const delegateVotes = getDelegateVotes(proposal);
 
   const renderProposalStateText = () => {
     switch (proposal.state) {
@@ -277,262 +284,329 @@ const ProposalMainSection = ({ proposalId }) => {
     }
   };
 
+  const handleFormSubmit = async () => {
+    if (isVotingOngoing) {
+      va.track("Vote", {
+        proposalId,
+        account: connectedWalletAccountAddress,
+      });
+      await castProposalVote();
+      setCastVoteCallSupportDetailed(pendingSupport);
+    } else {
+      va.track("Feedback", {
+        proposalId,
+        account: connectedWalletAccountAddress,
+      });
+      await sendProposalFeedback();
+    }
+
+    setPendingFeedback("");
+    setPendingSupport(null);
+  };
+
   return (
     <>
       <div css={css({ padding: "0 1.6rem" })}>
         <MainContentContainer
           sidebar={
-            <div
-              css={css({
-                padding: "2rem 0 6rem",
-                "@media (min-width: 600px)": {
-                  padding: "6rem 0",
-                },
-              })}
-            >
+            !isDesktopLayout ? null : (
               <div
-                style={{
-                  display: "flex",
-                  flexDirection: "column",
-                  gap: "1rem",
-                  marginBottom: "4.8rem",
-                }}
+                css={css({
+                  padding: "2rem 0 6rem",
+                  "@media (min-width: 600px)": {
+                    padding: "6rem 0",
+                  },
+                })}
               >
-                {isVotingOngoing && hasCastVote && (
-                  <Callout css={(t) => css({ fontSize: t.text.sizes.base })}>
-                    You voted{" "}
-                    <span
-                      css={(t) =>
-                        css({
-                          textTransform: "uppercase",
-                          fontWeight: t.text.weights.emphasis,
-                          "--color-for": t.colors.textPositive,
-                          "--color-against": t.colors.textNegative,
-                          "--color-abstain": t.colors.textMuted,
-                        })
-                      }
-                      style={{
-                        color: `var(--color-${supportDetailedToString(
-                          connectedWalletVote.supportDetailed
-                        )})`,
-                      }}
-                    >
-                      {supportDetailedToString(
-                        connectedWalletVote.supportDetailed
-                      )}
-                    </span>
-                  </Callout>
-                )}
-                {hasVotingStarted && (
-                  <Callout css={(t) => css({ fontSize: t.text.sizes.base })}>
-                    {renderProposalStateText()}
-                  </Callout>
-                )}
-              </div>
-              {hasVotingStarted ? (
-                <Tooltip.Root>
-                  <Tooltip.Trigger asChild>
-                    <div
-                      css={css({
-                        display: "flex",
-                        flexDirection: "column",
-                        gap: "0.5rem",
-                        marginBottom: "4rem",
-                      })}
-                    >
-                      <div
+                <div
+                  style={{
+                    display: "flex",
+                    flexDirection: "column",
+                    gap: "1rem",
+                    marginBottom: "4.8rem",
+                  }}
+                >
+                  {isVotingOngoing && hasCastVote && (
+                    <Callout css={(t) => css({ fontSize: t.text.sizes.base })}>
+                      You voted{" "}
+                      <span
                         css={(t) =>
                           css({
-                            display: "flex",
-                            justifyContent: "space-between",
-                            fontSize: t.text.sizes.small,
+                            textTransform: "uppercase",
                             fontWeight: t.text.weights.emphasis,
-                            "[data-for]": { color: t.colors.textPositive },
-                            "[data-against]": { color: t.colors.textNegative },
+                            "--color-for": t.colors.textPositive,
+                            "--color-against": t.colors.textNegative,
+                            "--color-abstain": t.colors.textMuted,
                           })
                         }
+                        style={{
+                          color: `var(--color-${supportDetailedToString(
+                            connectedWalletVote.supportDetailed
+                          )})`,
+                        }}
                       >
-                        <div data-for>For {proposal.forVotes}</div>
-                        <div data-against>Against {proposal.againstVotes}</div>
+                        {supportDetailedToString(
+                          connectedWalletVote.supportDetailed
+                        )}
+                      </span>
+                    </Callout>
+                  )}
+                  {hasVotingStarted && (
+                    <Callout css={(t) => css({ fontSize: t.text.sizes.base })}>
+                      {renderProposalStateText()}
+                    </Callout>
+                  )}
+                </div>
+                {hasVotingStarted ? (
+                  <Tooltip.Root>
+                    <Tooltip.Trigger asChild>
+                      <div style={{ marginBottom: "4rem" }}>
+                        <ProposalVoteStatusBar proposalId={proposalId} />
                       </div>
-                      <VotingBar
-                        forVotes={Number(proposal.forVotes)}
-                        againstVotes={Number(proposal.againstVotes)}
-                        abstainVotes={Number(proposal.abstainVotes)}
+                    </Tooltip.Trigger>
+                    <Tooltip.Content
+                      side="top"
+                      sideOffset={-10}
+                      css={css({ padding: 0 })}
+                    >
+                      <VoteDistributionToolTipContent
+                        votes={{
+                          for: Number(proposal.forVotes),
+                          against: Number(proposal.againstVotes),
+                          abstain: Number(proposal.abstainVotes),
+                        }}
+                        delegates={getDelegateVotes(proposal)}
                       />
-                      <VotingBar
-                        forVotes={delegateVotes?.for ?? 0}
-                        againstVotes={delegateVotes?.against ?? 0}
-                        abstainVotes={delegateVotes?.abstain ?? 0}
-                        height="0.3rem"
-                        css={css({ filter: "brightness(0.9)" })}
-                      />
-                      <div
-                        css={(t) =>
-                          css({
-                            fontSize: t.text.sizes.small,
-                            display: "flex",
-                            justifyContent: "space-between",
-                            gap: "0.5rem",
-                          })
-                        }
-                      >
-                        <div>
-                          {quorumVotes != null && <>Quorum {quorumVotes}</>}
-                        </div>
-                        <div>
-                          {hasVotingEnded ? (
-                            <>
-                              Voting ended{" "}
-                              <FormattedDateWithTooltip
-                                capitalize={false}
-                                relativeDayThreshold={5}
-                                value={endDate}
-                                day="numeric"
-                                month="short"
-                              />
-                            </>
-                          ) : hasVotingStarted ? (
-                            <>
-                              Voting ends{" "}
-                              <FormattedDateWithTooltip
-                                capitalize={false}
-                                relativeDayThreshold={5}
-                                value={endDate}
-                                day="numeric"
-                                month="short"
-                              />
-                            </>
-                          ) : (
-                            <>
-                              Voting starts{" "}
-                              <FormattedDateWithTooltip
-                                capitalize={false}
-                                relativeDayThreshold={5}
-                                value={startDate}
-                                day="numeric"
-                                month="short"
-                              />
-                            </>
-                          )}
-                        </div>
-                      </div>
-                    </div>
-                  </Tooltip.Trigger>
-                  <Tooltip.Content
-                    side="top"
-                    sideOffset={-10}
-                    css={css({ padding: 0 })}
+                    </Tooltip.Content>
+                  </Tooltip.Root>
+                ) : (
+                  <Callout
+                    css={(t) =>
+                      css({
+                        fontSize: t.text.sizes.base,
+                        marginBottom: "3.2rem",
+                      })
+                    }
                   >
-                    <VoteDistributionToolTipContent
-                      votes={{
-                        for: Number(proposal.forVotes),
-                        against: Number(proposal.againstVotes),
-                        abstain: Number(proposal.abstainVotes),
-                      }}
-                      delegates={getDelegateVotes(proposal)}
-                    />
-                  </Tooltip.Content>
-                </Tooltip.Root>
-              ) : (
-                <Callout
+                    {proposal.state === "canceled" ? (
+                      "Proposal canceled"
+                    ) : (
+                      <>
+                        Voting starts{" "}
+                        {startDate == null ? (
+                          "..."
+                        ) : (
+                          <FormattedDateWithTooltip
+                            capitalize={false}
+                            relativeDayThreshold={5}
+                            value={startDate}
+                            day="numeric"
+                            month="short"
+                          />
+                        )}
+                      </>
+                    )}
+                  </Callout>
+                )}
+                <Tabs.Root
+                  aria-label="Proposal info"
+                  defaultSelectedKey="activity"
                   css={(t) =>
                     css({
-                      fontSize: t.text.sizes.base,
-                      marginBottom: "3.2rem",
+                      position: "sticky",
+                      top: 0,
+                      zIndex: 1,
+                      background: t.colors.backgroundPrimary,
+                      "[role=tab]": { fontSize: t.text.sizes.base },
                     })
                   }
                 >
-                  {proposal.state === "canceled" ? (
-                    "Proposal canceled"
-                  ) : (
-                    <>
-                      Voting starts{" "}
-                      {startDate == null ? (
-                        "..."
-                      ) : (
-                        <FormattedDateWithTooltip
-                          capitalize={false}
-                          relativeDayThreshold={5}
-                          value={startDate}
-                          day="numeric"
-                          month="short"
-                        />
-                      )}
-                    </>
-                  )}
-                </Callout>
-              )}
-              <Tabs.Root
-                aria-label="Proposal info"
-                defaultSelectedKey="activity"
-                css={(t) =>
-                  css({
-                    position: "sticky",
-                    top: 0,
-                    zIndex: 1,
-                    background: t.colors.backgroundPrimary,
-                    "[role=tab]": { fontSize: t.text.sizes.base },
-                  })
-                }
-              >
-                <Tabs.Item key="activity" title="Activity">
-                  <div style={{ padding: "3.2rem 0 4rem" }}>
-                    <ProposalActionForm
-                      proposalId={proposalId}
-                      mode={
-                        !hasCastVote && isVotingOngoing ? "vote" : "feedback"
-                      }
-                      reason={pendingFeedback}
-                      setReason={setPendingFeedback}
-                      support={pendingSupport}
-                      setSupport={setPendingSupport}
-                      onSubmit={async () => {
-                        if (isVotingOngoing) {
-                          va.track("Vote", {
-                            proposalId,
-                            account: connectedWalletAccountAddress,
-                          });
-                          await castProposalVote();
-                          setCastVoteCallSupportDetailed(pendingSupport);
-                        } else {
-                          va.track("Feedback", {
-                            proposalId,
-                            account: connectedWalletAccountAddress,
-                          });
-                          await sendProposalFeedback();
+                  <Tabs.Item key="activity" title="Activity">
+                    <div style={{ padding: "3.2rem 0 4rem" }}>
+                      <ProposalActionForm
+                        proposalId={proposalId}
+                        mode={
+                          !hasCastVote && isVotingOngoing ? "vote" : "feedback"
                         }
+                        reason={pendingFeedback}
+                        setReason={setPendingFeedback}
+                        support={pendingSupport}
+                        setSupport={setPendingSupport}
+                        onSubmit={handleFormSubmit}
+                      />
+                    </div>
 
-                        setPendingFeedback("");
-                        setPendingSupport(null);
-                      }}
-                    />
-                  </div>
-
-                  {feedItems.length !== 0 && (
-                    <ActivityFeed isolated items={feedItems} />
-                  )}
-                </Tabs.Item>
-                <Tabs.Item key="transactions" title="Transactions">
-                  <div style={{ paddingTop: "3.2rem" }}>
-                    {proposal.transactions != null && (
-                      <TransactionList transactions={proposal.transactions} />
+                    {feedItems.length !== 0 && (
+                      <ActivityFeed isolated items={feedItems} />
                     )}
-                  </div>
-                </Tabs.Item>
-              </Tabs.Root>
-            </div>
+                  </Tabs.Item>
+                  <Tabs.Item key="transactions" title="Transactions">
+                    <div style={{ paddingTop: "3.2rem" }}>
+                      {proposal.transactions != null && (
+                        <TransactionList transactions={proposal.transactions} />
+                      )}
+                    </div>
+                  </Tabs.Item>
+                </Tabs.Root>
+              </div>
+            )
           }
         >
           <div
             css={css({
-              padding: "2rem 0 3.2rem",
+              padding: "0.8rem 0 3.2rem",
               "@media (min-width: 600px)": {
                 padding: "6rem 0 12rem",
               },
             })}
           >
-            <ProposalContent proposalId={proposalId} />
+            <ProposalHeader
+              title={proposal.title}
+              proposerId={proposal.proposerId}
+              sponsorIds={proposal.signers?.map((s) => s.id)}
+              createdAt={proposal.createdTimestamp}
+              transactions={proposal.transactions}
+            />
+            {isDesktopLayout ? (
+              <ProposalBody
+                // Slice off the title
+                markdownText={proposal.description.slice(
+                  proposal.description.search(/\n/)
+                )}
+              />
+            ) : (
+              <>
+                {hasVotingStarted && (
+                  <div style={{ margin: "0 0 2rem" }}>
+                    <ProposalVoteStatusBar proposalId={proposalId} />
+                  </div>
+                )}
+
+                <div ref={mobileTabAnchorRef} />
+                <Tabs.Root
+                  ref={mobileTabContainerRef}
+                  aria-label="Proposal sections"
+                  defaultSelectedKey="description"
+                  css={(t) =>
+                    css({
+                      position: "sticky",
+                      top: 0,
+                      zIndex: 1,
+                      background: t.colors.backgroundPrimary,
+                      paddingTop: "0.3rem",
+                      "[role=tab]": { fontSize: t.text.sizes.base },
+                    })
+                  }
+                  onSelectionChange={() => {
+                    const tabAnchorRect =
+                      mobileTabAnchorRef.current.getBoundingClientRect();
+                    const tabContainerRect =
+                      mobileTabContainerRef.current.getBoundingClientRect();
+                    if (tabContainerRect.top > tabAnchorRect.top)
+                      scrollContainerRef.current.scrollTo({
+                        top: mobileTabAnchorRef.current.offsetTop,
+                      });
+                  }}
+                >
+                  <Tabs.Item key="description" title="Description">
+                    <div style={{ padding: "3.2rem 0 6.4rem" }}>
+                      <ProposalBody
+                        // Slice off the title
+                        markdownText={proposal.description.slice(
+                          proposal.description.search(/\n/)
+                        )}
+                      />
+                      <div style={{ marginTop: "9.6rem" }}>
+                        {connectedWalletAccountAddress == null ? (
+                          <div style={{ textAlign: "center" }}>
+                            <Button
+                              onClick={() => {
+                                requestWalletAccess();
+                              }}
+                            >
+                              Connect wallet to{" "}
+                              {!hasCastVote && isVotingOngoing
+                                ? "vote"
+                                : "give feedback"}
+                            </Button>
+                          </div>
+                        ) : (
+                          <>
+                            <div
+                              css={(t) =>
+                                css({
+                                  fontSize: t.text.sizes.small,
+                                  color: t.colors.textDimmed,
+                                  margin: "0 0 1.2rem",
+                                })
+                              }
+                            >
+                              {!hasCastVote && isVotingOngoing
+                                ? "Cast vote as"
+                                : "Feedback as"}{" "}
+                              <AccountPreviewPopoverTrigger
+                                showAvatar
+                                accountAddress={connectedWalletAccountAddress}
+                              />
+                            </div>
+                            <ProposalActionForm
+                              size="small"
+                              helpTextPosition="bottom"
+                              proposalId={proposalId}
+                              mode={
+                                !hasCastVote && isVotingOngoing
+                                  ? "vote"
+                                  : "feedback"
+                              }
+                              reason={pendingFeedback}
+                              setReason={setPendingFeedback}
+                              support={pendingSupport}
+                              setSupport={setPendingSupport}
+                              onSubmit={handleFormSubmit}
+                            />
+                          </>
+                        )}
+                      </div>
+                    </div>
+                  </Tabs.Item>
+                  <Tabs.Item key="transactions" title="Transactions">
+                    <div
+                      style={{
+                        padding: "3.2rem 0 6.4rem",
+                        minHeight: "calc(100vh - 11rem)",
+                      }}
+                    >
+                      {proposal.transactions != null && (
+                        <TransactionList transactions={proposal.transactions} />
+                      )}
+                    </div>
+                  </Tabs.Item>
+                  <Tabs.Item key="activity" title="Activity">
+                    <div style={{ padding: "2.4rem 0 6.4rem" }}>
+                      <ProposalActionForm
+                        size="small"
+                        helpTextPosition="bottom"
+                        proposalId={proposalId}
+                        mode={
+                          !hasCastVote && isVotingOngoing ? "vote" : "feedback"
+                        }
+                        reason={pendingFeedback}
+                        setReason={setPendingFeedback}
+                        support={pendingSupport}
+                        setSupport={setPendingSupport}
+                        onSubmit={handleFormSubmit}
+                      />
+
+                      {feedItems.length !== 0 && (
+                        <div style={{ marginTop: "3.2rem" }}>
+                          <ActivityFeed isolated items={feedItems} />
+                        </div>
+                      )}
+                    </div>
+                  </Tabs.Item>
+                </Tabs.Root>
+              </>
+            )}
           </div>
         </MainContentContainer>
       </div>
@@ -542,12 +616,14 @@ const ProposalMainSection = ({ proposalId }) => {
 
 export const ProposalActionForm = ({
   proposalId,
+  size = "default",
   mode,
   reason,
   setReason,
   support,
   setSupport,
   onSubmit,
+  helpTextPosition = "top",
 }) => {
   const [isPending, setPending] = React.useState(false);
 
@@ -595,214 +671,205 @@ export const ProposalActionForm = ({
     return "Gas spent on voting will be refunded.";
   };
 
+  const helpText = (
+    <div
+      css={(t) =>
+        css({
+          fontSize: t.text.sizes.tiny,
+          color: t.colors.textDimmed,
+          "p + p": { marginTop: "1em" },
+          em: {
+            fontStyle: "normal",
+            fontWeight: t.text.weights.emphasis,
+          },
+        })
+      }
+    >
+      {renderHelpText()}
+    </div>
+  );
+
   return (
     <>
-      <div>
-        {/* <div */}
-        {/*   css={(t) => */}
-        {/*     css({ */}
-        {/*       paddingTop: "4rem", */}
-        {/*       background: `linear-gradient(0, ${t.colors.backgroundPrimary} 0%, transparent 100%)`, */}
-        {/*     }) */}
-        {/*   } */}
-        {/* /> */}
-        <div
+      <div style={{ display: "flex", flexDirection: "column", gap: "1.2rem" }}>
+        {helpTextPosition === "top" && helpText}
+        <form
+          onSubmit={(e) => {
+            e.preventDefault();
+            setPending(true);
+            onSubmit().finally(() => {
+              setPending(false);
+            });
+          }}
           css={(t) =>
             css({
-              fontSize: t.text.sizes.tiny,
-              color: t.colors.textDimmed,
-              "p + p": { marginTop: "1em" },
-              em: {
-                fontStyle: "normal",
-                fontWeight: t.text.weights.emphasis,
-              },
+              borderRadius: "0.5rem",
+              background: t.colors.backgroundSecondary,
+              padding: "var(--padding, 1rem)",
+              "&:has(textarea:focus-visible)": { boxShadow: t.shadows.focus },
             })
           }
+          style={{ "--padding": size === "small" ? "0.8rem" : undefined }}
         >
-          {renderHelpText()}
-        </div>
-        <div
-          css={css({
-            padding: "1.2rem 0 0",
-            // background: t.colors.backgroundPrimary,
-          })}
-        >
-          <form
-            onSubmit={(e) => {
-              e.preventDefault();
-              setPending(true);
-              onSubmit().finally(() => {
-                setPending(false);
-              });
+          <AutoAdjustingHeightTextarea
+            rows={1}
+            placeholder="I believe..."
+            value={reason}
+            onChange={(e) => {
+              setReason(e.target.value);
             }}
             css={(t) =>
               css({
-                borderRadius: "0.5rem",
                 background: t.colors.backgroundSecondary,
-                padding: "1rem",
-                "&:has(textarea:focus-visible)": { boxShadow: t.shadows.focus },
+                fontSize: t.text.sizes.base,
+                display: "block",
+                color: t.colors.textNormal,
+                fontWeight: "400",
+                width: "100%",
+                maxWidth: "100%",
+                outline: "none",
+                border: 0,
+                padding: "0.3rem 0.3rem",
+                "::placeholder": { color: t.colors.inputPlaceholder },
+                "&:disabled": {
+                  color: t.colors.textMuted,
+                  cursor: "not-allowed",
+                },
+                // Prevents iOS zooming in on input fields
+                "@supports (-webkit-touch-callout: none)": {
+                  fontSize: "1.6rem",
+                },
               })
             }
+            disabled={isPending || connectedWalletAccountAddress == null}
+          />
+          <div
+            style={{
+              display: "grid",
+              justifyContent: "flex-end",
+              gridAutoFlow: "column",
+              gridGap: "1rem",
+              marginTop: "1rem",
+            }}
           >
-            <AutoAdjustingHeightTextarea
-              rows={1}
-              placeholder="I believe..."
-              value={reason}
-              onChange={(e) => {
-                setReason(e.target.value);
-              }}
-              css={(t) =>
-                css({
-                  background: t.colors.backgroundSecondary,
-                  fontSize: t.text.sizes.base,
-                  display: "block",
-                  color: t.colors.textNormal,
-                  fontWeight: "400",
-                  width: "100%",
-                  maxWidth: "100%",
-                  outline: "none",
-                  border: 0,
-                  padding: "0.3rem 0.3rem",
-                  "::placeholder": { color: t.colors.inputPlaceholder },
-                  "&:disabled": {
-                    color: t.colors.textMuted,
-                    cursor: "not-allowed",
-                  },
-                  // Prevents iOS zooming in on input fields
-                  "@supports (-webkit-touch-callout: none)": {
-                    fontSize: "1.6rem",
-                  },
-                })
-              }
-              disabled={isPending || connectedWalletAccountAddress == null}
-            />
-            <div
-              style={{
-                display: "grid",
-                justifyContent: "flex-end",
-                gridAutoFlow: "column",
-                gridGap: "1rem",
-                marginTop: "1rem",
-              }}
-            >
-              {connectedWalletAccountAddress == null ? (
-                <Button
-                  type="button"
-                  onClick={() => {
-                    va.track("Connect Wallet", {
-                      location: "vote/feedback form",
-                    });
-                    requestWalletAccess();
+            {connectedWalletAccountAddress == null ? (
+              <Button
+                type="button"
+                onClick={() => {
+                  va.track("Connect Wallet", {
+                    location: "vote/feedback form",
+                  });
+                  requestWalletAccess();
+                }}
+                size={size}
+              >
+                Connect wallet to{" "}
+                {mode === "feedback" ? "give feedback" : "vote"}
+              </Button>
+            ) : (
+              <>
+                <Select
+                  aria-label="Select support"
+                  width="15rem"
+                  variant="default"
+                  size={size}
+                  multiline={false}
+                  value={support}
+                  onChange={(value) => {
+                    setSupport(value);
                   }}
-                  size="default"
+                  renderTriggerContent={
+                    support == null
+                      ? null
+                      : (key, options) =>
+                          options.find((o) => o.value === key).label
+                  }
+                  placeholder={
+                    mode === "feedback" ? "Select signal" : "Select vote"
+                  }
+                  options={
+                    mode === "vote"
+                      ? [
+                          {
+                            value: 1,
+                            textValue: "For",
+                            label: (
+                              <span
+                                css={(t) =>
+                                  css({ color: t.colors.textPositive })
+                                }
+                              >
+                                For
+                              </span>
+                            ),
+                          },
+                          {
+                            value: 0,
+                            textValue: "Against",
+                            label: (
+                              <span
+                                css={(t) =>
+                                  css({ color: t.colors.textNegative })
+                                }
+                              >
+                                Against
+                              </span>
+                            ),
+                          },
+                          { value: 2, label: "Abstain" },
+                        ]
+                      : [
+                          {
+                            value: 1,
+                            textValue: "Signal for",
+                            label: (
+                              <span
+                                css={(t) =>
+                                  css({ color: t.colors.textPositive })
+                                }
+                              >
+                                Signal for
+                              </span>
+                            ),
+                          },
+                          {
+                            value: 0,
+                            textValue: "Signal against",
+                            label: (
+                              <span
+                                css={(t) =>
+                                  css({ color: t.colors.textNegative })
+                                }
+                              >
+                                Signal against
+                              </span>
+                            ),
+                          },
+                          { value: 2, label: "No signal" },
+                        ]
+                  }
+                  disabled={isPending}
+                />
+                <Button
+                  type="submit"
+                  variant="primary"
+                  disabled={isPending || !hasRequiredInputs}
+                  isLoading={isPending}
+                  size={size}
                 >
-                  Connect wallet to{" "}
-                  {mode === "feedback" ? "give feedback" : "vote"}
+                  {mode === "vote"
+                    ? `Cast ${
+                        proposalVoteCount === 1
+                          ? "vote"
+                          : `${proposalVoteCount} votes`
+                      }`
+                    : "Submit feedback"}
                 </Button>
-              ) : (
-                <>
-                  <Select
-                    aria-label="Select support"
-                    width="15rem"
-                    variant="default"
-                    size="default"
-                    multiline={false}
-                    value={support}
-                    onChange={(value) => {
-                      setSupport(value);
-                    }}
-                    renderTriggerContent={
-                      support == null
-                        ? null
-                        : (key, options) =>
-                            options.find((o) => o.value === key).label
-                    }
-                    placeholder={
-                      mode === "feedback" ? "Select signal" : "Select vote"
-                    }
-                    options={
-                      mode === "vote"
-                        ? [
-                            {
-                              value: 1,
-                              textValue: "For",
-                              label: (
-                                <span
-                                  css={(t) =>
-                                    css({ color: t.colors.textPositive })
-                                  }
-                                >
-                                  For
-                                </span>
-                              ),
-                            },
-                            {
-                              value: 0,
-                              textValue: "Against",
-                              label: (
-                                <span
-                                  css={(t) =>
-                                    css({ color: t.colors.textNegative })
-                                  }
-                                >
-                                  Against
-                                </span>
-                              ),
-                            },
-                            { value: 2, label: "Abstain" },
-                          ]
-                        : [
-                            {
-                              value: 1,
-                              textValue: "Signal for",
-                              label: (
-                                <span
-                                  css={(t) =>
-                                    css({ color: t.colors.textPositive })
-                                  }
-                                >
-                                  Signal for
-                                </span>
-                              ),
-                            },
-                            {
-                              value: 0,
-                              textValue: "Signal against",
-                              label: (
-                                <span
-                                  css={(t) =>
-                                    css({ color: t.colors.textNegative })
-                                  }
-                                >
-                                  Signal against
-                                </span>
-                              ),
-                            },
-                            { value: 2, label: "No signal" },
-                          ]
-                    }
-                    disabled={isPending}
-                  />
-                  <Button
-                    type="submit"
-                    variant="primary"
-                    disabled={isPending || !hasRequiredInputs}
-                    isLoading={isPending}
-                    size="default"
-                  >
-                    {mode === "vote"
-                      ? `Cast ${
-                          proposalVoteCount === 1
-                            ? "vote"
-                            : `${proposalVoteCount} votes`
-                        }`
-                      : "Submit feedback"}
-                  </Button>
-                </>
-              )}
-            </div>
-          </form>
-        </div>
+              </>
+            )}
+          </div>
+        </form>
+        {helpTextPosition === "bottom" && helpText}
       </div>
     </>
   );
@@ -1295,9 +1362,8 @@ const ActivityFeedItemTitle = ({ item, isolated }) => {
   }
 };
 
-export const ProposalLikeContent = ({
+export const ProposalHeader = ({
   title,
-  description,
   createdAt,
   updatedAt,
   proposerId,
@@ -1310,24 +1376,34 @@ export const ProposalLikeContent = ({
       <h1
         css={(t) =>
           css({
-            fontSize: t.text.sizes.huge,
+            fontSize: t.text.sizes.headerLarger,
             lineHeight: 1.15,
             margin: "0 0 0.3rem",
+            "@media(min-width: 600px)": {
+              fontSize: t.text.sizes.huge,
+            },
           })
         }
       >
         {title}
       </h1>
       <div
+        data-has-ask={requestedAmounts.length > 0}
         css={(t) =>
           css({
             color: t.colors.textDimmed,
             fontSize: t.text.sizes.base,
+            marginBottom: "2.4rem",
+            '&[data-has-ask="true"]': {
+              marginBottom: "3.2rem",
+            },
+            "@media(min-width: 600px)": {
+              '&[data-has-ask="true"]': {
+                marginBottom: "4.8rem",
+              },
+            },
           })
         }
-        style={{
-          marginBottom: requestedAmounts.length === 0 ? "2.4rem" : "4.8rem",
-        }}
       >
         Proposed by{" "}
         <AccountPreviewPopoverTrigger showAvatar accountAddress={proposerId} />
@@ -1359,11 +1435,22 @@ export const ProposalLikeContent = ({
           </div>
         )}
       </div>
-
-      {description != null && <RichText markdownText={description} />}
     </div>
   );
 };
+
+export const ProposalBody = React.memo(({ markdownText }) => (
+  <div
+    css={(t) =>
+      css({
+        userSelect: "text",
+        "@media(min-width: 600px)": { fontSize: t.text.sizes.large },
+      })
+    }
+  >
+    <RichText markdownText={markdownText} />
+  </div>
+));
 
 const RequestedAmounts = ({ amounts }) => (
   <Callout
@@ -1409,26 +1496,6 @@ const RequestedAmounts = ({ amounts }) => (
   </Callout>
 );
 
-const ProposalContent = ({ proposalId }) => {
-  const proposal = useProposal(proposalId);
-
-  if (proposal?.description == null) return null;
-
-  return (
-    <ProposalLikeContent
-      title={proposal.title}
-      // Slice off the title
-      description={proposal.description.slice(
-        proposal.description.search(/\n/)
-      )}
-      proposerId={proposal.proposerId}
-      sponsorIds={proposal.signers?.map((s) => s.id)}
-      createdAt={proposal.createdTimestamp}
-      transactions={proposal.transactions}
-    />
-  );
-};
-
 const ProposalScreen = () => {
   const { proposalId } = useParams();
 
@@ -1436,6 +1503,8 @@ const ProposalScreen = () => {
 
   const [notFound, setNotFound] = React.useState(false);
   const [fetchError, setFetchError] = React.useState(null);
+
+  const scrollContainerRef = React.useRef();
 
   const { address: connectedWalletAccountAddress } = useWallet();
 
@@ -1476,6 +1545,7 @@ const ProposalScreen = () => {
   return (
     <>
       <Layout
+        scrollContainerRef={scrollContainerRef}
         navigationStack={[
           { to: "/?tab=proposals", label: "Proposals", desktopOnly: true },
           {
@@ -1556,7 +1626,10 @@ const ProposalScreen = () => {
             )}
           </div>
         ) : (
-          <ProposalMainSection proposalId={proposalId} />
+          <ProposalMainSection
+            proposalId={proposalId}
+            scrollContainerRef={scrollContainerRef}
+          />
         )}
       </Layout>
 
@@ -1790,5 +1863,110 @@ export const VoteDistributionToolTipContent = ({ votes, delegates }) => {
     </div>
   );
 };
+
+const ProposalVoteStatusBar = React.memo(({ proposalId }) => {
+  const { data: latestBlockNumber } = useBlockNumber();
+  const calculateBlockTimestamp = useApproximateBlockTimestampCalculator();
+
+  const proposal = useProposal(proposalId);
+  const quorumVotes = useDynamicQuorum(proposalId);
+  const delegateVotes = getDelegateVotes(proposal);
+
+  const endBlock = proposal?.objectionPeriodEndBlock ?? proposal?.endBlock;
+
+  const startDate = calculateBlockTimestamp(proposal.startBlock);
+  const endDate = calculateBlockTimestamp(endBlock);
+
+  const hasVotingEnded = latestBlockNumber > Number(endBlock);
+  const hasVotingStarted =
+    proposal?.startBlock != null &&
+    latestBlockNumber > Number(proposal.startBlock);
+
+  return (
+    <div
+      css={css({
+        display: "flex",
+        flexDirection: "column",
+        gap: "0.5rem",
+      })}
+    >
+      <div
+        css={(t) =>
+          css({
+            display: "flex",
+            justifyContent: "space-between",
+            fontSize: t.text.sizes.small,
+            fontWeight: t.text.weights.emphasis,
+            "[data-for]": { color: t.colors.textPositive },
+            "[data-against]": { color: t.colors.textNegative },
+          })
+        }
+      >
+        <div data-for>For {proposal.forVotes}</div>
+        <div data-against>Against {proposal.againstVotes}</div>
+      </div>
+      <VotingBar
+        forVotes={Number(proposal.forVotes)}
+        againstVotes={Number(proposal.againstVotes)}
+        abstainVotes={Number(proposal.abstainVotes)}
+      />
+      <VotingBar
+        forVotes={delegateVotes?.for ?? 0}
+        againstVotes={delegateVotes?.against ?? 0}
+        abstainVotes={delegateVotes?.abstain ?? 0}
+        height="0.3rem"
+        css={css({ filter: "brightness(0.9)" })}
+      />
+      <div
+        css={(t) =>
+          css({
+            fontSize: t.text.sizes.small,
+            display: "flex",
+            justifyContent: "space-between",
+            gap: "0.5rem",
+          })
+        }
+      >
+        <div>{quorumVotes != null && <>Quorum {quorumVotes}</>}</div>
+        <div>
+          {hasVotingEnded ? (
+            <>
+              Voting ended{" "}
+              <FormattedDateWithTooltip
+                capitalize={false}
+                relativeDayThreshold={5}
+                value={endDate}
+                day="numeric"
+                month="short"
+              />
+            </>
+          ) : hasVotingStarted ? (
+            <>
+              Voting ends{" "}
+              <FormattedDateWithTooltip
+                capitalize={false}
+                relativeDayThreshold={5}
+                value={endDate}
+                day="numeric"
+                month="short"
+              />
+            </>
+          ) : (
+            <>
+              Voting starts{" "}
+              <FormattedDateWithTooltip
+                capitalize={false}
+                relativeDayThreshold={5}
+                value={startDate}
+                day="numeric"
+                month="short"
+              />
+            </>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+});
 
 export default ProposalScreen;

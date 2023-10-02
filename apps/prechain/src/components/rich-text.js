@@ -43,6 +43,7 @@ const RichText = ({ blocks, markdownText, ...props }) => {
               borderRadius: "0.3rem",
               margin: "2rem 0",
             },
+            "p:first-of-type img": { marginTop: 0 },
           }),
         ]}
       />
