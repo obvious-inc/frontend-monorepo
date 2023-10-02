@@ -461,7 +461,7 @@ const ProposalMainSection = ({ proposalId, scrollContainerRef }) => {
             })}
           >
             <ProposalHeader
-              title={proposal.title}
+              title={proposal.title === null ? "Untitled" : proposal.title}
               proposerId={proposal.proposerId}
               sponsorIds={proposal.signers?.map((s) => s.id)}
               createdAt={proposal.createdTimestamp}
@@ -470,9 +470,13 @@ const ProposalMainSection = ({ proposalId, scrollContainerRef }) => {
             {isDesktopLayout ? (
               <ProposalBody
                 // Slice off the title
-                markdownText={proposal.description.slice(
-                  proposal.description.search(/\n/)
-                )}
+                markdownText={
+                  proposal.title === null
+                    ? proposal.description
+                    : proposal.description.slice(
+                        proposal.description.search(/\n/)
+                      )
+                }
               />
             ) : (
               <>

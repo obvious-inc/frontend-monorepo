@@ -1104,7 +1104,9 @@ const ProposalItem = React.memo(({ proposalId }) => {
               {authorAccountDisplayName ?? "..."}
             </em>
           </div>
-          <div data-title>{proposal.title}</div>
+          <div data-title>
+            {proposal.title === null ? "Untitled" : proposal.title}
+          </div>
           <div data-small data-mobile-only css={css({ marginTop: "0.2rem" })}>
             <PropStatusText proposalId={proposalId} />
           </div>
