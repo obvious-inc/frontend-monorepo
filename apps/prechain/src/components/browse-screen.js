@@ -509,9 +509,8 @@ const BrowseScreen = () => {
               <Tabs.Root
                 aria-label="Proposals and candidates"
                 selectedKey={
-                  searchParams.get("tab") ?? isDesktopLayout
-                    ? "proposals"
-                    : "activity"
+                  searchParams.get("tab") ??
+                  (isDesktopLayout ? "proposals" : "activity")
                 }
                 onSelectionChange={(key) => {
                   setSearchParams((p) => {
