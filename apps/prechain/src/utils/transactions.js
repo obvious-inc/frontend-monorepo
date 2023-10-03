@@ -1,17 +1,12 @@
 import { decodeAbiParameters, encodeAbiParameters, parseAbiItem } from "viem";
-import { contractAddressesByChainId } from "../store.js";
+import {
+  WETH_TOKEN_CONTRACT_ADDRESS,
+  contractAddressesByChainId,
+  tokenByAddress,
+} from "../store.js";
 
 const CREATE_STREAM_SIGNATURE =
   "createStream(address,uint256,address,uint256,uint256,uint8,address)";
-
-export const WETH_TOKEN_CONTRACT_ADDRESS =
-  "0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2";
-
-const tokenByAddress = {
-  "0x0000000000000000000000000000000000000000": "ETH",
-  [WETH_TOKEN_CONTRACT_ADDRESS]: "WETH",
-  "0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48": "USDC",
-};
 
 const decodeCalldataWithSignature = ({ signature, calldata }) => {
   const { name, inputs: inputTypes } = parseAbiItem(`function ${signature}`);

@@ -5,28 +5,13 @@ import { css } from "@emotion/react";
 import useDecodedFunctionData from "../hooks/decoded-function-data.js";
 import { useAccountDisplayName } from "@shades/common/app";
 import * as Tooltip from "@shades/ui-web/tooltip";
-import { WETH_TOKEN_CONTRACT_ADDRESS } from "../utils/transactions.js";
 import FormattedDateWithTooltip from "./formatted-date-with-tooltip.js";
-
-const TOKEN_BUYER_CONTRACT = "0x4f2acdc74f6941390d9b1804fabc3e780388cfe5";
-const DAO_PAYER_CONTRACT = "0xd97bcd9f47cee35c0a9ec1dc40c1269afc9e8e1d";
-const DAO_PROXY_CONTRACT = "0x6f3e6272a167e8accb32072d08e0957f9c79223d";
-const DAO_DATA_PROXY_CONTRACT = "0xf790a5f59678dd733fb3de93493a91f472ca1365";
-const DAO_TOKEN_CONTRACT = "0x9c8ff314c9bc7f6e59a9d9225fb22946427edc03";
-const DAO_AUCTION_HOUSE_PROXY_CONTRACT =
-  "0x830bd73e4184cef73443c15111a1df14e495c706";
-const DAO_DESCRIPTOR_CONTRACT = "0x6229c811d04501523c6058bfaac29c91bb586268";
-
-const KNOWN_CONTRACT_NAME_MAPPING = new Map([
-  [TOKEN_BUYER_CONTRACT, "DAO Token Buyer"],
-  [DAO_PAYER_CONTRACT, "DAO Payer"],
-  [DAO_PROXY_CONTRACT, "DAO Governance"],
-  [DAO_DATA_PROXY_CONTRACT, "DAO Candidates"],
-  [DAO_TOKEN_CONTRACT, "Nouns Token"],
-  [DAO_AUCTION_HOUSE_PROXY_CONTRACT, "Nouns Auction House"],
-  [DAO_DESCRIPTOR_CONTRACT, "Nouns Art"],
-  [WETH_TOKEN_CONTRACT_ADDRESS, "WETH Token Contract"],
-]);
+import {
+  DAO_PAYER_CONTRACT,
+  TOKEN_BUYER_CONTRACT,
+  WETH_TOKEN_CONTRACT_ADDRESS,
+  knownContractNames,
+} from "../store.js";
 
 const decimalsByCurrency = {
   ETH: 18,
@@ -523,7 +508,7 @@ export const FormattedEthWithConditionalTooltip = ({
 };
 
 const AddressDisplayNameWithTooltip = ({ address }) => {
-  const knownName = KNOWN_CONTRACT_NAME_MAPPING.get(address);
+  const knownName = knownContractNames?.[address];
   const { displayName } = useAccountDisplayName(address);
   return (
     <Tooltip.Root>

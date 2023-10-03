@@ -31,13 +31,42 @@ import { useWallet } from "./hooks/wallet.js";
 
 const { indexBy, sortBy } = arrayUtils;
 
+export const ETH_TOKEN_CONTRACT_ADDRESS =
+  "0x0000000000000000000000000000000000000000";
+export const USDC_TOKEN_CONTRACT_ADDRESS =
+  "0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48";
+export const WETH_TOKEN_CONTRACT_ADDRESS =
+  "0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2";
+export const TOKEN_BUYER_CONTRACT =
+  "0x4f2acdc74f6941390d9b1804fabc3e780388cfe5";
+export const DAO_PAYER_CONTRACT = "0xd97bcd9f47cee35c0a9ec1dc40c1269afc9e8e1d";
+export const DAO_PROXY_CONTRACT = "0x6f3e6272a167e8accb32072d08e0957f9c79223d";
+export const DAO_DATA_PROXY_CONTRACT =
+  "0xf790a5f59678dd733fb3de93493a91f472ca1365";
+export const DAO_TOKEN_CONTRACT = "0x9c8ff314c9bc7f6e59a9d9225fb22946427edc03";
+export const DAO_AUCTION_HOUSE_PROXY_CONTRACT =
+  "0x830bd73e4184cef73443c15111a1df14e495c706";
+export const DAO_DESCRIPTOR_CONTRACT =
+  "0x6229c811d04501523c6058bfaac29c91bb586268";
+
+export const knownContractNames = {
+  [TOKEN_BUYER_CONTRACT]: "DAO Token Buyer",
+  [DAO_PAYER_CONTRACT]: "DAO Payer",
+  [DAO_PROXY_CONTRACT]: "DAO Governance",
+  [DAO_DATA_PROXY_CONTRACT]: "DAO Candidates",
+  [DAO_TOKEN_CONTRACT]: "Nouns Token",
+  [DAO_AUCTION_HOUSE_PROXY_CONTRACT]: "Nouns Auction House",
+  [DAO_DESCRIPTOR_CONTRACT]: "Nouns Art",
+  [WETH_TOKEN_CONTRACT_ADDRESS]: "WETH Token Contract",
+};
+
 export const contractAddressesByChainId = {
   1: {
-    dao: "0x6f3E6272A167e8AcCb32072d08E0957F9c79223d",
-    data: "0xf790A5f59678dd733fb3De93493A91f472ca1365",
-    token: "0x9C8fF314C9Bc7F6e59A9d9225Fb22946427eDC03",
-    payer: "0xd97bcd9f47cee35c0a9ec1dc40c1269afc9e8e1d",
-    "token-buyer": "0x4f2acdc74f6941390d9b1804fabc3e780388cfe5",
+    dao: DAO_PROXY_CONTRACT,
+    data: DAO_DATA_PROXY_CONTRACT,
+    token: DAO_TOKEN_CONTRACT,
+    payer: DAO_PAYER_CONTRACT,
+    "token-buyer": TOKEN_BUYER_CONTRACT,
   },
   11155111: {
     dao: "0x35d2670d7C8931AACdd37C89Ddcb0638c3c44A57",
@@ -46,6 +75,12 @@ export const contractAddressesByChainId = {
     // payer: "0x0000000000000000000000000000000000000000",
     // "token-buyer": "0x0000000000000000000000000000000000000000",
   },
+};
+
+export const tokenByAddress = {
+  [ETH_TOKEN_CONTRACT_ADDRESS]: "ETH",
+  [WETH_TOKEN_CONTRACT_ADDRESS]: "WETH",
+  [USDC_TOKEN_CONTRACT_ADDRESS]: "USDC",
 };
 
 const betaSubgraph =
