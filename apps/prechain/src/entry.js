@@ -13,7 +13,7 @@ import { InjectedConnector } from "wagmi/connectors/injected";
 import { WalletConnectConnector } from "wagmi/connectors/walletConnect";
 import { Analytics as VercelAnalytics } from "@vercel/analytics/react";
 import { createCacheStore, CacheStoreProvider } from "@shades/common/app";
-import { ChainDataCacheContextProvider } from "./hooks/prechain.js";
+import { ChainDataCacheContextProvider } from "./store.js";
 import App from "./app.js";
 import "./reset.css";
 import "./index.css";
@@ -34,7 +34,15 @@ const { chains, publicClient } = configureWagmiChains(
     alchemyProvider({ apiKey: process.env.ALCHEMY_API_KEY }),
     // infuraProvider({ apiKey: process.env.INFURA_PROJECT_ID }),
     publicProvider(),
-  ]
+  ],
+  {
+    batch: {
+      multicall: {
+        wait: 250,
+        batchSize: 1024 * 8, // 8kb seems to be the max size for cloudflare
+      },
+    },
+  }
 );
 
 const wagmiConfig = createWagmiConfig({

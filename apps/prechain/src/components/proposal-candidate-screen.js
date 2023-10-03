@@ -12,13 +12,12 @@ import {
   array as arrayUtils,
   message as messageUtils,
 } from "@shades/common/utils";
-import { ErrorBoundary } from "@shades/common/react";
+import { ErrorBoundary, useMatchMedia } from "@shades/common/react";
 import Dialog from "@shades/ui-web/dialog";
 import Button from "@shades/ui-web/button";
 import Input from "@shades/ui-web/input";
 import Spinner from "@shades/ui-web/spinner";
 import * as Tooltip from "@shades/ui-web/tooltip";
-import usePageTitle from "../hooks/page-title.js";
 import {
   useProposalCandidate,
   useProposalCandidateVotingPower,
@@ -31,11 +30,13 @@ import {
   useDelegate,
   getValidSponsorSignatures,
   extractSlugFromCandidateId,
-} from "../hooks/prechain.js";
+} from "../store.js";
 import { useProposalThreshold } from "../hooks/dao.js";
 import { useWallet } from "../hooks/wallet.js";
+import MetaTags_ from "./meta-tags.js";
 import {
-  ProposalLikeContent,
+  ProposalHeader,
+  ProposalBody,
   ProposalActionForm,
   ActivityFeed,
   VotingBar,
@@ -86,7 +87,6 @@ export const buildCandidateFeed = (
     authorAccount: candidate.proposerId,
     candidateId,
   };
-
   const feedbackPostItems =
     candidate.feedbackPosts?.map((p) => ({
       type: "feedback-post",
@@ -97,6 +97,7 @@ export const buildCandidateFeed = (
       voteCount: p.votes,
       timestamp: p.createdTimestamp,
       blockNumber: BigInt(p.createdBlock),
+      isPending: p.isPending,
       candidateId,
     })) ?? [];
 
@@ -172,7 +173,7 @@ const getCandidateSignals = ({ candidate, proposerDelegate }) => {
 
   const supportByNounId = sortedFeedbackPosts.reduce(
     (supportByNounId, post) => {
-      const nounIds = post.voter.nounsRepresented.map((n) => n.id);
+      const nounIds = post.voter.nounsRepresented?.map((n) => n.id) ?? [];
       const newSupportByNounId = {};
 
       for (const nounId of nounIds) {
@@ -211,11 +212,21 @@ const getCandidateSignals = ({ candidate, proposerDelegate }) => {
   };
 };
 
-const ProposalCandidateScreenContent = ({ candidateId }) => {
+const ProposalCandidateScreenContent = ({
+  candidateId,
+  scrollContainerRef,
+}) => {
   const proposerId = candidateId.split("-")[0];
   const slug = extractSlugFromCandidateId(candidateId);
 
-  const { address: connectedWalletAccountAddress } = useWallet();
+  const {
+    address: connectedWalletAccountAddress,
+    requestAccess: requestWalletAccess,
+  } = useWallet();
+
+  const isDesktopLayout = useMatchMedia("(min-width: 952px)");
+  const mobileTabAnchorRef = React.useRef();
+  const mobileTabContainerRef = React.useRef();
 
   const proposalThreshold = useProposalThreshold();
 
@@ -259,7 +270,7 @@ const ProposalCandidateScreenContent = ({ candidateId }) => {
   const { description } = candidate.latestVersion.content;
   const firstBreakIndex = description.search(/\n/);
   const descriptionWithoutTitle =
-    firstBreakIndex === -1 ? "" : description.slice(firstBreakIndex);
+    firstBreakIndex === -1 ? description : description.slice(firstBreakIndex);
 
   const sponsorFeedItems = feedItems.filter((i) => i.type === "signature");
   const regularFeedItems = feedItems.filter((i) => i.type !== "signature");
@@ -269,232 +280,200 @@ const ProposalCandidateScreenContent = ({ candidateId }) => {
   const feedbackVoteCountExcludingAbstained =
     signals.votes.for + signals.votes.against;
 
+  const handleFormSubmit = async () => {
+    va.track("Feedback", {
+      candidateId,
+      account: connectedWalletAccountAddress,
+    });
+    return sendProposalFeedback().then(() => {
+      setPendingFeedback("");
+      setPendingSupport(null);
+    });
+  };
+
+  const sponsorStatusCallout = (
+    <Callout
+      css={(t) =>
+        css({
+          fontSize: t.text.sizes.small,
+          em: {
+            fontStyle: "normal",
+            fontWeight: t.text.weights.emphasis,
+          },
+          "p + p": { marginTop: "1em" },
+        })
+      }
+    >
+      {isProposalThresholdMet ? (
+        <>
+          <p>
+            This candidate has met the sponsor threshold ({candidateVotingPower}
+            /{proposalThreshold + 1}).
+          </p>
+          <p>
+            Voters can continue to add their support until the proposal is put
+            onchain.
+          </p>
+        </>
+      ) : (
+        <>
+          {candidateVotingPower === 0 ? (
+            <>
+              {proposalThreshold + 1} sponsoring{" "}
+              {proposalThreshold + 1 === 1 ? "noun" : "nouns"} required to put
+              proposal onchain.
+            </>
+          ) : (
+            <>
+              This candidate requires <em>{missingSponsorCount} more</em>{" "}
+              sponsoring {missingSponsorCount === 1 ? "noun" : "nouns"} (
+              {candidateVotingPower}/{proposalThreshold + 1}) to be proposed
+              onchain.
+            </>
+          )}
+        </>
+      )}
+    </Callout>
+  );
+
   return (
     <div css={css({ padding: "0 1.6rem" })}>
       <MainContentContainer
         sidebar={
-          <div
-            css={css({
-              padding: "2rem 0 6rem",
-              "@media (min-width: 600px)": {
-                padding: "6rem 0",
-              },
-            })}
-          >
-            <div style={{ padding: "0 0 1.6rem" }}>
-              <span
+          !isDesktopLayout ? null : (
+            <div
+              css={css({
+                padding: "2rem 0 6rem",
+                "@media (min-width: 600px)": {
+                  padding: "6rem 0",
+                },
+              })}
+            >
+              <div style={{ padding: "0 0 1.6rem" }}>
+                <span
+                  css={(t) =>
+                    css({
+                      fontSize: t.text.sizes.base,
+                      fontWeight: "400",
+                      lineHeight: 1.5,
+                      em: {
+                        fontStyle: "normal",
+                        fontSize: t.text.sizes.headerLarge,
+                        fontWeight: t.text.weights.header,
+                      },
+                    })
+                  }
+                >
+                  <em>{sponsoringNounIds.length}</em> sponsoring{" "}
+                  {sponsoringNounIds.length === 1 ? "noun" : "nouns"}
+                  {validSignatures.length > 1 && (
+                    <>
+                      {" "}
+                      across{" "}
+                      <span
+                        css={(t) =>
+                          css({ fontWeight: t.text.weights.emphasis })
+                        }
+                      >
+                        {validSignatures.length}
+                      </span>{" "}
+                      {validSignatures.length === 1 ? "delegate" : "delegates"}
+                    </>
+                  )}
+                  {proposerVoteCount > 0 && (
+                    <>
+                      <br />
+                      <em>{proposerVoteCount}</em>{" "}
+                      {proposerVoteCount === 1 ? "noun" : "nouns"} controlled by
+                      proposer
+                    </>
+                  )}
+                </span>
+              </div>
+              <div style={{ margin: "0 0 4.8rem" }}>{sponsorStatusCallout}</div>
+
+              {feedbackVoteCountExcludingAbstained > 0 && (
+                <Tooltip.Root>
+                  <Tooltip.Trigger asChild>
+                    <div style={{ marginBottom: "4rem" }}>
+                      <CandidateSignalsStatusBar candidateId={candidateId} />
+                    </div>
+                  </Tooltip.Trigger>
+                  <Tooltip.Content
+                    side="top"
+                    sideOffset={-10}
+                    css={css({ padding: 0 })}
+                  >
+                    <VoteDistributionToolTipContent
+                      votes={signals.votes}
+                      delegates={signals.delegates}
+                    />
+                  </Tooltip.Content>
+                </Tooltip.Root>
+              )}
+
+              <Tabs.Root
+                aria-label="Candidate info"
+                defaultSelectedKey="activity"
                 css={(t) =>
                   css({
-                    fontSize: t.text.sizes.base,
-                    fontWeight: "400",
-                    lineHeight: 1.5,
-                    em: {
-                      fontStyle: "normal",
-                      fontSize: t.text.sizes.headerLarge,
-                      fontWeight: t.text.weights.header,
-                    },
+                    position: "sticky",
+                    top: 0,
+                    background: t.colors.backgroundPrimary,
+                    "[role=tab]": { fontSize: t.text.sizes.base },
                   })
                 }
               >
-                <em>{sponsoringNounIds.length}</em> sponsoring{" "}
-                {sponsoringNounIds.length === 1 ? "noun" : "nouns"}
-                {validSignatures.length > 1 && (
-                  <>
-                    {" "}
-                    across{" "}
-                    <span
-                      css={(t) => css({ fontWeight: t.text.weights.emphasis })}
-                    >
-                      {validSignatures.length}
-                    </span>{" "}
-                    {validSignatures.length === 1 ? "delegate" : "delegates"}
-                  </>
-                )}
-                {proposerVoteCount > 0 && (
-                  <>
-                    <br />
-                    <em>{proposerVoteCount}</em>{" "}
-                    {proposerVoteCount === 1 ? "noun" : "nouns"} controlled by
-                    proposer
-                  </>
-                )}
-              </span>
-            </div>
-            <Callout
-              css={(t) =>
-                css({
-                  fontSize: t.text.sizes.small,
-                  marginBottom: "4.8rem",
-                  em: {
-                    fontStyle: "normal",
-                    fontWeight: t.text.weights.emphasis,
-                  },
-                  "p + p": { marginTop: "1em" },
-                })
-              }
-            >
-              {isProposalThresholdMet ? (
-                <>
-                  <p>
-                    This candidate has met the sponsor threshold (
-                    {candidateVotingPower}/{proposalThreshold + 1}).
-                  </p>
-                  <p>
-                    Voters can continue to add their support until the proposal
-                    is put onchain.
-                  </p>
-                </>
-              ) : (
-                <>
-                  {candidateVotingPower === 0 ? (
-                    <>
-                      {proposalThreshold + 1} sponsoring{" "}
-                      {proposalThreshold + 1 === 1 ? "noun" : "nouns"} required
-                      to put proposal onchain.
-                    </>
-                  ) : (
-                    <>
-                      This candidate requires{" "}
-                      <em>{missingSponsorCount} more</em> sponsoring{" "}
-                      {missingSponsorCount === 1 ? "noun" : "nouns"} (
-                      {candidateVotingPower}/{proposalThreshold + 1}) to be
-                      proposed onchain.
-                    </>
-                  )}
-                </>
-              )}
-            </Callout>
-            {feedbackVoteCountExcludingAbstained > 0 && (
-              <Tooltip.Root>
-                <Tooltip.Trigger asChild>
-                  <div
-                    css={css({
-                      display: "flex",
-                      flexDirection: "column",
-                      gap: "0.5rem",
-                      marginBottom: "4rem",
-                    })}
-                  >
-                    <div
-                      css={(t) =>
-                        css({
-                          display: "flex",
-                          justifyContent: "space-between",
-                          fontSize: t.text.sizes.small,
-                          fontWeight: t.text.weights.emphasis,
-                          "[data-for]": { color: t.colors.textPositive },
-                          "[data-against]": { color: t.colors.textNegative },
-                        })
-                      }
-                    >
-                      <div data-for>For {signals.votes.for}</div>
-                      <div data-against>Against {signals.votes.against}</div>
-                    </div>
-                    <VotingBar
-                      forVotes={signals.votes.for}
-                      againstVotes={signals.votes.against}
-                      abstainVotes={signals.votes.abstain}
+                <Tabs.Item key="activity" title="Activity">
+                  <div style={{ padding: "3.2rem 0 4rem" }}>
+                    <ProposalActionForm
+                      mode="feedback"
+                      reason={pendingFeedback}
+                      setReason={setPendingFeedback}
+                      support={pendingSupport}
+                      setSupport={setPendingSupport}
+                      onSubmit={handleFormSubmit}
                     />
-                    <VotingBar
-                      forVotes={signals.delegates.for}
-                      againstVotes={signals.delegates.against}
-                      abstainVotes={signals.delegates.abstain}
-                      height="0.3rem"
-                      css={css({ filter: "brightness(0.9)" })}
-                    />
-                    <div
-                      css={(t) =>
-                        css({
-                          textAlign: "right",
-                          fontSize: t.text.sizes.small,
-                        })
-                      }
-                    >
-                      Feedback signals are not binding votes
-                    </div>
                   </div>
-                </Tooltip.Trigger>
-                <Tooltip.Content
-                  side="top"
-                  sideOffset={-10}
-                  css={css({ padding: 0 })}
-                >
-                  <VoteDistributionToolTipContent
-                    votes={signals.votes}
-                    delegates={signals.delegates}
-                  />
-                </Tooltip.Content>
-              </Tooltip.Root>
-            )}
-            <Tabs.Root
-              aria-label="Candidate info"
-              defaultSelectedKey="activity"
-              css={(t) =>
-                css({
-                  position: "sticky",
-                  top: 0,
-                  background: t.colors.backgroundPrimary,
-                  "[role=tab]": { fontSize: t.text.sizes.base },
-                })
-              }
-            >
-              <Tabs.Item key="activity" title="Activity">
-                <div style={{ padding: "3.2rem 0 4rem" }}>
-                  <ProposalActionForm
-                    mode="feedback"
-                    reason={pendingFeedback}
-                    setReason={setPendingFeedback}
-                    support={pendingSupport}
-                    setSupport={setPendingSupport}
-                    onSubmit={async () => {
-                      va.track("Feedback", {
-                        candidateId,
-                        account: connectedWalletAccountAddress,
-                      });
-                      return sendProposalFeedback().then(() => {
-                        setPendingFeedback("");
-                      });
-                    }}
-                  />
-                </div>
 
-                {regularFeedItems.length !== 0 && (
-                  <ActivityFeed isolated items={regularFeedItems} />
-                )}
-              </Tabs.Item>
-              <Tabs.Item key="transactions" title="Transactions">
-                <div style={{ paddingTop: "3.2rem" }}>
-                  {candidate.latestVersion.content.transactions != null && (
-                    <TransactionList
-                      transactions={
-                        candidate.latestVersion.content.transactions
-                      }
-                    />
+                  {regularFeedItems.length !== 0 && (
+                    <ActivityFeed isolated items={regularFeedItems} />
                   )}
-                </div>
-              </Tabs.Item>
-              <Tabs.Item key="sponsors" title="Sponsors">
-                <div style={{ padding: "3.2rem 0 1.6rem" }}>
-                  {sponsorFeedItems.length === 0 ? (
-                    <div
-                      css={(t) =>
-                        css({
-                          textAlign: "center",
-                          fontSize: t.text.sizes.small,
-                          color: t.colors.textDimmed,
-                          paddingTop: "1.6rem",
-                        })
-                      }
-                    >
-                      No sponsors
-                    </div>
-                  ) : (
-                    <ActivityFeed isolated items={sponsorFeedItems} />
-                  )}
-                </div>
-              </Tabs.Item>
-            </Tabs.Root>
-          </div>
+                </Tabs.Item>
+                <Tabs.Item key="transactions" title="Transactions">
+                  <div style={{ paddingTop: "3.2rem" }}>
+                    {candidate.latestVersion.content.transactions != null && (
+                      <TransactionList
+                        transactions={
+                          candidate.latestVersion.content.transactions
+                        }
+                      />
+                    )}
+                  </div>
+                </Tabs.Item>
+                <Tabs.Item key="sponsors" title="Sponsors">
+                  <div style={{ padding: "3.2rem 0 1.6rem" }}>
+                    {sponsorFeedItems.length === 0 ? (
+                      <div
+                        css={(t) =>
+                          css({
+                            textAlign: "center",
+                            fontSize: t.text.sizes.small,
+                            color: t.colors.textDimmed,
+                            paddingTop: "1.6rem",
+                          })
+                        }
+                      >
+                        No sponsors
+                      </div>
+                    ) : (
+                      <ActivityFeed isolated items={sponsorFeedItems} />
+                    )}
+                  </div>
+                </Tabs.Item>
+              </Tabs.Root>
+            </div>
+          )
         }
       >
         {/* {candidate.latestVersion.proposalId != null && ( */}
@@ -510,7 +489,7 @@ const ProposalCandidateScreenContent = ({ candidateId }) => {
 
         <div
           css={css({
-            padding: "2rem 0 3.2rem",
+            padding: "0.8rem 0 3.2rem",
             "@media (min-width: 600px)": {
               padding: "6rem 0 12rem",
             },
@@ -538,14 +517,187 @@ const ProposalCandidateScreenContent = ({ candidateId }) => {
               </RouterLink>
             </Callout>
           )}
-          <ProposalLikeContent
+          <ProposalHeader
             title={candidate.latestVersion.content.title}
-            description={descriptionWithoutTitle}
             proposerId={candidate.proposerId}
             createdAt={candidate.createdTimestamp}
             updatedAt={candidate.lastUpdatedTimestamp}
             transactions={candidate.latestVersion.content.transactions}
           />
+
+          {isDesktopLayout ? (
+            <ProposalBody markdownText={descriptionWithoutTitle} />
+          ) : (
+            <>
+              {feedbackVoteCountExcludingAbstained > 0 && (
+                <div style={{ margin: "0 0 2rem" }}>
+                  <CandidateSignalsStatusBar candidateId={candidateId} />
+                </div>
+              )}
+
+              <div ref={mobileTabAnchorRef} />
+              <Tabs.Root
+                ref={mobileTabContainerRef}
+                aria-label="Candidate sections"
+                defaultSelectedKey="description"
+                css={(t) =>
+                  css({
+                    position: "sticky",
+                    top: 0,
+                    zIndex: 1,
+                    background: t.colors.backgroundPrimary,
+                    paddingTop: "0.3rem",
+                    "[role=tab]": { fontSize: t.text.sizes.base },
+                  })
+                }
+                onSelectionChange={() => {
+                  const tabAnchorRect =
+                    mobileTabAnchorRef.current.getBoundingClientRect();
+                  const tabContainerRect =
+                    mobileTabContainerRef.current.getBoundingClientRect();
+                  if (tabContainerRect.top > tabAnchorRect.top)
+                    scrollContainerRef.current.scrollTo({
+                      top: mobileTabAnchorRef.current.offsetTop,
+                    });
+                }}
+              >
+                <Tabs.Item key="description" title="Description">
+                  <div style={{ padding: "3.2rem 0 6.4rem" }}>
+                    <ProposalBody markdownText={descriptionWithoutTitle} />
+                    <div style={{ marginTop: "9.6rem" }}>
+                      {connectedWalletAccountAddress == null ? (
+                        <div style={{ textAlign: "center" }}>
+                          <Button
+                            onClick={() => {
+                              requestWalletAccess();
+                            }}
+                          >
+                            Connect wallet to give feedback
+                          </Button>
+                        </div>
+                      ) : (
+                        <>
+                          <div
+                            css={(t) =>
+                              css({
+                                fontSize: t.text.sizes.small,
+                                color: t.colors.textDimmed,
+                                margin: "0 0 1.2rem",
+                              })
+                            }
+                          >
+                            Feedback as{" "}
+                            <AccountPreviewPopoverTrigger
+                              showAvatar
+                              accountAddress={connectedWalletAccountAddress}
+                            />
+                          </div>
+                          <ProposalActionForm
+                            size="small"
+                            helpTextPosition="bottom"
+                            mode="feedback"
+                            reason={pendingFeedback}
+                            setReason={setPendingFeedback}
+                            support={pendingSupport}
+                            setSupport={setPendingSupport}
+                            onSubmit={handleFormSubmit}
+                          />
+                        </>
+                      )}
+                    </div>
+                  </div>
+                </Tabs.Item>
+                <Tabs.Item key="transactions" title="Transactions">
+                  <div
+                    style={{
+                      padding: "3.2rem 0 6.4rem",
+                      minHeight: "calc(100vh - 10rem)",
+                    }}
+                  >
+                    {candidate.latestVersion.content.transactions != null && (
+                      <TransactionList
+                        transactions={
+                          candidate.latestVersion.content.transactions
+                        }
+                      />
+                    )}
+                  </div>
+                </Tabs.Item>
+                <Tabs.Item key="activity" title="Activity">
+                  <div
+                    style={{
+                      padding: "2.4rem 0 6.4rem",
+                      minHeight: "calc(100vh - 10rem)",
+                    }}
+                  >
+                    <div style={{ marginBottom: "3.2rem" }}>
+                      <ProposalActionForm
+                        size="small"
+                        helpTextPosition="bottom"
+                        mode="feedback"
+                        reason={pendingFeedback}
+                        setReason={setPendingFeedback}
+                        support={pendingSupport}
+                        setSupport={setPendingSupport}
+                        onSubmit={handleFormSubmit}
+                      />
+                    </div>
+
+                    {regularFeedItems.length !== 0 && (
+                      <ActivityFeed isolated items={regularFeedItems} />
+                    )}
+                  </div>
+                </Tabs.Item>
+                <Tabs.Item key="sponsors" title="Sponsors">
+                  <div
+                    style={{
+                      padding: "2.4rem 0 6.4rem",
+                      minHeight: "calc(100vh - 10rem)",
+                    }}
+                  >
+                    {proposerVoteCount > 0 && (
+                      <Callout
+                        css={(t) =>
+                          css({
+                            margin: "0 0 1.6rem",
+                            em: {
+                              fontStyle: "normal",
+                              fontWeight: t.text.weights.emphasis,
+                            },
+                          })
+                        }
+                      >
+                        <em>
+                          {proposerVoteCount}{" "}
+                          {proposerVoteCount === 1 ? "noun" : "nouns"}
+                        </em>{" "}
+                        controlled by proposer
+                      </Callout>
+                    )}
+                    <div style={{ margin: "0 0 3.2rem" }}>
+                      {sponsorStatusCallout}
+                    </div>
+                    {sponsorFeedItems.length === 0 ? (
+                      <div
+                        css={(t) =>
+                          css({
+                            textAlign: "center",
+                            fontSize: t.text.sizes.small,
+                            color: t.colors.textDimmed,
+                            paddingTop: "1.6rem",
+                          })
+                        }
+                      >
+                        No sponsors
+                      </div>
+                    ) : (
+                      <ActivityFeed isolated items={sponsorFeedItems} />
+                    )}
+                  </div>
+                </Tabs.Item>
+              </Tabs.Root>
+            </>
+          )}
         </div>
       </MainContentContainer>
     </div>
@@ -982,6 +1134,8 @@ const ProposalCandidateScreen = () => {
   const [proposerId, ...slugParts] = candidateId.split("-");
   const slug = slugParts.join("-");
 
+  const scrollContainerRef = React.useRef();
+
   const [notFound, setNotFound] = React.useState(false);
   const [fetchError, setFetchError] = React.useState(null);
 
@@ -1034,11 +1188,11 @@ const ProposalCandidateScreen = () => {
 
   const isProposalThresholdMet = sponsoringNounIds.length > proposalThreshold;
 
-  usePageTitle(candidate?.latestVersion.content.title);
-
   return (
     <>
+      <MetaTags candidateId={candidateId} />
       <Layout
+        scrollContainerRef={scrollContainerRef}
         navigationStack={[
           { to: "/?tab=candidates", label: "Candidates", desktopOnly: true },
           {
@@ -1127,7 +1281,10 @@ const ProposalCandidateScreen = () => {
             )}
           </div>
         ) : (
-          <ProposalCandidateScreenContent candidateId={candidateId} />
+          <ProposalCandidateScreenContent
+            candidateId={candidateId}
+            scrollContainerRef={scrollContainerRef}
+          />
         )}
       </Layout>
 
@@ -1191,6 +1348,81 @@ const ProposalCandidateScreen = () => {
         </Dialog>
       )}
     </>
+  );
+};
+
+const CandidateSignalsStatusBar = React.memo(({ candidateId }) => {
+  const candidate = useProposalCandidate(candidateId);
+  const proposerDelegate = useDelegate(candidate.proposerId);
+  const signals = getCandidateSignals({ candidate, proposerDelegate });
+  return (
+    <div
+      css={css({
+        display: "flex",
+        flexDirection: "column",
+        gap: "0.5rem",
+      })}
+    >
+      <div
+        css={(t) =>
+          css({
+            display: "flex",
+            justifyContent: "space-between",
+            fontSize: t.text.sizes.small,
+            fontWeight: t.text.weights.emphasis,
+            "[data-for]": { color: t.colors.textPositive },
+            "[data-against]": { color: t.colors.textNegative },
+          })
+        }
+      >
+        <div data-for>For {signals.votes.for}</div>
+        <div data-against>Against {signals.votes.against}</div>
+      </div>
+      <VotingBar
+        forVotes={signals.votes.for}
+        againstVotes={signals.votes.against}
+        abstainVotes={signals.votes.abstain}
+      />
+      <VotingBar
+        forVotes={signals.delegates.for}
+        againstVotes={signals.delegates.against}
+        abstainVotes={signals.delegates.abstain}
+        height="0.3rem"
+        css={css({ filter: "brightness(0.9)" })}
+      />
+      <div
+        css={(t) =>
+          css({
+            textAlign: "right",
+            fontSize: t.text.sizes.small,
+          })
+        }
+      >
+        Feedback signals are not binding votes
+      </div>
+    </div>
+  );
+});
+
+const MetaTags = ({ candidateId }) => {
+  const candidate = useProposalCandidate(candidateId);
+
+  if (candidate?.latestVersion == null) return null;
+
+  const description = candidate.latestVersion.content.description?.trim();
+
+  return (
+    <MetaTags_
+      title={candidate.latestVersion.content.title}
+      description={
+        description == null
+          ? null
+          : description.length > 600
+          ? `${description.slice(0, 600)}...`
+          : description
+      }
+      canonicalPathname={`/candidates/${candidateId}`}
+    />
   );
 };
 

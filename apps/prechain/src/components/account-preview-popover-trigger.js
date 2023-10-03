@@ -5,7 +5,7 @@ import { useAccountDisplayName } from "@shades/common/app";
 import Button from "@shades/ui-web/button";
 import * as Popover from "@shades/ui-web/popover";
 import InlineUserButton from "@shades/ui-web/inline-user-button";
-import { useDelegate } from "../hooks/prechain.js";
+import { useDelegate } from "../store.js";
 import AccountAvatar from "./account-avatar.js";
 import NounAvatar from "./noun-avatar.js";
 

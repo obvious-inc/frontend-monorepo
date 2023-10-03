@@ -32,12 +32,13 @@ import {
   useProposalCandidates,
   useProposalCandidate,
   useProposalCandidateVotingPower,
-} from "../hooks/prechain.js";
+} from "../store.js";
 import useApproximateBlockTimestampCalculator from "../hooks/approximate-block-timestamp-calculator.js";
 import {
   useCollection as useDrafts,
   useSingleItem as useDraft,
 } from "../hooks/channel-drafts.js";
+import MetaTags from "./meta-tags.js";
 import * as Tabs from "./tabs.js";
 import Layout, { MainContentContainer } from "./layout.js";
 import FormattedDateWithTooltip from "./formatted-date-with-tooltip.js";
@@ -60,9 +61,28 @@ const searchProposals = (items, rawQuery) => {
   const filteredItems = items
     .map((i) => {
       const title = i.title ?? i.latestVersion?.content.title ?? i.name;
+      const id = i.id;
+
+      const tokens = [title, id];
+
+      let bestIndex;
+
+      for (const token of tokens) {
+        if (token == null) continue;
+        const index = token.trim().toLowerCase().indexOf(query);
+        if (index === 0) {
+          bestIndex = 0;
+          break;
+        }
+        if (index === -1) continue;
+        if (bestIndex == null || index < bestIndex) {
+          bestIndex = index;
+        }
+      }
+
       return {
         ...i,
-        index: title == null ? -1 : title.toLowerCase().indexOf(query),
+        index: bestIndex ?? -1,
       };
     })
     .filter((i) => i.index !== -1);
@@ -111,6 +131,8 @@ const BrowseScreen = () => {
   const [searchParams, setSearchParams] = useSearchParams();
 
   const isDesktopLayout = useMatchMedia("(min-width: 952px)");
+  const tabAnchorRef = React.useRef();
+  const tabContainerRef = React.useRef();
 
   const query = searchParams.get("q") ?? "";
   const deferredQuery = React.useDeferredValue(query.trim());
@@ -397,283 +419,302 @@ const BrowseScreen = () => {
   );
 
   return (
-    <Layout scrollContainerRef={scrollContainerRef}>
-      <div css={css({ padding: "0 1.6rem" })}>
-        <MainContentContainer
-          sidebar={
-            isDesktopLayout ? (
-              <FeedSidebar
-                align="right"
-                visible={filteredProposals.length > 0}
-              />
-            ) : null
-          }
-        >
-          <div
-            css={css({
-              padding: "0 0 3.2rem",
-              "@media (min-width: 600px)": {
-                padding: "6rem 0 8rem",
-              },
-            })}
+    <>
+      <MetaTags />
+      <Layout scrollContainerRef={scrollContainerRef}>
+        <div css={css({ padding: "0 1.6rem" })}>
+          <MainContentContainer
+            sidebar={
+              isDesktopLayout ? (
+                <FeedSidebar
+                  align="right"
+                  visible={filteredProposals.length > 0}
+                />
+              ) : null
+            }
           >
             <div
-              css={(t) =>
-                css({
-                  background: t.colors.backgroundPrimary,
-                  position: "sticky",
-                  top: 0,
-                  zIndex: 2,
-                  display: "flex",
-                  alignItems: "center",
-                  gap: "1.6rem",
-                  margin: "-0.3rem -1.6rem 0",
-                  padding: "0.3rem 1.6rem 0", // Top padding to offset the focus box shadow
-                  "@media (min-width: 600px)": {
-                    marginBottom: "2.8rem",
-                  },
-                })
-              }
+              css={css({
+                padding: "0 0 3.2rem",
+                "@media (min-width: 600px)": {
+                  padding: "6rem 0 8rem",
+                },
+              })}
             >
-              <Input
-                placeholder="Search..."
-                value={query}
-                onChange={(e) => {
-                  setPage(1);
-
-                  // Clear search from path if query is empty
-                  if (e.target.value.trim() === "") {
-                    setSearchParams((p) => {
-                      const newParams = new URLSearchParams(p);
-                      newParams.delete("q");
-                      return newParams;
-                    });
-                    return;
-                  }
-
-                  setSearchParams((p) => {
-                    const newParams = new URLSearchParams(p);
-                    newParams.set("q", e.target.value);
-                    return newParams;
-                  });
-                }}
+              <div
                 css={(t) =>
                   css({
-                    flex: 1,
-                    minWidth: 0,
-                    padding: "0.9rem 1.2rem",
-                    "@media (max-width: 600px)": {
-                      fontSize: t.text.sizes.base,
-                    },
-                  })
-                }
-              />
-
-              {searchParams.get("beta") != null && (
-                <Button
-                  onClick={() => {
-                    navigate("/new");
-                  }}
-                >
-                  New proposal
-                </Button>
-              )}
-            </div>
-
-            {deferredQuery !== "" ? (
-              <>
-                <SectionedList
-                  sections={[
-                    {
-                      items: filteredItems.slice(
-                        0,
-                        BROWSE_LIST_PAGE_ITEM_COUNT * page
-                      ),
-                    },
-                  ]}
-                />
-                {filteredItems.length > BROWSE_LIST_PAGE_ITEM_COUNT * page && (
-                  <div css={{ textAlign: "center", padding: "3.2rem 0" }}>
-                    <Button
-                      size="small"
-                      onClick={() => {
-                        setPage((p) => p + 1);
-                      }}
-                    >
-                      Show more
-                    </Button>
-                  </div>
-                )}
-              </>
-            ) : (
-              <Tabs.Root
-                aria-label="Proposals and candidates"
-                selectedKey={
-                  searchParams.get("tab") ??
-                  (isDesktopLayout ? "proposals" : "activity")
-                }
-                onSelectionChange={(key) => {
-                  setSearchParams((p) => {
-                    const newParams = new URLSearchParams(p);
-                    newParams.set("tab", key);
-                    return newParams;
-                  });
-                  setPage(1);
-
-                  const scrollAdjustmentThreshold = 100; // Scroll back up if the page is scolled beyond this threshold
-
-                  if (
-                    scrollContainerRef.current.scrollTop >
-                    scrollAdjustmentThreshold
-                  )
-                    scrollContainerRef.current.scrollTo({
-                      top: scrollAdjustmentThreshold,
-                    });
-                }}
-                css={(t) =>
-                  css({
-                    position: "sticky",
-                    top: "4.2rem",
-                    zIndex: 1,
-                    paddingTop: "1rem",
                     background: t.colors.backgroundPrimary,
-                    "[role=tab]": { fontSize: t.text.sizes.base },
+                    position: "sticky",
+                    top: 0,
+                    zIndex: 2,
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "1.6rem",
+                    margin: "-0.3rem -1.6rem 0",
+                    padding: "0.3rem 1.6rem 0", // Top padding to offset the focus box shadow
+                    "@media (min-width: 600px)": {
+                      marginBottom: "2.8rem",
+                    },
                   })
                 }
               >
-                {!isDesktopLayout && (
-                  <Tabs.Item key="activity" title="Activity">
-                    <FeedTabContent visible={filteredProposals.length > 0} />
-                  </Tabs.Item>
+                <Input
+                  placeholder="Search..."
+                  value={query}
+                  onChange={(e) => {
+                    setPage(1);
+
+                    // Clear search from path if query is empty
+                    if (e.target.value.trim() === "") {
+                      setSearchParams((p) => {
+                        const newParams = new URLSearchParams(p);
+                        newParams.delete("q");
+                        return newParams;
+                      });
+                      return;
+                    }
+
+                    setSearchParams((p) => {
+                      const newParams = new URLSearchParams(p);
+                      newParams.set("q", e.target.value);
+                      return newParams;
+                    });
+                  }}
+                  css={(t) =>
+                    css({
+                      flex: 1,
+                      minWidth: 0,
+                      padding: "0.9rem 1.2rem",
+                      "@media (max-width: 600px)": {
+                        fontSize: t.text.sizes.base,
+                      },
+                    })
+                  }
+                />
+
+                {searchParams.get("beta") != null && (
+                  <Button
+                    onClick={() => {
+                      navigate("/new");
+                    }}
+                  >
+                    New proposal
+                  </Button>
                 )}
-                <Tabs.Item key="proposals" title="Proposals">
-                  <div
-                    css={css({
-                      paddingTop: "2rem",
-                      "@media (min-width: 600px)": {
-                        paddingTop: "2.8rem",
+              </div>
+
+              {deferredQuery !== "" ? (
+                <>
+                  <SectionedList
+                    sections={[
+                      {
+                        items: filteredItems.slice(
+                          0,
+                          BROWSE_LIST_PAGE_ITEM_COUNT * page
+                        ),
                       },
-                    })}
+                    ]}
+                  />
+                  {filteredItems.length >
+                    BROWSE_LIST_PAGE_ITEM_COUNT * page && (
+                    <div css={{ textAlign: "center", padding: "3.2rem 0" }}>
+                      <Button
+                        size="small"
+                        onClick={() => {
+                          setPage((p) => p + 1);
+                        }}
+                      >
+                        Show more
+                      </Button>
+                    </div>
+                  )}
+                </>
+              ) : (
+                <>
+                  <div ref={tabAnchorRef} />
+                  <Tabs.Root
+                    ref={tabContainerRef}
+                    aria-label="Proposals and candidates"
+                    selectedKey={
+                      searchParams.get("tab") ??
+                      (isDesktopLayout ? "proposals" : "activity")
+                    }
+                    onSelectionChange={(key) => {
+                      const tabAnchorRect =
+                        tabAnchorRef.current.getBoundingClientRect();
+                      const tabContainerRect =
+                        tabContainerRef.current.getBoundingClientRect();
+                      if (tabContainerRect.top > tabAnchorRect.top)
+                        scrollContainerRef.current.scrollTo({
+                          top: tabAnchorRef.current.offsetTop - 42,
+                        });
+
+                      setSearchParams((p) => {
+                        const newParams = new URLSearchParams(p);
+                        newParams.set("tab", key);
+                        return newParams;
+                      });
+                      setPage(1);
+                    }}
+                    css={(t) =>
+                      css({
+                        position: "sticky",
+                        top: "4.2rem",
+                        zIndex: 1,
+                        paddingTop: "1rem",
+                        background: t.colors.backgroundPrimary,
+                        "[role=tab]": { fontSize: t.text.sizes.base },
+                      })
+                    }
                   >
-                    <SectionedList
-                      showPlaceholder={filteredProposals.length === 0}
-                      sections={[
-                        "drafts",
-                        "proposals:authored",
-                        "proposals:awaiting-vote",
-                        "proposals:new",
-                        "proposals:ongoing",
-                        "proposals:past",
-                      ]
-                        .map((sectionName) => sectionsByName[sectionName] ?? {})
-                        .filter(
-                          ({ items }) => items != null && items.length !== 0
-                        )}
-                    />
-                    {sectionsByName["proposals:past"] != null &&
-                      sectionsByName["proposals:past"].count >
-                        BROWSE_LIST_PAGE_ITEM_COUNT * page && (
-                        <div css={{ textAlign: "center", padding: "3.2rem 0" }}>
-                          <Button
-                            size="small"
-                            onClick={() => {
-                              setPage((p) => p + 1);
-                            }}
-                          >
-                            Show more
-                          </Button>
-                        </div>
-                      )}
-                  </div>
-                </Tabs.Item>
-                <Tabs.Item key="candidates" title="Candidates">
-                  <div
-                    css={css({
-                      paddingTop: "2rem",
-                      "@media (min-width: 600px)": {
-                        paddingTop: "2.8rem",
-                      },
-                    })}
-                  >
-                    {connectedWalletAccountAddress != null && (
+                    {!isDesktopLayout && (
+                      <Tabs.Item key="activity" title="Activity">
+                        <FeedTabContent
+                          visible={filteredProposals.length > 0}
+                        />
+                      </Tabs.Item>
+                    )}
+                    <Tabs.Item key="proposals" title="Proposals">
                       <div
                         css={css({
-                          margin: "0 0 1.4rem",
+                          paddingTop: "2rem",
                           "@media (min-width: 600px)": {
-                            margin: "-0.8rem 0 2.4rem",
+                            paddingTop: "2.8rem",
                           },
                         })}
                       >
-                        <Select
-                          size="small"
-                          aria-label="Candidate sorting"
-                          value={candidateSortStrategy}
-                          options={[
-                            { value: "activity", label: "Activity" },
-                            { value: "feedback", label: "Feedback" },
-                          ]}
-                          onChange={(value) => {
-                            setCandidateSortStrategy(value);
-                          }}
-                          fullWidth={false}
-                          width="max-content"
-                          renderTriggerContent={(value) => (
-                            <>
-                              Sort by:{" "}
-                              <em
-                                css={(t) =>
-                                  css({
-                                    fontStyle: "normal",
-                                    fontWeight: t.text.weights.emphasis,
-                                  })
-                                }
-                              >
-                                {value === "activity" ? "Activity" : "Feedback"}
-                              </em>
-                            </>
-                          )}
+                        <SectionedList
+                          showPlaceholder={filteredProposals.length === 0}
+                          sections={[
+                            "drafts",
+                            "proposals:authored",
+                            "proposals:awaiting-vote",
+                            "proposals:new",
+                            "proposals:ongoing",
+                            "proposals:past",
+                          ]
+                            .map(
+                              (sectionName) => sectionsByName[sectionName] ?? {}
+                            )
+                            .filter(
+                              ({ items }) => items != null && items.length !== 0
+                            )}
                         />
+                        {sectionsByName["proposals:past"] != null &&
+                          sectionsByName["proposals:past"].count >
+                            BROWSE_LIST_PAGE_ITEM_COUNT * page && (
+                            <div
+                              css={{ textAlign: "center", padding: "3.2rem 0" }}
+                            >
+                              <Button
+                                size="small"
+                                onClick={() => {
+                                  setPage((p) => p + 1);
+                                }}
+                              >
+                                Show more
+                              </Button>
+                            </div>
+                          )}
                       </div>
-                    )}
-
-                    <SectionedList
-                      showPlaceholder={filteredCandidates.length === 0}
-                      sections={[
-                        "candidates:authored",
-                        "candidates:sponsored",
-                        "candidates:feedback-missing",
-                        "candidates:feedback-given",
-                        "candidates:new",
-                        "candidates:recently-updated",
-                        "candidates:inactive",
-                      ]
-                        .map((sectionName) => sectionsByName[sectionName] ?? {})
-                        .filter(
-                          ({ items }) => items != null && items.length !== 0
-                        )}
-                    />
-                    {sectionsByName["candidates:inactive"] != null &&
-                      sectionsByName["candidates:inactive"].count >
-                        BROWSE_LIST_PAGE_ITEM_COUNT * page && (
-                        <div css={{ textAlign: "center", padding: "3.2rem 0" }}>
-                          <Button
-                            size="small"
-                            onClick={() => {
-                              setPage((p) => p + 1);
-                            }}
+                    </Tabs.Item>
+                    <Tabs.Item key="candidates" title="Candidates">
+                      <div
+                        css={css({
+                          paddingTop: "2rem",
+                          "@media (min-width: 600px)": {
+                            paddingTop: "2.8rem",
+                          },
+                        })}
+                      >
+                        {connectedWalletAccountAddress != null && (
+                          <div
+                            css={css({
+                              margin: "0 0 1.4rem",
+                              "@media (min-width: 600px)": {
+                                margin: "-0.8rem 0 2.4rem",
+                              },
+                            })}
                           >
-                            Show more
-                          </Button>
-                        </div>
-                      )}
-                  </div>
-                </Tabs.Item>
-              </Tabs.Root>
-            )}
-          </div>
-        </MainContentContainer>
-      </div>
-    </Layout>
+                            <Select
+                              size="small"
+                              aria-label="Candidate sorting"
+                              value={candidateSortStrategy}
+                              options={[
+                                { value: "activity", label: "Activity" },
+                                { value: "feedback", label: "Feedback" },
+                              ]}
+                              onChange={(value) => {
+                                setCandidateSortStrategy(value);
+                              }}
+                              fullWidth={false}
+                              width="max-content"
+                              renderTriggerContent={(value) => (
+                                <>
+                                  Sort by:{" "}
+                                  <em
+                                    css={(t) =>
+                                      css({
+                                        fontStyle: "normal",
+                                        fontWeight: t.text.weights.emphasis,
+                                      })
+                                    }
+                                  >
+                                    {value === "activity"
+                                      ? "Activity"
+                                      : "Feedback"}
+                                  </em>
+                                </>
+                              )}
+                            />
+                          </div>
+                        )}
+
+                        <SectionedList
+                          showPlaceholder={filteredCandidates.length === 0}
+                          sections={[
+                            "candidates:authored",
+                            "candidates:sponsored",
+                            "candidates:feedback-missing",
+                            "candidates:feedback-given",
+                            "candidates:new",
+                            "candidates:recently-updated",
+                            "candidates:inactive",
+                          ]
+                            .map(
+                              (sectionName) => sectionsByName[sectionName] ?? {}
+                            )
+                            .filter(
+                              ({ items }) => items != null && items.length !== 0
+                            )}
+                        />
+                        {sectionsByName["candidates:inactive"] != null &&
+                          sectionsByName["candidates:inactive"].count >
+                            BROWSE_LIST_PAGE_ITEM_COUNT * page && (
+                            <div
+                              css={{ textAlign: "center", padding: "3.2rem 0" }}
+                            >
+                              <Button
+                                size="small"
+                                onClick={() => {
+                                  setPage((p) => p + 1);
+                                }}
+                              >
+                                Show more
+                              </Button>
+                            </div>
+                          )}
+                      </div>
+                    </Tabs.Item>
+                  </Tabs.Root>
+                </>
+              )}
+            </div>
+          </MainContentContainer>
+        </div>
+      </Layout>
+    </>
   );
 };
 
@@ -1070,7 +1111,9 @@ const ProposalItem = React.memo(({ proposalId }) => {
               {authorAccountDisplayName ?? "..."}
             </em>
           </div>
-          <div data-title>{proposal.title}</div>
+          <div data-title>
+            {proposal.title === null ? "Untitled" : proposal.title}
+          </div>
           <div data-small data-mobile-only css={css({ marginTop: "0.2rem" })}>
             <PropStatusText proposalId={proposalId} />
           </div>

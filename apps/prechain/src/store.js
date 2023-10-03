@@ -26,7 +26,8 @@ import {
 import {
   parse as parseTransactions,
   unparse as unparseTransactions,
-} from "../utils/transactions.js";
+} from "./utils/transactions.js";
+import { useWallet } from "./hooks/wallet.js";
 
 const { indexBy, sortBy } = arrayUtils;
 
@@ -60,27 +61,32 @@ const subgraphEndpointByChainId = {
 
 const DEFAULT_CHAIN_ID = 1;
 
-const PROPDATES_QUERY = `{
-  propUpdates(orderBy: blockNumber, orderDirection: desc, first: 100) {
+const PROPDATE_FIELDS = `
+fragment PropdateFields on PropUpdate {
+  id
+  update
+  isCompleted
+  admin
+  blockNumber
+  blockTimestamp
+  prop {
     id
-    update
-    blockNumber
-    blockTimestamp
-    prop {
-      id
-    }
   }
 }`;
 
-const createPropdatesQuery = (proposalId) => `{
+const PROPDATES_QUERY = `
+${PROPDATE_FIELDS}
+query {
+  propUpdates(orderBy: blockNumber, orderDirection: desc, first: 100) {
+    ...PropdateFields
+  }
+}`;
+
+const createPropdatesQuery = (proposalId) => `
+${PROPDATE_FIELDS}
+query {
   propUpdates(where: { prop: "${proposalId}" }, orderBy: blockNumber, orderDirection: desc, first: 100) {
-    id
-    update
-    blockNumber
-    blockTimestamp
-    prop {
-      id
-    }
+    ...PropdateFields
   }
 }`;
 
@@ -177,6 +183,22 @@ export const useStore = createZustandStoreHook((set) => {
     proposalsById: {},
     proposalCandidatesById: {},
     propdatesByProposalId: {},
+
+    // UI actions
+    addOptimitisicCandidateFeedbackPost: (candidateId, post) => {
+      set((s) => {
+        const candidate = s.proposalCandidatesById[candidateId];
+
+        return {
+          proposalCandidatesById: {
+            ...s.proposalCandidatesById,
+            [candidateId]: mergeProposalCandidates(candidate, {
+              feedbackPosts: [{ ...post, candidateId, isPending: true }],
+            }),
+          },
+        };
+      });
+    },
 
     // Actions
     fetchProposal: (chainId, id) =>
@@ -353,9 +375,11 @@ export const useStore = createZustandStoreHook((set) => {
         if (data.propUpdates == null) throw new Error("not-found");
         const parseUpdate = (u) => ({
           id: u.id,
-          update: u.update,
+          update: u.update.trim() === "" ? null : u.update.trim(),
+          markedCompleted: u.isCompleted,
           blockNumber: BigInt(u.blockNumber),
           blockTimestamp: new Date(parseInt(u.blockTimestamp) * 1000),
+          authorAccount: u.admin,
           proposalId: u.prop.id,
         });
         const parsedPropdates = data.propUpdates.map(parseUpdate);
@@ -607,6 +631,8 @@ const parseFeedbackPost = (post) => ({
   ...post,
   createdBlock: BigInt(post.createdBlock),
   createdTimestamp: new Date(parseInt(post.createdTimestamp) * 1000),
+  proposalId: post.proposal?.id,
+  candidateId: post.candidate?.id,
 });
 
 const parseProposal = (data, { chainId }) => {
@@ -637,7 +663,8 @@ const parseProposal = (data, { chainId }) => {
   if (data.description != null) {
     const firstLine = data.description.split("\n")[0];
     const startIndex = [...firstLine].findIndex((c) => c !== "#");
-    parsedData.title = firstLine.slice(startIndex).trim();
+    parsedData.title =
+      startIndex === 0 ? null : firstLine.slice(startIndex).trim();
   }
 
   if (data.feedbackPosts != null)
@@ -750,8 +777,21 @@ const mergeProposalCandidates = (p1, p2) => {
 
   if (p1.feedbackPosts != null && p2.feedbackPosts != null)
     mergedCandidate.feedbackPosts = arrayUtils.unique(
-      (p1, p2) => p1.id === p2.id,
-      [...p1.feedbackPosts, ...p2.feedbackPosts]
+      (p1, p2) => {
+        if (p1.id === p2.id) return true;
+        if (!p1.isPending) return false;
+
+        // Bit of a hack to clear optimistic entries without proper ids
+        const [compositeId1, compositeId2] = [p1, p2].map((p) =>
+          [p.proposalId, p.candidateId, p.reason, p.supportDetailed, p.voter.id]
+            .join("-")
+            .trim()
+            .toLowerCase()
+        );
+        return compositeId1 === compositeId2;
+      },
+      // p2 has to be first here to take precedence
+      [...p2.feedbackPosts, ...p1.feedbackPosts]
     );
 
   if (p1?.latestVersion == null || p2?.latestVersion == null)
@@ -883,6 +923,13 @@ export const useSendProposalCandidateFeedback = (
   { support, reason }
 ) => {
   const chainId = useChainId();
+  const { address: accountAddress } = useWallet();
+
+  const addOptimitisicCandidateFeedbackPost = useStore(
+    (s) => s.addOptimitisicCandidateFeedbackPost
+  );
+
+  const { data: blockNumber } = useBlockNumber();
 
   const { config } = usePrepareContractWrite({
     address: contractAddressesByChainId[chainId].data,
@@ -894,7 +941,20 @@ export const useSendProposalCandidateFeedback = (
   });
   const { writeAsync: write } = useContractWrite(config);
 
-  return write;
+  return async () => {
+    const candidateId = [proposerId, slug].join("-").toLowerCase();
+    return write().then(({ hash }) => {
+      addOptimitisicCandidateFeedbackPost(candidateId, {
+        id: String(Math.random()),
+        reason,
+        supportDetailed: support,
+        createdTimestamp: new Date(),
+        createdBlock: blockNumber,
+        voter: { id: accountAddress.toLowerCase() },
+      });
+      return { hash };
+    });
+  };
 };
 
 export const useProposalCandidateVotingPower = (candidateId) => {

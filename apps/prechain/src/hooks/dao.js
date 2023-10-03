@@ -16,7 +16,7 @@ import {
   useActions,
   contractAddressesByChainId,
   useChainId,
-} from "./prechain.js";
+} from "../store.js";
 import { unparse as unparseTransactions } from "../utils/transactions.js";
 
 const EXECUTION_GRACE_PERIOD_IN_MILLIS = 1000 * 60 * 60 * 24 * 21; // 21 days

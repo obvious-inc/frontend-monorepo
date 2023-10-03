@@ -3,9 +3,10 @@ import { css } from "@emotion/react";
 import { useTab, useTabList, useTabPanel } from "react-aria";
 import { Item, useTabListState } from "react-stately";
 
-export const Root = ({ className, ...props }) => {
+export const Root = React.forwardRef(({ className, ...props }, externalRef) => {
   const state = useTabListState(props);
-  const ref = React.useRef();
+  const internalRef = React.useRef();
+  const ref = externalRef ?? internalRef;
   const { tabListProps } = useTabList(props, state, ref);
 
   return (
@@ -71,7 +72,7 @@ export const Root = ({ className, ...props }) => {
       <TabPanel key={state.selectedItem?.key} state={state} />
     </>
   );
-};
+});
 
 export { Item };
 
