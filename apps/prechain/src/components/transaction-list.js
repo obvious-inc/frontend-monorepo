@@ -5,11 +5,13 @@ import { css } from "@emotion/react";
 import useDecodedFunctionData from "../hooks/decoded-function-data.js";
 import { useAccountDisplayName } from "@shades/common/app";
 import * as Tooltip from "@shades/ui-web/tooltip";
-import { WETH_TOKEN_CONTRACT_ADDRESS } from "../utils/transactions.js";
 import FormattedDateWithTooltip from "./formatted-date-with-tooltip.js";
-
-const TOKEN_BUYER_CONTRACT = "0x4f2acdc74f6941390d9b1804fabc3e780388cfe5";
-const DAO_PAYER_CONTRACT = "0xd97bcd9f47cee35c0a9ec1dc40c1269afc9e8e1d";
+import {
+  DAO_PAYER_CONTRACT,
+  TOKEN_BUYER_CONTRACT,
+  WETH_TOKEN_CONTRACT_ADDRESS,
+  knownContracts,
+} from "../store.js";
 
 const decimalsByCurrency = {
   ETH: 18,
@@ -262,36 +264,9 @@ const ListItem = ({ transaction }) => {
           }
         >
           This transaction refills USDC to the{" "}
-          <Tooltip.Root>
-            <Tooltip.Trigger asChild>
-              <a
-                href={createEtherscanAddressUrl(DAO_PAYER_CONTRACT)}
-                target="_blank"
-                rel="noreferrer"
-              >
-                DAO Payer
-              </a>
-            </Tooltip.Trigger>
-            <Tooltip.Content side="top" sideOffset={6}>
-              {DAO_PAYER_CONTRACT}
-            </Tooltip.Content>
-          </Tooltip.Root>{" "}
+          <AddressDisplayNameWithTooltip address={DAO_PAYER_CONTRACT} />{" "}
           contract via the{" "}
-          <Tooltip.Root>
-            <Tooltip.Trigger asChild>
-              <a
-                href={createEtherscanAddressUrl(TOKEN_BUYER_CONTRACT)}
-                target="_blank"
-                rel="noreferrer"
-              >
-                DAO Token Buyer
-              </a>
-            </Tooltip.Trigger>
-            <Tooltip.Content side="top" sideOffset={6}>
-              {TOKEN_BUYER_CONTRACT}
-            </Tooltip.Content>
-          </Tooltip.Root>{" "}
-          (
+          <AddressDisplayNameWithTooltip address={TOKEN_BUYER_CONTRACT} /> (
           <FormattedEthWithConditionalTooltip value={t.value} />
           ).
         </div>
@@ -308,21 +283,7 @@ const ListItem = ({ transaction }) => {
           }
         >
           This transaction funds the stream with the required amount via the{" "}
-          <Tooltip.Root>
-            <Tooltip.Trigger asChild>
-              <a
-                href={createEtherscanAddressUrl(DAO_PAYER_CONTRACT)}
-                target="_blank"
-                rel="noreferrer"
-              >
-                DAO Payer
-              </a>
-            </Tooltip.Trigger>
-            <Tooltip.Content side="top" sideOffset={6}>
-              {DAO_PAYER_CONTRACT}
-            </Tooltip.Content>
-          </Tooltip.Root>
-          .
+          <AddressDisplayNameWithTooltip address={DAO_PAYER_CONTRACT} />.
         </div>
       )}
 
@@ -338,20 +299,9 @@ const ListItem = ({ transaction }) => {
           }
         >
           This transaction funds the stream with the required amount via the{" "}
-          <Tooltip.Root>
-            <Tooltip.Trigger asChild>
-              <a
-                href={createEtherscanAddressUrl(WETH_TOKEN_CONTRACT_ADDRESS)}
-                target="_blank"
-                rel="noreferrer"
-              >
-                WETH Token Contract
-              </a>
-            </Tooltip.Trigger>
-            <Tooltip.Content side="top" sideOffset={6}>
-              {WETH_TOKEN_CONTRACT_ADDRESS}
-            </Tooltip.Content>
-          </Tooltip.Root>
+          <AddressDisplayNameWithTooltip
+            address={WETH_TOKEN_CONTRACT_ADDRESS}
+          />
           .
         </div>
       )}
@@ -413,20 +363,9 @@ export const TransactionExplanation = ({ transaction: t }) => {
           </em>{" "}
           to the{" "}
           <em>
-            <Tooltip.Root>
-              <Tooltip.Trigger asChild>
-                <a
-                  href={createEtherscanAddressUrl(WETH_TOKEN_CONTRACT_ADDRESS)}
-                  target="_blank"
-                  rel="noreferrer"
-                >
-                  WETH Token Contract
-                </a>
-              </Tooltip.Trigger>
-              <Tooltip.Content side="top" sideOffset={6}>
-                {WETH_TOKEN_CONTRACT_ADDRESS}
-              </Tooltip.Content>
-            </Tooltip.Root>
+            <AddressDisplayNameWithTooltip
+              address={WETH_TOKEN_CONTRACT_ADDRESS}
+            />
           </em>
         </>
       );
@@ -436,20 +375,7 @@ export const TransactionExplanation = ({ transaction: t }) => {
         <>
           Top up the{" "}
           <em>
-            <Tooltip.Root>
-              <Tooltip.Trigger asChild>
-                <a
-                  href={createEtherscanAddressUrl(TOKEN_BUYER_CONTRACT)}
-                  target="_blank"
-                  rel="noreferrer"
-                >
-                  DAO Token Buyer
-                </a>
-              </Tooltip.Trigger>
-              <Tooltip.Content side="top" sideOffset={6}>
-                {TOKEN_BUYER_CONTRACT}
-              </Tooltip.Content>
-            </Tooltip.Root>
+            <AddressDisplayNameWithTooltip address={TOKEN_BUYER_CONTRACT} />
           </em>
         </>
       );
@@ -582,6 +508,7 @@ export const FormattedEthWithConditionalTooltip = ({
 };
 
 const AddressDisplayNameWithTooltip = ({ address }) => {
+  const knownContract = knownContracts?.[address];
   const { displayName } = useAccountDisplayName(address);
   return (
     <Tooltip.Root>
@@ -591,10 +518,15 @@ const AddressDisplayNameWithTooltip = ({ address }) => {
           target="_blank"
           rel="noreferrer"
         >
-          {displayName}
+          {knownContract?.name ?? displayName}
         </a>
       </Tooltip.Trigger>
       <Tooltip.Content side="top" sideOffset={6}>
+        {knownContract?.description && (
+          <p css={(t) => css({ fontWeight: t.text.weights.smallHeader })}>
+            {knownContract.description}
+          </p>
+        )}
         {address}
       </Tooltip.Content>
     </Tooltip.Root>
