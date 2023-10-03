@@ -25,7 +25,6 @@ import Dialog from "@shades/ui-web/dialog";
 import * as Tooltip from "@shades/ui-web/tooltip";
 import Spinner from "@shades/ui-web/spinner";
 import { extractAmounts as extractAmountsFromTransactions } from "../utils/transactions.js";
-import usePageTitle from "../hooks/page-title.js";
 import {
   useProposal,
   useProposalFetch,
@@ -43,6 +42,7 @@ import {
 } from "../hooks/prechain.js";
 import useApproximateBlockTimestampCalculator from "../hooks/approximate-block-timestamp-calculator.js";
 import { useWallet } from "../hooks/wallet.js";
+import MetaTags_ from "./meta-tags.js";
 import Layout, { MainContentContainer } from "./layout.js";
 import { Tag } from "./browse-screen.js";
 import AccountPreviewPopoverTrigger from "./account-preview-popover-trigger.js";
@@ -1544,8 +1544,6 @@ const ProposalScreen = () => {
     },
   });
 
-  usePageTitle(proposal?.title);
-
   return (
     <>
       <Layout
@@ -1887,90 +1885,116 @@ const ProposalVoteStatusBar = React.memo(({ proposalId }) => {
     latestBlockNumber > Number(proposal.startBlock);
 
   return (
-    <div
-      css={css({
-        display: "flex",
-        flexDirection: "column",
-        gap: "0.5rem",
-      })}
-    >
+    <>
+      <MetaTags proposalId={proposalId} />
       <div
-        css={(t) =>
-          css({
-            display: "flex",
-            justifyContent: "space-between",
-            fontSize: t.text.sizes.small,
-            fontWeight: t.text.weights.emphasis,
-            "[data-for]": { color: t.colors.textPositive },
-            "[data-against]": { color: t.colors.textNegative },
-          })
-        }
+        css={css({
+          display: "flex",
+          flexDirection: "column",
+          gap: "0.5rem",
+        })}
       >
-        <div data-for>For {proposal.forVotes}</div>
-        <div data-against>Against {proposal.againstVotes}</div>
-      </div>
-      <VotingBar
-        forVotes={Number(proposal.forVotes)}
-        againstVotes={Number(proposal.againstVotes)}
-        abstainVotes={Number(proposal.abstainVotes)}
-      />
-      <VotingBar
-        forVotes={delegateVotes?.for ?? 0}
-        againstVotes={delegateVotes?.against ?? 0}
-        abstainVotes={delegateVotes?.abstain ?? 0}
-        height="0.3rem"
-        css={css({ filter: "brightness(0.9)" })}
-      />
-      <div
-        css={(t) =>
-          css({
-            fontSize: t.text.sizes.small,
-            display: "flex",
-            justifyContent: "space-between",
-            gap: "0.5rem",
-          })
-        }
-      >
-        <div>{quorumVotes != null && <>Quorum {quorumVotes}</>}</div>
-        <div>
-          {hasVotingEnded ? (
-            <>
-              Voting ended{" "}
-              <FormattedDateWithTooltip
-                capitalize={false}
-                relativeDayThreshold={5}
-                value={endDate}
-                day="numeric"
-                month="short"
-              />
-            </>
-          ) : hasVotingStarted ? (
-            <>
-              Voting ends{" "}
-              <FormattedDateWithTooltip
-                capitalize={false}
-                relativeDayThreshold={5}
-                value={endDate}
-                day="numeric"
-                month="short"
-              />
-            </>
-          ) : (
-            <>
-              Voting starts{" "}
-              <FormattedDateWithTooltip
-                capitalize={false}
-                relativeDayThreshold={5}
-                value={startDate}
-                day="numeric"
-                month="short"
-              />
-            </>
-          )}
+        <div
+          css={(t) =>
+            css({
+              display: "flex",
+              justifyContent: "space-between",
+              fontSize: t.text.sizes.small,
+              fontWeight: t.text.weights.emphasis,
+              "[data-for]": { color: t.colors.textPositive },
+              "[data-against]": { color: t.colors.textNegative },
+            })
+          }
+        >
+          <div data-for>For {proposal.forVotes}</div>
+          <div data-against>Against {proposal.againstVotes}</div>
+        </div>
+        <VotingBar
+          forVotes={Number(proposal.forVotes)}
+          againstVotes={Number(proposal.againstVotes)}
+          abstainVotes={Number(proposal.abstainVotes)}
+        />
+        <VotingBar
+          forVotes={delegateVotes?.for ?? 0}
+          againstVotes={delegateVotes?.against ?? 0}
+          abstainVotes={delegateVotes?.abstain ?? 0}
+          height="0.3rem"
+          css={css({ filter: "brightness(0.9)" })}
+        />
+        <div
+          css={(t) =>
+            css({
+              fontSize: t.text.sizes.small,
+              display: "flex",
+              justifyContent: "space-between",
+              gap: "0.5rem",
+            })
+          }
+        >
+          <div>{quorumVotes != null && <>Quorum {quorumVotes}</>}</div>
+          <div>
+            {hasVotingEnded ? (
+              <>
+                Voting ended{" "}
+                <FormattedDateWithTooltip
+                  capitalize={false}
+                  relativeDayThreshold={5}
+                  value={endDate}
+                  day="numeric"
+                  month="short"
+                />
+              </>
+            ) : hasVotingStarted ? (
+              <>
+                Voting ends{" "}
+                <FormattedDateWithTooltip
+                  capitalize={false}
+                  relativeDayThreshold={5}
+                  value={endDate}
+                  day="numeric"
+                  month="short"
+                />
+              </>
+            ) : (
+              <>
+                Voting starts{" "}
+                <FormattedDateWithTooltip
+                  capitalize={false}
+                  relativeDayThreshold={5}
+                  value={startDate}
+                  day="numeric"
+                  month="short"
+                />
+              </>
+            )}
+          </div>
         </div>
       </div>
-    </div>
+    </>
   );
 });
+
+const MetaTags = ({ proposalId }) => {
+  const proposal = useProposal(proposalId);
+
+  if (proposal == null) return null;
+
+  const title =
+    proposal.title == null
+      ? `Prop ${proposalId}`
+      : `${proposal.title} (Prop ${proposalId})`;
+
+  const description = proposal.description.slice(
+    proposal.description.search(/\n/)
+  );
+
+  return (
+    <MetaTags_
+      title={title}
+      description={description}
+      canonicalPathname={`/proposals/${proposalId}`}
+    />
+  );
+};
 
 export default ProposalScreen;

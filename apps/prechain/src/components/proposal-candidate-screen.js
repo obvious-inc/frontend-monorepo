@@ -18,7 +18,6 @@ import Button from "@shades/ui-web/button";
 import Input from "@shades/ui-web/input";
 import Spinner from "@shades/ui-web/spinner";
 import * as Tooltip from "@shades/ui-web/tooltip";
-import usePageTitle from "../hooks/page-title.js";
 import {
   useProposalCandidate,
   useProposalCandidateVotingPower,
@@ -34,6 +33,7 @@ import {
 } from "../hooks/prechain.js";
 import { useProposalThreshold } from "../hooks/dao.js";
 import { useWallet } from "../hooks/wallet.js";
+import MetaTags_ from "./meta-tags.js";
 import {
   ProposalHeader,
   ProposalBody,
@@ -1187,10 +1187,9 @@ const ProposalCandidateScreen = () => {
 
   const isProposalThresholdMet = sponsoringNounIds.length > proposalThreshold;
 
-  usePageTitle(candidate?.latestVersion.content.title);
-
   return (
     <>
+      <MetaTags candidateId={candidateId} />
       <Layout
         scrollContainerRef={scrollContainerRef}
         navigationStack={[
@@ -1403,5 +1402,25 @@ const CandidateSignalsStatusBar = React.memo(({ candidateId }) => {
     </div>
   );
 });
+
+const MetaTags = ({ candidateId }) => {
+  const candidate = useProposalCandidate(candidateId);
+
+  if (candidate?.latestVersion == null) return null;
+
+  const rawDescription = candidate.latestVersion.content.description;
+
+  return (
+    <MetaTags_
+      title={candidate.latestVersion.content.title}
+      description={
+        rawDescription == null
+          ? null
+          : rawDescription.slice(rawDescription.search("\n"))
+      }
+      canonicalPathname={`/candidates/${candidateId}`}
+    />
+  );
+};
 
 export default ProposalCandidateScreen;
