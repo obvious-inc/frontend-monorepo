@@ -49,15 +49,35 @@ export const DAO_AUCTION_HOUSE_PROXY_CONTRACT =
 export const DAO_DESCRIPTOR_CONTRACT =
   "0x6229c811d04501523c6058bfaac29c91bb586268";
 
-export const knownContractNames = {
-  [TOKEN_BUYER_CONTRACT]: "DAO Token Buyer",
-  [DAO_PAYER_CONTRACT]: "DAO Payer",
-  [DAO_PROXY_CONTRACT]: "DAO Governance",
-  [DAO_DATA_PROXY_CONTRACT]: "DAO Candidates",
-  [DAO_TOKEN_CONTRACT]: "Nouns Token",
-  [DAO_AUCTION_HOUSE_PROXY_CONTRACT]: "Nouns Auction House",
-  [DAO_DESCRIPTOR_CONTRACT]: "Nouns Art",
-  [WETH_TOKEN_CONTRACT_ADDRESS]: "WETH Token Contract",
+export const knownContracts = {
+  [TOKEN_BUYER_CONTRACT]: {
+    name: "DAO Token Buyer",
+  },
+  [DAO_PAYER_CONTRACT]: {
+    name: "DAO Payer",
+  },
+  [DAO_PROXY_CONTRACT]: {
+    name: "DAO Governance",
+    description: "NounsDAOProxy",
+  },
+  [DAO_DATA_PROXY_CONTRACT]: {
+    name: "DAO Candidates",
+    description: "NounsDAODataProxy",
+  },
+  [DAO_TOKEN_CONTRACT]: {
+    name: "Nouns Token",
+  },
+  [DAO_AUCTION_HOUSE_PROXY_CONTRACT]: {
+    name: "Nouns Auction House",
+    description: "NounsAuctionHouseProxy",
+  },
+  [DAO_DESCRIPTOR_CONTRACT]: {
+    name: "Nouns Art",
+    description: "NounsDescriptorV2",
+  },
+  [WETH_TOKEN_CONTRACT_ADDRESS]: {
+    name: "WETH Token Contract",
+  },
 };
 
 export const contractAddressesByChainId = {

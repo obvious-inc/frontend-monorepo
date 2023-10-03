@@ -10,7 +10,7 @@ import {
   DAO_PAYER_CONTRACT,
   TOKEN_BUYER_CONTRACT,
   WETH_TOKEN_CONTRACT_ADDRESS,
-  knownContractNames,
+  knownContracts,
 } from "../store.js";
 
 const decimalsByCurrency = {
@@ -508,7 +508,7 @@ export const FormattedEthWithConditionalTooltip = ({
 };
 
 const AddressDisplayNameWithTooltip = ({ address }) => {
-  const knownName = knownContractNames?.[address];
+  const knownContract = knownContracts?.[address];
   const { displayName } = useAccountDisplayName(address);
   return (
     <Tooltip.Root>
@@ -518,10 +518,15 @@ const AddressDisplayNameWithTooltip = ({ address }) => {
           target="_blank"
           rel="noreferrer"
         >
-          {knownName ?? displayName}
+          {knownContract?.name ?? displayName}
         </a>
       </Tooltip.Trigger>
       <Tooltip.Content side="top" sideOffset={6}>
+        {knownContract?.description && (
+          <p css={(t) => css({ fontWeight: t.text.weights.smallHeader })}>
+            {knownContract.description}
+          </p>
+        )}
         {address}
       </Tooltip.Content>
     </Tooltip.Root>
