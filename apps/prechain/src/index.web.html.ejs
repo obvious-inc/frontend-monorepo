@@ -6,6 +6,7 @@
     <title><%= htmlWebpackPlugin.options.title %></title>
     <meta property="og:site_name" content="census" />
     <meta property="og:type" content="website" />
+    <meta property="og:title" content="<%= htmlWebpackPlugin.options.title %>" data-react-helmet="true" />
     <!-- <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png" /> -->
     <link rel="icon" type="image/png" sizes="192x192" href="/favicon-192x192.png" />
     <% if (htmlWebpackPlugin.options.isProduction) { %>
