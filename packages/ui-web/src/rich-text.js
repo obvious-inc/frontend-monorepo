@@ -76,6 +76,14 @@ export const createCss = (t) => ({
     fontFamily: t.fontStacks.monospace,
   },
 
+  "pre code": {
+    display: "block",
+    overflow: "auto",
+    padding: "1.6rem",
+    background: t.colors.backgroundModifierHover,
+    borderRadius: "0.3rem",
+  },
+
   // Links
   "a.link, a.link:active, a.link:visited": {
     color: t.colors.link,
