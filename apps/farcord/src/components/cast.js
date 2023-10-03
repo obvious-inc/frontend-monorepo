@@ -20,12 +20,12 @@ import { parseChannelFromUrl } from "../utils/channel";
 import { useNeynarCast } from "../hooks/neynar";
 import AppTag from "./app-tag";
 import TinyMutedText from "./tiny-muted-text";
+import AccountPreviewPopoverTrigger from "./account-preview-popover-trigger";
 
 const IMAGE_ENDINGS = ["jpg", "jpeg", "png", "gif", "webp", "svg"];
 
 export const CastAuthor = ({ cast }) => {
   const author = cast.author;
-  const warpcastAuthorLink = `https://warpcast.com/${author.username}`;
 
   return (
     <>
@@ -38,19 +38,10 @@ export const CastAuthor = ({ cast }) => {
       >
         {author.display_name || author.displayName}
       </p>
-      <a
-        href={warpcastAuthorLink}
-        target="_blank"
-        rel="noreferrer"
-        css={(t) =>
-          css({
-            color: t.colors.textMuted,
-            textDecoration: "none",
-          })
-        }
-      >
-        (@{author.username})
-      </a>
+      <AccountPreviewPopoverTrigger
+        fid={author.fid}
+        css={(t) => css({ color: t.colors.textMuted })}
+      />
     </>
   );
 };
