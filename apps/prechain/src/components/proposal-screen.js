@@ -102,7 +102,8 @@ export const buildProposalFeed = (proposal, { latestBlockNumber }) => {
 
   const propdateItems =
     proposal.propdates?.map((p) => ({
-      type: "propdate",
+      type: "event",
+      eventType: p.markedCompleted ? "propdate-completed" : "propdate-update",
       id: `propdate-${p.id}`,
       body: p.update,
       blockNumber: p.blockNumber,
@@ -1303,6 +1304,52 @@ const ActivityFeedItemTitle = ({ item, isolated }) => {
             </span>
           );
 
+        case "propdate-update":
+          return (
+            <span
+              css={(t) =>
+                css({
+                  color: t.colors.textDimmed,
+                })
+              }
+            >
+              <a
+                href="https://propdates.wtf/about"
+                target="_blank"
+                rel="noreferrer"
+              >
+                Propdate
+              </a>
+              {!isolated && (
+                <>
+                  {" "}
+                  for <ContextLink {...item} />
+                </>
+              )}
+            </span>
+          );
+
+        case "propdate-completed":
+          return (
+            <span
+              css={(t) =>
+                css({
+                  color: t.colors.textDimmed,
+                })
+              }
+            >
+              {isolated ? "Proposal" : <ContextLink {...item} />} marked as
+              completed via{" "}
+              <a
+                href="https://propdates.wtf/about"
+                target="_blank"
+                rel="noreferrer"
+              >
+                Propdate
+              </a>
+            </span>
+          );
+
         default:
           throw new Error(`Unknown event "${item.eventType}"`);
       }
@@ -1346,25 +1393,6 @@ const ActivityFeedItemTitle = ({ item, isolated }) => {
         </span>
       );
     }
-
-    case "propdate":
-      return (
-        <>
-          <a
-            href="https://propdates.wtf/about"
-            target="_blank"
-            rel="noreferrer"
-          >
-            Propdate
-          </a>
-          {!isolated && (
-            <>
-              {" "}
-              for <ContextLink {...item} />
-            </>
-          )}
-        </>
-      );
 
     default:
       throw new Error(`Unknown event type "${item.type}"`);

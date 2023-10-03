@@ -61,27 +61,32 @@ const subgraphEndpointByChainId = {
 
 const DEFAULT_CHAIN_ID = 1;
 
-const PROPDATES_QUERY = `{
-  propUpdates(orderBy: blockNumber, orderDirection: desc, first: 100) {
+const PROPDATE_FIELDS = `
+fragment PropdateFields on PropUpdate {
+  id
+  update
+  isCompleted
+  admin
+  blockNumber
+  blockTimestamp
+  prop {
     id
-    update
-    blockNumber
-    blockTimestamp
-    prop {
-      id
-    }
   }
 }`;
 
-const createPropdatesQuery = (proposalId) => `{
+const PROPDATES_QUERY = `
+${PROPDATE_FIELDS}
+query {
+  propUpdates(orderBy: blockNumber, orderDirection: desc, first: 100) {
+    ...PropdateFields
+  }
+}`;
+
+const createPropdatesQuery = (proposalId) => `
+${PROPDATE_FIELDS}
+query {
   propUpdates(where: { prop: "${proposalId}" }, orderBy: blockNumber, orderDirection: desc, first: 100) {
-    id
-    update
-    blockNumber
-    blockTimestamp
-    prop {
-      id
-    }
+    ...PropdateFields
   }
 }`;
 
@@ -370,9 +375,11 @@ export const useStore = createZustandStoreHook((set) => {
         if (data.propUpdates == null) throw new Error("not-found");
         const parseUpdate = (u) => ({
           id: u.id,
-          update: u.update,
+          update: u.update.trim() === "" ? null : u.update.trim(),
+          markedCompleted: u.isCompleted,
           blockNumber: BigInt(u.blockNumber),
           blockTimestamp: new Date(parseInt(u.blockTimestamp) * 1000),
+          authorAccount: u.admin,
           proposalId: u.prop.id,
         });
         const parsedPropdates = data.propUpdates.map(parseUpdate);
