@@ -32,7 +32,7 @@ import {
   useProposalCandidates,
   useProposalCandidate,
   useProposalCandidateVotingPower,
-} from "../hooks/prechain.js";
+} from "../store.js";
 import useApproximateBlockTimestampCalculator from "../hooks/approximate-block-timestamp-calculator.js";
 import {
   useCollection as useDrafts,

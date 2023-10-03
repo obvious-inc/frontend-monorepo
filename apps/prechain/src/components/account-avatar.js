@@ -3,7 +3,7 @@ import { css } from "@emotion/react";
 import { useEnsName, useEnsAvatar } from "wagmi";
 import { array as arrayUtils } from "@shades/common/utils";
 import Avatar from "@shades/ui-web/avatar";
-import { useDelegate } from "../hooks/prechain.js";
+import { useDelegate } from "../store.js";
 
 const { reverse } = arrayUtils;
 

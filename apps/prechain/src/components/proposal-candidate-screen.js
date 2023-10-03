@@ -30,7 +30,7 @@ import {
   useDelegate,
   getValidSponsorSignatures,
   extractSlugFromCandidateId,
-} from "../hooks/prechain.js";
+} from "../store.js";
 import { useProposalThreshold } from "../hooks/dao.js";
 import { useWallet } from "../hooks/wallet.js";
 import MetaTags_ from "./meta-tags.js";
@@ -87,7 +87,6 @@ export const buildCandidateFeed = (
     authorAccount: candidate.proposerId,
     candidateId,
   };
-
   const feedbackPostItems =
     candidate.feedbackPosts?.map((p) => ({
       type: "feedback-post",
@@ -98,6 +97,7 @@ export const buildCandidateFeed = (
       voteCount: p.votes,
       timestamp: p.createdTimestamp,
       blockNumber: BigInt(p.createdBlock),
+      isPending: p.isPending,
       candidateId,
     })) ?? [];
 
@@ -173,7 +173,7 @@ const getCandidateSignals = ({ candidate, proposerDelegate }) => {
 
   const supportByNounId = sortedFeedbackPosts.reduce(
     (supportByNounId, post) => {
-      const nounIds = post.voter.nounsRepresented.map((n) => n.id);
+      const nounIds = post.voter.nounsRepresented?.map((n) => n.id) ?? [];
       const newSupportByNounId = {};
 
       for (const nounId of nounIds) {
@@ -287,6 +287,7 @@ const ProposalCandidateScreenContent = ({
     });
     return sendProposalFeedback().then(() => {
       setPendingFeedback("");
+      setPendingSupport(null);
     });
   };
 

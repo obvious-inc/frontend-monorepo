@@ -39,7 +39,7 @@ import {
   useDelegate,
   useProposalCandidate,
   extractSlugFromCandidateId,
-} from "../hooks/prechain.js";
+} from "../store.js";
 import useApproximateBlockTimestampCalculator from "../hooks/approximate-block-timestamp-calculator.js";
 import { useWallet } from "../hooks/wallet.js";
 import MetaTags_ from "./meta-tags.js";
@@ -947,6 +947,7 @@ export const ActivityFeed = ({ isolated, items = [], spacing = "1.6rem" }) => {
               ":hover": { textDecoration: "underline" },
             },
           },
+          '[data-pending="true"]': { opacity: 0.6 },
           "[data-nowrap]": { whiteSpace: "nowrap" },
           "[data-container]": {
             display: "grid",
@@ -997,7 +998,7 @@ export const ActivityFeed = ({ isolated, items = [], spacing = "1.6rem" }) => {
       style={{ "--vertical-spacing": spacing }}
     >
       {items.map((item) => (
-        <div key={item.id} role="listitem">
+        <div key={item.id} role="listitem" data-pending={item.isPending}>
           <div data-container>
             <div>
               {item.type === "event" || item.authorAccount == null ? (
@@ -1034,35 +1035,39 @@ export const ActivityFeed = ({ isolated, items = [], spacing = "1.6rem" }) => {
                 >
                   <ActivityFeedItemTitle item={item} isolated={isolated} />
                 </div>
-                {item.voteCount != null && (
-                  <Tooltip.Root>
-                    <Tooltip.Trigger asChild>
-                      <span
-                        css={(t) =>
-                          css({
-                            display: "inline-flex",
-                            alignItems: "center",
-                            gap: "0.5rem",
-                            fontSize: t.text.sizes.tiny,
-                            color: t.colors.textDimmed,
-                          })
-                        }
-                      >
-                        {item.voteCount}
-                        <NogglesIcon
-                          style={{
-                            display: "inline-flex",
-                            width: "1.7rem",
-                            height: "auto",
-                          }}
-                        />
-                      </span>
-                    </Tooltip.Trigger>
-                    <Tooltip.Content side="top" sideOffset={5}>
-                      {item.voteCount}{" "}
-                      {Number(item.voteCount) === 1 ? "noun" : "nouns"}
-                    </Tooltip.Content>
-                  </Tooltip.Root>
+                {item.isPending ? (
+                  <Spinner size="1rem" />
+                ) : (
+                  item.voteCount != null && (
+                    <Tooltip.Root>
+                      <Tooltip.Trigger asChild>
+                        <span
+                          css={(t) =>
+                            css({
+                              display: "inline-flex",
+                              alignItems: "center",
+                              gap: "0.5rem",
+                              fontSize: t.text.sizes.tiny,
+                              color: t.colors.textDimmed,
+                            })
+                          }
+                        >
+                          {item.voteCount}
+                          <NogglesIcon
+                            style={{
+                              display: "inline-flex",
+                              width: "1.7rem",
+                              height: "auto",
+                            }}
+                          />
+                        </span>
+                      </Tooltip.Trigger>
+                      <Tooltip.Content side="top" sideOffset={5}>
+                        {item.voteCount}{" "}
+                        {Number(item.voteCount) === 1 ? "noun" : "nouns"}
+                      </Tooltip.Content>
+                    </Tooltip.Root>
+                  )
                 )}
               </div>
             </div>

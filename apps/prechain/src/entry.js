@@ -13,7 +13,7 @@ import { InjectedConnector } from "wagmi/connectors/injected";
 import { WalletConnectConnector } from "wagmi/connectors/walletConnect";
 import { Analytics as VercelAnalytics } from "@vercel/analytics/react";
 import { createCacheStore, CacheStoreProvider } from "@shades/common/app";
-import { ChainDataCacheContextProvider } from "./hooks/prechain.js";
+import { ChainDataCacheContextProvider } from "./store.js";
 import App from "./app.js";
 import "./reset.css";
 import "./index.css";

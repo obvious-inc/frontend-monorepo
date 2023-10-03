@@ -1,5 +1,5 @@
 import { decodeAbiParameters, encodeAbiParameters, parseAbiItem } from "viem";
-import { contractAddressesByChainId } from "../hooks/prechain.js";
+import { contractAddressesByChainId } from "../store.js";
 
 const CREATE_STREAM_SIGNATURE =
   "createStream(address,uint256,address,uint256,uint256,uint8,address)";
