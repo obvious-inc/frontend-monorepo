@@ -6,6 +6,8 @@ import * as Popover from "@shades/ui-web/popover";
 import InlineButton from "@shades/ui-web/inline-button";
 import { useNeynarUser } from "../hooks/neynar";
 import Avatar from "@shades/ui-web/avatar";
+import RichText from "./rich-text";
+import { message as messageUtils } from "@shades/common/utils";
 
 const AccountPreviewPopoverTrigger = React.forwardRef(
   (
@@ -53,6 +55,7 @@ const AccountPreview = React.forwardRef(({ fid, actions = [] }, ref) => {
   if (user == null) return null;
 
   const bio = user?.profile?.bio?.text;
+  const bioBlocks = messageUtils.parseString(bio);
 
   return (
     <div
@@ -131,7 +134,7 @@ const AccountPreview = React.forwardRef(({ fid, actions = [] }, ref) => {
             css({ fontSize: t.text.sizes.small, wordBreak: "break-word" })
           }
         >
-          {bio}
+          <RichText inline blocks={bioBlocks ?? []} />
         </div>
         <div
           css={(t) =>
