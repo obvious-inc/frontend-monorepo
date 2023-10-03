@@ -1408,15 +1408,17 @@ const MetaTags = ({ candidateId }) => {
 
   if (candidate?.latestVersion == null) return null;
 
-  const rawDescription = candidate.latestVersion.content.description;
+  const description = candidate.latestVersion.content.description?.trim();
 
   return (
     <MetaTags_
       title={candidate.latestVersion.content.title}
       description={
-        rawDescription == null
+        description == null
           ? null
-          : rawDescription.slice(rawDescription.search("\n"))
+          : description.length > 600
+          ? `${description.slice(0, 600)}...`
+          : description
       }
       canonicalPathname={`/candidates/${candidateId}`}
     />

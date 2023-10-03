@@ -1984,14 +1984,18 @@ const MetaTags = ({ proposalId }) => {
       ? `Prop ${proposalId}`
       : `${proposal.title} (Prop ${proposalId})`;
 
-  const description = proposal.description.slice(
-    proposal.description.search(/\n/)
-  );
+  const description = proposal.description
+    .slice(proposal.description.search(/\n/))
+    .trim();
 
   return (
     <MetaTags_
       title={title}
-      description={description}
+      description={
+        description.length > 600
+          ? `${description.slice(0, 600)}...`
+          : description
+      }
       canonicalPathname={`/proposals/${proposalId}`}
     />
   );
