@@ -1,5 +1,6 @@
 import { mainnet, sepolia } from "wagmi/chains";
 import { object as objectUtils } from "@shades/common/utils";
+import useChainId from "./hooks/chain-id.js";
 
 export const ETH_TOKEN_CONTRACT_ADDRESS =
   "0x0000000000000000000000000000000000000000";
@@ -41,9 +42,9 @@ const addressByIdentifierByChainId = {
     "usdc-token": "0x0000000000000000000000000000000000000000",
 
     // Nouns contracts
-    dao: "0x35d2670d7C8931AACdd37C89Ddcb0638c3c44A57",
-    data: "0x9040f720AA8A693F950B9cF94764b4b06079D002",
-    token: "0x4C4674bb72a096855496a7204962297bd7e12b85",
+    dao: "0x35d2670d7c8931aacdd37c89ddcb0638c3c44a57",
+    data: "0x9040f720aa8a693f950b9cf94764b4b06079d002",
+    token: "0x4c4674bb72a096855496a7204962297bd7e12b85",
     "auction-house": "0x0000000000000000000000000000000000000000",
     descriptor: "0x0000000000000000000000000000000000000000",
     payer: "0x0000000000000000000000000000000000000000",
@@ -104,8 +105,17 @@ export const resolveIdentifier = (chainId, identifier) => {
 };
 
 export const resolveAddress = (chainId, address) => {
-  const identifier = identifierByAddressByChainId[chainId]?.[address];
+  const identifier =
+    identifierByAddressByChainId[chainId]?.[address.toLowerCase()];
   if (identifier == null) return null;
   const meta = metaByIdentifier[identifier];
   return { address, ...meta };
+};
+
+export const useContract = (identifierOrAddress) => {
+  const chainId = useChainId();
+  return (
+    resolveIdentifier(chainId, identifierOrAddress) ??
+    resolveAddress(chainId, identifierOrAddress)
+  );
 };

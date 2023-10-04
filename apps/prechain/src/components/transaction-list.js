@@ -10,7 +10,7 @@ import {
   DAO_PAYER_CONTRACT,
   DAO_TOKEN_BUYER_CONTRACT,
   WETH_TOKEN_CONTRACT_ADDRESS,
-  resolveAddress as resolveContractAddress,
+  useContract,
 } from "../contracts.js";
 
 const decimalsByCurrency = {
@@ -508,7 +508,7 @@ export const FormattedEthWithConditionalTooltip = ({
 };
 
 const AddressDisplayNameWithTooltip = ({ address }) => {
-  const knownContract = resolveContractAddress(address);
+  const knownContract = useContract(address);
   const { displayName } = useAccountDisplayName(address);
   return (
     <Tooltip.Root>
