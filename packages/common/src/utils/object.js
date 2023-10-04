@@ -22,6 +22,9 @@ export const mapValues = (mapper, obj) =>
 export const filter = (predicate, obj) =>
   Object.fromEntries(Object.entries(obj).filter(predicate));
 
+export const mirror = (obj) =>
+  Object.entries(obj).map(([key, value]) => [value, key]);
+
 export const merge = (mergingFn, ...objects) => {
   return objects.reduce((result, o) => {
     if (result == null) return o;

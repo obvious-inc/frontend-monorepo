@@ -1,9 +1,5 @@
 import { decodeAbiParameters, encodeAbiParameters, parseAbiItem } from "viem";
-import {
-  WETH_TOKEN_CONTRACT_ADDRESS,
-  contractAddressesByChainId,
-  tokenByAddress,
-} from "../store.js";
+import { resolveAddress, resolveIdentifier } from "../contracts.js";
 
 const CREATE_STREAM_SIGNATURE =
   "createStream(address,uint256,address,uint256,uint256,uint8,address)";
@@ -22,7 +18,9 @@ const decodeCalldataWithSignature = ({ signature, calldata }) => {
 };
 
 export const parse = (data, { chainId }) => {
-  const contractAddresses = contractAddressesByChainId[chainId];
+  const nounsPayerContract = resolveIdentifier(chainId, "payer");
+  const nounsTokenBuyerContract = resolveIdentifier(chainId, "token-buyer");
+  const wethTokenContract = resolveIdentifier(chainId, "weth-token");
 
   const transactions = data.targets.map((target, i) => ({
     target,
@@ -46,7 +44,7 @@ export const parse = (data, { chainId }) => {
 
     if (isEthTransfer)
       return target.toLowerCase() ===
-        contractAddresses["token-buyer"]?.toLowerCase()
+        nounsTokenBuyerContract.address.toLowerCase()
         ? { type: "token-buyer-top-up", value }
         : { type: "transfer", target, value };
 
@@ -60,10 +58,11 @@ export const parse = (data, { chainId }) => {
 
     if (signature === CREATE_STREAM_SIGNATURE) {
       const tokenContractAddress = functionInputs[2].value.toLowerCase();
+      const tokenContract = resolveAddress(chainId, tokenContractAddress);
       return {
         type: "stream",
         receiverAddress: functionInputs[0].value.toLowerCase(),
-        token: tokenByAddress[tokenContractAddress],
+        token: tokenContract.token,
         tokenAmount: functionInputs[1].value,
         tokenContractAddress,
         startDate: new Date(Number(functionInputs[3].value) * 1000),
@@ -72,12 +71,15 @@ export const parse = (data, { chainId }) => {
       };
     }
 
-    if (target === WETH_TOKEN_CONTRACT_ADDRESS && signature === "deposit()") {
+    if (
+      target.toLowerCase() === wethTokenContract.address.toLowerCase() &&
+      signature === "deposit()"
+    ) {
       return { type: "weth-deposit", value };
     }
 
     if (
-      target === WETH_TOKEN_CONTRACT_ADDRESS &&
+      target.toLowerCase() === wethTokenContract.address.toLowerCase() &&
       signature === "transfer(address,uint256)"
     ) {
       const receiverAddress = functionInputs[0].value.toLowerCase();
@@ -93,7 +95,7 @@ export const parse = (data, { chainId }) => {
     }
 
     if (
-      target.toLowerCase() === contractAddresses["payer"]?.toLowerCase() &&
+      target.toLowerCase() === nounsPayerContract.address.toLowerCase() &&
       signature === "sendOrRegisterDebt(address,uint256)"
     ) {
       const receiverAddress = functionInputs[0].value.toLowerCase();
@@ -129,7 +131,9 @@ export const parse = (data, { chainId }) => {
 };
 
 export const unparse = (transactions, { chainId }) => {
-  const contractAddresses = contractAddressesByChainId[chainId];
+  const nounsPayerContract = resolveIdentifier(chainId, "payer");
+  const nounsTokenBuyerContract = resolveIdentifier(chainId, "token-buyer");
+
   return transactions.reduce(
     (acc, t) => {
       const append = (t) => ({
@@ -151,7 +155,7 @@ export const unparse = (transactions, { chainId }) => {
 
         case "token-buyer-top-up":
           return append({
-            target: contractAddresses["token-buyer"],
+            target: nounsTokenBuyerContract.address,
             value: t.value.toString(),
             signature: "",
             calldata: "0x",
@@ -159,7 +163,7 @@ export const unparse = (transactions, { chainId }) => {
 
         case "usdc-transfer-via-payer":
           return append({
-            target: contractAddresses["payer"],
+            target: nounsPayerContract.address,
             value: "0",
             signature: "sendOrRegisterDebt(address,uint256)",
             calldata: encodeAbiParameters(

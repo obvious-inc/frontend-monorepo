@@ -20,15 +20,15 @@ import Input from "@shades/ui-web/input";
 import Button from "@shades/ui-web/button";
 import Select from "@shades/ui-web/select";
 import {
-  useProposal,
-  useProposals,
-  isFinalProposalState,
-  isVotableProposalState,
-  useProposalThreshold,
-} from "../hooks/dao.js";
+  isFinalState as isFinalProposalState,
+  isVotableState as isVotableProposalState,
+} from "../utils/proposals.js";
+import { useProposalThreshold } from "../hooks/dao-contract.js";
 import { useWallet } from "../hooks/wallet.js";
 import {
-  useActions as usePrechainActions,
+  useActions,
+  useProposal,
+  useProposals,
   useProposalCandidates,
   useProposalCandidate,
   useProposalCandidateVotingPower,
@@ -407,7 +407,7 @@ const BrowseScreen = () => {
     }, filteredItems)
   );
 
-  const { fetchBrowseScreenData } = usePrechainActions();
+  const { fetchBrowseScreenData } = useActions();
 
   useFetch(
     () =>
@@ -887,7 +887,7 @@ const ActivityFeed = React.memo(({ filter = "all" }) => {
     cache: 20_000,
   });
 
-  const { fetchNounsActivity, fetchPropdates } = usePrechainActions();
+  const { fetchNounsActivity, fetchPropdates } = useActions();
 
   const [page, setPage] = React.useState(2);
 

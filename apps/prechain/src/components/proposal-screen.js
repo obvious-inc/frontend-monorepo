@@ -25,21 +25,21 @@ import Dialog from "@shades/ui-web/dialog";
 import * as Tooltip from "@shades/ui-web/tooltip";
 import Spinner from "@shades/ui-web/spinner";
 import { extractAmounts as extractAmountsFromTransactions } from "../utils/transactions.js";
+import { isSucceededState as isSucceededProposalState } from "../utils/proposals.js";
+import { extractSlugFromId as extractSlugFromCandidateId } from "../utils/candidates.js";
 import {
   useProposal,
   useProposalFetch,
+  useProposalCandidate,
+  useDelegate,
+} from "../store.js";
+import {
   useCancelProposal,
   useCastProposalVote,
-  useSendProposalFeedback,
-  usePriorVotes,
   useDynamicQuorum,
-  isSucceededProposalState,
-} from "../hooks/dao.js";
-import {
-  useDelegate,
-  useProposalCandidate,
-  extractSlugFromCandidateId,
-} from "../store.js";
+} from "../hooks/dao-contract.js";
+import { useSendProposalFeedback } from "../hooks/data-contract.js";
+import { usePriorVotes } from "../hooks/token-contract.js";
 import useApproximateBlockTimestampCalculator from "../hooks/approximate-block-timestamp-calculator.js";
 import { useWallet } from "../hooks/wallet.js";
 import MetaTags_ from "./meta-tags.js";

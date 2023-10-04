@@ -31,9 +31,9 @@ import {
 import {
   useCreateProposal,
   useCanCreateProposal,
-  useTokenBuyerEthNeeded,
-} from "../hooks/dao.js";
-import { useCreateProposalCandidate } from "../store.js";
+} from "../hooks/dao-contract.js";
+import { useTokenBuyerEthNeeded } from "../hooks/misc-contracts.js";
+import { useCreateProposalCandidate } from "../hooks/data-contract.js";
 import Layout, { MainContentContainer } from "./layout.js";
 import FormattedNumber from "./formatted-number.js";
 import AccountPreviewPopoverTrigger from "./account-preview-popover-trigger.js";

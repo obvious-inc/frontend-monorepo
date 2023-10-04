@@ -19,19 +19,23 @@ import Input from "@shades/ui-web/input";
 import Spinner from "@shades/ui-web/spinner";
 import * as Tooltip from "@shades/ui-web/tooltip";
 import {
+  extractSlugFromId as extractSlugFromCandidateId,
+  getValidSponsorSignatures,
+} from "../utils/candidates.js";
+import {
   useProposalCandidate,
   useProposalCandidateVotingPower,
   useProposalCandidateFetch,
+  useDelegate,
+} from "../store.js";
+import { useProposalThreshold } from "../hooks/dao-contract.js";
+import {
   useUpdateProposalCandidate,
   useCancelProposalCandidate,
   useSendProposalCandidateFeedback,
   useSignProposalCandidate,
   useAddSignatureToProposalCandidate,
-  useDelegate,
-  getValidSponsorSignatures,
-  extractSlugFromCandidateId,
-} from "../store.js";
-import { useProposalThreshold } from "../hooks/dao.js";
+} from "../hooks/data-contract.js";
 import { useWallet } from "../hooks/wallet.js";
 import MetaTags_ from "./meta-tags.js";
 import {

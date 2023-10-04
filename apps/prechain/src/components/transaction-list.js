@@ -8,10 +8,10 @@ import * as Tooltip from "@shades/ui-web/tooltip";
 import FormattedDateWithTooltip from "./formatted-date-with-tooltip.js";
 import {
   DAO_PAYER_CONTRACT,
-  TOKEN_BUYER_CONTRACT,
+  DAO_TOKEN_BUYER_CONTRACT,
   WETH_TOKEN_CONTRACT_ADDRESS,
-  knownContracts,
-} from "../store.js";
+  resolveAddress as resolveContractAddress,
+} from "../contracts.js";
 
 const decimalsByCurrency = {
   ETH: 18,
@@ -266,7 +266,7 @@ const ListItem = ({ transaction }) => {
           This transaction refills USDC to the{" "}
           <AddressDisplayNameWithTooltip address={DAO_PAYER_CONTRACT} />{" "}
           contract via the{" "}
-          <AddressDisplayNameWithTooltip address={TOKEN_BUYER_CONTRACT} /> (
+          <AddressDisplayNameWithTooltip address={DAO_TOKEN_BUYER_CONTRACT} /> (
           <FormattedEthWithConditionalTooltip value={t.value} />
           ).
         </div>
@@ -375,7 +375,7 @@ export const TransactionExplanation = ({ transaction: t }) => {
         <>
           Top up the{" "}
           <em>
-            <AddressDisplayNameWithTooltip address={TOKEN_BUYER_CONTRACT} />
+            <AddressDisplayNameWithTooltip address={DAO_TOKEN_BUYER_CONTRACT} />
           </em>
         </>
       );
@@ -508,7 +508,7 @@ export const FormattedEthWithConditionalTooltip = ({
 };
 
 const AddressDisplayNameWithTooltip = ({ address }) => {
-  const knownContract = knownContracts?.[address];
+  const knownContract = resolveContractAddress(address);
   const { displayName } = useAccountDisplayName(address);
   return (
     <Tooltip.Root>
