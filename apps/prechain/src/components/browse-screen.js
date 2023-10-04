@@ -1124,34 +1124,78 @@ const ProposalItem = React.memo(({ proposalId }) => {
   );
 });
 
+const dateDifference = (date1, date2) => {
+  const millis = date1.getTime() - date2.getTime();
+  const seconds = Math.floor(millis / 1000);
+  const minutes = Math.floor(seconds / 60);
+  const hours = Math.floor(minutes / 60);
+  const days = Math.floor(hours / 24);
+  return { millis, seconds, minutes, hours, days };
+};
+
 const PropStatusText = React.memo(({ proposalId }) => {
   const proposal = useProposal(proposalId);
 
   const calculateBlockTimestamp = useApproximateBlockTimestampCalculator();
 
-  const startDate = calculateBlockTimestamp(proposal.startBlock);
-  const endDate = calculateBlockTimestamp(proposal.endBlock);
-  const objectionPeriodEndDate = calculateBlockTimestamp(
-    proposal.objectionPeriodEndBlock
-  );
-
   switch (proposal.state) {
-    case "updatable":
-    case "pending":
-      return (
-        <>
-          Starts{" "}
-          <FormattedDateWithTooltip
-            relativeDayThreshold={5}
-            capitalize={false}
-            value={startDate}
-            day="numeric"
-            month="long"
-          />
-        </>
+    case "updatable": {
+      const updatePeriodEndDate = calculateBlockTimestamp(
+        proposal.updatePeriodEndBlock
+      );
+      const { minutes, hours, days } = dateDifference(
+        updatePeriodEndDate,
+        new Date()
       );
 
-    case "active":
+      if (hours === 0)
+        return (
+          <>
+            Editable for another {Math.max(minutes, 0)}{" "}
+            {minutes === 1 ? "minute" : "minutes"}
+          </>
+        );
+
+      if (days <= 2) return <>Editable for another {hours} hours</>;
+
+      return <>Editable for another {days} days</>;
+    }
+
+    case "pending": {
+      const startDate = calculateBlockTimestamp(proposal.startBlock);
+      const { minutes, hours, days } = dateDifference(startDate, new Date());
+
+      if (hours === 0)
+        return (
+          <>
+            Start in {Math.max(minutes, 0)}{" "}
+            {minutes === 1 ? "minute" : "minutes"}
+          </>
+        );
+
+      if (days <= 2) return <>Starts in {hours} hours</>;
+
+      return <>Starts in {days} days</>;
+    }
+
+    case "active": {
+      const endDate = calculateBlockTimestamp(proposal.endBlock);
+      const renderTimeLeft = () => {
+        const { minutes, hours, days } = dateDifference(endDate, new Date());
+
+        if (hours === 0)
+          return (
+            <>
+              Ends in {Math.max(minutes, 0)}{" "}
+              {minutes === 1 ? "minute" : "minutes"}
+            </>
+          );
+
+        if (days <= 2) return <>Ends in {hours} hours</>;
+
+        return <>Ends in {days} days</>;
+      };
+
       return (
         <>
           <div
@@ -1179,21 +1223,16 @@ const PropStatusText = React.memo(({ proposalId }) => {
               {proposal.forVotes} For {"-"} {proposal.againstVotes} Against
             </span>
             <span role="separator" aria-orientation="vertical" />
-            <span data-description>
-              Ends{" "}
-              <FormattedDateWithTooltip
-                relativeDayThreshold={5}
-                capitalize={false}
-                value={endDate}
-                day="numeric"
-                month="long"
-              />
-            </span>
+            <span data-description>{renderTimeLeft()}</span>
           </div>
         </>
       );
+    }
 
-    case "objection-period":
+    case "objection-period": {
+      const objectionPeriodEndDate = calculateBlockTimestamp(
+        proposal.objectionPeriodEndBlock
+      );
       return (
         <>
           Ends{" "}
@@ -1206,6 +1245,7 @@ const PropStatusText = React.memo(({ proposalId }) => {
           />
         </>
       );
+    }
 
     case "queued":
       return "Queued for execution";
@@ -1247,8 +1287,10 @@ const PropStatusTag = ({ proposalId }) => {
 
   switch (proposal.state) {
     case "updatable":
+      return <Tag size="large">Open for changes</Tag>;
+
     case "pending":
-      return <Tag size="large">Pending</Tag>;
+      return <Tag size="large">Upcoming</Tag>;
 
     case "active":
       return (
