@@ -8,10 +8,7 @@ import {
   Link as RouterLink,
 } from "react-router-dom";
 import { css } from "@emotion/react";
-import {
-  array as arrayUtils,
-  message as messageUtils,
-} from "@shades/common/utils";
+import { array as arrayUtils } from "@shades/common/utils";
 import { ErrorBoundary, useMatchMedia } from "@shades/common/react";
 import Dialog from "@shades/ui-web/dialog";
 import Button from "@shades/ui-web/button";
@@ -21,6 +18,7 @@ import * as Tooltip from "@shades/ui-web/tooltip";
 import {
   extractSlugFromId as extractSlugFromCandidateId,
   getValidSponsorSignatures,
+  buildFeed,
 } from "../utils/candidates.js";
 import {
   useProposalCandidate,
@@ -76,78 +74,10 @@ const useSearchParamToggleState = (key) => {
   return [isToggled, toggle];
 };
 
-export const buildCandidateFeed = (
-  candidate,
-  { skipSignatures = false } = {}
-) => {
-  if (candidate == null) return [];
-
-  const candidateId = candidate.id;
-
-  const createdEventItem = {
-    type: "event",
-    eventType: "candidate-created",
-    id: `${candidate.id}-created`,
-    timestamp: candidate.createdTimestamp,
-    blockNumber: candidate.createdBlock,
-    authorAccount: candidate.proposerId,
-    candidateId,
-  };
-  const feedbackPostItems =
-    candidate.feedbackPosts?.map((p) => ({
-      type: "feedback-post",
-      id: `${candidate.id}-${p.id}`,
-      authorAccount: p.voter.id,
-      body: p.reason,
-      support: p.supportDetailed,
-      voteCount: p.votes,
-      timestamp: p.createdTimestamp,
-      blockNumber: BigInt(p.createdBlock),
-      isPending: p.isPending,
-      candidateId,
-    })) ?? [];
-
-  const items = [createdEventItem, ...feedbackPostItems];
-
-  if (candidate.canceledBlock != null)
-    items.push({
-      type: "event",
-      eventType: "candidate-canceled",
-      id: `${candidate.id}-canceled`,
-      timestamp: candidate.createdTimestamp,
-      blockNumber: candidate.canceledBlock,
-      candidateId,
-    });
-
-  const sortedItems = arrayUtils.sortBy(
-    { value: (i) => i.blockNumber, order: "desc" },
-    items
-  );
-
-  if (skipSignatures) return sortedItems;
-
-  const signatureItems = getValidSponsorSignatures(candidate).map((s) => ({
-    type: "signature",
-    id: `${s.signer.id}-${s.expirationTimestamp.getTime()}`,
-    authorAccount: s.signer.id,
-    bodyRichText: s.reason == null ? null : messageUtils.parseString(s.reason),
-    voteCount: s.signer.nounsRepresented.length,
-    expiresAt: s.expirationTimestamp,
-    candidateId,
-  }));
-
-  const sortedSignatureItems = arrayUtils.sortBy(
-    { value: (i) => i.voteCount, order: "desc" },
-    signatureItems
-  );
-
-  return [...sortedSignatureItems, ...sortedItems];
-};
-
 const useFeedItems = (candidateId) => {
   const candidate = useProposalCandidate(candidateId);
 
-  return React.useMemo(() => buildCandidateFeed(candidate), [candidate]);
+  return React.useMemo(() => buildFeed(candidate), [candidate]);
 };
 
 const getCandidateSignals = ({ candidate, proposerDelegate }) => {

@@ -105,6 +105,19 @@ const useStore = createZustandStoreHook((set) => {
       });
     });
 
+  const fetchProposalCandidate = async (chainId, id) =>
+    NounsSubgraph.fetchProposalCandidate(chainId, id).then((candidate) => {
+      set((s) => ({
+        proposalCandidatesById: {
+          ...s.proposalCandidatesById,
+          [id]: mergeProposalCandidates(
+            s.proposalCandidatesById[id],
+            candidate
+          ),
+        },
+      }));
+    });
+
   return {
     delegatesById: {},
     proposalsById: {},
@@ -130,6 +143,10 @@ const useStore = createZustandStoreHook((set) => {
     // Actions
     fetchProposal: (chainId, id) =>
       NounsSubgraph.fetchProposal(chainId, id).then((proposal) => {
+        // Fetch candidate async
+        if (proposal.candidateId != null)
+          fetchProposalCandidate(chainId, proposal.candidateId);
+
         set((s) => ({
           proposalsById: {
             ...s.proposalsById,
@@ -137,18 +154,7 @@ const useStore = createZustandStoreHook((set) => {
           },
         }));
       }),
-    fetchProposalCandidate: async (chainId, id) =>
-      NounsSubgraph.fetchProposalCandidate(chainId, id).then((candidate) => {
-        set((s) => ({
-          proposalCandidatesById: {
-            ...s.proposalCandidatesById,
-            [id]: mergeProposalCandidates(
-              s.proposalCandidatesById[id],
-              candidate
-            ),
-          },
-        }));
-      }),
+    fetchProposalCandidate,
     fetchDelegates: (chainId) =>
       NounsSubgraph.fetchDelegates(chainId).then((delegates) => {
         set(() => ({

@@ -182,6 +182,14 @@ query {
       ...ProposalFeedbackFields
     }
   }
+
+  proposalCandidateVersions(
+    where: {content_: {matchingProposalIds_contains: ["${id}"]}}
+  ) {
+    proposal {
+      id
+    }
+  }
 }`;
 
 const createProposalCandidateQuery = (id) => `{
@@ -426,8 +434,8 @@ export const fetchProposalCandidatesFeedbackPosts = async (
 export const fetchProposal = (chainId, id) =>
   subgraphFetch({ chainId, query: createProposalQuery(id) }).then((data) => {
     if (data.proposal == null) return Promise.reject(new Error("not-found"));
-
-    return parseProposal(data.proposal, { chainId });
+    const candidateId = data.proposalCandidateVersions[0]?.proposal.id;
+    return parseProposal({ ...data.proposal, candidateId }, { chainId });
   });
 
 export const fetchProposalCandidate = async (chainId, rawId) => {

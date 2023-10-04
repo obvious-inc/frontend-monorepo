@@ -14,10 +14,7 @@ import {
   AutoAdjustingHeightTextarea,
   useMatchMedia,
 } from "@shades/common/react";
-import {
-  array as arrayUtils,
-  message as messageUtils,
-} from "@shades/common/utils";
+import { message as messageUtils } from "@shades/common/utils";
 import { Noggles as NogglesIcon } from "@shades/ui-web/icons";
 import Button from "@shades/ui-web/button";
 import Select from "@shades/ui-web/select";
@@ -25,7 +22,10 @@ import Dialog from "@shades/ui-web/dialog";
 import * as Tooltip from "@shades/ui-web/tooltip";
 import Spinner from "@shades/ui-web/spinner";
 import { extractAmounts as extractAmountsFromTransactions } from "../utils/transactions.js";
-import { isSucceededState as isSucceededProposalState } from "../utils/proposals.js";
+import {
+  isSucceededState as isSucceededProposalState,
+  buildFeed as buildProposalFeed,
+} from "../utils/proposals.js";
 import { extractSlugFromId as extractSlugFromCandidateId } from "../utils/candidates.js";
 import {
   useProposal,
@@ -62,106 +62,6 @@ const supportDetailedToString = (n) => {
   return nameBySupportDetailed[n];
 };
 
-export const buildProposalFeed = (proposal, { latestBlockNumber }) => {
-  if (proposal == null) return [];
-
-  const createdEventItem = {
-    type: "event",
-    eventType: "proposal-created",
-    id: `${proposal.id}-created`,
-    timestamp: proposal.createdTimestamp,
-    blockNumber: proposal.createdBlock,
-    authorAccount: proposal.proposerId,
-    proposalId: proposal.id,
-  };
-
-  const feedbackPostItems =
-    proposal.feedbackPosts?.map((p) => ({
-      type: "feedback-post",
-      id: `${proposal.id}-${p.id}`,
-      body: p.reason,
-      support: p.supportDetailed,
-      authorAccount: p.voter.id,
-      timestamp: p.createdTimestamp,
-      blockNumber: p.createdBlock,
-      voteCount: p.votes,
-      proposalId: proposal.id,
-    })) ?? [];
-
-  const voteItems =
-    proposal.votes?.map((v) => ({
-      type: "vote",
-      id: `${proposal.id}-${v.id}`,
-      body: v.reason,
-      support: v.supportDetailed,
-      authorAccount: v.voter.id,
-      blockNumber: v.blockNumber,
-      voteCount: v.votes,
-      proposalId: proposal.id,
-    })) ?? [];
-
-  const propdateItems =
-    proposal.propdates?.map((p) => ({
-      type: "event",
-      eventType: p.markedCompleted ? "propdate-completed" : "propdate-update",
-      id: `propdate-${p.id}`,
-      body: p.update,
-      blockNumber: p.blockNumber,
-      timestamp: p.blockTimestamp,
-      proposalId: proposal.id,
-    })) ?? [];
-
-  const items = [
-    ...feedbackPostItems,
-    ...voteItems,
-    ...propdateItems,
-    createdEventItem,
-  ];
-
-  if (proposal.state === "canceled")
-    return arrayUtils.sortBy(
-      { value: (i) => i.blockNumber, order: "desc" },
-      items
-    );
-
-  if (latestBlockNumber > proposal.startBlock) {
-    items.push({
-      type: "event",
-      eventType: "proposal-started",
-      id: `${proposal.id}-started`,
-      blockNumber: proposal.startBlock,
-      proposalId: proposal.id,
-    });
-  }
-
-  const actualEndBlock = proposal.objectionPeriodEndBlock ?? proposal.endBlock;
-
-  if (latestBlockNumber > actualEndBlock) {
-    items.push({
-      type: "event",
-      eventType: "proposal-ended",
-      id: `${proposal.id}-ended`,
-      blockNumber: actualEndBlock,
-      proposalId: proposal.id,
-    });
-  }
-
-  if (proposal.objectionPeriodEndBlock != null) {
-    items.push({
-      type: "event",
-      eventType: "proposal-objection-period-started",
-      id: `${proposal.id}-objection-period-start`,
-      blockNumber: proposal.endBlock,
-      proposalId: proposal.id,
-    });
-  }
-
-  return arrayUtils.sortBy(
-    { value: (i) => i.blockNumber, order: "desc" },
-    items
-  );
-};
-
 const useFeedItems = (proposalId) => {
   const { data: eagerLatestBlockNumber } = useBlockNumber({
     watch: true,
@@ -171,10 +71,11 @@ const useFeedItems = (proposalId) => {
   const latestBlockNumber = React.useDeferredValue(eagerLatestBlockNumber);
 
   const proposal = useProposal(proposalId);
+  const candidate = useProposalCandidate(proposal?.candidateId);
 
   return React.useMemo(
-    () => buildProposalFeed(proposal, { latestBlockNumber }),
-    [proposal, latestBlockNumber]
+    () => buildProposalFeed(proposal, { latestBlockNumber, candidate }),
+    [proposal, latestBlockNumber, candidate]
   );
 };
 

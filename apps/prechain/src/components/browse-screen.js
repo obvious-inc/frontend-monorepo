@@ -22,7 +22,9 @@ import Select from "@shades/ui-web/select";
 import {
   isFinalState as isFinalProposalState,
   isVotableState as isVotableProposalState,
+  buildFeed as buildProposalFeed,
 } from "../utils/proposals.js";
+import { buildFeed as buildCandidateFeed } from "../utils/candidates.js";
 import { useProposalThreshold } from "../hooks/dao-contract.js";
 import { useWallet } from "../hooks/wallet.js";
 import {
@@ -42,11 +44,7 @@ import MetaTags from "./meta-tags.js";
 import * as Tabs from "./tabs.js";
 import Layout, { MainContentContainer } from "./layout.js";
 import FormattedDateWithTooltip from "./formatted-date-with-tooltip.js";
-import {
-  ActivityFeed as ActivityList,
-  buildProposalFeed,
-} from "./proposal-screen.js";
-import { buildCandidateFeed } from "./proposal-candidate-screen.js";
+import { ActivityFeed as ActivityList } from "./proposal-screen.js";
 
 const ONE_DAY_IN_SECONDS = 60 * 60 * 24;
 const APPROXIMATE_SECONDS_PER_BLOCK = 12;
