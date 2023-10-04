@@ -52,6 +52,8 @@ import Callout from "./callout.js";
 import * as Tabs from "./tabs.js";
 import TransactionList from "./transaction-list.js";
 
+const isBetaSession = new URLSearchParams(location.search).get("beta") != null;
+
 const useSearchParamToggleState = (key) => {
   const [searchParams, setSearchParams] = useSearchParams();
 
@@ -1209,7 +1211,7 @@ const ProposalCandidateScreen = () => {
           candidate.canceledTimestamp != null ||
           connectedWalletAccountAddress == null
             ? []
-            : isProposer
+            : isProposer && isBetaSession
             ? [
                 { onSelect: toggleEditDialog, label: "Edit candidate" },
                 isProposalThresholdMet && {
