@@ -462,6 +462,7 @@ const BrowseScreen = () => {
                 <Input
                   placeholder="Search..."
                   value={query}
+                  size="large"
                   onChange={(e) => {
                     setPage(1);
 
@@ -481,16 +482,7 @@ const BrowseScreen = () => {
                       return newParams;
                     });
                   }}
-                  css={(t) =>
-                    css({
-                      flex: 1,
-                      minWidth: 0,
-                      padding: "0.9rem 1.2rem",
-                      "@media (max-width: 600px)": {
-                        fontSize: t.text.sizes.base,
-                      },
-                    })
-                  }
+                  css={css({ flex: 1, minWidth: 0 })}
                 />
 
                 {searchParams.get("beta") != null && (
@@ -515,6 +507,7 @@ const BrowseScreen = () => {
                         ),
                       },
                     ]}
+                    style={{ marginTop: "2rem" }}
                   />
                   {filteredItems.length >
                     BROWSE_LIST_PAGE_ITEM_COUNT * page && (
@@ -562,7 +555,7 @@ const BrowseScreen = () => {
                         position: "sticky",
                         top: "4.2rem",
                         zIndex: 1,
-                        paddingTop: "1rem",
+                        paddingTop: "1.6rem",
                         background: t.colors.backgroundPrimary,
                         "[role=tab]": { fontSize: t.text.sizes.base },
                       })
@@ -578,7 +571,7 @@ const BrowseScreen = () => {
                     <Tabs.Item key="proposals" title="Proposals">
                       <div
                         css={css({
-                          paddingTop: "2rem",
+                          paddingTop: "2.4rem",
                           "@media (min-width: 600px)": {
                             paddingTop: "2.8rem",
                           },
@@ -622,7 +615,7 @@ const BrowseScreen = () => {
                     <Tabs.Item key="candidates" title="Candidates">
                       <div
                         css={css({
-                          paddingTop: "2rem",
+                          paddingTop: "2.4rem",
                           "@media (min-width: 600px)": {
                             paddingTop: "2.8rem",
                           },
@@ -631,7 +624,7 @@ const BrowseScreen = () => {
                         {connectedWalletAccountAddress != null && (
                           <div
                             css={css({
-                              margin: "0 0 1.4rem",
+                              margin: "-0.4rem 0 2.4rem",
                               "@media (min-width: 600px)": {
                                 margin: "-0.8rem 0 2.4rem",
                               },
@@ -718,7 +711,7 @@ const BrowseScreen = () => {
   );
 };
 
-const SectionedList = ({ sections, showPlaceholder = false }) => {
+const SectionedList = ({ sections, showPlaceholder = false, ...props }) => {
   return (
     <ul
       role={showPlaceholder ? "presentation" : undefined}
@@ -836,6 +829,7 @@ const SectionedList = ({ sections, showPlaceholder = false }) => {
           },
         });
       }}
+      {...props}
     >
       {showPlaceholder ? (
         <li data-group key="placeholder">
