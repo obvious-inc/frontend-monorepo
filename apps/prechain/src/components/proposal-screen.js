@@ -643,6 +643,7 @@ export const ProposalActionForm = ({
   const proposalVoteCount = usePriorVotes({
     account: connectedWalletAccountAddress,
     blockNumber: proposal?.startBlock,
+    enabled: mode === "vote",
   });
   const currentVoteCount = connectedDelegate?.nounsRepresented.length ?? 0;
 

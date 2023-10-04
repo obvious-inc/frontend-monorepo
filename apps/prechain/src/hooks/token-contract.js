@@ -24,7 +24,7 @@ export const useCurrentVotes = (accountAddress) => {
   return Number(data);
 };
 
-export const usePriorVotes = ({ account, blockNumber }) => {
+export const usePriorVotes = ({ account, blockNumber, enabled = true }) => {
   const chainId = useChainId();
 
   const { data } = useContractRead({
@@ -34,7 +34,7 @@ export const usePriorVotes = ({ account, blockNumber }) => {
     ]),
     functionName: "getPriorVotes",
     args: [account, blockNumber],
-    enabled: account != null && blockNumber != null,
+    enabled: enabled && account != null && blockNumber != null,
   });
 
   return data == null ? null : Number(data);
