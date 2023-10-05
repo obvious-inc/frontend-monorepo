@@ -61,7 +61,7 @@ const Content = ({ titleProps, dismiss }) => {
               minWidth: 0,
               display: "flex",
               alignItems: "center",
-              gap: "1.2rem",
+              gap: "1.6rem",
               fontSize: t.text.sizes.header,
               fontWeight: t.text.weights.header,
               color: t.colors.textHeader,
@@ -69,7 +69,11 @@ const Content = ({ titleProps, dismiss }) => {
             })
           }
         >
-          <AccountAvatar address={accountAddress} size="2.8rem" />
+          <AccountAvatar
+            address={accountAddress}
+            size="3.2rem"
+            css={css({ margin: "-0.2rem" })}
+          />
           <a
             href={`https://etherscan.io/address/${accountAddress}`}
             target="_blank"
@@ -91,7 +95,7 @@ const Content = ({ titleProps, dismiss }) => {
               <div
                 css={(t) =>
                   css({
-                    fontSize: t.text.sizes.small,
+                    fontSize: t.text.sizes.tiny,
                     fontWeight: "400",
                     color: t.colors.textDimmed,
                   })
@@ -183,7 +187,6 @@ const NounList = ({ items }) => (
         display: "flex",
         flexDirection: "column",
         gap: "0.8rem",
-        padding: "0.4rem 0",
         li: {
           display: "flex",
           gap: "0.8rem",
