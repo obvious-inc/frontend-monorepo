@@ -357,7 +357,7 @@ const ItemTitle = ({ item, isolated }) => {
                     })
                   }
                 >
-                  Succeeded
+                  succeeded
                 </span>
               ) : (
                 <>
@@ -370,7 +370,7 @@ const ItemTitle = ({ item, isolated }) => {
                       })
                     }
                   >
-                    Defeated
+                    defeated
                   </span>
                 </>
               )}
