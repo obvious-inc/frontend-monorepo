@@ -10,6 +10,7 @@ import {
 import useFarcasterAccount from "./farcaster-account";
 import useSigner from "./signer";
 import { useChannelCacheContext, useIsChannelFollowed } from "../hooks/channel";
+import React from "react";
 
 const ChannelNavBar = ({ channelId, name, description }) => {
   const channel = useFarcasterChannel(channelId);
@@ -21,6 +22,14 @@ const ChannelNavBar = ({ channelId, name, description }) => {
   } = useChannelCacheContext();
 
   let channelLink = channel?.parentUrl;
+
+  const isFarcordChannel = channelLink == "https://farcord.com";
+
+  React.useEffect(() => {
+    if (channel && isFarcordChannel && fid && !isChannelFollowed) {
+      followChannel({ fid, channel });
+    }
+  }, [channel, isFarcordChannel, fid, followChannel, isChannelFollowed]);
 
   const renderRightColumn = () => {
     return (
@@ -170,7 +179,7 @@ const ChannelNavBar = ({ channelId, name, description }) => {
             <p>{description}</p>
           </div>
 
-          {channel && renderRightColumn()}
+          {channel && !isFarcordChannel && renderRightColumn()}
         </>
       </div>
     </NavBar>

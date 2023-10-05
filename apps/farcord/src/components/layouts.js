@@ -3,6 +3,7 @@ import {
   MagnificationGlass as MagnificationGlassIcon,
   Triangle as TriangleIcon,
   Pen as PenIcon,
+  Globe as GlobeIcon,
 } from "@shades/ui-web/icons";
 import { css, useTheme } from "@emotion/react";
 import { NavLink, Outlet, useSearchParams } from "react-router-dom";
@@ -333,13 +334,14 @@ const SmallText = ({ component: Component = "div", ...props }) => (
 export const MainLayout = ({ children }) => {
   const { fid } = useFarcasterAccount();
 
-  const followedChannels = useFollowedChannels(fid);
+  const storedFollowedChannels = useFollowedChannels(fid);
   const farcasterChannels = useFarcasterChannels();
 
   const [remainingChannels, setRemainingChannels] = React.useState([]);
-
   const [allChannelsExpanded, setAllChannelsExpanded] = React.useState(true);
   const [visibleAllChannels, setVisibleAllChannels] = React.useState([]);
+  const [followedChannels, setFollowedChannels] = React.useState([]);
+
   const [searchParams, setSearchParams] = useSearchParams();
 
   const isAuthDialogOpen = searchParams.get("auth-dialog") != null;
@@ -363,14 +365,19 @@ export const MainLayout = ({ children }) => {
   }, [setSearchParams]);
 
   React.useEffect(() => {
-    const followedChannelsIds = followedChannels?.map((c) => c.id);
+    const followedChannelsIds = storedFollowedChannels?.map((c) => c.id);
     const remainingChannels = farcasterChannels.filter(
       (channel) => !followedChannelsIds?.includes(channel.id)
     );
 
+    const fChannels = storedFollowedChannels?.filter(
+      (c) => c.id != "https://farcord.com"
+    );
+
+    setFollowedChannels(fChannels);
     setRemainingChannels(remainingChannels);
     setVisibleAllChannels(remainingChannels.slice(0, DEFAULT_TRUNCATED_COUNT));
-  }, [farcasterChannels, followedChannels]);
+  }, [farcasterChannels, storedFollowedChannels]);
 
   return (
     <>
@@ -469,6 +476,15 @@ export const MainLayout = ({ children }) => {
                 });
               }}
             />
+
+            <ListItem
+              compact={false}
+              component={NavLink}
+              to={"/channels/https%3A%2F%2Ffarcord.com"}
+              icon={<GlobeIcon style={{ width: "1.9rem", height: "auto" }} />}
+              title="Farcord"
+            />
+
             <ListItem
               compact={false}
               disabled={true}
