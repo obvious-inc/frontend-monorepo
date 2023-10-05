@@ -158,7 +158,7 @@ const AccountPreview = React.forwardRef(({ fid, actions = [] }, ref) => {
         </div>
       </div>
 
-      {(actions.length > 0 || user.description != null) && (
+      {actions.length > 0 && (
         <div
           css={(t) =>
             css({
@@ -168,12 +168,6 @@ const AccountPreview = React.forwardRef(({ fid, actions = [] }, ref) => {
             })
           }
         >
-          {user.description != null && (
-            <div css={(t) => css({ fontSize: t.text.sizes.base })}>
-              {user.description}
-            </div>
-          )}
-
           {actions.length > 0 && (
             <div
               css={css({
