@@ -44,7 +44,7 @@ import MetaTags from "./meta-tags.js";
 import * as Tabs from "./tabs.js";
 import Layout, { MainContentContainer } from "./layout.js";
 import FormattedDateWithTooltip from "./formatted-date-with-tooltip.js";
-import { ActivityFeed as ActivityList } from "./proposal-screen.js";
+import ActivityFeed_ from "./activity-feed.js";
 
 const ONE_DAY_IN_SECONDS = 60 * 60 * 24;
 const APPROXIMATE_SECONDS_PER_BLOCK = 12;
@@ -912,7 +912,7 @@ const ActivityFeed = React.memo(({ filter = "all" }) => {
 
   return (
     <>
-      <ActivityList items={visibleItems} />
+      <ActivityFeed_ items={visibleItems} />
 
       {feedItems.length > visibleItems.length && (
         <div css={{ textAlign: "center", padding: "3.2rem 0" }}>

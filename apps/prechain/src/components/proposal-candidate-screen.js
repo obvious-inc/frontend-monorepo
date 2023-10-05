@@ -36,11 +36,11 @@ import {
 } from "../hooks/data-contract.js";
 import { useWallet } from "../hooks/wallet.js";
 import MetaTags_ from "./meta-tags.js";
+import ActivityFeed from "./activity-feed.js";
 import {
   ProposalHeader,
   ProposalBody,
   ProposalActionForm,
-  ActivityFeed,
   VotingBar,
   VoteDistributionToolTipContent,
 } from "./proposal-screen.js";
