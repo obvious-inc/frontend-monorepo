@@ -1,4 +1,3 @@
-import datesDifferenceInDays from "date-fns/differenceInCalendarDays";
 import React from "react";
 import va from "@vercel/analytics";
 import { formatUnits } from "viem";
@@ -14,6 +13,12 @@ import {
   AutoAdjustingHeightTextarea,
   useMatchMedia,
 } from "@shades/common/react";
+import {
+  Clock as ClockIcon,
+  Checkmark as CheckmarkIcon,
+  Queue as QueueIcon,
+  CrossCircle as CrossCircleIcon,
+} from "@shades/ui-web/icons";
 import Button from "@shades/ui-web/button";
 import Select from "@shades/ui-web/select";
 import Dialog from "@shades/ui-web/dialog";
@@ -146,14 +151,79 @@ const ProposalMainSection = ({ proposalId, scrollContainerRef }) => {
   const startDate = calculateBlockTimestamp(proposal.startBlock);
   const endDate = calculateBlockTimestamp(endBlock);
 
+  const renderProposalStateIcon = () => {
+    switch (proposal.state) {
+      case "succeeded":
+      case "executed":
+        return (
+          <CheckmarkIcon
+            aria-hidden="true"
+            css={(t) => css({ width: "1.2rem", color: t.colors.textPositive })}
+          />
+        );
+      case "queued":
+        return (
+          <QueueIcon
+            aria-hidden="true"
+            style={{
+              width: "1.4rem",
+              transform: "translateY(1px)",
+            }}
+          />
+        );
+      case "canceled":
+      case "vetoed":
+      case "defeated":
+        return (
+          <CrossCircleIcon
+            aria-hidden="true"
+            css={(t) => css({ width: "1.8rem", color: t.colors.textNegative })}
+          />
+        );
+      case "expired":
+        return (
+          <ClockIcon
+            aria-hidden="true"
+            css={(t) => css({ width: "2rem", color: t.colors.textNegative })}
+          />
+        );
+      case "updatable":
+      case "pending":
+      case "active":
+      case "objection-period":
+        return <ClockIcon aria-hidden="true" style={{ width: "2rem" }} />;
+      default:
+        throw new Error();
+    }
+  };
+
   const renderProposalStateText = () => {
     switch (proposal.state) {
+      case "updatable":
+      case "pending":
+        return (
+          <>
+            Voting starts{" "}
+            {startDate == null ? (
+              "..."
+            ) : (
+              <FormattedDateWithTooltip
+                capitalize={false}
+                relativeDayThreshold={5}
+                value={startDate}
+                day="numeric"
+                month="short"
+              />
+            )}
+          </>
+        );
       case "vetoed":
       case "canceled":
-      case "queued":
       case "executed":
       case "defeated":
         return `Proposal ${proposalId} has been ${proposal.state}`;
+      case "queued":
+        return `Proposal ${proposalId} succeeded and has been queued for execution`;
       case "expired":
       case "succeeded":
         return `Proposal ${proposalId} has ${proposal.state}`;
@@ -248,7 +318,10 @@ const ProposalMainSection = ({ proposalId, scrollContainerRef }) => {
                     </Callout>
                   )}
                   {hasVotingStarted && (
-                    <Callout css={(t) => css({ fontSize: t.text.sizes.base })}>
+                    <Callout
+                      icon={renderProposalStateIcon()}
+                      css={(t) => css({ fontSize: t.text.sizes.base })}
+                    >
                       {renderProposalStateText()}
                     </Callout>
                   )}
@@ -277,6 +350,7 @@ const ProposalMainSection = ({ proposalId, scrollContainerRef }) => {
                   </Tooltip.Root>
                 ) : (
                   <Callout
+                    icon={renderProposalStateIcon()}
                     css={(t) =>
                       css({
                         fontSize: t.text.sizes.base,
@@ -284,24 +358,7 @@ const ProposalMainSection = ({ proposalId, scrollContainerRef }) => {
                       })
                     }
                   >
-                    {proposal.state === "canceled" ? (
-                      "Proposal canceled"
-                    ) : (
-                      <>
-                        Voting starts{" "}
-                        {startDate == null ? (
-                          "..."
-                        ) : (
-                          <FormattedDateWithTooltip
-                            capitalize={false}
-                            relativeDayThreshold={5}
-                            value={startDate}
-                            day="numeric"
-                            month="short"
-                          />
-                        )}
-                      </>
-                    )}
+                    {renderProposalStateText()}
                   </Callout>
                 )}
                 <Tabs.Root

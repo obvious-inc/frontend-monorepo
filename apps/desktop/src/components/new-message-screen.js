@@ -45,7 +45,7 @@ import { useState as useSidebarState } from "@shades/ui-web/sidebar-layout";
 import {
   CrossSmall as CrossSmallIcon,
   Checkmark as CheckmarkIcon,
-  CrossCircle as CrossCircleIcon,
+  CrossCircleSolid as CrossCircleIcon,
 } from "@shades/ui-web/icons";
 import Button from "@shades/ui-web/button";
 import Emoji from "@shades/ui-web/emoji";

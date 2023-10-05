@@ -27,7 +27,7 @@ import {
 import ChannelMessagesScrollView from "@shades/ui-web/channel-messages-scroll-view";
 import { isNodeEmpty as isRichTextNodeEmpty } from "@shades/ui-web/rich-text-editor";
 import AccountPreviewPopoverTrigger from "@shades/ui-web/account-preview-popover-trigger";
-import { CrossCircle as CrossCircleIcon } from "@shades/ui-web/icons";
+import { CrossCircleSolid as CrossCircleIcon } from "@shades/ui-web/icons";
 import MessageEditorForm from "@shades/ui-web/message-editor-form";
 import Spinner from "@shades/ui-web/spinner";
 import useLayoutSetting from "../hooks/layout-setting.js";
