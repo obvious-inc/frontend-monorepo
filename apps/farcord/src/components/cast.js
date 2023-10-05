@@ -510,7 +510,7 @@ export const CastItem = ({
         }}
       >
         <Avatar
-          url={cast.author.pfp_url || cast.author.pfp.url}
+          url={cast.author?.pfp_url || cast.author?.pfp?.url}
           size="var(--avatar-size)"
         />
         <div
