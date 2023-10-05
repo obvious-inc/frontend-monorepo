@@ -581,8 +581,8 @@ const BrowseScreen = () => {
                             "drafts",
                             "proposals:authored",
                             "proposals:awaiting-vote",
-                            "proposals:new",
                             "proposals:ongoing",
+                            "proposals:new",
                             "proposals:past",
                           ]
                             .map(
