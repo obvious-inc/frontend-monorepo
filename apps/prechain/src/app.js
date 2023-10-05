@@ -7,6 +7,7 @@ import {
   useWallet,
   Provider as ConnectWalletDialogProvider,
 } from "./hooks/wallet.js";
+import { Provider as GlobalDialogsProvider } from "./hooks/global-dialogs.js";
 import { useDelegatesFetch } from "./store.js";
 
 const ProposalScreen = React.lazy(() =>
@@ -27,6 +28,13 @@ const ConnectWalletScreen = React.lazy(() =>
   import("./components/connect-wallet-screen.js")
 );
 
+const dialogs = [
+  {
+    key: "account",
+    component: React.lazy(() => import("./components/account-dialog.js")),
+  },
+];
+
 const customTheme = {
   ...theme,
   sidebarWidth: "36rem",
@@ -45,45 +53,47 @@ const App = () => {
       <BrowserRouter>
         <ThemeProvider theme={customTheme}>
           <ConnectWalletDialogProvider>
-            <Tooltip.Provider delayDuration={300}>
-              <Global
-                styles={(theme) =>
-                  css({
-                    body: {
-                      color: theme.colors.textNormal,
-                      background: theme.colors.backgroundPrimary,
-                      fontFamily: theme.fontStacks.default,
-                      "::selection": {
-                        background: theme.colors.textSelectionBackground,
+            <GlobalDialogsProvider dialogs={dialogs}>
+              <Tooltip.Provider delayDuration={300}>
+                <Global
+                  styles={(theme) =>
+                    css({
+                      body: {
+                        color: theme.colors.textNormal,
+                        background: theme.colors.backgroundPrimary,
+                        fontFamily: theme.fontStacks.default,
+                        "::selection": {
+                          background: theme.colors.textSelectionBackground,
+                        },
                       },
-                    },
-                  })
-                }
-              />
-              <Routes>
-                <Route path="/">
-                  <Route index element={<BrowseScreen />} />
-                  <Route
-                    path="/new/:draftId?"
-                    element={
-                      <RequireConnectedAccount>
-                        <ProposeScreen />
-                      </RequireConnectedAccount>
-                    }
-                  />
-                  <Route
-                    path="/candidates/:candidateId"
-                    element={<ProposalCandidateScreen />}
-                  />
-                  <Route
-                    path="/proposals/:proposalId"
-                    element={<ProposalScreen />}
-                  />
-                  <Route path="/:proposalId" element={<ProposalScreen />} />
-                </Route>
-                <Route path="*" element={<Navigate to="/" replace />} />
-              </Routes>
-            </Tooltip.Provider>
+                    })
+                  }
+                />
+                <Routes>
+                  <Route path="/">
+                    <Route index element={<BrowseScreen />} />
+                    <Route
+                      path="/new/:draftId?"
+                      element={
+                        <RequireConnectedAccount>
+                          <ProposeScreen />
+                        </RequireConnectedAccount>
+                      }
+                    />
+                    <Route
+                      path="/candidates/:candidateId"
+                      element={<ProposalCandidateScreen />}
+                    />
+                    <Route
+                      path="/proposals/:proposalId"
+                      element={<ProposalScreen />}
+                    />
+                    <Route path="/:proposalId" element={<ProposalScreen />} />
+                  </Route>
+                  <Route path="*" element={<Navigate to="/" replace />} />
+                </Routes>
+              </Tooltip.Provider>
+            </GlobalDialogsProvider>
           </ConnectWalletDialogProvider>
         </ThemeProvider>
       </BrowserRouter>

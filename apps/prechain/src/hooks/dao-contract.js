@@ -1,9 +1,11 @@
 import { parseAbi, decodeEventLog } from "viem";
+import React from "react";
 import {
   useContractRead,
   useContractWrite,
   usePrepareContractWrite,
   usePublicClient,
+  useBlockNumber,
 } from "wagmi";
 import { unparse as unparseTransactions } from "../utils/transactions.js";
 import { resolveIdentifier } from "../contracts.js";
@@ -59,6 +61,47 @@ export const useDynamicQuorum = (proposalId) => {
   });
 
   if (!isSuccess) return undefined;
+
+  return Number(data);
+};
+
+export const useCurrentDynamicQuorum = ({ againstVotes = 0 } = {}) => {
+  const latestQuorumRef = React.useRef();
+
+  const chainId = useChainId();
+  const { data: blockNumber } = useBlockNumber({ watch: true, cache: 20_000 });
+
+  const { data: adjustedTotalSupply } = useContractRead({
+    address: getContractAddress(chainId),
+    abi: parseAbi([
+      "function adjustedTotalSupply() public view returns (uint256)",
+    ]),
+    functionName: "adjustedTotalSupply",
+  });
+  const { data: quorumParams } = useContractRead({
+    address: getContractAddress(chainId),
+    abi: parseAbi([
+      "function getDynamicQuorumParamsAt(uint256) public view returns (uint16, uint16, uint32)",
+    ]),
+    functionName: "getDynamicQuorumParamsAt",
+    args: [blockNumber],
+    enabled: blockNumber != null,
+  });
+  const { data, isSuccess } = useContractRead({
+    address: getContractAddress(chainId),
+    abi: parseAbi([
+      "function dynamicQuorumVotes(uint256, uint256, (uint16, uint16, uint32)) public view returns (uint256)",
+    ]),
+    functionName: "dynamicQuorumVotes",
+    args: [againstVotes, adjustedTotalSupply, quorumParams],
+    encoded: adjustedTotalSupply != null && quorumParams != null,
+  });
+
+  React.useEffect(() => {
+    if (isSuccess) latestQuorumRef.current = Number(data);
+  });
+
+  if (!isSuccess) return latestQuorumRef.current;
 
   return Number(data);
 };

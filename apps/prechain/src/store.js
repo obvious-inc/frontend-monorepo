@@ -302,7 +302,7 @@ export const useActions = () => {
 };
 
 export const useDelegate = (id) =>
-  useStore(React.useCallback((s) => s.delegatesById[id], [id]));
+  useStore(React.useCallback((s) => s.delegatesById[id?.toLowerCase()], [id]));
 
 export const useDelegatesFetch = () => {
   const { fetchDelegates } = useActions();

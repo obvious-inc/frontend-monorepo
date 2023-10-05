@@ -128,7 +128,7 @@ const AccountPreview = React.forwardRef(
           }
         >
           <h2>
-            {delegate?.nounsRepresented.length > 0
+            {delegate?.nounsRepresented?.length > 0
               ? "Nouns represented"
               : "No delegation currently"}
           </h2>

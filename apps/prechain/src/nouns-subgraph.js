@@ -77,6 +77,12 @@ const DELEGATES_QUERY = `{
         background
         accessory
       }
+      owner {
+        id
+        delegate {
+          id
+        }
+      }
     }
   }
 }`;
@@ -409,10 +415,15 @@ const parseDelegate = (data) => {
 
   parsedData.nounsRepresented = arrayUtils.sortBy(
     (n) => parseInt(n.id),
-    data.nounsRepresented.map((n) => ({
-      ...n,
-      seed: objectUtils.mapValues((v) => parseInt(v), n.seed),
-    }))
+    data.nounsRepresented
+      .map((n) => ({
+        ...n,
+        seed: objectUtils.mapValues((v) => parseInt(v), n.seed),
+        ownerId: n.owner?.id,
+        delegateId: n.owner?.delegate?.id,
+      }))
+      // Don’t include nouns delegated to other accounts
+      .filter((n) => n.delegateId == null || n.delegateId === data.id)
   );
 
   return parsedData;

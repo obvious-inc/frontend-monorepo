@@ -5,6 +5,7 @@ import { useLocation, Link as RouterLink } from "react-router-dom";
 import { useAccountDisplayName } from "@shades/common/app";
 import Button from "@shades/ui-web/button";
 import { useWallet } from "../hooks/wallet.js";
+import { useDialog } from "../hooks/global-dialogs.js";
 import AccountAvatar from "./account-avatar.js";
 import LogoSymbol from "./logo-symbol.js";
 
@@ -60,7 +61,6 @@ const Layout = ({
               display: "flex",
               flexDirection: "column",
               justifyContent: "flex-start",
-              // justifyContent: "flex-end",
               alignItems: "stretch",
               minHeight: "100%",
             })}
@@ -77,6 +77,8 @@ const Layout = ({
 
 const NavBar = ({ navigationStack, actions }) => {
   const location = useLocation();
+
+  const { open: openAccountDialog } = useDialog("account");
 
   const {
     address: connectedWalletAccountAddress,
@@ -215,13 +217,15 @@ const NavBar = ({ navigationStack, actions }) => {
                   label: "Connect Wallet",
                 }
               : {
-                  // onSelect: () => {},
-                  buttonProps: {
-                    component: "a",
-                    href: `https://etherscan.io/address/${connectedWalletAccountAddress}`,
-                    target: "_blank",
-                    rel: "noreferrer",
+                  onSelect: () => {
+                    openAccountDialog();
                   },
+                  // buttonProps: {
+                  //   component: "a",
+                  //   href: `https://etherscan.io/address/${connectedWalletAccountAddress}`,
+                  //   target: "_blank",
+                  //   rel: "noreferrer",
+                  // },
 
                   label: (
                     <div
