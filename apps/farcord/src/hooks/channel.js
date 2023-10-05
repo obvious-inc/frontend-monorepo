@@ -124,6 +124,8 @@ export const ChannelCacheContextProvider = ({ children }) => {
   }, []);
 
   const fetchUnreadState = React.useCallback(async ({ channel }) => {
+    if (!channel) return;
+
     return fetchNeynarCasts({
       parentUrl: channel?.parentUrl,
       limit: 1,
@@ -372,4 +374,21 @@ export const useIsChannelFollowed = (channelId) => {
   const { fid } = useFarcasterAccount();
   const followedChannels = followedChannelsByFid[fid];
   return followedChannels?.some((c) => c.id === channelId);
+};
+
+export const useUnreadStatesFetch = (fid) => {
+  const {
+    state: { followedChannelsByFid },
+    actions: { fetchUnreadState },
+  } = React.useContext(ChannelCacheContext);
+
+  React.useEffect(() => {
+    if (!fid) return;
+    const followedChannels = followedChannelsByFid[fid];
+    if (!followedChannels) return;
+
+    followedChannels.forEach((channel) => {
+      fetchUnreadState({ channel });
+    });
+  }, [fid, followedChannelsByFid, fetchUnreadState]);
 };

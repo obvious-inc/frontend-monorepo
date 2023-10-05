@@ -19,7 +19,11 @@ import FarcasterProfile from "./farcaster-profile";
 import Dialog from "@shades/ui-web/dialog";
 import AuthDialog from "./auth-dialog";
 import useFarcasterAccount from "./farcaster-account";
-import { useChannelHasUnread, useFollowedChannels } from "../hooks/channel";
+import {
+  useChannelHasUnread,
+  useFollowedChannels,
+  useUnreadStatesFetch,
+} from "../hooks/channel";
 import { getChannelLink } from "../utils/channel";
 import CreateChannelDialog from "./create-channel-dialog";
 
@@ -336,6 +340,7 @@ export const MainLayout = ({ children }) => {
 
   const storedFollowedChannels = useFollowedChannels(fid);
   const farcasterChannels = useFarcasterChannels();
+  useUnreadStatesFetch(fid);
 
   const [remainingChannels, setRemainingChannels] = React.useState([]);
   const [allChannelsExpanded, setAllChannelsExpanded] = React.useState(true);
