@@ -7,6 +7,7 @@ import {
   useWallet,
   Provider as ConnectWalletDialogProvider,
 } from "./hooks/wallet.js";
+import { useDelegatesFetch } from "./store.js";
 
 const ProposalScreen = React.lazy(() =>
   import("./components/proposal-screen.js")
@@ -38,6 +39,7 @@ const customTheme = {
 };
 
 const App = () => {
+  useDelegatesFetch();
   return (
     <React.Suspense fallback={null}>
       <BrowserRouter>
