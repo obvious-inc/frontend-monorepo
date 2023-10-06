@@ -4,13 +4,14 @@ import {
 } from "@shades/common/utils";
 import { parse as parseTransactions } from "./utils/transactions.js";
 
-const betaSubgraph =
-  new URLSearchParams(location.search).get("beta-subgraph") != null;
+const customGraphEndpoint = new URLSearchParams(location.search).get(
+  "nouns-subgraph"
+);
 
 const subgraphEndpointByChainId = {
-  1: betaSubgraph
-    ? "https://api.studio.thegraph.com/query/49498/nouns-v3-mainnet/version/latest"
-    : "https://api.thegraph.com/subgraphs/name/nounsdao/nouns-subgraph",
+  1:
+    customGraphEndpoint ??
+    "https://api.thegraph.com/subgraphs/name/nounsdao/nouns-subgraph",
   11155111:
     "https://api.studio.thegraph.com/proxy/49498/nouns-v3-sepolia/version/latest",
 };
