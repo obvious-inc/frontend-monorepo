@@ -81,10 +81,6 @@ export const useUserCasts = (fid) => {
         throw result.error;
       }
 
-      result.map((casts) =>
-        casts.messages.map((cast) => console.log(cast.data?.castAddBody?.text))
-      );
-
       return result;
     })
     .catch((err) => {

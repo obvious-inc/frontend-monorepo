@@ -21,6 +21,7 @@ import { useNeynarCast } from "../hooks/neynar";
 import AppTag from "./app-tag";
 import TinyMutedText from "./tiny-muted-text";
 import AccountPreviewPopoverTrigger from "./account-preview-popover-trigger";
+import { NewCastsMarker } from "./new-casts-marker";
 
 const IMAGE_ENDINGS = ["jpg", "jpeg", "png", "gif", "webp", "svg"];
 
@@ -469,6 +470,7 @@ export const CastItem = ({
   isRecent,
   showReplies = false,
   horizontalPadding = "1.6rem",
+  showLastReadMark = false,
 }) => {
   const navigate = useNavigate();
   const containerRef = React.useRef();
@@ -489,6 +491,7 @@ export const CastItem = ({
       data-message-id={cast.hash}
       style={{
         "--padding": `0.7rem ${horizontalPadding} 0.3rem`,
+        marginTop: "1.5rem",
       }}
       className="channel-message-container"
     >
@@ -518,6 +521,7 @@ export const CastItem = ({
           </>
         </div>
       </div>
+      {showLastReadMark && <NewCastsMarker />}
     </div>
   );
 };

@@ -20,7 +20,7 @@ import Dialog from "@shades/ui-web/dialog";
 import AuthDialog from "./auth-dialog";
 import useFarcasterAccount from "./farcaster-account";
 import {
-  useChannelHasUnread,
+  useChannelUnreadCount,
   useFollowedChannels,
   useUnreadStatesFetch,
 } from "../hooks/channel";
@@ -144,7 +144,8 @@ const ListItem = React.forwardRef(
 export const ChannelItem = ({ channel, expandable }) => {
   const theme = useTheme();
   const link = getChannelLink(channel);
-  const hasUnread = useChannelHasUnread(channel?.id);
+  const unreadCount = useChannelUnreadCount(channel?.id);
+
   const { isFloating: isFloatingMenuEnabled } = useSidebarState();
   const toggleMenu = useSidebarToggle();
 
@@ -170,14 +171,23 @@ export const ChannelItem = ({ channel, expandable }) => {
             display: "grid",
             gridTemplateColumns: "1fr auto",
             gridGap: "0.4rem",
-            color: hasUnread ? theme.colors.textNormal : undefined,
+            color: unreadCount > 0 ? theme.colors.textNormal : undefined,
             fontWeight:
-              hasUnread && theme.light
+              unreadCount > 0 && theme.light
                 ? theme.text.weights.emphasis
                 : undefined,
           }}
         >
           <p>{channel.name}</p>
+          {unreadCount > 0 && (
+            <p
+              css={(t) =>
+                css({ color: t.colors.textMuted, fontSize: t.fontSizes.tiny })
+              }
+            >
+              {unreadCount >= 10 ? "10+" : unreadCount}
+            </p>
+          )}
         </div>
       }
       icon={

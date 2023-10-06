@@ -128,10 +128,10 @@ export const ChannelCacheContextProvider = ({ children }) => {
 
     return fetchNeynarCasts({
       parentUrl: channel?.parentUrl,
-      limit: 1,
+      limit: 10,
       reverse: true,
     }).then((casts) => {
-      const lastCast = casts[0];
+      const lastCast = casts.slice(-1)[0];
       const lastCastAt = lastCast?.timestamp;
 
       setState((s) => {
@@ -143,6 +143,7 @@ export const ChannelCacheContextProvider = ({ children }) => {
               ...s.readStatesByChannelId[channel?.id],
               lastCastAt,
               lastCastHash: lastCast?.hash,
+              lastCastHashes: casts.map((c) => c.hash),
             },
           },
         };
@@ -150,21 +151,25 @@ export const ChannelCacheContextProvider = ({ children }) => {
     });
   }, []);
 
-  const markChannelRead = React.useCallback(async (channelId) => {
-    const readAt = new Date();
-    setState((s) => {
-      return {
-        ...s,
-        readStatesByChannelId: {
-          ...s.readStatesByChannelId,
-          [channelId]: {
-            ...s.readStatesByChannelId[channelId],
-            lastReadAt: readAt,
+  const markChannelRead = React.useCallback(
+    async ({ channelId, lastCastHash }) => {
+      const readAt = new Date();
+      setState((s) => {
+        return {
+          ...s,
+          readStatesByChannelId: {
+            ...s.readStatesByChannelId,
+            [channelId]: {
+              ...s.readStatesByChannelId[channelId],
+              lastReadAt: readAt,
+              lastReadHash: lastCastHash,
+            },
           },
-        },
-      };
-    });
-  }, []);
+        };
+      });
+    },
+    []
+  );
 
   const followChannel = React.useCallback(async ({ fid, channel }) => {
     setState((s) => {
@@ -364,6 +369,48 @@ export const useChannelHasUnread = (channelId) => {
   const lastCastTimestamp = new Date(channelState.lastCastAt).getTime();
 
   return lastReadTimestamp < lastCastTimestamp;
+};
+
+export const useChannelUnreadCount = (channelId) => {
+  const {
+    state: { readStatesByChannelId },
+  } = React.useContext(ChannelCacheContext);
+  if (!channelId) return;
+
+  const channelState = readStatesByChannelId[channelId];
+  if (channelState == null) return 0;
+
+  const lastReadTimestamp = new Date(channelState.lastReadAt).getTime();
+  const lastCastTimestamp = new Date(channelState.lastCastAt).getTime();
+  if (lastReadTimestamp > lastCastTimestamp) return 0;
+
+  const lastReadHash = channelState.lastReadHash;
+  if (!lastReadHash) return 0;
+
+  const lastHashes = channelState.lastCastHashes;
+
+  if (!lastHashes || lastHashes.length == 0) return 0;
+
+  try {
+    const position = lastHashes.indexOf(lastReadHash);
+    const unread = channelState.lastCastHashes.length - 1 - position;
+    return unread;
+  } catch (e) {
+    console.error("problem calculating unread for channel", channelId, e);
+    return 0;
+  }
+};
+
+export const useChannelLastReadCast = (channelId) => {
+  const {
+    state: { readStatesByChannelId },
+  } = React.useContext(ChannelCacheContext);
+  if (!channelId) return;
+
+  const channelState = readStatesByChannelId[channelId];
+  if (channelState == null) return null;
+
+  return channelState.lastReadHash;
 };
 
 export const useIsChannelFollowed = (channelId) => {

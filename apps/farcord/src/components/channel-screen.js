@@ -19,6 +19,7 @@ import {
   useChannelCasts,
   useChannelCastsFetch,
   useChannelHasUnread,
+  useChannelLastReadCast,
   useFeedCasts,
   useFeedCastsFetch,
 } from "../hooks/channel.js";
@@ -26,6 +27,8 @@ import { toHex } from "viem";
 import useFarcasterAccount from "./farcaster-account.js";
 import MessageEditorForm from "./message-editor-form.js";
 import { useMatchMedia } from "@shades/common/react";
+import isHotkey from "is-hotkey";
+import { usePreviousValue } from "../hooks/previous-value.js";
 
 export const ChannelCastsScrollView = ({
   channelId,
@@ -65,31 +68,25 @@ export const ChannelCastsScrollView = ({
   const hasAllCasts = false;
 
   const channelHasUnread = useChannelHasUnread(channelId);
+  const lastReadCastHash = useChannelLastReadCast(channelId);
+  const previousLastReadCastHash = usePreviousValue(lastReadCastHash);
+  const [ignoreMarker, setIgnoreMarker] = React.useState(false);
+  const isEscapeHotkey = isHotkey("escape");
 
   const {
     actions: { markChannelRead },
   } = useChannelCacheContext();
 
-  // const fetchMessages = useChannelCastsFetcher(channelId);
+  React.useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (isEscapeHotkey(e)) setIgnoreMarker(true);
+    };
 
-  // const fetchMoreCasts = useLatestCallback(async (query) => {
-  //   const count = 30;
-  //   setPendingMessagesBeforeCount(count);
-  //   return fetchMessages({
-  //     cursor: nextCursor,
-  //     ...query,
-  //   }).finally(() => {
-  //     setPendingMessagesBeforeCount(0);
-  //   });
-  // });
-
-  // React.useEffect(() => {
-  //   if (casts?.length !== 0) return;
-
-  //   // This should be called after the first render, and when navigating to
-  //   // emply channels
-  //   fetchMessages({ limit: 30 });
-  // }, [fetchMessages, casts?.length]);
+    window.addEventListener("keydown", handleKeyDown);
+    return () => {
+      window.removeEventListener("keydown", handleKeyDown);
+    };
+  });
 
   React.useEffect(() => {
     if (!channel && !isFeed && !isRecent && channelId)
@@ -113,7 +110,10 @@ export const ChannelCastsScrollView = ({
     )
       return;
 
-    markChannelRead(channelId);
+    markChannelRead({
+      channelId,
+      lastCastHash: channelCasts?.slice(-1)[0].hash,
+    });
   }, [
     channelId,
     didScrollToBottomRef,
@@ -256,6 +256,11 @@ export const ChannelCastsScrollView = ({
                     isFeed={isFeed}
                     isRecent={isRecent}
                     showReplies={true}
+                    showLastReadMark={
+                      !ignoreMarker &&
+                      previousLastReadCastHash != lastReadCastHash &&
+                      cast.hash == previousLastReadCastHash
+                    }
                   />
                 ))}
               </>
