@@ -2,9 +2,10 @@ import datesDifferenceInMonths from "date-fns/differenceInCalendarMonths";
 import { formatEther, formatUnits } from "viem";
 import React from "react";
 import { css } from "@emotion/react";
-import useDecodedFunctionData from "../hooks/decoded-function-data.js";
+import { ethereum as ethereumUtils } from "@shades/common/utils";
 import { useAccountDisplayName } from "@shades/common/app";
 import * as Tooltip from "@shades/ui-web/tooltip";
+import useDecodedFunctionData from "../hooks/decoded-function-data.js";
 import FormattedDateWithTooltip from "./formatted-date-with-tooltip.js";
 import {
   DAO_PAYER_CONTRACT,
@@ -74,32 +75,6 @@ const TransactionList = ({ transactions }) => (
         "pre:has(code)": {
           marginTop: "0.8rem",
         },
-        "pre code": {
-          display: "block",
-          padding: "0.8rem 1rem",
-          overflow: "auto",
-          userSelect: "text",
-          fontFamily: t.text.fontStacks.monospace,
-          fontSize: t.text.sizes.tiny,
-          color: t.colors.textDimmed,
-          background: t.colors.backgroundSecondary,
-          borderRadius: "0.3rem",
-          "[data-indent]": { paddingLeft: "1rem" },
-          "[data-comment]": { color: t.colors.textMuted },
-          "[data-indentifier]": { color: t.colors.textDimmed },
-          "[data-function-name]": {
-            color: t.colors.textPrimary,
-            fontWeight: t.text.weights.emphasis,
-          },
-          "[data-argument]": { color: t.colors.textNormal },
-          a: {
-            textDecoration: "none",
-            color: "currentColor",
-            "@media(hover: hover)": {
-              ":hover": { textDecoration: "underline" },
-            },
-          },
-        },
       })
     }
   >
@@ -121,21 +96,57 @@ const ListItem = ({ transaction }) => {
       case "proxied-function-call":
       case "proxied-payable-function-call":
         return (
-          <pre>
-            <code>
-              <a
-                data-identifier
-                href={createEtherscanAddressUrl(t.target)}
-                target="_blank"
-                rel="noreferrer"
-              >
-                contract
-              </a>
-              .<span data-function-name>{t.functionName}</span>(
-              {(t.functionInputs.length > 0 || t.value > 0) && (
-                <div data-indent>
-                  {t.functionInputs.map((input, i, inputs) => (
-                    <React.Fragment key={i}>
+          <Code block>
+            <AddressDisplayNameWithTooltip address={t.target} data-identifier>
+              {ethereumUtils.truncateAddress(t.target)}
+              {/* contract */}
+            </AddressDisplayNameWithTooltip>
+            .
+            <Tooltip.Root
+              // Disable the tooltip if the function lack arguments
+              open={t.functionInputs.length === 0 ? false : undefined}
+            >
+              <Tooltip.Trigger asChild>
+                <span data-function-name>{t.functionName}</span>
+              </Tooltip.Trigger>
+              <Tooltip.Content side="top" sideOffset={6}>
+                <Code>
+                  {t.functionName}(
+                  {t.functionInputs.map((i) => i.type).join(", ")})
+                </Code>
+              </Tooltip.Content>
+            </Tooltip.Root>
+            (
+            {(t.functionInputs.length > 0 || t.value > 0) && (
+              <>
+                <br />
+                {t.functionInputs.map((input, i, inputs) => (
+                  <React.Fragment key={i}>
+                    &nbsp;&nbsp;
+                    {Array.isArray(input.value) ? (
+                      <>
+                        [
+                        {input.value.map((item, i, items) => (
+                          <React.Fragment key={item.toString()}>
+                            <span data-argument>
+                              {input.type === "address[]" ? (
+                                <a
+                                  href={createEtherscanAddressUrl(item)}
+                                  target="_blank"
+                                  rel="noreferrer"
+                                >
+                                  {item}
+                                </a>
+                              ) : (
+                                item.toString()
+                              )}
+                            </span>
+                            {i < items.length - 1 && <>, </>}
+                          </React.Fragment>
+                        ))}
+                        ]
+                      </>
+                    ) : (
                       <span data-argument>
                         {input.type === "address" ? (
                           <a
@@ -149,42 +160,41 @@ const ListItem = ({ transaction }) => {
                           input.value.toString()
                         )}
                       </span>
-                      {(i !== inputs.length - 1 || t.value > 0) && (
-                        <>
-                          ,<br />
-                        </>
-                      )}
-                    </React.Fragment>
-                  ))}
-                  {t.value > 0 && (
-                    <span data-argument>{formatEther(t.value)} ETH</span>
-                  )}
-                </div>
-              )}
-              )
-            </code>
-          </pre>
+                    )}
+                    {(i !== inputs.length - 1 || t.value > 0) && (
+                      <>
+                        ,<br />
+                      </>
+                    )}
+                  </React.Fragment>
+                ))}
+                {t.value > 0 && (
+                  <span data-argument>{formatEther(t.value)} ETH</span>
+                )}
+                <br />
+              </>
+            )}
+            )
+          </Code>
         );
 
       case "unparsed-function-call":
       case "unparsed-payable-function-call":
         return (
-          <pre>
-            <code>
-              <span data-identifier>contract</span>:{" "}
-              <span data-argument>{t.target}</span>
-              <br />
-              <span data-identifier>calldata</span>:{" "}
-              <span data-argument>{t.calldata}</span>
-              {t.value > 0 && (
-                <>
-                  <br />
-                  <span data-identifier>ETH</span>:{" "}
-                  <span data-argument>{formatEther(t.value)}</span>
-                </>
-              )}
-            </code>
-          </pre>
+          <Code block>
+            <span data-identifier>contract</span>:{" "}
+            <span data-argument>{t.target}</span>
+            <br />
+            <span data-identifier>calldata</span>:{" "}
+            <span data-argument>{t.calldata}</span>
+            {t.value > 0 && (
+              <>
+                <br />
+                <span data-identifier>ETH</span>:{" "}
+                <span data-argument>{formatEther(t.value)}</span>
+              </>
+            )}
+          </Code>
         );
 
       case "transfer":
@@ -246,7 +256,7 @@ const ListItem = ({ transaction }) => {
             })
           }
         >
-          Implementation contract{" "}
+          Implementation contract at{" "}
           <AddressDisplayNameWithTooltip
             address={t.proxyImplementationAddress}
           />
@@ -507,18 +517,18 @@ export const FormattedEthWithConditionalTooltip = ({
   );
 };
 
-const AddressDisplayNameWithTooltip = ({ address }) => {
+const AddressDisplayNameWithTooltip = ({ address, children, ...props }) => {
   const knownContract = useContract(address);
   const { displayName } = useAccountDisplayName(address);
   return (
     <Tooltip.Root>
-      <Tooltip.Trigger asChild>
+      <Tooltip.Trigger asChild {...props}>
         <a
           href={createEtherscanAddressUrl(address)}
           target="_blank"
           rel="noreferrer"
         >
-          {knownContract?.name ?? displayName}
+          {children ?? knownContract?.name ?? displayName}
         </a>
       </Tooltip.Trigger>
       <Tooltip.Content side="top" sideOffset={6}>
@@ -530,6 +540,55 @@ const AddressDisplayNameWithTooltip = ({ address }) => {
         {address}
       </Tooltip.Content>
     </Tooltip.Root>
+  );
+};
+
+const Code = ({ block, ...props }) => {
+  const code = (
+    <code
+      css={(t) =>
+        css({
+          userSelect: "text",
+          fontFamily: t.text.fontStacks.monospace,
+          fontSize: t.text.sizes.tiny,
+          color: t.colors.textDimmed,
+        })
+      }
+      {...props}
+    />
+  );
+
+  if (!block) return code;
+
+  return (
+    <pre
+      css={(t) =>
+        css({
+          display: "block",
+          padding: "0.8rem 1rem",
+          overflow: "auto",
+          background: t.colors.backgroundSecondary,
+          borderRadius: "0.3rem",
+          "[data-indent]": { paddingLeft: "1rem" },
+          "[data-comment]": { color: t.colors.textMuted },
+          "[data-indentifier]": { color: t.colors.textDimmed },
+          "[data-function-name]": {
+            color: t.colors.textPrimary,
+            fontWeight: t.text.weights.emphasis,
+          },
+          "[data-argument]": { color: t.colors.textNormal },
+          a: {
+            textDecoration: "none",
+            color: "currentColor",
+            "@media(hover: hover)": {
+              ":hover": { textDecoration: "underline" },
+            },
+          },
+        })
+      }
+    >
+      {code}
+    </pre>
   );
 };
 
