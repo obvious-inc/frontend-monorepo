@@ -101,6 +101,8 @@ const ActivityFeed = ({ context, items = [], spacing = "1.6rem" }) => (
             <div
               css={css({
                 display: "flex",
+                alignItems: "flex-start",
+                gap: "1rem",
                 cursor: "default",
                 lineHeight: 1.5,
               })}
@@ -115,40 +117,42 @@ const ActivityFeed = ({ context, items = [], spacing = "1.6rem" }) => (
               >
                 <ItemTitle item={item} context={context} />
               </div>
-              {item.isPending ? (
-                <Spinner size="1rem" />
-              ) : (
-                item.voteCount != null && (
-                  <Tooltip.Root>
-                    <Tooltip.Trigger asChild>
-                      <span
-                        css={(t) =>
-                          css({
-                            display: "inline-flex",
-                            alignItems: "center",
-                            gap: "0.5rem",
-                            fontSize: t.text.sizes.tiny,
-                            color: t.colors.textDimmed,
-                          })
-                        }
-                      >
-                        {item.voteCount}
-                        <NogglesIcon
-                          style={{
-                            display: "inline-flex",
-                            width: "1.7rem",
-                            height: "auto",
-                          }}
-                        />
-                      </span>
-                    </Tooltip.Trigger>
-                    <Tooltip.Content side="top" sideOffset={5}>
-                      {item.voteCount}{" "}
-                      {Number(item.voteCount) === 1 ? "noun" : "nouns"}
-                    </Tooltip.Content>
-                  </Tooltip.Root>
-                )
-              )}
+              <div style={{ padding: "0.25rem 0" }}>
+                {item.isPending ? (
+                  <Spinner size="1rem" />
+                ) : (
+                  item.voteCount != null && (
+                    <Tooltip.Root>
+                      <Tooltip.Trigger asChild>
+                        <span
+                          css={(t) =>
+                            css({
+                              display: "flex",
+                              alignItems: "center",
+                              gap: "0.5rem",
+                              fontSize: t.text.sizes.tiny,
+                              color: t.colors.textDimmed,
+                            })
+                          }
+                        >
+                          {item.voteCount}
+                          <NogglesIcon
+                            style={{
+                              display: "inline-flex",
+                              width: "1.7rem",
+                              height: "auto",
+                            }}
+                          />
+                        </span>
+                      </Tooltip.Trigger>
+                      <Tooltip.Content side="top" sideOffset={5}>
+                        {item.voteCount}{" "}
+                        {Number(item.voteCount) === 1 ? "noun" : "nouns"}
+                      </Tooltip.Content>
+                    </Tooltip.Root>
+                  )
+                )}
+              </div>
             </div>
           </div>
         </div>
