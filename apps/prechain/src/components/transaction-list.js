@@ -4,15 +4,12 @@ import React from "react";
 import { css } from "@emotion/react";
 import { ethereum as ethereumUtils } from "@shades/common/utils";
 import { useAccountDisplayName } from "@shades/common/app";
+import Button from "@shades/ui-web/button";
+import { CaretDown as CaretDownIcon } from "@shades/ui-web/icons";
 import * as Tooltip from "@shades/ui-web/tooltip";
 import useDecodedFunctionData from "../hooks/decoded-function-data.js";
 import FormattedDateWithTooltip from "./formatted-date-with-tooltip.js";
-import {
-  DAO_PAYER_CONTRACT,
-  DAO_TOKEN_BUYER_CONTRACT,
-  WETH_TOKEN_CONTRACT_ADDRESS,
-  useContract,
-} from "../contracts.js";
+import { useContract } from "../contracts.js";
 
 const decimalsByCurrency = {
   ETH: 18,
@@ -87,6 +84,8 @@ const TransactionList = ({ transactions }) => (
 );
 
 const ListItem = ({ transaction }) => {
+  const daoPayerContract = useContract("payer");
+  const [isExpanded, setExpanded] = React.useState(false);
   const t = useEnhancedParsedTransaction(transaction);
 
   const renderCode = () => {
@@ -96,86 +95,12 @@ const ListItem = ({ transaction }) => {
       case "proxied-function-call":
       case "proxied-payable-function-call":
         return (
-          <Code block>
-            <AddressDisplayNameWithTooltip address={t.target} data-identifier>
-              {ethereumUtils.truncateAddress(t.target)}
-              {/* contract */}
-            </AddressDisplayNameWithTooltip>
-            .
-            <Tooltip.Root
-              // Disable the tooltip if the function lack arguments
-              open={t.functionInputs.length === 0 ? false : undefined}
-            >
-              <Tooltip.Trigger asChild>
-                <span data-function-name>{t.functionName}</span>
-              </Tooltip.Trigger>
-              <Tooltip.Content side="top" sideOffset={6}>
-                <Code>
-                  {t.functionName}(
-                  {t.functionInputs.map((i) => i.type).join(", ")})
-                </Code>
-              </Tooltip.Content>
-            </Tooltip.Root>
-            (
-            {(t.functionInputs.length > 0 || t.value > 0) && (
-              <>
-                <br />
-                {t.functionInputs.map((input, i, inputs) => (
-                  <React.Fragment key={i}>
-                    &nbsp;&nbsp;
-                    {Array.isArray(input.value) ? (
-                      <>
-                        [
-                        {input.value.map((item, i, items) => (
-                          <React.Fragment key={item.toString()}>
-                            <span data-argument>
-                              {input.type === "address[]" ? (
-                                <a
-                                  href={createEtherscanAddressUrl(item)}
-                                  target="_blank"
-                                  rel="noreferrer"
-                                >
-                                  {item}
-                                </a>
-                              ) : (
-                                item.toString()
-                              )}
-                            </span>
-                            {i < items.length - 1 && <>, </>}
-                          </React.Fragment>
-                        ))}
-                        ]
-                      </>
-                    ) : (
-                      <span data-argument>
-                        {input.type === "address" ? (
-                          <a
-                            href={createEtherscanAddressUrl(input.value)}
-                            target="_blank"
-                            rel="noreferrer"
-                          >
-                            {input.value}
-                          </a>
-                        ) : (
-                          input.value.toString()
-                        )}
-                      </span>
-                    )}
-                    {(i !== inputs.length - 1 || t.value > 0) && (
-                      <>
-                        ,<br />
-                      </>
-                    )}
-                  </React.Fragment>
-                ))}
-                {t.value > 0 && (
-                  <span data-argument>{formatEther(t.value)} ETH</span>
-                )}
-                <br />
-              </>
-            )}
-            )
-          </Code>
+          <FunctionCallCodeBlock
+            target={t.target}
+            name={t.functionName}
+            inputs={t.functionInputs}
+            value={t.value}
+          />
         );
 
       case "unparsed-function-call":
@@ -198,9 +123,10 @@ const ListItem = ({ transaction }) => {
         );
 
       case "transfer":
-      case "weth-transfer":
       case "usdc-transfer-via-payer":
+      case "weth-transfer":
       case "weth-deposit":
+      case "weth-approval":
       case "weth-stream-funding":
       case "usdc-stream-funding-via-payer":
       case "token-buyer-top-up":
@@ -212,7 +138,124 @@ const ListItem = ({ transaction }) => {
     }
   };
 
-  const explanation = <TransactionExplanation transaction={t} />;
+  const renderComment = () => {
+    switch (t.type) {
+      case "unparsed-function-call":
+        return (
+          <>
+            Displaying the raw calldata as the contract ABI cound not be fetched
+            from Etherscan.
+          </>
+        );
+
+      case "proxied-function-call":
+        return (
+          <>
+            Implementation contract at{" "}
+            <AddressDisplayNameWithTooltip
+              address={t.proxyImplementationAddress}
+            />
+            .
+          </>
+        );
+
+      case "token-buyer-top-up":
+        return (
+          <>
+            This transaction refills USDC to the{" "}
+            <AddressDisplayNameWithTooltip address={daoPayerContract.address} />{" "}
+            contract via the{" "}
+            <AddressDisplayNameWithTooltip address={t.target} /> (
+            <FormattedEthWithConditionalTooltip value={t.value} />
+            ).
+          </>
+        );
+
+      case "usdc-stream-funding-via-payer":
+        return (
+          <>
+            This transaction funds the stream with the required amount via the{" "}
+            <AddressDisplayNameWithTooltip address={t.target} />.
+          </>
+        );
+
+      case "weth-stream-funding":
+        return (
+          <>
+            This transaction funds the stream with the required amount via the{" "}
+            <AddressDisplayNameWithTooltip address={t.target} />.
+          </>
+        );
+
+      case "usdc-transfer-via-payer":
+        return (
+          <>
+            USDC is transfered from the{" "}
+            <AddressDisplayNameWithTooltip address={t.target} /> contract.
+          </>
+        );
+
+      case "function-call":
+      case "payable-function-call":
+      case "proxied-payable-function-call":
+      case "unparsed-payable-function-call":
+      case "transfer":
+      case "weth-transfer":
+      case "weth-deposit":
+      case "weth-approval":
+      case "stream":
+        return null;
+
+      default:
+        throw new Error(`Unknown transaction type: "${t.type}"`);
+    }
+  };
+
+  const renderExpandedContent = () => {
+    switch (t.type) {
+      case "weth-transfer":
+      case "weth-deposit":
+      case "weth-approval":
+      case "stream":
+      case "usdc-stream-funding-via-payer":
+      case "weth-stream-funding":
+      case "usdc-transfer-via-payer":
+        return (
+          <FunctionCallCodeBlock
+            target={t.target}
+            name={t.functionName}
+            inputs={t.functionInputs}
+            value={t.value}
+          />
+        );
+
+      case "transfer":
+      case "token-buyer-top-up":
+        return (
+          <FunctionCallCodeBlock
+            target={t.target}
+            name="transfer"
+            inputs={[]}
+            value={t.value}
+          />
+        );
+
+      case "unparsed-function-call":
+      case "proxied-function-call":
+      case "function-call":
+      case "payable-function-call":
+      case "proxied-payable-function-call":
+      case "unparsed-payable-function-call":
+        return null;
+
+      default:
+        throw new Error(`Unknown transaction type: "${t.type}"`);
+    }
+  };
+
+  const code = renderCode();
+  const comment = renderComment();
+  const expandedContent = renderExpandedContent();
 
   return (
     <>
@@ -228,96 +271,144 @@ const ListItem = ({ transaction }) => {
           })
         }
       >
-        {explanation}
+        <TransactionExplanation transaction={t} />
       </div>
-      {renderCode()}
-      {t.type === "unparsed-function-call" && (
-        <div
-          css={(t) =>
-            css({
-              fontSize: t.text.sizes.small,
-              color: t.colors.textDimmed,
-              marginTop: "0.8rem",
-            })
-          }
-        >
-          Displaying the raw calldata as the contract ABI cound not be fetched
-          from Etherscan.
-        </div>
-      )}
-      {t.type === "proxied-function-call" && (
+      {code}
+      {comment != null && (
         <div
           css={(t) =>
             css({
               a: { color: "currentcolor" },
               fontSize: t.text.sizes.small,
               color: t.colors.textDimmed,
-              marginTop: "0.8rem",
             })
           }
+          style={{ marginTop: code == null ? "0.4rem" : "0.8rem" }}
         >
-          Implementation contract at{" "}
-          <AddressDisplayNameWithTooltip
-            address={t.proxyImplementationAddress}
-          />
+          {comment}
         </div>
       )}
-      {t.type === "token-buyer-top-up" && (
-        <div
-          css={(t) =>
-            css({
-              a: { color: "currentcolor" },
-              fontSize: t.text.sizes.small,
-              color: t.colors.textDimmed,
-              marginTop: "0.2rem",
-            })
-          }
-        >
-          This transaction refills USDC to the{" "}
-          <AddressDisplayNameWithTooltip address={DAO_PAYER_CONTRACT} />{" "}
-          contract via the{" "}
-          <AddressDisplayNameWithTooltip address={DAO_TOKEN_BUYER_CONTRACT} /> (
-          <FormattedEthWithConditionalTooltip value={t.value} />
-          ).
-        </div>
-      )}
-      {t.type === "usdc-stream-funding-via-payer" && (
-        <div
-          css={(t) =>
-            css({
-              a: { color: "currentcolor" },
-              fontSize: t.text.sizes.small,
-              color: t.colors.textDimmed,
-              marginTop: "0.2rem",
-            })
-          }
-        >
-          This transaction funds the stream with the required amount via the{" "}
-          <AddressDisplayNameWithTooltip address={DAO_PAYER_CONTRACT} />.
-        </div>
-      )}
-
-      {t.type === "weth-stream-funding" && (
-        <div
-          css={(t) =>
-            css({
-              a: { color: "currentcolor" },
-              fontSize: t.text.sizes.small,
-              color: t.colors.textDimmed,
-              marginTop: "0.2rem",
-            })
-          }
-        >
-          This transaction funds the stream with the required amount via the{" "}
-          <AddressDisplayNameWithTooltip
-            address={WETH_TOKEN_CONTRACT_ADDRESS}
-          />
-          .
+      {expandedContent != null && (
+        <div style={{ marginTop: "0.6rem" }}>
+          <Button
+            variant="default-opaque"
+            size="tiny"
+            onClick={() => {
+              setExpanded((s) => !s);
+            }}
+            css={(t) =>
+              css({
+                fontSize: t.text.sizes.small,
+                color: t.colors.textDimmed,
+                "[data-underline]": { textDecoration: "underline" },
+              })
+            }
+            iconRight={
+              <CaretDownIcon
+                style={{
+                  width: "0.85rem",
+                  transform: isExpanded ? "scaleY(-1)" : undefined,
+                }}
+              />
+            }
+          >
+            Expand
+          </Button>
+          {isExpanded && expandedContent}
         </div>
       )}
     </>
   );
 };
+
+const FunctionCallCodeBlock = ({ target, name, inputs, value }) => (
+  <Code block>
+    <AddressDisplayNameWithTooltip address={target} data-identifier>
+      {ethereumUtils.truncateAddress(target)}
+      {/* contract */}
+    </AddressDisplayNameWithTooltip>
+    .
+    <Tooltip.Root
+      // Disable the tooltip if the function lack arguments
+      open={inputs.length === 0 ? false : undefined}
+    >
+      <Tooltip.Trigger asChild>
+        <span data-function-name>{name}</span>
+      </Tooltip.Trigger>
+      <Tooltip.Content side="top" sideOffset={6}>
+        <Code>
+          <span css={(t) => css({ color: t.colors.textPrimary })}>{name}</span>(
+          {inputs.map((i) => i.type).join(", ")})
+        </Code>
+      </Tooltip.Content>
+    </Tooltip.Root>
+    (
+    {(inputs.length > 0 || value > 0) && (
+      <>
+        <br />
+        {inputs.map((input, i, inputs) => (
+          <React.Fragment key={i}>
+            &nbsp;&nbsp;
+            {Array.isArray(input.value) ? (
+              <>
+                [
+                {input.value.map((item, i, items) => (
+                  <React.Fragment key={item.toString()}>
+                    <span data-argument>
+                      {input.type === "address[]" ? (
+                        <a
+                          href={createEtherscanAddressUrl(item)}
+                          target="_blank"
+                          rel="noreferrer"
+                        >
+                          {item}
+                        </a>
+                      ) : (
+                        item.toString()
+                      )}
+                    </span>
+                    {i < items.length - 1 && <>, </>}
+                  </React.Fragment>
+                ))}
+                ]
+              </>
+            ) : (
+              <span data-argument>
+                {input.type === "address" ? (
+                  <a
+                    href={createEtherscanAddressUrl(input.value)}
+                    target="_blank"
+                    rel="noreferrer"
+                  >
+                    {input.value}
+                  </a>
+                ) : (
+                  input.value.toString()
+                )}
+              </span>
+            )}
+            {(i !== inputs.length - 1 || value > 0) && (
+              <>
+                ,<br />
+              </>
+            )}
+          </React.Fragment>
+        ))}
+        {value > 0 && (
+          <span data-argument>
+            &nbsp;&nbsp;{value.toString()}{" "}
+            <span data-comment>
+              {"// "}
+              {formatEther(value)} ETH
+            </span>
+          </span>
+        )}
+        <br />
+      </>
+    )}
+    )
+  </Code>
+);
 
 export const TransactionExplanation = ({ transaction: t }) => {
   switch (t.type) {
@@ -335,31 +426,50 @@ export const TransactionExplanation = ({ transaction: t }) => {
         </>
       );
 
+    case "usdc-transfer-via-payer":
+      return (
+        <>
+          Transfer{" "}
+          <em>
+            {parseFloat(formatUnits(t.usdcAmount, 6)).toLocaleString()} USDC
+          </em>{" "}
+          to{" "}
+          <em>
+            <AddressDisplayNameWithTooltip address={t.receiverAddress} />
+          </em>
+        </>
+      );
+
     case "weth-transfer":
       return (
         <>
           Transfer{" "}
           <em>
             <FormattedEthWithConditionalTooltip
-              value={t.value}
+              value={t.wethAmount}
               tokenSymbol="WETH"
             />
           </em>{" "}
           to{" "}
           <em>
-            <AddressDisplayNameWithTooltip address={t.target} />
+            <AddressDisplayNameWithTooltip address={t.receiverAddress} />
           </em>
         </>
       );
 
-    case "usdc-transfer-via-payer":
+    case "weth-approval":
       return (
         <>
-          Transfer{" "}
-          <em>{parseFloat(formatUnits(t.value, 6)).toLocaleString()} USDC</em>{" "}
-          to{" "}
+          Approve{" "}
           <em>
-            <AddressDisplayNameWithTooltip address={t.target} />
+            <FormattedEthWithConditionalTooltip
+              value={t.wethAmount}
+              tokenSymbol="WETH"
+            />
+          </em>{" "}
+          allowance to{" "}
+          <em>
+            <AddressDisplayNameWithTooltip address={t.receiverAddress} />
           </em>
         </>
       );
@@ -373,9 +483,7 @@ export const TransactionExplanation = ({ transaction: t }) => {
           </em>{" "}
           to the{" "}
           <em>
-            <AddressDisplayNameWithTooltip
-              address={WETH_TOKEN_CONTRACT_ADDRESS}
-            />
+            <AddressDisplayNameWithTooltip address={t.target} />
           </em>
         </>
       );
@@ -385,7 +493,7 @@ export const TransactionExplanation = ({ transaction: t }) => {
         <>
           Top up the{" "}
           <em>
-            <AddressDisplayNameWithTooltip address={DAO_TOKEN_BUYER_CONTRACT} />
+            <AddressDisplayNameWithTooltip address={t.target} />
           </em>
         </>
       );
@@ -531,10 +639,30 @@ const AddressDisplayNameWithTooltip = ({ address, children, ...props }) => {
           {children ?? knownContract?.name ?? displayName}
         </a>
       </Tooltip.Trigger>
-      <Tooltip.Content side="top" sideOffset={6}>
-        {knownContract?.description && (
-          <p css={(t) => css({ fontWeight: t.text.weights.smallHeader })}>
-            {knownContract.description}
+      <Tooltip.Content
+        side="top"
+        sideOffset={6}
+        css={(t) =>
+          css({
+            userSelect: "text",
+            fontFamily: t.text.fontStacks.monospace,
+            fontSize: t.text.sizes.small,
+            color: t.colors.textDimmed,
+          })
+        }
+      >
+        {knownContract != null && (
+          <p
+            css={(t) =>
+              css({
+                fontFamily: t.text.fontStacks.default,
+                fontSize: t.text.sizes.small,
+                fontWeight: t.text.weights.header,
+                lineHeight: 1.5,
+              })
+            }
+          >
+            {knownContract.description ?? knownContract.name}
           </p>
         )}
         {address}
@@ -569,6 +697,8 @@ const Code = ({ block, ...props }) => {
           overflow: "auto",
           background: t.colors.backgroundSecondary,
           borderRadius: "0.3rem",
+          userSelect: "text",
+          lineHeight: 1.4,
           "[data-indent]": { paddingLeft: "1rem" },
           "[data-comment]": { color: t.colors.textMuted },
           "[data-indentifier]": { color: t.colors.textDimmed },

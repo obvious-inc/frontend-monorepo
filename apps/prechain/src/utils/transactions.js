@@ -45,7 +45,7 @@ export const parse = (data, { chainId }) => {
     if (isEthTransfer)
       return target.toLowerCase() ===
         nounsTokenBuyerContract.address.toLowerCase()
-        ? { type: "token-buyer-top-up", value }
+        ? { type: "token-buyer-top-up", target, value }
         : { type: "transfer", target, value };
 
     if (signature == null)
@@ -61,6 +61,9 @@ export const parse = (data, { chainId }) => {
       const tokenContract = resolveAddress(chainId, tokenContractAddress);
       return {
         type: "stream",
+        target,
+        functionName,
+        functionInputs,
         receiverAddress: functionInputs[0].value.toLowerCase(),
         token: tokenContract.token,
         tokenAmount: functionInputs[1].value,
@@ -73,9 +76,29 @@ export const parse = (data, { chainId }) => {
 
     if (
       target.toLowerCase() === wethTokenContract.address.toLowerCase() &&
-      signature === "deposit()"
+      functionName === "deposit"
     ) {
-      return { type: "weth-deposit", value };
+      return {
+        type: "weth-deposit",
+        target,
+        functionName,
+        functionInputs,
+        value,
+      };
+    }
+
+    if (
+      target.toLowerCase() === wethTokenContract.address.toLowerCase() &&
+      functionName === "approve"
+    ) {
+      return {
+        type: "weth-approval",
+        target,
+        functionName,
+        functionInputs,
+        receiverAddress: functionInputs[0].value,
+        wethAmount: BigInt(functionInputs[1].value),
+      };
     }
 
     if (
@@ -89,8 +112,11 @@ export const parse = (data, { chainId }) => {
 
       return {
         type: isStreamFunding ? "weth-stream-funding" : "weth-transfer",
-        target: functionInputs[0].value,
-        value: BigInt(functionInputs[1].value),
+        target,
+        functionName,
+        functionInputs,
+        receiverAddress: functionInputs[0].value,
+        wethAmount: BigInt(functionInputs[1].value),
       };
     }
 
@@ -107,23 +133,26 @@ export const parse = (data, { chainId }) => {
         type: isStreamFunding
           ? "usdc-stream-funding-via-payer"
           : "usdc-transfer-via-payer",
-        target: functionInputs[0].value,
-        value: BigInt(functionInputs[1].value),
+        target,
+        functionName,
+        functionInputs,
+        receiverAddress: functionInputs[0].value,
+        usdcAmount: BigInt(functionInputs[1].value),
       };
     }
 
     if (value > 0)
       return {
-        target,
         type: "payable-function-call",
+        target,
         functionName,
         functionInputs,
         value,
       };
 
     return {
-      target,
       type: "function-call",
+      target,
       functionName,
       functionInputs,
     };
@@ -168,7 +197,7 @@ export const unparse = (transactions, { chainId }) => {
             signature: "sendOrRegisterDebt(address,uint256)",
             calldata: encodeAbiParameters(
               [{ type: "address" }, { type: "uint256" }],
-              [t.target, t.value]
+              [t.receiverAddress, t.usdcAmount]
             ),
           });
 
@@ -196,14 +225,15 @@ export const unparse = (transactions, { chainId }) => {
 };
 
 export const extractAmounts = (parsedTransactions) => {
-  const ethTransfers = parsedTransactions.filter((t) => t.type === "transfer");
-  const payableFunctionCalls = parsedTransactions.filter(
-    (t) =>
-      t.type === "payable-function-call" ||
-      t.type === "unparsed-payable-function-call"
+  const ethTransfersAndPayableCalls = parsedTransactions.filter(
+    // Exclude WETH deposits as these are handled separately
+    (t) => t.type !== "weth-deposit" && t.value != null
   );
   const wethTransfers = parsedTransactions.filter(
-    (t) => t.type === "weth-transfer" || t.type === "weth-stream-funding"
+    (t) =>
+      t.type === "weth-transfer" ||
+      t.type === "weth-approval" ||
+      t.type === "weth-stream-funding"
   );
   const usdcTransfers = parsedTransactions.filter(
     (t) =>
@@ -211,12 +241,18 @@ export const extractAmounts = (parsedTransactions) => {
       t.type === "usdc-stream-funding-via-payer"
   );
 
-  const ethAmount = [...ethTransfers, ...payableFunctionCalls].reduce(
+  const ethAmount = ethTransfersAndPayableCalls.reduce(
     (sum, t) => sum + t.value,
     BigInt(0)
   );
-  const wethAmount = wethTransfers.reduce((sum, t) => sum + t.value, BigInt(0));
-  const usdcAmount = usdcTransfers.reduce((sum, t) => sum + t.value, BigInt(0));
+  const wethAmount = wethTransfers.reduce(
+    (sum, t) => sum + t.wethAmount,
+    BigInt(0)
+  );
+  const usdcAmount = usdcTransfers.reduce(
+    (sum, t) => sum + t.usdcAmount,
+    BigInt(0)
+  );
 
   return [
     { currency: "eth", amount: ethAmount },

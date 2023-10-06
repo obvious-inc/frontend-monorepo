@@ -2,24 +2,20 @@ import { mainnet, sepolia } from "wagmi/chains";
 import { object as objectUtils } from "@shades/common/utils";
 import useChainId from "./hooks/chain-id.js";
 
-export const ETH_TOKEN_CONTRACT_ADDRESS =
-  "0x0000000000000000000000000000000000000000";
-export const USDC_TOKEN_CONTRACT_ADDRESS =
+const ETH_TOKEN_CONTRACT_ADDRESS = "0x0000000000000000000000000000000000000000";
+const USDC_TOKEN_CONTRACT_ADDRESS =
   "0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48";
-export const WETH_TOKEN_CONTRACT_ADDRESS =
+const WETH_TOKEN_CONTRACT_ADDRESS =
   "0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2";
 
-export const DAO_TOKEN_BUYER_CONTRACT =
-  "0x4f2acdc74f6941390d9b1804fabc3e780388cfe5";
-export const DAO_PAYER_CONTRACT = "0xd97bcd9f47cee35c0a9ec1dc40c1269afc9e8e1d";
-export const DAO_PROXY_CONTRACT = "0x6f3e6272a167e8accb32072d08e0957f9c79223d";
-export const DAO_DATA_PROXY_CONTRACT =
-  "0xf790a5f59678dd733fb3de93493a91f472ca1365";
-export const DAO_TOKEN_CONTRACT = "0x9c8ff314c9bc7f6e59a9d9225fb22946427edc03";
-export const DAO_AUCTION_HOUSE_PROXY_CONTRACT =
+const DAO_TOKEN_BUYER_CONTRACT = "0x4f2acdc74f6941390d9b1804fabc3e780388cfe5";
+const DAO_PAYER_CONTRACT = "0xd97bcd9f47cee35c0a9ec1dc40c1269afc9e8e1d";
+const DAO_PROXY_CONTRACT = "0x6f3e6272a167e8accb32072d08e0957f9c79223d";
+const DAO_DATA_PROXY_CONTRACT = "0xf790a5f59678dd733fb3de93493a91f472ca1365";
+const DAO_TOKEN_CONTRACT = "0x9c8ff314c9bc7f6e59a9d9225fb22946427edc03";
+const DAO_AUCTION_HOUSE_PROXY_CONTRACT =
   "0x830bd73e4184cef73443c15111a1df14e495c706";
-export const DAO_DESCRIPTOR_CONTRACT =
-  "0x6229c811d04501523c6058bfaac29c91bb586268";
+const DAO_DESCRIPTOR_CONTRACT = "0x6229c811d04501523c6058bfaac29c91bb586268";
 
 const addressByIdentifierByChainId = {
   [mainnet.id]: {
@@ -62,7 +58,7 @@ const metaByIdentifier = {
     token: "ETH",
   },
   "weth-token": {
-    name: "WETH Token Contract",
+    name: "WETH Token",
     token: "WETH",
   },
   "usdc-token": {

@@ -111,12 +111,12 @@ const ProposeScreen = () => {
             return [
               {
                 type: "usdc-transfer-via-payer",
-                target: a.target,
-                value: parseUnits(String(a.amount), 6),
+                receiverAddress: a.target,
+                usdcAmount: parseUnits(String(a.amount), 6),
               },
               {
                 type: "token-buyer-top-up",
-                value: tokenBuyerTopUpValue ?? BigInt(1),
+                value: tokenBuyerTopUpValue ?? BigInt(0),
               },
             ];
 
