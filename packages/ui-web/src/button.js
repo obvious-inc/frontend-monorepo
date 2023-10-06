@@ -35,6 +35,15 @@ const stylesByVariant = (t, { danger }) => ({
       },
     },
   },
+  "default-opaque": {
+    color: t.colors.textNormal,
+    background: t.colors.buttonHover,
+    "@media (hover: hover)": {
+      "&:not([disabled]):hover": {
+        color: t.colors.textAccent,
+      },
+    },
+  },
   transparent: {
     color: t.colors.textNormal,
     // borderColor: t.colors.borderLight,
@@ -62,6 +71,7 @@ const stylesByVariant = (t, { danger }) => ({
 
 export const heightBySize = {
   default: "3.2rem",
+  tiny: "2rem",
   small: "2.8rem",
   medium: "3.6rem",
 };
@@ -74,6 +84,12 @@ const stylesBySize = (theme, { multiline, align, icon }) => {
       padding: icon ? 0 : align === "left" ? "0 0.8rem" : "0 1.2rem",
       [heightProp]: heightBySize.default,
       width: icon ? heightBySize.default : undefined,
+    },
+    tiny: {
+      fontSize: theme.fontSizes.small,
+      padding: icon ? 0 : "0 0.4rem",
+      [heightProp]: heightBySize.tiny,
+      width: icon ? heightBySize.tiny : undefined,
     },
     small: {
       fontSize: theme.fontSizes.base,
@@ -105,6 +121,7 @@ const stylesBySize = (theme, { multiline, align, icon }) => {
 };
 
 const iconLayoutPropsBySize = {
+  tiny: { size: "2rem", gutter: "0.2rem" },
   small: { size: "2.8rem", gutter: "0.6rem" },
   medium: { size: "3rem", gutter: "0.8rem" },
   large: { size: "3.2rem", gutter: "1rem" },
@@ -186,7 +203,7 @@ const Button = React.forwardRef(
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
-              minWidth: "1.5rem",
+              minWidth: "1.2rem",
               maxWidth: iconLayout.size,
               marginRight: children == null ? undefined : iconLayout.gutter,
             })}
