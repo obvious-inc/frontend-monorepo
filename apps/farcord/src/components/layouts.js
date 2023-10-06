@@ -157,7 +157,7 @@ export const ChannelItem = ({ channel, expandable }) => {
     <ListItem
       expandable={expandable}
       component={NavLink}
-      to={link}
+      to={{ pathname: link, search: location.search }}
       onClick={closeMenu}
       className={({ isActive }) => (isActive ? "active" : "")}
       title={
@@ -212,7 +212,7 @@ export const FeedItem = () => {
   return (
     <ListItem
       component={NavLink}
-      to={link}
+      to={{ pathname: link, search: location.search }}
       onClick={closeMenu}
       className={({ isActive }) => (isActive ? "active" : "")}
       title={
@@ -243,7 +243,7 @@ export const RecentItem = () => {
   return (
     <ListItem
       component={NavLink}
-      to={link}
+      to={{ pathname: link, search: location.search }}
       onClick={closeMenu}
       className={({ isActive }) => (isActive ? "active" : "")}
       title={
@@ -495,7 +495,10 @@ export const MainLayout = ({ children }) => {
             <ListItem
               compact={false}
               component={NavLink}
-              to={"/channels/https%3A%2F%2Ffarcord.com"}
+              to={{
+                pathname: "/channels/https%3A%2F%2Ffarcord.com",
+                search: location.search,
+              }}
               icon={<GlobeIcon style={{ width: "1.9rem", height: "auto" }} />}
               title="Farcord"
             />
