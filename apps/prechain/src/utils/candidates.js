@@ -28,6 +28,7 @@ export const buildFeed = (candidate, { skipSignatures = false } = {}) => {
   if (candidate == null) return [];
 
   const candidateId = candidate.id;
+  const targetProposalId = candidate.latestVersion?.targetProposalId;
 
   const createdEventItem = {
     type: "event",
@@ -37,6 +38,7 @@ export const buildFeed = (candidate, { skipSignatures = false } = {}) => {
     blockNumber: candidate.createdBlock,
     authorAccount: candidate.proposerId,
     candidateId,
+    targetProposalId,
   };
   const feedbackPostItems =
     candidate.feedbackPosts?.map((p) => ({
@@ -50,6 +52,7 @@ export const buildFeed = (candidate, { skipSignatures = false } = {}) => {
       blockNumber: BigInt(p.createdBlock),
       isPending: p.isPending,
       candidateId,
+      targetProposalId,
     })) ?? [];
 
   const items = [createdEventItem, ...feedbackPostItems];
@@ -62,6 +65,7 @@ export const buildFeed = (candidate, { skipSignatures = false } = {}) => {
       timestamp: candidate.createdTimestamp,
       blockNumber: candidate.canceledBlock,
       candidateId,
+      targetProposalId,
     });
 
   const sortedItems = arrayUtils.sortBy(
@@ -79,6 +83,7 @@ export const buildFeed = (candidate, { skipSignatures = false } = {}) => {
     voteCount: s.signer.nounsRepresented.length,
     expiresAt: s.expirationTimestamp,
     candidateId,
+    targetProposalId,
   }));
 
   const sortedSignatureItems = arrayUtils.sortBy(

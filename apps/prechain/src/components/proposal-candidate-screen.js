@@ -373,7 +373,10 @@ const ProposalCandidateScreenContent = ({
                   </div>
 
                   {regularFeedItems.length !== 0 && (
-                    <ActivityFeed isolated items={regularFeedItems} />
+                    <ActivityFeed
+                      context="candidate"
+                      items={regularFeedItems}
+                    />
                   )}
                 </Tabs.Item>
                 <Tabs.Item key="transactions" title="Transactions">

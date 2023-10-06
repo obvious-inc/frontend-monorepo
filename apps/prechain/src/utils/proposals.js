@@ -86,11 +86,24 @@ export const buildFeed = (proposal, { latestBlockNumber, candidate }) => {
   const propdateItems =
     proposal.propdates?.map((p) => ({
       type: "event",
-      eventType: p.markedCompleted ? "propdate-completed" : "propdate-update",
+      eventType: p.markedCompleted
+        ? "propdate-marked-completed"
+        : "propdate-posted",
       id: `propdate-${p.id}`,
       body: p.update,
       blockNumber: p.blockNumber,
       timestamp: p.blockTimestamp,
+      proposalId: proposal.id,
+    })) ?? [];
+
+  const updateEventItems =
+    proposal.versions?.map((v) => ({
+      type: "event",
+      eventType: "proposal-updated",
+      id: `proposal-update-${v.createdBlock}`,
+      body: v.updateMessage,
+      blockNumber: v.createdBlock,
+      timestamp: v.createdTimestamp,
       proposalId: proposal.id,
     })) ?? [];
 
@@ -99,6 +112,7 @@ export const buildFeed = (proposal, { latestBlockNumber, candidate }) => {
     ...feedbackPostItems,
     ...voteItems,
     ...propdateItems,
+    ...updateEventItems,
     createdEventItem,
   ];
 

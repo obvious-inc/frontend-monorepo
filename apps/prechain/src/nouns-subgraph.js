@@ -97,6 +97,7 @@ query {
     status
     createdBlock
     createdTimestamp
+    lastUpdatedBlock
     lastUpdatedTimestamp
     startBlock
     endBlock
@@ -161,6 +162,7 @@ query {
     description
     createdBlock
     createdTimestamp
+    lastUpdatedBlock
     lastUpdatedTimestamp
     startBlock
     endBlock
@@ -189,9 +191,17 @@ query {
     }
   }
 
+  proposalVersions(where: {proposal: "${id}"}) {
+    createdAt
+    updateMessage
+  }
+
   proposalCandidateVersions(
     where: {content_: {matchingProposalIds_contains: ["${id}"]}}
   ) {
+    createdBlock
+    createdTimestamp
+    updateMessage
     proposal {
       id
     }
@@ -319,6 +329,7 @@ const parseProposal = (data, { chainId }) => {
     "endBlock",
     "updatePeriodEndBlock",
     "objectionPeriodEndBlock",
+    "lastUpdatedBlock",
   ]) {
     if (data[prop] === "0") {
       parsedData[prop] = null;
@@ -343,6 +354,13 @@ const parseProposal = (data, { chainId }) => {
 
   if (data.feedbackPosts != null)
     parsedData.feedbackPosts = data.feedbackPosts.map(parseFeedbackPost);
+
+  if (data.versions != null)
+    parsedData.versions = data.versions.map((v) => ({
+      updateMessage: v.updateMessage,
+      createdBlock: BigInt(v.createdBlock),
+      createdTimestamp: new Date(parseInt(v.createdTimestamp) * 1000),
+    }));
 
   if (data.proposer?.id != null) parsedData.proposerId = data.proposer.id;
 
@@ -446,7 +464,18 @@ export const fetchProposal = (chainId, id) =>
   subgraphFetch({ chainId, query: createProposalQuery(id) }).then((data) => {
     if (data.proposal == null) return Promise.reject(new Error("not-found"));
     const candidateId = data.proposalCandidateVersions[0]?.proposal.id;
-    return parseProposal({ ...data.proposal, candidateId }, { chainId });
+    // (olli) Lets leave it like this until versions have block numbers
+    const versions = data.proposalVersions
+      .filter((v) => v.createdAt === data.proposal.lastUpdatedTimestamp)
+      .map((v) => ({
+        ...v,
+        createdTimestamp: v.createdAt,
+        createdBlock: data.proposal.lastUpdatedBlock,
+      }));
+    return parseProposal(
+      { ...data.proposal, versions, candidateId },
+      { chainId }
+    );
   });
 
 export const fetchProposalCandidate = async (chainId, rawId) => {

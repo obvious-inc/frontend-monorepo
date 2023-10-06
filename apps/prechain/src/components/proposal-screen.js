@@ -390,7 +390,7 @@ const ProposalMainSection = ({ proposalId, scrollContainerRef }) => {
                     </div>
 
                     {feedItems.length !== 0 && (
-                      <ActivityFeed isolated items={feedItems} />
+                      <ActivityFeed context="proposal" items={feedItems} />
                     )}
                   </Tabs.Item>
                   <Tabs.Item key="transactions" title="Transactions">

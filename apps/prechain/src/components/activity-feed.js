@@ -13,7 +13,7 @@ import RichText from "./rich-text.js";
 import FormattedDateWithTooltip from "./formatted-date-with-tooltip.js";
 import AccountAvatar from "./account-avatar.js";
 
-const ActivityFeed = ({ isolated, items = [], spacing = "1.6rem" }) => (
+const ActivityFeed = ({ context, items = [], spacing = "1.6rem" }) => (
   <ul
     css={(t) =>
       css({
@@ -113,7 +113,7 @@ const ActivityFeed = ({ isolated, items = [], spacing = "1.6rem" }) => (
                   textOverflow: "ellipsis",
                 })}
               >
-                <ItemTitle item={item} isolated={isolated} />
+                <ItemTitle item={item} context={context} />
               </div>
               {item.isPending ? (
                 <Spinner size="1rem" />
@@ -191,8 +191,10 @@ const ActivityFeed = ({ isolated, items = [], spacing = "1.6rem" }) => (
   </ul>
 );
 
-const ItemTitle = ({ item, isolated }) => {
-  const proposal = useProposal(item.proposalId);
+const ItemTitle = ({ item, context }) => {
+  const isIsolatedContext = ["proposal", "context"].includes(context);
+
+  const proposal = useProposal(item.proposalId ?? item.targetProposalId);
   const candidate = useProposalCandidate(item.candidateId);
 
   const truncatedLength = 30;
@@ -202,23 +204,27 @@ const ItemTitle = ({ item, isolated }) => {
       ? s
       : `${s.slice(0, truncatedLength).trim()}...`;
 
-  const ContextLink = ({ proposalId, candidateId, truncate }) => {
-    if (proposalId != null)
+  const ContextLink = ({ proposalId, candidateId, truncate, children }) => {
+    if (proposalId != null) {
+      const title =
+        proposal?.title == null
+          ? `Prop ${proposalId}`
+          : `Prop ${proposalId}: ${truncateTitle(proposal.title)}`;
       return (
         <RouterLink to={`/proposals/${proposalId}`}>
-          {proposal?.title == null
-            ? `Prop ${proposalId} `
-            : `${truncateTitle(proposal.title)} (Prop ${proposalId})`}
+          {children ?? title}
         </RouterLink>
       );
+    }
 
     if (candidateId != null) {
-      const title =
+      const fullTitle =
         candidate?.latestVersion?.content.title ??
         extractSlugFromCandidateId(candidateId);
+      const title = truncate ? truncateTitle(fullTitle) : fullTitle;
       return (
         <RouterLink to={`/candidates/${candidateId}`}>
-          {truncate ? truncateTitle(title) : title}
+          {children ?? title}
         </RouterLink>
       );
     }
@@ -237,9 +243,11 @@ const ItemTitle = ({ item, isolated }) => {
     case "event": {
       switch (item.eventType) {
         case "proposal-created":
+        case "proposal-updated":
           return (
             <span css={(t) => css({ color: t.colors.textDimmed })}>
-              {isolated ? "Proposal" : <ContextLink {...item} />} created
+              {context === "proposal" ? "Proposal" : <ContextLink {...item} />}{" "}
+              {item.eventType === "proposal-created" ? "created" : "updated"}
               {item.authorAccount != null && (
                 <>
                   {" "}
@@ -258,7 +266,7 @@ const ItemTitle = ({ item, isolated }) => {
                     capitalize={false}
                     value={item.timestamp}
                     disableRelative
-                    month={isolated ? "long" : "short"}
+                    month={context === "proposal" ? "long" : "short"}
                     day="numeric"
                   />
                 </>
@@ -267,16 +275,28 @@ const ItemTitle = ({ item, isolated }) => {
           );
 
         case "candidate-created": {
+          const label =
+            context === "candidate" ? (
+              "Candidate"
+            ) : context === "proposal" ? (
+              <ContextLink {...item}>
+                {item.targetProposalId != null
+                  ? "Update candidate"
+                  : "Candidate"}
+              </ContextLink>
+            ) : item.targetProposalId != null ? (
+              <>
+                <ContextLink {...item}>Update candidate</ContextLink> for{" "}
+                <ContextLink proposalId={item.targetProposalId} truncate />
+              </>
+            ) : (
+              <>
+                Candidate <ContextLink truncate {...item} />
+              </>
+            );
           return (
             <span css={(t) => css({ color: t.colors.textDimmed })}>
-              {isolated ? (
-                "Candidate"
-              ) : (
-                <>
-                  Candidate <ContextLink truncate {...item} />
-                </>
-              )}{" "}
-              created
+              {label} created
               {item.authorAccount != null && (
                 <>
                   {" "}
@@ -295,7 +315,7 @@ const ItemTitle = ({ item, isolated }) => {
                     capitalize={false}
                     value={item.timestamp}
                     disableRelative
-                    month={isolated ? "long" : "short"}
+                    month={isIsolatedContext ? "long" : "short"}
                     day="numeric"
                   />
                 </>
@@ -313,7 +333,18 @@ const ItemTitle = ({ item, isolated }) => {
                 })
               }
             >
-              {isolated ? "Candidate" : <ContextLink {...item} />} was canceled
+              {context === "proposal" ? (
+                <ContextLink {...item}>
+                  {item.targetProposalId == null
+                    ? "Candidate"
+                    : "Update candidate"}
+                </ContextLink>
+              ) : context === "candidate" ? (
+                "Candidate"
+              ) : (
+                <ContextLink {...item} />
+              )}{" "}
+              was canceled
             </span>
           );
 
@@ -321,7 +352,7 @@ const ItemTitle = ({ item, isolated }) => {
           return (
             <span css={(t) => css({ color: t.colors.textDimmed })}>
               Voting{" "}
-              {!isolated && (
+              {context !== "proposal" && (
                 <>
                   for <ContextLink {...item} />
                 </>
@@ -334,7 +365,7 @@ const ItemTitle = ({ item, isolated }) => {
                     capitalize={false}
                     value={item.timestamp}
                     disableRelative
-                    month={isolated ? "long" : "short"}
+                    month={isIsolatedContext ? "long" : "short"}
                     day="numeric"
                     hour="numeric"
                     minute="numeric"
@@ -347,7 +378,7 @@ const ItemTitle = ({ item, isolated }) => {
         case "proposal-ended":
           return (
             <span css={(t) => css({ color: t.colors.textDimmed })}>
-              {isolated ? "Proposal" : <ContextLink {...item} />}{" "}
+              {context === "proposal" ? "Proposal" : <ContextLink {...item} />}{" "}
               {isSucceededProposalState(proposal.state) ? (
                 <span
                   css={(t) =>
@@ -381,7 +412,7 @@ const ItemTitle = ({ item, isolated }) => {
                     capitalize={false}
                     value={item.timestamp}
                     disableRelative
-                    month={isolated ? "long" : "short"}
+                    month={isIsolatedContext ? "long" : "short"}
                     day="numeric"
                     hour="numeric"
                     minute="numeric"
@@ -400,12 +431,12 @@ const ItemTitle = ({ item, isolated }) => {
                 })
               }
             >
-              {isolated ? "Proposal" : <ContextLink {...item} />} entered
-              objection period
+              {context === "proposal" ? "Proposal" : <ContextLink {...item} />}{" "}
+              entered objection period
             </span>
           );
 
-        case "propdate-update":
+        case "propdate-posted":
           return (
             <span
               css={(t) =>
@@ -421,7 +452,7 @@ const ItemTitle = ({ item, isolated }) => {
               >
                 Propdate
               </a>
-              {!isolated && (
+              {context !== "proposal" && (
                 <>
                   {" "}
                   for <ContextLink {...item} />
@@ -430,7 +461,7 @@ const ItemTitle = ({ item, isolated }) => {
             </span>
           );
 
-        case "propdate-completed":
+        case "propdate-marked-completed":
           return (
             <span
               css={(t) =>
@@ -439,8 +470,8 @@ const ItemTitle = ({ item, isolated }) => {
                 })
               }
             >
-              {isolated ? "Proposal" : <ContextLink {...item} />} marked as
-              completed via{" "}
+              {context === "proposal" ? "Proposal" : <ContextLink {...item} />}{" "}
+              marked as completed via{" "}
               <a
                 href="https://propdates.wtf/about"
                 target="_blank"
@@ -460,7 +491,7 @@ const ItemTitle = ({ item, isolated }) => {
     case "feedback-post": {
       const signalWord = item.type === "vote" ? "voted" : "signaled";
       return (
-        <span data-nowrap>
+        <span>
           {accountName}{" "}
           {item.support === 0 ? (
             <Signal negative>{signalWord} against</Signal>
@@ -468,13 +499,13 @@ const ItemTitle = ({ item, isolated }) => {
             <Signal positive>{signalWord} for</Signal>
           ) : item.type === "vote" ? (
             <Signal>abstained</Signal>
-          ) : isolated ? null : (
+          ) : isIsolatedContext ? null : (
             "commented on"
           )}
-          {!isolated && (
+          {!isIsolatedContext && (
             <>
               {" "}
-              <ContextLink {...item} />
+              <ContextLink truncate {...item} />
             </>
           )}
         </span>
