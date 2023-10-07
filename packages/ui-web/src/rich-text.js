@@ -28,17 +28,19 @@ export const createCss = (t) => ({
   // Headings
   h1: { fontSize: "1.375em" },
   h2: { fontSize: "1.125em" },
-  h3: { fontSize: "1em" },
+  'h3, h4, h5, h6': { fontSize: "1em" },
   "* + h1": { marginTop: "3rem" },
   "h1:has(+ *)": { marginBottom: "1rem" },
   "* + h2": { marginTop: "2.4rem" },
   "h2:has(+ *)": { marginBottom: "0.5rem" },
-  "* + h3": { marginTop: "2.4rem" },
-  "h3:has(+ *)": { marginBottom: "0.5rem" },
+  "* + h3, * + h4, * + h5, * + h6": { marginTop: "2.4rem" },
+  "h3:has(+ *), h4:has(+ *), h5:has(+ *), h6:has(+ *)": {
+    marginBottom: "0.5rem",
+  },
 
   // Heading overrides some other block elements’ top spacing
   [["p", "ul", "ol"]
-    .map((el) => `h1 + ${el}, h2 + ${el}, h3 + ${el}`)
+    .map((el) => `h1 + ${el}, h2 + ${el}, h3 + ${el}, h4 + ${el}, h5 + ${el}`)
     .join(", ")]: { marginTop: 0 },
 
   // Quotes
