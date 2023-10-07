@@ -249,9 +249,11 @@ const ProposalMainSection = ({ proposalId, scrollContainerRef }) => {
         throw new Error();
     }
   };
+  const currentFormAction =
+    !hasCastVote && isVotingOngoing ? "vote" : "feedback";
 
   const handleFormSubmit = async () => {
-    if (isVotingOngoing) {
+    if (currentFormAction === "vote") {
       va.track("Vote", {
         proposalId,
         account: connectedWalletAccountAddress,
@@ -378,9 +380,7 @@ const ProposalMainSection = ({ proposalId, scrollContainerRef }) => {
                     <div style={{ padding: "3.2rem 0 4rem" }}>
                       <ProposalActionForm
                         proposalId={proposalId}
-                        mode={
-                          !hasCastVote && isVotingOngoing ? "vote" : "feedback"
-                        }
+                        mode={currentFormAction}
                         reason={pendingFeedback}
                         setReason={setPendingFeedback}
                         support={pendingSupport}
