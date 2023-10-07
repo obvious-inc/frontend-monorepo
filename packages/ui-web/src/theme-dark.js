@@ -6,6 +6,8 @@ export const createPrimary = ({
 } = {}) =>
   `hsl(${hue} ${saturation * 100}% ${lightness * 100}% / ${opacity * 100}%)`;
 
+const textRed = "rgb(235, 87, 87)";
+
 const primary = createPrimary();
 const primaryTintDarker = createPrimary({ saturation: 1, lightness: 0.43 });
 const primaryTintLighter = createPrimary({ saturation: 1, lightness: 0.6 });
@@ -17,7 +19,7 @@ const textDimmedModifierHover = "hsl(0 0% 66%)";
 const textMuted = "hsl(0 0% 40%)";
 const textMutedModifierHover = "hsl(0 0% 46%)";
 const textMutedAlpha = "hsl(0 0% 100% / 28%)";
-const textDanger = "rgb(235, 87, 87)";
+const textDanger = textRed;
 const backgroundNormal = "hsl(0 0% 13%)";
 const backgroundDark = "hsl(0 0% 10%)";
 const backgroundLight = "hsl(0 0% 15%)";
@@ -54,7 +56,8 @@ const fontStacks = {
   headers:
     'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif',
   monospace:
-    'ui-monospace, "Cascadia Mono", "Segoe UI Mono", "Ubuntu Mono", "Roboto Mono", Menlo, Monaco, Consolas, monospace',
+    '"SFMono-Regular", Menlo, Consolas, "PT Mono", "Liberation Mono", Courier, monospace',
+  // 'ui-monospace, "Cascadia Mono", "Segoe UI Mono", "Ubuntu Mono", "Roboto Mono", Menlo, Monaco, Consolas, monospace',
 };
 
 export default {

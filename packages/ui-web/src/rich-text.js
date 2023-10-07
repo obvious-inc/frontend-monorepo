@@ -73,7 +73,11 @@ export const createCss = (t) => ({
 
   // Code
   code: {
-    fontSize: "0.875em",
+    color: t.colors.textNormal,
+    background: t.colors.backgroundModifierHover,
+    borderRadius: "0.3rem",
+    fontSize: "0.85em",
+    padding: "0.2em 0.4em",
     fontFamily: t.fontStacks.monospace,
   },
 
