@@ -23,6 +23,7 @@ export const createCss = (t) => ({
   },
   "* + ul, * + ol": { marginTop: "2rem" },
   "ul:has(+ *), ol:has(+ *)": { marginBottom: "2rem" },
+  "ul ul, ol ol, ul ol, ol ul": { margin: 0 },
 
   // Headings
   h1: { fontSize: "1.375em" },
