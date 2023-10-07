@@ -21,6 +21,7 @@ import Button from "@shades/ui-web/button";
 import Select from "@shades/ui-web/select";
 import {
   isFinalState as isFinalProposalState,
+  isSucceededState as isSucceededProposalState,
   isVotableState as isVotableProposalState,
   buildFeed as buildProposalFeed,
 } from "../utils/proposals.js";
@@ -180,7 +181,8 @@ const BrowseScreen = () => {
     const connectedAccount = connectedWalletAccountAddress?.toLowerCase();
 
     if (["pending", "updatable"].includes(p.state)) return "proposals:new";
-    if (isFinalProposalState(p.state)) return "proposals:past";
+    if (isFinalProposalState(p.state) || isSucceededProposalState(p.state))
+      return "proposals:past";
 
     if (connectedAccount == null) return "proposals:ongoing";
 
