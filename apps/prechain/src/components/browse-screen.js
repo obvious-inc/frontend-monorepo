@@ -124,6 +124,31 @@ const useFeedItems = ({ filter }) => {
 
 const BROWSE_LIST_PAGE_ITEM_COUNT = 20;
 
+const groupConfigByKey = {
+  drafts: { title: "Drafts" },
+  "proposals:new": { title: "New" },
+  "proposals:ongoing": { title: "Ongoing" },
+  "proposals:awaiting-vote": { title: "Not yet voted" },
+  "proposals:authored": { title: "Authored" },
+  "proposals:past": { title: "Past" },
+  "candidates:authored": { title: "Authored" },
+  "candidates:sponsored": { title: "Sponsored" },
+  "candidates:new": {
+    title: "New",
+    description: "Candidates created within the last 3 days",
+  },
+  "candidates:recently-updated": { title: "Recently updated" },
+  "candidates:feedback-given": { title: "Feedback given" },
+  "candidates:feedback-missing": {
+    title: "Missing feedback",
+    description: "Candidates that hasn’t received feedback from you",
+  },
+  "candidates:inactive": {
+    title: "Stale",
+    description: "No activity within the last 5 days",
+  },
+};
+
 const BrowseScreen = () => {
   const scrollContainerRef = React.useRef();
   const navigate = useNavigate();
@@ -258,13 +283,14 @@ const BrowseScreen = () => {
 
   const sectionsByName = objectUtils.mapValues(
     // Sort and slice sections
-    (items, groupName) => {
+    (items, groupKey) => {
       const isSearch = deferredQuery !== "";
+      const { title, description } = groupConfigByKey[groupKey];
 
-      switch (groupName) {
+      switch (groupKey) {
         case "drafts":
           return {
-            title: "Drafts",
+            title,
             items: isSearch
               ? items
               : arrayUtils.sortBy(
@@ -272,6 +298,24 @@ const BrowseScreen = () => {
                   items
                 ),
           };
+
+        case "proposals:authored":
+        case "proposals:awaiting-vote":
+        case "proposals:ongoing":
+        case "proposals:new": {
+          return {
+            title,
+            items: isSearch
+              ? items
+              : arrayUtils.sortBy(
+                  {
+                    value: (i) => Number(i.startBlock),
+                    order: "desc",
+                  },
+                  items
+                ),
+          };
+        }
 
         case "proposals:past": {
           const sortedItems = isSearch
@@ -284,54 +328,9 @@ const BrowseScreen = () => {
                 items
               );
           return {
-            title: "Past",
+            title,
             count: sortedItems.length,
             items: sortedItems.slice(0, BROWSE_LIST_PAGE_ITEM_COUNT * page),
-          };
-        }
-
-        // Pending and updatable proposals
-        case "proposals:new":
-          return {
-            title: "New",
-            items: isSearch
-              ? items
-              : arrayUtils.sortBy(
-                  {
-                    value: (i) => Number(i.createdBlock),
-                    order: "desc",
-                  },
-                  items
-                ),
-          };
-
-        case "proposals:ongoing":
-        case "proposals:awaiting-vote":
-        case "proposals:authored": {
-          const title = {
-            "proposals:ongoing": "Ongoing",
-            "proposals:awaiting-vote": "Not yet voted",
-            "proposals:authored": "Authored",
-          }[groupName];
-
-          return {
-            title,
-            items: isSearch
-              ? items
-              : arrayUtils.sortBy(
-                  // First the active ones
-                  (i) =>
-                    ["active", "objection-period"].includes(i.state)
-                      ? Number(i.objectionPeriodEndBlock ?? i.endBlock)
-                      : Infinity,
-                  // Then the succeeded but not yet executed
-                  {
-                    value: (i) =>
-                      Number(i.objectionPeriodEndBlock ?? i.endBlock),
-                    order: "desc",
-                  },
-                  items
-                ),
           };
         }
 
@@ -350,21 +349,6 @@ const BrowseScreen = () => {
                 },
                 items
               );
-
-          const title = {
-            "candidates:authored": "Authored",
-            "candidates:sponsored": "Sponsored",
-            "candidates:new": "New",
-            "candidates:recently-updated": "Recently updated",
-            "candidates:feedback-given": "Feedback given",
-            "candidates:feedback-missing": "Missing feedback",
-          }[groupName];
-
-          const description = {
-            "candidates:new": "Candidates created within the last 3 days",
-            "candidates:feedback-missing":
-              "Candidates that hasn’t received feedback from you",
-          }[groupName];
 
           return {
             title,
@@ -385,8 +369,8 @@ const BrowseScreen = () => {
                 items
               );
           return {
-            title: "Stale",
-            description: "No activity within the last 5 days",
+            title,
+            description,
             count: sortedItems.length,
             items: sortedItems.slice(0, BROWSE_LIST_PAGE_ITEM_COUNT * page),
           };
@@ -396,7 +380,7 @@ const BrowseScreen = () => {
           return null;
 
         default:
-          throw new Error(`Unknown section "${groupName}"`);
+          throw new Error(`Unknown group "${groupKey}"`);
       }
     },
     // Group items
