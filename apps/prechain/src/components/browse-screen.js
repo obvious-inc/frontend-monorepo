@@ -1,4 +1,3 @@
-import datesDifferenceInDays from "date-fns/differenceInCalendarDays";
 import dateSubtractDays from "date-fns/subDays";
 import dateStartOfDay from "date-fns/startOfDay";
 import React from "react";
@@ -19,6 +18,7 @@ import {
 import Input from "@shades/ui-web/input";
 import Button from "@shades/ui-web/button";
 import Select from "@shades/ui-web/select";
+import { ArrowDown as ArrowDownIcon } from "@shades/ui-web/icons";
 import {
   isFinalState as isFinalProposalState,
   isSucceededState as isSucceededProposalState,
@@ -35,6 +35,7 @@ import {
   useProposalCandidates,
   useProposalCandidate,
   useProposalCandidateVotingPower,
+  // useDelegate,
 } from "../store.js";
 import useApproximateBlockTimestampCalculator from "../hooks/approximate-block-timestamp-calculator.js";
 import {
@@ -45,14 +46,24 @@ import MetaTags from "./meta-tags.js";
 import * as Tabs from "./tabs.js";
 import Layout, { MainContentContainer } from "./layout.js";
 import FormattedDateWithTooltip from "./formatted-date-with-tooltip.js";
+import AccountAvatar from "./account-avatar.js";
 import ActivityFeed_ from "./activity-feed.js";
+import { getCandidateSignals } from "./proposal-candidate-screen.js";
 
 const ONE_DAY_IN_SECONDS = 60 * 60 * 24;
 const APPROXIMATE_SECONDS_PER_BLOCK = 12;
 const APPROXIMATE_BLOCKS_PER_DAY =
   ONE_DAY_IN_SECONDS / APPROXIMATE_SECONDS_PER_BLOCK;
 
+const CANDIDATE_NEW_THRESHOLD_IN_DAYS = 3;
 const CANDIDATE_ACTIVE_THRESHOLD_IN_DAYS = 5;
+
+const getCandidateScore = (candidate) => {
+  const signals = getCandidateSignals({ candidate });
+  if (signals.delegates.for === 0 && signals.delegates.abstain === 0)
+    return null;
+  return signals.delegates.for - signals.delegates.against;
+};
 
 const searchProposals = (items, rawQuery) => {
   const query = rawQuery.trim().toLowerCase();
@@ -137,15 +148,19 @@ const groupConfigByKey = {
     title: "New",
     description: "Candidates created within the last 3 days",
   },
-  "candidates:recently-updated": { title: "Recently updated" },
+  "candidates:recently-active": { title: "Recently active" },
   "candidates:feedback-given": { title: "Feedback given" },
   "candidates:feedback-missing": {
     title: "Missing feedback",
     description: "Candidates that hasn’t received feedback from you",
   },
+  "candidates:popular": {
+    title: "Trending",
+    description: `The most popular candidate active within the last ${CANDIDATE_ACTIVE_THRESHOLD_IN_DAYS} days`,
+  },
   "candidates:inactive": {
     title: "Stale",
-    description: "No activity within the last 5 days",
+    description: `No activity within the last ${CANDIDATE_ACTIVE_THRESHOLD_IN_DAYS} days`,
   },
 };
 
@@ -170,11 +185,19 @@ const BrowseScreen = () => {
   const [page, setPage] = React.useState(1);
   const [candidateSortStrategy_, setCandidateSortStrategy] = useCachedState(
     "candidate-sorting-strategy",
-    "activity"
+    "popularity"
   );
 
-  const candidateSortStrategy =
-    connectedWalletAccountAddress == null ? "activity" : candidateSortStrategy_;
+  const candidateSortStrategies =
+    connectedWalletAccountAddress == null
+      ? ["activity", "popularity"]
+      : ["activity", "popularity", "connected-account-feedback"];
+
+  const candidateSortStrategy = candidateSortStrategies.includes(
+    candidateSortStrategy_
+  )
+    ? candidateSortStrategy_
+    : "popularity";
 
   const filteredProposals = React.useMemo(
     () => proposals.filter((p) => p.startBlock != null),
@@ -230,22 +253,26 @@ const BrowseScreen = () => {
   const candidateActiveThreshold = dateStartOfDay(
     dateSubtractDays(new Date(), CANDIDATE_ACTIVE_THRESHOLD_IN_DAYS)
   );
+  const candidateNewThreshold = dateStartOfDay(
+    dateSubtractDays(new Date(), CANDIDATE_NEW_THRESHOLD_IN_DAYS)
+  );
 
   const groupCandidate = (c) => {
     const connectedAccount = connectedWalletAccountAddress?.toLowerCase();
     const { content } = c.latestVersion;
+    const isActive =
+      c.createdTimestamp > candidateActiveThreshold ||
+      c.lastUpdatedTimestamp > candidateActiveThreshold ||
+      (c.feedbackPosts != null &&
+        c.feedbackPosts.some(
+          (p) => p.createdTimestamp > candidateActiveThreshold
+        ));
 
-    if (candidateSortStrategy === "feedback") {
-      const isActive =
-        c.createdTimestamp > candidateActiveThreshold ||
-        c.lastUpdatedTimestamp > candidateActiveThreshold ||
-        (c.feedbackPosts != null &&
-          c.feedbackPosts.some(
-            (p) => p.createdTimestamp > candidateActiveThreshold
-          ));
+    if (!isActive) return "candidates:inactive";
 
-      if (!isActive) return "candidates:inactive";
+    if (candidateSortStrategy === "popularity") return "candidates:popular";
 
+    if (candidateSortStrategy === "connected-account-feedback") {
       const hasFeedback =
         c.feedbackPosts != null &&
         c.feedbackPosts.some(
@@ -272,13 +299,9 @@ const BrowseScreen = () => {
     )
       return "candidates:sponsored";
 
-    if (datesDifferenceInDays(new Date(), c.createdTimestamp) <= 3)
-      return "candidates:new";
+    if (c.createdTimestamp <= candidateNewThreshold) return "candidates:new";
 
-    if (datesDifferenceInDays(new Date(), c.lastUpdatedTimestamp) <= 5)
-      return "candidates:recently-updated";
-
-    return "candidates:inactive";
+    return "candidates:recently-active";
   };
 
   const sectionsByName = objectUtils.mapValues(
@@ -337,42 +360,40 @@ const BrowseScreen = () => {
         case "candidates:authored":
         case "candidates:sponsored":
         case "candidates:new":
-        case "candidates:recently-updated":
+        case "candidates:recently-active":
         case "candidates:feedback-given":
-        case "candidates:feedback-missing": {
-          const sortedItems = isSearch
-            ? items
-            : arrayUtils.sortBy(
-                {
-                  value: (i) => i.lastUpdatedTimestamp,
-                  order: "desc",
-                },
-                items
-              );
-
-          return {
-            title,
-            description,
-            count: sortedItems.length,
-            items: sortedItems,
-          };
-        }
-
+        case "candidates:feedback-missing":
+        case "candidates:popular":
         case "candidates:inactive": {
           const sortedItems = isSearch
             ? items
             : arrayUtils.sortBy(
-                {
-                  value: (i) => i.lastUpdatedTimestamp,
-                  order: "desc",
-                },
+                candidateSortStrategy === "popularity"
+                  ? {
+                      value: (i) => getCandidateScore(i) ?? 0,
+                      order: "desc",
+                    }
+                  : {
+                      value: (i) =>
+                        Math.max(
+                          i.lastUpdatedTimestamp,
+                          ...(i.feedbackPosts?.map((p) => p.createdTimestamp) ??
+                            [])
+                        ),
+                      order: "desc",
+                    },
                 items
               );
+
+          const paginate = groupKey === "candidates:inactive";
+
           return {
             title,
             description,
             count: sortedItems.length,
-            items: sortedItems.slice(0, BROWSE_LIST_PAGE_ITEM_COUNT * page),
+            items: paginate
+              ? sortedItems.slice(0, BROWSE_LIST_PAGE_ITEM_COUNT * page)
+              : sortedItems,
           };
         }
 
@@ -605,48 +626,56 @@ const BrowseScreen = () => {
                           },
                         })}
                       >
-                        {connectedWalletAccountAddress != null && (
-                          <div
-                            css={css({
-                              margin: "-0.4rem 0 2.4rem",
-                              "@media (min-width: 600px)": {
-                                margin: "-0.8rem 0 2.4rem",
+                        <div
+                          css={css({
+                            margin: "-0.4rem 0 2.4rem",
+                            "@media (min-width: 600px)": {
+                              margin: "-0.8rem 0 2.4rem",
+                            },
+                          })}
+                        >
+                          <Select
+                            size="small"
+                            aria-label="Candidate sorting"
+                            value={candidateSortStrategy}
+                            options={[
+                              { value: "popularity", label: "Popularity" },
+                              { value: "activity", label: "Recent activity" },
+                              {
+                                value: "connected-account-feedback",
+                                label: "Your feedback",
                               },
-                            })}
-                          >
-                            <Select
-                              size="small"
-                              aria-label="Candidate sorting"
-                              value={candidateSortStrategy}
-                              options={[
-                                { value: "activity", label: "Activity" },
-                                { value: "feedback", label: "Feedback" },
-                              ]}
-                              onChange={(value) => {
-                                setCandidateSortStrategy(value);
-                              }}
-                              fullWidth={false}
-                              width="max-content"
-                              renderTriggerContent={(value) => (
-                                <>
-                                  Sort by:{" "}
-                                  <em
-                                    css={(t) =>
-                                      css({
-                                        fontStyle: "normal",
-                                        fontWeight: t.text.weights.emphasis,
-                                      })
-                                    }
-                                  >
-                                    {value === "activity"
-                                      ? "Activity"
-                                      : "Feedback"}
-                                  </em>
-                                </>
-                              )}
-                            />
-                          </div>
-                        )}
+                            ].filter(
+                              (o) =>
+                                // A connected wallet is required for feedback filter to work
+                                connectedWalletAccountAddress != null ||
+                                o.value !== "connected-account-feedback"
+                            )}
+                            onChange={(value) => {
+                              setCandidateSortStrategy(value);
+                            }}
+                            fullWidth={false}
+                            width="max-content"
+                            renderTriggerContent={(value, options) => (
+                              <>
+                                Sort by:{" "}
+                                <em
+                                  css={(t) =>
+                                    css({
+                                      fontStyle: "normal",
+                                      fontWeight: t.text.weights.emphasis,
+                                    })
+                                  }
+                                >
+                                  {
+                                    options.find((o) => o.value === value)
+                                      ?.label
+                                  }
+                                </em>
+                              </>
+                            )}
+                          />
+                        </div>
 
                         <SectionedList
                           showPlaceholder={filteredCandidates.length === 0}
@@ -656,7 +685,8 @@ const BrowseScreen = () => {
                             "candidates:feedback-missing",
                             "candidates:feedback-given",
                             "candidates:new",
-                            "candidates:recently-updated",
+                            "candidates:recently-active",
+                            "candidates:popular",
                             "candidates:inactive",
                           ]
                             .map(
@@ -772,7 +802,10 @@ const SectionedList = ({ sections, showPlaceholder = false, ...props }) => {
           "[data-small]": {
             color: t.colors.textDimmed,
             fontSize: t.text.sizes.small,
-            lineHeight: 1.4,
+            lineHeight: 1.25,
+            padding: "0.1rem 0",
+          },
+          "[data-nowrap]": {
             whiteSpace: "nowrap",
             overflow: "hidden",
             textOverflow: "ellipsis",
@@ -795,12 +828,6 @@ const SectionedList = ({ sections, showPlaceholder = false, ...props }) => {
               display: "none",
             },
             "[data-group] li + li": { marginTop: "0.4rem" },
-            "a[data-avatar-layout]": {
-              display: "grid",
-              alignItems: "center",
-              gridTemplateColumns: "auto minmax(0,1fr)",
-              gridGap: "1rem",
-            },
             // "[data-title]": {
             //   whiteSpace: "normal",
             // },
@@ -1055,18 +1082,7 @@ const ProposalItem = React.memo(({ proposalId }) => {
   const tagWithStatusText = <PropTagWithStatusText proposalId={proposalId} />;
 
   return (
-    <RouterLink
-      to={`/proposals/${proposalId}`}
-      data-dimmed={isDimmed}
-      // data-avatar-layout
-    >
-      {/* <Avatar */}
-      {/*   signature={proposalId} */}
-      {/*   signatureLength={3} */}
-      {/*   size="3.2rem" */}
-      {/*   background={isDimmed ? theme.colors.backgroundModifierHover : undefined} */}
-      {/*   data-desktop-only */}
-      {/* /> */}
+    <RouterLink to={`/proposals/${proposalId}`} data-dimmed={isDimmed}>
       <div
         css={css({
           display: "grid",
@@ -1254,7 +1270,11 @@ const PropTagWithStatusText = ({ proposalId }) => {
         textAlign: "right",
       })}
     >
-      {statusText != null && <div data-desktop-only>{statusText}</div>}
+      {statusText != null && (
+        <div data-desktop-only data-nowrap>
+          {statusText}
+        </div>
+      )}
       <PropStatusTag proposalId={proposalId} />
     </div>
   );
@@ -1321,87 +1341,152 @@ const ProposalCandidateItem = React.memo(({ candidateId }) => {
   const { displayName: authorAccountDisplayName } = useAccountDisplayName(
     candidate.proposer
   );
-  const votingPower = useProposalCandidateVotingPower(candidateId);
+
+  const candidateVotingPower = useProposalCandidateVotingPower(candidateId);
   const proposalThreshold = useProposalThreshold();
+
+  // const proposerDelegate = useDelegate(candidate.proposerId);
+  const signals = getCandidateSignals({ candidate });
+  // const commentCount =
+  //   signals.delegates.for +
+  //   signals.delegates.against +
+  //   signals.delegates.abstain;
+
   const isCanceled = candidate.canceledTimestamp != null;
 
-  const statusText =
-    votingPower > proposalThreshold ? (
-      <>Sponsor threshold met</>
-    ) : (
-      <>
-        {votingPower} / {proposalThreshold + 1}{" "}
-        {votingPower === 1 ? "sponsor" : "sponsors"}
-        {/* <NogglesIcon */}
-        {/*   style={{ */}
-        {/*     display: "inline-flex", */}
-        {/*     width: "1.7rem", */}
-        {/*     height: "auto", */}
-        {/*     position: "relative", */}
-        {/*     top: "-0.1rem", */}
-        {/*     marginLeft: "0.5rem", */}
-        {/*   }} */}
-        {/* /> */}
-      </>
-    );
+  const isProposalThresholdMet = candidateVotingPower > proposalThreshold;
+
+  const hasUpdate =
+    candidate.lastUpdatedTimestamp != null &&
+    candidate.lastUpdatedTimestamp.getTime() !==
+      candidate.createdTimestamp.getTime();
+
+  const feedbackPostsAscending = arrayUtils.sortBy(
+    (p) => p.createdBlock,
+    candidate?.feedbackPosts ?? []
+  );
+  const mostRecentFeedbackPost = feedbackPostsAscending.slice(-1)[0];
+
+  const hasFeedback = mostRecentFeedbackPost != null;
+
+  const mostRecentActivity =
+    hasFeedback &&
+    (!hasUpdate ||
+      mostRecentFeedbackPost.createdBlock > candidate.lastUpdatedBlock)
+      ? "feedback"
+      : hasUpdate
+      ? "update"
+      : "create";
+
+  const feedbackAuthorAccounts = arrayUtils.unique(
+    feedbackPostsAscending.map((p) => p.voter.id)
+  );
 
   return (
     <RouterLink to={`/candidates/${encodeURIComponent(candidateId)}`}>
-      {/* <Avatar */}
-      {/*   signature={candidate.slug.split("-")[0]} */}
-      {/*   signatureLength={2} */}
-      {/*   size="3.2rem" */}
-      {/*   data-desktop-only */}
-      {/* /> */}
       <div
         css={css({
-          display: "grid",
-          gridTemplateColumns: "minmax(0,1fr) auto",
-          gridGap: "1.6rem",
-          alignItems: "center",
+          "@container(min-width: 540px)": {
+            display: "grid",
+            gridTemplateColumns: "minmax(0,1fr) auto",
+            gridGap: "3.2rem",
+            alignItems: "stretch",
+          },
         })}
       >
-        <div>
-          <div data-small>
-            Candidate by{" "}
-            <em
-              css={(t) =>
-                css({
-                  fontWeight: t.text.weights.emphasis,
-                  fontStyle: "normal",
-                })
-              }
+        <div
+          css={css({
+            display: "grid",
+            gridTemplateColumns: "2.2rem minmax(0,1fr)",
+            gridGap: "1.2rem",
+            alignItems: "center",
+          })}
+        >
+          <div />
+          <div>
+            <div data-small>
+              Candidate by{" "}
+              <em
+                css={(t) =>
+                  css({
+                    fontWeight: t.text.weights.emphasis,
+                    fontStyle: "normal",
+                  })
+                }
+              >
+                {authorAccountDisplayName ?? "..."}
+              </em>
+            </div>
+            <div
+              data-title
+              css={css({ margin: "0.1rem 0", position: "relative" })}
             >
-              {authorAccountDisplayName ?? "..."}
-            </em>
-          </div>
-          <div data-title>{candidate.latestVersion.content.title}</div>
-          <div data-small css={css({ marginTop: "0.2rem" })}>
-            {candidate.lastUpdatedTimestamp != null &&
-            candidate.lastUpdatedTimestamp.getTime() !==
-              candidate.createdTimestamp.getTime() ? (
-              <>
-                Last updated{" "}
-                <FormattedDateWithTooltip
-                  relativeDayThreshold={5}
-                  capitalize={false}
-                  value={candidate.lastUpdatedTimestamp}
-                  day="numeric"
-                  month="short"
-                />
-              </>
-            ) : (
-              <>
-                Created{" "}
-                <FormattedDateWithTooltip
-                  relativeDayThreshold={5}
-                  capitalize={false}
-                  value={candidate.createdTimestamp}
-                  day="numeric"
-                  month="short"
-                />
-              </>
-            )}
+              {candidate.latestVersion.content.title}
+              <div
+                css={css({
+                  position: "absolute",
+                  right: "calc(100% + 1.2rem)",
+                  top: "50%",
+                  transform: "translateY(-50%)",
+                })}
+              >
+                <ScoreStack {...signals.delegates} />
+              </div>
+            </div>
+            <div data-small>
+              {mostRecentActivity === "update" ? (
+                <>
+                  Last updated{" "}
+                  <FormattedDateWithTooltip
+                    relativeDayThreshold={5}
+                    capitalize={false}
+                    value={candidate.lastUpdatedTimestamp}
+                    day="numeric"
+                    month="short"
+                  />
+                </>
+              ) : mostRecentActivity === "feedback" ? (
+                <>
+                  Last comment{" "}
+                  <FormattedDateWithTooltip
+                    relativeDayThreshold={5}
+                    capitalize={false}
+                    value={mostRecentFeedbackPost.createdTimestamp}
+                    day="numeric"
+                    month="short"
+                  />
+                </>
+              ) : (
+                <>
+                  Created{" "}
+                  <FormattedDateWithTooltip
+                    relativeDayThreshold={5}
+                    capitalize={false}
+                    value={candidate.createdTimestamp}
+                    day="numeric"
+                    month="short"
+                  />
+                </>
+              )}
+              {isProposalThresholdMet && (
+                <span>
+                  <span
+                    role="separator"
+                    aria-orientation="vertical"
+                    css={(t) =>
+                      css({
+                        ":before": {
+                          content: '"–"',
+                          color: t.colors.textMuted,
+                          margin: "0 0.5rem",
+                        },
+                      })
+                    }
+                  />
+                  Sponsor threshold met
+                </span>
+              )}
+            </div>
           </div>
         </div>
         <div
@@ -1412,7 +1497,29 @@ const ProposalCandidateItem = React.memo(({ candidateId }) => {
             alignItems: "center",
           })}
         >
-          <div>{statusText}</div>
+          {/* <span data-desktop-only> */}
+          {/*   {commentCount > 0 ? ( */}
+          {/*     <> */}
+          {/*       <span data-small style={{ marginRight: "1.6rem" }}> */}
+          {/*         {commentCount} comments */}
+          {/*       </span> */}
+          {/*     </> */}
+          {/*   ) : null} */}
+          {/* </span> */}
+          <div
+            css={css({
+              display: "none",
+              "@container(min-width: 540px)": {
+                display: "flex",
+                gap: "0.3rem",
+                alignItems: "center",
+              },
+            })}
+          >
+            {feedbackAuthorAccounts.map((a) => (
+              <AccountAvatar key={a} address={a} size="2rem" />
+            ))}
+          </div>
 
           {isCanceled ? (
             <Tag variant="error" size="large">
@@ -1420,9 +1527,17 @@ const ProposalCandidateItem = React.memo(({ candidateId }) => {
             </Tag>
           ) : candidate.latestVersion.targetProposalId != null ? (
             <Tag variant="special" size="large">
-              Proposal update
+              Prop {candidate.latestVersion.targetProposalId} update
             </Tag>
           ) : null}
+          {/* votingPower > proposalThreshold ? ( */}
+          {/*   <Tag variant="success">Sponsor threshold met</Tag> */}
+          {/* ) : ( */}
+          {/*   <Tag> */}
+          {/*     {votingPower} / {proposalThreshold + 1}{" "} */}
+          {/*     {votingPower === 1 ? "sponsor" : "sponsors"} */}
+          {/*   </Tag> */}
+          {/* )} */}
         </div>
       </div>
     </RouterLink>
@@ -1438,12 +1553,6 @@ const ProposalDraftItem = ({ draftId }) => {
 
   return (
     <RouterLink to={`/new/${draftId}`}>
-      {/* <Avatar */}
-      {/*   signature={draft.name || "Untitled draft"} */}
-      {/*   signatureLength={2} */}
-      {/*   size="3.2rem" */}
-      {/*   data-desktop-only */}
-      {/* /> */}
       <div
         css={css({
           display: "grid",
@@ -1474,13 +1583,15 @@ const ProposalDraftItem = ({ draftId }) => {
   );
 };
 
-export const Tag = ({ variant, size = "normal", ...props }) => (
+export const Tag = ({ variant, size = "normal", active, ...props }) => (
   <span
     data-variant={variant}
     data-size={size}
+    data-active={active}
     css={(t) =>
       css({
         display: "inline-flex",
+        justifyContent: "center",
         background: t.colors.backgroundModifierHover,
         color: t.colors.textDimmed,
         fontSize: t.text.sizes.micro,
@@ -1489,6 +1600,9 @@ export const Tag = ({ variant, size = "normal", ...props }) => (
         padding: "0.1rem 0.3rem",
         borderRadius: "0.2rem",
         lineHeight: 1.2,
+        whiteSpace: "nowrap",
+        overflow: "hidden",
+        textOverflow: "ellipsis",
         '&[data-size="large"]': { padding: "0.3rem 0.5rem" },
         '&[data-variant="active"]': {
           color: t.colors.textPrimary,
@@ -1506,6 +1620,9 @@ export const Tag = ({ variant, size = "normal", ...props }) => (
           color: "#8d519d",
           background: "#f2dff7",
         },
+        '&[data-active="true"]': {
+          boxShadow: t.shadows.focusSmall,
+        },
         "@media(min-width: 600px)": {
           fontSize: t.text.sizes.tiny,
         },
@@ -1514,5 +1631,89 @@ export const Tag = ({ variant, size = "normal", ...props }) => (
     {...props}
   />
 );
+
+const ScoreStack = React.memo(({ for: for_, against }) => {
+  const score = for_ - against;
+  const hasScore = for_ > 0 || against > 0;
+  return (
+    <div
+      css={(t) =>
+        css({
+          width: "2.2rem",
+          overflow: "visible",
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "center",
+          gap: "0.2rem",
+          textAlign: "center",
+          fontWeight: t.text.weights.normal,
+        })
+      }
+    >
+      <div
+        data-active={for_ > 0}
+        css={(t) =>
+          css({
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            fontSize: t.text.sizes.tiny,
+            padding: "0.2rem",
+            lineHeight: 1,
+            color: t.colors.textMuted,
+            "> *": { minWidth: "0.9rem" },
+            '&[data-active="true"]': {
+              color: t.colors.textPositive,
+            },
+          })
+        }
+      >
+        <div>{for_}</div>
+        <ArrowDownIcon style={{ width: "0.9rem", transform: "scaleY(-1)" }} />
+      </div>
+      <div
+        data-active={hasScore}
+        css={(t) =>
+          css({
+            color: t.colors.textMuted,
+            background: t.colors.backgroundModifierHover,
+            fontSize: t.text.sizes.base,
+            borderRadius: "0.2rem",
+            lineHeight: 1,
+            padding: "0.4rem",
+            minWidth: "2.2rem",
+            '&[data-active="true"]': {
+              color: t.colors.textNormal,
+            },
+            '[data-negative="true"]': { transform: "translateX(-0.1rem)" },
+          })
+        }
+      >
+        <div data-negative={score < 0}>{score}</div>
+      </div>
+      <div
+        data-active={against > 0}
+        css={(t) =>
+          css({
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            fontSize: t.text.sizes.tiny,
+            padding: "0.2rem",
+            lineHeight: 1,
+            color: t.colors.textMuted,
+            "> *": { minWidth: "0.9rem" },
+            '&[data-active="true"]': {
+              color: t.colors.textNegative,
+            },
+          })
+        }
+      >
+        <div>{against}</div>
+        <ArrowDownIcon style={{ width: "0.9rem" }} />
+      </div>
+    </div>
+  );
+});
 
 export default BrowseScreen;

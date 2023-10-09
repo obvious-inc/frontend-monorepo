@@ -80,7 +80,7 @@ const useFeedItems = (candidateId) => {
   return React.useMemo(() => buildFeed(candidate), [candidate]);
 };
 
-const getCandidateSignals = ({ candidate, proposerDelegate }) => {
+export const getCandidateSignals = ({ candidate, proposerDelegate }) => {
   const signatures = getValidSponsorSignatures(candidate);
 
   const proposerDelegateNounIds =
@@ -104,7 +104,7 @@ const getCandidateSignals = ({ candidate, proposerDelegate }) => {
   // Sort first to make sure we pick the most recent feedback from per voter
   const sortedFeedbackPosts = arrayUtils.sortBy(
     { value: (c) => c.createdTimestamp, order: "desc" },
-    candidate.feedbackPosts
+    candidate.feedbackPosts ?? []
   );
 
   const supportByNounId = sortedFeedbackPosts.reduce(

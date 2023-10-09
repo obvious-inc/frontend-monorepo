@@ -172,6 +172,9 @@ export default {
     focus: `0 0 0 0.1rem ${primary}, 0 0 0 0.3rem ${createPrimary({
       opacity: 0.4,
     })}`,
+    focusSmall: `0 0 0 0.1rem ${primary}, 0 0 0 0.2rem ${createPrimary({
+      opacity: 0.4,
+    })}`,
     elevationHigh:
       "rgb(15 15 15 / 10%) 0px 0px 0px 1px, rgb(15 15 15 / 20%) 0px 5px 10px, rgb(15 15 15 / 40%) 0px 15px 40px",
     elevationLow:
