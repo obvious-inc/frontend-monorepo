@@ -226,8 +226,12 @@ export const unparse = (transactions, { chainId }) => {
 
 export const extractAmounts = (parsedTransactions) => {
   const ethTransfersAndPayableCalls = parsedTransactions.filter(
-    // Exclude WETH deposits as these are handled separately
-    (t) => t.type !== "weth-deposit" && t.value != null
+    (t) =>
+      // Exclude Token Buyer top ups
+      t.type !== "token-buyer-top-up" &&
+      // Exclude WETH deposits as these are handled separately
+      t.type !== "weth-deposit" &&
+      t.value != null
   );
   const wethTransfers = parsedTransactions.filter(
     (t) =>
