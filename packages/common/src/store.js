@@ -191,16 +191,36 @@ export const Provider = ({ api, children }) => {
   React.useEffect(() => {
     if (authenticationData == null || user?.id == null) return;
 
+    let isConnected = false;
     let disconnect;
 
-    api.connect({ userId: user.id, authenticationData }).then((disconnect_) => {
+    const visibilityChangeHandler = () => {
+      if (document.visibilityState !== "visible") return;
+      if (isConnected) return;
+      disconnect?.();
+      connect();
+    };
+
+    const connect = async () => {
+      const listener = (eventName, payload) => {
+        if (eventName === "connection-state-change")
+          isConnected = payload.connected;
+      };
+      const disconnect_ = await api.connect(
+        { userId: user.id, authenticationData },
+        listener
+      );
       disconnect = disconnect_;
-    });
+      document.addEventListener("visibilitychange", visibilityChangeHandler);
+    };
+
+    connect();
 
     return () => {
       disconnect?.();
+      document.removeEventListener("visibilitychange", visibilityChangeHandler);
     };
-  }, [authenticationData, user?.id, api]);
+  }, [api, authenticationData, user?.id]);
 
   const contextValue = React.useMemo(
     () => ({

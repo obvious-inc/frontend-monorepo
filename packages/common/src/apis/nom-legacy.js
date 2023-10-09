@@ -248,68 +248,45 @@ export default ({
   const parsers = createParsers({ buildCloudflareImageUrl });
   const { parseUser, parseChannel, parseMessage } = parsers;
 
-  const handleServerEvent = (rawEventName, data) => {
+  const parseServerEvent = (rawEventName, data) => {
     const name = serverEventMap[rawEventName];
 
-    const typingEndedTimeoutHandles = {};
-
-    // Dispatch a 'user-typing-ended' action when a user+channel combo has
-    // been silent for a while
-    if (name === "user-typed") {
-      const id = [data.channel.id, data.user.id].join(":");
-
-      if (typingEndedTimeoutHandles[id]) {
-        clearTimeout(typingEndedTimeoutHandles[id]);
-        delete typingEndedTimeoutHandles[id];
-      }
-
-      typingEndedTimeoutHandles[id] = setTimeout(() => {
-        delete typingEndedTimeoutHandles[id];
-        emit("user-typing-ended", {
-          channelId: data.channel.id,
-          userId: data.user.id,
-        });
-      }, 6000);
-    }
-
-    const emitServerEvent = (customData) => {
+    const finalizeServerEvent = (customData) => {
       const eventName = ["server-event", name].join(":");
-      emit(eventName, { ...data, ...customData });
+      return [eventName, { ...data, ...customData }];
     };
 
     switch (name) {
       case "channel-updated":
       case "channel-user":
-        emitServerEvent({ channel: parseChannel(data.channel) });
-        break;
+        return finalizeServerEvent({ channel: parseChannel(data.channel) });
 
       case "user-typed":
-        emitServerEvent({ userId: data.user.id, channelId: data.channel.id });
-        break;
+        return finalizeServerEvent({
+          userId: data.user.id,
+          channelId: data.channel.id,
+        });
 
       case "user-profile-updated":
       case "user-presence-updated":
       case "channel-user-joined":
-        emitServerEvent({ user: parseUser(data.user) });
-        break;
+        return finalizeServerEvent({ user: parseUser(data.user) });
 
       case "message-created":
       case "message-updated":
       case "message-removed":
       case "message-reaction-added":
       case "message-reaction-removed":
-        emitServerEvent({ message: parseMessage(data.message) });
-        break;
+        return finalizeServerEvent({ message: parseMessage(data.message) });
 
       case "channel-user-invited":
-        emitServerEvent({
+        return finalizeServerEvent({
           user: parseUser(data.user),
           channel: parseChannel(data.channel),
         });
-        break;
 
       default:
-        emitServerEvent();
+        return finalizeServerEvent();
     }
   };
 
@@ -708,7 +685,7 @@ export default ({
         refreshToken: body.refresh_token,
       };
     },
-    async connect({ userId }) {
+    async connect({ userId }, optionalListener) {
       const accessToken = await cacheStore.read(ACCESS_TOKEN_CACHE_KEY);
       // Pusher.logToConsole = debug;
       const pusher = await initPusherConnection({
@@ -720,20 +697,22 @@ export default ({
 
       const channel = pusher.subscribe(`private-${userId}`);
 
-      for (let event of Object.keys(serverEventMap))
-        channel.bind(event, (data) => {
-          handleServerEvent(event, data);
+      for (let eventName of Object.keys(serverEventMap))
+        channel.bind(eventName, (data) => {
+          const [parsedName, payload] = parseServerEvent(eventName, data);
+          optionalListener?.(parsedName, payload);
+          emit(parsedName, payload);
         });
 
       pusher.connection.bind("state_change", ({ current }) => {
-        emit("connection-state-change", {
-          connected: current === "connected",
-        });
+        const connected = current === "connected";
+        optionalListener?.("connection-state-change", { connected });
+        emit("connection-state-change", { connected });
       });
 
-      emit("connection-state-change", {
-        connected: pusher.connection.state === "connected",
-      });
+      const connected = pusher.connection.state === "connected";
+      optionalListener?.("connection-state-change", { connected });
+      emit("connection-state-change", { connected });
 
       return () => {
         // Disconnect

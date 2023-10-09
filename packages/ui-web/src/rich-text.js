@@ -28,7 +28,7 @@ export const createCss = (t) => ({
   // Headings
   h1: { fontSize: "1.375em" },
   h2: { fontSize: "1.125em" },
-  'h3, h4, h5, h6': { fontSize: "1em" },
+  "h3, h4, h5, h6": { fontSize: "1em" },
   "* + h1": { marginTop: "3rem" },
   "h1:has(+ *)": { marginBottom: "1rem" },
   "* + h2": { marginTop: "2.4rem" },
