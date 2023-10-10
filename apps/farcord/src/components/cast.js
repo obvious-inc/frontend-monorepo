@@ -17,11 +17,11 @@ import RichText from "./rich-text";
 import useFarcasterAccount from "./farcaster-account";
 import { useFarcasterChannelByUrl } from "../hooks/farcord";
 import { parseChannelFromUrl } from "../utils/channel";
-import { useNeynarCast } from "../hooks/neynar";
 import AppTag from "./app-tag";
 import TinyMutedText from "./tiny-muted-text";
 import AccountPreviewPopoverTrigger from "./account-preview-popover-trigger";
 import { NewCastsMarker } from "./new-casts-marker";
+import ReplyTargetCast from "./reply-target-cast";
 
 const IMAGE_ENDINGS = ["jpg", "jpeg", "png", "gif", "webp", "svg"];
 
@@ -58,7 +58,7 @@ const CastBody = ({ cast }) => {
   );
 };
 
-const CastDate = ({ date }) => {
+export const CastDate = ({ date }) => {
   return (
     <TinyMutedText style={{ lineHeight: 1.5 }}>
       {isToday(date) ? (
@@ -258,7 +258,7 @@ export const CastHeader = ({ cast }) => {
                 css={css({
                   width: "auto",
                   height: "1.6rem",
-                  fill: "rgb(213, 19, 56)",
+                  fill: "rgb(255, 93, 103)",
                 })}
               />
             ) : (
@@ -280,7 +280,11 @@ export const CastHeader = ({ cast }) => {
           >
             {recasted ? (
               <RetweetIcon
-                css={css({ width: "auto", height: "1.6rem", fill: "green" })}
+                css={css({
+                  width: "auto",
+                  height: "1.6rem",
+                  fill: "rgb(0, 186, 124)",
+                })}
               />
             ) : (
               <RetweetIcon css={css({ width: "auto", height: "1.6rem" })} />
@@ -382,84 +386,6 @@ const CastChannel = ({ cast }) => {
       >
         {parsedChannel?.name || truncatedParentUrl}
       </Link>
-    </div>
-  );
-};
-
-const ReplyTargetCast = ({ castHash, layout, onClickMessage }) => {
-  const cast = useNeynarCast(castHash);
-
-  return (
-    <div
-      css={(t) =>
-        css({
-          position: "relative",
-          ":before": {
-            display: "var(--path-display)",
-            content: '""',
-            position: "absolute",
-            right: "calc(100% - 5rem + 0.5rem)",
-            top: "calc(50% - 1px)",
-            width: "2.7rem",
-            height: "1.2rem",
-            border: "0.2rem solid",
-            borderColor: t.colors.borderLight,
-            borderRight: 0,
-            borderBottom: 0,
-            borderTopLeftRadius: "0.4rem",
-          },
-        })
-      }
-      style={{
-        "--path-display": layout === "bubbles" ? "none" : "block",
-        paddingLeft: layout !== "bubbles" ? "5rem" : undefined,
-        marginBottom: layout === "bubbles" ? 0 : "0.5rem",
-      }}
-    >
-      <div
-        css={css({
-          display: "grid",
-          gridTemplateColumns: "1.4rem minmax(0,1fr)",
-          alignItems: "center",
-          gridGap: "0.5rem",
-        })}
-      >
-        <Avatar
-          url={cast?.author?.pfp_url || cast?.author?.pfp.url}
-          size="1.4rem"
-        />
-        <div
-          css={(t) =>
-            css({
-              fontSize: "1.3rem",
-              whiteSpace: "nowrap",
-              overflow: "hidden",
-              textOverflow: "ellipsis",
-              color: t.colors.textDimmed,
-            })
-          }
-        >
-          <>
-            {cast?.author?.display_name || cast?.author?.displayName}
-            {": "}
-            <span
-              role="button"
-              tabIndex={0}
-              onClick={onClickMessage}
-              css={(theme) =>
-                css({
-                  "@media(hover: hover)": {
-                    cursor: "pointer",
-                    ":hover": { color: theme.colors.textNormal },
-                  },
-                })
-              }
-            >
-              <RichText inline blocks={cast?.richText ?? []} />
-            </span>
-          </>
-        </div>
-      </div>
     </div>
   );
 };

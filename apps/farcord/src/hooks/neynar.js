@@ -371,3 +371,68 @@ export const fetchCustodyAddressByUsername = async (username) => {
       throw err;
     });
 };
+
+export async function fetchMentionAndReplies({ fid, cursor, limit = 3 }) {
+  if (!fid) return [];
+
+  let params = new URLSearchParams({
+    api_key: process.env.NEYNAR_API_KEY,
+    fid: Number(fid),
+    limit,
+  });
+
+  if (cursor) params.set("cursor", cursor);
+
+  return fetch(NEYNAR_V1_ENDPOINT + "/mentions-and-replies?" + params)
+    .then((result) => {
+      return result.json();
+    })
+    .then((data) => {
+      return data.result.notifications?.map((notification) => {
+        return {
+          ...notification,
+          richText: notification.text
+            ? messageUtils.parseString(notification.text)
+            : null,
+        };
+      });
+    })
+    .catch((err) => {
+      throw err;
+    });
+}
+
+export async function fetchReactionsAndRecasts({
+  fid,
+  cursor,
+  limit = DEFAULT_PAGE_SIZE,
+}) {
+  if (!fid) return [];
+
+  let params = new URLSearchParams({
+    api_key: process.env.NEYNAR_API_KEY,
+    fid: Number(fid),
+    limit,
+  });
+
+  if (cursor) params.set("cursor", cursor);
+
+  return fetch(NEYNAR_V1_ENDPOINT + "/reactions-and-recasts?" + params)
+    .then((result) => {
+      return result.json();
+    })
+    .then((data) => {
+      return data.result.notifications?.map((notification) => {
+        return {
+          ...notification,
+          richText: notification.text
+            ? messageUtils.parseString(notification.text)
+            : null,
+          type: notification.reactionType,
+        };
+      });
+    })
+    .catch((err) => {
+      throw err;
+    });
+}

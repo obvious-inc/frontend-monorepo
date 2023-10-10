@@ -4,6 +4,7 @@ import {
   Triangle as TriangleIcon,
   Pen as PenIcon,
   Globe as GlobeIcon,
+  Bell as BellIcon,
 } from "@shades/ui-web/icons";
 import { css, useTheme } from "@emotion/react";
 import { NavLink, Outlet, useSearchParams } from "react-router-dom";
@@ -26,6 +27,8 @@ import {
 } from "../hooks/channel";
 import { getChannelLink } from "../utils/channel";
 import CreateChannelDialog from "./create-channel-dialog";
+import { useNotificationsBadge } from "../hooks/notifications";
+import NotificationBadge from "./notification-badge";
 
 const DEFAULT_TRUNCATED_COUNT = 10;
 
@@ -170,6 +173,7 @@ export const ChannelItem = ({ channel, expandable }) => {
           style={{
             display: "grid",
             gridTemplateColumns: "1fr auto",
+            alignItems: "center",
             gridGap: "0.4rem",
             color: unreadCount > 0 ? theme.colors.textNormal : undefined,
             fontWeight:
@@ -179,15 +183,7 @@ export const ChannelItem = ({ channel, expandable }) => {
           }}
         >
           <p>{channel.name}</p>
-          {unreadCount > 0 && (
-            <p
-              css={(t) =>
-                css({ color: t.colors.textMuted, fontSize: t.fontSizes.tiny })
-              }
-            >
-              {unreadCount >= 10 ? "10+" : unreadCount}
-            </p>
-          )}
+          {unreadCount > 0 && <NotificationBadge count={unreadCount} />}
         </div>
       }
       icon={
@@ -195,6 +191,63 @@ export const ChannelItem = ({ channel, expandable }) => {
           <Avatar url={channel.imageUrl} />
         </span>
       }
+      size="normal"
+    />
+  );
+};
+
+export const NotificationsItem = ({ fid, expandable }) => {
+  const theme = useTheme();
+
+  const { isFloating: isFloatingMenuEnabled } = useSidebarState();
+  const toggleMenu = useSidebarToggle();
+
+  const notificationsBadge = useNotificationsBadge(fid);
+
+  const closeMenu = () => {
+    if (isFloatingMenuEnabled) toggleMenu();
+  };
+
+  return (
+    <ListItem
+      expandable={expandable}
+      compact={false}
+      component={NavLink}
+      to={{ pathname: "/notifications", search: location.search }}
+      onClick={closeMenu}
+      className={({ isActive }) => (isActive ? "active" : "")}
+      title={
+        <div
+          className="title"
+          css={css({
+            overflow: "hidden",
+            textOverflow: "ellipsis",
+          })}
+          style={{
+            display: "grid",
+            gridTemplateColumns: "1fr auto",
+            alignItems: "center",
+            gridGap: "0.4rem",
+            color:
+              notificationsBadge?.count > 0
+                ? theme.colors.textNormal
+                : undefined,
+            fontWeight:
+              notificationsBadge?.count > 0 && theme.light
+                ? theme.text.weights.emphasis
+                : undefined,
+          }}
+        >
+          <p>Notifications</p>
+          {notificationsBadge.count > 0 && (
+            <NotificationBadge
+              count={notificationsBadge.count}
+              hasImportant={notificationsBadge.hasImportant}
+            />
+          )}
+        </div>
+      }
+      icon={<BellIcon style={{ width: "1.9rem", height: "auto" }} />}
       size="normal"
     />
   );
@@ -346,6 +399,8 @@ const SmallText = ({ component: Component = "div", ...props }) => (
 );
 
 export const MainLayout = ({ children }) => {
+  const [searchParams, setSearchParams] = useSearchParams();
+
   const { fid } = useFarcasterAccount();
 
   const storedFollowedChannels = useFollowedChannels(fid);
@@ -356,8 +411,6 @@ export const MainLayout = ({ children }) => {
   const [allChannelsExpanded, setAllChannelsExpanded] = React.useState(true);
   const [visibleAllChannels, setVisibleAllChannels] = React.useState([]);
   const [followedChannels, setFollowedChannels] = React.useState([]);
-
-  const [searchParams, setSearchParams] = useSearchParams();
 
   const isAuthDialogOpen = searchParams.get("auth-dialog") != null;
   const isCreateChannelDialogOpen = searchParams.get("create-channel") != null;
@@ -486,11 +539,13 @@ export const MainLayout = ({ children }) => {
               onClick={() => {
                 setSearchParams((params) => {
                   const newParams = new URLSearchParams(params);
-                  newParams.set("create-channel", "true");
+                  newParams.set("create-channel", 1);
                   return newParams;
                 });
               }}
             />
+
+            <NotificationsItem fid={fid} />
 
             <ListItem
               compact={false}
@@ -564,6 +619,7 @@ export const MainLayout = ({ children }) => {
         }
       >
         {children}
+
         {isAuthDialogOpen && (
           <Dialog
             isOpen={isAuthDialogOpen}
