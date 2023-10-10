@@ -1,5 +1,6 @@
-import React from "react";
 import { marked } from "marked";
+import React from "react";
+import { css } from "@emotion/react";
 import RichText from "@shades/ui-web/rich-text";
 
 const isProduction = process.env.NODE_ENV === "production";
@@ -137,6 +138,34 @@ const MarkdownRichText = ({ text, ...props }) => {
     const tokens = marked.lexer(text);
     return tokens.map(parseToken).filter(Boolean);
   }, [text]);
+
+  const lastBlockString = blocks
+    .slice(-1)[0]
+    .children?.map((el) => el.text ?? "")
+    .join("");
+
+  if (lastBlockString.toLowerCase() === "sent from voter.wtf")
+    return (
+      <>
+        <RichText blocks={blocks.slice(0, -1)} {...props} />
+        <div
+          css={(t) =>
+            css({
+              marginTop: "0.4rem",
+              fontSize: t.text.sizes.small,
+              color: t.colors.textDimmed,
+              fontStyle: "italic",
+            })
+          }
+        >
+          Sent from{" "}
+          <a href="https://www.voter.wtf" target="_blank" rel="noreferrer">
+            voter.wtf
+          </a>
+        </div>
+      </>
+    );
+
   return <RichText blocks={blocks} {...props} />;
 };
 
