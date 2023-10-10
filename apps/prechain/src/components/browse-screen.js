@@ -300,7 +300,7 @@ const BrowseScreen = () => {
     )
       return "candidates:sponsored";
 
-    if (c.createdTimestamp <= candidateNewThreshold) return "candidates:new";
+    if (c.createdTimestamp >= candidateNewThreshold) return "candidates:new";
 
     return "candidates:recently-active";
   };
