@@ -114,6 +114,7 @@ export const createCss = (t) => ({
 
   // Images
   "button.image": {
+    display: "block",
     borderRadius: "0.3rem",
     overflow: "hidden",
     background: t.colors.backgroundSecondary,
