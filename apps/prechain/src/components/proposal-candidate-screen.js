@@ -19,6 +19,7 @@ import {
   extractSlugFromId as extractSlugFromCandidateId,
   getValidSponsorSignatures,
   buildFeed,
+  getSignals,
 } from "../utils/candidates.js";
 import {
   useProposalCandidate,
@@ -78,74 +79,6 @@ const useFeedItems = (candidateId) => {
   const candidate = useProposalCandidate(candidateId);
 
   return React.useMemo(() => buildFeed(candidate), [candidate]);
-};
-
-export const getCandidateSignals = ({ candidate, proposerDelegate }) => {
-  const signatures = getValidSponsorSignatures(candidate);
-
-  const proposerDelegateNounIds =
-    proposerDelegate?.nounsRepresented.map((n) => n.id) ?? [];
-
-  const sponsorNounIds = signatures.flatMap((s) =>
-    s.signer.nounsRepresented.map((n) => n.id)
-  );
-
-  const sponsoringNounIds = arrayUtils.unique([
-    ...sponsorNounIds,
-    ...proposerDelegateNounIds,
-  ]);
-  const sponsorIds = arrayUtils.unique(
-    [
-      ...signatures.map((s) => s.signer.id),
-      proposerDelegateNounIds.length === 0 ? null : proposerDelegate.id,
-    ].filter(Boolean)
-  );
-
-  // Sort first to make sure we pick the most recent feedback from per voter
-  const sortedFeedbackPosts = arrayUtils.sortBy(
-    { value: (c) => c.createdTimestamp, order: "desc" },
-    candidate.feedbackPosts ?? []
-  );
-
-  const supportByNounId = sortedFeedbackPosts.reduce(
-    (supportByNounId, post) => {
-      const nounIds = post.voter.nounsRepresented?.map((n) => n.id) ?? [];
-      const newSupportByNounId = {};
-
-      for (const nounId of nounIds) {
-        if (supportByNounId[nounId] != null) continue;
-        newSupportByNounId[nounId] = post.supportDetailed;
-      }
-
-      return { ...supportByNounId, ...newSupportByNounId };
-    },
-    // Assume that the sponsors will vote for
-    sponsoringNounIds.reduce((acc, id) => ({ ...acc, [id]: 1 }), {})
-  );
-
-  const supportByDelegateId = sortedFeedbackPosts.reduce(
-    (supportByDelegateId, post) => {
-      if (supportByDelegateId[post.voter.id] != null)
-        return supportByDelegateId;
-      return { ...supportByDelegateId, [post.voter.id]: post.supportDetailed };
-    },
-    // Assume that sponsors will vote for
-    sponsorIds.reduce((acc, id) => ({ ...acc, [id]: 1 }), {})
-  );
-
-  const countSignals = (supportList) =>
-    supportList.reduce(
-      (acc, support) => {
-        const signalGroup = { 0: "against", 1: "for", 2: "abstain" }[support];
-        return { ...acc, [signalGroup]: acc[signalGroup] + 1 };
-      },
-      { for: 0, against: 0, abstain: 0 }
-    );
-
-  return {
-    votes: countSignals(Object.values(supportByNounId)),
-    delegates: countSignals(Object.values(supportByDelegateId)),
-  };
 };
 
 const ProposalCandidateScreenContent = ({
@@ -211,7 +144,7 @@ const ProposalCandidateScreenContent = ({
   const sponsorFeedItems = feedItems.filter((i) => i.type === "signature");
   const regularFeedItems = feedItems.filter((i) => i.type !== "signature");
 
-  const signals = getCandidateSignals({ candidate, proposerDelegate });
+  const signals = getSignals({ candidate, proposerDelegate });
 
   const feedbackVoteCountExcludingAbstained =
     signals.votes.for + signals.votes.against;
@@ -1293,7 +1226,7 @@ const ProposalCandidateScreen = () => {
 const CandidateSignalsStatusBar = React.memo(({ candidateId }) => {
   const candidate = useProposalCandidate(candidateId);
   const proposerDelegate = useDelegate(candidate.proposerId);
-  const signals = getCandidateSignals({ candidate, proposerDelegate });
+  const signals = getSignals({ candidate, proposerDelegate });
   return (
     <div
       css={css({

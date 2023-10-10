@@ -159,3 +159,33 @@ export const buildFeed = (proposal, { latestBlockNumber, candidate }) => {
     items
   );
 };
+
+export const getStateLabel = (state) => {
+  switch (state) {
+    case "updatable":
+      return "Open for changes";
+
+    case "pending":
+      return "Upcoming";
+
+    case "active":
+      return "Ongoing";
+
+    case "objection-period":
+      return "Objection period";
+
+    case "queued":
+      return "Succeeded";
+
+    case "canceled":
+    case "expired":
+    case "defeated":
+    case "vetoed":
+    case "succeeded":
+    case "executed":
+      return state;
+
+    default:
+      throw new Error();
+  }
+};

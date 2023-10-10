@@ -25,8 +25,12 @@ import {
   isSucceededState as isSucceededProposalState,
   isVotableState as isVotableProposalState,
   buildFeed as buildProposalFeed,
+  getStateLabel as getProposalStateLabel,
 } from "../utils/proposals.js";
-import { buildFeed as buildCandidateFeed } from "../utils/candidates.js";
+import {
+  buildFeed as buildCandidateFeed,
+  getSignals as getCandidateSignals,
+} from "../utils/candidates.js";
 import { useProposalThreshold } from "../hooks/dao-contract.js";
 import { useWallet } from "../hooks/wallet.js";
 import {
@@ -48,8 +52,8 @@ import * as Tabs from "./tabs.js";
 import Layout, { MainContentContainer } from "./layout.js";
 import FormattedDateWithTooltip from "./formatted-date-with-tooltip.js";
 import AccountAvatar from "./account-avatar.js";
+import Tag from "./tag.js";
 import ActivityFeed_ from "./activity-feed.js";
-import { getCandidateSignals } from "./proposal-candidate-screen.js";
 
 const ONE_DAY_IN_SECONDS = 60 * 60 * 24;
 const APPROXIMATE_SECONDS_PER_BLOCK = 12;
@@ -1261,60 +1265,24 @@ const PropTagWithStatusText = ({ proposalId }) => {
   );
 };
 
-const PropStatusTag = ({ proposalId }) => {
+const PropStatusTag = ({ proposalId, ...props }) => {
   const proposal = useProposal(proposalId);
 
-  switch (proposal.state) {
-    case "updatable":
-      return <Tag size="large">Open for changes</Tag>;
+  const variantByState = {
+    active: "active",
+    "objection-period": "warning",
+    defeated: "error",
+    vetoed: "error",
+    succeeded: "succeeded",
+    queued: "succeeded",
+    executed: "succeeded",
+  };
 
-    case "pending":
-      return <Tag size="large">Upcoming</Tag>;
-
-    case "active":
-      return (
-        <Tag variant="active" size="large">
-          Ongoing
-        </Tag>
-      );
-
-    case "objection-period":
-      return (
-        <Tag variant="warning" size="large">
-          Objection period
-        </Tag>
-      );
-
-    case "canceled":
-    case "expired":
-      return <Tag size="large">{proposal.state}</Tag>;
-
-    case "defeated":
-    case "vetoed":
-      return (
-        <Tag variant="error" size="large">
-          {proposal.state}
-        </Tag>
-      );
-
-    case "succeeded":
-    case "executed":
-      return (
-        <Tag variant="success" size="large">
-          {proposal.state}
-        </Tag>
-      );
-
-    case "queued":
-      return (
-        <Tag variant="success" size="large">
-          Succeeded
-        </Tag>
-      );
-
-    default:
-      return null;
-  }
+  return (
+    <Tag size="large" variant={variantByState[proposal.state]} {...props}>
+      {getProposalStateLabel(proposal.state)}
+    </Tag>
+  );
 };
 
 const ProposalCandidateItem = React.memo(({ candidateId }) => {
@@ -1563,55 +1531,6 @@ const ProposalDraftItem = ({ draftId }) => {
     </RouterLink>
   );
 };
-
-export const Tag = ({ variant, size = "normal", active, ...props }) => (
-  <span
-    data-variant={variant}
-    data-size={size}
-    data-active={active}
-    css={(t) =>
-      css({
-        display: "inline-flex",
-        justifyContent: "center",
-        background: t.colors.backgroundModifierHover,
-        color: t.colors.textDimmed,
-        fontSize: t.text.sizes.micro,
-        fontWeight: "400",
-        textTransform: "uppercase",
-        padding: "0.1rem 0.3rem",
-        borderRadius: "0.2rem",
-        lineHeight: 1.2,
-        whiteSpace: "nowrap",
-        overflow: "hidden",
-        textOverflow: "ellipsis",
-        '&[data-size="large"]': { padding: "0.3rem 0.5rem" },
-        '&[data-variant="active"]': {
-          color: t.colors.textPrimary,
-          background: "#deedfd",
-        },
-        '&[data-variant="success"]': {
-          color: "#097045",
-          background: "#e0f1e1",
-        },
-        '&[data-variant="error"]': {
-          color: t.colors.textNegative,
-          background: "#fbe9e9",
-        },
-        '&[data-variant="special"]': {
-          color: "#8d519d",
-          background: "#f2dff7",
-        },
-        '&[data-active="true"]': {
-          boxShadow: t.shadows.focusSmall,
-        },
-        "@media(min-width: 600px)": {
-          fontSize: t.text.sizes.tiny,
-        },
-      })
-    }
-    {...props}
-  />
-);
 
 const ScoreStack = React.memo(({ for: for_, against }) => {
   const score = for_ - against;

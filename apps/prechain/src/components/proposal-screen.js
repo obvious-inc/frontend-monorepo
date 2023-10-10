@@ -44,7 +44,7 @@ import useApproximateBlockTimestampCalculator from "../hooks/approximate-block-t
 import { useWallet } from "../hooks/wallet.js";
 import MetaTags_ from "./meta-tags.js";
 import Layout, { MainContentContainer } from "./layout.js";
-import { Tag } from "./browse-screen.js";
+import ProposalStateTag from "./proposal-state-tag.js";
 import AccountPreviewPopoverTrigger from "./account-preview-popover-trigger.js";
 import FormattedDateWithTooltip from "./formatted-date-with-tooltip.js";
 import Callout from "./callout.js";
@@ -1081,7 +1081,11 @@ const ProposalScreen = () => {
                 Proposal #{proposalId}
                 {proposal?.state != null && (
                   <>
-                    <Tag style={{ marginLeft: "0.6rem" }}>{proposal.state}</Tag>
+                    <ProposalStateTag
+                      size="small"
+                      proposalId={proposalId}
+                      style={{ marginLeft: "0.6rem" }}
+                    />
                   </>
                 )}
               </>
