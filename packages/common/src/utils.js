@@ -1,6 +1,7 @@
 export * as array from "./utils/array";
 export * as object from "./utils/object";
 export * as function from "./utils/function";
+export * as date from "./utils/date";
 export * as url from "./utils/url";
 export * as message from "./utils/message";
 export * as channel from "./utils/channel";

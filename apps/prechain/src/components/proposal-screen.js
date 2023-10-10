@@ -8,6 +8,7 @@ import {
   useSearchParams,
 } from "react-router-dom";
 import { css } from "@emotion/react";
+import { date as dateUtils } from "@shades/common/utils";
 import {
   ErrorBoundary,
   AutoAdjustingHeightTextarea,
@@ -148,9 +149,6 @@ const ProposalMainSection = ({ proposalId, scrollContainerRef }) => {
 
   if (proposal == null) return null;
 
-  const startDate = calculateBlockTimestamp(proposal.startBlock);
-  const endDate = calculateBlockTimestamp(endBlock);
-
   const renderProposalStateIcon = () => {
     switch (proposal.state) {
       case "succeeded":
@@ -200,23 +198,25 @@ const ProposalMainSection = ({ proposalId, scrollContainerRef }) => {
   const renderProposalStateText = () => {
     switch (proposal.state) {
       case "updatable":
-      case "pending":
-        return (
-          <>
-            Voting starts{" "}
-            {startDate == null ? (
-              "..."
-            ) : (
-              <FormattedDateWithTooltip
-                capitalize={false}
-                relativeDayThreshold={5}
-                value={startDate}
-                day="numeric"
-                month="short"
-              />
-            )}
-          </>
+      case "pending": {
+        const startDate = calculateBlockTimestamp(proposal.startBlock);
+        const { minutes, hours, days } = dateUtils.differenceUnits(
+          startDate,
+          new Date()
         );
+
+        if (hours === 0)
+          return (
+            <>
+              Start in {Math.max(minutes, 0)}{" "}
+              {minutes === 1 ? "minute" : "minutes"}
+            </>
+          );
+
+        if (days <= 1) return <>Starts in {Math.round(minutes / 60)} hours</>;
+
+        return <>Starts in {Math.round(hours / 24)} days</>;
+      }
       case "vetoed":
       case "canceled":
       case "executed":
@@ -228,23 +228,28 @@ const ProposalMainSection = ({ proposalId, scrollContainerRef }) => {
       case "succeeded":
         return `Proposal ${proposalId} has ${proposal.state}`;
       case "active":
-      case "objection-period":
-        return (
-          <>
-            Voting for Proposal {proposalId} ends{" "}
-            {endDate == null ? (
-              "..."
-            ) : (
-              <FormattedDateWithTooltip
-                capitalize={false}
-                relativeDayThreshold={5}
-                value={endDate}
-                day="numeric"
-                month="short"
-              />
-            )}
-          </>
+      case "objection-period": {
+        const endDate = calculateBlockTimestamp(
+          proposal.objectionPeriodEndBlock ?? proposal.endBlock
         );
+        const { minutes, hours, days } = dateUtils.differenceUnits(
+          endDate,
+          new Date()
+        );
+
+        if (hours <= 1)
+          return (
+            <>
+              Voting ends in {Math.max(minutes, 0)}{" "}
+              {minutes === 1 ? "minute" : "minutes"}
+            </>
+          );
+
+        if (days <= 1)
+          return <>Voting ends in {Math.round(minutes / 60)} hours</>;
+
+        return <>Voting ends in {Math.round(hours / 24)} days</>;
+      }
       default:
         throw new Error();
     }

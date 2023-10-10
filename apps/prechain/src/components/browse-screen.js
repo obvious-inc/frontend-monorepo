@@ -14,6 +14,7 @@ import {
   array as arrayUtils,
   object as objectUtils,
   message as messageUtils,
+  date as dateUtils,
 } from "@shades/common/utils";
 import Input from "@shades/ui-web/input";
 import Button from "@shades/ui-web/button";
@@ -322,24 +323,20 @@ const BrowseScreen = () => {
                 ),
           };
 
-        case "proposals:authored":
         case "proposals:awaiting-vote":
-        case "proposals:ongoing":
-        case "proposals:new": {
           return {
             title,
             items: isSearch
               ? items
               : arrayUtils.sortBy(
-                  {
-                    value: (i) => Number(i.startBlock),
-                    order: "desc",
-                  },
+                  (i) => Number(i.objectionPeriodEndBlock ?? i.endBlock),
                   items
                 ),
           };
-        }
 
+        case "proposals:authored":
+        case "proposals:ongoing":
+        case "proposals:new":
         case "proposals:past": {
           const sortedItems = isSearch
             ? items
@@ -350,10 +347,13 @@ const BrowseScreen = () => {
                 },
                 items
               );
+          const paginate = groupKey === "proposals:past";
           return {
             title,
             count: sortedItems.length,
-            items: sortedItems.slice(0, BROWSE_LIST_PAGE_ITEM_COUNT * page),
+            items: paginate
+              ? sortedItems.slice(0, BROWSE_LIST_PAGE_ITEM_COUNT * page)
+              : sortedItems,
           };
         }
 
@@ -1070,7 +1070,6 @@ const FeedTabContent = React.memo(({ visible }) => {
 });
 
 const ProposalItem = React.memo(({ proposalId }) => {
-  // const theme = useTheme();
   const proposal = useProposal(proposalId);
   const { displayName: authorAccountDisplayName } = useAccountDisplayName(
     proposal.proposer?.id
@@ -1118,15 +1117,6 @@ const ProposalItem = React.memo(({ proposalId }) => {
   );
 });
 
-const dateDifference = (date1, date2) => {
-  const millis = date1.getTime() - date2.getTime();
-  const seconds = Math.floor(millis / 1000);
-  const minutes = Math.floor(seconds / 60);
-  const hours = Math.floor(minutes / 60);
-  const days = Math.floor(hours / 24);
-  return { millis, seconds, minutes, hours, days };
-};
-
 const PropStatusText = React.memo(({ proposalId }) => {
   const proposal = useProposal(proposalId);
 
@@ -1137,12 +1127,12 @@ const PropStatusText = React.memo(({ proposalId }) => {
       const updatePeriodEndDate = calculateBlockTimestamp(
         proposal.updatePeriodEndBlock
       );
-      const { minutes, hours, days } = dateDifference(
+      const { minutes, hours, days } = dateUtils.differenceUnits(
         updatePeriodEndDate,
         new Date()
       );
 
-      if (hours === 0)
+      if (hours <= 1)
         return (
           <>
             Editable for another {Math.max(minutes, 0)}{" "}
@@ -1157,7 +1147,10 @@ const PropStatusText = React.memo(({ proposalId }) => {
 
     case "pending": {
       const startDate = calculateBlockTimestamp(proposal.startBlock);
-      const { minutes, hours, days } = dateDifference(startDate, new Date());
+      const { minutes, hours, days } = dateUtils.differenceUnits(
+        startDate,
+        new Date()
+      );
 
       if (hours === 0)
         return (
@@ -1167,17 +1160,23 @@ const PropStatusText = React.memo(({ proposalId }) => {
           </>
         );
 
-      if (days <= 2) return <>Starts in {hours} hours</>;
+      if (days <= 1) return <>Starts in {Math.round(minutes / 60)} hours</>;
 
-      return <>Starts in {days} days</>;
+      return <>Starts in {Math.round(hours / 24)} days</>;
     }
 
-    case "active": {
-      const endDate = calculateBlockTimestamp(proposal.endBlock);
+    case "active":
+    case "objection-period": {
+      const endDate = calculateBlockTimestamp(
+        proposal.objectionPeriodEndBlock ?? proposal.endBlock
+      );
       const renderTimeLeft = () => {
-        const { minutes, hours, days } = dateDifference(endDate, new Date());
+        const { minutes, hours, days } = dateUtils.differenceUnits(
+          endDate,
+          new Date()
+        );
 
-        if (hours === 0)
+        if (hours <= 1)
           return (
             <>
               Ends in {Math.max(minutes, 0)}{" "}
@@ -1185,9 +1184,9 @@ const PropStatusText = React.memo(({ proposalId }) => {
             </>
           );
 
-        if (days <= 2) return <>Ends in {hours} hours</>;
+        if (days <= 1) return <>Ends in {Math.round(minutes / 60)} hours</>;
 
-        return <>Ends in {days} days</>;
+        return <>Ends in {Math.round(hours / 24)} days</>;
       };
 
       return (
@@ -1219,24 +1218,6 @@ const PropStatusText = React.memo(({ proposalId }) => {
             <span role="separator" aria-orientation="vertical" />
             <span data-description>{renderTimeLeft()}</span>
           </div>
-        </>
-      );
-    }
-
-    case "objection-period": {
-      const objectionPeriodEndDate = calculateBlockTimestamp(
-        proposal.objectionPeriodEndBlock
-      );
-      return (
-        <>
-          Ends{" "}
-          <FormattedDateWithTooltip
-            relativeDayThreshold={5}
-            capitalize={false}
-            value={objectionPeriodEndDate}
-            day="numeric"
-            month="long"
-          />
         </>
       );
     }
