@@ -5,14 +5,41 @@ import { css } from "@emotion/react";
 import { ThreadScreen } from "./cast-screen.js";
 import useFarcasterAccount from "./farcaster-account.js";
 import { useMatchMedia } from "@shades/common/react";
-import { useSortedByDateNotificationsByFid } from "../hooks/notifications.js";
+import {
+  useNotificationLastSeenAt,
+  useNotificationsBadge,
+  useNotificationsContext,
+  useSortedByDateNotificationsByFid,
+} from "../hooks/notifications.js";
 import NotificationItem from "./notification.js";
+import { usePreviousValue } from "../hooks/previous-value.js";
 
 const NotificationsView = () => {
   const notificationsContainerRef = React.useRef();
 
   const { fid } = useFarcasterAccount();
   const notifications = useSortedByDateNotificationsByFid(fid);
+  const { count: unseenNotifsCount } = useNotificationsBadge(fid);
+
+  const {
+    actions: { markNotificationsRead },
+  } = useNotificationsContext();
+
+  const notifsLastSeenAt = useNotificationLastSeenAt(fid);
+  const prevNotifsLastSeenAt = usePreviousValue(notifsLastSeenAt);
+
+  React.useEffect(() => {
+    if (
+      !fid ||
+      // Only mark as read when the page has focus
+      !document.hasFocus() ||
+      // If no notifications, ignore
+      unseenNotifsCount == 0
+    )
+      return;
+
+    markNotificationsRead({ fid });
+  }, [fid, markNotificationsRead, unseenNotifsCount]);
 
   return (
     <div
@@ -60,8 +87,9 @@ const NotificationsView = () => {
           <>
             {notifications.map((notification) => (
               <NotificationItem
-                key={notification.hash}
+                key={`${notification.type}-${notification.hash}`}
                 notification={notification}
+                unseen={notification.timestamp > prevNotifsLastSeenAt}
               />
             ))}
           </>

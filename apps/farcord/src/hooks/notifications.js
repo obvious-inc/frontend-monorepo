@@ -4,14 +4,25 @@ import { fetchMentionAndReplies, fetchReactionsAndRecasts } from "./neynar";
 import { array as arrayUtils } from "@shades/common/utils";
 export const NotificationsContext = React.createContext();
 
+const getInitialNotificationsReadState = () => {
+  return JSON.parse(localStorage.getItem("ns:notif-read-states")) ?? {};
+};
+
 export const NotificationsContextProvider = ({ children }) => {
   const [state, setState] = React.useState(() => ({
     mentionsByFid: {},
     repliesByFid: {},
     recastsByFid: {},
     likesByFid: {},
-    lastSeenByFid: {},
+    lastSeenByFid: getInitialNotificationsReadState(),
   }));
+
+  React.useEffect(() => {
+    localStorage.setItem(
+      "ns:notif-read-states",
+      JSON.stringify(state.lastSeenByFid)
+    );
+  }, [state.lastSeenByFid]);
 
   const fetchNotifications = React.useCallback(async ({ fid }) => {
     fetchMentionAndReplies({ fid }).then((notifications) => {
@@ -57,14 +68,28 @@ export const NotificationsContextProvider = ({ children }) => {
     });
   }, []);
 
+  const markNotificationsRead = React.useCallback(async ({ fid }) => {
+    const seenAt = new Date();
+    setState((s) => {
+      return {
+        ...s,
+        lastSeenByFid: {
+          ...s.lastSeenByFid,
+          [fid]: seenAt,
+        },
+      };
+    });
+  }, []);
+
   const contextValue = React.useMemo(
     () => ({
       state,
       actions: {
         fetchNotifications,
+        markNotificationsRead,
       },
     }),
-    [state, fetchNotifications]
+    [state, fetchNotifications, markNotificationsRead]
   );
 
   return (
@@ -90,17 +115,53 @@ export const useNotificationsFetch = ({ fid }) => {
 
 export const useNotificationsBadge = (fid) => {
   const {
-    state: { mentionsByFid, repliesByFid, recastsByFid, likesByFid },
+    state: { lastSeenByFid },
   } = React.useContext(NotificationsContext);
+  const { mentions, replies, recasts, likes } =
+    useNotificationsByFidOrFetch(fid);
 
-  // TODO: calculate badge count
-  // red and number if mentions/replies
-  // highlight if just new likes or recasts
+  const allNotifs = React.useMemo(() => {
+    return [...mentions, ...replies, ...recasts, ...likes];
+  }, [mentions, replies, recasts, likes]);
 
-  return { count: 1, hasImportant: true };
+  const unseenNotifs = React.useMemo(() => {
+    const lastSeen = lastSeenByFid[fid];
+    return allNotifs.filter((n) => n.timestamp > lastSeen);
+  }, [allNotifs, fid, lastSeenByFid]);
+
+  const hasUnseenMentionsOrReplies = React.useMemo(() => {
+    return unseenNotifs.some(
+      (n) => n.type === "cast-mention" || n.type === "cast-reply"
+    );
+  }, [unseenNotifs]);
+
+  if (!lastSeenByFid[fid]) {
+    return {
+      count: 0,
+      hasImportant: false,
+    };
+  }
+
+  return {
+    count: unseenNotifs?.length || 0,
+    hasImportant: hasUnseenMentionsOrReplies || false,
+  };
 };
 
 export const useNotificationsByFid = (fid) => {
+  const {
+    state: { mentionsByFid, repliesByFid, recastsByFid, likesByFid },
+  } = React.useContext(NotificationsContext);
+
+  return {
+    mentions: mentionsByFid[fid] ?? [],
+    replies: repliesByFid[fid] ?? [],
+    recasts: recastsByFid[fid] ?? [],
+    likes: likesByFid[fid] ?? [],
+  };
+};
+
+export const useNotificationsByFidOrFetch = (fid) => {
   const {
     state: { mentionsByFid, repliesByFid, recastsByFid, likesByFid },
   } = React.useContext(NotificationsContext);
@@ -115,7 +176,8 @@ export const useNotificationsByFid = (fid) => {
 };
 
 export const useSortedByDateNotificationsByFid = (fid) => {
-  const { mentions, replies, recasts, likes } = useNotificationsByFid(fid);
+  const { mentions, replies, recasts, likes } =
+    useNotificationsByFidOrFetch(fid);
 
   const notifications = React.useMemo(() => {
     return [...mentions, ...replies, ...recasts, ...likes];
@@ -125,4 +187,16 @@ export const useSortedByDateNotificationsByFid = (fid) => {
     { value: (n) => n.timestamp, order: "desc" },
     notifications
   );
+};
+
+export function useNotificationsContext() {
+  return React.useContext(NotificationsContext);
+}
+
+export const useNotificationLastSeenAt = (fid) => {
+  const {
+    state: { lastSeenByFid },
+  } = React.useContext(NotificationsContext);
+
+  return lastSeenByFid[fid];
 };

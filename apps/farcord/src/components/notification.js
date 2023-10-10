@@ -258,13 +258,13 @@ const RecastNotification = ({ notification }) => {
           }
         >
           <NotificationBody notification={notification} />
-        </Link>
+        </div>
       </div>
     </div>
   );
 };
 
-const NotificationItem = ({ notification }) => {
+const NotificationItem = ({ notification, unseen = false }) => {
   const containerRef = React.useRef();
 
   const notificationType = notification?.type;
@@ -308,6 +308,9 @@ const NotificationItem = ({ notification }) => {
         css({
           "--padding": `2rem 1.6rem 1rem`,
           borderBottom: `0.1rem dashed ${t.colors.borderLighter}`,
+          background: unseen
+            ? `${t.colors.backgroundTertiary} !important`
+            : "inherit",
         })
       }
       className="channel-message-container"
