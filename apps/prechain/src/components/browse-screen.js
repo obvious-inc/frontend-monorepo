@@ -40,7 +40,6 @@ import {
   useProposalCandidates,
   useProposalCandidate,
   useProposalCandidateVotingPower,
-  // useDelegate,
 } from "../store.js";
 import useApproximateBlockTimestampCalculator from "../hooks/approximate-block-timestamp-calculator.js";
 import {
@@ -76,9 +75,10 @@ const searchProposals = (items, rawQuery) => {
   const filteredItems = items
     .map((i) => {
       const title = i.title ?? i.latestVersion?.content.title ?? i.name;
+      const authorAccountAddress = i.proposerId;
       const id = i.id;
 
-      const tokens = [title, id];
+      const tokens = [title, authorAccountAddress, id];
 
       let bestIndex;
 
