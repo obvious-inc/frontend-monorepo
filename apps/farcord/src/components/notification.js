@@ -1,5 +1,4 @@
 import React from "react";
-import RichText from "./rich-text";
 import { css } from "@emotion/react";
 import ReplyTargetCast from "./reply-target-cast";
 import { Link, useNavigate } from "react-router-dom";
@@ -14,7 +13,6 @@ import {
 
 const NotificationBody = ({ notification }) => {
   if (notification == null) return null;
-  if (notification.richText) return <RichText blocks={notification.richText} />;
 
   return (
     <p style={{ whiteSpace: "pre-wrap", wordWrap: "break-word" }}>
@@ -114,9 +112,11 @@ const LikeNotification = ({ notification }) => {
     if (reactors.length === 1) {
       return `${reactor.displayName} liked your cast`;
     } else if (reactors.length === 2) {
-      return `${reactor.displayName} and 1 other liked`;
+      return `${reactor.displayName} and 1 other liked your cast`;
     } else {
-      return `${reactor.displayName} and ${reactors.length - 1} others liked`;
+      return `${reactor.displayName} and ${
+        reactors.length - 1
+      } others liked your cast`;
     }
   };
 
@@ -150,7 +150,7 @@ const LikeNotification = ({ notification }) => {
             line-height: 1.2;
           `}
         >
-          {reactors.map((reactor) => (
+          {reactors.slice(0, 8).map((reactor) => (
             <Avatar
               key={reactor.fid}
               url={reactor.pfp_url || reactor.pfp?.url}
@@ -230,7 +230,7 @@ const RecastNotification = ({ notification }) => {
             line-height: 1.2;
           `}
         >
-          {reactors.map((reactor) => (
+          {reactors.slice(0, 8).map((reactor) => (
             <Avatar
               key={reactor.fid}
               url={reactor.pfp_url || reactor.pfp?.url}
@@ -258,7 +258,7 @@ const RecastNotification = ({ notification }) => {
           }
         >
           <NotificationBody notification={notification} />
-        </div>
+        </Link>
       </div>
     </div>
   );
