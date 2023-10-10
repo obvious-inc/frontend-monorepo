@@ -1070,6 +1070,7 @@ const ProposalScreen = () => {
 
   return (
     <>
+      <MetaTags proposalId={proposalId} />
       <Layout
         scrollContainerRef={scrollContainerRef}
         navigationStack={[
@@ -1413,92 +1414,89 @@ const ProposalVoteStatusBar = React.memo(({ proposalId }) => {
     latestBlockNumber > Number(proposal.startBlock);
 
   return (
-    <>
-      <MetaTags proposalId={proposalId} />
+    <div
+      css={css({
+        display: "flex",
+        flexDirection: "column",
+        gap: "0.5rem",
+      })}
+    >
       <div
-        css={css({
-          display: "flex",
-          flexDirection: "column",
-          gap: "0.5rem",
-        })}
+        css={(t) =>
+          css({
+            display: "flex",
+            justifyContent: "space-between",
+            fontSize: t.text.sizes.small,
+            fontWeight: t.text.weights.emphasis,
+            "[data-for]": { color: t.colors.textPositive },
+            "[data-against]": { color: t.colors.textNegative },
+          })
+        }
       >
-        <div
-          css={(t) =>
-            css({
-              display: "flex",
-              justifyContent: "space-between",
-              fontSize: t.text.sizes.small,
-              fontWeight: t.text.weights.emphasis,
-              "[data-for]": { color: t.colors.textPositive },
-              "[data-against]": { color: t.colors.textNegative },
-            })
-          }
-        >
-          <div data-for>For {proposal.forVotes}</div>
-          <div data-against>Against {proposal.againstVotes}</div>
-        </div>
-        <VotingBar
-          forVotes={Number(proposal.forVotes)}
-          againstVotes={Number(proposal.againstVotes)}
-          abstainVotes={Number(proposal.abstainVotes)}
-        />
-        <VotingBar
-          forVotes={delegateVotes?.for ?? 0}
-          againstVotes={delegateVotes?.against ?? 0}
-          abstainVotes={delegateVotes?.abstain ?? 0}
-          height="0.3rem"
-          css={css({ filter: "brightness(0.9)" })}
-        />
-        <div
-          css={(t) =>
-            css({
-              fontSize: t.text.sizes.small,
-              display: "flex",
-              justifyContent: "space-between",
-              gap: "0.5rem",
-            })
-          }
-        >
-          <div>{quorumVotes != null && <>Quorum {quorumVotes}</>}</div>
-          <div>
-            {hasVotingEnded ? (
-              <>
-                Voting ended{" "}
-                <FormattedDateWithTooltip
-                  capitalize={false}
-                  relativeDayThreshold={5}
-                  value={endDate}
-                  day="numeric"
-                  month="short"
-                />
-              </>
-            ) : hasVotingStarted ? (
-              <>
-                Voting ends{" "}
-                <FormattedDateWithTooltip
-                  capitalize={false}
-                  relativeDayThreshold={5}
-                  value={endDate}
-                  day="numeric"
-                  month="short"
-                />
-              </>
-            ) : (
-              <>
-                Voting starts{" "}
-                <FormattedDateWithTooltip
-                  capitalize={false}
-                  relativeDayThreshold={5}
-                  value={startDate}
-                  day="numeric"
-                  month="short"
-                />
-              </>
-            )}
-          </div>
+        <div data-for>For {proposal.forVotes}</div>
+        <div data-against>Against {proposal.againstVotes}</div>
+      </div>
+      <VotingBar
+        forVotes={Number(proposal.forVotes)}
+        againstVotes={Number(proposal.againstVotes)}
+        abstainVotes={Number(proposal.abstainVotes)}
+      />
+      <VotingBar
+        forVotes={delegateVotes?.for ?? 0}
+        againstVotes={delegateVotes?.against ?? 0}
+        abstainVotes={delegateVotes?.abstain ?? 0}
+        height="0.3rem"
+        css={css({ filter: "brightness(0.9)" })}
+      />
+      <div
+        css={(t) =>
+          css({
+            fontSize: t.text.sizes.small,
+            display: "flex",
+            justifyContent: "space-between",
+            gap: "0.5rem",
+          })
+        }
+      >
+        <div>{quorumVotes != null && <>Quorum {quorumVotes}</>}</div>
+        <div>
+          {hasVotingEnded ? (
+            <>
+              Voting ended{" "}
+              <FormattedDateWithTooltip
+                capitalize={false}
+                relativeDayThreshold={5}
+                value={endDate}
+                day="numeric"
+                month="short"
+              />
+            </>
+          ) : hasVotingStarted ? (
+            <>
+              Voting ends{" "}
+              <FormattedDateWithTooltip
+                capitalize={false}
+                relativeDayThreshold={5}
+                value={endDate}
+                day="numeric"
+                month="short"
+              />
+            </>
+          ) : (
+            <>
+              Voting starts{" "}
+              <FormattedDateWithTooltip
+                capitalize={false}
+                relativeDayThreshold={5}
+                value={startDate}
+                day="numeric"
+                month="short"
+              />
+            </>
+          )}
         </div>
       </div>
-    </>
+    </div>
   );
 });
 
