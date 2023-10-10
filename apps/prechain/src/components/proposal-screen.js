@@ -46,7 +46,6 @@ import MetaTags_ from "./meta-tags.js";
 import Layout, { MainContentContainer } from "./layout.js";
 import { Tag } from "./browse-screen.js";
 import AccountPreviewPopoverTrigger from "./account-preview-popover-trigger.js";
-import RichText from "./rich-text.js";
 import FormattedDateWithTooltip from "./formatted-date-with-tooltip.js";
 import Callout from "./callout.js";
 import * as Tabs from "./tabs.js";
@@ -56,6 +55,8 @@ import TransactionList, {
 } from "./transaction-list.js";
 
 const nameBySupportDetailed = { 0: "against", 1: "for", 2: "abstain" };
+
+const MarkdownRichText = React.lazy(() => import("./markdown-rich-text.js"));
 
 const supportDetailedToString = (n) => {
   if (nameBySupportDetailed[n] == null) throw new Error();
@@ -975,7 +976,7 @@ export const ProposalBody = React.memo(({ markdownText }) => (
       })
     }
   >
-    <RichText markdownText={markdownText} />
+    <MarkdownRichText text={markdownText} />
   </div>
 ));
 

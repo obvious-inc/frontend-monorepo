@@ -1,7 +1,7 @@
 import datesDifferenceInDays from "date-fns/differenceInCalendarDays";
+import React from "react";
 import { Link as RouterLink } from "react-router-dom";
 import { css } from "@emotion/react";
-import { message as messageUtils } from "@shades/common/utils";
 import { Noggles as NogglesIcon } from "@shades/ui-web/icons";
 import * as Tooltip from "@shades/ui-web/tooltip";
 import Spinner from "@shades/ui-web/spinner";
@@ -9,9 +9,10 @@ import { isSucceededState as isSucceededProposalState } from "../utils/proposals
 import { extractSlugFromId as extractSlugFromCandidateId } from "../utils/candidates.js";
 import { useProposal, useProposalCandidate } from "../store.js";
 import AccountPreviewPopoverTrigger from "./account-preview-popover-trigger.js";
-import RichText from "./rich-text.js";
 import FormattedDateWithTooltip from "./formatted-date-with-tooltip.js";
 import AccountAvatar from "./account-avatar.js";
+
+const MarkdownRichText = React.lazy(() => import("./markdown-rich-text.js"));
 
 const ActivityFeed = ({ context, items = [], spacing = "1.6rem" }) => (
   <ul
@@ -156,15 +157,11 @@ const ActivityFeed = ({ context, items = [], spacing = "1.6rem" }) => (
             </div>
           </div>
         </div>
-        <div css={css({ paddingLeft: "2.6rem" })}>
-          {item.body != null && (
-            <RichText
-              blocks={messageUtils.parseString(item.body)}
-              css={css({
-                margin: "0.35rem 0",
-                userSelect: "text",
-              })}
-            />
+        <div css={css({ paddingLeft: "2.6rem", userSelect: "text" })}>
+          {(item.body || null) != null && (
+            <div css={css({ margin: "0.35rem 0" })}>
+              <ItemBody text={item.body} />
+            </div>
           )}
           {item.type === "signature" && (
             <div
@@ -194,6 +191,20 @@ const ActivityFeed = ({ context, items = [], spacing = "1.6rem" }) => (
     ))}
   </ul>
 );
+
+const ItemBody = React.memo(({ text }) => (
+  <MarkdownRichText
+    text={text}
+    css={css({
+      // Make all headings small
+      "h1,h2,h3,h4,h5,h6": { fontSize: "1em" },
+      "*+h1,*+h2,*+h3,*+h4,*+h5,*+h6": { marginTop: "1.5em" },
+      "h1:has(+*),h2:has(+*),h3:has(+*),h4:has(+*),h5:has(+*),h6:has(+*)": {
+        marginBottom: "0.5em",
+      },
+    })}
+  />
+));
 
 const ItemTitle = ({ item, context }) => {
   const isIsolatedContext = ["proposal", "context"].includes(context);

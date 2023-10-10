@@ -13,34 +13,38 @@ export const createCss = (t) => ({
   p: {
     margin: "0",
   },
-  "* + p": { marginTop: "1rem" },
-  "p:has(+ *)": { marginBottom: "1rem" },
+  "* + p": { marginTop: "0.625em" },
+  "p:has(+ *)": { marginBottom: "0.625em" },
 
   // Lists
   "ul, ol": {
-    paddingLeft: "3rem",
+    paddingLeft: "1.875em",
     margin: 0,
+    listStyleType: "disc",
   },
-  "* + ul, * + ol": { marginTop: "2rem" },
-  "ul:has(+ *), ol:has(+ *)": { marginBottom: "2rem" },
+  "* + ul, * + ol": { marginTop: "1.25em" },
+  "ul:has(+ *), ol:has(+ *)": { marginBottom: "1.25em" },
   "ul ul, ol ol, ul ol, ol ul": { margin: 0 },
 
   // Headings
   h1: { fontSize: "1.375em" },
   h2: { fontSize: "1.125em" },
   "h3, h4, h5, h6": { fontSize: "1em" },
-  "* + h1": { marginTop: "3rem" },
-  "h1:has(+ *)": { marginBottom: "1rem" },
-  "* + h2": { marginTop: "2.4rem" },
-  "h2:has(+ *)": { marginBottom: "0.5rem" },
-  "* + h3, * + h4, * + h5, * + h6": { marginTop: "2.4rem" },
+  "* + h1": { marginTop: "1.875em" },
+  "h1:has(+ *)": { marginBottom: "0.625em" },
+  "* + h2": { marginTop: "1.5em" },
+  "h2:has(+ *)": { marginBottom: "0.8em" },
+  "* + h3, * + h4, * + h5, * + h6": { marginTop: "1.5em" },
   "h3:has(+ *), h4:has(+ *), h5:has(+ *), h6:has(+ *)": {
-    marginBottom: "0.5rem",
+    marginBottom: "0.5em",
   },
 
   // Heading overrides some other block elements’ top spacing
   [["p", "ul", "ol"]
-    .map((el) => `h1 + ${el}, h2 + ${el}, h3 + ${el}, h4 + ${el}, h5 + ${el}`)
+    .map(
+      (el) =>
+        `h1 + ${el}, h2 + ${el}, h3 + ${el}, h4 + ${el}, h5 + ${el}, h6 + ${el}`
+    )
     .join(", ")]: { marginTop: 0 },
 
   // Quotes
@@ -50,26 +54,26 @@ export const createCss = (t) => ({
     paddingLeft: "1rem",
     fontStyle: "italic",
   },
-  "* + blockquote": { marginTop: "2rem" },
-  "blockquote:has(+ *)": { marginBottom: "2rem" },
+  "* + blockquote": { marginTop: "1.25em" },
+  "blockquote:has(+ *)": { marginBottom: "1.25em" },
 
   // Callouts
   aside: {
     background: t.colors.backgroundModifierHover,
-    padding: "1.6rem",
-    paddingLeft: "1.2rem",
+    padding: "1em",
+    paddingLeft: "0.75em",
     borderRadius: "0.3rem",
     display: "flex",
   },
-  "* + aside": { marginTop: "2rem" },
-  "aside:has(+ *)": { marginBottom: "2rem" },
+  "* + aside": { marginTop: "1.25em" },
+  "aside:has(+ *)": { marginBottom: "1.25em" },
   "aside:before": {
     fontSize: "1.35em",
     lineHeight: "1em",
     display: "block",
-    width: "2.4rem",
-    height: "2.4rem",
-    marginRight: "0.8rem",
+    width: "1.5em",
+    height: "1.5em",
+    marginRight: "0.5em",
     content: '"💡"',
   },
 
@@ -86,7 +90,7 @@ export const createCss = (t) => ({
   "pre code": {
     display: "block",
     overflow: "auto",
-    padding: "1.6rem",
+    padding: "1em",
     background: t.colors.backgroundModifierHover,
     borderRadius: "0.3rem",
   },
@@ -117,9 +121,11 @@ export const createCss = (t) => ({
       boxShadow: t.shadows.focus,
     },
     "@media(hover: hover)": {
-      cursor: "zoom-in",
-      "&[data-editable]": { cursor: "pointer" },
-      ":hover": { filter: "brightness(1.05)" },
+      ":not([disabled])": {
+        cursor: "zoom-in",
+        "&[data-editable]": { cursor: "pointer" },
+        ":hover": { filter: "brightness(1.05)" },
+      },
     },
     "& > img": { display: "block" },
   },
@@ -127,7 +133,7 @@ export const createCss = (t) => ({
   // Horizontal dividers
   '[role="separator"], hr': {
     border: 0,
-    padding: "1rem 0",
+    padding: "0.625em 0",
     borderRadius: "0.3rem",
     ":after": {
       content: '""',
@@ -163,8 +169,8 @@ export const createCss = (t) => ({
       display: "inline",
       content: '""',
     },
-    "* + p:before": { marginTop: "1rem" },
-    "p:has(+ *):after": { marginBottom: "1rem" },
+    "* + p:before": { marginTop: "0.625em" },
+    "p:has(+ *):after": { marginBottom: "0.625em" },
   },
 });
 
@@ -172,6 +178,10 @@ const blockComponentsByElementType = {
   paragraph: "p",
   "heading-1": "h1",
   "heading-2": "h2",
+  "heading-3": "h3",
+  "heading-4": "h4",
+  "heading-5": "h5",
+  "heading-6": "h6",
   "bulleted-list": "ul",
   "numbered-list": "ol",
   quote: "blockquote",
@@ -215,6 +225,10 @@ const createRenderer = ({
       case "numbered-list":
       case "heading-1":
       case "heading-2":
+      case "heading-3":
+      case "heading-4":
+      case "heading-5":
+      case "heading-6":
       case "quote":
       case "callout": {
         const isLast = i === els.length - 1;
@@ -225,6 +239,23 @@ const createRenderer = ({
             {inline && " "}
             {isLast && suffix}
           </Component>
+        );
+      }
+
+      case "code-block": {
+        const isLast = i === els.length - 1;
+
+        return (
+          <React.Fragment key={i}>
+            {inline ? (
+              <code>{el.code}</code>
+            ) : (
+              <pre key={i}>
+                <code>{el.code}</code>
+              </pre>
+            )}
+            {isLast && suffix}
+          </React.Fragment>
         );
       }
 
@@ -244,6 +275,9 @@ const createRenderer = ({
             {el.label ?? el.url}
           </a>
         );
+
+      case "code":
+        return <code key={i}>{el.code}</code>;
 
       case "horizontal-divider":
         return (
@@ -318,6 +352,8 @@ const createRenderer = ({
                 }
               ).width;
 
+        const interactive = el.interactive ?? true;
+
         return (
           <button
             key={i}
@@ -325,6 +361,8 @@ const createRenderer = ({
             onClick={() => {
               onClickInteractiveElement?.(el);
             }}
+            disabled={!interactive}
+            data-interactive={interactive}
           >
             <Image
               src={el.url}
