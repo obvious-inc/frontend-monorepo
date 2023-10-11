@@ -22,6 +22,7 @@ import TinyMutedText from "./tiny-muted-text";
 import AccountPreviewPopoverTrigger from "./account-preview-popover-trigger";
 import { NewCastsMarker } from "./new-casts-marker";
 import ReplyTargetCast from "./reply-target-cast";
+import { useMatchMedia } from "@shades/common/react";
 
 const IMAGE_ENDINGS = ["jpg", "jpeg", "png", "gif", "webp", "svg"];
 
@@ -93,6 +94,7 @@ export const CastHeader = ({ cast }) => {
   const [recasted, setRecasted] = React.useState(false);
   const [likesCount, setLikesCount] = React.useState(0);
   const [recastsCount, setRecastsCount] = React.useState(0);
+  const isSmallScreen = useMatchMedia("(max-width: 800px)");
 
   const [searchParams] = useSearchParams();
 
@@ -400,6 +402,7 @@ export const CastItem = ({
 }) => {
   const navigate = useNavigate();
   const containerRef = React.useRef();
+  const isSmallScreen = useMatchMedia("(max-width: 800px)");
 
   const replyTargetCastElement = showReplies && cast.parentHash && (
     <ReplyTargetCast
@@ -424,10 +427,13 @@ export const CastItem = ({
       {showReplies && replyTargetCastElement}
       <div
         className="main-container"
-        style={{
-          gridTemplateColumns: "var(--avatar-size) minmax(0,1fr)",
-          gridGap: "var(--gutter-size)",
-        }}
+        css={(t) =>
+          css({
+            gridTemplateColumns: "var(--avatar-size) minmax(0,1fr)",
+            gridGap: "var(--gutter-size)",
+            fontSize: isSmallScreen ? t.text.sizes.base : "inherit",
+          })
+        }
       >
         <Avatar
           url={cast.author?.pfp_url || cast.author?.pfp?.url}

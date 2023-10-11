@@ -30,19 +30,15 @@ const AccountPreviewPopoverTrigger = React.forwardRef(
       <Popover.Root placement={popoverPlacement} {...props}>
         <Popover.Trigger asChild disabled={disabled}>
           {children ?? (
-            <div {...props}>
-              (
-              <InlineButton
-                ref={triggerRef}
-                variant={buttonVariant}
-                {...props}
-                disabled={props.disabled ?? disabled}
-                css={css({ userSelect: "text", fontWeight: "unset" })}
-              >
-                @{user?.username}
-              </InlineButton>
-              )
-            </div>
+            <InlineButton
+              ref={triggerRef}
+              variant={buttonVariant}
+              {...props}
+              disabled={props.disabled ?? disabled}
+              css={css({ userSelect: "text", fontWeight: "unset" })}
+            >
+              (@{user?.username})
+            </InlineButton>
           )}
         </Popover.Trigger>
         <Popover.Content>
