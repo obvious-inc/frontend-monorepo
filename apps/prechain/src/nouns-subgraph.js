@@ -467,7 +467,12 @@ export const fetchProposal = (chainId, id) =>
     const candidateId = data.proposalCandidateVersions[0]?.proposal.id;
     // (olli) Lets leave it like this until versions have block numbers
     const versions = data.proposalVersions
-      .filter((v) => v.createdAt === data.proposal.lastUpdatedTimestamp)
+      .slice()
+      .filter(
+        (v) =>
+          v.createdAt > data.proposal.createdTimestamp &&
+          v.createdAt === data.proposal.lastUpdatedTimestamp
+      )
       .map((v) => ({
         ...v,
         createdTimestamp: v.createdAt,
