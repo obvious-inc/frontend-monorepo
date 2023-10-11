@@ -196,18 +196,20 @@ const ActivityFeed = ({ context, items = [], spacing = "1.6rem" }) => (
 );
 
 const ItemBody = React.memo(({ text, displayImages }) => (
-  <MarkdownRichText
-    text={text}
-    displayImages={displayImages}
-    css={css({
-      // Make all headings small
-      "h1,h2,h3,h4,h5,h6": { fontSize: "1em" },
-      "*+h1,*+h2,*+h3,*+h4,*+h5,*+h6": { marginTop: "1.5em" },
-      "h1:has(+*),h2:has(+*),h3:has(+*),h4:has(+*),h5:has(+*),h6:has(+*)": {
-        marginBottom: "0.5em",
-      },
-    })}
-  />
+  <React.Suspense fallback={null}>
+    <MarkdownRichText
+      text={text}
+      displayImages={displayImages}
+      css={css({
+        // Make all headings small
+        "h1,h2,h3,h4,h5,h6": { fontSize: "1em" },
+        "*+h1,*+h2,*+h3,*+h4,*+h5,*+h6": { marginTop: "1.5em" },
+        "h1:has(+*),h2:has(+*),h3:has(+*),h4:has(+*),h5:has(+*),h6:has(+*)": {
+          marginBottom: "0.5em",
+        },
+      })}
+    />
+  </React.Suspense>
 ));
 
 const ItemTitle = ({ item, context }) => {
