@@ -31,6 +31,9 @@ import { getChannelLink } from "../utils/channel";
 import CreateChannelDialog from "./create-channel-dialog";
 import { useNotificationsBadge } from "../hooks/notifications";
 import NotificationBadge from "./notification-badge";
+import { array as arrayUtils } from "@shades/common/utils";
+
+const { sort } = arrayUtils;
 
 const DEFAULT_TRUNCATED_COUNT = 10;
 
@@ -480,7 +483,14 @@ export const MainLayout = ({ children }) => {
       (c) => c.id != "https://farcord.com"
     );
 
-    setFollowedChannels(fChannels);
+    const sortedChannels = sort((c1, c2) => {
+      if (c1.name.startsWith("http") && c2.name.startsWith("http")) return 0;
+      if (c1.name.startsWith("http")) return 1;
+      if (c2.name.startsWith("http")) return -1;
+      return c1.name.toLowerCase().localeCompare(c2.name.toLowerCase());
+    }, fChannels ?? []);
+
+    setFollowedChannels(sortedChannels);
     setRemainingChannels(remainingChannels);
     setVisibleAllChannels(remainingChannels.slice(0, DEFAULT_TRUNCATED_COUNT));
   }, [farcasterChannels, storedFollowedChannels]);
