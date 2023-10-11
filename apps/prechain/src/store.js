@@ -80,6 +80,30 @@ const mergeProposalCandidates = (p1, p2) => {
 };
 
 const useStore = createZustandStoreHook((set) => {
+  const fetchProposalsVersions = async (chainId, proposalIds) =>
+    NounsSubgraph.fetchProposalsVersions(chainId, proposalIds).then(
+      (versions) => {
+        set((s) => {
+          const versionsByProposalId = arrayUtils.groupBy(
+            (v) => v.proposalId,
+            versions
+          );
+          const fetchedProposalsById = objectUtils.mapValues(
+            (versions, id) => ({ id, versions }),
+            versionsByProposalId
+          );
+
+          return {
+            proposalsById: objectUtils.merge(
+              mergeProposals,
+              s.proposalsById,
+              fetchedProposalsById
+            ),
+          };
+        });
+      }
+    );
+
   const fetchProposalCandidatesFeedbackPosts = async (chainId, candidateIds) =>
     NounsSubgraph.fetchProposalCandidatesFeedbackPosts(
       chainId,
@@ -183,7 +207,13 @@ const useStore = createZustandStoreHook((set) => {
     fetchBrowseScreenData: (chainId, options) =>
       NounsSubgraph.fetchBrowseScreenData(chainId, options).then(
         ({ proposals, candidates }) => {
-          // Fetch feedback async
+          // Fetch proposal versions async
+          fetchProposalsVersions(
+            chainId,
+            proposals.map((p) => p.id)
+          );
+
+          // Fetch candidate feedback async
           fetchProposalCandidatesFeedbackPosts(
             chainId,
             candidates.map((c) => c.id)

@@ -99,15 +99,17 @@ export const buildFeed = (proposal, { latestBlockNumber, candidate }) => {
     })) ?? [];
 
   const updateEventItems =
-    proposal.versions?.map((v) => ({
-      type: "event",
-      eventType: "proposal-updated",
-      id: `proposal-update-${v.createdBlock}`,
-      body: v.updateMessage,
-      blockNumber: v.createdBlock,
-      timestamp: v.createdTimestamp,
-      proposalId: proposal.id,
-    })) ?? [];
+    proposal.versions
+      ?.filter((v) => v.createdBlock > proposal.createdBlock)
+      .map((v) => ({
+        type: "event",
+        eventType: "proposal-updated",
+        id: `proposal-update-${v.createdBlock}`,
+        body: v.updateMessage,
+        blockNumber: v.createdBlock,
+        timestamp: v.createdTimestamp,
+        proposalId: proposal.id,
+      })) ?? [];
 
   const items = [
     ...candidateItems,

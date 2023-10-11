@@ -194,6 +194,7 @@ query {
 
   proposalVersions(where: {proposal: "${id}"}) {
     createdAt
+    createdBlock
     updateMessage
   }
 
@@ -255,6 +256,19 @@ ${CANDIDATE_FEEDBACK_FIELDS}
 query {
   candidateFeedbacks(where: {candidate_:{id: "${candidateId}"}}) {
     ...CandidateFeedbackFields
+  }
+}`;
+
+const createProposalsVersionsQuery = (proposalIds) => `{
+  proposalVersions(where: {proposal_in: [${proposalIds.map(
+    (id) => `"${id}"`
+  )}]}) {
+    createdAt
+    createdBlock
+    updateMessage
+    proposal {
+      id
+    }
   }
 }`;
 
@@ -320,6 +334,13 @@ const parseFeedbackPost = (post) => ({
   candidateId: post.candidate?.id,
 });
 
+const parseProposalVersion = (v) => ({
+  updateMessage: v.updateMessage,
+  createdBlock: BigInt(v.createdBlock),
+  createdTimestamp: new Date(parseInt(v.createdAt) * 1000),
+  proposalId: v.proposal?.id,
+});
+
 const parseProposal = (data, { chainId }) => {
   const parsedData = { ...data };
 
@@ -357,11 +378,7 @@ const parseProposal = (data, { chainId }) => {
     parsedData.feedbackPosts = data.feedbackPosts.map(parseFeedbackPost);
 
   if (data.versions != null)
-    parsedData.versions = data.versions.map((v) => ({
-      updateMessage: v.updateMessage,
-      createdBlock: BigInt(v.createdBlock),
-      createdTimestamp: new Date(parseInt(v.createdTimestamp) * 1000),
-    }));
+    parsedData.versions = data.versions.map(parseProposalVersion);
 
   if (data.proposer?.id != null) parsedData.proposerId = data.proposer.id;
 
@@ -448,6 +465,16 @@ const parseDelegate = (data) => {
   return parsedData;
 };
 
+export const fetchProposalsVersions = async (chainId, proposalIds) =>
+  subgraphFetch({
+    chainId,
+    query: createProposalsVersionsQuery(proposalIds),
+  }).then((data) => {
+    if (data.proposalVersions == null)
+      return Promise.reject(new Error("not-found"));
+    return data.proposalVersions.map(parseProposalVersion);
+  });
+
 export const fetchProposalCandidatesFeedbackPosts = async (
   chainId,
   candidateIds
@@ -465,21 +492,8 @@ export const fetchProposal = (chainId, id) =>
   subgraphFetch({ chainId, query: createProposalQuery(id) }).then((data) => {
     if (data.proposal == null) return Promise.reject(new Error("not-found"));
     const candidateId = data.proposalCandidateVersions[0]?.proposal.id;
-    // (olli) Lets leave it like this until versions have block numbers
-    const versions = data.proposalVersions
-      .slice()
-      .filter(
-        (v) =>
-          v.createdAt > data.proposal.createdTimestamp &&
-          v.createdAt === data.proposal.lastUpdatedTimestamp
-      )
-      .map((v) => ({
-        ...v,
-        createdTimestamp: v.createdAt,
-        createdBlock: data.proposal.lastUpdatedBlock,
-      }));
     return parseProposal(
-      { ...data.proposal, versions, candidateId },
+      { ...data.proposal, versions: data.proposalVersions, candidateId },
       { chainId }
     );
   });
