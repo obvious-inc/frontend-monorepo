@@ -206,6 +206,8 @@ const ProposalMainSection = ({ proposalId, scrollContainerRef }) => {
           new Date()
         );
 
+        if (minutes < 1) return <>Starts in less than 1 minute</>;
+
         if (hours === 0)
           return (
             <>
@@ -237,6 +239,8 @@ const ProposalMainSection = ({ proposalId, scrollContainerRef }) => {
           endDate,
           new Date()
         );
+
+        if (minutes < 1) return <>Voting ends in less than 1 minute</>;
 
         if (hours <= 1)
           return (

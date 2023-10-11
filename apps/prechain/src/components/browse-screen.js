@@ -1136,6 +1136,8 @@ const PropStatusText = React.memo(({ proposalId }) => {
         new Date()
       );
 
+      if (minutes < 1) return <>Closes for changes in less than 1 minute</>;
+
       if (hours <= 1)
         return (
           <>
@@ -1155,6 +1157,8 @@ const PropStatusText = React.memo(({ proposalId }) => {
         startDate,
         new Date()
       );
+
+      if (minutes < 1) return <>Starts in less than 1 minute</>;
 
       if (hours === 0)
         return (
@@ -1179,6 +1183,8 @@ const PropStatusText = React.memo(({ proposalId }) => {
           endDate,
           new Date()
         );
+
+        if (minutes < 1) return <>Ends in less than 1 minute</>;
 
         if (hours <= 1)
           return (
