@@ -184,7 +184,7 @@ export const useSortedByDateNotificationsByFid = (fid) => {
   }, [mentions, replies, recasts, likes]);
 
   return arrayUtils.sortBy(
-    { value: (n) => n.timestamp, order: "desc" },
+    { value: (n) => n.latestReactionTimestamp, order: "desc" },
     notifications
   );
 };
