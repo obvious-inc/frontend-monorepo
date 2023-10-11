@@ -115,21 +115,31 @@ export const useNotificationsFetch = ({ fid }) => {
 
 export const useNotificationsBadge = (fid) => {
   const {
-    state: { lastSeenByFid },
+    state: {
+      lastSeenByFid,
+      mentionsByFid,
+      repliesByFid,
+      recastsByFid,
+      likesByFid,
+    },
   } = React.useContext(NotificationsContext);
-  const { mentions, replies, recasts, likes } =
-    useNotificationsByFidOrFetch(fid);
+  useNotificationsByFidOrFetch(fid);
 
-  const allNotifs = React.useMemo(() => {
-    return [...mentions, ...replies, ...recasts, ...likes];
-  }, [mentions, replies, recasts, likes]);
+  const allFidNotifs = React.useMemo(() => {
+    return [
+      ...(mentionsByFid[fid] ?? []),
+      ...(repliesByFid[fid] ?? []),
+      ...(recastsByFid[fid] ?? []),
+      ...(likesByFid[fid] ?? []),
+    ];
+  }, [mentionsByFid, repliesByFid, recastsByFid, likesByFid, fid]);
 
   const unseenNotifs = React.useMemo(() => {
     const lastSeen = lastSeenByFid[fid];
-    return allNotifs.filter(
-      (n) => (n.latestReactionTimestamp ?? n.timestamp) > lastSeen
-    );
-  }, [allNotifs, fid, lastSeenByFid]);
+    return allFidNotifs.filter((n) => {
+      return (n.latestReactionTimestamp ?? n.timestamp) > lastSeen;
+    });
+  }, [allFidNotifs, fid, lastSeenByFid]);
 
   const hasUnseenMentionsOrReplies = React.useMemo(() => {
     return unseenNotifs.some(
