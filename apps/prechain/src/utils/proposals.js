@@ -186,6 +186,6 @@ export const getStateLabel = (state) => {
       return state;
 
     default:
-      throw new Error();
+      throw new Error(`Unknown state "${state}"`);
   }
 };
