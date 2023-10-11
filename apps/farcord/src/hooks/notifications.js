@@ -126,7 +126,7 @@ export const useNotificationsBadge = (fid) => {
 
   const unseenNotifs = React.useMemo(() => {
     const lastSeen = lastSeenByFid[fid];
-    return allNotifs.filter((n) => n.timestamp > lastSeen);
+    return allNotifs.filter((n) => n.latestReactionTimestamp > lastSeen);
   }, [allNotifs, fid, lastSeenByFid]);
 
   const hasUnseenMentionsOrReplies = React.useMemo(() => {
