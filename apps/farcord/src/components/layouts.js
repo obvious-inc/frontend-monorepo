@@ -583,7 +583,7 @@ export const MainLayout = ({ children }) => {
             <ListItem
               compact={false}
               icon={<PenIcon style={{ width: "1.9rem", height: "auto" }} />}
-              title="Create channel"
+              title="Create Channel"
               onClick={() => {
                 setSearchParams((params) => {
                   const newParams = new URLSearchParams(params);
