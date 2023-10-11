@@ -6,6 +6,7 @@ const CREATE_STREAM_SIGNATURE =
 
 const decodeCalldataWithSignature = ({ signature, calldata }) => {
   const { name, inputs: inputTypes } = parseAbiItem(`function ${signature}`);
+  if (inputTypes.length === 0) return { name, inputs: [] };
   try {
     const inputs = decodeAbiParameters(inputTypes, calldata);
     return {
