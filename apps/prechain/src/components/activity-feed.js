@@ -160,7 +160,10 @@ const ActivityFeed = ({ context, items = [], spacing = "1.6rem" }) => (
         <div css={css({ paddingLeft: "2.6rem", userSelect: "text" })}>
           {(item.body || null) != null && (
             <div css={css({ margin: "0.35rem 0" })}>
-              <ItemBody text={item.body} />
+              <ItemBody
+                text={item.body}
+                displayImages={item.type === "event"}
+              />
             </div>
           )}
           {item.type === "signature" && (
@@ -192,9 +195,10 @@ const ActivityFeed = ({ context, items = [], spacing = "1.6rem" }) => (
   </ul>
 );
 
-const ItemBody = React.memo(({ text }) => (
+const ItemBody = React.memo(({ text, displayImages }) => (
   <MarkdownRichText
     text={text}
+    displayImages={displayImages}
     css={css({
       // Make all headings small
       "h1,h2,h3,h4,h5,h6": { fontSize: "1em" },

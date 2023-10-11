@@ -63,12 +63,18 @@ const parseToken = (token, context) => {
         code: token.text,
       };
 
-    case "image":
-      return {
-        type: "image",
-        url: token.href,
-        interactive: false,
-      };
+    case "image": {
+      if (context?.displayImages)
+        return {
+          type: "image",
+          url: token.href,
+          interactive: false,
+        };
+
+      if (context?.link) return { text: context.linkUrl };
+
+      return { type: "link", url: token.href };
+    }
 
     case "hr":
       return { type: "horizontal-divider" };
@@ -78,13 +84,17 @@ const parseToken = (token, context) => {
         token.href.endsWith(`.${ext}`)
       );
 
-      if (isImage)
+      if (isImage && context?.displayImages)
         return { type: "image", url: token.href, interactive: false };
 
       return {
         type: "link",
         url: token.href,
-        children: parseChildren(token, parseToken, context),
+        children: parseChildren(token, parseToken, {
+          ...context,
+          link: true,
+          linkUrl: token.href,
+        }),
       };
     }
 
@@ -132,16 +142,17 @@ const parseToken = (token, context) => {
   }
 };
 
-const MarkdownRichText = ({ text, ...props }) => {
+const MarkdownRichText = ({ text, displayImages = true, ...props }) => {
   const blocks = React.useMemo(() => {
     const tokens = marked.lexer(text);
-    return tokens.map(parseToken).filter(Boolean);
-  }, [text]);
+    return tokens.map((t) => parseToken(t, { displayImages })).filter(Boolean);
+  }, [text, displayImages]);
 
-  const lastBlockString = blocks
-    .slice(-1)[0]
-    .children?.map((el) => el.text ?? "")
-    .join("");
+  const lastBlockString =
+    blocks
+      .slice(-1)[0]
+      .children?.map((el) => el.text ?? "")
+      .join("") ?? "";
 
   if (lastBlockString.toLowerCase() === "sent from voter.wtf")
     return (
