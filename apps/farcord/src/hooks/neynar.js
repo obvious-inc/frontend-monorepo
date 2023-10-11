@@ -372,7 +372,11 @@ export const fetchCustodyAddressByUsername = async (username) => {
     });
 };
 
-export async function fetchMentionAndReplies({ fid, cursor, limit = 3 }) {
+export async function fetchMentionAndReplies({
+  fid,
+  cursor,
+  limit = DEFAULT_PAGE_SIZE,
+}) {
   if (!fid) return [];
 
   let params = new URLSearchParams({

@@ -131,6 +131,8 @@ export const ChannelCacheContextProvider = ({ children }) => {
       limit: 10,
       reverse: true,
     }).then((casts) => {
+      if (casts?.length == 0) return;
+
       const lastCast = casts.slice(-1)[0];
       const lastCastAt = lastCast?.timestamp;
 
@@ -378,7 +380,8 @@ export const useChannelUnreadCount = (channelId) => {
   if (!channelId) return;
 
   const channelState = readStatesByChannelId[channelId];
-  if (channelState == null) return 0;
+  if (channelState == null) return;
+  if (!channelState.lastCastAt) return;
 
   const lastReadTimestamp = new Date(channelState.lastReadAt).getTime();
   const lastCastTimestamp = new Date(channelState.lastCastAt).getTime();

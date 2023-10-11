@@ -198,7 +198,7 @@ export const ChannelItem = ({ channel, expandable }) => {
   );
 };
 
-export const NotificationsItem = ({ fid, expandable }) => {
+export const NotificationsItem = ({ fid, expandable, ...props }) => {
   const theme = useTheme();
 
   const { isFloating: isFloatingMenuEnabled } = useSidebarState();
@@ -250,7 +250,7 @@ export const NotificationsItem = ({ fid, expandable }) => {
         </div>
       }
       icon={<BellIcon style={{ width: "1.9rem", height: "auto" }} />}
-      size="normal"
+      {...props}
     />
   );
 };
@@ -583,7 +583,7 @@ export const MainLayout = ({ children }) => {
               }}
             />
 
-            <NotificationsItem fid={fid} />
+            <NotificationsItem fid={fid} disabled={!fid} />
 
             <ListItem
               compact={false}
