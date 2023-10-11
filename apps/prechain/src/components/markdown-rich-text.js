@@ -84,8 +84,7 @@ const parseToken = (token, context) => {
       return {
         type: "link",
         url: token.href,
-        // TODO: parse and flatten children
-        label: decodeHtmlEntities(token.text),
+        children: parseChildren(token, parseToken, context),
       };
     }
 

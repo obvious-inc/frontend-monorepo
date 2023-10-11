@@ -113,7 +113,7 @@ export const createCss = (t) => ({
   },
 
   // Images
-  "button.image": {
+  ".image": {
     display: "block",
     borderRadius: "0.3rem",
     overflow: "hidden",
@@ -122,7 +122,7 @@ export const createCss = (t) => ({
       boxShadow: t.shadows.focus,
     },
     "@media(hover: hover)": {
-      ":not([disabled])": {
+      '&[data-interactive="interactive"]': {
         cursor: "zoom-in",
         "&[data-editable]": { cursor: "pointer" },
         ":hover": { filter: "brightness(1.05)" },
@@ -263,7 +263,13 @@ const createRenderer = ({
       case "list-item":
         return <li key={i}>{children()}</li>;
 
-      case "link":
+      case "link": {
+        const content =
+          el.label != null
+            ? el.label
+            : el.children != null
+            ? children()
+            : el.url;
         return (
           <a
             key={i}
@@ -273,9 +279,10 @@ const createRenderer = ({
             className="link"
             onClick={(e) => onClickInteractiveElement?.(e)}
           >
-            {el.label ?? el.url}
+            {content}
           </a>
         );
+      }
 
       case "code":
         return <code key={i}>{el.code}</code>;
@@ -355,15 +362,21 @@ const createRenderer = ({
 
         const interactive = el.interactive ?? true;
 
+        const ContainerComponent = interactive ? "button" : "div";
+        const containerProps = interactive
+          ? {
+              onClick: () => {
+                onClickInteractiveElement?.(el);
+              },
+            }
+          : null;
+
         return (
-          <button
+          <ContainerComponent
             key={i}
             className="image"
-            onClick={() => {
-              onClickInteractiveElement?.(el);
-            }}
-            disabled={!interactive}
             data-interactive={interactive}
+            {...containerProps}
           >
             <Image
               src={el.url}
@@ -374,7 +387,7 @@ const createRenderer = ({
                 aspectRatio: `${el.width} / ${el.height}`,
               }}
             />
-          </button>
+          </ContainerComponent>
         );
       }
 
