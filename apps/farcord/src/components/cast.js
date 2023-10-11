@@ -94,7 +94,6 @@ export const CastHeader = ({ cast }) => {
   const [recasted, setRecasted] = React.useState(false);
   const [likesCount, setLikesCount] = React.useState(0);
   const [recastsCount, setRecastsCount] = React.useState(0);
-  const isSmallScreen = useMatchMedia("(max-width: 800px)");
 
   const [searchParams] = useSearchParams();
 
