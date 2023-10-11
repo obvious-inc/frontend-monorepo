@@ -12,12 +12,7 @@ import { channelsReducer } from "./reducers/channels.js";
 import { ChannelCacheContextProvider } from "./hooks/channel.js";
 import { NotificationsContextProvider } from "./hooks/notifications.js";
 
-const ChannelScreen = React.lazy(() =>
-  import("./components/channel-screen.js")
-);
-const NotificationsScreen = React.lazy(() =>
-  import("./components/notifications-screen.js")
-);
+const MainScreen = React.lazy(() => import("./components/main-screen.js"));
 
 const useTheme = () => {
   const systemPrefersDarkTheme = useMatchMedia("(prefers-color-scheme: dark)");
@@ -73,27 +68,31 @@ const App = () => {
                           <Route path="/">
                             <Route
                               path="channels/:channelId"
-                              element={<ChannelScreen />}
+                              element={<MainScreen screenType="channel" />}
                             />
                             <Route
                               path="channels"
-                              element={<ChannelScreen />}
+                              element={<MainScreen screenType="channel" />}
                             />
                             <Route
                               path="feed"
-                              element={<ChannelScreen isFeed />}
+                              element={<MainScreen screenType="feed" />}
                             />
                             <Route
                               path="recent"
-                              element={<ChannelScreen isRecent />}
+                              element={<MainScreen screenType="recent" />}
                             />
                             <Route
                               path="notifications"
-                              element={<NotificationsScreen />}
+                              element={
+                                <MainScreen screenType="notifications" />
+                              }
                             />
-                            <Route index element={<ChannelScreen isFeed />} />
+                            <Route
+                              index
+                              element={<MainScreen screenType="feed" />}
+                            />
                           </Route>
-                          {/* <Route path="*" element={<Navigate to="/feed" replace />} /> */}
                         </Routes>
                       </Tooltip.Provider>
                     </SidebarProvider>

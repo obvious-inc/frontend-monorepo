@@ -3,7 +3,6 @@ import {
   MagnificationGlass as MagnificationGlassIcon,
   Triangle as TriangleIcon,
   Pen as PenIcon,
-  Globe as GlobeIcon,
   Bell as BellIcon,
   Home as HomeIcon,
   RSS as RSSIcon,

@@ -1,10 +1,6 @@
 import React from "react";
-import { MainLayout } from "./layouts.js";
-import { useSearchParams } from "react-router-dom";
 import { css } from "@emotion/react";
-import { ThreadScreen } from "./cast-screen.js";
 import useFarcasterAccount from "./farcaster-account.js";
-import { useMatchMedia } from "@shades/common/react";
 import {
   useNotificationLastSeenAt,
   useNotificationsBadge,
@@ -141,18 +137,4 @@ const NotificationsView = () => {
   );
 };
 
-const NotificationsScreen = () => {
-  const [searchParams] = useSearchParams();
-  const castHash = searchParams.get("cast");
-  const isSmallScreen = useMatchMedia("(max-width: 800px)");
-  const hideNotificationsView = isSmallScreen && castHash;
-
-  return (
-    <MainLayout>
-      {!hideNotificationsView && <NotificationsView />}
-      {castHash && <ThreadScreen castHash={castHash} />}
-    </MainLayout>
-  );
-};
-
-export default NotificationsScreen;
+export default NotificationsView;

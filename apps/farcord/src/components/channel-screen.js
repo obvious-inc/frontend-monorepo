@@ -1,12 +1,9 @@
 import React from "react";
-import { MainLayout } from "./layouts.js";
-import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { css } from "@emotion/react";
 import { ReverseVerticalScrollView } from "@shades/common/react";
 import Spinner from "@shades/ui-web/spinner";
 import { CastItem } from "./cast.js";
 import ChannelNavBar from "./channel-navbar.js";
-import { ThreadScreen } from "./cast-screen.js";
 import {
   ChainDataCacheDispatchContext,
   useFarcasterChannel,
@@ -26,7 +23,6 @@ import {
 import { toHex } from "viem";
 import useFarcasterAccount from "./farcaster-account.js";
 import MessageEditorForm from "./message-editor-form.js";
-import { useMatchMedia } from "@shades/common/react";
 import isHotkey from "is-hotkey";
 import { usePreviousValue } from "../hooks/previous-value.js";
 
@@ -343,41 +339,4 @@ const ChannelView = ({ channelId, isFeed, isRecent }) => {
   );
 };
 
-const ChannelScreen = ({ isFeed = false, isRecent = false }) => {
-  const navigate = useNavigate();
-  const { channelId } = useParams();
-  const [searchParams] = useSearchParams();
-  const searchUrl = searchParams.get("url");
-  const castHash = searchParams.get("cast");
-  const isSmallScreen = useMatchMedia("(max-width: 800px)");
-  const hideChannelView = isSmallScreen && castHash;
-
-  React.useEffect(() => {
-    const gotoChannelUrl = (channelUrl) => {
-      searchParams.delete("url");
-      navigate({
-        pathname: `/channels/${encodeURIComponent(channelUrl)}`,
-        search: searchParams.toString(),
-      });
-    };
-
-    if (!channelId && searchUrl) {
-      gotoChannelUrl(searchUrl);
-    }
-  }, [channelId, searchParams, navigate, searchUrl]);
-
-  return (
-    <MainLayout>
-      {!hideChannelView && (
-        <ChannelView
-          channelId={channelId}
-          isFeed={isFeed}
-          isRecent={isRecent}
-        />
-      )}
-      {castHash && <ThreadScreen castHash={castHash} />}
-    </MainLayout>
-  );
-};
-
-export default ChannelScreen;
+export default ChannelView;
