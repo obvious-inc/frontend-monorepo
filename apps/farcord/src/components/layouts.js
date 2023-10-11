@@ -319,6 +319,40 @@ export const RecentItem = () => {
   );
 };
 
+export const FarcordItem = () => {
+  const { isFloating: isFloatingMenuEnabled } = useSidebarState();
+  const toggleMenu = useSidebarToggle();
+
+  const closeMenu = () => {
+    if (isFloatingMenuEnabled) toggleMenu();
+  };
+
+  return (
+    <ListItem
+      component={NavLink}
+      compact={false}
+      to={{
+        pathname: "/channels/https%3A%2F%2Ffarcord.com",
+        search: location.search,
+      }}
+      onClick={closeMenu}
+      className={({ isActive }) => (isActive ? "active" : "")}
+      title={
+        <div
+          className="title"
+          css={css({
+            overflow: "hidden",
+            textOverflow: "ellipsis",
+          })}
+        >
+          Farcord
+        </div>
+      }
+      icon={<FarcordIcon style={{ width: "1.9rem", height: "auto" }} />}
+    />
+  );
+};
+
 const CollapsibleSection = ({
   title,
   expanded,
@@ -567,17 +601,7 @@ export const MainLayout = ({ children }) => {
 
             {fid && <FeedItem />}
             <RecentItem />
-
-            <ListItem
-              compact={false}
-              component={NavLink}
-              to={{
-                pathname: "/channels/https%3A%2F%2Ffarcord.com",
-                search: location.search,
-              }}
-              icon={<FarcordIcon style={{ width: "1.9rem", height: "auto" }} />}
-              title="Farcord"
-            />
+            <FarcordItem />
 
             <div
               css={css({
