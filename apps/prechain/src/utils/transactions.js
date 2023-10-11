@@ -66,6 +66,7 @@ export const parse = (data, { chainId }) => {
       return {
         type: "unparsed-function-call",
         target,
+        signature,
         calldata,
         value,
         error: "calldata-decoding-failed",

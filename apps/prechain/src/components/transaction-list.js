@@ -110,6 +110,13 @@ const ListItem = ({ transaction }) => {
             <span data-identifier>contract</span>:{" "}
             <span data-argument>{t.target}</span>
             <br />
+            {t.signature != null && (
+              <>
+                <span data-identifier>signature</span>:{" "}
+                <span data-argument>{t.signature}</span>
+                <br />
+              </>
+            )}
             <span data-identifier>calldata</span>:{" "}
             <span data-argument>{t.calldata}</span>
             {t.value > 0 && (
