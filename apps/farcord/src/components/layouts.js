@@ -5,6 +5,9 @@ import {
   Pen as PenIcon,
   Globe as GlobeIcon,
   Bell as BellIcon,
+  Home as HomeIcon,
+  RSS as RSSIcon,
+  Farcord as FarcordIcon,
 } from "@shades/ui-web/icons";
 import { css, useTheme } from "@emotion/react";
 import { NavLink, Outlet, useSearchParams } from "react-router-dom";
@@ -265,6 +268,7 @@ export const FeedItem = () => {
   return (
     <ListItem
       component={NavLink}
+      compact={false}
       to={{ pathname: link, search: location.search }}
       onClick={closeMenu}
       className={({ isActive }) => (isActive ? "active" : "")}
@@ -276,10 +280,10 @@ export const FeedItem = () => {
             textOverflow: "ellipsis",
           })}
         >
-          Feed
+          Your Feed
         </div>
       }
-      size="normal"
+      icon={<HomeIcon style={{ width: "1.9rem", height: "auto" }} />}
     />
   );
 };
@@ -296,6 +300,7 @@ export const RecentItem = () => {
   return (
     <ListItem
       component={NavLink}
+      compact={false}
       to={{ pathname: link, search: location.search }}
       onClick={closeMenu}
       className={({ isActive }) => (isActive ? "active" : "")}
@@ -307,10 +312,10 @@ export const RecentItem = () => {
             textOverflow: "ellipsis",
           })}
         >
-          Recent
+          All Casts
         </div>
       }
-      size="normal"
+      icon={<RSSIcon style={{ width: "1.9rem", height: "auto" }} />}
     />
   );
 };
@@ -549,38 +554,41 @@ export const MainLayout = ({ children }) => {
 
             <ListItem
               compact={false}
-              component={NavLink}
-              to={{
-                pathname: "/channels/https%3A%2F%2Ffarcord.com",
-                search: location.search,
-              }}
-              icon={<GlobeIcon style={{ width: "1.9rem", height: "auto" }} />}
-              title="Farcord"
-            />
-
-            <ListItem
-              compact={false}
               disabled={true}
               icon={<MagnificationGlassIcon style={{ width: "1.4rem" }} />}
               title="Search"
             />
 
             <div
-              style={{
-                height: "2rem",
-              }}
+              css={css({
+                margin: "1rem 1rem",
+                border: "0.05rem solid hsl(0 0% 100% / 8%)",
+              })}
             />
 
-            <RecentItem />
             {fid && <FeedItem />}
+            <RecentItem />
+
+            <ListItem
+              compact={false}
+              component={NavLink}
+              to={{
+                pathname: "/channels/https%3A%2F%2Ffarcord.com",
+                search: location.search,
+              }}
+              icon={<FarcordIcon style={{ width: "1.9rem", height: "auto" }} />}
+              title="Farcord"
+            />
+
+            <div
+              css={css({
+                margin: "1rem 1rem",
+                border: "0.05rem solid hsl(0 0% 100% / 8%)",
+              })}
+            />
 
             {fid && (
               <>
-                <div
-                  style={{
-                    height: "2rem",
-                  }}
-                />
                 <CollapsibleSection
                   key="star"
                   title="Followed Channels"
@@ -595,7 +603,7 @@ export const MainLayout = ({ children }) => {
 
             <div
               style={{
-                height: "2rem",
+                height: "1rem",
               }}
             />
 
