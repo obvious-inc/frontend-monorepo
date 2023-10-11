@@ -149,7 +149,7 @@ export const useNotificationsBadge = (fid) => {
 
   if (!lastSeenByFid[fid]) {
     return {
-      count: 0,
+      count: -1,
       hasImportant: false,
     };
   }
