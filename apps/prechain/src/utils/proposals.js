@@ -69,6 +69,7 @@ export const buildFeed = (proposal, { latestBlockNumber, candidate }) => {
       blockNumber: p.createdBlock,
       voteCount: p.votes,
       proposalId: proposal.id,
+      isPending: p.isPending,
     })) ?? [];
 
   const voteItems =
@@ -81,6 +82,7 @@ export const buildFeed = (proposal, { latestBlockNumber, candidate }) => {
       blockNumber: v.blockNumber,
       voteCount: v.votes,
       proposalId: proposal.id,
+      isPending: v.isPending,
     })) ?? [];
 
   const propdateItems =

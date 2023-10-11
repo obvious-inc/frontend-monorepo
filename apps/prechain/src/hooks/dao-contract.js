@@ -9,6 +9,7 @@ import {
 } from "wagmi";
 import { unparse as unparseTransactions } from "../utils/transactions.js";
 import { resolveIdentifier } from "../contracts.js";
+import { useActions } from "../store.js";
 import { useWallet } from "./wallet.js";
 import useChainId from "./chain-id.js";
 import { useCurrentVotes } from "./token-contract.js";
@@ -169,6 +170,9 @@ export const useCastProposalVote = (
   { support, reason, enabled = true }
 ) => {
   const chainId = useChainId();
+  const { data: blockNumber } = useBlockNumber();
+  const { address: accountAddress } = useWallet();
+  const { addOptimitisicProposalVote } = useActions();
 
   const hasReason = reason != null && reason.trim() !== "";
 
@@ -199,7 +203,18 @@ export const useCastProposalVote = (
 
   const write = hasReason ? writeCastVoteWithReason : writeCastVote;
 
-  return write;
+  return async () => {
+    return write().then(({ hash }) => {
+      addOptimitisicProposalVote(proposalId, {
+        id: String(Math.random()),
+        reason,
+        supportDetailed: support,
+        blockNumber,
+        voter: { id: accountAddress.toLowerCase() },
+      });
+      return { hash };
+    });
+  };
 };
 
 export const useCreateProposal = ({ enabled = true } = {}) => {

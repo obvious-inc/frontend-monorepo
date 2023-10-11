@@ -28,8 +28,13 @@ const mergeProposals = (p1, p2) => {
 
   if (p1.votes != null && p2.votes != null)
     mergedProposal.votes = arrayUtils.unique(
-      (v1, v2) => v1.id === v2.id,
-      [...p1.votes, ...p2.votes]
+      (v1, v2) => {
+        if (v1.id === v2.id) return true;
+        if (!v1.isPending) return false;
+        return v1.voter.id.toLowerCase() === v2.voter.id.toLowerCase();
+      },
+      // p2 has to be first here to take precedence
+      [...p2.votes, ...p1.votes]
     );
 
   return mergedProposal;
@@ -125,6 +130,20 @@ const useStore = createZustandStoreHook((set) => {
     propdatesByProposalId: {},
 
     // UI actions
+    addOptimitisicProposalVote: (proposalId, vote) => {
+      set((s) => {
+        const proposal = s.proposalsById[proposalId];
+
+        return {
+          proposalsById: {
+            ...s.proposalsById,
+            [proposalId]: mergeProposals(proposal, {
+              votes: [{ ...vote, isPending: true }],
+            }),
+          },
+        };
+      });
+    },
     addOptimitisicCandidateFeedbackPost: (candidateId, post) => {
       set((s) => {
         const candidate = s.proposalCandidatesById[candidateId];
@@ -271,6 +290,9 @@ export const useActions = () => {
   const fetchNounsActivity = useStore((s) => s.fetchNounsActivity);
   const fetchBrowseScreenData = useStore((s) => s.fetchBrowseScreenData);
   const fetchPropdates = useStore((s) => s.fetchPropdates);
+  const addOptimitisicProposalVote = useStore(
+    (s) => s.addOptimitisicProposalVote
+  );
   const addOptimitisicCandidateFeedbackPost = useStore(
     (s) => s.addOptimitisicCandidateFeedbackPost
   );
@@ -297,6 +319,7 @@ export const useActions = () => {
       [fetchBrowseScreenData, chainId]
     ),
     fetchPropdates,
+    addOptimitisicProposalVote,
     addOptimitisicCandidateFeedbackPost,
   };
 };
