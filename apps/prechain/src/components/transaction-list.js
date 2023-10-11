@@ -151,7 +151,8 @@ const ListItem = ({ transaction }) => {
         if (t.error === "calldata-decoding-failed")
           return (
             <span css={(t) => css({ color: t.colors.textNegative })}>
-              Decoding failed. This is likely invalid calldata.
+              Decoding failed. This likely means that the signature or calldata
+              is incorrectly formatted.
             </span>
           );
         return (
