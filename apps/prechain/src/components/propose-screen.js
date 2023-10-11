@@ -103,7 +103,7 @@ const ProposeScreen = () => {
               {
                 type: "transfer",
                 target: a.target,
-                value: parseEther(a.amount),
+                value: parseEther(String(a.amount)),
               },
             ];
 
