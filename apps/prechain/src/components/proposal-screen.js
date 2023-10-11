@@ -1064,6 +1064,7 @@ const ProposalScreen = () => {
         return;
       }
 
+      console.error(e);
       setFetchError(e);
     },
   });

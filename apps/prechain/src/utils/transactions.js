@@ -6,15 +6,18 @@ const CREATE_STREAM_SIGNATURE =
 
 const decodeCalldataWithSignature = ({ signature, calldata }) => {
   const { name, inputs: inputTypes } = parseAbiItem(`function ${signature}`);
-  const inputs = decodeAbiParameters(inputTypes, calldata);
-
-  return {
-    name,
-    inputs: inputs.map((value, i) => ({
-      value,
-      type: inputTypes[i]?.type,
-    })),
-  };
+  try {
+    const inputs = decodeAbiParameters(inputTypes, calldata);
+    return {
+      name,
+      inputs: inputs.map((value, i) => ({
+        value,
+        type: inputTypes[i]?.type,
+      })),
+    };
+  } catch (e) {
+    return { name, calldataDecodingFailed: true };
+  }
 };
 
 export const parse = (data, { chainId }) => {
@@ -53,8 +56,20 @@ export const parse = (data, { chainId }) => {
         ? { type: "unparsed-payable-function-call", target, calldata, value }
         : { type: "unparsed-function-call", target, calldata };
 
-    const { name: functionName, inputs: functionInputs } =
-      decodeCalldataWithSignature({ signature, calldata });
+    const {
+      name: functionName,
+      inputs: functionInputs,
+      calldataDecodingFailed,
+    } = decodeCalldataWithSignature({ signature, calldata });
+
+    if (calldataDecodingFailed)
+      return {
+        type: "unparsed-function-call",
+        target,
+        calldata,
+        value,
+        error: "calldata-decoding-failed",
+      };
 
     if (signature === CREATE_STREAM_SIGNATURE) {
       const tokenContractAddress = functionInputs[2].value.toLowerCase();

@@ -141,6 +141,12 @@ const ListItem = ({ transaction }) => {
   const renderComment = () => {
     switch (t.type) {
       case "unparsed-function-call":
+        if (t.error === "calldata-decoding-failed")
+          return (
+            <span css={(t) => css({ color: t.colors.textNegative })}>
+              Decoding failed. This is likely invalid calldata.
+            </span>
+          );
         return (
           <>
             Displaying the raw calldata as the contract ABI cound not be fetched
