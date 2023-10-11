@@ -593,7 +593,7 @@ export const MainLayout = ({ children }) => {
               }}
             />
 
-            {/* <NotificationsItem fid={fid} disabled={!fid} /> */}
+            <NotificationsItem fid={fid} disabled={!fid} />
 
             <ListItem
               compact={false}
