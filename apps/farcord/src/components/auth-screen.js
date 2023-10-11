@@ -16,6 +16,7 @@ import { DEFAULT_CHAIN_ID, useWalletFarcasterId } from "../hooks/farcord";
 import { useSignerByPublicKey } from "../hooks/hub";
 import { useConnect } from "wagmi";
 import { Small } from "./text";
+import { useMatchMedia } from "@shades/common/react";
 
 const { truncateAddress } = ethereumUtils;
 
@@ -88,6 +89,7 @@ const WalletUser = () => {
 const AuthScreen = () => {
   const [farcasterUsername, setFarcasterUsername] = React.useState("");
   const [custodyWalletAddress, setCustodyWalletAddress] = React.useState("");
+  const isSmallScreen = useMatchMedia("(max-width: 800px)");
 
   const {
     cancel: cancelWalletConnectionAttempt,
@@ -575,22 +577,29 @@ const AuthScreen = () => {
                 onClick={async () => {
                   handleCreateSignerClick();
                 }}
+                disabled={isSmallScreen}
                 style={{ marginBottom: "2rem" }}
               >
                 Create Signer
               </Button>
 
-              <p>You&apos;ll be asked to submit a transaction on-chain.</p>
-              <Small
-                css={css({
-                  width: "40rem",
-                  maxWidth: "100%",
-                  marginTop: "0.5rem",
-                  "p + p": { marginTop: "1.4rem" },
-                })}
-              >
-                <p>(This should cost between $0.10 and $1 in gas fees)</p>
-              </Small>
+              {isSmallScreen ? (
+                <p>Mobile is read-only for now, sorry!</p>
+              ) : (
+                <>
+                  <p>You&apos;ll be asked to submit a transaction on-chain.</p>
+                  <Small
+                    css={css({
+                      width: "40rem",
+                      maxWidth: "100%",
+                      marginTop: "0.5rem",
+                      "p + p": { marginTop: "1.4rem" },
+                    })}
+                  >
+                    <p>(This should cost between $0.10 and $1 in gas fees)</p>
+                  </Small>
+                </>
+              )}
 
               <Small
                 css={css({

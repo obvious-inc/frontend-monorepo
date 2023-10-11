@@ -5,6 +5,8 @@ import { css } from "@emotion/react";
 import { Small } from "./text.js";
 import Button from "@shades/ui-web/button";
 import { useSearchParams } from "react-router-dom";
+import { useMatchMedia } from "@shades/common/react";
+import TinyMutedText from "./tiny-muted-text.js";
 
 const AuthDialog = () => {
   const [searchParams] = useSearchParams();
@@ -15,6 +17,8 @@ const AuthDialog = () => {
   const [custodyWalletVisible, setCustodyWalletVisible] = React.useState(
     provider === "wallet"
   );
+
+  const isSmallScreen = useMatchMedia("(max-width: 800px)");
 
   return (
     <div
@@ -45,9 +49,18 @@ const AuthDialog = () => {
               alignItems: "center",
             })}
           >
-            <Button onClick={() => setWarpcastVisible(true)}>
+            <Button
+              onClick={() => setWarpcastVisible(true)}
+              disabled={isSmallScreen}
+            >
               Use Warpcast
             </Button>
+
+            {isSmallScreen && (
+              <TinyMutedText style={{ marginTop: "2.8rem" }}>
+                Desktop-only
+              </TinyMutedText>
+            )}
 
             <Small
               css={css({
