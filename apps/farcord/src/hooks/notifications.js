@@ -126,7 +126,9 @@ export const useNotificationsBadge = (fid) => {
 
   const unseenNotifs = React.useMemo(() => {
     const lastSeen = lastSeenByFid[fid];
-    return allNotifs.filter((n) => n.latestReactionTimestamp > lastSeen);
+    return allNotifs.filter(
+      (n) => n.latestReactionTimestamp || n.timestamp > lastSeen
+    );
   }, [allNotifs, fid, lastSeenByFid]);
 
   const hasUnseenMentionsOrReplies = React.useMemo(() => {
@@ -184,7 +186,7 @@ export const useSortedByDateNotificationsByFid = (fid) => {
   }, [mentions, replies, recasts, likes]);
 
   return arrayUtils.sortBy(
-    { value: (n) => n.latestReactionTimestamp, order: "desc" },
+    { value: (n) => n.latestReactionTimestamp || n.timestamp, order: "desc" },
     notifications
   );
 };
