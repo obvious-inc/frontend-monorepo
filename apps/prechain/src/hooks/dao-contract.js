@@ -183,7 +183,7 @@ export const useCastProposalVote = (
     ]),
     functionName: "castRefundableVote",
     args: [Number(proposalId), support],
-    enabled: enabled && !hasReason,
+    enabled: enabled && support != null && !hasReason,
   });
 
   const { config: castVoteWithReasonConfig } = usePrepareContractWrite({
@@ -193,7 +193,7 @@ export const useCastProposalVote = (
     ]),
     functionName: "castRefundableVoteWithReason",
     args: [Number(proposalId), support, reason],
-    enabled: enabled && hasReason,
+    enabled: enabled && support != null && hasReason,
   });
 
   const { writeAsync: writeCastVote } = useContractWrite(castVoteConfig);

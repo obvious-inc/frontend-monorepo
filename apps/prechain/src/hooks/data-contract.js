@@ -71,6 +71,7 @@ export const useSendProposalFeedback = (proposalId, { support, reason }) => {
     ]),
     functionName: "sendFeedback",
     args: [parseInt(proposalId), support, reason],
+    enabled: support != null,
   });
   const { writeAsync: write } = useContractWrite(config);
 
