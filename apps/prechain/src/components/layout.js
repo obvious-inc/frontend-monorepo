@@ -130,7 +130,7 @@ const NavBar = ({ navigationStack, actions }) => {
                     width: "2rem",
                     height: "auto",
                     verticalAlign: "sub",
-                    transform: "translateY(0.1rem)",
+                    transform: "translateY(0.15rem)",
                   })}
                 />
                 {location.pathname !== "/" && (
