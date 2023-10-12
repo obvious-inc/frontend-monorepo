@@ -362,7 +362,7 @@ const createRenderer = ({
 
         const interactive = el.interactive ?? true;
 
-        const ContainerComponent = interactive ? "button" : "div";
+        const ContainerComponent = interactive ? "button" : "span";
         const containerProps = interactive
           ? {
               onClick: () => {
