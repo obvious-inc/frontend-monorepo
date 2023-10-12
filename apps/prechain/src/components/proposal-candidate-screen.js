@@ -1085,7 +1085,8 @@ const ProposalCandidateScreen = () => {
                   label: "Put on chain",
                 },
               ].filter(Boolean)
-            : connectedDelegateHasVotes
+            : connectedDelegateHasVotes &&
+              candidate.latestVersion.proposalId == null
             ? [{ onSelect: toggleSponsorDialog, label: "Sponsor candidate" }]
             : []
         }

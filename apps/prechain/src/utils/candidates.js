@@ -44,9 +44,9 @@ export const buildFeed = (candidate, { skipSignatures = false } = {}) => {
     candidate.feedbackPosts?.map((p) => ({
       type: "feedback-post",
       id: `${candidate.id}-${p.id}`,
-      authorAccount: p.voter.id,
+      authorAccount: p.voterId,
       body: p.reason,
-      support: p.supportDetailed,
+      support: p.support,
       voteCount: p.votes,
       timestamp: p.createdTimestamp,
       blockNumber: BigInt(p.createdBlock),
@@ -128,7 +128,7 @@ export const getSignals = ({ candidate, proposerDelegate }) => {
 
       for (const nounId of nounIds) {
         if (supportByNounId[nounId] != null) continue;
-        newSupportByNounId[nounId] = post.supportDetailed;
+        newSupportByNounId[nounId] = post.support;
       }
 
       return { ...supportByNounId, ...newSupportByNounId };
@@ -139,9 +139,8 @@ export const getSignals = ({ candidate, proposerDelegate }) => {
 
   const supportByDelegateId = sortedFeedbackPosts.reduce(
     (supportByDelegateId, post) => {
-      if (supportByDelegateId[post.voter.id] != null)
-        return supportByDelegateId;
-      return { ...supportByDelegateId, [post.voter.id]: post.supportDetailed };
+      if (supportByDelegateId[post.voterId] != null) return supportByDelegateId;
+      return { ...supportByDelegateId, [post.voterId]: post.support };
     },
     // Assume that sponsors will vote for
     sponsorIds.reduce((acc, id) => ({ ...acc, [id]: 1 }), {})

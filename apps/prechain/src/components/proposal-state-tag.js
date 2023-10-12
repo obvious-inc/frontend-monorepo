@@ -16,7 +16,7 @@ const ProposalStateTag = ({ proposalId, ...props }) => {
   };
 
   // `state` might be null before we have fetched the current block number
-  if (proposal.state == null) return null
+  if (proposal.state == null) return null;
 
   return (
     <Tag size="large" variant={variantByState[proposal.state]} {...props}>

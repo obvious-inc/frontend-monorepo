@@ -134,7 +134,14 @@ const NavBar = ({ navigationStack, actions }) => {
                   })}
                 />
                 {location.pathname !== "/" && (
-                  <span style={{ marginLeft: "0.6rem" }}>Camp</span>
+                  <span
+                    css={css({
+                      marginLeft: "0.6rem",
+                      "@media(max-width: 440px)": { display: "none" },
+                    })}
+                  >
+                    Camp
+                  </span>
                 )}
               </>
             ),
@@ -144,11 +151,15 @@ const NavBar = ({ navigationStack, actions }) => {
           <React.Fragment key={item.to}>
             {index > 0 && (
               <span
+                data-index={index}
                 data-desktop-only={item.desktopOnly}
                 css={(t) =>
                   css({
                     color: t.colors.textMuted,
                     fontSize: t.text.sizes.base,
+                    "@media(max-width: 440px)": {
+                      '&[data-index="1"]': { display: "none" },
+                    },
                   })
                 }
               >

@@ -31,7 +31,7 @@ const mergeProposals = (p1, p2) => {
       (v1, v2) => {
         if (v1.id === v2.id) return true;
         if (!v1.isPending) return false;
-        return v1.voter.id.toLowerCase() === v2.voter.id.toLowerCase();
+        return v1.voterId.toLowerCase() === v2.voterId.toLowerCase();
       },
       // p2 has to be first here to take precedence
       [...p2.votes, ...p1.votes]
@@ -53,7 +53,7 @@ const mergeProposalCandidates = (p1, p2) => {
 
         // Bit of a hack to clear optimistic entries without proper ids
         const [compositeId1, compositeId2] = [p1, p2].map((p) =>
-          [p.proposalId, p.candidateId, p.reason, p.supportDetailed, p.voter.id]
+          [p.proposalId, p.candidateId, p.reason, p.support, p.voterId]
             .join("-")
             .trim()
             .toLowerCase()
@@ -248,7 +248,7 @@ const useStore = createZustandStoreHook((set) => {
         ({ votes, proposalFeedbackPosts, candidateFeedbackPosts }) => {
           set((s) => {
             const postsByCandidateId = arrayUtils.groupBy(
-              (p) => p.candidate.id.toLowerCase(),
+              (p) => p.candidateId.toLowerCase(),
               candidateFeedbackPosts
             );
             const newCandidatesById = objectUtils.mapValues(
@@ -261,11 +261,11 @@ const useStore = createZustandStoreHook((set) => {
             );
 
             const feedbackPostsByProposalId = arrayUtils.groupBy(
-              (p) => p.proposal.id,
+              (p) => p.proposalId,
               proposalFeedbackPosts
             );
             const votesByProposalId = arrayUtils.groupBy(
-              (v) => v.proposal.id,
+              (v) => v.proposalId,
               votes
             );
 

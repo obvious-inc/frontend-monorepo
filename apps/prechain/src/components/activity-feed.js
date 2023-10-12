@@ -14,7 +14,7 @@ import AccountAvatar from "./account-avatar.js";
 
 const MarkdownRichText = React.lazy(() => import("./markdown-rich-text.js"));
 
-const ActivityFeed = ({ context, items = [], spacing = "1.6rem" }) => (
+const ActivityFeed = ({ context, items = [], spacing = "2.1rem" }) => (
   <ul
     css={(t) =>
       css({
@@ -81,119 +81,142 @@ const ActivityFeed = ({ context, items = [], spacing = "1.6rem" }) => (
     style={{ "--vertical-spacing": spacing }}
   >
     {items.map((item) => (
-      <div key={item.id} role="listitem" data-pending={item.isPending}>
-        <div data-container>
-          <div>
-            {item.type === "event" || item.authorAccount == null ? (
-              <div data-timeline-symbol />
-            ) : (
-              <AccountPreviewPopoverTrigger accountAddress={item.authorAccount}>
-                <button data-avatar-button>
-                  <AccountAvatar
-                    data-avatar
-                    address={item.authorAccount}
-                    size="2rem"
-                  />
-                </button>
-              </AccountPreviewPopoverTrigger>
-            )}
-          </div>
-          <div>
-            <div
-              css={css({
-                display: "flex",
-                alignItems: "flex-start",
-                gap: "1rem",
-                cursor: "default",
-                lineHeight: 1.5,
-              })}
-            >
-              <div
-                css={css({
-                  flex: 1,
-                  minWidth: 0,
-                  overflow: "hidden",
-                  textOverflow: "ellipsis",
-                })}
-              >
-                <ItemTitle item={item} context={context} />
-              </div>
-              <div style={{ padding: "0.25rem 0" }}>
-                {item.isPending ? (
-                  <Spinner size="1rem" />
-                ) : (
-                  item.voteCount != null && (
-                    <Tooltip.Root>
-                      <Tooltip.Trigger asChild>
-                        <span
-                          css={(t) =>
-                            css({
-                              display: "flex",
-                              alignItems: "center",
-                              gap: "0.5rem",
-                              fontSize: t.text.sizes.tiny,
-                              color: t.colors.textDimmed,
-                            })
-                          }
-                        >
-                          {item.voteCount}
-                          <NogglesIcon
-                            style={{
-                              display: "inline-flex",
-                              width: "1.7rem",
-                              height: "auto",
-                            }}
-                          />
-                        </span>
-                      </Tooltip.Trigger>
-                      <Tooltip.Content side="top" sideOffset={5}>
-                        {item.voteCount}{" "}
-                        {Number(item.voteCount) === 1 ? "noun" : "nouns"}
-                      </Tooltip.Content>
-                    </Tooltip.Root>
-                  )
-                )}
-              </div>
-            </div>
-          </div>
-        </div>
-        <div css={css({ paddingLeft: "2.6rem", userSelect: "text" })}>
-          {(item.body || null) != null && (
-            <div css={css({ margin: "0.35rem 0" })}>
-              <ItemBody
-                text={item.body}
-                displayImages={item.type === "event"}
-              />
-            </div>
-          )}
-          {item.type === "signature" && (
-            <div
-              css={(t) =>
-                css({
-                  fontSize: t.text.sizes.small,
-                  color: t.colors.textDimmed,
-                })
-              }
-            >
-              Expires{" "}
-              {datesDifferenceInDays(item.expiresAt, new Date()) > 100 ? (
-                "in >100 days"
-              ) : (
-                <FormattedDateWithTooltip
-                  capitalize={false}
-                  relativeDayThreshold={Infinity}
-                  value={item.expiresAt}
-                  month="short"
-                  day="numeric"
-                />
-              )}
-            </div>
-          )}
-        </div>
-      </div>
+      <FeedItem key={item.id} {...item} context={context} />
     ))}
   </ul>
 );
+
+const FeedItem = React.memo(({ context, ...item }) => {
+  return (
+    <div key={item.id} role="listitem" data-pending={item.isPending}>
+      <div data-container>
+        <div>
+          {item.type === "event" || item.authorAccount == null ? (
+            <div data-timeline-symbol />
+          ) : (
+            <AccountPreviewPopoverTrigger accountAddress={item.authorAccount}>
+              <button data-avatar-button>
+                <AccountAvatar
+                  data-avatar
+                  address={item.authorAccount}
+                  size="2rem"
+                />
+              </button>
+            </AccountPreviewPopoverTrigger>
+          )}
+        </div>
+        <div>
+          <div
+            css={css({
+              display: "flex",
+              alignItems: "flex-start",
+              gap: "1rem",
+              cursor: "default",
+              lineHeight: 1.5,
+            })}
+          >
+            <div
+              css={css({
+                flex: 1,
+                minWidth: 0,
+                overflow: "hidden",
+                textOverflow: "ellipsis",
+              })}
+            >
+              <ItemTitle item={item} context={context} />
+              {item.timestamp != null && (
+                <span
+                  css={(t) =>
+                    css({
+                      fontSize: t.text.sizes.small,
+                      color: t.colors.textDimmed,
+                    })
+                  }
+                >
+                  {" "}
+                  &middot;{" "}
+                  <FormattedDateWithTooltip
+                    tinyRelative
+                    relativeDayThreshold={7}
+                    month="short"
+                    day="numeric"
+                    value={item.timestamp}
+                  />
+                </span>
+              )}
+            </div>
+            <div style={{ padding: "0.25rem 0" }}>
+              {item.isPending ? (
+                <Spinner size="1rem" />
+              ) : (
+                item.voteCount != null && (
+                  <Tooltip.Root>
+                    <Tooltip.Trigger asChild>
+                      <span
+                        css={(t) =>
+                          css({
+                            display: "flex",
+                            alignItems: "center",
+                            gap: "0.5rem",
+                            fontSize: t.text.sizes.tiny,
+                            color: t.colors.textDimmed,
+                          })
+                        }
+                      >
+                        {item.voteCount}
+                        <NogglesIcon
+                          style={{
+                            display: "inline-flex",
+                            width: "1.7rem",
+                            height: "auto",
+                          }}
+                        />
+                      </span>
+                    </Tooltip.Trigger>
+                    <Tooltip.Content side="top" sideOffset={5}>
+                      {item.voteCount}{" "}
+                      {Number(item.voteCount) === 1 ? "noun" : "nouns"}
+                    </Tooltip.Content>
+                  </Tooltip.Root>
+                )
+              )}
+            </div>
+          </div>
+        </div>
+      </div>
+      <div css={css({ paddingLeft: "2.6rem", userSelect: "text" })}>
+        {(item.body || null) != null && (
+          <div css={css({ margin: "0.625em 0 2em" })}>
+            <ItemBody text={item.body} displayImages={item.type === "event"} />
+          </div>
+        )}
+        {item.type === "signature" && (
+          <div
+            css={(t) =>
+              css({
+                fontSize: t.text.sizes.small,
+                color: t.colors.textDimmed,
+              })
+            }
+          >
+            Expires{" "}
+            {datesDifferenceInDays(item.expiresAt, new Date()) > 100 ? (
+              "in >100 days"
+            ) : (
+              <FormattedDateWithTooltip
+                capitalize={false}
+                relativeDayThreshold={Infinity}
+                value={item.expiresAt}
+                month="short"
+                day="numeric"
+              />
+            )}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+});
 
 const ItemBody = React.memo(({ text, displayImages }) => (
   <React.Suspense fallback={null}>
@@ -230,7 +253,7 @@ const ItemTitle = ({ item, context }) => {
       const title =
         proposal?.title == null
           ? `Prop ${proposalId}`
-          : `Prop ${proposalId}: ${truncateTitle(proposal.title)}`;
+          : `Prop ${proposalId}: ${truncateTitle(proposal.title)} `;
       return (
         <RouterLink to={`/proposals/${proposalId}`}>
           {children ?? title}
@@ -279,19 +302,6 @@ const ItemTitle = ({ item, context }) => {
                   />
                 </>
               )}
-              {item.timestamp != null && (
-                <>
-                  {" "}
-                  on{" "}
-                  <FormattedDateWithTooltip
-                    capitalize={false}
-                    value={item.timestamp}
-                    disableRelative
-                    month={context === "proposal" ? "long" : "short"}
-                    day="numeric"
-                  />
-                </>
-              )}
             </span>
           );
 
@@ -325,19 +335,6 @@ const ItemTitle = ({ item, context }) => {
                   <AccountPreviewPopoverTrigger
                     showAvatar
                     accountAddress={item.authorAccount}
-                  />
-                </>
-              )}
-              {item.timestamp != null && (
-                <>
-                  {" "}
-                  on{" "}
-                  <FormattedDateWithTooltip
-                    capitalize={false}
-                    value={item.timestamp}
-                    disableRelative
-                    month={isIsolatedContext ? "long" : "short"}
-                    day="numeric"
                   />
                 </>
               )}
@@ -379,20 +376,6 @@ const ItemTitle = ({ item, context }) => {
                 </>
               )}{" "}
               started{" "}
-              {item.timestamp != null && (
-                <>
-                  on{" "}
-                  <FormattedDateWithTooltip
-                    capitalize={false}
-                    value={item.timestamp}
-                    disableRelative
-                    month={isIsolatedContext ? "long" : "short"}
-                    day="numeric"
-                    hour="numeric"
-                    minute="numeric"
-                  />
-                </>
-              )}
             </span>
           );
 
@@ -426,20 +409,6 @@ const ItemTitle = ({ item, context }) => {
                   </span>
                 </>
               )}
-              {item.timestamp != null && (
-                <>
-                  on{" "}
-                  <FormattedDateWithTooltip
-                    capitalize={false}
-                    value={item.timestamp}
-                    disableRelative
-                    month={isIsolatedContext ? "long" : "short"}
-                    day="numeric"
-                    hour="numeric"
-                    minute="numeric"
-                  />
-                </>
-              )}
             </span>
           );
 
@@ -454,6 +423,68 @@ const ItemTitle = ({ item, context }) => {
             >
               {context === "proposal" ? "Proposal" : <ContextLink {...item} />}{" "}
               entered objection period
+            </span>
+          );
+
+        case "proposal-queued":
+          return (
+            <span
+              css={(t) =>
+                css({
+                  color: t.colors.textDimmed,
+                })
+              }
+            >
+              {context === "proposal" ? "Proposal" : <ContextLink {...item} />}{" "}
+              was queued for execution
+            </span>
+          );
+
+        case "proposal-executed":
+          return (
+            <span
+              css={(t) =>
+                css({
+                  color: t.colors.textDimmed,
+                })
+              }
+            >
+              {context === "proposal" ? "Proposal" : <ContextLink {...item} />}{" "}
+              was{" "}
+              <span
+                css={(t) =>
+                  css({
+                    color: t.colors.textPositive,
+                    fontWeight: t.text.weights.emphasis,
+                  })
+                }
+              >
+                executed
+              </span>
+            </span>
+          );
+
+        case "proposal-canceled":
+          return (
+            <span
+              css={(t) =>
+                css({
+                  color: t.colors.textDimmed,
+                })
+              }
+            >
+              {context === "proposal" ? "Proposal" : <ContextLink {...item} />}{" "}
+              was{" "}
+              <span
+                css={(t) =>
+                  css({
+                    color: t.colors.textNegative,
+                    fontWeight: t.text.weights.emphasis,
+                  })
+                }
+              >
+                canceled
+              </span>
             </span>
           );
 

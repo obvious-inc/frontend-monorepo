@@ -498,7 +498,8 @@ export const TransactionExplanation = ({ transaction: t }) => {
           to the{" "}
           <em>
             <AddressDisplayNameWithTooltip address={t.target} />
-          </em> contract
+          </em>{" "}
+          contract
         </>
       );
 

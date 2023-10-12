@@ -63,8 +63,8 @@ export const buildFeed = (proposal, { latestBlockNumber, candidate }) => {
       type: "feedback-post",
       id: `${proposal.id}-${p.id}`,
       body: p.reason,
-      support: p.supportDetailed,
-      authorAccount: p.voter.id,
+      support: p.support,
+      authorAccount: p.voterId,
       timestamp: p.createdTimestamp,
       blockNumber: p.createdBlock,
       voteCount: p.votes,
@@ -77,9 +77,10 @@ export const buildFeed = (proposal, { latestBlockNumber, candidate }) => {
       type: "vote",
       id: `${proposal.id}-${v.id}`,
       body: v.reason,
-      support: v.supportDetailed,
-      authorAccount: v.voter.id,
-      blockNumber: v.blockNumber,
+      support: v.support,
+      authorAccount: v.voterId,
+      blockNumber: v.createdBlock,
+      timestamp: v.createdTimestamp,
       voteCount: v.votes,
       proposalId: proposal.id,
       isPending: v.isPending,
@@ -120,13 +121,41 @@ export const buildFeed = (proposal, { latestBlockNumber, candidate }) => {
     createdEventItem,
   ];
 
-  if (proposal.state === "canceled")
-    return arrayUtils.sortBy(
-      { value: (i) => i.blockNumber, order: "desc" },
-      items
-    );
+  if (proposal.canceledBlock != null)
+    items.push({
+      type: "event",
+      eventType: "proposal-canceled",
+      id: `${proposal.id}-canceled`,
+      blockNumber: proposal.canceledBlock,
+      timestamp: proposal.canceledTimestamp,
+      proposalId: proposal.id,
+    });
 
-  if (latestBlockNumber > proposal.startBlock) {
+  if (proposal.queuedBlock != null)
+    items.push({
+      type: "event",
+      eventType: "proposal-queued",
+      id: `${proposal.id}-queued`,
+      blockNumber: proposal.queuedBlock,
+      timestamp: proposal.queuedTimestamp,
+      proposalId: proposal.id,
+    });
+
+  if (proposal.executedBlock != null)
+    items.push({
+      type: "event",
+      eventType: "proposal-executed",
+      id: `${proposal.id}-executed`,
+      blockNumber: proposal.executedBlock,
+      timestamp: proposal.executedTimestamp,
+      proposalId: proposal.id,
+    });
+
+  if (
+    latestBlockNumber > proposal.startBlock &&
+    (proposal.canceledBlock == null ||
+      proposal.canceledBlock > proposal.startBlock)
+  ) {
     items.push({
       type: "event",
       eventType: "proposal-started",
@@ -136,24 +165,31 @@ export const buildFeed = (proposal, { latestBlockNumber, candidate }) => {
     });
   }
 
-  const actualEndBlock = proposal.objectionPeriodEndBlock ?? proposal.endBlock;
-
-  if (latestBlockNumber > actualEndBlock) {
-    items.push({
-      type: "event",
-      eventType: "proposal-ended",
-      id: `${proposal.id}-ended`,
-      blockNumber: actualEndBlock,
-      proposalId: proposal.id,
-    });
-  }
-
-  if (proposal.objectionPeriodEndBlock != null) {
+  if (
+    proposal.objectionPeriodEndBlock != null &&
+    (proposal.canceledBlock == null ||
+      proposal.canceledBlock > proposal.endBlock)
+  ) {
     items.push({
       type: "event",
       eventType: "proposal-objection-period-started",
       id: `${proposal.id}-objection-period-start`,
       blockNumber: proposal.endBlock,
+      proposalId: proposal.id,
+    });
+  }
+
+  const actualEndBlock = proposal.objectionPeriodEndBlock ?? proposal.endBlock;
+
+  if (
+    latestBlockNumber > actualEndBlock &&
+    (proposal.canceledBlock == null || proposal.canceledBlock > actualEndBlock)
+  ) {
+    items.push({
+      type: "event",
+      eventType: "proposal-ended",
+      id: `${proposal.id}-ended`,
+      blockNumber: actualEndBlock,
       proposalId: proposal.id,
     });
   }

@@ -20,6 +20,7 @@ const VOTE_FIELDS = `
 fragment VoteFields on Vote {
   id
   blockNumber
+  blockTimestamp
   reason
   supportDetailed
   votes
@@ -104,6 +105,12 @@ query {
     endBlock
     updatePeriodEndBlock
     objectionPeriodEndBlock
+    canceledBlock
+    canceledTimestamp
+    queuedBlock
+    queuedTimestamp
+    executedBlock
+    executedTimestamp
     forVotes
     againstVotes
     abstainVotes
@@ -169,6 +176,12 @@ query {
     endBlock
     updatePeriodEndBlock
     objectionPeriodEndBlock
+    canceledBlock
+    canceledTimestamp
+    queuedBlock
+    queuedTimestamp
+    executedBlock
+    executedTimestamp
     targets
     signatures
     calldatas
@@ -327,11 +340,27 @@ const subgraphFetch = async ({
 };
 
 const parseFeedbackPost = (post) => ({
-  ...post,
+  id: post.id,
+  reason: post.reason,
+  support: post.supportDetailed,
   createdBlock: BigInt(post.createdBlock),
   createdTimestamp: new Date(parseInt(post.createdTimestamp) * 1000),
+  votes: Number(post.votes),
   proposalId: post.proposal?.id,
   candidateId: post.candidate?.id,
+  voterId: post.voter.id,
+  voter: post.voter,
+});
+
+const parseProposalVote = (v) => ({
+  id: v.id,
+  createdBlock: BigInt(v.blockNumber),
+  createdTimestamp: new Date(parseInt(v.blockTimestamp) * 1000),
+  reason: v.reason,
+  support: v.supportDetailed,
+  votes: Number(v.votes),
+  voterId: v.voter.id,
+  proposalId: v.proposal?.id,
 });
 
 const parseProposalVersion = (v) => ({
@@ -352,6 +381,9 @@ const parseProposal = (data, { chainId }) => {
     "updatePeriodEndBlock",
     "objectionPeriodEndBlock",
     "lastUpdatedBlock",
+    "canceledBlock",
+    "executedBlock",
+    "queuedBlock",
   ]) {
     if (data[prop] === "0") {
       parsedData[prop] = null;
@@ -361,7 +393,13 @@ const parseProposal = (data, { chainId }) => {
   }
 
   // Timestamps
-  for (const prop of ["createdTimestamp", "lastUpdatedTimestamp"]) {
+  for (const prop of [
+    "createdTimestamp",
+    "lastUpdatedTimestamp",
+    "canceledTimestamp",
+    "executedTimestamp",
+    "queuedTimestamp",
+  ]) {
     if (data[prop] != null) {
       parsedData[prop] = new Date(parseInt(data[prop]) * 1000);
     }
@@ -379,6 +417,8 @@ const parseProposal = (data, { chainId }) => {
 
   if (data.versions != null)
     parsedData.versions = data.versions.map(parseProposalVersion);
+
+  if (data.votes != null) parsedData.votes = data.votes.map(parseProposalVote);
 
   if (data.proposer?.id != null) parsedData.proposerId = data.proposer.id;
 
@@ -555,7 +595,7 @@ export const fetchNounsActivity = (chainId, { startBlock, endBlock }) =>
     const candidateFeedbackPosts =
       data.candidateFeedbacks.map(parseFeedbackPost);
     const proposalFeedbackPosts = data.proposalFeedbacks.map(parseFeedbackPost);
-    const { votes } = data;
+    const votes = data.votes.map(parseProposalVote);
 
     return { votes, proposalFeedbackPosts, candidateFeedbackPosts };
   });

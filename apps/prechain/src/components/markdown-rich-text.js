@@ -158,21 +158,22 @@ const MarkdownRichText = ({ text, displayImages = true, ...props }) => {
     return (
       <>
         <RichText blocks={blocks.slice(0, -1)} {...props} />
-        <div
-          css={(t) =>
-            css({
-              marginTop: "0.4rem",
-              fontSize: t.text.sizes.small,
-              color: t.colors.textDimmed,
-              fontStyle: "italic",
-            })
-          }
-        >
-          Sent from{" "}
-          <a href="https://www.voter.wtf" target="_blank" rel="noreferrer">
-            voter.wtf
-          </a>
-        </div>
+        <p style={{ margin: "0.625em 0 0", padding: "0.15rem 0" }}>
+          <em
+            css={(t) =>
+              css({
+                fontSize: t.text.sizes.small,
+                color: t.colors.textDimmed,
+                fontStyle: "italic",
+              })
+            }
+          >
+            Sent from{" "}
+            <a href="https://www.voter.wtf" target="_blank" rel="noreferrer">
+              voter.wtf
+            </a>
+          </em>
+        </p>
       </>
     );
 

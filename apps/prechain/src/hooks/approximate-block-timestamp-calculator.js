@@ -1,23 +1,30 @@
 import React from "react";
 import { useBlockNumber } from "wagmi";
 
+const secondsPerBlock = 12;
+
+export const approximateBlockTimestamp = (blockNumber, referenceBlock) => {
+  const blockNumberDiff = Number(blockNumber) - Number(referenceBlock.number);
+  return new Date(
+    referenceBlock.timestamp.getTime() +
+      blockNumberDiff * secondsPerBlock * 1000
+  );
+};
+
 const useApproximateBlockTimestampCalculator = () => {
   const { data: latestBlockNumber } = useBlockNumber();
 
   return React.useCallback(
-    (blockNumber) => {
+    (blockNumber, optionalReferenceBlock) => {
       if (blockNumber == null) return null;
-      if (latestBlockNumber == null) return null;
+      if (latestBlockNumber == null && optionalReferenceBlock) return null;
 
-      const secondsPerBlock = 12; // Copied from agora
+      const referenceBlock = optionalReferenceBlock ?? {
+        number: latestBlockNumber,
+        timestamp: new Date(),
+      };
 
-      const nowSeconds = new Date().getTime() / 1000;
-
-      const timestampSeconds =
-        nowSeconds +
-        secondsPerBlock * (parseInt(blockNumber) - Number(latestBlockNumber));
-
-      return new Date(timestampSeconds * 1000);
+      return approximateBlockTimestamp(blockNumber, referenceBlock);
     },
     [latestBlockNumber]
   );

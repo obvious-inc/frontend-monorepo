@@ -207,12 +207,14 @@ export const useCastProposalVote = (
 
   return async () => {
     return write().then(({ hash }) => {
+      const voterId = accountAddress.toLowerCase();
       addOptimitisicProposalVote(proposalId, {
         id: String(Math.random()),
         reason,
-        supportDetailed: support,
-        blockNumber,
-        voter: { id: accountAddress.toLowerCase() },
+        support: support,
+        createdBlock: blockNumber,
+        voterId,
+        voter: { id: voterId },
       });
       return { hash };
     });

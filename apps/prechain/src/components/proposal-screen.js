@@ -83,12 +83,10 @@ const useFeedItems = (proposalId) => {
 const getDelegateVotes = (proposal) => {
   if (proposal.votes == null) return null;
   return proposal.votes
-    .filter((v) => Number(v.votes) > 0)
+    .filter((v) => v.votes > 0)
     .reduce(
       (acc, v) => {
-        const voteGroup = { 0: "against", 1: "for", 2: "abstain" }[
-          v.supportDetailed
-        ];
+        const voteGroup = { 0: "against", 1: "for", 2: "abstain" }[v.support];
         return { ...acc, [voteGroup]: acc[voteGroup] + 1 };
       },
       { for: 0, against: 0, abstain: 0 }
@@ -121,7 +119,7 @@ const ProposalMainSection = ({ proposalId, scrollContainerRef }) => {
       ? null
       : proposal?.votes?.find(
           (v) =>
-            v.voter.id.toLowerCase() ===
+            v.voterId.toLowerCase() ===
             connectedWalletAccountAddress.toLowerCase()
         );
 
@@ -321,13 +319,11 @@ const ProposalMainSection = ({ proposalId, scrollContainerRef }) => {
                         }
                         style={{
                           color: `var(--color-${supportDetailedToString(
-                            connectedWalletVote.supportDetailed
+                            connectedWalletVote.support
                           )})`,
                         }}
                       >
-                        {supportDetailedToString(
-                          connectedWalletVote.supportDetailed
-                        )}
+                        {supportDetailedToString(connectedWalletVote.support)}
                       </span>
                     </Callout>
                   )}
@@ -1086,7 +1082,7 @@ const ProposalScreen = () => {
             to: `/proposals/${proposalId} `,
             label: (
               <>
-                Proposal #{proposalId}
+                Proposal {proposalId}
                 {proposal?.state != null && (
                   <>
                     <ProposalStateTag
