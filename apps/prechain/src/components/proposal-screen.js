@@ -264,6 +264,8 @@ const ProposalMainSection = ({ proposalId, scrollContainerRef }) => {
 
   const handleFormSubmit = async () => {
     if (currentFormAction === "vote") {
+      // Would rather have this than disabling the submit button on every keystroke
+      if (castProposalVote == null) return;
       va.track("Vote", {
         proposalId,
         account: connectedWalletAccountAddress,

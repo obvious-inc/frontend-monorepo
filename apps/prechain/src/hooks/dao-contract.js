@@ -203,6 +203,8 @@ export const useCastProposalVote = (
 
   const write = hasReason ? writeCastVoteWithReason : writeCastVote;
 
+  if (write == null) return null;
+
   return async () => {
     return write().then(({ hash }) => {
       addOptimitisicProposalVote(proposalId, {
