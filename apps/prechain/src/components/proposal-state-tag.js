@@ -15,6 +15,9 @@ const ProposalStateTag = ({ proposalId, ...props }) => {
     executed: "success",
   };
 
+  // `state` might be null before we have fetched the current block number
+  if (proposal.state == null) return null
+
   return (
     <Tag size="large" variant={variantByState[proposal.state]} {...props}>
       {getProposalStateLabel(proposal.state)}
