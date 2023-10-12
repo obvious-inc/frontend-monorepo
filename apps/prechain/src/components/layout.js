@@ -134,7 +134,7 @@ const NavBar = ({ navigationStack, actions }) => {
                   })}
                 />
                 {location.pathname !== "/" && (
-                  <span style={{ marginLeft: "0.6rem" }}>Home</span>
+                  <span style={{ marginLeft: "0.6rem" }}>Camp</span>
                 )}
               </>
             ),
