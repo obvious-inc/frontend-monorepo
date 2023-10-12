@@ -25,7 +25,6 @@ import {
   isSucceededState as isSucceededProposalState,
   isVotableState as isVotableProposalState,
   buildFeed as buildProposalFeed,
-  getStateLabel as getProposalStateLabel,
 } from "../utils/proposals.js";
 import {
   buildFeed as buildCandidateFeed,
@@ -52,6 +51,7 @@ import Layout, { MainContentContainer } from "./layout.js";
 import FormattedDateWithTooltip from "./formatted-date-with-tooltip.js";
 import AccountAvatar from "./account-avatar.js";
 import Tag from "./tag.js";
+import ProposalStateTag from "./proposal-state-tag.js";
 import ActivityFeed_ from "./activity-feed.js";
 
 const ONE_DAY_IN_SECONDS = 60 * 60 * 24;
@@ -1266,28 +1266,8 @@ const PropTagWithStatusText = ({ proposalId }) => {
           {statusText}
         </div>
       )}
-      <PropStatusTag proposalId={proposalId} />
+      <ProposalStateTag proposalId={proposalId} />
     </div>
-  );
-};
-
-const PropStatusTag = ({ proposalId, ...props }) => {
-  const proposal = useProposal(proposalId);
-
-  const variantByState = {
-    active: "active",
-    "objection-period": "warning",
-    defeated: "error",
-    vetoed: "error",
-    succeeded: "succeeded",
-    queued: "succeeded",
-    executed: "succeeded",
-  };
-
-  return (
-    <Tag size="large" variant={variantByState[proposal.state]} {...props}>
-      {getProposalStateLabel(proposal.state)}
-    </Tag>
   );
 };
 

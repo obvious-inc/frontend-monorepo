@@ -10,9 +10,9 @@ const ProposalStateTag = ({ proposalId, ...props }) => {
     "objection-period": "warning",
     defeated: "error",
     vetoed: "error",
-    succeeded: "succeeded",
-    queued: "succeeded",
-    executed: "succeeded",
+    succeeded: "success",
+    queued: "success",
+    executed: "success",
   };
 
   return (
