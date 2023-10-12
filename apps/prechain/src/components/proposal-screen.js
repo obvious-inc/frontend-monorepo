@@ -398,7 +398,11 @@ const ProposalMainSection = ({ proposalId, scrollContainerRef }) => {
                     </div>
 
                     {feedItems.length !== 0 && (
-                      <ActivityFeed context="proposal" items={feedItems} />
+                      <ActivityFeed
+                        context="proposal"
+                        spacing="1.6rem"
+                        items={feedItems}
+                      />
                     )}
                   </Tabs.Item>
                   <Tabs.Item key="transactions" title="Transactions">

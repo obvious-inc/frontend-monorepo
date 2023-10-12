@@ -87,6 +87,7 @@ const ActivityFeed = ({ context, items = [], spacing = "2.1rem" }) => (
 );
 
 const FeedItem = React.memo(({ context, ...item }) => {
+  const isIsolatedContext = ["proposal", "context"].includes(context);
   return (
     <div key={item.id} role="listitem" data-pending={item.isPending}>
       <div data-container>
@@ -186,7 +187,7 @@ const FeedItem = React.memo(({ context, ...item }) => {
       </div>
       <div css={css({ paddingLeft: "2.6rem", userSelect: "text" })}>
         {(item.body || null) != null && (
-          <div css={css({ margin: "0.625em 0 2em" })}>
+          <div style={{ margin: isIsolatedContext ? 0 : "0.625em 0 2em" }}>
             <ItemBody text={item.body} displayImages={item.type === "event"} />
           </div>
         )}

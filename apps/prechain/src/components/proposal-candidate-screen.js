@@ -339,7 +339,11 @@ const ProposalCandidateScreenContent = ({
                         No sponsors
                       </div>
                     ) : (
-                      <ActivityFeed isolated items={sponsorFeedItems} />
+                      <ActivityFeed
+                        isolated
+                        spacing="1.6rem"
+                        items={sponsorFeedItems}
+                      />
                     )}
                   </div>
                 </Tabs.Item>
