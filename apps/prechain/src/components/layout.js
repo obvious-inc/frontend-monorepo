@@ -127,7 +127,7 @@ const NavBar = ({ navigationStack, actions }) => {
                 <LogoSymbol
                   css={css({
                     display: "inline-block",
-                    width: "1.8rem",
+                    width: "2rem",
                     height: "auto",
                     verticalAlign: "sub",
                     transform: "translateY(0.1rem)",

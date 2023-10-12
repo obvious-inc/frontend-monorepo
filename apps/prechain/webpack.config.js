@@ -5,7 +5,7 @@ require("dotenv").config();
 
 module.exports = (...args) => {
   const config = createConfig(...args, {
-    htmlTitle: "Census",
+    htmlTitle: "Nouns Camp",
     htmlDescription: "A Nouns governance client",
   });
   return {

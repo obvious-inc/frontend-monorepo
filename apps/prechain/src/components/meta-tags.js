@@ -1,8 +1,8 @@
 import ReactHelmet from "react-helmet";
 
-const APP_NAME = "Census";
+const APP_NAME = "Nouns Camp";
 const APP_FALLBACK_DESCRIPTION = "A Nouns governance client";
-const APP_BASENAME = "https://www.census.wtf";
+const APP_BASENAME = "https://www.nouns.camp";
 
 const MetaTags = ({
   title: title_,
