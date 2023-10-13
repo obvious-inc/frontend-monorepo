@@ -44,7 +44,7 @@ const FormattedDateWithTooltip = React.memo(
       if (tinyRelative) {
         const { seconds, minutes, hours, days, weeks } =
           dateUtils.differenceUnits(new Date(), valueDate, { floor: false });
-        if (seconds < 60) return `${Math.max(seconds, 0)}s`;
+        if (seconds < 60) return "now";
         if (Math.round(minutes) < 60) return `${Math.round(minutes)}m`;
         if (Math.round(hours) < 24) return `${Math.round(hours)}h`;
         if (Math.round(days) < 7) return `${Math.round(days)}d`;
