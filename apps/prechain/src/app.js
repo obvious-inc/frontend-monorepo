@@ -1,5 +1,6 @@
 import React from "react";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { I18nProvider } from "react-aria";
 import { ThemeProvider, Global, css } from "@emotion/react";
 import { light as theme } from "@shades/ui-web/theme";
 import * as Tooltip from "@shades/ui-web/tooltip";
@@ -50,53 +51,55 @@ const App = () => {
   useDelegatesFetch();
   return (
     <React.Suspense fallback={null}>
-      <BrowserRouter>
-        <ThemeProvider theme={customTheme}>
-          <ConnectWalletDialogProvider>
-            <GlobalDialogsProvider dialogs={dialogs}>
-              <Tooltip.Provider delayDuration={300}>
-                <Global
-                  styles={(theme) =>
-                    css({
-                      body: {
-                        color: theme.colors.textNormal,
-                        background: theme.colors.backgroundPrimary,
-                        fontFamily: theme.fontStacks.default,
-                        "::selection": {
-                          background: theme.colors.textSelectionBackground,
+      <I18nProvider locale="en-US">
+        <BrowserRouter>
+          <ThemeProvider theme={customTheme}>
+            <ConnectWalletDialogProvider>
+              <GlobalDialogsProvider dialogs={dialogs}>
+                <Tooltip.Provider delayDuration={300}>
+                  <Global
+                    styles={(theme) =>
+                      css({
+                        body: {
+                          color: theme.colors.textNormal,
+                          background: theme.colors.backgroundPrimary,
+                          fontFamily: theme.fontStacks.default,
+                          "::selection": {
+                            background: theme.colors.textSelectionBackground,
+                          },
                         },
-                      },
-                    })
-                  }
-                />
-                <Routes>
-                  <Route path="/">
-                    <Route index element={<BrowseScreen />} />
-                    <Route
-                      path="/new/:draftId?"
-                      element={
-                        <RequireConnectedAccount>
-                          <ProposeScreen />
-                        </RequireConnectedAccount>
-                      }
-                    />
-                    <Route
-                      path="/candidates/:candidateId"
-                      element={<ProposalCandidateScreen />}
-                    />
-                    <Route
-                      path="/proposals/:proposalId"
-                      element={<ProposalScreen />}
-                    />
-                    <Route path="/:proposalId" element={<ProposalScreen />} />
-                  </Route>
-                  <Route path="*" element={<Navigate to="/" replace />} />
-                </Routes>
-              </Tooltip.Provider>
-            </GlobalDialogsProvider>
-          </ConnectWalletDialogProvider>
-        </ThemeProvider>
-      </BrowserRouter>
+                      })
+                    }
+                  />
+                  <Routes>
+                    <Route path="/">
+                      <Route index element={<BrowseScreen />} />
+                      <Route
+                        path="/new/:draftId?"
+                        element={
+                          <RequireConnectedAccount>
+                            <ProposeScreen />
+                          </RequireConnectedAccount>
+                        }
+                      />
+                      <Route
+                        path="/candidates/:candidateId"
+                        element={<ProposalCandidateScreen />}
+                      />
+                      <Route
+                        path="/proposals/:proposalId"
+                        element={<ProposalScreen />}
+                      />
+                      <Route path="/:proposalId" element={<ProposalScreen />} />
+                    </Route>
+                    <Route path="*" element={<Navigate to="/" replace />} />
+                  </Routes>
+                </Tooltip.Provider>
+              </GlobalDialogsProvider>
+            </ConnectWalletDialogProvider>
+          </ThemeProvider>
+        </BrowserRouter>
+      </I18nProvider>
     </React.Suspense>
   );
 };
