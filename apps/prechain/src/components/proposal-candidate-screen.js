@@ -288,6 +288,7 @@ const ProposalCandidateScreenContent = ({
                   css({
                     position: "sticky",
                     top: 0,
+                    zIndex: 1,
                     background: t.colors.backgroundPrimary,
                     "[role=tab]": { fontSize: t.text.sizes.base },
                   })
