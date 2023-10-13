@@ -54,13 +54,13 @@ import TransactionList, {
   FormattedEthWithConditionalTooltip,
 } from "./transaction-list.js";
 
-const nameBySupportDetailed = { 0: "against", 1: "for", 2: "abstain" };
+const nameBySupport = { 0: "against", 1: "for", 2: "abstain" };
 
 const MarkdownRichText = React.lazy(() => import("./markdown-rich-text.js"));
 
-const supportDetailedToString = (n) => {
-  if (nameBySupportDetailed[n] == null) throw new Error();
-  return nameBySupportDetailed[n];
+const supportToString = (n) => {
+  if (nameBySupport[n] == null) throw new Error();
+  return nameBySupport[n];
 };
 
 const useFeedItems = (proposalId) => {
@@ -114,7 +114,7 @@ const ProposalMainSection = ({ proposalId, scrollContainerRef }) => {
 
   const connectedWalletVote =
     castVoteCallSupportDetailed != null
-      ? { supportDetailed: castVoteCallSupportDetailed }
+      ? { support: castVoteCallSupportDetailed }
       : connectedWalletAccountAddress == null
       ? null
       : proposal?.votes?.find(
@@ -318,12 +318,12 @@ const ProposalMainSection = ({ proposalId, scrollContainerRef }) => {
                           })
                         }
                         style={{
-                          color: `var(--color-${supportDetailedToString(
+                          color: `var(--color-${supportToString(
                             connectedWalletVote.support
                           )})`,
                         }}
                       >
-                        {supportDetailedToString(connectedWalletVote.support)}
+                        {supportToString(connectedWalletVote.support)}
                       </span>
                     </Callout>
                   )}

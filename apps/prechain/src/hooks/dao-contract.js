@@ -211,7 +211,7 @@ export const useCastProposalVote = (
       addOptimitisicProposalVote(proposalId, {
         id: String(Math.random()),
         reason,
-        support: support,
+        support,
         createdBlock: blockNumber,
         voterId,
         voter: { id: voterId },
