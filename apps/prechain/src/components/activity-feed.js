@@ -14,10 +14,11 @@ import AccountAvatar from "./account-avatar.js";
 
 const MarkdownRichText = React.lazy(() => import("./markdown-rich-text.js"));
 
-const ActivityFeed = ({ context, items = [], spacing = "2.1rem" }) => (
+const ActivityFeed = ({ context, items = [], spacing = "2rem" }) => (
   <ul
     css={(t) =>
       css({
+        lineHeight: 1.4285714286, // 20px line height given font size if 14px
         fontSize: t.text.sizes.base,
         '[role="listitem"] + [role="listitem"]': {
           marginTop: "var(--vertical-spacing)",
@@ -41,7 +42,6 @@ const ActivityFeed = ({ context, items = [], spacing = "2.1rem" }) => (
         "[data-avatar-button]": {
           display: "block",
           outline: "none",
-          paddingTop: "0.1rem",
           ":focus-visible [data-avatar]": {
             boxShadow: t.shadows.focus,
             background: t.colors.backgroundModifierHover,
@@ -87,7 +87,6 @@ const ActivityFeed = ({ context, items = [], spacing = "2.1rem" }) => (
 );
 
 const FeedItem = React.memo(({ context, ...item }) => {
-  const isIsolatedContext = ["proposal", "context"].includes(context);
   return (
     <div key={item.id} role="listitem" data-pending={item.isPending}>
       <div data-container>
@@ -113,7 +112,6 @@ const FeedItem = React.memo(({ context, ...item }) => {
               alignItems: "flex-start",
               gap: "1rem",
               cursor: "default",
-              lineHeight: 1.5,
             })}
           >
             <div
@@ -131,11 +129,12 @@ const FeedItem = React.memo(({ context, ...item }) => {
                     css({
                       fontSize: t.text.sizes.small,
                       color: t.colors.textDimmed,
+                      position: "absolute",
+                      padding: "0.15rem 0",
                     })
                   }
                 >
-                  {" "}
-                  &middot;{" "}
+                  &nbsp;&middot;{" "}
                   <FormattedDateWithTooltip
                     tinyRelative
                     relativeDayThreshold={7}
@@ -187,7 +186,7 @@ const FeedItem = React.memo(({ context, ...item }) => {
       </div>
       <div css={css({ paddingLeft: "2.6rem", userSelect: "text" })}>
         {(item.body || null) != null && (
-          <div style={{ margin: isIsolatedContext ? 0 : "0.625em 0 2em" }}>
+          <div style={{ margin: "0.5rem 0" }}>
             <ItemBody text={item.body} displayImages={item.type === "event"} />
           </div>
         )}
@@ -224,12 +223,13 @@ const ItemBody = React.memo(({ text, displayImages }) => (
     <MarkdownRichText
       text={text}
       displayImages={displayImages}
+      compact
       css={css({
         // Make all headings small
         "h1,h2,h3,h4,h5,h6": { fontSize: "1em" },
         "*+h1,*+h2,*+h3,*+h4,*+h5,*+h6": { marginTop: "1.5em" },
         "h1:has(+*),h2:has(+*),h3:has(+*),h4:has(+*),h5:has(+*),h6:has(+*)": {
-          marginBottom: "0.5em",
+          marginBottom: "0.625em",
         },
       })}
     />
@@ -237,7 +237,7 @@ const ItemBody = React.memo(({ text, displayImages }) => (
 ));
 
 const ItemTitle = ({ item, context }) => {
-  const isIsolatedContext = ["proposal", "context"].includes(context);
+  const isIsolatedContext = ["proposal", "candidate"].includes(context);
 
   const proposal = useProposal(item.proposalId ?? item.targetProposalId);
   const candidate = useProposalCandidate(item.candidateId);

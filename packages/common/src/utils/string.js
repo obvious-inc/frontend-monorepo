@@ -1,3 +1,6 @@
+export const getUserPerceivedCharacters = (string) =>
+  [...new Intl.Segmenter().segment(string)].map((x) => x.segment);
+
 export const getWords = (string, { splitOnPunctuation = true } = {}) =>
   string.trim().split(splitOnPunctuation ? /[\s,.]+/ : /[\s]+/);
 

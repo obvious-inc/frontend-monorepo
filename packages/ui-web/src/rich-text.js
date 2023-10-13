@@ -166,12 +166,29 @@ export const createCss = (t) => ({
   // Compact mode
   '&[data-compact="true"]': {
     p: { display: "inline" },
-    "* + p:before, p:has(+ *):after": {
-      display: "inline",
+    "* + p:before": {
+      display: "block",
       content: '""',
+      marginTop: "0.625em",
     },
-    "* + p:before": { marginTop: "0.625em" },
-    "p:has(+ *):after": { marginBottom: "0.625em" },
+    "p:has(+ *):after": {
+      display: "block",
+      content: '""',
+      marginBottom: "0.625em",
+    },
+    "p, blockquote, pre code, .image": {
+      marginTop: "0.625em",
+    },
+    [["blockquote", "pre code", ".image"]
+      .map((selector) => `* + ${selector}`)
+      .join(", ")]: {
+      marginTop: "0.625em",
+    },
+    [["blockquote", "pre code", ".image"]
+      .map((selector) => `${selector}:has(+ *)`)
+      .join(", ")]: {
+      marginTop: "0.625em",
+    },
   },
 });
 

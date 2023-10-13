@@ -97,6 +97,11 @@ const NavBar = ({ navigationStack, actions }) => {
           justifyContent: "flex-start",
           whiteSpace: "nowrap",
           minHeight: t.navBarHeight, // "4.7rem",
+          "@media (max-width: 600px)": {
+            '[data-desktop-only="true"]': {
+              display: "none",
+            },
+          },
         })
       }
     >
@@ -109,11 +114,6 @@ const NavBar = ({ navigationStack, actions }) => {
           gap: "0.2rem",
           overflow: "hidden",
           padding: "1rem 1.6rem",
-          "@media (max-width: 600px)": {
-            '[data-desktop-only="true"]': {
-              display: "none",
-            },
-          },
           "@media (min-width: 600px)": {
             padding: "1rem",
           },
@@ -271,7 +271,7 @@ const NavBar = ({ navigationStack, actions }) => {
                   }
                 />
               ) : (
-                <li key={a.label}>
+                <li key={a.label} data-desktop-only={a.desktopOnly}>
                   <Button
                     variant={a.buttonVariant ?? "transparent"}
                     size="small"

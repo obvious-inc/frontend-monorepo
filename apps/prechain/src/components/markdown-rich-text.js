@@ -1,7 +1,12 @@
 import { marked } from "marked";
 import React from "react";
 import { css } from "@emotion/react";
+import {
+  string as stringUtils,
+  emoji as emojiUtils,
+} from "@shades/common/utils";
 import RichText from "@shades/ui-web/rich-text";
+import Emoji from "@shades/ui-web/emoji";
 
 const isProduction = process.env.NODE_ENV === "production";
 
@@ -123,7 +128,22 @@ const parseToken = (token, context) => {
       if (token.tokens != null)
         return parseChildren(token, parseToken, context);
 
-      const el = { type: "text", text: decodeHtmlEntities(token.text) };
+      const text = decodeHtmlEntities(token.text);
+
+      const maybeEmojiChars =
+        text.length <= 10 &&
+        stringUtils.getUserPerceivedCharacters(text.trim());
+
+      if (
+        Array.isArray(maybeEmojiChars) &&
+        maybeEmojiChars.every(emojiUtils.isEmoji)
+      )
+        return maybeEmojiChars.map((c) => ({
+          type: "emoji",
+          emoji: c,
+        }));
+
+      const el = { type: "text", text };
       if (context?.bold) el.bold = true;
       if (context?.italic) el.italic = true;
       if (context?.strikethrough) el.strikethrough = true;
@@ -157,8 +177,10 @@ const MarkdownRichText = ({ text, displayImages = true, ...props }) => {
   if (lastBlockString.toLowerCase() === "sent from voter.wtf")
     return (
       <>
-        <RichText blocks={blocks.slice(0, -1)} {...props} />
-        <p style={{ margin: "0.625em 0 0", padding: "0.15rem 0" }}>
+        {blocks.length > 2 && (
+          <RichText blocks={blocks.slice(0, -1)} {...props} />
+        )}
+        <p style={{ margin: blocks.length > 2 ? "0.625em 0 0" : 0 }}>
           <em
             css={(t) =>
               css({
@@ -177,7 +199,21 @@ const MarkdownRichText = ({ text, displayImages = true, ...props }) => {
       </>
     );
 
-  return <RichText blocks={blocks} {...props} />;
+  return (
+    <RichText
+      blocks={blocks}
+      renderElement={(el, i) => {
+        switch (el.type) {
+          case "emoji":
+            return <Emoji key={i} emoji={el.emoji} />;
+
+          default:
+            return null;
+        }
+      }}
+      {...props}
+    />
+  );
 };
 
 export default MarkdownRichText;

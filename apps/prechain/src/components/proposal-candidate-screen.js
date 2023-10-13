@@ -340,8 +340,7 @@ const ProposalCandidateScreenContent = ({
                       </div>
                     ) : (
                       <ActivityFeed
-                        isolated
-                        spacing="1.6rem"
+                        context="candidate"
                         items={sponsorFeedItems}
                       />
                     )}
@@ -520,7 +519,10 @@ const ProposalCandidateScreenContent = ({
                     </div>
 
                     {regularFeedItems.length !== 0 && (
-                      <ActivityFeed isolated items={regularFeedItems} />
+                      <ActivityFeed
+                        context="candidate"
+                        items={regularFeedItems}
+                      />
                     )}
                   </div>
                 </Tabs.Item>
@@ -567,7 +569,10 @@ const ProposalCandidateScreenContent = ({
                         No sponsors
                       </div>
                     ) : (
-                      <ActivityFeed isolated items={sponsorFeedItems} />
+                      <ActivityFeed
+                        context="candidate"
+                        items={sponsorFeedItems}
+                      />
                     )}
                   </div>
                 </Tabs.Item>
@@ -1091,7 +1096,13 @@ const ProposalCandidateScreen = () => {
               ].filter(Boolean)
             : connectedDelegateHasVotes &&
               candidate.latestVersion.proposalId == null
-            ? [{ onSelect: toggleSponsorDialog, label: "Sponsor candidate" }]
+            ? [
+                {
+                  onSelect: toggleSponsorDialog,
+                  label: "Sponsor candidate",
+                  desktopOnly: true,
+                },
+              ]
             : []
         }
       >
