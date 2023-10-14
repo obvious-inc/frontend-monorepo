@@ -136,6 +136,24 @@ export const ChannelCastsScrollView = ({
     );
   }
 
+  if (casts.length === 0 && isFeed) {
+    return (
+      <div
+        css={(t) =>
+          css({
+            flex: 1,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            paddingBottom: t.mainHeader.height,
+          })
+        }
+      >
+        Follow some folks and start building your feed.
+      </div>
+    );
+  }
+
   return (
     <>
       {isFeed ? (

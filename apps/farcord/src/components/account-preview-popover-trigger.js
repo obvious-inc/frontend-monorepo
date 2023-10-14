@@ -8,6 +8,18 @@ import { useNeynarUser } from "../hooks/neynar";
 import Avatar from "@shades/ui-web/avatar";
 import RichText from "./rich-text";
 import { message as messageUtils } from "@shades/common/utils";
+import {
+  AddUser as AddUserIcon,
+  RemoveUser as RemoveUserIcon,
+} from "@shades/ui-web/icons";
+import {
+  followUser,
+  isFollowing,
+  unfollowUser,
+  useIsFollower,
+} from "../hooks/hub";
+import useSigner from "./signer";
+import useFarcasterAccount from "./farcaster-account";
 
 const AccountPreviewPopoverTrigger = React.forwardRef(
   (
@@ -51,11 +63,43 @@ const AccountPreviewPopoverTrigger = React.forwardRef(
 
 const AccountPreview = React.forwardRef(({ fid, actions = [] }, ref) => {
   const { user } = useNeynarUser(fid);
+  const { fid: mainFid } = useFarcasterAccount();
+  const { signer } = useSigner();
+
+  const followsUser = useIsFollower({ fid: mainFid, fidToCheck: fid });
+  const [followed, setFollowed] = React.useState(false);
+
   const displayName = user?.displayName;
-  if (user == null) return null;
 
   const bio = user?.profile?.bio?.text;
   const bioBlocks = bio ? messageUtils.parseString(bio) : [];
+
+  const handleFollowClick = async () => {
+    if (!followed) {
+      return await followUser({
+        fid: mainFid,
+        signer,
+        fidToFollow: fid,
+      }).then(() => {
+        setFollowed(true);
+      });
+    } else {
+      return await unfollowUser({
+        fid: mainFid,
+        signer,
+        fidToUnfollow: fid,
+      }).then(() => {
+        setFollowed(false);
+      });
+    }
+  };
+
+  React.useEffect(() => {
+    if (followsUser == null) return;
+    setFollowed(followsUser);
+  }, [followsUser]);
+
+  if (user == null) return null;
 
   return (
     <div
@@ -67,7 +111,7 @@ const AccountPreview = React.forwardRef(({ fid, actions = [] }, ref) => {
         overflow: "hidden",
       })}
     >
-      <div style={{ display: "flex", padding: "1.2rem" }}>
+      <div style={{ display: "flex", alignItems: "center", padding: "1.2rem" }}>
         <Avatar
           url={user?.pfp_url || user?.pfp.url}
           size="4rem"
@@ -126,6 +170,29 @@ const AccountPreview = React.forwardRef(({ fid, actions = [] }, ref) => {
             </Tooltip.Root>
           </div>
         </div>
+        {fid != mainFid && (
+          <div style={{ justifySelf: "end", paddingLeft: "2rem" }}>
+            {followed ? (
+              <Button
+                size="small"
+                align="right"
+                icon={<RemoveUserIcon style={{ width: "1.6rem" }} />}
+                onClick={handleFollowClick}
+              >
+                Unfollow
+              </Button>
+            ) : (
+              <Button
+                size="small"
+                align="right"
+                icon={<AddUserIcon style={{ width: "1.6rem" }} />}
+                onClick={handleFollowClick}
+              >
+                Follow
+              </Button>
+            )}
+          </div>
+        )}
       </div>
 
       <div style={{ margin: "1rem 2rem" }}>

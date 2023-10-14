@@ -7,6 +7,8 @@ import {
   makeReactionAdd,
   makeReactionRemove,
   makeUserDataAdd,
+  makeLinkAdd,
+  makeLinkRemove,
 } from "@farcaster/hub-web";
 import { hexToBytes } from "viem";
 import { decodeMetadata } from "../utils/farcaster";
@@ -354,4 +356,87 @@ export const setUserData = async ({ fid, signer, dataType, value }) => {
 
     return submitHubMessage(messageData.value);
   });
+};
+
+export const followUser = async ({ fid, signer, fidToFollow }) => {
+  const farcastSigner = new NobleEd25519Signer(hexToBytes(signer?.privateKey));
+
+  return makeLinkAdd(
+    {
+      type: "follow",
+      targetFid: Number(fidToFollow),
+    },
+    {
+      network: FarcasterNetwork.MAINNET,
+      fid: Number(fid),
+    },
+    farcastSigner
+  ).then((messageData) => {
+    if (messageData.isErr()) {
+      throw messageData.error;
+    }
+
+    return submitHubMessage(messageData.value);
+  });
+};
+
+export const unfollowUser = async ({ fid, signer, fidToUnfollow }) => {
+  const farcastSigner = new NobleEd25519Signer(hexToBytes(signer?.privateKey));
+
+  return makeLinkRemove(
+    {
+      type: "follow",
+      targetFid: Number(fidToUnfollow),
+    },
+    {
+      network: FarcasterNetwork.MAINNET,
+      fid: Number(fid),
+    },
+    farcastSigner
+  ).then((messageData) => {
+    if (messageData.isErr()) {
+      throw messageData.error;
+    }
+
+    return submitHubMessage(messageData.value);
+  });
+};
+
+export const isFollowing = async ({ fid, fidToCheck }) => {
+  return farcasterClient
+    .getLink({
+      fid: Number(fid),
+      linkType: "follow",
+      targetFid: Number(fidToCheck),
+    })
+    .then((result) => {
+      if (result.isErr()) {
+        throw result.error;
+      }
+
+      return result.value;
+    })
+    .then((link) => {
+      return link != null;
+    });
+};
+
+export const useIsFollower = ({ fid, fidToCheck }) => {
+  const [isFollower, setIsFollower] = React.useState(null);
+
+  React.useEffect(() => {
+    if (!fid || !fidToCheck) return;
+
+    setIsFollower(null);
+
+    isFollowing({ fid, fidToCheck })
+      .then((result) => {
+        setIsFollower(result);
+      })
+      .catch((err) => {
+        console.error(err);
+      });
+  }, [fid, fidToCheck]);
+
+  return isFollower;
 };
