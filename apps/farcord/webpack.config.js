@@ -19,6 +19,7 @@ module.exports = (...args) => {
         WARPCAST_API_TOKEN: null,
         FARCORD_APP_FID: null,
         FARCORD_APP_MNEMONIC: null,
+        IMGUR_CLIENT_ID: null,
       }),
     ],
   };

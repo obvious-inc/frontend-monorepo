@@ -3,31 +3,45 @@ import Button from "@shades/ui-web/button";
 import Spinner from "@shades/ui-web/spinner";
 import { useNeynarUser } from "../hooks/neynar";
 import useSigner from "./signer";
-import { useSearchParams } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import useFarcasterAccount from "./farcaster-account";
 
 const FarcasterUser = () => {
+  const navigate = useNavigate();
   const { fid } = useFarcasterAccount();
   const { user: farcasterUser, isFetching: isFetchingNeynarUser } =
     useNeynarUser(fid);
 
   const { broadcasted } = useSigner();
-  const [, setSearchParams] = useSearchParams();
 
   if (isFetchingNeynarUser) {
     return <Spinner size="1rem" />;
   }
 
   const handleProfileClick = async () => {
-    if (!broadcasted) {
-      setSearchParams({ "auth-dialog": 1, provider: "wallet" });
-    }
+    navigate("/profile");
+
+    // if (!broadcasted) {
+    //   setSearchParams({ "auth-dialog": 1, provider: "wallet" });
+    // }
   };
+
+  if (!farcasterUser?.displayName) {
+    return (
+      <Button
+        size="small"
+        variant="default"
+        onClick={() => {
+          navigate("/profile");
+        }}
+      >
+        Set up your profile
+      </Button>
+    );
+  }
 
   return (
     <Button
-      // todo: need a new screen for profile / logout / revoke signers
-      disabled={broadcasted}
       onClick={() => {
         handleProfileClick();
       }}
@@ -82,6 +96,7 @@ const FarcasterProfile = () => {
   const { fid } = useFarcasterAccount();
   const { signer } = useSigner();
   const [, setSearchParams] = useSearchParams();
+  const navigate = useNavigate();
 
   return (
     <>
@@ -98,7 +113,17 @@ const FarcasterProfile = () => {
           })
         }
       >
-        {!signer || !fid ? (
+        {!fid ? (
+          <Button
+            size="small"
+            variant="default"
+            onClick={() => {
+              navigate("/register");
+            }}
+          >
+            Connect your wallet
+          </Button>
+        ) : !signer ? (
           <Button
             size="small"
             variant="default"

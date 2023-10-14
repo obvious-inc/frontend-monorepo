@@ -55,7 +55,7 @@ const AccountPreview = React.forwardRef(({ fid, actions = [] }, ref) => {
   if (user == null) return null;
 
   const bio = user?.profile?.bio?.text;
-  const bioBlocks = messageUtils.parseString(bio);
+  const bioBlocks = bio ? messageUtils.parseString(bio) : [];
 
   return (
     <div

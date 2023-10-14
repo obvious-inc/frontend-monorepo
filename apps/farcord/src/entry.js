@@ -6,6 +6,7 @@ import {
   WagmiConfig,
   createConfig as createWagmiConfig,
   configureChains as configureWagmiChains,
+  mainnet,
 } from "wagmi";
 import { optimism } from "wagmi/chains";
 import { infuraProvider } from "wagmi/providers/infura";
@@ -39,7 +40,7 @@ try {
 }
 
 const { chains, publicClient } = configureWagmiChains(
-  [optimism],
+  [optimism, mainnet],
   [infuraProvider({ apiKey: process.env.INFURA_PROJECT_ID }), publicProvider()]
 );
 

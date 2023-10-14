@@ -6,6 +6,7 @@ import {
   makeCastAdd,
   makeReactionAdd,
   makeReactionRemove,
+  makeUserDataAdd,
 } from "@farcaster/hub-web";
 import { hexToBytes } from "viem";
 import { decodeMetadata } from "../utils/farcaster";
@@ -245,6 +246,101 @@ export const addCast = async ({
       mentionsPositions: [],
       parentUrl,
       parentCastId,
+    },
+    {
+      network: FarcasterNetwork.MAINNET,
+      fid: Number(fid),
+    },
+    farcastSigner
+  ).then((messageData) => {
+    if (messageData.isErr()) {
+      throw messageData.error;
+    }
+
+    return submitHubMessage(messageData.value);
+  });
+};
+
+export const useUserData = (fid) => {
+  const [userData, setUserData] = React.useState(null);
+
+  React.useEffect(() => {
+    if (!fid) return;
+
+    setUserData(null);
+
+    farcasterClient
+      .getUserDataByFid({
+        fid: Number(fid),
+      })
+      .then((result) => {
+        if (result.isErr()) {
+          throw result.error;
+        }
+
+        result.value.messages.forEach((message) => {
+          const dataBody = message.data?.userDataBody;
+          let dataType;
+          switch (dataBody?.type) {
+            case 1:
+              dataType = "pfp";
+              break;
+            case 2:
+              dataType = "displayName";
+              break;
+            case 3:
+              dataType = "bio";
+              break;
+            case 5:
+              dataType = "url";
+              break;
+            case 6:
+              dataType = "username";
+              break;
+            default:
+              console.log("unexpected data type", dataBody?.type);
+              return;
+          }
+
+          setUserData((userData) => ({
+            ...userData,
+            [dataType]: dataBody.value,
+          }));
+        });
+      })
+      .catch((err) => {
+        console.error(err);
+      });
+  }, [fid]);
+
+  return userData;
+};
+
+export const setUserData = async ({ fid, signer, dataType, value }) => {
+  const farcastSigner = new NobleEd25519Signer(hexToBytes(signer?.privateKey));
+
+  let hubDataType;
+  switch (dataType) {
+    case "pfp":
+      hubDataType = 1;
+      break;
+    case "displayName":
+      hubDataType = 2;
+      break;
+    case "bio":
+      hubDataType = 3;
+      break;
+    case "url":
+      hubDataType = 5;
+      break;
+    default:
+      throw new Error("unknown data type");
+  }
+
+  return makeUserDataAdd(
+    {
+      type: hubDataType,
+      value: value,
     },
     {
       network: FarcasterNetwork.MAINNET,

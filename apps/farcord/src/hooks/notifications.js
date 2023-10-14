@@ -26,6 +26,8 @@ export const NotificationsContextProvider = ({ children }) => {
 
   const fetchNotifications = React.useCallback(async ({ fid }) => {
     fetchMentionAndReplies({ fid }).then((notifications) => {
+      if (!notifications) return;
+
       const notificationsByType = arrayUtils.groupBy(
         (n) => n.type,
         notifications
@@ -47,6 +49,8 @@ export const NotificationsContextProvider = ({ children }) => {
     });
 
     fetchReactionsAndRecasts({ fid }).then((notifications) => {
+      if (!notifications) return;
+
       const notificationsByType = arrayUtils.groupBy(
         (n) => n.reactionType,
         notifications

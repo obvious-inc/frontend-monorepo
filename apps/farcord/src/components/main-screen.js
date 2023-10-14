@@ -5,8 +5,10 @@ import { ThreadScreen } from "./cast-screen.js";
 import { useMatchMedia } from "@shades/common/react";
 import ChannelView from "./channel-screen.js";
 import NotificationsView from "./notifications-screen.js";
+import RegisterView from "./register-screen.js";
+import ProfileView from "./profile-screen.js";
 
-const MainScreen = ({ screenType = "channel" }) => {
+const MainScreen = ({ screenType = "channel", fullScreen = false }) => {
   const navigate = useNavigate();
   const { channelId } = useParams();
   const [searchParams] = useSearchParams();
@@ -39,6 +41,10 @@ const MainScreen = ({ screenType = "channel" }) => {
         return <ChannelView isRecent />;
       case "notifications":
         return <NotificationsView />;
+      case "register":
+        return <RegisterView />;
+      case "profile":
+        return <ProfileView />;
       default:
         return null;
     }
@@ -47,7 +53,7 @@ const MainScreen = ({ screenType = "channel" }) => {
   return (
     <MainLayout>
       {!hideMainView && screenItem}
-      {castHash && <ThreadScreen castHash={castHash} />}
+      {castHash && !fullScreen && <ThreadScreen castHash={castHash} />}
     </MainLayout>
   );
 };

@@ -89,6 +89,24 @@ const App = () => {
                               }
                             />
                             <Route
+                              path="register"
+                              element={
+                                <MainScreen
+                                  screenType="register"
+                                  fullScreen={true}
+                                />
+                              }
+                            />
+                            <Route
+                              path="profile"
+                              element={
+                                <MainScreen
+                                  screenType="profile"
+                                  fullScreen={true}
+                                />
+                              }
+                            />
+                            <Route
                               index
                               element={<MainScreen screenType="feed" />}
                             />

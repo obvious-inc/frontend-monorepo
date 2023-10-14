@@ -7,14 +7,13 @@ import Avatar from "@shades/ui-web/avatar";
 import AccountAvatar from "@shades/ui-web/account-avatar";
 import * as Tooltip from "@shades/ui-web/tooltip";
 import Spinner from "@shades/ui-web/spinner";
-import { useSwitchNetwork, useDisconnect } from "wagmi";
+import { useSwitchNetwork, useDisconnect, useConnect } from "wagmi";
 import { toHex } from "viem";
 import Input from "@shades/ui-web/input";
 import { fetchCustodyAddressByUsername, useNeynarUser } from "../hooks/neynar";
 import useSigner from "./signer";
 import { DEFAULT_CHAIN_ID, useWalletFarcasterId } from "../hooks/farcord";
 import { useSignerByPublicKey } from "../hooks/hub";
-import { useConnect } from "wagmi";
 import { Small } from "./text";
 import { useMatchMedia } from "@shades/common/react";
 
@@ -26,7 +25,7 @@ const WalletUser = () => {
   const { user: farcasterUser } = useNeynarUser(fid);
 
   const SLICE_LENGTH = 30;
-  const truncate = farcasterUser?.profile?.bio?.text.length > SLICE_LENGTH;
+  const truncate = farcasterUser?.profile?.bio?.text?.length > SLICE_LENGTH;
   const profileBio = truncate
     ? farcasterUser?.profile?.bio?.text.slice(0, SLICE_LENGTH) + "..."
     : farcasterUser?.profile?.bio?.text;
