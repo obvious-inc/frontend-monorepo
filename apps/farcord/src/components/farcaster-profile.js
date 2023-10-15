@@ -123,16 +123,6 @@ const FarcasterProfile = () => {
           >
             Connect your wallet
           </Button>
-        ) : !signer ? (
-          <Button
-            size="small"
-            variant="default"
-            onClick={() => {
-              setSearchParams({ "auth-dialog": 1 });
-            }}
-          >
-            Sign in with Farcaster
-          </Button>
         ) : (
           <FarcasterUser />
         )}

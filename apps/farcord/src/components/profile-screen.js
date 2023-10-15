@@ -516,6 +516,22 @@ const ProfileView = () => {
           username={username}
         />
 
+        {!signer && (
+          <div>
+            <Small css={(t) => css({ color: t.colors.textHighlight })}>
+              Your account is in read-only mode. Create a signer to make edits.
+            </Small>
+            <Button
+              style={{ marginTop: "1rem" }}
+              disabled={true}
+              onClick={() => navigate("/signers")}
+              size="medium"
+            >
+              Signers
+            </Button>
+          </div>
+        )}
+
         <div>
           <form
             id="update-displayName-form"
@@ -559,7 +575,8 @@ const ProfileView = () => {
               isLoading={displayNameUpdatePending}
               disabled={
                 displayNameUpdatePending ||
-                displayName == displayNameUpdateValue
+                displayName == displayNameUpdateValue ||
+                !signer
               }
             >
               Update display name
@@ -625,7 +642,7 @@ const ProfileView = () => {
               form="update-bio-form"
               size="medium"
               isLoading={bioUpdatePending}
-              disabled={bioUpdatePending || bio == bioUpdateValue}
+              disabled={bioUpdatePending || bio == bioUpdateValue || !signer}
             >
               Update bio
             </Button>
@@ -703,7 +720,10 @@ const ProfileView = () => {
               size="medium"
               isLoading={hasUsernameUpdatePending}
               disabled={
-                !isValidUsername || hasUsernameUpdatePending || usernameTimelock
+                !isValidUsername ||
+                hasUsernameUpdatePending ||
+                usernameTimelock ||
+                !signer
               }
             >
               Set username
