@@ -25,6 +25,8 @@ import useFarcasterAccount from "./farcaster-account.js";
 import MessageEditorForm from "./message-editor-form.js";
 import isHotkey from "is-hotkey";
 import { usePreviousValue } from "../hooks/previous-value.js";
+import { uploadImages as uploadImgurImages } from "../utils/imgur.js";
+import { parseImagesFromBlocks } from "../utils/message.js";
 
 export const ChannelCastsScrollView = ({
   channelId,
@@ -303,18 +305,31 @@ const ChannelView = ({ channelId, isFeed, isRecent }) => {
     : "Connect wallet and create signer to cast";
 
   const onSubmit = async (blocks) => {
-    const text = message.stringifyBlocks(blocks);
+    const embeds = [];
+    const text = message.stringifyBlocks(blocks, {
+      humanReadable: false,
+    });
+
+    const imageEmbeds = parseImagesFromBlocks(blocks);
+    embeds.push(...imageEmbeds.map((image) => ({ url: image })));
+
+    // todo: parse cast ids to add to embeds
+
     return addCast({
       fid,
       signer,
       text,
       parentUrl: isFeed || isRecent ? null : channel.parentUrl,
+      embeds: embeds,
     })
       .then((result) => {
         return toHex(result.value.hash);
       })
       .then(() => {
         return fetchChannelCasts({ channel: channel });
+      })
+      .catch((e) => {
+        console.error(e);
       });
   };
 
@@ -343,7 +358,7 @@ const ChannelView = ({ channelId, isFeed, isRecent }) => {
         <MessageEditorForm
           ref={inputRef}
           inline
-          fileUploadDisabled
+          uploadImage={uploadImgurImages}
           disabled={!broadcasted}
           placeholder={placeholderText}
           submit={async (blocks) => {

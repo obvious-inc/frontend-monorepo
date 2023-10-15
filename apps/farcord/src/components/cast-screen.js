@@ -15,6 +15,8 @@ import {
 } from "../hooks/channel.js";
 import useFarcasterAccount from "./farcaster-account.js";
 import MessageEditorForm from "./message-editor-form.js";
+import { uploadImages as uploadImgurImages } from "../utils/imgur.js";
+import { parseImagesFromBlocks } from "../utils/message.js";
 
 const ThreadScrollView = ({ castHash }) => {
   const castsContainerRef = React.useRef();
@@ -165,18 +167,31 @@ export const ThreadScreen = ({ castHash }) => {
     : "Connect wallet and create signer to cast";
 
   const onSubmit = async (blocks) => {
-    const text = message.stringifyBlocks(blocks);
+    const embeds = [];
+    const text = message.stringifyBlocks(blocks, {
+      humanReadable: false,
+    });
+
+    const imageEmbeds = parseImagesFromBlocks(blocks);
+    embeds.push(...imageEmbeds.map((image) => ({ url: image })));
+
+    // todo: parse cast ids to add to embeds
+
     return addCast({
       fid,
       signer,
       text,
       parentCastId: { hash: hexToBytes(cast.hash), fid: cast.author.fid },
+      embeds: embeds,
     })
       .then((result) => {
         return toHex(result.value.hash);
       })
       .then(() => {
         return fetchThreadCasts({ threadHash: castHash });
+      })
+      .catch((e) => {
+        console.error(e);
       });
   };
 
@@ -206,7 +221,7 @@ export const ThreadScreen = ({ castHash }) => {
         <MessageEditorForm
           ref={inputRef}
           inline
-          fileUploadDisabled
+          uploadImage={uploadImgurImages}
           disabled={!broadcasted}
           placeholder={placeholderText}
           submit={async (blocks) => {

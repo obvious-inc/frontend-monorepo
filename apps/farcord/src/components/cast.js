@@ -302,41 +302,66 @@ export const CastHeader = ({ cast }) => {
   );
 };
 
-const Embed = ({ embed }) => {
-  const [isImage, setIsImage] = React.useState(false);
+const Embed = ({ embed, text }) => {
+  const [embedType, setEmbedType] = React.useState("url");
 
   useEffect(() => {
     return () => {
       if (IMAGE_ENDINGS.some((ending) => embed.url.endsWith(ending))) {
-        setIsImage(true);
+        setEmbedType("image");
+      } else if (embed.url.endsWith("mp4")) {
+        setEmbedType("video");
       }
     };
   }, [embed]);
 
-  if (isImage)
-    return (
-      <a
-        href={embed.url}
-        target="_blank"
-        rel="noreferrer"
-        css={css({
+  if (embed.url && text.includes(embed?.url)) return null;
+
+  return (
+    <a
+      href={embed.url}
+      target="_blank"
+      rel="noreferrer"
+      css={(t) =>
+        css({
           display: "block",
           padding: "1rem 0 1rem 0",
           maxWidth: "40rem",
           height: "auto",
+          color: t.colors.link,
+          textDecoration: "none",
+          ":hover": { color: t.colors.linkModifierHover },
           img: {
             maxWidth: "40rem",
             maxHeight: "30rem",
             height: "auto",
             borderRadius: "0.3rem",
           },
-        })}
-      >
+        })
+      }
+    >
+      {embedType == "image" ? (
         <img src={embed.url} loading="lazy" />
-      </a>
-    );
-
-  return null;
+      ) : embedType == "video" ? (
+        <video
+          controls
+          playsInline
+          src={embed.url}
+          css={css({
+            display: "block",
+            marginTop: "0.8rem",
+            borderRadius: "0.3rem",
+            objectFit: "cover",
+            maxWidth: "100%",
+            height: 260,
+            width: "auto",
+          })}
+        />
+      ) : (
+        <p>{embed.url}</p>
+      )}
+    </a>
+  );
 };
 
 const CastEmbeds = ({ cast }) => {
@@ -345,7 +370,7 @@ const CastEmbeds = ({ cast }) => {
     <div>
       {cast.embeds.map((embed, i) => (
         <div key={i}>
-          <Embed embed={embed} />
+          <Embed embed={embed} text={cast.text} />
         </div>
       ))}
     </div>

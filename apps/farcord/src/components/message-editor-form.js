@@ -383,13 +383,11 @@ const MessageEditorForm = React.memo(
                 ]).then(([dimensions, [uploadedFile]]) => {
                   setImageUploads((fs) => {
                     const newImageUploads = fs.map((f) => {
-                      if (!uploadedFile.filename.endsWith(f.name)) return f;
+                      if (!uploadedFile.name.endsWith(f.name)) return f;
                       return {
                         id: uploadedFile.id,
-                        name: uploadedFile.filename,
-                        url: uploadedFile.variants.find((url) =>
-                          url.endsWith("/public")
-                        ),
+                        name: uploadedFile.name,
+                        url: uploadedFile.link,
                         previewUrl: f.url,
                         ...dimensions,
                       };

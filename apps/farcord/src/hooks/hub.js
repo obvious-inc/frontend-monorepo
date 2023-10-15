@@ -236,13 +236,14 @@ export const addCast = async ({
   text,
   parentUrl,
   parentCastId,
+  embeds = [],
 }) => {
   const farcastSigner = new NobleEd25519Signer(hexToBytes(signer?.privateKey));
 
   return makeCastAdd(
     {
       text: text,
-      embeds: [],
+      embeds: embeds,
       embedsDeprecated: [],
       mentions: [],
       mentionsPositions: [],

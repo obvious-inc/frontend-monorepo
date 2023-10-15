@@ -2,7 +2,10 @@ const IMGUR_API_ENDPOINT = "https://api.imgur.com/3/image/";
 
 export const uploadImages = async ({ files }) => {
   const formData = new FormData();
-  for (let file of files) formData.append("image", file);
+  for (let file of files) {
+    formData.append("image", file);
+    if (file?.name) formData.append("name", file.name);
+  }
 
   return await fetch(IMGUR_API_ENDPOINT, {
     method: "POST",
@@ -12,14 +15,13 @@ export const uploadImages = async ({ files }) => {
       Accept: "application/json",
     },
   })
-    .then((res) => res.json())
+    .then(async (res) => res.json())
     .then(async (data) => {
       if (!data.success) {
         const errorMessage = data.data.error?.message ?? data.data.error;
         throw new Error("Image upload failed: " + errorMessage);
       }
 
-      console.log("success", data.data);
       return [data.data];
     })
     .catch((err) => {
