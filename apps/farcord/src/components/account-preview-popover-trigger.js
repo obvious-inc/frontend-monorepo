@@ -20,6 +20,7 @@ const AccountPreviewPopoverTrigger = React.forwardRef(
   (
     {
       fid,
+      username,
       variant: buttonVariant = "link",
       popoverPlacement = "top",
       accountActions = [],
@@ -44,7 +45,7 @@ const AccountPreviewPopoverTrigger = React.forwardRef(
               disabled={props.disabled ?? disabled}
               css={css({ userSelect: "text", fontWeight: "unset" })}
             >
-              (@{user?.username})
+              (@{username ?? user?.username})
             </InlineButton>
           )}
         </Popover.Trigger>

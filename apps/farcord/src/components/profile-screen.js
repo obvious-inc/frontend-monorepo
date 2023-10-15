@@ -33,7 +33,7 @@ export const EIP_712_USERNAME_PROOF = [
   { name: "owner", type: "address" },
 ];
 
-const AccountPreview = ({ displayName, bio }) => {
+const AccountPreview = ({ displayName, bio, username }) => {
   const { fid } = useFarcasterAccount();
   const { signer } = useSigner();
   const userData = useHubUserData(fid);
@@ -157,6 +157,7 @@ const AccountPreview = ({ displayName, bio }) => {
             </span>{" "}
             <AccountPreviewPopoverTrigger
               fid={fid}
+              username={username}
               css={(t) => css({ color: t.colors.textMuted })}
             />
           </p>
@@ -192,6 +193,7 @@ const ProfileView = () => {
 
   const userData = useHubUserData(fid);
 
+  const [username, setUsername] = React.useState(null);
   const [hasUsernameUpdatePending, setHasUsernameUpdatePending] =
     React.useState(false);
   const [usernameUpdateError, setUsernameUpdateError] = React.useState(null);
@@ -275,6 +277,20 @@ const ProfileView = () => {
       if (data?.error) {
         setUsernameUpdateError(data.error);
         return;
+      }
+
+      try {
+        const transfer = data?.transfers?.[0];
+
+        if (!transfer) {
+          console.error("expected username", data);
+          throw new Error("expected username");
+        }
+
+        setUsername(transfer.username);
+      } catch (e) {
+        // if error occurs, reload page to hopefully fetch new username correctly
+        window.location.reload();
       }
     } catch (e) {
       console.error(e);
@@ -487,7 +503,11 @@ const ProfileView = () => {
           padding: "0 1rem",
         })}
       >
-        <AccountPreview displayName={displayName} bio={bio} />
+        <AccountPreview
+          displayName={displayName}
+          bio={bio}
+          username={username}
+        />
 
         <div>
           <form
