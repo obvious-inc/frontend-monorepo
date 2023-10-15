@@ -315,7 +315,7 @@ const Embed = ({ embed, text }) => {
     };
   }, [embed]);
 
-  if (embed.url && text.includes(embed?.url)) return null;
+  if (embed.url && embedType == "url" && text.includes(embed?.url)) return null;
 
   return (
     <a
@@ -340,9 +340,9 @@ const Embed = ({ embed, text }) => {
         })
       }
     >
-      {embedType == "image" ? (
+      {embedType === "image" ? (
         <img src={embed.url} loading="lazy" />
-      ) : embedType == "video" ? (
+      ) : embedType === "video" ? (
         <video
           controls
           playsInline
