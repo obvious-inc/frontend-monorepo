@@ -33,13 +33,19 @@ export const EIP_712_USERNAME_PROOF = [
   { name: "owner", type: "address" },
 ];
 
-const AccountPreview = () => {
+const AccountPreview = ({ displayName, bio }) => {
   const { fid } = useFarcasterAccount();
   const { signer } = useSigner();
   const userData = useHubUserData(fid);
+
+  const [pfp, setPfp] = React.useState(null);
+
+  const [imageUploadPending, setImageUploadPending] = React.useState(false);
   const [imageUploadError, setImageUploadError] = React.useState(null);
 
   const handleFileUpload = async (event) => {
+    setImageUploadPending(true);
+    setImageUploadError(null);
     const file = event.target.files[0];
     let formData = new FormData();
     formData.append("image", file);
@@ -55,24 +61,34 @@ const AccountPreview = () => {
       .then((res) => res.json())
       .then(async (data) => {
         if (!data.success) {
-          throw new Error("Image upload failed: " + data.data.error);
+          const errorMessage = data.data.error?.message ?? data.data.error;
+          throw new Error("Image upload failed: " + errorMessage);
         }
+
+        const imageUrl = data.data.link;
 
         return await setUserData({
           fid,
           signer,
           dataType: "pfp",
-          value: data.data.link,
+          value: imageUrl,
         }).then(() => {
-          // todo: not sure how to do this better...
-          window.location.reload();
+          setPfp(imageUrl);
         });
       })
       .catch((err) => {
         console.error(err);
         setImageUploadError(err);
+      })
+      .finally(() => {
+        setImageUploadPending(false);
       });
   };
+
+  React.useEffect(() => {
+    if (!userData) return;
+    setPfp(userData?.pfp);
+  }, [userData]);
 
   return (
     <>
@@ -102,18 +118,21 @@ const AccountPreview = () => {
           }
         >
           <label htmlFor="file-input">
-            {userData?.pfp ? (
+            {pfp || userData?.pfp ? (
               <Avatar
-                url={userData?.pfp}
+                url={pfp ?? userData?.pfp}
                 size="5rem"
                 css={(t) =>
                   css({
                     background: t.colors.borderLighter,
+                    opacity: imageUploadPending ? 0.5 : 1,
                   })
                 }
               />
             ) : (
-              <PlusCircleIcon height="auto" />
+              <PlusCircleIcon
+                style={{ opacity: imageUploadPending ? 0.5 : 1 }}
+              />
             )}
           </label>
 
@@ -133,13 +152,15 @@ const AccountPreview = () => {
           }
         >
           <p>
-            <span style={{ fontWeight: "bold" }}>{userData?.displayName}</span>{" "}
+            <span style={{ fontWeight: "bold" }}>
+              {displayName ?? userData?.displayName}
+            </span>{" "}
             <AccountPreviewPopoverTrigger
               fid={fid}
               css={(t) => css({ color: t.colors.textMuted })}
             />
           </p>
-          <p>{userData?.bio}</p>
+          <p>{bio ?? userData?.bio}</p>
         </div>
       </div>
       {imageUploadError && (
@@ -180,6 +201,7 @@ const ProfileView = () => {
   );
   const [usernameTimelock, setUsernameTimelock] = React.useState(null);
 
+  const [displayName, setDisplayName] = React.useState(null);
   const [displayNameUpdateValue, setDisplayNameUpdateValue] = React.useState(
     userData?.displayName
   );
@@ -188,6 +210,7 @@ const ProfileView = () => {
   const [displayNameUpdateError, setDisplayNameUpdateError] =
     React.useState(null);
 
+  const [bio, setBio] = React.useState(null);
   const [bioUpdateValue, setBioUpdateValue] = React.useState(null);
   const [bioUpdatePending, setBioUpdatePending] = React.useState(false);
   const [bioUpdateError, setBioUpdateError] = React.useState(null);
@@ -274,6 +297,7 @@ const ProfileView = () => {
     }).then(() => {
       setDisplayNameUpdatePending(false);
       setDisplayNameUpdateError(null);
+      setDisplayName(displayNameUpdateValue);
     });
   };
 
@@ -290,6 +314,7 @@ const ProfileView = () => {
     }).then(() => {
       setBioUpdatePending(false);
       setBioUpdateError(null);
+      setBio(bioUpdateValue);
     });
   };
 
@@ -334,7 +359,10 @@ const ProfileView = () => {
   React.useEffect(() => {
     if (!userData) return;
 
+    setDisplayName(userData?.displayName);
     setDisplayNameUpdateValue(userData?.displayName);
+
+    setBio(userData?.bio);
     setBioUpdateValue(userData?.bio);
   }, [userData]);
 
@@ -459,7 +487,7 @@ const ProfileView = () => {
           padding: "0 1rem",
         })}
       >
-        <AccountPreview />
+        <AccountPreview displayName={displayName} bio={bio} />
 
         <div>
           <form
@@ -500,7 +528,7 @@ const ProfileView = () => {
               isLoading={displayNameUpdatePending}
               disabled={
                 displayNameUpdatePending ||
-                userData?.displayName == displayNameUpdateValue
+                displayName == displayNameUpdateValue
               }
             >
               Update display name
@@ -562,7 +590,7 @@ const ProfileView = () => {
               form="update-bio-form"
               size="medium"
               isLoading={bioUpdatePending}
-              disabled={bioUpdatePending || userData?.bio == bioUpdateValue}
+              disabled={bioUpdatePending || bio == bioUpdateValue}
             >
               Update bio
             </Button>

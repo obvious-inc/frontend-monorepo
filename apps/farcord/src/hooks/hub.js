@@ -300,7 +300,7 @@ export const useUserData = (fid) => {
               dataType = "username";
               break;
             default:
-              console.log("unexpected data type", dataBody?.type);
+              console.error("unexpected data type", dataBody?.type);
               return;
           }
 
@@ -422,19 +422,18 @@ export const isFollowing = async ({ fid, fidToCheck }) => {
 };
 
 export const useIsFollower = ({ fid, fidToCheck }) => {
-  const [isFollower, setIsFollower] = React.useState(null);
+  const [isFollower, setIsFollower] = React.useState(false);
 
   React.useEffect(() => {
     if (!fid || !fidToCheck) return;
-
-    setIsFollower(null);
 
     isFollowing({ fid, fidToCheck })
       .then((result) => {
         setIsFollower(result);
       })
       .catch((err) => {
-        console.error(err);
+        setIsFollower(false);
+        if (err.errCode != "not_found") console.error(err);
       });
   }, [fid, fidToCheck]);
 

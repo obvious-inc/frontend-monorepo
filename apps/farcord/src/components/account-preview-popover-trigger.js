@@ -12,12 +12,7 @@ import {
   AddUser as AddUserIcon,
   RemoveUser as RemoveUserIcon,
 } from "@shades/ui-web/icons";
-import {
-  followUser,
-  isFollowing,
-  unfollowUser,
-  useIsFollower,
-} from "../hooks/hub";
+import { followUser, unfollowUser, useIsFollower } from "../hooks/hub";
 import useSigner from "./signer";
 import useFarcasterAccount from "./farcaster-account";
 
