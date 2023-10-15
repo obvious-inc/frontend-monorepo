@@ -8,7 +8,13 @@ import {
   useContractRead,
   useWaitForTransaction,
 } from "wagmi";
-import { encodeAbiParameters, formatEther, formatUnits, isHex } from "viem";
+import {
+  InsufficientFundsError,
+  encodeAbiParameters,
+  formatEther,
+  formatUnits,
+  isHex,
+} from "viem";
 import { DEFAULT_CHAIN_ID } from "../hooks/farcord";
 import { mnemonicToAccount } from "viem/accounts";
 import Button from "@shades/ui-web/button";
@@ -239,6 +245,10 @@ const RegisterView = () => {
     enabled: Boolean(signerSig && regSig && signer && storagePrices),
   });
 
+  const isInsufficientFundsError = registerPrepareError?.walk(
+    (e) => e instanceof InsufficientFundsError
+  );
+
   const { writeAsync: registerNewAccount } = useContractWrite(config);
 
   const createRecoveryAddressSignature = async () => {
@@ -375,17 +385,7 @@ const RegisterView = () => {
       hash: registerTransaction,
     });
 
-  React.useEffect(() => {
-    const gotoProfilePage = () => {
-      navigate({
-        pathname: `/profile`,
-      });
-    };
-
-    if (hasFid && !chain?.unsupported) {
-      gotoProfilePage();
-    }
-  }, [navigate, hasFid, chain]);
+  const alreadyRegistered = hasFid && chain.id == DEFAULT_CHAIN_ID;
 
   React.useEffect(() => {
     const gotoProfilePage = () => {
@@ -394,10 +394,10 @@ const RegisterView = () => {
       });
     };
 
-    if (isRegisterSuccess) {
+    if (alreadyRegistered) {
       gotoProfilePage();
     }
-  }, [navigate, isRegisterSuccess]);
+  }, [navigate, alreadyRegistered]);
 
   return (
     <div
@@ -515,7 +515,7 @@ const RegisterView = () => {
               Cancel
             </Button>
           </div>
-        ) : chain?.unsupported ? (
+        ) : chain.id != DEFAULT_CHAIN_ID ? (
           <>
             <div style={{ color: "#ffc874" }}>Network not supported</div>
             <Button
@@ -585,6 +585,19 @@ const RegisterView = () => {
             >
               {registerTransaction}
             </a>
+          </div>
+        ) : isRegisterSuccess ? (
+          <div>
+            <h2>Welcome to Farcaster! 🎉</h2>
+            <Small>Your account was successfully created.</Small>
+
+            <Button
+              style={{ marginTop: "2rem" }}
+              onClick={() => navigate("/profile")}
+              size="medium"
+            >
+              Fill my profile
+            </Button>
           </div>
         ) : (
           <>
@@ -951,6 +964,7 @@ const RegisterView = () => {
                     value={storageUnits ?? 1}
                     onChange={(e) => setStorageUnits(e.target.value)}
                     type={"number"}
+                    min={1}
                     css={(t) =>
                       css({
                         padding: "0.5rem",
@@ -1024,15 +1038,16 @@ const RegisterView = () => {
                       color: t.colors.textDanger,
                       textOverflow: "ellipsis",
                       overflow: "hidden",
-                      // whiteSpace: "nowrap",
                       whiteSpace: "pre-wrap",
                       wordBreak: "break-word",
                     })
                   }
                 >
-                  {registerError
-                    ? registerError.slice(0, 200)
-                    : registerPrepareError.message.slice(0, 300)}
+                  {isInsufficientFundsError
+                    ? "Your wallet does not have enough funds. Make sure you have bridged some ETH to Optimism."
+                    : registerPrepareError
+                    ? registerPrepareError.message.slice(0, 300)
+                    : registerError.slice(0, 200)}
                 </Small>
               )}
             </StepElement>

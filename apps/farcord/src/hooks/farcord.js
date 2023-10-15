@@ -157,5 +157,7 @@ export const useWalletFarcasterId = (walletAddress) => {
     chainId: useChainId(),
   });
 
-  return { data, error };
+  const id = data == 0 ? null : data;
+
+  return { data: id, error };
 };

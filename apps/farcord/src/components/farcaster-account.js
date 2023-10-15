@@ -21,10 +21,18 @@ export const Provider = ({ children }) => {
     setAccount(accountData);
   });
 
+  const logout = useLatestCallback(async () => {
+    setAccount(null);
+  }, []);
+
   useWalletEvent("disconnect", () => {
     if (!account) return;
     if (account.provider === "warpcast") return;
 
+    setAccount(null);
+  });
+
+  useWalletEvent("account-change", () => {
     setAccount(null);
   });
 
@@ -45,8 +53,9 @@ export const Provider = ({ children }) => {
       address,
       account,
       initAccount,
+      logout,
     }),
-    [fid, address, account, initAccount]
+    [fid, address, account, initAccount, logout]
   );
 
   return (

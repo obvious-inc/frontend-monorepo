@@ -170,7 +170,7 @@ const AccountPreview = React.forwardRef(({ fid, actions = [] }, ref) => {
             </Tooltip.Root>
           </div>
         </div>
-        {fid != mainFid && (
+        {mainFid && fid != mainFid && (
           <div style={{ justifySelf: "end", paddingLeft: "2rem" }}>
             {followed ? (
               <Button
