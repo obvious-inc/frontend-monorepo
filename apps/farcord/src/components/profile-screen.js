@@ -17,6 +17,7 @@ import { addDays } from "date-fns";
 import FormattedDate from "./formatted-date";
 import Input from "@shades/ui-web/input";
 import { PlusCircle as PlusCircleIcon } from "@shades/ui-web/icons";
+import { uploadImages } from "../utils/imgur";
 
 const FARCASTER_FNAME_API_ENDPOINT = "https://fnames.farcaster.xyz";
 
@@ -47,25 +48,10 @@ const AccountPreview = ({ displayName, bio, username }) => {
     setImageUploadPending(true);
     setImageUploadError(null);
     const file = event.target.files[0];
-    let formData = new FormData();
-    formData.append("image", file);
 
-    await fetch("https://api.imgur.com/3/image/", {
-      method: "POST",
-      body: formData,
-      headers: {
-        Authorization: "Client-ID " + process.env.IMGUR_CLIENT_ID,
-        Accept: "application/json",
-      },
-    })
-      .then((res) => res.json())
-      .then(async (data) => {
-        if (!data.success) {
-          const errorMessage = data.data.error?.message ?? data.data.error;
-          throw new Error("Image upload failed: " + errorMessage);
-        }
-
-        const imageUrl = data.data.link;
+    await uploadImages({ files: [file] })
+      .then(async ([image]) => {
+        const imageUrl = image.link;
 
         return await setUserData({
           fid,
