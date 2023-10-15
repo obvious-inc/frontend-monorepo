@@ -282,6 +282,8 @@ const ProfileView = () => {
       try {
         const transfer = data?.transfers?.[0];
 
+        // TODO: this is not updating well
+
         if (!transfer) {
           console.error("expected username", data);
           throw new Error("expected username");
@@ -468,6 +470,11 @@ const ProfileView = () => {
           <Button onClick={() => navigate("/register")} size="medium">
             Create new account
           </Button>
+
+          <Small>
+            If you just finished creating an account and got the success
+            message, try refreshing this page a couple of times.
+          </Small>
         </div>
       </div>
     );
@@ -523,7 +530,11 @@ const ProfileView = () => {
             <input
               value={displayNameUpdateValue ?? ""}
               onChange={(e) => setDisplayNameUpdateValue(e.target.value)}
-              placeholder={displayNameUpdateValue ?? userData?.displayName}
+              placeholder={
+                displayNameUpdateValue ??
+                userData?.displayName ??
+                "Vitalik Buterin"
+              }
               css={(t) =>
                 css({
                   padding: "1rem",
@@ -587,7 +598,11 @@ const ProfileView = () => {
               value={bioUpdateValue ?? ""}
               type="text"
               onChange={(e) => setBioUpdateValue(e.target.value)}
-              placeholder={bioUpdateValue ?? userData?.bio}
+              placeholder={
+                bioUpdateValue ??
+                userData?.bio ??
+                "Tell other folks something about yourself..."
+              }
               css={(t) =>
                 css({
                   padding: "1rem",
@@ -716,7 +731,9 @@ const ProfileView = () => {
               </Small>
             ) : (
               <Small style={{ marginTop: "1rem" }}>
-                You can only change your username once every 28 days.
+                {hasUsernameUpdatePending
+                  ? "Please check your wallet to sign the message"
+                  : "You can only change your username once every 28 days."}
               </Small>
             )}
 

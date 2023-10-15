@@ -23,7 +23,7 @@ export const Provider = ({ children }) => {
 
   const logout = useLatestCallback(async () => {
     setAccount(null);
-  }, []);
+  });
 
   useWalletEvent("disconnect", () => {
     if (!account) return;
