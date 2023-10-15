@@ -30,6 +30,7 @@ import { ethereum as ethereumUtils } from "@shades/common/utils";
 import { idRegistryAbi } from "../abis/farc-id-registry";
 import { useNavigate } from "react-router-dom";
 import useSigner from "./signer";
+import useWalletEvent from "../hooks/wallet-event.js";
 
 const { truncateAddress } = ethereumUtils;
 
@@ -250,6 +251,24 @@ const RegisterView = () => {
   );
 
   const { writeAsync: registerNewAccount } = useContractWrite(config);
+
+  useWalletEvent("disconnect", () => {
+    setRegSig(null);
+    setSignerSig(null);
+    setSignerMetadata(null);
+    setSigner(null);
+    setRecoveryAddress(null);
+    setDeadline(null);
+  });
+
+  useWalletEvent("account-change", () => {
+    setRegSig(null);
+    setSignerSig(null);
+    setSignerMetadata(null);
+    setSigner(null);
+    setRecoveryAddress(null);
+    setDeadline(null);
+  });
 
   const createRecoveryAddressSignature = async () => {
     if (!recoveryAddress) return;
