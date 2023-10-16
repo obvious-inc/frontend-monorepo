@@ -7,6 +7,8 @@ import ChannelView from "./channel-screen.js";
 import NotificationsView from "./notifications-screen.js";
 import RegisterView from "./register-screen.js";
 import ProfileView from "./profile-screen.js";
+import LoginView from "./login-screen.js";
+import WarpcastAuthScreen from "./warpcast-screen.js";
 
 const MainScreen = ({ screenType = "channel", fullScreen = false }) => {
   const navigate = useNavigate();
@@ -41,6 +43,10 @@ const MainScreen = ({ screenType = "channel", fullScreen = false }) => {
         return <ChannelView isRecent />;
       case "notifications":
         return <NotificationsView />;
+      case "login":
+        return <LoginView />;
+      case "login-with-warpcast":
+        return <WarpcastAuthScreen />;
       case "register":
         return <RegisterView />;
       case "profile":

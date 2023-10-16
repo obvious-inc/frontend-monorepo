@@ -89,6 +89,26 @@ const App = () => {
                               }
                             />
                             <Route
+                              path="login"
+                              element={
+                                <MainScreen
+                                  screenType="login"
+                                  fullScreen={true}
+                                />
+                              }
+                            />
+
+                            <Route
+                              path="login/warpcast"
+                              element={
+                                <MainScreen
+                                  screenType="login-with-warpcast"
+                                  fullScreen={true}
+                                />
+                              }
+                            />
+
+                            <Route
                               path="register"
                               element={
                                 <MainScreen

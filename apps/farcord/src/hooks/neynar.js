@@ -344,6 +344,7 @@ export const fetchUserByUsername = async (username) => {
       return result.json();
     })
     .then((data) => {
+      if (data.code) throw new Error(data.message);
       return data.result.user;
     })
     .catch((err) => {
@@ -352,24 +353,7 @@ export const fetchUserByUsername = async (username) => {
 };
 
 export const fetchCustodyAddressByUsername = async (username) => {
-  const user = await fetchUserByUsername(username);
-  if (!user) return;
-
-  const params = new URLSearchParams({
-    api_key: process.env.NEYNAR_API_KEY,
-    fid: user.fid,
-  });
-
-  return fetch(NEYNAR_V1_ENDPOINT + "/custody-address?" + params)
-    .then((result) => {
-      return result.json();
-    })
-    .then((data) => {
-      return data.result;
-    })
-    .catch((err) => {
-      throw err;
-    });
+  return await fetchUserByUsername(username);
 };
 
 export async function fetchMentionAndReplies({

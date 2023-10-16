@@ -28,7 +28,7 @@ import { Small } from "./text";
 import * as Tooltip from "@shades/ui-web/tooltip";
 import { ethereum as ethereumUtils } from "@shades/common/utils";
 import { idRegistryAbi } from "../abis/farc-id-registry";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import useSigner from "./signer";
 import useWalletEvent from "../hooks/wallet-event.js";
 
@@ -476,6 +476,10 @@ const RegisterView = () => {
               Connect your wallet
             </h1>
 
+            <Small style={{ marginTop: "1rem" }}>
+              Connect the wallet you wish to associate a Farcaster account with.
+            </Small>
+
             <div
               css={css({
                 display: "grid",
@@ -519,6 +523,31 @@ const RegisterView = () => {
                 <Small>Check your wallet</Small>
               </>
             )}
+
+            <div
+              css={(t) =>
+                css({
+                  marginTop: "3rem",
+                  paddingTop: "1rem",
+                  borderTop: `1px solid ${t.colors.borderLighter}`,
+                })
+              }
+            >
+              <Link
+                to="/login"
+                css={(theme) =>
+                  css({
+                    fontSize: theme.text.sizes.base,
+                    color: theme.colors.textDimmed,
+                    ":hover": {
+                      color: theme.colors.linkModifierHover,
+                    },
+                  })
+                }
+              >
+                Already have a Farcaster account?
+              </Link>
+            </div>
           </div>
         ) : isSwitchingToOptimism ? (
           <div>

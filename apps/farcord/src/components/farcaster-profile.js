@@ -118,10 +118,10 @@ const FarcasterProfile = () => {
             size="small"
             variant="default"
             onClick={() => {
-              navigate("/register");
+              navigate("/login");
             }}
           >
-            Connect your wallet
+            Sign in
           </Button>
         ) : (
           <FarcasterUser />

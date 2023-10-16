@@ -187,7 +187,9 @@ const WarpcastAuthScreen = () => {
       })}
       style={{ height: undefined }}
     >
-      {signerStatus === "requesting-signed-key-request" ? (
+      {!warpcastStatus ||
+      warpcastStatus === "creating" ||
+      signerStatus === "requesting-signed-key-request" ? (
         <div>
           <Spinner
             size="2.4rem"
@@ -197,17 +199,6 @@ const WarpcastAuthScreen = () => {
             })}
           />
           <div style={{ marginBottom: "1rem" }}>Generating QR code...</div>
-        </div>
-      ) : warpcastStatus === "creating" ? (
-        <div>
-          <div style={{ marginBottom: "1rem" }}>Creating QR code...</div>
-          <Spinner
-            size="2.4rem"
-            css={(t) => ({
-              color: t.colors.textDimmed,
-              margin: "2rem auto 2rem",
-            })}
-          />
         </div>
       ) : warpcastStatus === "pending" ? (
         <div
