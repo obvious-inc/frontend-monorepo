@@ -1,3 +1,4 @@
+import getDateYear from "date-fns/getYear";
 import datesDifferenceInMonths from "date-fns/differenceInCalendarMonths";
 import { formatEther, formatUnits } from "viem";
 import React from "react";
@@ -541,7 +542,11 @@ export const TransactionExplanation = ({ transaction: t }) => {
             disableRelative
             day="numeric"
             month="short"
-            year="numeric"
+            year={
+              getDateYear(t.startDate) !== getDateYear(t.endDate)
+                ? "numeric"
+                : undefined
+            }
             value={t.startDate}
           />{" "}
           and{" "}

@@ -1,7 +1,9 @@
+import formatDate from "date-fns/format";
+import getDateYear from "date-fns/getYear";
 import React from "react";
 import { useParams, useNavigate, useSearchParams } from "react-router-dom";
-import { isAddress, parseEther, parseUnits } from "viem";
-import { useAccount, useEnsName, useEnsAddress } from "wagmi";
+import { isAddress, parseEther, parseUnits, parseAbi } from "viem";
+import { useAccount, useEnsName, useEnsAddress, useContractRead } from "wagmi";
 import { css } from "@emotion/react";
 import {
   useLatestCallback,
@@ -24,6 +26,7 @@ import RichTextEditor, {
 } from "@shades/ui-web/rich-text-editor";
 import Dialog from "@shades/ui-web/dialog";
 import DialogHeader from "@shades/ui-web/dialog-header";
+import { useContract } from "../contracts.js";
 import {
   useCollection as useDrafts,
   useSingleItem as useDraft,
@@ -35,9 +38,16 @@ import {
 import { useTokenBuyerEthNeeded } from "../hooks/misc-contracts.js";
 import { useCreateProposalCandidate } from "../hooks/data-contract.js";
 import Layout, { MainContentContainer } from "./layout.js";
+import FormattedDate from "./formatted-date.js";
 import FormattedNumber from "./formatted-number.js";
 import AccountPreviewPopoverTrigger from "./account-preview-popover-trigger.js";
 import { TransactionExplanation } from "./transaction-list.js";
+
+const decimalsByCurrency = {
+  eth: 18,
+  weth: 18,
+  usdc: 6,
+};
 
 const ProposeScreen = () => {
   const { draftId } = useParams();
@@ -78,6 +88,7 @@ const ProposeScreen = () => {
   const usdcSumValue = draft.actions.reduce((sum, a) => {
     switch (a.type) {
       case "one-time-payment":
+      case "streaming-payment":
         return a.currency !== "usdc"
           ? sum
           : sum + parseUnits(String(a.amount), 6);
@@ -96,36 +107,102 @@ const ProposeScreen = () => {
       draft.body
     )}`;
     const transactions = draft.actions.flatMap((a) => {
-      switch (a.type) {
-        case "one-time-payment": {
-          if (a.currency === "eth")
-            return [
-              {
-                type: "transfer",
-                target: a.target,
-                value: parseEther(String(a.amount)),
-              },
-            ];
+      const getActionTransactions = () => {
+        switch (a.type) {
+          case "one-time-payment": {
+            switch (a.currency) {
+              case "eth":
+                return [
+                  {
+                    type: "transfer",
+                    target: a.target,
+                    value: parseEther(String(a.amount)),
+                  },
+                ];
 
-          if (a.currency === "usdc")
-            return [
-              {
-                type: "usdc-transfer-via-payer",
-                receiverAddress: a.target,
-                usdcAmount: parseUnits(String(a.amount), 6),
-              },
-              {
-                type: "token-buyer-top-up",
-                value: tokenBuyerTopUpValue ?? BigInt(0),
-              },
-            ];
+              case "usdc":
+                return [
+                  {
+                    type: "usdc-transfer-via-payer",
+                    receiverAddress: a.target,
+                    usdcAmount: parseUnits(String(a.amount), 6),
+                  },
+                ];
 
-          throw new Error();
+              default:
+                throw new Error();
+            }
+          }
+
+          case "streaming-payment": {
+            const formattedAmount = String(a.amount);
+
+            const createStreamTransaction = {
+              type: "stream",
+              receiverAddress: a.target,
+              token: a.currency.toUpperCase(),
+              tokenAmount: parseUnits(
+                formattedAmount,
+                decimalsByCurrency[a.currency]
+              ),
+              startDate: new Date(a.startTimestamp),
+              endDate: new Date(a.endTimestamp),
+              streamContractAddress: a.predictedStreamContractAddress,
+            };
+
+            switch (a.currency) {
+              case "weth":
+                return [
+                  createStreamTransaction,
+                  {
+                    type: "weth-deposit",
+                    value: parseUnits(formattedAmount, decimalsByCurrency.eth),
+                  },
+                  {
+                    type: "weth-transfer",
+                    receiverAddress: a.predictedStreamContractAddress,
+                    wethAmount: parseUnits(
+                      formattedAmount,
+                      decimalsByCurrency.weth
+                    ),
+                  },
+                ];
+
+              case "usdc":
+                return [
+                  createStreamTransaction,
+                  {
+                    type: "usdc-transfer-via-payer",
+                    receiverAddress: a.predictedStreamContractAddress,
+                    usdcAmount: parseUnits(
+                      formattedAmount,
+                      decimalsByCurrency.usdc
+                    ),
+                  },
+                ];
+
+              default:
+                throw new Error();
+            }
+          }
+
+          default:
+            throw new Error();
         }
+      };
 
-        default:
-          throw new Error();
-      }
+      const actionTransactions = getActionTransactions();
+
+      if (tokenBuyerTopUpValue > 0)
+        return [
+          ...actionTransactions,
+          {
+            type: "token-buyer-top-up",
+            value: tokenBuyerTopUpValue,
+          },
+        ];
+
+      return actionTransactions;
     });
 
     return Promise.resolve()
@@ -470,6 +547,8 @@ const ProposeScreen = () => {
                   initialCurrency={transaction.currency}
                   initialAmount={transaction.amount}
                   initialTarget={transaction.target}
+                  initialStreamStartTimestamp={transaction.startTimestamp}
+                  initialStreamEndTimestamp={transaction.endTimestamp}
                   submit={(a) => {
                     setActions(
                       draft.actions.map((a_, i) =>
@@ -520,12 +599,62 @@ const ProposeScreen = () => {
   );
 };
 
+const parseAmount = (amount, currency) => {
+  switch (currency.toLowerCase()) {
+    case "eth":
+    case "weth":
+    case "usdc":
+      return parseUnits(String(amount), decimalsByCurrency[currency]);
+    default:
+      throw new Error();
+  }
+};
+
+const usePredictedStreamContractAddress = (
+  { receiverAddress, formattedAmount, currency, startDate, endDate },
+  { enabled }
+) => {
+  const executorContract = useContract("executor");
+  const streamPaymentTokenContract = useContract(`${currency}-token`);
+  const streamFactoryContract = useContract("stream-factory");
+
+  const { data, isSuccess } = useContractRead({
+    address: streamFactoryContract.address,
+    abi: parseAbi([
+      "function predictStreamAddress(address, address, address, uint256, address, uint256, uint256) public view returns (address)",
+    ]),
+    functionName: "predictStreamAddress",
+    args: [
+      executorContract.address,
+      executorContract.address,
+      receiverAddress,
+      parseAmount(formattedAmount, currency),
+      streamPaymentTokenContract.address,
+      (startDate?.getTime() ?? 0) / 1000,
+      (endDate?.getTime() ?? 0) / 1000,
+    ],
+    enabled:
+      enabled &&
+      parseFloat(formattedAmount) > 0 &&
+      isAddress(receiverAddress) &&
+      startDate != null &&
+      endDate != null &&
+      endDate > startDate,
+  });
+
+  if (!isSuccess) return null;
+
+  return data;
+};
+
 const ActionDialog = ({
   title,
   initialType,
   initialCurrency,
   initialAmount,
   initialTarget,
+  initialStreamStartTimestamp,
+  initialStreamEndTimestamp,
   titleProps,
   remove,
   submit,
@@ -538,6 +667,17 @@ const ActionDialog = ({
   const [currency, setCurrency] = React.useState(initialCurrency ?? "eth");
   const [amount, setAmount] = React.useState(initialAmount ?? 0);
   const [receiverQuery, setReceiverQuery] = React.useState(initialTarget ?? "");
+
+  const [streamStartDate, setStreamStartDate] = React.useState(
+    initialStreamStartTimestamp == null
+      ? null
+      : new Date(initialStreamStartTimestamp)
+  );
+  const [streamEndDate, setStreamEndDate] = React.useState(
+    initialStreamEndTimestamp == null
+      ? null
+      : new Date(initialStreamEndTimestamp)
+  );
 
   const { data: ensName } = useEnsName({
     address: receiverQuery.trim(),
@@ -562,16 +702,6 @@ const ActionDialog = ({
       ? null
       : parseFloat(amount) / ethToUsdRate;
 
-  const hasRequiredInputs = (() => {
-    switch (type) {
-      case "one-time-payment":
-        return parseFloat(amount) > 0 && isAddress(target);
-
-      default:
-        throw new Error();
-    }
-  })();
-
   useFetch(
     () =>
       fetch("https://api.coinbase.com/v2/exchange-rates?currency=ETH")
@@ -584,6 +714,39 @@ const ActionDialog = ({
     []
   );
 
+  const predictedStreamContractAddress = usePredictedStreamContractAddress(
+    {
+      receiverAddress: target,
+      formattedAmount: String(amount),
+      currency,
+      startDate: streamStartDate,
+      endDate: streamEndDate,
+    },
+    {
+      enabled: type === "streaming-payment",
+    }
+  );
+
+  const hasRequiredInputs = (() => {
+    switch (type) {
+      case "one-time-payment":
+        return parseFloat(amount) > 0 && isAddress(target);
+
+      case "streaming-payment":
+        return (
+          parseFloat(amount) > 0 &&
+          isAddress(target) &&
+          streamStartDate != null &&
+          streamEndDate != null &&
+          streamEndDate > streamStartDate &&
+          predictedStreamContractAddress != null
+        );
+
+      default:
+        throw new Error();
+    }
+  })();
+
   return (
     <form
       onSubmit={(e) => {
@@ -595,6 +758,9 @@ const ActionDialog = ({
           target,
           amount,
           currency,
+          startTimestamp: streamStartDate?.getTime(),
+          endTimestamp: streamEndDate?.getTime(),
+          predictedStreamContractAddress,
         });
         dismiss();
       }}
@@ -616,9 +782,8 @@ const ActionDialog = ({
             options={[
               { value: "one-time-payment", label: "One-time transfer" },
               {
-                value: "monthly-payment",
-                label: "Monthly transfer",
-                disabled: true,
+                value: "streaming-payment",
+                label: "Streaming transfer",
               },
               {
                 value: "custom-transaction",
@@ -627,10 +792,62 @@ const ActionDialog = ({
               },
             ]}
             onChange={(value) => {
+              if (value === "streaming-payment" && currency === "eth")
+                setCurrency("weth");
               setType(value);
             }}
           />
         </div>
+
+        {type === "streaming-payment" && (
+          <div>
+            <div
+              style={{
+                display: "grid",
+                gridTemplateColumns: "repeat(2, minmax(0,1fr))",
+                gap: "1.6rem",
+              }}
+            >
+              <Input
+                label="Start"
+                type="date"
+                value={
+                  streamStartDate == null
+                    ? ""
+                    : formatDate(streamStartDate, "yyyy-MM-dd")
+                }
+                onChange={(e) => {
+                  setStreamStartDate(new Date(e.target.valueAsNumber));
+                }}
+              />
+              <Input
+                label="End"
+                type="date"
+                value={
+                  streamEndDate == null
+                    ? ""
+                    : formatDate(streamEndDate, "yyyy-MM-dd")
+                }
+                onChange={(e) => {
+                  setStreamEndDate(new Date(e.target.valueAsNumber));
+                }}
+              />
+            </div>
+            <div
+              css={(t) =>
+                css({
+                  fontSize: t.text.sizes.small,
+                  color: t.colors.textDimmed,
+                  marginTop: "0.7rem",
+                })
+              }
+            >
+              Consider the estimated execution time of the proposal; creating a
+              stream with a past start date will work fine, but it is a little
+              bit awkward.
+            </div>
+          </div>
+        )}
 
         <div>
           <Label htmlFor="amount">Amount</Label>
@@ -673,10 +890,17 @@ const ActionDialog = ({
             <Select
               aria-label="Currency token"
               value={currency}
-              options={[
-                { value: "eth", label: "ETH" },
-                { value: "usdc", label: "USDC" },
-              ]}
+              options={
+                type === "one-time-payment"
+                  ? [
+                      { value: "eth", label: "ETH" },
+                      { value: "usdc", label: "USDC" },
+                    ]
+                  : [
+                      { value: "weth", label: "WETH" },
+                      { value: "usdc", label: "USDC" },
+                    ]
+              }
               onChange={(value) => {
                 setCurrency(value);
               }}
@@ -819,6 +1043,7 @@ const ActionDialog = ({
 
 const currencyFractionDigits = {
   eth: [1, 4],
+  weth: [1, 4],
   usdc: [2, 2],
 };
 
@@ -842,6 +1067,47 @@ const ActionExplanation = ({ action: a }) => {
             {a.currency.toUpperCase()}
           </em>{" "}
           to <em>{targetDisplayName}</em>
+        </>
+      );
+    }
+
+    case "streaming-payment": {
+      const [minimumFractionDigits, maximumFractionDigits] =
+        currencyFractionDigits[a.currency];
+
+      return (
+        <>
+          Stream{" "}
+          <em>
+            <FormattedNumber
+              value={a.amount}
+              minimumFractionDigits={minimumFractionDigits}
+              maximumFractionDigits={maximumFractionDigits}
+            />{" "}
+            {a.currency.toUpperCase()}
+          </em>{" "}
+          to <em>{targetDisplayName}</em> between{" "}
+          <em>
+            <FormattedDate
+              value={a.startTimestamp}
+              day="numeric"
+              month="short"
+              year={
+                getDateYear(a.startTimestamp) === getDateYear(a.endTimestamp)
+                  ? undefined
+                  : "numeric"
+              }
+            />
+          </em>{" "}
+          and{" "}
+          <em>
+            <FormattedDate
+              value={a.endTimestamp}
+              day="numeric"
+              month="short"
+              year="numeric"
+            />
+          </em>
         </>
       );
     }

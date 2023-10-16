@@ -1274,7 +1274,7 @@ const PropTagWithStatusText = ({ proposalId }) => {
 const ProposalCandidateItem = React.memo(({ candidateId }) => {
   const candidate = useProposalCandidate(candidateId);
   const { displayName: authorAccountDisplayName } = useAccountDisplayName(
-    candidate.proposer
+    candidate.proposerId
   );
 
   const candidateVotingPower = useProposalCandidateVotingPower(candidateId);
