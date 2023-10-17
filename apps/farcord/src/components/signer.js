@@ -129,7 +129,8 @@ export const Provider = ({ children }) => {
     chainId: DEFAULT_CHAIN_ID,
     functionName: "remove",
     args: [signer?.publicKey],
-    enabled: !!signer?.publicKey && !!broadcasted,
+    // enabled: !!signer?.publicKey && !!broadcasted,
+    enabled: false, // TODO: set this up properly when planning revoke signer feature
   });
 
   const { writeAsync: createWalletRemoveSignerTransaction } = useContractWrite(
