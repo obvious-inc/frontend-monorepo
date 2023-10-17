@@ -1,4 +1,5 @@
 import formatDate from "date-fns/format";
+import { isAddress } from "viem";
 import React from "react";
 import va from "@vercel/analytics";
 import {
@@ -1011,10 +1012,28 @@ const ProposalCandidateEditDialog = ({ candidateId, titleProps, dismiss }) => {
   );
 };
 
+const normalizeId = (id) => {
+  const parts = id.toLowerCase().split("-");
+  const proposerFirst = isAddress(
+    parts[0].startsWith("0x") ? parts[0] : `0x${parts[0]}`
+  );
+  const rawProposerId = proposerFirst ? parts[0] : parts.slice(-1)[0];
+  const proposerId = rawProposerId.startsWith("0x")
+    ? rawProposerId
+    : `0x${rawProposerId}`;
+
+  const slug = (proposerFirst ? parts.slice(1) : parts.slice(0, -1)).join("-");
+  console.log(proposerId, slug);
+
+  return `${proposerId}-${slug}`;
+};
+
 const ProposalCandidateScreen = () => {
-  const { candidateId } = useParams();
-  const [proposerId, ...slugParts] = candidateId.split("-");
-  const slug = slugParts.join("-");
+  const { candidateId: rawId } = useParams();
+  const candidateId = normalizeId(rawId);
+
+  const proposerId = candidateId.split("-")[0];
+  const slug = extractSlugFromCandidateId(candidateId);
 
   const scrollContainerRef = React.useRef();
 
