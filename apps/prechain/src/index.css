@@ -8,8 +8,8 @@ body {
   font-size: 1.4rem;
   user-select: none;
   -webkit-user-select: none;
-  background: rgb(25 25 25);
-  color: white;
+  background: white;
+  color: black;
   overflow: hidden;
   text-rendering: optimizeLegibility;
 }
