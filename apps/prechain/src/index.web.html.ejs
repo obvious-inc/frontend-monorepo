@@ -9,6 +9,8 @@
     <meta property="og:title" content="<%= htmlWebpackPlugin.options.title %>" data-react-helmet="true" />
     <meta property="description" content="<%= htmlWebpackPlugin.options.description %>" data-react-helmet="true" />
     <meta property="og:description" content="<%= htmlWebpackPlugin.options.description %>" data-react-helmet="true" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
     <% if (htmlWebpackPlugin.options.manifestPath) { %>
       <link rel="manifest" href="<%= htmlWebpackPlugin.options.manifestPath %>" />
     <% } %>
