@@ -129,6 +129,7 @@ export const Provider = ({ children }) => {
     chainId: DEFAULT_CHAIN_ID,
     functionName: "remove",
     args: [signer?.publicKey],
+    enabled: !!signer?.publicKey && !!broadcasted,
   });
 
   const { writeAsync: createWalletRemoveSignerTransaction } = useContractWrite(
@@ -327,6 +328,7 @@ export const Provider = ({ children }) => {
       setSigner,
       resetSigner,
       isAddSignerPending,
+      isAddSignerSuccess,
       isRevokeSignerPending,
       createWarpcastSignKeyRequest,
     }),
@@ -344,6 +346,7 @@ export const Provider = ({ children }) => {
       setSigner,
       resetSigner,
       isAddSignerPending,
+      isAddSignerSuccess,
       isRevokeSignerPending,
       createWarpcastSignKeyRequest,
     ]

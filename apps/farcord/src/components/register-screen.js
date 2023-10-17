@@ -803,7 +803,7 @@ const RegisterView = () => {
 
             <StepElement
               collapsed={signerSig || !regSig}
-              title="2. Connect to farcord"
+              title="2. Connect farcord"
             >
               <Small>
                 In order to interact with the Farcaster network you need to
@@ -840,7 +840,7 @@ const RegisterView = () => {
                 disabled={hasPendingSignerRequest}
                 style={{ marginTop: "2rem" }}
               >
-                Connect to Farcord
+                Connect Farcord
               </Button>
               <Small style={{ textAlign: "center", marginTop: "1rem" }}>
                 You will be asked to sign a message (off-chain).

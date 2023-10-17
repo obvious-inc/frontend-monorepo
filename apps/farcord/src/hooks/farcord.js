@@ -3,6 +3,7 @@ import { useFetch } from "@shades/common/react";
 import { array as arrayUtils } from "@shades/common/utils";
 import { useContractRead, useNetwork } from "wagmi";
 import { channelsReducer } from "../reducers/channels";
+import { optimism } from "wagmi/chains";
 
 const { indexBy, sortBy } = arrayUtils;
 
@@ -154,7 +155,8 @@ export const useWalletFarcasterId = (walletAddress) => {
     ],
     functionName: "idOf",
     args: [walletAddress],
-    chainId: useChainId(),
+    chainId: optimism.id,
+    enabled: !!walletAddress,
   });
 
   const id = data == 0 ? null : data;

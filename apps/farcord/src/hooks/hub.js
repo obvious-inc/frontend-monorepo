@@ -41,6 +41,43 @@ export const fetchSignerEvent = async ({ fid, publicKey }) => {
     });
 };
 
+export const fetchUserSigners = async ({ fid }) => {
+  return farcasterClient
+    .getOnChainSignersByFid({ fid: Number(fid) })
+    .then((result) => {
+      if (result.isErr()) {
+        throw result.error;
+      }
+
+      return result.value;
+    })
+    .catch((err) => {
+      console.error(err);
+    });
+};
+
+export const useUserSigners = (fid) => {
+  const [signers, setSigners] = React.useState([]);
+
+  React.useEffect(() => {
+    if (!fid) {
+      setSigners([]);
+      return;
+    }
+
+    fetchUserSigners({ fid })
+      .then((result) => {
+        setSigners(result.events);
+      })
+      .catch((err) => {
+        console.error(err);
+        setSigners([]);
+      });
+  }, [fid]);
+
+  return signers;
+};
+
 export const fetchAppFid = async ({ fid, hash }) => {
   return farcasterClient
     .getCast({

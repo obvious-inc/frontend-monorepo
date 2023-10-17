@@ -175,7 +175,7 @@ const ProfileView = () => {
   const switchToOptimismMainnet = () => switchNetwork(DEFAULT_CHAIN_ID);
 
   const { fid } = useFarcasterAccount();
-  const { signer } = useSigner();
+  const { signer, broadcasted: onChain } = useSigner();
 
   const userData = useHubUserData(fid);
 
@@ -502,21 +502,25 @@ const ProfileView = () => {
           username={username}
         />
 
-        {!signer && (
+        {(!signer || !onChain) && (
           <div>
             <Small css={(t) => css({ color: t.colors.textHighlight })}>
-              Your account is in read-only mode. Create a signer to make edits.
+              Your account is{" "}
+              <span style={{ fontWeight: "bold" }}>read-only</span>. Connect
+              Farcord to make edits.
             </Small>
-            <Button
-              style={{ marginTop: "1rem" }}
-              disabled={true}
-              onClick={() => navigate("/signers")}
-              size="medium"
-            >
-              Signers
-            </Button>
           </div>
         )}
+
+        <div>
+          <Button
+            style={{ marginTop: "1rem" }}
+            onClick={() => navigate("/profile/apps")}
+            size="medium"
+          >
+            Connected apps
+          </Button>
+        </div>
 
         <div>
           <form

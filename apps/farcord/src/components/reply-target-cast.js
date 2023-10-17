@@ -56,25 +56,35 @@ const ReplyTargetCast = ({ castHash, layout, onClickMessage }) => {
             })
           }
         >
-          <>
-            {cast?.author?.display_name || cast?.author?.displayName}
-            {": "}
+          {cast?.deleted ? (
             <span
-              role="button"
-              tabIndex={0}
-              onClick={onClickMessage}
-              css={(theme) =>
-                css({
-                  "@media(hover: hover)": {
-                    cursor: "pointer",
-                    ":hover": { color: theme.colors.textNormal },
-                  },
-                })
+              css={(t) =>
+                css({ fontStyle: "italic", color: t.colors.textMuted })
               }
             >
-              <RichText inline blocks={cast?.richText ?? []} />
+              Cast deleted
             </span>
-          </>
+          ) : (
+            <>
+              {cast?.author?.display_name || cast?.author?.displayName}
+              {": "}
+              <span
+                role="button"
+                tabIndex={0}
+                onClick={onClickMessage}
+                css={(theme) =>
+                  css({
+                    "@media(hover: hover)": {
+                      cursor: "pointer",
+                      ":hover": { color: theme.colors.textNormal },
+                    },
+                  })
+                }
+              >
+                <RichText inline blocks={cast?.richText ?? []} />
+              </span>
+            </>
+          )}
         </div>
       </div>
     </div>

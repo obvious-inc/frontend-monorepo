@@ -14,6 +14,8 @@ import * as Tooltip from "@shades/ui-web/tooltip";
 import Dialog from "@shades/ui-web/dialog";
 import CustodyWalletDialog from "./custody-wallet-dialog";
 import { ErrorBoundary } from "@shades/common/react";
+import { optimism } from "wagmi/chains";
+import AccountPreview from "./account-preview";
 
 const { truncateAddress } = ethereumUtils;
 
@@ -23,14 +25,15 @@ const LoginView = () => {
 
   const {
     cancel: cancelWalletConnectionAttempt,
-
     accountAddress,
     chain,
     isConnecting,
   } = useWallet();
-  const { connect, connectors, isLoading, pendingConnector } = useConnect();
+  const { connect, connectors, isLoading, pendingConnector } = useConnect({
+    chainId: optimism.id,
+  });
   const { fid } = useFarcasterAccount();
-  const { signer } = useSigner();
+  const { signer, broadcasted } = useSigner();
 
   const { switchNetworkAsync: switchNetwork } = useSwitchNetwork();
   const switchToOptimismMainnet = () => switchNetwork(DEFAULT_CHAIN_ID);
@@ -145,7 +148,9 @@ const LoginView = () => {
                         (isLoading && connector.id === pendingConnector?.id)
                       }
                       key={connector.id}
-                      onClick={() => connect({ connector })}
+                      onClick={() =>
+                        connect({ chainId: optimism.id, connector })
+                      }
                     >
                       {connector.name}
                       {!connector.ready && " (unsupported)"}
@@ -210,8 +215,8 @@ const LoginView = () => {
             </h1>
 
             <Small style={{ marginTop: "1rem" }}>
-              If you&apos;ve never used Farcaster before, you can create a new
-              account here.
+              If you&apos;ve never used Farcaster before, you can soon create a
+              new account here.
             </Small>
 
             <Button
@@ -220,6 +225,7 @@ const LoginView = () => {
               onClick={() => {
                 navigate("/register");
               }}
+              disabled={true}
             >
               Create a new account
             </Button>
@@ -344,8 +350,7 @@ const LoginView = () => {
             </Button>
 
             <Small css={css({ marginTop: "3rem", fontStyle: "italic" })}>
-              I&apos;m 100% sure I have a Farcaster account, but I can&apos;t
-              find it.{" "}
+              I&apos;m 100% sure I have a Farcaster account - help me{" "}
               <Link
                 to={`?custody-wallet=1&wallet=${accountAddress}`}
                 preventScrollReset={true}
@@ -358,15 +363,81 @@ const LoginView = () => {
                   })
                 }
               >
-                Help me find it
+                find it
               </Link>
               .
             </Small>
           </div>
-        ) : !signer ? (
-          <div>Fid {fid} / No signer</div>
+        ) : !signer || !broadcasted ? (
+          <div>
+            <h1
+              css={(theme) =>
+                css({
+                  fontSize: theme.fontSizes.headerLarge,
+                  color: theme.colors.textHeader,
+                  marginBottom: "2rem",
+                })
+              }
+            >
+              Almost there!
+            </h1>
+            <AccountPreview />
+
+            <Small>
+              Connect Farcord to be able to create casts, likes, and so on.
+            </Small>
+
+            <div
+              css={css({
+                display: "grid",
+                gridTemplateColumns: "repeat(2, 1fr)",
+                columnGap: "1rem",
+                marginTop: "2rem",
+              })}
+            >
+              <Button
+                size="medium"
+                onClick={() => {
+                  navigate("/profile/apps/new");
+                }}
+              >
+                Connect farcord
+              </Button>
+              <Button
+                size="medium"
+                onClick={() => {
+                  navigate("/feed");
+                }}
+              >
+                Start browsing
+              </Button>
+            </div>
+          </div>
         ) : (
-          <div>Good to go</div>
+          <div>
+            <h1
+              css={(theme) =>
+                css({
+                  fontSize: theme.fontSizes.headerLarge,
+                  color: theme.colors.textHeader,
+                  marginBottom: "2rem",
+                })
+              }
+            >
+              Welcome to Farcord 👋
+            </h1>
+            <AccountPreview />
+
+            <Button
+              size="medium"
+              css={css({ marginTop: "2rem" })}
+              onClick={() => {
+                navigate("/feed");
+              }}
+            >
+              Start browsing
+            </Button>
+          </div>
         )}
       </div>
       {isCustodyWalletDialogOpen && (

@@ -147,8 +147,11 @@ const CustodyWalletDialog = () => {
               <Small style={{ marginTop: "2rem" }}>
                 You might not have imported your Farcaster recovery phrase into
                 your wallet yet. If that&apos;s the case, you can do so by
-                opening Warpcast and going to the Advanced settings page. If you
-                don&apos;t wanna do it, you can{" "}
+                opening Warpcast and going to the Advanced settings page.
+              </Small>
+
+              <Small style={{ marginTop: "1rem" }}>
+                If you don&apos;t wanna import it, you can{" "}
                 <Link
                   to="/login/warpcast"
                   preventScrollReset={true}

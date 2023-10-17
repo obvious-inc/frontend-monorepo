@@ -9,7 +9,12 @@ import {
   Farcord as FarcordIcon,
 } from "@shades/ui-web/icons";
 import { css, useTheme } from "@emotion/react";
-import { NavLink, Outlet, useSearchParams } from "react-router-dom";
+import {
+  NavLink,
+  Outlet,
+  useNavigate,
+  useSearchParams,
+} from "react-router-dom";
 import { useFarcasterChannels } from "../hooks/farcord";
 import {
   useState as useSidebarState,
@@ -18,7 +23,8 @@ import {
 } from "@shades/ui-web/sidebar-layout";
 import { ErrorBoundary } from "@shades/common/react";
 import Avatar from "@shades/ui-web/avatar";
-import FarcasterProfile from "./farcaster-profile";
+import ProfileDropdownTrigger from "./farcaster-profile";
+import Button from "@shades/ui-web/button";
 import Dialog from "@shades/ui-web/dialog";
 import AuthDialog from "./auth-dialog";
 import useFarcasterAccount from "./farcaster-account";
@@ -32,6 +38,8 @@ import CreateChannelDialog from "./create-channel-dialog";
 import { useNotificationsBadge } from "../hooks/notifications";
 import NotificationBadge from "./notification-badge";
 import { array as arrayUtils } from "@shades/common/utils";
+import * as DropdownMenu from "@shades/ui-web/dropdown-menu";
+import useSigner from "./signer";
 
 const { sort } = arrayUtils;
 
@@ -442,7 +450,10 @@ const SmallText = ({ component: Component = "div", ...props }) => (
 export const MainLayout = ({ children }) => {
   const [searchParams, setSearchParams] = useSearchParams();
 
-  const { fid } = useFarcasterAccount();
+  const navigate = useNavigate();
+
+  const { fid, logout } = useFarcasterAccount();
+  const { broadcasted } = useSigner();
 
   const storedFollowedChannels = useFollowedChannels(fid);
   const farcasterChannels = useFarcasterChannels();
@@ -495,9 +506,130 @@ export const MainLayout = ({ children }) => {
     setVisibleAllChannels(remainingChannels.slice(0, DEFAULT_TRUNCATED_COUNT));
   }, [farcasterChannels, storedFollowedChannels]);
 
+  const isReadOnly = Boolean(fid) && !broadcasted;
+  const isAuthenticated = Boolean(fid);
+
   return (
     <>
       <SidebarLayout
+        header={({ isHoveringSidebar }) =>
+          !fid ? (
+            <div
+              style={{
+                justifySelf: "center",
+                width: "100%",
+                padding: "0 1rem",
+              }}
+            >
+              <Button
+                style={{ width: "100%" }}
+                onClick={() => {
+                  navigate("/login");
+                }}
+              >
+                Sign in
+              </Button>
+            </div>
+          ) : (
+            <DropdownMenu.Root placement="bottom">
+              <DropdownMenu.Trigger>
+                <ProfileDropdownTrigger
+                  fid={fid}
+                  subtitle={!broadcasted ? "read-only" : null}
+                  isHoveringSidebar={isHoveringSidebar}
+                />
+              </DropdownMenu.Trigger>
+              <DropdownMenu.Content
+                css={(theme) =>
+                  css({
+                    "--menu-width": `var(--menu-width-override, ${theme.sidebarWidth})`,
+                    width: `calc(var(--menu-width) - 2rem)`,
+                  })
+                }
+                // style={{ "--menu-width-override": menuWidthOverride }}
+                items={[
+                  isReadOnly && {
+                    id: "verify-account",
+                    children: [
+                      {
+                        id: "verify-account",
+                        label: "Connect Farcord",
+                        primary: true,
+                      },
+                    ],
+                  },
+                  {
+                    id: "main",
+                    children: [
+                      // { id: "settings", label: "Settings" },
+                      { id: "edit-profile", label: "Edit profile" },
+                      { id: "edit-apps", label: "Connected apps" },
+                      // { id: "share-profile", label: "Share profile" },
+                      // {
+                      //   id: "copy-account-address",
+                      //   label: "Copy account address",
+                      // },
+                    ],
+                  },
+                  // {
+                  //   id: "switch",
+                  //   children: [
+                  //     {
+                  //       id: "switch-account",
+                  //       label: "Switch to another account",
+                  //     },
+                  //   ],
+                  // },
+                  isAuthenticated && {
+                    id: "log-out",
+                    children: [{ id: "log-out", label: "Log out" }],
+                  },
+                ].filter(Boolean)}
+                onAction={(key) => {
+                  switch (key) {
+                    case "verify-account":
+                      navigate("/profile/apps/new");
+                      break;
+
+                    // case "settings":
+                    //   openSettingsDialog();
+                    //   break;
+
+                    case "edit-profile":
+                      navigate("/profile");
+                      break;
+
+                    case "edit-apps":
+                      navigate("/profile/apps");
+                      break;
+
+                    // case "share-profile":
+                    //   openProfileLinkDialog();
+                    //   break;
+
+                    case "switch-account":
+                      alert("Just switch account from your wallet!");
+                      break;
+
+                    case "log-out":
+                      logout();
+                      break;
+                  }
+                }}
+              >
+                {(item) => (
+                  <DropdownMenu.Section items={item.children}>
+                    {(item) => (
+                      <DropdownMenu.Item primary={item.primary}>
+                        {item.label}
+                      </DropdownMenu.Item>
+                    )}
+                  </DropdownMenu.Section>
+                )}
+              </DropdownMenu.Content>
+            </DropdownMenu.Root>
+          )
+        }
         sidebarContent={
           <div
             css={(t) =>
@@ -572,8 +704,6 @@ export const MainLayout = ({ children }) => {
               })
             }
           >
-            <FarcasterProfile />
-
             <div
               style={{
                 height: "1rem",

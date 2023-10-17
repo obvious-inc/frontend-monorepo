@@ -9,6 +9,8 @@ import RegisterView from "./register-screen.js";
 import ProfileView from "./profile-screen.js";
 import LoginView from "./login-screen.js";
 import WarpcastAuthScreen from "./warpcast-screen.js";
+import SignersView from "./signers-screen.js";
+import NewSignerView from "./new-signer-view.js";
 
 const MainScreen = ({ screenType = "channel", fullScreen = false }) => {
   const navigate = useNavigate();
@@ -51,6 +53,10 @@ const MainScreen = ({ screenType = "channel", fullScreen = false }) => {
         return <RegisterView />;
       case "profile":
         return <ProfileView />;
+      case "apps":
+        return <SignersView />;
+      case "apps-new":
+        return <NewSignerView />;
       default:
         return null;
     }

@@ -221,12 +221,16 @@ export const useNeynarCast = (castHash) => {
           return result.json();
         })
         .then((data) => {
-          setCast({
-            ...data.result.cast,
-            richText: data.result.cast.text
-              ? messageUtils.parseString(data.result.cast.text)
-              : null,
-          });
+          if (!data.result.cast) {
+            setCast({ hash: castHash, deleted: true });
+          } else {
+            setCast({
+              ...data.result.cast,
+              richText: data.result.cast.text
+                ? messageUtils.parseString(data.result.cast.text)
+                : null,
+            });
+          }
         })
         .catch((err) => {
           throw err;

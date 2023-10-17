@@ -164,7 +164,7 @@ export const ThreadScreen = ({ castHash }) => {
 
   const placeholderText = broadcasted
     ? "Compose your reply..."
-    : "Connect wallet and create signer to cast";
+    : "Connect wallet to cast";
 
   const onSubmit = async (blocks) => {
     const embeds = [];

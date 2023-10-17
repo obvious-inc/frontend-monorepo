@@ -126,6 +126,27 @@ const App = () => {
                                 />
                               }
                             />
+
+                            <Route
+                              path="profile/apps"
+                              element={
+                                <MainScreen
+                                  screenType="apps"
+                                  fullScreen={true}
+                                />
+                              }
+                            />
+
+                            <Route
+                              path="profile/apps/new"
+                              element={
+                                <MainScreen
+                                  screenType="apps-new"
+                                  fullScreen={true}
+                                />
+                              }
+                            />
+
                             <Route
                               index
                               element={<MainScreen screenType="feed" />}
