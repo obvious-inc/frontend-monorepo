@@ -47,14 +47,16 @@ export const useSendProposalCandidateFeedback = (
 
   return async () => {
     const candidateId = [proposerId, slug].join("-").toLowerCase();
+    const voterId = accountAddress.toLowerCase();
     return write().then(({ hash }) => {
       addOptimitisicCandidateFeedbackPost(candidateId, {
         id: String(Math.random()),
         reason,
-        supportDetailed: support,
+        support,
         createdTimestamp: new Date(),
         createdBlock: blockNumber,
-        voter: { id: accountAddress.toLowerCase() },
+        voterId,
+        voter: { id: voterId },
       });
       return { hash };
     });
