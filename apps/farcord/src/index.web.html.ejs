@@ -10,8 +10,26 @@
       href="/farcord-favicon-192x192.png"
     />
     <title><%= htmlWebpackPlugin.options.title %></title>
-    <meta property="og:site_name" content="farcord" />
+    <meta
+      property="og:site_name"
+      content="<%= htmlWebpackPlugin.options.title %>"
+    />
     <meta property="og:type" content="website" />
+    <meta
+      property="og:title"
+      content="<%= htmlWebpackPlugin.options.title %>"
+      data-react-helmet="true"
+    />
+    <meta
+      property="description"
+      content="<%= htmlWebpackPlugin.options.description %>"
+      data-react-helmet="true"
+    />
+    <meta
+      property="og:description"
+      content="<%= htmlWebpackPlugin.options.description %>"
+      data-react-helmet="true"
+    />
     <% if (htmlWebpackPlugin.options.isProduction) { %>
     <script
       src="https://cdn.usefathom.com/script.js"

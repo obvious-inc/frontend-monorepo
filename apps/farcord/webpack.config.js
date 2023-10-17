@@ -4,7 +4,10 @@ const createConfig = require("webpack-config");
 require("dotenv").config();
 
 module.exports = (...args) => {
-  const config = createConfig(...args, { htmlTitle: "Farcord" });
+  const config = createConfig(...args, {
+    htmlTitle: "Farcord",
+    htmlDescription: "A discord-like client for Farcaster",
+  });
   return {
     ...config,
     entry: "./src/entry.js",

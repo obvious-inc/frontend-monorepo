@@ -40,6 +40,7 @@ import NotificationBadge from "./notification-badge";
 import { array as arrayUtils } from "@shades/common/utils";
 import * as DropdownMenu from "@shades/ui-web/dropdown-menu";
 import useSigner from "./signer";
+import MetaTags from "./meta-tags";
 
 const { sort } = arrayUtils;
 
@@ -523,6 +524,7 @@ export const MainLayout = ({ children }) => {
 
   return (
     <>
+      <MetaTags />
       <SidebarLayout
         header={({ isHoveringSidebar }) =>
           !fid ? (

@@ -27,6 +27,7 @@ import isHotkey from "is-hotkey";
 import { usePreviousValue } from "../hooks/previous-value.js";
 import { uploadImages as uploadImgurImages } from "../utils/imgur.js";
 import { parseImagesFromBlocks } from "../utils/message.js";
+import MetaTags_ from "./meta-tags.js";
 
 export const ChannelCastsScrollView = ({
   channelId,
@@ -349,6 +350,7 @@ const ChannelView = ({ channelId, isFeed, isRecent }) => {
         })
       }
     >
+      <MetaTags channelId={channelId} isFeed={isFeed} />
       <ChannelCastsScrollView
         channelId={channelId}
         isFeed={isFeed}
@@ -370,6 +372,32 @@ const ChannelView = ({ channelId, isFeed, isRecent }) => {
 
       <div css={css({ height: "2rem" })}></div>
     </div>
+  );
+};
+
+const MetaTags = ({ channelId, isFeed }) => {
+  const channel = useFarcasterChannel(channelId);
+  const channelName = channel ? channel?.name : isFeed ? "Feed" : "Recent";
+  const channelDescription = channel?.description ?? "";
+  const title = channelDescription
+    ? `${channelName} - ${channelDescription}`
+    : channelName;
+  const description = channelDescription;
+  const imageUrl = channel?.imageUrl;
+
+  const canonicalLink = window.location.pathname;
+
+  return (
+    <MetaTags_
+      title={title}
+      description={
+        description.length > 600
+          ? `${description.slice(0, 600)}...`
+          : description
+      }
+      canonicalPathname={canonicalLink}
+      imageUrl={imageUrl}
+    />
   );
 };
 

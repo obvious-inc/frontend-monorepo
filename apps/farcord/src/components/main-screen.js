@@ -1,7 +1,7 @@
 import React from "react";
 import { MainLayout } from "./layouts.js";
 import { useNavigate, useParams, useSearchParams } from "react-router-dom";
-import { ThreadScreen } from "./cast-screen.js";
+import ThreadScreen from "./cast-screen.js";
 import { useMatchMedia } from "@shades/common/react";
 import ChannelView from "./channel-screen.js";
 import NotificationsView from "./notifications-screen.js";

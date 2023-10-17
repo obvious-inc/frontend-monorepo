@@ -17,6 +17,9 @@ import useFarcasterAccount from "./farcaster-account.js";
 import MessageEditorForm from "./message-editor-form.js";
 import { uploadImages as uploadImgurImages } from "../utils/imgur.js";
 import { parseImagesFromBlocks } from "../utils/message.js";
+import MetaTags_ from "./meta-tags.js";
+import { useFarcasterChannelByUrl } from "../hooks/farcord.js";
+import { parseChannelFromUrl } from "../utils/channel.js";
 
 const ThreadScrollView = ({ castHash }) => {
   const castsContainerRef = React.useRef();
@@ -213,6 +216,7 @@ export const ThreadScreen = ({ castHash }) => {
         })
       }
     >
+      <MetaTags castHash={castHash} />
       <ThreadNavBar castHash={castHash} />
 
       <ThreadScrollView castHash={castHash} />
@@ -234,3 +238,38 @@ export const ThreadScreen = ({ castHash }) => {
     </div>
   );
 };
+
+const MetaTags = ({ castHash }) => {
+  const cast = useNeynarCast(castHash);
+  const parentUrl = cast?.parentUrl || cast?.parent_url;
+  const warpcastChannel = useFarcasterChannelByUrl(parentUrl);
+
+  if (cast == null) return null;
+
+  const authorName = cast.author?.display_name || cast.author?.displayName;
+  const castText = cast.text;
+  const title = `${authorName} on Farcord: ${castText}`;
+  const description = castText.trim();
+
+  const parsedChannel = warpcastChannel ?? parseChannelFromUrl(parentUrl);
+  const channelLink = `/channels/${
+    parsedChannel?.id || encodeURIComponent(parsedChannel.url)
+  }`;
+  const canonicalPath = parentUrl
+    ? `${channelLink}?cast=${castHash}`
+    : `/recent?cast=${castHash}`;
+
+  return (
+    <MetaTags_
+      title={title}
+      description={
+        description.length > 600
+          ? `${description.slice(0, 600)}...`
+          : description
+      }
+      canonicalPathname={canonicalPath}
+    />
+  );
+};
+
+export default ThreadScreen;
