@@ -1023,7 +1023,6 @@ const normalizeId = (id) => {
     : `0x${rawProposerId}`;
 
   const slug = (proposerFirst ? parts.slice(1) : parts.slice(0, -1)).join("-");
-  console.log(proposerId, slug);
 
   return `${proposerId}-${slug}`;
 };
