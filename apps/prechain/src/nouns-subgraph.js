@@ -9,9 +9,7 @@ const customGraphEndpoint = new URLSearchParams(location.search).get(
 );
 
 const subgraphEndpointByChainId = {
-  1:
-    customGraphEndpoint ??
-    "https://api.thegraph.com/subgraphs/name/nounsdao/nouns-subgraph",
+  1: customGraphEndpoint ?? process.env.NOUNS_MAINNET_SUBGRAPH_URL,
   11155111:
     "https://api.studio.thegraph.com/proxy/49498/nouns-v3-sepolia/version/latest",
 };
