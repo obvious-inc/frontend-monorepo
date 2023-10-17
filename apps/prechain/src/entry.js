@@ -19,6 +19,28 @@ import "./index.css";
 
 const isProduction = process.env.NODE_ENV === "production";
 
+const registerServiceWorker = () => {
+  if ("serviceWorker" in navigator) {
+    window.addEventListener("load", () => {
+      navigator.serviceWorker.register("/service-worker.js");
+    });
+  }
+};
+
+const unregisterServiceWorker = () => {
+  if ("serviceWorker" in navigator) {
+    navigator.serviceWorker.getRegistrations().then((registrations) => {
+      for (let registration of registrations) registration.unregister();
+    });
+  }
+};
+
+if (process.env.NODE_ENV === "production") {
+  registerServiceWorker();
+} else {
+  unregisterServiceWorker();
+}
+
 let cacheStoreStorage;
 try {
   // This might throw in contexts where storage access isn’t allowed
