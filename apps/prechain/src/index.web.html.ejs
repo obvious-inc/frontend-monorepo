@@ -9,6 +9,9 @@
     <meta property="og:title" content="<%= htmlWebpackPlugin.options.title %>" data-react-helmet="true" />
     <meta property="description" content="<%= htmlWebpackPlugin.options.description %>" data-react-helmet="true" />
     <meta property="og:description" content="<%= htmlWebpackPlugin.options.description %>" data-react-helmet="true" />
+    <% if (htmlWebpackPlugin.options.manifestPath) { %>
+      <link rel="manifest" href="<%= htmlWebpackPlugin.options.manifestPath %>" />
+    <% } %>
     <!-- <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png" /> -->
     <link rel="icon" type="image/png" sizes="192x192" href="/favicon-192x192.png" />
     <% if (htmlWebpackPlugin.options.isProduction) { %>
