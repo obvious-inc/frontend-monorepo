@@ -22,7 +22,7 @@ const NotificationBadge = ({ count, hasImportant = false, ...props }) => (
     }
     {...props}
   >
-    {count}
+    {count >= 10 ? "10+" : count}
   </div>
 );
 
