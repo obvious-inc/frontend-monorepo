@@ -195,8 +195,18 @@ export const ChannelItem = ({ channel, expandable }) => {
                 : undefined,
           }}
         >
-          <p>{channel.name}</p>
-          {unreadCount > 0 && <NotificationBadge count={unreadCount} />}
+          <div
+            style={{
+              display: "grid",
+              gridTemplateColumns: "1fr auto",
+              alignItems: "center",
+            }}
+          >
+            <div css={css({ overflow: "hidden", textOverflow: "ellipsis" })}>
+              {channel.name}
+            </div>
+            {unreadCount > 0 && <NotificationBadge count={unreadCount} />}
+          </div>
         </div>
       }
       icon={
