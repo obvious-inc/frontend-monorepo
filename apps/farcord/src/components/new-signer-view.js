@@ -9,6 +9,7 @@ import { useWallet } from "@shades/common/wallet";
 import useSigner from "./signer";
 import { useConnect } from "wagmi";
 import { redirect } from "react-router-dom";
+import { DEFAULT_CHAIN_ID } from "../hooks/farcord";
 
 const { truncateAddress } = ethereumUtils;
 
@@ -16,7 +17,9 @@ const NewSignerView = () => {
   const isSmallScreen = useMatchMedia("(max-width: 800px)");
   const { accountAddress } = useWallet();
 
-  const { error: walletError } = useConnect();
+  const { error: walletError } = useConnect({
+    chainId: DEFAULT_CHAIN_ID,
+  });
 
   const [waitingTransactionHash, setWaitingTransactionHash] =
     React.useState(null);

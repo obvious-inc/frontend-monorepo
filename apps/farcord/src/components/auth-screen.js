@@ -106,7 +106,9 @@ const AuthScreen = () => {
     error: walletError,
     isLoading,
     pendingConnector,
-  } = useConnect();
+  } = useConnect({
+    chainId: DEFAULT_CHAIN_ID,
+  });
 
   const { error: loginError } = useWalletLogin();
 

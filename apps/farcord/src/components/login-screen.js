@@ -14,7 +14,6 @@ import * as Tooltip from "@shades/ui-web/tooltip";
 import Dialog from "@shades/ui-web/dialog";
 import CustodyWalletDialog from "./custody-wallet-dialog";
 import { ErrorBoundary } from "@shades/common/react";
-import { optimism } from "wagmi/chains";
 import AccountPreview from "./account-preview";
 
 const { truncateAddress } = ethereumUtils;
@@ -30,7 +29,7 @@ const LoginView = () => {
     isConnecting,
   } = useWallet();
   const { connect, connectors, isLoading, pendingConnector } = useConnect({
-    chainId: optimism.id,
+    chainId: DEFAULT_CHAIN_ID,
   });
   const { fid } = useFarcasterAccount();
   const { signer, broadcasted } = useSigner();
@@ -148,9 +147,7 @@ const LoginView = () => {
                         (isLoading && connector.id === pendingConnector?.id)
                       }
                       key={connector.id}
-                      onClick={() =>
-                        connect({ chainId: optimism.id, connector })
-                      }
+                      onClick={() => connect({ connector })}
                     >
                       {connector.name}
                       {!connector.ready && " (unsupported)"}

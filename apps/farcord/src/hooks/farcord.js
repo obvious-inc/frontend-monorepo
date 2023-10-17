@@ -16,7 +16,7 @@ const WARPCAST_CHANNELS_INFO_ENDPOINT =
 const FARCASTER_ID_REGISTRY_CONTRACT_ADDRESS =
   "0x00000000FcAf86937e41bA038B4fA40BAA4B780A";
 
-export const DEFAULT_CHAIN_ID = 10;
+export const DEFAULT_CHAIN_ID = optimism.id;
 
 export const ChainDataCacheContext = React.createContext();
 export const ChainDataCacheDispatchContext = React.createContext();
@@ -155,7 +155,7 @@ export const useWalletFarcasterId = (walletAddress) => {
     ],
     functionName: "idOf",
     args: [walletAddress],
-    chainId: optimism.id,
+    chainId: DEFAULT_CHAIN_ID,
     enabled: !!walletAddress,
   });
 

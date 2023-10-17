@@ -172,7 +172,9 @@ const RegisterView = () => {
     isConnecting,
   } = useWallet();
 
-  const { connect, connectors, isLoading, pendingConnector } = useConnect();
+  const { connect, connectors, isLoading, pendingConnector } = useConnect({
+    chainId: DEFAULT_CHAIN_ID,
+  });
 
   const { switchNetworkAsync: switchNetwork } = useSwitchNetwork();
   const switchToOptimismMainnet = () => switchNetwork(DEFAULT_CHAIN_ID);
