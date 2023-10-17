@@ -147,10 +147,7 @@ const SignersView = () => {
         <AccountPreview />
 
         {sortedSigners.length > 0 && (
-          <Small>
-            This is the list of apps that you have connected to your Farcaster
-            account.
-          </Small>
+          <Small>Apps connected to your Farcaster account:</Small>
         )}
 
         <div
