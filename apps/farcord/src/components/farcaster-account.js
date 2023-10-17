@@ -25,6 +25,10 @@ export const Provider = ({ children }) => {
     setAccount(accountData);
   });
 
+  const reloadAccount = useLatestCallback(async () => {
+    setAccount(null);
+  });
+
   const logout = useLatestCallback(async () => {
     await disconnectWallet();
     setAccount(null);
@@ -60,8 +64,9 @@ export const Provider = ({ children }) => {
       account,
       initAccount,
       logout,
+      reloadAccount,
     }),
-    [fid, address, account, initAccount, logout]
+    [fid, address, account, initAccount, logout, reloadAccount]
   );
 
   return (

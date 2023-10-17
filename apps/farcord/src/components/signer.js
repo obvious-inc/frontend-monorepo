@@ -140,12 +140,19 @@ export const Provider = ({ children }) => {
   const { isLoading: isAddSignerPending, isSuccess: isAddSignerSuccess } =
     useWaitForTransaction({
       hash: addSignerTx,
+      onSuccess() {
+        setBroadcasted(true);
+        setAddSignerTx(null);
+      },
     });
 
-  const { isLoading: isRevokeSignerPending, isSuccess: isRevokeSignerSuccess } =
-    useWaitForTransaction({
-      hash: revokeSignerTx,
-    });
+  const { isLoading: isRevokeSignerPending } = useWaitForTransaction({
+    hash: revokeSignerTx,
+    onSuccess() {
+      resetSigner();
+      setRevokeSignerTx(null);
+    },
+  });
 
   const createWarpcastSignKeyRequest = useLatestCallback(
     async ({ publicKey }) => {
@@ -291,22 +298,6 @@ export const Provider = ({ children }) => {
         setStatus("idle");
       });
   });
-
-  React.useEffect(() => {
-    if (isRevokeSignerPending) return;
-    if (isRevokeSignerSuccess) {
-      resetSigner();
-      setRevokeSignerTx(null);
-    }
-  }, [isRevokeSignerPending, isRevokeSignerSuccess, resetSigner]);
-
-  React.useEffect(() => {
-    if (isAddSignerPending) return;
-    if (isAddSignerSuccess) {
-      setBroadcasted(true);
-      setAddSignerTx(null);
-    }
-  }, [isAddSignerPending, isAddSignerSuccess]);
 
   React.useEffect(() => {
     if (!onChainSigner) setBroadcasted(false);

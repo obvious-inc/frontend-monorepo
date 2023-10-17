@@ -146,35 +146,34 @@ export const useIdRegistryEvent = (walletAddress) => {
     });
 };
 
+export const fetchSigner = async ({ fid, publicKey }) => {
+  if (!fid || !publicKey) {
+    return null;
+  }
+
+  return farcasterClient
+    .getOnChainSigner({
+      fid: Number(fid),
+      signer: hexToBytes(publicKey),
+    })
+    .then((result) => {
+      if (result.isErr()) {
+        throw result.error;
+      }
+
+      return result.value;
+    })
+    .catch((err) => {
+      if (err.errCode == "not_found") return;
+      console.error(err);
+    });
+};
+
 export const useSignerByPublicKey = (fid, publicKey) => {
   const [signer, setSigner] = React.useState(null);
 
   React.useEffect(() => {
-    async function fetchSigner() {
-      if (!fid || !publicKey) {
-        setSigner(null);
-        return;
-      }
-
-      return farcasterClient
-        .getOnChainSigner({
-          fid: Number(fid),
-          signer: hexToBytes(publicKey),
-        })
-        .then((result) => {
-          if (result.isErr()) {
-            throw result.error;
-          }
-
-          setSigner(result.value);
-        })
-        .catch((err) => {
-          if (err.errCode == "not_found") return;
-          console.error(err);
-        });
-    }
-
-    fetchSigner();
+    fetchSigner({ fid, publicKey }).then((s) => setSigner(s));
   }, [fid, publicKey]);
 
   return signer;

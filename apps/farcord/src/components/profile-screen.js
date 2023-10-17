@@ -3,7 +3,7 @@ import { css } from "@emotion/react";
 import { useWallet } from "@shades/common/wallet";
 import { useSwitchNetwork } from "wagmi";
 import useFarcasterAccount from "./farcaster-account";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import Avatar from "@shades/ui-web/avatar";
 import AccountPreviewPopoverTrigger from "./account-preview-popover-trigger";
 import Button from "@shades/ui-web/button";
@@ -506,21 +506,25 @@ const ProfileView = () => {
           <div>
             <Small css={(t) => css({ color: t.colors.textHighlight })}>
               Your account is{" "}
-              <span style={{ fontWeight: "bold" }}>read-only</span>. Connect
-              Farcord to make edits.
+              <span style={{ fontWeight: "bold" }}>read-only</span>.{" "}
+              <Link
+                to="/profile/apps/new"
+                preventScrollReset={true}
+                css={(theme) =>
+                  css({
+                    color: theme.colors.textHighlight,
+                    ":hover": {
+                      color: theme.colors.linkModifierHover,
+                    },
+                  })
+                }
+              >
+                Connect farcord
+              </Link>{" "}
+              to make edits.
             </Small>
           </div>
         )}
-
-        <div>
-          <Button
-            style={{ marginTop: "1rem" }}
-            onClick={() => navigate("/profile/apps")}
-            size="medium"
-          >
-            Connected apps
-          </Button>
-        </div>
 
         <div>
           <form

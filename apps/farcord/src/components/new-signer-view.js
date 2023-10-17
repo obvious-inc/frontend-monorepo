@@ -8,12 +8,14 @@ import { useMatchMedia } from "@shades/common/react";
 import { useWallet } from "@shades/common/wallet";
 import useSigner from "./signer";
 import { useConnect } from "wagmi";
-import { redirect } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { DEFAULT_CHAIN_ID } from "../hooks/farcord";
 
 const { truncateAddress } = ethereumUtils;
 
 const NewSignerView = () => {
+  const navigate = useNavigate();
+
   const isSmallScreen = useMatchMedia("(max-width: 800px)");
   const { accountAddress } = useWallet();
 
@@ -32,6 +34,7 @@ const NewSignerView = () => {
     reset: resetSignerState,
     isAddSignerPending,
     isAddSignerSuccess,
+    broadcasted,
   } = useSigner();
 
   const error = walletError ?? signerError;
@@ -46,7 +49,11 @@ const NewSignerView = () => {
     });
   };
 
-  if (isAddSignerSuccess) redirect("/profile/apps");
+  React.useEffect(() => {
+    if (broadcasted) {
+      navigate("/profile");
+    }
+  }, [broadcasted, navigate]);
 
   return (
     <div
@@ -136,6 +143,19 @@ const NewSignerView = () => {
           >
             {waitingTransactionHash}
           </a>
+        </div>
+      ) : isAddSignerSuccess ? (
+        <div>
+          <Spinner
+            size="2.4rem"
+            css={(t) => ({
+              color: t.colors.textDimmed,
+              margin: "0 auto 2rem",
+            })}
+          />
+          <div style={{ marginBottom: "1rem" }}>
+            Waiting for signer to be broadcasted to Farcaster network...
+          </div>
         </div>
       ) : (
         <>

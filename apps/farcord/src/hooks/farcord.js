@@ -4,6 +4,7 @@ import { array as arrayUtils } from "@shades/common/utils";
 import { useContractRead, useNetwork } from "wagmi";
 import { channelsReducer } from "../reducers/channels";
 import { optimism } from "wagmi/chains";
+import { idRegistryAbi } from "../abis/farc-id-registry";
 
 const { indexBy, sortBy } = arrayUtils;
 
@@ -132,27 +133,7 @@ export const useWalletFarcasterId = (walletAddress) => {
 
   const { data, error } = useContractRead({
     address: FARCASTER_ID_REGISTRY_CONTRACT_ADDRESS,
-    abi: [
-      {
-        inputs: [
-          {
-            internalType: "address",
-            name: "owner",
-            type: "address",
-          },
-        ],
-        name: "idOf",
-        outputs: [
-          {
-            internalType: "uint256",
-            name: "fid",
-            type: "uint256",
-          },
-        ],
-        stateMutability: "view",
-        type: "function",
-      },
-    ],
+    abi: idRegistryAbi,
     functionName: "idOf",
     args: [walletAddress],
     chainId: DEFAULT_CHAIN_ID,

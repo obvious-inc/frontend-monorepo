@@ -31,6 +31,7 @@ import { idRegistryAbi } from "../abis/farc-id-registry";
 import { Link, useNavigate } from "react-router-dom";
 import useSigner from "./signer";
 import useWalletEvent from "../hooks/wallet-event.js";
+import useFarcasterAccount from "./farcaster-account";
 
 const { truncateAddress } = ethereumUtils;
 
@@ -172,6 +173,8 @@ const RegisterView = () => {
     isConnecting,
   } = useWallet();
 
+  const { fid, reloadAccount } = useFarcasterAccount();
+
   const { connect, connectors, isLoading, pendingConnector } = useConnect({
     chainId: DEFAULT_CHAIN_ID,
   });
@@ -231,7 +234,8 @@ const RegisterView = () => {
     chainId: DEFAULT_CHAIN_ID,
     functionName: "idOf",
     args: [accountAddress],
-    enabled: Boolean(accountAddress),
+    enabled: Boolean(registerTransaction),
+    watch: Boolean(registerTransaction),
   });
 
   const { config, error: registerPrepareError } = usePrepareContractWrite({
@@ -406,7 +410,12 @@ const RegisterView = () => {
       hash: registerTransaction,
     });
 
-  const alreadyRegistered = hasFid && chain.id == DEFAULT_CHAIN_ID;
+  const alreadyRegistered =
+    !registerTransaction && fid && chain.id == DEFAULT_CHAIN_ID;
+
+  if (registerTransaction && hasFid) {
+    reloadAccount();
+  }
 
   React.useEffect(() => {
     const gotoProfilePage = () => {
@@ -641,13 +650,29 @@ const RegisterView = () => {
             <h2>Welcome to Farcaster! 🎉</h2>
             <Small>Your account was successfully created.</Small>
 
-            <Button
-              style={{ marginTop: "2rem" }}
-              onClick={() => navigate("/profile")}
-              size="medium"
-            >
-              Fill my profile
-            </Button>
+            {!hasFid ? (
+              <>
+                <Spinner
+                  size="2.4rem"
+                  css={(t) => ({
+                    color: t.colors.textDimmed,
+                    margin: "3rem auto 1rem",
+                  })}
+                />
+                <Small>
+                  Give it a second for your account to be broadcasted to the
+                  Farcaster Network
+                </Small>
+              </>
+            ) : (
+              <Button
+                style={{ marginTop: "2rem" }}
+                onClick={() => navigate("/profile")}
+                size="medium"
+              >
+                Fill my profile
+              </Button>
+            )}
           </div>
         ) : (
           <>
