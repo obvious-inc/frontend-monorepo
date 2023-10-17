@@ -33,7 +33,7 @@ import {
   useFollowedChannels,
   useUnreadStatesFetch,
 } from "../hooks/channel";
-import { getChannelLink } from "../utils/channel";
+import { getChannelLink, getChannelName } from "../utils/channel";
 import CreateChannelDialog from "./create-channel-dialog";
 import { useNotificationsBadge } from "../hooks/notifications";
 import NotificationBadge from "./notification-badge";
@@ -169,6 +169,8 @@ export const ChannelItem = ({ channel, expandable }) => {
     if (isFloatingMenuEnabled) toggleMenu();
   };
 
+  const channelTitle = getChannelName(channel);
+
   return (
     <ListItem
       expandable={expandable}
@@ -203,7 +205,7 @@ export const ChannelItem = ({ channel, expandable }) => {
             }}
           >
             <div css={css({ overflow: "hidden", textOverflow: "ellipsis" })}>
-              {channel.name}
+              {channelTitle}
             </div>
             {unreadCount > 0 && <NotificationBadge count={unreadCount} />}
           </div>

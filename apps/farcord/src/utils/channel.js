@@ -17,3 +17,11 @@ export const getChannelLink = (channel) => {
 
   return `/channels/${channel.id}`;
 };
+
+export const getChannelName = (channel) => {
+  return channel.name
+    .replace("https://", "")
+    .replace("http://", "")
+    .replace("www.", "")
+    .replace(/\/$/, "");
+};
