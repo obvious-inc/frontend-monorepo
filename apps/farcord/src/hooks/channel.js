@@ -59,8 +59,8 @@ export const ChannelCacheContextProvider = ({ children }) => {
     );
   }, []);
 
-  const fetchFeedCasts = React.useCallback(async ({ fid, cursor }) => {
-    if (fid) {
+  const fetchFeedCasts = React.useCallback(async ({ fid, cursor, isFeed }) => {
+    if (isFeed && fid) {
       return fetchNeynarCasts({ fid, cursor }).then((casts) => {
         setState((s) => {
           return {
@@ -255,14 +255,14 @@ export const useChannelCasts = (channelId) => {
   return castsByChannelId[channelId];
 };
 
-export const useFeedCastsFetch = ({ fid, cursor }) => {
+export const useFeedCastsFetch = ({ fid, cursor, isFeed = false }) => {
   const {
     actions: { fetchFeedCasts },
   } = React.useContext(ChannelCacheContext);
 
   useFetch(
     () =>
-      fetchFeedCasts({ fid, cursor }).catch((e) => {
+      fetchFeedCasts({ fid, cursor, isFeed }).catch((e) => {
         throw e;
       }),
     [fetchFeedCasts, fid, cursor]

@@ -51,7 +51,7 @@ export const ChannelCastsScrollView = ({
   useChannelCastsFetch({ channel, cursor: null });
   const channelCasts = useChannelCasts(channelId);
 
-  useFeedCastsFetch({ fid, cursor: null });
+  useFeedCastsFetch({ fid, isFeed });
   const feedCasts = useFeedCasts(fid);
 
   useFeedCastsFetch({});
@@ -295,7 +295,7 @@ const ChannelView = ({ channelId, isFeed, isRecent }) => {
   const { signer, broadcasted } = useSigner();
 
   const {
-    actions: { fetchChannelCasts },
+    actions: { fetchChannelCasts, fetchFeedCasts },
   } = useChannelCacheContext();
 
   const channel = useFarcasterChannel(channelId);
@@ -326,6 +326,7 @@ const ChannelView = ({ channelId, isFeed, isRecent }) => {
         return toHex(result.value.hash);
       })
       .then(() => {
+        if (isFeed || isRecent) return fetchFeedCasts({ fid, isFeed });
         return fetchChannelCasts({ channel: channel });
       })
       .catch((e) => {
