@@ -307,13 +307,16 @@ const Embed = ({ embed, text }) => {
 
   useEffect(() => {
     return () => {
-      if (IMAGE_ENDINGS.some((ending) => embed.url.endsWith(ending))) {
+      if (IMAGE_ENDINGS.some((ending) => embed.url?.endsWith(ending))) {
         setEmbedType("image");
-      } else if (embed.url.endsWith("mp4")) {
+      } else if (embed.url?.endsWith("mp4")) {
         setEmbedType("video");
       }
     };
   }, [embed]);
+
+  // todo: not sure how to handle cast id embeds for now
+  if (!embed.url) return <div></div>;
 
   if (embed.url && embedType == "url" && text.includes(embed?.url)) return null;
 
