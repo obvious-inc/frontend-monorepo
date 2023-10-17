@@ -9,7 +9,7 @@ import { idRegistryAbi } from "../abis/farc-id-registry";
 const { indexBy, sortBy } = arrayUtils;
 
 const NEYNAR_FARCASTER_CHANNELS_STATIC_LIST =
-  "https://raw.githubusercontent.com/neynarxyz/farcaster-channels/main/warpcast.json";
+  "https://raw.githubusercontent.com/pedropregueiro/farcaster-channels/main/warpcast.json";
 
 const WARPCAST_CHANNELS_INFO_ENDPOINT =
   "https://client.warpcast.com/v2/channel";
