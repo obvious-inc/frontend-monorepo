@@ -7,6 +7,7 @@ module.exports = (...args) => {
   const config = createConfig(...args, {
     htmlTitle: "Farcord",
     htmlDescription: "A discord-like client for Farcaster",
+    htmlImage: "/farcord-metaimage.png",
   });
   return {
     ...config,

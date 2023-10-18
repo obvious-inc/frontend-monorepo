@@ -380,7 +380,7 @@ const MetaTags = ({ channelId, isFeed }) => {
   const channelName = channel ? channel?.name : isFeed ? "Feed" : "Recent";
   const channelDescription = channel?.description ?? "";
   const title = channelDescription
-    ? `${channelName} - ${channelDescription}`
+    ? `${channelName} on Farcord - ${channelDescription}`
     : channelName;
   const description = channelDescription;
   const imageUrl = channel?.imageUrl;
