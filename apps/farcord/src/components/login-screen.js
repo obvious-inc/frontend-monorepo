@@ -222,7 +222,6 @@ const LoginView = () => {
               onClick={() => {
                 navigate("/register");
               }}
-              disabled={true}
             >
               Create a new account
             </Button>
