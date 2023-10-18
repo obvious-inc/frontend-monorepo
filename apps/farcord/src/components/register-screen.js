@@ -126,22 +126,17 @@ const ethFormatter = new Intl.NumberFormat("en", {
   maximumSignificantDigits: 2,
 });
 
-const StepElement = ({ collapsed = false, title, children }) => {
+const StepElement = ({ collapsed = false, done = false, title, children }) => {
   return (
     <>
       <div
-        css={(t) =>
-          css({
-            textAlign: "left",
-            border: collapsed ? `1px solid ${t.colors.borderLighter}` : "none",
-            borderRadius: "0.3rem",
-            display: "grid",
-            gridTemplateRows: "auto",
-            rowGap: "1rem",
-            padding: "2rem 2rem",
-            maxWidth: "50rem",
-          })
-        }
+        css={css({
+          textAlign: "left",
+          display: "grid",
+          gridTemplateRows: "auto",
+          rowGap: "1rem",
+          maxWidth: "50rem",
+        })}
       >
         <h1
           css={(theme) =>
@@ -731,7 +726,11 @@ const RegisterView = () => {
               </Tooltip.Root>
             </div>
 
-            <StepElement collapsed={regSig} title="1. Recovery address">
+            <StepElement
+              collapsed={regSig}
+              done={regSig}
+              title="1. Recovery address"
+            >
               <Small>
                 The recovery address is used as a backup if you ever lose access
                 to the connected wallet ({truncateAddress(accountAddress)}) and
@@ -830,6 +829,7 @@ const RegisterView = () => {
 
             <StepElement
               collapsed={signerSig || !regSig}
+              done={signerSig}
               title="2. Connect farcord"
             >
               <Small>
