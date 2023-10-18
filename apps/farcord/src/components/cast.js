@@ -1,7 +1,7 @@
 import { css } from "@emotion/react";
 import { isToday, isYesterday, parseISO } from "date-fns";
 import FormattedDate from "./formatted-date";
-import React, { Suspense, useEffect } from "react";
+import React, { Suspense } from "react";
 import Avatar from "@shades/ui-web/avatar";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { REACTION_TYPE, addReaction, removeReaction } from "../hooks/hub";
@@ -303,17 +303,24 @@ export const CastHeader = ({ cast }) => {
 };
 
 const Embed = ({ embed, text }) => {
-  const [embedType, setEmbedType] = React.useState("url");
+  // const [embedType, setEmbedType] = React.useState("url");
+  // useEffect(() => {
+  //   return () => {
+  //     if (IMAGE_ENDINGS.some((ending) => embed.url?.endsWith(ending))) {
+  //       setEmbedType("image");
+  //     } else if (embed.url?.endsWith("mp4")) {
+  //       setEmbedType("video");
+  //     }
+  //   };
+  // }, [embed]);
 
-  useEffect(() => {
-    return () => {
-      if (IMAGE_ENDINGS.some((ending) => embed.url?.endsWith(ending))) {
-        setEmbedType("image");
-      } else if (embed.url?.endsWith("mp4")) {
-        setEmbedType("video");
-      }
-    };
-  }, [embed]);
+  let embedType = "url";
+
+  if (IMAGE_ENDINGS.some((ending) => embed.url?.endsWith(ending))) {
+    embedType = "image";
+  } else if (embed.url?.endsWith("mp4")) {
+    embedType = "video";
+  }
 
   // todo: not sure how to handle cast id embeds for now
   if (!embed.url) return <div></div>;
