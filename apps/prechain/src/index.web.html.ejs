@@ -9,8 +9,15 @@
     <meta property="og:title" content="<%= htmlWebpackPlugin.options.title %>" data-react-helmet="true" />
     <meta property="description" content="<%= htmlWebpackPlugin.options.description %>" data-react-helmet="true" />
     <meta property="og:description" content="<%= htmlWebpackPlugin.options.description %>" data-react-helmet="true" />
-    <!-- <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png" /> -->
+    <meta name="theme-color" content="#ffffff" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+    <meta name="apple-touch-icon" content="/icon-opaque-192x192.png" />
+    <% if (htmlWebpackPlugin.options.manifestPath) { %>
+      <link rel="manifest" href="<%= htmlWebpackPlugin.options.manifestPath %>" />
+    <% } %>
     <link rel="icon" type="image/png" sizes="192x192" href="/favicon-192x192.png" />
+    <link rel="icon" type="image/png" sizes="512x512" href="/icon-opaque-512x512.png" />
     <% if (htmlWebpackPlugin.options.isProduction) { %>
       <script 
         src="https://cdn.usefathom.com/script.js" 

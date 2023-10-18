@@ -5,6 +5,12 @@ export const extractSlugFromId = (candidateId) => {
   return slugParts.join("-");
 };
 
+export const makeUrlId = (id) => {
+  const proposerId = id.split("-")[0];
+  const slug = extractSlugFromId(id);
+  return `${slug}-${proposerId.slice(2)}`;
+};
+
 export const getValidSponsorSignatures = (candidate) => {
   const signatures = candidate?.latestVersion?.content.contentSignatures ?? [];
   return arrayUtils

@@ -87,6 +87,10 @@ const App = () => {
                         element={<ProposalCandidateScreen />}
                       />
                       <Route
+                        path="/c/:candidateId"
+                        element={<ProposalCandidateScreen />}
+                      />
+                      <Route
                         path="/proposals/:proposalId"
                         element={<ProposalScreen />}
                       />

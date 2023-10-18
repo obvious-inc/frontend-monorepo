@@ -1,12 +1,19 @@
 {
-  "name": "NOM",
+  "name": "Nouns Camp",
   "display": "standalone",
   "start_url": "/",
+  "background_color": "#ffffff",
+  "theme_color": "#000000",
   "icons": [
     {
-      "src": "favicon-192x192.png",
+      "src": "icon-opaque-192x192.png",
       "type": "image/png",
       "sizes": "192x192"
+    },
+    {
+      "src": "icon-opaque-512x512.png",
+      "type": "image/png",
+      "sizes": "512x512"
     }
   ]
 }

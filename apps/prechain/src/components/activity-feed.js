@@ -6,7 +6,10 @@ import { Noggles as NogglesIcon } from "@shades/ui-web/icons";
 import * as Tooltip from "@shades/ui-web/tooltip";
 import Spinner from "@shades/ui-web/spinner";
 import { isSucceededState as isSucceededProposalState } from "../utils/proposals.js";
-import { extractSlugFromId as extractSlugFromCandidateId } from "../utils/candidates.js";
+import {
+  extractSlugFromId as extractSlugFromCandidateId,
+  makeUrlId as makeCandidateUrlId,
+} from "../utils/candidates.js";
 import { useProposal, useProposalCandidate } from "../store.js";
 import AccountPreviewPopoverTrigger from "./account-preview-popover-trigger.js";
 import FormattedDateWithTooltip from "./formatted-date-with-tooltip.js";
@@ -268,7 +271,11 @@ const ItemTitle = ({ item, context }) => {
         extractSlugFromCandidateId(candidateId);
       const title = truncate ? truncateTitle(fullTitle) : fullTitle;
       return (
-        <RouterLink to={`/candidates/${candidateId}`}>
+        <RouterLink
+          to={`/candidates/${encodeURIComponent(
+            makeCandidateUrlId(candidateId)
+          )}`}
+        >
           {children ?? title}
         </RouterLink>
       );

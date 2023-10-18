@@ -29,6 +29,7 @@ import {
 import {
   buildFeed as buildCandidateFeed,
   getSignals as getCandidateSignals,
+  makeUrlId as makeCandidateUrlId,
 } from "../utils/candidates.js";
 import { useProposalThreshold } from "../hooks/dao-contract.js";
 import { useWallet } from "../hooks/wallet.js";
@@ -1318,7 +1319,9 @@ const ProposalCandidateItem = React.memo(({ candidateId }) => {
   );
 
   return (
-    <RouterLink to={`/candidates/${encodeURIComponent(candidateId)}`}>
+    <RouterLink
+      to={`/candidates/${encodeURIComponent(makeCandidateUrlId(candidateId))}`}
+    >
       <div
         css={css({
           "@container(min-width: 540px)": {
