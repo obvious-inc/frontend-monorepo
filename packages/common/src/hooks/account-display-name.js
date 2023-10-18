@@ -22,7 +22,7 @@ const useAccountDisplayName = (
   const isAddress = isEthereumAccountAddress(accountAddress);
 
   if (accountAddress != null && !isAddress)
-    console.warn(`Invalid address "${accountAddress}`);
+    console.warn(`Invalid address "${accountAddress}"`);
 
   const checksumEncodedAddress = isAddress
     ? checksumEncodeAddress(accountAddress)

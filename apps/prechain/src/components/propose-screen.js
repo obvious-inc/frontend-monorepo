@@ -37,6 +37,7 @@ import {
 } from "../hooks/dao-contract.js";
 import { useTokenBuyerEthNeeded } from "../hooks/misc-contracts.js";
 import { useCreateProposalCandidate } from "../hooks/data-contract.js";
+import useAbi from "../hooks/abi.js";
 import Layout, { MainContentContainer } from "./layout.js";
 import FormattedDate from "./formatted-date.js";
 import FormattedNumber from "./formatted-number.js";
@@ -47,6 +48,128 @@ const decimalsByCurrency = {
   eth: 18,
   weth: 18,
   usdc: 6,
+};
+const getActionTransactions = (a) => {
+  switch (a.type) {
+    case "one-time-payment": {
+      switch (a.currency) {
+        case "eth":
+          return [
+            {
+              type: "transfer",
+              target: a.target,
+              value: parseEther(String(a.amount)),
+            },
+          ];
+
+        case "usdc":
+          return [
+            {
+              type: "usdc-transfer-via-payer",
+              receiverAddress: a.target,
+              usdcAmount: parseUnits(String(a.amount), 6),
+            },
+          ];
+
+        default:
+          throw new Error();
+      }
+    }
+
+    case "streaming-payment": {
+      const formattedAmount = String(a.amount);
+
+      const createStreamTransaction = {
+        type: "stream",
+        receiverAddress: a.target,
+        token: a.currency.toUpperCase(),
+        tokenAmount: parseUnits(
+          formattedAmount,
+          decimalsByCurrency[a.currency]
+        ),
+        startDate: new Date(a.startTimestamp),
+        endDate: new Date(a.endTimestamp),
+        streamContractAddress: a.predictedStreamContractAddress,
+      };
+
+      switch (a.currency) {
+        case "weth":
+          return [
+            createStreamTransaction,
+            {
+              type: "weth-deposit",
+              value: parseUnits(formattedAmount, decimalsByCurrency.eth),
+            },
+            {
+              type: "weth-transfer",
+              receiverAddress: a.predictedStreamContractAddress,
+              wethAmount: parseUnits(formattedAmount, decimalsByCurrency.weth),
+            },
+          ];
+
+        case "usdc":
+          return [
+            createStreamTransaction,
+            {
+              type: "usdc-transfer-via-payer",
+              receiverAddress: a.predictedStreamContractAddress,
+              usdcAmount: parseUnits(formattedAmount, decimalsByCurrency.usdc),
+            },
+          ];
+
+        default:
+          throw new Error();
+      }
+    }
+
+    case "custom-transaction":
+      return [
+        {
+          type: "unparsed-function-call",
+          target: a.contractAddress,
+          signature: "",
+          calldata: "0x",
+          value: "0",
+        },
+      ];
+
+    default:
+      throw new Error();
+  }
+};
+
+const getArgumentDefaultValue = (type_) => {
+  const type =
+    type_.startsWith("int") || type_.startsWith("uint") ? "number" : type_;
+  switch (type) {
+    case "number":
+      return "0";
+    case "address":
+      return "0x0000000000000000000000000000000000000000";
+    case "bool":
+      return false;
+    case "bytes":
+    case "string":
+    default:
+      return "";
+  }
+};
+
+const getArgumentInputPlaceholder = (type_) => {
+  const type =
+    type_.startsWith("int") || type_.startsWith("uint") ? "number" : type_;
+  switch (type) {
+    case "number":
+      return "0";
+    case "address":
+    case "bool":
+      return "false";
+    case "bytes":
+      return "0x...";
+    case "string":
+    default:
+      return "...";
+  }
 };
 
 const ProposeScreen = () => {
@@ -107,91 +230,7 @@ const ProposeScreen = () => {
       draft.body
     )}`;
     const transactions = draft.actions.flatMap((a) => {
-      const getActionTransactions = () => {
-        switch (a.type) {
-          case "one-time-payment": {
-            switch (a.currency) {
-              case "eth":
-                return [
-                  {
-                    type: "transfer",
-                    target: a.target,
-                    value: parseEther(String(a.amount)),
-                  },
-                ];
-
-              case "usdc":
-                return [
-                  {
-                    type: "usdc-transfer-via-payer",
-                    receiverAddress: a.target,
-                    usdcAmount: parseUnits(String(a.amount), 6),
-                  },
-                ];
-
-              default:
-                throw new Error();
-            }
-          }
-
-          case "streaming-payment": {
-            const formattedAmount = String(a.amount);
-
-            const createStreamTransaction = {
-              type: "stream",
-              receiverAddress: a.target,
-              token: a.currency.toUpperCase(),
-              tokenAmount: parseUnits(
-                formattedAmount,
-                decimalsByCurrency[a.currency]
-              ),
-              startDate: new Date(a.startTimestamp),
-              endDate: new Date(a.endTimestamp),
-              streamContractAddress: a.predictedStreamContractAddress,
-            };
-
-            switch (a.currency) {
-              case "weth":
-                return [
-                  createStreamTransaction,
-                  {
-                    type: "weth-deposit",
-                    value: parseUnits(formattedAmount, decimalsByCurrency.eth),
-                  },
-                  {
-                    type: "weth-transfer",
-                    receiverAddress: a.predictedStreamContractAddress,
-                    wethAmount: parseUnits(
-                      formattedAmount,
-                      decimalsByCurrency.weth
-                    ),
-                  },
-                ];
-
-              case "usdc":
-                return [
-                  createStreamTransaction,
-                  {
-                    type: "usdc-transfer-via-payer",
-                    receiverAddress: a.predictedStreamContractAddress,
-                    usdcAmount: parseUnits(
-                      formattedAmount,
-                      decimalsByCurrency.usdc
-                    ),
-                  },
-                ];
-
-              default:
-                throw new Error();
-            }
-          }
-
-          default:
-            throw new Error();
-        }
-      };
-
-      const actionTransactions = getActionTransactions();
+      const actionTransactions = getActionTransactions(a);
 
       if (tokenBuyerTopUpValue > 0)
         return [
@@ -549,6 +588,14 @@ const ProposeScreen = () => {
                   initialTarget={transaction.target}
                   initialStreamStartTimestamp={transaction.startTimestamp}
                   initialStreamEndTimestamp={transaction.endTimestamp}
+                  initialContractAddress={transaction.contractAddress}
+                  initialContractFunction={transaction.contractFunction}
+                  initialContractFunctionInput={
+                    transaction.contractFunctionInput
+                  }
+                  initialContractCustomAbiString={
+                    transaction.contractCustomAbiString
+                  }
                   submit={(a) => {
                     setActions(
                       draft.actions.map((a_, i) =>
@@ -655,6 +702,10 @@ const ActionDialog = ({
   initialTarget,
   initialStreamStartTimestamp,
   initialStreamEndTimestamp,
+  initialContractAddress,
+  initialContractFunction,
+  initialContractFunctionInput,
+  initialContractCustomAbiString,
   titleProps,
   remove,
   submit,
@@ -668,6 +719,7 @@ const ActionDialog = ({
   const [amount, setAmount] = React.useState(initialAmount ?? 0);
   const [receiverQuery, setReceiverQuery] = React.useState(initialTarget ?? "");
 
+  // For streams
   const [streamStartDate, setStreamStartDate] = React.useState(
     initialStreamStartTimestamp == null
       ? null
@@ -679,6 +731,42 @@ const ActionDialog = ({
       : new Date(initialStreamEndTimestamp)
   );
 
+  // For custom transactions
+  const [contractAddress, setContractAddress] = React.useState(
+    initialContractAddress ?? ""
+  );
+  const [contractFunction, setContractFunction] = React.useState(
+    initialContractFunction ?? ""
+  );
+  const [contractFunctionInput, setContractFunctionInput] = React.useState(
+    initialContractFunctionInput ?? []
+  );
+  const [rawContractCustomAbiString, setContractRawCustomAbiString] =
+    React.useState(initialContractCustomAbiString ?? "");
+
+  const deferredAbiString = React.useDeferredValue(
+    rawContractCustomAbiString.trim()
+  );
+
+  const customAbi = React.useMemo(() => {
+    try {
+      const abi = JSON.parse(deferredAbiString);
+      if (!Array.isArray(abi)) return null;
+      return abi;
+    } catch (e) {
+      const lines = deferredAbiString
+        .split(/\n/)
+        .filter((l) => l.trim() !== "");
+      try {
+        return parseAbi(lines);
+      } catch (e) {
+        return null;
+      }
+    }
+  }, [deferredAbiString]);
+
+  const targetContract = useContract(contractAddress);
+
   const { data: ensName } = useEnsName({
     address: receiverQuery.trim(),
     enabled: isAddress(receiverQuery.trim()),
@@ -687,6 +775,61 @@ const ActionDialog = ({
     name: receiverQuery.trim(),
     enabled: receiverQuery.trim().split(".").slice(-1)[0] === "eth",
   });
+
+  const {
+    abi: etherscanAbi,
+    proxyImplementationAbi: etherscanProxyImplementationAbi,
+    notFound: etherscanAbiNotFound,
+  } = useAbi(contractAddress, {
+    enabled: type === "custom-transaction" && isAddress(contractAddress),
+  });
+
+  const abi = etherscanAbiNotFound
+    ? customAbi
+    : etherscanProxyImplementationAbi ?? etherscanAbi;
+
+  const contractFunctionOptions = abi
+    ?.filter(
+      (item) =>
+        item.type === "function" &&
+        ["payable", "nonpayable"].includes(item.stateMutability)
+    )
+    .map((item) => {
+      const label = `${item.name}()`;
+      const signature = `${item.name}(${item.inputs
+        .map((i) => i.type)
+        .join(",")})`;
+      const description =
+        item.inputs.length === 0 ? null : (
+          <span
+            css={(t) =>
+              css({
+                "[data-identifier]": { fontWeight: t.text.weights.emphasis },
+              })
+            }
+          >
+            {item.name}(
+            {item.inputs.map((input, i) => (
+              <React.Fragment key={i}>
+                {i !== 0 && <>, </>}
+                {input.internalType} <span data-identifier>{input.name}</span>
+              </React.Fragment>
+            ))}
+            )
+          </span>
+        );
+
+      return {
+        value: signature,
+        label,
+        description,
+        inputs: item.inputs,
+      };
+    });
+
+  const selectedContractFunctionOption = contractFunctionOptions?.find(
+    (o) => o.value === contractFunction
+  );
 
   const target = isAddress(receiverQuery.trim())
     ? receiverQuery.trim()
@@ -742,6 +885,9 @@ const ActionDialog = ({
           predictedStreamContractAddress != null
         );
 
+      case "custom-transaction":
+        return selectedContractFunctionOption != null;
+
       default:
         throw new Error();
     }
@@ -750,17 +896,19 @@ const ActionDialog = ({
   return (
     <form
       onSubmit={(e) => {
-        if (!isAddress(target)) throw new Error();
-
         e.preventDefault();
         submit({
           type,
-          target,
+          target: target || null,
           amount,
           currency,
           startTimestamp: streamStartDate?.getTime(),
           endTimestamp: streamEndDate?.getTime(),
           predictedStreamContractAddress,
+          contractAddress,
+          contractFunction,
+          contractFunctionInput,
+          contractCustomAbiString: rawContractCustomAbiString,
         });
         dismiss();
       }}
@@ -788,7 +936,6 @@ const ActionDialog = ({
               {
                 value: "custom-transaction",
                 label: "Custom transaction",
-                disabled: true,
               },
             ]}
             onChange={(value) => {
@@ -849,148 +996,418 @@ const ActionDialog = ({
           </div>
         )}
 
-        <div>
-          <Label htmlFor="amount">Amount</Label>
-          <div
-            style={{
-              display: "grid",
-              gridTemplateColumns: "minmax(0,1fr) auto",
-              gap: "0.8rem",
-            }}
-          >
-            <Input
-              id="amount"
-              value={amount}
-              // type="number"
-              // step="0.01"
-              // min={0}
-              onBlur={() => {
-                setAmount(parseFloat(amount));
+        {type !== "custom-transaction" && (
+          <div>
+            <Label htmlFor="amount">Amount</Label>
+            <div
+              style={{
+                display: "grid",
+                gridTemplateColumns: "minmax(0,1fr) auto",
+                gap: "0.8rem",
               }}
-              onChange={(e) => {
-                const { value } = e.target;
-                if (value.trim() === "") {
-                  setAmount(0);
-                  return;
+            >
+              <Input
+                id="amount"
+                value={amount}
+                // type="number"
+                // step="0.01"
+                // min={0}
+                onBlur={() => {
+                  setAmount(parseFloat(amount));
+                }}
+                onChange={(e) => {
+                  const { value } = e.target;
+                  if (value.trim() === "") {
+                    setAmount(0);
+                    return;
+                  }
+
+                  const n = parseFloat(value);
+
+                  if (isNaN(n) || !/^[0-9]*.?[0-9]*$/.test(value)) return;
+
+                  if (/^[0-9]*$/.test(value)) {
+                    setAmount(n);
+                    return;
+                  }
+
+                  setAmount(value);
+                }}
+                // hint={<>{formatEther(amount)} ETH</>}
+              />
+              <Select
+                aria-label="Currency token"
+                value={currency}
+                options={
+                  type === "one-time-payment"
+                    ? [
+                        { value: "eth", label: "ETH" },
+                        { value: "usdc", label: "USDC" },
+                      ]
+                    : [
+                        { value: "weth", label: "WETH" },
+                        { value: "usdc", label: "USDC" },
+                      ]
                 }
-
-                const n = parseFloat(value);
-
-                if (isNaN(n) || !/^[0-9]*.?[0-9]*$/.test(value)) return;
-
-                if (/^[0-9]*$/.test(value)) {
-                  setAmount(n);
-                  return;
-                }
-
-                setAmount(value);
-              }}
-              // hint={<>{formatEther(amount)} ETH</>}
-            />
-            <Select
-              aria-label="Currency token"
-              value={currency}
-              options={
-                type === "one-time-payment"
-                  ? [
-                      { value: "eth", label: "ETH" },
-                      { value: "usdc", label: "USDC" },
-                    ]
-                  : [
-                      { value: "weth", label: "WETH" },
-                      { value: "usdc", label: "USDC" },
-                    ]
+                onChange={(value) => {
+                  setCurrency(value);
+                }}
+                width="max-content"
+                fullWidth={false}
+              />
+            </div>
+            <div
+              css={(t) =>
+                css({
+                  fontSize: t.text.sizes.small,
+                  color: t.colors.textDimmed,
+                  marginTop: "0.7rem",
+                })
               }
-              onChange={(value) => {
-                setCurrency(value);
-              }}
-              width="max-content"
-              fullWidth={false}
-            />
+            >
+              {convertedEthToUsdValue != null && (
+                <>
+                  {convertedEthToUsdValue < 0.01 ? (
+                    "<0.01 USD"
+                  ) : (
+                    <>
+                      &asymp;{" "}
+                      <FormattedNumber
+                        value={convertedEthToUsdValue}
+                        minimumFractionDigits={2}
+                        maximumFractionDigits={2}
+                      />{" "}
+                      USD
+                    </>
+                  )}
+                </>
+              )}
+              {convertedUsdcToEthValue != null && (
+                <>
+                  {convertedUsdcToEthValue < 0.0001 ? (
+                    "<0.0001 ETH"
+                  ) : (
+                    <>
+                      &asymp;{" "}
+                      <FormattedNumber
+                        value={convertedUsdcToEthValue}
+                        minimumFractionDigits={1}
+                        maximumFractionDigits={4}
+                      />{" "}
+                      ETH
+                    </>
+                  )}
+                </>
+              )}
+              &nbsp;
+            </div>
           </div>
-          <div
-            css={(t) =>
-              css({
-                fontSize: t.text.sizes.small,
-                color: t.colors.textDimmed,
-                marginTop: "0.7rem",
-              })
-            }
-          >
-            {convertedEthToUsdValue != null && (
-              <>
-                {convertedEthToUsdValue < 0.01 ? (
-                  "<0.01 USD"
-                ) : (
-                  <>
-                    &asymp;{" "}
-                    <FormattedNumber
-                      value={convertedEthToUsdValue}
-                      minimumFractionDigits={2}
-                      maximumFractionDigits={2}
-                    />{" "}
-                    USD
-                  </>
-                )}
-              </>
-            )}
-            {convertedUsdcToEthValue != null && (
-              <>
-                {convertedUsdcToEthValue < 0.0001 ? (
-                  "<0.0001 ETH"
-                ) : (
-                  <>
-                    &asymp;{" "}
-                    <FormattedNumber
-                      value={convertedUsdcToEthValue}
-                      minimumFractionDigits={1}
-                      maximumFractionDigits={4}
-                    />{" "}
-                    ETH
-                  </>
-                )}
-              </>
-            )}
-            &nbsp;
-          </div>
-        </div>
+        )}
 
-        <Input
-          label="Receiver account"
-          value={receiverQuery}
-          onBlur={() => {
-            if (!isAddress(receiverQuery) && ensAddress != null)
-              setReceiverQuery(ensAddress);
-          }}
-          onChange={(e) => {
-            setReceiverQuery(e.target.value);
-          }}
-          placeholder="0x..., vitalik.eth"
-          hint={
-            !isAddress(receiverQuery) && ensAddress == null ? (
-              "Specify an Ethereum account address or ENS name"
-            ) : ensAddress != null ? (
-              ensAddress
-            ) : ensName != null ? (
-              <>
-                Primary ENS name:{" "}
-                <em
+        {type !== "custom-transaction" && (
+          <Input
+            label="Receiver account"
+            value={receiverQuery}
+            onBlur={() => {
+              if (!isAddress(receiverQuery) && ensAddress != null)
+                setReceiverQuery(ensAddress);
+            }}
+            onChange={(e) => {
+              setReceiverQuery(e.target.value);
+            }}
+            placeholder="0x..., vitalik.eth"
+            hint={
+              !isAddress(receiverQuery) && ensAddress == null ? (
+                "Specify an Ethereum account address or ENS name"
+              ) : ensAddress != null ? (
+                ensAddress
+              ) : ensName != null ? (
+                <>
+                  Primary ENS name:{" "}
+                  <em
+                    css={(t) =>
+                      css({
+                        fontStyle: "normal",
+                        fontWeight: t.text.weights.emphasis,
+                      })
+                    }
+                  >
+                    {ensName}
+                  </em>
+                </>
+              ) : (
+                <>&nbsp;</>
+              )
+            }
+          />
+        )}
+
+        {type === "custom-transaction" && (
+          <>
+            <Input
+              label="Target contract address"
+              value={contractAddress}
+              onChange={(e) => {
+                setContractAddress(e.target.value);
+                setContractFunction("");
+                setContractFunctionInput([]);
+              }}
+              placeholder="0x..."
+              hint={targetContract?.name}
+            />
+
+            {etherscanAbiNotFound && (
+              <Input
+                label="ABI"
+                component="textarea"
+                value={rawContractCustomAbiString}
+                onChange={(e) => {
+                  setContractRawCustomAbiString(e.target.value);
+                }}
+                onBlur={() => {
+                  try {
+                    const formattedAbi = JSON.stringify(
+                      JSON.parse(rawContractCustomAbiString),
+                      null,
+                      2
+                    );
+                    setContractRawCustomAbiString(formattedAbi);
+                  } catch (e) {
+                    //
+                  }
+                }}
+                rows={5}
+                placeholder="[]"
+                hint="Paste a JSON formatted ABI array"
+                css={(t) =>
+                  css({
+                    fontSize: t.text.sizes.small,
+                    padding: "1rem",
+                  })
+                }
+              />
+            )}
+
+            {contractFunctionOptions?.length > 0 && (
+              <div>
+                <Label htmlFor="contract-function">Function to call</Label>
+                <Select
+                  id="contract-function"
+                  aria-label="Contract function"
+                  value={contractFunction}
+                  options={contractFunctionOptions}
+                  size="medium"
+                  onChange={(value) => {
+                    setContractFunction(value);
+                    setContractFunctionInput([]);
+                  }}
+                  width="max-content"
+                  fullWidth
+                />
+              </div>
+            )}
+
+            {selectedContractFunctionOption != null &&
+              selectedContractFunctionOption.inputs.length > 0 && (
+                <div
                   css={(t) =>
                     css({
-                      fontStyle: "normal",
-                      fontWeight: t.text.weights.emphasis,
+                      "[data-input] + [data-input]": {
+                        marginTop: "1.6rem",
+                      },
+                      "[data-components]": {
+                        paddingLeft: "2.4rem",
+                        position: "relative",
+                        ":before": {
+                          position: "absolute",
+                          top: "4.6rem",
+                          left: "0.8rem",
+                          content: '""',
+                          height: "calc(100% - 6.4rem)",
+                          width: "0.8rem",
+                          border: "0.1rem solid",
+                          borderRight: 0,
+                          borderColor: t.colors.borderLight,
+                        },
+                      },
+                      "[data-components] [data-input] + [data-input]": {
+                        marginTop: "0.8rem",
+                      },
+                      "[data-array]": {
+                        display: "flex",
+                        flexDirection: "column",
+                        gap: "0.8rem",
+                      },
+                      "[data-append-button]": { marginTop: "0.4rem" },
+                      "[data-code]": {
+                        fontSize: "0.85em",
+                        fontFamily: t.fontStacks.monospace,
+                      },
+                      "[data-code] [data-type]": { color: t.colors.textMuted },
                     })
                   }
                 >
-                  {ensName}
-                </em>
-              </>
-            ) : (
-              <>&nbsp;</>
-            )
-          }
-        />
+                  <Label>Arguments</Label>
+                  {selectedContractFunctionOption.inputs.map((input, i) => {
+                    const renderInput = (input, inputValue, setInputValue) => {
+                      const labelContent =
+                        input.name == null ? null : (
+                          <span data-code>
+                            <span data-type>{input.internalType}</span>{" "}
+                            {input.name}
+                          </span>
+                        );
+
+                      const isArray = input.type.slice(-2) === "[]";
+
+                      if (isArray) {
+                        const elementType = input.type.slice(0, -2);
+                        const defaultValue =
+                          input.components != null
+                            ? {}
+                            : getArgumentDefaultValue(elementType);
+                        return (
+                          <div key={input.name} data-input>
+                            {labelContent != null && (
+                              <Label>{labelContent}</Label>
+                            )}
+                            <div data-array>
+                              {(inputValue ?? []).map(
+                                (elementValue, elementIndex) => {
+                                  const setElementValue = (getElementValue) => {
+                                    setInputValue((currentInputValue) => {
+                                      const nextElementValue =
+                                        typeof getElementValue === "function"
+                                          ? getElementValue(elementValue)
+                                          : getElementValue;
+                                      const nextInputValue = [
+                                        ...currentInputValue,
+                                      ];
+                                      nextInputValue[elementIndex] =
+                                        nextElementValue;
+                                      return nextInputValue;
+                                    });
+                                  };
+
+                                  return renderInput(
+                                    {
+                                      components: input.components,
+                                      type: elementType,
+                                    },
+                                    elementValue,
+                                    setElementValue
+                                  );
+                                }
+                              )}
+
+                              <div
+                                style={{
+                                  paddingTop:
+                                    inputValue?.length > 0 &&
+                                    input.components != null
+                                      ? "0.8rem"
+                                      : 0,
+                                }}
+                              >
+                                <Button
+                                  size="tiny"
+                                  type="button"
+                                  onClick={() => {
+                                    setInputValue((els = []) => [
+                                      ...els,
+                                      defaultValue,
+                                    ]);
+                                  }}
+                                  style={{ alignSelf: "flex-start" }}
+                                >
+                                  Add element
+                                </Button>
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      }
+
+                      if (input.components != null)
+                        return (
+                          <div key={input.name} data-input>
+                            {labelContent != null && (
+                              <Label>{labelContent}</Label>
+                            )}
+                            <div data-components>
+                              {input.components.map((c) => {
+                                const componentValue =
+                                  inputValue?.[c.name] ?? "";
+                                const setComponentValue = (
+                                  getComponentValue
+                                ) => {
+                                  setInputValue((currentInputValue) => {
+                                    const currentComponentValue =
+                                      currentInputValue?.[c.name];
+                                    const nextComponentValue =
+                                      typeof getComponentValue === "function"
+                                        ? getComponentValue(
+                                            currentComponentValue
+                                          )
+                                        : getComponentValue;
+                                    return {
+                                      ...currentInputValue,
+                                      [c.name]: nextComponentValue,
+                                    };
+                                  });
+                                };
+
+                                return renderInput(
+                                  c,
+                                  componentValue,
+                                  setComponentValue
+                                );
+                              })}
+                            </div>
+                          </div>
+                        );
+
+                      const defaultValue = getArgumentDefaultValue(input.type);
+
+                      switch (input.type) {
+                        default:
+                          return (
+                            <Input
+                              key={input.name}
+                              label={labelContent}
+                              value={inputValue ?? defaultValue}
+                              onChange={(e) => {
+                                setInputValue(e.target.value);
+                              }}
+                              placeholder={getArgumentInputPlaceholder(
+                                input.type
+                              )}
+                              containerProps={{ "data-input": true }}
+                            />
+                          );
+                      }
+                    };
+
+                    const value = contractFunctionInput[i];
+                    const setValue = (getInputValue) => {
+                      setContractFunctionInput((currentState) => {
+                        const currentInputValue = currentState[i];
+                        const nextState = [...currentState];
+                        nextState[i] =
+                          typeof getInputValue === "function"
+                            ? getInputValue(currentInputValue)
+                            : getInputValue;
+                        return nextState;
+                      });
+                    };
+                    return renderInput(input, value, setValue);
+                  })}
+                </div>
+              )}
+          </>
+        )}
       </main>
+
       <footer
         css={css({
           display: "flex",
@@ -1156,8 +1573,10 @@ const ActionExplanation = ({ action: a }) => {
     //   );
     // }
 
-    case "custom":
-      return <TransactionExplanation transaction={a.transaction} />;
+    case "custom-transaction":
+      return (
+        <TransactionExplanation transaction={getActionTransactions(a)[0]} />
+      );
 
     default:
       throw new Error(`Unknown action type: "${a.type}"`);
