@@ -205,6 +205,8 @@ const ProfileView = () => {
 
   const checkUsernameAvailability = useLatestCallback(async () => {
     if (!usernameUpdateValue) return;
+    if (usernameUpdateValue == username) return;
+
     const response = await fetch(
       FARCASTER_FNAME_API_ENDPOINT + `/transfers?name=${usernameUpdateValue}`
     );
@@ -327,6 +329,7 @@ const ProfileView = () => {
       setUsernameUpdateError(null);
       checkUsernameAvailability().then((isAvailable) => {
         if (!usernameUpdateValue) return;
+        if (usernameUpdateValue == username) return;
         if (!isAvailable) {
           setIsValidUsername(false);
           setUsernameUpdateError("Username is already taken");
@@ -337,7 +340,7 @@ const ProfileView = () => {
     }, 500);
 
     return () => clearTimeout(delayDebounceFn);
-  }, [usernameUpdateValue, checkUsernameAvailability]);
+  }, [usernameUpdateValue, checkUsernameAvailability, username]);
 
   React.useEffect(() => {
     const fetchTransfers = async (fid) => {
@@ -368,6 +371,9 @@ const ProfileView = () => {
 
     setBio(userData?.bio);
     setBioUpdateValue(userData?.bio);
+
+    setUsername(userData?.username);
+    setUsernameUpdateValue(userData?.username);
   }, [userData]);
 
   if (chain?.unsupported) {
@@ -717,6 +723,7 @@ const ProfileView = () => {
                 !isValidUsername ||
                 hasUsernameUpdatePending ||
                 usernameTimelock ||
+                username == usernameUpdateValue ||
                 !signer
               }
             >
