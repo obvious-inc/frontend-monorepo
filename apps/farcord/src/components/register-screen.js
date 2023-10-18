@@ -411,7 +411,7 @@ const RegisterView = () => {
     });
 
   const alreadyRegistered =
-    !registerTransaction && fid && chain.id == DEFAULT_CHAIN_ID;
+    !registerTransaction && fid && chain?.id == DEFAULT_CHAIN_ID;
 
   if (registerTransaction && hasFid) {
     reloadAccount();
