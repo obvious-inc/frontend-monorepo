@@ -3,6 +3,7 @@ export const config = {
 };
 
 export default async (req) => {
+  console.log("new request coming through", req);
   const { searchParams } = new URL(req.url);
   const address = searchParams.get("address");
 
