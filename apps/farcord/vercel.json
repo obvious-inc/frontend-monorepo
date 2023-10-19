@@ -1,1 +1,12 @@
-{}
+{
+  "rewrites": [
+    {
+      "source": "/api/:path*",
+      "destination": "https://api.newshades.xyz/:path*"
+    },
+    {
+      "source": "/(.*)",
+      "destination": "/index.html"
+    }
+  ]
+}
