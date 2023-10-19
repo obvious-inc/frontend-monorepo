@@ -151,7 +151,7 @@ export const Provider = ({ children }) => {
           },
           body: JSON.stringify({
             key: publicKey,
-            deadline: BigInt(deadline),
+            deadline: deadline,
           }),
         })
           .then(async (res) => {
@@ -208,7 +208,7 @@ export const Provider = ({ children }) => {
           },
           body: JSON.stringify({
             key: publicKey,
-            deadline: BigInt(deadline),
+            deadline: deadline,
           }),
         })
           .then(async (res) => {
