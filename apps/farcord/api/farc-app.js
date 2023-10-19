@@ -19,66 +19,92 @@ const SIGNED_KEY_REQUEST_TYPE = [
   { name: "deadline", type: "uint256" },
 ];
 
-export default async (req) => {
-  console.log("new request coming through", req);
-  const body = req.body || "";
-  console.log("body", body);
-
-  if (req.method === "POST") {
-    if (!body.key || !body.deadline) {
-      return new Response(
-        JSON.stringify({
-          data: { error: "key and deadline are required" },
-        }),
-        {
-          status: 400,
-          headers: {
-            "Content-Type": "application/json",
-          },
-        }
-      );
-    }
-
-    console.log("key", body.key);
-    console.log("deadline", body.deadline);
-
-    const signature = await appAccount.signTypedData({
-      domain: SIGNED_KEY_REQUEST_VALIDATOR_EIP_712_DOMAIN,
-      types: {
-        SignedKeyRequest: SIGNED_KEY_REQUEST_TYPE,
-      },
-      primaryType: "SignedKeyRequest",
-      message: {
-        requestFid: Number(process.env.FARCORD_APP_FID),
-        key: body.key,
-        deadline: body.deadline,
-      },
-    });
-
-    console.log("sig", signature);
-
-    return new Response(
-      JSON.stringify({
-        data: { signature: signature },
-      }),
-      {
-        status: 200,
-        headers: {
-          "Content-Type": "application/json",
-        },
-      }
-    );
-  } else {
-    return new Response(
-      JSON.stringify({
-        data: { address: appAccount.address, fid: process.env.FARCORD_APP_FID },
-      }),
-      {
-        status: 200,
-        headers: {
-          "Content-Type": "application/json",
-        },
-      }
-    );
+export default async function handler(request) {
+  const urlParams = new URL(request.url).searchParams;
+  const query = Object.fromEntries(urlParams);
+  const cookies = request.headers.get("cookie");
+  let body;
+  try {
+    body = await request.json();
+  } catch (e) {
+    body = null;
   }
-};
+
+  return new Response(
+    JSON.stringify({
+      body,
+      query,
+      cookies,
+    }),
+    {
+      status: 200,
+      headers: {
+        "content-type": "application/json",
+      },
+    }
+  );
+}
+
+// export default async (req) => {
+//   //   console.log("new request coming through", req);
+//   const body = req.body || "";
+//   console.log("body", body);
+
+//   if (req.method === "POST") {
+//     if (!body.key || !body.deadline) {
+//       return new Response(
+//         JSON.stringify({
+//           data: { error: "key and deadline are required" },
+//         }),
+//         {
+//           status: 400,
+//           headers: {
+//             "Content-Type": "application/json",
+//           },
+//         }
+//       );
+//     }
+
+//     console.log("key", body.key);
+//     console.log("deadline", body.deadline);
+
+//     const signature = await appAccount.signTypedData({
+//       domain: SIGNED_KEY_REQUEST_VALIDATOR_EIP_712_DOMAIN,
+//       types: {
+//         SignedKeyRequest: SIGNED_KEY_REQUEST_TYPE,
+//       },
+//       primaryType: "SignedKeyRequest",
+//       message: {
+//         requestFid: Number(process.env.FARCORD_APP_FID),
+//         key: body.key,
+//         deadline: body.deadline,
+//       },
+//     });
+
+//     console.log("sig", signature);
+
+//     return new Response(
+//       JSON.stringify({
+//         data: { signature: signature },
+//       }),
+//       {
+//         status: 200,
+//         headers: {
+//           "Content-Type": "application/json",
+//         },
+//       }
+//     );
+//   } else {
+//     return new Response(
+//       JSON.stringify({
+//         data: { address: appAccount.address, fid: process.env.FARCORD_APP_FID },
+//       }),
+//       {
+//         status: 200,
+//         headers: {
+//           "Content-Type": "application/json",
+//         },
+//       }
+//     );
+//   }
+// };
