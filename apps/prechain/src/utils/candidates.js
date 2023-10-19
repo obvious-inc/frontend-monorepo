@@ -68,7 +68,7 @@ export const buildFeed = (candidate, { skipSignatures = false } = {}) => {
       type: "event",
       eventType: "candidate-canceled",
       id: `${candidate.id}-canceled`,
-      timestamp: candidate.createdTimestamp,
+      timestamp: candidate.canceledTimestamp,
       blockNumber: candidate.canceledBlock,
       candidateId,
       targetProposalId,
