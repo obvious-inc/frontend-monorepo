@@ -1,9 +1,8 @@
-import formatDate from "date-fns/format";
 import getDateYear from "date-fns/getYear";
 import React from "react";
 import { useParams, useNavigate, useSearchParams } from "react-router-dom";
-import { isAddress, parseEther, parseUnits, parseAbi } from "viem";
-import { useAccount, useEnsName, useEnsAddress, useContractRead } from "wagmi";
+import { parseEther, parseUnits } from "viem";
+import { useAccount } from "wagmi";
 import { css } from "@emotion/react";
 import {
   useLatestCallback,
@@ -11,22 +10,17 @@ import {
 } from "@shades/common/react";
 import { message as messageUtils } from "@shades/common/utils";
 import { useAccountDisplayName } from "@shades/common/app";
-import { useFetch } from "@shades/common/react";
 import {
   Plus as PlusIcon,
   TrashCan as TrashCanIcon,
 } from "@shades/ui-web/icons";
 import Button from "@shades/ui-web/button";
-import Input, { Label } from "@shades/ui-web/input";
 import Select from "@shades/ui-web/select";
 import RichTextEditor, {
   Provider as EditorProvider,
   Toolbar as EditorToolbar,
   isNodeEmpty as isRichTextEditorNodeEmpty,
 } from "@shades/ui-web/rich-text-editor";
-import Dialog from "@shades/ui-web/dialog";
-import DialogHeader from "@shades/ui-web/dialog-header";
-import { useContract } from "../contracts.js";
 import {
   useCollection as useDrafts,
   useSingleItem as useDraft,
@@ -37,18 +31,19 @@ import {
 } from "../hooks/dao-contract.js";
 import { useTokenBuyerEthNeeded } from "../hooks/misc-contracts.js";
 import { useCreateProposalCandidate } from "../hooks/data-contract.js";
-import useAbi from "../hooks/abi.js";
 import Layout, { MainContentContainer } from "./layout.js";
 import FormattedDate from "./formatted-date.js";
 import FormattedNumber from "./formatted-number.js";
 import AccountPreviewPopoverTrigger from "./account-preview-popover-trigger.js";
 import { TransactionExplanation } from "./transaction-list.js";
+import ActionDialog from "./action-dialog.js";
 
 const decimalsByCurrency = {
   eth: 18,
   weth: 18,
   usdc: 6,
 };
+
 const getActionTransactions = (a) => {
   switch (a.type) {
     case "one-time-payment": {
@@ -138,40 +133,6 @@ const getActionTransactions = (a) => {
   }
 };
 
-const getArgumentDefaultValue = (type_) => {
-  const type =
-    type_.startsWith("int") || type_.startsWith("uint") ? "number" : type_;
-  switch (type) {
-    case "number":
-      return "0";
-    case "address":
-      return "0x0000000000000000000000000000000000000000";
-    case "bool":
-      return false;
-    case "bytes":
-    case "string":
-    default:
-      return "";
-  }
-};
-
-const getArgumentInputPlaceholder = (type_) => {
-  const type =
-    type_.startsWith("int") || type_.startsWith("uint") ? "number" : type_;
-  switch (type) {
-    case "number":
-      return "0";
-    case "address":
-    case "bool":
-      return "false";
-    case "bytes":
-      return "0x...";
-    case "string":
-    default:
-      return "...";
-  }
-};
-
 const ProposeScreen = () => {
   const { draftId } = useParams();
   const navigate = useNavigate();
@@ -198,6 +159,9 @@ const ProposeScreen = () => {
   const hasRequiredInput = !isNameEmpty && !isBodyEmpty;
 
   const slug = draft?.name.trim().toLowerCase().replace(/\s+/g, "-");
+
+  const selectedAction =
+    selectedActionIndex >= 0 ? draft.actions[selectedActionIndex] : null;
 
   const createProposalCandidate = useCreateProposalCandidate({
     enabled: hasRequiredInput && draftTargetType === "candidate",
@@ -568,893 +532,52 @@ const ProposeScreen = () => {
         </EditorProvider>
       </Layout>
 
-      {selectedActionIndex != null &&
-        draft.actions[selectedActionIndex] != null && (
-          <Dialog
-            isOpen
-            onRequestClose={() => {
-              setSelectedActionIndex(null);
-            }}
-            width="46rem"
-          >
-            {({ titleProps }) => {
-              const transaction = draft.actions[selectedActionIndex];
-              return (
-                <ActionDialog
-                  title="Edit action"
-                  initialType={transaction.type}
-                  initialCurrency={transaction.currency}
-                  initialAmount={transaction.amount}
-                  initialTarget={transaction.target}
-                  initialStreamStartTimestamp={transaction.startTimestamp}
-                  initialStreamEndTimestamp={transaction.endTimestamp}
-                  initialContractAddress={transaction.contractAddress}
-                  initialContractFunction={transaction.contractFunction}
-                  initialContractFunctionInput={
-                    transaction.contractFunctionInput
-                  }
-                  initialContractCustomAbiString={
-                    transaction.contractCustomAbiString
-                  }
-                  submit={(a) => {
-                    setActions(
-                      draft.actions.map((a_, i) =>
-                        i !== selectedActionIndex ? a_ : a
-                      )
-                    );
-                  }}
-                  remove={() => {
-                    setActions(
-                      draft.actions.filter((_, i) => i !== selectedActionIndex)
-                    );
-                  }}
-                  titleProps={titleProps}
-                  dismiss={() => {
-                    setSelectedActionIndex(null);
-                  }}
-                />
-              );
-            }}
-          </Dialog>
-        )}
+      {selectedAction != null && (
+        <ActionDialog
+          isOpen
+          close={() => {
+            setSelectedActionIndex(null);
+          }}
+          title="Edit action"
+          submit={(a) => {
+            setActions(
+              draft.actions.map((a_, i) => (i !== selectedActionIndex ? a_ : a))
+            );
+          }}
+          remove={() => {
+            setActions(
+              draft.actions.filter((_, i) => i !== selectedActionIndex)
+            );
+          }}
+          initialType={selectedAction.type}
+          initialCurrency={selectedAction.currency}
+          initialAmount={selectedAction.amount}
+          initialTarget={selectedAction.target}
+          initialStreamStartTimestamp={selectedAction.startTimestamp}
+          initialStreamEndTimestamp={selectedAction.endTimestamp}
+          initialContractAddress={selectedAction.contractAddress}
+          initialContractFunction={selectedAction.contractFunction}
+          initialContractFunctionInput={selectedAction.contractFunctionInput}
+          initialContractCustomAbiString={
+            selectedAction.contractCustomAbiString
+          }
+        />
+      )}
 
       {showNewActionDialog && (
-        <Dialog
+        <ActionDialog
           isOpen
-          onRequestClose={() => {
+          close={() => {
             setShowNewActionDialog(false);
           }}
-          width="46rem"
-        >
-          {({ titleProps }) => (
-            <ActionDialog
-              title="Add action"
-              submit={(a) => {
-                console.log(draft);
-                setActions([...draft.actions, a]);
-              }}
-              titleProps={titleProps}
-              dismiss={() => {
-                setShowNewActionDialog(false);
-              }}
-              submitButtonLabel="Add"
-            />
-          )}
-        </Dialog>
+          title="Add action"
+          submit={(a) => {
+            setActions([...draft.actions, a]);
+          }}
+          submitButtonLabel="Add"
+        />
       )}
     </>
-  );
-};
-
-const parseAmount = (amount, currency) => {
-  switch (currency.toLowerCase()) {
-    case "eth":
-    case "weth":
-    case "usdc":
-      return parseUnits(String(amount), decimalsByCurrency[currency]);
-    default:
-      throw new Error();
-  }
-};
-
-const usePredictedStreamContractAddress = (
-  { receiverAddress, formattedAmount, currency, startDate, endDate },
-  { enabled }
-) => {
-  const executorContract = useContract("executor");
-  const streamPaymentTokenContract = useContract(`${currency}-token`);
-  const streamFactoryContract = useContract("stream-factory");
-
-  const { data, isSuccess } = useContractRead({
-    address: streamFactoryContract.address,
-    abi: parseAbi([
-      "function predictStreamAddress(address, address, address, uint256, address, uint256, uint256) public view returns (address)",
-    ]),
-    functionName: "predictStreamAddress",
-    args: [
-      executorContract.address,
-      executorContract.address,
-      receiverAddress,
-      parseAmount(formattedAmount, currency),
-      streamPaymentTokenContract.address,
-      (startDate?.getTime() ?? 0) / 1000,
-      (endDate?.getTime() ?? 0) / 1000,
-    ],
-    enabled:
-      enabled &&
-      parseFloat(formattedAmount) > 0 &&
-      isAddress(receiverAddress) &&
-      startDate != null &&
-      endDate != null &&
-      endDate > startDate,
-  });
-
-  if (!isSuccess) return null;
-
-  return data;
-};
-
-const ActionDialog = ({
-  title,
-  initialType,
-  initialCurrency,
-  initialAmount,
-  initialTarget,
-  initialStreamStartTimestamp,
-  initialStreamEndTimestamp,
-  initialContractAddress,
-  initialContractFunction,
-  initialContractFunctionInput,
-  initialContractCustomAbiString,
-  titleProps,
-  remove,
-  submit,
-  dismiss,
-  submitButtonLabel = "Save",
-}) => {
-  const [ethToUsdRate, setEthToUsdRate] = React.useState(null);
-
-  const [type, setType] = React.useState(initialType ?? "one-time-payment");
-  const [currency, setCurrency] = React.useState(initialCurrency ?? "eth");
-  const [amount, setAmount] = React.useState(initialAmount ?? 0);
-  const [receiverQuery, setReceiverQuery] = React.useState(initialTarget ?? "");
-
-  // For streams
-  const [streamStartDate, setStreamStartDate] = React.useState(
-    initialStreamStartTimestamp == null
-      ? null
-      : new Date(initialStreamStartTimestamp)
-  );
-  const [streamEndDate, setStreamEndDate] = React.useState(
-    initialStreamEndTimestamp == null
-      ? null
-      : new Date(initialStreamEndTimestamp)
-  );
-
-  // For custom transactions
-  const [contractAddress, setContractAddress] = React.useState(
-    initialContractAddress ?? ""
-  );
-  const [contractFunction, setContractFunction] = React.useState(
-    initialContractFunction ?? ""
-  );
-  const [contractFunctionInput, setContractFunctionInput] = React.useState(
-    initialContractFunctionInput ?? []
-  );
-  const [rawContractCustomAbiString, setContractRawCustomAbiString] =
-    React.useState(initialContractCustomAbiString ?? "");
-
-  const deferredAbiString = React.useDeferredValue(
-    rawContractCustomAbiString.trim()
-  );
-
-  const customAbi = React.useMemo(() => {
-    try {
-      const abi = JSON.parse(deferredAbiString);
-      if (!Array.isArray(abi)) return null;
-      return abi;
-    } catch (e) {
-      const lines = deferredAbiString
-        .split(/\n/)
-        .filter((l) => l.trim() !== "");
-      try {
-        return parseAbi(lines);
-      } catch (e) {
-        return null;
-      }
-    }
-  }, [deferredAbiString]);
-
-  const targetContract = useContract(contractAddress);
-
-  const { data: ensName } = useEnsName({
-    address: receiverQuery.trim(),
-    enabled: isAddress(receiverQuery.trim()),
-  });
-  const { data: ensAddress } = useEnsAddress({
-    name: receiverQuery.trim(),
-    enabled: receiverQuery.trim().split(".").slice(-1)[0] === "eth",
-  });
-
-  const {
-    abi: etherscanAbi,
-    proxyImplementationAbi: etherscanProxyImplementationAbi,
-    notFound: etherscanAbiNotFound,
-  } = useAbi(contractAddress, {
-    enabled: type === "custom-transaction" && isAddress(contractAddress),
-  });
-
-  const abi = etherscanAbiNotFound
-    ? customAbi
-    : etherscanProxyImplementationAbi ?? etherscanAbi;
-
-  const contractFunctionOptions = abi
-    ?.filter(
-      (item) =>
-        item.type === "function" &&
-        ["payable", "nonpayable"].includes(item.stateMutability)
-    )
-    .map((item) => {
-      const label = `${item.name}()`;
-      const signature = `${item.name}(${item.inputs
-        .map((i) => i.type)
-        .join(",")})`;
-      const description =
-        item.inputs.length === 0 ? null : (
-          <span
-            css={(t) =>
-              css({
-                "[data-identifier]": { fontWeight: t.text.weights.emphasis },
-              })
-            }
-          >
-            {item.name}(
-            {item.inputs.map((input, i) => (
-              <React.Fragment key={i}>
-                {i !== 0 && <>, </>}
-                {input.internalType} <span data-identifier>{input.name}</span>
-              </React.Fragment>
-            ))}
-            )
-          </span>
-        );
-
-      return {
-        value: signature,
-        label,
-        description,
-        inputs: item.inputs,
-      };
-    });
-
-  const selectedContractFunctionOption = contractFunctionOptions?.find(
-    (o) => o.value === contractFunction
-  );
-
-  const target = isAddress(receiverQuery.trim())
-    ? receiverQuery.trim()
-    : ensAddress ?? "";
-
-  const convertedEthToUsdValue =
-    currency !== "eth" || ethToUsdRate == null || parseFloat(amount) === 0
-      ? null
-      : parseFloat(amount) * ethToUsdRate;
-
-  const convertedUsdcToEthValue =
-    currency !== "usdc" || ethToUsdRate == null || parseFloat(amount) === 0
-      ? null
-      : parseFloat(amount) / ethToUsdRate;
-
-  useFetch(
-    () =>
-      fetch("https://api.coinbase.com/v2/exchange-rates?currency=ETH")
-        .then((res) => res.json())
-        .then((body) => {
-          const rate = body.data.rates["USD"];
-          if (rate == null) return;
-          setEthToUsdRate(parseFloat(rate));
-        }),
-    []
-  );
-
-  const predictedStreamContractAddress = usePredictedStreamContractAddress(
-    {
-      receiverAddress: target,
-      formattedAmount: String(amount),
-      currency,
-      startDate: streamStartDate,
-      endDate: streamEndDate,
-    },
-    {
-      enabled: type === "streaming-payment",
-    }
-  );
-
-  const hasRequiredInputs = (() => {
-    switch (type) {
-      case "one-time-payment":
-        return parseFloat(amount) > 0 && isAddress(target);
-
-      case "streaming-payment":
-        return (
-          parseFloat(amount) > 0 &&
-          isAddress(target) &&
-          streamStartDate != null &&
-          streamEndDate != null &&
-          streamEndDate > streamStartDate &&
-          predictedStreamContractAddress != null
-        );
-
-      case "custom-transaction":
-        return selectedContractFunctionOption != null;
-
-      default:
-        throw new Error();
-    }
-  })();
-
-  return (
-    <form
-      onSubmit={(e) => {
-        e.preventDefault();
-        submit({
-          type,
-          target: target || null,
-          amount,
-          currency,
-          startTimestamp: streamStartDate?.getTime(),
-          endTimestamp: streamEndDate?.getTime(),
-          predictedStreamContractAddress,
-          contractAddress,
-          contractFunction,
-          contractFunctionInput,
-          contractCustomAbiString: rawContractCustomAbiString,
-        });
-        dismiss();
-      }}
-      css={css({
-        overflow: "auto",
-        padding: "1.6rem",
-        "@media (min-width: 600px)": {
-          padding: "2.4rem",
-        },
-      })}
-    >
-      <DialogHeader title={title} titleProps={titleProps} dismiss={dismiss} />
-      <main style={{ display: "flex", flexDirection: "column", gap: "1.6rem" }}>
-        <div>
-          <Select
-            label="Type"
-            value={type}
-            size="medium"
-            options={[
-              { value: "one-time-payment", label: "One-time transfer" },
-              {
-                value: "streaming-payment",
-                label: "Streaming transfer",
-              },
-              {
-                value: "custom-transaction",
-                label: "Custom transaction",
-              },
-            ]}
-            onChange={(value) => {
-              if (value === "streaming-payment" && currency === "eth")
-                setCurrency("weth");
-              setType(value);
-            }}
-          />
-        </div>
-
-        {type === "streaming-payment" && (
-          <div>
-            <div
-              style={{
-                display: "grid",
-                gridTemplateColumns: "repeat(2, minmax(0,1fr))",
-                gap: "1.6rem",
-              }}
-            >
-              <Input
-                label="Start"
-                type="date"
-                value={
-                  streamStartDate == null
-                    ? ""
-                    : formatDate(streamStartDate, "yyyy-MM-dd")
-                }
-                onChange={(e) => {
-                  setStreamStartDate(new Date(e.target.valueAsNumber));
-                }}
-              />
-              <Input
-                label="End"
-                type="date"
-                value={
-                  streamEndDate == null
-                    ? ""
-                    : formatDate(streamEndDate, "yyyy-MM-dd")
-                }
-                onChange={(e) => {
-                  setStreamEndDate(new Date(e.target.valueAsNumber));
-                }}
-              />
-            </div>
-            <div
-              css={(t) =>
-                css({
-                  fontSize: t.text.sizes.small,
-                  color: t.colors.textDimmed,
-                  marginTop: "0.7rem",
-                })
-              }
-            >
-              Consider the estimated execution time of the proposal; creating a
-              stream with a past start date will work fine, but it is a little
-              bit awkward.
-            </div>
-          </div>
-        )}
-
-        {type !== "custom-transaction" && (
-          <div>
-            <Label htmlFor="amount">Amount</Label>
-            <div
-              style={{
-                display: "grid",
-                gridTemplateColumns: "minmax(0,1fr) auto",
-                gap: "0.8rem",
-              }}
-            >
-              <Input
-                id="amount"
-                value={amount}
-                // type="number"
-                // step="0.01"
-                // min={0}
-                onBlur={() => {
-                  setAmount(parseFloat(amount));
-                }}
-                onChange={(e) => {
-                  const { value } = e.target;
-                  if (value.trim() === "") {
-                    setAmount(0);
-                    return;
-                  }
-
-                  const n = parseFloat(value);
-
-                  if (isNaN(n) || !/^[0-9]*.?[0-9]*$/.test(value)) return;
-
-                  if (/^[0-9]*$/.test(value)) {
-                    setAmount(n);
-                    return;
-                  }
-
-                  setAmount(value);
-                }}
-                // hint={<>{formatEther(amount)} ETH</>}
-              />
-              <Select
-                aria-label="Currency token"
-                value={currency}
-                options={
-                  type === "one-time-payment"
-                    ? [
-                        { value: "eth", label: "ETH" },
-                        { value: "usdc", label: "USDC" },
-                      ]
-                    : [
-                        { value: "weth", label: "WETH" },
-                        { value: "usdc", label: "USDC" },
-                      ]
-                }
-                onChange={(value) => {
-                  setCurrency(value);
-                }}
-                width="max-content"
-                fullWidth={false}
-              />
-            </div>
-            <div
-              css={(t) =>
-                css({
-                  fontSize: t.text.sizes.small,
-                  color: t.colors.textDimmed,
-                  marginTop: "0.7rem",
-                })
-              }
-            >
-              {convertedEthToUsdValue != null && (
-                <>
-                  {convertedEthToUsdValue < 0.01 ? (
-                    "<0.01 USD"
-                  ) : (
-                    <>
-                      &asymp;{" "}
-                      <FormattedNumber
-                        value={convertedEthToUsdValue}
-                        minimumFractionDigits={2}
-                        maximumFractionDigits={2}
-                      />{" "}
-                      USD
-                    </>
-                  )}
-                </>
-              )}
-              {convertedUsdcToEthValue != null && (
-                <>
-                  {convertedUsdcToEthValue < 0.0001 ? (
-                    "<0.0001 ETH"
-                  ) : (
-                    <>
-                      &asymp;{" "}
-                      <FormattedNumber
-                        value={convertedUsdcToEthValue}
-                        minimumFractionDigits={1}
-                        maximumFractionDigits={4}
-                      />{" "}
-                      ETH
-                    </>
-                  )}
-                </>
-              )}
-              &nbsp;
-            </div>
-          </div>
-        )}
-
-        {type !== "custom-transaction" && (
-          <Input
-            label="Receiver account"
-            value={receiverQuery}
-            onBlur={() => {
-              if (!isAddress(receiverQuery) && ensAddress != null)
-                setReceiverQuery(ensAddress);
-            }}
-            onChange={(e) => {
-              setReceiverQuery(e.target.value);
-            }}
-            placeholder="0x..., vitalik.eth"
-            hint={
-              !isAddress(receiverQuery) && ensAddress == null ? (
-                "Specify an Ethereum account address or ENS name"
-              ) : ensAddress != null ? (
-                ensAddress
-              ) : ensName != null ? (
-                <>
-                  Primary ENS name:{" "}
-                  <em
-                    css={(t) =>
-                      css({
-                        fontStyle: "normal",
-                        fontWeight: t.text.weights.emphasis,
-                      })
-                    }
-                  >
-                    {ensName}
-                  </em>
-                </>
-              ) : (
-                <>&nbsp;</>
-              )
-            }
-          />
-        )}
-
-        {type === "custom-transaction" && (
-          <>
-            <Input
-              label="Target contract address"
-              value={contractAddress}
-              onChange={(e) => {
-                setContractAddress(e.target.value);
-                setContractFunction("");
-                setContractFunctionInput([]);
-              }}
-              placeholder="0x..."
-              hint={targetContract?.name}
-            />
-
-            {etherscanAbiNotFound && (
-              <Input
-                label="ABI"
-                component="textarea"
-                value={rawContractCustomAbiString}
-                onChange={(e) => {
-                  setContractRawCustomAbiString(e.target.value);
-                }}
-                onBlur={() => {
-                  try {
-                    const formattedAbi = JSON.stringify(
-                      JSON.parse(rawContractCustomAbiString),
-                      null,
-                      2
-                    );
-                    setContractRawCustomAbiString(formattedAbi);
-                  } catch (e) {
-                    //
-                  }
-                }}
-                rows={5}
-                placeholder="[]"
-                hint="Paste a JSON formatted ABI array"
-                css={(t) =>
-                  css({
-                    fontSize: t.text.sizes.small,
-                    padding: "1rem",
-                  })
-                }
-              />
-            )}
-
-            {contractFunctionOptions?.length > 0 && (
-              <div>
-                <Label htmlFor="contract-function">Function to call</Label>
-                <Select
-                  id="contract-function"
-                  aria-label="Contract function"
-                  value={contractFunction}
-                  options={contractFunctionOptions}
-                  size="medium"
-                  onChange={(value) => {
-                    setContractFunction(value);
-                    setContractFunctionInput([]);
-                  }}
-                  width="max-content"
-                  fullWidth
-                />
-              </div>
-            )}
-
-            {selectedContractFunctionOption != null &&
-              selectedContractFunctionOption.inputs.length > 0 && (
-                <div
-                  css={(t) =>
-                    css({
-                      "[data-input] + [data-input]": {
-                        marginTop: "1.6rem",
-                      },
-                      "[data-components]": {
-                        paddingLeft: "2.4rem",
-                        position: "relative",
-                        ":before": {
-                          position: "absolute",
-                          top: "4.6rem",
-                          left: "0.8rem",
-                          content: '""',
-                          height: "calc(100% - 6.4rem)",
-                          width: "0.8rem",
-                          border: "0.1rem solid",
-                          borderRight: 0,
-                          borderColor: t.colors.borderLight,
-                        },
-                      },
-                      "[data-components] [data-input] + [data-input]": {
-                        marginTop: "0.8rem",
-                      },
-                      "[data-array]": {
-                        display: "flex",
-                        flexDirection: "column",
-                        gap: "0.8rem",
-                      },
-                      "[data-append-button]": { marginTop: "0.4rem" },
-                      "[data-code]": {
-                        fontSize: "0.85em",
-                        fontFamily: t.fontStacks.monospace,
-                      },
-                      "[data-code] [data-type]": { color: t.colors.textMuted },
-                    })
-                  }
-                >
-                  <Label>Arguments</Label>
-                  {selectedContractFunctionOption.inputs.map((input, i) => {
-                    const renderInput = (input, inputValue, setInputValue) => {
-                      const labelContent =
-                        input.name == null ? null : (
-                          <span data-code>
-                            <span data-type>{input.internalType}</span>{" "}
-                            {input.name}
-                          </span>
-                        );
-
-                      const isArray = input.type.slice(-2) === "[]";
-
-                      if (isArray) {
-                        const elementType = input.type.slice(0, -2);
-                        const defaultValue =
-                          input.components != null
-                            ? {}
-                            : getArgumentDefaultValue(elementType);
-                        return (
-                          <div key={input.name} data-input>
-                            {labelContent != null && (
-                              <Label>{labelContent}</Label>
-                            )}
-                            <div data-array>
-                              {(inputValue ?? []).map(
-                                (elementValue, elementIndex) => {
-                                  const setElementValue = (getElementValue) => {
-                                    setInputValue((currentInputValue) => {
-                                      const nextElementValue =
-                                        typeof getElementValue === "function"
-                                          ? getElementValue(elementValue)
-                                          : getElementValue;
-                                      const nextInputValue = [
-                                        ...currentInputValue,
-                                      ];
-                                      nextInputValue[elementIndex] =
-                                        nextElementValue;
-                                      return nextInputValue;
-                                    });
-                                  };
-
-                                  return renderInput(
-                                    {
-                                      components: input.components,
-                                      type: elementType,
-                                    },
-                                    elementValue,
-                                    setElementValue
-                                  );
-                                }
-                              )}
-
-                              <div
-                                style={{
-                                  paddingTop:
-                                    inputValue?.length > 0 &&
-                                    input.components != null
-                                      ? "0.8rem"
-                                      : 0,
-                                }}
-                              >
-                                <Button
-                                  size="tiny"
-                                  type="button"
-                                  onClick={() => {
-                                    setInputValue((els = []) => [
-                                      ...els,
-                                      defaultValue,
-                                    ]);
-                                  }}
-                                  style={{ alignSelf: "flex-start" }}
-                                >
-                                  Add element
-                                </Button>
-                              </div>
-                            </div>
-                          </div>
-                        );
-                      }
-
-                      if (input.components != null)
-                        return (
-                          <div key={input.name} data-input>
-                            {labelContent != null && (
-                              <Label>{labelContent}</Label>
-                            )}
-                            <div data-components>
-                              {input.components.map((c) => {
-                                const componentValue =
-                                  inputValue?.[c.name] ?? "";
-                                const setComponentValue = (
-                                  getComponentValue
-                                ) => {
-                                  setInputValue((currentInputValue) => {
-                                    const currentComponentValue =
-                                      currentInputValue?.[c.name];
-                                    const nextComponentValue =
-                                      typeof getComponentValue === "function"
-                                        ? getComponentValue(
-                                            currentComponentValue
-                                          )
-                                        : getComponentValue;
-                                    return {
-                                      ...currentInputValue,
-                                      [c.name]: nextComponentValue,
-                                    };
-                                  });
-                                };
-
-                                return renderInput(
-                                  c,
-                                  componentValue,
-                                  setComponentValue
-                                );
-                              })}
-                            </div>
-                          </div>
-                        );
-
-                      const defaultValue = getArgumentDefaultValue(input.type);
-
-                      switch (input.type) {
-                        default:
-                          return (
-                            <Input
-                              key={input.name}
-                              label={labelContent}
-                              value={inputValue ?? defaultValue}
-                              onChange={(e) => {
-                                setInputValue(e.target.value);
-                              }}
-                              placeholder={getArgumentInputPlaceholder(
-                                input.type
-                              )}
-                              containerProps={{ "data-input": true }}
-                            />
-                          );
-                      }
-                    };
-
-                    const value = contractFunctionInput[i];
-                    const setValue = (getInputValue) => {
-                      setContractFunctionInput((currentState) => {
-                        const currentInputValue = currentState[i];
-                        const nextState = [...currentState];
-                        nextState[i] =
-                          typeof getInputValue === "function"
-                            ? getInputValue(currentInputValue)
-                            : getInputValue;
-                        return nextState;
-                      });
-                    };
-                    return renderInput(input, value, setValue);
-                  })}
-                </div>
-              )}
-          </>
-        )}
-      </main>
-
-      <footer
-        css={css({
-          display: "flex",
-          justifyContent: "space-between",
-          gap: "1rem",
-          paddingTop: "2.5rem",
-          "@media (min-width: 600px)": {
-            paddingTop: "3rem",
-          },
-        })}
-      >
-        {remove == null ? (
-          <div />
-        ) : (
-          <Button
-            type="button"
-            danger
-            size="medium"
-            icon={<TrashCanIcon style={{ width: "1.5rem" }} />}
-            onClick={() => {
-              remove();
-              dismiss();
-            }}
-          />
-        )}
-        <div
-          css={css({
-            display: "grid",
-            gridAutoFlow: "column",
-            gridAutoColumns: "minmax(0,1fr)",
-            gridGap: "1rem",
-          })}
-        >
-          <Button type="button" size="medium" onClick={dismiss}>
-            Cancel
-          </Button>
-          <Button
-            type="submit"
-            size="medium"
-            variant="primary"
-            disabled={!hasRequiredInputs}
-          >
-            {submitButtonLabel}
-          </Button>
-        </div>
-      </footer>
-    </form>
   );
 };
 

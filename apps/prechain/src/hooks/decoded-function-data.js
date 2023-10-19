@@ -31,20 +31,20 @@ const useDecodedFunctionData = (
   { target, calldata },
   { enabled = false } = {}
 ) => {
-  const { abi, proxyImplementationAbi, proxyImplementationAddress } = useAbi(
-    target,
-    { enabled }
-  );
+  const { data: abiData } = useAbi(target, { enabled });
+
+  const abi = abiData?.abi;
+  const proxyImplementation = abiData?.proxyImplementation;
 
   const decodedFunctionData =
     abi == null ? null : decodeCalldataWithAbi({ abi, calldata });
 
   if (decodedFunctionData != null) return decodedFunctionData;
 
-  if (proxyImplementationAbi == null) return null;
+  if (proxyImplementation == null) return null;
 
   const decodedFunctionDataFromProxy = decodeCalldataWithAbi({
-    abi: proxyImplementationAbi,
+    abi: proxyImplementation.abi,
     calldata,
   });
 
@@ -52,7 +52,7 @@ const useDecodedFunctionData = (
 
   return {
     proxy: true,
-    proxyImplementationAddress,
+    proxyImplementationAddress: proxyImplementation.address,
     ...decodedFunctionDataFromProxy,
   };
 };

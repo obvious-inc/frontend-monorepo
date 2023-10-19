@@ -29,7 +29,10 @@ const fetchAbi = async (address_) => {
 
   const responseBody = await response.json();
 
-  if (responseBody.status !== "1") return null;
+  if (responseBody.status !== "1") {
+    console.log(responseBody)
+    return null;
+  }
 
   const abi = JSON.parse(responseBody.result);
 

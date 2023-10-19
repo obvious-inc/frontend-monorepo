@@ -4,7 +4,7 @@ import { useContractRead, usePublicClient } from "wagmi";
 import { useFetch } from "@shades/common/react";
 
 // https://eips.ethereum.org/EIPS/eip-1967#logic-contract-address
-const IMPLEMENTATION_CONTRACT_ADDRESS_STORAGE_SLOT =
+const EIP_1967_IMPLEMENTATION_CONTRACT_ADDRESS_STORAGE_SLOT =
   "0x360894a13ba1a3210667c828492db98dca3e2076cc3735a920a3ca505d382bbc";
 
 const useAbi = (address, { enabled = true } = {}) => {
@@ -17,6 +17,7 @@ const useAbi = (address, { enabled = true } = {}) => {
   const [proxyImplementationAddressFromStorage, setProxyImplmentationAddress] =
     React.useState(null);
 
+  const [isFetchingAbi, setFetchingAbi] = React.useState(false);
   const [notFound, setNotFound] = React.useState(false);
 
   const implementationAbiItem =
@@ -31,7 +32,7 @@ const useAbi = (address, { enabled = true } = {}) => {
       publicClient
         .getStorageAt({
           address,
-          slot: IMPLEMENTATION_CONTRACT_ADDRESS_STORAGE_SLOT,
+          slot: EIP_1967_IMPLEMENTATION_CONTRACT_ADDRESS_STORAGE_SLOT,
         })
         .then(
           (data) => {
@@ -73,19 +74,24 @@ const useAbi = (address, { enabled = true } = {}) => {
     !enabled
       ? undefined
       : () => {
+          setFetchingAbi(true);
           setNotFound(false);
-          return fetchAbi(address).then(
-            (abi) => {
-              setAbi(abi);
-            },
-            (e) => {
-              if (e.message === "not-found") {
-                setNotFound(true);
-                return;
+          return fetchAbi(address)
+            .then(
+              (abi) => {
+                setAbi(abi);
+              },
+              (e) => {
+                if (e.message === "not-found") {
+                  setNotFound(true);
+                  return;
+                }
+                return Promise.reject(e);
               }
-              return Promise.reject(e);
-            }
-          );
+            )
+            .finally(() => {
+              setFetchingAbi(false);
+            });
         },
     [address]
   );
@@ -100,7 +106,25 @@ const useAbi = (address, { enabled = true } = {}) => {
     [proxyImplementationAddress]
   );
 
-  return { abi, proxyImplementationAbi, proxyImplementationAddress, notFound };
+  const proxyImplementation =
+    proxyImplementationAbi == null
+      ? null
+      : {
+          abi: proxyImplementationAbi,
+          address: proxyImplementationAddress,
+        };
+
+  return {
+    data:
+      abi == null
+        ? null
+        : {
+            abi,
+            proxyImplementation,
+          },
+    error: notFound ? new Error("not-found") : null,
+    isLoading: isFetchingAbi,
+  };
 };
 
 export default useAbi;
