@@ -2,8 +2,13 @@ export const config = {
   runtime: "edge",
 };
 
+import { mnemonicToAccount } from "viem/accounts";
+
+const appAccount = mnemonicToAccount(process.env.FARCORD_APP_MNEMONIC);
+
 export default async (req) => {
   console.log("new request coming through", req);
+  console.log("account", appAccount.address);
   const { searchParams } = new URL(req.url);
   const address = searchParams.get("address");
 
