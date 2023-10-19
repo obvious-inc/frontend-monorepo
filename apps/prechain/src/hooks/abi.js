@@ -1,4 +1,4 @@
-import { isAddress, getAbiItem, trim as trimHexOrBytes } from "viem";
+import { getAbiItem, trim as trimHexOrBytes } from "viem";
 import React from "react";
 import { useContractRead, usePublicClient } from "wagmi";
 import { useFetch } from "@shades/common/react";
@@ -7,18 +7,45 @@ import { useFetch } from "@shades/common/react";
 const EIP_1967_IMPLEMENTATION_CONTRACT_ADDRESS_STORAGE_SLOT =
   "0x360894a13ba1a3210667c828492db98dca3e2076cc3735a920a3ca505d382bbc";
 
+const fetchEip1967ProxyImplementationAddressFromStorage = (
+  address,
+  { publicClient }
+) =>
+  publicClient
+    .getStorageAt({
+      address,
+      slot: EIP_1967_IMPLEMENTATION_CONTRACT_ADDRESS_STORAGE_SLOT,
+    })
+    .then(
+      (data) => {
+        const address = trimHexOrBytes(data);
+        if (address === "0x00") return null;
+        return address;
+      },
+      () => null
+    );
+
+const updateAddressData = (address_, data) => (dataByAddress) => {
+  const address = address_.toLowerCase();
+  if (address == null) return dataByAddress;
+  return {
+    ...dataByAddress,
+    [address]: { ...dataByAddress[address], ...data },
+  };
+};
+
 const useAbi = (address, { enabled = true } = {}) => {
   const publicClient = usePublicClient();
 
-  const [abi, setAbi] = React.useState(null);
-  const [proxyImplementationAbi, setProxyImplementationAbi] =
-    React.useState(null);
+  const [dataByAddress, setDataByAddress] = React.useState({});
 
-  const [proxyImplementationAddressFromStorage, setProxyImplmentationAddress] =
-    React.useState(null);
-
-  const [isFetchingAbi, setFetchingAbi] = React.useState(false);
-  const [notFound, setNotFound] = React.useState(false);
+  const {
+    abi,
+    proxyImplementationAddressFromStorage,
+    proxyImplementationAbi,
+    isFetchingAbi,
+    notFound,
+  } = dataByAddress[address?.toLowerCase()] ?? {};
 
   const implementationAbiItem =
     abi != null && getAbiItem({ abi, name: "implementation" });
@@ -27,29 +54,12 @@ const useAbi = (address, { enabled = true } = {}) => {
     address,
     abi,
     functionName: "implementation",
-    enabled: isAddress(address) && implementationAbiItem != null,
-    onError: () => {
-      publicClient
-        .getStorageAt({
-          address,
-          slot: EIP_1967_IMPLEMENTATION_CONTRACT_ADDRESS_STORAGE_SLOT,
-        })
-        .then(
-          (data) => {
-            const address = trimHexOrBytes(data);
-            if (address === "0x00") return;
-            setProxyImplmentationAddress(address);
-          },
-          () => {
-            // Ignore
-          }
-        );
-    },
+    enabled: implementationAbiItem != null,
   });
 
   const proxyImplementationAddress =
-    proxyImplementationAddressFromContract ??
-    proxyImplementationAddressFromStorage;
+    proxyImplementationAddressFromStorage ??
+    proxyImplementationAddressFromContract;
 
   const fetchAbi = React.useCallback(
     (address) =>
@@ -70,41 +80,48 @@ const useAbi = (address, { enabled = true } = {}) => {
     []
   );
 
-  useFetch(
-    !enabled
-      ? undefined
-      : () => {
-          setFetchingAbi(true);
-          setNotFound(false);
-          return fetchAbi(address)
-            .then(
-              (abi) => {
-                setAbi(abi);
-              },
-              (e) => {
-                if (e.message === "not-found") {
-                  setNotFound(true);
-                  return;
-                }
-                return Promise.reject(e);
-              }
-            )
-            .finally(() => {
-              setFetchingAbi(false);
-            });
+  useFetch(() => {
+    if (!enabled) return;
+    setDataByAddress(updateAddressData(address, { isFetchingAbi: true }));
+    return fetchAbi(address)
+      .then(
+        (abi) => {
+          setDataByAddress(updateAddressData(address, { abi }));
         },
-    [address]
-  );
+        (e) => {
+          if (e.message === "not-found") {
+            setDataByAddress(updateAddressData(address, { notFound: true }));
+            return;
+          }
+          return Promise.reject(e);
+        }
+      )
+      .finally(() => {
+        setDataByAddress(updateAddressData(address, { isFetchingAbi: false }));
+      });
+  }, [address]);
 
-  useFetch(
-    proxyImplementationAddress == null
-      ? undefined
-      : () =>
-          fetchAbi(proxyImplementationAddress).then((abi) => {
-            setProxyImplementationAbi(abi);
-          }),
-    [proxyImplementationAddress]
-  );
+  useFetch(() => {
+    if (!enabled) return;
+    return fetchEip1967ProxyImplementationAddressFromStorage(address, {
+      publicClient,
+    }).then((implementationAddress) => {
+      setDataByAddress(
+        updateAddressData(address, {
+          proxyImplementationAddressFromStorage: implementationAddress,
+        })
+      );
+    });
+  }, [address, publicClient]);
+
+  useFetch(() => {
+    if (proxyImplementationAddress == null) return;
+    return fetchAbi(proxyImplementationAddress).then((abi) => {
+      setDataByAddress(
+        updateAddressData(address, { proxyImplementationAbi: abi })
+      );
+    });
+  }, [proxyImplementationAddress]);
 
   const proxyImplementation =
     proxyImplementationAbi == null

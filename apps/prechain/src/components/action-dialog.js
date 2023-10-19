@@ -1,12 +1,19 @@
 import formatDate from "date-fns/format";
 import React from "react";
-import { isAddress, parseAbi, parseUnits } from "viem";
+import {
+  isAddress,
+  parseAbi,
+  parseUnits,
+  encodeAbiParameters,
+  decodeAbiParameters,
+} from "viem";
 import { useEnsName, useEnsAddress, useContractRead } from "wagmi";
 import { css } from "@emotion/react";
 import { useFetch } from "@shades/common/react";
 import { TrashCan as TrashCanIcon } from "@shades/ui-web/icons";
 import Button from "@shades/ui-web/button";
 import Input, { Label } from "@shades/ui-web/input";
+import Spinner from "@shades/ui-web/spinner";
 import Select from "@shades/ui-web/select";
 import Dialog from "@shades/ui-web/dialog";
 import DialogHeader from "@shades/ui-web/dialog-header";
@@ -20,38 +27,55 @@ const decimalsByCurrency = {
   usdc: 6,
 };
 
-const getArgumentDefaultValue = (type_) => {
-  const type =
-    type_.startsWith("int") || type_.startsWith("uint") ? "number" : type_;
-  switch (type) {
+const simplifyType = (type) =>
+  type.startsWith("int") || type.startsWith("uint") ? "number" : type;
+
+const getArgumentInputPlaceholder = (type) => {
+  switch (simplifyType(type)) {
     case "number":
       return "0";
-    case "address":
-      return "0x0000000000000000000000000000000000000000";
-    case "bool":
-      return false;
-    case "bytes":
     case "string":
+      return "...";
+    case "address":
+    case "bytes":
+      return "0x...";
     default:
       return "";
   }
 };
 
-const getArgumentInputPlaceholder = (type_) => {
-  const type =
-    type_.startsWith("int") || type_.startsWith("uint") ? "number" : type_;
-  switch (type) {
-    case "number":
-      return "0";
-    case "address":
-    case "bool":
-      return "false";
-    case "bytes":
-      return "0x...";
-    case "string":
-    default:
-      return "...";
-  }
+const getNumberTypeMax = (type) => {
+  const isUnsigned = type.startsWith("u");
+  const numberOfBits = BigInt(type.split("int").slice(-1)[0]);
+  const signedMax = 2n ** (numberOfBits - 1n) - 1n;
+  return isUnsigned ? signedMax + 1n : signedMax;
+};
+
+const buildInitialInputState = (inputs = []) => {
+  const buildInputState = (input) => {
+    const isArray = input.type.slice(-2) === "[]";
+
+    if (isArray) return [];
+
+    if (input.components != null) {
+      return input.components.reduce(
+        (obj, c) => ({
+          ...obj,
+          [c.name]: buildInputState(c),
+        }),
+        {}
+      );
+    }
+
+    switch (simplifyType(input.type)) {
+      case "bool":
+        return null;
+      default:
+        return "";
+    }
+  };
+
+  return inputs.map(buildInputState);
 };
 
 const parseAmount = (amount, currency) => {
@@ -110,7 +134,7 @@ const ActionDialog = ({ isOpen, close, ...props }) => (
     }}
     width="46rem"
   >
-    {({ titleProps }) => <Content {...titleProps} {...props} />}
+    {({ titleProps }) => <Content {...titleProps} {...props} dismiss={close} />}
   </Dialog>
 );
 
@@ -196,12 +220,13 @@ const Content = ({
     enabled: receiverQuery.trim().split(".").slice(-1)[0] === "eth",
   });
 
-  const { data: etherscanAbiData, error: etherscanAbiError } = useAbi(
-    contractAddress,
-    {
-      enabled: type === "custom-transaction" && isAddress(contractAddress),
-    }
-  );
+  const {
+    data: etherscanAbiData,
+    error: etherscanAbiError,
+    isLoading: isLoadingEtherscanAbi,
+  } = useAbi(contractAddress, {
+    enabled: type === "custom-transaction" && isAddress(contractAddress),
+  });
 
   const etherscanAbi = etherscanAbiData?.abi;
   const etherscanProxyImplementationAbi =
@@ -210,7 +235,9 @@ const Content = ({
 
   const abi = etherscanAbiNotFound
     ? customAbi
-    : etherscanProxyImplementationAbi ?? etherscanAbi;
+    : etherscanAbi == null
+    ? null
+    : [...etherscanAbi, ...(etherscanProxyImplementationAbi ?? [])];
 
   const contractFunctionOptions = abi
     ?.filter(
@@ -236,7 +263,13 @@ const Content = ({
             {item.inputs.map((input, i) => (
               <React.Fragment key={i}>
                 {i !== 0 && <>, </>}
-                {input.internalType} <span data-identifier>{input.name}</span>
+                {input.internalType ?? input.type}
+                {input.name != null && (
+                  <>
+                    {" "}
+                    <span data-identifier>{input.name}</span>
+                  </>
+                )}
               </React.Fragment>
             ))}
             )
@@ -309,8 +342,19 @@ const Content = ({
           predictedStreamContractAddress != null
         );
 
-      case "custom-transaction":
-        return selectedContractFunctionOption != null;
+      case "custom-transaction": {
+        if (selectedContractFunctionOption == null) return false;
+
+        try {
+          encodeAbiParameters(
+            selectedContractFunctionOption.inputs,
+            contractFunctionInput
+          );
+          return true;
+        } catch (e) {
+          return false;
+        }
+      }
 
       default:
         throw new Error();
@@ -321,19 +365,47 @@ const Content = ({
     <form
       onSubmit={(e) => {
         e.preventDefault();
-        submit({
-          type,
-          target: target || null,
-          amount,
-          currency,
-          startTimestamp: streamStartDate?.getTime(),
-          endTimestamp: streamEndDate?.getTime(),
-          predictedStreamContractAddress,
-          contractAddress,
-          contractFunction,
-          contractFunctionInput,
-          contractCustomAbiString: rawContractCustomAbiString,
-        });
+        switch (type) {
+          case "one-time-payment":
+            submit({ type, target, amount, currency });
+            break;
+
+          case "streaming-payment":
+            submit({
+              type,
+              target,
+              amount,
+              currency,
+              startTimestamp: streamStartDate?.getTime(),
+              endTimestamp: streamEndDate?.getTime(),
+              predictedStreamContractAddress,
+            });
+            break;
+
+          case "custom-transaction": {
+            const inputTypes = selectedContractFunctionOption.inputs;
+            submit({
+              type,
+              contractAddress,
+              contractFunction,
+              contractFunctionInput: JSON.parse(
+                JSON.stringify(
+                  decodeAbiParameters(
+                    inputTypes,
+                    encodeAbiParameters(inputTypes, contractFunctionInput)
+                  ),
+                  (_, value) =>
+                    typeof value === "bigint" ? value.toString() : value
+                )
+              ),
+              contractCustomAbiString: rawContractCustomAbiString,
+            });
+            break;
+          }
+
+          default:
+            throw new Error();
+        }
         dismiss();
       }}
       css={css({
@@ -433,9 +505,6 @@ const Content = ({
               <Input
                 id="amount"
                 value={amount}
-                // type="number"
-                // step="0.01"
-                // min={0}
                 onBlur={() => {
                   setAmount(parseFloat(amount));
                 }}
@@ -457,7 +526,6 @@ const Content = ({
 
                   setAmount(value);
                 }}
-                // hint={<>{formatEther(amount)} ETH</>}
               />
               <Select
                 aria-label="Currency token"
@@ -623,7 +691,12 @@ const Content = ({
                   size="medium"
                   onChange={(value) => {
                     setContractFunction(value);
-                    setContractFunctionInput([]);
+                    const selectedOption = contractFunctionOptions?.find(
+                      (o) => o.value === value
+                    );
+                    setContractFunctionInput(
+                      buildInitialInputState(selectedOption?.inputs)
+                    );
                   }}
                   width="max-content"
                   fullWidth
@@ -632,202 +705,27 @@ const Content = ({
             )}
 
             {selectedContractFunctionOption != null &&
-              selectedContractFunctionOption.inputs.length > 0 && (
-                <div
-                  css={(t) =>
-                    css({
-                      "[data-input] + [data-input]": {
-                        marginTop: "1.6rem",
-                      },
-                      "[data-components]": {
-                        paddingLeft: "2.4rem",
-                        position: "relative",
-                        ":before": {
-                          position: "absolute",
-                          top: "4.6rem",
-                          left: "0.8rem",
-                          content: '""',
-                          height: "calc(100% - 6.4rem)",
-                          width: "0.8rem",
-                          border: "0.1rem solid",
-                          borderRight: 0,
-                          borderColor: t.colors.borderLight,
-                        },
-                      },
-                      "[data-components] [data-input] + [data-input]": {
-                        marginTop: "0.8rem",
-                      },
-                      "[data-array]": {
-                        display: "flex",
-                        flexDirection: "column",
-                        gap: "0.8rem",
-                      },
-                      "[data-append-button]": { marginTop: "0.4rem" },
-                      "[data-code]": {
-                        fontSize: "0.85em",
-                        fontFamily: t.fontStacks.monospace,
-                      },
-                      "[data-code] [data-type]": { color: t.colors.textMuted },
-                    })
-                  }
-                >
-                  <Label>Arguments</Label>
-                  {selectedContractFunctionOption.inputs.map((input, i) => {
-                    const renderInput = (input, inputValue, setInputValue) => {
-                      const labelContent =
-                        input.name == null ? null : (
-                          <span data-code>
-                            <span data-type>{input.internalType}</span>{" "}
-                            {input.name}
-                          </span>
-                        );
-
-                      const isArray = input.type.slice(-2) === "[]";
-
-                      if (isArray) {
-                        const elementType = input.type.slice(0, -2);
-                        const defaultValue =
-                          input.components != null
-                            ? {}
-                            : getArgumentDefaultValue(elementType);
-                        return (
-                          <div key={input.name} data-input>
-                            {labelContent != null && (
-                              <Label>{labelContent}</Label>
-                            )}
-                            <div data-array>
-                              {(inputValue ?? []).map(
-                                (elementValue, elementIndex) => {
-                                  const setElementValue = (getElementValue) => {
-                                    setInputValue((currentInputValue) => {
-                                      const nextElementValue =
-                                        typeof getElementValue === "function"
-                                          ? getElementValue(elementValue)
-                                          : getElementValue;
-                                      const nextInputValue = [
-                                        ...currentInputValue,
-                                      ];
-                                      nextInputValue[elementIndex] =
-                                        nextElementValue;
-                                      return nextInputValue;
-                                    });
-                                  };
-
-                                  return renderInput(
-                                    {
-                                      components: input.components,
-                                      type: elementType,
-                                    },
-                                    elementValue,
-                                    setElementValue
-                                  );
-                                }
-                              )}
-
-                              <div
-                                style={{
-                                  paddingTop:
-                                    inputValue?.length > 0 &&
-                                    input.components != null
-                                      ? "0.8rem"
-                                      : 0,
-                                }}
-                              >
-                                <Button
-                                  size="tiny"
-                                  type="button"
-                                  onClick={() => {
-                                    setInputValue((els = []) => [
-                                      ...els,
-                                      defaultValue,
-                                    ]);
-                                  }}
-                                  style={{ alignSelf: "flex-start" }}
-                                >
-                                  Add element
-                                </Button>
-                              </div>
-                            </div>
-                          </div>
-                        );
-                      }
-
-                      if (input.components != null)
-                        return (
-                          <div key={input.name} data-input>
-                            {labelContent != null && (
-                              <Label>{labelContent}</Label>
-                            )}
-                            <div data-components>
-                              {input.components.map((c) => {
-                                const componentValue =
-                                  inputValue?.[c.name] ?? "";
-                                const setComponentValue = (
-                                  getComponentValue
-                                ) => {
-                                  setInputValue((currentInputValue) => {
-                                    const currentComponentValue =
-                                      currentInputValue?.[c.name];
-                                    const nextComponentValue =
-                                      typeof getComponentValue === "function"
-                                        ? getComponentValue(
-                                            currentComponentValue
-                                          )
-                                        : getComponentValue;
-                                    return {
-                                      ...currentInputValue,
-                                      [c.name]: nextComponentValue,
-                                    };
-                                  });
-                                };
-
-                                return renderInput(
-                                  c,
-                                  componentValue,
-                                  setComponentValue
-                                );
-                              })}
-                            </div>
-                          </div>
-                        );
-
-                      const defaultValue = getArgumentDefaultValue(input.type);
-
-                      switch (input.type) {
-                        default:
-                          return (
-                            <Input
-                              key={input.name}
-                              label={labelContent}
-                              value={inputValue ?? defaultValue}
-                              onChange={(e) => {
-                                setInputValue(e.target.value);
-                              }}
-                              placeholder={getArgumentInputPlaceholder(
-                                input.type
-                              )}
-                              containerProps={{ "data-input": true }}
-                            />
-                          );
-                      }
-                    };
-
-                    const value = contractFunctionInput[i];
-                    const setValue = (getInputValue) => {
-                      setContractFunctionInput((currentState) => {
-                        const currentInputValue = currentState[i];
-                        const nextState = [...currentState];
-                        nextState[i] =
-                          typeof getInputValue === "function"
-                            ? getInputValue(currentInputValue)
-                            : getInputValue;
-                        return nextState;
-                      });
-                    };
-                    return renderInput(input, value, setValue);
-                  })}
-                </div>
-              )}
+            selectedContractFunctionOption.inputs.length > 0 ? (
+              <div>
+                <Label>Arguments</Label>
+                <ArgumentInputs
+                  inputs={selectedContractFunctionOption.inputs}
+                  inputState={contractFunctionInput}
+                  setInputState={setContractFunctionInput}
+                />
+              </div>
+            ) : isLoadingEtherscanAbi ? (
+              <div
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  minHeight: "6.28rem",
+                }}
+              >
+                <Spinner />
+              </div>
+            ) : null}
           </>
         )}
       </main>
@@ -879,6 +777,233 @@ const Content = ({
         </div>
       </footer>
     </form>
+  );
+};
+
+const renderInput = (input, inputValue, setInputValue) => {
+  const labelContent =
+    input.name == null ? null : (
+      <span data-code>
+        <span data-type>{input.internalType ?? input.type}</span> {input.name}
+      </span>
+    );
+
+  const isArray = input.type.slice(-2) === "[]";
+
+  if (isArray) {
+    const elementType = input.type.slice(0, -2);
+    const defaultValue = input.components != null ? {} : "";
+    return (
+      <div key={input.name} data-input>
+        {labelContent != null && <Label>{labelContent}</Label>}
+        <div data-array>
+          {(inputValue ?? []).map((elementValue, elementIndex) => {
+            const setElementValue = (getElementValue) => {
+              setInputValue((currentInputValue) => {
+                const nextElementValue =
+                  typeof getElementValue === "function"
+                    ? getElementValue(elementValue)
+                    : getElementValue;
+                const nextInputValue = [...currentInputValue];
+                nextInputValue[elementIndex] = nextElementValue;
+                return nextInputValue;
+              });
+            };
+
+            return (
+              <React.Fragment key={elementIndex}>
+                {renderInput(
+                  {
+                    components: input.components,
+                    type: elementType,
+                  },
+                  elementValue,
+                  setElementValue
+                )}
+              </React.Fragment>
+            );
+          })}
+
+          <div
+            style={{
+              paddingTop:
+                inputValue?.length > 0 && input.components != null
+                  ? "0.8rem"
+                  : 0,
+            }}
+          >
+            <Button
+              size="tiny"
+              type="button"
+              onClick={() => {
+                setInputValue((els = []) => [...els, defaultValue]);
+              }}
+              style={{ alignSelf: "flex-start" }}
+            >
+              Add element
+            </Button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (input.components != null)
+    return (
+      <div key={input.name} data-input>
+        {labelContent != null && <Label>{labelContent}</Label>}
+        <div data-components>
+          {input.components.map((c) => {
+            const componentValue = inputValue?.[c.name] ?? "";
+            const setComponentValue = (getComponentValue) => {
+              setInputValue((currentInputValue) => {
+                const currentComponentValue = currentInputValue?.[c.name];
+                const nextComponentValue =
+                  typeof getComponentValue === "function"
+                    ? getComponentValue(currentComponentValue)
+                    : getComponentValue;
+                return {
+                  ...currentInputValue,
+                  [c.name]: nextComponentValue,
+                };
+              });
+            };
+
+            return (
+              <React.Fragment key={c.name}>
+                {renderInput(c, componentValue, setComponentValue)}
+              </React.Fragment>
+            );
+          })}
+        </div>
+      </div>
+    );
+
+  const simplifiedType = simplifyType(input.type);
+
+  switch (simplifiedType) {
+    case "bool":
+      return (
+        <div data-input>
+          <Select
+            label={labelContent}
+            value={inputValue}
+            size="medium"
+            options={[
+              { value: true, label: "true" },
+              { value: false, label: "false" },
+            ]}
+            onChange={(value) => {
+              setInputValue(value);
+            }}
+          />
+        </div>
+      );
+
+    case "number": {
+      const isUnsigned = input.type.startsWith("u");
+      const max = getNumberTypeMax(input.type);
+      const min = isUnsigned ? 0n : max * -1n;
+
+      return (
+        <Input
+          type="number"
+          min={min.toString()}
+          max={max.toString()}
+          value={inputValue}
+          onChange={(e) => {
+            try {
+              const n = BigInt(e.target.value);
+              const truncatedN = n > max ? max : n < min ? min : n;
+              setInputValue(truncatedN.toString());
+            } catch (e) {
+              // Ignore
+            }
+          }}
+          label={labelContent}
+          placeholder={getArgumentInputPlaceholder(input.type)}
+          containerProps={{ "data-input": true }}
+        />
+      );
+    }
+
+    default:
+      return (
+        <Input
+          value={inputValue}
+          onChange={(e) => {
+            setInputValue(e.target.value);
+          }}
+          label={labelContent}
+          placeholder={getArgumentInputPlaceholder(input.type)}
+          containerProps={{ "data-input": true }}
+        />
+      );
+  }
+};
+
+const ArgumentInputs = ({ inputs, inputState, setInputState }) => {
+  return (
+    <div
+      css={(t) =>
+        css({
+          "[data-input] + [data-input]": {
+            marginTop: "2.4rem",
+          },
+          "[data-components]": {
+            paddingLeft: "2.4rem",
+            position: "relative",
+            ":before": {
+              position: "absolute",
+              top: "4.6rem",
+              left: "0.8rem",
+              content: '""',
+              height: "calc(100% - 6.4rem)",
+              width: "0.8rem",
+              border: "0.1rem solid",
+              borderRight: 0,
+              borderColor: t.colors.borderLight,
+            },
+          },
+          "[data-components] [data-input] + [data-input]": {
+            marginTop: "0.8rem",
+          },
+          "[data-array]": {
+            display: "flex",
+            flexDirection: "column",
+            gap: "0.8rem",
+          },
+          "[data-append-button]": { marginTop: "0.4rem" },
+          "[data-code]": {
+            fontSize: "0.85em",
+            fontFamily: t.fontStacks.monospace,
+            color: t.colors.textNormal,
+          },
+          "[data-code] [data-type]": { color: t.colors.textDimmed },
+        })
+      }
+    >
+      {inputs.map((input, i) => {
+        const value = inputState[i];
+        const setValue = (getInputValue) => {
+          setInputState((currentState) => {
+            const currentInputValue = currentState[i];
+            const nextState = [...currentState];
+            nextState[i] =
+              typeof getInputValue === "function"
+                ? getInputValue(currentInputValue)
+                : getInputValue;
+            return nextState;
+          });
+        };
+
+        return (
+          <React.Fragment key={input.name}>
+            {renderInput(input, value, setValue)}
+          </React.Fragment>
+        );
+      })}
+    </div>
   );
 };
 

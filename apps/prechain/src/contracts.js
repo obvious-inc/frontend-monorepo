@@ -24,6 +24,8 @@ const addressByIdentifierByChainId = {
     "eth-token": ETH_TOKEN_CONTRACT_ADDRESS,
     "weth-token": WETH_TOKEN_CONTRACT_ADDRESS,
     "usdc-token": USDC_TOKEN_CONTRACT_ADDRESS,
+    "lido-steth-token": "0xae7ab96520de3a18e5e111b5eaab095312d7fe84",
+    "lido-withdrawal-queque": "0x889edc2edab5f40e902b864ad4d7ade8e412f9b1",
 
     // Nouns contracts
     dao: DAO_LOGIC_PROXY_CONTRACT,
@@ -70,16 +72,24 @@ const metaByIdentifier = {
   "usdc-token": {
     token: "USDC",
   },
+  "lido-steth-token": {
+    name: "Lido: stETH Token",
+    token: "stETH",
+  },
+  "lido-withdrawal-queque": {
+    name: "Lido: Withdrawal Queue",
+  },
 
   // Nouns contracts
   dao: {
-    name: "DAO Governance",
+    name: "Nouns DAO Governance",
     description: "NounsDAOProxy",
   },
   data: {
-    name: "DAO Candidates",
+    name: "Nouns DAO Candidates",
     description: "NounsDAODataProxy",
   },
+  executor: { name: "Nouns DAO Executor" },
   token: {
     name: "Nouns Token",
   },
@@ -92,10 +102,10 @@ const metaByIdentifier = {
     description: "NounsDescriptorV2",
   },
   "token-buyer": {
-    name: "DAO Token Buyer",
+    name: "Nouns DAO Token Buyer",
   },
   payer: {
-    name: "DAO Payer",
+    name: "Nouns DAO Payer",
   },
 };
 
