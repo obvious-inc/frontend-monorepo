@@ -15,6 +15,7 @@ const DAO_DATA_PROXY_CONTRACT = "0xf790a5f59678dd733fb3de93493a91f472ca1365";
 const DAO_TOKEN_CONTRACT = "0x9c8ff314c9bc7f6e59a9d9225fb22946427edc03";
 const DAO_AUCTION_HOUSE_PROXY_CONTRACT =
   "0x830bd73e4184cef73443c15111a1df14e495c706";
+const DAO_EXECUTOR_PROXY = "0xb1a32fc9f9d8b2cf86c068cae13108809547ef71";
 const DAO_DESCRIPTOR_CONTRACT = "0x6229c811d04501523c6058bfaac29c91bb586268";
 
 const addressByIdentifierByChainId = {
@@ -22,6 +23,8 @@ const addressByIdentifierByChainId = {
     "eth-token": ETH_TOKEN_CONTRACT_ADDRESS,
     "weth-token": WETH_TOKEN_CONTRACT_ADDRESS,
     "usdc-token": USDC_TOKEN_CONTRACT_ADDRESS,
+    "lido-steth-token": "0xae7ab96520de3a18e5e111b5eaab095312d7fe84",
+    "lido-withdrawal-queque": "0x889edc2edab5f40e902b864ad4d7ade8e412f9b1",
 
     // Nouns contracts
     dao: DAO_PROXY_CONTRACT,
@@ -31,6 +34,7 @@ const addressByIdentifierByChainId = {
     descriptor: DAO_DESCRIPTOR_CONTRACT,
     payer: DAO_PAYER_CONTRACT,
     "token-buyer": DAO_TOKEN_BUYER_CONTRACT,
+    executor: DAO_EXECUTOR_PROXY,
   },
   [sepolia.id]: {
     "eth-token": "0x0000000000000000000000000000000000000000",
@@ -64,6 +68,13 @@ const metaByIdentifier = {
   "usdc-token": {
     token: "USDC",
   },
+  "lido-steth-token": {
+    name: "Lido: stETH Token",
+    token: "stETH",
+  },
+  "lido-withdrawal-queque": {
+    name: "Lido: Withdrawal Queue",
+  },
 
   // Nouns contracts
   dao: {
@@ -74,6 +85,7 @@ const metaByIdentifier = {
     name: "DAO Candidates",
     description: "NounsDAODataProxy",
   },
+  executor: { name: "Nouns DAO Executor" },
   token: {
     name: "Nouns Token",
   },
