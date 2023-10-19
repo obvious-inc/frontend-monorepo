@@ -88,8 +88,9 @@ const parseToken = (token, context) => {
       const isImage = ["jpg", "png", "gif"].some((ext) =>
         token.href.endsWith(`.${ext}`)
       );
+      const hasLabel = token.text !== token.href;
 
-      if (isImage && context?.displayImages)
+      if (isImage && hasLabel && context?.displayImages)
         return { type: "image", url: token.href, interactive: false };
 
       return {
