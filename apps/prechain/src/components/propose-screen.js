@@ -1,7 +1,8 @@
+import getDateYear from "date-fns/getYear";
 import React from "react";
 import { useParams, useNavigate, useSearchParams } from "react-router-dom";
-import { isAddress, parseEther, parseUnits } from "viem";
-import { useAccount, useEnsName, useEnsAddress } from "wagmi";
+import { parseEther, parseUnits } from "viem";
+import { useAccount } from "wagmi";
 import { css } from "@emotion/react";
 import {
   useLatestCallback,
@@ -9,21 +10,17 @@ import {
 } from "@shades/common/react";
 import { message as messageUtils } from "@shades/common/utils";
 import { useAccountDisplayName } from "@shades/common/app";
-import { useFetch } from "@shades/common/react";
 import {
   Plus as PlusIcon,
   TrashCan as TrashCanIcon,
 } from "@shades/ui-web/icons";
 import Button from "@shades/ui-web/button";
-import Input, { Label } from "@shades/ui-web/input";
 import Select from "@shades/ui-web/select";
 import RichTextEditor, {
   Provider as EditorProvider,
   Toolbar as EditorToolbar,
   isNodeEmpty as isRichTextEditorNodeEmpty,
 } from "@shades/ui-web/rich-text-editor";
-import Dialog from "@shades/ui-web/dialog";
-import DialogHeader from "@shades/ui-web/dialog-header";
 import {
   useCollection as useDrafts,
   useSingleItem as useDraft,
@@ -35,9 +32,106 @@ import {
 import { useTokenBuyerEthNeeded } from "../hooks/misc-contracts.js";
 import { useCreateProposalCandidate } from "../hooks/data-contract.js";
 import Layout, { MainContentContainer } from "./layout.js";
+import FormattedDate from "./formatted-date.js";
 import FormattedNumber from "./formatted-number.js";
 import AccountPreviewPopoverTrigger from "./account-preview-popover-trigger.js";
 import { TransactionExplanation } from "./transaction-list.js";
+import ActionDialog from "./action-dialog.js";
+
+const decimalsByCurrency = {
+  eth: 18,
+  weth: 18,
+  usdc: 6,
+};
+
+const getActionTransactions = (a) => {
+  switch (a.type) {
+    case "one-time-payment": {
+      switch (a.currency) {
+        case "eth":
+          return [
+            {
+              type: "transfer",
+              target: a.target,
+              value: parseEther(String(a.amount)),
+            },
+          ];
+
+        case "usdc":
+          return [
+            {
+              type: "usdc-transfer-via-payer",
+              receiverAddress: a.target,
+              usdcAmount: parseUnits(String(a.amount), 6),
+            },
+          ];
+
+        default:
+          throw new Error();
+      }
+    }
+
+    case "streaming-payment": {
+      const formattedAmount = String(a.amount);
+
+      const createStreamTransaction = {
+        type: "stream",
+        receiverAddress: a.target,
+        token: a.currency.toUpperCase(),
+        tokenAmount: parseUnits(
+          formattedAmount,
+          decimalsByCurrency[a.currency]
+        ),
+        startDate: new Date(a.startTimestamp),
+        endDate: new Date(a.endTimestamp),
+        streamContractAddress: a.predictedStreamContractAddress,
+      };
+
+      switch (a.currency) {
+        case "weth":
+          return [
+            createStreamTransaction,
+            {
+              type: "weth-deposit",
+              value: parseUnits(formattedAmount, decimalsByCurrency.eth),
+            },
+            {
+              type: "weth-transfer",
+              receiverAddress: a.predictedStreamContractAddress,
+              wethAmount: parseUnits(formattedAmount, decimalsByCurrency.weth),
+            },
+          ];
+
+        case "usdc":
+          return [
+            createStreamTransaction,
+            {
+              type: "usdc-transfer-via-payer",
+              receiverAddress: a.predictedStreamContractAddress,
+              usdcAmount: parseUnits(formattedAmount, decimalsByCurrency.usdc),
+            },
+          ];
+
+        default:
+          throw new Error();
+      }
+    }
+
+    case "custom-transaction":
+      return [
+        {
+          type: "unparsed-function-call",
+          target: a.contractAddress,
+          signature: "",
+          calldata: "0x",
+          value: "0",
+        },
+      ];
+
+    default:
+      throw new Error();
+  }
+};
 
 const ProposeScreen = () => {
   const { draftId } = useParams();
@@ -66,6 +160,9 @@ const ProposeScreen = () => {
 
   const slug = draft?.name.trim().toLowerCase().replace(/\s+/g, "-");
 
+  const selectedAction =
+    selectedActionIndex >= 0 ? draft.actions[selectedActionIndex] : null;
+
   const createProposalCandidate = useCreateProposalCandidate({
     enabled: hasRequiredInput && draftTargetType === "candidate",
   });
@@ -78,6 +175,7 @@ const ProposeScreen = () => {
   const usdcSumValue = draft.actions.reduce((sum, a) => {
     switch (a.type) {
       case "one-time-payment":
+      case "streaming-payment":
         return a.currency !== "usdc"
           ? sum
           : sum + parseUnits(String(a.amount), 6);
@@ -96,36 +194,18 @@ const ProposeScreen = () => {
       draft.body
     )}`;
     const transactions = draft.actions.flatMap((a) => {
-      switch (a.type) {
-        case "one-time-payment": {
-          if (a.currency === "eth")
-            return [
-              {
-                type: "transfer",
-                target: a.target,
-                value: parseEther(String(a.amount)),
-              },
-            ];
+      const actionTransactions = getActionTransactions(a);
 
-          if (a.currency === "usdc")
-            return [
-              {
-                type: "usdc-transfer-via-payer",
-                receiverAddress: a.target,
-                usdcAmount: parseUnits(String(a.amount), 6),
-              },
-              {
-                type: "token-buyer-top-up",
-                value: tokenBuyerTopUpValue ?? BigInt(0),
-              },
-            ];
+      if (tokenBuyerTopUpValue > 0)
+        return [
+          ...actionTransactions,
+          {
+            type: "token-buyer-top-up",
+            value: tokenBuyerTopUpValue,
+          },
+        ];
 
-          throw new Error();
-        }
-
-        default:
-          throw new Error();
-      }
+      return actionTransactions;
     });
 
     return Promise.resolve()
@@ -452,373 +532,58 @@ const ProposeScreen = () => {
         </EditorProvider>
       </Layout>
 
-      {selectedActionIndex != null &&
-        draft.actions[selectedActionIndex] != null && (
-          <Dialog
-            isOpen
-            onRequestClose={() => {
-              setSelectedActionIndex(null);
-            }}
-            width="46rem"
-          >
-            {({ titleProps }) => {
-              const transaction = draft.actions[selectedActionIndex];
-              return (
-                <ActionDialog
-                  title="Edit action"
-                  initialType={transaction.type}
-                  initialCurrency={transaction.currency}
-                  initialAmount={transaction.amount}
-                  initialTarget={transaction.target}
-                  submit={(a) => {
-                    setActions(
-                      draft.actions.map((a_, i) =>
-                        i !== selectedActionIndex ? a_ : a
-                      )
-                    );
-                  }}
-                  remove={() => {
-                    setActions(
-                      draft.actions.filter((_, i) => i !== selectedActionIndex)
-                    );
-                  }}
-                  titleProps={titleProps}
-                  dismiss={() => {
-                    setSelectedActionIndex(null);
-                  }}
-                />
-              );
-            }}
-          </Dialog>
-        )}
+      {selectedAction != null && (
+        <ActionDialog
+          isOpen
+          close={() => {
+            setSelectedActionIndex(null);
+          }}
+          title="Edit action"
+          submit={(a) => {
+            setActions(
+              draft.actions.map((a_, i) => (i !== selectedActionIndex ? a_ : a))
+            );
+          }}
+          remove={() => {
+            setActions(
+              draft.actions.filter((_, i) => i !== selectedActionIndex)
+            );
+          }}
+          initialType={selectedAction.type}
+          initialCurrency={selectedAction.currency}
+          initialAmount={selectedAction.amount}
+          initialTarget={selectedAction.target}
+          initialStreamStartTimestamp={selectedAction.startTimestamp}
+          initialStreamEndTimestamp={selectedAction.endTimestamp}
+          initialContractAddress={selectedAction.contractAddress}
+          initialContractFunction={selectedAction.contractFunction}
+          initialContractFunctionInput={selectedAction.contractFunctionInput}
+          initialContractCustomAbiString={
+            selectedAction.contractCustomAbiString
+          }
+        />
+      )}
 
       {showNewActionDialog && (
-        <Dialog
+        <ActionDialog
           isOpen
-          onRequestClose={() => {
+          close={() => {
             setShowNewActionDialog(false);
           }}
-          width="46rem"
-        >
-          {({ titleProps }) => (
-            <ActionDialog
-              title="Add action"
-              submit={(a) => {
-                console.log(draft);
-                setActions([...draft.actions, a]);
-              }}
-              titleProps={titleProps}
-              dismiss={() => {
-                setShowNewActionDialog(false);
-              }}
-              submitButtonLabel="Add"
-            />
-          )}
-        </Dialog>
+          title="Add action"
+          submit={(a) => {
+            setActions([...draft.actions, a]);
+          }}
+          submitButtonLabel="Add"
+        />
       )}
     </>
   );
 };
 
-const ActionDialog = ({
-  title,
-  initialType,
-  initialCurrency,
-  initialAmount,
-  initialTarget,
-  titleProps,
-  remove,
-  submit,
-  dismiss,
-  submitButtonLabel = "Save",
-}) => {
-  const [ethToUsdRate, setEthToUsdRate] = React.useState(null);
-
-  const [type, setType] = React.useState(initialType ?? "one-time-payment");
-  const [currency, setCurrency] = React.useState(initialCurrency ?? "eth");
-  const [amount, setAmount] = React.useState(initialAmount ?? 0);
-  const [receiverQuery, setReceiverQuery] = React.useState(initialTarget ?? "");
-
-  const { data: ensName } = useEnsName({
-    address: receiverQuery.trim(),
-    enabled: isAddress(receiverQuery.trim()),
-  });
-  const { data: ensAddress } = useEnsAddress({
-    name: receiverQuery.trim(),
-    enabled: receiverQuery.trim().split(".").slice(-1)[0] === "eth",
-  });
-
-  const target = isAddress(receiverQuery.trim())
-    ? receiverQuery.trim()
-    : ensAddress ?? "";
-
-  const convertedEthToUsdValue =
-    currency !== "eth" || ethToUsdRate == null || parseFloat(amount) === 0
-      ? null
-      : parseFloat(amount) * ethToUsdRate;
-
-  const convertedUsdcToEthValue =
-    currency !== "usdc" || ethToUsdRate == null || parseFloat(amount) === 0
-      ? null
-      : parseFloat(amount) / ethToUsdRate;
-
-  const hasRequiredInputs = (() => {
-    switch (type) {
-      case "one-time-payment":
-        return parseFloat(amount) > 0 && isAddress(target);
-
-      default:
-        throw new Error();
-    }
-  })();
-
-  useFetch(
-    () =>
-      fetch("https://api.coinbase.com/v2/exchange-rates?currency=ETH")
-        .then((res) => res.json())
-        .then((body) => {
-          const rate = body.data.rates["USD"];
-          if (rate == null) return;
-          setEthToUsdRate(parseFloat(rate));
-        }),
-    []
-  );
-
-  return (
-    <form
-      onSubmit={(e) => {
-        if (!isAddress(target)) throw new Error();
-
-        e.preventDefault();
-        submit({
-          type,
-          target,
-          amount,
-          currency,
-        });
-        dismiss();
-      }}
-      css={css({
-        overflow: "auto",
-        padding: "1.6rem",
-        "@media (min-width: 600px)": {
-          padding: "2.4rem",
-        },
-      })}
-    >
-      <DialogHeader title={title} titleProps={titleProps} dismiss={dismiss} />
-      <main style={{ display: "flex", flexDirection: "column", gap: "1.6rem" }}>
-        <div>
-          <Select
-            label="Type"
-            value={type}
-            size="medium"
-            options={[
-              { value: "one-time-payment", label: "One-time transfer" },
-              {
-                value: "monthly-payment",
-                label: "Monthly transfer",
-                disabled: true,
-              },
-              {
-                value: "custom-transaction",
-                label: "Custom transaction",
-                disabled: true,
-              },
-            ]}
-            onChange={(value) => {
-              setType(value);
-            }}
-          />
-        </div>
-
-        <div>
-          <Label htmlFor="amount">Amount</Label>
-          <div
-            style={{
-              display: "grid",
-              gridTemplateColumns: "minmax(0,1fr) auto",
-              gap: "0.8rem",
-            }}
-          >
-            <Input
-              id="amount"
-              value={amount}
-              // type="number"
-              // step="0.01"
-              // min={0}
-              onBlur={() => {
-                setAmount(parseFloat(amount));
-              }}
-              onChange={(e) => {
-                const { value } = e.target;
-                if (value.trim() === "") {
-                  setAmount(0);
-                  return;
-                }
-
-                const n = parseFloat(value);
-
-                if (isNaN(n) || !/^[0-9]*.?[0-9]*$/.test(value)) return;
-
-                if (/^[0-9]*$/.test(value)) {
-                  setAmount(n);
-                  return;
-                }
-
-                setAmount(value);
-              }}
-              // hint={<>{formatEther(amount)} ETH</>}
-            />
-            <Select
-              aria-label="Currency token"
-              value={currency}
-              options={[
-                { value: "eth", label: "ETH" },
-                { value: "usdc", label: "USDC" },
-              ]}
-              onChange={(value) => {
-                setCurrency(value);
-              }}
-              width="max-content"
-              fullWidth={false}
-            />
-          </div>
-          <div
-            css={(t) =>
-              css({
-                fontSize: t.text.sizes.small,
-                color: t.colors.textDimmed,
-                marginTop: "0.7rem",
-              })
-            }
-          >
-            {convertedEthToUsdValue != null && (
-              <>
-                {convertedEthToUsdValue < 0.01 ? (
-                  "<0.01 USD"
-                ) : (
-                  <>
-                    &asymp;{" "}
-                    <FormattedNumber
-                      value={convertedEthToUsdValue}
-                      minimumFractionDigits={2}
-                      maximumFractionDigits={2}
-                    />{" "}
-                    USD
-                  </>
-                )}
-              </>
-            )}
-            {convertedUsdcToEthValue != null && (
-              <>
-                {convertedUsdcToEthValue < 0.0001 ? (
-                  "<0.0001 ETH"
-                ) : (
-                  <>
-                    &asymp;{" "}
-                    <FormattedNumber
-                      value={convertedUsdcToEthValue}
-                      minimumFractionDigits={1}
-                      maximumFractionDigits={4}
-                    />{" "}
-                    ETH
-                  </>
-                )}
-              </>
-            )}
-            &nbsp;
-          </div>
-        </div>
-
-        <Input
-          label="Receiver account"
-          value={receiverQuery}
-          onBlur={() => {
-            if (!isAddress(receiverQuery) && ensAddress != null)
-              setReceiverQuery(ensAddress);
-          }}
-          onChange={(e) => {
-            setReceiverQuery(e.target.value);
-          }}
-          placeholder="0x..., vitalik.eth"
-          hint={
-            !isAddress(receiverQuery) && ensAddress == null ? (
-              "Specify an Ethereum account address or ENS name"
-            ) : ensAddress != null ? (
-              ensAddress
-            ) : ensName != null ? (
-              <>
-                Primary ENS name:{" "}
-                <em
-                  css={(t) =>
-                    css({
-                      fontStyle: "normal",
-                      fontWeight: t.text.weights.emphasis,
-                    })
-                  }
-                >
-                  {ensName}
-                </em>
-              </>
-            ) : (
-              <>&nbsp;</>
-            )
-          }
-        />
-      </main>
-      <footer
-        css={css({
-          display: "flex",
-          justifyContent: "space-between",
-          gap: "1rem",
-          paddingTop: "2.5rem",
-          "@media (min-width: 600px)": {
-            paddingTop: "3rem",
-          },
-        })}
-      >
-        {remove == null ? (
-          <div />
-        ) : (
-          <Button
-            type="button"
-            danger
-            size="medium"
-            icon={<TrashCanIcon style={{ width: "1.5rem" }} />}
-            onClick={() => {
-              remove();
-              dismiss();
-            }}
-          />
-        )}
-        <div
-          css={css({
-            display: "grid",
-            gridAutoFlow: "column",
-            gridAutoColumns: "minmax(0,1fr)",
-            gridGap: "1rem",
-          })}
-        >
-          <Button type="button" size="medium" onClick={dismiss}>
-            Cancel
-          </Button>
-          <Button
-            type="submit"
-            size="medium"
-            variant="primary"
-            disabled={!hasRequiredInputs}
-          >
-            {submitButtonLabel}
-          </Button>
-        </div>
-      </footer>
-    </form>
-  );
-};
-
 const currencyFractionDigits = {
   eth: [1, 4],
+  weth: [1, 4],
   usdc: [2, 2],
 };
 
@@ -842,6 +607,47 @@ const ActionExplanation = ({ action: a }) => {
             {a.currency.toUpperCase()}
           </em>{" "}
           to <em>{targetDisplayName}</em>
+        </>
+      );
+    }
+
+    case "streaming-payment": {
+      const [minimumFractionDigits, maximumFractionDigits] =
+        currencyFractionDigits[a.currency];
+
+      return (
+        <>
+          Stream{" "}
+          <em>
+            <FormattedNumber
+              value={a.amount}
+              minimumFractionDigits={minimumFractionDigits}
+              maximumFractionDigits={maximumFractionDigits}
+            />{" "}
+            {a.currency.toUpperCase()}
+          </em>{" "}
+          to <em>{targetDisplayName}</em> between{" "}
+          <em>
+            <FormattedDate
+              value={a.startTimestamp}
+              day="numeric"
+              month="short"
+              year={
+                getDateYear(a.startTimestamp) === getDateYear(a.endTimestamp)
+                  ? undefined
+                  : "numeric"
+              }
+            />
+          </em>{" "}
+          and{" "}
+          <em>
+            <FormattedDate
+              value={a.endTimestamp}
+              day="numeric"
+              month="short"
+              year="numeric"
+            />
+          </em>
         </>
       );
     }
@@ -890,8 +696,10 @@ const ActionExplanation = ({ action: a }) => {
     //   );
     // }
 
-    case "custom":
-      return <TransactionExplanation transaction={a.transaction} />;
+    case "custom-transaction":
+      return (
+        <TransactionExplanation transaction={getActionTransactions(a)[0]} />
+      );
 
     default:
       throw new Error(`Unknown action type: "${a.type}"`);

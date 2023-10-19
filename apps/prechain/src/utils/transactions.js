@@ -5,19 +5,28 @@ const CREATE_STREAM_SIGNATURE =
   "createStream(address,uint256,address,uint256,uint256,uint8,address)";
 
 const decodeCalldataWithSignature = ({ signature, calldata }) => {
-  const { name, inputs: inputTypes } = parseAbiItem(`function ${signature}`);
-  if (inputTypes.length === 0) return { name, inputs: [] };
   try {
-    const inputs = decodeAbiParameters(inputTypes, calldata);
-    return {
-      name,
-      inputs: inputs.map((value, i) => ({
-        value,
-        type: inputTypes[i]?.type,
-      })),
-    };
+    const { name, inputs: inputTypes } = parseAbiItem(`function ${signature}`);
+    if (inputTypes.length === 0) return { name, inputs: [] };
+
+    try {
+      const inputs = decodeAbiParameters(inputTypes, calldata);
+      return {
+        name,
+        inputs: inputs.map((value, i) => ({
+          value,
+          type: inputTypes[i]?.type,
+        })),
+      };
+    } catch (e) {
+      return { name, calldataDecodingFailed: true };
+    }
   } catch (e) {
-    return { name, calldataDecodingFailed: true };
+    return {
+      name: signature,
+      signatureDecodingFailed: true,
+      calldataDecodingFailed: true,
+    };
   }
 };
 
@@ -177,8 +186,13 @@ export const parse = (data, { chainId }) => {
 };
 
 export const unparse = (transactions, { chainId }) => {
+  const wethTokenContract = resolveIdentifier(chainId, "weth-token");
   const nounsPayerContract = resolveIdentifier(chainId, "payer");
   const nounsTokenBuyerContract = resolveIdentifier(chainId, "token-buyer");
+  const nounsStreamFactoryContract = resolveIdentifier(
+    chainId,
+    "stream-factory"
+  );
 
   return transactions.reduce(
     (acc, t) => {
@@ -218,6 +232,54 @@ export const unparse = (transactions, { chainId }) => {
             ),
           });
 
+        case "weth-deposit":
+          return append({
+            target: wethTokenContract.address,
+            value: t.value,
+            signature: "deposit()",
+            calldata: "0x",
+          });
+
+        case "weth-transfer":
+        case "weth-stream-funding":
+          return append({
+            target: wethTokenContract.address,
+            value: "0",
+            signature: "transfer(address,uint256)",
+            calldata: encodeAbiParameters(
+              [{ type: "address" }, { type: "uint256" }],
+              [t.receiverAddress, t.wethAmount]
+            ),
+          });
+
+        case "stream":
+          return append({
+            target: nounsStreamFactoryContract.address,
+            value: "0",
+            signature: CREATE_STREAM_SIGNATURE,
+            calldata: encodeAbiParameters(
+              [
+                "address",
+                "uint256",
+                "address",
+                "uint256",
+                "uint256",
+                "uint8",
+                "address",
+              ].map((type) => ({ type })),
+              [
+                t.receiverAddress,
+                t.tokenAmount,
+                resolveIdentifier(chainId, `${t.token.toLowerCase()}-token`)
+                  .address,
+                t.startDate.getTime() / 1000,
+                t.endDate.getTime() / 1000,
+                0,
+                t.streamContractAddress,
+              ]
+            ),
+          });
+
         case "function-call":
           return append({
             target: t.target,
@@ -229,6 +291,15 @@ export const unparse = (transactions, { chainId }) => {
               t.functionInputs.map((i) => ({ type: i.type })),
               t.functionInputs.map((i) => i.value)
             ),
+          });
+
+        case "unparsed-function-call":
+        case "unparsed-payable-function-call":
+          return append({
+            target: t.target,
+            value: t.value ?? "0",
+            signature: t.signature ?? "",
+            calldata: t.calldata ?? "0x",
           });
 
         // TODO

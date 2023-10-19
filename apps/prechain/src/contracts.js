@@ -8,15 +8,16 @@ const USDC_TOKEN_CONTRACT_ADDRESS =
 const WETH_TOKEN_CONTRACT_ADDRESS =
   "0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2";
 
-const DAO_TOKEN_BUYER_CONTRACT = "0x4f2acdc74f6941390d9b1804fabc3e780388cfe5";
-const DAO_PAYER_CONTRACT = "0xd97bcd9f47cee35c0a9ec1dc40c1269afc9e8e1d";
-const DAO_PROXY_CONTRACT = "0x6f3e6272a167e8accb32072d08e0957f9c79223d";
+const DAO_LOGIC_PROXY_CONTRACT = "0x6f3e6272a167e8accb32072d08e0957f9c79223d";
+const DAO_EXECUTOR_PROXY_CONTRACT =
+  "0xb1a32fc9f9d8b2cf86c068cae13108809547ef71";
 const DAO_DATA_PROXY_CONTRACT = "0xf790a5f59678dd733fb3de93493a91f472ca1365";
 const DAO_TOKEN_CONTRACT = "0x9c8ff314c9bc7f6e59a9d9225fb22946427edc03";
 const DAO_AUCTION_HOUSE_PROXY_CONTRACT =
   "0x830bd73e4184cef73443c15111a1df14e495c706";
-const DAO_EXECUTOR_PROXY = "0xb1a32fc9f9d8b2cf86c068cae13108809547ef71";
 const DAO_DESCRIPTOR_CONTRACT = "0x6229c811d04501523c6058bfaac29c91bb586268";
+const DAO_TOKEN_BUYER_CONTRACT = "0x4f2acdc74f6941390d9b1804fabc3e780388cfe5";
+const DAO_PAYER_CONTRACT = "0xd97bcd9f47cee35c0a9ec1dc40c1269afc9e8e1d";
 
 const addressByIdentifierByChainId = {
   [mainnet.id]: {
@@ -27,28 +28,31 @@ const addressByIdentifierByChainId = {
     "lido-withdrawal-queque": "0x889edc2edab5f40e902b864ad4d7ade8e412f9b1",
 
     // Nouns contracts
-    dao: DAO_PROXY_CONTRACT,
+    dao: DAO_LOGIC_PROXY_CONTRACT,
+    executor: DAO_EXECUTOR_PROXY_CONTRACT,
     data: DAO_DATA_PROXY_CONTRACT,
     token: DAO_TOKEN_CONTRACT,
     "auction-house": DAO_AUCTION_HOUSE_PROXY_CONTRACT,
     descriptor: DAO_DESCRIPTOR_CONTRACT,
     payer: DAO_PAYER_CONTRACT,
     "token-buyer": DAO_TOKEN_BUYER_CONTRACT,
-    executor: DAO_EXECUTOR_PROXY,
+    "stream-factory": "0x0fd206fc7a7dbcd5661157edcb1ffdd0d02a61ff",
   },
   [sepolia.id]: {
     "eth-token": "0x0000000000000000000000000000000000000000",
-    "weth-token": "0x0000000000000000000000000000000000000000",
-    "usdc-token": "0x0000000000000000000000000000000000000000",
+    "weth-token": "0xfff9976782d46cc05630d1f6ebab18b2324d6b14",
+    "usdc-token": "0xebcc972b6b3eb15c0592be1871838963d0b94278",
 
     // Nouns contracts
     dao: "0x35d2670d7c8931aacdd37c89ddcb0638c3c44a57",
+    executor: "0x07e5d6a1550ad5e597a9b0698a474aa080a2fb28",
     data: "0x9040f720aa8a693f950b9cf94764b4b06079d002",
     token: "0x4c4674bb72a096855496a7204962297bd7e12b85",
     "auction-house": "0x0000000000000000000000000000000000000000",
     descriptor: "0x0000000000000000000000000000000000000000",
-    payer: "0x0000000000000000000000000000000000000000",
-    "token-buyer": "0x0000000000000000000000000000000000000000",
+    payer: "0x5a2a0951c6b3479dbee1d5909aac7b325d300d94",
+    "token-buyer": "0x821176470cfef1db78f1e2dbae136f73c36ddd48",
+    "stream-factory": "0xb78ccf3bd015f209fb9b2d3d132fd8784df78df5",
   },
 };
 
@@ -78,11 +82,11 @@ const metaByIdentifier = {
 
   // Nouns contracts
   dao: {
-    name: "DAO Governance",
+    name: "Nouns DAO Governance",
     description: "NounsDAOProxy",
   },
   data: {
-    name: "DAO Candidates",
+    name: "Nouns DAO Candidates",
     description: "NounsDAODataProxy",
   },
   executor: { name: "Nouns DAO Executor" },
@@ -98,10 +102,10 @@ const metaByIdentifier = {
     description: "NounsDescriptorV2",
   },
   "token-buyer": {
-    name: "DAO Token Buyer",
+    name: "Nouns DAO Token Buyer",
   },
   payer: {
-    name: "DAO Payer",
+    name: "Nouns DAO Payer",
   },
 };
 

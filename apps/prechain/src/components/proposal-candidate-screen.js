@@ -1105,14 +1105,16 @@ const ProposalCandidateScreen = () => {
           candidate.canceledTimestamp != null ||
           connectedWalletAccountAddress == null
             ? []
-            : isProposer && isBetaSession
-            ? [
-                { onSelect: toggleEditDialog, label: "Edit candidate" },
-                isProposalThresholdMet && {
-                  onSelect: toggleProposeDialog,
-                  label: "Put on chain",
-                },
-              ].filter(Boolean)
+            : isProposer
+            ? isBetaSession
+              ? [
+                  { onSelect: toggleEditDialog, label: "Edit candidate" },
+                  isProposalThresholdMet && {
+                    onSelect: toggleProposeDialog,
+                    label: "Put on chain",
+                  },
+                ].filter(Boolean)
+              : []
             : connectedDelegateHasVotes &&
               candidate.latestVersion.proposalId == null
             ? [
