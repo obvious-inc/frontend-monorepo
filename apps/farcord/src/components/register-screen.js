@@ -308,11 +308,9 @@ const RegisterView = () => {
               `${process.env.EDGE_API_BASE_URL}/farc-app`
             );
             const data = await res.json();
-            console.log("response", data);
-
             const metadata = encodeAbiParameters(KEY_METADATA_TYPE, [
               {
-                requestFid: BigInt(process.env.FARCORD_APP_FID),
+                requestFid: BigInt(data.fid),
                 requestSigner: data.address,
                 signature: sig,
                 deadline: Number(deadline),

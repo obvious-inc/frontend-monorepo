@@ -47,19 +47,6 @@ const KEY_METADATA_TYPE = [
   },
 ];
 
-const SIGNED_KEY_REQUEST_VALIDATOR_EIP_712_DOMAIN = {
-  name: "Farcaster SignedKeyRequestValidator",
-  version: "1",
-  chainId: DEFAULT_CHAIN_ID,
-  verifyingContract: "0x00000000fc700472606ed4fa22623acf62c60553",
-};
-
-const SIGNED_KEY_REQUEST_TYPE = [
-  { name: "requestFid", type: "uint256" },
-  { name: "key", type: "bytes" },
-  { name: "deadline", type: "uint256" },
-];
-
 export const createCacheKey = (address) =>
   [address?.toLowerCase(), "signer"].filter(Boolean).join("-");
 
@@ -157,20 +144,27 @@ export const Provider = ({ children }) => {
       setError(null);
       setStatus("requesting-signed-key-request");
       try {
-        return await appAccount
-          .signTypedData({
-            domain: SIGNED_KEY_REQUEST_VALIDATOR_EIP_712_DOMAIN,
-            types: {
-              SignedKeyRequest: SIGNED_KEY_REQUEST_TYPE,
-            },
-            primaryType: "SignedKeyRequest",
-            message: {
-              requestFid: BigInt(process.env.FARCORD_APP_FID),
-              key: publicKey,
-              deadline: BigInt(deadline),
-            },
+        return await fetch(`${process.env.EDGE_API_BASE_URL}/farc-app`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            key: publicKey,
+            deadline: BigInt(deadline),
+          }),
+        })
+          .then(async (res) => {
+            return await res.json();
+          })
+          .then((data) => {
+            return data?.signature;
           })
           .then(async (signature) => {
+            const res = await fetch(
+              `${process.env.EDGE_API_BASE_URL}/farc-app`
+            );
+            const data = await res.json();
             return await fetch(`${warpcastApi}/v2/signed-key-requests`, {
               method: "POST",
               headers: {
@@ -178,7 +172,7 @@ export const Provider = ({ children }) => {
               },
               body: JSON.stringify({
                 key: publicKey,
-                requestFid: process.env.FARCORD_APP_FID,
+                requestFid: data.fid,
                 signature,
                 deadline,
               }),
@@ -207,21 +201,29 @@ export const Provider = ({ children }) => {
       setError(null);
       setStatus("requesting-signature");
       try {
-        return await appAccount
-          .signTypedData({
-            domain: SIGNED_KEY_REQUEST_VALIDATOR_EIP_712_DOMAIN,
-            types: {
-              SignedKeyRequest: SIGNED_KEY_REQUEST_TYPE,
-            },
-            primaryType: "SignedKeyRequest",
-            message: {
-              requestFid: BigInt(process.env.FARCORD_APP_FID),
-              key: publicKey,
-              deadline: BigInt(deadline),
-            },
+        return await fetch(`${process.env.EDGE_API_BASE_URL}/farc-app`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            key: publicKey,
+            deadline: BigInt(deadline),
+          }),
+        })
+          .then(async (res) => {
+            return await res.json();
+          })
+          .then((data) => {
+            return data?.signature;
           })
           .then(async (signature) => {
             setStatus("requesting-transaction");
+            const res = await fetch(
+              `${process.env.EDGE_API_BASE_URL}/farc-app`
+            );
+            const data = await res.json();
+
             return await createWalletAddSignerTransaction({
               args: [
                 1,
@@ -230,7 +232,7 @@ export const Provider = ({ children }) => {
                 encodeAbiParameters(KEY_METADATA_TYPE, [
                   {
                     requestFid: BigInt(process.env.FARCORD_APP_FID),
-                    requestSigner: appAccount.address,
+                    requestSigner: data.address,
                     signature: signature,
                     deadline: BigInt(deadline),
                   },
