@@ -301,7 +301,7 @@ const RegisterView = () => {
             return await res.json();
           })
           .then((data) => {
-            return data?.signature;
+            return data.data.signature;
           })
           .then(async (sig) => {
             const res = await fetch(
@@ -310,8 +310,8 @@ const RegisterView = () => {
             const data = await res.json();
             const metadata = encodeAbiParameters(KEY_METADATA_TYPE, [
               {
-                requestFid: BigInt(data.fid),
-                requestSigner: data.address,
+                requestFid: BigInt(data.data.fid),
+                requestSigner: data.data.address,
                 signature: sig,
                 deadline: Number(deadline),
               },

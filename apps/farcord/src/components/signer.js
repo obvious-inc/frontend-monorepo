@@ -158,7 +158,7 @@ export const Provider = ({ children }) => {
             return await res.json();
           })
           .then((data) => {
-            return data?.signature;
+            return data.data.signature;
           })
           .then(async (signature) => {
             const res = await fetch(
@@ -172,7 +172,7 @@ export const Provider = ({ children }) => {
               },
               body: JSON.stringify({
                 key: publicKey,
-                requestFid: data.fid,
+                requestFid: data.data.fid,
                 signature,
                 deadline,
               }),
@@ -215,7 +215,7 @@ export const Provider = ({ children }) => {
             return await res.json();
           })
           .then((data) => {
-            return data?.signature;
+            return data.data.signature;
           })
           .then(async (signature) => {
             setStatus("requesting-transaction");
@@ -231,8 +231,8 @@ export const Provider = ({ children }) => {
                 1,
                 encodeAbiParameters(KEY_METADATA_TYPE, [
                   {
-                    requestFid: BigInt(process.env.FARCORD_APP_FID),
-                    requestSigner: data.address,
+                    requestFid: BigInt(data.data.fid),
+                    requestSigner: data.data.address,
                     signature: signature,
                     deadline: BigInt(deadline),
                   },
