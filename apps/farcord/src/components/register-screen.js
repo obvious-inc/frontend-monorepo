@@ -16,7 +16,6 @@ import {
   isHex,
 } from "viem";
 import { DEFAULT_CHAIN_ID } from "../hooks/farcord";
-import { mnemonicToAccount } from "viem/accounts";
 import Button from "@shades/ui-web/button";
 import { useWallet } from "@shades/common/wallet";
 import { signTypedData } from "@wagmi/core";
@@ -36,8 +35,6 @@ import useFarcasterAccount from "./farcaster-account";
 const { truncateAddress } = ethereumUtils;
 
 const BUNDLER_CONTRACT_ADDRESS = "0x00000000fc94856F3967b047325F88d47Bc225d0";
-
-const appAccount = mnemonicToAccount(process.env.FARCORD_APP_MNEMONIC);
 
 const ID_REGISTRY_ADDRESS = "0x00000000fcaf86937e41ba038b4fa40baa4b780a";
 const STORAGE_REGISTRY_ADDRESS = "0x00000000fcCe7f938e7aE6D3c335bD6a1a7c593D";
@@ -86,19 +83,6 @@ const KEY_METADATA_TYPE = [
   },
 ];
 
-const SIGNED_KEY_REQUEST_VALIDATOR_EIP_712_DOMAIN = {
-  name: "Farcaster SignedKeyRequestValidator",
-  version: "1",
-  chainId: DEFAULT_CHAIN_ID,
-  verifyingContract: "0x00000000fc700472606ed4fa22623acf62c60553",
-};
-
-const SIGNED_KEY_REQUEST_TYPE = [
-  { name: "requestFid", type: "uint256" },
-  { name: "key", type: "bytes" },
-  { name: "deadline", type: "uint256" },
-];
-
 const KEY_REGISTRY_EIP_712_DOMAIN = {
   name: "Farcaster KeyRegistry",
   version: "1",
@@ -126,7 +110,7 @@ const ethFormatter = new Intl.NumberFormat("en", {
   maximumSignificantDigits: 2,
 });
 
-const StepElement = ({ collapsed = false, done = false, title, children }) => {
+const StepElement = ({ collapsed = false, title, children }) => {
   return (
     <>
       <div
@@ -303,24 +287,33 @@ const RegisterView = () => {
     return await createSigner()
       .then(async (createdSigner) => {
         setSigner(createdSigner);
-        await appAccount
-          .signTypedData({
-            domain: SIGNED_KEY_REQUEST_VALIDATOR_EIP_712_DOMAIN,
-            types: {
-              SignedKeyRequest: SIGNED_KEY_REQUEST_TYPE,
-            },
-            primaryType: "SignedKeyRequest",
-            message: {
-              requestFid: Number(process.env.FARCORD_APP_FID),
-              key: createdSigner?.publicKey,
-              deadline: Number(deadline),
-            },
+        await fetch(`${process.env.EDGE_API_BASE_URL}/farc-app`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            key: createdSigner?.publicKey,
+            deadline: Number(deadline),
+          }),
+        })
+          .then(async (res) => {
+            return await res.json();
+          })
+          .then((data) => {
+            return data?.signature;
           })
           .then(async (sig) => {
+            const res = await fetch(
+              `${process.env.EDGE_API_BASE_URL}/farc-app`
+            );
+            const data = await res.json();
+            console.log("response", data);
+
             const metadata = encodeAbiParameters(KEY_METADATA_TYPE, [
               {
                 requestFid: BigInt(process.env.FARCORD_APP_FID),
-                requestSigner: appAccount.address,
+                requestSigner: data.address,
                 signature: sig,
                 deadline: Number(deadline),
               },

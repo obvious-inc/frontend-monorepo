@@ -10,7 +10,6 @@ import {
   useWaitForTransaction,
 } from "wagmi";
 import { DEFAULT_CHAIN_ID } from "../hooks/farcord";
-import { mnemonicToAccount } from "viem/accounts";
 import useFarcasterAccount from "./farcaster-account";
 
 const warpcastApi = "https://api.warpcast.com";
@@ -60,8 +59,6 @@ const SIGNED_KEY_REQUEST_TYPE = [
   { name: "key", type: "bytes" },
   { name: "deadline", type: "uint256" },
 ];
-
-const appAccount = mnemonicToAccount(process.env.FARCORD_APP_MNEMONIC);
 
 export const createCacheKey = (address) =>
   [address?.toLowerCase(), "signer"].filter(Boolean).join("-");
