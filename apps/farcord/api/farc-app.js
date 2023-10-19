@@ -19,13 +19,12 @@ const SIGNED_KEY_REQUEST_TYPE = [
   { name: "deadline", type: "uint256" },
 ];
 
-export default async function handler(req, res) {
+export default async (req) => {
   console.log("new request coming through", req);
+  const body = req.body || "";
+  console.log("body", body);
 
   if (req.method === "POST") {
-    const body = req.body;
-    console.log("body", body);
-
     if (!body.key || !body.deadline) {
       return new Response(
         JSON.stringify({
@@ -82,4 +81,4 @@ export default async function handler(req, res) {
       }
     );
   }
-}
+};
