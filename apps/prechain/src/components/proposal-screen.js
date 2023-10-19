@@ -132,7 +132,8 @@ const ProposalMainSection = ({ proposalId, scrollContainerRef }) => {
   const hasVotingStarted =
     proposal?.startBlock != null &&
     latestBlockNumber > Number(proposal.startBlock);
-  const isVotingOngoing = hasVotingStarted && !hasVotingEnded;
+  const isVotingOngoing =
+    hasVotingStarted && !hasVotingEnded && proposal?.state !== "canceled";
 
   const sendProposalFeedback = useSendProposalFeedback(proposalId, {
     support: pendingSupport,
