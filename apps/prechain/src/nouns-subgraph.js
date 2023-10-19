@@ -416,7 +416,10 @@ const parseProposal = (data, { chainId }) => {
   if (data.versions != null)
     parsedData.versions = data.versions.map(parseProposalVersion);
 
-  if (data.votes != null) parsedData.votes = data.votes.map(parseProposalVote);
+  if (data.votes != null)
+    parsedData.votes = data.votes
+      .map(parseProposalVote)
+      .filter((v) => !hideProposalVote(v));
 
   if (data.proposer?.id != null) parsedData.proposerId = data.proposer.id;
 
@@ -425,6 +428,9 @@ const parseProposal = (data, { chainId }) => {
 
   return parsedData;
 };
+
+const hideProposalVote = (v) =>
+  v.votes === 0 && (v.reason?.trim() ?? "") === "";
 
 const parseProposalCandidate = (data, { chainId }) => {
   const parsedData = {
@@ -593,7 +599,9 @@ export const fetchNounsActivity = (chainId, { startBlock, endBlock }) =>
     const candidateFeedbackPosts =
       data.candidateFeedbacks.map(parseFeedbackPost);
     const proposalFeedbackPosts = data.proposalFeedbacks.map(parseFeedbackPost);
-    const votes = data.votes.map(parseProposalVote);
+    const votes = data.votes
+      .map(parseProposalVote)
+      .filter((v) => !hideProposalVote(v));
 
     return { votes, proposalFeedbackPosts, candidateFeedbackPosts };
   });
