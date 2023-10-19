@@ -26,9 +26,22 @@ export default async (req) => {
     const { body } = req;
     console.log("body", body);
 
-    const { key, deadline } = body;
-    console.log("key", key);
-    console.log("deadline", deadline);
+    if (!body.key || !body.deadline) {
+      return new Response(
+        JSON.stringify({
+          data: { error: "key and deadline are required" },
+        }),
+        {
+          status: 400,
+          headers: {
+            "Content-Type": "application/json",
+          },
+        }
+      );
+    }
+
+    console.log("key", body.key);
+    console.log("deadline", body.deadline);
 
     const signature = await appAccount.signTypedData({
       domain: SIGNED_KEY_REQUEST_VALIDATOR_EIP_712_DOMAIN,
@@ -38,8 +51,8 @@ export default async (req) => {
       primaryType: "SignedKeyRequest",
       message: {
         requestFid: Number(process.env.FARCORD_APP_FID),
-        key: key,
-        deadline: deadline,
+        key: body.key,
+        deadline: body.deadline,
       },
     });
 
