@@ -120,22 +120,32 @@ const useFeedItems = ({ filter }) => {
   const candidates = useProposalCandidates();
 
   return React.useMemo(() => {
-    const proposalItems =
-      filter === "candidates"
-        ? []
-        : proposals.flatMap((p) => buildProposalFeed(p, { latestBlockNumber }));
+    const buildProposalItems = () =>
+      proposals.flatMap((p) => buildProposalFeed(p, { latestBlockNumber }));
+    const buildCandidateItems = () =>
+      candidates.flatMap((c) =>
+        buildCandidateFeed(c, { skipSignatures: true })
+      );
 
-    const candidateItems =
-      filter === "proposals"
-        ? []
-        : candidates.flatMap((c) =>
-            buildCandidateFeed(c, { skipSignatures: true })
+    const buildFeedItems = () => {
+      switch (filter) {
+        case "proposals":
+          return buildProposalItems();
+        case "candidates":
+          return buildCandidateItems();
+        case "propdates":
+          return buildProposalItems().filter(
+            (i) => i.type === "event" && i.eventType.startsWith("propdate")
           );
+        default:
+          return [...buildProposalItems(), ...buildCandidateItems()];
+      }
+    };
 
-    return arrayUtils.sortBy({ value: (i) => i.blockNumber, order: "desc" }, [
-      ...proposalItems,
-      ...candidateItems,
-    ]);
+    return arrayUtils.sortBy(
+      { value: (i) => i.blockNumber, order: "desc" },
+      buildFeedItems()
+    );
   }, [proposals, candidates, filter, latestBlockNumber]);
 };
 
@@ -982,6 +992,7 @@ const FeedSidebar = React.memo(({ visible = true }) => {
             { value: "all", label: "Everything" },
             { value: "proposals", label: "Proposal activity only" },
             { value: "candidates", label: "Candidate activity only" },
+            { value: "propdates", label: "Propdates only" },
           ]}
           onChange={(value) => {
             setFilter(value);
@@ -994,6 +1005,7 @@ const FeedSidebar = React.memo(({ visible = true }) => {
               all: "Everything",
               proposals: "Proposal activity",
               candidates: "Candidate activity",
+              propdates: "Propdates",
             }[value];
             return (
               <>

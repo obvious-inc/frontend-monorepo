@@ -30,7 +30,7 @@ const fetchAbi = async (address_) => {
   const responseBody = await response.json();
 
   if (responseBody.status !== "1") {
-    console.log(responseBody)
+    console.log(responseBody);
     return null;
   }
 
