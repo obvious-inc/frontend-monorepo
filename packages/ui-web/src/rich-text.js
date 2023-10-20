@@ -363,7 +363,8 @@ const createRenderer = ({
           </div>
         );
 
-      case "attachments": {
+      case "attachments":
+      case "image-grid": {
         if (inline) {
           if (root && i === 0)
             return (
@@ -384,7 +385,7 @@ const createRenderer = ({
               justifyContent: "flex-start",
               flexWrap: "wrap",
               margin: "-1rem 0 0 -1rem",
-              "& > button": {
+              "& > *": {
                 margin: "1rem 0 0 1rem",
               },
             })}
@@ -415,6 +416,8 @@ const createRenderer = ({
           // Skip fitting step if both max dimensions are explicitly set to `null`
           imagesMaxWidth === null && imagesMaxHeight === null
             ? el.width
+            : el.width == null
+            ? null
             : dimensionUtils.fitInsideBounds(
                 { width: el.width, height: el.height },
                 {
@@ -453,7 +456,12 @@ const createRenderer = ({
               width={fittedWidth}
               style={{
                 maxWidth: "100%",
-                aspectRatio: `${el.width} / ${el.height}`,
+                maxHeight:
+                  fittedWidth == null
+                    ? imagesMaxHeight ?? defaultMaxHeight
+                    : undefined,
+                aspectRatio:
+                  el.width == null ? undefined : `${el.width} / ${el.height}`,
               }}
             />
           </ContainerComponent>

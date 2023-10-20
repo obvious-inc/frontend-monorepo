@@ -1,7 +1,7 @@
 import React from "react";
 import { css } from "@emotion/react";
 
-const Image = (props) => {
+const Image = ({ disableFallback = false, ...props }) => {
   const ref = React.useRef();
 
   const [error, setError] = React.useState(null);
@@ -13,11 +13,15 @@ const Image = (props) => {
     };
   }, [props.src]);
 
-  if (error != null)
+  if (error != null && !disableFallback)
     return (
-      <div
+      <span
         data-url={props.src ?? "--none--"}
-        style={{ width: props.width, ...props.style }}
+        style={{
+          padding: props.width == null ? "1em" : 0,
+          width: props.width,
+          ...props.style,
+        }}
         css={(t) =>
           css({
             userSelect: "none",
@@ -25,12 +29,12 @@ const Image = (props) => {
             alignItems: "center",
             justifyContent: "center",
             color: t.colors.textMuted,
-            fontSize: t.fontSizes.default,
+            fontSize: "1em",
           })
         }
       >
         Error loading image
-      </div>
+      </span>
     );
 
   return <img ref={ref} {...props} />;

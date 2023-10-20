@@ -12,7 +12,7 @@ export const map = (fn, nodes) => {
   const mappedNodes = [];
 
   for (let [index, node] of nodes.entries()) {
-    if (node.children != null) node.children = map(node.children, fn);
+    if (node.children != null) node.children = map(fn, node.children);
     mappedNodes.push(fn(node, index));
   }
 

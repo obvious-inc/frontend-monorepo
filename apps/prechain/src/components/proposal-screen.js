@@ -979,7 +979,7 @@ export const ProposalBody = React.memo(({ markdownText }) => (
       })
     }
   >
-    <MarkdownRichText text={markdownText} />
+    <MarkdownRichText text={markdownText} imagesMaxHeight={680} />
   </div>
 ));
 

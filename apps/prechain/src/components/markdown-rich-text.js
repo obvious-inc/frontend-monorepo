@@ -4,6 +4,8 @@ import { css } from "@emotion/react";
 import {
   string as stringUtils,
   emoji as emojiUtils,
+  message as messageUtils,
+  getImageDimensionsFromUrl,
 } from "@shades/common/utils";
 import RichText from "@shades/ui-web/rich-text";
 import Emoji from "@shades/ui-web/emoji";
@@ -71,9 +73,14 @@ const parseToken = (token, context) => {
     case "image": {
       if (context?.displayImages)
         return {
-          type: "image",
-          url: token.href,
-          interactive: false,
+          type: "image-grid",
+          children: [
+            {
+              type: "image",
+              url: token.href,
+              interactive: false,
+            },
+          ],
         };
 
       if (context?.link) return { text: context.linkUrl };
@@ -98,7 +105,10 @@ const parseToken = (token, context) => {
       const hasLabel = token.text !== token.href;
 
       if (isImage && hasLabel && context?.displayImages)
-        return { type: "image", url: token.href, interactive: false };
+        return {
+          type: "image-grid",
+          children: [{ type: "image", url: token.href, interactive: false }],
+        };
 
       return {
         type: "link",
@@ -170,11 +180,62 @@ const parseToken = (token, context) => {
   }
 };
 
-const MarkdownRichText = ({ text, displayImages = true, ...props }) => {
+const setImageDimensions = async (blocks) => {
+  const isImage = (n) => ["image", "image-attachment"].includes(n.type);
+
+  const elements = [];
+  messageUtils.iterate((node) => {
+    if (isImage(node) && node.width == null) elements.push(node);
+  }, blocks);
+
+  const dimentionsByUrl = Object.fromEntries(
+    await Promise.all(
+      elements.map(async (el) => {
+        try {
+          const dimensions = await getImageDimensionsFromUrl(el.url);
+          return [el.url, dimensions];
+        } catch (e) {
+          return [el.url, null];
+        }
+      })
+    )
+  );
+
+  return messageUtils.map((node) => {
+    if (!isImage(node) || dimentionsByUrl[node.url] == null) return node;
+    const dimensions = dimentionsByUrl[node.url];
+    return { ...node, ...dimensions };
+  }, blocks);
+};
+
+const useParsedMarkdownText = (text, { displayImages, awaitImages }) => {
+  const [blocksWithImageDimensions, setBlocksWithImageDimensions] =
+    React.useState(null);
+
   const blocks = React.useMemo(() => {
     const tokens = marked.lexer(text);
     return tokens.map((t) => parseToken(t, { displayImages })).filter(Boolean);
   }, [text, displayImages]);
+
+  React.useEffect(() => {
+    if (!awaitImages) return;
+    (async () => {
+      setBlocksWithImageDimensions(await setImageDimensions(blocks));
+    })();
+  }, [blocks, awaitImages]);
+
+  return awaitImages ? blocksWithImageDimensions : blocks;
+};
+
+const MarkdownRichText = ({
+  text,
+  awaitImages = false,
+  displayImages = true,
+  ...props
+}) => {
+  const blocks = useParsedMarkdownText(text, { displayImages, awaitImages });
+
+  if (blocks == null) return null;
 
   const lastBlockString =
     blocks
