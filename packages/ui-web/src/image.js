@@ -16,6 +16,7 @@ const Image = (props) => {
   if (error != null)
     return (
       <div
+        data-url={props.src ?? "--none--"}
         style={{ width: props.width, ...props.style }}
         css={(t) =>
           css({
