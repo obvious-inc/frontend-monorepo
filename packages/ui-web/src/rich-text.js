@@ -22,10 +22,10 @@ export const createCss = (t) => ({
     margin: 0,
     listStyleType: "disc",
   },
-  "ul": {
+  ul: {
     listStyleType: "disc",
   },
-  "ol": {
+  ol: {
     listStyleType: "decimal",
   },
   "* + ul, * + ol": { marginTop: "1.25em" },
@@ -154,6 +154,20 @@ export const createCss = (t) => ({
     },
   },
 
+  table: {
+    borderSpacing: 0,
+    "th,td": {
+      padding: "0.2em 0.4em",
+    },
+    "thead th": {
+      fontWeight: t.text.weights.emphasis,
+      borderBottom: "0.1rem solid",
+      borderColor: t.colors.borderLight,
+    },
+  },
+  "* + tabel": { marginTop: "1.25em" },
+  "table:has(+ *)": { marginBottom: "1.25em" },
+
   // Misc
   wordBreak: "break-word",
   em: { fontStyle: "italic" },
@@ -185,12 +199,12 @@ export const createCss = (t) => ({
     "p, blockquote, pre code, .image": {
       marginTop: "0.625em",
     },
-    [["blockquote", "pre code", ".image"]
+    [["blockquote", "pre code", ".image", "table"]
       .map((selector) => `* + ${selector}`)
       .join(", ")]: {
       marginTop: "0.625em",
     },
-    [["blockquote", "pre code", ".image"]
+    [["blockquote", "pre code", ".image", "table"]
       .map((selector) => `${selector}:has(+ *)`)
       .join(", ")]: {
       marginTop: "0.625em",
@@ -309,6 +323,38 @@ const createRenderer = ({
 
       case "code":
         return <code key={i}>{el.code}</code>;
+
+      case "table": {
+        const isLast = i === els.length - 1;
+
+        return (
+          <React.Fragment key={i}>
+            {inline ? (
+              <>[table]</>
+            ) : (
+              <table>
+                <thead>
+                  <tr>
+                    {el.header.map((headerCell, i) => (
+                      <th key={i}>{headerCell}</th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {el.rows.map((rowCells, i) => (
+                    <tr key={i}>
+                      {rowCells.map((cell, i) => (
+                        <td key={i}>{cell}</td>
+                      ))}
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            )}
+            {isLast && suffix}
+          </React.Fragment>
+        );
+      }
 
       case "horizontal-divider":
         return (

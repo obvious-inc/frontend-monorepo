@@ -84,6 +84,13 @@ const parseToken = (token, context) => {
     case "hr":
       return { type: "horizontal-divider" };
 
+    case "table":
+      return {
+        type: "table",
+        header: token.header.map((t) => t.text),
+        rows: token.rows.map((r) => r.map((c) => c.text)),
+      };
+
     case "link": {
       const isImage = ["jpg", "png", "gif"].some((ext) =>
         token.href.endsWith(`.${ext}`)
