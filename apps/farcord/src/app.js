@@ -11,6 +11,7 @@ import { Provider as FarcasterAccountProvider } from "./components/farcaster-acc
 import { channelsReducer } from "./reducers/channels.js";
 import { ChannelCacheContextProvider } from "./hooks/channel.js";
 import { NotificationsContextProvider } from "./hooks/notifications.js";
+import TransferView from "./components/transfer-view.js";
 
 const MainScreen = React.lazy(() => import("./components/main-screen.js"));
 
@@ -145,6 +146,11 @@ const App = () => {
                                   fullScreen={true}
                                 />
                               }
+                            />
+
+                            <Route
+                              path="/transfer"
+                              element={<TransferView />}
                             />
 
                             <Route
