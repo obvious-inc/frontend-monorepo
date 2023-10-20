@@ -22,6 +22,12 @@ export const createCss = (t) => ({
     margin: 0,
     listStyleType: "disc",
   },
+  "ul": {
+    listStyleType: "disc",
+  },
+  "ol": {
+    listStyleType: "decimal",
+  },
   "* + ul, * + ol": { marginTop: "1.25em" },
   "ul:has(+ *), ol:has(+ *)": { marginBottom: "1.25em" },
   "ul ul, ol ol, ul ol, ol ul": { margin: 0 },
