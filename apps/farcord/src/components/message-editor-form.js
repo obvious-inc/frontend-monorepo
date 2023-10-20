@@ -383,7 +383,11 @@ const MessageEditorForm = React.memo(
                 ]).then(([dimensions, [uploadedFile]]) => {
                   setImageUploads((fs) => {
                     const newImageUploads = fs.map((f) => {
-                      if (!uploadedFile.name.endsWith(f.name)) return f;
+                      // todo: original name is percent encoded, but no on imgur
+                      if (
+                        !encodeURIComponent(uploadedFile.name).endsWith(f.name)
+                      )
+                        return f;
                       return {
                         id: uploadedFile.id,
                         name: uploadedFile.name,
