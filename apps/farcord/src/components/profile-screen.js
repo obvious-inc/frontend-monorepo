@@ -9,7 +9,11 @@ import AccountPreviewPopoverTrigger from "./account-preview-popover-trigger";
 import Button from "@shades/ui-web/button";
 import { Small } from "./text";
 import { useLatestCallback } from "@shades/common/react";
-import { setUserData, useUserData as useHubUserData } from "../hooks/hub";
+import {
+  fetchUsernameProofsByFid,
+  setUserData,
+  useUserData as useHubUserData,
+} from "../hooks/hub";
 import useSigner from "./signer";
 import { signTypedData } from "@wagmi/core";
 import { DEFAULT_CHAIN_ID } from "../hooks/farcord";
@@ -18,6 +22,7 @@ import FormattedDate from "./formatted-date";
 import Input from "@shades/ui-web/input";
 import { PlusCircle as PlusCircleIcon } from "@shades/ui-web/icons";
 import { uploadImages } from "../utils/imgur";
+import { bytesToString, toHex } from "viem";
 
 const FARCASTER_FNAME_API_ENDPOINT = "https://fnames.farcaster.xyz";
 
@@ -278,6 +283,15 @@ const ProfileView = () => {
         }
 
         setUsername(transfer.username);
+
+        await setUserData({
+          fid,
+          signer,
+          dataType: "username",
+          value: transfer.username,
+        });
+
+        // need to push the proof
       } catch (e) {
         // if error occurs, reload page to hopefully fetch new username correctly
         window.location.reload();
@@ -366,15 +380,45 @@ const ProfileView = () => {
   React.useEffect(() => {
     if (!userData) return;
 
+    const fetchProofs = async (fid) => {
+      let finalUsername;
+      let finalDatetime;
+      await fetchUsernameProofsByFid({ fid }).then((proofs) => {
+        for (const proof of proofs) {
+          const proofOwner = toHex(proof.owner);
+          if (proofOwner.toLowerCase() !== accountAddress.toLowerCase())
+            continue;
+
+          const namez = bytesToString(proof.name);
+
+          if (finalDatetime && finalDatetime > proof.timestamp) continue;
+          finalUsername = namez;
+        }
+
+        if (finalUsername) {
+          setUserData({
+            fid,
+            signer,
+            dataType: "username",
+            value: finalUsername,
+          });
+        }
+      });
+    };
+
     setDisplayName(userData?.displayName);
     setDisplayNameUpdateValue(userData?.displayName);
 
     setBio(userData?.bio);
     setBioUpdateValue(userData?.bio);
 
-    setUsername(userData?.username);
+    if (!userData?.username && signer && onChain) {
+      fetchProofs(fid);
+    } else {
+      setUsername(userData?.username);
+    }
     setUsernameUpdateValue(userData?.username);
-  }, [userData]);
+  }, [userData, fid, accountAddress, signer, onChain]);
 
   if (chain?.unsupported) {
     return (
@@ -729,7 +773,7 @@ const ProfileView = () => {
             >
               Set username
             </Button>
-            {usernameTimelock ? (
+            {username != usernameUpdateValue && usernameTimelock ? (
               <Small
                 css={(t) =>
                   css({

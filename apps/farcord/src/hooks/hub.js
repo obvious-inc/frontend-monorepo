@@ -372,6 +372,9 @@ export const setUserData = async ({ fid, signer, dataType, value }) => {
     case "url":
       hubDataType = 5;
       break;
+    case "username":
+      hubDataType = 6;
+      break;
     default:
       throw new Error("unknown data type");
   }
@@ -475,4 +478,21 @@ export const useIsFollower = ({ fid, fidToCheck }) => {
   }, [fid, fidToCheck]);
 
   return isFollower;
+};
+
+export const fetchUsernameProofsByFid = async ({ fid }) => {
+  return farcasterClient
+    .getUserNameProofsByFid({
+      fid: Number(fid),
+    })
+    .then((result) => {
+      if (result.isErr()) {
+        throw result.error;
+      }
+
+      return result.value.proofs;
+    })
+    .catch((err) => {
+      console.error(err);
+    });
 };

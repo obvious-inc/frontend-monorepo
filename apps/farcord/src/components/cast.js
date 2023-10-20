@@ -303,17 +303,6 @@ export const CastHeader = ({ cast }) => {
 };
 
 const Embed = ({ embed, text }) => {
-  // const [embedType, setEmbedType] = React.useState("url");
-  // useEffect(() => {
-  //   return () => {
-  //     if (IMAGE_ENDINGS.some((ending) => embed.url?.endsWith(ending))) {
-  //       setEmbedType("image");
-  //     } else if (embed.url?.endsWith("mp4")) {
-  //       setEmbedType("video");
-  //     }
-  //   };
-  // }, [embed]);
-
   let embedType = "url";
 
   if (IMAGE_ENDINGS.some((ending) => embed.url?.endsWith(ending))) {
