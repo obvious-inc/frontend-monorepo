@@ -2,7 +2,7 @@
   "name": "prechain",
   "private": true,
   "scripts": {
-    "dev": "webpack serve --mode=development",
+    "dev": "webpack serve --mode=development --port=$PORT",
     "build": "webpack --mode=production",
     "lint": "eslint . && prettier . --check",
     "format": "prettier . --write"
