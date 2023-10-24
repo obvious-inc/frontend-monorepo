@@ -1403,22 +1403,11 @@ export const VoteDistributionToolTipContent = ({ votes, delegates }) => {
 };
 
 const ProposalVoteStatusBar = React.memo(({ proposalId }) => {
-  const { data: latestBlockNumber } = useBlockNumber();
-  const calculateBlockTimestamp = useApproximateBlockTimestampCalculator();
-
   const proposal = useProposal(proposalId);
   const quorumVotes = useDynamicQuorum(proposalId);
   const delegateVotes = getDelegateVotes(proposal);
 
-  const endBlock = proposal?.objectionPeriodEndBlock ?? proposal?.endBlock;
-
-  const startDate = calculateBlockTimestamp(proposal.startBlock);
-  const endDate = calculateBlockTimestamp(endBlock);
-
-  const hasVotingEnded = latestBlockNumber > Number(endBlock);
-  const hasVotingStarted =
-    proposal?.startBlock != null &&
-    latestBlockNumber > Number(proposal.startBlock);
+  const { forVotes, againstVotes, abstainVotes } = proposal;
 
   return (
     <div
@@ -1440,13 +1429,13 @@ const ProposalVoteStatusBar = React.memo(({ proposalId }) => {
           })
         }
       >
-        <div data-for>For {proposal.forVotes}</div>
-        <div data-against>Against {proposal.againstVotes}</div>
+        <div data-for>For {forVotes}</div>
+        <div data-against>Against {againstVotes}</div>
       </div>
       <VotingBar
-        forVotes={Number(proposal.forVotes)}
-        againstVotes={Number(proposal.againstVotes)}
-        abstainVotes={Number(proposal.abstainVotes)}
+        forVotes={forVotes}
+        againstVotes={againstVotes}
+        abstainVotes={abstainVotes}
       />
       <VotingBar
         forVotes={delegateVotes?.for ?? 0}
@@ -1462,43 +1451,21 @@ const ProposalVoteStatusBar = React.memo(({ proposalId }) => {
             display: "flex",
             justifyContent: "space-between",
             gap: "0.5rem",
+            "[data-for], [data-against]": {
+              fontWeight: t.text.weights.emphasis,
+            },
+            "[data-for]": { color: t.colors.textPositive },
+            "[data-against]": { color: t.colors.textNegative },
           })
         }
       >
         <div>{quorumVotes != null && <>Quorum {quorumVotes}</>}</div>
         <div>
-          {hasVotingEnded ? (
+          {againstVotes <= forVotes && quorumVotes > forVotes && (
             <>
-              Voting ended{" "}
-              <FormattedDateWithTooltip
-                capitalize={false}
-                relativeDayThreshold={5}
-                value={endDate}
-                day="numeric"
-                month="short"
-              />
-            </>
-          ) : hasVotingStarted ? (
-            <>
-              Voting ends{" "}
-              <FormattedDateWithTooltip
-                capitalize={false}
-                relativeDayThreshold={5}
-                value={endDate}
-                day="numeric"
-                month="short"
-              />
-            </>
-          ) : (
-            <>
-              Voting starts{" "}
-              <FormattedDateWithTooltip
-                capitalize={false}
-                relativeDayThreshold={5}
-                value={startDate}
-                day="numeric"
-                month="short"
-              />
+              {quorumVotes - forVotes} <span data-for>For</span>{" "}
+              {quorumVotes - forVotes === 1 ? "vote" : "votes"} left to meet
+              quorum
             </>
           )}
         </div>

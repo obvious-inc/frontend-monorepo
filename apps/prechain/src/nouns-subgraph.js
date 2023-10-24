@@ -403,6 +403,13 @@ const parseProposal = (data, { chainId }) => {
     }
   }
 
+  // Regular numbers
+  for (const prop of ["forVotes", "againstVotes", "abstainVotes"]) {
+    if (data[prop] != null) {
+      parsedData[prop] = Number(data[prop]);
+    }
+  }
+
   if (data.description != null) {
     const firstLine = data.description.split("\n")[0];
     const startIndex = [...firstLine].findIndex((c) => c !== "#");
