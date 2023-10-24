@@ -53,7 +53,7 @@ export const buildFeed = (candidate, { skipSignatures = false } = {}) => {
       authorAccount: p.voterId,
       body: p.reason,
       support: p.support,
-      voteCount: p.votes,
+      voteCount: p.voter.nounsRepresented.length,
       timestamp: p.createdTimestamp,
       blockNumber: BigInt(p.createdBlock),
       isPending: p.isPending,
