@@ -440,6 +440,22 @@ const Content = ({
               setType(value);
             }}
           />
+          {type === "streaming-payment" && (
+            <div
+              css={(t) =>
+                css({
+                  fontSize: t.text.sizes.small,
+                  color: t.colors.textDimmed,
+                  marginTop: "0.7rem",
+                  "p + p": { marginTop: "0.7em" },
+                })
+              }
+            >
+              Streams are a good way to align incentives between the proposer
+              and the DAO. It can help make the DAO more comfortable commiting
+              to large funding requests or projects with uncertain outcomes.
+            </div>
+          )}
         </div>
 
         {type === "streaming-payment" && (
@@ -482,12 +498,15 @@ const Content = ({
                   fontSize: t.text.sizes.small,
                   color: t.colors.textDimmed,
                   marginTop: "0.7rem",
+                  "p + p": { marginTop: "0.7em" },
                 })
               }
             >
-              Consider the estimated execution time of the proposal; creating a
-              stream with a past start date will work fine, but it is a little
-              bit awkward.
+              <p>
+                Requested funds are vested with each Ethereum block within the
+                given duration. The start date can be in the past.
+              </p>
+              <p>Vested funds can be withdrawn at any time.</p>
             </div>
           </div>
         )}
