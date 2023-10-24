@@ -16,7 +16,7 @@ const AccountDialog = ({ isOpen, close }) => (
     onRequestClose={() => {
       close();
     }}
-    width="36rem"
+    width="38rem"
   >
     {(props) => <Content dismiss={close} {...props} />}
   </Dialog>
@@ -135,7 +135,7 @@ const Content = ({ titleProps, dismiss }) => {
               "dd[data-block]": {
                 textAlign: "left",
                 gridColumn: "span 2",
-                paddingLeft: "1.6rem",
+                paddingLeft: "1rem",
                 paddingBottom: "1.6rem",
               },
             })
