@@ -249,20 +249,19 @@ const Content = ({
         ["payable", "nonpayable"].includes(item.stateMutability)
     )
     .map((item) => {
-      const label = `${item.name}()`;
-      const signature = `${item.name}(${item.inputs
-        .map((i) => i.type)
-        .join(",")})`;
-      const description =
-        item.inputs.length === 0 ? null : (
+      const value = `${item.name}(${item.inputs.map((i) => i.type).join(",")})`;
+      const label = (
+        <span>
+          {item.name}(
           <span
             css={(t) =>
               css({
-                "[data-identifier]": { fontWeight: t.text.weights.emphasis },
+                color: t.colors.textDimmed,
+                fontSize: t.text.sizes.small,
+                padding: "0 0.1em",
               })
             }
           >
-            {item.name}(
             {item.inputs.map((input, i) => (
               <React.Fragment key={i}>
                 {i !== 0 && <>, </>}
@@ -275,14 +274,15 @@ const Content = ({
                 )}
               </React.Fragment>
             ))}
-            )
           </span>
-        );
+          )
+        </span>
+      );
 
       return {
-        value: signature,
+        value,
         label,
-        description,
+        textValue: item.name,
         inputs: item.inputs,
       };
     });
@@ -720,7 +720,6 @@ const Content = ({
                       buildInitialInputState(selectedOption?.inputs)
                     );
                   }}
-                  width="max-content"
                   fullWidth
                 />
               </div>

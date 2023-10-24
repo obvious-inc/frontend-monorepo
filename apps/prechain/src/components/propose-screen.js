@@ -370,6 +370,17 @@ const ProposeScreen = () => {
                         {hasActions ? "Add action" : "Add a proposal action"}
                       </Button>
                     </div>
+
+                    {/* <Button */}
+                    {/*   onClick={() => { */}
+                    {/*     console.log( */}
+                    {/*       messageUtils.toMarkdown(draft.body), */}
+                    {/*       draft.body */}
+                    {/*     ); */}
+                    {/*   }} */}
+                    {/* > */}
+                    {/*   Preview */}
+                    {/* </Button> */}
                   </div>
 
                   <div
