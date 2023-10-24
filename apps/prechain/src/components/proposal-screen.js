@@ -633,7 +633,7 @@ export const ProposalActionForm = ({
       );
 
     if (proposalVoteCount === 0)
-      return "Note that althouth you may vote without any delegated nouns, gas spent will not be refunded.";
+      return "You can vote with zero voting power, but gas spent will not be refunded.";
 
     return "Gas spent on voting will be refunded.";
   };
