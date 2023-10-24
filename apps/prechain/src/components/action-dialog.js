@@ -10,7 +10,10 @@ import {
 import { useEnsName, useEnsAddress, useContractRead } from "wagmi";
 import { css } from "@emotion/react";
 import { useFetch } from "@shades/common/react";
-import { TrashCan as TrashCanIcon } from "@shades/ui-web/icons";
+import {
+  TrashCan as TrashCanIcon,
+  Cross as CrossIcon,
+} from "@shades/ui-web/icons";
 import Button from "@shades/ui-web/button";
 import Input, { Label } from "@shades/ui-web/input";
 import Spinner from "@shades/ui-web/spinner";
@@ -132,7 +135,7 @@ const ActionDialog = ({ isOpen, close, ...props }) => (
     onRequestClose={() => {
       close();
     }}
-    width="46rem"
+    width="52rem"
   >
     {({ titleProps }) => <Content {...titleProps} {...props} dismiss={close} />}
   </Dialog>
@@ -835,6 +838,10 @@ const renderInput = (input, inputValue, setInputValue) => {
                   {
                     components: input.components,
                     type: elementType,
+                    remove: () =>
+                      setInputValue((els) =>
+                        els.filter((_, i) => i !== elementIndex)
+                      ),
                   },
                   elementValue,
                   setElementValue
@@ -871,94 +878,137 @@ const renderInput = (input, inputValue, setInputValue) => {
     return (
       <div key={input.name} data-input>
         {labelContent != null && <Label>{labelContent}</Label>}
-        <div data-components>
-          {input.components.map((c) => {
-            const componentValue = inputValue?.[c.name] ?? "";
-            const setComponentValue = (getComponentValue) => {
-              setInputValue((currentInputValue) => {
-                const currentComponentValue = currentInputValue?.[c.name];
-                const nextComponentValue =
-                  typeof getComponentValue === "function"
-                    ? getComponentValue(currentComponentValue)
-                    : getComponentValue;
-                return {
-                  ...currentInputValue,
-                  [c.name]: nextComponentValue,
-                };
-              });
-            };
+        <div data-components css={css({ display: "flex", gap: "0.4rem" })}>
+          <div css={css({ flex: "1", minWidth: 0 })}>
+            {input.components.map((c) => {
+              const componentValue = inputValue?.[c.name] ?? "";
+              const setComponentValue = (getComponentValue) => {
+                setInputValue((currentInputValue) => {
+                  const currentComponentValue = currentInputValue?.[c.name];
+                  const nextComponentValue =
+                    typeof getComponentValue === "function"
+                      ? getComponentValue(currentComponentValue)
+                      : getComponentValue;
+                  return {
+                    ...currentInputValue,
+                    [c.name]: nextComponentValue,
+                  };
+                });
+              };
 
-            return (
-              <React.Fragment key={c.name}>
-                {renderInput(c, componentValue, setComponentValue)}
-              </React.Fragment>
-            );
-          })}
+              return (
+                <React.Fragment key={c.name}>
+                  {renderInput(c, componentValue, setComponentValue)}
+                </React.Fragment>
+              );
+            })}
+          </div>
+          {input.remove != null && (
+            <Button
+              type="button"
+              variant="transparent"
+              size="tiny"
+              onClick={input.remove}
+              icon={<CrossIcon style={{ width: "1.6rem" }} />}
+            />
+          )}
         </div>
       </div>
     );
 
-  const simplifiedType = simplifyType(input.type);
+  const renderIndividualInput = () => {
+    const simplifiedType = simplifyType(input.type);
 
-  switch (simplifiedType) {
-    case "bool":
-      return (
-        <div data-input>
-          <Select
-            label={labelContent}
+    switch (simplifiedType) {
+      case "bool":
+        return (
+          <div data-input>
+            <Select
+              label={labelContent}
+              value={inputValue}
+              size="medium"
+              options={[
+                { value: true, label: "true" },
+                { value: false, label: "false" },
+              ]}
+              onChange={(value) => {
+                setInputValue(value);
+              }}
+            />
+          </div>
+        );
+
+      case "number": {
+        const isUnsigned = input.type.startsWith("u");
+        const max = getNumberTypeMax(input.type);
+        const min = isUnsigned ? 0n : max * -1n;
+
+        return (
+          <Input
+            type="number"
+            min={min.toString()}
+            max={max.toString()}
             value={inputValue}
-            size="medium"
-            options={[
-              { value: true, label: "true" },
-              { value: false, label: "false" },
-            ]}
-            onChange={(value) => {
-              setInputValue(value);
+            onChange={(e) => {
+              try {
+                const n = BigInt(e.target.value);
+                const truncatedN = n > max ? max : n < min ? min : n;
+                setInputValue(truncatedN.toString());
+              } catch (e) {
+                // Ignore
+              }
             }}
+            label={labelContent}
+            placeholder={getArgumentInputPlaceholder(input.type)}
+            containerProps={{ "data-input": true }}
           />
-        </div>
-      );
+        );
+      }
 
-    case "number": {
-      const isUnsigned = input.type.startsWith("u");
-      const max = getNumberTypeMax(input.type);
-      const min = isUnsigned ? 0n : max * -1n;
+      case "address":
+        return (
+          <Input
+            value={inputValue}
+            onChange={(e) => {
+              setInputValue(e.target.value);
+            }}
+            maxLength={42}
+            label={labelContent}
+            placeholder={getArgumentInputPlaceholder(input.type)}
+            containerProps={{ "data-input": true }}
+          />
+        );
 
-      return (
-        <Input
-          type="number"
-          min={min.toString()}
-          max={max.toString()}
-          value={inputValue}
-          onChange={(e) => {
-            try {
-              const n = BigInt(e.target.value);
-              const truncatedN = n > max ? max : n < min ? min : n;
-              setInputValue(truncatedN.toString());
-            } catch (e) {
-              // Ignore
-            }
-          }}
-          label={labelContent}
-          placeholder={getArgumentInputPlaceholder(input.type)}
-          containerProps={{ "data-input": true }}
-        />
-      );
+      default:
+        return (
+          <Input
+            value={inputValue}
+            onChange={(e) => {
+              setInputValue(e.target.value);
+            }}
+            label={labelContent}
+            placeholder={getArgumentInputPlaceholder(input.type)}
+            containerProps={{ "data-input": true }}
+          />
+        );
     }
-
-    default:
-      return (
-        <Input
-          value={inputValue}
-          onChange={(e) => {
-            setInputValue(e.target.value);
-          }}
-          label={labelContent}
-          placeholder={getArgumentInputPlaceholder(input.type)}
-          containerProps={{ "data-input": true }}
+  };
+  return input.remove == null ? (
+    renderIndividualInput()
+  ) : (
+    <div css={css({ display: "flex", alignItems: "center", gap: "0.4rem" })}>
+      <div css={css({ flex: 1, minWidth: 0 })}>{renderIndividualInput()}</div>
+      {input.remove != null && (
+        <Button
+          type="button"
+          variant="transparent"
+          size="tiny"
+          onClick={input.remove}
+          icon={<CrossIcon style={{ width: "1.6rem" }} />}
         />
-      );
-  }
+      )}
+    </div>
+  );
 };
 
 const ArgumentInputs = ({ inputs, inputState, setInputState }) => {
