@@ -235,7 +235,7 @@ const MarkdownRichText = ({
 }) => {
   const blocks = useParsedMarkdownText(text, { displayImages, awaitImages });
 
-  if (blocks == null) return null;
+  if (blocks == null || blocks.length === 0) return null;
 
   const lastBlockString =
     blocks
