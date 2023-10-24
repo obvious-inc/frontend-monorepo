@@ -1089,7 +1089,10 @@ const ProposalScreen = () => {
                     <ProposalStateTag
                       size="small"
                       proposalId={proposalId}
-                      style={{ marginLeft: "0.6rem" }}
+                      style={{
+                        marginLeft: "0.6rem",
+                        transform: "translateY(-0.1rem)",
+                      }}
                     />
                   </>
                 )}
