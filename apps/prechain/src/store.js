@@ -470,18 +470,33 @@ export const useProposal = (id) => {
 };
 
 export const useProposalCandidates = () => {
+  const { data: blockNumber } = useBlockNumber({
+    watch: true,
+    cacheTime: 30_000,
+  });
+
   const candidatesById = useStore((s) => s.proposalCandidatesById);
+  const proposalsById = useStore((s) => s.proposalsById);
+
   return React.useMemo(() => {
     const candidates = Object.values(candidatesById);
-    // Exclude canceled candidates as well as those with a matching proposal
-    const filteredCandidates = candidates.filter(
-      (c) => c.canceledTimestamp == null && c.latestVersion?.proposalId == null
-    );
+    const filteredCandidates = candidates.filter((c) => {
+      // Exclude canceled candidates as well as those with a matching proposal
+      if (c.canceledTimestamp != null || c.latestVersion?.proposalId != null)
+        return false;
+      if (c.latestVersion?.targetProposalId == null) return true;
+      const targetProposal = proposalsById[c.latestVersion.targetProposalId];
+      // Exlude candidates with a target proposal past its update period end block
+      return (
+        targetProposal != null &&
+        targetProposal.updatePeriodEndBlock > blockNumber
+      );
+    });
     return arrayUtils.sortBy(
       { value: (p) => p.lastUpdatedTimestamp, order: "desc" },
       filteredCandidates
     );
-  }, [candidatesById]);
+  }, [candidatesById, proposalsById, blockNumber]);
 };
 
 export const useProposalCandidateVotingPower = (candidateId) => {
