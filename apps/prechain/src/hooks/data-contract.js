@@ -45,6 +45,8 @@ export const useSendProposalCandidateFeedback = (
   });
   const { writeAsync: write } = useContractWrite(config);
 
+  if (write == null) return null;
+
   return async () => {
     const candidateId = [proposerId, slug].join("-").toLowerCase();
     const voterId = accountAddress.toLowerCase();
