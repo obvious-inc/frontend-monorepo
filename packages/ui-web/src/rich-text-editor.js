@@ -17,13 +17,14 @@ import {
 import { ErrorBoundary } from "@shades/common/react";
 import { createCss as createRichTextCss } from "./rich-text.js";
 import createControlledParagraphLineBreaksPlugin from "./slate/plugins/controlled-paragraph-line-breaks.js";
+import createSensibleVoidsPlugin from "./slate/plugins/sensible-voids.js";
 import createListsPlugin from "./slate/plugins/lists.js";
 import createQuotesPlugin from "./slate/plugins/quotes.js";
 import createCalloutsPlugin from "./slate/plugins/callouts.js";
 import createHorizontalDividerPlugin from "./slate/plugins/horizontal-divider.js";
 import createEmojiPlugin from "./slate/plugins/emojis.js";
 import createInlineLinksPlugin from "./slate/plugins/inline-links.js";
-import createImagePlugin from "./slate/plugins/images.js";
+import createImagesPlugin from "./slate/plugins/images.js";
 import createHeadingsPlugin from "./slate/plugins/headings.js";
 import createUserMentionsPlugin from "./slate/plugins/user-mentions.js";
 import createChannelLinksPlugin from "./slate/plugins/channel-link.js";
@@ -266,6 +267,7 @@ const RichTextEditor = React.forwardRef(
       onChange,
       onKeyDown,
       onBlur,
+      onFocus,
       disabled = false,
       inline = false,
       triggers = [],
@@ -296,12 +298,13 @@ const RichTextEditor = React.forwardRef(
 
       const { middleware, elements, handlers } = mergePlugins([
         createControlledParagraphLineBreaksPlugin(),
+        createSensibleVoidsPlugin(),
         createListsPlugin({ inline }),
         createQuotesPlugin({ inline }),
         createCalloutsPlugin({ inline }),
         createHeadingsPlugin({ inline }),
         createHorizontalDividerPlugin(),
-        createImagePlugin(),
+        createImagesPlugin(),
         createUserMentionsPlugin(),
         createChannelLinksPlugin(),
         createInlineLinksPlugin(),
@@ -440,6 +443,12 @@ const RichTextEditor = React.forwardRef(
               setSelection(null);
               setActiveMarks([]);
               onBlur?.(e);
+            }}
+            onFocus={(e) => {
+              const marks = editor.getMarks();
+              setActiveMarks(marks == null ? [] : Object.keys(marks));
+              setSelection(editor.selection);
+              onFocus?.(e);
             }}
             css={(theme) => {
               const styles = createRichTextCss(theme);

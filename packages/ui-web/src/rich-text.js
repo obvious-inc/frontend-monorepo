@@ -128,7 +128,7 @@ export const createCss = (t) => ({
       boxShadow: t.shadows.focus,
     },
     "@media(hover: hover)": {
-      '&[data-interactive="interactive"]': {
+      '&[data-interactive="true"]': {
         cursor: "zoom-in",
         "&[data-editable]": { cursor: "pointer" },
         ":hover": { filter: "brightness(1.05)" },

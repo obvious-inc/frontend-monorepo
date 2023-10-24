@@ -1,10 +1,14 @@
 import { Transforms } from "slate";
 import { useSelected, useFocused } from "slate-react";
-import { dimension as dimensionUtils } from "@shades/common/utils";
+import {
+  dimension as dimensionUtils,
+  function as functionUtils,
+} from "@shades/common/utils";
 import {
   SINGLE_IMAGE_ATTACHMENT_MAX_WIDTH,
   SINGLE_IMAGE_ATTACHMENT_MAX_HEIGHT,
 } from "../../rich-text.js";
+import { withEmptyBlockBackwardDeleteTransform } from "../utils.js";
 import Image from "../../image.js";
 
 const ELEMENT_TYPE = "image";
@@ -35,29 +39,36 @@ const middleware = (editor) => {
 
   editor.insertImage = ({ url, width, height }, { at } = {}) => {
     const match = editor.node(at);
-
     if (match != null && match[0].type === "image") {
       editor.setNodes({ url, width, height }, { at });
       return;
     }
 
-    if (at) Transforms.select(editor, at);
+    Transforms.select(editor, at);
 
     editor.withoutNormalizing(() => {
-      Transforms.insertNodes(editor, {
-        type: ELEMENT_TYPE,
-        url,
-        width,
-        height,
-        children: [{ text: "" }],
-      });
+      Transforms.insertNodes(editor, [
+        {
+          type: ELEMENT_TYPE,
+          url,
+          width,
+          height,
+          children: [{ text: "" }],
+        },
+        { type: "paragraph", children: [{ text: "" }] },
+      ]);
       Transforms.liftNodes(editor, {
         match: (node, path) => path.length > 1 && node.type === "image",
       });
     });
   };
 
-  return editor;
+  return functionUtils.compose((e) =>
+    withEmptyBlockBackwardDeleteTransform(
+      { fromElementType: ELEMENT_TYPE, toElementType: "paragraph" },
+      e
+    )
+  )(editor);
 };
 
 const ImageComponent = ({
@@ -86,6 +97,7 @@ const ImageComponent = ({
       <button
         type="button"
         className="image"
+        data-interactive
         data-editable
         data-focused={isFocused ? "true" : undefined}
         onClick={(e) => {
