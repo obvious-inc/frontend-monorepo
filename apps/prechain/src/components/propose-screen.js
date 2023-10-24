@@ -509,7 +509,7 @@ const ProposeScreen = () => {
                       },
                     })
                   }
-                  style={{ flex: 1, minHeight: 0 }}
+                  style={{ flex: 1, minHeight: "12rem" }}
                 />
                 <nav css={css({ position: "fixed", bottom: 0 })}>
                   <div
