@@ -126,11 +126,9 @@ const MessageEditorForm = React.memo(
     const executeMessage = async () => {
       const blocks = toMessageBlocks(pendingSlateNodes);
 
-      const isEmpty = blocks.every(isNodeEmpty);
-
       if (
         !allowEmptySubmit &&
-        isEmpty &&
+        messageUtils.isEmpty(blocks) &&
         // We want to allow "empty" messages if it has attachements
         imageUploads.length === 0
       )
