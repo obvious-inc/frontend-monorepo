@@ -262,6 +262,23 @@ const withEditorCommands = (editor) => {
   return editor;
 };
 
+const withSimplePasteBehavior = (editor) => {
+  const { insertData } = editor;
+
+  editor.insertData = (data) => {
+    const text = data.getData("text");
+
+    if (text) {
+      editor.insertText(text);
+      return;
+    }
+
+    insertData(data);
+  };
+
+  return editor;
+};
+
 const RichTextEditor = React.forwardRef(
   (
     {
@@ -293,6 +310,7 @@ const RichTextEditor = React.forwardRef(
       const editor = compose(
         withMarks,
         withTextCommands,
+        withSimplePasteBehavior,
         withEditorCommands,
         withReact,
         withHistory
