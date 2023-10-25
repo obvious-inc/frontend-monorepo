@@ -91,8 +91,10 @@ const Select = React.forwardRef(
               icon={icon ?? state.selectedItem?.value.icon}
               align={align}
               iconRight={
-                <div css={css({ padding: "0 0.2rem" })}>
-                  <CaretDownIcon style={{ width: "1.1rem" }} />
+                <div style={{ padding: size === "small" ? 0 : "0 0.2rem" }}>
+                  <CaretDownIcon
+                    style={{ width: size === "small" ? "0.9rem" : "1.1rem" }}
+                  />
                 </div>
               }
             >
