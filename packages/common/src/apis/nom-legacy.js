@@ -857,10 +857,10 @@ export default ({
       return message;
     },
     async removeMessage(messageId) {
-      const rawMessage = await authorizedFetch(`/messages/${messageId}`, {
+      await authorizedFetch(`/messages/${messageId}`, {
         method: "DELETE",
       });
-      return parseMessage(rawMessage);
+      return { id: messageId };
     },
     reportMessage(messageId, { comment }) {
       return authorizedFetch(`/messages/${messageId}/report`, {
