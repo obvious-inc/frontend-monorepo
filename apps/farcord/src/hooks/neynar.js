@@ -199,6 +199,15 @@ export async function fetchMentionAndReplies({
         return parseNotification({ notification });
       });
     })
+    .then((notifications) => {
+      return notifications.filter((n) => {
+        if (!n) return false;
+        if (n.type === "cast-reply" || n.type == "cast-mention") {
+          if (n.author.fid === Number(fid)) return false;
+        }
+        return true;
+      });
+    })
     .catch((err) => {
       throw err;
     });
