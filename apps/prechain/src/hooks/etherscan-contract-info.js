@@ -7,6 +7,22 @@ import { useFetch } from "@shades/common/react";
 const EIP_1967_IMPLEMENTATION_CONTRACT_ADDRESS_STORAGE_SLOT =
   "0x360894a13ba1a3210667c828492db98dca3e2076cc3735a920a3ca505d382bbc";
 
+const fetchContractInfo = (address) =>
+  fetch(
+    `${process.env.EDGE_API_BASE_URL}/contract-info?address=${address}`
+  ).then(async (res) => {
+    if (!res.ok) {
+      try {
+        const body = await res.json();
+        return Promise.reject(new Error(body.code ?? "unknown-error"));
+      } catch (e) {
+        return Promise.reject(new Error("unknown-error"));
+      }
+    }
+    const body = await res.json();
+    return body.data;
+  });
+
 const fetchEip1967ProxyImplementationAddressFromStorage = (
   address,
   { publicClient }
@@ -34,17 +50,19 @@ const updateAddressData = (address_, data) => (dataByAddress) => {
   };
 };
 
-const useAbi = (address, { enabled = true } = {}) => {
+const useContractInfo = (address, { enabled = true } = {}) => {
   const publicClient = usePublicClient();
 
   const [dataByAddress, setDataByAddress] = React.useState({});
 
   const {
+    name,
     abi,
     proxyImplementationAddressFromStorage,
     proxyImplementationAbi,
     isFetchingAbi,
     notFound,
+    notContractAddress,
   } = dataByAddress[address?.toLowerCase()] ?? {};
 
   const implementationAbiItem =
@@ -61,36 +79,29 @@ const useAbi = (address, { enabled = true } = {}) => {
     proxyImplementationAddressFromStorage ??
     proxyImplementationAddressFromContract;
 
-  const fetchAbi = React.useCallback(
-    (address) =>
-      fetch(
-        `${process.env.EDGE_API_BASE_URL}/contract-abi?address=${address}`
-      ).then(async (res) => {
-        if (!res.ok) {
-          try {
-            const body = await res.json();
-            return Promise.reject(new Error(body.code ?? "unknown-error"));
-          } catch (e) {
-            return Promise.reject(new Error("unknown-error"));
-          }
-        }
-        const body = await res.json();
-        return body.data;
-      }),
-    []
-  );
-
-  useFetch(() => {
-    if (!enabled) return;
+  const fetchAndUpdateContractInfo = React.useCallback(() => {
     setDataByAddress(updateAddressData(address, { isFetchingAbi: true }));
-    return fetchAbi(address)
+    return fetchContractInfo(address)
       .then(
-        (abi) => {
-          setDataByAddress(updateAddressData(address, { abi }));
+        (info) => {
+          const data = { name: info.name, abi: info.abi };
+          if (info.isProxy)
+            data.proxyImplementationAbi = info.implementationAbi;
+          setDataByAddress(updateAddressData(address, data));
         },
         (e) => {
-          if (e.message === "not-found") {
+          if (
+            ["code-not-verified", "implementation-abi-not-found"].includes(
+              e.message
+            )
+          ) {
             setDataByAddress(updateAddressData(address, { notFound: true }));
+            return;
+          }
+          if (e.message === "contract-address-required") {
+            setDataByAddress(
+              updateAddressData(address, { notContractAddress: true })
+            );
             return;
           }
           return Promise.reject(e);
@@ -100,6 +111,11 @@ const useAbi = (address, { enabled = true } = {}) => {
         setDataByAddress(updateAddressData(address, { isFetchingAbi: false }));
       });
   }, [address]);
+
+  useFetch(() => {
+    if (!enabled) return;
+    return fetchAndUpdateContractInfo(address);
+  }, [fetchAndUpdateContractInfo, address]);
 
   useFetch(() => {
     if (!enabled) return;
@@ -115,13 +131,14 @@ const useAbi = (address, { enabled = true } = {}) => {
   }, [address, publicClient]);
 
   useFetch(() => {
-    if (proxyImplementationAddress == null) return;
-    return fetchAbi(proxyImplementationAddress).then((abi) => {
+    if (proxyImplementationAddress == null || proxyImplementationAbi != null)
+      return;
+    return fetchContractInfo(proxyImplementationAddress).then((info) => {
       setDataByAddress(
-        updateAddressData(address, { proxyImplementationAbi: abi })
+        updateAddressData(address, { proxyImplementationAbi: info.abi })
       );
     });
-  }, [proxyImplementationAddress]);
+  }, [proxyImplementationAddress, proxyImplementationAbi]);
 
   const proxyImplementation =
     proxyImplementationAbi == null
@@ -136,12 +153,21 @@ const useAbi = (address, { enabled = true } = {}) => {
       abi == null
         ? null
         : {
+            name,
             abi,
             proxyImplementation,
           },
-    error: notFound ? new Error("not-found") : null,
+    error: notFound
+      ? new Error("not-found")
+      : notContractAddress
+      ? new Error("not-contract-address")
+      : null,
     isLoading: isFetchingAbi,
+    reset: () => {
+      setDataByAddress({});
+      fetchAndUpdateContractInfo();
+    },
   };
 };
 
-export default useAbi;
+export default useContractInfo;

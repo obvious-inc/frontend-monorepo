@@ -75,8 +75,15 @@ const entrypoints = [
     file: "button.js",
     dependencies: ["react", "react-aria", ...emotionDeps],
   },
-  { file: "icon-button.js", dependencies: ["react", ...emotionDeps] },
+  {
+    file: "icon-button.js",
+    dependencies: ["react", "react-aria", ...emotionDeps],
+  },
   { file: "inline-button.js", dependencies: ["react", ...emotionDeps] },
+  {
+    file: "link.js",
+    dependencies: ["react", ...emotionDeps],
+  },
   {
     file: "input.js",
     dependencies: ["react", "@shades/common/react", ...emotionDeps],

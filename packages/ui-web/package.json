@@ -21,6 +21,7 @@
     "./button": "./dist/button.js",
     "./icon-button": "./dist/icon-button.js",
     "./inline-button": "./dist/inline-button.js",
+    "./link": "./dist/link.js",
     "./input": "./dist/input.js",
     "./select": "./dist/select.js",
     "./popover": "./dist/popover.js",

@@ -15,13 +15,14 @@ import {
   Cross as CrossIcon,
 } from "@shades/ui-web/icons";
 import Button from "@shades/ui-web/button";
+import Link from "@shades/ui-web/link";
 import Input, { Label } from "@shades/ui-web/input";
 import Spinner from "@shades/ui-web/spinner";
 import Select from "@shades/ui-web/select";
 import Dialog from "@shades/ui-web/dialog";
 import DialogHeader from "@shades/ui-web/dialog-header";
 import { useContract } from "../contracts.js";
-import useAbi from "../hooks/abi.js";
+import useEtherscanContractInfo from "../hooks/etherscan-contract-info.js";
 import FormattedNumber from "./formatted-number.js";
 
 const decimalsByCurrency = {
@@ -212,8 +213,6 @@ const Content = ({
     }
   }, [deferredAbiString]);
 
-  const targetContract = useContract(contractAddress);
-
   const { data: ensName } = useEnsName({
     address: receiverQuery.trim(),
     enabled: isAddress(receiverQuery.trim()),
@@ -224,17 +223,23 @@ const Content = ({
   });
 
   const {
-    data: etherscanAbiData,
-    error: etherscanAbiError,
-    isLoading: isLoadingEtherscanAbi,
-  } = useAbi(contractAddress, {
+    data: etherscanContractData,
+    error: etherscanRequestError,
+    isLoading: isLoadingEtherscanData,
+    reset: resetEtherscanData,
+  } = useEtherscanContractInfo(contractAddress, {
     enabled: type === "custom-transaction" && isAddress(contractAddress),
   });
 
-  const etherscanAbi = etherscanAbiData?.abi;
+  const etherscanAbi = etherscanContractData?.abi;
   const etherscanProxyImplementationAbi =
-    etherscanAbiData?.proxyImplementation?.abi;
-  const etherscanAbiNotFound = etherscanAbiError?.message === "not-found";
+    etherscanContractData?.proxyImplementation?.abi;
+  const etherscanAbiNotFound = ["not-found", "not-contract-address"].includes(
+    etherscanRequestError?.message
+  );
+
+  const isMissingCode =
+    etherscanRequestError?.message === "not-contract-address";
 
   const abi = etherscanAbiNotFound
     ? customAbi
@@ -243,11 +248,13 @@ const Content = ({
     : [...etherscanAbi, ...(etherscanProxyImplementationAbi ?? [])];
 
   const contractFunctionOptions = abi
-    ?.filter(
-      (item) =>
-        item.type === "function" &&
-        ["payable", "nonpayable"].includes(item.stateMutability)
-    )
+    ?.filter((item) => {
+      if (item.type !== "function") return false;
+      if (item.stateMutability != null)
+        return ["payable", "nonpayable"].includes(item.stateMutability);
+      if (item.constant != null) return !item.constant;
+      return !item.pure || !item.view;
+    })
     .map((item) => {
       const value = `${item.name}(${item.inputs.map((i) => i.type).join(",")})`;
       const label = (
@@ -661,7 +668,7 @@ const Content = ({
 
         {type === "custom-transaction" && (
           <>
-            <Input
+            <AddressInput
               label="Target contract address"
               value={contractAddress}
               onChange={(e) => {
@@ -670,7 +677,54 @@ const Content = ({
                 setContractFunctionInput([]);
               }}
               placeholder="0x..."
-              hint={targetContract?.name}
+              maxLength={42}
+              hint={
+                isMissingCode ? (
+                  "No contract code found at the given address"
+                ) : etherscanAbiNotFound ? (
+                  <>
+                    No abi found for address.{" "}
+                    <Link
+                      underline
+                      color="currentColor"
+                      type="button"
+                      onClick={() => {
+                        resetEtherscanData();
+                      }}
+                    >
+                      Try again
+                    </Link>
+                  </>
+                ) : etherscanAbi != null &&
+                  contractFunctionOptions?.length === 0 ? (
+                  <>
+                    No public write functions found on contract
+                    {etherscanContractData?.name != null && (
+                      <>
+                        {" "}
+                        {'"'}
+                        {etherscanContractData.name}
+                        {'"'}
+                      </>
+                    )}
+                  </>
+                ) : etherscanContractData?.name != null ? (
+                  <>
+                    Etherscan contract name:{" "}
+                    <strong>
+                      <Link
+                        color="currentColor"
+                        component="a"
+                        href={`https://etherscan.io/address/${contractAddress}`}
+                        rel="noreferrer"
+                        target="_blank"
+                      >
+                        {etherscanContractData.name}
+                      </Link>
+                    </strong>
+                  </>
+                ) : null
+              }
             />
 
             {etherscanAbiNotFound && (
@@ -705,7 +759,7 @@ const Content = ({
               />
             )}
 
-            {contractFunctionOptions?.length > 0 && (
+            {contractFunctionOptions?.length > 0 ? (
               <div>
                 <Label htmlFor="contract-function">Function to call</Label>
                 <Select
@@ -726,19 +780,7 @@ const Content = ({
                   fullWidth
                 />
               </div>
-            )}
-
-            {selectedContractFunctionOption != null &&
-            selectedContractFunctionOption.inputs.length > 0 ? (
-              <div>
-                <Label>Arguments</Label>
-                <ArgumentInputs
-                  inputs={selectedContractFunctionOption.inputs}
-                  inputState={contractFunctionInput}
-                  setInputState={setContractFunctionInput}
-                />
-              </div>
-            ) : isLoadingEtherscanAbi ? (
+            ) : isLoadingEtherscanData && !etherscanAbiNotFound ? (
               <div
                 style={{
                   display: "flex",
@@ -750,6 +792,18 @@ const Content = ({
                 <Spinner />
               </div>
             ) : null}
+
+            {selectedContractFunctionOption != null &&
+              selectedContractFunctionOption.inputs.length > 0 && (
+                <div>
+                  <Label>Arguments</Label>
+                  <ArgumentInputs
+                    inputs={selectedContractFunctionOption.inputs}
+                    inputState={contractFunctionInput}
+                    setInputState={setContractFunctionInput}
+                  />
+                </div>
+              )}
           </>
         )}
       </main>
@@ -969,12 +1023,11 @@ const renderInput = (input, inputValue, setInputValue) => {
 
       case "address":
         return (
-          <Input
+          <AddressInput
             value={inputValue}
             onChange={(e) => {
               setInputValue(e.target.value);
             }}
-            maxLength={42}
             label={labelContent}
             placeholder={getArgumentInputPlaceholder(input.type)}
             containerProps={{ "data-input": true }}
@@ -1075,6 +1128,21 @@ const ArgumentInputs = ({ inputs, inputState, setInputState }) => {
         );
       })}
     </div>
+  );
+};
+
+const AddressInput = (props) => {
+  const hintOverride =
+    props.value.trim() !== "" && !isAddress(props.value)
+      ? "Not a valid address"
+      : null;
+  return (
+    <Input
+      placeholder="0x..."
+      maxLength={42}
+      {...props}
+      hint={hintOverride ?? props.hint}
+    />
   );
 };
 

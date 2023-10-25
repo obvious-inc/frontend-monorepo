@@ -39,10 +39,10 @@ import * as Toolbar from "@shades/ui-web/toolbar";
 import * as Tooltip from "@shades/ui-web/tooltip";
 import EmojiPicker from "@shades/ui-web/emoji-picker";
 import MessageEditorForm from "@shades/ui-web/message-editor-form";
+import Link from "@shades/ui-web/link";
 import AccountPreviewPopoverTrigger from "./account-preview-popover-trigger.js";
 import FormattedDate from "./formatted-date";
 import RichText from "./rich-text";
-import Link from "./link";
 
 const ONE_MINUTE_IN_MILLIS = 1000 * 60;
 

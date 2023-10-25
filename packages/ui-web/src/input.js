@@ -97,6 +97,7 @@ const Input = React.forwardRef(
                 fontSize: t.text.sizes.small,
                 color: t.colors.textDimmed,
                 marginTop: "0.7rem",
+                strong: { fontWeight: t.text.weights.emphasis },
               })
             }
           >

@@ -727,8 +727,8 @@ export default () => {
   const { items: drafts, createItem: createDraft } = useDrafts();
 
   React.useEffect(() => {
-    if (draft === null) navigate("/", { replace: true });
-  }, [draft, navigate]);
+    if (draftId != null && draft === null) navigate("/", { replace: true });
+  }, [draftId, draft, navigate]);
 
   const getFirstEmptyDraft = useLatestCallback(() =>
     drafts.find((draft) => {

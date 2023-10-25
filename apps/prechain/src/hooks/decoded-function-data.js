@@ -1,5 +1,5 @@
 import { getAbiItem, decodeFunctionData } from "viem";
-import useAbi from "./abi.js";
+import useEtherscanContractInfo from "./etherscan-contract-info.js";
 
 const decodeCalldataWithAbi = ({ abi, calldata }) => {
   try {
@@ -31,10 +31,10 @@ const useDecodedFunctionData = (
   { target, calldata },
   { enabled = false } = {}
 ) => {
-  const { data: abiData } = useAbi(target, { enabled });
+  const { data: contractInfo } = useEtherscanContractInfo(target, { enabled });
 
-  const abi = abiData?.abi;
-  const proxyImplementation = abiData?.proxyImplementation;
+  const abi = contractInfo?.abi;
+  const proxyImplementation = contractInfo?.proxyImplementation;
 
   const decodedFunctionData =
     abi == null ? null : decodeCalldataWithAbi({ abi, calldata });

@@ -436,7 +436,7 @@ const RichTextEditorWithAutoComplete = React.forwardRef(
                 whiteSpace: "nowrap",
                 overflow: "hidden",
                 textOverflow: "ellipsis",
-                top: 0,
+                // top: 0,
               },
             })
           }

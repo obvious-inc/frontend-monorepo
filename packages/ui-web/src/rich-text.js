@@ -104,8 +104,9 @@ export const createCss = (t) => ({
     padding: "1em",
     background: t.colors.backgroundModifierHover,
     borderRadius: "0.3rem",
-    // Hack to make the Slate placeholder centered in code blocks
-    "[data-slate-placeholder]": { padding: "1em 0" },
+    // This prevents Slate’s absolutely positioned placeholder from
+    // overflowing the code container
+    position: "relative",
   },
   "* + pre:has(code)": { marginTop: "var(--default-block-gap)" },
   "pre:has(code):has(+ *)": { marginBottom: "var(--default-block-gap)" },

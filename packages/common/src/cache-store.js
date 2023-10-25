@@ -89,6 +89,7 @@ export const useStore = () => {
 
 export const useCachedState = (key, initialState) => {
   const store = useStore();
+  const [isInitialized, setInitialized] = React.useState(false);
   const { getCachedState, setCachedState } = React.useContext(Context);
 
   const cachedState = getCachedState(key);
@@ -107,13 +108,13 @@ export const useCachedState = (key, initialState) => {
     const handleCachedValue = (cachedValue) => {
       if (cachedValue != null) {
         setCachedState(key, cachedValue);
-        return;
+      } else {
+        setCachedState(
+          key,
+          typeof initialState === "function" ? initialState() : initialState
+        );
       }
-
-      setCachedState(
-        key,
-        typeof initialState === "function" ? initialState() : initialState
-      );
+      setInitialized(true);
     };
 
     if (store.isAsync) {
@@ -154,5 +155,5 @@ export const useCachedState = (key, initialState) => {
     };
   }, [key, setCachedState]);
 
-  return [cachedState, set, { read }];
+  return [cachedState, set, { read, isInitialized }];
 };
