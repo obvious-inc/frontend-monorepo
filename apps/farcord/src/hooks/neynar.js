@@ -278,6 +278,9 @@ export const useSearchUsersByUsername = ({ fid, query, enabled }) => {
 const parseUser = ({ user }) => {
   const { fid, username, profile } = user;
 
+  // todo: better understand why this would be called 2x..
+  if (user.bioBlocks) return user;
+
   const bio = profile?.bio?.text;
   const bioMentionedProfiles = profile?.bio?.mentionedProfiles ?? [];
   const bioBlocks = bio ? parseString(bio, bioMentionedProfiles) : [];
