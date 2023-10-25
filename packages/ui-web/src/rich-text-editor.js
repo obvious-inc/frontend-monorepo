@@ -622,7 +622,7 @@ export const Toolbar = ({ disabled: disabled_, ...props }) => {
   const [selectedBlockNode, selectedBlockPath] = selectedNodeEntry ?? [];
 
   const inlineElementsAllowed =
-    selectedBlockNode != null &&
+    selectedBlockNode?.type != null &&
     !selectedBlockNode.type.startsWith("heading-") &&
     selectedBlockNode.type !== "code-block";
 
