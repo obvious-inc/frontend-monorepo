@@ -45,6 +45,9 @@ const isNodeEmpty = (node, options = {}) => {
     case "horizontal-divider":
       return false;
 
+    case "code-block":
+      return node.code.trim() === "";
+
     default:
       return node.children.every((n) => isNodeEmpty(n, options));
   }
@@ -237,6 +240,9 @@ export const stringifyBlocks = (
       case "horizontal-divider":
         return "\n---\n";
 
+      case "code-block":
+        return `\n\`\`\`${el.code}\`\`\`\n`;
+
       default:
         throw new Error();
     }
@@ -315,6 +321,9 @@ export const toMarkdown = (blockElements) => {
 
       case "horizontal-divider":
         return "\n\n---";
+
+      case "code-block":
+        return `\n\n\`\`\`${renderChildren()}\`\`\``;
 
       default:
         throw new Error(`Unknown element type: "${el.type}"`);

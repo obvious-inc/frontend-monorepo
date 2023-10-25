@@ -359,7 +359,7 @@ const Channel = ({ channelId, noSideMenu }) => {
 
   if (notFound)
     return authenticationStatus === "not-authenticated" ? (
-      <ErrorBoundary fallback={() => window.location.reload()}>
+      <ErrorBoundary fallback={() => null}>
         <React.Suspense fallback={null}>
           <LazyLoginScreen />
         </React.Suspense>

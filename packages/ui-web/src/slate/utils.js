@@ -32,6 +32,7 @@ export const mergePlugins = (plugins) => {
   return { middleware, elements, handlers };
 };
 
+// TODO: move to element specific plugins
 export const isNodeEmpty = (el, options = {}) => {
   const { trim = true } = options;
 
@@ -44,6 +45,9 @@ export const isNodeEmpty = (el, options = {}) => {
     case "emoji":
       return false;
 
+    case "code-block":
+      return el.children[0].text.trim() === "";
+
     default: {
       if (el.text != null) return trim ? el.text.trim() === "" : el.text === "";
       return el.children.every((n) => isNodeEmpty(n, options));
@@ -51,8 +55,11 @@ export const isNodeEmpty = (el, options = {}) => {
   }
 };
 
+// TODO: move to element specific plugins
 export const toMessageBlocks = (nodes) =>
   nodes.map((n) => {
+    if (n.type === "code-block")
+      return { type: "code-block", code: n.children[0].text };
     if (n.type === "link") return { type: "link", url: n.url, label: n.label };
     if (n.type === "emoji") return { type: "emoji", emoji: n.emoji };
     if (n.type === "user") return { type: "user", ref: n.ref };
@@ -62,8 +69,12 @@ export const toMessageBlocks = (nodes) =>
     return { ...n, children: toMessageBlocks(n.children) };
   });
 
+// TODO: move to element specific plugins
 export const fromMessageBlocks = (blocks) =>
   blocks.reduce((acc, n) => {
+    if (n.type === "code-block")
+      return [...acc, { ...n, children: [{ text: n.code }] }];
+
     if (n.type === "link")
       return [
         ...acc,
@@ -214,7 +225,7 @@ export const intersectsSelection = (editor, nodePath) => {
 };
 
 export const withBlockPrefixShortcut = (
-  { prefix, elementType, transform, afterTransform },
+  { prefix, elementType, instant = false, transform, afterTransform },
   editor
 ) => {
   const { insertText } = editor;
@@ -222,7 +233,11 @@ export const withBlockPrefixShortcut = (
   editor.insertText = (text) => {
     const { selection } = editor;
 
-    if (!text.endsWith(" ") || !selection || !Range.isCollapsed(selection)) {
+    if (
+      (!instant && !text.endsWith(" ")) ||
+      !selection ||
+      !Range.isCollapsed(selection)
+    ) {
       insertText(text);
       return;
     }
@@ -241,7 +256,8 @@ export const withBlockPrefixShortcut = (
       focus: Editor.start(editor, blockEntry[1]),
     };
     const prefixText =
-      Editor.string(editor, prefixRange, { voids: true }) + text.slice(0, -1);
+      Editor.string(editor, prefixRange, { voids: true }) +
+      (instant ? text : text.slice(0, -1));
 
     const isMatch = Array.isArray(prefix)
       ? prefix.includes(prefixText)

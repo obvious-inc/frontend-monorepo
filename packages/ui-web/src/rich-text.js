@@ -8,7 +8,11 @@ export const SINGLE_IMAGE_ATTACHMENT_MAX_HEIGHT = 280;
 export const MULTI_IMAGE_ATTACHMENT_MAX_WIDTH = 280;
 export const MULTI_IMAGE_ATTACHMENT_MAX_HEIGHT = 240;
 
+const DEFAULT_BLOCK_GAP = "1.25em";
+
 export const createCss = (t) => ({
+  "--default-block-gap": DEFAULT_BLOCK_GAP,
+
   // Paragraphs
   p: {
     margin: "0",
@@ -28,8 +32,8 @@ export const createCss = (t) => ({
   ol: {
     listStyleType: "decimal",
   },
-  "* + ul, * + ol": { marginTop: "1.25em" },
-  "ul:has(+ *), ol:has(+ *)": { marginBottom: "1.25em" },
+  "* + ul, * + ol": { marginTop: "var(--default-block-gap)" },
+  "ul:has(+ *), ol:has(+ *)": { marginBottom: "var(--default-block-gap)" },
   "ul ul, ol ol, ul ol, ol ul": { margin: 0 },
 
   // Headings
@@ -60,8 +64,8 @@ export const createCss = (t) => ({
     paddingLeft: "1rem",
     fontStyle: "italic",
   },
-  "* + blockquote": { marginTop: "1.25em" },
-  "blockquote:has(+ *)": { marginBottom: "1.25em" },
+  "* + blockquote": { marginTop: "var(--default-block-gap)" },
+  "blockquote:has(+ *)": { marginBottom: "var(--default-block-gap)" },
 
   // Callouts
   aside: {
@@ -71,8 +75,8 @@ export const createCss = (t) => ({
     borderRadius: "0.3rem",
     display: "flex",
   },
-  "* + aside": { marginTop: "1.25em" },
-  "aside:has(+ *)": { marginBottom: "1.25em" },
+  "* + aside": { marginTop: "var(--default-block-gap)" },
+  "aside:has(+ *)": { marginBottom: "var(--default-block-gap)" },
   "aside:before": {
     fontSize: "1.35em",
     lineHeight: "1em",
@@ -93,13 +97,18 @@ export const createCss = (t) => ({
     fontFamily: t.fontStacks.monospace,
   },
 
+  "pre:has(code)": { margin: 0 },
   "pre code": {
     display: "block",
     overflow: "auto",
     padding: "1em",
     background: t.colors.backgroundModifierHover,
     borderRadius: "0.3rem",
+    // Hack to make the Slate placeholder centered in code blocks
+    "[data-slate-placeholder]": { padding: "1em 0" },
   },
+  "* + pre:has(code)": { marginTop: "var(--default-block-gap)" },
+  "pre:has(code):has(+ *)": { marginBottom: "var(--default-block-gap)" },
 
   // Links
   "a.link, a.link:active, a.link:visited": {
@@ -165,8 +174,8 @@ export const createCss = (t) => ({
       borderColor: t.colors.borderLight,
     },
   },
-  "* + tabel": { marginTop: "1.25em" },
-  "table:has(+ *)": { marginBottom: "1.25em" },
+  "* + table": { marginTop: "var(--default-block-gap)" },
+  "table:has(+ *)": { marginBottom: "var(--default-block-gap)" },
 
   // Misc
   wordBreak: "break-word",
@@ -196,18 +205,18 @@ export const createCss = (t) => ({
       content: '""',
       marginBottom: "0.625em",
     },
-    "p, blockquote, pre code, .image": {
-      marginTop: "0.625em",
-    },
-    [["blockquote", "pre code", ".image", "table"]
+    // "p, blockquote, pre:has(code), .image": {
+    //   marginTop: "0.625em",
+    // },
+    [["blockquote", "pre:has(code)", ".image", "table"]
       .map((selector) => `* + ${selector}`)
       .join(", ")]: {
       marginTop: "0.625em",
     },
-    [["blockquote", "pre code", ".image", "table"]
+    [["blockquote", "pre:has(code)", ".image", "table"]
       .map((selector) => `${selector}:has(+ *)`)
       .join(", ")]: {
-      marginTop: "0.625em",
+      marginBottom: "0.625em",
     },
   },
 });
@@ -378,6 +387,7 @@ const createRenderer = ({
         return (
           <div
             key={i}
+            className="grid"
             css={css({
               paddingTop: "0.5rem",
               display: "flex",

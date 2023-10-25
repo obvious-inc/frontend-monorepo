@@ -13,6 +13,7 @@ const RichText = ({ blocks, ...props }) => {
   const renderLargeEmoji =
     !props.inline &&
     blocks.length === 1 &&
+    blocks[0].type === "paragraph" &&
     blocks[0].children.length <= 10 &&
     blocks[0].children.every((b) => b.type === "emoji");
 

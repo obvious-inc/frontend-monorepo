@@ -20,7 +20,8 @@ import createControlledParagraphLineBreaksPlugin from "./slate/plugins/controlle
 import createSensibleVoidsPlugin from "./slate/plugins/sensible-voids.js";
 import createListsPlugin from "./slate/plugins/lists.js";
 import createQuotesPlugin from "./slate/plugins/quotes.js";
-import createCalloutsPlugin from "./slate/plugins/callouts.js";
+import createCodeBlocksPlugin from "./slate/plugins/code-blocks.js";
+// import createCalloutsPlugin from "./slate/plugins/callouts.js";
 import createHorizontalDividerPlugin from "./slate/plugins/horizontal-divider.js";
 import createEmojiPlugin from "./slate/plugins/emojis.js";
 import createInlineLinksPlugin from "./slate/plugins/inline-links.js";
@@ -301,7 +302,7 @@ const RichTextEditor = React.forwardRef(
         createSensibleVoidsPlugin(),
         createListsPlugin({ inline }),
         createQuotesPlugin({ inline }),
-        createCalloutsPlugin({ inline }),
+        createCodeBlocksPlugin(),
         createHeadingsPlugin({ inline }),
         createHorizontalDividerPlugin(),
         createImagesPlugin(),
@@ -569,6 +570,13 @@ const Element = (props) => {
 
     case "paragraph":
       return <p {...attributes}>{children}</p>;
+
+    case "code-block":
+      return (
+        <pre {...attributes}>
+          <code>{children}</code>
+        </pre>
+      );
 
     default:
       console.warn(`Unsupported element type "${element.type}"`);

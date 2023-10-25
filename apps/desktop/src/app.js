@@ -92,7 +92,7 @@ const App = () => {
   );
 
   return (
-    <ErrorBoundary fallback={() => window.location.reload()}>
+    <ErrorBoundary fallback={() => null}>
       <React.Suspense fallback={null}>
         <LazyApp />
       </React.Suspense>

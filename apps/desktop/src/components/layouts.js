@@ -514,7 +514,7 @@ const Layout = () => {
           )
         }
       >
-        <ErrorBoundary fallback={() => window.location.reload()}>
+        <ErrorBoundary fallback={() => null}>
           <React.Suspense fallback={null}>
             <Outlet />
           </React.Suspense>
