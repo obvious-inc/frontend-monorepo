@@ -57,7 +57,7 @@ const RichTextEditorWithAutoComplete = React.forwardRef(
           value: m.fid,
           label,
           description: `@${m.username}`,
-          image: <Avatar url={m.pfpfUrl} />,
+          image: <Avatar url={m.pfpUrl} size={"3.2rem"} />,
         };
       });
     }, [autoCompleteMode, matchedUsers]);

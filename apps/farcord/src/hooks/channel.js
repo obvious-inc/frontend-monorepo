@@ -450,12 +450,16 @@ export const useCastFetch = ({ castHash }) => {
 export const useCast = (castHash) => {
   const {
     state: { castsByHash },
+    actions: { fetchCast },
   } = React.useContext(ChannelCacheContext);
 
   const cast = castsByHash[castHash];
 
-  // if not found, fetch it
-  useCastFetch({ castHash });
+  React.useEffect(() => {
+    if (!cast && castHash) {
+      fetchCast({ castHash });
+    }
+  }, [cast, fetchCast, castHash]);
 
   return cast;
 };
