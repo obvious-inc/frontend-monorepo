@@ -39,6 +39,8 @@ export const parseBlocksToFarcasterComponents = (blocks) => {
     humanReadable: false,
   });
 
+  let textBuffer = Buffer.from(text, "utf-8");
+
   // todo: parse cast ids to add to embeds
 
   const embeds = [];
@@ -51,16 +53,16 @@ export const parseBlocksToFarcasterComponents = (blocks) => {
   let updatedText = text;
   let mentionsPositions = [];
   let mentionedFids = [];
-  let charsRemoved = 0;
 
   for (const match of matches) {
     const matchedFid = match[1];
-
     mentionedFids.push(Number(matchedFid));
-    mentionsPositions.push(match.index - charsRemoved);
+
+    const position = textBuffer.indexOf(match[0]);
+    mentionsPositions.push(position);
 
     updatedText = updatedText.replace(match[0], "");
-    charsRemoved += match[0].length;
+    textBuffer = Buffer.from(updatedText, "utf-8");
   }
 
   return {
