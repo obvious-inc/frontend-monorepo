@@ -389,7 +389,7 @@ export const useFeedCastsFetch = ({ fid, cursor, isFeed = false }) => {
       fetchFeedCasts({ fid, cursor, isFeed }).catch((e) => {
         throw e;
       }),
-    [fetchFeedCasts, fid, cursor]
+    [fetchFeedCasts, fid, cursor, isFeed]
   );
 };
 
