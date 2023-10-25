@@ -362,8 +362,9 @@ const parseNotification = ({ notification }) => {
 export const extractUsersFromNeynarCast = (cast) => {
   if (!cast) return [];
 
-  const author = cast.author;
-  const mentionedProfiles = cast.mentionedProfiles;
+  const author = parseUser({ user: cast.author });
+  const mentionedProfiles = cast.mentionedProfiles || cast.mentioned_profiles;
+  const mentionedUsers = mentionedProfiles.map((p) => parseUser({ user: p }));
 
-  return arrayUtils.unique([author, ...mentionedProfiles], (u) => u.fid);
+  return arrayUtils.unique([author, ...mentionedUsers], (u) => u.fid);
 };

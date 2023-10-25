@@ -604,7 +604,6 @@ export const useUserByFid = (fid) => {
 
   React.useEffect(() => {
     if (!user) {
-      console.log("user not found in cache. fetching", fid);
       fetchUserByFid({ fid: Number(fid) });
     }
   }, [user, fetchUserByFid, fid]);
