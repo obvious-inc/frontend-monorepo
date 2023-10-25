@@ -674,6 +674,10 @@ export const Toolbar = ({ disabled: disabled_, ...props }) => {
               width: "max-content",
               variant: "transparent",
               size: "small",
+              onBlur: () => {
+                storedSelectionRangeRef?.unref();
+                setStoredSelectionRangeRef(null);
+              },
               onFocus: () => {
                 setStoredSelectionRangeRef(
                   editorRef.current.rangeRef(editorRef.current.selection)
