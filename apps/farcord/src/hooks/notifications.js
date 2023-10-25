@@ -52,7 +52,7 @@ export const NotificationsContextProvider = ({ children }) => {
       if (!notifications) return;
 
       const notificationsByType = arrayUtils.groupBy(
-        (n) => n.reactionType,
+        (n) => n.type,
         notifications
       );
 

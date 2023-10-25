@@ -20,9 +20,8 @@ import {
   createControlledParagraphLineBreaksPlugin,
   createEmojiPlugin,
   createImagePlugin,
-  // TODO: re-enable mentions when farc ready
-  // createUserMentionsPlugin,
 } from "@shades/ui-web/slate";
+import { default as createUserMentionsPlugin } from "./slate/plugins/user-mentions.js";
 import { search, mergePlugins } from "@shades/ui-web/slate";
 import { default as createInlineLinksPlugin } from "./slate/plugins/inline-links.js";
 
@@ -299,7 +298,7 @@ const RichTextEditor = React.forwardRef(
         // createHeadingsPlugin({ inline }),
         // createHorizontalDividerPlugin(),
         createImagePlugin(),
-        // createUserMentionsPlugin(),
+        createUserMentionsPlugin(),
         createInlineLinksPlugin(),
         createEmojiPlugin(),
       ]);

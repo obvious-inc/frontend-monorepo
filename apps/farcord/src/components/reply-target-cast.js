@@ -1,10 +1,10 @@
 import { css } from "@emotion/react";
-import { useNeynarCast } from "../hooks/neynar";
 import Avatar from "@shades/ui-web/avatar";
 import RichText from "./rich-text";
+import { useCast } from "../hooks/channel";
 
 const ReplyTargetCast = ({ castHash, layout, onClickMessage }) => {
-  const cast = useNeynarCast(castHash);
+  const cast = useCast(castHash);
 
   return (
     <div
@@ -41,10 +41,7 @@ const ReplyTargetCast = ({ castHash, layout, onClickMessage }) => {
           gridGap: "0.5rem",
         })}
       >
-        <Avatar
-          url={cast?.author?.pfp_url || cast?.author?.pfp.url}
-          size="1.4rem"
-        />
+        <Avatar url={cast?.author?.pfpUrl} size="1.4rem" />
         <div
           css={(t) =>
             css({

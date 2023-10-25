@@ -10,25 +10,25 @@ import Spinner from "@shades/ui-web/spinner";
 import { useSwitchNetwork, useDisconnect, useConnect } from "wagmi";
 import { toHex } from "viem";
 import Input from "@shades/ui-web/input";
-import { fetchCustodyAddressByUsername, useNeynarUser } from "../hooks/neynar";
+import { fetchCustodyAddressByUsername } from "../hooks/neynar";
 import useSigner from "./signer";
 import { DEFAULT_CHAIN_ID, useWalletFarcasterId } from "../hooks/farcord";
 import { useSignerByPublicKey } from "../hooks/hub";
 import { Small } from "./text";
 import { useMatchMedia } from "@shades/common/react";
+import { useUserByFid } from "../hooks/channel";
 
 const { truncateAddress } = ethereumUtils;
 
 const WalletUser = () => {
   const { accountAddress } = useWallet();
   const { data: fid } = useWalletFarcasterId(accountAddress);
-  const { user: farcasterUser } = useNeynarUser(fid);
+  const farcasterUser = useUserByFid(fid);
 
   const SLICE_LENGTH = 30;
-  const truncate = farcasterUser?.profile?.bio?.text?.length > SLICE_LENGTH;
-  const profileBio = truncate
-    ? farcasterUser?.profile?.bio?.text.slice(0, SLICE_LENGTH) + "..."
-    : farcasterUser?.profile?.bio?.text;
+  const bio = farcasterUser.bio;
+  const truncate = bio?.length > SLICE_LENGTH;
+  const profileBio = truncate ? bio.slice(0, SLICE_LENGTH) + "..." : bio;
 
   return (
     <>

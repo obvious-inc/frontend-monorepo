@@ -269,20 +269,22 @@ export const removeReaction = ({ fid, signer, cast, reactionType }) => {
 export const addCast = async ({
   fid,
   signer,
-  text,
   parentUrl,
   parentCastId,
-  embeds = [],
+  text,
+  embeds,
+  mentions,
+  mentionsPositions,
 }) => {
   const farcastSigner = new NobleEd25519Signer(hexToBytes(signer?.privateKey));
 
   return makeCastAdd(
     {
-      text: text,
-      embeds: embeds,
+      text,
+      embeds,
+      mentions,
+      mentionsPositions,
       embedsDeprecated: [],
-      mentions: [],
-      mentionsPositions: [],
       parentUrl,
       parentCastId,
     },

@@ -4,10 +4,8 @@ import Button from "@shades/ui-web/button";
 import * as Tooltip from "@shades/ui-web/tooltip";
 import * as Popover from "@shades/ui-web/popover";
 import InlineButton from "@shades/ui-web/inline-button";
-import { useNeynarUser } from "../hooks/neynar";
 import Avatar from "@shades/ui-web/avatar";
 import RichText from "./rich-text";
-import { message as messageUtils } from "@shades/common/utils";
 import {
   AddUser as AddUserIcon,
   RemoveUser as RemoveUserIcon,
@@ -15,6 +13,7 @@ import {
 import { followUser, unfollowUser, useIsFollower } from "../hooks/hub";
 import useSigner from "./signer";
 import useFarcasterAccount from "./farcaster-account";
+import { useUserByFid } from "../hooks/channel";
 
 const AccountPreviewPopoverTrigger = React.forwardRef(
   (
@@ -29,7 +28,7 @@ const AccountPreviewPopoverTrigger = React.forwardRef(
     },
     triggerRef
   ) => {
-    const { user } = useNeynarUser(fid);
+    const user = useUserByFid(fid);
     if (fid == null && user == null) return null;
 
     const disabled = user?.deleted;
@@ -45,7 +44,7 @@ const AccountPreviewPopoverTrigger = React.forwardRef(
               disabled={props.disabled ?? disabled}
               css={css({ userSelect: "text", fontWeight: "unset" })}
             >
-              (@{username ?? user?.username})
+              @{username ?? user?.username}
             </InlineButton>
           )}
         </Popover.Trigger>
@@ -58,7 +57,7 @@ const AccountPreviewPopoverTrigger = React.forwardRef(
 );
 
 const AccountPreview = React.forwardRef(({ fid, actions = [] }, ref) => {
-  const { user } = useNeynarUser(fid);
+  const user = useUserByFid(fid);
   const { fid: mainFid } = useFarcasterAccount();
   const { signer } = useSigner();
 
@@ -66,9 +65,6 @@ const AccountPreview = React.forwardRef(({ fid, actions = [] }, ref) => {
   const [followed, setFollowed] = React.useState(false);
 
   const displayName = user?.displayName;
-
-  const bio = user?.profile?.bio?.text;
-  const bioBlocks = bio ? messageUtils.parseString(bio) : [];
 
   const handleFollowClick = async () => {
     if (!followed) {
@@ -109,7 +105,7 @@ const AccountPreview = React.forwardRef(({ fid, actions = [] }, ref) => {
     >
       <div style={{ display: "flex", alignItems: "center", padding: "1.2rem" }}>
         <Avatar
-          url={user?.pfp_url || user?.pfp.url}
+          url={user?.pfpUrl}
           size="4rem"
           style={{ marginRight: "1.2rem" }}
         />
@@ -197,7 +193,7 @@ const AccountPreview = React.forwardRef(({ fid, actions = [] }, ref) => {
             css({ fontSize: t.text.sizes.small, wordBreak: "break-word" })
           }
         >
-          <RichText inline blocks={bioBlocks ?? []} />
+          <RichText inline blocks={user.bioBlocks ?? []} />
         </div>
         <div
           css={(t) =>

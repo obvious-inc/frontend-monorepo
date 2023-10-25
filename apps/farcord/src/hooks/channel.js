@@ -1,9 +1,12 @@
 import React from "react";
 import { useFetch } from "@shades/common/react";
 import {
-  fetchNeynarCasts,
+  extractUsersFromNeynarCast,
+  fetchNeynarCast,
+  fetchNeynarFeedCasts,
   fetchNeynarRecentCasts,
   fetchNeynarThreadCasts,
+  fetchUserByFid as fetchNeynarUserByFid,
 } from "./neynar";
 import { fetchWarpcastFollowedChannels } from "./warpcast";
 import { ChainDataCacheContext } from "./farcord";
@@ -21,12 +24,14 @@ export const ChannelCacheContext = React.createContext();
 
 export const ChannelCacheContextProvider = ({ children }) => {
   const [state, setState] = React.useState(() => ({
+    castsByHash: {},
     castsByChannelId: {},
     castsByThreadHash: {},
     recentCastsByFid: {},
     recentCasts: [],
     followedChannelsByFid: getInitialFollowedChannels(),
     readStatesByChannelId: getInitialReadStates(),
+    usersByFid: {},
   }));
 
   React.useEffect(() => {
@@ -44,14 +49,33 @@ export const ChannelCacheContextProvider = ({ children }) => {
   }, [state.followedChannelsByFid]);
 
   const fetchChannelCasts = React.useCallback(async ({ channel, cursor }) => {
-    return fetchNeynarCasts({ parentUrl: channel?.parentUrl, cursor }).then(
+    return fetchNeynarFeedCasts({ parentUrl: channel?.parentUrl, cursor }).then(
       (casts) => {
+        const castsUsers = casts.reduce((acc, cast) => {
+          acc.push(...extractUsersFromNeynarCast(cast));
+          return acc;
+        }, []);
+
         setState((s) => {
           return {
             ...s,
             castsByChannelId: {
               ...s.castsByChannelId,
               [channel?.id]: casts,
+            },
+            castsByHash: {
+              ...s.castsByHash,
+              ...casts.reduce((acc, cast) => {
+                acc[cast.hash] = cast;
+                return acc;
+              }, {}),
+            },
+            usersByFid: {
+              ...s.usersByFid,
+              ...castsUsers.reduce((acc, user) => {
+                acc[user.fid] = user;
+                return acc;
+              }, {}),
             },
           };
         });
@@ -61,7 +85,12 @@ export const ChannelCacheContextProvider = ({ children }) => {
 
   const fetchFeedCasts = React.useCallback(async ({ fid, cursor, isFeed }) => {
     if (isFeed && fid) {
-      return fetchNeynarCasts({ fid, cursor }).then((casts) => {
+      return fetchNeynarFeedCasts({ fid, cursor }).then((casts) => {
+        const castsUsers = casts.reduce((acc, cast) => {
+          acc.push(...extractUsersFromNeynarCast(cast));
+          return acc;
+        }, []);
+
         setState((s) => {
           return {
             ...s,
@@ -69,15 +98,48 @@ export const ChannelCacheContextProvider = ({ children }) => {
               ...s.recentCastsByFid,
               [fid]: casts,
             },
+            castsByHash: {
+              ...s.castsByHash,
+              ...casts.reduce((acc, cast) => {
+                acc[cast.hash] = cast;
+                return acc;
+              }, {}),
+            },
+            usersByFid: {
+              ...s.usersByFid,
+              ...castsUsers.reduce((acc, user) => {
+                acc[user.fid] = user;
+                return acc;
+              }, {}),
+            },
           };
         });
       });
     } else {
       return fetchNeynarRecentCasts({ cursor }).then((casts) => {
+        const castsUsers = casts.reduce((acc, cast) => {
+          acc.push(...extractUsersFromNeynarCast(cast));
+          return acc;
+        }, []);
+
         setState((s) => {
           return {
             ...s,
             recentCasts: casts,
+            castsByHash: {
+              ...s.castsByHash,
+              ...casts.reduce((acc, cast) => {
+                acc[cast.hash] = cast;
+                return acc;
+              }, {}),
+            },
+            usersByFid: {
+              ...s.usersByFid,
+              ...castsUsers.reduce((acc, user) => {
+                acc[user.fid] = user;
+                return acc;
+              }, {}),
+            },
           };
         });
       });
@@ -87,6 +149,11 @@ export const ChannelCacheContextProvider = ({ children }) => {
   const fetchThreadCasts = React.useCallback(async ({ threadHash, cursor }) => {
     return fetchNeynarThreadCasts({ threadCastHash: threadHash, cursor }).then(
       (casts) => {
+        const castsUsers = casts.reduce((acc, cast) => {
+          acc.push(...extractUsersFromNeynarCast(cast));
+          return acc;
+        }, []);
+
         setState((s) => {
           return {
             ...s,
@@ -94,10 +161,47 @@ export const ChannelCacheContextProvider = ({ children }) => {
               ...s.castsByThreadHash,
               [threadHash]: casts,
             },
+            castsByHash: {
+              ...s.castsByHash,
+              ...casts.reduce((acc, cast) => {
+                acc[cast.hash] = cast;
+                return acc;
+              }, {}),
+            },
+            usersByFid: {
+              ...s.usersByFid,
+              ...castsUsers.reduce((acc, user) => {
+                acc[user.fid] = user;
+                return acc;
+              }, {}),
+            },
           };
         });
       }
     );
+  }, []);
+
+  const fetchCast = React.useCallback(async ({ castHash }) => {
+    return fetchNeynarCast(castHash).then(async (cast) => {
+      const castUsers = await extractUsersFromNeynarCast(cast);
+
+      setState((s) => {
+        return {
+          ...s,
+          castsByHash: {
+            ...s.castsByHash,
+            [castHash]: cast,
+          },
+          usersByFid: {
+            ...s.usersByFid,
+            ...castUsers.reduce((acc, user) => {
+              acc[user.fid] = user;
+              return acc;
+            }, {}),
+          },
+        };
+      });
+    });
   }, []);
 
   const fetchFollowedChannels = React.useCallback(async ({ fid }) => {
@@ -126,7 +230,7 @@ export const ChannelCacheContextProvider = ({ children }) => {
   const fetchUnreadState = React.useCallback(async ({ channel }) => {
     if (!channel) return;
 
-    return fetchNeynarCasts({
+    return fetchNeynarFeedCasts({
       parentUrl: channel?.parentUrl,
       limit: 10,
       reverse: true,
@@ -150,6 +254,22 @@ export const ChannelCacheContextProvider = ({ children }) => {
           },
         };
       });
+    });
+  }, []);
+
+  const fetchUserByFid = React.useCallback(async ({ fid }) => {
+    if (!fid) return;
+    return fetchNeynarUserByFid(fid).then((user) => {
+      setState((s) => {
+        return {
+          ...s,
+          usersByFid: {
+            ...s.usersByFid,
+            [fid]: user,
+          },
+        };
+      });
+      return user;
     });
   }, []);
 
@@ -203,6 +323,7 @@ export const ChannelCacheContextProvider = ({ children }) => {
     () => ({
       state,
       actions: {
+        fetchCast,
         fetchChannelCasts,
         fetchThreadCasts,
         fetchFeedCasts,
@@ -211,10 +332,12 @@ export const ChannelCacheContextProvider = ({ children }) => {
         markChannelRead,
         followChannel,
         unfollowChannel,
+        fetchUserByFid,
       },
     }),
     [
       state,
+      fetchCast,
       fetchChannelCasts,
       fetchThreadCasts,
       fetchFeedCasts,
@@ -223,6 +346,7 @@ export const ChannelCacheContextProvider = ({ children }) => {
       markChannelRead,
       followChannel,
       unfollowChannel,
+      fetchUserByFid,
     ]
   );
 
@@ -307,6 +431,33 @@ export const useThreadCasts = (threadHash) => {
   } = React.useContext(ChannelCacheContext);
 
   return castsByThreadHash[threadHash];
+};
+
+export const useCastFetch = ({ castHash }) => {
+  const {
+    actions: { fetchCast },
+  } = React.useContext(ChannelCacheContext);
+
+  useFetch(
+    () =>
+      fetchCast({ castHash }).catch((e) => {
+        throw e;
+      }),
+    [fetchCast, castHash]
+  );
+};
+
+export const useCast = (castHash) => {
+  const {
+    state: { castsByHash },
+  } = React.useContext(ChannelCacheContext);
+
+  const cast = castsByHash[castHash];
+
+  // if not found, fetch it
+  useCastFetch({ castHash });
+
+  return cast;
 };
 
 export function useChannelCacheContext() {
@@ -441,4 +592,22 @@ export const useUnreadStatesFetch = (fid) => {
       fetchUnreadState({ channel });
     });
   }, [fid, followedChannelsByFid, fetchUnreadState]);
+};
+
+export const useUserByFid = (fid) => {
+  const {
+    state: { usersByFid },
+    actions: { fetchUserByFid },
+  } = React.useContext(ChannelCacheContext);
+
+  const user = usersByFid[Number(fid)];
+
+  React.useEffect(() => {
+    if (!user) {
+      console.log("user not found in cache. fetching", fid);
+      fetchUserByFid({ fid: Number(fid) });
+    }
+  }, [user, fetchUserByFid, fid]);
+
+  return user;
 };

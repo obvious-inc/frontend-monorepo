@@ -16,7 +16,7 @@ import {
   ChainDataCacheDispatchContext,
   useFarcasterChannelByUrl,
 } from "../hooks/farcord";
-import { fetchNeynarCasts } from "../hooks/neynar";
+import { fetchNeynarFeedCasts } from "../hooks/neynar";
 import { getChannelLink } from "../utils/channel";
 
 const { createEmptyParagraphElement } = messageUtils;
@@ -239,7 +239,7 @@ const CreateChannelDialog = ({ dismiss, titleProps }) => {
         const create = async () => {
           const text = messageUtils.stringifyBlocks(castText);
 
-          return fetchNeynarCasts({
+          return fetchNeynarFeedCasts({
             parentUrl: url,
             limit: 1,
           })

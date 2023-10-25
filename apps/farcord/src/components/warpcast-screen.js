@@ -6,12 +6,12 @@ import Spinner from "@shades/ui-web/spinner";
 import QRCode from "qrcode";
 import useSigner from "./signer";
 import { useInterval, useLatestCallback } from "@shades/common/react";
-import { useNeynarUser } from "../hooks/neynar";
 import Avatar from "@shades/ui-web/avatar";
 import { Small } from "./text";
 import useFarcasterAccount from "./farcaster-account";
 import { createKeyPair } from "../utils/crypto";
 import { toHex } from "viem";
+import { useUserByFid } from "../hooks/channel";
 
 const { truncateAddress } = ethereumUtils;
 
@@ -19,13 +19,12 @@ const warpcastApi = "https://api.warpcast.com";
 
 const WarpcastUser = () => {
   const { fid } = useFarcasterAccount();
-  const { user: farcasterUser } = useNeynarUser(fid);
+  const farcasterUser = useUserByFid(fid);
 
   const SLICE_LENGTH = 30;
-  const truncate = farcasterUser?.profile?.bio?.text.length > SLICE_LENGTH;
-  const profileBio = truncate
-    ? farcasterUser?.profile?.bio?.text.slice(0, SLICE_LENGTH) + "..."
-    : farcasterUser?.profile?.bio?.text;
+  const bio = farcasterUser?.bio;
+  const truncate = bio?.length > SLICE_LENGTH;
+  const profileBio = truncate ? bio.slice(0, SLICE_LENGTH) + "..." : bio;
 
   return (
     <>

@@ -4,13 +4,13 @@ import NavBar from "./navbar";
 import { useSearchParams } from "react-router-dom";
 import Button from "@shades/ui-web/button";
 import { Cross as CrossIcon } from "@shades/ui-web/icons";
-import { useNeynarCast } from "../hooks/neynar.js";
+import { useCast } from "../hooks/channel.js";
 
 const ThreadNavBar = ({ castHash }) => {
-  const cast = useNeynarCast(castHash);
+  const cast = useCast(castHash);
   const [searchParams, setSearchParams] = useSearchParams();
   const parentHash = cast?.parentHash;
-  const parentCast = useNeynarCast(parentHash);
+  const parentCast = useCast(parentHash);
 
   const threadAuthor = parentCast
     ? parentCast.author?.displayName

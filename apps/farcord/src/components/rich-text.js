@@ -1,5 +1,10 @@
 import RichTextBase from "@shades/ui-web/rich-text";
 import Emoji from "@shades/ui-web/emoji";
+import AccountPreviewPopoverTrigger from "./account-preview-popover-trigger";
+
+const UserMention = ({ fid }) => {
+  return <AccountPreviewPopoverTrigger fid={fid} variant="button" />;
+};
 
 const RichText = ({ blocks, ...props }) => {
   // Special "large emoji" case
@@ -25,6 +30,9 @@ const RichText = ({ blocks, ...props }) => {
         switch (el.type) {
           case "emoji":
             return <Emoji key={i} emoji={el.emoji} />;
+
+          case "user":
+            return <UserMention key={i} fid={el.ref} />;
 
           default:
             return null;

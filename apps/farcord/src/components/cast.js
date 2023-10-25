@@ -98,7 +98,7 @@ export const CastHeader = ({ cast }) => {
   const [searchParams] = useSearchParams();
 
   const renderSignerInfo = () => {
-    if (searchParams.get("dev") || process.env.NODE_ENV === "development") {
+    if (searchParams.get("dev")) {
       return (
         <>
           <Suspense>
@@ -112,26 +112,10 @@ export const CastHeader = ({ cast }) => {
   React.useEffect(() => {
     if (!fid) return;
 
-    let uniqueLikes = [];
-    let uniqueRecasts = [];
-
-    // v1 Vs. v2 neynar apis...
-    if ("recasts" in cast) {
-      uniqueLikes = arrayUtils.unique(cast.reactions?.fids || []);
-      uniqueRecasts = arrayUtils.unique(cast.recasts?.fids || []);
-    } else {
-      uniqueLikes = arrayUtils.unique(
-        cast.reactions?.likes.map((r) => r.fid) || []
-      );
-      uniqueRecasts = arrayUtils.unique(
-        cast.reactions?.recasts.map((r) => r.fid) || []
-      );
-    }
-
-    setLiked(uniqueLikes.includes(Number(fid)));
-    setLikesCount(uniqueLikes.length);
-    setRecasted(uniqueRecasts.includes(Number(fid)));
-    setRecastsCount(uniqueRecasts.length);
+    setLiked(cast.reactions.likes.includes(Number(fid)));
+    setLikesCount(cast.reactions.likes.length);
+    setRecasted(cast.reactions.recasts.includes(Number(fid)));
+    setRecastsCount(cast.reactions.recasts.length);
   }, [cast, fid]);
 
   const handleLikeClick = async () => {
@@ -458,10 +442,7 @@ export const CastItem = ({
           })
         }
       >
-        <Avatar
-          url={cast.author?.pfp_url || cast.author?.pfp?.url}
-          size="var(--avatar-size)"
-        />
+        <Avatar url={cast.author?.pfpUrl} size="var(--avatar-size)" />
         <div
           style={{
             display: "block",

@@ -1,7 +1,6 @@
 import React from "react";
 import { css } from "@emotion/react";
 import Spinner from "@shades/ui-web/spinner";
-import { useNeynarUser } from "../hooks/neynar";
 import { useUserData } from "../hooks/hub";
 import Avatar from "@shades/ui-web/avatar";
 import {
@@ -9,6 +8,7 @@ import {
   useToggle as useSidebarToggle,
 } from "@shades/ui-web/sidebar-layout";
 import { DoubleChevronLeft as DoubleChevronLeftIcon } from "@shades/ui-web/icons";
+import { useUserByFid } from "../hooks/channel";
 
 const ProfileDropdownTrigger = React.forwardRef(
   ({ isConnecting, fid, subtitle, isHoveringSidebar, ...props }, ref) => {
@@ -16,12 +16,12 @@ const ProfileDropdownTrigger = React.forwardRef(
       useSidebarState();
     const toggleMenu = useSidebarToggle();
     const userData = useUserData(fid);
-    const neynarUserData = useNeynarUser(fid);
+    const neynarUserData = useUserByFid(fid);
 
     const showCollapseButton =
       isMenuFloating || (!isMenuCollapsed && isHoveringSidebar);
 
-    const accountDescription = neynarUserData?.user?.username;
+    const accountDescription = neynarUserData?.username;
 
     if (!subtitle) {
       if (!userData?.displayName) subtitle = "Set up your profile";

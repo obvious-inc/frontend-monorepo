@@ -8,7 +8,6 @@ import {
   ChainDataCacheDispatchContext,
   useFarcasterChannel,
 } from "../hooks/farcord.js";
-import { message } from "@shades/common/utils";
 import useSigner from "./signer";
 import { addCast } from "../hooks/hub.js";
 import {
@@ -26,7 +25,7 @@ import MessageEditorForm from "./message-editor-form.js";
 import isHotkey from "is-hotkey";
 import { usePreviousValue } from "../hooks/previous-value.js";
 import { uploadImages as uploadImgurImages } from "../utils/imgur.js";
-import { parseImagesFromBlocks } from "../utils/message.js";
+import { parseBlocksToFarcasterComponents } from "../utils/message.js";
 import MetaTags_ from "./meta-tags.js";
 
 export const ChannelCastsScrollView = ({
@@ -306,22 +305,16 @@ const ChannelView = ({ channelId, isFeed, isRecent }) => {
     : "Connect wallet to cast";
 
   const onSubmit = async (blocks) => {
-    const embeds = [];
-    const text = message.stringifyBlocks(blocks, {
-      humanReadable: false,
-    });
-
-    const imageEmbeds = parseImagesFromBlocks(blocks);
-    embeds.push(...imageEmbeds.map((image) => ({ url: image })));
-
-    // todo: parse cast ids to add to embeds
+    const parsedFarcasterComponents = parseBlocksToFarcasterComponents(blocks);
 
     return addCast({
       fid,
       signer,
-      text,
       parentUrl: isFeed || isRecent ? null : channel.parentUrl,
-      embeds: embeds,
+      text: parsedFarcasterComponents.text,
+      embeds: parsedFarcasterComponents.embeds,
+      mentions: parsedFarcasterComponents.mentions,
+      mentionsPositions: parsedFarcasterComponents.mentionsPositions,
     })
       .then((result) => {
         return toHex(result.value.hash);

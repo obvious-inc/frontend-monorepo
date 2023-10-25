@@ -10,9 +10,12 @@ import {
   Retweet as RetweetIcon,
   HeartSolid as HeartSolidIcon,
 } from "@shades/ui-web/icons";
+import RichText from "./rich-text";
 
-const NotificationBody = ({ notification }) => {
+const NotificationBody = ({ notification, displayRichText = false }) => {
   if (notification == null) return null;
+  if (notification.richText && displayRichText)
+    return <RichText blocks={notification.richText} />;
 
   return (
     <p style={{ whiteSpace: "pre-wrap", wordWrap: "break-word" }}>
@@ -43,10 +46,7 @@ const MentionNotification = ({ notification, showReplyTarget = false }) => {
           gridGap: "var(--gutter-size)",
         }}
       >
-        <Avatar
-          url={notification.author?.pfp_url || notification.author?.pfp?.url}
-          size="var(--avatar-size)"
-        />
+        <Avatar url={notification.author?.pfpUrl} size="var(--avatar-size)" />
         <div>
           <div
             css={css`
@@ -97,7 +97,10 @@ const MentionNotification = ({ notification, showReplyTarget = false }) => {
               <CastDate date={parseISO(notification.timestamp)} />
             </Link>
           </div>
-          <NotificationBody notification={notification} />
+          <NotificationBody
+            notification={notification}
+            displayRichText={true}
+          />
         </div>
       </div>
     </>
@@ -151,11 +154,7 @@ const LikeNotification = ({ notification }) => {
           `}
         >
           {reactors.slice(0, 8).map((reactor) => (
-            <Avatar
-              key={reactor.fid}
-              url={reactor.pfp_url || reactor.pfp?.url}
-              size="3rem"
-            />
+            <Avatar key={reactor.fid} url={reactor.pfpUrl} size="3rem" />
           ))}
         </div>
         {likedText()}
@@ -231,11 +230,7 @@ const RecastNotification = ({ notification }) => {
           `}
         >
           {reactors.slice(0, 8).map((reactor) => (
-            <Avatar
-              key={reactor.fid}
-              url={reactor.pfp_url || reactor.pfp?.url}
-              size="3rem"
-            />
+            <Avatar key={reactor.fid} url={reactor.pfpUrl} size="3rem" />
           ))}
         </div>
         {recastText()}

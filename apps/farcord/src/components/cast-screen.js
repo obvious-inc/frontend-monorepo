@@ -1,14 +1,13 @@
 import React from "react";
 import { css } from "@emotion/react";
-import { useNeynarCast } from "../hooks/neynar.js";
 import Spinner from "@shades/ui-web/spinner";
 import { CastItem } from "./cast.js";
 import useSigner from "./signer.js";
-import { message } from "@shades/common/utils";
 import { addCast } from "../hooks/hub.js";
 import { hexToBytes, toHex } from "viem";
 import ThreadNavBar from "./thread-navbar.js";
 import {
+  useCast,
   useChannelCacheContext,
   useThreadCasts,
   useThreadCastsFetch,
@@ -16,7 +15,7 @@ import {
 import useFarcasterAccount from "./farcaster-account.js";
 import MessageEditorForm from "./message-editor-form.js";
 import { uploadImages as uploadImgurImages } from "../utils/imgur.js";
-import { parseImagesFromBlocks } from "../utils/message.js";
+import { parseBlocksToFarcasterComponents } from "../utils/message.js";
 import MetaTags_ from "./meta-tags.js";
 import { useFarcasterChannelByUrl } from "../hooks/farcord.js";
 import { parseChannelFromUrl } from "../utils/channel.js";
@@ -25,7 +24,7 @@ const ThreadScrollView = ({ castHash }) => {
   const castsContainerRef = React.useRef();
   const scrollContainerRef = React.useRef();
 
-  const cast = useNeynarCast(castHash);
+  const cast = useCast(castHash);
   const threadCasts = useThreadCasts(castHash);
 
   if (!cast || !threadCasts) {
@@ -157,7 +156,7 @@ export const ThreadScreen = ({ castHash }) => {
   const inputRef = React.useRef();
   const { fid } = useFarcasterAccount();
   const { signer, broadcasted } = useSigner();
-  const cast = useNeynarCast(castHash);
+  const cast = useCast(castHash);
 
   const {
     actions: { fetchThreadCasts },
@@ -170,22 +169,16 @@ export const ThreadScreen = ({ castHash }) => {
     : "Connect wallet to cast";
 
   const onSubmit = async (blocks) => {
-    const embeds = [];
-    const text = message.stringifyBlocks(blocks, {
-      humanReadable: false,
-    });
-
-    const imageEmbeds = parseImagesFromBlocks(blocks);
-    embeds.push(...imageEmbeds.map((image) => ({ url: image })));
-
-    // todo: parse cast ids to add to embeds
+    const parsedFarcasterComponents = parseBlocksToFarcasterComponents(blocks);
 
     return addCast({
       fid,
       signer,
-      text,
       parentCastId: { hash: hexToBytes(cast.hash), fid: cast.author.fid },
-      embeds: embeds,
+      text: parsedFarcasterComponents.text,
+      embeds: parsedFarcasterComponents.embeds,
+      mentions: parsedFarcasterComponents.mentions,
+      mentionsPositions: parsedFarcasterComponents.mentionsPositions,
     })
       .then((result) => {
         return toHex(result.value.hash);
@@ -240,11 +233,12 @@ export const ThreadScreen = ({ castHash }) => {
 };
 
 const MetaTags = ({ castHash }) => {
-  const cast = useNeynarCast(castHash);
+  const cast = useCast(castHash);
+
   const parentUrl = cast?.parentUrl || cast?.parent_url;
   const warpcastChannel = useFarcasterChannelByUrl(parentUrl);
 
-  if (cast == null) return null;
+  if (cast == null || cast?.deleted) return null;
 
   const authorName = cast.author?.display_name || cast.author?.displayName;
   const castText = cast.text;

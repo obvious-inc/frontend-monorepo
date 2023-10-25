@@ -1,20 +1,11 @@
 import React from "react";
 import { css } from "@emotion/react";
-import {
-  array as arrayUtils,
-  emoji as emojiUtils,
-  ethereum as ethereumUtils,
-  user as userUtils,
-} from "@shades/common/utils";
+import { emoji as emojiUtils } from "@shades/common/utils";
 import { useEmojis } from "@shades/common/app";
 import RichTextEditor from "./rich-text-editor.js";
 import Avatar from "@shades/ui-web/avatar";
-
-const { sort } = arrayUtils;
-const {
-  search: searchUsers,
-  createDefaultComparator: createUserDefaultComparator,
-} = userUtils;
+import useFarcasterAccount from "./farcaster-account.js";
+import { useSearchUsersByUsername } from "../hooks/neynar.js";
 
 const RichTextEditorWithAutoComplete = React.forwardRef(
   (
@@ -25,7 +16,6 @@ const RichTextEditorWithAutoComplete = React.forwardRef(
       onKeyDown,
       disabled,
       inline = false,
-      members = [],
       ...props
     },
     editorRef
@@ -37,6 +27,8 @@ const RichTextEditorWithAutoComplete = React.forwardRef(
     const [emojiQuery, setEmojiQuery] = React.useState(null);
     const [selectedAutoCompleteIndex, setSelectedAutoCompleteIndex] =
       React.useState(-1);
+
+    const { fid } = useFarcasterAccount();
 
     const autoCompleteMode = (() => {
       if (mentionQuery != null) return "mentions";
@@ -50,26 +42,25 @@ const RichTextEditorWithAutoComplete = React.forwardRef(
 
     const isAutoCompleteMenuOpen = autoCompleteMode != null;
 
+    const matchedUsers = useSearchUsersByUsername({
+      fid,
+      query: mentionQuery,
+      enabled: autoCompleteMode == "mentions",
+    });
+
     const filteredMentionOptions = React.useMemo(() => {
       if (autoCompleteMode !== "mentions") return [];
 
-      const filteredMembers =
-        mentionQuery.trim() === ""
-          ? sort(createUserDefaultComparator(), members)
-          : searchUsers(members, mentionQuery);
-
-      return filteredMembers.slice(0, 10).map((m) => {
-        const label = m.displayName;
-        const truncatedAddress = ethereumUtils.truncateAddress(m.walletAddress);
-        const hasCustomDisplayName = label !== truncatedAddress;
+      return matchedUsers?.slice(0, 10).map((m) => {
+        const label = m.displayName || m.display_name;
         return {
-          value: m.id,
+          value: m.fid,
           label,
-          description: hasCustomDisplayName ? truncatedAddress : undefined,
-          image: <Avatar url={m.imageUrl} />,
+          description: `@${m.username}`,
+          image: <Avatar url={m.pfpfUrl} />,
         };
       });
-    }, [autoCompleteMode, mentionQuery, members]);
+    }, [autoCompleteMode, matchedUsers]);
 
     const filteredEmojiOptions = React.useMemo(() => {
       if (autoCompleteMode !== "emojis") return [];

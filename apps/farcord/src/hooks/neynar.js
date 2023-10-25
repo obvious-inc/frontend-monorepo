@@ -1,13 +1,14 @@
-import React, { useEffect, useState } from "react";
-import { useFarcasterChannel } from "./farcord";
+import React from "react";
 import { message as messageUtils } from "@shades/common/utils";
+import { parseString } from "../utils/message";
+import { array as arrayUtils } from "@shades/common/utils";
 
 const NEYNAR_V1_ENDPOINT = "https://api.neynar.com/v1/farcaster";
 const NEYNAR_V2_ENDPOINT = "https://api.neynar.com/v2/farcaster";
 
 const DEFAULT_PAGE_SIZE = 30;
 
-export async function fetchNeynarCasts({
+export async function fetchNeynarFeedCasts({
   parentUrl,
   fid,
   cursor,
@@ -35,12 +36,14 @@ export async function fetchNeynarCasts({
       return result.json();
     })
     .then((data) => {
-      return data.casts?.map((cast) => {
-        return {
-          ...cast,
-          richText: cast.text ? messageUtils.parseString(cast.text) : null,
-        };
-      });
+      return data.casts;
+    })
+    .then(async (casts) => {
+      return await Promise.all(
+        casts.map(async (cast) => {
+          return parseCast({ cast });
+        })
+      );
     })
     .then((parsedCasts) => {
       return parsedCasts.reverse();
@@ -63,12 +66,14 @@ export async function fetchNeynarRecentCasts({ cursor }) {
       return result.json();
     })
     .then((data) => {
-      return data.result.casts?.map((cast) => {
-        return {
-          ...cast,
-          richText: cast.text ? messageUtils.parseString(cast.text) : null,
-        };
-      });
+      return data.result.casts;
+    })
+    .then(async (casts) => {
+      return await Promise.all(
+        casts.map(async (cast) => {
+          return parseCast({ cast });
+        })
+      );
     })
     .then((parsedCasts) => {
       return parsedCasts.reverse();
@@ -93,12 +98,14 @@ export async function fetchNeynarThreadCasts({ threadCastHash, cursor }) {
       return result.json();
     })
     .then((data) => {
-      return data.result.casts?.map((cast) => {
-        return {
-          ...cast,
-          richText: cast.text ? messageUtils.parseString(cast.text) : null,
-        };
-      });
+      return data.result.casts;
+    })
+    .then(async (casts) => {
+      return await Promise.all(
+        casts.map(async (cast) => {
+          return parseCast({ cast });
+        })
+      );
     })
     .then((parsedCasts) => {
       return parsedCasts.slice(1);
@@ -108,185 +115,30 @@ export async function fetchNeynarThreadCasts({ threadCastHash, cursor }) {
     });
 }
 
-export const useNeynarChannelCasts = (channelId) => {
-  const [casts, setCasts] = useState([]);
-  const [nextCursor, setNextCursor] = useState(null);
-  const [pending, setPending] = useState(false);
-  const channel = useFarcasterChannel(channelId);
+export async function fetchNeynarCast(castHash) {
+  const params = new URLSearchParams({
+    api_key: process.env.NEYNAR_API_KEY,
+    hash: castHash,
+  });
 
-  const fetchCasts = React.useCallback(
-    async (query = {}) => {
-      const { cursor } = query;
-      let params = new URLSearchParams({
-        api_key: process.env.NEYNAR_API_KEY,
-        feed_type: "filter",
-        filter_type: "parent_url",
-        parent_url: channel?.parentUrl,
-        limit: DEFAULT_PAGE_SIZE,
-      });
+  if (!castHash) return null;
 
-      if (cursor) params.set("cursor", cursor);
-
-      setPending(true);
-      fetch(NEYNAR_V2_ENDPOINT + "/feed?" + params)
-        .then((result) => {
-          return result.json();
-        })
-        .then((data) => {
-          setNextCursor(data.next.cursor);
-          return data.casts?.map((cast) => {
-            return {
-              ...cast,
-              richText: cast.text ? messageUtils.parseString(cast.text) : null,
-            };
-          });
-        })
-        .then((parsedCasts) => {
-          setCasts(parsedCasts.reverse());
-        })
-        .catch((err) => {
-          throw err;
-        })
-        .finally(() => {
-          setPending(false);
-        });
-    },
-    [channel?.parentUrl]
-  );
-
-  useEffect(() => {
-    if (!channel?.parentUrl) return;
-
-    fetchCasts();
-  }, [channel, fetchCasts]);
-
-  return { casts, nextCursor, fetchCasts, pending };
-};
-
-export const useNeynarRecentCasts = ({ cursor, fid }) => {
-  const [casts, setCasts] = useState(null);
-  const [nextCursor, setNextCursor] = useState(null);
-
-  useEffect(() => {
-    let params = new URLSearchParams({
-      api_key: process.env.NEYNAR_API_KEY,
-      viewerFid: fid,
-      limit: DEFAULT_PAGE_SIZE,
+  return fetch(NEYNAR_V1_ENDPOINT + "/cast?" + params)
+    .then((result) => {
+      return result.json();
+    })
+    .then(async (data) => {
+      return parseCast({ cast: data.result?.cast, hash: castHash });
+    })
+    .catch((err) => {
+      throw err;
     });
-
-    if (cursor) params.set("cursor", cursor);
-
-    async function fetchCasts() {
-      fetch(NEYNAR_V1_ENDPOINT + "/recent-casts?" + params)
-        .then((result) => {
-          return result.json();
-        })
-        .then((data) => {
-          setNextCursor(data.result.next.cursor);
-          return data.result.casts?.map((cast) => {
-            return {
-              ...cast,
-              richText: cast.text ? messageUtils.parseString(cast.text) : null,
-            };
-          });
-        })
-        .then((parsedCasts) => {
-          setCasts(parsedCasts.reverse());
-        })
-        .catch((err) => {
-          throw err;
-        });
-    }
-
-    fetchCasts();
-  }, [fid, cursor]);
-
-  return { casts, nextCursor };
-};
-
-export const useNeynarCast = (castHash) => {
-  const [cast, setCast] = useState(null);
-
-  useEffect(() => {
-    if (!castHash) return;
-
-    async function fetchCast() {
-      const params = new URLSearchParams({
-        api_key: process.env.NEYNAR_API_KEY,
-        hash: castHash,
-      });
-
-      fetch(NEYNAR_V1_ENDPOINT + "/cast?" + params)
-        .then((result) => {
-          return result.json();
-        })
-        .then((data) => {
-          if (!data.result.cast) {
-            setCast({ hash: castHash, deleted: true });
-          } else {
-            setCast({
-              ...data.result.cast,
-              richText: data.result.cast.text
-                ? messageUtils.parseString(data.result.cast.text)
-                : null,
-            });
-          }
-        })
-        .catch((err) => {
-          throw err;
-        });
-    }
-
-    fetchCast();
-
-    return () => {
-      setCast(null);
-    };
-  }, [castHash]);
-
-  return cast;
-};
-
-export const useNeynarThreadCasts = (castHash) => {
-  const [casts, setCasts] = useState(null);
-
-  useEffect(() => {
-    async function fetchCast() {
-      const params = new URLSearchParams({
-        api_key: process.env.NEYNAR_API_KEY,
-        threadHash: castHash,
-      });
-
-      fetch(NEYNAR_V1_ENDPOINT + "/all-casts-in-thread?" + params)
-        .then((result) => {
-          return result.json();
-        })
-        .then((data) => {
-          return data.result.casts?.map((cast) => {
-            return {
-              ...cast,
-              richText: cast.text ? messageUtils.parseString(cast.text) : null,
-            };
-          });
-        })
-        .then((parsedCasts) => {
-          setCasts(parsedCasts.slice(1));
-        })
-        .catch((err) => {
-          throw err;
-        });
-    }
-
-    fetchCast();
-  }, [castHash]);
-
-  return casts;
-};
+}
 
 export const fetchUserByFid = async (fid) => {
   const params = new URLSearchParams({
     api_key: process.env.NEYNAR_API_KEY,
-    fid,
+    fid: Number(fid),
   });
 
   return fetch(NEYNAR_V1_ENDPOINT + "/user?" + params)
@@ -294,47 +146,11 @@ export const fetchUserByFid = async (fid) => {
       return result.json();
     })
     .then((jsonResult) => {
-      return jsonResult.result.user;
+      return parseUser({ user: jsonResult.result.user });
     })
     .catch((err) => {
       throw err;
     });
-};
-
-export const useNeynarUser = (fid) => {
-  const [user, setUser] = useState(null);
-  const [isFetching, setIsFetching] = useState(false);
-
-  useEffect(() => {
-    if (!fid) return;
-
-    setIsFetching(true);
-
-    async function fetchCast() {
-      const params = new URLSearchParams({
-        api_key: process.env.NEYNAR_API_KEY,
-        fid,
-      });
-
-      fetch(NEYNAR_V1_ENDPOINT + "/user?" + params)
-        .then((result) => {
-          return result.json();
-        })
-        .then((data) => {
-          setUser(data.result.user);
-        })
-        .catch((err) => {
-          throw err;
-        })
-        .finally(() => {
-          setIsFetching(false);
-        });
-    }
-
-    fetchCast();
-  }, [fid]);
-
-  return { user, isFetching };
 };
 
 export const fetchUserByUsername = async (username) => {
@@ -349,7 +165,7 @@ export const fetchUserByUsername = async (username) => {
     })
     .then((data) => {
       if (data.code) throw new Error(data.message);
-      return data.result.user;
+      return parseUser({ user: data.result.user });
     })
     .catch((err) => {
       throw err;
@@ -381,12 +197,7 @@ export async function fetchMentionAndReplies({
     })
     .then((data) => {
       return data.result.notifications?.map((notification) => {
-        return {
-          ...notification,
-          richText: notification.text
-            ? messageUtils.parseString(notification.text)
-            : null,
-        };
+        return parseNotification({ notification });
       });
     })
     .catch((err) => {
@@ -415,16 +226,145 @@ export async function fetchReactionsAndRecasts({
     })
     .then((data) => {
       return data.result.notifications?.map((notification) => {
-        return {
-          ...notification,
-          richText: notification.text
-            ? messageUtils.parseString(notification.text)
-            : null,
-          type: notification.reactionType,
-        };
+        return parseNotification({ notification });
       });
     })
     .catch((err) => {
       throw err;
     });
 }
+
+export async function searchUsersByUsername({ fid, query }) {
+  let params = new URLSearchParams({
+    api_key: process.env.NEYNAR_API_KEY,
+    viewer_fid: fid ? Number(fid) : 3, // required...
+    q: query,
+  });
+
+  return fetch(NEYNAR_V2_ENDPOINT + "/user/search?" + params)
+    .then((result) => {
+      return result.json();
+    })
+    .then((data) => {
+      return data.result.users;
+    })
+    .then((users) => {
+      return users.map((user) => {
+        return parseUser({ user });
+      });
+    })
+    .catch((err) => {
+      throw err;
+    });
+}
+
+export const useSearchUsersByUsername = ({ fid, query, enabled }) => {
+  const [results, setResults] = React.useState([]);
+
+  React.useEffect(() => {
+    if (!query) return;
+    if (!enabled) return;
+
+    const searchUsers = async () => {
+      const results = await searchUsersByUsername({ fid, query });
+      setResults(results);
+    };
+
+    searchUsers();
+  }, [fid, query, enabled]);
+
+  return results;
+};
+
+const parseUser = ({ user }) => {
+  const { fid, username, profile } = user;
+
+  const bio = profile?.bio?.text;
+  const bioMentionedProfiles = profile?.bio?.mentionedProfiles ?? [];
+  const bioBlocks = bio ? parseString(bio, bioMentionedProfiles) : [];
+
+  const pfpUrl = user.pfp_url ?? user.pfp?.url;
+
+  return {
+    fid,
+    username,
+    displayName: user.displayName ?? user.display_name,
+    bio,
+    bioBlocks,
+    pfpUrl,
+    custodyAddress: user.custodyAddress ?? user.custody_address,
+    followerCount: user.followerCount ?? user.follower_count,
+    followingCount: user.followingCount ?? user.following_count,
+  };
+};
+
+const parseCast = ({ cast, hash }) => {
+  if (!cast) return { hash: hash, deleted: true };
+
+  const mentionedProfiles = cast.mentionedProfiles ?? cast.mentioned_profiles;
+  const richText = parseString(cast.text, mentionedProfiles);
+
+  const reactions =
+    "recasts" in cast
+      ? {
+          likes: arrayUtils.unique(cast.reactions?.fids || []),
+          recasts: arrayUtils.unique(cast.recasts?.fids || []),
+        }
+      : {
+          likes: arrayUtils.unique(
+            cast.reactions?.likes.map((r) => r.fid) || []
+          ),
+          recasts: arrayUtils.unique(
+            cast.reactions?.recasts.map((r) => r.fid) || []
+          ),
+        };
+
+  const author = parseUser({ user: cast.author });
+
+  return {
+    hash: cast.hash,
+    author: author,
+    embeds: cast.embeds,
+    text: cast.text,
+    parentAuthor: cast.parentAuthor ?? cast.parent_author,
+    parentHash: cast.parentHash ?? cast.parent_hash,
+    parentUrl: cast.parentUrl ?? cast.parent_url,
+    replies: cast.replies,
+    threadHash: cast.threadHash ?? cast.thread_hash,
+    timestamp: cast.timestamp,
+    richText: richText,
+    reactions: reactions,
+    mentionedProfiles: mentionedProfiles,
+  };
+};
+
+const parseNotification = ({ notification }) => {
+  const { hash, text, type, timestamp } = notification;
+
+  const richText = parseString(text, notification.mentionedProfiles);
+  const author = parseUser({ user: notification.author });
+
+  const reactors = notification.reactors?.map((r) => {
+    return parseUser({ user: r });
+  });
+
+  return {
+    ...notification,
+    text,
+    hash,
+    richText,
+    type: type ?? notification.reactionType,
+    timestamp,
+    author,
+    reactors,
+  };
+};
+
+export const extractUsersFromNeynarCast = (cast) => {
+  if (!cast) return [];
+
+  const author = cast.author;
+  const mentionedProfiles = cast.mentionedProfiles;
+
+  return arrayUtils.unique([author, ...mentionedProfiles], (u) => u.fid);
+};
