@@ -69,16 +69,27 @@ export default () => ({
     onKeyDown: (e, editor) => {
       const lineBreakHotkeys = ["shift+enter", "enter"];
 
-      if (!lineBreakHotkeys.some((h) => isHotkey(h, e))) return;
+      if (lineBreakHotkeys.some((h) => isHotkey(h, e))) {
+        const matchEntry = Editor.above(editor, {
+          match: (node) => node.type === ELEMENT_TYPE,
+        });
 
-      const matchEntry = Editor.above(editor, {
-        match: (node) => node.type === ELEMENT_TYPE,
-      });
+        if (matchEntry != null) {
+          e.preventDefault();
+          editor.insertText("\n");
+        }
+      }
 
-      if (matchEntry == null) return;
+      if (isHotkey("mod+a", e)) {
+        const matchEntry = Editor.above(editor, {
+          match: (node) => node.type === ELEMENT_TYPE,
+        });
 
-      e.preventDefault();
-      editor.insertText("\n");
+        if (matchEntry != null) {
+          e.preventDefault();
+          Transforms.select(editor, matchEntry[1]);
+        }
+      }
     },
   },
 });
