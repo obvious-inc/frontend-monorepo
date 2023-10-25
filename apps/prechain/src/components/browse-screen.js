@@ -13,12 +13,12 @@ import { useAccountDisplayName, useCachedState } from "@shades/common/app";
 import {
   array as arrayUtils,
   object as objectUtils,
-  message as messageUtils,
   date as dateUtils,
 } from "@shades/common/utils";
 import Input from "@shades/ui-web/input";
 import Button from "@shades/ui-web/button";
 import Select from "@shades/ui-web/select";
+import { isNodeEmpty as isRichTextNodeEmpty } from "@shades/ui-web/rich-text-editor";
 import { ArrowDown as ArrowDownIcon } from "@shades/ui-web/icons";
 import {
   isFinalState as isFinalProposalState,
@@ -228,7 +228,8 @@ const BrowseScreen = () => {
     const filteredProposalDrafts = proposalDrafts
       .filter(
         (d) =>
-          d.name.trim() !== "" || !messageUtils.isEmpty(d.body, { trim: true })
+          d.name.trim() !== "" ||
+          d.body.some((n) => isRichTextNodeEmpty(n, { trim: true }))
       )
       .map((d) => ({ ...d, type: "draft" }));
 
