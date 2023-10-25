@@ -246,7 +246,7 @@ export const withBlockPrefixShortcut = (
       match: (n) => Element.isElement(n) && Editor.isBlock(editor, n),
     });
 
-    if (blockEntry == null || blockEntry[0].type === elementType) {
+    if (blockEntry == null || blockEntry[0].type !== "paragraph") {
       insertText(text);
       return;
     }
