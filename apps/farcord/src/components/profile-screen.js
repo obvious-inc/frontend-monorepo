@@ -16,7 +16,7 @@ import {
 } from "../hooks/hub";
 import useSigner from "./signer";
 import { signTypedData } from "@wagmi/core";
-import { DEFAULT_CHAIN_ID } from "../hooks/farcord";
+import { DEFAULT_CHAIN_ID } from "../utils/farcaster";
 import { addDays } from "date-fns";
 import FormattedDate from "./formatted-date";
 import Input from "@shades/ui-web/input";

@@ -1,5 +1,4 @@
 import React from "react";
-import { message as messageUtils } from "@shades/common/utils";
 import { parseString } from "../utils/message";
 import { array as arrayUtils } from "@shades/common/utils";
 

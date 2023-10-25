@@ -15,7 +15,7 @@ import {
   formatUnits,
   isHex,
 } from "viem";
-import { DEFAULT_CHAIN_ID } from "../hooks/farcord";
+import { DEFAULT_CHAIN_ID } from "../utils/farcaster";
 import Button from "@shades/ui-web/button";
 import { useWallet } from "@shades/common/wallet";
 import { signTypedData } from "@wagmi/core";

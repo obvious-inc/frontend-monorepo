@@ -1,6 +1,6 @@
 import React from "react";
 import { useConnect, useSwitchNetwork } from "wagmi";
-import { DEFAULT_CHAIN_ID } from "../hooks/farcord";
+import { DEFAULT_CHAIN_ID } from "../utils/farcaster";
 import Button from "@shades/ui-web/button";
 import { useWallet } from "@shades/common/wallet";
 import { css } from "@emotion/react";

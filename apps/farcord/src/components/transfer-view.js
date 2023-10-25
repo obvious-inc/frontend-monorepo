@@ -10,8 +10,9 @@ import {
   usePrepareContractWrite,
   useWaitForTransaction,
 } from "wagmi";
-import { DEFAULT_CHAIN_ID, useWalletFarcasterId } from "../hooks/farcord";
+import { useWalletFarcasterId } from "../hooks/farcord";
 import {
+  DEFAULT_CHAIN_ID,
   ID_REGISTRY_ADDRESS,
   ID_TRANSFER_REQUEST_TYPE,
   REGISTER_REQUEST_VALIDATOR_EIP_712_DOMAIN,

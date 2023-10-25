@@ -9,7 +9,7 @@ import {
   usePrepareContractWrite,
   useWaitForTransaction,
 } from "wagmi";
-import { DEFAULT_CHAIN_ID } from "../hooks/farcord";
+import { DEFAULT_CHAIN_ID } from "../utils/farcaster";
 import useFarcasterAccount from "./farcaster-account";
 
 const warpcastApi = "https://api.warpcast.com";

@@ -12,11 +12,12 @@ import { toHex } from "viem";
 import Input from "@shades/ui-web/input";
 import { fetchCustodyAddressByUsername } from "../hooks/neynar";
 import useSigner from "./signer";
-import { DEFAULT_CHAIN_ID, useWalletFarcasterId } from "../hooks/farcord";
+import { useWalletFarcasterId } from "../hooks/farcord";
 import { useSignerByPublicKey } from "../hooks/hub";
 import { Small } from "./text";
 import { useMatchMedia } from "@shades/common/react";
 import { useUserByFid } from "../hooks/channel";
+import { DEFAULT_CHAIN_ID } from "../utils/farcaster";
 
 const { truncateAddress } = ethereumUtils;
 

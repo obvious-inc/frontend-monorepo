@@ -9,7 +9,7 @@ import { useWallet } from "@shades/common/wallet";
 import useSigner from "./signer";
 import { useConnect } from "wagmi";
 import { useNavigate } from "react-router-dom";
-import { DEFAULT_CHAIN_ID } from "../hooks/farcord";
+import { DEFAULT_CHAIN_ID } from "../utils/farcaster";
 
 const { truncateAddress } = ethereumUtils;
 

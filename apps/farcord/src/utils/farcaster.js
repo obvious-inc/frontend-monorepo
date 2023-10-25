@@ -1,6 +1,7 @@
 import { decodeAbiParameters, toHex } from "viem";
-import { DEFAULT_CHAIN_ID } from "../hooks/farcord";
+import { optimism } from "wagmi/chains";
 
+export const DEFAULT_CHAIN_ID = optimism.id;
 export const ID_REGISTRY_ADDRESS = "0x00000000fcaf86937e41ba038b4fa40baa4b780a";
 export const STORAGE_REGISTRY_ADDRESS =
   "0x00000000fcCe7f938e7aE6D3c335bD6a1a7c593D";
