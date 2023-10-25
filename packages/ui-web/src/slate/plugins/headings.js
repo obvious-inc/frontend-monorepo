@@ -2,6 +2,7 @@ import isHotkey from "is-hotkey";
 import {
   Transforms,
   Editor,
+  Node,
   // Range,
   // Point,
   // Element as SlateElement,
@@ -12,17 +13,61 @@ import {
   withEmptyBlockBackwardDeleteTransform,
 } from "../utils.js";
 
-const elementTypes = ["heading-1", "heading-2"];
+const elementTypes = ["heading-1", "heading-2", "heading-3"];
 
 const { compose } = functionUtils;
 
-// TODO: prevent line breaks
 const middleware = (editor) => {
+  const { normalizeNode } = editor;
+
+  editor.normalizeNode = ([node, path]) => {
+    if (!elementTypes.includes(node.type)) {
+      normalizeNode([node, path]);
+      return;
+    }
+
+    for (const [childNode, childPath] of Node.children(editor, path)) {
+      // Element children aren’t allowed
+      if (childNode.children != null) {
+        Transforms.unwrapNodes(editor, { at: childPath });
+        return;
+      }
+
+      // We only allow a single child
+      const childLeafIndex = childPath.slice(-1)[0];
+      if (childLeafIndex !== 0) {
+        Transforms.mergeNodes(editor, { at: childPath });
+        return;
+      }
+
+      // No line breaks
+      if (childNode.text.includes("\n")) {
+        Transforms.insertText(editor, childNode.text.split("\n").join(" "), {
+          at: childPath,
+        });
+        return;
+      }
+
+      // No marks
+      if (childNode.italic || childNode.bold || childNode.strikethrough) {
+        Transforms.unsetNodes(editor, ["italic", "bold", "strikethrough"], {
+          at: childPath,
+        });
+        return;
+      }
+    }
+
+    normalizeNode([node, path]);
+    return;
+  };
+
   return compose(
     (e) =>
       withBlockPrefixShortcut({ prefix: "#", elementType: "heading-1" }, e),
     (e) =>
       withBlockPrefixShortcut({ prefix: "##", elementType: "heading-2" }, e),
+    (e) =>
+      withBlockPrefixShortcut({ prefix: "###", elementType: "heading-3" }, e),
     (e) =>
       withEmptyBlockBackwardDeleteTransform(
         { fromElementType: elementTypes, toElementType: "paragraph" },

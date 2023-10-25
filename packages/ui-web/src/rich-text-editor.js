@@ -15,6 +15,7 @@ import {
   getImageDimensionsFromUrl,
 } from "@shades/common/utils";
 import { ErrorBoundary } from "@shades/common/react";
+import Select from "./select.js";
 import { createCss as createRichTextCss } from "./rich-text.js";
 import createControlledParagraphLineBreaksPlugin from "./slate/plugins/controlled-paragraph-line-breaks.js";
 import createSensibleVoidsPlugin from "./slate/plugins/sensible-voids.js";
@@ -553,6 +554,9 @@ const Element = (props) => {
     case "heading-2":
       return <h2 {...attributes}>{children}</h2>;
 
+    case "heading-3":
+      return <h3 {...attributes}>{children}</h3>;
+
     case "bulleted-list":
       return <ul {...attributes}>{children}</ul>;
 
@@ -606,7 +610,21 @@ export const Toolbar = ({ disabled: disabled_, ...props }) => {
     imageDialogActions,
   } = context;
 
-  const disabled = disabled_ || selection == null;
+  const [storedSelectionRangeRef, setStoredSelectionRangeRef] =
+    React.useState(null);
+
+  const disabled =
+    storedSelectionRangeRef == null && (disabled_ || selection == null);
+
+  const selectedNodeEntry = editorRef.current?.above({
+    match: editorRef.current.isBlock,
+  });
+  const [selectedBlockNode, selectedBlockPath] = selectedNodeEntry ?? [];
+
+  const inlineElementsAllowed =
+    selectedBlockNode != null &&
+    !selectedBlockNode.type.startsWith("heading-") &&
+    selectedBlockNode.type !== "code-block";
 
   return (
     <div
@@ -621,7 +639,7 @@ export const Toolbar = ({ disabled: disabled_, ...props }) => {
             background: t.colors.borderLight,
             margin: "0 0.5rem",
           },
-          button: {
+          "[data-button]": {
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
@@ -644,13 +662,66 @@ export const Toolbar = ({ disabled: disabled_, ...props }) => {
       {...props}
     >
       {[
+        selectedBlockNode != null && [
+          {
+            key: "block-type",
+            type: "select",
+            props: {
+              "aria-label": "Block type select",
+              disabled,
+              value: selectedBlockNode.type,
+              fullWidth: false,
+              width: "max-content",
+              variant: "transparent",
+              size: "small",
+              onFocus: () => {
+                setStoredSelectionRangeRef(
+                  editorRef.current.rangeRef(editorRef.current.selection)
+                );
+              },
+              onChange: (value) => {
+                const editor = editorRef.current;
+
+                if (selectedBlockNode.type === "list-item") {
+                  Editor.withoutNormalizing(editorRef.current, () => {
+                    editor.setNodes({ type: value });
+                    editor.unwrapNodes({
+                      at: selectedBlockPath,
+                      match: (n) =>
+                        ["bulleted-list", "numbered-list"].includes(n.type),
+                      split: true,
+                    });
+                  });
+                } else {
+                  editor.setNodes({ type: value });
+                }
+
+                editor.focus(storedSelectionRangeRef.current);
+                storedSelectionRangeRef.unref();
+                setStoredSelectionRangeRef(null);
+              },
+              options: [
+                { value: "paragraph", label: "Text" },
+                { value: "heading-1", label: "Heading 1" },
+                { value: "heading-2", label: "Heading 2" },
+                { value: "heading-3", label: "Heading 3" },
+                { value: "code-block", label: "Code" },
+                { value: "quote", label: "Quote" },
+                selectedBlockNode.type === "list-item" && {
+                  value: "list-item",
+                  label: "List item",
+                },
+              ].filter(Boolean),
+            },
+          },
+        ],
         [
           {
             key: "bold",
             icon: "B",
             isActive: activeMarks.includes("bold"),
             props: {
-              disabled,
+              disabled: disabled || !inlineElementsAllowed,
               "data-active": activeMarks.includes("bold"),
               style: { fontWeight: "700" },
               onMouseDown: (e) => {
@@ -663,7 +734,7 @@ export const Toolbar = ({ disabled: disabled_, ...props }) => {
             key: "italic",
             icon: "i",
             props: {
-              disabled,
+              disabled: disabled || !inlineElementsAllowed,
               "data-active": activeMarks.includes("italic"),
               style: { fontStyle: "italic" },
               onMouseDown: (e) => {
@@ -676,7 +747,7 @@ export const Toolbar = ({ disabled: disabled_, ...props }) => {
             key: "strikethrough",
             icon: "S",
             props: {
-              disabled,
+              disabled: disabled || !inlineElementsAllowed,
               "data-active": activeMarks.includes("strikethrough"),
               style: { TextDecoration: "line-through" },
               onMouseDown: (e) => {
@@ -686,46 +757,46 @@ export const Toolbar = ({ disabled: disabled_, ...props }) => {
             },
           },
         ],
-        [
-          {
-            key: "bulleted-list",
-            icon: (
-              <svg viewBox="0 0 20 20" style={{ width: "1.4rem" }}>
-                <path
-                  fill="currentColor"
-                  fillRule="evenodd"
-                  clipRule="evenodd"
-                  d="M4 3a1 1 0 1 1-2 0 1 1 0 0 1 2 0Zm3 0a.75.75 0 0 1 .75-.75h10a.75.75 0 0 1 0 1.5h-10A.75.75 0 0 1 7 3Zm.75 6.25a.75.75 0 0 0 0 1.5h10a.75.75 0 0 0 0-1.5h-10Zm0 7a.75.75 0 0 0 0 1.5h10a.75.75 0 0 0 0-1.5h-10ZM3 11a1 1 0 1 0 0-2 1 1 0 0 0 0 2Zm0 7a1 1 0 1 0 0-2 1 1 0 0 0 0 2Z"
-                />
-              </svg>
-            ),
-            props: {
-              disabled: true,
-              onMouseDown: (e) => {
-                e.preventDefault();
-              },
-            },
-          },
-          {
-            key: "numbered-list",
-            icon: (
-              <svg viewBox="0 0 20 20" style={{ width: "1.5rem" }}>
-                <path
-                  fill="currentColor"
-                  fillRule="evenodd"
-                  clipRule="evenodd"
-                  d="M3.792 2.094A.5.5 0 0 1 4 2.5V6h1a.5.5 0 1 1 0 1H2a.5.5 0 1 1 0-1h1V3.194l-.842.28a.5.5 0 0 1-.316-.948l1.5-.5a.5.5 0 0 1 .45.068ZM7.75 3.5a.75.75 0 0 0 0 1.5h10a.75.75 0 0 0 0-1.5h-10ZM7 10.75a.75.75 0 0 1 .75-.75h10a.75.75 0 0 1 0 1.5h-10a.75.75 0 0 1-.75-.75Zm0 6.5a.75.75 0 0 1 .75-.75h10a.75.75 0 0 1 0 1.5h-10a.75.75 0 0 1-.75-.75Zm-4.293-3.36a.997.997 0 0 1 .793-.39c.49 0 .75.38.75.75 0 .064-.033.194-.173.409a5.146 5.146 0 0 1-.594.711c-.256.267-.552.548-.87.848l-.088.084a41.6 41.6 0 0 0-.879.845A.5.5 0 0 0 2 18h3a.5.5 0 0 0 0-1H3.242l.058-.055c.316-.298.629-.595.904-.882a6.1 6.1 0 0 0 .711-.859c.18-.277.335-.604.335-.954 0-.787-.582-1.75-1.75-1.75a1.998 1.998 0 0 0-1.81 1.147.5.5 0 1 0 .905.427.996.996 0 0 1 .112-.184Z"
-                />
-              </svg>
-            ),
-            props: {
-              disabled: true,
-              onMouseDown: (e) => {
-                e.preventDefault();
-              },
-            },
-          },
-        ],
+        // [
+        //   {
+        //     key: "bulleted-list",
+        //     icon: (
+        //       <svg viewBox="0 0 20 20" style={{ width: "1.4rem" }}>
+        //         <path
+        //           fill="currentColor"
+        //           fillRule="evenodd"
+        //           clipRule="evenodd"
+        //           d="M4 3a1 1 0 1 1-2 0 1 1 0 0 1 2 0Zm3 0a.75.75 0 0 1 .75-.75h10a.75.75 0 0 1 0 1.5h-10A.75.75 0 0 1 7 3Zm.75 6.25a.75.75 0 0 0 0 1.5h10a.75.75 0 0 0 0-1.5h-10Zm0 7a.75.75 0 0 0 0 1.5h10a.75.75 0 0 0 0-1.5h-10ZM3 11a1 1 0 1 0 0-2 1 1 0 0 0 0 2Zm0 7a1 1 0 1 0 0-2 1 1 0 0 0 0 2Z"
+        //         />
+        //       </svg>
+        //     ),
+        //     props: {
+        //       disabled: true,
+        //       onMouseDown: (e) => {
+        //         e.preventDefault();
+        //       },
+        //     },
+        //   },
+        //   {
+        //     key: "numbered-list",
+        //     icon: (
+        //       <svg viewBox="0 0 20 20" style={{ width: "1.5rem" }}>
+        //         <path
+        //           fill="currentColor"
+        //           fillRule="evenodd"
+        //           clipRule="evenodd"
+        //           d="M3.792 2.094A.5.5 0 0 1 4 2.5V6h1a.5.5 0 1 1 0 1H2a.5.5 0 1 1 0-1h1V3.194l-.842.28a.5.5 0 0 1-.316-.948l1.5-.5a.5.5 0 0 1 .45.068ZM7.75 3.5a.75.75 0 0 0 0 1.5h10a.75.75 0 0 0 0-1.5h-10ZM7 10.75a.75.75 0 0 1 .75-.75h10a.75.75 0 0 1 0 1.5h-10a.75.75 0 0 1-.75-.75Zm0 6.5a.75.75 0 0 1 .75-.75h10a.75.75 0 0 1 0 1.5h-10a.75.75 0 0 1-.75-.75Zm-4.293-3.36a.997.997 0 0 1 .793-.39c.49 0 .75.38.75.75 0 .064-.033.194-.173.409a5.146 5.146 0 0 1-.594.711c-.256.267-.552.548-.87.848l-.088.084a41.6 41.6 0 0 0-.879.845A.5.5 0 0 0 2 18h3a.5.5 0 0 0 0-1H3.242l.058-.055c.316-.298.629-.595.904-.882a6.1 6.1 0 0 0 .711-.859c.18-.277.335-.604.335-.954 0-.787-.582-1.75-1.75-1.75a1.998 1.998 0 0 0-1.81 1.147.5.5 0 1 0 .905.427.996.996 0 0 1 .112-.184Z"
+        //         />
+        //       </svg>
+        //     ),
+        //     props: {
+        //       disabled: true,
+        //       onMouseDown: (e) => {
+        //         e.preventDefault();
+        //       },
+        //     },
+        //   },
+        // ],
         [
           {
             key: "link",
@@ -738,7 +809,7 @@ export const Toolbar = ({ disabled: disabled_, ...props }) => {
               </svg>
             ),
             props: {
-              disabled,
+              disabled: disabled || !inlineElementsAllowed,
               onMouseDown: (e) => {
                 e.preventDefault();
                 linkDialogActions.open();
@@ -756,7 +827,7 @@ export const Toolbar = ({ disabled: disabled_, ...props }) => {
               </svg>
             ),
             props: {
-              disabled,
+              disabled: disabled || !inlineElementsAllowed,
               onMouseDown: (e) => {
                 e.preventDefault();
                 imageDialogActions.open();
@@ -764,22 +835,33 @@ export const Toolbar = ({ disabled: disabled_, ...props }) => {
             },
           },
         ],
-      ].map((sectionActions, i) => {
-        const sectionButtons = sectionActions.map((action) => (
-          <button key={action.key} type="button" {...action.props}>
-            {action.icon}
-          </button>
-        ));
+      ]
+        .filter(Boolean)
+        .map((sectionActions, i) => {
+          const sectionButtons = sectionActions.map((action) =>
+            action.type === "select" ? (
+              <Select key={action.key} {...action.props} />
+            ) : (
+              <button
+                key={action.key}
+                type="button"
+                data-button
+                {...action.props}
+              >
+                {action.icon}
+              </button>
+            )
+          );
 
-        if (i === 0) return sectionButtons;
+          if (i === 0) return sectionButtons;
 
-        return (
-          <React.Fragment key={i}>
-            <div role="separator" aria-orientation="vertical" />
-            {sectionButtons}
-          </React.Fragment>
-        );
-      })}
+          return (
+            <React.Fragment key={i}>
+              <div role="separator" aria-orientation="vertical" />
+              {sectionButtons}
+            </React.Fragment>
+          );
+        })}
     </div>
   );
 };
