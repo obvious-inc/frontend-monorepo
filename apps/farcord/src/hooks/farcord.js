@@ -5,17 +5,9 @@ import { useContractRead, useNetwork } from "wagmi";
 import { channelsReducer } from "../reducers/channels";
 import { optimism } from "wagmi/chains";
 import { idRegistryAbi } from "../abis/farc-id-registry";
+import { ID_REGISTRY_ADDRESS } from "../utils/farcaster";
 
 const { indexBy, sortBy } = arrayUtils;
-
-const NEYNAR_FARCASTER_CHANNELS_STATIC_LIST =
-  "https://raw.githubusercontent.com/pedropregueiro/farcaster-channels/main/warpcast.json";
-
-const WARPCAST_CHANNELS_INFO_ENDPOINT =
-  "https://client.warpcast.com/v2/channel";
-
-const FARCASTER_ID_REGISTRY_CONTRACT_ADDRESS =
-  "0x00000000FcAf86937e41bA038B4fA40BAA4B780A";
 
 export const DEFAULT_CHAIN_ID = optimism.id;
 
@@ -23,41 +15,16 @@ export const ChainDataCacheContext = React.createContext();
 export const ChainDataCacheDispatchContext = React.createContext();
 
 const farcasterChannelsFetch = () =>
-  fetch(NEYNAR_FARCASTER_CHANNELS_STATIC_LIST)
-    .then((res) => {
-      if (res.ok) return res.json();
-      return Promise.reject(new Error(res.statusText));
+  fetch(`${process.env.EDGE_API_BASE_URL}/channels`, {
+    headers: {
+      "Content-Type": "application/json",
+    },
+  })
+    .then((result) => {
+      return result.json();
     })
     .then((data) => {
-      return Promise.all(
-        data.map((channel) =>
-          fetch(WARPCAST_CHANNELS_INFO_ENDPOINT + "?key=" + channel.channel_id)
-            .then((res) => {
-              if (res.ok) return res.json();
-              else {
-                console.error(
-                  "Error fetching channel info for " + channel.channel_id
-                );
-                return null;
-              }
-            })
-            .then((body) => {
-              if (!body) return;
-              const warpcastChannel = body.result.channel;
-              return {
-                id: channel.channel_id,
-                parentUrl: channel.parent_url,
-                name: warpcastChannel.name,
-                imageUrl: warpcastChannel.fastImageUrl,
-                followerCount: warpcastChannel.followerCount,
-                description: warpcastChannel.description,
-              };
-            })
-        )
-      ).then((result) => {
-        // filter undefined keys
-        return result.filter((c) => c);
-      });
+      return data.channels;
     });
 
 export const ChainDataCacheContextProvider = ({ children }) => {
@@ -132,7 +99,7 @@ export const useWalletFarcasterId = (walletAddress) => {
   }, [walletAddress]);
 
   const { data, error } = useContractRead({
-    address: FARCASTER_ID_REGISTRY_CONTRACT_ADDRESS,
+    address: ID_REGISTRY_ADDRESS,
     abi: idRegistryAbi,
     functionName: "idOf",
     args: [walletAddress],
