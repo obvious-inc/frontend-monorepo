@@ -597,19 +597,21 @@ const ProposeScreen = () => {
                     gap: "1.6rem",
                   })}
                 >
-                  <div
-                    css={(t) =>
-                      css({
-                        padding: "0.8rem",
-                        borderTopLeftRadius: "0.3rem",
-                        borderTopRightRadius: "0.3rem",
-                        background: t.colors.backgroundPrimary,
-                        boxShadow: t.shadows.elevationHigh,
-                      })
-                    }
-                  >
-                    <EditorToolbar />
-                  </div>
+                  {editorMode === "rich-text" && (
+                    <div
+                      css={(t) =>
+                        css({
+                          padding: "0.8rem",
+                          borderTopLeftRadius: "0.3rem",
+                          borderTopRightRadius: "0.3rem",
+                          background: t.colors.backgroundPrimary,
+                          boxShadow: t.shadows.elevationHigh,
+                        })
+                      }
+                    >
+                      <EditorToolbar />
+                    </div>
+                  )}
                   {isDebugSession && (
                     <div
                       css={(t) =>
