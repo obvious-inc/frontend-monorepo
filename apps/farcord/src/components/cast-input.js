@@ -19,16 +19,10 @@ const CastInput = ({
   const { fid } = useFarcasterAccount();
   const { signer, broadcasted } = useSigner();
 
-  const channelName =
-    channel?.name == channel?.parentUrl ? channel?.name : `#${channel?.name}`;
-
-  const channelPlaceholderText = !channel
-    ? "Cast ..."
-    : isFeed
-    ? "Cast to your feed..."
-    : isRecent
-    ? "Cast away..."
-    : `Cast to ${channelName}`;
+  const channelPlaceholderText =
+    isFeed || isRecent || !channel
+      ? "Cast..."
+      : `Cast to channel ${channel?.name}...`;
 
   const replyPlaceholderText = `Reply to @${
     threadCast?.author.username
