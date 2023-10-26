@@ -12,7 +12,6 @@ import {
   Heart as HeartRegularIcon,
   HeartSolid as HeartSolidIcon,
 } from "@shades/ui-web/icons";
-import { array as arrayUtils } from "@shades/common/utils";
 import RichText from "./rich-text";
 import useFarcasterAccount from "./farcaster-account";
 import { useFarcasterChannelByUrl } from "../hooks/farcord";

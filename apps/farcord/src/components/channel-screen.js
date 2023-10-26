@@ -8,8 +8,6 @@ import {
   ChainDataCacheDispatchContext,
   useFarcasterChannel,
 } from "../hooks/farcord.js";
-import useSigner from "./signer";
-import { addCast } from "../hooks/hub.js";
 import {
   useChannelCacheContext,
   useChannelCasts,
@@ -19,14 +17,11 @@ import {
   useFeedCasts,
   useFeedCastsFetch,
 } from "../hooks/channel.js";
-import { toHex } from "viem";
 import useFarcasterAccount from "./farcaster-account.js";
-import MessageEditorForm from "./message-editor-form.js";
 import isHotkey from "is-hotkey";
 import { usePreviousValue } from "../hooks/previous-value.js";
-import { uploadImages as uploadImgurImages } from "../utils/imgur.js";
-import { parseBlocksToFarcasterComponents } from "../utils/message.js";
 import MetaTags_ from "./meta-tags.js";
+import CastInput from "./cast-input.js";
 
 export const ChannelCastsScrollView = ({
   channelId,
@@ -291,42 +286,8 @@ export const ChannelCastsScrollView = ({
 
 const ChannelView = ({ channelId, isFeed, isRecent }) => {
   const inputRef = React.useRef();
-  const { fid } = useFarcasterAccount();
-  const { signer, broadcasted } = useSigner();
-
-  const {
-    actions: { fetchChannelCasts, fetchFeedCasts },
-  } = useChannelCacheContext();
 
   const channel = useFarcasterChannel(channelId);
-
-  const placeholderText = broadcasted
-    ? "Compose your cast..."
-    : "Connect wallet to cast";
-
-  const onSubmit = async (blocks) => {
-    const parsedFarcasterComponents = parseBlocksToFarcasterComponents(blocks);
-
-    return addCast({
-      fid,
-      signer,
-      parentUrl: isFeed || isRecent ? null : channel.parentUrl,
-      text: parsedFarcasterComponents.text,
-      embeds: parsedFarcasterComponents.embeds,
-      mentions: parsedFarcasterComponents.mentions,
-      mentionsPositions: parsedFarcasterComponents.mentionsPositions,
-    })
-      .then((result) => {
-        return toHex(result.value.hash);
-      })
-      .then(() => {
-        if (isFeed || isRecent) return fetchFeedCasts({ fid, isFeed });
-        return fetchChannelCasts({ channel: channel });
-      })
-      .catch((e) => {
-        console.error(e);
-      });
-  };
 
   return (
     <div
@@ -350,18 +311,12 @@ const ChannelView = ({ channelId, isFeed, isRecent }) => {
         isRecent={isRecent}
       />
 
-      <div css={css({ padding: "0 1.6rem" })}>
-        <MessageEditorForm
-          ref={inputRef}
-          inline
-          uploadImage={uploadImgurImages}
-          disabled={!broadcasted}
-          placeholder={placeholderText}
-          submit={async (blocks) => {
-            await onSubmit(blocks);
-          }}
-        />
-      </div>
+      <CastInput
+        inputRef={inputRef}
+        isFeed={isFeed}
+        isRecent={isRecent}
+        channel={channel}
+      />
 
       <div css={css({ height: "2rem" })}></div>
     </div>

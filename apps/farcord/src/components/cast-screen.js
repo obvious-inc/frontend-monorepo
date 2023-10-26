@@ -2,23 +2,16 @@ import React from "react";
 import { css } from "@emotion/react";
 import Spinner from "@shades/ui-web/spinner";
 import { CastItem } from "./cast.js";
-import useSigner from "./signer.js";
-import { addCast } from "../hooks/hub.js";
-import { hexToBytes, toHex } from "viem";
 import ThreadNavBar from "./thread-navbar.js";
 import {
   useCast,
-  useChannelCacheContext,
   useThreadCasts,
   useThreadCastsFetch,
 } from "../hooks/channel.js";
-import useFarcasterAccount from "./farcaster-account.js";
-import MessageEditorForm from "./message-editor-form.js";
-import { uploadImages as uploadImgurImages } from "../utils/imgur.js";
-import { parseBlocksToFarcasterComponents } from "../utils/message.js";
 import MetaTags_ from "./meta-tags.js";
 import { useFarcasterChannelByUrl } from "../hooks/farcord.js";
 import { parseChannelFromUrl } from "../utils/channel.js";
+import CastInput from "./cast-input.js";
 
 const ThreadScrollView = ({ castHash }) => {
   const castsContainerRef = React.useRef();
@@ -154,42 +147,9 @@ const ThreadScrollView = ({ castHash }) => {
 
 export const ThreadScreen = ({ castHash }) => {
   const inputRef = React.useRef();
-  const { fid } = useFarcasterAccount();
-  const { signer, broadcasted } = useSigner();
   const cast = useCast(castHash);
 
-  const {
-    actions: { fetchThreadCasts },
-  } = useChannelCacheContext();
-
   useThreadCastsFetch({ threadCast: castHash, cursor: null });
-
-  const placeholderText = broadcasted
-    ? "Compose your reply..."
-    : "Connect wallet to cast";
-
-  const onSubmit = async (blocks) => {
-    const parsedFarcasterComponents = parseBlocksToFarcasterComponents(blocks);
-
-    return addCast({
-      fid,
-      signer,
-      parentCastId: { hash: hexToBytes(cast.hash), fid: cast.author.fid },
-      text: parsedFarcasterComponents.text,
-      embeds: parsedFarcasterComponents.embeds,
-      mentions: parsedFarcasterComponents.mentions,
-      mentionsPositions: parsedFarcasterComponents.mentionsPositions,
-    })
-      .then((result) => {
-        return toHex(result.value.hash);
-      })
-      .then(() => {
-        return fetchThreadCasts({ threadHash: castHash });
-      })
-      .catch((e) => {
-        console.error(e);
-      });
-  };
 
   return (
     <div
@@ -214,18 +174,7 @@ export const ThreadScreen = ({ castHash }) => {
 
       <ThreadScrollView castHash={castHash} />
 
-      <div css={css({ padding: "0 1.6rem" })}>
-        <MessageEditorForm
-          ref={inputRef}
-          inline
-          uploadImage={uploadImgurImages}
-          disabled={!broadcasted}
-          placeholder={placeholderText}
-          submit={async (blocks) => {
-            await onSubmit(blocks);
-          }}
-        />
-      </div>
+      <CastInput inputRef={inputRef} threadCast={cast} />
 
       <div css={css({ height: "2rem" })}></div>
     </div>
