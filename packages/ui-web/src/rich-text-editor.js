@@ -12,6 +12,7 @@ import isHotkey from "is-hotkey";
 import {
   function as functionUtils,
   url as urlUtils,
+  requestIdleCallback,
   getImageDimensionsFromUrl,
 } from "@shades/common/utils";
 import { ErrorBoundary } from "@shades/common/react";
@@ -243,7 +244,7 @@ const withEditorCommands = (editor) => {
   editor.focus = (location) => {
     return new Promise((resolve) => {
       // Whatever works
-      window.requestIdleCallback(() => {
+      requestIdleCallback(() => {
         Transforms.select(editor, location ?? Editor.end(editor, []));
         ReactEditor.focus(editor);
         resolve();

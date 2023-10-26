@@ -36,3 +36,8 @@ export const getImageDimensionsFromUrl = (url) =>
 
     img.src = url;
   });
+
+export const requestIdleCallback =
+  typeof window.requestIdleCallback === "function"
+    ? window.requestIdleCallback
+    : window.setTimeout;
