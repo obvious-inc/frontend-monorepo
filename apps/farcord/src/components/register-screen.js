@@ -41,6 +41,7 @@ import {
   REGISTER_REQUEST_VALIDATOR_EIP_712_DOMAIN,
   STORAGE_REGISTRY_ADDRESS,
 } from "../utils/farcaster";
+import { track } from "@vercel/analytics";
 
 const { truncateAddress } = ethereumUtils;
 
@@ -293,6 +294,9 @@ const RegisterView = () => {
     await registerNewAccount()
       .then((tx) => {
         setRegisterTransaction(tx.hash);
+      })
+      .then(() => {
+        track("Account created", { account: accountAddress });
       })
       .catch((e) => {
         console.error(e);
