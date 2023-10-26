@@ -43,6 +43,7 @@ export const isNodeEmpty = (el, options = {}) => {
     case "image-attachment":
     case "link":
     case "emoji":
+    case "code":
       return false;
 
     case "code-block":
@@ -74,6 +75,8 @@ export const fromMessageBlocks = (blocks) =>
   blocks.reduce((acc, n) => {
     if (n.type === "code-block")
       return [...acc, { ...n, children: [{ text: n.code }] }];
+
+    if (n.type === "code") return [...acc, { text: `\`${n.code}\`` }];
 
     if (n.type === "link")
       return [
