@@ -473,7 +473,25 @@ const RichTextEditor = React.forwardRef(
             }}
             css={(theme) => {
               const styles = createRichTextCss(theme);
-              return css({ ...styles, "a:hover": { textDecoration: "none" } });
+              return css({
+                ...styles,
+                "a:hover": { textDecoration: "none" },
+                "&[data-disabled]": {
+                  color: theme.colors.textMuted,
+                  cursor: "not-allowed",
+                  "[data-slate-placeholder]": {
+                    color: theme.colors.textMuted,
+                  },
+                },
+                "[data-slate-placeholder]": {
+                  color: theme.colors.inputPlaceholder,
+                  opacity: "1 !important",
+                  whiteSpace: "nowrap",
+                  overflow: "hidden",
+                  textOverflow: "ellipsis",
+                  top: 0,
+                },
+              });
             }}
             readOnly={disabled}
             data-disabled={disabled || undefined}

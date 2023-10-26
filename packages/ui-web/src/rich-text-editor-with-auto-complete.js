@@ -420,26 +420,6 @@ const RichTextEditorWithAutoComplete = React.forwardRef(
             setEmojiQuery(null);
             setCommandQuery(null);
           }}
-          css={(t) =>
-            css({
-              color: t.colors.textNormal,
-              "&[data-disabled]": {
-                color: t.colors.textMuted,
-                cursor: "not-allowed",
-                "[data-slate-placeholder]": {
-                  color: t.colors.textMuted,
-                },
-              },
-              "[data-slate-placeholder]": {
-                color: t.colors.inputPlaceholder,
-                opacity: "1 !important",
-                whiteSpace: "nowrap",
-                overflow: "hidden",
-                textOverflow: "ellipsis",
-                // top: 0,
-              },
-            })
-          }
           {...props}
         />
 

@@ -210,15 +210,7 @@ const CreateChannelDialogContent = ({
                 setBody(e);
               }}
               placeholder={`Use markdown shortcuts like "# " and "1. " to create headings and lists.`}
-              css={(t) =>
-                css({
-                  fontSize: t.text.sizes.large,
-                  "[data-slate-placeholder]": {
-                    opacity: "1 !important",
-                    color: t.colors.textMuted,
-                  },
-                })
-              }
+              css={(t) => css({ fontSize: t.text.sizes.large })}
               style={{ minHeight: "13.8rem" }}
             />
           </main>
