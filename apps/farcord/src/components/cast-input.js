@@ -72,7 +72,7 @@ const CastInput = ({
 
     return addCast(addCastData)
       .then((result) => {
-        track("cast", { author: fid, cast: result.value.hash });
+        track("cast", { author: Number(fid), cast: toHex(result.value.hash) });
         return toHex(result.value.hash);
       })
       .then(() => {

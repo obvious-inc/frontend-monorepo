@@ -10,6 +10,8 @@ import useSigner from "./signer";
 import { useConnect } from "wagmi";
 import { useNavigate } from "react-router-dom";
 import { DEFAULT_CHAIN_ID } from "../utils/farcaster";
+import { track } from "@vercel/analytics";
+import useFarcasterAccount from "./farcaster-account";
 
 const { truncateAddress } = ethereumUtils;
 
@@ -19,6 +21,7 @@ const NewSignerView = () => {
   const isSmallScreen = useMatchMedia("(max-width: 800px)");
   const { accountAddress } = useWallet();
 
+  const { fid } = useFarcasterAccount();
   const { error: walletError } = useConnect({
     chainId: DEFAULT_CHAIN_ID,
   });
@@ -41,11 +44,15 @@ const NewSignerView = () => {
 
   const handleCreateSignerClick = async () => {
     return createSigner().then((createdSigner) => {
-      return broadcastSigner({ publicKey: createdSigner?.publicKey }).then(
-        (txHash) => {
+      return broadcastSigner({ publicKey: createdSigner?.publicKey })
+        .then((txHash) => {
           setWaitingTransactionHash(txHash);
-        }
-      );
+        })
+        .then(() => {
+          track("Signer created", {
+            author: Number(fid),
+          });
+        });
     });
   };
 
