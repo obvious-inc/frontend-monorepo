@@ -5,7 +5,7 @@ import { array as arrayUtils } from "@shades/common/utils";
 const NEYNAR_V1_ENDPOINT = "https://api.neynar.com/v1/farcaster";
 const NEYNAR_V2_ENDPOINT = "https://api.neynar.com/v2/farcaster";
 
-const DEFAULT_PAGE_SIZE = 30;
+const DEFAULT_PAGE_SIZE = 75;
 
 export async function fetchNeynarFeedCasts({
   parentUrl,
