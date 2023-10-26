@@ -15,6 +15,7 @@ import Dialog from "@shades/ui-web/dialog";
 import CustodyWalletDialog from "./custody-wallet-dialog";
 import { ErrorBoundary } from "@shades/common/react";
 import AccountPreview from "./account-preview";
+import { track } from "@vercel/analytics";
 
 const { truncateAddress } = ethereumUtils;
 
@@ -30,6 +31,12 @@ const LoginView = () => {
   } = useWallet();
   const { connect, connectors, isLoading, pendingConnector } = useConnect({
     chainId: DEFAULT_CHAIN_ID,
+    onSuccess(data) {
+      track("Connect Wallet", {
+        account: data.account,
+        connector: data.connector?.name,
+      });
+    },
   });
   const { fid } = useFarcasterAccount();
   const { signer, broadcasted } = useSigner();

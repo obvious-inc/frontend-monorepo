@@ -18,6 +18,7 @@ import {
 } from "../hooks/farcord";
 import { fetchNeynarFeedCasts } from "../hooks/neynar";
 import { getChannelLink } from "../utils/channel";
+import { track } from "@vercel/analytics";
 
 const { createEmptyParagraphElement } = messageUtils;
 
@@ -248,7 +249,7 @@ const CreateChannelDialog = ({ dismiss, titleProps }) => {
                 throw new Error("Channel already exists");
               }
             })
-            .then(() => {
+            .then(async () => {
               return addCast({
                 fid,
                 signer,
@@ -258,11 +259,15 @@ const CreateChannelDialog = ({ dismiss, titleProps }) => {
                 return toHex(result.value.hash);
               });
             })
-            .then(() => {
+            .then(async () => {
               dispatch({
                 type: "add-channel-by-parent-url",
                 id: url,
                 value: url,
+              });
+              track("Channel created", {
+                creator: Number(fid),
+                channel: url,
               });
             })
             .then(() => {
