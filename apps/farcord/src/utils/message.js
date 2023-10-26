@@ -149,7 +149,7 @@ export const parseString = (text, mentionedProfiles) => {
               cleanedUrl = cleanedUrl.slice(0, -1);
             }
 
-            if (prev != null) prev.text = `${prev.text} `;
+            if (prev != null && prev.text) prev.text = `${prev.text} `;
             const url = new URL(cleanedUrl);
             const linkEl = { type: "link", url: url.href };
             if (trailingPart === "") return [...els, linkEl];
