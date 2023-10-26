@@ -290,7 +290,7 @@ export const toMarkdown = (blockElements) => {
 
       case "quote":
       case "callout":
-        return `\n\n> ${renderChildren()}`;
+        return `\n\n> ${renderChildren().trim().split("\n").join("\n> ")}`;
 
       case "bulleted-list":
       case "numbered-list": {
@@ -323,7 +323,7 @@ export const toMarkdown = (blockElements) => {
         return "\n\n---";
 
       case "code-block":
-        return `\n\n\`\`\`${renderChildren()}\`\`\``;
+        return `\n\n\`\`\`\n${el.code}\n\`\`\``;
 
       default:
         throw new Error(`Unknown element type: "${el.type}"`);

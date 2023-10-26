@@ -106,7 +106,10 @@ export const fromMessageBlocks = (blocks) =>
 
     if (n.children == null) return [...acc, n];
 
-    return [...acc, { ...n, children: fromMessageBlocks(n.children) }];
+    const children = fromMessageBlocks(n.children);
+    const nonEmptyChildren = children.length === 0 ? [{ text: "" }] : children;
+
+    return [...acc, { ...n, children: nonEmptyChildren }];
   }, []);
 
 export const search = (editor, query, options = {}) => {

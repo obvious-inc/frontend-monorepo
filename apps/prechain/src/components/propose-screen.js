@@ -8,7 +8,10 @@ import {
   useLatestCallback,
   AutoAdjustingHeightTextarea,
 } from "@shades/common/react";
-import { message as messageUtils } from "@shades/common/utils";
+import {
+  message as messageUtils,
+  markdown as markdownUtils,
+} from "@shades/common/utils";
 import { useAccountDisplayName } from "@shades/common/app";
 import {
   Plus as PlusIcon,
@@ -20,6 +23,8 @@ import RichTextEditor, {
   Provider as EditorProvider,
   Toolbar as EditorToolbar,
   isNodeEmpty as isRichTextEditorNodeEmpty,
+  toMessageBlocks as richTextToMessageBlocks,
+  fromMessageBlocks as messageToRichTextBlocks,
 } from "@shades/ui-web/rich-text-editor";
 import {
   useCollection as useDrafts,
@@ -31,12 +36,16 @@ import {
 } from "../hooks/dao-contract.js";
 import { useTokenBuyerEthNeeded } from "../hooks/misc-contracts.js";
 import { useCreateProposalCandidate } from "../hooks/data-contract.js";
+import useKeyboardShortcuts from "../hooks/keyboard-shortcuts.js";
 import Layout, { MainContentContainer } from "./layout.js";
 import FormattedDate from "./formatted-date.js";
 import FormattedNumber from "./formatted-number.js";
 import AccountPreviewPopoverTrigger from "./account-preview-popover-trigger.js";
 import { TransactionExplanation } from "./transaction-list.js";
 import ActionDialog from "./action-dialog.js";
+
+const isDebugSession =
+  new URLSearchParams(location.search).get("debug") != null;
 
 const decimalsByCurrency = {
   eth: 18,
@@ -133,6 +142,37 @@ const getActionTransactions = (a) => {
   }
 };
 
+const useEditorMode = (draft, { setBody }) => {
+  const [mode, setModeState] = React.useState(
+    typeof draft.body === "string" ? "markdown" : "rich-text"
+  );
+
+  const setMode = (newMode) => {
+    if (mode === newMode) return;
+
+    const transform = [mode, newMode].join(" -> ");
+
+    switch (transform) {
+      case "markdown -> rich-text": {
+        const messageBlocks = markdownUtils.toMessageBlocks(draft.body);
+        setBody(messageToRichTextBlocks(messageBlocks));
+        break;
+      }
+
+      case "rich-text -> markdown":
+        setBody(messageUtils.toMarkdown(richTextToMessageBlocks(draft.body)));
+        break;
+
+      default:
+        throw new Error(`unknown transform: "${transform}"`);
+    }
+
+    setModeState(newMode);
+  };
+
+  return [mode, setMode];
+};
+
 const ProposeScreen = () => {
   const { draftId } = useParams();
   const navigate = useNavigate();
@@ -152,9 +192,13 @@ const ProposeScreen = () => {
   const [selectedActionIndex, setSelectedActionIndex] = React.useState(null);
   const [showNewActionDialog, setShowNewActionDialog] = React.useState(false);
 
-  const isNameEmpty = draft == null || draft.name.trim() === "";
+  const [editorMode, setEditorMode] = useEditorMode(draft, { setBody });
+
+  const isNameEmpty = draft.name.trim() === "";
   const isBodyEmpty =
-    draft == null || draft.body.every(isRichTextEditorNodeEmpty);
+    typeof draft.body === "string"
+      ? draft.body.trim() === ""
+      : draft.body.every(isRichTextEditorNodeEmpty);
 
   const hasRequiredInput = !isNameEmpty && !isBodyEmpty;
 
@@ -190,9 +234,13 @@ const ProposeScreen = () => {
   const submit = async () => {
     setPendingRequest(true);
 
-    const description = `# ${draft.name.trim()}\n\n${messageUtils.toMarkdown(
-      draft.body
-    )}`;
+    const bodyMarkdown =
+      typeof draft.body === "string"
+        ? draft.body
+        : messageUtils.toMarkdown(richTextToMessageBlocks(draft.body));
+
+    const description = `# ${draft.name.trim()}\n\n${bodyMarkdown}`;
+
     const transactions = draft.actions.flatMap((a) => {
       const actionTransactions = getActionTransactions(a);
 
@@ -237,6 +285,13 @@ const ProposeScreen = () => {
   };
 
   const hasActions = draft.actions != null && draft.actions.length > 0;
+
+  useKeyboardShortcuts({
+    "$mod+Shift+m": (e) => {
+      e.preventDefault();
+      setEditorMode(editorMode === "rich-text" ? "markdown" : "rich-text");
+    },
+  });
 
   return (
     <>
@@ -370,17 +425,6 @@ const ProposeScreen = () => {
                         {hasActions ? "Add action" : "Add a proposal action"}
                       </Button>
                     </div>
-
-                    {/* <Button */}
-                    {/*   onClick={() => { */}
-                    {/*     console.log( */}
-                    {/*       messageUtils.toMarkdown(draft.body), */}
-                    {/*       draft.body */}
-                    {/*     ); */}
-                    {/*   }} */}
-                    {/* > */}
-                    {/*   Preview */}
-                    {/* </Button> */}
                   </div>
 
                   <div
@@ -467,7 +511,9 @@ const ProposeScreen = () => {
                   aria-label="Title"
                   rows={1}
                   value={draft.name}
-                  onChange={(e) => setName(e.target.value)}
+                  onChange={(e) => {
+                    setName(e.target.value);
+                  }}
                   autoFocus
                   disabled={hasPendingRequest}
                   placeholder="Untitled proposal"
@@ -502,27 +548,55 @@ const ProposeScreen = () => {
                     accountAddress={connectedAccountAddress}
                   />
                 </div>
-                <RichTextEditor
-                  ref={editorRef}
-                  value={draft.body}
-                  onChange={(e) => {
-                    setBody(e);
-                  }}
-                  placeholder={`Use markdown shortcuts like "# " and "1. " to create headings and lists.`}
-                  imagesMaxWidth={null}
-                  imagesMaxHeight={window.innerHeight / 2}
-                  css={(t) =>
-                    css({
-                      fontSize: t.text.sizes.large,
-                      "[data-slate-placeholder]": {
-                        opacity: "1 !important",
-                        color: t.colors.textMuted,
-                      },
-                    })
-                  }
-                  style={{ flex: 1, minHeight: "12rem" }}
-                />
-                <nav css={css({ position: "fixed", bottom: 0 })}>
+                {editorMode === "rich-text" ? (
+                  <RichTextEditor
+                    ref={editorRef}
+                    value={draft.body}
+                    onChange={(e) => {
+                      setBody(e);
+                    }}
+                    placeholder={`Use markdown shortcuts like "# " and "1. " to create headings and lists.`}
+                    imagesMaxWidth={null}
+                    imagesMaxHeight={window.innerHeight / 2}
+                    css={(t) =>
+                      css({
+                        fontSize: t.text.sizes.large,
+                        "[data-slate-placeholder]": {
+                          opacity: "1 !important",
+                          color: t.colors.textMuted,
+                        },
+                      })
+                    }
+                    style={{ flex: 1, minHeight: "12rem" }}
+                  />
+                ) : (
+                  <div style={{ flex: 1, minHeight: "12rem" }}>
+                    <AutoAdjustingHeightTextarea
+                      value={draft.body}
+                      onChange={(e) => {
+                        setBody(e.target.value);
+                      }}
+                      css={(t) =>
+                        css({
+                          outline: "none",
+                          border: 0,
+                          fontSize: t.text.sizes.large,
+                          color: t.colors.textNormal,
+                          padding: 0,
+                          width: "100%",
+                        })
+                      }
+                    />
+                  </div>
+                )}
+                <nav
+                  css={css({
+                    position: "fixed",
+                    bottom: 0,
+                    display: "flex",
+                    gap: "1.6rem",
+                  })}
+                >
                   <div
                     css={(t) =>
                       css({
@@ -536,6 +610,35 @@ const ProposeScreen = () => {
                   >
                     <EditorToolbar />
                   </div>
+                  {isDebugSession && (
+                    <div
+                      css={(t) =>
+                        css({
+                          padding: "0.8rem",
+                          borderTopLeftRadius: "0.3rem",
+                          borderTopRightRadius: "0.3rem",
+                          background: t.colors.backgroundPrimary,
+                          boxShadow: t.shadows.elevationHigh,
+                        })
+                      }
+                    >
+                      <Select
+                        aria-label="Editor mode"
+                        variant="transparent"
+                        size="small"
+                        fullWidth={false}
+                        width="max-content"
+                        value={editorMode}
+                        onChange={(value) => {
+                          setEditorMode(value);
+                        }}
+                        options={[
+                          { value: "rich-text", label: "Rich text" },
+                          { value: "markdown", label: "Markdown" },
+                        ]}
+                      />
+                    </div>
+                  )}
                 </nav>
               </div>
             </MainContentContainer>
