@@ -24,9 +24,13 @@ const CastInput = ({
       ? "Cast..."
       : `Cast to channel ${channel?.name}...`;
 
-  const replyPlaceholderText = `Reply to @${
-    threadCast?.author.username
-  }: ${threadCast?.text.slice(0, 50)}...`;
+  const replyTarget = threadCast?.author.username
+    ? `@${threadCast?.author.username}`
+    : threadCast?.author.displayName ?? threadCast?.author.fid;
+
+  const replyPlaceholderText = !threadCast
+    ? "Reply..."
+    : `Reply to ${replyTarget}: ${threadCast?.text.slice(0, 50)}...`;
 
   const placeholderText = !broadcasted
     ? "Sign in to cast"
