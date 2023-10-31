@@ -13,14 +13,78 @@ import { useFarcasterChannelByUrl } from "../hooks/farcord.js";
 import { parseChannelFromUrl } from "../utils/channel.js";
 import CastInput from "./cast-input.js";
 
+const RecursiveThreadView = ({ casts, level = 0 }) => {
+  const horizontalPadding = "1.6rem";
+  const leftPadding = `calc(${horizontalPadding} * ${level})`;
+
+  return (
+    <div>
+      {casts.map((cast) => (
+        <div key={cast.hash} css={{ paddingLeft: leftPadding }}>
+          <CastItem cast={cast} />
+          <div>
+            {cast.children && (
+              <RecursiveThreadView casts={cast.children} level={level + 1} />
+            )}
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+};
+
+const ThreadCasts = ({ castHash }) => {
+  const threadCasts = useThreadCasts(castHash);
+
+  const castsWithChildren = React.useMemo(() => {
+    if (!threadCasts) return null;
+    if (threadCasts.length == 0) return null;
+
+    const castsWithChildren = threadCasts.reduce((acc, cast) => {
+      if (cast.parentHash == castHash) {
+        acc.push(cast);
+      } else {
+        const parentCast = threadCasts.find((c) => c.hash == cast.parentHash);
+        parentCast.children = parentCast.children || [];
+        const childrenHashes = parentCast.children.map((c) => c.hash);
+        if (!childrenHashes.includes(cast.hash)) parentCast.children.push(cast);
+      }
+
+      return acc;
+    }, []);
+
+    return castsWithChildren;
+  }, [threadCasts, castHash]);
+
+  if (!threadCasts)
+    return (
+      <div
+        css={(t) =>
+          css({
+            flex: 1,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            paddingBottom: t.mainHeader.height,
+          })
+        }
+      >
+        <Spinner size="2.4rem" />
+      </div>
+    );
+
+  if (threadCasts?.length == 0) return <></>;
+
+  return <RecursiveThreadView casts={castsWithChildren} />;
+};
+
 const ThreadScrollView = ({ castHash }) => {
   const castsContainerRef = React.useRef();
   const scrollContainerRef = React.useRef();
 
   const cast = useCast(castHash);
-  const threadCasts = useThreadCasts(castHash);
 
-  if (!cast || !threadCasts) {
+  if (!cast) {
     return (
       <div
         css={(t) =>
@@ -108,35 +172,21 @@ const ThreadScrollView = ({ castHash }) => {
               })
             }
           >
-            <div css={css({ height: "1.3rem" })} />
             <div>
               <CastItem cast={cast} />
             </div>
             <div
               css={(theme) =>
                 css({
-                  height: "3rem",
                   margin: "1.6rem 0",
                   borderBottomColor: theme.colors.borderLight,
                   borderBottomWidth: "1px",
                   borderBottomStyle: "dashed",
-                  borderTopColor: theme.colors.borderLight,
-                  borderTopWidth: "1px",
-                  borderTopStyle: "dashed",
                 })
               }
             />
-            {threadCasts && (
-              <>
-                <div>
-                  {threadCasts
-                    .filter((c) => c.parentHash == cast.hash)
-                    .map((threadCast) => (
-                      <CastItem key={threadCast.hash} cast={threadCast} />
-                    ))}
-                </div>
-              </>
-            )}
+
+            <ThreadCasts castHash={castHash} />
             <div css={css({ height: "1.6rem" })} />
           </div>
         </div>
