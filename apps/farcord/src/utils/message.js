@@ -77,7 +77,7 @@ export const parseString = (text, mentionedProfiles) => {
   let string = text;
   if (!string || string?.trim() === "") return [];
 
-  const usernameMatches = [...string.matchAll(/@([\w]+(\.eth)?)/gi)];
+  const usernameMatches = [...string.matchAll(/@([\w-]+(\.eth)?)/gi)];
 
   // for each match, fetch user by username and replace with fid
   usernameMatches.map((match) => {
