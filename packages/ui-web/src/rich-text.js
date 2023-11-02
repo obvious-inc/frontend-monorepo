@@ -46,8 +46,12 @@ export const createCss = (t) => ({
   // :not(*:not(style) + *) is a hacky way of selecting the first child while
   // playing well with emotion’s SSR https://github.com/emotion-js/emotion/issues/1178
   // In case it’s not clear this is the most clever thing ever.
-  "li > p:not(*:not(style) + *):has(+ :is(ul, ol))": { marginBottom: 0 },
-  "li > p:not(*:not(style) + *) + :is(ul, ol):not(:has(+ *))": { marginTop: 0 },
+  "li > p:not(*:not(style) + *):has(+ :is(ul, ol))": {
+    marginBottom: "0 !important",
+  },
+  "li > p:not(*:not(style) + *) + :is(ul, ol):not(:has(+ *))": {
+    marginTop: "0 !important",
+  },
 
   // Scratch that, *this* is the most clever thing ever
   "li:has(+ li) > * + *:not(:has(+ *)):not(p:not(*:not(style) + *) + :is(ul, ol):not(:has(+ *)))":
