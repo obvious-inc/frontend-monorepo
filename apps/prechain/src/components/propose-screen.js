@@ -55,6 +55,19 @@ const decimalsByCurrency = {
   usdc: 6,
 };
 
+const retryPromise = (fn, { retries = 3, timeout = 1000 } = {}) =>
+  new Promise((resolve, reject) => {
+    fn().then(resolve, (e) => {
+      if (retries < 1) return reject(e);
+      setTimeout(() => {
+        retryPromise(fn, { retries: retries - 1, timeout }).then(
+          resolve,
+          reject
+        );
+      }, timeout);
+    });
+  });
+
 const getActionTransactions = (a) => {
   switch (a.type) {
     case "one-time-payment": {
@@ -276,18 +289,31 @@ const ProposeScreen = () => {
     return Promise.resolve()
       .then(() =>
         draftTargetType === "candidate"
-          ? createProposalCandidate({ slug, description, transactions }).then(
-              (candidate) => {
-                const candidateId = [
-                  connectedAccountAddress,
-                  encodeURIComponent(candidate.slug),
-                ].join("-");
-                navigate(`/candidates/${candidateId}`, { replace: true });
+          ? createProposalCandidate({
+              slug: candidateSlug,
+              description,
+              transactions,
+            }).then(async (candidate) => {
+              const candidateId = [
+                connectedAccountAddress,
+                encodeURIComponent(candidate.slug),
+              ].join("-");
+
+              await retryPromise(() => fetchProposalCandidate(candidateId), {
+                retries: 100,
+              });
+
+              navigate(`/candidates/${candidateId}`, { replace: true });
+            })
+          : createProposal({ description, transactions }).then(
+              async (proposal) => {
+                await retryPromise(() => fetchProposal(proposal.id), {
+                  retries: 100,
+                });
+
+                navigate(`/${proposal.id}`, { replace: true });
               }
             )
-          : createProposal({ description, transactions }).then((proposal) => {
-              navigate(`/${proposal.id}`, { replace: true });
-            })
       )
       .then(() => {
         deleteDraft(draftId);
