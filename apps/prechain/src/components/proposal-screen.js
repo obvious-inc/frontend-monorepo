@@ -26,7 +26,10 @@ import Dialog from "@shades/ui-web/dialog";
 import * as Tooltip from "@shades/ui-web/tooltip";
 import Spinner from "@shades/ui-web/spinner";
 import { extractAmounts as extractAmountsFromTransactions } from "../utils/transactions.js";
-import { buildFeed as buildProposalFeed } from "../utils/proposals.js";
+import {
+  buildFeed as buildProposalFeed,
+  isVotableState as isVotableProposalState,
+} from "../utils/proposals.js";
 import {
   useProposal,
   useProposalFetch,
@@ -128,12 +131,12 @@ const ProposalMainSection = ({ proposalId, scrollContainerRef }) => {
 
   const endBlock = proposal?.objectionPeriodEndBlock ?? proposal?.endBlock;
 
-  const hasVotingEnded = latestBlockNumber > Number(endBlock);
+  const hasVotingEnded =
+    latestBlockNumber > Number(endBlock) && proposal?.state !== "canceled";
   const hasVotingStarted =
     proposal?.startBlock != null &&
     latestBlockNumber > Number(proposal.startBlock);
-  const isVotingOngoing =
-    hasVotingStarted && !hasVotingEnded && proposal?.state !== "canceled";
+  const isVotingOngoing = hasVotingStarted && !hasVotingEnded;
 
   const sendProposalFeedback = useSendProposalFeedback(proposalId, {
     support: pendingSupport,
@@ -1404,6 +1407,8 @@ export const VoteDistributionToolTipContent = ({ votes, delegates }) => {
 
 const ProposalVoteStatusBar = React.memo(({ proposalId }) => {
   const proposal = useProposal(proposalId);
+  const isVotingOngoing = isVotableProposalState(proposal.state);
+
   const quorumVotes = useDynamicQuorum(proposalId);
   const delegateVotes = getDelegateVotes(proposal);
 
@@ -1460,15 +1465,17 @@ const ProposalVoteStatusBar = React.memo(({ proposalId }) => {
         }
       >
         <div>{quorumVotes != null && <>Quorum {quorumVotes}</>}</div>
-        <div>
-          {againstVotes <= forVotes && quorumVotes > forVotes && (
-            <>
-              {quorumVotes - forVotes} <span data-for>For</span>{" "}
-              {quorumVotes - forVotes === 1 ? "vote" : "votes"} left to meet
-              quorum
-            </>
-          )}
-        </div>
+        {isVotingOngoing && (
+          <div>
+            {againstVotes <= forVotes && quorumVotes > forVotes && (
+              <>
+                {quorumVotes - forVotes} <span data-for>For</span>{" "}
+                {quorumVotes - forVotes === 1 ? "vote" : "votes"} left to meet
+                quorum
+              </>
+            )}
+          </div>
+        )}
       </div>
     </div>
   );
