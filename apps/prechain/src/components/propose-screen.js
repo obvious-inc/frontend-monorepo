@@ -5,6 +5,7 @@ import { parseEther, parseUnits } from "viem";
 import { useAccount } from "wagmi";
 import { css } from "@emotion/react";
 import {
+  useFetch,
   useLatestCallback,
   AutoAdjustingHeightTextarea,
 } from "@shades/common/react";
@@ -34,6 +35,7 @@ import {
   useCreateProposal,
   useCanCreateProposal,
 } from "../hooks/dao-contract.js";
+import { useActions, useProposalCandidate } from "../store.js";
 import { useTokenBuyerEthNeeded } from "../hooks/misc-contracts.js";
 import { useCreateProposalCandidate } from "../hooks/data-contract.js";
 import useKeyboardShortcuts from "../hooks/keyboard-shortcuts.js";
@@ -178,6 +180,11 @@ const ProposeScreen = () => {
   const navigate = useNavigate();
 
   const { address: connectedAccountAddress } = useAccount();
+  const {
+    fetchProposal,
+    fetchProposalCandidate,
+    fetchProposalCandidatesByAccount,
+  } = useActions();
 
   const canCreateProposal = useCanCreateProposal();
 
@@ -201,7 +208,18 @@ const ProposeScreen = () => {
 
   const hasRequiredInput = !isNameEmpty && !isBodyEmpty;
 
-  const slug = draft?.name.trim().toLowerCase().replace(/\s+/g, "-");
+  const candidateSlug = draft?.name.trim().toLowerCase().replace(/\s+/g, "-");
+
+  const candidateId = [
+    connectedAccountAddress.toLowerCase(),
+    candidateSlug,
+  ].join("-");
+  const candidateSlugInUse = useProposalCandidate(candidateId) != null;
+
+  useFetch(
+    () => fetchProposalCandidatesByAccount(connectedAccountAddress),
+    [connectedAccountAddress]
+  );
 
   const selectedAction =
     selectedActionIndex >= 0 ? draft.actions[selectedActionIndex] : null;
@@ -541,11 +559,17 @@ const ProposeScreen = () => {
                     })
                   }
                 >
-                  By{" "}
-                  <AccountPreviewPopoverTrigger
-                    // showAvatar
-                    accountAddress={connectedAccountAddress}
-                  />
+                  {draftTargetType === "candidate" && candidateSlugInUse ? (
+                    <>Slug already in use</>
+                  ) : (
+                    <>
+                      By{" "}
+                      <AccountPreviewPopoverTrigger
+                        // showAvatar
+                        accountAddress={connectedAccountAddress}
+                      />
+                    </>
+                  )}
                 </div>
                 {editorMode === "rich-text" ? (
                   <RichTextEditor

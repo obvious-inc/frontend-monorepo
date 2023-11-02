@@ -262,6 +262,39 @@ const createProposalCandidateQuery = (id) => `{
   }
 }`;
 
+const createProposalCandidatesByAccountQuery = (accountAddress) => `{
+  proposalCandidates(where: { proposer: "${accountAddress}" }) {
+    id
+    slug
+    proposer
+    createdBlock
+    canceledBlock
+    lastUpdatedBlock
+    canceledTimestamp
+    createdTimestamp
+    lastUpdatedTimestamp
+    latestVersion {
+      id
+      content {
+        title
+        matchingProposalIds
+        proposalIdToUpdate
+        contentSignatures {
+          reason
+          canceled
+          expirationTimestamp
+          signer {
+            id
+            nounsRepresented {
+              id
+            }
+          }
+        }
+      }
+    }
+  }
+}`;
+
 const createProposalCandidateFeedbackPostsByCandidateQuery = (candidateId) => `
 ${CANDIDATE_FEEDBACK_FIELDS}
 query {
@@ -578,6 +611,17 @@ export const fetchDelegates = (chainId) =>
   subgraphFetch({ chainId, query: DELEGATES_QUERY }).then((data) =>
     data.delegates.map(parseDelegate)
   );
+
+export const fetchProposalCandidatesByAccount = (chainId, accountAddress) =>
+  subgraphFetch({
+    chainId,
+    query: createProposalCandidatesByAccountQuery(accountAddress),
+  }).then((data) => {
+    const candidates = data.proposalCandidates.map((c) =>
+      parseProposalCandidate(c, { chainId })
+    );
+    return candidates;
+  });
 
 export const fetchBrowseScreenData = (chainId, options) =>
   subgraphFetch({ chainId, query: createBrowseScreenQuery(options) }).then(

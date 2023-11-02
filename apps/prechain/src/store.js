@@ -204,6 +204,23 @@ const useStore = createZustandStoreHook((set) => {
           delegatesById: arrayUtils.indexBy((d) => d.id, delegates),
         }));
       }),
+    fetchProposalCandidatesByAccount: (chainId, accountAddress) =>
+      NounsSubgraph.fetchProposalCandidatesByAccount(
+        chainId,
+        accountAddress
+      ).then((candidates) => {
+        const fetchedCandidatesById = arrayUtils.indexBy(
+          (p) => p.id.toLowerCase(),
+          candidates
+        );
+        set((s) => ({
+          proposalCandidatesById: objectUtils.merge(
+            mergeProposalCandidates,
+            s.proposalCandidatesById,
+            fetchedCandidatesById
+          ),
+        }));
+      }),
     fetchBrowseScreenData: (chainId, options) =>
       NounsSubgraph.fetchBrowseScreenData(chainId, options).then(
         ({ proposals, candidates }) => {
@@ -317,6 +334,9 @@ export const useActions = () => {
   const fetchProposal = useStore((s) => s.fetchProposal);
   const fetchProposalCandidate = useStore((s) => s.fetchProposalCandidate);
   const fetchDelegates = useStore((s) => s.fetchDelegates);
+  const fetchProposalCandidatesByAccount = useStore(
+    (s) => s.fetchProposalCandidatesByAccount
+  );
   const fetchNounsActivity = useStore((s) => s.fetchNounsActivity);
   const fetchBrowseScreenData = useStore((s) => s.fetchBrowseScreenData);
   const fetchPropdates = useStore((s) => s.fetchPropdates);
@@ -339,6 +359,10 @@ export const useActions = () => {
     fetchDelegates: React.useCallback(
       (...args) => fetchDelegates(chainId, ...args),
       [fetchDelegates, chainId]
+    ),
+    fetchProposalCandidatesByAccount: React.useCallback(
+      (...args) => fetchProposalCandidatesByAccount(chainId, ...args),
+      [fetchProposalCandidatesByAccount, chainId]
     ),
     fetchNounsActivity: React.useCallback(
       (...args) => fetchNounsActivity(chainId, ...args),
