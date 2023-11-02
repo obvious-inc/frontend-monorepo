@@ -39,6 +39,7 @@ const isNodeEmpty = (node, options = {}) => {
     return trim ? node.text.trim() === "" : node.text === "";
 
   switch (node.type) {
+    case "emoji":
     case "user":
     case "channel-link":
     case "image":
