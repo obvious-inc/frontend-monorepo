@@ -200,8 +200,20 @@ const useStore = createZustandStoreHook((set) => {
     fetchProposalCandidate,
     fetchDelegates: (chainId) =>
       NounsSubgraph.fetchDelegates(chainId).then((delegates) => {
-        set(() => ({
-          delegatesById: arrayUtils.indexBy((d) => d.id, delegates),
+        set((s) => ({
+          delegatesById: {
+            ...s.delegatesById,
+            ...arrayUtils.indexBy((d) => d.id, delegates),
+          },
+        }));
+      }),
+    fetchDelegate: (chainId, id) =>
+      NounsSubgraph.fetchDelegate(chainId, id).then((delegate) => {
+        set((s) => ({
+          delegatesById: {
+            ...s.delegatesById,
+            [id?.toLowerCase()]: delegate,
+          },
         }));
       }),
     fetchBrowseScreenData: (chainId, options) =>
@@ -317,6 +329,7 @@ export const useActions = () => {
   const fetchProposal = useStore((s) => s.fetchProposal);
   const fetchProposalCandidate = useStore((s) => s.fetchProposalCandidate);
   const fetchDelegates = useStore((s) => s.fetchDelegates);
+  const fetchDelegate = useStore((s) => s.fetchDelegate);
   const fetchNounsActivity = useStore((s) => s.fetchNounsActivity);
   const fetchBrowseScreenData = useStore((s) => s.fetchBrowseScreenData);
   const fetchPropdates = useStore((s) => s.fetchPropdates);
@@ -335,6 +348,10 @@ export const useActions = () => {
     fetchProposalCandidate: React.useCallback(
       (...args) => fetchProposalCandidate(chainId, ...args),
       [fetchProposalCandidate, chainId]
+    ),
+    fetchDelegate: React.useCallback(
+      (...args) => fetchDelegate(chainId, ...args),
+      [fetchDelegate, chainId]
     ),
     fetchDelegates: React.useCallback(
       (...args) => fetchDelegates(chainId, ...args),
@@ -360,6 +377,25 @@ export const useDelegate = (id) =>
 export const useDelegatesFetch = () => {
   const { fetchDelegates } = useActions();
   useFetch(() => fetchDelegates(), [fetchDelegates]);
+};
+
+export const useDelegateFetch = (id, options) => {
+  const { data: blockNumber } = useBlockNumber({
+    watch: true,
+    cacheTime: 10_000,
+  });
+  const onError = useLatestCallback(options?.onError);
+
+  const { fetchDelegate } = useActions();
+
+  useFetch(
+    () =>
+      fetchDelegate(id).catch((e) => {
+        if (onError == null) return Promise.reject(e);
+        onError(e);
+      }),
+    [fetchDelegate, id, onError, blockNumber]
+  );
 };
 
 export const useProposalFetch = (id, options) => {

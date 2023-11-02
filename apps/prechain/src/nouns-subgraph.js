@@ -25,6 +25,9 @@ fragment VoteFields on Vote {
   voter {
     id
   }
+  proposal {
+    id
+  }
 }`;
 
 const CANDIDATE_FEEDBACK_FIELDS = `
@@ -65,7 +68,9 @@ fragment ProposalFeedbackFields on ProposalFeedback {
   }
 }`;
 
-const DELEGATES_QUERY = `{
+const DELEGATES_QUERY = `
+${VOTE_FIELDS}
+query {
   delegates(first: 1000, where: {nounsRepresented_: {}}) {
     id
     nounsRepresented {
@@ -84,7 +89,37 @@ const DELEGATES_QUERY = `{
         }
       }
     }
+    votes (orderBy: blockNumber, orderDirection: desc) {
+      ...VoteFields
+    }
   }
+}`;
+
+const createDelegateQuery = (id) => `
+  ${VOTE_FIELDS}
+  query {
+    delegate(id: "${id}") {
+      id
+      nounsRepresented {
+        id
+        seed {
+          head
+          glasses
+          body
+          background
+          accessory
+        }
+        owner {
+          id
+          delegate {
+            id
+          }
+        }
+      }
+      votes (orderBy: blockNumber, orderDirection: desc) {
+        ...VoteFields
+      }
+    }
 }`;
 
 const createBrowseScreenQuery = ({ skip = 0, first = 1000 } = {}) => `
@@ -513,6 +548,11 @@ const parseDelegate = (data) => {
       .filter((n) => n.delegateId == null || n.delegateId === data.id)
   );
 
+  if (data.votes != null)
+    parsedData.votes = data.votes
+      .map(parseProposalVote)
+      .filter((v) => !hideProposalVote(v));
+
   return parsedData;
 };
 
@@ -578,6 +618,15 @@ export const fetchDelegates = (chainId) =>
   subgraphFetch({ chainId, query: DELEGATES_QUERY }).then((data) =>
     data.delegates.map(parseDelegate)
   );
+
+export const fetchDelegate = (chainId, id) =>
+  subgraphFetch({
+    chainId,
+    query: createDelegateQuery(id?.toLowerCase()),
+  }).then((data) => {
+    if (data.delegate == null) return Promise.reject(new Error("not-found"));
+    return parseDelegate(data.delegate);
+  });
 
 export const fetchBrowseScreenData = (chainId, options) =>
   subgraphFetch({ chainId, query: createBrowseScreenQuery(options) }).then(
