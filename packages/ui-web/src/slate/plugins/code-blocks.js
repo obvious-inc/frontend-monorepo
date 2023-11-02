@@ -31,22 +31,22 @@ const middleware = (editor) => {
     }
 
     const characterBeforeCursor = Editor.string(editor, {
-      anchor: Editor.before(editor, selection.anchor),
+      anchor: editor.before(selection.anchor),
       focus: selection.focus,
     });
     const textAfterCursor = Editor.string(editor, {
       anchor: selection.anchor,
-      focus: Editor.end(editor, matchEntry[1]),
+      focus: editor.end(matchEntry[1]),
     });
 
-    if (characterBeforeCursor !== "\n" || textAfterCursor.trim() !== "") {
+    if (characterBeforeCursor === "\n" && textAfterCursor.trim() === "") {
       deleteBackward(...args);
+      editor.insertBreak();
+      editor.setNodes({ type: "paragraph" });
       return;
     }
 
     deleteBackward(...args);
-    Editor.insertBreak(editor);
-    Transforms.setNodes(editor, { type: "paragraph" });
   };
 
   return compose(

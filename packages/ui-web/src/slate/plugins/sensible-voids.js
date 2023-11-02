@@ -1,12 +1,12 @@
-import { Editor, Node, Path, Range, Transforms } from "slate";
+import { Editor, Node, Path, Range } from "slate";
 
 // https://github.com/ianstormtaylor/slate/issues/3991
 const middleware = (editor) => {
   const { deleteBackward, insertBreak } = editor;
 
-  // if current selection is void node, insert a default node below
+  // if current selection is a void node, insert a default node below
   editor.insertBreak = () => {
-    if (!editor.selection || !Range.isCollapsed(editor.selection)) {
+    if (editor.selection == null || !Range.isCollapsed(editor.selection)) {
       insertBreak();
       return;
     }
@@ -15,7 +15,7 @@ const middleware = (editor) => {
     const selectedNode = Node.get(editor, selectedNodePath);
 
     if (Editor.isVoid(editor, selectedNode)) {
-      Editor.insertNode(editor, {
+      editor.insertNode({
         type: "paragraph",
         children: [{ text: "" }],
       });
@@ -49,7 +49,7 @@ const middleware = (editor) => {
     if (parentIsEmpty) {
       const prevNode = Node.get(editor, Path.previous(parentPath));
       if (Editor.isVoid(editor, prevNode)) {
-        Transforms.removeNodes(editor);
+        editor.removeNodes();
         return;
       }
     }

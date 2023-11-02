@@ -272,76 +272,97 @@ export const toMarkdown = (blockElements) => {
     return text;
   };
 
-  const renderElement = (el) => {
+  const renderBlockElement = (el, { indent: indent_ = 0 } = {}) => {
+    const indent = "".padStart(indent_, " ");
     const renderChildren = () => el.children.map(renderNode).join("");
 
     switch (el.type) {
       case "paragraph":
-        return `\n\n${renderChildren()}`;
+        return `${indent}${renderChildren()}`;
 
       case "heading-1":
-        return `\n\n# ${renderChildren()}`;
+        return `${indent}# ${renderChildren()}`;
       case "heading-2":
-        return `\n\n## ${renderChildren()}`;
+        return `${indent}## ${renderChildren()}`;
       case "heading-3":
-        return `\n\n### ${renderChildren()}`;
+        return `${indent}### ${renderChildren()}`;
       case "heading-4":
-        return `\n\n#### ${renderChildren()}`;
+        return `${indent}#### ${renderChildren()}`;
 
       case "quote":
       case "callout":
-        return `\n\n> ${renderChildren().trim().split("\n").join("\n> ")}`;
+        return `${indent}> ${renderChildren().trim().split("\n").join("\n> ")}`;
 
       case "bulleted-list":
       case "numbered-list": {
         const isBulletList = el.type === "bulleted-list";
-        const children = el.children.map((el, i) => {
+        const children = el.children.map((el, i, els) => {
           const prefix = isBulletList ? "-" : `${i + 1}.`;
-          const children = el.children.map(renderNode).join("");
-          return `${prefix} ${children}`;
+          const renderedListItemChildren = el.children.map((el, i) =>
+            renderBlockElement(el, {
+              indent: i === 0 ? 0 : indent_ + prefix.length + 1,
+            })
+          );
+
+          // Special case to make nested lists look nicer
+          if (
+            el.children.length === 2 &&
+            el.children[0].type === "paragraph" &&
+            ["bulleted-list", "numbered-list"].includes(el.children[1].type)
+          )
+            return `${indent}${prefix} ${renderedListItemChildren.join("\n")}`;
+
+          const renderedListItem = `${indent}${prefix} ${renderedListItemChildren.join(
+            "\n\n"
+          )}`;
+
+          if (i !== els.length - 1 && el.children.length > 1)
+            return renderedListItem + "\n";
+
+          return renderedListItem;
         });
-        return `\n\n${children.join("\n")}`;
+
+        return `${children.join("\n")}`;
       }
 
-      case "link":
-        return `[${el.text ?? el.url}](${el.url})`;
-
-      case "emoji":
-        return el.emoji;
-
+      case "image-grid":
       case "attachments": {
         const children = el.children.map(
           (el) => `![${el.text ?? el.url}](${el.url})`
         );
-        return `\n\n${children.join("\n\n")()}`;
+        return `${indent}${children.join("\n")}`;
       }
 
       case "image":
-        return `\n\n![${el.text ?? el.url}](${el.url})`;
+        return `${indent}![${el.text ?? el.url}](${el.url})`;
 
       case "horizontal-divider":
-        return "\n\n---";
+        return `${indent}---`;
 
       case "code-block":
-        return `\n\n\`\`\`\n${el.code}\n\`\`\``;
+        return `${indent}\`\`\`\n${el.code}\n\`\`\``;
 
       default:
         throw new Error(`Unknown element type: "${el.type}"`);
     }
   };
 
-  const renderNode = (n, i) => {
-    if (n.text != null) return renderTextNode(n);
-    return renderElement(n, i);
+  const renderNode = (node) => {
+    if (node.type == null || node.type === "text") return renderTextNode(node);
+
+    switch (node.type) {
+      case "link":
+        return `[${node.label ?? node.text ?? node.url}](${node.url})`;
+
+      case "emoji":
+        return node.emoji;
+
+      default:
+        throw new Error(`Unknown node type: "${node.type}"`);
+    }
   };
 
-  return (
-    blockElements
-      .map(renderElement)
-      .join("")
-      // Gets rid of the the outer paragraph line breaks
-      .trim()
-  );
+  return blockElements.map(renderBlockElement).join("\n\n");
 };
 
 export const createParagraphElement = (content = "") => ({

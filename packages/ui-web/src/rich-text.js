@@ -9,16 +9,19 @@ export const MULTI_IMAGE_ATTACHMENT_MAX_WIDTH = 280;
 export const MULTI_IMAGE_ATTACHMENT_MAX_HEIGHT = 240;
 
 const DEFAULT_BLOCK_GAP = "1.25em";
+const DEFAULT_COMPACT_BLOCK_GAP = "0.625em";
 
+// note: emotion doesn’t accept :is without a leading star in some cases (*:is)
 export const createCss = (t) => ({
   "--default-block-gap": DEFAULT_BLOCK_GAP,
+  "--default-compact-block-gap": DEFAULT_COMPACT_BLOCK_GAP,
 
   // Paragraphs
   p: {
     margin: "0",
   },
-  "* + p": { marginTop: "0.625em" },
-  "p:has(+ *)": { marginBottom: "0.625em" },
+  "* + p": { marginTop: "var(--default-compact-block-gap)" },
+  "p:has(+ *)": { marginBottom: "var(--default-compact-block-gap)" },
 
   // Lists
   "ul, ol": {
@@ -32,9 +35,23 @@ export const createCss = (t) => ({
   ol: {
     listStyleType: "decimal",
   },
-  "* + ul, * + ol": { marginTop: "var(--default-block-gap)" },
-  "ul:has(+ *), ol:has(+ *)": { marginBottom: "var(--default-block-gap)" },
-  "ul ul, ol ol, ul ol, ol ul": { margin: 0 },
+  "* + :is(ul, ol)": { marginTop: "var(--default-block-gap)" },
+  "*:is(ul, ol):has(+ *)": { marginBottom: "var(--default-block-gap)" },
+  "*:is(ul, ol) :is(ul, ol)": { margin: 0 },
+  // This mess removes any margins between a leading paragrah followed by a
+  // single list element inside a list item. This make simple nested lists look
+  // and feel nicer since the elements stay in place when you indent, preventing
+  // a vertical placement shift.
+  //
+  // :not(*:not(style) + *) is a hacky way of selecting the first child while
+  // playing well with emotion’s SSR https://github.com/emotion-js/emotion/issues/1178
+  // In case it’s not clear this is the most clever thing ever.
+  "li > p:not(*:not(style) + *):has(+ :is(ul, ol))": { marginBottom: 0 },
+  "li > p:not(*:not(style) + *) + :is(ul, ol):not(:has(+ *))": { marginTop: 0 },
+
+  // Scratch that, *this* is the most clever thing ever
+  "li:has(+ li) > * + *:not(:has(+ *)):not(p:not(*:not(style) + *) + :is(ul, ol):not(:has(+ *)))":
+    { paddingBottom: "var(--default-compact-block-gap)" },
 
   // Headings
   h1: { fontSize: "1.375em" },
@@ -45,17 +62,12 @@ export const createCss = (t) => ({
   "* + h2": { marginTop: "1.5em" },
   "h2:has(+ *)": { marginBottom: "0.8em" },
   "* + h3, * + h4, * + h5, * + h6": { marginTop: "1.5em" },
-  "h3:has(+ *), h4:has(+ *), h5:has(+ *), h6:has(+ *)": {
+  "*:is(h3, h4, h5, h6):has(+ *)": {
     marginBottom: "0.5em",
   },
 
   // Heading overrides some other block elements’ top spacing
-  [["p", "ul", "ol"]
-    .map(
-      (el) =>
-        `h1 + ${el}, h2 + ${el}, h3 + ${el}, h4 + ${el}, h5 + ${el}, h6 + ${el}`
-    )
-    .join(", ")]: { marginTop: 0 },
+  "*:is(h1, h2, h3, h4, h5, h6) + *:is(p, ul, ol)": { marginTop: 0 },
 
   // Quotes
   blockquote: {
@@ -149,11 +161,23 @@ export const createCss = (t) => ({
     },
     "& > img": { display: "block" },
   },
+  ".grid > *": {
+    display: "flex",
+    alignItems: "flex-start",
+    justifyContent: "flex-start",
+    flexWrap: "wrap",
+    margin: "-1rem 0 0 -1rem",
+    "& > *": {
+      margin: "1rem 0 0 1rem",
+    },
+  },
+  "* + .grid": { marginTop: "var(--default-block-gap)" },
+  ".grid:has(+ *)": { marginBottom: "var(--default-block-gap)" },
 
   // Horizontal dividers
   '[role="separator"], hr': {
     border: 0,
-    padding: "0.625em 0",
+    padding: "var(--default-compact-block-gap) 0",
     borderRadius: "0.3rem",
     ":after": {
       content: '""',
@@ -189,7 +213,7 @@ export const createCss = (t) => ({
   // Inline mode
   '&[data-inline="true"]': {
     // All block elements
-    'p, ul, ol, li, h1, h2, h3, blockquote, aside, code, button.image, [role="separator"], hr':
+    'p, ul, ol, li, h1, h2, h3, h4, h5 ,h6, blockquote, aside, pre:has(code), .grid, table, button.image, [role="separator"], hr':
       {
         display: "inline",
         padding: 0,
@@ -202,26 +226,23 @@ export const createCss = (t) => ({
     "* + p:before": {
       display: "block",
       content: '""',
-      marginTop: "0.625em",
+      marginTop: "var(--default-compact-block-gap)",
     },
     "p:has(+ *):after": {
       display: "block",
       content: '""',
-      marginBottom: "0.625em",
+      marginBottom: "var(--default-compact-block-gap)",
     },
-    // "p, blockquote, pre:has(code), .image": {
-    //   marginTop: "0.625em",
-    // },
-    [["blockquote", "pre:has(code)", ".image", "table"]
-      .map((selector) => `* + ${selector}`)
-      .join(", ")]: {
-      marginTop: "0.625em",
-    },
-    [["blockquote", "pre:has(code)", ".image", "table"]
-      .map((selector) => `${selector}:has(+ *)`)
-      .join(", ")]: {
-      marginBottom: "0.625em",
-    },
+  },
+  '&[data-compact="true"], li': {
+    '* + *:is(ul, ol, blockquote, aside, pre:has(code), .grid, table, [role="separator"], hr)':
+      {
+        marginTop: "var(--default-compact-block-gap)",
+      },
+    '*:is(ul, ol, blockquote, aside, pre:has(code), .grid, table, [role="separator"], hr):has(+ *)':
+      {
+        marginBottom: "var(--default-compact-block-gap)",
+      },
   },
 });
 
@@ -392,19 +413,11 @@ const createRenderer = ({
           <div
             key={i}
             className="grid"
-            css={css({
-              paddingTop: "0.5rem",
-              display: "flex",
-              alignItems: "flex-start",
-              justifyContent: "flex-start",
-              flexWrap: "wrap",
-              margin: "-1rem 0 0 -1rem",
-              "& > *": {
-                margin: "1rem 0 0 1rem",
-              },
-            })}
+            style={{
+              paddingTop: el.type === "attachments" ? "0.5rem" : undefined,
+            }}
           >
-            {children()}
+            <div>{children()}</div>
           </div>
         );
       }

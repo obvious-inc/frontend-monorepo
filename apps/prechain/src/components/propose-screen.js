@@ -183,10 +183,9 @@ const ProposeScreen = () => {
 
   const [draftTargetType, setDraftTargetType] = React.useState("candidate");
 
-  const editorRef = React.useRef();
-
   const { deleteItem: deleteDraft } = useDrafts();
   const [draft, { setName, setBody, setActions }] = useDraft(draftId);
+  // console.log(draft.body);
 
   const [hasPendingRequest, setPendingRequest] = React.useState(false);
   const [selectedActionIndex, setSelectedActionIndex] = React.useState(null);
@@ -550,7 +549,6 @@ const ProposeScreen = () => {
                 </div>
                 {editorMode === "rich-text" ? (
                   <RichTextEditor
-                    ref={editorRef}
                     value={draft.body}
                     onChange={(e) => {
                       setBody(e);
@@ -576,6 +574,7 @@ const ProposeScreen = () => {
                           color: t.colors.textNormal,
                           padding: 0,
                           width: "100%",
+                          fontFamily: t.fontStacks.monospace,
                         })
                       }
                     />

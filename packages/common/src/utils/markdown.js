@@ -11,8 +11,8 @@ const decodeHtmlEntities = (string) => {
   return textareaEl.value;
 };
 
-const parseChildren = (token, parse, context_) => {
-  const { list, ...context } = context_ ?? {};
+const parseChildren = (token, parse, context_ = {}) => {
+  const { list, ...context } = context_;
   const children = list ? token.items : token.tokens;
   return children.reduce((parsedChildren, token) => {
     const parsedChild = parse(token, context);
@@ -22,7 +22,7 @@ const parseChildren = (token, parse, context_) => {
   }, []);
 };
 
-const parseToken = (token, context) => {
+const parseToken = (token, context = {}) => {
   switch (token.type) {
     case "paragraph":
       return {
@@ -39,13 +39,19 @@ const parseToken = (token, context) => {
     case "list":
       return {
         type: token.ordered ? "numbered-list" : "bulleted-list",
-        children: parseChildren(token, parseToken, { ...context, list: true }),
+        children: parseChildren(token, parseToken, {
+          ...context,
+          list: true,
+        }),
       };
 
     case "list_item":
       return {
         type: "list-item",
-        children: parseChildren(token, parseToken, context),
+        children: parseChildren(token, parseToken, {
+          ...context,
+          listMode: "normal", // token.loose ? "normal" : "simple",
+        }),
       };
 
     case "blockquote":
@@ -104,6 +110,7 @@ const parseToken = (token, context) => {
       return {
         type: "link",
         url: token.href,
+        label: hasLabel ? token.text : null,
         children: parseChildren(token, parseToken, {
           ...context,
           link: true,
@@ -134,8 +141,12 @@ const parseToken = (token, context) => {
       return { type: "text", text: token.text };
 
     case "text": {
-      if (token.tokens != null)
-        return parseChildren(token, parseToken, context);
+      if (token.tokens != null) {
+        const { listMode, ...context_ } = context;
+        const children = parseChildren(token, parseToken, context_);
+        if (listMode == null || listMode === "simple") return children;
+        return { type: "paragraph", children };
+      }
 
       const text = decodeHtmlEntities(token.text);
 

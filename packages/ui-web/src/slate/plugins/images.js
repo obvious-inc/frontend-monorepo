@@ -1,35 +1,62 @@
-import { Transforms } from "slate";
+import { Path, Node } from "slate";
 import { useSelected, useFocused } from "slate-react";
-import {
-  dimension as dimensionUtils,
-  function as functionUtils,
-} from "@shades/common/utils";
+import { dimension as dimensionUtils } from "@shades/common/utils";
 import {
   SINGLE_IMAGE_ATTACHMENT_MAX_WIDTH,
   SINGLE_IMAGE_ATTACHMENT_MAX_HEIGHT,
 } from "../../rich-text.js";
-import { withEmptyBlockBackwardDeleteTransform } from "../utils.js";
 import Image from "../../image.js";
 
-const ELEMENT_TYPE = "image";
+const isProduction = process.env.NODE_ENV === "production";
+
+const IMAGE_ELEMENT_TYPE = "image";
+const IMAGE_CONTAINER_ELEMENT_TYPE = "image-grid";
 
 const middleware = (editor) => {
-  const { normalizeNode, isVoid } = editor;
+  const { normalizeNode, isVoid, insertBreak, insertSoftBreak } = editor;
 
-  editor.isVoid = (element) => {
-    return element.type === ELEMENT_TYPE || isVoid(element);
-  };
+  editor.isVoid = (node) => node.type === IMAGE_ELEMENT_TYPE || isVoid(node);
 
-  editor.normalizeNode = ([node, path]) => {
-    if (node.type !== ELEMENT_TYPE) {
-      normalizeNode([node, path]);
+  const normalizeImageElement = ([node, path]) => {
+    const [parentNode, parentPath] = editor.parent(path) ?? [];
+
+    if (parentNode?.type !== IMAGE_CONTAINER_ELEMENT_TYPE) {
+      editor.wrapNodes(
+        { type: IMAGE_CONTAINER_ELEMENT_TYPE, children: [] },
+        {
+          at: parentPath,
+          match: (node) => node.type === IMAGE_ELEMENT_TYPE,
+        }
+      );
       return;
     }
 
-    if (path.length > 1) {
-      Transforms.liftNodes(editor, {
-        at: path,
-        match: (node, path) => path.length > 1 && node.type === "image",
+    normalizeNode([node, path]);
+  };
+
+  const normalizeImageContainerElement = ([node, path]) => {
+    // Empty containers aren’t allowed
+    if (node.children.find((n) => n.type === IMAGE_ELEMENT_TYPE) == null) {
+      editor.removeNodes({ at: path });
+      return;
+    }
+
+    const [previousNode] = editor.previous({ at: path }) ?? [];
+
+    if (previousNode?.type === IMAGE_CONTAINER_ELEMENT_TYPE) {
+      editor.mergeNodes({ at: path });
+      return;
+    }
+
+    // Only image children allowed
+    const firstNonImageIndex = node.children.findIndex(
+      (n) => n.type !== IMAGE_ELEMENT_TYPE
+    );
+
+    if (firstNonImageIndex !== -1) {
+      editor.moveNodes({
+        at: [...path, firstNonImageIndex],
+        to: Path.next(path),
       });
       return;
     }
@@ -37,38 +64,114 @@ const middleware = (editor) => {
     normalizeNode([node, path]);
   };
 
+  editor.normalizeNode = isProduction
+    ? normalizeNode
+    : ([node, path]) => {
+        if (node.type === IMAGE_ELEMENT_TYPE) {
+          normalizeImageElement([node, path]);
+          return;
+        }
+
+        if (node.type === IMAGE_CONTAINER_ELEMENT_TYPE) {
+          normalizeImageContainerElement([node, path]);
+          return;
+        }
+
+        if (
+          editor.isBlock(node) &&
+          node.children.every((n) => n.type === IMAGE_ELEMENT_TYPE)
+        ) {
+          editor.setNodes({ type: IMAGE_CONTAINER_ELEMENT_TYPE }, { at: path });
+          return;
+        }
+
+        normalizeNode([node, path]);
+      };
+
+  editor.insertBreak = () => {
+    const parentImageContainerMatchEntry = editor.above({
+      match: (n) => n.type === IMAGE_CONTAINER_ELEMENT_TYPE,
+    });
+
+    if (parentImageContainerMatchEntry != null) {
+      editor.withoutNormalizing(() => {
+        insertBreak();
+        editor.liftNodes();
+      });
+      return;
+    }
+
+    insertBreak();
+  };
+
+  editor.insertSoftBreak = (...args) => {
+    const parentImageContainerMatchEntry = editor.above({
+      match: (n) => n.type === IMAGE_CONTAINER_ELEMENT_TYPE,
+    });
+
+    if (parentImageContainerMatchEntry != null) {
+      editor.insertBreak();
+      return;
+    }
+
+    insertSoftBreak(...args);
+  };
+
   editor.insertImage = ({ url, width, height }, { at } = {}) => {
     const match = editor.node(at);
-    if (match != null && match[0].type === "image") {
+    if (match != null && match[0].type === IMAGE_ELEMENT_TYPE) {
       editor.setNodes({ url, width, height }, { at });
       return;
     }
 
-    Transforms.select(editor, at);
+    editor.select(at);
+
+    const [parentBlockNode] = editor.above({
+      match: (n) => editor.isBlock(n) && n.type !== IMAGE_ELEMENT_TYPE,
+    });
+
+    const isInImageContainer =
+      parentBlockNode.type === IMAGE_CONTAINER_ELEMENT_TYPE;
+
+    const imageElement = {
+      type: IMAGE_ELEMENT_TYPE,
+      url,
+      width,
+      height,
+      children: [{ text: "" }],
+    };
+
+    if (isInImageContainer) {
+      editor.insertNode(imageElement, { at });
+      return;
+    }
+
+    const isInEmptyParagraph = Node.string(parentBlockNode).trim() === "";
+
+    if (isInEmptyParagraph) {
+      editor.withoutNormalizing(() => {
+        // editor.removeNodes({ at })
+        editor.setNodes({ type: IMAGE_CONTAINER_ELEMENT_TYPE }, { at });
+        editor.insertNode(imageElement, { at });
+        editor.print();
+        // editor.insertBreak();
+      });
+      return;
+    }
 
     editor.withoutNormalizing(() => {
-      Transforms.insertNodes(editor, [
+      editor.insertBreak();
+      editor.insertNodes([
         {
-          type: ELEMENT_TYPE,
-          url,
-          width,
-          height,
-          children: [{ text: "" }],
+          type: IMAGE_CONTAINER_ELEMENT_TYPE,
+          children: [imageElement],
         },
         { type: "paragraph", children: [{ text: "" }] },
       ]);
-      Transforms.liftNodes(editor, {
-        match: (node, path) => path.length > 1 && node.type === "image",
-      });
     });
   };
 
-  return functionUtils.compose((e) =>
-    withEmptyBlockBackwardDeleteTransform(
-      { fromElementType: ELEMENT_TYPE, toElementType: "paragraph" },
-      e
-    )
-  )(editor);
+  return editor;
 };
 
 const ImageComponent = ({
@@ -86,13 +189,15 @@ const ImageComponent = ({
   const fittedWidth =
     maxWidth == null && maxHeight == null
       ? element.width
+      : element.width == null
+      ? null
       : dimensionUtils.fitInsideBounds(
           { width: element.width, height: element.height },
           { width: maxWidth, height: maxHeight }
         ).width;
 
   return (
-    <div {...attributes}>
+    <span {...attributes}>
       {children}
       <button
         type="button"
@@ -113,15 +218,32 @@ const ImageComponent = ({
           width={fittedWidth}
           style={{
             maxWidth: "100%",
-            aspectRatio: `${element.width} / ${element.height}`,
+            maxHeight: fittedWidth == null ? maxHeight : undefined,
+            aspectRatio:
+              element.width == null
+                ? undefined
+                : `${element.width} / ${element.height}`,
           }}
         />
       </button>
+    </span>
+  );
+};
+
+const ImageContainerComponent = ({ attributes, children }) => {
+  return (
+    <div className="grid" {...attributes}>
+      <div>{children}</div>
     </div>
   );
 };
 
-export default () => ({
-  middleware,
-  elements: { [ELEMENT_TYPE]: ImageComponent },
-});
+export default () =>
+  // { inline = false } = {}
+  ({
+    middleware,
+    elements: {
+      [IMAGE_ELEMENT_TYPE]: ImageComponent,
+      [IMAGE_CONTAINER_ELEMENT_TYPE]: ImageContainerComponent,
+    },
+  });
