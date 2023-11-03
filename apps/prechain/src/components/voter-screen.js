@@ -24,6 +24,7 @@ import { useCurrentDynamicQuorum } from "../hooks/dao-contract.js";
 import { SectionedList } from "./browse-screen.js";
 import Button from "@shades/ui-web/button";
 import Spinner from "@shades/ui-web/spinner";
+import { VotingBar } from "./proposal-screen.js";
 
 const VOTER_LIST_PAGE_ITEM_COUNT = 20;
 
@@ -37,6 +38,23 @@ const useFeedItems = (voterAddress) => {
   );
 };
 
+const getDelegateVotes = (delegate) => {
+  if (delegate?.votes == null) return null;
+  return delegate.votes.reduce(
+    (acc, v) => {
+      const voteGroup = { 0: "against", 1: "for", 2: "abstain" }[v.support];
+      const withReason = v.reason != null;
+      return {
+        ...acc,
+        [voteGroup]: acc[voteGroup] + 1,
+        withReason: withReason ? acc.withReason + 1 : acc.withReason,
+        totalVotes: acc.totalVotes + 1,
+      };
+    },
+    { for: 0, against: 0, abstain: 0, withReason: 0, totalVotes: 0 }
+  );
+};
+
 const FeedSidebar = React.memo(({ visible = true, voterAddress }) => {
   const [sorting, setSorting] = React.useState("recent");
 
@@ -45,7 +63,7 @@ const FeedSidebar = React.memo(({ visible = true, voterAddress }) => {
   if (!visible) return null;
 
   return (
-    <div css={css({ paddingTop: "2rem" })}>
+    <div css={css({ marginTop: "3.2rem" })}>
       <div
         css={css({
           height: "4.05rem",
@@ -138,6 +156,98 @@ const VotingPowerCallout = ({ voterAddress }) => {
     </Callout>
   );
 };
+
+const VoterStatsBar = React.memo(({ voterAddress }) => {
+  const delegate = useDelegate(voterAddress);
+  const delegateVotes = getDelegateVotes(delegate);
+
+  const formatPercentage = (number, total) => {
+    if (Number(number) === 0) return "0%";
+    const percentage = (number * 100) / total;
+    const isLessThanOne = percentage < 1;
+    const hasDecimals = Math.round(percentage) !== percentage;
+
+    return (
+      <span
+        css={css({
+          ":before": {
+            content: isLessThanOne ? '"<"' : hasDecimals ? '"~"' : undefined,
+          },
+        })}
+      >
+        {isLessThanOne ? "1" : Math.round(percentage)}%
+      </span>
+    );
+  };
+
+  return (
+    <div
+      css={css({
+        display: "flex",
+        flexDirection: "column",
+        gap: "0.5rem",
+        marginTop: "3.2rem",
+      })}
+    >
+      <div
+        css={(t) =>
+          css({
+            display: "flex",
+            justifyContent: "space-between",
+            fontSize: t.text.sizes.small,
+            fontWeight: t.text.weights.emphasis,
+            "[data-for]": { color: t.colors.textPositive },
+            "[data-against]": { color: t.colors.textNegative },
+          })
+        }
+      >
+        <div data-for>For {delegateVotes?.for ?? 0}</div>
+        <div data-against>Against {delegateVotes?.against ?? 0}</div>
+      </div>
+      <VotingBar
+        forVotes={delegateVotes?.for ?? 0}
+        againstVotes={delegateVotes?.against ?? 0}
+        abstainVotes={delegateVotes?.abstain ?? 0}
+      />
+      <div
+        css={(t) =>
+          css({
+            fontSize: t.text.sizes.small,
+            display: "flex",
+            justifyContent: "space-between",
+            gap: "0.5rem",
+            "[data-for], [data-against]": {
+              fontWeight: t.text.weights.emphasis,
+            },
+            "[data-for]": { color: t.colors.textPositive },
+            "[data-against]": { color: t.colors.textNegative },
+          })
+        }
+      >
+        <div>
+          {delegateVotes?.abstain != null && (
+            <>Abstain {delegateVotes?.abstain}</>
+          )}
+        </div>
+        <div>
+          {delegateVotes?.totalVotes != null && (
+            <>
+              <span>Voted on {delegateVotes?.totalVotes} proposals </span>
+              <span>
+                (
+                {formatPercentage(
+                  delegateVotes.withReason,
+                  delegateVotes.totalVotes
+                )}{" "}
+                with reason)
+              </span>
+            </>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+});
 
 const VoterHeader = ({ voterAddress }) => {
   const { displayName, truncatedAddress, ensName } =
@@ -255,6 +365,8 @@ const VoterMainSection = ({ voterAddress }) => {
                 })}
               >
                 <VotingPowerCallout voterAddress={voterAddress} />
+
+                <VoterStatsBar voterAddress={voterAddress} />
 
                 <FeedSidebar align="right" voterAddress={voterAddress} />
               </div>
