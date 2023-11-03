@@ -255,6 +255,33 @@ const useStore = createZustandStoreHook((set) => {
           }));
         }
       ),
+    fetchVoterScreenData: (chainId, id, options) =>
+      NounsSubgraph.fetchVoterScreenData(chainId, id, options).then(
+        ({ proposals, candidates }) => {
+          const fetchedProposalsById = arrayUtils.indexBy(
+            (p) => p.id,
+            proposals
+          );
+
+          const fetchedCandidatesById = arrayUtils.indexBy(
+            (p) => p.id.toLowerCase(),
+            candidates
+          );
+
+          set((s) => ({
+            proposalsById: objectUtils.merge(
+              mergeProposals,
+              s.proposalsById,
+              fetchedProposalsById
+            ),
+            proposalCandidatesById: objectUtils.merge(
+              mergeProposalCandidates,
+              s.proposalCandidatesById,
+              fetchedCandidatesById
+            ),
+          }));
+        }
+      ),
     fetchNounsActivity: (chainId, { startBlock, endBlock }) =>
       NounsSubgraph.fetchNounsActivity(chainId, { startBlock, endBlock }).then(
         ({ votes, proposalFeedbackPosts, candidateFeedbackPosts }) => {
@@ -332,6 +359,7 @@ export const useActions = () => {
   const fetchDelegate = useStore((s) => s.fetchDelegate);
   const fetchNounsActivity = useStore((s) => s.fetchNounsActivity);
   const fetchBrowseScreenData = useStore((s) => s.fetchBrowseScreenData);
+  const fetchVoterScreenData = useStore((s) => s.fetchVoterScreenData);
   const fetchPropdates = useStore((s) => s.fetchPropdates);
   const addOptimitisicProposalVote = useStore(
     (s) => s.addOptimitisicProposalVote
@@ -364,6 +392,10 @@ export const useActions = () => {
     fetchBrowseScreenData: React.useCallback(
       (...args) => fetchBrowseScreenData(chainId, ...args),
       [fetchBrowseScreenData, chainId]
+    ),
+    fetchVoterScreenData: React.useCallback(
+      (...args) => fetchVoterScreenData(chainId, ...args),
+      [fetchVoterScreenData, chainId]
     ),
     fetchPropdates,
     addOptimitisicProposalVote,

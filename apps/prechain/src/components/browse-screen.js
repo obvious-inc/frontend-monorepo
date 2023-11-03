@@ -741,7 +741,11 @@ const BrowseScreen = () => {
   );
 };
 
-const SectionedList = ({ sections, showPlaceholder = false, ...props }) => {
+export const SectionedList = ({
+  sections,
+  showPlaceholder = false,
+  ...props
+}) => {
   return (
     <ul
       role={showPlaceholder ? "presentation" : undefined}
@@ -1090,8 +1094,10 @@ const FeedTabContent = React.memo(({ visible }) => {
 const ProposalItem = React.memo(({ proposalId }) => {
   const proposal = useProposal(proposalId);
   const { displayName: authorAccountDisplayName } = useAccountDisplayName(
-    proposal.proposer?.id
+    proposal?.proposer?.id
   );
+
+  if (!proposal) return null;
 
   const isDimmed =
     proposal.state != null && ["canceled", "expired"].includes(proposal.state);

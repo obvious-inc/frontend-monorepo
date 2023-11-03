@@ -99,6 +99,10 @@ query {
       status
       createdBlock
       createdTimestamp
+      startBlock
+      proposer {
+        id
+      }
     }
   }
 }`;
@@ -134,6 +138,10 @@ const createDelegateQuery = (id) => `
         status
         createdBlock
         createdTimestamp
+        startBlock
+        proposer {
+          id
+        }
       }
     }
 }`;
@@ -177,6 +185,76 @@ query {
   }
 
   proposalCandidates(orderBy: createdBlock, orderDirection: desc, skip: ${skip}, first: ${first}) {
+    id
+    slug
+    proposer
+    createdBlock
+    canceledBlock
+    lastUpdatedBlock
+    canceledTimestamp
+    createdTimestamp
+    lastUpdatedTimestamp
+    latestVersion {
+      id
+      content {
+        title
+        matchingProposalIds
+        proposalIdToUpdate
+        contentSignatures {
+          reason
+          canceled
+          expirationTimestamp
+          signer {
+            id
+            nounsRepresented {
+              id
+            }
+          }
+        }
+      }
+    }
+  }
+}`;
+
+const createVoterScreenQuery = (id, { skip = 0, first = 1000 } = {}) => `
+${VOTE_FIELDS}
+query {
+  proposals(orderBy: createdBlock, orderDirection: desc, skip: ${skip}, first: ${first}, where: {proposer: "${id}"}) {
+    id
+    description
+    title
+    status
+    createdBlock
+    createdTimestamp
+    lastUpdatedBlock
+    lastUpdatedTimestamp
+    startBlock
+    endBlock
+    updatePeriodEndBlock
+    objectionPeriodEndBlock
+    canceledBlock
+    canceledTimestamp
+    queuedBlock
+    queuedTimestamp
+    executedBlock
+    executedTimestamp
+    forVotes
+    againstVotes
+    abstainVotes
+    quorumVotes
+    executionETA
+    proposer {
+      id
+    }
+    signers {
+      id
+    }
+    votes {
+      ...VoteFields
+    }
+  }
+
+  proposalCandidates(orderBy: createdBlock, orderDirection: desc, skip: ${skip}, first: ${first}, where: {proposer: "${id}"}) {
     id
     slug
     proposer
@@ -656,6 +734,18 @@ export const fetchBrowseScreenData = (chainId, options) =>
       return { proposals, candidates };
     }
   );
+
+export const fetchVoterScreenData = (chainId, id, options) =>
+  subgraphFetch({
+    chainId,
+    query: createVoterScreenQuery(id.toLowerCase(), options),
+  }).then((data) => {
+    const proposals = data.proposals.map((p) => parseProposal(p, { chainId }));
+    const candidates = data.proposalCandidates.map((c) =>
+      parseProposalCandidate(c, { chainId })
+    );
+    return { proposals, candidates };
+  });
 
 export const fetchNounsActivity = (chainId, { startBlock, endBlock }) =>
   subgraphFetch({

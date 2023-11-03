@@ -1,11 +1,11 @@
 import React from "react";
 import { isAddress } from "viem";
-import { useBlockNumber, useEnsAddress } from "wagmi";
+import { useEnsAddress } from "wagmi";
 import { useParams } from "react-router-dom";
 import { css } from "@emotion/react";
-import { useMatchMedia } from "@shades/common/react";
+import { useMatchMedia, useFetch } from "@shades/common/react";
 import { buildFeed as buildVoterFeed } from "../utils/voters.js";
-import { useDelegate, useDelegateFetch } from "../store.js";
+import { useActions, useDelegate, useDelegateFetch } from "../store.js";
 import MetaTags_ from "./meta-tags.js";
 import Layout, { MainContentContainer } from "./layout.js";
 import Callout from "./callout.js";
@@ -16,6 +16,10 @@ import AccountAvatar from "./account-avatar.js";
 import NounAvatar from "./noun-avatar.js";
 import Select from "@shades/ui-web/select";
 import { useCurrentDynamicQuorum } from "../hooks/dao-contract.js";
+import { SectionedList } from "./browse-screen.js";
+import Button from "@shades/ui-web/button";
+
+const VOTER_LIST_PAGE_ITEM_COUNT = 20;
 
 const useFeedItems = (voterAddress) => {
   const delegate = useDelegate(voterAddress);
@@ -209,6 +213,25 @@ const VoterHeader = ({ voterAddress }) => {
 const VoterMainSection = ({ voterAddress }) => {
   const isDesktopLayout = useMatchMedia("(min-width: 952px)");
 
+  const [page, setPage] = React.useState(1);
+  const delegate = useDelegate(voterAddress);
+
+  const filteredProposals = delegate?.proposals ?? [];
+
+  // todo: use new accountcandidate hook
+  const filteredCandidates = delegate?.proposalCandidates ?? [];
+
+  const { fetchVoterScreenData } = useActions();
+
+  useFetch(
+    () =>
+      Promise.all([
+        fetchVoterScreenData(voterAddress, { first: 40 }),
+        fetchVoterScreenData(voterAddress, { skip: 40, first: 1000 }),
+      ]),
+    [fetchVoterScreenData, voterAddress]
+  );
+
   return (
     <>
       <div css={css({ padding: "0 1.6rem" })}>
@@ -225,11 +248,7 @@ const VoterMainSection = ({ voterAddress }) => {
               >
                 <VotingPowerCallout voterAddress={voterAddress} />
 
-                <FeedSidebar
-                  align="right"
-                  voterAddress={voterAddress}
-                  // visible={filteredProposals.length > 0}
-                />
+                <FeedSidebar align="right" voterAddress={voterAddress} />
               </div>
             ) : null
           }
@@ -259,18 +278,73 @@ const VoterMainSection = ({ voterAddress }) => {
               }
             >
               <Tabs.Item key="proposals" title="Proposals">
-                <div style={{ padding: "3.2rem 0 6.4rem" }}>
-                  <p>Proposals</p>
+                <div
+                  css={css({
+                    paddingTop: "2.4rem",
+                    "@media (min-width: 600px)": {
+                      paddingTop: "2.8rem",
+                    },
+                  })}
+                >
+                  <SectionedList
+                    sections={[
+                      {
+                        items: filteredProposals.slice(
+                          0,
+                          VOTER_LIST_PAGE_ITEM_COUNT * page
+                        ),
+                      },
+                    ]}
+                    style={{ marginTop: "2rem" }}
+                  />
+                  {filteredProposals.length >
+                    VOTER_LIST_PAGE_ITEM_COUNT * page && (
+                    <div css={{ textAlign: "center", padding: "3.2rem 0" }}>
+                      <Button
+                        size="small"
+                        onClick={() => {
+                          setPage((p) => p + 1);
+                        }}
+                      >
+                        Show more
+                      </Button>
+                    </div>
+                  )}
                 </div>
               </Tabs.Item>
               <Tabs.Item key="candidates" title="Candidates">
                 <div
-                  style={{
-                    padding: "3.2rem 0 6.4rem",
-                    minHeight: "calc(100vh - 11rem)",
-                  }}
+                  css={css({
+                    paddingTop: "2.4rem",
+                    "@media (min-width: 600px)": {
+                      paddingTop: "2.8rem",
+                    },
+                  })}
                 >
-                  Candidates
+                  <SectionedList
+                    sections={[
+                      {
+                        items: filteredCandidates.slice(
+                          0,
+                          VOTER_LIST_PAGE_ITEM_COUNT * page
+                        ),
+                      },
+                    ]}
+                    style={{ marginTop: "2rem" }}
+                  />
+                  {filteredCandidates.length >
+                    VOTER_LIST_PAGE_ITEM_COUNT * page && (
+                    <div css={{ textAlign: "center", padding: "3.2rem 0" }}>
+                      <Button
+                        size="small"
+                        onClick={() => {
+                          setPage((p) => p + 1);
+                        }}
+                      >
+                        Show more
+                      </Button>
+                    </div>
+                  )}
                 </div>
               </Tabs.Item>
             </Tabs.Root>
