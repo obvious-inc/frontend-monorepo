@@ -266,7 +266,9 @@ const ProposalMainSection = ({ proposalId, scrollContainerRef }) => {
 
   const handleFormSubmit = async () => {
     if (currentFormAction === "vote") {
-      // Would rather have this than disabling the submit button on every keystroke
+      // A prepared contract write takes a second to to do its thing after every
+      // argument change, so this might be null. This seems like a nicer
+      // behavior compared to disabling the submit button on every keystroke
       if (castProposalVote == null) return;
       va.track("Vote", {
         proposalId,
@@ -275,6 +277,8 @@ const ProposalMainSection = ({ proposalId, scrollContainerRef }) => {
       await castProposalVote();
       setCastVoteCallSupportDetailed(pendingSupport);
     } else {
+      // Same as above
+      if (sendProposalFeedback == null) return;
       va.track("Feedback", {
         proposalId,
         account: connectedWalletAccountAddress,
