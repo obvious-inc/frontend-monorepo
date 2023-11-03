@@ -24,11 +24,28 @@ const parseChildren = (token, parse, context_ = {}) => {
 
 const parseToken = (token, context = {}) => {
   switch (token.type) {
-    case "paragraph":
+    case "paragraph": {
+      const isImageParagraph = token.tokens.every(
+        (t) => t.type === "image" || t.text.trim() === ""
+      );
+
+      if (isImageParagraph) {
+        const imageTokens = token.tokens.filter((t) => t.type === "image");
+        return {
+          type: "image-grid",
+          children: imageTokens.map((t) => ({
+            type: "image",
+            url: t.href,
+            interactive: false,
+          })),
+        };
+      }
+
       return {
         type: "paragraph",
         children: parseChildren(token, parseToken, context),
       };
+    }
 
     case "heading":
       return {
@@ -70,14 +87,9 @@ const parseToken = (token, context = {}) => {
     case "image": {
       if (context?.displayImages)
         return {
-          type: "image-grid",
-          children: [
-            {
-              type: "image",
-              url: token.href,
-              interactive: false,
-            },
-          ],
+          type: "image",
+          url: token.href,
+          interactive: false,
         };
 
       if (context?.link) return { text: context.linkUrl };
@@ -96,21 +108,18 @@ const parseToken = (token, context = {}) => {
       };
 
     case "link": {
-      const isImage = ["jpg", "png", "gif"].some((ext) =>
+      const isImageUrl = ["jpg", "png", "gif"].some((ext) =>
         token.href.endsWith(`.${ext}`)
       );
+
       const hasLabel = token.text !== token.href;
 
-      if (isImage && hasLabel && context?.displayImages)
-        return {
-          type: "image-grid",
-          children: [{ type: "image", url: token.href, interactive: false }],
-        };
+      if (isImageUrl && !hasLabel && context?.displayImages)
+        return { type: "image", url: token.href, interactive: false };
 
       return {
         type: "link",
         url: token.href,
-        label: hasLabel ? token.text : null,
         children: parseChildren(token, parseToken, {
           ...context,
           link: true,
