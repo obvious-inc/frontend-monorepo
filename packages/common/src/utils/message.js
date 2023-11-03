@@ -32,6 +32,24 @@ export const filter = (predicate, nodes) => {
   return filteredNodes;
 };
 
+export const some = (predicate, nodes) => {
+  for (let node of nodes) {
+    if (predicate(node)) return true;
+    if (node.children == null) continue;
+    return some(predicate, node.children);
+  }
+  return false;
+};
+
+export const every = (predicate, nodes) => {
+  for (let node of nodes) {
+    if (!predicate(node)) return false;
+    if (node.children == null) continue;
+    return every(predicate, node.children);
+  }
+  return true;
+};
+
 const isNodeEmpty = (node, options = {}) => {
   const { trim = false } = options;
 
