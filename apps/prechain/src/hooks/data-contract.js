@@ -42,6 +42,7 @@ export const useSendProposalCandidateFeedback = (
     ]),
     functionName: "sendCandidateFeedback",
     args: [proposerId, slug, support, reason],
+    enabled: support != null,
   });
   const { writeAsync: write } = useContractWrite(config);
 
