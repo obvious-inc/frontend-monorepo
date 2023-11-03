@@ -1,7 +1,7 @@
 import React from "react";
 import { isAddress } from "viem";
 import { useEnsAddress } from "wagmi";
-import { useParams } from "react-router-dom";
+import { useParams, Link as RouterLink } from "react-router-dom";
 import { css } from "@emotion/react";
 import { useMatchMedia, useFetch } from "@shades/common/react";
 import { buildFeed as buildVoterFeed } from "../utils/voters.js";
@@ -391,11 +391,60 @@ const VoterScreen = () => {
           },
         ]}
       >
-        {voterAddress && (
+        {voterAddress ? (
           <VoterMainSection
             voterAddress={voterAddress}
             scrollContainerRef={scrollContainerRef}
           />
+        ) : (
+          <div
+            style={{
+              flex: 1,
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              textAlign: "center",
+              paddingBottom: "10vh",
+            }}
+          >
+            <div>
+              <div
+                css={(t) =>
+                  css({
+                    fontSize: t.text.sizes.headerLarger,
+                    fontWeight: t.text.weights.header,
+                    margin: "0 0 1.6rem",
+                    lineHeight: 1.3,
+                  })
+                }
+              >
+                Not found
+              </div>
+              <div
+                css={(t) =>
+                  css({
+                    fontSize: t.text.sizes.large,
+                    wordBreak: "break-word",
+                    margin: "0 0 4.8rem",
+                  })
+                }
+              >
+                Found no voter with id{" "}
+                <span css={(t) => css({ fontWeight: t.text.weights.emphasis })}>
+                  {voterId}
+                </span>
+                .
+              </div>
+              <Button
+                component={RouterLink}
+                to="/"
+                variant="primary"
+                size="large"
+              >
+                Go back
+              </Button>
+            </div>
+          </div>
         )}
       </Layout>
     </>
@@ -403,10 +452,13 @@ const VoterScreen = () => {
 };
 
 const MetaTags = ({ voterId, voterAddress }) => {
-  const { displayName, truncatedAddress } = useAccountDisplayName(voterAddress);
+  const { displayName, truncatedAddress, address } =
+    useAccountDisplayName(voterAddress);
 
   const title =
-    displayName == null
+    address == null
+      ? ""
+      : displayName == null
       ? `${truncatedAddress}`
       : `${displayName} (${truncatedAddress})`;
 
