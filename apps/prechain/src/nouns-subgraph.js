@@ -89,10 +89,10 @@ query {
         }
       }
     }
-    votes (orderBy: blockNumber, orderDirection: desc) {
+    votes (first: 1000, orderBy: blockNumber, orderDirection: desc) {
       ...VoteFields
     }
-    proposals (orderBy: createdBlock, orderDirection: desc) {
+    proposals (first: 1000, orderBy: createdBlock, orderDirection: desc) {
       id
       description
       title
@@ -128,10 +128,10 @@ const createDelegateQuery = (id) => `
           }
         }
       }
-      votes (orderBy: blockNumber, orderDirection: desc) {
+      votes (first: 1000, orderBy: blockNumber, orderDirection: desc) {
         ...VoteFields
       }
-      proposals (orderBy: createdBlock, orderDirection: desc) {
+      proposals (first: 1000, orderBy: createdBlock, orderDirection: desc) {
         id
         description
         title
