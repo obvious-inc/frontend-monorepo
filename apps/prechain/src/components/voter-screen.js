@@ -184,8 +184,9 @@ const VoterHeader = ({ voterAddress }) => {
           {truncatedAddress}
         </div>
       )}
-      <Callout css={(t) => css({ fontSize: t.text.sizes.base })}>
-        {delegate?.nounsRepresented.length > 0 && (
+
+      {delegate?.nounsRepresented.length > 0 && (
+        <Callout css={(t) => css({ fontSize: t.text.sizes.base })}>
           <div
             css={(t) =>
               css({
@@ -209,8 +210,8 @@ const VoterHeader = ({ voterAddress }) => {
               </div>
             ))}
           </div>
-        )}
-      </Callout>
+        </Callout>
+      )}
     </div>
   );
 };
