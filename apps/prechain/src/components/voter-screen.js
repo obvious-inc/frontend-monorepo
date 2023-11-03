@@ -131,7 +131,13 @@ const VotingPowerCallout = ({ voterAddress }) => {
   return (
     <Callout css={(t) => css({ fontSize: t.text.sizes.base })}>
       <span css={(t) => css({ fontWeight: t.text.weights.smallHeader })}>
-        {voteCount} {voteCount === 1 ? "noun" : "nouns"} represented
+        {voteCount === 0 ? (
+          "No delegation currently"
+        ) : (
+          <>
+            {voteCount} {voteCount === 1 ? "noun" : "nouns"} represented
+          </>
+        )}
       </span>{" "}
       {voteCount !== 0 && (
         <>
