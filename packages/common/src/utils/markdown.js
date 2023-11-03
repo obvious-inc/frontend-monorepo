@@ -11,8 +11,8 @@ const decodeHtmlEntities = (string) => {
   return textareaEl.value;
 };
 
-const parseChildren = (token, parse, context_) => {
-  const { list, ...context } = context_ ?? {};
+const parseChildren = (token, parse, context_ = {}) => {
+  const { list, ...context } = context_;
   const children = list ? token.items : token.tokens;
   return children.reduce((parsedChildren, token) => {
     const parsedChild = parse(token, context);
@@ -22,13 +22,30 @@ const parseChildren = (token, parse, context_) => {
   }, []);
 };
 
-const parseToken = (token, context) => {
+const parseToken = (token, context = {}) => {
   switch (token.type) {
-    case "paragraph":
+    case "paragraph": {
+      const isImageParagraph = token.tokens.every(
+        (t) => t.type === "image" || t.text.trim() === ""
+      );
+
+      if (isImageParagraph) {
+        const imageTokens = token.tokens.filter((t) => t.type === "image");
+        return {
+          type: "image-grid",
+          children: imageTokens.map((t) => ({
+            type: "image",
+            url: t.href,
+            interactive: false,
+          })),
+        };
+      }
+
       return {
         type: "paragraph",
         children: parseChildren(token, parseToken, context),
       };
+    }
 
     case "heading":
       return {
@@ -39,13 +56,19 @@ const parseToken = (token, context) => {
     case "list":
       return {
         type: token.ordered ? "numbered-list" : "bulleted-list",
-        children: parseChildren(token, parseToken, { ...context, list: true }),
+        children: parseChildren(token, parseToken, {
+          ...context,
+          list: true,
+        }),
       };
 
     case "list_item":
       return {
         type: "list-item",
-        children: parseChildren(token, parseToken, context),
+        children: parseChildren(token, parseToken, {
+          ...context,
+          listMode: "normal", // token.loose ? "normal" : "simple",
+        }),
       };
 
     case "blockquote":
@@ -64,14 +87,9 @@ const parseToken = (token, context) => {
     case "image": {
       if (context?.displayImages)
         return {
-          type: "image-grid",
-          children: [
-            {
-              type: "image",
-              url: token.href,
-              interactive: false,
-            },
-          ],
+          type: "image",
+          url: token.href,
+          interactive: false,
         };
 
       if (context?.link) return { text: context.linkUrl };
@@ -90,16 +108,14 @@ const parseToken = (token, context) => {
       };
 
     case "link": {
-      const isImage = ["jpg", "png", "gif"].some((ext) =>
+      const isImageUrl = ["jpg", "png", "gif"].some((ext) =>
         token.href.endsWith(`.${ext}`)
       );
+
       const hasLabel = token.text !== token.href;
 
-      if (isImage && hasLabel && context?.displayImages)
-        return {
-          type: "image-grid",
-          children: [{ type: "image", url: token.href, interactive: false }],
-        };
+      if (isImageUrl && !hasLabel && context?.displayImages)
+        return { type: "image", url: token.href, interactive: false };
 
       return {
         type: "link",
@@ -134,8 +150,12 @@ const parseToken = (token, context) => {
       return { type: "text", text: token.text };
 
     case "text": {
-      if (token.tokens != null)
-        return parseChildren(token, parseToken, context);
+      if (token.tokens != null) {
+        const { listMode, ...context_ } = context;
+        const children = parseChildren(token, parseToken, context_);
+        if (listMode == null || listMode === "simple") return children;
+        return { type: "paragraph", children };
+      }
 
       const text = decodeHtmlEntities(token.text);
 

@@ -226,11 +226,15 @@ const BrowseScreen = () => {
 
   const filteredItems = React.useMemo(() => {
     const filteredProposalDrafts = proposalDrafts
-      .filter(
-        (d) =>
-          d.name.trim() !== "" ||
-          d.body.some((n) => isRichTextNodeEmpty(n, { trim: true }))
-      )
+      .filter((d) => {
+        if (d.name.trim() !== "") return true;
+
+        const isMarkdown = typeof d.body === "string";
+
+        return isMarkdown
+          ? d.body.trim() !== ""
+          : d.body.some((n) => isRichTextNodeEmpty(n, { trim: true }));
+      })
       .map((d) => ({ ...d, type: "draft" }));
 
     const items = [
@@ -1183,7 +1187,7 @@ const PropStatusText = React.memo(({ proposalId }) => {
       if (hours === 0)
         return (
           <>
-            Start in {Math.max(minutes, 0)}{" "}
+            Starts in {Math.max(minutes, 0)}{" "}
             {minutes === 1 ? "minute" : "minutes"}
           </>
         );

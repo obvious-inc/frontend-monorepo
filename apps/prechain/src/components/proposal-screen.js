@@ -26,7 +26,10 @@ import Dialog from "@shades/ui-web/dialog";
 import * as Tooltip from "@shades/ui-web/tooltip";
 import Spinner from "@shades/ui-web/spinner";
 import { extractAmounts as extractAmountsFromTransactions } from "../utils/transactions.js";
-import { buildFeed as buildProposalFeed } from "../utils/proposals.js";
+import {
+  buildFeed as buildProposalFeed,
+  isVotableState as isVotableProposalState,
+} from "../utils/proposals.js";
 import {
   useProposal,
   useProposalFetch,
@@ -128,12 +131,12 @@ const ProposalMainSection = ({ proposalId, scrollContainerRef }) => {
 
   const endBlock = proposal?.objectionPeriodEndBlock ?? proposal?.endBlock;
 
-  const hasVotingEnded = latestBlockNumber > Number(endBlock);
+  const hasVotingEnded =
+    latestBlockNumber > Number(endBlock) && proposal?.state !== "canceled";
   const hasVotingStarted =
     proposal?.startBlock != null &&
     latestBlockNumber > Number(proposal.startBlock);
-  const isVotingOngoing =
-    hasVotingStarted && !hasVotingEnded && proposal?.state !== "canceled";
+  const isVotingOngoing = hasVotingStarted && !hasVotingEnded;
 
   const sendProposalFeedback = useSendProposalFeedback(proposalId, {
     support: pendingSupport,
@@ -210,7 +213,7 @@ const ProposalMainSection = ({ proposalId, scrollContainerRef }) => {
         if (hours === 0)
           return (
             <>
-              Start in {Math.max(minutes, 0)}{" "}
+              Starts in {Math.max(minutes, 0)}{" "}
               {minutes === 1 ? "minute" : "minutes"}
             </>
           );
@@ -263,7 +266,9 @@ const ProposalMainSection = ({ proposalId, scrollContainerRef }) => {
 
   const handleFormSubmit = async () => {
     if (currentFormAction === "vote") {
-      // Would rather have this than disabling the submit button on every keystroke
+      // A prepared contract write takes a second to to do its thing after every
+      // argument change, so this might be null. This seems like a nicer
+      // behavior compared to disabling the submit button on every keystroke
       if (castProposalVote == null) return;
       va.track("Vote", {
         proposalId,
@@ -272,6 +277,8 @@ const ProposalMainSection = ({ proposalId, scrollContainerRef }) => {
       await castProposalVote();
       setCastVoteCallSupportDetailed(pendingSupport);
     } else {
+      // Same as above
+      if (sendProposalFeedback == null) return;
       va.track("Feedback", {
         proposalId,
         account: connectedWalletAccountAddress,
@@ -1404,6 +1411,8 @@ export const VoteDistributionToolTipContent = ({ votes, delegates }) => {
 
 const ProposalVoteStatusBar = React.memo(({ proposalId }) => {
   const proposal = useProposal(proposalId);
+  const isVotingOngoing = isVotableProposalState(proposal.state);
+
   const quorumVotes = useDynamicQuorum(proposalId);
   const delegateVotes = getDelegateVotes(proposal);
 
@@ -1460,15 +1469,17 @@ const ProposalVoteStatusBar = React.memo(({ proposalId }) => {
         }
       >
         <div>{quorumVotes != null && <>Quorum {quorumVotes}</>}</div>
-        <div>
-          {againstVotes <= forVotes && quorumVotes > forVotes && (
-            <>
-              {quorumVotes - forVotes} <span data-for>For</span>{" "}
-              {quorumVotes - forVotes === 1 ? "vote" : "votes"} left to meet
-              quorum
-            </>
-          )}
-        </div>
+        {isVotingOngoing && (
+          <div>
+            {againstVotes <= forVotes && quorumVotes > forVotes && (
+              <>
+                {quorumVotes - forVotes} <span data-for>For</span>{" "}
+                {quorumVotes - forVotes === 1 ? "vote" : "votes"} left to meet
+                quorum
+              </>
+            )}
+          </div>
+        )}
       </div>
     </div>
   );

@@ -5,6 +5,7 @@ import { parseEther, parseUnits } from "viem";
 import { useAccount } from "wagmi";
 import { css } from "@emotion/react";
 import {
+  useFetch,
   useLatestCallback,
   AutoAdjustingHeightTextarea,
 } from "@shades/common/react";
@@ -34,6 +35,7 @@ import {
   useCreateProposal,
   useCanCreateProposal,
 } from "../hooks/dao-contract.js";
+import { useActions, useAccountProposalCandidates } from "../store.js";
 import { useTokenBuyerEthNeeded } from "../hooks/misc-contracts.js";
 import { useCreateProposalCandidate } from "../hooks/data-contract.js";
 import useKeyboardShortcuts from "../hooks/keyboard-shortcuts.js";
@@ -52,6 +54,19 @@ const decimalsByCurrency = {
   weth: 18,
   usdc: 6,
 };
+
+const retryPromise = (fn, { retries = 3, timeout = 1000 } = {}) =>
+  new Promise((resolve, reject) => {
+    fn().then(resolve, (e) => {
+      if (retries < 1) return reject(e);
+      setTimeout(() => {
+        retryPromise(fn, { retries: retries - 1, timeout }).then(
+          resolve,
+          reject
+        );
+      }, timeout);
+    });
+  });
 
 const getActionTransactions = (a) => {
   switch (a.type) {
@@ -178,21 +193,34 @@ const ProposeScreen = () => {
   const navigate = useNavigate();
 
   const { address: connectedAccountAddress } = useAccount();
+  const {
+    fetchProposal,
+    fetchProposalCandidate,
+    fetchProposalCandidatesByAccount,
+  } = useActions();
 
   const canCreateProposal = useCanCreateProposal();
 
   const [draftTargetType, setDraftTargetType] = React.useState("candidate");
 
-  const editorRef = React.useRef();
-
   const { deleteItem: deleteDraft } = useDrafts();
   const [draft, { setName, setBody, setActions }] = useDraft(draftId);
+  // console.log(draft.body);
 
   const [hasPendingRequest, setPendingRequest] = React.useState(false);
   const [selectedActionIndex, setSelectedActionIndex] = React.useState(null);
   const [showNewActionDialog, setShowNewActionDialog] = React.useState(false);
 
   const [editorMode, setEditorMode] = useEditorMode(draft, { setBody });
+
+  const accountProposalCandidates = useAccountProposalCandidates(
+    connectedAccountAddress
+  );
+
+  useFetch(
+    () => fetchProposalCandidatesByAccount(connectedAccountAddress),
+    [connectedAccountAddress]
+  );
 
   const isNameEmpty = draft.name.trim() === "";
   const isBodyEmpty =
@@ -201,8 +229,6 @@ const ProposeScreen = () => {
       : draft.body.every(isRichTextEditorNodeEmpty);
 
   const hasRequiredInput = !isNameEmpty && !isBodyEmpty;
-
-  const slug = draft?.name.trim().toLowerCase().replace(/\s+/g, "-");
 
   const selectedAction =
     selectedActionIndex >= 0 ? draft.actions[selectedActionIndex] : null;
@@ -256,21 +282,47 @@ const ProposeScreen = () => {
       return actionTransactions;
     });
 
+    const buildCandidateSlug = (title) => {
+      const slugifiedTitle = title.toLowerCase().replace(/\s+/g, "-");
+      let index = 0;
+      while (slugifiedTitle) {
+        const slug = [slugifiedTitle, index].filter(Boolean).join("-");
+        if (accountProposalCandidates.find((c) => c.slug === slug) == null)
+          return slug;
+        index += 1;
+      }
+    };
+
+    const candidateSlug = buildCandidateSlug(draft.name.trim());
+
     return Promise.resolve()
       .then(() =>
         draftTargetType === "candidate"
-          ? createProposalCandidate({ slug, description, transactions }).then(
-              (candidate) => {
-                const candidateId = [
-                  connectedAccountAddress,
-                  encodeURIComponent(candidate.slug),
-                ].join("-");
-                navigate(`/candidates/${candidateId}`, { replace: true });
+          ? createProposalCandidate({
+              slug: candidateSlug,
+              description,
+              transactions,
+            }).then(async (candidate) => {
+              const candidateId = [
+                connectedAccountAddress,
+                encodeURIComponent(candidate.slug),
+              ].join("-");
+
+              await retryPromise(() => fetchProposalCandidate(candidateId), {
+                retries: 100,
+              });
+
+              navigate(`/candidates/${candidateId}`, { replace: true });
+            })
+          : createProposal({ description, transactions }).then(
+              async (proposal) => {
+                await retryPromise(() => fetchProposal(proposal.id), {
+                  retries: 100,
+                });
+
+                navigate(`/${proposal.id}`, { replace: true });
               }
             )
-          : createProposal({ description, transactions }).then((proposal) => {
-              navigate(`/${proposal.id}`, { replace: true });
-            })
       )
       .then(() => {
         deleteDraft(draftId);
@@ -550,7 +602,6 @@ const ProposeScreen = () => {
                 </div>
                 {editorMode === "rich-text" ? (
                   <RichTextEditor
-                    ref={editorRef}
                     value={draft.body}
                     onChange={(e) => {
                       setBody(e);
@@ -568,6 +619,7 @@ const ProposeScreen = () => {
                       onChange={(e) => {
                         setBody(e.target.value);
                       }}
+                      placeholder="..."
                       css={(t) =>
                         css({
                           outline: "none",
@@ -576,6 +628,7 @@ const ProposeScreen = () => {
                           color: t.colors.textNormal,
                           padding: 0,
                           width: "100%",
+                          fontFamily: t.fontStacks.monospace,
                         })
                       }
                     />

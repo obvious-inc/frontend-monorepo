@@ -245,7 +245,7 @@ const withEditorCommands = (editor) => {
     return new Promise((resolve) => {
       // Whatever works
       requestIdleCallback(() => {
-        Transforms.select(editor, location ?? Editor.end(editor, []));
+        editor.select(location ?? editor.end([]));
         ReactEditor.focus(editor);
         resolve();
       });
@@ -255,16 +255,18 @@ const withEditorCommands = (editor) => {
   editor.clear = () => {
     editor.children = [{ type: "paragraph", children: [{ text: "" }] }];
     // Move cursor to start
-    Transforms.select(editor, Editor.start(editor, []));
+    editor.select(editor.start([]));
   };
 
   editor.string = (location = [], options) => string(location, options);
 
+  editor.print = () => console.log(JSON.stringify(editor.children, null, 2));
+
   return editor;
 };
 
-const withSimplePasteBehavior = (editor) => {
-  const { insertData } = editor;
+const withSaneishDefaultBehaviors = (editor) => {
+  const { insertData, isInline } = editor;
 
   editor.insertData = (data) => {
     const text = data.getData("text");
@@ -276,6 +278,9 @@ const withSimplePasteBehavior = (editor) => {
 
     insertData(data);
   };
+
+  editor.isInline = (node) =>
+    (node.children == null && node.text != null) || isInline(node);
 
   return editor;
 };
@@ -311,25 +316,25 @@ const RichTextEditor = React.forwardRef(
       const editor = compose(
         withMarks,
         withTextCommands,
-        withSimplePasteBehavior,
+        withSaneishDefaultBehaviors,
         withEditorCommands,
         withReact,
         withHistory
       )(createSlateEditor());
 
       const { middleware, elements, handlers } = mergePlugins([
-        createControlledParagraphLineBreaksPlugin(),
-        createSensibleVoidsPlugin(),
-        createListsPlugin({ inline }),
-        createQuotesPlugin({ inline }),
         createCodeBlocksPlugin(),
+        createControlledParagraphLineBreaksPlugin(),
         createHeadingsPlugin({ inline }),
         createHorizontalDividerPlugin(),
-        createImagesPlugin(),
+        createImagesPlugin({ inline }),
         createUserMentionsPlugin(),
         createChannelLinksPlugin(),
         createInlineLinksPlugin(),
         createEmojiPlugin(),
+        createListsPlugin({ inline }),
+        createQuotesPlugin({ inline }),
+        createSensibleVoidsPlugin(),
       ]);
 
       return {
@@ -375,14 +380,14 @@ const RichTextEditor = React.forwardRef(
       if (ref != null) ref.current = editor;
       internalEditorRef.current = editor;
       // :this-is-fine:
-      Editor.normalize(editor, { force: true });
+      editor.normalize({ force: true });
     }, [ref, internalEditorRef, editor, onChange]);
 
     return (
       <>
         <Slate
           editor={editor}
-          value={value}
+          initialValue={value}
           onChange={(value) => {
             handlers.onChange(value, editor);
             const marks = editor.getMarks();
@@ -475,6 +480,7 @@ const RichTextEditor = React.forwardRef(
               const styles = createRichTextCss(theme);
               return css({
                 ...styles,
+                outline: "none",
                 "a:hover": { textDecoration: "none" },
                 "&[data-disabled]": {
                   color: theme.colors.textMuted,

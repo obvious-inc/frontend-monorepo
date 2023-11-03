@@ -1,5 +1,5 @@
 import isHotkey from "is-hotkey";
-import { Editor, Node, Transforms } from "slate";
+import { Editor, Node, Path, Transforms } from "slate";
 import { search, intersectsSelection } from "../utils";
 
 const PARAGRAPH_ELEMENT_TYPE = "paragraph";
@@ -13,16 +13,44 @@ const middleware = (editor) => {
       return;
     }
 
+    if (node.children == null) {
+      editor.setNodes({ type: "text" }, { at: path });
+      editor.wrapNodes(
+        { type: PARAGRAPH_ELEMENT_TYPE, children: [] },
+        { at: path }
+      );
+      return;
+    }
+
+    if (node.children.length === 0) {
+      editor.removeNodes({ at: path });
+      return;
+    }
+
+    // Paragraphs should never hold other block elements
+    for (const [childNode, childPath] of Node.children(editor, path)) {
+      if (childNode.type === PARAGRAPH_ELEMENT_TYPE) {
+        editor.unwrapNodes({ at: childPath });
+        return;
+      }
+
+      if (editor.isBlock(childNode)) {
+        editor.moveNodes({ at: childPath, to: Path.next(path) });
+        return;
+      }
+    }
+
     const nodeString = Node.string(node);
     const hasSelection = intersectsSelection(editor, path);
 
     // Remove empty paragraphs
     if (
       nodeString.trim() === "" &&
-      !hasSelection && // Empty nodes are allowed whereever the cursor is
-      editor.children.length > 1 // If it’s the last remaining node, we let it be
+      !hasSelection && // Empty nodes are allowed wherever the cursor is
+      path.slice(-1)[0] > 0 && // If it’s the first child node, we let it be
+      !(path.length === 1 && editor.next({ at: path }) == null) // The last root level node can also be empty
     ) {
-      Transforms.removeNodes(editor, { at: path });
+      editor.removeNodes({ at: path });
       return;
     }
 
@@ -69,7 +97,7 @@ const middleware = (editor) => {
       at: { anchor: start, focus: end },
     });
 
-    Transforms.splitNodes(editor, { at: matchStartPoint });
+    editor.splitNodes({ at: matchStartPoint });
   };
 
   return editor;
@@ -81,7 +109,7 @@ export default () => ({
     onKeyDown: (e, editor) => {
       if (!isHotkey("shift+enter", e)) return;
 
-      const matchEntry = Editor.above(editor, {
+      const matchEntry = editor.above({
         match: (node) => node.type === PARAGRAPH_ELEMENT_TYPE,
       });
 

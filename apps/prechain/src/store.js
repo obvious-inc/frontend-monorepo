@@ -216,6 +216,23 @@ const useStore = createZustandStoreHook((set) => {
           },
         }));
       }),
+    fetchProposalCandidatesByAccount: (chainId, accountAddress) =>
+      NounsSubgraph.fetchProposalCandidatesByAccount(
+        chainId,
+        accountAddress
+      ).then((candidates) => {
+        const fetchedCandidatesById = arrayUtils.indexBy(
+          (p) => p.id.toLowerCase(),
+          candidates
+        );
+        set((s) => ({
+          proposalCandidatesById: objectUtils.merge(
+            mergeProposalCandidates,
+            s.proposalCandidatesById,
+            fetchedCandidatesById
+          ),
+        }));
+      }),
     fetchBrowseScreenData: (chainId, options) =>
       NounsSubgraph.fetchBrowseScreenData(chainId, options).then(
         ({ proposals, candidates }) => {
@@ -357,6 +374,9 @@ export const useActions = () => {
   const fetchProposalCandidate = useStore((s) => s.fetchProposalCandidate);
   const fetchDelegates = useStore((s) => s.fetchDelegates);
   const fetchDelegate = useStore((s) => s.fetchDelegate);
+  const fetchProposalCandidatesByAccount = useStore(
+    (s) => s.fetchProposalCandidatesByAccount
+  );
   const fetchNounsActivity = useStore((s) => s.fetchNounsActivity);
   const fetchBrowseScreenData = useStore((s) => s.fetchBrowseScreenData);
   const fetchVoterScreenData = useStore((s) => s.fetchVoterScreenData);
@@ -384,6 +404,10 @@ export const useActions = () => {
     fetchDelegates: React.useCallback(
       (...args) => fetchDelegates(chainId, ...args),
       [fetchDelegates, chainId]
+    ),
+    fetchProposalCandidatesByAccount: React.useCallback(
+      (...args) => fetchProposalCandidatesByAccount(chainId, ...args),
+      [fetchProposalCandidatesByAccount, chainId]
     ),
     fetchNounsActivity: React.useCallback(
       (...args) => fetchNounsActivity(chainId, ...args),
@@ -565,6 +589,17 @@ export const useProposalCandidates = () => {
       filteredCandidates
     );
   }, [candidatesById, proposalsById, blockNumber]);
+};
+
+export const useAccountProposalCandidates = (accountAddress) => {
+  const candidatesById = useStore((s) => s.proposalCandidatesById);
+
+  return React.useMemo(() => {
+    const candidates = Object.values(candidatesById);
+    return candidates.filter(
+      (c) => c.proposerId.toLowerCase() === accountAddress.toLowerCase()
+    );
+  }, [candidatesById, accountAddress]);
 };
 
 export const useProposalCandidateVotingPower = (candidateId) => {

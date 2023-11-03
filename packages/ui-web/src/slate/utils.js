@@ -103,6 +103,8 @@ export const fromMessageBlocks = (blocks) =>
         { text: "" },
       ];
 
+    if (n.type === "image") return [...acc, { ...n, children: [{ text: "" }] }];
+
     // TODO implement plugin "unsupported-element"
     if (n.children == null && n.text == null)
       return [...acc, { ...n, text: "" }];
@@ -283,11 +285,7 @@ export const withBlockPrefixShortcut = (
 
       if (transform == null) {
         // Apply default transform
-        Transforms.setNodes(
-          editor,
-          { type: elementType },
-          { at: blockEntry[1] }
-        );
+        editor.setNodes({ type: elementType }, { at: blockEntry[1] });
       }
 
       // Re-select the node since we deleted the prefix text
@@ -321,8 +319,8 @@ export const withEmptyBlockBackwardDeleteTransform = (
       return;
     }
 
-    const match = Editor.above(editor, {
-      match: (n) => Element.isElement(n) && Editor.isBlock(editor, n),
+    const match = editor.above({
+      match: (n) => Element.isElement(n) && editor.isBlock(n),
     });
 
     if (match == null) {
@@ -331,7 +329,7 @@ export const withEmptyBlockBackwardDeleteTransform = (
     }
 
     const [block, path] = match;
-    const start = Editor.start(editor, path);
+    const start = editor.start(path);
 
     const isMatchingBlockType = Array.isArray(fromElementType)
       ? fromElementType.includes(block.type)
@@ -343,7 +341,7 @@ export const withEmptyBlockBackwardDeleteTransform = (
       isMatchingBlockType &&
       Point.equals(selection.anchor, start)
     ) {
-      Transforms.setNodes(editor, { type: toElementType });
+      editor.setNodes({ type: toElementType });
       return;
     }
 

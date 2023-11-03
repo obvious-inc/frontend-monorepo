@@ -549,7 +549,7 @@ const Content = ({
 
                   const n = parseFloat(value);
 
-                  if (isNaN(n) || !/^[0-9]*.?[0-9]*$/.test(value)) return;
+                  if (isNaN(n) || !/^[0-9]*\.?[0-9]*$/.test(value)) return;
 
                   if (/^[0-9]*$/.test(value)) {
                     setAmount(n);

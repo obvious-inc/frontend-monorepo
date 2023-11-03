@@ -1,16 +1,20 @@
 import { url as urlUtils } from "@shades/common/utils";
-import { Editor, Transforms, Point, Text, Node } from "slate";
+import { Point, Text, Node } from "slate";
 import { getWords } from "../utils.js";
+
+const INLINE_LINK_ELEMENT_TYPE = "link";
 
 const wrapLink = (editor, url, { at } = {}) => {
   const parsedUrl = new URL(url);
-  const link = {
-    type: "link",
-    url: parsedUrl.href,
-    label: parsedUrl.href,
-    children: [{ text: parsedUrl.href }],
-  };
-  Transforms.insertNodes(editor, link, { at, split: true });
+  editor.insertNodes(
+    {
+      type: INLINE_LINK_ELEMENT_TYPE,
+      url: parsedUrl.href,
+      label: parsedUrl.href,
+      children: [{ text: parsedUrl.href }],
+    },
+    { at, split: true }
+  );
 };
 
 const createUrl = (url) => {
@@ -31,21 +35,21 @@ const createMiddleware = ({ isUrl }) => {
       for (const [childNode, childPath] of Node.children(editor, path)) {
         // Element children aren’t allowed
         if (childNode.children != null) {
-          Transforms.unwrapNodes(editor, { at: childPath });
+          editor.unwrapNodes({ at: childPath });
           return;
         }
 
         // We only allow a single child
         const childLeafIndex = childPath.slice(-1)[0];
         if (childLeafIndex !== 0) {
-          Transforms.mergeNodes(editor, { at: childPath });
+          editor.mergeNodes({ at: childPath });
           return;
         }
       }
 
       // Unwrap empty links
       if (node.children[0].text === "") {
-        Transforms.unwrapNodes(editor, { at: path });
+        editor.unwrapNodes({ at: path });
         return;
       }
 
@@ -59,20 +63,29 @@ const createMiddleware = ({ isUrl }) => {
       return;
     };
 
-    editor.isInline = (element) => element.type === "link" || isInline(element);
+    editor.isInline = (element) =>
+      element.type === INLINE_LINK_ELEMENT_TYPE || isInline(element);
 
     editor.insertLink = (
       { label: maybeLabel, url },
       { at = editor.selection, select = true } = {}
     ) => {
-      const linkMatch = editor.above({ at, match: (n) => n.type === "link" });
+      const linkMatch = editor.above({
+        at,
+        match: (n) => n.type === INLINE_LINK_ELEMENT_TYPE,
+      });
 
       const hasLabel = maybeLabel != null && maybeLabel.trim() !== "";
       const label = hasLabel ? maybeLabel : url;
 
       if (linkMatch == null) {
         editor.insertNodes(
-          { type: "link", url, label, children: [{ text: label }] },
+          {
+            type: INLINE_LINK_ELEMENT_TYPE,
+            url,
+            label,
+            children: [{ text: label }],
+          },
           { at }
         );
         if (select) {
@@ -103,7 +116,7 @@ const createMiddleware = ({ isUrl }) => {
     };
 
     editor.normalizeNode = ([node, path]) => {
-      if (node.type === "link") {
+      if (node.type === INLINE_LINK_ELEMENT_TYPE) {
         normalizeLinkNode([node, path]);
         return;
       }
@@ -117,9 +130,9 @@ const createMiddleware = ({ isUrl }) => {
       const urlEntries = getWords([node, path]).filter(([word]) => isUrl(word));
 
       for (let [url, urlRange] of urlEntries) {
-        const match = Editor.above(editor, {
+        const match = editor.above({
           at: urlRange,
-          match: (n) => n.type === "link",
+          match: (n) => n.type === INLINE_LINK_ELEMENT_TYPE,
         });
 
         // Url already wrapped in a link
@@ -134,8 +147,8 @@ const createMiddleware = ({ isUrl }) => {
     editor.insertText = (text) => {
       const { selection } = editor;
 
-      const match = Editor.above(editor, {
-        match: (n) => n.type === "link",
+      const match = editor.above({
+        match: (n) => n.type === INLINE_LINK_ELEMENT_TYPE,
       });
 
       if (!match) {
@@ -145,11 +158,11 @@ const createMiddleware = ({ isUrl }) => {
 
       const [linkNode, linkNodePath] = match;
 
-      const linkEndPoint = Editor.end(editor, linkNodePath);
+      const linkEndPoint = editor.end(linkNodePath);
 
       // Move cursor out of the node when pressing "space" at the end of a link
       if (text === " " && Point.equals(selection.anchor, linkEndPoint)) {
-        Transforms.move(editor, { distance: 1, unit: "offset" });
+        editor.move({ distance: 1, unit: "offset" });
         insertText(text);
         return;
       }
@@ -197,5 +210,5 @@ const LinkComponent = ({ attributes, children, element, openEditDialog }) => {
 
 export default ({ isUrl = urlUtils.validate } = {}) => ({
   middleware: createMiddleware({ isUrl }),
-  elements: { link: LinkComponent },
+  elements: { [INLINE_LINK_ELEMENT_TYPE]: LinkComponent },
 });
