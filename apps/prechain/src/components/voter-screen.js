@@ -5,7 +5,12 @@ import { useParams } from "react-router-dom";
 import { css } from "@emotion/react";
 import { useMatchMedia, useFetch } from "@shades/common/react";
 import { buildFeed as buildVoterFeed } from "../utils/voters.js";
-import { useActions, useDelegate, useDelegateFetch } from "../store.js";
+import {
+  useAccountProposalCandidates,
+  useActions,
+  useDelegate,
+  useDelegateFetch,
+} from "../store.js";
 import MetaTags_ from "./meta-tags.js";
 import Layout, { MainContentContainer } from "./layout.js";
 import Callout from "./callout.js";
@@ -217,9 +222,7 @@ const VoterMainSection = ({ voterAddress }) => {
   const delegate = useDelegate(voterAddress);
 
   const filteredProposals = delegate?.proposals ?? [];
-
-  // todo: use new accountcandidate hook
-  const filteredCandidates = delegate?.proposalCandidates ?? [];
+  const voterCandidates = useAccountProposalCandidates(voterAddress);
 
   const { fetchVoterScreenData } = useActions();
 
@@ -324,7 +327,7 @@ const VoterMainSection = ({ voterAddress }) => {
                   <SectionedList
                     sections={[
                       {
-                        items: filteredCandidates.slice(
+                        items: voterCandidates.slice(
                           0,
                           VOTER_LIST_PAGE_ITEM_COUNT * page
                         ),
@@ -332,7 +335,7 @@ const VoterMainSection = ({ voterAddress }) => {
                     ]}
                     style={{ marginTop: "2rem" }}
                   />
-                  {filteredCandidates.length >
+                  {voterCandidates.length >
                     VOTER_LIST_PAGE_ITEM_COUNT * page && (
                     <div css={{ textAlign: "center", padding: "3.2rem 0" }}>
                       <Button
