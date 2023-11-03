@@ -616,6 +616,7 @@ const ProposeScreen = () => {
                       onChange={(e) => {
                         setBody(e.target.value);
                       }}
+                      placeholder="..."
                       css={(t) =>
                         css({
                           outline: "none",
