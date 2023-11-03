@@ -2,8 +2,6 @@ import isHotkey from "is-hotkey";
 import { Node, Point, Path, Range } from "slate";
 import { withBlockPrefixShortcut } from "../utils.js";
 
-// const isProduction = process.env.NODE_ENV === "production";
-
 const BULLETED_LIST_ROOT_ELEMENT_TYPE = "bulleted-list";
 const NUMBERED_LIST_ROOT_ELEMENT_TYPE = "numbered-list";
 const LIST_ITEM_ELEMENT_TYPE = "list-item";

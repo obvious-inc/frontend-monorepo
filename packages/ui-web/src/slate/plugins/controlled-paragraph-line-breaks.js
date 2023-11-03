@@ -1,5 +1,5 @@
 import isHotkey from "is-hotkey";
-import { Editor, Node, Path, Transforms } from "slate";
+import { Node, Path } from "slate";
 import { search, intersectsSelection } from "../utils";
 
 const PARAGRAPH_ELEMENT_TYPE = "paragraph";
@@ -58,10 +58,10 @@ const middleware = (editor) => {
 
     // Prevent leading line breaks
     if (startMatch?.includes("\n")) {
-      const nodeStart = Editor.start(editor, path);
+      const nodeStart = editor.start(path);
 
-      Transforms.delete(editor, {
-        at: { anchor: nodeStart, focus: Editor.after(editor, nodeStart) },
+      editor.delete({
+        at: { anchor: nodeStart, focus: editor.after(nodeStart) },
       });
       return;
     }
@@ -73,10 +73,10 @@ const middleware = (editor) => {
       endMatch?.includes("\n") &&
       !hasSelection // A trailing line break is fine if the cursor it there
     ) {
-      const nodeEnd = Editor.end(editor, path);
+      const nodeEnd = editor.end(path);
 
-      Transforms.delete(editor, {
-        at: { anchor: nodeEnd, focus: Editor.before(editor, nodeEnd) },
+      editor.delete({
+        at: { anchor: nodeEnd, focus: editor.before(nodeEnd) },
       });
       return;
     }
@@ -92,7 +92,7 @@ const middleware = (editor) => {
     }
 
     // Split the paragraph wherever there’s a match
-    const [start, end] = Editor.edges(editor, path);
+    const [start, end] = editor.edges(path);
     const [matchStartPoint] = search(editor, match, {
       at: { anchor: start, focus: end },
     });

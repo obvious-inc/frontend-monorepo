@@ -7,8 +7,6 @@ import {
 } from "../../rich-text.js";
 import Image from "../../image.js";
 
-const isProduction = process.env.NODE_ENV === "production";
-
 const IMAGE_ELEMENT_TYPE = "image";
 const IMAGE_CONTAINER_ELEMENT_TYPE = "image-grid";
 
@@ -64,29 +62,27 @@ const middleware = (editor) => {
     normalizeNode([node, path]);
   };
 
-  editor.normalizeNode = isProduction
-    ? normalizeNode
-    : ([node, path]) => {
-        if (node.type === IMAGE_ELEMENT_TYPE) {
-          normalizeImageElement([node, path]);
-          return;
-        }
+  editor.normalizeNode = ([node, path]) => {
+    if (node.type === IMAGE_ELEMENT_TYPE) {
+      normalizeImageElement([node, path]);
+      return;
+    }
 
-        if (node.type === IMAGE_CONTAINER_ELEMENT_TYPE) {
-          normalizeImageContainerElement([node, path]);
-          return;
-        }
+    if (node.type === IMAGE_CONTAINER_ELEMENT_TYPE) {
+      normalizeImageContainerElement([node, path]);
+      return;
+    }
 
-        if (
-          editor.isBlock(node) &&
-          node.children.every((n) => n.type === IMAGE_ELEMENT_TYPE)
-        ) {
-          editor.setNodes({ type: IMAGE_CONTAINER_ELEMENT_TYPE }, { at: path });
-          return;
-        }
+    if (
+      editor.isBlock(node) &&
+      node.children.every((n) => n.type === IMAGE_ELEMENT_TYPE)
+    ) {
+      editor.setNodes({ type: IMAGE_CONTAINER_ELEMENT_TYPE }, { at: path });
+      return;
+    }
 
-        normalizeNode([node, path]);
-      };
+    normalizeNode([node, path]);
+  };
 
   editor.insertBreak = () => {
     const parentImageContainerMatchEntry = editor.above({
@@ -119,6 +115,8 @@ const middleware = (editor) => {
 
   editor.insertImage = ({ url, width, height }, { at } = {}) => {
     const match = editor.node(at);
+
+    // If there is an image at the selection, edit that element
     if (match != null && match[0].type === IMAGE_ELEMENT_TYPE) {
       editor.setNodes({ url, width, height }, { at });
       return;
@@ -142,32 +140,19 @@ const middleware = (editor) => {
     };
 
     if (isInImageContainer) {
-      editor.insertNode(imageElement, { at });
+      editor.insertNode(imageElement);
       return;
     }
 
     const isInEmptyParagraph = Node.string(parentBlockNode).trim() === "";
 
-    if (isInEmptyParagraph) {
-      editor.withoutNormalizing(() => {
-        // editor.removeNodes({ at })
-        editor.setNodes({ type: IMAGE_CONTAINER_ELEMENT_TYPE }, { at });
-        editor.insertNode(imageElement, { at });
-        editor.print();
-        // editor.insertBreak();
-      });
-      return;
-    }
-
     editor.withoutNormalizing(() => {
+      if (isInEmptyParagraph) editor.removeNodes();
+      editor.insertNode({
+        type: IMAGE_CONTAINER_ELEMENT_TYPE,
+        children: [imageElement],
+      });
       editor.insertBreak();
-      editor.insertNodes([
-        {
-          type: IMAGE_CONTAINER_ELEMENT_TYPE,
-          children: [imageElement],
-        },
-        { type: "paragraph", children: [{ text: "" }] },
-      ]);
     });
   };
 

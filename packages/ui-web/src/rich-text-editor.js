@@ -266,7 +266,19 @@ const withEditorCommands = (editor) => {
 };
 
 const withSaneishDefaultBehaviors = (editor) => {
-  const { insertData, isInline } = editor;
+  const { insertData, normalizeNode, isInline } = editor;
+
+  editor.normalizeNode = ([node, path]) => {
+    if (path.length === 0 && node.children.length === 0) {
+      editor.insertNode(
+        { type: "paragraph", children: [{ text: "" }] },
+        { at: path }
+      );
+      return;
+    }
+
+    normalizeNode([node, path]);
+  };
 
   editor.insertData = (data) => {
     const text = data.getData("text");
@@ -568,6 +580,7 @@ const RichTextEditor = React.forwardRef(
                     onSubmit={async ({ url }) => {
                       imageDialogActions.close();
                       const [{ width, height }] = await Promise.all([
+                        // TODO handle image error
                         getImageDimensionsFromUrl(url),
                         editor.focus(imageDialogState.at),
                       ]);
