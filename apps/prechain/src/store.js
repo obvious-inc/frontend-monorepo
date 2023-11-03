@@ -523,6 +523,17 @@ export const useProposalCandidates = () => {
   }, [candidatesById, proposalsById, blockNumber]);
 };
 
+export const useAccountProposalCandidates = (accountAddress) => {
+  const candidatesById = useStore((s) => s.proposalCandidatesById);
+
+  return React.useMemo(() => {
+    const candidates = Object.values(candidatesById);
+    return candidates.filter(
+      (c) => c.proposerId.toLowerCase() === accountAddress.toLowerCase()
+    );
+  }, [candidatesById, accountAddress]);
+};
+
 export const useProposalCandidateVotingPower = (candidateId) => {
   const candidate = useProposalCandidate(candidateId);
   const proposerDelegate = useDelegate(candidate.proposerId);

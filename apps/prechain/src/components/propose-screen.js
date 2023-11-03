@@ -35,7 +35,7 @@ import {
   useCreateProposal,
   useCanCreateProposal,
 } from "../hooks/dao-contract.js";
-import { useActions, useProposalCandidate } from "../store.js";
+import { useActions, useAccountProposalCandidates } from "../store.js";
 import { useTokenBuyerEthNeeded } from "../hooks/misc-contracts.js";
 import { useCreateProposalCandidate } from "../hooks/data-contract.js";
 import useKeyboardShortcuts from "../hooks/keyboard-shortcuts.js";
@@ -213,13 +213,9 @@ const ProposeScreen = () => {
 
   const [editorMode, setEditorMode] = useEditorMode(draft, { setBody });
 
-  const candidateSlug = draft?.name.trim().toLowerCase().replace(/\s+/g, "-");
-
-  const candidateId = [
-    connectedAccountAddress.toLowerCase(),
-    candidateSlug,
-  ].join("-");
-  const candidateSlugInUse = useProposalCandidate(candidateId) != null;
+  const accountProposalCandidates = useAccountProposalCandidates(
+    connectedAccountAddress
+  );
 
   useFetch(
     () => fetchProposalCandidatesByAccount(connectedAccountAddress),
@@ -232,10 +228,7 @@ const ProposeScreen = () => {
       ? draft.body.trim() === ""
       : draft.body.every(isRichTextEditorNodeEmpty);
 
-  const hasRequiredInput =
-    !isNameEmpty &&
-    !isBodyEmpty &&
-    !(draftTargetType === "candidate" && candidateSlugInUse);
+  const hasRequiredInput = !isNameEmpty && !isBodyEmpty;
 
   const selectedAction =
     selectedActionIndex >= 0 ? draft.actions[selectedActionIndex] : null;
@@ -288,6 +281,19 @@ const ProposeScreen = () => {
 
       return actionTransactions;
     });
+
+    const buildCandidateSlug = (title) => {
+      const slugifiedTitle = title.toLowerCase().replace(/\s+/g, "-");
+      let index = 0;
+      while (slugifiedTitle) {
+        const slug = [slugifiedTitle, index].filter(Boolean).join("-");
+        if (accountProposalCandidates.find((c) => c.slug === slug) == null)
+          return slug;
+        index += 1;
+      }
+    };
+
+    const candidateSlug = buildCandidateSlug(draft.name.trim());
 
     return Promise.resolve()
       .then(() =>
@@ -588,17 +594,11 @@ const ProposeScreen = () => {
                     })
                   }
                 >
-                  {draftTargetType === "candidate" && candidateSlugInUse ? (
-                    <>Slug already in use</>
-                  ) : (
-                    <>
-                      By{" "}
-                      <AccountPreviewPopoverTrigger
-                        // showAvatar
-                        accountAddress={connectedAccountAddress}
-                      />
-                    </>
-                  )}
+                  By{" "}
+                  <AccountPreviewPopoverTrigger
+                    // showAvatar
+                    accountAddress={connectedAccountAddress}
+                  />
                 </div>
                 {editorMode === "rich-text" ? (
                   <RichTextEditor
