@@ -391,10 +391,12 @@ const VoterScreen = () => {
           },
         ]}
       >
-        <VoterMainSection
-          voterAddress={voterAddress}
-          scrollContainerRef={scrollContainerRef}
-        />
+        {voterAddress && (
+          <VoterMainSection
+            voterAddress={voterAddress}
+            scrollContainerRef={scrollContainerRef}
+          />
+        )}
       </Layout>
     </>
   );
