@@ -213,7 +213,7 @@ const ProposalMainSection = ({ proposalId, scrollContainerRef }) => {
         if (hours === 0)
           return (
             <>
-              Start in {Math.max(minutes, 0)}{" "}
+              Starts in {Math.max(minutes, 0)}{" "}
               {minutes === 1 ? "minute" : "minutes"}
             </>
           );
