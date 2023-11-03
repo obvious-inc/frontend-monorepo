@@ -213,14 +213,6 @@ const ProposeScreen = () => {
 
   const [editorMode, setEditorMode] = useEditorMode(draft, { setBody });
 
-  const isNameEmpty = draft.name.trim() === "";
-  const isBodyEmpty =
-    typeof draft.body === "string"
-      ? draft.body.trim() === ""
-      : draft.body.every(isRichTextEditorNodeEmpty);
-
-  const hasRequiredInput = !isNameEmpty && !isBodyEmpty;
-
   const candidateSlug = draft?.name.trim().toLowerCase().replace(/\s+/g, "-");
 
   const candidateId = [
@@ -233,6 +225,17 @@ const ProposeScreen = () => {
     () => fetchProposalCandidatesByAccount(connectedAccountAddress),
     [connectedAccountAddress]
   );
+
+  const isNameEmpty = draft.name.trim() === "";
+  const isBodyEmpty =
+    typeof draft.body === "string"
+      ? draft.body.trim() === ""
+      : draft.body.every(isRichTextEditorNodeEmpty);
+
+  const hasRequiredInput =
+    !isNameEmpty &&
+    !isBodyEmpty &&
+    !(draftTargetType === "candidate" && candidateSlugInUse);
 
   const selectedAction =
     selectedActionIndex >= 0 ? draft.actions[selectedActionIndex] : null;
