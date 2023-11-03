@@ -92,6 +92,14 @@ query {
     votes (orderBy: blockNumber, orderDirection: desc) {
       ...VoteFields
     }
+    proposals (orderBy: createdBlock, orderDirection: desc) {
+      id
+      description
+      title
+      status
+      createdBlock
+      createdTimestamp
+    }
   }
 }`;
 
@@ -118,6 +126,14 @@ const createDelegateQuery = (id) => `
       }
       votes (orderBy: blockNumber, orderDirection: desc) {
         ...VoteFields
+      }
+      proposals (orderBy: createdBlock, orderDirection: desc) {
+        id
+        description
+        title
+        status
+        createdBlock
+        createdTimestamp
       }
     }
 }`;
@@ -548,10 +564,10 @@ const parseDelegate = (data) => {
       .filter((n) => n.delegateId == null || n.delegateId === data.id)
   );
 
-  if (data.votes != null)
-    parsedData.votes = data.votes
-      .map(parseProposalVote)
-      .filter((v) => !hideProposalVote(v));
+  if (data.votes != null) parsedData.votes = data.votes.map(parseProposalVote);
+
+  if (data.proposals != null)
+    parsedData.proposals = data.proposals.map(parseProposal);
 
   return parsedData;
 };

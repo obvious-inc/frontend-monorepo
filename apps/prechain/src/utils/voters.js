@@ -1,6 +1,6 @@
 import { array as arrayUtils } from "@shades/common/utils";
 
-export const buildFeed = (delegate, { latestBlockNumber, voterAddress }) => {
+export const buildFeed = (delegate) => {
   if (delegate == null) return [];
 
   const voteItems =
@@ -17,7 +17,18 @@ export const buildFeed = (delegate, { latestBlockNumber, voterAddress }) => {
       isPending: v.isPending,
     })) ?? [];
 
-  const items = [...voteItems];
+  const proposalItems =
+    delegate.proposals?.map((proposal) => ({
+      type: "event",
+      eventType: "proposal-created",
+      id: `${proposal.id}-created`,
+      timestamp: proposal.createdTimestamp,
+      blockNumber: proposal.createdBlock,
+      authorAccount: proposal.proposerId,
+      proposalId: proposal.id,
+    })) ?? [];
+
+  const items = [...voteItems, ...proposalItems];
 
   return arrayUtils.sortBy(
     { value: (i) => i.blockNumber, order: "desc" },

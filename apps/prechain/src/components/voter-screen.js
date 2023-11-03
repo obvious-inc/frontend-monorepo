@@ -18,19 +18,9 @@ import Select from "@shades/ui-web/select";
 import { useCurrentDynamicQuorum } from "../hooks/dao-contract.js";
 
 const useFeedItems = (voterAddress) => {
-  const { data: eagerLatestBlockNumber } = useBlockNumber({
-    watch: true,
-    cacheTime: 20_000,
-  });
-
-  const latestBlockNumber = React.useDeferredValue(eagerLatestBlockNumber);
-
   const delegate = useDelegate(voterAddress);
 
-  return React.useMemo(
-    () => buildVoterFeed(delegate, { latestBlockNumber }),
-    [delegate, latestBlockNumber]
-  );
+  return React.useMemo(() => buildVoterFeed(delegate), [delegate]);
 };
 
 const FeedSidebar = React.memo(({ visible = true, voterAddress }) => {
