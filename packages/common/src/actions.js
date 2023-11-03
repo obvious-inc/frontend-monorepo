@@ -322,7 +322,7 @@ export default ({
             );
             const allMessages = responses.flatMap((ms) => ms);
             dispatch({
-              type: "fetch-messages:request-successful",
+              type: "fetch-reply-target-messages:request-successful",
               messages: allMessages,
               channelId,
             });
@@ -508,7 +508,7 @@ export default ({
     },
     async fetchUserMessages(userId) {
       const messages = await api.fetchUserMessages(userId);
-      dispatch({ type: "fetch-messages:request-successful", messages });
+      dispatch({ type: "fetch-user-messages:request-successful", messages });
       return messages;
     },
     fetchUserChannelsReadStates,
