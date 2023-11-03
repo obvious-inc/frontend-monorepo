@@ -23,13 +23,18 @@ import Select from "@shades/ui-web/select";
 import { useCurrentDynamicQuorum } from "../hooks/dao-contract.js";
 import { SectionedList } from "./browse-screen.js";
 import Button from "@shades/ui-web/button";
+import Spinner from "@shades/ui-web/spinner";
 
 const VOTER_LIST_PAGE_ITEM_COUNT = 20;
 
 const useFeedItems = (voterAddress) => {
   const delegate = useDelegate(voterAddress);
+  const candidates = useAccountProposalCandidates(voterAddress);
 
-  return React.useMemo(() => buildVoterFeed(delegate), [delegate]);
+  return React.useMemo(
+    () => buildVoterFeed(delegate, candidates),
+    [delegate, candidates]
+  );
 };
 
 const FeedSidebar = React.memo(({ visible = true, voterAddress }) => {
@@ -361,7 +366,7 @@ const VoterMainSection = ({ voterAddress }) => {
 const VoterScreen = () => {
   const { voterId } = useParams();
 
-  const { data: ensAddress } = useEnsAddress({
+  const { data: ensAddress, isFetching } = useEnsAddress({
     name: voterId.trim(),
     enabled: voterId.trim().split(".").slice(-1)[0] === "eth",
   });
@@ -396,6 +401,8 @@ const VoterScreen = () => {
             voterAddress={voterAddress}
             scrollContainerRef={scrollContainerRef}
           />
+        ) : isFetching ? (
+          <Spinner size="2rem" />
         ) : (
           <div
             style={{

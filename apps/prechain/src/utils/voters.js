@@ -1,6 +1,6 @@
 import { array as arrayUtils } from "@shades/common/utils";
 
-export const buildFeed = (delegate) => {
+export const buildFeed = (delegate, candidates) => {
   if (delegate == null) return [];
 
   const voteItems =
@@ -28,7 +28,18 @@ export const buildFeed = (delegate) => {
       proposalId: proposal.id,
     })) ?? [];
 
-  const items = [...voteItems, ...proposalItems];
+  const candidateItems = candidates?.map((candidate) => ({
+    type: "event",
+    eventType: "candidate-created",
+    id: `${candidate.id}-created`,
+    timestamp: candidate.createdTimestamp,
+    blockNumber: candidate.createdBlock,
+    authorAccount: candidate.proposerId,
+    candidateId: candidate.id,
+    targetProposalId: candidate.proposalId,
+  }));
+
+  const items = [...voteItems, ...proposalItems, ...candidateItems];
 
   return arrayUtils.sortBy(
     { value: (i) => i.blockNumber, order: "desc" },
