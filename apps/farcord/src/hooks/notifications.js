@@ -1,6 +1,6 @@
 import React from "react";
 import { useFetch } from "@shades/common/react";
-import { fetchMentionAndReplies, fetchReactionsAndRecasts } from "./neynar";
+import { fetchNotifications as fetchAllNotifications } from "./neynar";
 import { array as arrayUtils } from "@shades/common/utils";
 export const NotificationsContext = React.createContext();
 
@@ -14,6 +14,7 @@ export const NotificationsContextProvider = ({ children }) => {
     repliesByFid: {},
     recastsByFid: {},
     likesByFid: {},
+    followsByFid: {},
     lastSeenByFid: getInitialNotificationsReadState(),
   }));
 
@@ -25,7 +26,7 @@ export const NotificationsContextProvider = ({ children }) => {
   }, [state.lastSeenByFid]);
 
   const fetchNotifications = React.useCallback(async ({ fid }) => {
-    fetchMentionAndReplies({ fid }).then((notifications) => {
+    fetchAllNotifications({ fid }).then((notifications) => {
       if (!notifications) return;
 
       const notificationsByType = arrayUtils.groupBy(
@@ -38,34 +39,23 @@ export const NotificationsContextProvider = ({ children }) => {
           ...s,
           mentionsByFid: {
             ...s.mentionsByFid,
-            [fid]: notificationsByType?.["cast-mention"],
+            [fid]: notificationsByType?.["mention"],
           },
           repliesByFid: {
             ...s.repliesByFid,
-            [fid]: notificationsByType?.["cast-reply"],
+            [fid]: notificationsByType?.["reply"],
           },
-        };
-      });
-    });
-
-    fetchReactionsAndRecasts({ fid }).then((notifications) => {
-      if (!notifications) return;
-
-      const notificationsByType = arrayUtils.groupBy(
-        (n) => n.type,
-        notifications
-      );
-
-      setState((s) => {
-        return {
-          ...s,
           likesByFid: {
             ...s.likesByFid,
-            [fid]: notificationsByType?.["like"],
+            [fid]: notificationsByType?.["likes"],
           },
           recastsByFid: {
             ...s.recastsByFid,
-            [fid]: notificationsByType?.["recast"],
+            [fid]: notificationsByType?.["recasts"],
+          },
+          followsByFid: {
+            ...s.followsByFid,
+            [fid]: notificationsByType?.["follows"],
           },
         };
       });
@@ -125,6 +115,7 @@ export const useNotificationsBadge = (fid) => {
       repliesByFid,
       recastsByFid,
       likesByFid,
+      followsByFid,
     },
   } = React.useContext(NotificationsContext);
   useNotificationsByFidOrFetch(fid);
@@ -135,20 +126,26 @@ export const useNotificationsBadge = (fid) => {
       ...(repliesByFid[fid] ?? []),
       ...(recastsByFid[fid] ?? []),
       ...(likesByFid[fid] ?? []),
+      ...(followsByFid[fid] ?? []),
     ];
-  }, [mentionsByFid, repliesByFid, recastsByFid, likesByFid, fid]);
+  }, [
+    mentionsByFid,
+    repliesByFid,
+    recastsByFid,
+    likesByFid,
+    followsByFid,
+    fid,
+  ]);
 
   const unseenNotifs = React.useMemo(() => {
     const lastSeen = lastSeenByFid[fid];
     return allFidNotifs.filter((n) => {
-      return (n.latestReactionTimestamp ?? n.timestamp) > lastSeen;
+      return (n.mostRecentTimestamp ?? n.timestamp) > lastSeen;
     });
   }, [allFidNotifs, fid, lastSeenByFid]);
 
   const hasUnseenMentionsOrReplies = React.useMemo(() => {
-    return unseenNotifs.some(
-      (n) => n.type === "cast-mention" || n.type === "cast-reply"
-    );
+    return unseenNotifs.some((n) => n.type === "mention" || n.type === "reply");
   }, [unseenNotifs]);
 
   if (!lastSeenByFid[fid]) {
@@ -166,7 +163,13 @@ export const useNotificationsBadge = (fid) => {
 
 export const useNotificationsByFid = (fid) => {
   const {
-    state: { mentionsByFid, repliesByFid, recastsByFid, likesByFid },
+    state: {
+      mentionsByFid,
+      repliesByFid,
+      recastsByFid,
+      likesByFid,
+      followsByFid,
+    },
   } = React.useContext(NotificationsContext);
 
   return {
@@ -174,12 +177,19 @@ export const useNotificationsByFid = (fid) => {
     replies: repliesByFid[fid] ?? [],
     recasts: recastsByFid[fid] ?? [],
     likes: likesByFid[fid] ?? [],
+    follows: followsByFid[fid] ?? [],
   };
 };
 
 export const useNotificationsByFidOrFetch = (fid) => {
   const {
-    state: { mentionsByFid, repliesByFid, recastsByFid, likesByFid },
+    state: {
+      mentionsByFid,
+      repliesByFid,
+      recastsByFid,
+      likesByFid,
+      followsByFid,
+    },
   } = React.useContext(NotificationsContext);
 
   useNotificationsFetch({ fid });
@@ -188,19 +198,20 @@ export const useNotificationsByFidOrFetch = (fid) => {
     replies: repliesByFid[fid] ?? [],
     recasts: recastsByFid[fid] ?? [],
     likes: likesByFid[fid] ?? [],
+    follows: followsByFid[fid] ?? [],
   };
 };
 
 export const useSortedByDateNotificationsByFid = (fid) => {
-  const { mentions, replies, recasts, likes } =
+  const { mentions, replies, recasts, likes, follows } =
     useNotificationsByFidOrFetch(fid);
 
   const notifications = React.useMemo(() => {
-    return [...mentions, ...replies, ...recasts, ...likes];
-  }, [mentions, replies, recasts, likes]);
+    return [...mentions, ...replies, ...recasts, ...likes, ...follows];
+  }, [mentions, replies, recasts, likes, follows]);
 
   return arrayUtils.sortBy(
-    { value: (n) => n.latestReactionTimestamp ?? n.timestamp, order: "desc" },
+    { value: (n) => n.mostRecentTimestamp ?? n.timestamp, order: "desc" },
     notifications
   );
 };

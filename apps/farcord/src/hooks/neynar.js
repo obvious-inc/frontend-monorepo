@@ -175,67 +175,31 @@ export const fetchCustodyAddressByUsername = async (username) => {
   return await fetchUserByUsername(username);
 };
 
-export async function fetchMentionAndReplies({
+export async function fetchNotifications({
   fid,
   cursor,
-  limit = DEFAULT_PAGE_SIZE,
+  limit = 50, //limit for notificatons is different
 }) {
-  if (!fid) return [];
-
   let params = new URLSearchParams({
     api_key: process.env.NEYNAR_API_KEY,
-    fid: Number(fid),
+    fid,
+    cursor,
     limit,
   });
 
-  if (cursor) params.set("cursor", cursor);
-
-  return fetch(NEYNAR_V1_ENDPOINT + "/mentions-and-replies?" + params)
+  return fetch(NEYNAR_V2_ENDPOINT + "/notifications?" + params)
     .then((result) => {
       return result.json();
     })
     .then((data) => {
-      return data.result.notifications?.map((notification) => {
-        return parseNotification({ notification });
-      });
+      return data.notifications;
     })
     .then((notifications) => {
-      return notifications.filter((n) => {
-        if (!n) return false;
-        if (n.type === "cast-reply" || n.type == "cast-mention") {
-          if (n.author.fid === Number(fid)) return false;
-        }
-        return true;
-      });
-    })
-    .catch((err) => {
-      throw err;
-    });
-}
-
-export async function fetchReactionsAndRecasts({
-  fid,
-  cursor,
-  limit = DEFAULT_PAGE_SIZE,
-}) {
-  if (!fid) return [];
-
-  let params = new URLSearchParams({
-    api_key: process.env.NEYNAR_API_KEY,
-    fid: Number(fid),
-    limit,
-  });
-
-  if (cursor) params.set("cursor", cursor);
-
-  return fetch(NEYNAR_V1_ENDPOINT + "/reactions-and-recasts?" + params)
-    .then((result) => {
-      return result.json();
-    })
-    .then((data) => {
-      return data.result.notifications?.map((notification) => {
-        return parseNotification({ notification });
-      });
+      return notifications
+        ?.map((notification) => {
+          return parseNotification({ notification });
+        })
+        .filter((n) => n);
     })
     .catch((err) => {
       throw err;
@@ -350,25 +314,41 @@ const parseCast = ({ cast, hash }) => {
 };
 
 const parseNotification = ({ notification }) => {
-  const { hash, text, type, timestamp } = notification;
+  const { type, most_recent_timestamp: mostRecentTimestamp } = notification;
 
-  const richText = parseString(text, notification.mentionedProfiles);
-  const author = parseUser({ user: notification.author });
+  const parsedNotification = { ...notification, type, mostRecentTimestamp };
 
-  const reactors = notification.reactors?.map((r) => {
-    return parseUser({ user: r });
-  });
+  if (type != "follows") {
+    const parsedCast = parseCast({ cast: notification.cast });
+    if (parsedCast.deleted) return null;
+    parsedNotification.cast = parsedCast;
+  }
 
-  return {
-    ...notification,
-    text,
-    hash,
-    richText,
-    type: type ?? notification.reactionType,
-    timestamp,
-    author,
-    reactors,
-  };
+  if (notification.reactions) {
+    // reactions include duplicate users... so we need to filter them out
+    const reactors = [];
+    parsedNotification.reactions = notification.reactions
+      .map((r) => {
+        if (reactors.includes(r.user.fid)) return null;
+        reactors.push(r.user.fid);
+        return { cast: r.cast, user: parseUser({ user: r.user }) };
+      })
+      .filter((r) => r);
+  }
+
+  parsedNotification.id = `${parsedNotification.type}-${parsedNotification.cast?.hash}`;
+
+  if (notification.follows) {
+    const timestamp = new Date(
+      parsedNotification.mostRecentTimestamp
+    ).getTime();
+    parsedNotification.id = `${parsedNotification.type}-${timestamp}`;
+    parsedNotification.follows = notification.follows.map((f) => {
+      return { user: parseUser({ user: f.user }) };
+    });
+  }
+
+  return parsedNotification;
 };
 
 export const extractUsersFromNeynarCast = (cast) => {

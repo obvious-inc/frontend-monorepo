@@ -14,27 +14,29 @@ import RichText from "./rich-text";
 
 const NotificationBody = ({ notification, displayRichText = false }) => {
   if (notification == null) return null;
-  if (notification.richText && displayRichText)
-    return <RichText blocks={notification.richText} />;
+  const cast = notification.cast;
+  if (cast.richText && displayRichText)
+    return <RichText blocks={cast.richText} />;
 
   return (
     <p style={{ whiteSpace: "pre-wrap", wordWrap: "break-word" }}>
-      {notification.text}
+      {cast.text}
     </p>
   );
 };
 
 const MentionNotification = ({ notification, showReplyTarget = false }) => {
   const navigate = useNavigate();
-  const author = notification.author;
+  const cast = notification.cast;
+  const author = cast.author;
 
   return (
     <>
       {showReplyTarget && (
         <ReplyTargetCast
-          castHash={notification.parentHash}
+          castHash={cast.parentHash}
           onClickMessage={() => {
-            navigate(`?cast=${notification.parentHash}`);
+            navigate(`?cast=${cast.parentHash}`);
           }}
         />
       )}
@@ -46,7 +48,7 @@ const MentionNotification = ({ notification, showReplyTarget = false }) => {
           gridGap: "var(--gutter-size)",
         }}
       >
-        <Avatar url={notification.author?.pfpUrl} size="var(--avatar-size)" />
+        <Avatar url={cast.author?.pfpUrl} size="var(--avatar-size)" />
         <div>
           <div
             css={css`
@@ -77,7 +79,7 @@ const MentionNotification = ({ notification, showReplyTarget = false }) => {
             />
 
             <Link
-              to={`?cast=${notification.hash}`}
+              to={`?cast=${cast.hash}`}
               css={(t) =>
                 css({
                   color: "inherit",
@@ -94,7 +96,7 @@ const MentionNotification = ({ notification, showReplyTarget = false }) => {
                 })
               }
             >
-              <CastDate date={parseISO(notification.timestamp)} />
+              <CastDate date={parseISO(cast.timestamp)} />
             </Link>
           </div>
           <NotificationBody
@@ -108,7 +110,9 @@ const MentionNotification = ({ notification, showReplyTarget = false }) => {
 };
 
 const LikeNotification = ({ notification }) => {
-  const reactors = notification.reactors;
+  const reactions = notification.reactions;
+  const reactors = reactions.map((r) => r.user);
+  const cast = notification.cast;
 
   const likedText = () => {
     const reactor = reactors[0];
@@ -154,12 +158,16 @@ const LikeNotification = ({ notification }) => {
           `}
         >
           {reactors.slice(0, 8).map((reactor) => (
-            <Avatar key={reactor.fid} url={reactor.pfpUrl} size="3rem" />
+            <Avatar
+              key={`${notification.id}-${reactor.fid}`}
+              url={reactor.pfpUrl}
+              size="3rem"
+            />
           ))}
         </div>
         {likedText()}
         <Link
-          to={`?cast=${notification.hash}`}
+          to={`?cast=${cast.hash}`}
           css={(t) =>
             css({
               color: t.colors.textMuted,
@@ -184,7 +192,9 @@ const LikeNotification = ({ notification }) => {
 };
 
 const RecastNotification = ({ notification }) => {
-  const reactors = notification.reactors;
+  const reactions = notification.reactions;
+  const reactors = reactions.map((r) => r.user);
+  const cast = notification.cast;
 
   const recastText = () => {
     const reactor = reactors[0];
@@ -230,12 +240,16 @@ const RecastNotification = ({ notification }) => {
           `}
         >
           {reactors.slice(0, 8).map((reactor) => (
-            <Avatar key={reactor.fid} url={reactor.pfpUrl} size="3rem" />
+            <Avatar
+              key={`${notification.id}-${reactor.fid}`}
+              url={reactor.pfpUrl}
+              size="3rem"
+            />
           ))}
         </div>
         {recastText()}
         <Link
-          to={`?cast=${notification.hash}`}
+          to={`?cast=${cast.hash}`}
           css={(t) =>
             css({
               color: t.colors.textMuted,
@@ -259,13 +273,73 @@ const RecastNotification = ({ notification }) => {
   );
 };
 
+const FollowsNotification = ({ notification }) => {
+  const reactors = notification.follows.map((r) => r.user);
+
+  const followText = () => {
+    const reactor = reactors[0];
+    if (reactors.length === 1) {
+      return `${reactor.displayName} followed you`;
+    } else if (reactors.length === 2) {
+      return `${reactor.displayName} and 1 other followed you`;
+    } else {
+      return `${reactor.displayName} and ${
+        reactors.length - 1
+      } others followed you`;
+    }
+  };
+
+  return (
+    <div
+      className="main-container"
+      style={{
+        display: "grid",
+        gridTemplateColumns: "var(--avatar-size) minmax(0,1fr)",
+        gridGap: "var(--gutter-size)",
+      }}
+    >
+      <HeartSolidIcon
+        css={css({
+          width: "var(--avatar-size)",
+          fill: "rgb(255, 93, 103)",
+        })}
+      />
+      <div>
+        <div
+          css={css`
+            display: grid;
+            grid-auto-flow: column;
+            grid-auto-columns: minmax(0, auto);
+            justify-content: flex-start;
+            align-items: center;
+            grid-gap: 0.6rem;
+            margin: 0 0 0.2rem;
+            cursor: default;
+            min-height: 1.9rem;
+            line-height: 1.2;
+          `}
+        >
+          {reactors.slice(0, 8).map((reactor) => (
+            <Avatar
+              key={`${notification.id}-${reactor.fid}`}
+              url={reactor.pfpUrl}
+              size="3rem"
+            />
+          ))}
+        </div>
+        {followText()}
+      </div>
+    </div>
+  );
+};
+
 const NotificationItem = ({ notification, unseen = false }) => {
   const containerRef = React.useRef();
 
   const notificationType = notification?.type;
   const notificationItem = React.useMemo(() => {
     switch (notificationType) {
-      case "cast-reply": {
+      case "reply": {
         return (
           <MentionNotification
             notification={notification}
@@ -273,7 +347,7 @@ const NotificationItem = ({ notification, unseen = false }) => {
           />
         );
       }
-      case "cast-mention": {
+      case "mention": {
         return (
           <MentionNotification
             notification={notification}
@@ -281,11 +355,14 @@ const NotificationItem = ({ notification, unseen = false }) => {
           />
         );
       }
-      case "like": {
+      case "likes": {
         return <LikeNotification notification={notification} />;
       }
-      case "recast": {
+      case "recasts": {
         return <RecastNotification notification={notification} />;
+      }
+      case "follows": {
+        return <FollowsNotification notification={notification} />;
       }
       default: {
         console.error("Unknown notification type", notification);
@@ -298,7 +375,7 @@ const NotificationItem = ({ notification, unseen = false }) => {
     <div
       ref={containerRef}
       role="listitem"
-      data-message-id={notification.hash}
+      data-message-id={notification.id}
       css={(t) =>
         css({
           "--padding": `2rem 1.6rem 1rem`,

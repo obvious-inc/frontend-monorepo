@@ -121,7 +121,7 @@ const NotificationsView = () => {
                 <>
                   {notifications.map((notification) => (
                     <NotificationItem
-                      key={`${notification.type}-${notification.hash}`}
+                      key={notification.id}
                       notification={notification}
                       unseen={notification.timestamp > prevNotifsLastSeenAt}
                     />
