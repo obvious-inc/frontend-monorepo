@@ -404,14 +404,7 @@ const VoterMainSection = ({ voterAddress }) => {
               }
             >
               <Tabs.Item key="proposals" title="Proposals">
-                <div
-                  css={css({
-                    paddingTop: "2.4rem",
-                    "@media (min-width: 600px)": {
-                      paddingTop: "2.8rem",
-                    },
-                  })}
-                >
+                <div>
                   <SectionedList
                     sections={[
                       {
@@ -439,14 +432,7 @@ const VoterMainSection = ({ voterAddress }) => {
                 </div>
               </Tabs.Item>
               <Tabs.Item key="candidates" title="Candidates">
-                <div
-                  css={css({
-                    paddingTop: "2.4rem",
-                    "@media (min-width: 600px)": {
-                      paddingTop: "2.8rem",
-                    },
-                  })}
-                >
+                <div>
                   <SectionedList
                     sections={[
                       {
