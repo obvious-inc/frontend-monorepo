@@ -45,6 +45,7 @@ const ThreadCasts = ({ castHash }) => {
         acc.push(cast);
       } else {
         const parentCast = threadCasts.find((c) => c.hash == cast.parentHash);
+        if (!parentCast) return acc;
         parentCast.children = parentCast.children || [];
         const childrenHashes = parentCast.children.map((c) => c.hash);
         if (!childrenHashes.includes(cast.hash)) parentCast.children.push(cast);

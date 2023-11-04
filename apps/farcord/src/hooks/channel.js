@@ -149,7 +149,11 @@ export const ChannelCacheContextProvider = ({ children }) => {
   const fetchThreadCasts = React.useCallback(async ({ threadHash, cursor }) => {
     return fetchNeynarThreadCasts({ threadCastHash: threadHash, cursor }).then(
       (casts) => {
-        const castsUsers = casts.reduce((acc, cast) => {
+        // ignore casts before specific cast requested from thread
+        const castHashes = casts.map((c) => c.hash);
+        const threadIndex = castHashes.indexOf(threadHash);
+        const threadCasts = casts.slice(threadIndex + 1);
+        const castsUsers = threadCasts.reduce((acc, cast) => {
           acc.push(...extractUsersFromNeynarCast(cast));
           return acc;
         }, []);
@@ -159,11 +163,11 @@ export const ChannelCacheContextProvider = ({ children }) => {
             ...s,
             castsByThreadHash: {
               ...s.castsByThreadHash,
-              [threadHash]: casts,
+              [threadHash]: threadCasts,
             },
             castsByHash: {
               ...s.castsByHash,
-              ...casts.reduce((acc, cast) => {
+              ...threadCasts.reduce((acc, cast) => {
                 acc[cast.hash] = cast;
                 return acc;
               }, {}),
