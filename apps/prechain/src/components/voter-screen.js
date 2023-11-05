@@ -419,7 +419,21 @@ const VoterMainSection = ({ voterAddress }) => {
             >
               <Tabs.Item key="proposals" title="Proposals">
                 <div>
+                  {delegate && filteredProposals.length === 0 && (
+                    <div
+                      css={(t) =>
+                        css({
+                          textAlign: "center",
+                          padding: "3.2rem 0",
+                          color: t.colors.textDimmed,
+                        })
+                      }
+                    >
+                      No proposals
+                    </div>
+                  )}
                   <SectionedList
+                    showPlaceholder={!delegate}
                     sections={[
                       {
                         items: filteredProposals.slice(
@@ -447,7 +461,21 @@ const VoterMainSection = ({ voterAddress }) => {
               </Tabs.Item>
               <Tabs.Item key="candidates" title="Candidates">
                 <div>
+                  {delegate && voterCandidates.length === 0 && (
+                    <div
+                      css={(t) =>
+                        css({
+                          textAlign: "center",
+                          padding: "3.2rem 0",
+                          color: t.colors.textDimmed,
+                        })
+                      }
+                    >
+                      No candidates
+                    </div>
+                  )}
                   <SectionedList
+                    showPlaceholder={!delegate}
                     sections={[
                       {
                         items: voterCandidates.slice(
