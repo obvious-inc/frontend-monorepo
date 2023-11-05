@@ -269,7 +269,6 @@ const VoterHeader = ({ voterAddress }) => {
           gridTemplateColumns: "auto 1fr",
           columnGap: "1rem",
           alignItems: "center",
-          marginBottom: !ensName ? "2.4rem" : "unset",
         })}
       >
         <h1
@@ -291,19 +290,34 @@ const VoterHeader = ({ voterAddress }) => {
           placeholder={false}
         />
       </div>
-      {ensName && (
-        <div
-          css={(t) =>
-            css({
-              color: t.colors.textDimmed,
-              fontSize: t.text.sizes.base,
-              marginBottom: "2.4rem",
-            })
-          }
+      <div
+        css={(t) =>
+          css({
+            color: t.colors.textDimmed,
+            fontSize: t.text.sizes.base,
+            marginBottom: "2.4rem",
+          })
+        }
+      >
+        <a
+          href={`https://etherscan.io/address/${voterAddress}`}
+          target="_blank"
+          rel="noreferrer"
+          css={css({
+            color: "inherit",
+            textDecoration: "none",
+            display: "flex",
+            flexDirection: "column",
+            maxHeight: "2.8rem",
+            justifyContent: "center",
+            "@media(hover: hover)": {
+              ":hover": { textDecoration: "underline" },
+            },
+          })}
         >
           {truncatedAddress}
-        </div>
-      )}
+        </a>
+      </div>
 
       {delegate?.nounsRepresented.length > 0 && (
         <Callout css={(t) => css({ fontSize: t.text.sizes.base })}>
