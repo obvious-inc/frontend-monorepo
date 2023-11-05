@@ -219,7 +219,7 @@ query {
 const createVoterScreenQuery = (id, { skip = 0, first = 1000 } = {}) => `
 ${VOTE_FIELDS}
 query {
-  proposals(orderBy: createdBlock, orderDirection: desc, skip: ${skip}, first: ${first}, where: {proposer: "${id}"}) {
+  proposals(orderBy: createdBlock, orderDirection: desc, skip: ${skip}, first: ${first}) {
     id
     description
     title
@@ -254,7 +254,7 @@ query {
     }
   }
 
-  proposalCandidates(orderBy: createdBlock, orderDirection: desc, skip: ${skip}, first: ${first}, where: {proposer: "${id}"}) {
+  proposalCandidates(orderBy: createdBlock, orderDirection: desc, skip: ${skip}, first: ${first}) {
     id
     slug
     proposer
