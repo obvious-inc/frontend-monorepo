@@ -597,7 +597,7 @@ export const useAccountProposalCandidates = (accountAddress) => {
   return React.useMemo(() => {
     const candidates = Object.values(candidatesById);
     return candidates.filter(
-      (c) => c.proposerId.toLowerCase() === accountAddress.toLowerCase()
+      (c) => c.proposerId?.toLowerCase() === accountAddress.toLowerCase()
     );
   }, [candidatesById, accountAddress]);
 };
