@@ -6,7 +6,10 @@ const PARAGRAPH_ELEMENT_TYPE = "paragraph";
 
 const createMiddleware = ({ mode }) => {
   return (editor) => {
-    const { normalizeNode } = editor;
+    const { normalizeNode, isLeafBlock } = editor;
+
+    editor.isLeafBlock = (node) =>
+      node.type === PARAGRAPH_ELEMENT_TYPE || isLeafBlock(node);
 
     editor.normalizeNode = ([node, path]) => {
       if (node.type !== PARAGRAPH_ELEMENT_TYPE) {

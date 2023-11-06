@@ -11,7 +11,10 @@ const { compose } = functionUtils;
 const ELEMENT_TYPE = "code-block";
 
 const middleware = (editor) => {
-  const { deleteBackward } = editor;
+  const { deleteBackward, isLeafBlock } = editor;
+
+  editor.isLeafBlock = (node) =>
+    node.type === ELEMENT_TYPE || isLeafBlock(node);
 
   editor.deleteBackward = (...args) => {
     const { selection } = editor;

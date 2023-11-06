@@ -312,6 +312,8 @@ const withSaneishDefaultBehaviors = (editor, { mode } = {}) => {
   editor.isInline = (node) =>
     (node.children == null && node.text != null) || isInline(node);
 
+  editor.isLeafBlock = () => false;
+
   return editor;
 };
 

@@ -6,12 +6,22 @@ import {
   withEmptyBlockBackwardDeleteTransform,
 } from "../utils.js";
 
-const elementTypes = ["heading-1", "heading-2", "heading-3"];
+const elementTypes = [
+  "heading-1",
+  "heading-2",
+  "heading-3",
+  "heading-4",
+  "heading-5",
+  "heading-6",
+];
 
 const { compose } = functionUtils;
 
 const middleware = (editor) => {
-  const { normalizeNode } = editor;
+  const { normalizeNode, isLeafBlock } = editor;
+
+  editor.isLeafBlock = (node) =>
+    elementTypes.includes(node.type) || isLeafBlock(node);
 
   editor.normalizeNode = ([node, path]) => {
     if (!elementTypes.includes(node.type)) {
@@ -85,8 +95,11 @@ export default ({ mode } = {}) => ({
       if (matchEntry == null) return;
 
       e.preventDefault();
-      editor.insertBreak;
-      editor.setNodes({ type: "paragraph" });
+
+      editor.withoutNormalizing(() => {
+        editor.insertBreak();
+        editor.setNodes({ type: "paragraph" });
+      });
     },
   },
 });

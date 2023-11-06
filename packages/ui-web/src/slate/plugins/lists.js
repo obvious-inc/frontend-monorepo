@@ -175,19 +175,19 @@ export default ({ mode } = {}) => ({
         mode === "inline" ? ["shift+enter"] : ["shift+enter", "enter"];
 
       if (lineBreakHotkeys.some((h) => isHotkey(h, e))) {
-        const parentNonParagraphBlockMatchEntry = editor.above({
-          match: (n) => editor.isBlock(n) && n.type !== "paragraph",
+        const parentNonLeafBlockMatchEntry = editor.above({
+          match: (n) => editor.isBlock(n) && !editor.isLeafBlock(n),
         });
 
         if (
-          parentNonParagraphBlockMatchEntry == null ||
-          parentNonParagraphBlockMatchEntry[0].type !== LIST_ITEM_ELEMENT_TYPE
+          parentNonLeafBlockMatchEntry == null ||
+          parentNonLeafBlockMatchEntry[0].type !== LIST_ITEM_ELEMENT_TYPE
         )
           return;
 
         e.preventDefault();
 
-        const matchEntry = parentNonParagraphBlockMatchEntry;
+        const matchEntry = parentNonLeafBlockMatchEntry;
 
         const listItemPath = matchEntry[1];
         const isFirstChildBlockEmpty =
