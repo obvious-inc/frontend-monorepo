@@ -112,7 +112,7 @@ const middleware = (editor) => {
   };
 
   editor.normalizeNode = ([node, path]) => {
-    if (node.type === LIST_ITEM_ELEMENT_TYPE) {
+    if (isListItem(node)) {
       // Unwrap list items that lack a parent list
       const parentNode = Node.parent(editor, path);
       if (parentNode == null || !isListRoot(parentNode)) {
@@ -133,19 +133,15 @@ const middleware = (editor) => {
       }
     }
 
-    // if (isListRoot(node)) {
-    //   // Assert all children are of type "list-item"
-    //   for (const [childNode, childNodePath] of Node.children(editor, path)) {
-    //     if (childNode.type === "list-item") continue;
+    if (isListRoot(node)) {
+      const [previousNode] = editor.previous({ at: path }) ?? [];
 
-    //     if (!isProduction) {
-    //       throw new Error(childNodePath);
-    //     } else {
-    //       editor.liftNodes({ at: childNodePath });
-    //       return;
-    //     }
-    //   }
-    // }
+      // Merge adjecent lists
+      if (previousNode != null && isListRoot(previousNode)) {
+        editor.mergeNodes({ at: path });
+        return;
+      }
+    }
 
     normalizeNode([node, path]);
   };
