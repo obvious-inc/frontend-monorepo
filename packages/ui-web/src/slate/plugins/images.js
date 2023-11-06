@@ -223,12 +223,10 @@ const ImageContainerComponent = ({ attributes, children }) => {
   );
 };
 
-export default () =>
-  // { inline = false } = {}
-  ({
-    middleware,
-    elements: {
-      [IMAGE_ELEMENT_TYPE]: ImageComponent,
-      [IMAGE_CONTAINER_ELEMENT_TYPE]: ImageContainerComponent,
-    },
-  });
+export default () => ({
+  middleware,
+  elements: {
+    [IMAGE_ELEMENT_TYPE]: ImageComponent,
+    [IMAGE_CONTAINER_ELEMENT_TYPE]: ImageContainerComponent,
+  },
+});

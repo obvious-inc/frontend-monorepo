@@ -167,13 +167,12 @@ const middleware = (editor) => {
   );
 };
 
-export default ({ inline = false } = {}) => ({
+export default ({ mode } = {}) => ({
   middleware,
   handlers: {
     onKeyDown: (e, editor) => {
-      const lineBreakHotkeys = inline
-        ? ["shift+enter"]
-        : ["shift+enter", "enter"];
+      const lineBreakHotkeys =
+        mode === "inline" ? ["shift+enter"] : ["shift+enter", "enter"];
 
       if (lineBreakHotkeys.some((h) => isHotkey(h, e))) {
         const parentNonParagraphBlockMatchEntry = editor.above({

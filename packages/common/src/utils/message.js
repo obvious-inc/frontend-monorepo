@@ -331,9 +331,9 @@ export const toMarkdown = (blockElements) => {
           )
             return `${indent}${prefix} ${renderedListItemChildren.join("\n")}`;
 
-          const renderedListItem = `${indent}${prefix} ${renderedListItemChildren.join(
-            "\n\n"
-          )}`;
+          const renderedListItem = `${indent}${prefix} ${renderedListItemChildren
+            .filter((s) => s.trim() !== "")
+            .join("\n\n")}`;
 
           if (i !== els.length - 1 && el.children.length > 1)
             return renderedListItem + "\n";
@@ -381,7 +381,10 @@ export const toMarkdown = (blockElements) => {
     }
   };
 
-  return blockElements.map(renderBlockElement).join("\n\n");
+  return blockElements
+    .map(renderBlockElement)
+    .filter((s) => s.trim() !== "")
+    .join("\n\n");
 };
 
 export const createParagraphElement = (content = "") => ({

@@ -192,6 +192,8 @@ const ProposeScreen = () => {
   const { draftId } = useParams();
   const navigate = useNavigate();
 
+  const editorRef = React.useRef();
+
   const { address: connectedAccountAddress } = useAccount();
   const {
     fetchProposal,
@@ -602,9 +604,13 @@ const ProposeScreen = () => {
                 </div>
                 {editorMode === "rich-text" ? (
                   <RichTextEditor
+                    ref={editorRef}
                     value={draft.body}
                     onChange={(e) => {
                       setBody(e);
+                    }}
+                    onBlur={() => {
+                      editorRef.current.removeEmptyParagraphs();
                     }}
                     placeholder={`Use markdown shortcuts like "# " and "1. " to create headings and lists.`}
                     imagesMaxWidth={null}

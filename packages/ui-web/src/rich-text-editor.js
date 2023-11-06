@@ -5,6 +5,7 @@ import {
   Transforms,
   Editor,
   Range,
+  Node,
 } from "slate";
 import { Slate, Editable, withReact, ReactEditor } from "slate-react";
 import { withHistory } from "slate-history";
@@ -265,16 +266,33 @@ const withEditorCommands = (editor) => {
   return editor;
 };
 
-const withSaneishDefaultBehaviors = (editor) => {
+const withSaneishDefaultBehaviors = (editor, { mode } = {}) => {
   const { insertData, normalizeNode, isInline } = editor;
 
   editor.normalizeNode = ([node, path]) => {
-    if (path.length === 0 && node.children.length === 0) {
-      editor.insertNode(
-        { type: "paragraph", children: [{ text: "" }] },
-        { at: path }
-      );
-      return;
+    if (path.length === 0) {
+      // The editor should never be empty
+      if (node.children.length === 0) {
+        editor.insertNode(
+          { type: "paragraph", children: [{ text: "" }] },
+          { at: path }
+        );
+        return;
+      }
+
+      const lastNode = node.children.slice(-1)[0];
+
+      // Always end with an empty paragraph in non-inline mode
+      if (
+        (mode !== "inline" && lastNode.type !== "paragraph") ||
+        Node.string(lastNode) !== ""
+      ) {
+        editor.insertNode(
+          { type: "paragraph", children: [{ text: "" }] },
+          { at: [node.children.length] }
+        );
+        return;
+      }
     }
 
     normalizeNode([node, path]);
@@ -324,6 +342,8 @@ const RichTextEditor = React.forwardRef(
       setActiveMarks,
     } = React.useContext(Context);
 
+    const editorMode = inline ? "inline" : "normal";
+
     const { editor, handlers, customElementsByNodeType } = React.useMemo(() => {
       const editor = compose(
         withMarks,
@@ -332,20 +352,20 @@ const RichTextEditor = React.forwardRef(
         withEditorCommands,
         withReact,
         withHistory
-      )(createSlateEditor());
+      )(createSlateEditor(), { mode: editorMode });
 
       const { middleware, elements, handlers } = mergePlugins([
         createCodeBlocksPlugin(),
-        createControlledParagraphLineBreaksPlugin(),
-        createHeadingsPlugin({ inline }),
+        createControlledParagraphLineBreaksPlugin({ mode: editorMode }),
+        createHeadingsPlugin({ mode: editorMode }),
         createHorizontalDividerPlugin(),
-        createImagesPlugin({ inline }),
+        createImagesPlugin(),
         createUserMentionsPlugin(),
         createChannelLinksPlugin(),
         createInlineLinksPlugin(),
         createEmojiPlugin(),
-        createListsPlugin({ inline }),
-        createQuotesPlugin({ inline }),
+        createListsPlugin({ mode: editorMode }),
+        createQuotesPlugin({ mode: editorMode }),
         createSensibleVoidsPlugin(),
       ]);
 
@@ -354,7 +374,7 @@ const RichTextEditor = React.forwardRef(
         customElementsByNodeType: elements,
         handlers,
       };
-    }, [inline]);
+    }, [editorMode]);
 
     const renderElement = (props_) => {
       const props =
@@ -652,6 +672,15 @@ const Leaf = ({ attributes, children, leaf }) => {
   return <span {...attributes}>{children}</span>;
 };
 
+const transformableBlockTypes = [
+  "paragraph",
+  "heading-1",
+  "heading-2",
+  "heading-3",
+  "quote",
+  "code-block",
+];
+
 export const Toolbar = ({ disabled: disabled_, ...props }) => {
   const context = React.useContext(Context);
 
@@ -678,9 +707,8 @@ export const Toolbar = ({ disabled: disabled_, ...props }) => {
   const [selectedBlockNode, selectedBlockPath] = selectedNodeEntry ?? [];
 
   const inlineElementsAllowed =
-    selectedBlockNode?.type != null &&
-    !selectedBlockNode.type.startsWith("heading-") &&
-    selectedBlockNode.type !== "code-block";
+    selectedBlockNode?.type === "paragraph" ||
+    selectedBlockNode?.type === "quote";
 
   return (
     <div
@@ -724,7 +752,9 @@ export const Toolbar = ({ disabled: disabled_, ...props }) => {
             type: "select",
             props: {
               "aria-label": "Block type select",
-              disabled,
+              disabled:
+                disabled ||
+                !transformableBlockTypes.includes(selectedBlockNode.type),
               value: selectedBlockNode.type,
               fullWidth: false,
               width: "max-content",
@@ -770,6 +800,10 @@ export const Toolbar = ({ disabled: disabled_, ...props }) => {
                 selectedBlockNode.type === "list-item" && {
                   value: "list-item",
                   label: "List item",
+                },
+                selectedBlockNode.type === "image" && {
+                  value: "image",
+                  label: "Image",
                 },
               ].filter(Boolean),
             },
