@@ -203,7 +203,6 @@ const ProposeScreen = () => {
 
   const { deleteItem: deleteDraft } = useDrafts();
   const [draft, { setName, setBody, setActions }] = useDraft(draftId);
-  // console.log(draft.body);
 
   const [hasPendingRequest, setPendingRequest] = React.useState(false);
   const [selectedActionIndex, setSelectedActionIndex] = React.useState(null);

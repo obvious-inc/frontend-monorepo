@@ -275,7 +275,7 @@ const withSaneishDefaultBehaviors = (editor, { mode } = {}) => {
       if (node.children.length === 0) {
         editor.insertNode(
           { type: "paragraph", children: [{ text: "" }] },
-          { at: path }
+          { at: [0] }
         );
         return;
       }

@@ -75,6 +75,7 @@ const middleware = (editor) => {
 
     if (
       editor.isBlock(node) &&
+      node.children.length > 0 &&
       node.children.every((n) => n.type === IMAGE_ELEMENT_TYPE)
     ) {
       editor.setNodes({ type: IMAGE_CONTAINER_ELEMENT_TYPE }, { at: path });
