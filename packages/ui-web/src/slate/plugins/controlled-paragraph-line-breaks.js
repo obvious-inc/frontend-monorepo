@@ -135,6 +135,8 @@ export default ({ mode } = {}) => ({
   middleware: createMiddleware({ mode }),
   handlers: {
     onKeyDown: (e, editor) => {
+      if (e.isDefaultPrevented()) return;
+
       if (!isHotkey("shift+enter", e)) return;
 
       const matchEntry = editor.above({

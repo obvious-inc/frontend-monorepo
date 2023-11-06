@@ -1,4 +1,4 @@
-import { Editor, Path, Point, Text, Element, Range, Transforms } from "slate";
+import { Editor, Node, Path, Point, Text, Element, Range } from "slate";
 import { function as functionUtils } from "@shades/common/utils";
 
 const { compose } = functionUtils;
@@ -250,8 +250,8 @@ export const withBlockPrefixShortcut = (
       return;
     }
 
-    const blockEntry = Editor.above(editor, {
-      match: (n) => Element.isElement(n) && Editor.isBlock(editor, n),
+    const blockEntry = editor.above({
+      match: (n) => Element.isElement(n) && editor.isBlock(n),
     });
 
     if (blockEntry == null || blockEntry[0].type !== "paragraph") {
@@ -261,10 +261,10 @@ export const withBlockPrefixShortcut = (
 
     const prefixRange = {
       anchor: selection.anchor,
-      focus: Editor.start(editor, blockEntry[1]),
+      focus: editor.start(blockEntry[1]),
     };
     const prefixText =
-      Editor.string(editor, prefixRange, { voids: true }) +
+      editor.string(prefixRange, { voids: true }) +
       (instant ? text : text.slice(0, -1));
 
     const isMatch = Array.isArray(prefix)
@@ -277,10 +277,10 @@ export const withBlockPrefixShortcut = (
     }
 
     editor.withoutNormalizing(() => {
-      Transforms.select(editor, prefixRange);
+      editor.select(prefixRange);
 
       if (!Range.isCollapsed(prefixRange)) {
-        Transforms.delete(editor, { at: prefixRange });
+        editor.delete({ at: prefixRange });
       }
 
       if (transform == null) {
@@ -323,7 +323,7 @@ export const withEmptyBlockBackwardDeleteTransform = (
       match: (n) => Element.isElement(n) && editor.isBlock(n),
     });
 
-    if (match == null) {
+    if (match == null || Node.string(match[0]).trim() !== "") {
       deleteBackward(...args);
       return;
     }

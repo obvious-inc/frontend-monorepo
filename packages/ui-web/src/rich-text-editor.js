@@ -357,18 +357,18 @@ const RichTextEditor = React.forwardRef(
       )(createSlateEditor(), { mode: editorMode });
 
       const { middleware, elements, handlers } = mergePlugins([
-        createCodeBlocksPlugin(),
         createControlledParagraphLineBreaksPlugin({ mode: editorMode }),
+        createCodeBlocksPlugin(),
         createHeadingsPlugin({ mode: editorMode }),
         createHorizontalDividerPlugin(),
         createImagesPlugin(),
+        createQuotesPlugin({ mode: editorMode }),
+        createSensibleVoidsPlugin(),
         createUserMentionsPlugin(),
         createChannelLinksPlugin(),
         createInlineLinksPlugin(),
         createEmojiPlugin(),
         createListsPlugin({ mode: editorMode }),
-        createQuotesPlugin({ mode: editorMode }),
-        createSensibleVoidsPlugin(),
       ]);
 
       return {

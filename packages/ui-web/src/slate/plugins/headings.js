@@ -83,6 +83,8 @@ export default ({ mode } = {}) => ({
   middleware,
   handlers: {
     onKeyDown: (e, editor) => {
+      if (e.isDefaultPrevented()) return;
+
       const linebreakHotkeys =
         mode === "inline" ? ["shift+enter"] : ["shift+enter", "enter"];
 

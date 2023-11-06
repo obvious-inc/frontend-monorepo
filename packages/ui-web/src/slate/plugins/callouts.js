@@ -106,6 +106,8 @@ export default ({ inline = false } = {}) => ({
   middleware,
   handlers: {
     onKeyDown: (e, editor) => {
+      if (e.isDefaultPrevented()) return;
+
       const lineBreakHotkeys = inline
         ? ["shift+enter"]
         : ["shift+enter", "enter"];
