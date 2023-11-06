@@ -158,9 +158,7 @@ const getActionTransactions = (a) => {
 };
 
 const useEditorMode = (draft, { setBody }) => {
-  const [mode, setModeState] = React.useState(
-    typeof draft.body === "string" ? "markdown" : "rich-text"
-  );
+  const mode = typeof draft.body === "string" ? "markdown" : "rich-text";
 
   const setMode = (newMode) => {
     if (mode === newMode) return;
@@ -181,8 +179,6 @@ const useEditorMode = (draft, { setBody }) => {
       default:
         throw new Error(`unknown transform: "${transform}"`);
     }
-
-    setModeState(newMode);
   };
 
   return [mode, setMode];
