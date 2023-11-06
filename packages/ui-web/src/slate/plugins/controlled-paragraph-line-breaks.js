@@ -106,6 +106,12 @@ const createMiddleware = ({ mode }) => {
     };
 
     editor.removeEmptyParagraphs = () => {
+      if (
+        editor.children.length === 1 &&
+        editor.children[0].type === "paragraph"
+      )
+        return;
+
       const getFirstEmptyParagraphEntry = () => {
         const entries = [
           ...editor.nodes({
