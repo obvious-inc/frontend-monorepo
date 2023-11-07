@@ -43,6 +43,8 @@ export {
   fromMessageBlocks,
 } from "./slate/utils.js";
 
+export const isSelectionCollapsed = Range.isCollapsed;
+
 const { compose } = functionUtils;
 
 const markHotkeys = {
@@ -260,6 +262,8 @@ const withEditorCommands = (editor) => {
   };
 
   editor.string = (location = [], options) => string(location, options);
+
+  editor.isFocused = () => ReactEditor.isFocused(editor);
 
   editor.print = () => console.log(JSON.stringify(editor.children, null, 2));
 
@@ -683,7 +687,7 @@ const transformableBlockTypes = [
   "code-block",
 ];
 
-export const Toolbar = ({ disabled: disabled_, ...props }) => {
+export const Toolbar = ({ disabled: disabled_, onFocus, onBlur, ...props }) => {
   const context = React.useContext(Context);
 
   if (context == null)
@@ -719,11 +723,13 @@ export const Toolbar = ({ disabled: disabled_, ...props }) => {
           display: "flex",
           alignItems: "center",
           justifyContent: "flex-start",
+          gap: "0.3rem 0",
+          flexWrap: "wrap",
           '[role="separator"]': {
             width: "0.1rem",
             height: "2rem",
             background: t.colors.borderLight,
-            margin: "0 0.5rem",
+            margin: "0 0.3rem",
           },
           "[data-button]": {
             display: "flex",
@@ -742,6 +748,11 @@ export const Toolbar = ({ disabled: disabled_, ...props }) => {
               },
             },
             '&[data-active="true"]': { color: t.colors.textPrimary },
+          },
+          "[data-select]": {
+            paddingTop: 0,
+            paddingBottom: 0,
+            minHeight: "2.6rem",
           },
         })
       }
@@ -762,11 +773,14 @@ export const Toolbar = ({ disabled: disabled_, ...props }) => {
               width: "max-content",
               variant: "transparent",
               size: "small",
+              "data-select": true,
               onBlur: () => {
+                onBlur?.();
                 storedSelectionRangeRef?.unref();
                 setStoredSelectionRangeRef(null);
               },
               onFocus: () => {
+                onFocus?.();
                 setStoredSelectionRangeRef(
                   editorRef.current.rangeRef(editorRef.current.selection)
                 );
@@ -775,7 +789,7 @@ export const Toolbar = ({ disabled: disabled_, ...props }) => {
                 const editor = editorRef.current;
 
                 if (selectedBlockNode.type === "list-item") {
-                  Editor.withoutNormalizing(editorRef.current, () => {
+                  editor.withoutNormalizing(() => {
                     editor.setNodes({ type: value });
                     editor.unwrapNodes({
                       at: selectedBlockPath,
@@ -788,9 +802,10 @@ export const Toolbar = ({ disabled: disabled_, ...props }) => {
                   editor.setNodes({ type: value });
                 }
 
+                onBlur?.(); // onBlur doesn’t seem to fire on iOS
+                setStoredSelectionRangeRef(null);
                 editor.focus(storedSelectionRangeRef.current);
                 storedSelectionRangeRef.unref();
-                setStoredSelectionRangeRef(null);
               },
               options: [
                 { value: "paragraph", label: "Text" },

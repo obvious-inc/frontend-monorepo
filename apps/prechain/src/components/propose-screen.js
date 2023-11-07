@@ -24,6 +24,7 @@ import RichTextEditor, {
   Provider as EditorProvider,
   Toolbar as EditorToolbar,
   isNodeEmpty as isRichTextEditorNodeEmpty,
+  isSelectionCollapsed,
   toMessageBlocks as richTextToMessageBlocks,
   fromMessageBlocks as messageToRichTextBlocks,
 } from "@shades/ui-web/rich-text-editor";
@@ -45,6 +46,7 @@ import FormattedNumber from "./formatted-number.js";
 import AccountPreviewPopoverTrigger from "./account-preview-popover-trigger.js";
 import { TransactionExplanation } from "./transaction-list.js";
 import ActionDialog from "./action-dialog.js";
+import { Overlay } from "react-aria";
 
 const isDebugSession =
   new URLSearchParams(location.search).get("debug") != null;
@@ -189,6 +191,58 @@ const ProposeScreen = () => {
   const navigate = useNavigate();
 
   const editorRef = React.useRef();
+  const toolbarContainerRef = React.useRef();
+
+  const [toolbarHasFocus, setToolbarHasFocus] = React.useState(false);
+
+  const updateToolbarPosition = () => {
+    const el = toolbarContainerRef.current;
+    const editor = editorRef.current;
+    if (el == null || editor == null) return;
+
+    const { selection } = editor;
+
+    if (
+      toolbarHasFocus ||
+      (editor.isFocused() &&
+        selection != null &&
+        !isSelectionCollapsed(selection) &&
+        editor.string(selection) !== "")
+    ) {
+      const domSelection = window.getSelection();
+
+      // Required for iOS
+      if (domSelection.toString() === "") return;
+
+      const domRange = domSelection.getRangeAt(0);
+      const rect = domRange.getBoundingClientRect();
+
+      el.style.display = "block";
+      el.style.position = "absolute";
+      el.style.top = rect.top + window.scrollY - el.offsetHeight - 12 + "px";
+
+      const leftOffset = rect.left + window.scrollX - 36;
+
+      if (el.offsetWidth >= window.innerWidth - 32) {
+        el.style.right = "auto";
+        el.style.left = 16 + "px";
+      } else if (leftOffset + el.offsetWidth + 16 > window.innerWidth) {
+        el.style.left = "auto";
+        el.style.right = 16 + "px";
+      } else {
+        el.style.right = "auto";
+        el.style.left = Math.max(16, leftOffset) + "px";
+      }
+
+      return;
+    }
+
+    el.style.display = "none";
+  };
+
+  React.useEffect(() => {
+    updateToolbarPosition();
+  });
 
   const { address: connectedAccountAddress } = useAccount();
   const {
@@ -337,6 +391,7 @@ const ProposeScreen = () => {
 
   useKeyboardShortcuts({
     "$mod+Shift+m": (e) => {
+      if (!isDebugSession) return;
       e.preventDefault();
       setEditorMode(editorMode === "rich-text" ? "markdown" : "rich-text");
     },
@@ -480,6 +535,7 @@ const ProposeScreen = () => {
                     style={{
                       padding: "1.6rem 0",
                       display: "flex",
+                      gap: "1rem",
                     }}
                   >
                     <Button
@@ -498,7 +554,7 @@ const ProposeScreen = () => {
                           navigate("/", { replace: true });
                         });
                       }}
-                      icon={<TrashCanIcon />}
+                      icon={<TrashCanIcon style={{ width: "1.4rem" }} />}
                     />
                     <div
                       style={{
@@ -635,59 +691,69 @@ const ProposeScreen = () => {
                     />
                   </div>
                 )}
-                <nav
-                  css={css({
-                    position: "fixed",
-                    bottom: 0,
-                    display: "flex",
-                    gap: "1.6rem",
-                  })}
-                >
-                  {editorMode === "rich-text" && (
-                    <div
-                      css={(t) =>
-                        css({
-                          padding: "0.8rem",
-                          borderTopLeftRadius: "0.3rem",
-                          borderTopRightRadius: "0.3rem",
-                          background: t.colors.backgroundPrimary,
-                          boxShadow: t.shadows.elevationHigh,
-                        })
-                      }
+                <Overlay>
+                  <div ref={toolbarContainerRef}>
+                    <nav
+                      css={css({
+                        display: "flex",
+                        gap: "1.6rem",
+                        maxWidth: "calc(100vw - 3.2rem)",
+                        width: "max-content",
+                      })}
                     >
-                      <EditorToolbar />
-                    </div>
-                  )}
-                  {isDebugSession && (
-                    <div
-                      css={(t) =>
-                        css({
-                          padding: "0.8rem",
-                          borderTopLeftRadius: "0.3rem",
-                          borderTopRightRadius: "0.3rem",
-                          background: t.colors.backgroundPrimary,
-                          boxShadow: t.shadows.elevationHigh,
-                        })
-                      }
-                    >
-                      <Select
-                        aria-label="Editor mode"
-                        variant="transparent"
-                        size="small"
-                        fullWidth={false}
-                        width="max-content"
-                        value={editorMode}
-                        onChange={(value) => {
-                          setEditorMode(value);
-                        }}
-                        options={[
-                          { value: "rich-text", label: "Rich text" },
-                          { value: "markdown", label: "Markdown" },
-                        ]}
-                      />
-                    </div>
-                  )}
-                </nav>
+                      {editorMode === "rich-text" && (
+                        <div
+                          css={(t) =>
+                            css({
+                              padding: "0.3rem",
+                              borderRadius: "0.3rem",
+                              background: t.colors.backgroundPrimary,
+                              boxShadow: t.shadows.elevationHigh,
+                            })
+                          }
+                        >
+                          <EditorToolbar
+                            onFocus={() => {
+                              setToolbarHasFocus(true);
+                            }}
+                            onBlur={() => {
+                              setToolbarHasFocus(false);
+                            }}
+                          />
+                        </div>
+                      )}
+                      {/* {isDebugSession && ( */}
+                      {/*   <div */}
+                      {/*     css={(t) => */}
+                      {/*       css({ */}
+                      {/*         padding: "0.8rem", */}
+                      {/*         borderTopLeftRadius: "0.3rem", */}
+                      {/*         borderTopRightRadius: "0.3rem", */}
+                      {/*         background: t.colors.backgroundPrimary, */}
+                      {/*         boxShadow: t.shadows.elevationHigh, */}
+                      {/*       }) */}
+                      {/*     } */}
+                      {/*   > */}
+                      {/*     <Select */}
+                      {/*       aria-label="Editor mode" */}
+                      {/*       variant="transparent" */}
+                      {/*       size="small" */}
+                      {/*       fullWidth={false} */}
+                      {/*       width="max-content" */}
+                      {/*       value={editorMode} */}
+                      {/*       onChange={(value) => { */}
+                      {/*         setEditorMode(value); */}
+                      {/*       }} */}
+                      {/*       options={[ */}
+                      {/*         { value: "rich-text", label: "Rich text" }, */}
+                      {/*         { value: "markdown", label: "Markdown" }, */}
+                      {/*       ]} */}
+                      {/*     /> */}
+                      {/*   </div> */}
+                      {/* )} */}
+                    </nav>
+                  </div>
+                </Overlay>
               </div>
             </MainContentContainer>
           </form>
