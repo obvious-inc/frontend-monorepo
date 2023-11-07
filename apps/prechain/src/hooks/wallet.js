@@ -1,6 +1,6 @@
 import React from "react";
 import { css } from "@emotion/react";
-import { useAccount, useConnect } from "wagmi";
+import { useAccount, useConnect, useDisconnect } from "wagmi";
 import Dialog from "@shades/ui-web/dialog";
 import Button from "@shades/ui-web/button";
 import Spinner from "@shades/ui-web/spinner";
@@ -131,8 +131,12 @@ const ConnectDialog = ({ titleProps, dismiss }) => {
 
 export const useWallet = () => {
   const { openDialog } = React.useContext(Context);
-  const { address } = useAccount();
+  const {
+    address,
+    // connector: connectedConnector
+  } = useAccount();
   const { connect, connectors, isLoading, reset } = useConnect();
+  const { disconnectAsync: disconnect } = useDisconnect();
 
   const hasReadyConnector = connectors.some((c) => c.ready);
 
@@ -160,7 +164,9 @@ export const useWallet = () => {
   return {
     address: impersonationAddress ?? address,
     requestAccess: hasReadyConnector ? requestAccess : null,
+    disconnect,
     isLoading,
     reset,
+    // isShimmedDisconnect: connectedConnector?.options?.shimDisconnect ?? false,
   };
 };
