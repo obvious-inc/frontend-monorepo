@@ -218,8 +218,10 @@ query {
 
 const createVoterScreenQuery = (id, { skip = 0, first = 1000 } = {}) => `
 ${VOTE_FIELDS}
+${CANDIDATE_FEEDBACK_FIELDS}
+${PROPOSAL_FEEDBACK_FIELDS}
 query {
-  proposals(orderBy: createdBlock, orderDirection: desc, skip: ${skip}, first: ${first}) {
+  proposals(orderBy: createdBlock, orderDirection: desc, skip: ${skip}, first: ${first}, where: {proposer: "${id}"} ) {
     id
     description
     title
@@ -254,7 +256,7 @@ query {
     }
   }
 
-  proposalCandidates(orderBy: createdBlock, orderDirection: desc, skip: ${skip}, first: ${first}) {
+  proposalCandidates(orderBy: createdBlock, orderDirection: desc, skip: ${skip}, first: ${first}, where: {proposer: "${id}"}) {
     id
     slug
     proposer
@@ -283,6 +285,15 @@ query {
         }
       }
     }
+  }
+  votes (orderBy: blockNumber, orderDirection: desc, skip: ${skip}, first: ${first}, where: {voter: "${id}"}) {
+    ...VoteFields
+  }
+  candidateFeedbacks(skip: ${skip}, first: ${first}, where: {voter: "${id}"}) {
+    ...CandidateFeedbackFields
+  }
+  proposalFeedbacks(skip: ${skip}, first: ${first}, where: {voter: "${id}"}) {
+    ...ProposalFeedbackFields
   }
 }`;
 
@@ -445,6 +456,92 @@ const createProposalsVersionsQuery = (proposalIds) => `{
   }
 }`;
 
+const createProposalsQuery = (proposalIds) => `
+${VOTE_FIELDS}
+${PROPOSAL_FEEDBACK_FIELDS}
+query {
+  proposals(where: {id_in: [${proposalIds.map((id) => `"${id}"`)}]}) {
+    id
+    status
+    title
+    description
+    createdBlock
+    createdTimestamp
+    lastUpdatedBlock
+    lastUpdatedTimestamp
+    startBlock
+    endBlock
+    updatePeriodEndBlock
+    objectionPeriodEndBlock
+    canceledBlock
+    canceledTimestamp
+    queuedBlock
+    queuedTimestamp
+    executedBlock
+    executedTimestamp
+    targets
+    signatures
+    calldatas
+    values
+    forVotes
+    againstVotes
+    abstainVotes
+    executionETA
+    quorumVotes
+    proposer {
+      id
+    }
+    signers {
+      id
+    }
+    votes {
+      ...VoteFields
+    }
+    feedbackPosts {
+      ...ProposalFeedbackFields
+    }
+  }
+}`;
+
+const createProposalCandidatesQuery = (candidateIds) => `
+query {
+  proposalCandidates(where: {id_in: [${candidateIds.map((id) => `"${id}"`)}]}) {
+    id
+    slug
+    proposer
+    canceledTimestamp
+    createdTimestamp
+    lastUpdatedTimestamp
+    createdBlock
+    canceledBlock
+    lastUpdatedBlock
+    latestVersion {
+      id
+      content {
+        title
+        description
+        targets
+        values
+        signatures
+        calldatas
+        matchingProposalIds
+        proposalIdToUpdate
+        contentSignatures {
+          reason
+          canceled
+          expirationTimestamp
+          signer {
+            id
+            nounsRepresented {
+              id
+            }
+          }
+        }
+      }
+    }
+  }
+}`;
+
 const createProposalCandidateFeedbackPostsByCandidatesQuery = (
   candidateIds
 ) => `
@@ -469,6 +566,25 @@ query {
     ...ProposalFeedbackFields
   }
   votes(where: {blockNumber_gte: ${startBlock}, blockNumber_lte: ${endBlock}}, orderBy: blockNumber, orderDirection: desc, first: 1000) {
+    ...VoteFields
+    proposal {
+      id
+    }
+  }
+}`;
+
+const createVoterActivityDataQuery = (id, { startBlock, endBlock }) => `
+${CANDIDATE_FEEDBACK_FIELDS}
+${PROPOSAL_FEEDBACK_FIELDS}
+${VOTE_FIELDS}
+query {
+  candidateFeedbacks(where: {voter: "${id}", createdBlock_gte: ${startBlock}, createdBlock_lte: ${endBlock}}, first: 1000) {
+    ...CandidateFeedbackFields
+  }
+  proposalFeedbacks(where: {voter: "${id}"createdBlock_gte: ${startBlock}, createdBlock_lte: ${endBlock}}, first: 1000) {
+    ...ProposalFeedbackFields
+  }
+  votes(where: {voter: "${id}", blockNumber_gte: ${startBlock}, blockNumber_lte: ${endBlock}}, orderBy: blockNumber, orderDirection: desc, first: 1000) {
     ...VoteFields
     proposal {
       id
@@ -693,6 +809,24 @@ export const fetchProposalsVersions = async (chainId, proposalIds) =>
     return data.proposalVersions.map(parseProposalVersion);
   });
 
+export const fetchProposals = async (chainId, proposalIds) =>
+  subgraphFetch({
+    chainId,
+    query: createProposalsQuery(proposalIds),
+  }).then((data) => {
+    return data.proposals.map((p) => parseProposal(p, { chainId }));
+  });
+
+export const fetchProposalCandidates = async (chainId, candidateIds) =>
+  subgraphFetch({
+    chainId,
+    query: createProposalCandidatesQuery(candidateIds),
+  }).then((data) => {
+    return data.proposalCandidates.map((c) =>
+      parseProposalCandidate(c, { chainId })
+    );
+  });
+
 export const fetchProposalCandidatesFeedbackPosts = async (
   chainId,
   candidateIds
@@ -788,7 +922,17 @@ export const fetchVoterScreenData = (chainId, id, options) =>
     const candidates = data.proposalCandidates.map((c) =>
       parseProposalCandidate(c, { chainId })
     );
-    return { proposals, candidates };
+    const votes = data.votes.map(parseProposalVote);
+    const proposalFeedbackPosts = data.proposalFeedbacks.map(parseFeedbackPost);
+    const candidateFeedbackPosts =
+      data.candidateFeedbacks.map(parseFeedbackPost);
+    return {
+      proposals,
+      candidates,
+      votes,
+      proposalFeedbackPosts,
+      candidateFeedbackPosts,
+    };
   });
 
 export const fetchNounsActivity = (chainId, { startBlock, endBlock }) =>
@@ -808,6 +952,26 @@ export const fetchNounsActivity = (chainId, { startBlock, endBlock }) =>
     const votes = data.votes
       .map(parseProposalVote)
       .filter((v) => !hideProposalVote(v));
+
+    return { votes, proposalFeedbackPosts, candidateFeedbackPosts };
+  });
+
+export const fetchVoterActivity = (
+  chainId,
+  voterAddress,
+  { startBlock, endBlock }
+) =>
+  subgraphFetch({
+    chainId,
+    query: createVoterActivityDataQuery(voterAddress?.toLowerCase(), {
+      startBlock: startBlock.toString(),
+      endBlock: endBlock.toString(),
+    }),
+  }).then((data) => {
+    const candidateFeedbackPosts =
+      data.candidateFeedbacks.map(parseFeedbackPost);
+    const proposalFeedbackPosts = data.proposalFeedbacks.map(parseFeedbackPost);
+    const votes = data.votes.map(parseProposalVote);
 
     return { votes, proposalFeedbackPosts, candidateFeedbackPosts };
   });

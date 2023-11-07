@@ -117,7 +117,7 @@ const useFeedItems = ({ filter }) => {
   const latestBlockNumber = React.useDeferredValue(eagerLatestBlockNumber);
 
   const proposals = useProposals({ state: true, propdates: true });
-  const candidates = useProposalCandidates();
+  const candidates = useProposalCandidates({});
 
   return React.useMemo(() => {
     const buildProposalItems = () =>
@@ -195,7 +195,7 @@ const BrowseScreen = () => {
   const { address: connectedWalletAccountAddress } = useWallet();
 
   const proposals = useProposals({ state: true });
-  const candidates = useProposalCandidates();
+  const candidates = useProposalCandidates({});
   const { items: proposalDrafts } = useDrafts();
 
   const [page, setPage] = React.useState(1);

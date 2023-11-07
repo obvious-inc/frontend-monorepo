@@ -10,13 +10,15 @@ import {
   useActions,
   useDelegate,
   useDelegateFetch,
+  useProposalCandidates,
+  useProposals,
 } from "../store.js";
 import MetaTags_ from "./meta-tags.js";
 import Layout, { MainContentContainer } from "./layout.js";
 import Callout from "./callout.js";
 import * as Tabs from "./tabs.js";
 import ActivityFeed_ from "./activity-feed.js";
-import { useAccountDisplayName } from "@shades/common/app";
+import { useAccountDisplayName, useCachedState } from "@shades/common/app";
 import AccountAvatar from "./account-avatar.js";
 import NounAvatar from "./noun-avatar.js";
 import Select from "@shades/ui-web/select";
@@ -25,18 +27,39 @@ import { APPROXIMATE_BLOCKS_PER_DAY, SectionedList } from "./browse-screen.js";
 import Button from "@shades/ui-web/button";
 import Spinner from "@shades/ui-web/spinner";
 import { VotingBar } from "./proposal-screen.js";
+import { array as arrayUtils } from "@shades/common/utils";
 
 const VOTER_LIST_PAGE_ITEM_COUNT = 20;
 const FEED_PAGE_ITEM_COUNT = 30;
 
 const useFeedItems = ({ voterAddress, filter }) => {
   const delegate = useDelegate(voterAddress);
-  const candidates = useAccountProposalCandidates(voterAddress);
+  const proposals = useProposals({ state: true, propdates: true });
+  const candidates = useProposalCandidates({
+    excludeCanceled: false,
+    excludeMatchingProposal: false,
+  });
 
-  return React.useMemo(
-    () => buildVoterFeed(delegate, candidates),
-    [delegate, candidates]
-  );
+  return React.useMemo(() => {
+    const buildProposalItems = () => buildVoterFeed(delegate, { proposals });
+    const buildCandidateItems = () => buildVoterFeed(delegate, { candidates });
+
+    const buildFeedItems = () => {
+      switch (filter) {
+        case "proposals":
+          return [...buildProposalItems()];
+        case "candidates":
+          return [...buildCandidateItems()];
+        default:
+          return [...buildVoterFeed(delegate, { proposals, candidates })];
+      }
+    };
+
+    return arrayUtils.sortBy(
+      { value: (i) => i.blockNumber, order: "desc" },
+      buildFeedItems()
+    );
+  }, [delegate, proposals, candidates, filter]);
 };
 
 const getDelegateVotes = (delegate) => {
@@ -62,7 +85,7 @@ const ActivityFeed = React.memo(({ voterAddress, filter = "all" }) => {
     cache: 20_000,
   });
 
-  const { fetchNounsActivity } = useActions();
+  const { fetchVoterActivity } = useActions();
 
   const [page, setPage] = React.useState(1);
 
@@ -74,19 +97,19 @@ const ActivityFeed = React.memo(({ voterAddress, filter = "all" }) => {
     latestBlockNumber == null
       ? null
       : () =>
-          fetchNounsActivity({
+          fetchVoterActivity(voterAddress, {
             startBlock:
               latestBlockNumber - BigInt(APPROXIMATE_BLOCKS_PER_DAY * 3),
             endBlock: latestBlockNumber,
           }).then(() =>
-            fetchNounsActivity({
+            fetchVoterActivity(voterAddress, {
               startBlock:
                 latestBlockNumber - BigInt(APPROXIMATE_BLOCKS_PER_DAY * 30),
               endBlock:
                 latestBlockNumber - BigInt(APPROXIMATE_BLOCKS_PER_DAY * 3) - 1n,
             })
           ),
-    [latestBlockNumber, fetchNounsActivity]
+    [latestBlockNumber, fetchVoterActivity]
   );
 
   if (visibleItems.length === 0) return null;
@@ -112,7 +135,10 @@ const ActivityFeed = React.memo(({ voterAddress, filter = "all" }) => {
 });
 
 const FeedSidebar = React.memo(({ visible = true, voterAddress }) => {
-  const [filter, setFilter] = React.useState("all");
+  const [filter, setFilter] = useCachedState(
+    "voter-screen:activity-filter",
+    "all"
+  );
   if (!visible) return null;
 
   return (
@@ -130,7 +156,11 @@ const FeedSidebar = React.memo(({ visible = true, voterAddress }) => {
           size="small"
           aria-label="Feed filter"
           value={filter}
-          options={[{ value: "all", label: "Everything" }]}
+          options={[
+            { value: "all", label: "Everything" },
+            { value: "proposals", label: "Proposal activity only" },
+            { value: "candidates", label: "Candidate activity only" },
+          ]}
           onChange={(value) => {
             setFilter(value);
           }}
@@ -139,6 +169,8 @@ const FeedSidebar = React.memo(({ visible = true, voterAddress }) => {
           renderTriggerContent={(value) => {
             const filterLabel = {
               all: "Everything",
+              proposals: "Proposal activity",
+              candidates: "Candidate activity",
             }[value];
             return (
               <>
@@ -165,7 +197,10 @@ const FeedSidebar = React.memo(({ visible = true, voterAddress }) => {
 });
 
 const FeedTabContent = React.memo(({ visible, voterAddress }) => {
-  const [filter, setFilter] = React.useState("all");
+  const [filter, setFilter] = useCachedState(
+    "voter-screen:activity-filter",
+    "all"
+  );
 
   if (!visible) return null;
 
@@ -176,7 +211,11 @@ const FeedTabContent = React.memo(({ visible, voterAddress }) => {
           size="small"
           aria-label="Feed filter"
           value={filter}
-          options={[{ value: "all", label: "Everything" }]}
+          options={[
+            { value: "all", label: "Everything" },
+            { value: "proposals", label: "Proposal activity only" },
+            { value: "candidates", label: "Candidate activity only" },
+          ]}
           onChange={(value) => {
             setFilter(value);
           }}
@@ -185,6 +224,8 @@ const FeedTabContent = React.memo(({ visible, voterAddress }) => {
           renderTriggerContent={(value) => {
             const filterLabel = {
               all: "Everything",
+              proposals: "Proposal activity",
+              candidates: "Candidate activity",
             }[value];
             return (
               <>
