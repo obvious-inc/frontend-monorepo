@@ -9,43 +9,15 @@ import {
   usePrepareContractWrite,
   useWaitForTransaction,
 } from "wagmi";
-import { DEFAULT_CHAIN_ID } from "../utils/farcaster";
+import {
+  DEFAULT_CHAIN_ID,
+  KEY_GATEWAY_ADDRESS,
+  KEY_METADATA_TYPE,
+  KEY_REGISTRY_ADDRESS,
+} from "../utils/farcaster";
 import useFarcasterAccount from "./farcaster-account";
 
 const warpcastApi = "https://api.warpcast.com";
-
-const DEFAULT_KEY_REGISTRY_ADDRESS =
-  "0x00000000fC9e66f1c6d86D750B4af47fF0Cc343d";
-
-const KEY_METADATA_TYPE = [
-  {
-    components: [
-      {
-        internalType: "uint256",
-        name: "requestFid",
-        type: "uint256",
-      },
-      {
-        internalType: "address",
-        name: "requestSigner",
-        type: "address",
-      },
-      {
-        internalType: "bytes",
-        name: "signature",
-        type: "bytes",
-      },
-      {
-        internalType: "uint256",
-        name: "deadline",
-        type: "uint256",
-      },
-    ],
-    internalType: "struct SignedKeyRequestValidator.SignedKeyRequestMetadata",
-    name: "metadata",
-    type: "tuple",
-  },
-];
 
 export const createCacheKey = (address) =>
   [address?.toLowerCase(), "signer"].filter(Boolean).join("-");
@@ -99,7 +71,7 @@ export const Provider = ({ children }) => {
   });
 
   const { writeAsync: createWalletAddSignerTransaction } = useContractWrite({
-    address: DEFAULT_KEY_REGISTRY_ADDRESS,
+    address: KEY_GATEWAY_ADDRESS,
     abi: parseAbi([
       "function add(uint32 keyType, bytes calldata key, uint8 metadataType, bytes calldata metadata) external",
     ]),
@@ -108,7 +80,7 @@ export const Provider = ({ children }) => {
   });
 
   const { config: walletRemoveSignerConfig } = usePrepareContractWrite({
-    address: DEFAULT_KEY_REGISTRY_ADDRESS,
+    address: KEY_REGISTRY_ADDRESS,
     abi: parseAbi(["function remove(bytes calldata key) external"]),
     chainId: DEFAULT_CHAIN_ID,
     functionName: "remove",

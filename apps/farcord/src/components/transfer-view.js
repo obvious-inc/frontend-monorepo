@@ -14,8 +14,8 @@ import { useWalletFarcasterId } from "../hooks/farcord";
 import {
   DEFAULT_CHAIN_ID,
   ID_REGISTRY_ADDRESS,
+  ID_REGISTRY_EIP_712_DOMAIN,
   ID_TRANSFER_REQUEST_TYPE,
-  REGISTER_REQUEST_VALIDATOR_EIP_712_DOMAIN,
 } from "../utils/farcaster";
 import { signTypedData } from "@wagmi/core";
 import { isHex } from "viem";
@@ -74,7 +74,7 @@ const TransferView = () => {
 
     // the destination wallet should sign this?!
     return await signTypedData({
-      domain: REGISTER_REQUEST_VALIDATOR_EIP_712_DOMAIN,
+      domain: ID_REGISTRY_EIP_712_DOMAIN,
       types: {
         Transfer: ID_TRANSFER_REQUEST_TYPE,
       },

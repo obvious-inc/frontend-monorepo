@@ -2,11 +2,18 @@ import { decodeAbiParameters, toHex } from "viem";
 import { optimism } from "wagmi/chains";
 
 export const DEFAULT_CHAIN_ID = optimism.id;
-export const ID_REGISTRY_ADDRESS = "0x00000000fcaf86937e41ba038b4fa40baa4b780a";
+
+export const ID_REGISTRY_ADDRESS = "0x00000000fc6c5f01fc30151999387bb99a9f489b";
+export const ID_GATEWAY_ADDRESS = "0x00000000fc25870c6ed6b6c7e41fb078b7656f69";
+
+export const KEY_REGISTRY_ADDRESS =
+  "0x00000000fc1237824fb747abde0ff18990e59b7e";
+export const KEY_GATEWAY_ADDRESS = "0x00000000fc56947c7e7183f8ca4b62398caadf0b";
+
 export const STORAGE_REGISTRY_ADDRESS =
   "0x00000000fcCe7f938e7aE6D3c335bD6a1a7c593D";
 export const BUNDLER_CONTRACT_ADDRESS =
-  "0x00000000fc94856F3967b047325F88d47Bc225d0";
+  "0x00000000fc04c910a0b5fea33b03e0447ad0b0aa";
 
 export const WARPCAST_RECOVERY_PROXY_ADDRESS =
   "0x00000000fcD5A8E45785c8A4b9a718C9348e4F18";
@@ -41,11 +48,18 @@ export const KEY_METADATA_TYPE = [
   },
 ];
 
-export const REGISTER_REQUEST_VALIDATOR_EIP_712_DOMAIN = {
+export const ID_REGISTRY_EIP_712_DOMAIN = {
   name: "Farcaster IdRegistry",
   version: "1",
   chainId: DEFAULT_CHAIN_ID,
   verifyingContract: ID_REGISTRY_ADDRESS,
+};
+
+export const ID_GATEWAY_EIP_712_DOMAIN = {
+  name: "Farcaster IdGateway",
+  version: "1",
+  chainId: DEFAULT_CHAIN_ID,
+  verifyingContract: ID_GATEWAY_ADDRESS,
 };
 
 export const ID_REGISTRATION_REQUEST_TYPE = [
@@ -61,6 +75,13 @@ export const ID_TRANSFER_REQUEST_TYPE = [
   { name: "nonce", type: "uint256" },
   { name: "deadline", type: "uint256" },
 ];
+
+export const KEY_GATEWAY_EIP_712_DOMAIN = {
+  name: "Farcaster KeyGateway",
+  version: "1",
+  chainId: DEFAULT_CHAIN_ID,
+  verifyingContract: KEY_GATEWAY_ADDRESS,
+};
 
 export const KEY_REGISTRY_EIP_712_DOMAIN = {
   name: "Farcaster KeyRegistry",

@@ -15,7 +15,17 @@ import {
   formatUnits,
   isHex,
 } from "viem";
-import { DEFAULT_CHAIN_ID } from "../utils/farcaster";
+import {
+  DEFAULT_CHAIN_ID,
+  ID_GATEWAY_EIP_712_DOMAIN,
+  KEY_GATEWAY_EIP_712_DOMAIN,
+  BUNDLER_CONTRACT_ADDRESS,
+  ID_REGISTRATION_REQUEST_TYPE,
+  ID_REGISTRY_ADDRESS,
+  KEY_METADATA_TYPE,
+  KEY_REGISTRY_ADD_TYPE,
+  STORAGE_REGISTRY_ADDRESS,
+} from "../utils/farcaster";
 import Button from "@shades/ui-web/button";
 import { useWallet } from "@shades/common/wallet";
 import { signTypedData } from "@wagmi/core";
@@ -31,16 +41,6 @@ import { Link, useNavigate } from "react-router-dom";
 import useSigner from "./signer";
 import useWalletEvent from "../hooks/wallet-event.js";
 import useFarcasterAccount from "./farcaster-account";
-import {
-  BUNDLER_CONTRACT_ADDRESS,
-  ID_REGISTRATION_REQUEST_TYPE,
-  ID_REGISTRY_ADDRESS,
-  KEY_METADATA_TYPE,
-  KEY_REGISTRY_ADD_TYPE,
-  KEY_REGISTRY_EIP_712_DOMAIN,
-  REGISTER_REQUEST_VALIDATOR_EIP_712_DOMAIN,
-  STORAGE_REGISTRY_ADDRESS,
-} from "../utils/farcaster";
 import { track } from "@vercel/analytics";
 
 const { truncateAddress } = ethereumUtils;
@@ -170,7 +170,7 @@ const RegisterView = () => {
     args: [
       [accountAddress, recoveryAddress, Number(deadline), regSig],
       [[1, signer?.publicKey, 1, signerMetadata, Number(deadline), signerSig]],
-      Number(1),
+      Number(storageUnits - 1),
     ],
     value: storagePrices ? BigInt(storageUnits) * storagePrices?.[0].result : 0,
     enabled: Boolean(signerSig && regSig && signer && storagePrices),
@@ -207,7 +207,7 @@ const RegisterView = () => {
     setDeadline(oneDayFromNow);
 
     await signTypedData({
-      domain: REGISTER_REQUEST_VALIDATOR_EIP_712_DOMAIN,
+      domain: ID_GATEWAY_EIP_712_DOMAIN,
       types: {
         Register: ID_REGISTRATION_REQUEST_TYPE,
       },
@@ -265,7 +265,7 @@ const RegisterView = () => {
             setSignerMetadata(metadata);
 
             await signTypedData({
-              domain: KEY_REGISTRY_EIP_712_DOMAIN,
+              domain: KEY_GATEWAY_EIP_712_DOMAIN,
               types: {
                 Add: KEY_REGISTRY_ADD_TYPE,
               },
