@@ -284,8 +284,8 @@ const withSaneishDefaultBehaviors = (editor, { mode } = {}) => {
 
       // Always end with an empty paragraph in non-inline mode
       if (
-        (mode !== "inline" && lastNode.type !== "paragraph") ||
-        Node.string(lastNode) !== ""
+        mode !== "inline" &&
+        (lastNode.type !== "paragraph" || Node.string(lastNode) !== "")
       ) {
         editor.insertNode(
           { type: "paragraph", children: [{ text: "" }] },
