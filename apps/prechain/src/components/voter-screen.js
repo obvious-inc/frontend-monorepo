@@ -98,17 +98,9 @@ const ActivityFeed = React.memo(({ voterAddress, filter = "all" }) => {
       ? null
       : () =>
           fetchVoterActivity(voterAddress, {
-            startBlock:
-              latestBlockNumber - BigInt(APPROXIMATE_BLOCKS_PER_DAY * 3),
+            startBlock: latestBlockNumber - BigInt(APPROXIMATE_BLOCKS_PER_DAY),
             endBlock: latestBlockNumber,
-          }).then(() =>
-            fetchVoterActivity(voterAddress, {
-              startBlock:
-                latestBlockNumber - BigInt(APPROXIMATE_BLOCKS_PER_DAY * 30),
-              endBlock:
-                latestBlockNumber - BigInt(APPROXIMATE_BLOCKS_PER_DAY * 3) - 1n,
-            })
-          ),
+          }).then(() => {}),
     [latestBlockNumber, fetchVoterActivity]
   );
 

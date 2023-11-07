@@ -809,16 +809,19 @@ export const fetchProposalsVersions = async (chainId, proposalIds) =>
     return data.proposalVersions.map(parseProposalVersion);
   });
 
-export const fetchProposals = async (chainId, proposalIds) =>
-  subgraphFetch({
+export const fetchProposals = async (chainId, proposalIds) => {
+  if (!proposalIds || proposalIds.length == 0) return [];
+  return subgraphFetch({
     chainId,
     query: createProposalsQuery(proposalIds),
   }).then((data) => {
     return data.proposals.map((p) => parseProposal(p, { chainId }));
   });
+};
 
-export const fetchProposalCandidates = async (chainId, candidateIds) =>
-  subgraphFetch({
+export const fetchProposalCandidates = async (chainId, candidateIds) => {
+  if (!candidateIds || candidateIds.length == 0) return [];
+  return subgraphFetch({
     chainId,
     query: createProposalCandidatesQuery(candidateIds),
   }).then((data) => {
@@ -826,6 +829,7 @@ export const fetchProposalCandidates = async (chainId, candidateIds) =>
       parseProposalCandidate(c, { chainId })
     );
   });
+};
 
 export const fetchProposalCandidatesFeedbackPosts = async (
   chainId,
