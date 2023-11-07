@@ -58,7 +58,7 @@ const ModalDialog = React.forwardRef(
               justifyContent: "center",
               overflow: "auto",
               background: "var(--background, hsl(0 0% 0% / 40%))",
-              padding: "6rem 1.5rem 0",
+              padding: "6rem 0 0",
               "@media (min-width: 600px)": {
                 padding: "2.8rem",
                 alignItems: "center",
@@ -76,7 +76,6 @@ const ModalDialog = React.forwardRef(
               (t) =>
                 css({
                   width: "100%",
-                  maxWidth: width,
                   color: t.colors.textNormal,
                   background: t.colors.dialogBackground,
                   borderTopLeftRadius: "0.6rem",
@@ -88,6 +87,7 @@ const ModalDialog = React.forwardRef(
                   outline: "none",
                   "@media (min-width: 600px)": {
                     borderRadius: "0.6rem",
+                    maxWidth: width,
                     height: "var(--desktop-set-height, auto)",
                     maxHeight:
                       "var(--desktop-set-height, min(calc(100% - 3rem), 82rem))",
