@@ -616,6 +616,32 @@ const ProposeScreen = () => {
                   aria-label="Title"
                   rows={1}
                   value={draft.name}
+                  onKeyDown={(e) => {
+                    const editor = editorRef.current;
+
+                    if (e.key === "ArrowDown") {
+                      e.preventDefault();
+                      editor.focus(editor.start([]));
+                    } else if (e.key === "Enter") {
+                      e.preventDefault();
+                      const textBeforeSelection = e.target.value.slice(
+                        0,
+                        e.target.selectionStart
+                      );
+                      const textAfterSelection = e.target.value.slice(
+                        e.target.selectionEnd
+                      );
+                      setName(textBeforeSelection);
+                      editor.insertNode(
+                        {
+                          type: "paragraph",
+                          children: [{ text: textAfterSelection }],
+                        },
+                        { at: editor.start([]) }
+                      );
+                      editor.focus(editor.start([]));
+                    }
+                  }}
                   onChange={(e) => {
                     setName(e.target.value);
                   }}
