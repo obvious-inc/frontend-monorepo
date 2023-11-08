@@ -145,6 +145,10 @@ export const fetchUserByFid = async (fid) => {
       return result.json();
     })
     .then((jsonResult) => {
+      if (!jsonResult.result?.user) {
+        console.warn("user not found", fid);
+        return null;
+      }
       return parseUser({ user: jsonResult.result.user });
     })
     .catch((err) => {
