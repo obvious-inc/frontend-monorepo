@@ -451,6 +451,9 @@ const ProposeScreen = () => {
                       minHeight: 0,
                       // overflow: "auto",
                       "@media (min-width: 600px)": {
+                        padding: "3.2rem 0 12rem",
+                      },
+                      "@media (min-width: 952px)": {
                         padding: "6rem 0 12rem",
                       },
                     })}
@@ -616,129 +619,43 @@ const ProposeScreen = () => {
                 </div>
               }
             >
-              <div
-                css={(t) =>
-                  css({
-                    position: "relative",
-                    display: "flex",
-                    flexDirection: "column",
-                    "@media (min-width: 600px)": {
-                      padding: "6rem 0 16rem",
-                    },
-                    "@media (min-width: 952px)": {
-                      minHeight: `calc(100vh - ${t.navBarHeight})`,
-                    },
-                  })
-                }
-              >
-                <AutoAdjustingHeightTextarea
-                  aria-label="Title"
-                  rows={1}
-                  value={draft.name}
-                  onKeyDown={(e) => {
-                    if (editorMode !== "rich-text") {
-                      if (e.key === "Enter") {
-                        e.preventDefault();
-                        return;
-                      }
-
-                      return;
-                    }
-
-                    const editor = editorRef.current;
-
-                    if (e.key === "ArrowDown") {
-                      e.preventDefault();
-                      editor.focus(editor.start([]));
-                    } else if (e.key === "Enter") {
-                      e.preventDefault();
-                      const textBeforeSelection = e.target.value.slice(
-                        0,
-                        e.target.selectionStart
-                      );
-                      const textAfterSelection = e.target.value.slice(
-                        e.target.selectionEnd
-                      );
-                      setName(textBeforeSelection);
-                      editor.insertNode(
-                        {
-                          type: "paragraph",
-                          children: [{ text: textAfterSelection }],
-                        },
-                        { at: editor.start([]) }
-                      );
-                      editor.focus(editor.start([]));
-                    }
-                  }}
-                  onChange={(e) => {
-                    setName(e.target.value);
-                  }}
-                  autoFocus
-                  disabled={hasPendingRequest}
-                  placeholder="Untitled proposal"
-                  css={(t) =>
-                    css({
-                      background: "none",
-                      fontSize: t.text.sizes.huge,
-                      lineHeight: 1.15,
-                      width: "100%",
-                      outline: "none",
-                      fontWeight: t.text.weights.header,
-                      border: 0,
-                      padding: 0,
-                      color: t.colors.textNormal,
-                      margin: "0 0 0.3rem",
-                      "::placeholder": { color: t.colors.textMuted },
-                    })
-                  }
-                />
+              <div style={{ position: "relative" }}>
                 <div
                   css={(t) =>
                     css({
-                      color: t.colors.textDimmed,
-                      fontSize: t.text.sizes.base,
-                      marginBottom: "2.4rem",
+                      display: "flex",
+                      flexDirection: "column",
+                      "@media (min-width: 600px)": {
+                        padding: "6rem 0 0",
+                      },
+                      "@media (min-width: 952px)": {
+                        minHeight: `calc(100vh - ${t.navBarHeight})`,
+                        padding: "6rem 0 16rem",
+                      },
                     })
                   }
                 >
-                  By{" "}
-                  <AccountPreviewPopoverTrigger
-                    // showAvatar
-                    accountAddress={connectedAccountAddress}
-                  />
-                </div>
-                {editorMode === "rich-text" ? (
-                  <RichTextEditor
-                    ref={editorRef}
-                    value={draft.body}
-                    onChange={(e, editor) => {
-                      setBody(e);
-                      setEditorFocused(editor.isFocused());
-                      setEditorSelection(editor.selection);
-                    }}
-                    onFocus={(_, editor) => {
-                      setEditorFocused(true);
-                      setEditorSelection(editor.selection);
-                    }}
-                    onBlur={() => {
-                      editorRef.current.removeEmptyParagraphs();
-                      setEditorFocused(false);
-                    }}
-                    placeholder={`Use markdown shortcuts like "# " and "1. " to create headings and lists.`}
-                    imagesMaxWidth={null}
-                    imagesMaxHeight={window.innerHeight / 2}
-                    css={(t) => css({ fontSize: t.text.sizes.large })}
-                    style={{ flex: 1, minHeight: "12rem" }}
-                  />
-                ) : (
-                  <div style={{ flex: 1, minHeight: "12rem" }}>
-                    <AutoAdjustingHeightTextarea
-                      value={draft.body}
-                      onKeyDown={(e) => {
-                        if (e.key !== "Enter") return;
+                  <AutoAdjustingHeightTextarea
+                    aria-label="Title"
+                    rows={1}
+                    value={draft.name}
+                    onKeyDown={(e) => {
+                      if (editorMode !== "rich-text") {
+                        if (e.key === "Enter") {
+                          e.preventDefault();
+                          return;
+                        }
 
+                        return;
+                      }
+
+                      const editor = editorRef.current;
+
+                      if (e.key === "ArrowDown") {
                         e.preventDefault();
-
+                        editor.focus(editor.start([]));
+                      } else if (e.key === "Enter") {
+                        e.preventDefault();
                         const textBeforeSelection = e.target.value.slice(
                           0,
                           e.target.selectionStart
@@ -746,83 +663,177 @@ const ProposeScreen = () => {
                         const textAfterSelection = e.target.value.slice(
                           e.target.selectionEnd
                         );
-
-                        const lineTextBeforeSelection = textBeforeSelection
-                          .split("\n")
-                          .slice(-1)[0];
-
-                        const indentCount =
-                          lineTextBeforeSelection.length -
-                          lineTextBeforeSelection.trimStart().length;
-
-                        setBody(
-                          [
-                            textBeforeSelection,
-                            textAfterSelection.padStart(indentCount, " "),
-                          ].join("\n")
+                        setName(textBeforeSelection);
+                        editor.insertNode(
+                          {
+                            type: "paragraph",
+                            children: [{ text: textAfterSelection }],
+                          },
+                          { at: editor.start([]) }
                         );
-
-                        document.execCommand(
-                          "insertText",
-                          undefined,
-                          "\n" + "".padEnd(indentCount, " ")
-                        );
-                      }}
-                      onChange={(e) => {
-                        setBody(e.target.value);
-                      }}
-                      placeholder="Raw markdown mode..."
-                      css={(t) =>
-                        css({
-                          outline: "none",
-                          border: 0,
-                          fontSize: t.text.sizes.large,
-                          color: t.colors.textNormal,
-                          padding: 0,
-                          width: "100%",
-                          fontFamily: t.fontStacks.monospace,
-                        })
+                        editor.focus(editor.start([]));
                       }
+                    }}
+                    onChange={(e) => {
+                      setName(e.target.value);
+                    }}
+                    autoFocus
+                    disabled={hasPendingRequest}
+                    placeholder="Untitled proposal"
+                    css={(t) =>
+                      css({
+                        background: "none",
+                        fontSize: t.text.sizes.huge,
+                        lineHeight: 1.15,
+                        width: "100%",
+                        outline: "none",
+                        fontWeight: t.text.weights.header,
+                        border: 0,
+                        padding: 0,
+                        color: t.colors.textNormal,
+                        margin: "0 0 0.3rem",
+                        "::placeholder": { color: t.colors.textMuted },
+                      })
+                    }
+                  />
+                  <div
+                    css={(t) =>
+                      css({
+                        color: t.colors.textDimmed,
+                        fontSize: t.text.sizes.base,
+                        marginBottom: "2.4rem",
+                      })
+                    }
+                  >
+                    By{" "}
+                    <AccountPreviewPopoverTrigger
+                      // showAvatar
+                      accountAddress={connectedAccountAddress}
                     />
                   </div>
-                )}
-                <Overlay>
-                  <div
-                    ref={floatingToolbarContainerRef}
-                    css={css({ transition: "0.1s opacity ease-out" })}
-                  >
-                    <nav
-                      css={css({
-                        display: "flex",
-                        gap: "1.6rem",
-                        maxWidth: "calc(100vw - 3.2rem)",
-                        width: "max-content",
-                      })}
+                  {editorMode === "rich-text" ? (
+                    <RichTextEditor
+                      ref={editorRef}
+                      value={draft.body}
+                      onChange={(e, editor) => {
+                        setBody(e);
+                        setEditorFocused(editor.isFocused());
+                        setEditorSelection(editor.selection);
+                      }}
+                      onFocus={(_, editor) => {
+                        setEditorFocused(true);
+                        setEditorSelection(editor.selection);
+                      }}
+                      onBlur={() => {
+                        editorRef.current.removeEmptyParagraphs();
+                        setEditorFocused(false);
+                      }}
+                      placeholder={`Use markdown shortcuts like "# " and "1. " to create headings and lists.`}
+                      imagesMaxWidth={null}
+                      imagesMaxHeight={window.innerHeight / 2}
+                      css={(t) => css({ fontSize: t.text.sizes.large })}
+                      style={{ flex: 1, minHeight: "12rem" }}
+                    />
+                  ) : (
+                    <div
+                      style={{
+                        flex: 1,
+                        minHeight: "12rem",
+                        paddingBottom: "3.2rem",
+                      }}
                     >
-                      {editorMode === "rich-text" && (
-                        <div
-                          css={(t) =>
-                            css({
-                              padding: "0.3rem",
-                              borderRadius: "0.3rem",
-                              background: t.colors.backgroundPrimary,
-                              boxShadow: t.shadows.elevationHigh,
-                            })
-                          }
-                        >
-                          <EditorToolbar
-                            onFocus={() => {
-                              setToolbarHasFocus(true);
-                            }}
-                            onBlur={() => {
-                              setToolbarHasFocus(false);
-                            }}
-                          />
-                        </div>
-                      )}
-                    </nav>
-                  </div>
-                </Overlay>
+                      <AutoAdjustingHeightTextarea
+                        value={draft.body}
+                        onKeyDown={(e) => {
+                          if (e.key !== "Enter") return;
+
+                          e.preventDefault();
+
+                          const textBeforeSelection = e.target.value.slice(
+                            0,
+                            e.target.selectionStart
+                          );
+                          const textAfterSelection = e.target.value.slice(
+                            e.target.selectionEnd
+                          );
+
+                          const lineTextBeforeSelection = textBeforeSelection
+                            .split("\n")
+                            .slice(-1)[0];
+
+                          const indentCount =
+                            lineTextBeforeSelection.length -
+                            lineTextBeforeSelection.trimStart().length;
+
+                          setBody(
+                            [
+                              textBeforeSelection,
+                              textAfterSelection.padStart(indentCount, " "),
+                            ].join("\n")
+                          );
+
+                          document.execCommand(
+                            "insertText",
+                            undefined,
+                            "\n" + "".padEnd(indentCount, " ")
+                          );
+                        }}
+                        onChange={(e) => {
+                          setBody(e.target.value);
+                        }}
+                        placeholder="Raw markdown mode..."
+                        css={(t) =>
+                          css({
+                            outline: "none",
+                            border: 0,
+                            fontSize: t.text.sizes.large,
+                            color: t.colors.textNormal,
+                            padding: 0,
+                            width: "100%",
+                            fontFamily: t.fontStacks.monospace,
+                          })
+                        }
+                      />
+                    </div>
+                  )}
+                  <Overlay>
+                    <div
+                      ref={floatingToolbarContainerRef}
+                      css={css({ transition: "0.1s opacity ease-out" })}
+                    >
+                      <nav
+                        css={css({
+                          display: "flex",
+                          gap: "1.6rem",
+                          maxWidth: "calc(100vw - 3.2rem)",
+                          width: "max-content",
+                        })}
+                      >
+                        {editorMode === "rich-text" && (
+                          <div
+                            css={(t) =>
+                              css({
+                                padding: "0.3rem",
+                                borderRadius: "0.3rem",
+                                background: t.colors.backgroundPrimary,
+                                boxShadow: t.shadows.elevationHigh,
+                              })
+                            }
+                          >
+                            <EditorToolbar
+                              onFocus={() => {
+                                setToolbarHasFocus(true);
+                              }}
+                              onBlur={() => {
+                                setToolbarHasFocus(false);
+                              }}
+                            />
+                          </div>
+                        )}
+                      </nav>
+                    </div>
+                  </Overlay>
+                </div>
 
                 {editorMode === "rich-text" && (
                   <FixedBottomToolbar
