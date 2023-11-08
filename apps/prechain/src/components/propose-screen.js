@@ -636,6 +636,15 @@ const ProposeScreen = () => {
                   rows={1}
                   value={draft.name}
                   onKeyDown={(e) => {
+                    if (editorMode !== "rich-text") {
+                      if (e.key === "Enter") {
+                        e.preventDefault();
+                        return;
+                      }
+
+                      return;
+                    }
+
                     const editor = editorRef.current;
 
                     if (e.key === "ArrowDown") {
@@ -725,10 +734,44 @@ const ProposeScreen = () => {
                   <div style={{ flex: 1, minHeight: "12rem" }}>
                     <AutoAdjustingHeightTextarea
                       value={draft.body}
+                      onKeyDown={(e) => {
+                        if (e.key !== "Enter") return;
+
+                        e.preventDefault();
+
+                        const textBeforeSelection = e.target.value.slice(
+                          0,
+                          e.target.selectionStart
+                        );
+                        const textAfterSelection = e.target.value.slice(
+                          e.target.selectionEnd
+                        );
+
+                        const lineTextBeforeSelection = textBeforeSelection
+                          .split("\n")
+                          .slice(-1)[0];
+
+                        const indentCount =
+                          lineTextBeforeSelection.length -
+                          lineTextBeforeSelection.trimStart().length;
+
+                        setBody(
+                          [
+                            textBeforeSelection,
+                            textAfterSelection.padStart(indentCount, " "),
+                          ].join("\n")
+                        );
+
+                        document.execCommand(
+                          "insertText",
+                          undefined,
+                          "\n" + "".padEnd(indentCount, " ")
+                        );
+                      }}
                       onChange={(e) => {
                         setBody(e.target.value);
                       }}
-                      placeholder="..."
+                      placeholder="Raw markdown mode..."
                       css={(t) =>
                         css({
                           outline: "none",
