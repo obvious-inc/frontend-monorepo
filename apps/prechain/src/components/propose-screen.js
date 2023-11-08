@@ -449,9 +449,9 @@ const ProposeScreen = () => {
                     css={css({
                       flex: 1,
                       minHeight: 0,
-                      // overflow: "auto",
+                      padding: "0 0 3.2rem",
                       "@media (min-width: 600px)": {
-                        padding: "3.2rem 0 12rem",
+                        padding: "3.2rem 0",
                       },
                       "@media (min-width: 952px)": {
                         padding: "6rem 0 12rem",
