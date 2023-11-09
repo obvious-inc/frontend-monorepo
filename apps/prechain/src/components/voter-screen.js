@@ -711,8 +711,6 @@ const VoterScreen = () => {
             voterAddress={voterAddress}
             scrollContainerRef={scrollContainerRef}
           />
-        ) : isFetching ? (
-          <Spinner size="2rem" />
         ) : (
           <div
             style={{
@@ -746,11 +744,19 @@ const VoterScreen = () => {
                   })
                 }
               >
-                Found no voter with id{" "}
-                <span css={(t) => css({ fontWeight: t.text.weights.emphasis })}>
-                  {voterId}
-                </span>
-                .
+                {isFetching ? (
+                  <Spinner size="2rem" />
+                ) : (
+                  <>
+                    Found no voter with id{" "}
+                    <span
+                      css={(t) => css({ fontWeight: t.text.weights.emphasis })}
+                    >
+                      {voterId}
+                    </span>
+                    .
+                  </>
+                )}
               </div>
               <Button
                 component={RouterLink}
