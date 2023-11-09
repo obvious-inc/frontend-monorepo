@@ -722,51 +722,49 @@ const VoterScreen = () => {
               paddingBottom: "10vh",
             }}
           >
-            <div>
-              <div
-                css={(t) =>
-                  css({
-                    fontSize: t.text.sizes.headerLarger,
-                    fontWeight: t.text.weights.header,
-                    margin: "0 0 1.6rem",
-                    lineHeight: 1.3,
-                  })
-                }
-              >
-                Not found
+            {isFetching ? (
+              <Spinner size="2rem" />
+            ) : (
+              <div>
+                <div
+                  css={(t) =>
+                    css({
+                      fontSize: t.text.sizes.headerLarger,
+                      fontWeight: t.text.weights.header,
+                      margin: "0 0 1.6rem",
+                      lineHeight: 1.3,
+                    })
+                  }
+                >
+                  Not found
+                </div>
+                <div
+                  css={(t) =>
+                    css({
+                      fontSize: t.text.sizes.large,
+                      wordBreak: "break-word",
+                      margin: "0 0 4.8rem",
+                    })
+                  }
+                >
+                  Found no voter with id{" "}
+                  <span
+                    css={(t) => css({ fontWeight: t.text.weights.emphasis })}
+                  >
+                    {voterId}
+                  </span>
+                  .
+                </div>
+                <Button
+                  component={RouterLink}
+                  to="/"
+                  variant="primary"
+                  size="large"
+                >
+                  Go back
+                </Button>
               </div>
-              <div
-                css={(t) =>
-                  css({
-                    fontSize: t.text.sizes.large,
-                    wordBreak: "break-word",
-                    margin: "0 0 4.8rem",
-                  })
-                }
-              >
-                {isFetching ? (
-                  <Spinner size="2rem" />
-                ) : (
-                  <>
-                    Found no voter with id{" "}
-                    <span
-                      css={(t) => css({ fontWeight: t.text.weights.emphasis })}
-                    >
-                      {voterId}
-                    </span>
-                    .
-                  </>
-                )}
-              </div>
-              <Button
-                component={RouterLink}
-                to="/"
-                variant="primary"
-                size="large"
-              >
-                Go back
-              </Button>
-            </div>
+            )}
           </div>
         )}
       </Layout>
