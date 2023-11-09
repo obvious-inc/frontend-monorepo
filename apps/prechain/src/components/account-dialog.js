@@ -23,7 +23,12 @@ const AccountDialog = ({ isOpen, close }) => (
 );
 
 const Content = ({ titleProps, dismiss }) => {
-  const { address: accountAddress } = useWallet();
+  const {
+    address: accountAddress,
+    disconnect: disconnectWallet,
+    isShimmedDisconnect,
+    requestAccess: requestWalletAccess,
+  } = useWallet();
   const { displayName, truncatedAddress } =
     useAccountDisplayName(accountAddress);
   const delegate = useDelegate(accountAddress);
@@ -175,6 +180,38 @@ const Content = ({ titleProps, dismiss }) => {
           )}
         </dl>
       </main>
+
+      <footer
+        css={css({
+          display: "flex",
+          justifyContent: "flex-end",
+          gap: "1rem",
+          padding: "0 1.6rem 1.6rem",
+          "@media (min-width: 600px)": {
+            padding: "0 2rem 2rem",
+          },
+        })}
+      >
+        {isShimmedDisconnect ? (
+          <Button
+            onClick={() => {
+              dismiss();
+              requestWalletAccess();
+            }}
+          >
+            Connect a different account
+          </Button>
+        ) : (
+          <Button
+            onClick={() => {
+              dismiss();
+              disconnectWallet();
+            }}
+          >
+            Disconnect wallet
+          </Button>
+        )}
+      </footer>
     </div>
   );
 };

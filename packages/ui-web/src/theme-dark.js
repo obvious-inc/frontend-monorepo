@@ -50,6 +50,16 @@ const textSizes = {
   tab: "1.5rem",
 };
 
+const textWeights = {
+  default: "400",
+  normal: "400",
+  header: "700",
+  smallHeader: "600",
+  emphasis: "600",
+  menuListBoxItem: "500",
+  notificationBadge: "500",
+};
+
 const fontStacks = {
   default:
     'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif',
@@ -74,7 +84,7 @@ export default {
   },
   mainMenu: {
     itemHeight: "2.7rem",
-    itemTextWeight: "500",
+    itemTextWeight: textWeights.menuListBoxItem,
     itemBorderRadius: "0.3rem",
     itemHorizontalPadding: "1rem",
     inputHeight: "2.9rem",
@@ -157,14 +167,7 @@ export default {
   fontSizes: textSizes,
   text: {
     sizes: textSizes,
-    weights: {
-      default: "400",
-      normal: "400",
-      header: "700",
-      smallHeader: "600",
-      emphasis: "600",
-      notificationBadge: "500",
-    },
+    weights: textWeights,
     fontStacks,
   },
   fontStacks,

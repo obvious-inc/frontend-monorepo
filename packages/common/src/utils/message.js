@@ -291,35 +291,60 @@ export const toMarkdown = (blockElements) => {
     return text;
   };
 
-  const renderBlockElement = (el, { indent: indent_ = 0 } = {}) => {
-    const indent = "".padStart(indent_, " ");
-    const renderChildren = () => el.children.map(renderNode).join("");
+  const renderBlockElement = (
+    el,
+    { index, prefix, indent: indent_ = 0 } = {}
+  ) => {
+    const indent = index === 0 ? "" : "".padStart(indent_, " ");
+
+    const renderInlineChildren = () => {
+      const inlineChildren = el.children.map(renderNode).join("");
+      if (prefix == null) return inlineChildren;
+      return inlineChildren.split("\n").join(`\n${prefix}`);
+    };
 
     switch (el.type) {
       case "paragraph":
-        return `${indent}${renderChildren()}`;
+        return `${indent}${renderInlineChildren()}`;
 
       case "heading-1":
-        return `${indent}# ${renderChildren()}`;
+        return `${indent}# ${renderInlineChildren()}`;
       case "heading-2":
-        return `${indent}## ${renderChildren()}`;
+        return `${indent}## ${renderInlineChildren()}`;
       case "heading-3":
-        return `${indent}### ${renderChildren()}`;
+        return `${indent}### ${renderInlineChildren()}`;
       case "heading-4":
-        return `${indent}#### ${renderChildren()}`;
+        return `${indent}#### ${renderInlineChildren()}`;
 
       case "quote":
       case "callout":
-        return `${indent}> ${renderChildren().trim().split("\n").join("\n> ")}`;
+        if (el.children[0].children != null)
+          return `${indent}> ${el.children
+            .map((el, i) =>
+              renderBlockElement(el, {
+                index: i,
+                prefix: `${indent}> `,
+                indent: indent_,
+              })
+            )
+            .join(`\n>\n${indent}> `)}`;
+
+        return `${indent}> ${renderInlineChildren()
+          .trim()
+          .split("\n")
+          .join("\n> ")}`;
 
       case "bulleted-list":
       case "numbered-list": {
         const isBulletList = el.type === "bulleted-list";
         const children = el.children.map((el, i, els) => {
-          const prefix = isBulletList ? "-" : `${i + 1}.`;
+          const listItemPrefix = isBulletList ? "-" : `${i + 1}.`;
           const renderedListItemChildren = el.children.map((el, i) =>
             renderBlockElement(el, {
-              indent: i === 0 ? 0 : indent_ + prefix.length + 1,
+              index: i,
+              prefix,
+              indent: indent_ + listItemPrefix.length + 1,
+              // indent: i === 0 ? 0 : indent_ + listItemPrefix.length + 1,
             })
           );
 
@@ -329,11 +354,13 @@ export const toMarkdown = (blockElements) => {
             el.children[0].type === "paragraph" &&
             ["bulleted-list", "numbered-list"].includes(el.children[1].type)
           )
-            return `${indent}${prefix} ${renderedListItemChildren.join("\n")}`;
+            return `${indent}${listItemPrefix} ${renderedListItemChildren.join(
+              "\n"
+            )}`;
 
-          const renderedListItem = `${indent}${prefix} ${renderedListItemChildren.join(
-            "\n\n"
-          )}`;
+          const renderedListItem = `${indent}${listItemPrefix} ${renderedListItemChildren
+            .filter((s) => s.trim() !== "")
+            .join("\n\n")}`;
 
           if (i !== els.length - 1 && el.children.length > 1)
             return renderedListItem + "\n";
@@ -341,7 +368,7 @@ export const toMarkdown = (blockElements) => {
           return renderedListItem;
         });
 
-        return `${children.join("\n")}`;
+        return children.join(`\n${prefix}`);
       }
 
       case "image-grid":
@@ -358,8 +385,12 @@ export const toMarkdown = (blockElements) => {
       case "horizontal-divider":
         return `${indent}---`;
 
-      case "code-block":
-        return `${indent}\`\`\`\n${el.code}\n\`\`\``;
+      case "code-block": {
+        const lineIndent = "".padStart(indent_, " ");
+        return `${indent}\`\`\`\n${el.code}\n\`\`\``
+          .split("\n")
+          .join(`\n${prefix}${lineIndent}`);
+      }
 
       default:
         throw new Error(`Unknown element type: "${el.type}"`);
@@ -381,7 +412,10 @@ export const toMarkdown = (blockElements) => {
     }
   };
 
-  return blockElements.map(renderBlockElement).join("\n\n");
+  return blockElements
+    .map((el, i) => renderBlockElement(el, { index: i }))
+    .filter((s) => s.trim() !== "")
+    .join("\n\n");
 };
 
 export const createParagraphElement = (content = "") => ({

@@ -1330,12 +1330,13 @@ const MessageRecipientOption = ({
   const { optionProps, labelProps, descriptionProps, isFocused, isDisabled } =
     useOption({ key: itemKey }, state, ref);
 
-  const theme = useTheme();
-
   return (
     <li
       {...optionProps}
       ref={ref}
+      data-disabled={isDisabled}
+      data-focused={isFocused}
+      data-selected={isSelected}
       css={(t) =>
         css({
           minHeight: t.dropdownMenus.itemHeight,
@@ -1348,58 +1349,59 @@ const MessageRecipientOption = ({
           color: t.colors.textNormal,
           borderRadius: "0.3rem",
           outline: "none",
+          cursor: "pointer",
+
+          "[data-label]": {
+            fontSize: t.text.sizes.large,
+            color: t.colors.textNormal,
+            fontWeight: t.text.weights.menuListBoxItem,
+          },
+          "[data-description]": {
+            color: t.colors.textDimmed,
+            fontSize: t.text.sizes.base,
+            flex: 1,
+            minWidth: 0,
+            whiteSpace: "nowrap",
+            overflow: "hidden",
+            textOverflow: "ellipsis",
+            marginLeft: "0.8rem",
+          },
+          "[data-icon]": {
+            marginRight: "1rem",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+          },
+
+          "[data-flex]": {
+            flex: 1,
+            minWidth: 0,
+            display: "flex",
+            alignItems: "center",
+          },
+
+          '&[data-disabled="true"]': {
+            cursor: "default",
+          },
+          '&[data-selected="true"]': {
+            background: t.colors.primaryTransparentSoft,
+          },
+          '&[data-focused="true"]': {
+            background: t.colors.backgroundModifierHover,
+            "[data-label]": {
+              color: t.colors.textAccent,
+            },
+          },
         })
       }
-      style={{
-        cursor: isDisabled ? "default" : "pointer",
-        background: isSelected
-          ? theme.colors.primaryTransparentSoft
-          : isFocused
-          ? theme.colors.backgroundModifierHover
-          : undefined,
-      }}
     >
-      <div
-        css={css({
-          marginRight: "1rem",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-        })}
-      >
-        {icon}
-      </div>
-      <div
-        css={css({
-          flex: 1,
-          minWidth: 0,
-          display: "flex",
-          alignItems: "center",
-        })}
-      >
-        <div
-          {...labelProps}
-          css={(t) => css({ fontSize: t.text.sizes.large })}
-          style={{ color: isFocused ? theme.colors.textAccent : undefined }}
-        >
+      <div data-icon>{icon}</div>
+      <div data-flex>
+        <div {...labelProps} data-label>
           {label}
         </div>
         {description != null && (
-          <div
-            {...descriptionProps}
-            css={(t) =>
-              css({
-                color: t.colors.textDimmed,
-                fontSize: t.text.sizes.base,
-                flex: 1,
-                minWidth: 0,
-                whiteSpace: "nowrap",
-                overflow: "hidden",
-                textOverflow: "ellipsis",
-                marginLeft: "0.8rem",
-              })
-            }
-          >
+          <div {...descriptionProps} data-description>
             {description}
           </div>
         )}

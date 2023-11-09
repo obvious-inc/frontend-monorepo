@@ -3,7 +3,7 @@ import React from "react";
 import { useParams, useNavigate, useSearchParams } from "react-router-dom";
 import { parseEther, parseUnits } from "viem";
 import { useAccount } from "wagmi";
-import { css } from "@emotion/react";
+import { css, Global as GlobalStyles } from "@emotion/react";
 import {
   useFetch,
   useLatestCallback,
@@ -12,6 +12,7 @@ import {
 import {
   message as messageUtils,
   markdown as markdownUtils,
+  isTouchDevice,
 } from "@shades/common/utils";
 import { useAccountDisplayName } from "@shades/common/app";
 import {
@@ -24,6 +25,7 @@ import RichTextEditor, {
   Provider as EditorProvider,
   Toolbar as EditorToolbar,
   isNodeEmpty as isRichTextEditorNodeEmpty,
+  isSelectionCollapsed,
   toMessageBlocks as richTextToMessageBlocks,
   fromMessageBlocks as messageToRichTextBlocks,
 } from "@shades/ui-web/rich-text-editor";
@@ -45,6 +47,7 @@ import FormattedNumber from "./formatted-number.js";
 import AccountPreviewPopoverTrigger from "./account-preview-popover-trigger.js";
 import { TransactionExplanation } from "./transaction-list.js";
 import ActionDialog from "./action-dialog.js";
+import { Overlay } from "react-aria";
 
 const isDebugSession =
   new URLSearchParams(location.search).get("debug") != null;
@@ -158,9 +161,7 @@ const getActionTransactions = (a) => {
 };
 
 const useEditorMode = (draft, { setBody }) => {
-  const [mode, setModeState] = React.useState(
-    typeof draft.body === "string" ? "markdown" : "rich-text"
-  );
+  const mode = typeof draft.body === "string" ? "markdown" : "rich-text";
 
   const setMode = (newMode) => {
     if (mode === newMode) return;
@@ -181,8 +182,6 @@ const useEditorMode = (draft, { setBody }) => {
       default:
         throw new Error(`unknown transform: "${transform}"`);
     }
-
-    setModeState(newMode);
   };
 
   return [mode, setMode];
@@ -191,6 +190,26 @@ const useEditorMode = (draft, { setBody }) => {
 const ProposeScreen = () => {
   const { draftId } = useParams();
   const navigate = useNavigate();
+
+  const editorRef = React.useRef();
+  const editor = editorRef.current;
+
+  const scrollContainerRef = React.useRef();
+
+  const [isEditorFocused, setEditorFocused] = React.useState(false);
+  const [editorSelection, setEditorSelection] = React.useState(null);
+
+  const [hasFloatingToolbarFocus, setHasFloatingToolbarFocus] =
+    React.useState(false);
+
+  const isFloatingToolbarVisible =
+    !isTouchDevice() &&
+    editor != null &&
+    (hasFloatingToolbarFocus ||
+      (isEditorFocused &&
+        editorSelection != null &&
+        !isSelectionCollapsed(editorSelection) &&
+        editor.string(editorSelection) !== ""));
 
   const { address: connectedAccountAddress } = useAccount();
   const {
@@ -205,7 +224,6 @@ const ProposeScreen = () => {
 
   const { deleteItem: deleteDraft } = useDrafts();
   const [draft, { setName, setBody, setActions }] = useDraft(draftId);
-  // console.log(draft.body);
 
   const [hasPendingRequest, setPendingRequest] = React.useState(false);
   const [selectedActionIndex, setSelectedActionIndex] = React.useState(null);
@@ -340,6 +358,7 @@ const ProposeScreen = () => {
 
   useKeyboardShortcuts({
     "$mod+Shift+m": (e) => {
+      if (!isDebugSession) return;
       e.preventDefault();
       setEditorMode(editorMode === "rich-text" ? "markdown" : "rich-text");
     },
@@ -348,6 +367,7 @@ const ProposeScreen = () => {
   return (
     <>
       <Layout
+        scrollContainerRef={scrollContainerRef}
         navigationStack={[
           { to: "/?tab=proposals", label: "Drafts", desktopOnly: true },
           { to: `/new/${draftId}`, label: draft?.name || "Untitled draft" },
@@ -379,8 +399,11 @@ const ProposeScreen = () => {
                     css={css({
                       flex: 1,
                       minHeight: 0,
-                      // overflow: "auto",
+                      padding: "0 0 3.2rem",
                       "@media (min-width: 600px)": {
+                        padding: "3.2rem 0",
+                      },
+                      "@media (min-width: 952px)": {
                         padding: "6rem 0 12rem",
                       },
                     })}
@@ -483,6 +506,7 @@ const ProposeScreen = () => {
                     style={{
                       padding: "1.6rem 0",
                       display: "flex",
+                      gap: "1rem",
                     }}
                   >
                     <Button
@@ -501,7 +525,7 @@ const ProposeScreen = () => {
                           navigate("/", { replace: true });
                         });
                       }}
-                      icon={<TrashCanIcon />}
+                      icon={<TrashCanIcon style={{ width: "1.4rem" }} />}
                     />
                     <div
                       style={{
@@ -545,148 +569,205 @@ const ProposeScreen = () => {
                 </div>
               }
             >
-              <div
-                css={(t) =>
-                  css({
-                    display: "flex",
-                    flexDirection: "column",
-                    "@media (min-width: 600px)": {
-                      padding: "6rem 0 16rem",
-                    },
-                    "@media (min-width: 952px)": {
-                      minHeight: `calc(100vh - ${t.navBarHeight})`,
-                    },
-                  })
-                }
-              >
-                <AutoAdjustingHeightTextarea
-                  aria-label="Title"
-                  rows={1}
-                  value={draft.name}
-                  onChange={(e) => {
-                    setName(e.target.value);
-                  }}
-                  autoFocus
-                  disabled={hasPendingRequest}
-                  placeholder="Untitled proposal"
-                  css={(t) =>
-                    css({
-                      background: "none",
-                      fontSize: t.text.sizes.huge,
-                      lineHeight: 1.15,
-                      width: "100%",
-                      outline: "none",
-                      fontWeight: t.text.weights.header,
-                      border: 0,
-                      padding: 0,
-                      color: t.colors.textNormal,
-                      margin: "0 0 0.3rem",
-                      "::placeholder": { color: t.colors.textMuted },
-                    })
-                  }
-                />
+              <div style={{ position: "relative" }}>
                 <div
                   css={(t) =>
                     css({
-                      color: t.colors.textDimmed,
-                      fontSize: t.text.sizes.base,
-                      marginBottom: "2.4rem",
+                      display: "flex",
+                      flexDirection: "column",
+                      "@media (min-width: 600px)": {
+                        padding: "6rem 0 0",
+                      },
+                      "@media (min-width: 952px)": {
+                        minHeight: `calc(100vh - ${t.navBarHeight} - 6.4rem)`, // 6.4rem is the fixed toolbar container height
+                        padding: "6rem 0 16rem",
+                      },
                     })
                   }
                 >
-                  By{" "}
-                  <AccountPreviewPopoverTrigger
-                    // showAvatar
-                    accountAddress={connectedAccountAddress}
-                  />
-                </div>
-                {editorMode === "rich-text" ? (
-                  <RichTextEditor
-                    value={draft.body}
-                    onChange={(e) => {
-                      setBody(e);
-                    }}
-                    placeholder={`Use markdown shortcuts like "# " and "1. " to create headings and lists.`}
-                    imagesMaxWidth={null}
-                    imagesMaxHeight={window.innerHeight / 2}
-                    css={(t) => css({ fontSize: t.text.sizes.large })}
-                    style={{ flex: 1, minHeight: "12rem" }}
-                  />
-                ) : (
-                  <div style={{ flex: 1, minHeight: "12rem" }}>
-                    <AutoAdjustingHeightTextarea
-                      value={draft.body}
-                      onChange={(e) => {
-                        setBody(e.target.value);
-                      }}
-                      placeholder="..."
-                      css={(t) =>
-                        css({
-                          outline: "none",
-                          border: 0,
-                          fontSize: t.text.sizes.large,
-                          color: t.colors.textNormal,
-                          padding: 0,
-                          width: "100%",
-                          fontFamily: t.fontStacks.monospace,
-                        })
+                  <AutoAdjustingHeightTextarea
+                    aria-label="Title"
+                    rows={1}
+                    value={draft.name}
+                    onKeyDown={(e) => {
+                      if (editorMode !== "rich-text") {
+                        if (e.key === "Enter") {
+                          e.preventDefault();
+                          return;
+                        }
+
+                        return;
                       }
+
+                      const editor = editorRef.current;
+
+                      if (e.key === "ArrowDown") {
+                        e.preventDefault();
+                        editor.focus(editor.start([]));
+                      } else if (e.key === "Enter") {
+                        e.preventDefault();
+                        const textBeforeSelection = e.target.value.slice(
+                          0,
+                          e.target.selectionStart
+                        );
+                        const textAfterSelection = e.target.value.slice(
+                          e.target.selectionEnd
+                        );
+                        setName(textBeforeSelection);
+                        editor.insertNode(
+                          {
+                            type: "paragraph",
+                            children: [{ text: textAfterSelection }],
+                          },
+                          { at: editor.start([]) }
+                        );
+                        editor.focus(editor.start([]));
+                      }
+                    }}
+                    onChange={(e) => {
+                      setName(e.target.value);
+                    }}
+                    autoFocus
+                    disabled={hasPendingRequest}
+                    placeholder="Untitled proposal"
+                    css={(t) =>
+                      css({
+                        background: "none",
+                        fontSize: t.text.sizes.huge,
+                        lineHeight: 1.15,
+                        width: "100%",
+                        outline: "none",
+                        fontWeight: t.text.weights.header,
+                        border: 0,
+                        padding: 0,
+                        color: t.colors.textNormal,
+                        margin: "0 0 0.3rem",
+                        "::placeholder": { color: t.colors.textMuted },
+                      })
+                    }
+                  />
+                  <div
+                    css={(t) =>
+                      css({
+                        color: t.colors.textDimmed,
+                        fontSize: t.text.sizes.base,
+                        marginBottom: "2.4rem",
+                      })
+                    }
+                  >
+                    By{" "}
+                    <AccountPreviewPopoverTrigger
+                      // showAvatar
+                      accountAddress={connectedAccountAddress}
                     />
                   </div>
-                )}
-                <nav
-                  css={css({
-                    position: "fixed",
-                    bottom: 0,
-                    display: "flex",
-                    gap: "1.6rem",
-                  })}
-                >
-                  {editorMode === "rich-text" && (
+                  {editorMode === "rich-text" ? (
+                    <RichTextEditor
+                      ref={editorRef}
+                      value={draft.body}
+                      onChange={(e, editor) => {
+                        setBody(e);
+                        setEditorFocused(editor.isFocused());
+                        setEditorSelection(editor.selection);
+                      }}
+                      onFocus={(_, editor) => {
+                        setEditorFocused(true);
+                        setEditorSelection(editor.selection);
+                      }}
+                      onBlur={() => {
+                        editorRef.current.removeEmptyParagraphs();
+                        setEditorFocused(false);
+                      }}
+                      placeholder={`Use markdown shortcuts like "# " and "1. " to create headings and lists.`}
+                      imagesMaxWidth={null}
+                      imagesMaxHeight={window.innerHeight / 2}
+                      css={(t) => css({ fontSize: t.text.sizes.large })}
+                      style={{ flex: 1, minHeight: "12rem" }}
+                    />
+                  ) : (
                     <div
-                      css={(t) =>
-                        css({
-                          padding: "0.8rem",
-                          borderTopLeftRadius: "0.3rem",
-                          borderTopRightRadius: "0.3rem",
-                          background: t.colors.backgroundPrimary,
-                          boxShadow: t.shadows.elevationHigh,
-                        })
-                      }
+                      style={{
+                        flex: 1,
+                        minHeight: "12rem",
+                        paddingBottom: "3.2rem",
+                      }}
                     >
-                      <EditorToolbar />
-                    </div>
-                  )}
-                  {isDebugSession && (
-                    <div
-                      css={(t) =>
-                        css({
-                          padding: "0.8rem",
-                          borderTopLeftRadius: "0.3rem",
-                          borderTopRightRadius: "0.3rem",
-                          background: t.colors.backgroundPrimary,
-                          boxShadow: t.shadows.elevationHigh,
-                        })
-                      }
-                    >
-                      <Select
-                        aria-label="Editor mode"
-                        variant="transparent"
-                        size="small"
-                        fullWidth={false}
-                        width="max-content"
-                        value={editorMode}
-                        onChange={(value) => {
-                          setEditorMode(value);
+                      <AutoAdjustingHeightTextarea
+                        value={draft.body}
+                        onKeyDown={(e) => {
+                          if (e.key !== "Enter") return;
+
+                          e.preventDefault();
+
+                          const textBeforeSelection = e.target.value.slice(
+                            0,
+                            e.target.selectionStart
+                          );
+                          const textAfterSelection = e.target.value.slice(
+                            e.target.selectionEnd
+                          );
+
+                          const lineTextBeforeSelection = textBeforeSelection
+                            .split("\n")
+                            .slice(-1)[0];
+
+                          const indentCount =
+                            lineTextBeforeSelection.length -
+                            lineTextBeforeSelection.trimStart().length;
+
+                          setBody(
+                            [
+                              textBeforeSelection,
+                              textAfterSelection.padStart(indentCount, " "),
+                            ].join("\n")
+                          );
+
+                          document.execCommand(
+                            "insertText",
+                            undefined,
+                            "\n" + "".padEnd(indentCount, " ")
+                          );
                         }}
-                        options={[
-                          { value: "rich-text", label: "Rich text" },
-                          { value: "markdown", label: "Markdown" },
-                        ]}
+                        onChange={(e) => {
+                          setBody(e.target.value);
+                        }}
+                        placeholder="Raw markdown mode..."
+                        css={(t) =>
+                          css({
+                            outline: "none",
+                            border: 0,
+                            fontSize: t.text.sizes.large,
+                            color: t.colors.textNormal,
+                            padding: 0,
+                            width: "100%",
+                            fontFamily: t.fontStacks.monospace,
+                          })
+                        }
                       />
                     </div>
                   )}
-                </nav>
+                </div>
+
+                {editorMode === "rich-text" && (
+                  <>
+                    <FloatingToolbar
+                      isVisible={isFloatingToolbarVisible}
+                      scrollContainerRef={scrollContainerRef}
+                      onFocus={() => {
+                        setHasFloatingToolbarFocus(true);
+                      }}
+                      onBlur={() => {
+                        setHasFloatingToolbarFocus(false);
+                      }}
+                    />
+                    <FixedBottomToolbar
+                      isVisible={
+                        isEditorFocused &&
+                        (isTouchDevice() || !isFloatingToolbarVisible)
+                      }
+                    />
+                  </>
+                )}
               </div>
             </MainContentContainer>
           </form>
@@ -738,6 +819,213 @@ const ProposeScreen = () => {
           submitButtonLabel="Add"
         />
       )}
+    </>
+  );
+};
+
+const FloatingToolbar = ({
+  scrollContainerRef,
+  isVisible,
+  onFocus,
+  onBlur,
+}) => {
+  const containerRef = React.useRef();
+
+  // Update position and visibility
+  React.useEffect(() => {
+    const el = containerRef.current;
+
+    if (!isVisible) {
+      el.style.pointerEvents = "none";
+      el.style.opacity = "0";
+      return;
+    }
+
+    const scrollContainerEl = scrollContainerRef.current;
+
+    const updatePosition = () => {
+      const domSelection = window.getSelection();
+      const domRange = domSelection.getRangeAt(0);
+      const rect = domRange.getBoundingClientRect();
+      const scrollContainerRect = scrollContainerEl.getBoundingClientRect();
+
+      const selectionTop = rect.top + window.scrollY - el.offsetHeight;
+      const scrollContainerTop = scrollContainerRect.top + window.scrollY;
+
+      el.style.display = "block";
+      el.style.position = "absolute";
+      el.style.top = Math.max(scrollContainerTop, selectionTop - 12) + "px";
+
+      const leftOffset = rect.left + window.scrollX - 36;
+
+      if (el.offsetWidth >= window.innerWidth - 32) {
+        el.style.right = "auto";
+        el.style.left = 16 + "px";
+      } else if (leftOffset + el.offsetWidth + 16 > window.innerWidth) {
+        el.style.left = "auto";
+        el.style.right = 16 + "px";
+      } else {
+        el.style.right = "auto";
+        el.style.left = Math.max(16, leftOffset) + "px";
+      }
+
+      el.style.pointerEvents = "auto";
+      el.style.opacity = "1";
+    };
+
+    scrollContainerEl.addEventListener("scroll", updatePosition);
+
+    updatePosition();
+
+    return () => {
+      scrollContainerEl.removeEventListener("scroll", updatePosition);
+    };
+  });
+
+  return (
+    <Overlay>
+      <div
+        ref={containerRef}
+        css={css({ transition: "0.1s opacity ease-out" })}
+      >
+        <nav
+          css={css({
+            display: "flex",
+            gap: "1.6rem",
+            maxWidth: "calc(100vw - 3.2rem)",
+            width: "max-content",
+          })}
+        >
+          <div
+            css={(t) =>
+              css({
+                padding: "0.3rem",
+                borderRadius: "0.3rem",
+                background: t.colors.backgroundPrimary,
+                boxShadow: t.shadows.elevationHigh,
+              })
+            }
+          >
+            <EditorToolbar onFocus={onFocus} onBlur={onBlur} />
+          </div>
+        </nav>
+      </div>
+    </Overlay>
+  );
+};
+
+const FixedBottomToolbar = ({ isVisible = false }) => {
+  const ref = React.useRef();
+
+  // Fix to top of soft keyboard on touch devices
+  React.useEffect(() => {
+    if (!isTouchDevice()) return;
+
+    const el = ref.current;
+
+    const updatePosition = () => {
+      const viewport = window.visualViewport;
+      el.style.opacity = isVisible ? "1" : "0";
+
+      if (viewport.height >= window.innerHeight) {
+        el.dataset.fixedToKeyboard = false;
+        return;
+      }
+
+      el.dataset.fixedToKeyboard = true;
+      el.style.top =
+        viewport.offsetTop + viewport.height - el.offsetHeight + "px";
+    };
+
+    const handleTouchMove = (e) => {
+      const { target } = e.touches[0];
+      if (el == target || el.contains(target)) return;
+      // iOS will only fire the last scroll event, so we hide the toolbar until
+      // the scroll finishes to prevent it from rendering in the wrong position
+      el.style.opacity = "0";
+    };
+
+    window.visualViewport.addEventListener("resize", updatePosition);
+    window.visualViewport.addEventListener("scroll", updatePosition);
+    addEventListener("touchmove", handleTouchMove);
+
+    updatePosition();
+
+    return () => {
+      window.visualViewport.removeEventListener("resize", updatePosition);
+      window.visualViewport.removeEventListener("scroll", updatePosition);
+      removeEventListener("touchmove", handleTouchMove);
+    };
+  });
+
+  return (
+    <>
+      <nav
+        ref={ref}
+        aria-hidden={!isVisible}
+        data-touch={isTouchDevice()}
+        css={(t) =>
+          css({
+            position: "sticky",
+            top: "auto",
+            bottom: 0,
+            maxWidth: "calc(100vw - 3.2rem)",
+            width: "max-content",
+            padding: "1.6rem 0",
+            pointerEvents: "none",
+            transition: "0.1s opacity ease-out",
+            "[data-box]": {
+              pointerEvents: "auto",
+              padding: "0.3rem",
+              borderRadius: "0.3rem",
+              background: t.colors.backgroundPrimary,
+              boxShadow: t.shadows.elevationLow,
+              transition: "0.1s opacity ease-out",
+            },
+            '&[data-touch="true"]': {
+              display: "none",
+            },
+            '&[data-fixed-to-keyboard="true"]': {
+              display: "block",
+              position: "fixed",
+              zIndex: 100,
+              bottom: "auto",
+              left: 0,
+              width: "100%",
+              maxWidth: "100%",
+              margin: 0,
+              padding: "0.8rem",
+              background: t.colors.backgroundPrimary,
+              borderTop: "0.1rem solid",
+              borderColor: t.colors.borderLight,
+              "[data-box]": {
+                padding: 0,
+                boxShadow: "none",
+              },
+            },
+            '&[aria-hidden="true"]': {
+              opacity: 0,
+              pointerEvents: "none",
+            },
+          })
+        }
+      >
+        <div data-box>
+          <EditorToolbar />
+        </div>
+      </nav>
+
+      <GlobalStyles
+        styles={css({
+          // This makes the scroll work roughly as expected when toggling the
+          // soft keyboard on iOS. Doesn’t seem to break anything, I dunno.
+          "@media(hover: none)": {
+            html: {
+              overflow: "auto",
+            },
+          },
+        })}
+      />
     </>
   );
 };

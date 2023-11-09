@@ -2,8 +2,6 @@ import isHotkey from "is-hotkey";
 import { Node, Point, Path, Range } from "slate";
 import { withBlockPrefixShortcut } from "../utils.js";
 
-// const isProduction = process.env.NODE_ENV === "production";
-
 const BULLETED_LIST_ROOT_ELEMENT_TYPE = "bulleted-list";
 const NUMBERED_LIST_ROOT_ELEMENT_TYPE = "numbered-list";
 const LIST_ITEM_ELEMENT_TYPE = "list-item";
@@ -114,7 +112,7 @@ const middleware = (editor) => {
   };
 
   editor.normalizeNode = ([node, path]) => {
-    if (node.type === LIST_ITEM_ELEMENT_TYPE) {
+    if (isListItem(node)) {
       // Unwrap list items that lack a parent list
       const parentNode = Node.parent(editor, path);
       if (parentNode == null || !isListRoot(parentNode)) {
@@ -135,19 +133,15 @@ const middleware = (editor) => {
       }
     }
 
-    // if (isListRoot(node)) {
-    //   // Assert all children are of type "list-item"
-    //   for (const [childNode, childNodePath] of Node.children(editor, path)) {
-    //     if (childNode.type === "list-item") continue;
+    if (isListRoot(node)) {
+      const [previousNode] = editor.previous({ at: path }) ?? [];
 
-    //     if (!isProduction) {
-    //       throw new Error(childNodePath);
-    //     } else {
-    //       editor.liftNodes({ at: childNodePath });
-    //       return;
-    //     }
-    //   }
-    // }
+      // Merge adjecent lists
+      if (previousNode != null && isListRoot(previousNode)) {
+        editor.mergeNodes({ at: path });
+        return;
+      }
+    }
 
     normalizeNode([node, path]);
   };
@@ -173,28 +167,27 @@ const middleware = (editor) => {
   );
 };
 
-export default ({ inline = false } = {}) => ({
+export default ({ mode } = {}) => ({
   middleware,
   handlers: {
     onKeyDown: (e, editor) => {
-      const lineBreakHotkeys = inline
-        ? ["shift+enter"]
-        : ["shift+enter", "enter"];
+      const lineBreakHotkeys =
+        mode === "inline" ? ["shift+enter"] : ["shift+enter", "enter"];
 
       if (lineBreakHotkeys.some((h) => isHotkey(h, e))) {
-        const parentNonParagraphBlockMatchEntry = editor.above({
-          match: (n) => editor.isBlock(n) && n.type !== "paragraph",
+        const parentNonLeafBlockMatchEntry = editor.above({
+          match: (n) => editor.isBlock(n) && !editor.isLeafBlock(n),
         });
 
         if (
-          parentNonParagraphBlockMatchEntry == null ||
-          parentNonParagraphBlockMatchEntry[0].type !== LIST_ITEM_ELEMENT_TYPE
+          parentNonLeafBlockMatchEntry == null ||
+          parentNonLeafBlockMatchEntry[0].type !== LIST_ITEM_ELEMENT_TYPE
         )
           return;
 
         e.preventDefault();
 
-        const matchEntry = parentNonParagraphBlockMatchEntry;
+        const matchEntry = parentNonLeafBlockMatchEntry;
 
         const listItemPath = matchEntry[1];
         const isFirstChildBlockEmpty =

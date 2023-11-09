@@ -337,11 +337,15 @@ const Option = ({ item, state }) => {
       >
         <div
           {...labelProps}
-          style={{
-            minWidth: 0,
-            overflow: "hidden",
-            textOverflow: "ellipsis",
-          }}
+          css={(t) =>
+            css({
+              color: t.colors.textDimmed,
+              fontWeight: t.text.weights.menuListBoxItem,
+              minWidth: 0,
+              overflow: "hidden",
+              textOverflow: "ellipsis",
+            })
+          }
         >
           {item.value.label}
         </div>

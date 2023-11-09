@@ -10,9 +10,7 @@ const ELEMENT_TYPE = "horizontal-divider";
 const middleware = (editor) => {
   const { isVoid } = editor;
 
-  editor.isVoid = (element) => {
-    return element.type === ELEMENT_TYPE || isVoid(element);
-  };
+  editor.isVoid = (element) => element.type === ELEMENT_TYPE || isVoid(element);
 
   return compose((editor) =>
     withBlockPrefixShortcut(

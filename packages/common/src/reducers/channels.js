@@ -124,11 +124,21 @@ const metaById = (state = {}, action) => {
     case "fetch-messages:request-successful": {
       if (action.limit == null) return state;
       const config = state[action.channelId];
+      const endMessageId = action.messages.slice(-1)[0].id;
+
+      // This dangerously assumes messages have incremental hex ids
+      const lastPageEndMessageId =
+        config?.lastPageEndMessageId == null ||
+        parseInt(endMessageId, 16) < parseInt(config.lastPageEndMessageId, 16)
+          ? endMessageId
+          : config.lastPageEndMessageId;
+
       const hasAllMessages = action.messages.length < action.limit;
       return {
         ...state,
         [action.channelId]: {
           ...config,
+          lastPageEndMessageId,
           hasAllMessages,
           hasFetchedMessages: true,
         },
@@ -685,6 +695,9 @@ export const selectHasFetchedMessages = (state, channelId) =>
 export const selectHasAllMessages = (state, channelId) =>
   state.channels.metaById[channelId]?.hasAllMessages ?? false;
 
+export const selectLastPageEndMessageId = (state, channelId) =>
+  state.channels.metaById[channelId]?.lastPageEndMessageId;
+
 export const selectChannelAccessLevel = (state, channelId) => {
   const meta = state.channels.metaById[channelId];
   if (meta == null || meta.publicPermissions == null) return null;
@@ -717,7 +730,6 @@ export const selectPermissions = (state, channelId) => {
     ...(meta?.publicPermissions ?? []),
   ];
 
-  console.log(permissions);
   const canPostMessages =
     permissions.includes(Permissions.CHANNEL_WRITE_MESSAGES) ||
     permissions.includes(Permissions.CHANNEL_JOIN);

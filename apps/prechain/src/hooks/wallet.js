@@ -1,9 +1,11 @@
 import React from "react";
 import { css } from "@emotion/react";
-import { useAccount, useConnect } from "wagmi";
+import { mainnet } from "wagmi/chains";
+import { useAccount, useConnect, useDisconnect, useSwitchNetwork } from "wagmi";
 import Dialog from "@shades/ui-web/dialog";
 import Button from "@shades/ui-web/button";
 import Spinner from "@shades/ui-web/spinner";
+import useChainId, { useConnectedChainId } from "./chain-id.js";
 
 const impersonationAddress = new URLSearchParams(location.search).get(
   "impersonate"
@@ -32,8 +34,12 @@ export const Provider = ({ children }) => {
 };
 
 const ConnectDialog = ({ titleProps, dismiss }) => {
-  const { address } = useAccount();
+  const { connector: connectedConnector } = useAccount();
+
+  const connectedConnectorId = connectedConnector?.id;
+
   const { connectAsync: connect, connectors, isLoading, reset } = useConnect();
+
   const init = (id) => {
     connect({ connector: connectors.find((c) => c.id === id) }).then(() => {
       dismiss();
@@ -56,7 +62,7 @@ const ConnectDialog = ({ titleProps, dismiss }) => {
     return injectedConnector.name;
   })();
 
-  if (isLoading || address != null)
+  if (isLoading)
     return (
       <div
         style={{
@@ -98,6 +104,11 @@ const ConnectDialog = ({ titleProps, dismiss }) => {
             margin: "0 0 1.6rem",
           },
           em: { fontStyle: "normal", fontWeight: t.text.weights.emphasis },
+          "[data-small]": {
+            fontSize: t.text.sizes.small,
+            color: t.colors.textDimmed,
+            lineHeight: 1.4,
+          },
         })
       }
     >
@@ -106,14 +117,23 @@ const ConnectDialog = ({ titleProps, dismiss }) => {
         css={css({ display: "flex", flexDirection: "column", gap: "1rem" })}
       >
         {hasInjected && (
-          <Button
-            fullWidth
-            onClick={() => {
-              init("injected");
-            }}
-          >
-            <em>{injectedTitle}</em> browser extension
-          </Button>
+          <div>
+            <Button
+              fullWidth
+              onClick={() => {
+                init("injected");
+              }}
+              disabled={connectedConnectorId === "injected"}
+            >
+              <em>{injectedTitle}</em> browser extension
+            </Button>
+            {connectedConnectorId === "injected" && (
+              <div data-small style={{ padding: "0.8rem 0 1.2rem" }}>
+                {injectedTitle} is already connected. Disconnect or switch
+                account in your wallet app.
+              </div>
+            )}
+          </div>
         )}
 
         <Button
@@ -131,8 +151,15 @@ const ConnectDialog = ({ titleProps, dismiss }) => {
 
 export const useWallet = () => {
   const { openDialog } = React.useContext(Context);
-  const { address } = useAccount();
-  const { connect, connectors, isLoading, reset } = useConnect();
+  const { address, connector: connectedConnector } = useAccount();
+  const { connect, connectors, isLoading: isConnecting, reset } = useConnect();
+  const { disconnectAsync: disconnect } = useDisconnect();
+  const { isLoading: isSwitchingNetwork, switchNetworkAsync: switchNetwork } =
+    useSwitchNetwork();
+  const chainId = useChainId();
+  const connectedChainId = useConnectedChainId();
+
+  const isUnsupportedChain = chainId !== connectedChainId;
 
   const hasReadyConnector = connectors.some((c) => c.ready);
 
@@ -142,15 +169,10 @@ export const useWallet = () => {
       return;
     }
 
-    const hasInjectedConnector = connectors.some(
-      (c) => c.ready && c.id === "injected"
-    );
-    const wcConnector = connectors.find(
-      (c) => c.ready && c.id === "walletConnect"
-    );
+    const readyConnectors = connectors.filter((c) => c.ready);
 
-    if (!hasInjectedConnector && wcConnector != null) {
-      connect({ connector: wcConnector });
+    if (readyConnectors.length === 1) {
+      connect({ connector: readyConnectors[0] });
       return;
     }
 
@@ -160,7 +182,11 @@ export const useWallet = () => {
   return {
     address: impersonationAddress ?? address,
     requestAccess: hasReadyConnector ? requestAccess : null,
-    isLoading,
+    disconnect,
     reset,
+    switchToMainnet: () => switchNetwork(mainnet.id),
+    isLoading: isConnecting || isSwitchingNetwork,
+    isUnsupportedChain,
+    isShimmedDisconnect: connectedConnector?.options?.shimDisconnect ?? false,
   };
 };

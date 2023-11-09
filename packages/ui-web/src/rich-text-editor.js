@@ -5,6 +5,7 @@ import {
   Transforms,
   Editor,
   Range,
+  Node,
 } from "slate";
 import { Slate, Editable, withReact, ReactEditor } from "slate-react";
 import { withHistory } from "slate-history";
@@ -14,6 +15,7 @@ import {
   url as urlUtils,
   requestIdleCallback,
   getImageDimensionsFromUrl,
+  isTouchDevice,
 } from "@shades/common/utils";
 import { ErrorBoundary } from "@shades/common/react";
 import Select from "./select.js";
@@ -41,6 +43,8 @@ export {
   toMessageBlocks,
   fromMessageBlocks,
 } from "./slate/utils.js";
+
+export const isSelectionCollapsed = Range.isCollapsed;
 
 const { compose } = functionUtils;
 
@@ -260,13 +264,44 @@ const withEditorCommands = (editor) => {
 
   editor.string = (location = [], options) => string(location, options);
 
+  editor.isFocused = () => ReactEditor.isFocused(editor);
+
   editor.print = () => console.log(JSON.stringify(editor.children, null, 2));
 
   return editor;
 };
 
-const withSaneishDefaultBehaviors = (editor) => {
-  const { insertData, isInline } = editor;
+const withSaneishDefaultBehaviors = (editor, { mode } = {}) => {
+  const { insertData, normalizeNode, isInline } = editor;
+
+  editor.normalizeNode = ([node, path]) => {
+    if (path.length === 0) {
+      // The editor should never be empty
+      if (node.children.length === 0) {
+        editor.insertNode(
+          { type: "paragraph", children: [{ text: "" }] },
+          { at: [0] }
+        );
+        return;
+      }
+
+      const lastNode = node.children.slice(-1)[0];
+
+      // Always end with an empty paragraph in non-inline mode
+      if (
+        mode !== "inline" &&
+        (lastNode.type !== "paragraph" || Node.string(lastNode) !== "")
+      ) {
+        editor.insertNode(
+          { type: "paragraph", children: [{ text: "" }] },
+          { at: [node.children.length] }
+        );
+        return;
+      }
+    }
+
+    normalizeNode([node, path]);
+  };
 
   editor.insertData = (data) => {
     const text = data.getData("text");
@@ -281,6 +316,8 @@ const withSaneishDefaultBehaviors = (editor) => {
 
   editor.isInline = (node) =>
     (node.children == null && node.text != null) || isInline(node);
+
+  editor.isLeafBlock = () => false;
 
   return editor;
 };
@@ -312,6 +349,8 @@ const RichTextEditor = React.forwardRef(
       setActiveMarks,
     } = React.useContext(Context);
 
+    const editorMode = inline ? "inline" : "normal";
+
     const { editor, handlers, customElementsByNodeType } = React.useMemo(() => {
       const editor = compose(
         withMarks,
@@ -320,21 +359,21 @@ const RichTextEditor = React.forwardRef(
         withEditorCommands,
         withReact,
         withHistory
-      )(createSlateEditor());
+      )(createSlateEditor(), { mode: editorMode });
 
       const { middleware, elements, handlers } = mergePlugins([
+        createControlledParagraphLineBreaksPlugin({ mode: editorMode }),
         createCodeBlocksPlugin(),
-        createControlledParagraphLineBreaksPlugin(),
-        createHeadingsPlugin({ inline }),
+        createHeadingsPlugin({ mode: editorMode }),
         createHorizontalDividerPlugin(),
-        createImagesPlugin({ inline }),
+        createImagesPlugin(),
+        createQuotesPlugin({ mode: editorMode }),
+        createSensibleVoidsPlugin(),
         createUserMentionsPlugin(),
         createChannelLinksPlugin(),
         createInlineLinksPlugin(),
         createEmojiPlugin(),
-        createListsPlugin({ inline }),
-        createQuotesPlugin({ inline }),
-        createSensibleVoidsPlugin(),
+        createListsPlugin({ mode: editorMode }),
       ]);
 
       return {
@@ -342,7 +381,7 @@ const RichTextEditor = React.forwardRef(
         customElementsByNodeType: elements,
         handlers,
       };
-    }, [inline]);
+    }, [editorMode]);
 
     const renderElement = (props_) => {
       const props =
@@ -468,13 +507,13 @@ const RichTextEditor = React.forwardRef(
             onBlur={(e) => {
               setSelection(null);
               setActiveMarks([]);
-              onBlur?.(e);
+              onBlur?.(e, editor);
             }}
             onFocus={(e) => {
               const marks = editor.getMarks();
               setActiveMarks(marks == null ? [] : Object.keys(marks));
               setSelection(editor.selection);
-              onFocus?.(e);
+              onFocus?.(e, editor);
             }}
             css={(theme) => {
               const styles = createRichTextCss(theme);
@@ -568,6 +607,7 @@ const RichTextEditor = React.forwardRef(
                     onSubmit={async ({ url }) => {
                       imageDialogActions.close();
                       const [{ width, height }] = await Promise.all([
+                        // TODO handle image error
                         getImageDimensionsFromUrl(url),
                         editor.focus(imageDialogState.at),
                       ]);
@@ -639,7 +679,79 @@ const Leaf = ({ attributes, children, leaf }) => {
   return <span {...attributes}>{children}</span>;
 };
 
-export const Toolbar = ({ disabled: disabled_, ...props }) => {
+const transformableBlockTypes = [
+  "paragraph",
+  "heading-1",
+  "heading-2",
+  "heading-3",
+  "quote",
+  "code-block",
+];
+
+const toolbarActionsByKey = {
+  "block-transform": {
+    label: "Change block type",
+    props: {
+      fullWidth: false,
+      width: "max-content",
+      variant: "transparent",
+      size: "small",
+    },
+  },
+  "heading-transform": {
+    icon: "H",
+    style: { fontWeight: "700" },
+  },
+  "quote-transform": {
+    icon: ">",
+  },
+  "code-block-transform": {
+    icon: "`C`",
+  },
+  "toggle-mark-bold": {
+    icon: "B",
+    mark: "bold",
+    props: {
+      style: { fontWeight: "700" },
+    },
+  },
+  "toggle-mark-italic": {
+    icon: "i",
+    mark: "italic",
+    props: {
+      style: { fontStyle: "italic" },
+    },
+  },
+  "toggle-mark-strikethrough": {
+    icon: "S",
+    mark: "strikethrough",
+    props: {
+      style: { textDecoration: "line-through" },
+    },
+  },
+  "insert-link": {
+    icon: (
+      <svg viewBox="0 0 64 64" style={{ width: "1.6rem" }}>
+        <path
+          d="m27.75,44.73l4.24,4.24-3.51,3.51c-2.34,2.34-5.41,3.51-8.49,3.51-6.63,0-12-5.37-12-12,0-3.07,1.17-6.14,3.51-8.49l10-10c2.34-2.34,5.41-3.51,8.49-3.51s6.14,1.17,8.49,3.51l1.41,1.41-4.24,4.24-1.41-1.41c-1.13-1.13-2.64-1.76-4.24-1.76s-5.11,2.62-6.24,3.76l-8,8c-1.13,1.13-1.76,2.64-1.76,4.24,0,3.31,2.69,6,6,6,1.6,0,3.11-.62,4.24-1.76l3.51-3.51ZM44,8c-3.07,0-6.14,1.17-8.49,3.51l-3.51,3.51,4.24,4.24,3.51-3.51c1.13-1.13,2.64-1.76,4.24-1.76,3.31,0,6,2.69,6,6,0,1.6-.62,3.11-1.76,4.24l-10,10c-1.13,1.13-2.64,1.76-4.24,1.76s-3.11-.62-4.24-1.76l-1.41-1.41-4.24,4.24,1.41,1.41c2.34,2.34,5.41,3.51,8.49,3.51s6.14-1.17,8.49-3.51l10-10c2.34-2.34,3.51-5.41,3.51-8.49,0-6.63-5.37-12-12-12Z"
+          fill="currentColor"
+        />
+      </svg>
+    ),
+  },
+  "insert-image": {
+    icon: (
+      <svg viewBox="0 0 64 64" style={{ width: "1.8rem" }}>
+        <path
+          d="m38,27c0-2.76,2.24-5,5-5s5,2.24,5,5-2.24,5-5,5-5-2.24-5-5Zm20-15v40H6V12h52Zm-6,6H12v26l14-14h4l16,16h6v-28Z"
+          fill="currentColor"
+        />
+      </svg>
+    ),
+  },
+};
+
+export const Toolbar = ({ disabled: disabled_, onFocus, onBlur, ...props }) => {
   const context = React.useContext(Context);
 
   if (context == null)
@@ -660,14 +772,217 @@ export const Toolbar = ({ disabled: disabled_, ...props }) => {
     storedSelectionRangeRef == null && (disabled_ || selection == null);
 
   const selectedNodeEntry = editorRef.current?.above({
-    match: editorRef.current.isBlock,
+    match: (n) => editorRef.current.isBlock(n) && !Editor.isEditor(n),
   });
   const [selectedBlockNode, selectedBlockPath] = selectedNodeEntry ?? [];
 
   const inlineElementsAllowed =
-    selectedBlockNode?.type != null &&
-    !selectedBlockNode.type.startsWith("heading-") &&
-    selectedBlockNode.type !== "code-block";
+    selectedBlockNode?.type === "paragraph" ||
+    selectedBlockNode?.type === "quote";
+
+  const selectedNodeIsTransformable =
+    selectedBlockNode != null &&
+    transformableBlockTypes.includes(selectedBlockNode.type);
+
+  const renderAction = (action) => {
+    const editor = editorRef.current;
+
+    switch (action.key) {
+      case "block-transform":
+        return (
+          <Select
+            key={action.key}
+            aria-label={action.label}
+            disabled={disabled || !selectedNodeIsTransformable}
+            value={selectedBlockNode.type}
+            options={[
+              { value: "paragraph", label: "Text" },
+              { value: "heading-1", label: "Heading 1" },
+              { value: "heading-2", label: "Heading 2" },
+              { value: "heading-3", label: "Heading 3" },
+              { value: "code-block", label: "Code" },
+              { value: "quote", label: "Quote" },
+              selectedBlockNode.type === "list-item" && {
+                value: "list-item",
+                label: "List item",
+              },
+              selectedBlockNode.type === "image" && {
+                value: "image",
+                label: "Image",
+              },
+            ].filter(Boolean)}
+            onBlur={() => {
+              onBlur?.();
+              storedSelectionRangeRef?.unref();
+              setStoredSelectionRangeRef(null);
+            }}
+            onFocus={() => {
+              onFocus?.();
+              setStoredSelectionRangeRef(
+                editorRef.current.rangeRef(editorRef.current.selection)
+              );
+            }}
+            onChange={(blockType) => {
+              if (selectedBlockNode.type === "list-item") {
+                editor.withoutNormalizing(() => {
+                  editor.setNodes({ type: blockType });
+                  editor.unwrapNodes({
+                    at: selectedBlockPath,
+                    match: (n) =>
+                      ["bulleted-list", "numbered-list"].includes(n.type),
+                    split: true,
+                  });
+                });
+              } else {
+                editor.setNodes({ type: blockType });
+              }
+
+              onBlur?.(); // onBlur doesn’t seem to fire on iOS
+              setStoredSelectionRangeRef(null);
+              editor.focus(storedSelectionRangeRef.current);
+              storedSelectionRangeRef.unref();
+            }}
+            data-select
+            {...action.props}
+          />
+        );
+
+      case "heading-transform":
+        return (
+          <button
+            key={action.key}
+            type="button"
+            data-button
+            disabled={disabled || !selectedNodeIsTransformable}
+            data-active={selectedBlockNode?.type.startsWith("heading-")}
+            {...action.props}
+            onMouseDown={(e) => {
+              e.preventDefault();
+
+              if (!selectedBlockNode.type.startsWith("heading-")) {
+                editor.setNodes({ type: "heading-1" });
+                return;
+              }
+
+              const nextHeadingLevel =
+                parseInt(selectedBlockNode.type.split("-")[1]) + 1;
+
+              editor.setNodes({
+                type:
+                  nextHeadingLevel > 3
+                    ? "paragraph"
+                    : `heading-${nextHeadingLevel}`,
+              });
+            }}
+          >
+            {action.icon}
+          </button>
+        );
+
+      case "quote-transform":
+        return (
+          <button
+            key={action.key}
+            type="button"
+            data-button
+            disabled={disabled || !selectedNodeIsTransformable}
+            data-active={selectedBlockNode?.type === "quote"}
+            {...action.props}
+            onMouseDown={(e) => {
+              e.preventDefault();
+              editor.setNodes({
+                type:
+                  selectedBlockNode.type === "quote" ? "paragraph" : "quote",
+              });
+            }}
+          >
+            {action.icon}
+          </button>
+        );
+
+      case "code-block-transform":
+        return (
+          <button
+            key={action.key}
+            type="button"
+            data-button
+            disabled={disabled || !selectedNodeIsTransformable}
+            data-active={selectedBlockNode?.type === "code-block"}
+            {...action.props}
+            onMouseDown={(e) => {
+              e.preventDefault();
+              editor.setNodes({
+                type:
+                  selectedBlockNode.type === "code-block"
+                    ? "paragraph"
+                    : "code-block",
+              });
+            }}
+          >
+            {action.icon}
+          </button>
+        );
+
+      case "toggle-mark-bold":
+      case "toggle-mark-italic":
+      case "toggle-mark-strikethrough":
+        return (
+          <button
+            key={action.key}
+            type="button"
+            data-button
+            disabled={disabled || !inlineElementsAllowed}
+            data-active={activeMarks.includes(action.mark)}
+            {...action.props}
+            onMouseDown={(e) => {
+              e.preventDefault();
+              editorRef.current.toggleMark(action.mark);
+            }}
+          >
+            {action.icon}
+          </button>
+        );
+
+      case "insert-link":
+        return (
+          <button
+            key={action.key}
+            type="button"
+            data-button
+            disabled={disabled || !inlineElementsAllowed}
+            // data-active={activeMarks.includes(action.mark)}
+            {...action.props}
+            onMouseDown={(e) => {
+              e.preventDefault();
+              linkDialogActions.open();
+            }}
+          >
+            {action.icon}
+          </button>
+        );
+
+      case "insert-image":
+        return (
+          <button
+            key={action.key}
+            type="button"
+            data-button
+            disabled={disabled || !inlineElementsAllowed}
+            // data-active={activeMarks.includes(action.mark)}
+            {...action.props}
+            onMouseDown={(e) => {
+              e.preventDefault();
+              imageDialogActions.open();
+            }}
+          >
+            {action.icon}
+          </button>
+        );
+
+      default:
+        throw new Error();
+    }
+  };
 
   return (
     <div
@@ -676,11 +991,13 @@ export const Toolbar = ({ disabled: disabled_, ...props }) => {
           display: "flex",
           alignItems: "center",
           justifyContent: "flex-start",
+          gap: "0.3rem 0",
+          flexWrap: "wrap",
           '[role="separator"]': {
             width: "0.1rem",
             height: "2rem",
             background: t.colors.borderLight,
-            margin: "0 0.5rem",
+            margin: "0 0.3rem",
           },
           "[data-button]": {
             display: "flex",
@@ -700,212 +1017,38 @@ export const Toolbar = ({ disabled: disabled_, ...props }) => {
             },
             '&[data-active="true"]': { color: t.colors.textPrimary },
           },
+          "[data-select]": {
+            paddingTop: 0,
+            paddingBottom: 0,
+            minHeight: "2.6rem",
+          },
         })
       }
       {...props}
     >
       {[
-        selectedBlockNode != null && [
-          {
-            key: "block-type",
-            type: "select",
-            props: {
-              "aria-label": "Block type select",
-              disabled,
-              value: selectedBlockNode.type,
-              fullWidth: false,
-              width: "max-content",
-              variant: "transparent",
-              size: "small",
-              onBlur: () => {
-                storedSelectionRangeRef?.unref();
-                setStoredSelectionRangeRef(null);
-              },
-              onFocus: () => {
-                setStoredSelectionRangeRef(
-                  editorRef.current.rangeRef(editorRef.current.selection)
-                );
-              },
-              onChange: (value) => {
-                const editor = editorRef.current;
-
-                if (selectedBlockNode.type === "list-item") {
-                  Editor.withoutNormalizing(editorRef.current, () => {
-                    editor.setNodes({ type: value });
-                    editor.unwrapNodes({
-                      at: selectedBlockPath,
-                      match: (n) =>
-                        ["bulleted-list", "numbered-list"].includes(n.type),
-                      split: true,
-                    });
-                  });
-                } else {
-                  editor.setNodes({ type: value });
-                }
-
-                editor.focus(storedSelectionRangeRef.current);
-                storedSelectionRangeRef.unref();
-                setStoredSelectionRangeRef(null);
-              },
-              options: [
-                { value: "paragraph", label: "Text" },
-                { value: "heading-1", label: "Heading 1" },
-                { value: "heading-2", label: "Heading 2" },
-                { value: "heading-3", label: "Heading 3" },
-                { value: "code-block", label: "Code" },
-                { value: "quote", label: "Quote" },
-                selectedBlockNode.type === "list-item" && {
-                  value: "list-item",
-                  label: "List item",
-                },
-              ].filter(Boolean),
-            },
-          },
-        ],
-        [
-          {
-            key: "bold",
-            icon: "B",
-            isActive: activeMarks.includes("bold"),
-            props: {
-              disabled: disabled || !inlineElementsAllowed,
-              "data-active": activeMarks.includes("bold"),
-              style: { fontWeight: "700" },
-              onMouseDown: (e) => {
-                e.preventDefault();
-                editorRef.current.toggleMark("bold");
-              },
-            },
-          },
-          {
-            key: "italic",
-            icon: "i",
-            props: {
-              disabled: disabled || !inlineElementsAllowed,
-              "data-active": activeMarks.includes("italic"),
-              style: { fontStyle: "italic" },
-              onMouseDown: (e) => {
-                e.preventDefault();
-                editorRef.current.toggleMark("italic");
-              },
-            },
-          },
-          {
-            key: "strikethrough",
-            icon: "S",
-            props: {
-              disabled: disabled || !inlineElementsAllowed,
-              "data-active": activeMarks.includes("strikethrough"),
-              style: { TextDecoration: "line-through" },
-              onMouseDown: (e) => {
-                e.preventDefault();
-                editorRef.current.toggleMark("strikethrough");
-              },
-            },
-          },
-        ],
-        // [
-        //   {
-        //     key: "bulleted-list",
-        //     icon: (
-        //       <svg viewBox="0 0 20 20" style={{ width: "1.4rem" }}>
-        //         <path
-        //           fill="currentColor"
-        //           fillRule="evenodd"
-        //           clipRule="evenodd"
-        //           d="M4 3a1 1 0 1 1-2 0 1 1 0 0 1 2 0Zm3 0a.75.75 0 0 1 .75-.75h10a.75.75 0 0 1 0 1.5h-10A.75.75 0 0 1 7 3Zm.75 6.25a.75.75 0 0 0 0 1.5h10a.75.75 0 0 0 0-1.5h-10Zm0 7a.75.75 0 0 0 0 1.5h10a.75.75 0 0 0 0-1.5h-10ZM3 11a1 1 0 1 0 0-2 1 1 0 0 0 0 2Zm0 7a1 1 0 1 0 0-2 1 1 0 0 0 0 2Z"
-        //         />
-        //       </svg>
-        //     ),
-        //     props: {
-        //       disabled: true,
-        //       onMouseDown: (e) => {
-        //         e.preventDefault();
-        //       },
-        //     },
-        //   },
-        //   {
-        //     key: "numbered-list",
-        //     icon: (
-        //       <svg viewBox="0 0 20 20" style={{ width: "1.5rem" }}>
-        //         <path
-        //           fill="currentColor"
-        //           fillRule="evenodd"
-        //           clipRule="evenodd"
-        //           d="M3.792 2.094A.5.5 0 0 1 4 2.5V6h1a.5.5 0 1 1 0 1H2a.5.5 0 1 1 0-1h1V3.194l-.842.28a.5.5 0 0 1-.316-.948l1.5-.5a.5.5 0 0 1 .45.068ZM7.75 3.5a.75.75 0 0 0 0 1.5h10a.75.75 0 0 0 0-1.5h-10ZM7 10.75a.75.75 0 0 1 .75-.75h10a.75.75 0 0 1 0 1.5h-10a.75.75 0 0 1-.75-.75Zm0 6.5a.75.75 0 0 1 .75-.75h10a.75.75 0 0 1 0 1.5h-10a.75.75 0 0 1-.75-.75Zm-4.293-3.36a.997.997 0 0 1 .793-.39c.49 0 .75.38.75.75 0 .064-.033.194-.173.409a5.146 5.146 0 0 1-.594.711c-.256.267-.552.548-.87.848l-.088.084a41.6 41.6 0 0 0-.879.845A.5.5 0 0 0 2 18h3a.5.5 0 0 0 0-1H3.242l.058-.055c.316-.298.629-.595.904-.882a6.1 6.1 0 0 0 .711-.859c.18-.277.335-.604.335-.954 0-.787-.582-1.75-1.75-1.75a1.998 1.998 0 0 0-1.81 1.147.5.5 0 1 0 .905.427.996.996 0 0 1 .112-.184Z"
-        //         />
-        //       </svg>
-        //     ),
-        //     props: {
-        //       disabled: true,
-        //       onMouseDown: (e) => {
-        //         e.preventDefault();
-        //       },
-        //     },
-        //   },
-        // ],
-        [
-          {
-            key: "link",
-            icon: (
-              <svg viewBox="0 0 64 64" style={{ width: "1.6rem" }}>
-                <path
-                  d="m27.75,44.73l4.24,4.24-3.51,3.51c-2.34,2.34-5.41,3.51-8.49,3.51-6.63,0-12-5.37-12-12,0-3.07,1.17-6.14,3.51-8.49l10-10c2.34-2.34,5.41-3.51,8.49-3.51s6.14,1.17,8.49,3.51l1.41,1.41-4.24,4.24-1.41-1.41c-1.13-1.13-2.64-1.76-4.24-1.76s-5.11,2.62-6.24,3.76l-8,8c-1.13,1.13-1.76,2.64-1.76,4.24,0,3.31,2.69,6,6,6,1.6,0,3.11-.62,4.24-1.76l3.51-3.51ZM44,8c-3.07,0-6.14,1.17-8.49,3.51l-3.51,3.51,4.24,4.24,3.51-3.51c1.13-1.13,2.64-1.76,4.24-1.76,3.31,0,6,2.69,6,6,0,1.6-.62,3.11-1.76,4.24l-10,10c-1.13,1.13-2.64,1.76-4.24,1.76s-3.11-.62-4.24-1.76l-1.41-1.41-4.24,4.24,1.41,1.41c2.34,2.34,5.41,3.51,8.49,3.51s6.14-1.17,8.49-3.51l10-10c2.34-2.34,3.51-5.41,3.51-8.49,0-6.63-5.37-12-12-12Z"
-                  fill="currentColor"
-                />
-              </svg>
-            ),
-            props: {
-              disabled: disabled || !inlineElementsAllowed,
-              onMouseDown: (e) => {
-                e.preventDefault();
-                linkDialogActions.open();
-              },
-            },
-          },
-          {
-            key: "image",
-            icon: (
-              <svg viewBox="0 0 64 64" style={{ width: "1.8rem" }}>
-                <path
-                  d="m38,27c0-2.76,2.24-5,5-5s5,2.24,5,5-2.24,5-5,5-5-2.24-5-5Zm20-15v40H6V12h52Zm-6,6H12v26l14-14h4l16,16h6v-28Z"
-                  fill="currentColor"
-                />
-              </svg>
-            ),
-            props: {
-              disabled: disabled || !inlineElementsAllowed,
-              onMouseDown: (e) => {
-                e.preventDefault();
-                imageDialogActions.open();
-              },
-            },
-          },
-        ],
+        !isTouchDevice() && selectedNodeIsTransformable
+          ? ["block-transform"]
+          : null,
+        ["toggle-mark-bold", "toggle-mark-italic", "toggle-mark-strikethrough"],
+        isTouchDevice()
+          ? ["heading-transform", "quote-transform", "code-block-transform"]
+          : null,
+        ["insert-link", "insert-image"],
       ]
         .filter(Boolean)
-        .map((sectionActions, i) => {
-          const sectionButtons = sectionActions.map((action) =>
-            action.type === "select" ? (
-              <Select key={action.key} {...action.props} />
-            ) : (
-              <button
-                key={action.key}
-                type="button"
-                data-button
-                {...action.props}
-              >
-                {action.icon}
-              </button>
-            )
-          );
+        .map((sectionActions, sectionIndex) => {
+          const renderedSectionActions = sectionActions.map((actionKey) => {
+            const action = toolbarActionsByKey[actionKey];
+            return renderAction({ key: actionKey, ...action });
+          });
 
-          if (i === 0) return sectionButtons;
+          if (sectionIndex === 0) return renderedSectionActions;
 
           return (
-            <React.Fragment key={i}>
+            <React.Fragment key={sectionIndex}>
               <div role="separator" aria-orientation="vertical" />
-              {sectionButtons}
+              {renderedSectionActions}
             </React.Fragment>
           );
         })}

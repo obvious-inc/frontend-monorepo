@@ -1,10 +1,15 @@
+import { mainnet, sepolia } from "wagmi/chains";
 import { useNetwork } from "wagmi";
 
-const DEFAULT_CHAIN_ID = 1;
+const supportedChainIds = [mainnet.id, sepolia.id];
 
 const useChainId = () => {
   const { chain } = useNetwork();
-  return chain?.id ?? DEFAULT_CHAIN_ID;
+  if (chain == null || !supportedChainIds.includes(chain.id)) return mainnet.id;
+
+  return chain.id;
 };
+
+export const useConnectedChainId = () => useNetwork().chain?.id;
 
 export default useChainId;
