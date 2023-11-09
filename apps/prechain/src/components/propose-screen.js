@@ -3,7 +3,7 @@ import React from "react";
 import { useParams, useNavigate, useSearchParams } from "react-router-dom";
 import { parseEther, parseUnits } from "viem";
 import { useAccount } from "wagmi";
-import { css } from "@emotion/react";
+import { css, Global as GlobalStyles } from "@emotion/react";
 import {
   useFetch,
   useLatestCallback,
@@ -579,7 +579,7 @@ const ProposeScreen = () => {
                         padding: "6rem 0 0",
                       },
                       "@media (min-width: 952px)": {
-                        minHeight: `calc(100vh - ${t.navBarHeight})`,
+                        minHeight: `calc(100vh - ${t.navBarHeight} - 6.4rem)`, // 6.4rem is the fixed toolbar container height
                         padding: "6rem 0 16rem",
                       },
                     })
@@ -752,6 +752,7 @@ const ProposeScreen = () => {
                   <>
                     <FloatingToolbar
                       isVisible={isFloatingToolbarVisible}
+                      scrollContainerRef={scrollContainerRef}
                       onFocus={() => {
                         setHasFloatingToolbarFocus(true);
                       }}
@@ -760,9 +761,9 @@ const ProposeScreen = () => {
                       }}
                     />
                     <FixedBottomToolbar
-                      isHidden={
-                        !isTouchDevice() &&
-                        (isFloatingToolbarVisible || !isEditorFocused)
+                      isVisible={
+                        isEditorFocused &&
+                        (isTouchDevice() || !isFloatingToolbarVisible)
                       }
                     />
                   </>
@@ -913,7 +914,7 @@ const FloatingToolbar = ({
   );
 };
 
-const FixedBottomToolbar = ({ isHidden }) => {
+const FixedBottomToolbar = ({ isVisible = false }) => {
   const ref = React.useRef();
 
   // Fix to top of soft keyboard on touch devices
@@ -924,11 +925,10 @@ const FixedBottomToolbar = ({ isHidden }) => {
 
     const updatePosition = () => {
       const viewport = window.visualViewport;
-      el.style.opacity = "1";
+      el.style.opacity = isVisible ? "1" : "0";
 
       if (viewport.height >= window.innerHeight) {
         el.dataset.fixedToKeyboard = false;
-        el.style.top = "auto";
         return;
       }
 
@@ -959,59 +959,74 @@ const FixedBottomToolbar = ({ isHidden }) => {
   });
 
   return (
-    <nav
-      ref={ref}
-      aria-hidden={isHidden}
-      data-touch={isTouchDevice()}
-      css={(t) =>
-        css({
-          position: "sticky",
-          bottom: 0,
-          maxWidth: "calc(100vw - 3.2rem)",
-          width: "max-content",
-          padding: "1.6rem 0",
-          pointerEvents: "none",
-          transition: "0.1s opacity ease-out",
-          "[data-box]": {
-            pointerEvents: "auto",
-            padding: "0.3rem",
-            borderRadius: "0.3rem",
-            background: t.colors.backgroundPrimary,
-            boxShadow: t.shadows.elevationLow,
+    <>
+      <nav
+        ref={ref}
+        aria-hidden={!isVisible}
+        data-touch={isTouchDevice()}
+        css={(t) =>
+          css({
+            position: "sticky",
+            top: "auto",
+            bottom: 0,
+            maxWidth: "calc(100vw - 3.2rem)",
+            width: "max-content",
+            padding: "1.6rem 0",
+            pointerEvents: "none",
             transition: "0.1s opacity ease-out",
-          },
-          '&[data-touch="true"]': {
-            display: "none",
-          },
-          '&[data-fixed-to-keyboard="true"]': {
-            display: "block",
-            position: "fixed",
-            zIndex: 100,
-            bottom: "auto",
-            left: 0,
-            width: "100%",
-            maxWidth: "100%",
-            margin: 0,
-            padding: "0.8rem",
-            background: t.colors.backgroundPrimary,
-            borderTop: "0.1rem solid",
-            borderColor: t.colors.borderLight,
             "[data-box]": {
-              padding: 0,
-              boxShadow: "none",
+              pointerEvents: "auto",
+              padding: "0.3rem",
+              borderRadius: "0.3rem",
+              background: t.colors.backgroundPrimary,
+              boxShadow: t.shadows.elevationLow,
+              transition: "0.1s opacity ease-out",
+            },
+            '&[data-touch="true"]': {
+              display: "none",
+            },
+            '&[data-fixed-to-keyboard="true"]': {
+              display: "block",
+              position: "fixed",
+              zIndex: 100,
+              bottom: "auto",
+              left: 0,
+              width: "100%",
+              maxWidth: "100%",
+              margin: 0,
+              padding: "0.8rem",
+              background: t.colors.backgroundPrimary,
+              borderTop: "0.1rem solid",
+              borderColor: t.colors.borderLight,
+              "[data-box]": {
+                padding: 0,
+                boxShadow: "none",
+              },
+            },
+            '&[aria-hidden="true"]': {
+              opacity: 0,
+              pointerEvents: "none",
+            },
+          })
+        }
+      >
+        <div data-box>
+          <EditorToolbar />
+        </div>
+      </nav>
+
+      <GlobalStyles
+        styles={css({
+          // This makes the scroll work roughly as expected when toggling the
+          // soft keyboard on iOS. Doesn’t seem to break anything, I dunno.
+          "@media(hover: none)": {
+            html: {
+              overflow: "auto",
             },
           },
-          '&[aria-hidden="true"]': {
-            opacity: 0,
-            pointerEvents: "none",
-          },
-        })
-      }
-    >
-      <div data-box>
-        <EditorToolbar />
-      </div>
-    </nav>
+        })}
+      />
+    </>
   );
 };
 
