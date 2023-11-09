@@ -707,10 +707,7 @@ export const useProposal = (id) => {
   );
 };
 
-export const useProposalCandidates = ({
-  excludeCanceled = true,
-  excludeMatchingProposal = true,
-}) => {
+export const useProposalCandidates = ({ excludeCanceled = true }) => {
   const { data: blockNumber } = useBlockNumber({
     watch: true,
     cacheTime: 30_000,
@@ -726,9 +723,8 @@ export const useProposalCandidates = ({
       if (c.canceledTimestamp != null || c.latestVersion?.proposalId != null)
         return excludeCanceled ? false : true;
 
-      if (!excludeMatchingProposal) return true;
-
       if (c.latestVersion?.targetProposalId == null) return true;
+
       const targetProposal = proposalsById[c.latestVersion.targetProposalId];
       // Exlude candidates with a target proposal past its update period end block
       return (
@@ -740,13 +736,7 @@ export const useProposalCandidates = ({
       { value: (p) => p.lastUpdatedTimestamp, order: "desc" },
       filteredCandidates
     );
-  }, [
-    candidatesById,
-    proposalsById,
-    blockNumber,
-    excludeCanceled,
-    excludeMatchingProposal,
-  ]);
+  }, [candidatesById, proposalsById, blockNumber, excludeCanceled]);
 };
 
 export const useAccountProposalCandidates = (accountAddress) => {
