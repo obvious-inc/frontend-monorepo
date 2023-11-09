@@ -317,7 +317,7 @@ const useStore = createZustandStoreHook((set) => {
           }));
         }
       ),
-    fetchVoterScreenData: (chainId, id, options) =>
+    fetchVoterScreenData: (chainId, id, options) => {
       NounsSubgraph.fetchVoterScreenData(chainId, id, options).then(
         ({
           proposals,
@@ -382,7 +382,23 @@ const useStore = createZustandStoreHook((set) => {
             ),
           }));
         }
-      ),
+      );
+
+      PropdatesSubgraph.fetchPropdatesByAccount(id).then((propdates) => {
+        const proposalIds = arrayUtils.unique(
+          propdates.map((p) => p.proposalId)
+        );
+
+        fetchProposals(chainId, proposalIds);
+
+        set(() => ({
+          propdatesByProposalId: arrayUtils.groupBy(
+            (d) => d.proposalId,
+            propdates
+          ),
+        }));
+      });
+    },
     fetchNounsActivity: (chainId, { startBlock, endBlock }) =>
       NounsSubgraph.fetchNounsActivity(chainId, { startBlock, endBlock }).then(
         ({ votes, proposalFeedbackPosts, candidateFeedbackPosts }) => {

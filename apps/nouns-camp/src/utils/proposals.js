@@ -92,6 +92,7 @@ export const buildFeed = (proposal, { latestBlockNumber, candidate }) => {
       id: `propdate-${p.id}`,
       body: p.update,
       blockNumber: p.blockNumber,
+      authorAccount: p.authorAccount,
       timestamp: p.blockTimestamp,
       proposalId: proposal.id,
     })) ?? [];
