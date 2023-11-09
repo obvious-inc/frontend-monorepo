@@ -772,7 +772,7 @@ export const Toolbar = ({ disabled: disabled_, onFocus, onBlur, ...props }) => {
     storedSelectionRangeRef == null && (disabled_ || selection == null);
 
   const selectedNodeEntry = editorRef.current?.above({
-    match: editorRef.current.isBlock,
+    match: (n) => editorRef.current.isBlock(n) && !Editor.isEditor(n),
   });
   const [selectedBlockNode, selectedBlockPath] = selectedNodeEntry ?? [];
 
@@ -853,10 +853,7 @@ export const Toolbar = ({ disabled: disabled_, onFocus, onBlur, ...props }) => {
             key={action.key}
             type="button"
             data-button
-            disabled={
-              disabled ||
-              !transformableBlockTypes.includes(selectedBlockNode.type)
-            }
+            disabled={disabled || !selectedNodeIsTransformable}
             data-active={selectedBlockNode?.type.startsWith("heading-")}
             {...action.props}
             onMouseDown={(e) => {
@@ -888,10 +885,7 @@ export const Toolbar = ({ disabled: disabled_, onFocus, onBlur, ...props }) => {
             key={action.key}
             type="button"
             data-button
-            disabled={
-              disabled ||
-              !transformableBlockTypes.includes(selectedBlockNode.type)
-            }
+            disabled={disabled || !selectedNodeIsTransformable}
             data-active={selectedBlockNode?.type === "quote"}
             {...action.props}
             onMouseDown={(e) => {
@@ -912,10 +906,7 @@ export const Toolbar = ({ disabled: disabled_, onFocus, onBlur, ...props }) => {
             key={action.key}
             type="button"
             data-button
-            disabled={
-              disabled ||
-              !transformableBlockTypes.includes(selectedBlockNode.type)
-            }
+            disabled={disabled || !selectedNodeIsTransformable}
             data-active={selectedBlockNode?.type === "code-block"}
             {...action.props}
             onMouseDown={(e) => {
