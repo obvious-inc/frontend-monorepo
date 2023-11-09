@@ -1094,7 +1094,7 @@ const FeedTabContent = React.memo(({ visible }) => {
 const ProposalItem = React.memo(({ proposalId }) => {
   const proposal = useProposal(proposalId);
   const { displayName: authorAccountDisplayName } = useAccountDisplayName(
-    proposal?.proposer?.id
+    proposal.proposer?.id
   );
 
   const isDimmed =
