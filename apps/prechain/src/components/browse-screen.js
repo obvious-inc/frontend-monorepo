@@ -20,6 +20,7 @@ import Button from "@shades/ui-web/button";
 import Select from "@shades/ui-web/select";
 import { isNodeEmpty as isRichTextNodeEmpty } from "@shades/ui-web/rich-text-editor";
 import { ArrowDown as ArrowDownIcon } from "@shades/ui-web/icons";
+import { APPROXIMATE_BLOCKS_PER_DAY } from "../constants/ethereum.js";
 import {
   isFinalState as isFinalProposalState,
   isSucceededState as isSucceededProposalState,
@@ -54,11 +55,6 @@ import AccountAvatar from "./account-avatar.js";
 import Tag from "./tag.js";
 import ProposalStateTag from "./proposal-state-tag.js";
 import ActivityFeed_ from "./activity-feed.js";
-
-const ONE_DAY_IN_SECONDS = 60 * 60 * 24;
-const APPROXIMATE_SECONDS_PER_BLOCK = 12;
-const APPROXIMATE_BLOCKS_PER_DAY =
-  ONE_DAY_IN_SECONDS / APPROXIMATE_SECONDS_PER_BLOCK;
 
 const CANDIDATE_NEW_THRESHOLD_IN_DAYS = 3;
 const CANDIDATE_ACTIVE_THRESHOLD_IN_DAYS = 5;
