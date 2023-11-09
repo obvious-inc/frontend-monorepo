@@ -195,71 +195,21 @@ const ProposeScreen = () => {
   const editor = editorRef.current;
 
   const scrollContainerRef = React.useRef();
-  const floatingToolbarContainerRef = React.useRef();
 
   const [isEditorFocused, setEditorFocused] = React.useState(false);
   const [editorSelection, setEditorSelection] = React.useState(null);
-  const [toolbarHasFocus, setToolbarHasFocus] = React.useState(false);
+
+  const [hasFloatingToolbarFocus, setHasFloatingToolbarFocus] =
+    React.useState(false);
 
   const isFloatingToolbarVisible =
     !isTouchDevice() &&
     editor != null &&
-    (toolbarHasFocus ||
+    (hasFloatingToolbarFocus ||
       (isEditorFocused &&
         editorSelection != null &&
         !isSelectionCollapsed(editorSelection) &&
         editor.string(editorSelection) !== ""));
-
-  // Update floating toolbar position
-  React.useEffect(() => {
-    const el = floatingToolbarContainerRef.current;
-
-    if (!isFloatingToolbarVisible) {
-      el.style.pointerEvents = "none";
-      el.style.opacity = "0";
-      return;
-    }
-
-    const scrollContainerEl = scrollContainerRef.current;
-
-    const updatePosition = () => {
-      const domSelection = window.getSelection();
-      const domRange = domSelection.getRangeAt(0);
-      const rect = domRange.getBoundingClientRect();
-      const scrollContainerRect = scrollContainerEl.getBoundingClientRect();
-
-      const selectionTop = rect.top + window.scrollY - el.offsetHeight;
-      const scrollContainerTop = scrollContainerRect.top + window.scrollY;
-
-      el.style.display = "block";
-      el.style.position = "absolute";
-      el.style.top = Math.max(scrollContainerTop, selectionTop - 12) + "px";
-
-      const leftOffset = rect.left + window.scrollX - 36;
-
-      if (el.offsetWidth >= window.innerWidth - 32) {
-        el.style.right = "auto";
-        el.style.left = 16 + "px";
-      } else if (leftOffset + el.offsetWidth + 16 > window.innerWidth) {
-        el.style.left = "auto";
-        el.style.right = 16 + "px";
-      } else {
-        el.style.right = "auto";
-        el.style.left = Math.max(16, leftOffset) + "px";
-      }
-
-      el.style.pointerEvents = "auto";
-      el.style.opacity = "1";
-    };
-
-    scrollContainerEl.addEventListener("scroll", updatePosition);
-
-    updatePosition();
-
-    return () => {
-      scrollContainerEl.removeEventListener("scroll", updatePosition);
-    };
-  });
 
   const { address: connectedAccountAddress } = useAccount();
   const {
@@ -796,52 +746,26 @@ const ProposeScreen = () => {
                       />
                     </div>
                   )}
-                  <Overlay>
-                    <div
-                      ref={floatingToolbarContainerRef}
-                      css={css({ transition: "0.1s opacity ease-out" })}
-                    >
-                      <nav
-                        css={css({
-                          display: "flex",
-                          gap: "1.6rem",
-                          maxWidth: "calc(100vw - 3.2rem)",
-                          width: "max-content",
-                        })}
-                      >
-                        {editorMode === "rich-text" && (
-                          <div
-                            css={(t) =>
-                              css({
-                                padding: "0.3rem",
-                                borderRadius: "0.3rem",
-                                background: t.colors.backgroundPrimary,
-                                boxShadow: t.shadows.elevationHigh,
-                              })
-                            }
-                          >
-                            <EditorToolbar
-                              onFocus={() => {
-                                setToolbarHasFocus(true);
-                              }}
-                              onBlur={() => {
-                                setToolbarHasFocus(false);
-                              }}
-                            />
-                          </div>
-                        )}
-                      </nav>
-                    </div>
-                  </Overlay>
                 </div>
 
                 {editorMode === "rich-text" && (
-                  <FixedBottomToolbar
-                    isHidden={
-                      !isTouchDevice() &&
-                      (isFloatingToolbarVisible || !isEditorFocused)
-                    }
-                  />
+                  <>
+                    <FloatingToolbar
+                      isVisible={isFloatingToolbarVisible}
+                      onFocus={() => {
+                        setHasFloatingToolbarFocus(true);
+                      }}
+                      onBlur={() => {
+                        setHasFloatingToolbarFocus(false);
+                      }}
+                    />
+                    <FixedBottomToolbar
+                      isHidden={
+                        !isTouchDevice() &&
+                        (isFloatingToolbarVisible || !isEditorFocused)
+                      }
+                    />
+                  </>
                 )}
               </div>
             </MainContentContainer>
@@ -898,9 +822,101 @@ const ProposeScreen = () => {
   );
 };
 
+const FloatingToolbar = ({
+  scrollContainerRef,
+  isVisible,
+  onFocus,
+  onBlur,
+}) => {
+  const containerRef = React.useRef();
+
+  // Update position and visibility
+  React.useEffect(() => {
+    const el = containerRef.current;
+
+    if (!isVisible) {
+      el.style.pointerEvents = "none";
+      el.style.opacity = "0";
+      return;
+    }
+
+    const scrollContainerEl = scrollContainerRef.current;
+
+    const updatePosition = () => {
+      const domSelection = window.getSelection();
+      const domRange = domSelection.getRangeAt(0);
+      const rect = domRange.getBoundingClientRect();
+      const scrollContainerRect = scrollContainerEl.getBoundingClientRect();
+
+      const selectionTop = rect.top + window.scrollY - el.offsetHeight;
+      const scrollContainerTop = scrollContainerRect.top + window.scrollY;
+
+      el.style.display = "block";
+      el.style.position = "absolute";
+      el.style.top = Math.max(scrollContainerTop, selectionTop - 12) + "px";
+
+      const leftOffset = rect.left + window.scrollX - 36;
+
+      if (el.offsetWidth >= window.innerWidth - 32) {
+        el.style.right = "auto";
+        el.style.left = 16 + "px";
+      } else if (leftOffset + el.offsetWidth + 16 > window.innerWidth) {
+        el.style.left = "auto";
+        el.style.right = 16 + "px";
+      } else {
+        el.style.right = "auto";
+        el.style.left = Math.max(16, leftOffset) + "px";
+      }
+
+      el.style.pointerEvents = "auto";
+      el.style.opacity = "1";
+    };
+
+    scrollContainerEl.addEventListener("scroll", updatePosition);
+
+    updatePosition();
+
+    return () => {
+      scrollContainerEl.removeEventListener("scroll", updatePosition);
+    };
+  });
+
+  return (
+    <Overlay>
+      <div
+        ref={containerRef}
+        css={css({ transition: "0.1s opacity ease-out" })}
+      >
+        <nav
+          css={css({
+            display: "flex",
+            gap: "1.6rem",
+            maxWidth: "calc(100vw - 3.2rem)",
+            width: "max-content",
+          })}
+        >
+          <div
+            css={(t) =>
+              css({
+                padding: "0.3rem",
+                borderRadius: "0.3rem",
+                background: t.colors.backgroundPrimary,
+                boxShadow: t.shadows.elevationHigh,
+              })
+            }
+          >
+            <EditorToolbar onFocus={onFocus} onBlur={onBlur} />
+          </div>
+        </nav>
+      </div>
+    </Overlay>
+  );
+};
+
 const FixedBottomToolbar = ({ isHidden }) => {
   const ref = React.useRef();
 
+  // Fix to top of soft keyboard on touch devices
   React.useEffect(() => {
     if (!isTouchDevice()) return;
 
@@ -910,9 +926,7 @@ const FixedBottomToolbar = ({ isHidden }) => {
       const viewport = window.visualViewport;
       el.style.opacity = "1";
 
-      if (
-        viewport.height === window.document.body.getBoundingClientRect().height
-      ) {
+      if (viewport.height >= window.innerHeight) {
         el.dataset.fixedToKeyboard = false;
         el.style.top = "auto";
         return;
@@ -926,9 +940,8 @@ const FixedBottomToolbar = ({ isHidden }) => {
     const handleTouchMove = (e) => {
       const { target } = e.touches[0];
       if (el == target || el.contains(target)) return;
-      // iOS will only fire the last scroll event so we have to hide toolbar
-      // until the scroll finishes to prevent it from rendering in the wrong
-      // position
+      // iOS will only fire the last scroll event, so we hide the toolbar until
+      // the scroll finishes to prevent it from rendering in the wrong position
       el.style.opacity = "0";
     };
 
@@ -997,7 +1010,6 @@ const FixedBottomToolbar = ({ isHidden }) => {
     >
       <div data-box>
         <EditorToolbar />
-        {isHidden}
       </div>
     </nav>
   );
