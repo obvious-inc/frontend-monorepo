@@ -83,6 +83,9 @@ const NavBar = ({ navigationStack, actions }) => {
   const {
     address: connectedWalletAccountAddress,
     requestAccess: requestWalletAccess,
+    switchToMainnet: switchWalletToMainnet,
+    isUnsupportedChain,
+    isLoading: isLoadingWallet,
   } = useWallet();
   const { displayName: connectedAccountDisplayName } = useAccountDisplayName(
     connectedWalletAccountAddress
@@ -222,10 +225,24 @@ const NavBar = ({ navigationStack, actions }) => {
                   },
                   buttonProps: {
                     variant: "default",
-                    isLoading: requestWalletAccess == null,
-                    disabled: requestWalletAccess == null,
+                    isLoading: requestWalletAccess == null || isLoadingWallet,
+                    disabled: requestWalletAccess == null || isLoadingWallet,
                   },
                   label: "Connect Wallet",
+                }
+              : isUnsupportedChain
+              ? {
+                  onSelect: () => {
+                    switchWalletToMainnet().catch(() => {
+                      alert("Ops, something went wrong!");
+                    });
+                  },
+                  buttonProps: {
+                    variant: "default",
+                    isLoading: isLoadingWallet,
+                    disabled: switchWalletToMainnet == null || isLoadingWallet,
+                  },
+                  label: "Switch to Mainnet",
                 }
               : {
                   onSelect: () => {

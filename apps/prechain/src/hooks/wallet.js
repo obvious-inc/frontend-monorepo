@@ -1,9 +1,11 @@
 import React from "react";
 import { css } from "@emotion/react";
-import { useAccount, useConnect, useDisconnect } from "wagmi";
+import { mainnet } from "wagmi/chains";
+import { useAccount, useConnect, useDisconnect, useSwitchNetwork } from "wagmi";
 import Dialog from "@shades/ui-web/dialog";
 import Button from "@shades/ui-web/button";
 import Spinner from "@shades/ui-web/spinner";
+import useChainId, { useConnectedChainId } from "./chain-id.js";
 
 const impersonationAddress = new URLSearchParams(location.search).get(
   "impersonate"
@@ -150,8 +152,14 @@ const ConnectDialog = ({ titleProps, dismiss }) => {
 export const useWallet = () => {
   const { openDialog } = React.useContext(Context);
   const { address, connector: connectedConnector } = useAccount();
-  const { connect, connectors, isLoading, reset } = useConnect();
+  const { connect, connectors, isLoading: isConnecting, reset } = useConnect();
   const { disconnectAsync: disconnect } = useDisconnect();
+  const { isLoading: isSwitchingNetwork, switchNetworkAsync: switchNetwork } =
+    useSwitchNetwork();
+  const chainId = useChainId();
+  const connectedChainId = useConnectedChainId();
+
+  const isUnsupportedChain = chainId !== connectedChainId;
 
   const hasReadyConnector = connectors.some((c) => c.ready);
 
@@ -175,8 +183,10 @@ export const useWallet = () => {
     address: impersonationAddress ?? address,
     requestAccess: hasReadyConnector ? requestAccess : null,
     disconnect,
-    isLoading,
     reset,
+    switchToMainnet: () => switchNetwork(mainnet.id),
+    isLoading: isConnecting || isSwitchingNetwork,
+    isUnsupportedChain,
     isShimmedDisconnect: connectedConnector?.options?.shimDisconnect ?? false,
   };
 };
