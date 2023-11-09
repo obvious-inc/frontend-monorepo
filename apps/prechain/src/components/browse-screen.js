@@ -1097,8 +1097,6 @@ const ProposalItem = React.memo(({ proposalId }) => {
     proposal?.proposer?.id
   );
 
-  if (!proposal) return null;
-
   const isDimmed =
     proposal.state != null && ["canceled", "expired"].includes(proposal.state);
 

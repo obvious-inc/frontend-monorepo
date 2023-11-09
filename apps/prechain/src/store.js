@@ -244,11 +244,21 @@ const useStore = createZustandStoreHook((set) => {
       }),
     fetchDelegate: (chainId, id) =>
       NounsSubgraph.fetchDelegate(chainId, id).then((delegate) => {
+        const createdProposalsById = arrayUtils.indexBy(
+          (p) => p.id,
+          delegate.proposals
+        );
+
         set((s) => ({
           delegatesById: {
             ...s.delegatesById,
             [id?.toLowerCase()]: delegate,
           },
+          proposalsById: objectUtils.merge(
+            mergeProposals,
+            s.proposalsById,
+            createdProposalsById
+          ),
         }));
       }),
     fetchProposalCandidatesByAccount: (chainId, accountAddress) =>
