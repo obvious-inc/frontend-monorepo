@@ -2,7 +2,7 @@ import { css } from "@emotion/react";
 
 const NotificationBadge = ({ count, ...props }) => (
   <div
-    css={(theme) =>
+    css={(t) =>
       css({
         display: "flex",
         alignItems: "center",
@@ -12,7 +12,7 @@ const NotificationBadge = ({ count, ...props }) => (
         height: "1.5rem",
         minWidth: "1.5rem",
         fontSize: "1rem",
-        fontWeight: theme.text.weights.notificationBadge,
+        fontWeight: t.text.weights.numberBadge,
         lineHeight: 1,
         borderRadius: "0.75rem",
         padding: "0 0.4rem",

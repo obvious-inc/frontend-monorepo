@@ -4,6 +4,7 @@ import { useBlockNumber, useEnsAddress } from "wagmi";
 import { useParams, Link as RouterLink } from "react-router-dom";
 import { css } from "@emotion/react";
 import { useMatchMedia, useFetch } from "@shades/common/react";
+import { APPROXIMATE_BLOCKS_PER_DAY } from "../constants/ethereum.js";
 import { buildFeed as buildVoterFeed } from "../utils/voters.js";
 import {
   useAccountProposalCandidates,
@@ -23,7 +24,7 @@ import AccountAvatar from "./account-avatar.js";
 import NounAvatar from "./noun-avatar.js";
 import Select from "@shades/ui-web/select";
 import { useCurrentDynamicQuorum } from "../hooks/dao-contract.js";
-import { APPROXIMATE_BLOCKS_PER_DAY, SectionedList } from "./browse-screen.js";
+import { SectionedList } from "./browse-screen.js";
 import Button from "@shades/ui-web/button";
 import Spinner from "@shades/ui-web/spinner";
 import { VotingBar } from "./proposal-screen.js";
@@ -361,7 +362,7 @@ const VoterStatsBar = React.memo(({ voterAddress }) => {
             fontSize: t.text.sizes.small,
             display: "flex",
             justifyContent: "space-between",
-            gap: "0.5rem",
+            gap: "1.6rem",
             "[data-for], [data-against]": {
               fontWeight: t.text.weights.emphasis,
             },
@@ -370,15 +371,21 @@ const VoterStatsBar = React.memo(({ voterAddress }) => {
           })
         }
       >
-        <div>
+        <div css={css({ whiteSpace: "nowrap" })}>
           {delegateVotes?.abstain != null && (
             <>Abstain {delegateVotes?.abstain}</>
           )}
         </div>
-        <div>
+        <div css={css({ textAlign: "right" })}>
           {delegateVotes?.totalVotes != null && (
             <>
-              <span>Voted on {delegateVotes?.totalVotes} proposals </span>
+              <span>
+                Voted on {delegateVotes.totalVotes}{" "}
+                {delegateVotes.totalVotes === 1 ? "proposal" : "proposals"}{" "}
+              </span>
+              <br
+                css={css({ "@media(min-width: 380px)": { display: "none" } })}
+              />
               <span>
                 (
                 {formatPercentage(
@@ -404,7 +411,7 @@ const VoterHeader = ({ voterAddress }) => {
     <div
       css={css({
         userSelect: "text",
-        marginBottom: "2rem",
+        marginBottom: "1.6rem",
         "@media (min-width: 600px)": {
           marginBottom: "2.8rem",
         },
@@ -443,6 +450,9 @@ const VoterHeader = ({ voterAddress }) => {
             color: t.colors.textDimmed,
             fontSize: t.text.sizes.base,
             marginBottom: "2.4rem",
+            "@media (min-width: 600px)": {
+              marginBottom: "2.8rem",
+            },
           })
         }
       >
@@ -467,31 +477,30 @@ const VoterHeader = ({ voterAddress }) => {
       </div>
 
       {delegate?.nounsRepresented.length > 0 && (
-        <Callout css={(t) => css({ fontSize: t.text.sizes.base })}>
-          <div
-            css={(t) =>
-              css({
-                display: "flex",
-                gap: "1.2rem",
-                flexWrap: "wrap",
-                justifyContent: "flex-start",
-                "[data-id]": {
-                  fontSize: t.text.sizes.tiny,
-                  color: t.colors.textDimmed,
-                  margin: "0.2rem 0 0",
-                  textAlign: "center",
-                },
-              })
-            }
-          >
-            {delegate.nounsRepresented.map((n) => (
-              <div key={n.id}>
-                <NounAvatar id={n.id} seed={n.seed} size="3.2rem" />
-                <div data-id>{n.id}</div>
-              </div>
-            ))}
-          </div>
-        </Callout>
+        <div
+          css={(t) =>
+            css({
+              display: "flex",
+              gap: "1.6rem",
+              flexWrap: "wrap",
+              justifyContent: "flex-start",
+              "[data-id]": {
+                fontSize: t.text.sizes.tiny,
+                fontWeight: t.text.weights.numberBadge,
+                color: t.colors.textDimmed,
+                margin: "0.2rem 0 0",
+                textAlign: "center",
+              },
+            })
+          }
+        >
+          {delegate.nounsRepresented.map((n) => (
+            <div key={n.id}>
+              <NounAvatar id={n.id} seed={n.seed} size="4rem" />
+              <div data-id>{n.id}</div>
+            </div>
+          ))}
+        </div>
       )}
     </div>
   );
