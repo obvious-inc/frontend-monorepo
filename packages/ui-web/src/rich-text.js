@@ -217,11 +217,15 @@ export const createCss = (t) => ({
   // Inline mode
   '&[data-inline="true"]': {
     // All block elements
-    'p, ul, ol, li, h1, h2, h3, h4, h5 ,h6, blockquote, aside, pre:has(code), .grid, table, button.image, [role="separator"], hr':
+    'p, ul, ol, li, h1, h2, h3, h4, h5 ,h6, aside, pre:has(code), .grid, table, button.image, [role="separator"], hr':
       {
         display: "inline",
         padding: 0,
       },
+    blockquote: {
+      display: "inline",
+      padding: "0 0 0 0.5em",
+    },
   },
 
   // Compact mode
