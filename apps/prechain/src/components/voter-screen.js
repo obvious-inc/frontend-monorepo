@@ -38,7 +38,6 @@ const useFeedItems = ({ voterAddress, filter }) => {
   const proposals = useProposals({ state: true, propdates: true });
   const candidates = useProposalCandidates({
     excludeCanceled: false,
-    excludeMatchingProposal: false,
   });
 
   return React.useMemo(() => {

@@ -353,6 +353,19 @@ const useStore = createZustandStoreHook((set) => {
             candidateFeedbackPosts.map((p) => p.candidateId)
           );
 
+          const postsByCandidateId = arrayUtils.groupBy(
+            (p) => p.candidateId.toLowerCase(),
+            candidateFeedbackPosts
+          );
+          const newCandidatesById = objectUtils.mapValues(
+            (feedbackPosts, candidateId) => ({
+              id: candidateId,
+              slug: extractSlugFromCandidateId(candidateId),
+              feedbackPosts,
+            }),
+            postsByCandidateId
+          );
+
           fetchProposalCandidates(chainId, feedbackCandidateIds);
 
           set((s) => ({
@@ -364,7 +377,8 @@ const useStore = createZustandStoreHook((set) => {
             proposalCandidatesById: objectUtils.merge(
               mergeProposalCandidates,
               s.proposalCandidatesById,
-              createdCandidatesById
+              createdCandidatesById,
+              newCandidatesById
             ),
           }));
         }
