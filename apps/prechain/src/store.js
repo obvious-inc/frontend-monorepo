@@ -731,7 +731,7 @@ export const useProposal = (id) => {
   );
 };
 
-export const useProposalCandidates = ({ excludeCanceled = true }) => {
+export const useProposalCandidates = ({ excludeCanceled = true } = {}) => {
   const { data: blockNumber } = useBlockNumber({
     watch: true,
     cacheTime: 30_000,
