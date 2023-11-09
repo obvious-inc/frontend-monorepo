@@ -326,6 +326,11 @@ const useStore = createZustandStoreHook((set) => {
           proposalFeedbackPosts,
           candidateFeedbackPosts,
         }) => {
+          fetchProposalsVersions(
+            chainId,
+            proposals.map((p) => p.id)
+          );
+
           const createdProposalsById = arrayUtils.indexBy(
             (p) => p.id,
             proposals
