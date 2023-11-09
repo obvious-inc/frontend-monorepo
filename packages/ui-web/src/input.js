@@ -35,6 +35,9 @@ const Input = React.forwardRef(
       <Component
         ref={ref}
         autoComplete="off"
+        autoCorrect="off"
+        autoCapitalize="none"
+        spellCheck="off"
         css={(t) =>
           css({
             "--bg-regular": t.colors.inputBackground,
