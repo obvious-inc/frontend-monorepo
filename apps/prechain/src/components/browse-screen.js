@@ -741,7 +741,11 @@ const BrowseScreen = () => {
   );
 };
 
-const SectionedList = ({ sections, showPlaceholder = false, ...props }) => {
+export const SectionedList = ({
+  sections,
+  showPlaceholder = false,
+  ...props
+}) => {
   return (
     <ul
       role={showPlaceholder ? "presentation" : undefined}

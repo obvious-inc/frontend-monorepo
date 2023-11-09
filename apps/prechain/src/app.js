@@ -29,6 +29,8 @@ const ConnectWalletScreen = React.lazy(() =>
   import("./components/connect-wallet-screen.js")
 );
 
+const VoterScreen = React.lazy(() => import("./components/voter-screen.js"));
+
 const dialogs = [
   {
     key: "account",
@@ -95,6 +97,8 @@ const App = () => {
                         element={<ProposalScreen />}
                       />
                       <Route path="/:proposalId" element={<ProposalScreen />} />
+
+                      <Route path="/voter/:voterId" element={<VoterScreen />} />
                     </Route>
                     <Route path="*" element={<Navigate to="/" replace />} />
                   </Routes>

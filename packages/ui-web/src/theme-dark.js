@@ -57,7 +57,7 @@ const textWeights = {
   smallHeader: "600",
   emphasis: "600",
   menuListBoxItem: "500",
-  notificationBadge: "500",
+  numberBadge: "500",
 };
 
 const fontStacks = {

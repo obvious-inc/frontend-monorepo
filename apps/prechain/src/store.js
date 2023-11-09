@@ -147,6 +147,39 @@ const useStore = createZustandStoreHook((set) => {
       }));
     });
 
+  const fetchProposals = async (chainId, ids) =>
+    NounsSubgraph.fetchProposals(chainId, ids).then((proposals) => {
+      set((s) => {
+        const fetchedProposalsById = arrayUtils.indexBy((p) => p.id, proposals);
+
+        return {
+          proposalsById: objectUtils.merge(
+            mergeProposals,
+            s.proposalsById,
+            fetchedProposalsById
+          ),
+        };
+      });
+    });
+
+  const fetchProposalCandidates = async (chainId, ids) =>
+    NounsSubgraph.fetchProposalCandidates(chainId, ids).then((candidates) => {
+      set((s) => {
+        const fetchedCandidatesById = arrayUtils.indexBy(
+          (p) => p.id.toLowerCase(),
+          candidates
+        );
+
+        return {
+          proposalCandidatesById: objectUtils.merge(
+            mergeProposalCandidates,
+            s.proposalCandidatesById,
+            fetchedCandidatesById
+          ),
+        };
+      });
+    });
+
   return {
     delegatesById: {},
     proposalsById: {},
@@ -184,6 +217,7 @@ const useStore = createZustandStoreHook((set) => {
     },
 
     // Actions
+    fetchProposals,
     fetchProposal: (chainId, id) =>
       NounsSubgraph.fetchProposal(chainId, id).then((proposal) => {
         // Fetch candidate async
@@ -198,10 +232,33 @@ const useStore = createZustandStoreHook((set) => {
         }));
       }),
     fetchProposalCandidate,
+    fetchProposalCandidates,
     fetchDelegates: (chainId) =>
       NounsSubgraph.fetchDelegates(chainId).then((delegates) => {
-        set(() => ({
-          delegatesById: arrayUtils.indexBy((d) => d.id, delegates),
+        set((s) => ({
+          delegatesById: {
+            ...s.delegatesById,
+            ...arrayUtils.indexBy((d) => d.id, delegates),
+          },
+        }));
+      }),
+    fetchDelegate: (chainId, id) =>
+      NounsSubgraph.fetchDelegate(chainId, id).then((delegate) => {
+        const createdProposalsById = arrayUtils.indexBy(
+          (p) => p.id,
+          delegate.proposals
+        );
+
+        set((s) => ({
+          delegatesById: {
+            ...s.delegatesById,
+            [id?.toLowerCase()]: delegate,
+          },
+          proposalsById: objectUtils.merge(
+            mergeProposals,
+            s.proposalsById,
+            createdProposalsById
+          ),
         }));
       }),
     fetchProposalCandidatesByAccount: (chainId, accountAddress) =>
@@ -256,6 +313,72 @@ const useStore = createZustandStoreHook((set) => {
               mergeProposalCandidates,
               s.proposalCandidatesById,
               fetchedCandidatesById
+            ),
+          }));
+        }
+      ),
+    fetchVoterScreenData: (chainId, id, options) =>
+      NounsSubgraph.fetchVoterScreenData(chainId, id, options).then(
+        ({
+          proposals,
+          candidates,
+          votes,
+          proposalFeedbackPosts,
+          candidateFeedbackPosts,
+        }) => {
+          const createdProposalsById = arrayUtils.indexBy(
+            (p) => p.id,
+            proposals
+          );
+
+          const propIds = arrayUtils.unique(
+            [...votes, ...proposalFeedbackPosts].map((p) => p.proposalId)
+          );
+
+          // Fetch proposals voted or commented on by voter
+          fetchProposals(chainId, propIds);
+
+          const createdCandidatesById = arrayUtils.indexBy(
+            (p) => p.id.toLowerCase(),
+            candidates
+          );
+
+          // fetch feedback for voter's candies (candidates tab)
+          fetchProposalCandidatesFeedbackPosts(
+            chainId,
+            candidates.map((c) => c.id.toLowerCase())
+          );
+
+          const feedbackCandidateIds = arrayUtils.unique(
+            candidateFeedbackPosts.map((p) => p.candidateId)
+          );
+
+          const postsByCandidateId = arrayUtils.groupBy(
+            (p) => p.candidateId.toLowerCase(),
+            candidateFeedbackPosts
+          );
+          const newCandidatesById = objectUtils.mapValues(
+            (feedbackPosts, candidateId) => ({
+              id: candidateId,
+              slug: extractSlugFromCandidateId(candidateId),
+              feedbackPosts,
+            }),
+            postsByCandidateId
+          );
+
+          fetchProposalCandidates(chainId, feedbackCandidateIds);
+
+          set((s) => ({
+            proposalsById: objectUtils.merge(
+              mergeProposals,
+              s.proposalsById,
+              createdProposalsById
+            ),
+            proposalCandidatesById: objectUtils.merge(
+              mergeProposalCandidates,
+              s.proposalCandidatesById,
+              createdCandidatesById,
+              newCandidatesById
             ),
           }));
         }
@@ -317,6 +440,77 @@ const useStore = createZustandStoreHook((set) => {
           });
         }
       ),
+
+    fetchVoterActivity: (chainId, voterAddress, { startBlock, endBlock }) =>
+      NounsSubgraph.fetchVoterActivity(chainId, voterAddress, {
+        startBlock,
+        endBlock,
+      }).then(({ votes, proposalFeedbackPosts, candidateFeedbackPosts }) => {
+        const propIds = arrayUtils.unique(
+          [...votes, ...proposalFeedbackPosts].map((p) => p.proposalId)
+        );
+
+        fetchProposals(chainId, propIds);
+
+        const candidateIds = arrayUtils.unique(
+          candidateFeedbackPosts.map((p) => p.candidateId)
+        );
+
+        fetchProposalCandidates(chainId, candidateIds);
+
+        set((s) => {
+          const postsByCandidateId = arrayUtils.groupBy(
+            (p) => p.candidateId.toLowerCase(),
+            candidateFeedbackPosts
+          );
+          const newCandidatesById = objectUtils.mapValues(
+            (feedbackPosts, candidateId) => ({
+              id: candidateId,
+              slug: extractSlugFromCandidateId(candidateId),
+              feedbackPosts,
+            }),
+            postsByCandidateId
+          );
+
+          const feedbackPostsByProposalId = arrayUtils.groupBy(
+            (p) => p.proposalId,
+            proposalFeedbackPosts
+          );
+          const votesByProposalId = arrayUtils.groupBy(
+            (v) => v.proposalId,
+            votes
+          );
+
+          const proposalsWithNewFeedbackPostsById = objectUtils.mapValues(
+            (feedbackPosts, proposalId) => ({
+              id: proposalId,
+              feedbackPosts,
+            }),
+            feedbackPostsByProposalId
+          );
+          const proposalsWithNewVotesById = objectUtils.mapValues(
+            (votes, proposalId) => ({
+              id: proposalId,
+              votes,
+            }),
+            votesByProposalId
+          );
+
+          return {
+            proposalsById: objectUtils.merge(
+              mergeProposals,
+              s.proposalsById,
+              proposalsWithNewFeedbackPostsById,
+              proposalsWithNewVotesById
+            ),
+            proposalCandidatesById: objectUtils.merge(
+              mergeProposalCandidates,
+              s.proposalCandidatesById,
+              newCandidatesById
+            ),
+          };
+        });
+      }),
     fetchPropdates: (proposalId) =>
       PropdatesSubgraph.fetchPropdates(proposalId).then((propdates) => {
         set(() => ({
@@ -332,13 +526,18 @@ const useStore = createZustandStoreHook((set) => {
 export const useActions = () => {
   const chainId = useChainId();
   const fetchProposal = useStore((s) => s.fetchProposal);
+  const fetchProposals = useStore((s) => s.fetchProposals);
   const fetchProposalCandidate = useStore((s) => s.fetchProposalCandidate);
+  const fetchProposalCandidates = useStore((s) => s.fetchProposalCandidates);
   const fetchDelegates = useStore((s) => s.fetchDelegates);
+  const fetchDelegate = useStore((s) => s.fetchDelegate);
   const fetchProposalCandidatesByAccount = useStore(
     (s) => s.fetchProposalCandidatesByAccount
   );
   const fetchNounsActivity = useStore((s) => s.fetchNounsActivity);
+  const fetchVoterActivity = useStore((s) => s.fetchVoterActivity);
   const fetchBrowseScreenData = useStore((s) => s.fetchBrowseScreenData);
+  const fetchVoterScreenData = useStore((s) => s.fetchVoterScreenData);
   const fetchPropdates = useStore((s) => s.fetchPropdates);
   const addOptimitisicProposalVote = useStore(
     (s) => s.addOptimitisicProposalVote
@@ -352,9 +551,21 @@ export const useActions = () => {
       (...args) => fetchProposal(chainId, ...args),
       [fetchProposal, chainId]
     ),
+    fetchProposals: React.useCallback(
+      (...args) => fetchProposals(chainId, ...args),
+      [fetchProposals, chainId]
+    ),
     fetchProposalCandidate: React.useCallback(
       (...args) => fetchProposalCandidate(chainId, ...args),
       [fetchProposalCandidate, chainId]
+    ),
+    fetchProposalCandidates: React.useCallback(
+      (...args) => fetchProposalCandidates(chainId, ...args),
+      [fetchProposalCandidates, chainId]
+    ),
+    fetchDelegate: React.useCallback(
+      (...args) => fetchDelegate(chainId, ...args),
+      [fetchDelegate, chainId]
     ),
     fetchDelegates: React.useCallback(
       (...args) => fetchDelegates(chainId, ...args),
@@ -368,9 +579,17 @@ export const useActions = () => {
       (...args) => fetchNounsActivity(chainId, ...args),
       [fetchNounsActivity, chainId]
     ),
+    fetchVoterActivity: React.useCallback(
+      (...args) => fetchVoterActivity(chainId, ...args),
+      [fetchVoterActivity, chainId]
+    ),
     fetchBrowseScreenData: React.useCallback(
       (...args) => fetchBrowseScreenData(chainId, ...args),
       [fetchBrowseScreenData, chainId]
+    ),
+    fetchVoterScreenData: React.useCallback(
+      (...args) => fetchVoterScreenData(chainId, ...args),
+      [fetchVoterScreenData, chainId]
     ),
     fetchPropdates,
     addOptimitisicProposalVote,
@@ -384,6 +603,25 @@ export const useDelegate = (id) =>
 export const useDelegatesFetch = () => {
   const { fetchDelegates } = useActions();
   useFetch(() => fetchDelegates(), [fetchDelegates]);
+};
+
+export const useDelegateFetch = (id, options) => {
+  const { data: blockNumber } = useBlockNumber({
+    watch: true,
+    cacheTime: 10_000,
+  });
+  const onError = useLatestCallback(options?.onError);
+
+  const { fetchDelegate } = useActions();
+
+  useFetch(
+    () =>
+      fetchDelegate(id).catch((e) => {
+        if (onError == null) return Promise.reject(e);
+        onError(e);
+      }),
+    [fetchDelegate, id, onError, blockNumber]
+  );
 };
 
 export const useProposalFetch = (id, options) => {
@@ -493,7 +731,7 @@ export const useProposal = (id) => {
   );
 };
 
-export const useProposalCandidates = () => {
+export const useProposalCandidates = ({ excludeCanceled = true } = {}) => {
   const { data: blockNumber } = useBlockNumber({
     watch: true,
     cacheTime: 30_000,
@@ -507,8 +745,10 @@ export const useProposalCandidates = () => {
     const filteredCandidates = candidates.filter((c) => {
       // Exclude canceled candidates as well as those with a matching proposal
       if (c.canceledTimestamp != null || c.latestVersion?.proposalId != null)
-        return false;
+        return excludeCanceled ? false : true;
+
       if (c.latestVersion?.targetProposalId == null) return true;
+
       const targetProposal = proposalsById[c.latestVersion.targetProposalId];
       // Exlude candidates with a target proposal past its update period end block
       return (
@@ -520,7 +760,7 @@ export const useProposalCandidates = () => {
       { value: (p) => p.lastUpdatedTimestamp, order: "desc" },
       filteredCandidates
     );
-  }, [candidatesById, proposalsById, blockNumber]);
+  }, [candidatesById, proposalsById, blockNumber, excludeCanceled]);
 };
 
 export const useAccountProposalCandidates = (accountAddress) => {
@@ -529,7 +769,7 @@ export const useAccountProposalCandidates = (accountAddress) => {
   return React.useMemo(() => {
     const candidates = Object.values(candidatesById);
     return candidates.filter(
-      (c) => c.proposerId.toLowerCase() === accountAddress.toLowerCase()
+      (c) => c.proposerId?.toLowerCase() === accountAddress.toLowerCase()
     );
   }, [candidatesById, accountAddress]);
 };
