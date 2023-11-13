@@ -776,7 +776,7 @@ const parseProposalCandidate = (data, { chainId }) => {
     parsedData.latestVersion.content.contentSignatures =
       data.latestVersion.content.contentSignatures.map((s) => ({
         ...s,
-        expirationTimestamp: new Date(parseInt(s.expirationTimestamp)),
+        expirationTimestamp: new Date(parseInt(s.expirationTimestamp) * 1000),
       }));
 
   if (data.latestVersion.content.targets != null)
