@@ -1022,13 +1022,9 @@ export const fetchProposalCandidatesSponsoredByAccount = (
   })
     .then((data) => {
       // Fetch signatures, then content IDs, and finally the candidate versions
-      const candidateSignatures = data.proposalCandidateSignatures.map((s) => ({
-        ...s,
-        contentId: s.content.id,
-        expirationTimestamp: new Date(parseInt(s.expirationTimestamp) * 1000),
-      }));
-
-      return arrayUtils.unique(candidateSignatures.map((s) => s.contentId));
+      return arrayUtils.unique(
+        data.proposalCandidateSignatures.map((s) => s.content.id)
+      );
     })
     .then(async (contentIds) => {
       const data = await subgraphFetch({
