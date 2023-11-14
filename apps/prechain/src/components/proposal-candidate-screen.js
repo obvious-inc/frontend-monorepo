@@ -84,6 +84,7 @@ const useFeedItems = (candidateId) => {
 
 const ProposalCandidateScreenContent = ({
   candidateId,
+  toggleSponsorDialog,
   scrollContainerRef,
 }) => {
   const proposerId = candidateId.split("-")[0];
@@ -327,25 +328,11 @@ const ProposalCandidateScreenContent = ({
                 </Tabs.Item>
                 <Tabs.Item key="sponsors" title="Sponsors">
                   <div style={{ padding: "3.2rem 0 1.6rem" }}>
-                    {sponsorFeedItems.length === 0 ? (
-                      <div
-                        css={(t) =>
-                          css({
-                            textAlign: "center",
-                            fontSize: t.text.sizes.small,
-                            color: t.colors.textDimmed,
-                            paddingTop: "1.6rem",
-                          })
-                        }
-                      >
-                        No sponsors
-                      </div>
-                    ) : (
-                      <ActivityFeed
-                        context="candidate"
-                        items={sponsorFeedItems}
-                      />
-                    )}
+                    <SponsorsTabMainContent
+                      candidateId={candidateId}
+                      sponsorFeedItems={sponsorFeedItems}
+                      toggleSponsorDialog={toggleSponsorDialog}
+                    />
                   </div>
                 </Tabs.Item>
               </Tabs.Root>
@@ -353,17 +340,6 @@ const ProposalCandidateScreenContent = ({
           )
         }
       >
-        {/* {candidate.latestVersion.proposalId != null && ( */}
-        {/*   <> */}
-        {/*     <br /> */}
-        {/*     Proposal:{" "} */}
-        {/*     <RouterLink to={`/${candidate.latestVersion.proposalId}`}> */}
-        {/*       {candidate.latestVersion.proposalId} */}
-        {/*     </RouterLink> */}
-        {/*     <br /> */}
-        {/*   </> */}
-        {/* )} */}
-
         <div
           css={css({
             padding: "0.8rem 0 3.2rem",
@@ -557,25 +533,11 @@ const ProposalCandidateScreenContent = ({
                     <div style={{ margin: "0 0 3.2rem" }}>
                       {sponsorStatusCallout}
                     </div>
-                    {sponsorFeedItems.length === 0 ? (
-                      <div
-                        css={(t) =>
-                          css({
-                            textAlign: "center",
-                            fontSize: t.text.sizes.small,
-                            color: t.colors.textDimmed,
-                            paddingTop: "1.6rem",
-                          })
-                        }
-                      >
-                        No sponsors
-                      </div>
-                    ) : (
-                      <ActivityFeed
-                        context="candidate"
-                        items={sponsorFeedItems}
-                      />
-                    )}
+                    <SponsorsTabMainContent
+                      candidateId={candidateId}
+                      sponsorFeedItems={sponsorFeedItems}
+                      toggleSponsorDialog={toggleSponsorDialog}
+                    />
                   </div>
                 </Tabs.Item>
               </Tabs.Root>
@@ -584,6 +546,70 @@ const ProposalCandidateScreenContent = ({
         </div>
       </MainContentContainer>
     </div>
+  );
+};
+
+const SponsorsTabMainContent = ({
+  candidateId,
+  sponsorFeedItems,
+  toggleSponsorDialog,
+}) => {
+  const candidate = useProposalCandidate(candidateId);
+
+  const { address: connectedWalletAccountAddress } = useWallet();
+  const connectedDelegate = useDelegate(connectedWalletAccountAddress);
+  const connectedDelegateHasVotes =
+    connectedDelegate != null && connectedDelegate.nounsRepresented.length > 0;
+  const showSponsorButton =
+    connectedDelegateHasVotes &&
+    candidate.latestVersion.proposalId == null &&
+    candidate.canceledTimestamp == null;
+
+  if (sponsorFeedItems.length === 0)
+    return (
+      <div
+        css={(t) =>
+          css({
+            textAlign: "center",
+            fontSize: t.text.sizes.small,
+            color: t.colors.textDimmed,
+            paddingTop: "3.2rem",
+          })
+        }
+      >
+        No sponsors
+        {showSponsorButton && (
+          <div css={css({ marginTop: "2.4rem" })}>
+            <Button
+              type="button"
+              onClick={() => {
+                toggleSponsorDialog();
+              }}
+            >
+              Sponsor candidate
+            </Button>
+          </div>
+        )}
+      </div>
+    );
+
+  return (
+    <>
+      <ActivityFeed context="candidate" items={sponsorFeedItems} />
+
+      {showSponsorButton && (
+        <div css={css({ marginTop: "3.2rem" })}>
+          <Button
+            type="button"
+            onClick={() => {
+              toggleSponsorDialog();
+            }}
+          >
+            Sponsor candidate
+          </Button>
+        </div>
+      )}
+    </>
   );
 };
 
@@ -1042,9 +1068,6 @@ const ProposalCandidateScreen = () => {
   const proposalThreshold = useProposalThreshold();
 
   const { address: connectedWalletAccountAddress } = useWallet();
-  const connectedDelegate = useDelegate(connectedWalletAccountAddress);
-  const connectedDelegateHasVotes =
-    connectedDelegate != null && connectedDelegate.nounsRepresented.length > 0;
 
   const candidate = useProposalCandidate(candidateId);
 
@@ -1115,15 +1138,6 @@ const ProposalCandidateScreen = () => {
                   },
                 ].filter(Boolean)
               : []
-            : connectedDelegateHasVotes &&
-              candidate.latestVersion.proposalId == null
-            ? [
-                {
-                  onSelect: toggleSponsorDialog,
-                  label: "Sponsor candidate",
-                  desktopOnly: true,
-                },
-              ]
             : []
         }
       >
@@ -1192,6 +1206,7 @@ const ProposalCandidateScreen = () => {
         ) : (
           <ProposalCandidateScreenContent
             candidateId={candidateId}
+            toggleSponsorDialog={toggleSponsorDialog}
             scrollContainerRef={scrollContainerRef}
           />
         )}
