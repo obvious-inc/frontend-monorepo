@@ -9,7 +9,7 @@ import {
 import { getState as getProposalState } from "./utils/proposals.js";
 import {
   extractSlugFromId as extractSlugFromCandidateId,
-  getValidSponsorSignatures as getValidCandidateSponsorSignature,
+  getSponsorSignatures as getCandidateSponsorSignatures,
 } from "./utils/candidates.js";
 import useChainId from "./hooks/chain-id.js";
 import * as NounsSubgraph from "./nouns-subgraph.js";
@@ -731,7 +731,10 @@ export const useProposal = (id) => {
   );
 };
 
-export const useProposalCandidates = ({ excludeCanceled = true } = {}) => {
+export const useProposalCandidates = ({
+  includeCanceled = false,
+  includePromoted = false,
+} = {}) => {
   const { data: blockNumber } = useBlockNumber({
     watch: true,
     cacheTime: 30_000,
@@ -742,25 +745,37 @@ export const useProposalCandidates = ({ excludeCanceled = true } = {}) => {
 
   return React.useMemo(() => {
     const candidates = Object.values(candidatesById);
-    const filteredCandidates = candidates.filter((c) => {
-      // Exclude canceled candidates as well as those with a matching proposal
-      if (c.canceledTimestamp != null || c.latestVersion?.proposalId != null)
-        return excludeCanceled ? false : true;
 
-      if (c.latestVersion?.targetProposalId == null) return true;
+    const filteredCandidates = candidates.filter((c) => {
+      // Filter canceled candidates
+      if (c.canceledTimestamp != null) return includeCanceled;
+
+      // Filter candidates with a with a matching proposal
+      if (c.latestVersion?.proposalId != null) return includePromoted;
+
+      if (c.latestVersion?.targetProposalId == null || includePromoted)
+        return true;
 
       const targetProposal = proposalsById[c.latestVersion.targetProposalId];
+
       // Exlude candidates with a target proposal past its update period end block
       return (
         targetProposal != null &&
         targetProposal.updatePeriodEndBlock > blockNumber
       );
     });
+
     return arrayUtils.sortBy(
       { value: (p) => p.lastUpdatedTimestamp, order: "desc" },
       filteredCandidates
     );
-  }, [candidatesById, proposalsById, blockNumber, excludeCanceled]);
+  }, [
+    candidatesById,
+    proposalsById,
+    blockNumber,
+    includeCanceled,
+    includePromoted,
+  ]);
 };
 
 export const useAccountProposalCandidates = (accountAddress) => {
@@ -781,7 +796,9 @@ export const useProposalCandidateVotingPower = (candidateId) => {
   const proposerDelegateNounIds =
     proposerDelegate?.nounsRepresented.map((n) => n.id) ?? [];
 
-  const validSignatures = getValidCandidateSponsorSignature(candidate);
+  const validSignatures = getCandidateSponsorSignatures(candidate, {
+    excludeInvalid: true,
+  });
 
   const sponsoringNounIds = arrayUtils.unique(
     validSignatures.flatMap((s) => s.signer.nounsRepresented.map((n) => n.id))

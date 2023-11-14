@@ -113,15 +113,16 @@ const useFeedItems = ({ filter }) => {
   const latestBlockNumber = React.useDeferredValue(eagerLatestBlockNumber);
 
   const proposals = useProposals({ state: true, propdates: true });
-  const candidates = useProposalCandidates();
+  const candidates = useProposalCandidates({
+    includeCanceled: true,
+    includePromoted: true,
+  });
 
   return React.useMemo(() => {
     const buildProposalItems = () =>
       proposals.flatMap((p) => buildProposalFeed(p, { latestBlockNumber }));
     const buildCandidateItems = () =>
-      candidates.flatMap((c) =>
-        buildCandidateFeed(c, { skipSignatures: true })
-      );
+      candidates.flatMap((c) => buildCandidateFeed(c));
 
     const buildFeedItems = () => {
       switch (filter) {

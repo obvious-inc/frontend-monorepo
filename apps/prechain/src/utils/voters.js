@@ -15,7 +15,7 @@ export const buildFeed = (delegate, { proposals, candidates }) => {
 
   const candidateFeedItems =
     candidates
-      ?.map((c) => buildCandidateFeed(c, { skipSignatures: false }))
+      ?.map((c) => buildCandidateFeed(c))
       .flat()
       .filter(
         (i) => i.authorAccount?.toLowerCase() === delegate.id.toLowerCase()

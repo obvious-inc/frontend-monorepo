@@ -14,6 +14,8 @@ const subgraphEndpointByChainId = {
     "https://api.studio.thegraph.com/proxy/49498/nouns-v3-sepolia/version/latest",
 };
 
+const parseTimestamp = (unixSeconds) => new Date(parseInt(unixSeconds) * 1000);
+
 const VOTE_FIELDS = `
 fragment VoteFields on Vote {
   id
@@ -65,6 +67,21 @@ fragment ProposalFeedbackFields on ProposalFeedback {
   }
   proposal {
     id
+  }
+}`;
+
+const CANDIDATE_CONTENT_SIGNATURE_FIELDS = `
+fragment CandidateContentSignatureFields on ProposalCandidateSignature {
+  reason
+  canceled
+  createdBlock
+  createdTimestamp
+  expirationTimestamp
+  signer {
+    id
+    nounsRepresented {
+      id
+    }
   }
 }`;
 
@@ -164,6 +181,7 @@ const createDelegateQuery = (id) => `
 
 const createBrowseScreenQuery = ({ skip = 0, first = 1000 } = {}) => `
 ${VOTE_FIELDS}
+${CANDIDATE_CONTENT_SIGNATURE_FIELDS}
 query {
   proposals(orderBy: createdBlock, orderDirection: desc, skip: ${skip}, first: ${first}) {
     id
@@ -217,15 +235,7 @@ query {
         matchingProposalIds
         proposalIdToUpdate
         contentSignatures {
-          reason
-          canceled
-          expirationTimestamp
-          signer {
-            id
-            nounsRepresented {
-              id
-            }
-          }
+          ...CandidateContentSignatureFields
         }
       }
     }
@@ -236,6 +246,7 @@ const createVoterScreenQuery = (id, { skip = 0, first = 1000 } = {}) => `
 ${VOTE_FIELDS}
 ${CANDIDATE_FEEDBACK_FIELDS}
 ${PROPOSAL_FEEDBACK_FIELDS}
+${CANDIDATE_CONTENT_SIGNATURE_FIELDS}
 query {
   proposals(orderBy: createdBlock, orderDirection: desc, skip: ${skip}, first: ${first}, where: {proposer: "${id}"} ) {
     id
@@ -289,15 +300,7 @@ query {
         matchingProposalIds
         proposalIdToUpdate
         contentSignatures {
-          reason
-          canceled
-          expirationTimestamp
-          signer {
-            id
-            nounsRepresented {
-              id
-            }
-          }
+          ...CandidateContentSignatureFields
         }
       }
     }
@@ -377,7 +380,9 @@ query {
   }
 }`;
 
-const createProposalCandidateQuery = (id) => `{
+const createProposalCandidateQuery = (id) => `
+${CANDIDATE_CONTENT_SIGNATURE_FIELDS}
+query {
   proposalCandidate(id: "${id}") {
     id
     slug
@@ -400,15 +405,7 @@ const createProposalCandidateQuery = (id) => `{
         matchingProposalIds
         proposalIdToUpdate
         contentSignatures {
-          reason
-          canceled
-          expirationTimestamp
-          signer {
-            id
-            nounsRepresented {
-              id
-            }
-          }
+          ...CandidateContentSignatureFields
         }
       }
     }
@@ -418,7 +415,9 @@ const createProposalCandidateQuery = (id) => `{
   }
 }`;
 
-const createProposalCandidatesByAccountQuery = (accountAddress) => `{
+const createProposalCandidatesByAccountQuery = (accountAddress) => `
+${CANDIDATE_CONTENT_SIGNATURE_FIELDS}
+query {
   proposalCandidates(where: { proposer: "${accountAddress}" }) {
     id
     slug
@@ -436,15 +435,7 @@ const createProposalCandidatesByAccountQuery = (accountAddress) => `{
         matchingProposalIds
         proposalIdToUpdate
         contentSignatures {
-          reason
-          canceled
-          expirationTimestamp
-          signer {
-            id
-            nounsRepresented {
-              id
-            }
-          }
+          ...CandidateContentSignatureFields
         }
       }
     }
@@ -520,6 +511,7 @@ query {
 }`;
 
 const createProposalCandidatesQuery = (candidateIds) => `
+${CANDIDATE_CONTENT_SIGNATURE_FIELDS}
 query {
   proposalCandidates(where: {id_in: [${candidateIds.map((id) => `"${id}"`)}]}) {
     id
@@ -543,15 +535,7 @@ query {
         matchingProposalIds
         proposalIdToUpdate
         contentSignatures {
-          reason
-          canceled
-          expirationTimestamp
-          signer {
-            id
-            nounsRepresented {
-              id
-            }
-          }
+          ...CandidateContentSignatureFields
         }
       }
     }
@@ -636,7 +620,7 @@ const parseFeedbackPost = (post) => ({
   reason: post.reason,
   support: post.supportDetailed,
   createdBlock: BigInt(post.createdBlock),
-  createdTimestamp: new Date(parseInt(post.createdTimestamp) * 1000),
+  createdTimestamp: parseTimestamp(post.createdTimestamp),
   votes: Number(post.votes),
   proposalId: post.proposal?.id,
   candidateId: post.candidate?.id,
@@ -647,7 +631,7 @@ const parseFeedbackPost = (post) => ({
 const parseProposalVote = (v) => ({
   id: v.id,
   createdBlock: BigInt(v.blockNumber),
-  createdTimestamp: new Date(parseInt(v.blockTimestamp) * 1000),
+  createdTimestamp: parseTimestamp(v.blockTimestamp),
   reason: v.reason,
   support: v.supportDetailed,
   votes: Number(v.votes),
@@ -658,7 +642,7 @@ const parseProposalVote = (v) => ({
 const parseProposalVersion = (v) => ({
   updateMessage: v.updateMessage,
   createdBlock: BigInt(v.createdBlock),
-  createdTimestamp: new Date(parseInt(v.createdAt) * 1000),
+  createdTimestamp: parseTimestamp(v.createdAt),
   proposalId: v.proposal?.id,
 });
 
@@ -693,7 +677,7 @@ const parseProposal = (data, { chainId }) => {
     "queuedTimestamp",
   ]) {
     if (data[prop] != null) {
-      parsedData[prop] = new Date(parseInt(data[prop]) * 1000);
+      parsedData[prop] = parseTimestamp(data[prop]);
     }
   }
 
@@ -760,7 +744,7 @@ const parseProposalCandidate = (data, { chainId }) => {
     "canceledTimestamp",
   ]) {
     if (data[prop] != null) {
-      parsedData[prop] = new Date(parseInt(data[prop]) * 1000);
+      parsedData[prop] = parseTimestamp(data[prop]);
     }
   }
 
@@ -776,7 +760,9 @@ const parseProposalCandidate = (data, { chainId }) => {
     parsedData.latestVersion.content.contentSignatures =
       data.latestVersion.content.contentSignatures.map((s) => ({
         ...s,
-        expirationTimestamp: new Date(parseInt(s.expirationTimestamp) * 1000),
+        createdBlock: BigInt(s.createdBlock),
+        createdTimestamp: parseTimestamp(s.createdTimestamp),
+        expirationTimestamp: parseTimestamp(s.expirationTimestamp),
       }));
 
   if (data.latestVersion.content.targets != null)

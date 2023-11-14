@@ -1,4 +1,5 @@
 import formatDate from "date-fns/format";
+import datesDifferenceInDays from "date-fns/differenceInCalendarDays";
 import { isAddress } from "viem";
 import React from "react";
 import va from "@vercel/analytics";
@@ -18,7 +19,7 @@ import Spinner from "@shades/ui-web/spinner";
 import * as Tooltip from "@shades/ui-web/tooltip";
 import {
   extractSlugFromId as extractSlugFromCandidateId,
-  getValidSponsorSignatures,
+  getSponsorSignatures,
   buildFeed,
   getSignals,
 } from "../utils/candidates.js";
@@ -38,7 +39,7 @@ import {
 } from "../hooks/data-contract.js";
 import { useWallet } from "../hooks/wallet.js";
 import MetaTags_ from "./meta-tags.js";
-import ActivityFeed from "./activity-feed.js";
+import ActivityFeed, { VotingPowerNoggle } from "./activity-feed.js";
 import {
   ProposalHeader,
   ProposalBody,
@@ -47,10 +48,14 @@ import {
   VoteDistributionToolTipContent,
 } from "./proposal-screen.js";
 import AccountPreviewPopoverTrigger from "./account-preview-popover-trigger.js";
+import AccountAvatar from "./account-avatar.js";
+import FormattedDateWithTooltip from "./formatted-date-with-tooltip.js";
 import Layout, { MainContentContainer } from "./layout.js";
 import Callout from "./callout.js";
 import * as Tabs from "./tabs.js";
 import TransactionList from "./transaction-list.js";
+
+const MarkdownRichText = React.lazy(() => import("./markdown-rich-text.js"));
 
 const isBetaSession = new URLSearchParams(location.search).get("beta") != null;
 
@@ -78,7 +83,6 @@ const useSearchParamToggleState = (key) => {
 
 const useFeedItems = (candidateId) => {
   const candidate = useProposalCandidate(candidateId);
-
   return React.useMemo(() => buildFeed(candidate), [candidate]);
 };
 
@@ -127,7 +131,9 @@ const ProposalCandidateScreenContent = ({
     proposerDelegate?.nounsRepresented.map((n) => n.id) ?? [];
   const proposerVoteCount = proposerDelegateNounIds.length;
 
-  const validSignatures = getValidSponsorSignatures(candidate);
+  const validSignatures = getSponsorSignatures(candidate, {
+    excludeInvalid: true,
+  });
 
   const sponsoringNounIds = arrayUtils.unique(
     validSignatures.flatMap((s) => s.signer.nounsRepresented.map((n) => n.id))
@@ -142,9 +148,6 @@ const ProposalCandidateScreenContent = ({
   const firstBreakIndex = description.search(/\n/);
   const descriptionWithoutTitle =
     firstBreakIndex === -1 ? description : description.slice(firstBreakIndex);
-
-  const sponsorFeedItems = feedItems.filter((i) => i.type === "signature");
-  const regularFeedItems = feedItems.filter((i) => i.type !== "signature");
 
   const signals = getSignals({ candidate, proposerDelegate });
 
@@ -308,11 +311,8 @@ const ProposalCandidateScreenContent = ({
                     />
                   </div>
 
-                  {regularFeedItems.length !== 0 && (
-                    <ActivityFeed
-                      context="candidate"
-                      items={regularFeedItems}
-                    />
+                  {feedItems.length !== 0 && (
+                    <ActivityFeed context="candidate" items={feedItems} />
                   )}
                 </Tabs.Item>
                 <Tabs.Item key="transactions" title="Transactions">
@@ -330,7 +330,6 @@ const ProposalCandidateScreenContent = ({
                   <div style={{ padding: "3.2rem 0 1.6rem" }}>
                     <SponsorsTabMainContent
                       candidateId={candidateId}
-                      sponsorFeedItems={sponsorFeedItems}
                       toggleSponsorDialog={toggleSponsorDialog}
                     />
                   </div>
@@ -496,11 +495,8 @@ const ProposalCandidateScreenContent = ({
                       />
                     </div>
 
-                    {regularFeedItems.length !== 0 && (
-                      <ActivityFeed
-                        context="candidate"
-                        items={regularFeedItems}
-                      />
+                    {feedItems.length !== 0 && (
+                      <ActivityFeed context="candidate" items={feedItems} />
                     )}
                   </div>
                 </Tabs.Item>
@@ -535,7 +531,6 @@ const ProposalCandidateScreenContent = ({
                     </div>
                     <SponsorsTabMainContent
                       candidateId={candidateId}
-                      sponsorFeedItems={sponsorFeedItems}
                       toggleSponsorDialog={toggleSponsorDialog}
                     />
                   </div>
@@ -549,12 +544,12 @@ const ProposalCandidateScreenContent = ({
   );
 };
 
-const SponsorsTabMainContent = ({
-  candidateId,
-  sponsorFeedItems,
-  toggleSponsorDialog,
-}) => {
+const SponsorsTabMainContent = ({ candidateId, toggleSponsorDialog }) => {
   const candidate = useProposalCandidate(candidateId);
+
+  const signatures = getSponsorSignatures(candidate, {
+    excludeInvalid: true,
+  });
 
   const { address: connectedWalletAccountAddress } = useWallet();
   const connectedDelegate = useDelegate(connectedWalletAccountAddress);
@@ -565,7 +560,7 @@ const SponsorsTabMainContent = ({
     candidate.latestVersion.proposalId == null &&
     candidate.canceledTimestamp == null;
 
-  if (sponsorFeedItems.length === 0)
+  if (signatures.length === 0)
     return (
       <div
         css={(t) =>
@@ -595,7 +590,131 @@ const SponsorsTabMainContent = ({
 
   return (
     <>
-      <ActivityFeed context="candidate" items={sponsorFeedItems} />
+      <ul
+        css={(t) =>
+          css({
+            listStyle: "none",
+            "li + li": { marginTop: "2rem" },
+            "[data-avatar-button]": {
+              display: "block",
+              outline: "none",
+              ":focus-visible [data-avatar]": {
+                boxShadow: t.shadows.focus,
+                background: t.colors.backgroundModifierHover,
+              },
+              "@media (hover: hover)": {
+                ":not(:disabled)": {
+                  cursor: "pointer",
+                  ":hover [data-avatar]": {
+                    boxShadow: `0 0 0 0.2rem ${t.colors.backgroundModifierHover}`,
+                  },
+                },
+              },
+            },
+          })
+        }
+      >
+        {arrayUtils
+          .sortBy(
+            { value: (s) => s.signer.nounsRepresented.length, order: "desc" },
+            signatures
+          )
+          .map((s) => (
+            <li key={s.createdBlock}>
+              <div
+                css={css({
+                  display: "grid",
+                  gap: "0.6rem",
+                  gridTemplateColumns: "auto minmax(0,1fr) auto",
+                })}
+              >
+                <AccountPreviewPopoverTrigger accountAddress={s.signer.id}>
+                  <button data-avatar-button>
+                    <AccountAvatar
+                      data-avatar
+                      address={s.signer.id}
+                      size="2rem"
+                    />
+                  </button>
+                </AccountPreviewPopoverTrigger>
+                <div>
+                  <AccountPreviewPopoverTrigger accountAddress={s.signer.id} />
+                  <span
+                    css={(t) =>
+                      css({
+                        fontSize: t.text.sizes.small,
+                        color: t.colors.textDimmed,
+                      })
+                    }
+                  >
+                    &nbsp;&middot;{" "}
+                    <FormattedDateWithTooltip
+                      disableRelative
+                      month="short"
+                      day="numeric"
+                      value={s.createdTimestamp}
+                    />
+                  </span>
+                </div>
+
+                <VotingPowerNoggle count={s.signer.nounsRepresented.length} />
+              </div>
+
+              <div css={css({ paddingLeft: "2.6rem", userSelect: "text" })}>
+                {(s.reason || null) != null && (
+                  <React.Suspense fallback={null}>
+                    <div css={css({ margin: "0.5rem 0" })}>
+                      <MarkdownRichText
+                        text={s.reason}
+                        displayImages={false}
+                        compact
+                      />
+                    </div>
+                  </React.Suspense>
+                )}
+
+                <div
+                  css={(t) =>
+                    css({
+                      fontSize: t.text.sizes.small,
+                      color: t.colors.textDimmed,
+                    })
+                  }
+                >
+                  {(() => {
+                    if (s.canceled) return "Canceled";
+
+                    const daysLeftUntilExpiration = datesDifferenceInDays(
+                      s.expirationTimestamp,
+                      new Date()
+                    );
+
+                    if (daysLeftUntilExpiration < -100)
+                      return "Expired >100 days ago";
+
+                    if (daysLeftUntilExpiration > 100)
+                      return "Expires in >100 days";
+
+                    const relativeTimestamp = (
+                      <FormattedDateWithTooltip
+                        capitalize={false}
+                        relativeDayThreshold={Infinity}
+                        value={s.expirationTimestamp}
+                        month="short"
+                        day="numeric"
+                      />
+                    );
+
+                    if (daysLeftUntilExpiration < 0)
+                      return <>Expired {relativeTimestamp}</>;
+
+                    return <>Expires {relativeTimestamp}</>;
+                  })()}
+                </div>
+              </div>
+            </li>
+          ))}
+      </ul>
 
       {showSponsorButton && (
         <div css={css({ marginTop: "3.2rem" })}>
@@ -1034,7 +1153,7 @@ const ProposalCandidateEditDialog = ({ candidateId, titleProps, dismiss }) => {
         </div>
       </footer>
     </form>
-    // </EditorProvider>
+    // </EditorProvider >
   );
 };
 

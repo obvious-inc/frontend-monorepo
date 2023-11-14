@@ -1,4 +1,3 @@
-import datesDifferenceInDays from "date-fns/differenceInCalendarDays";
 import React from "react";
 import { Link as RouterLink } from "react-router-dom";
 import { css } from "@emotion/react";
@@ -153,34 +152,7 @@ const FeedItem = React.memo(({ context, ...item }) => {
                 <Spinner size="1rem" />
               ) : (
                 item.voteCount != null && (
-                  <Tooltip.Root>
-                    <Tooltip.Trigger asChild>
-                      <span
-                        css={(t) =>
-                          css({
-                            display: "flex",
-                            alignItems: "center",
-                            gap: "0.5rem",
-                            fontSize: t.text.sizes.tiny,
-                            color: t.colors.textDimmed,
-                          })
-                        }
-                      >
-                        {item.voteCount}
-                        <NogglesIcon
-                          style={{
-                            display: "inline-flex",
-                            width: "1.7rem",
-                            height: "auto",
-                          }}
-                        />
-                      </span>
-                    </Tooltip.Trigger>
-                    <Tooltip.Content side="top" sideOffset={5}>
-                      {item.voteCount}{" "}
-                      {Number(item.voteCount) === 1 ? "noun" : "nouns"}
-                    </Tooltip.Content>
-                  </Tooltip.Root>
+                  <VotingPowerNoggle count={Number(item.voteCount)} />
                 )
               )}
             </div>
@@ -193,7 +165,7 @@ const FeedItem = React.memo(({ context, ...item }) => {
             <ItemBody text={item.body} displayImages={item.type === "event"} />
           </div>
         )}
-        {item.type === "signature" && (
+        {item.type === "candidate-signature-added" && (
           <div
             css={(t) =>
               css({
@@ -202,17 +174,20 @@ const FeedItem = React.memo(({ context, ...item }) => {
               })
             }
           >
-            Expires{" "}
-            {datesDifferenceInDays(item.expiresAt, new Date()) > 100 ? (
-              "in >100 days"
+            {item.isCanceled ? (
+              "Signature canceled"
             ) : (
-              <FormattedDateWithTooltip
-                capitalize={false}
-                relativeDayThreshold={Infinity}
-                value={item.expiresAt}
-                month="short"
-                day="numeric"
-              />
+              <>
+                {item.expiresAt < new Date()
+                  ? "Signature expired"
+                  : "Signature expires"}{" "}
+                <FormattedDateWithTooltip
+                  capitalize={false}
+                  value={item.expiresAt}
+                  month="short"
+                  day="numeric"
+                />
+              </>
             )}
           </div>
         )}
@@ -572,6 +547,19 @@ const ItemTitle = ({ item, context }) => {
       );
     }
 
+    case "candidate-signature-added":
+      return (
+        <span>
+          {accountName} <Signal positive>sponsored candidate</Signal>
+          {!isIsolatedContext && (
+            <>
+              {" "}
+              <ContextLink truncate {...item} />
+            </>
+          )}
+        </span>
+      );
+
     default:
       throw new Error(`Unknown event type "${item.type}"`);
   }
@@ -597,6 +585,36 @@ const Signal = ({ positive, negative, ...props }) => (
     }}
     {...props}
   />
+);
+
+export const VotingPowerNoggle = ({ count }) => (
+  <Tooltip.Root>
+    <Tooltip.Trigger asChild>
+      <span
+        css={(t) =>
+          css({
+            display: "flex",
+            alignItems: "center",
+            gap: "0.5rem",
+            fontSize: t.text.sizes.tiny,
+            color: t.colors.textDimmed,
+          })
+        }
+      >
+        {count}
+        <NogglesIcon
+          style={{
+            display: "inline-flex",
+            width: "1.7rem",
+            height: "auto",
+          }}
+        />
+      </span>
+    </Tooltip.Trigger>
+    <Tooltip.Content side="top" sideOffset={5}>
+      {count} {count === 1 ? "noun" : "nouns"}
+    </Tooltip.Content>
+  </Tooltip.Root>
 );
 
 export default ActivityFeed;

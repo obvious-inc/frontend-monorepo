@@ -11,26 +11,32 @@ export const makeUrlId = (id) => {
   return `${slug}-${proposerId.slice(2)}`;
 };
 
-export const getValidSponsorSignatures = (candidate) => {
+export const getSponsorSignatures = (
+  candidate,
+  { excludeInvalid = false } = {}
+) => {
   const signatures = candidate?.latestVersion?.content.contentSignatures ?? [];
   return arrayUtils
     .sortBy({ value: (i) => i.expirationTimestamp, order: "desc" }, signatures)
-    .reduce((validSignatures, s) => {
+    .reduce((signatures, s) => {
+      if (!excludeInvalid) return [...signatures, s];
+
       if (
         // Exclude canceled ones...
         s.canceled ||
         // ...expires ones
         s.expirationTimestamp <= new Date() ||
         // ...multiple ones from the same signer with shorter expiration
-        validSignatures.some((s_) => s_.signer.id === s.signer.id)
+        signatures.some((s_) => s_.signer.id === s.signer.id)
       )
         // TODO: exclude signers who have an active or pending proposal
-        return validSignatures;
-      return [...validSignatures, s];
+        return signatures;
+
+      return [...signatures, s];
     }, []);
 };
 
-export const buildFeed = (candidate, { skipSignatures = false } = {}) => {
+export const buildFeed = (candidate) => {
   if (candidate == null) return [];
 
   const candidateId = candidate.id;
@@ -74,34 +80,28 @@ export const buildFeed = (candidate, { skipSignatures = false } = {}) => {
       targetProposalId,
     });
 
-  const sortedItems = arrayUtils.sortBy(
-    { value: (i) => i.blockNumber, order: "desc" },
-    items
-  );
-
-  if (skipSignatures) return sortedItems;
-
-  const signatureItems = getValidSponsorSignatures(candidate).map((s) => ({
-    type: "signature",
+  const signatureItems = getSponsorSignatures(candidate).map((s) => ({
+    type: "candidate-signature-added",
     id: `${s.signer.id}-${s.expirationTimestamp.getTime()}`,
     authorAccount: s.signer.id,
     body: s.reason,
     voteCount: s.signer.nounsRepresented?.length,
+    timestamp: s.createdTimestamp,
+    blockNumber: s.createdBlock,
     expiresAt: s.expirationTimestamp,
+    isCanceled: s.canceled,
     candidateId,
     targetProposalId,
   }));
 
-  const sortedSignatureItems = arrayUtils.sortBy(
-    { value: (i) => i.voteCount, order: "desc" },
-    signatureItems
-  );
-
-  return [...sortedSignatureItems, ...sortedItems];
+  return arrayUtils.sortBy({ value: (i) => i.blockNumber, order: "desc" }, [
+    ...items,
+    ...signatureItems,
+  ]);
 };
 
 export const getSignals = ({ candidate, proposerDelegate }) => {
-  const signatures = getValidSponsorSignatures(candidate);
+  const signatures = getSponsorSignatures(candidate, { excludeInvalid: true });
 
   const proposerDelegateNounIds =
     proposerDelegate?.nounsRepresented.map((n) => n.id) ?? [];

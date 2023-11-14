@@ -43,10 +43,7 @@ export const isVotableState = (state) =>
 export const buildFeed = (proposal, { latestBlockNumber, candidate }) => {
   if (proposal == null) return [];
 
-  const candidateItems =
-    candidate == null
-      ? []
-      : buildCandidateFeed(candidate, { skipSignatures: true });
+  const candidateItems = candidate == null ? [] : buildCandidateFeed(candidate);
 
   const createdEventItem = {
     type: "event",
