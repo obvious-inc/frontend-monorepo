@@ -291,84 +291,60 @@ export const toMarkdown = (blockElements) => {
     return text;
   };
 
-  const renderBlockElement = (
-    el,
-    { index, prefix, indent: indent_ = 0 } = {}
-  ) => {
-    const indent = index === 0 ? "" : "".padStart(indent_, " ");
-
-    const renderInlineChildren = () => {
-      const inlineChildren = el.children.map(renderNode).join("");
-      if (prefix == null) return inlineChildren;
-      return inlineChildren.split("\n").join(`\n${prefix}`);
-    };
+  const renderBlockElement = (el) => {
+    const renderInlineChildren = () => el.children.map(renderNode).join("");
 
     switch (el.type) {
       case "paragraph":
-        return `${indent}${renderInlineChildren()}`;
+        return renderInlineChildren();
 
       case "heading-1":
-        return `${indent}# ${renderInlineChildren()}`;
+        return `# ${renderInlineChildren()}`;
       case "heading-2":
-        return `${indent}## ${renderInlineChildren()}`;
+        return `## ${renderInlineChildren()}`;
       case "heading-3":
-        return `${indent}### ${renderInlineChildren()}`;
+        return `### ${renderInlineChildren()}`;
       case "heading-4":
-        return `${indent}#### ${renderInlineChildren()}`;
+        return `#### ${renderInlineChildren()}`;
 
       case "quote":
       case "callout":
+        // Block children
         if (el.children[0].children != null)
-          return `${indent}> ${el.children
-            .map((el, i) =>
-              renderBlockElement(el, {
-                index: i,
-                prefix: `${indent}> `,
-                indent: indent_,
-              })
-            )
-            .join(`\n>\n${indent}> `)}`;
+          return el.children
+            .map(renderBlockElement)
+            .join("\n\n")
+            .split("\n")
+            .map((line) => `> ${line}`)
+            .join("\n");
 
-        return `${indent}> ${renderInlineChildren()
-          .trim()
-          .split("\n")
-          .join("\n> ")}`;
+        return `> ${renderInlineChildren().trim().split("\n").join("\n> ")}`;
 
       case "bulleted-list":
       case "numbered-list": {
         const isBulletList = el.type === "bulleted-list";
-        const children = el.children.map((el, i, els) => {
-          const listItemPrefix = isBulletList ? "-" : `${i + 1}.`;
-          const renderedListItemChildren = el.children.map((el, i) =>
-            renderBlockElement(el, {
-              index: i,
-              prefix,
-              indent: indent_ + listItemPrefix.length + 1,
-              // indent: i === 0 ? 0 : indent_ + listItemPrefix.length + 1,
-            })
-          );
 
-          // Special case to make nested lists look nicer
-          if (
+        const children = el.children.map((el, i) => {
+          const listItemPrefix = isBulletList ? "-" : `${i + 1}.`;
+          const renderedListItemChildBlocks =
+            el.children.map(renderBlockElement);
+
+          const indentSpace = "".padStart(listItemPrefix.length + 1, " ");
+
+          // Special case to make simple nested lists look bit nicer
+          const skipBlockSpace =
             el.children.length === 2 &&
             el.children[0].type === "paragraph" &&
-            ["bulleted-list", "numbered-list"].includes(el.children[1].type)
-          )
-            return `${indent}${listItemPrefix} ${renderedListItemChildren.join(
-              "\n"
-            )}`;
+            ["bulleted-list", "numbered-list"].includes(el.children[1].type);
 
-          const renderedListItem = `${indent}${listItemPrefix} ${renderedListItemChildren
+          return `${listItemPrefix} ${renderedListItemChildBlocks
             .filter((s) => s.trim() !== "")
-            .join("\n\n")}`;
-
-          if (i !== els.length - 1 && el.children.length > 1)
-            return renderedListItem + "\n";
-
-          return renderedListItem;
+            .join(skipBlockSpace ? "\n" : "\n\n")}`
+            .split("\n")
+            .join(`\n${indentSpace}`);
         });
 
-        return children.join(`\n${prefix}`);
+        return children.join("\n");
       }
 
       case "image-grid":
@@ -376,21 +352,17 @@ export const toMarkdown = (blockElements) => {
         const children = el.children.map(
           (el) => `![${el.text ?? el.url}](${el.url})`
         );
-        return `${indent}${children.join("\n")}`;
+        return children.join("\n");
       }
 
       case "image":
-        return `${indent}![${el.text ?? el.url}](${el.url})`;
+        return `![${el.text ?? el.url}](${el.url})`;
 
       case "horizontal-divider":
-        return `${indent}---`;
+        return "---";
 
-      case "code-block": {
-        const lineIndent = "".padStart(indent_, " ");
-        return `${indent}\`\`\`\n${el.code}\n\`\`\``
-          .split("\n")
-          .join(`\n${prefix}${lineIndent}`);
-      }
+      case "code-block":
+        return `\`\`\`\n${el.code}\n\`\`\``;
 
       default:
         throw new Error(`Unknown element type: "${el.type}"`);
