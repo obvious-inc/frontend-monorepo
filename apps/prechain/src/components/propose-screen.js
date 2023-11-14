@@ -238,8 +238,8 @@ const ProposeScreen = () => {
   const [isEditorFocused, setEditorFocused] = React.useState(false);
   const [editorSelection, setEditorSelection] = React.useState(null);
 
-  const [hasFloatingToolbarFocus, setHasFloatingToolbarFocus] =
-    React.useState(false);
+  const [hasFloatingToolbarFocus, setHasFloatingToolbarFocus] = React.useState(false);
+  const [hasFixedToolbarFocus, setHasFixedToolbarFocus] = React.useState(false);
 
   const isFloatingToolbarVisible =
     !isTouchDevice() &&
@@ -851,9 +851,15 @@ const ProposeScreen = () => {
                     />
                     <FixedBottomToolbar
                       isVisible={
-                        isEditorFocused &&
+                        (isEditorFocused || hasFixedToolbarFocus) &&
                         (isTouchDevice() || !isFloatingToolbarVisible)
                       }
+                      onFocus={() => {
+                        setHasFixedToolbarFocus(true);
+                      }}
+                      onBlur={() => {
+                        setHasFixedToolbarFocus(false);
+                      }}
                     />
                   </>
                 )}
@@ -1211,7 +1217,7 @@ const FloatingToolbar = ({
   );
 };
 
-const FixedBottomToolbar = ({ isVisible = false }) => {
+const FixedBottomToolbar = ({ isVisible = false, onFocus, onBlur }) => {
   const ref = React.useRef();
 
   // Fix to top of soft keyboard on touch devices
@@ -1308,7 +1314,7 @@ const FixedBottomToolbar = ({ isVisible = false }) => {
         }
       >
         <div data-box>
-          <EditorToolbar />
+          <EditorToolbar onFocus={onFocus} onBlur={onBlur} />
         </div>
       </nav>
 
