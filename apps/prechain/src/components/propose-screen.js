@@ -1,7 +1,7 @@
 import getDateYear from "date-fns/getYear";
 import React from "react";
 import { useParams, useNavigate, useSearchParams } from "react-router-dom";
-import { parseEther, parseUnits } from "viem";
+import { parseEther, parseUnits, parseAbiItem } from "viem";
 import { useAccount } from "wagmi";
 import { css, Global as GlobalStyles } from "@emotion/react";
 import {
@@ -14,10 +14,10 @@ import {
   markdown as markdownUtils,
   isTouchDevice,
 } from "@shades/common/utils";
-import { useAccountDisplayName } from "@shades/common/app";
 import {
   Plus as PlusIcon,
   TrashCan as TrashCanIcon,
+  CaretDown as CaretDownIcon,
 } from "@shades/ui-web/icons";
 import Button from "@shades/ui-web/button";
 import Select from "@shades/ui-web/select";
@@ -29,6 +29,12 @@ import RichTextEditor, {
   toMessageBlocks as richTextToMessageBlocks,
   fromMessageBlocks as messageToRichTextBlocks,
 } from "@shades/ui-web/rich-text-editor";
+import {
+  parse as parseTransactions,
+  unparse as unparseTransactions,
+} from "../utils/transactions.js";
+import { useContract } from "../contracts.js";
+import useChainId from "../hooks/chain-id.js";
 import {
   useCollection as useDrafts,
   useSingleItem as useDraft,
@@ -45,7 +51,13 @@ import Layout, { MainContentContainer } from "./layout.js";
 import FormattedDate from "./formatted-date.js";
 import FormattedNumber from "./formatted-number.js";
 import AccountPreviewPopoverTrigger from "./account-preview-popover-trigger.js";
-import { TransactionExplanation } from "./transaction-list.js";
+import {
+  useEnhancedParsedTransaction,
+  TransactionExplanation,
+  FunctionCallCodeBlock,
+  UnparsedFunctionCallCodeBlock,
+  AddressDisplayNameWithTooltip,
+} from "./transaction-list.js";
 import ActionDialog from "./action-dialog.js";
 import { Overlay } from "react-aria";
 
@@ -71,93 +83,119 @@ const retryPromise = (fn, { retries = 3, timeout = 1000 } = {}) =>
     });
   });
 
-const getActionTransactions = (a) => {
-  switch (a.type) {
-    case "one-time-payment": {
-      switch (a.currency) {
-        case "eth":
-          return [
-            {
-              type: "transfer",
-              target: a.target,
-              value: parseEther(String(a.amount)),
-            },
-          ];
+const getActionTransactions = (a, { chainId }) => {
+  const getParsedTransactions = () => {
+    switch (a.type) {
+      case "one-time-payment": {
+        switch (a.currency) {
+          case "eth":
+            return [
+              {
+                type: "transfer",
+                target: a.target,
+                value: parseEther(a.amount),
+              },
+            ];
 
-        case "usdc":
-          return [
-            {
-              type: "usdc-transfer-via-payer",
-              receiverAddress: a.target,
-              usdcAmount: parseUnits(String(a.amount), 6),
-            },
-          ];
+          case "usdc":
+            return [
+              {
+                type: "usdc-transfer-via-payer",
+                receiverAddress: a.target,
+                usdcAmount: parseUnits(a.amount, 6),
+              },
+            ];
 
-        default:
-          throw new Error();
+          default:
+            throw new Error();
+        }
       }
-    }
 
-    case "streaming-payment": {
-      const formattedAmount = String(a.amount);
+      case "streaming-payment": {
+        const createStreamTransaction = {
+          type: "stream",
+          receiverAddress: a.target,
+          token: a.currency.toUpperCase(),
+          tokenAmount: parseUnits(a.amount, decimalsByCurrency[a.currency]),
+          startDate: new Date(a.startTimestamp),
+          endDate: new Date(a.endTimestamp),
+          streamContractAddress: a.predictedStreamContractAddress,
+        };
 
-      const createStreamTransaction = {
-        type: "stream",
-        receiverAddress: a.target,
-        token: a.currency.toUpperCase(),
-        tokenAmount: parseUnits(
-          formattedAmount,
-          decimalsByCurrency[a.currency]
-        ),
-        startDate: new Date(a.startTimestamp),
-        endDate: new Date(a.endTimestamp),
-        streamContractAddress: a.predictedStreamContractAddress,
-      };
+        switch (a.currency) {
+          case "weth":
+            return [
+              createStreamTransaction,
+              {
+                type: "weth-deposit",
+                value: parseUnits(a.amount, decimalsByCurrency.eth),
+              },
+              {
+                type: "weth-transfer",
+                receiverAddress: a.predictedStreamContractAddress,
+                wethAmount: parseUnits(a.amount, decimalsByCurrency.weth),
+              },
+            ];
 
-      switch (a.currency) {
-        case "weth":
-          return [
-            createStreamTransaction,
-            {
-              type: "weth-deposit",
-              value: parseUnits(formattedAmount, decimalsByCurrency.eth),
-            },
-            {
-              type: "weth-transfer",
-              receiverAddress: a.predictedStreamContractAddress,
-              wethAmount: parseUnits(formattedAmount, decimalsByCurrency.weth),
-            },
-          ];
+          case "usdc":
+            return [
+              createStreamTransaction,
+              {
+                type: "usdc-transfer-via-payer",
+                receiverAddress: a.predictedStreamContractAddress,
+                usdcAmount: parseUnits(a.amount, decimalsByCurrency.usdc),
+              },
+            ];
 
-        case "usdc":
-          return [
-            createStreamTransaction,
-            {
-              type: "usdc-transfer-via-payer",
-              receiverAddress: a.predictedStreamContractAddress,
-              usdcAmount: parseUnits(formattedAmount, decimalsByCurrency.usdc),
-            },
-          ];
-
-        default:
-          throw new Error();
+          default:
+            throw new Error();
+        }
       }
+
+      case "custom-transaction": {
+        const {
+          name: functionName,
+          inputs: inputTypes,
+          stateMutability,
+        } = parseAbiItem(a.contractCallFormattedTargetAbiItem);
+        const functionInputs = a.contractCallArguments.map((value, i) => ({
+          ...inputTypes[i],
+          value,
+        }));
+
+        // parseEther fails if we don’t
+        const { contractCallEthValue } = a;
+
+        if (stateMutability === "payable")
+          return [
+            {
+              type: "payable-function-call",
+              target: a.contractCallTargetAddress,
+              functionName,
+              functionInputs,
+              value: parseEther(contractCallEthValue),
+            },
+          ];
+
+        return [
+          {
+            type: "function-call",
+            target: a.contractCallTargetAddress,
+            functionName,
+            functionInputs,
+          },
+        ];
+      }
+
+      default:
+        throw new Error();
     }
+  };
 
-    case "custom-transaction":
-      return [
-        {
-          type: "unparsed-function-call",
-          target: a.contractAddress,
-          signature: "",
-          calldata: "0x",
-          value: "0",
-        },
-      ];
-
-    default:
-      throw new Error();
-  }
+  return parseTransactions(
+    unparseTransactions(getParsedTransactions(), { chainId }),
+    { chainId }
+  );
 };
 
 const useEditorMode = (draft, { setBody }) => {
@@ -190,6 +228,7 @@ const useEditorMode = (draft, { setBody }) => {
 const ProposeScreen = () => {
   const { draftId } = useParams();
   const navigate = useNavigate();
+  const chainId = useChainId();
 
   const editorRef = React.useRef();
   const editor = editorRef.current;
@@ -286,7 +325,7 @@ const ProposeScreen = () => {
     const description = `# ${draft.name.trim()}\n\n${bodyMarkdown}`;
 
     const transactions = draft.actions.flatMap((a) => {
-      const actionTransactions = getActionTransactions(a);
+      const actionTransactions = getActionTransactions(a, { chainId });
 
       if (tokenBuyerTopUpValue > 0)
         return [
@@ -388,9 +427,10 @@ const ProposeScreen = () => {
                   css={(t) =>
                     css({
                       "@media (min-width: 952px)": {
+                        position: "relative",
                         display: "flex",
                         flexDirection: "column",
-                        height: `calc(100vh - ${t.navBarHeight})`,
+                        minHeight: `calc(100vh - ${t.navBarHeight})`,
                       },
                     })
                   }
@@ -404,7 +444,7 @@ const ProposeScreen = () => {
                         padding: "3.2rem 0",
                       },
                       "@media (min-width: 952px)": {
-                        padding: "6rem 0 12rem",
+                        padding: "6rem 0 3,2rem",
                       },
                     })}
                   >
@@ -416,7 +456,7 @@ const ProposeScreen = () => {
                             fontSize: t.text.sizes.small,
                             fontWeight: t.text.weights.emphasis,
                             color: t.colors.textMuted,
-                            margin: "0 0 1.4rem",
+                            margin: "0 0 1.6rem",
                           })
                         }
                       >
@@ -427,29 +467,44 @@ const ProposeScreen = () => {
                       <ol
                         css={(t) =>
                           css({
-                            listStyle: "none",
                             padding: 0,
                             margin: 0,
-                            "li + li": { marginTop: "1.6rem" },
-                            "li > button": {
-                              padding: "1.4rem 1.6rem",
-                              borderRadius: "0.3rem",
-                              display: "block",
-                              width: "100%",
-                              border: "0.1rem solid",
-                              borderColor: t.colors.borderLight,
-                              outline: "none",
-                              ":focus-visible": { boxShadow: t.shadows.focus },
-                              a: { color: t.colors.textDimmed },
-                              em: {
-                                fontStyle: "normal",
-                                fontWeight: t.text.weights.emphasis,
-                                color: t.colors.textDimmed,
-                              },
-                              "@media(hover: hover)": {
-                                cursor: "pointer",
-                                ":hover": {
-                                  background: t.colors.backgroundModifierHover,
+                            paddingLeft: "2.4rem",
+                            "li + li": { marginTop: "2.4rem" },
+                            "ul[data-transaction-list]": {
+                              marginTop: "1.2rem",
+                              listStyle: "none",
+                              li: { position: "relative" },
+                              "li + li": { marginTop: "1rem" },
+                              '&[data-branch="true"]': {
+                                paddingLeft: "2.4rem",
+                                "li:before, li:after": {
+                                  position: "absolute",
+                                  content: '""',
+                                  display: "block",
+                                },
+                                "li:not(:last-of-type):before": {
+                                  left: "-1.6rem",
+                                  height: "calc(100% + 1rem)",
+                                  borderLeft: "0.1rem solid",
+                                  borderColor: t.colors.borderLight,
+                                },
+                                "li:not(:last-of-type):after": {
+                                  top: "1.8rem",
+                                  left: "-1.5rem",
+                                  width: "0.8rem",
+                                  borderBottom: "0.1rem solid",
+                                  borderColor: t.colors.borderLight,
+                                },
+                                "li:last-of-type:before": {
+                                  top: 0,
+                                  left: "-1.6rem",
+                                  height: "1.8rem",
+                                  width: "0.8rem",
+                                  borderLeft: "0.1rem solid",
+                                  borderBottomLeftRadius: "0.2rem",
+                                  borderBottom: "0.1rem solid",
+                                  borderColor: t.colors.borderLight,
                                 },
                               },
                             },
@@ -460,28 +515,47 @@ const ProposeScreen = () => {
                           .filter((a) => a.type != null)
                           .map((a, i) => {
                             return (
-                              <li key={i}>
-                                <button
-                                  type="button"
-                                  onClick={() => {
+                              <li key={`${a.type}-${i}`}>
+                                <ActionListItem
+                                  action={a}
+                                  openEditDialog={() => {
                                     setSelectedActionIndex(i);
-                                    // setTransactions(
-                                    //   draft.transactions.filter(
-                                    //     (_, index) => index !== i
-                                    //   )
-                                    // );
                                   }}
-                                >
-                                  <ActionExplanation action={a} />
-                                </button>
+                                />
                               </li>
                             );
                           })}
+
+                        {tokenBuyerTopUpValue > 0 && (
+                          <li>
+                            <ActionListItem
+                              action={{
+                                type: "token-buyer-top-up",
+                                value: tokenBuyerTopUpValue,
+                              }}
+                              transactions={parseTransactions(
+                                unparseTransactions(
+                                  [
+                                    {
+                                      type: "token-buyer-top-up",
+                                      value: tokenBuyerTopUpValue,
+                                    },
+                                  ],
+                                  { chainId }
+                                ),
+                                { chainId }
+                              )}
+                            />
+                          </li>
+                        )}
                       </ol>
                     )}
 
                     <div
-                      style={{ marginTop: hasActions ? "1.6rem" : undefined }}
+                      style={{
+                        marginTop: hasActions ? "2.8rem" : undefined,
+                        paddingLeft: hasActions ? "2.4rem" : undefined,
+                      }}
                     >
                       <Button
                         type="button"
@@ -502,68 +576,84 @@ const ProposeScreen = () => {
                     </div>
                   </div>
 
-                  <div
-                    style={{
-                      padding: "1.6rem 0",
-                      display: "flex",
-                      gap: "1rem",
-                    }}
-                  >
-                    <Button
-                      danger
-                      size="medium"
-                      type="button"
-                      onClick={() => {
-                        if (
-                          !confirm(
-                            "Are you sure you wish to discard this proposal?"
-                          )
-                        )
-                          return;
-
-                        deleteDraft(draftId).then(() => {
-                          navigate("/", { replace: true });
-                        });
-                      }}
-                      icon={<TrashCanIcon style={{ width: "1.4rem" }} />}
+                  <div css={css({ position: "sticky", bottom: 0 })}>
+                    <div
+                      css={(t) =>
+                        css({
+                          height: "1.6rem",
+                          background: `linear-gradient(180deg, transparent 0, ${t.colors.backgroundPrimary})`,
+                        })
+                      }
                     />
                     <div
-                      style={{
-                        flex: 1,
-                        minWidth: 0,
-                        display: "flex",
-                        gap: "1rem",
-                        justifyContent: "flex-end",
-                      }}
+                      css={(t) =>
+                        css({
+                          padding: "0 0 1.6rem",
+                          display: "flex",
+                          gap: "1rem",
+                          background: t.colors.backgroundPrimary,
+                        })
+                      }
                     >
-                      <Select
-                        aria-label="Draft type"
-                        value={draftTargetType}
-                        options={[
-                          { value: "candidate", label: "Create as candidate" },
-                          {
-                            value: "proposal",
-                            label: "Create as proposal",
-                            disabled: !canCreateProposal,
-                          },
-                        ]}
-                        onChange={(value) => {
-                          setDraftTargetType(value);
-                        }}
-                        size="medium"
-                        align="center"
-                        width="max-content"
-                        fullWidth={false}
-                      />
                       <Button
-                        type="submit"
-                        variant="primary"
+                        danger
                         size="medium"
-                        isLoading={hasPendingRequest}
-                        disabled={!hasRequiredInput || hasPendingRequest}
+                        type="button"
+                        onClick={() => {
+                          if (
+                            !confirm(
+                              "Are you sure you wish to discard this proposal?"
+                            )
+                          )
+                            return;
+
+                          deleteDraft(draftId).then(() => {
+                            navigate("/", { replace: true });
+                          });
+                        }}
+                        icon={<TrashCanIcon style={{ width: "1.4rem" }} />}
+                      />
+                      <div
+                        style={{
+                          flex: 1,
+                          minWidth: 0,
+                          display: "flex",
+                          gap: "1rem",
+                          justifyContent: "flex-end",
+                        }}
                       >
-                        Submit
-                      </Button>
+                        <Select
+                          aria-label="Draft type"
+                          value={draftTargetType}
+                          options={[
+                            {
+                              value: "candidate",
+                              label: "Create as candidate",
+                            },
+                            {
+                              value: "proposal",
+                              label: "Create as proposal",
+                              disabled: !canCreateProposal,
+                            },
+                          ]}
+                          onChange={(value) => {
+                            setDraftTargetType(value);
+                          }}
+                          size="medium"
+                          align="center"
+                          width="max-content"
+                          fullWidth={false}
+                        />
+                        <Button
+                          type="submit"
+                          variant="primary"
+                          size="medium"
+                          isLoading={hasPendingRequest}
+                          disabled={!hasRequiredInput || hasPendingRequest}
+                        >
+                          Submit
+                        </Button>
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -657,7 +747,6 @@ const ProposeScreen = () => {
                   >
                     By{" "}
                     <AccountPreviewPopoverTrigger
-                      // showAvatar
                       accountAddress={connectedAccountAddress}
                     />
                   </div>
@@ -797,11 +886,16 @@ const ProposeScreen = () => {
           initialTarget={selectedAction.target}
           initialStreamStartTimestamp={selectedAction.startTimestamp}
           initialStreamEndTimestamp={selectedAction.endTimestamp}
-          initialContractAddress={selectedAction.contractAddress}
-          initialContractFunction={selectedAction.contractFunction}
-          initialContractFunctionInput={selectedAction.contractFunctionInput}
-          initialContractCustomAbiString={
-            selectedAction.contractCustomAbiString
+          initialContractCallTargetAddress={
+            selectedAction.contractCallTargetAddress
+          }
+          initialContractCallFormattedTargetAbiItem={
+            selectedAction.contractCallFormattedTargetAbiItem
+          }
+          initialContractCallArguments={selectedAction.contractCallArguments}
+          initialContractCallEthValue={selectedAction.contractCallEthValue}
+          initialContractCallCustomAbiString={
+            selectedAction.contractCallCustomAbiString
           }
         />
       )}
@@ -818,6 +912,209 @@ const ProposeScreen = () => {
           }}
           submitButtonLabel="Add"
         />
+      )}
+    </>
+  );
+};
+
+const ActionListItem = ({ action: a, transactions, openEditDialog }) => {
+  const chainId = useChainId();
+  const actionTransactions =
+    transactions ?? getActionTransactions(a, { chainId });
+
+  const daoTokenBuyerContract = useContract("token-buyer");
+  const daoPayerContract = useContract("payer");
+  const wethTokenContract = useContract("weth-token");
+
+  const [isExpanded, setExpanded] = React.useState(
+    a.type === "custom-transaction"
+  );
+
+  const renderTransactionComment = (t) => {
+    switch (t.type) {
+      case "usdc-transfer-via-payer":
+        return (
+          <>
+            USDC is transfered from the{" "}
+            <AddressDisplayNameWithTooltip address={t.target}>
+              DAO Payer Contract
+            </AddressDisplayNameWithTooltip>
+            .
+          </>
+        );
+
+      case "stream":
+        return <>This transaction initiates a new stream contract.</>;
+
+      case "usdc-stream-funding-via-payer":
+        return (
+          <>
+            This funds the stream with the requested USDC amount, via the{" "}
+            <AddressDisplayNameWithTooltip address={daoPayerContract.address}>
+              Nouns Payer Contract
+            </AddressDisplayNameWithTooltip>
+            .
+          </>
+        );
+
+      case "weth-deposit":
+        if (a.type !== "streaming-payment") return null;
+        return (
+          <>
+            To fund the stream with WETH, the requested funds must first be
+            deposited to the{" "}
+            <AddressDisplayNameWithTooltip address={wethTokenContract.address}>
+              WETH token contract
+            </AddressDisplayNameWithTooltip>
+            .
+          </>
+        );
+
+      case "weth-stream-funding":
+        return (
+          <>
+            After the deposit is done, the funds are transfered to the stream
+            contract.
+          </>
+        );
+
+      case "proxied-function-call":
+      case "function-call":
+      case "payable-function-call":
+      case "proxied-payable-function-call":
+      case "transfer":
+      case "weth-transfer":
+      case "weth-approval":
+      case "token-buyer-top-up":
+        return null;
+
+      case "unparsed-function-call":
+      case "unparsed-payable-function-call":
+        throw new Error();
+
+      default:
+        throw new Error(`Unknown transaction type: "${t.type}"`);
+    }
+  };
+
+  return (
+    <>
+      <div
+        css={(t) =>
+          css({
+            a: { color: t.colors.textDimmed },
+            em: {
+              fontStyle: "normal",
+              fontWeight: t.text.weights.emphasis,
+              color: t.colors.textDimmed,
+            },
+          })
+        }
+      >
+        <ActionSummary action={a} />
+      </div>
+      {a.type === "token-buyer-top-up" && (
+        <div
+          css={(t) =>
+            css({
+              a: { color: "currentcolor" },
+              fontSize: t.text.sizes.small,
+              color: t.colors.textDimmed,
+              padding: "0.4rem 0",
+            })
+          }
+        >
+          This transaction is automatically added to refill the{" "}
+          <AddressDisplayNameWithTooltip address={daoPayerContract.address}>
+            Payer Contract
+          </AddressDisplayNameWithTooltip>{" "}
+          with USDC, via the{" "}
+          <AddressDisplayNameWithTooltip
+            address={daoTokenBuyerContract.address}
+          >
+            DAO Token Buyer
+          </AddressDisplayNameWithTooltip>
+          .
+        </div>
+      )}
+      <div
+        css={css({
+          marginTop: "0.6rem",
+          display: "flex",
+          gap: "0.8rem",
+        })}
+      >
+        {openEditDialog != null && (
+          <Button
+            variant="default-opaque"
+            size="tiny"
+            onClick={() => {
+              openEditDialog();
+            }}
+            css={(t) =>
+              css({
+                color: t.colors.textDimmed,
+              })
+            }
+          >
+            Edit
+          </Button>
+        )}
+
+        <Button
+          variant="default-opaque"
+          size="tiny"
+          onClick={() => {
+            setExpanded((s) => !s);
+          }}
+          css={(t) =>
+            css({
+              color: t.colors.textDimmed,
+            })
+          }
+          iconRight={
+            <CaretDownIcon
+              style={{
+                width: "0.85rem",
+                transform: isExpanded ? "scaleY(-1)" : undefined,
+              }}
+            />
+          }
+        >
+          {isExpanded ? "Hide" : "Show"}{" "}
+          {actionTransactions.length === 1
+            ? "transaction"
+            : `transactions (${actionTransactions.length})`}
+        </Button>
+      </div>
+
+      {isExpanded && (
+        <ul data-transaction-list data-branch={actionTransactions.length > 1}>
+          {actionTransactions.map((t, i) => {
+            const comment = renderTransactionComment(t);
+            return (
+              <li key={i}>
+                <TransactionCodeBlock transaction={t} />
+
+                {comment != null && (
+                  <div
+                    css={(t) =>
+                      css({
+                        a: { color: "currentcolor" },
+                        fontSize: t.text.sizes.small,
+                        color: t.colors.textDimmed,
+                        marginTop: "0.6rem",
+                        paddingBottom: "0.8rem",
+                      })
+                    }
+                  >
+                    {comment}
+                  </div>
+                )}
+              </li>
+            );
+          })}
+        </ul>
       )}
     </>
   );
@@ -1036,8 +1333,8 @@ const currencyFractionDigits = {
   usdc: [2, 2],
 };
 
-const ActionExplanation = ({ action: a }) => {
-  const { displayName: targetDisplayName } = useAccountDisplayName(a.target);
+const ActionSummary = ({ action: a }) => {
+  const chainId = useChainId();
 
   switch (a.type) {
     case "one-time-payment": {
@@ -1049,13 +1346,16 @@ const ActionExplanation = ({ action: a }) => {
           Transfer{" "}
           <em>
             <FormattedNumber
-              value={a.amount}
+              value={BigInt(a.amount)}
               minimumFractionDigits={minimumFractionDigits}
               maximumFractionDigits={maximumFractionDigits}
             />{" "}
             {a.currency.toUpperCase()}
           </em>{" "}
-          to <em>{targetDisplayName}</em>
+          to{" "}
+          <em>
+            <AddressDisplayNameWithTooltip address={a.target} />
+          </em>
         </>
       );
     }
@@ -1069,13 +1369,17 @@ const ActionExplanation = ({ action: a }) => {
           Stream{" "}
           <em>
             <FormattedNumber
-              value={a.amount}
+              value={BigInt(a.amount)}
               minimumFractionDigits={minimumFractionDigits}
               maximumFractionDigits={maximumFractionDigits}
             />{" "}
             {a.currency.toUpperCase()}
           </em>{" "}
-          to <em>{targetDisplayName}</em> between{" "}
+          to{" "}
+          <em>
+            <AddressDisplayNameWithTooltip address={a.target} />
+          </em>{" "}
+          between{" "}
           <em>
             <FormattedDate
               value={a.startTimestamp}
@@ -1101,57 +1405,59 @@ const ActionExplanation = ({ action: a }) => {
       );
     }
 
-    // case "monthly-payment": {
-    //   const formattedUnits = formatUnits(
-    //     t.tokenAmount,
-    //     decimalsByCurrency[t.token]
-    //   );
-    //   // TODO: handle unknown token contract
-    //   return (
-    //     <>
-    //       Stream{" "}
-    //       {t.token != null && (
-    //         <>
-    //           <em>
-    //             {t.token === "USDC"
-    //               ? parseFloat(formattedUnits).toLocaleString()
-    //               : formattedUnits}{" "}
-    //             {t.token}
-    //           </em>{" "}
-    //         </>
-    //       )}
-    //       to{" "}
-    //       <em>
-    //         <AddressDisplayNameWithTooltip address={t.receiverAddress} />
-    //       </em>{" "}
-    //       between{" "}
-    //       <FormattedDateWithTooltip
-    //         disableRelative
-    //         day="numeric"
-    //         month="short"
-    //         year="numeric"
-    //         value={t.startDate}
-    //       />{" "}
-    //       and{" "}
-    //       <FormattedDateWithTooltip
-    //         disableRelative
-    //         day="numeric"
-    //         month="short"
-    //         year="numeric"
-    //         value={t.endDate}
-    //       />{" "}
-    //       ({datesDifferenceInMonths(t.endDate, t.startDate)} months)
-    //     </>
-    //   );
-    // }
-
     case "custom-transaction":
       return (
-        <TransactionExplanation transaction={getActionTransactions(a)[0]} />
+        <TransactionExplanation
+          transaction={getActionTransactions(a, { chainId })[0]}
+        />
+      );
+
+    case "token-buyer-top-up":
+      return (
+        <TransactionExplanation
+          transaction={{ type: "token-buyer-top-up", value: a.amount }}
+        />
       );
 
     default:
       throw new Error(`Unknown action type: "${a.type}"`);
+  }
+};
+
+const TransactionCodeBlock = ({ transaction }) => {
+  const t = useEnhancedParsedTransaction(transaction);
+
+  switch (t.type) {
+    case "weth-transfer":
+    case "weth-deposit":
+    case "weth-approval":
+    case "stream":
+    case "usdc-stream-funding-via-payer":
+    case "weth-stream-funding":
+    case "usdc-transfer-via-payer":
+    case "function-call":
+    case "payable-function-call":
+    case "proxied-function-call":
+    case "proxied-payable-function-call":
+      return (
+        <FunctionCallCodeBlock
+          target={t.target}
+          name={t.functionName}
+          inputs={t.functionInputs}
+          value={t.value}
+        />
+      );
+
+    case "transfer":
+    case "token-buyer-top-up":
+      return <UnparsedFunctionCallCodeBlock transaction={t} />;
+
+    case "unparsed-function-call":
+    case "unparsed-payable-function-call":
+      return <UnparsedFunctionCallCodeBlock transaction={t} />;
+
+    default:
+      throw new Error(`Unknown transaction type: "${t.type}"`);
   }
 };
 

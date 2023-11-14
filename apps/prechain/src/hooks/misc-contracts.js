@@ -17,5 +17,5 @@ export const useTokenBuyerEthNeeded = (additionalUsdcTokens) => {
     enabled: additionalUsdcTokens != null,
   });
 
-  return data == null ? null : Number(data);
+  return data;
 };

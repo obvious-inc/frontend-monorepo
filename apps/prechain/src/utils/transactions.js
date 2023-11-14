@@ -1,3 +1,4 @@
+import { formatAbiParameters } from "abitype";
 import { decodeAbiParameters, encodeAbiParameters, parseAbiItem } from "viem";
 import { resolveAddress, resolveIdentifier } from "../contracts.js";
 
@@ -252,7 +253,11 @@ export const unparse = (transactions, { chainId }) => {
             ),
           });
 
-        case "stream":
+        case "stream": {
+          const tokenContract = resolveIdentifier(
+            chainId,
+            `${t.token.toLowerCase()}-token`
+          );
           return append({
             target: nounsStreamFactoryContract.address,
             value: "0",
@@ -270,8 +275,7 @@ export const unparse = (transactions, { chainId }) => {
               [
                 t.receiverAddress,
                 t.tokenAmount,
-                resolveIdentifier(chainId, `${t.token.toLowerCase()}-token`)
-                  .address,
+                tokenContract.address,
                 t.startDate.getTime() / 1000,
                 t.endDate.getTime() / 1000,
                 0,
@@ -279,19 +283,22 @@ export const unparse = (transactions, { chainId }) => {
               ]
             ),
           });
+        }
 
         case "function-call":
+        case "payable-function-call": {
+          const formattedInputs = formatAbiParameters(t.functionInputs);
+          const signature = `${t.functionName}(${formattedInputs})`;
           return append({
             target: t.target,
-            value: "0",
-            signature: `${t.functionName}(${t.functionInputs
-              .map((i) => i.type)
-              .join(",")})`,
+            value: t.type === "payable-function-call" ? t.value : "0",
+            signature,
             calldata: encodeAbiParameters(
-              t.functionInputs.map((i) => ({ type: i.type })),
+              t.functionInputs,
               t.functionInputs.map((i) => i.value)
             ),
           });
+        }
 
         case "unparsed-function-call":
         case "unparsed-payable-function-call":

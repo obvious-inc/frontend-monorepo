@@ -12,6 +12,20 @@ import useDecodedFunctionData from "../hooks/decoded-function-data.js";
 import FormattedDateWithTooltip from "./formatted-date-with-tooltip.js";
 import { useContract } from "../contracts.js";
 
+const formatTuple = (obj) => {
+  const formattedEntries = Object.entries(obj).reduce((acc, [key, value]) => {
+    const formattedValue = (() => {
+      if (value.toString() === "[object Object]") return formatTuple(value);
+      return typeof value === "string" ? `"${value}"` : value;
+    })();
+
+    if (acc == null) return `${key}: ${formattedValue}`;
+    return `${acc}, ${key}: ${formattedValue}`;
+  }, null);
+
+  return `(${formattedEntries})`;
+};
+
 const decimalsByCurrency = {
   ETH: 18,
   WETH: 18,
@@ -21,7 +35,7 @@ const decimalsByCurrency = {
 const createEtherscanAddressUrl = (address) =>
   `https://etherscan.io/address/${address}`;
 
-const useEnhancedParsedTransaction = (transaction) => {
+export const useEnhancedParsedTransaction = (transaction) => {
   const { type, target, calldata, value } = transaction;
   const isUnparsed = [
     "unparsed-function-call",
@@ -106,29 +120,7 @@ const ListItem = ({ transaction }) => {
 
       case "unparsed-function-call":
       case "unparsed-payable-function-call":
-        return (
-          <Code block>
-            <span data-identifier>contract</span>:{" "}
-            <span data-argument>{t.target}</span>
-            <br />
-            {t.signature != null && (
-              <>
-                <span data-identifier>signature</span>:{" "}
-                <span data-argument>{t.signature}</span>
-                <br />
-              </>
-            )}
-            <span data-identifier>calldata</span>:{" "}
-            <span data-argument>{t.calldata}</span>
-            {t.value > 0 && (
-              <>
-                <br />
-                <span data-identifier>ETH</span>:{" "}
-                <span data-argument>{formatEther(t.value)}</span>
-              </>
-            )}
-          </Code>
-        );
+        return <UnparsedFunctionCallCodeBlock transaction={t} />;
 
       case "transfer":
       case "usdc-transfer-via-payer":
@@ -336,11 +328,10 @@ const ListItem = ({ transaction }) => {
   );
 };
 
-const FunctionCallCodeBlock = ({ target, name, inputs, value }) => (
+export const FunctionCallCodeBlock = ({ target, name, inputs, value }) => (
   <Code block>
     <AddressDisplayNameWithTooltip address={target} data-identifier>
       {ethereumUtils.truncateAddress(target)}
-      {/* contract */}
     </AddressDisplayNameWithTooltip>
     .
     <Tooltip.Root
@@ -358,7 +349,7 @@ const FunctionCallCodeBlock = ({ target, name, inputs, value }) => (
       </Tooltip.Content>
     </Tooltip.Root>
     (
-    {(inputs.length > 0 || value > 0) && (
+    {inputs.length > 0 && (
       <>
         <br />
         {inputs.map((input, i, inputs) => (
@@ -368,7 +359,7 @@ const FunctionCallCodeBlock = ({ target, name, inputs, value }) => (
               <>
                 [
                 {input.value.map((item, i, items) => (
-                  <React.Fragment key={item.toString()}>
+                  <React.Fragment key={i}>
                     <span data-argument>
                       {input.type === "address[]" ? (
                         <a
@@ -378,6 +369,8 @@ const FunctionCallCodeBlock = ({ target, name, inputs, value }) => (
                         >
                           {item}
                         </a>
+                      ) : item.toString() === "[object Object]" ? (
+                        formatTuple(item)
                       ) : (
                         item.toString()
                       )}
@@ -397,35 +390,75 @@ const FunctionCallCodeBlock = ({ target, name, inputs, value }) => (
                   >
                     {input.value}
                   </a>
+                ) : input.type === "string" ? (
+                  `"${input.value}"`
                 ) : (
                   input.value.toString()
                 )}
               </span>
             )}
-            {(i !== inputs.length - 1 || value > 0) && (
-              <>
-                ,<br />
-              </>
-            )}
+            {i !== inputs.length - 1 && <>,</>}
+            <br />
           </React.Fragment>
         ))}
-        {value > 0 && (
-          <span data-argument>
-            &nbsp;&nbsp;{value.toString()}{" "}
-            <span data-comment>
-              {"// "}
-              {formatEther(value)} ETH
-            </span>
-          </span>
-        )}
-        <br />
       </>
     )}
     )
+    {value > 0 && (
+      <>
+        <br />
+        <span data-identifier>value:</span>
+        <span data-argument>
+          &nbsp;{value.toString()}{" "}
+          <span data-comment>
+            {"// "}
+            {formatEther(value)} ETH
+          </span>
+        </span>
+      </>
+    )}
+  </Code>
+);
+
+export const UnparsedFunctionCallCodeBlock = ({ transaction: t }) => (
+  <Code block>
+    <span data-identifier>target</span>:{" "}
+    <span data-argument>
+      <AddressDisplayNameWithTooltip address={t.target} data-identifier>
+        {t.target}
+      </AddressDisplayNameWithTooltip>
+    </span>
+    {t.signature != null && (
+      <>
+        <br />
+        <span data-identifier>signature</span>:{" "}
+        <span data-argument>{t.signature}</span>
+      </>
+    )}
+    {t.calldata != null && (
+      <>
+        <br />
+        <span data-identifier>calldata</span>:{" "}
+        <span data-argument>{t.calldata}</span>
+      </>
+    )}
+    {t.value > 0 && (
+      <>
+        <br />
+        <span data-identifier>value</span>:{" "}
+        <span data-argument>{t.value.toString()}</span>
+        <span data-comment>
+          {" // "}
+          <FormattedEthWithConditionalTooltip value={t.value} />
+        </span>
+      </>
+    )}
   </Code>
 );
 
 export const TransactionExplanation = ({ transaction: t }) => {
+  const nounsPayerContract = useContract("payer");
+
   switch (t.type) {
     case "transfer":
       return (
@@ -509,7 +542,9 @@ export const TransactionExplanation = ({ transaction: t }) => {
         <>
           Top up the{" "}
           <em>
-            <AddressDisplayNameWithTooltip address={t.target} />
+            <AddressDisplayNameWithTooltip
+              address={nounsPayerContract.address}
+            />
           </em>
         </>
       );
@@ -623,20 +658,22 @@ export const FormattedEthWithConditionalTooltip = ({
 }) => {
   const ethString = formatEther(value);
   const [ethValue, ethDecimals] = ethString.split(".");
-  const trimDecimals = ethDecimals != null && ethDecimals.length > 3;
-  const trimmedEthString = [
+  const truncateDecimals = ethDecimals != null && ethDecimals.length > 3;
+  const truncatedEthString = [
     ethValue,
-    trimDecimals ? `${ethDecimals.slice(0, 3)}...` : ethDecimals,
+    truncateDecimals ? `${ethDecimals.slice(0, 3)}...` : ethDecimals,
   ]
     .filter(Boolean)
     .join(".");
 
-  if (!trimDecimals) return `${ethString} ${tokenSymbol}`;
+  if (!truncateDecimals) return `${ethString} ${tokenSymbol}`;
 
   return (
     <Tooltip.Root>
       <Tooltip.Trigger asChild>
-        <span role="button">{trimmedEthString} ETH</span>
+        <span role="button">
+          {truncatedEthString} {tokenSymbol}
+        </span>
       </Tooltip.Trigger>
       <Tooltip.Content side="top" sideOffset={6}>
         {ethString} {tokenSymbol}
@@ -645,7 +682,11 @@ export const FormattedEthWithConditionalTooltip = ({
   );
 };
 
-const AddressDisplayNameWithTooltip = ({ address, children, ...props }) => {
+export const AddressDisplayNameWithTooltip = ({
+  address,
+  children,
+  ...props
+}) => {
   const knownContract = useContract(address);
   const { displayName } = useAccountDisplayName(address);
   return (
@@ -700,6 +741,11 @@ const Code = ({ block, ...props }) => {
           fontFamily: t.text.fontStacks.monospace,
           fontSize: t.text.sizes.tiny,
           color: t.colors.textDimmed,
+          "::-webkit-scrollbar, ::scrollbar": {
+            width: 0,
+            height: 0,
+            background: "transparent",
+          },
         })
       }
       {...props}

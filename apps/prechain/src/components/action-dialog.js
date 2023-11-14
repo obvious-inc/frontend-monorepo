@@ -4,9 +4,11 @@ import {
   isAddress,
   parseAbi,
   parseUnits,
+  parseEther,
   encodeAbiParameters,
   decodeAbiParameters,
 } from "viem";
+import { formatAbiItem } from "abitype";
 import { useEnsName, useEnsAddress, useContractRead } from "wagmi";
 import { css } from "@emotion/react";
 import { useFetch } from "@shades/common/react";
@@ -87,19 +89,26 @@ const parseAmount = (amount, currency) => {
     case "eth":
     case "weth":
     case "usdc":
-      return parseUnits(String(amount), decimalsByCurrency[currency]);
+      return parseUnits(amount.toString(), decimalsByCurrency[currency]);
     default:
       throw new Error();
   }
 };
 
 const usePredictedStreamContractAddress = (
-  { receiverAddress, formattedAmount, currency, startDate, endDate },
+  { receiverAddress, amount: amount_, currency, startDate, endDate },
   { enabled }
 ) => {
   const executorContract = useContract("executor");
   const streamPaymentTokenContract = useContract(`${currency}-token`);
   const streamFactoryContract = useContract("stream-factory");
+
+  let amount = 0;
+  try {
+    amount = BigInt(amount_);
+  } catch (e) {
+    //
+  }
 
   const { data, isSuccess } = useContractRead({
     address: streamFactoryContract.address,
@@ -111,14 +120,14 @@ const usePredictedStreamContractAddress = (
       executorContract.address,
       executorContract.address,
       receiverAddress,
-      parseAmount(formattedAmount, currency),
+      parseAmount(amount, currency),
       streamPaymentTokenContract.address,
       (startDate?.getTime() ?? 0) / 1000,
       (endDate?.getTime() ?? 0) / 1000,
     ],
     enabled:
       enabled &&
-      parseFloat(formattedAmount) > 0 &&
+      amount > 0 &&
       isAddress(receiverAddress) &&
       startDate != null &&
       endDate != null &&
@@ -128,6 +137,25 @@ const usePredictedStreamContractAddress = (
   if (!isSuccess) return null;
 
   return data;
+};
+
+const useEthToUsdRate = () => {
+  const [rate, setRate] = React.useState(null);
+
+  useFetch(
+    () =>
+      // TODO: Use Chainlink instead
+      fetch("https://api.coinbase.com/v2/exchange-rates?currency=ETH")
+        .then((res) => res.json())
+        .then((body) => {
+          const rate = body.data.rates["USD"];
+          if (rate == null) return;
+          setRate(parseFloat(rate));
+        }),
+    []
+  );
+
+  return rate;
 };
 
 const ActionDialog = ({ isOpen, close, ...props }) => (
@@ -155,16 +183,15 @@ const Content = ({
   initialTarget,
   initialStreamStartTimestamp,
   initialStreamEndTimestamp,
-  initialContractAddress,
-  initialContractFunction,
-  initialContractFunctionInput,
-  initialContractCustomAbiString,
+  initialContractCallTargetAddress,
+  initialContractCallFormattedTargetAbiItem,
+  initialContractCallArguments,
+  initialContractCallEthValue,
+  initialContractCallCustomAbiString,
 }) => {
-  const [ethToUsdRate, setEthToUsdRate] = React.useState(null);
-
   const [type, setType] = React.useState(initialType ?? "one-time-payment");
   const [currency, setCurrency] = React.useState(initialCurrency ?? "eth");
-  const [amount, setAmount] = React.useState(initialAmount ?? 0);
+  const [amount, setAmount] = React.useState(initialAmount ?? "0");
   const [receiverQuery, setReceiverQuery] = React.useState(initialTarget ?? "");
 
   // For streams
@@ -180,20 +207,23 @@ const Content = ({
   );
 
   // For custom transactions
-  const [contractAddress, setContractAddress] = React.useState(
-    initialContractAddress ?? ""
+  const [contractCallTargetAddress, setContractCallTargetAddress] =
+    React.useState(initialContractCallTargetAddress ?? "");
+  const [
+    contractCallFormattedTargetAbiItem,
+    setContractCallFormattedTargetAbiItem,
+  ] = React.useState(initialContractCallFormattedTargetAbiItem ?? "");
+  const [contractCallArguments, setContractCallArguments] = React.useState(
+    initialContractCallArguments ?? []
   );
-  const [contractFunction, setContractFunction] = React.useState(
-    initialContractFunction ?? ""
+  const [contractCallEthValue, setContractCallEthValue] = React.useState(
+    initialContractCallEthValue ?? "0"
   );
-  const [contractFunctionInput, setContractFunctionInput] = React.useState(
-    initialContractFunctionInput ?? []
-  );
-  const [rawContractCustomAbiString, setContractRawCustomAbiString] =
-    React.useState(initialContractCustomAbiString ?? "");
+  const [rawContractCallCustomAbiString, setRawContractCallCustomAbiString] =
+    React.useState(initialContractCallCustomAbiString ?? "");
 
   const deferredAbiString = React.useDeferredValue(
-    rawContractCustomAbiString.trim()
+    rawContractCallCustomAbiString.trim()
   );
 
   const customAbi = React.useMemo(() => {
@@ -213,22 +243,34 @@ const Content = ({
     }
   }, [deferredAbiString]);
 
-  const { data: ensName } = useEnsName({
-    address: receiverQuery.trim(),
-    enabled: isAddress(receiverQuery.trim()),
-  });
   const { data: ensAddress } = useEnsAddress({
     name: receiverQuery.trim(),
     enabled: receiverQuery.trim().split(".").slice(-1)[0] === "eth",
   });
+
+  const ethToUsdRate = useEthToUsdRate();
+
+  const hasAmount =
+    amount !== "" && parseFloat(amount) > 0 && parseFloat(amount) < Infinity;
+
+  const convertedEthToUsdValue =
+    currency !== "eth" || ethToUsdRate == null || !hasAmount
+      ? null
+      : parseFloat(amount) * ethToUsdRate;
+
+  const convertedUsdcToEthValue =
+    currency !== "usdc" || ethToUsdRate == null || !hasAmount
+      ? null
+      : parseFloat(amount) / ethToUsdRate;
 
   const {
     data: etherscanContractData,
     error: etherscanRequestError,
     isLoading: isLoadingEtherscanData,
     reset: resetEtherscanData,
-  } = useEtherscanContractInfo(contractAddress, {
-    enabled: type === "custom-transaction" && isAddress(contractAddress),
+  } = useEtherscanContractInfo(contractCallTargetAddress, {
+    enabled:
+      type === "custom-transaction" && isAddress(contractCallTargetAddress),
   });
 
   const etherscanAbi = etherscanContractData?.abi;
@@ -247,7 +289,7 @@ const Content = ({
     ? null
     : [...etherscanAbi, ...(etherscanProxyImplementationAbi ?? [])];
 
-  const contractFunctionOptions = abi
+  const contractCallAbiItemOptions = abi
     ?.filter((item) => {
       if (item.type !== "function") return false;
       if (item.stateMutability != null)
@@ -256,7 +298,7 @@ const Content = ({
       return !item.pure || !item.view;
     })
     .map((item) => {
-      const value = `${item.name}(${item.inputs.map((i) => i.type).join(",")})`;
+      const formattedAbiItem = formatAbiItem(item);
       const label = (
         <span>
           {item.name}(
@@ -287,47 +329,30 @@ const Content = ({
       );
 
       return {
-        value,
+        value: formattedAbiItem,
         label,
         textValue: item.name,
-        inputs: item.inputs,
+        abiItem: item,
+        formattedAbiItem,
       };
     });
 
-  const selectedContractFunctionOption = contractFunctionOptions?.find(
-    (o) => o.value === contractFunction
-  );
+  const selectedContractCallAbiItem = contractCallAbiItemOptions?.find(
+    (o) => o.formattedAbiItem === contractCallFormattedTargetAbiItem
+  )?.abiItem;
+
+  const isPayableContractCall =
+    selectedContractCallAbiItem?.payable ??
+    selectedContractCallAbiItem?.stateMutability === "payable";
 
   const target = isAddress(receiverQuery.trim())
     ? receiverQuery.trim()
     : ensAddress ?? "";
 
-  const convertedEthToUsdValue =
-    currency !== "eth" || ethToUsdRate == null || parseFloat(amount) === 0
-      ? null
-      : parseFloat(amount) * ethToUsdRate;
-
-  const convertedUsdcToEthValue =
-    currency !== "usdc" || ethToUsdRate == null || parseFloat(amount) === 0
-      ? null
-      : parseFloat(amount) / ethToUsdRate;
-
-  useFetch(
-    () =>
-      fetch("https://api.coinbase.com/v2/exchange-rates?currency=ETH")
-        .then((res) => res.json())
-        .then((body) => {
-          const rate = body.data.rates["USD"];
-          if (rate == null) return;
-          setEthToUsdRate(parseFloat(rate));
-        }),
-    []
-  );
-
   const predictedStreamContractAddress = usePredictedStreamContractAddress(
     {
       receiverAddress: target,
-      formattedAmount: String(amount),
+      amount,
       currency,
       startDate: streamStartDate,
       endDate: streamEndDate,
@@ -353,14 +378,15 @@ const Content = ({
         );
 
       case "custom-transaction": {
-        if (selectedContractFunctionOption == null) return false;
+        if (selectedContractCallAbiItem == null) return false;
 
         try {
           encodeAbiParameters(
-            selectedContractFunctionOption.inputs,
-            contractFunctionInput
+            selectedContractCallAbiItem.inputs,
+            contractCallArguments
           );
-          return true;
+
+          return !isPayableContractCall || contractCallEthValue !== "";
         } catch (e) {
           return false;
         }
@@ -393,22 +419,25 @@ const Content = ({
             break;
 
           case "custom-transaction": {
-            const inputTypes = selectedContractFunctionOption.inputs;
+            const { inputs: inputTypes } = selectedContractCallAbiItem;
             submit({
               type,
-              contractAddress,
-              contractFunction,
-              contractFunctionInput: JSON.parse(
+              contractCallTargetAddress,
+              contractCallFormattedTargetAbiItem,
+              contractCallArguments: JSON.parse(
                 JSON.stringify(
+                  // Encoding and decoding gives us valid defaults for empty
+                  // arguments, e.g. empty numbers turn into zeroes
                   decodeAbiParameters(
                     inputTypes,
-                    encodeAbiParameters(inputTypes, contractFunctionInput)
+                    encodeAbiParameters(inputTypes, contractCallArguments)
                   ),
                   (_, value) =>
                     typeof value === "bigint" ? value.toString() : value
                 )
               ),
-              contractCustomAbiString: rawContractCustomAbiString,
+              contractCallEthValue,
+              contractCallCustomAbiString: rawContractCallCustomAbiString,
             });
             break;
           }
@@ -427,7 +456,9 @@ const Content = ({
       })}
     >
       <DialogHeader title={title} titleProps={titleProps} dismiss={dismiss} />
-      <main style={{ display: "flex", flexDirection: "column", gap: "1.6rem" }}>
+      <main
+        css={css({ display: "flex", flexDirection: "column", gap: "1.6rem" })}
+      >
         <div>
           <Select
             label="Type"
@@ -534,28 +565,10 @@ const Content = ({
                 gap: "0.8rem",
               }}
             >
-              <Input
+              <DecimalInput
                 id="amount"
                 value={amount}
-                onBlur={() => {
-                  setAmount(parseFloat(amount));
-                }}
-                onChange={(e) => {
-                  const { value } = e.target;
-                  if (value.trim() === "") {
-                    setAmount(0);
-                    return;
-                  }
-
-                  const n = parseFloat(value);
-
-                  if (isNaN(n) || !/^[0-9]*\.?[0-9]*$/.test(value)) return;
-
-                  if (/^[0-9]*$/.test(value)) {
-                    setAmount(n);
-                    return;
-                  }
-
+                onChange={(value) => {
                   setAmount(value);
                 }}
               />
@@ -629,39 +642,17 @@ const Content = ({
         )}
 
         {type !== "custom-transaction" && (
-          <Input
+          <AddressInput
             label="Receiver account"
             value={receiverQuery}
-            onBlur={() => {
-              if (!isAddress(receiverQuery) && ensAddress != null)
-                setReceiverQuery(ensAddress);
-            }}
-            onChange={(e) => {
-              setReceiverQuery(e.target.value);
+            onChange={(maybeAddress) => {
+              setReceiverQuery(maybeAddress);
             }}
             placeholder="0x..., vitalik.eth"
             hint={
-              !isAddress(receiverQuery) && ensAddress == null ? (
-                "Specify an Ethereum account address or ENS name"
-              ) : ensAddress != null ? (
-                ensAddress
-              ) : ensName != null ? (
-                <>
-                  Primary ENS name:{" "}
-                  <em
-                    css={(t) =>
-                      css({
-                        fontStyle: "normal",
-                        fontWeight: t.text.weights.emphasis,
-                      })
-                    }
-                  >
-                    {ensName}
-                  </em>
-                </>
-              ) : (
-                <>&nbsp;</>
-              )
+              !isAddress(receiverQuery)
+                ? "Specify an Ethereum account address or ENS name"
+                : null
             }
           />
         )}
@@ -670,11 +661,11 @@ const Content = ({
           <>
             <AddressInput
               label="Target contract address"
-              value={contractAddress}
-              onChange={(e) => {
-                setContractAddress(e.target.value);
-                setContractFunction("");
-                setContractFunctionInput([]);
+              value={contractCallTargetAddress}
+              onChange={(maybeAddress) => {
+                setContractCallTargetAddress(maybeAddress);
+                setContractCallFormattedTargetAbiItem("");
+                setContractCallArguments([]);
               }}
               placeholder="0x..."
               maxLength={42}
@@ -696,7 +687,7 @@ const Content = ({
                     </Link>
                   </>
                 ) : etherscanAbi != null &&
-                  contractFunctionOptions?.length === 0 ? (
+                  contractCallAbiItemOptions?.length === 0 ? (
                   <>
                     No public write functions found on contract
                     {etherscanContractData?.name != null && (
@@ -715,7 +706,7 @@ const Content = ({
                       <Link
                         color="currentColor"
                         component="a"
-                        href={`https://etherscan.io/address/${contractAddress}`}
+                        href={`https://etherscan.io/address/${contractCallTargetAddress}`}
                         rel="noreferrer"
                         target="_blank"
                       >
@@ -723,7 +714,9 @@ const Content = ({
                       </Link>
                     </strong>
                   </>
-                ) : null
+                ) : (
+                  <>&nbsp;</>
+                )
               }
             />
 
@@ -731,18 +724,18 @@ const Content = ({
               <Input
                 label="ABI"
                 component="textarea"
-                value={rawContractCustomAbiString}
+                value={rawContractCallCustomAbiString}
                 onChange={(e) => {
-                  setContractRawCustomAbiString(e.target.value);
+                  setRawContractCallCustomAbiString(e.target.value);
                 }}
                 onBlur={() => {
                   try {
                     const formattedAbi = JSON.stringify(
-                      JSON.parse(rawContractCustomAbiString),
+                      JSON.parse(rawContractCallCustomAbiString),
                       null,
                       2
                     );
-                    setContractRawCustomAbiString(formattedAbi);
+                    setRawContractCallCustomAbiString(formattedAbi);
                   } catch (e) {
                     //
                   }
@@ -759,22 +752,22 @@ const Content = ({
               />
             )}
 
-            {contractFunctionOptions?.length > 0 ? (
+            {contractCallAbiItemOptions?.length > 0 ? (
               <div>
                 <Label htmlFor="contract-function">Function to call</Label>
                 <Select
                   id="contract-function"
                   aria-label="Contract function"
-                  value={contractFunction}
-                  options={contractFunctionOptions}
+                  value={contractCallFormattedTargetAbiItem}
+                  options={contractCallAbiItemOptions}
                   size="medium"
                   onChange={(value) => {
-                    setContractFunction(value);
-                    const selectedOption = contractFunctionOptions?.find(
+                    setContractCallFormattedTargetAbiItem(value);
+                    const selectedOption = contractCallAbiItemOptions?.find(
                       (o) => o.value === value
                     );
-                    setContractFunctionInput(
-                      buildInitialInputState(selectedOption?.inputs)
+                    setContractCallArguments(
+                      buildInitialInputState(selectedOption?.abiItem.inputs)
                     );
                   }}
                   fullWidth
@@ -793,17 +786,34 @@ const Content = ({
               </div>
             ) : null}
 
-            {selectedContractFunctionOption != null &&
-              selectedContractFunctionOption.inputs.length > 0 && (
+            {selectedContractCallAbiItem != null &&
+              selectedContractCallAbiItem.inputs.length > 0 && (
                 <div>
                   <Label>Arguments</Label>
                   <ArgumentInputs
-                    inputs={selectedContractFunctionOption.inputs}
-                    inputState={contractFunctionInput}
-                    setInputState={setContractFunctionInput}
+                    inputs={selectedContractCallAbiItem.inputs}
+                    inputState={contractCallArguments}
+                    setInputState={setContractCallArguments}
                   />
                 </div>
               )}
+
+            {isPayableContractCall && (
+              <DecimalInput
+                label="Amount of attached ETH"
+                value={contractCallEthValue}
+                onChange={(value) => {
+                  setContractCallEthValue(value);
+                }}
+                hint={
+                  ["", "0"].includes(contractCallEthValue) ? (
+                    <>&nbsp;</>
+                  ) : (
+                    <>{parseEther(contractCallEthValue).toString()} WEI</>
+                  )
+                }
+              />
+            )}
           </>
         )}
       </main>
@@ -828,6 +838,8 @@ const Content = ({
             size="medium"
             icon={<TrashCanIcon style={{ width: "1.5rem" }} />}
             onClick={() => {
+              if (!confirm("Are you sure you wish to delete this action?"))
+                return;
               remove();
               dismiss();
             }}
@@ -1025,8 +1037,8 @@ const renderInput = (input, inputValue, setInputValue) => {
         return (
           <AddressInput
             value={inputValue}
-            onChange={(e) => {
-              setInputValue(e.target.value);
+            onChange={(maybeAddress) => {
+              setInputValue(maybeAddress);
             }}
             label={labelContent}
             placeholder={getArgumentInputPlaceholder(input.type)}
@@ -1087,6 +1099,8 @@ const ArgumentInputs = ({ inputs, inputState, setInputState }) => {
               border: "0.1rem solid",
               borderRight: 0,
               borderColor: t.colors.borderLight,
+              borderTopLeftRadius: "0.2rem",
+              borderBottomLeftRadius: "0.2rem",
             },
           },
           "[data-components] [data-input] + [data-input]": {
@@ -1131,19 +1145,193 @@ const ArgumentInputs = ({ inputs, inputState, setInputState }) => {
   );
 };
 
-const AddressInput = (props) => {
-  const hintOverride =
-    props.value.trim() !== "" && !isAddress(props.value)
-      ? "Not a valid address"
-      : null;
+const AddressInput = ({ value, ...props }) => {
+  const [hasFocus, setFocused] = React.useState(false);
+
+  const { data: ensName } = useEnsName({
+    address: value.trim(),
+    enabled: isAddress(value.trim()),
+  });
+  const { data: ensAddress } = useEnsAddress({
+    name: value.trim(),
+    enabled: value.trim().split(".").slice(-1)[0] === "eth",
+  });
+
+  const buildHint = () => {
+    if (isAddress(value)) {
+      if (props.hint != null) return props.hint;
+      if (ensName != null)
+        return (
+          <>
+            Primary ENS name:{" "}
+            <em
+              css={(t) =>
+                css({
+                  fontStyle: "normal",
+                  fontWeight: t.text.weights.emphasis,
+                })
+              }
+            >
+              {ensName}
+            </em>
+          </>
+        );
+      return <>&nbsp;</>;
+    }
+
+    if (ensAddress != null) return ensAddress;
+
+    if (hasFocus) {
+      if (value.startsWith("0x"))
+        return `An account address should be 42 characters long (currently ${value.length})`;
+
+      return props.hint ?? "Specify an Ethereum account address or ENS name";
+    }
+
+    return props.hint ?? <>&nbsp;</>;
+  };
+
   return (
     <Input
       placeholder="0x..."
-      maxLength={42}
       {...props}
-      hint={hintOverride ?? props.hint}
+      maxLength={42}
+      value={value}
+      onFocus={(e) => {
+        props.onFocus?.(e);
+        setFocused(true);
+      }}
+      onBlur={(e) => {
+        props.onBlur?.(e);
+        setFocused(false);
+        if (!isAddress(value) && ensAddress != null) props.onChange(ensAddress);
+      }}
+      onChange={(e) => {
+        props.onChange(e.target.value.trim());
+      }}
+      hint={buildHint()}
     />
   );
 };
+
+const DecimalInput = ({ value, ...props }) => (
+  // TODO: maintain cursor position (from within the <Input /> component)
+  <Input
+    value={value}
+    {...props}
+    onBlur={(e) => {
+      props.onBlur?.(e);
+
+      if (value === "0") return;
+
+      if (value === "") {
+        props.onChange("0");
+        return;
+      }
+
+      const numberType = value.includes(".") ? "float" : "integer";
+
+      switch (numberType) {
+        case "integer": {
+          const firstNonZeroIndex = value.split("").findIndex((c) => c !== "0");
+
+          const leadingZeroCount =
+            firstNonZeroIndex === -1 ? value.length : firstNonZeroIndex;
+
+          // Trim leading zeroes
+          if (leadingZeroCount > 0) {
+            props.onChange(value.slice(leadingZeroCount));
+            return;
+          }
+
+          return;
+        }
+
+        case "float": {
+          const [integerPart, fractionalPart] = value.split(".");
+
+          const firstNonZeroIndex = integerPart
+            .split("")
+            .findIndex((c) => c !== "0");
+
+          const leadingZeroCount =
+            firstNonZeroIndex === -1 ? integerPart.length : firstNonZeroIndex;
+
+          const trimmedIntegerPart = integerPart.slice(
+            Math.min(leadingZeroCount, integerPart.length - 1)
+          );
+
+          // Remove trailing decimal point
+          if (fractionalPart === "") {
+            props.onChange(trimmedIntegerPart.slice(0, -1));
+            return;
+          }
+
+          const firstTrailingNonZeroBackwardsIndex = fractionalPart
+            .split("")
+            .reverse()
+            .findIndex((c) => c !== "0");
+
+          const trailingZeroCount =
+            firstTrailingNonZeroBackwardsIndex === -1
+              ? fractionalPart.length
+              : firstTrailingNonZeroBackwardsIndex;
+
+          const trimmedFractionalPart =
+            trailingZeroCount === 0
+              ? fractionalPart
+              : fractionalPart.slice(0, trailingZeroCount * -1);
+
+          const trimmedAmount = [
+            trimmedIntegerPart,
+            trimmedFractionalPart,
+          ].join(".");
+
+          if (trimmedAmount !== value) {
+            props.onChange(trimmedAmount);
+            return;
+          }
+
+          return;
+        }
+      }
+    }}
+    onChange={(e) => {
+      const { value } = e.target;
+
+      if (value.trim() === "" || value.trim() === "0") {
+        props.onChange(value.trim());
+        return;
+      }
+
+      // Limit the allowed format
+      if (isNaN(parseFloat(value)) || !/^[0-9]*\.?[0-9]*$/.test(value)) return;
+
+      // const selectionIsAtStart = e.target.selectionStart === 0
+
+      if (!value.includes(".")) {
+        props.onChange(value);
+        return;
+      }
+
+      const [integerPart, fractionalPart] = value.split(".");
+
+      const firstNonZeroIndex = integerPart
+        .split("")
+        .findIndex((c) => c !== "0");
+      const leadingZeroCount =
+        firstNonZeroIndex === -1 ? integerPart.length : firstNonZeroIndex;
+
+      const trimmedIntegerPart = integerPart.slice(leadingZeroCount);
+
+      const trimmedValue = [
+        trimmedIntegerPart === "" ? "0" : trimmedIntegerPart,
+        fractionalPart,
+      ].join(".");
+
+      props.onChange(trimmedValue);
+    }}
+  />
+);
 
 export default ActionDialog;
