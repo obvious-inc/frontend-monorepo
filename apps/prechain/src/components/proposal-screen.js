@@ -119,8 +119,8 @@ const ProposalMainSection = ({ proposalId, scrollContainerRef }) => {
     castVoteCallSupportDetailed != null
       ? { support: castVoteCallSupportDetailed }
       : connectedWalletAccountAddress == null
-      ? null
-      : proposal?.votes?.find(
+        ? null
+        : proposal?.votes?.find(
           (v) =>
             v.voterId.toLowerCase() ===
             connectedWalletAccountAddress.toLowerCase()
@@ -443,8 +443,8 @@ const ProposalMainSection = ({ proposalId, scrollContainerRef }) => {
                   proposal.title === null
                     ? proposal.description
                     : proposal.description.slice(
-                        proposal.description.search(/\n/)
-                      )
+                      proposal.description.search(/\n/)
+                    )
                 }
               />
             ) : (
@@ -603,6 +603,7 @@ export const ProposalActionForm = ({
   const {
     address: connectedWalletAccountAddress,
     requestAccess: requestWalletAccess,
+    isUnsupportedChain,
   } = useWallet();
   const connectedDelegate = useDelegate(connectedWalletAccountAddress);
 
@@ -620,6 +621,10 @@ export const ProposalActionForm = ({
   if (mode == null) throw new Error();
 
   const renderHelpText = () => {
+    if (isUnsupportedChain)
+      return `Switch to Ethereum Mainnet to ${mode === "vote" ? "vote" : "give feedback"
+        }.`;
+
     if (mode === "feedback")
       return "Signal your voting intentions to influence and guide proposers.";
 
@@ -756,7 +761,7 @@ export const ProposalActionForm = ({
                     support == null
                       ? null
                       : (key, options) =>
-                          options.find((o) => o.value === key).label
+                        options.find((o) => o.value === key).label
                   }
                   placeholder={
                     mode === "feedback" ? "Select signal" : "Select vote"
@@ -764,79 +769,80 @@ export const ProposalActionForm = ({
                   options={
                     mode === "vote"
                       ? [
-                          {
-                            value: 1,
-                            textValue: "For",
-                            label: (
-                              <span
-                                css={(t) =>
-                                  css({ color: t.colors.textPositive })
-                                }
-                              >
-                                For
-                              </span>
-                            ),
-                          },
-                          {
-                            value: 0,
-                            textValue: "Against",
-                            label: (
-                              <span
-                                css={(t) =>
-                                  css({ color: t.colors.textNegative })
-                                }
-                              >
-                                Against
-                              </span>
-                            ),
-                          },
-                          { value: 2, label: "Abstain" },
-                        ]
+                        {
+                          value: 1,
+                          textValue: "For",
+                          label: (
+                            <span
+                              css={(t) =>
+                                css({ color: t.colors.textPositive })
+                              }
+                            >
+                              For
+                            </span>
+                          ),
+                        },
+                        {
+                          value: 0,
+                          textValue: "Against",
+                          label: (
+                            <span
+                              css={(t) =>
+                                css({ color: t.colors.textNegative })
+                              }
+                            >
+                              Against
+                            </span>
+                          ),
+                        },
+                        { value: 2, label: "Abstain" },
+                      ]
                       : [
-                          {
-                            value: 1,
-                            textValue: "Signal for",
-                            label: (
-                              <span
-                                css={(t) =>
-                                  css({ color: t.colors.textPositive })
-                                }
-                              >
-                                Signal for
-                              </span>
-                            ),
-                          },
-                          {
-                            value: 0,
-                            textValue: "Signal against",
-                            label: (
-                              <span
-                                css={(t) =>
-                                  css({ color: t.colors.textNegative })
-                                }
-                              >
-                                Signal against
-                              </span>
-                            ),
-                          },
-                          { value: 2, label: "No signal" },
-                        ]
+                        {
+                          value: 1,
+                          textValue: "Signal for",
+                          label: (
+                            <span
+                              css={(t) =>
+                                css({ color: t.colors.textPositive })
+                              }
+                            >
+                              Signal for
+                            </span>
+                          ),
+                        },
+                        {
+                          value: 0,
+                          textValue: "Signal against",
+                          label: (
+                            <span
+                              css={(t) =>
+                                css({ color: t.colors.textNegative })
+                              }
+                            >
+                              Signal against
+                            </span>
+                          ),
+                        },
+                        { value: 2, label: "No signal" },
+                      ]
                   }
                   disabled={isPending}
                 />
                 <Button
                   type="submit"
                   variant="primary"
-                  disabled={isPending || !hasRequiredInputs}
+                  disabled={
+                    isPending || !hasRequiredInputs || isUnsupportedChain
+                  }
                   isLoading={isPending}
                   size={size}
                 >
                   {mode === "vote"
-                    ? `Cast ${
-                        proposalVoteCount === 1
-                          ? "vote"
-                          : `${proposalVoteCount} votes`
-                      }`
+                    ? `Cast ${proposalVoteCount === 1
+                      ? "vote"
+                      : `${proposalVoteCount} votes`
+                    }`
                     : "Submit feedback"}
                 </Button>
               </>
@@ -1049,7 +1055,7 @@ const ProposalScreen = () => {
   const isProposer =
     connectedWalletAccountAddress != null &&
     connectedWalletAccountAddress.toLowerCase() ===
-      proposal?.proposerId?.toLowerCase();
+    proposal?.proposerId?.toLowerCase();
 
   const [searchParams, setSearchParams] = useSearchParams();
 
