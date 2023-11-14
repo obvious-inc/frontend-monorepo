@@ -227,14 +227,22 @@ const ItemTitle = ({ item, context }) => {
       ? s
       : `${s.slice(0, truncatedLength).trim()}...`;
 
-  const ContextLink = ({ proposalId, candidateId, truncate, children }) => {
+  const ContextLink = ({
+    proposalId,
+    candidateId,
+    short,
+    truncate,
+    children,
+  }) => {
     if (proposalId != null) {
       const title =
         proposal?.title == null
-          ? `Prop ${proposalId}`
-          : `Prop ${proposalId}: ${truncateTitle(proposal.title)} `;
+          ? `Proposal ${proposalId}`
+          : `${short ? proposalId : `Proposal ${proposalId}`}: ${truncateTitle(
+              proposal.title
+            )} `;
       return (
-        <RouterLink to={`/proposals/${proposalId}`}>
+        <RouterLink to={`/ proposals / ${proposalId}`}>
           {children ?? title}
         </RouterLink>
       );
@@ -247,9 +255,9 @@ const ItemTitle = ({ item, context }) => {
       const title = truncate ? truncateTitle(fullTitle) : fullTitle;
       return (
         <RouterLink
-          to={`/candidates/${encodeURIComponent(
+          to={`/ candidates / ${encodeURIComponent(
             makeCandidateUrlId(candidateId)
-          )}`}
+          )} `}
         >
           {children ?? title}
         </RouterLink>
@@ -540,7 +548,7 @@ const ItemTitle = ({ item, context }) => {
           {!isIsolatedContext && (
             <>
               {" "}
-              <ContextLink truncate {...item} />
+              <ContextLink truncate short {...item} />
             </>
           )}
         </span>
@@ -554,7 +562,7 @@ const ItemTitle = ({ item, context }) => {
           {!isIsolatedContext && (
             <>
               {" "}
-              <ContextLink truncate {...item} />
+              <ContextLink truncate short {...item} />
             </>
           )}
         </span>
