@@ -11,24 +11,24 @@ module.exports = (...args) => {
   const plugins = !isProduction
     ? config.plugins
     : [
-        ...config.plugins,
-        new CopyPlugin({
-          patterns: [
-            {
-              from: path.resolve(
-                __dirname,
-                "../../apps/landing/public/favicon-32x32.png"
-              ),
-            },
-            {
-              from: path.resolve(
-                __dirname,
-                "../../apps/landing/public/favicon-192x192.png"
-              ),
-            },
-          ],
-        }),
-      ];
+      ...config.plugins,
+      new CopyPlugin({
+        patterns: [
+          {
+            from: path.resolve(
+              __dirname,
+              "../../apps/obvious-landing/public/favicon-32x32.png"
+            ),
+          },
+          {
+            from: path.resolve(
+              __dirname,
+              "../../apps/obvious-landing/public/favicon-192x192.png"
+            ),
+          },
+        ],
+      }),
+    ];
 
   return {
     ...config,
