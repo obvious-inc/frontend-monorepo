@@ -304,9 +304,7 @@ const ProposeScreen = () => {
     switch (a.type) {
       case "one-time-payment":
       case "streaming-payment":
-        return a.currency !== "usdc"
-          ? sum
-          : sum + parseUnits(String(a.amount), 6);
+        return a.currency !== "usdc" ? sum : sum + parseUnits(a.amount, 6);
 
       default:
         return sum;
@@ -1353,7 +1351,7 @@ const ActionSummary = ({ action: a }) => {
           Transfer{" "}
           <em>
             <FormattedNumber
-              value={BigInt(a.amount)}
+              value={parseFloat(a.amount)}
               minimumFractionDigits={minimumFractionDigits}
               maximumFractionDigits={maximumFractionDigits}
             />{" "}
@@ -1376,7 +1374,7 @@ const ActionSummary = ({ action: a }) => {
           Stream{" "}
           <em>
             <FormattedNumber
-              value={BigInt(a.amount)}
+              value={parseFloat(a.amount)}
               minimumFractionDigits={minimumFractionDigits}
               maximumFractionDigits={maximumFractionDigits}
             />{" "}
@@ -1422,7 +1420,7 @@ const ActionSummary = ({ action: a }) => {
     case "token-buyer-top-up":
       return (
         <TransactionExplanation
-          transaction={{ type: "token-buyer-top-up", value: a.amount }}
+          transaction={{ type: "token-buyer-top-up", value: a.value }}
         />
       );
 
