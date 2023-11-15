@@ -242,7 +242,7 @@ const ItemTitle = ({ item, context }) => {
               proposal.title
             )} `;
       return (
-        <RouterLink to={`/ proposals / ${proposalId}`}>
+        <RouterLink to={`/proposals/${proposalId}`}>
           {children ?? title}
         </RouterLink>
       );
@@ -255,9 +255,9 @@ const ItemTitle = ({ item, context }) => {
       const title = truncate ? truncateTitle(fullTitle) : fullTitle;
       return (
         <RouterLink
-          to={`/ candidates / ${encodeURIComponent(
+          to={`/candidates/${encodeURIComponent(
             makeCandidateUrlId(candidateId)
-          )} `}
+          )}`}
         >
           {children ?? title}
         </RouterLink>
