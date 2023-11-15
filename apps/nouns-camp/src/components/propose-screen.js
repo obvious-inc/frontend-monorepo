@@ -336,80 +336,99 @@ const ProposeScreen = () => {
   const submit = async () => {
     setPendingRequest(true);
 
-    const bodyMarkdown =
-      typeof draft.body === "string"
-        ? draft.body
-        : messageUtils.toMarkdown(richTextToMessageBlocks(draft.body));
+    try {
+      const bodyMarkdown =
+        typeof draft.body === "string"
+          ? draft.body
+          : messageUtils.toMarkdown(richTextToMessageBlocks(draft.body));
 
-    const description = `# ${draft.name.trim()}\n\n${bodyMarkdown}`;
+      const description = `# ${draft.name.trim()}\n\n${bodyMarkdown}`;
 
-    const transactions = draft.actions.flatMap((a) => {
-      const actionTransactions = getActionTransactions(a, { chainId });
+      const transactions = draft.actions.flatMap((a) => {
+        const actionTransactions = getActionTransactions(a, { chainId });
 
-      if (tokenBuyerTopUpValue > 0)
-        return [
-          ...actionTransactions,
-          {
-            type: "token-buyer-top-up",
-            value: tokenBuyerTopUpValue,
-          },
-        ];
+        if (tokenBuyerTopUpValue > 0)
+          return [
+            ...actionTransactions,
+            {
+              type: "token-buyer-top-up",
+              value: tokenBuyerTopUpValue,
+            },
+          ];
 
-      return actionTransactions;
-    });
+        return actionTransactions;
+      });
 
-    const buildCandidateSlug = (title) => {
-      const slugifiedTitle = title.toLowerCase().replace(/\s+/g, "-");
-      let index = 0;
-      while (slugifiedTitle) {
-        const slug = [slugifiedTitle, index].filter(Boolean).join("-");
-        if (accountProposalCandidates.find((c) => c.slug === slug) == null)
-          return slug;
-        index += 1;
-      }
-    };
+      const buildCandidateSlug = (title) => {
+        const slugifiedTitle = title.toLowerCase().replace(/\s+/g, "-");
+        let index = 0;
+        while (slugifiedTitle) {
+          const slug = [slugifiedTitle, index].filter(Boolean).join("-");
+          if (accountProposalCandidates.find((c) => c.slug === slug) == null)
+            return slug;
+          index += 1;
+        }
+      };
 
-    const candidateSlug = buildCandidateSlug(draft.name.trim());
-
-    return Promise.resolve()
-      .then(() =>
-        draftTargetType === "candidate"
-          ? createProposalCandidate({
-              slug: candidateSlug,
-              description,
-              transactions,
-            }).then(async (candidate) => {
-              const candidateId = [
-                connectedAccountAddress,
-                encodeURIComponent(candidate.slug),
-              ].join("-");
-
-              await retryPromise(() => fetchProposalCandidate(candidateId), {
-                retries: 100,
+      return Promise.resolve()
+        .then(() => {
+          switch (draftTargetType) {
+            case "proposal":
+              return createProposal({ description, transactions });
+            case "candidate": {
+              const slug = buildCandidateSlug(draft.name.trim());
+              return createProposalCandidate({
+                slug,
+                description,
+                transactions,
               });
+            }
+          }
+        })
+        .then(
+          async (res) => {
+            switch (draftTargetType) {
+              case "proposal": {
+                await retryPromise(() => fetchProposal(res.id), {
+                  retries: 100,
+                });
+                navigate(`/${res.id}`, { replace: true });
+                break;
+              }
 
-              navigate(`/candidates/${candidateId}`, { replace: true });
-            })
-          : createProposal({ description, transactions }).then(
-              async (proposal) => {
-                await retryPromise(() => fetchProposal(proposal.id), {
+              case "candidate": {
+                const candidateId = [
+                  connectedAccountAddress,
+                  encodeURIComponent(res.slug),
+                ].join("-");
+
+                await retryPromise(() => fetchProposalCandidate(candidateId), {
                   retries: 100,
                 });
 
-                navigate(`/${proposal.id}`, { replace: true });
+                navigate(`/candidates/${candidateId}`, { replace: true });
+                break;
               }
-            )
-      )
-      .then(() => {
-        deleteDraft(draftId);
-      })
-      .catch((e) => {
-        alert("Ops, looks like something went wrong!");
-        return Promise.reject(e);
-      })
-      .finally(() => {
-        setPendingRequest(false);
-      });
+            }
+          },
+          (e) => {
+            alert("Ops, looks like something went wrong!");
+            return Promise.reject(e);
+          }
+        )
+        .catch(() => {
+          // This should only happen for errors occuring after a successful submit
+        })
+        .finally(() => {
+          setPendingRequest(false);
+          deleteDraft(draftId);
+        });
+    } catch (e) {
+      setPendingRequest(false);
+      alert(
+        "Ops, looks like something went wrong preparing your draft for submit!"
+      );
+    }
   };
 
   const hasActions = draft.actions != null && draft.actions.length > 0;
