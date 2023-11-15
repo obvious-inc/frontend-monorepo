@@ -695,12 +695,9 @@ const transformableBlockTypes = [
 const toolbarActionsByKey = {
   "block-transform": {
     label: "Change block type",
-    props: {
-      fullWidth: false,
-      width: "max-content",
-      variant: "transparent",
-      size: "small",
-    },
+  },
+  "list-transform": {
+    label: "Change list type",
   },
   "heading-transform": {
     icon: "H",
@@ -775,10 +772,16 @@ export const Toolbar = ({ disabled: disabled_, onFocus, onBlur, ...props }) => {
   const disabled =
     storedSelectionRangeRef == null && (disabled_ || selection == null);
 
-  const selectedNodeEntry = editorRef.current?.above({
-    match: (n) => editorRef.current.isBlock(n) && !Editor.isEditor(n),
+  const editor = editorRef.current;
+
+  const [selectedBlockNode, selectedBlockPath] =
+    editor?.above({
+      match: (n) => !Editor.isEditor(n) && editor.isBlock(n),
+    }) ?? [];
+
+  const selectedListRootNodeEntry = editor?.above({
+    match: (n) => editor.isListRoot?.(n) ?? false,
   });
-  const [selectedBlockNode, selectedBlockPath] = selectedNodeEntry ?? [];
 
   const inlineElementsAllowed =
     selectedBlockNode?.type === "paragraph" ||
@@ -788,33 +791,66 @@ export const Toolbar = ({ disabled: disabled_, onFocus, onBlur, ...props }) => {
     selectedBlockNode != null &&
     transformableBlockTypes.includes(selectedBlockNode.type);
 
-  const renderAction = (action) => {
-    const editor = editorRef.current;
+  const blockTransformTargetOptions = [
+    { value: "paragraph", label: "Text" },
+    { value: "heading-1", label: "Heading 1" },
+    { value: "heading-2", label: "Heading 2" },
+    { value: "heading-3", label: "Heading 3" },
+    // TODO
+    // { value: "bulleted-list", label: "Bulleted list" },
+    // { value: "numbered-list", label: "Numbered list" },
+    { value: "code-block", label: "Code" },
+    { value: "quote", label: "Quote" },
+  ];
 
+  const renderAction = (action) => {
     switch (action.key) {
-      case "block-transform":
+      case "list-transform":
+      case "block-transform": {
+        const getProps = () => {
+          switch (action.key) {
+            case "list-transform":
+              return {
+                value: selectedListRootNodeEntry[0].type,
+                options: [
+                  { value: "bulleted-list", label: "Bulleted list" },
+                  { value: "numbered-list", label: "Numbered list" },
+                ],
+                disabled,
+              };
+
+            case "block-transform":
+              return {
+                value: selectedBlockNode.type,
+                options: [
+                  ...blockTransformTargetOptions,
+                  selectedBlockNode.type === "list-item" && {
+                    value: "list-item",
+                    label: "List item",
+                  },
+                  selectedBlockNode.type === "image" && {
+                    value: "image",
+                    label: "Image",
+                  },
+                ].filter(Boolean),
+                disabled: disabled || !selectedNodeIsTransformable,
+              };
+
+            default:
+              throw new Error();
+          }
+        };
+
+        const props = getProps();
+
         return (
           <Select
             key={action.key}
+            fullWidth={false}
+            width="max-content"
+            variant="transparent"
+            size="small"
             aria-label={action.label}
-            disabled={disabled || !selectedNodeIsTransformable}
-            value={selectedBlockNode.type}
-            options={[
-              { value: "paragraph", label: "Text" },
-              { value: "heading-1", label: "Heading 1" },
-              { value: "heading-2", label: "Heading 2" },
-              { value: "heading-3", label: "Heading 3" },
-              { value: "code-block", label: "Code" },
-              { value: "quote", label: "Quote" },
-              selectedBlockNode.type === "list-item" && {
-                value: "list-item",
-                label: "List item",
-              },
-              selectedBlockNode.type === "image" && {
-                value: "image",
-                label: "Image",
-              },
-            ].filter(Boolean)}
             onBlur={() => {
               onBlur?.();
               storedSelectionRangeRef?.unref();
@@ -822,23 +858,37 @@ export const Toolbar = ({ disabled: disabled_, onFocus, onBlur, ...props }) => {
             }}
             onFocus={() => {
               onFocus?.();
-              setStoredSelectionRangeRef(
-                editorRef.current.rangeRef(editorRef.current.selection)
-              );
+              setStoredSelectionRangeRef(editor.rangeRef(editor.selection));
             }}
             onChange={(blockType) => {
-              if (selectedBlockNode.type === "list-item") {
-                editor.withoutNormalizing(() => {
-                  editor.setNodes({ type: blockType });
-                  editor.unwrapNodes({
-                    at: selectedBlockPath,
-                    match: (n) =>
-                      ["bulleted-list", "numbered-list"].includes(n.type),
-                    split: true,
-                  });
-                });
-              } else {
-                editor.setNodes({ type: blockType });
+              switch (action.key) {
+                case "list-transform": {
+                  editor.setNodes(
+                    { type: blockType },
+                    { at: selectedListRootNodeEntry[1] }
+                  );
+                  break;
+                }
+
+                case "block-transform": {
+                  if (selectedBlockNode.type === "list-item") {
+                    editor.withoutNormalizing(() => {
+                      editor.setNodes({ type: blockType });
+                      editor.unwrapNodes({
+                        at: selectedBlockPath,
+                        match: editor.isListRoot,
+                        split: true,
+                      });
+                    });
+                  } else {
+                    editor.setNodes({ type: blockType });
+                  }
+
+                  break;
+                }
+
+                default:
+                  new Error();
               }
 
               onBlur?.(); // onBlur doesn’t seem to fire on iOS
@@ -847,9 +897,11 @@ export const Toolbar = ({ disabled: disabled_, onFocus, onBlur, ...props }) => {
               storedSelectionRangeRef.unref();
             }}
             data-select
+            {...props}
             {...action.props}
           />
         );
+      }
 
       case "heading-transform":
         return (
@@ -940,7 +992,7 @@ export const Toolbar = ({ disabled: disabled_, onFocus, onBlur, ...props }) => {
             {...action.props}
             onMouseDown={(e) => {
               e.preventDefault();
-              editorRef.current.toggleMark(action.mark);
+              editor.toggleMark(action.mark);
             }}
           >
             {action.icon}
@@ -1031,6 +1083,9 @@ export const Toolbar = ({ disabled: disabled_, onFocus, onBlur, ...props }) => {
       {...props}
     >
       {[
+        !isTouchDevice() && selectedListRootNodeEntry != null
+          ? ["list-transform"]
+          : null,
         !isTouchDevice() && selectedNodeIsTransformable
           ? ["block-transform"]
           : null,
@@ -1040,7 +1095,7 @@ export const Toolbar = ({ disabled: disabled_, onFocus, onBlur, ...props }) => {
           : null,
         ["insert-link", "insert-image"],
       ]
-        .filter(Boolean)
+        .filter((section) => section != null && section.length !== 0)
         .map((sectionActions, sectionIndex) => {
           const renderedSectionActions = sectionActions.map((actionKey) => {
             const action = toolbarActionsByKey[actionKey];

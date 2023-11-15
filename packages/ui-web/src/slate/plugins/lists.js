@@ -146,6 +146,8 @@ const middleware = (editor) => {
     normalizeNode([node, path]);
   };
 
+  editor.isListRoot = isListRoot;
+
   return withBlockPrefixShortcut(
     {
       prefix: ["-", "*", "1."],
