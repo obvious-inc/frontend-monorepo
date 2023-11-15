@@ -1,5 +1,5 @@
 {
-  "name": "landing",
+  "name": "obvious-landing",
   "private": true,
   "scripts": {
     "dev": "next dev",

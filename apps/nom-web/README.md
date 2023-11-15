@@ -1,12 +1,12 @@
-# NOM desktop
+# NOM web
 
-This is the home of the NOM desktop and web client.
+This is the home of the NOM web and desktop client.
 
 Some desktop builds can be found on [the release page](https://github.com/NewShadesDAO/front/releases), but until we get automatic updates going the easiest way to follow along is to access the regular web app on [app.nom.xyz](https://app.nom.xyz).
 
 ## Introduction
 
-_NOM desktop_ is a [`React`](https://reactjs.org/) web app, using a thin [`Electron`](https://www.electronjs.org/) wrapper to build for desktop. The details might change quickly but at the time of writing we bundle our Javascript with [`webpack`](https://webpack.js.org/), transpile with [`SWC`](https://swc.rs/); and package, make distributals, and publish our desktop builds with [`Electron Forge`](https://www.electronforge.io/).
+_NOM web_ is a [`React`](https://reactjs.org/) web app, using a thin [`Electron`](https://www.electronjs.org/) wrapper to build for desktop. The details might change quickly but at the time of writing we bundle our Javascript with [`webpack`](https://webpack.js.org/), transpile with [`SWC`](https://swc.rs/); and package, make distributals, and publish our desktop builds with [`Electron Forge`](https://www.electronforge.io/).
 
 ## Development setup
 
@@ -21,7 +21,7 @@ npm install -w desktop
 
 Why the `-w desktop`? Read up on npm workspaces [here](https://docs.npmjs.com/cli/v8/using-npm/workspaces).
 
-Copy `.env.template` and tweak the config as you wish. By default the app is setup to talk to our staging API at [staging-api.newshades.xyz](https://staging-api.newshades.xyz/). For more info on how to run the API locally, check out the repo [NewShadesDAO/api](https://github.com/NewShadesDAO/api).
+Copy `.env.template` and tweak the config as you wish. By default the app is setup to talk to our staging API at [staging-api.newshades.xyz](https://staging-api.newshades.xyz/). For more info on how to run the API locally, check out the repo [NewShadesDAO/api](https://github.com/obvious-inc/api).
 
 ```sh
 cp packages/desktop/.env.template packages/desktop/.env
@@ -33,7 +33,7 @@ Start a local dev server with:
 npm run start-web -w desktop
 ```
 
-By default this expects the [NOM API](https://github.com/NewShadesDAO/api) to be running on `localhost:5001`, but you can override that with an environment variable `API_ENDPOINT` if you like:
+By default this expects the [NOM API](https://github.com/obvious-inc/api) to be running on `localhost:5001`, but you can override that with an environment variable `API_ENDPOINT` if you like:
 
 ```sh
 API_ENDPOINT=https://api.newshades.xyz npm run start-web
