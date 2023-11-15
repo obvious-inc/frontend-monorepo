@@ -891,10 +891,10 @@ export const Toolbar = ({ disabled: disabled_, onFocus, onBlur, ...props }) => {
                   new Error();
               }
 
-              onBlur?.(); // onBlur doesn’t seem to fire on iOS
               setStoredSelectionRangeRef(null);
               editor.focus(storedSelectionRangeRef.current);
               storedSelectionRangeRef.unref();
+              onBlur?.(); // onBlur doesn’t seem to fire on iOS
             }}
             data-select
             {...props}

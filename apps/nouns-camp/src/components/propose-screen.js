@@ -242,6 +242,9 @@ const ProposeScreen = () => {
     React.useState(false);
   const [hasFixedToolbarFocus, setHasFixedToolbarFocus] = React.useState(false);
 
+  const hasEditorOrToolbarFocus =
+    isEditorFocused || hasFloatingToolbarFocus || hasFixedToolbarFocus;
+
   const isFloatingToolbarVisible =
     !isTouchDevice() &&
     editor != null &&
@@ -250,6 +253,23 @@ const ProposeScreen = () => {
         editorSelection != null &&
         !isSelectionCollapsed(editorSelection) &&
         editor.string(editorSelection) !== ""));
+
+  React.useEffect(() => {
+    if (hasEditorOrToolbarFocus) return;
+
+    let didFocus = false;
+
+    // Wait a little bit to prevent triggering this in-between async focus
+    // changes between the editor and the toolbar
+    setTimeout(() => {
+      if (didFocus) return;
+      editorRef.current.removeEmptyParagraphs();
+    }, 100);
+
+    return () => {
+      didFocus = true;
+    };
+  }, [hasEditorOrToolbarFocus]);
 
   const { address: connectedAccountAddress } = useAccount();
   const {
@@ -763,7 +783,6 @@ const ProposeScreen = () => {
                         setEditorSelection(editor.selection);
                       }}
                       onBlur={() => {
-                        editorRef.current.removeEmptyParagraphs();
                         setEditorFocused(false);
                       }}
                       placeholder={`Use markdown shortcuts like "# " and "1. " to create headings and lists.`}
