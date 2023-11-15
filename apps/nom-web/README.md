@@ -1,6 +1,6 @@
 # NOM web
 
-Project live at [app.nom.xyz](https://app.nom.xyz).
+Project live at [app.nom.wtf](https://app.nom.wtf).
 
 ## Development setup
 
@@ -32,7 +32,7 @@ API_ENDPOINT=https://api.newshades.xyz/ pnpm -F nom-web dev
 
 ## Deployment
 
-`HEAD` of `main` is automatically deployed to [app.now.xyz](https://app.now.xyz) with [Vercel](https://vercel.com/).
+`HEAD` of `main` is automatically deployed to [app.nom.wtf](https://app.nom.wtf) with [Vercel](https://vercel.com/).
 
 Desktop builds are currently manual.
 
