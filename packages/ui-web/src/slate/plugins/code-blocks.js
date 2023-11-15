@@ -8,13 +8,13 @@ import {
 
 const { compose } = functionUtils;
 
-const ELEMENT_TYPE = "code-block";
+const CODE_BLOCK_ELEMENT_TYPE = "code-block";
 
 const middleware = (editor) => {
   const { deleteBackward, isLeafBlock } = editor;
 
   editor.isLeafBlock = (node) =>
-    node.type === ELEMENT_TYPE || isLeafBlock(node);
+    node.type === CODE_BLOCK_ELEMENT_TYPE || isLeafBlock(node);
 
   editor.deleteBackward = (...args) => {
     const { selection } = editor;
@@ -25,7 +25,7 @@ const middleware = (editor) => {
     }
 
     const matchEntry = editor.above({
-      match: (n) => n.type === ELEMENT_TYPE,
+      match: (n) => n.type === CODE_BLOCK_ELEMENT_TYPE,
     });
 
     if (matchEntry == null) {
@@ -59,12 +59,15 @@ const middleware = (editor) => {
   return compose(
     (e) =>
       withBlockPrefixShortcut(
-        { prefix: "```", instant: true, elementType: ELEMENT_TYPE },
+        { prefix: "```", instant: true, elementType: CODE_BLOCK_ELEMENT_TYPE },
         e
       ),
     (e) =>
       withEmptyBlockBackwardDeleteTransform(
-        { fromElementType: ELEMENT_TYPE, toElementType: "paragraph" },
+        {
+          fromElementType: CODE_BLOCK_ELEMENT_TYPE,
+          toElementType: "paragraph",
+        },
         e
       )
   )(editor);
@@ -80,7 +83,7 @@ export default () => ({
 
       if (lineBreakHotkeys.some((h) => isHotkey(h, e))) {
         const matchEntry = editor.above({
-          match: (node) => node.type === ELEMENT_TYPE,
+          match: (node) => node.type === CODE_BLOCK_ELEMENT_TYPE,
         });
 
         if (matchEntry != null) {
@@ -91,7 +94,7 @@ export default () => ({
 
       if (isHotkey("mod+a", e)) {
         const matchEntry = editor.above({
-          match: (node) => node.type === ELEMENT_TYPE,
+          match: (node) => node.type === CODE_BLOCK_ELEMENT_TYPE,
         });
 
         if (matchEntry != null) {

@@ -1,9 +1,9 @@
-import { Transforms, Text, Editor } from "slate";
+import { Text } from "slate";
 import { useSelected, useFocused } from "slate-react";
 import InlineChannelButton from "../../inline-user-button.js";
 import { getWords } from "../utils.js";
 
-const ELEMENT_TYPE = "channel-link";
+const CHANNEL_LINK_ELEMENT_TYPE = "channel-link";
 
 const pathnameRegex = /^\/channels\/(?<channelId>\w*)$/;
 
@@ -18,23 +18,27 @@ const isChannelLink = (string) => {
 };
 
 const wrapLink = (editor, channelId, { at } = {}) => {
-  const link = { type: ELEMENT_TYPE, ref: channelId, children: [] };
-  Transforms.wrapNodes(editor, link, { at, split: true });
+  const link = {
+    type: CHANNEL_LINK_ELEMENT_TYPE,
+    ref: channelId,
+    children: [],
+  };
+  editor.wrapNodes(link, { at, split: true });
 };
 
 const middleware = (editor) => {
   const { isInline, isVoid, normalizeNode } = editor;
 
   editor.isInline = (element) => {
-    return element.type === ELEMENT_TYPE || isInline(element);
+    return element.type === CHANNEL_LINK_ELEMENT_TYPE || isInline(element);
   };
 
   editor.isVoid = (element) => {
-    return element.type === ELEMENT_TYPE || isVoid(element);
+    return element.type === CHANNEL_LINK_ELEMENT_TYPE || isVoid(element);
   };
 
   editor.normalizeNode = ([node, path]) => {
-    if (node.type === ELEMENT_TYPE) {
+    if (node.type === CHANNEL_LINK_ELEMENT_TYPE) {
       normalizeNode([node, path]);
       return;
     }
@@ -49,9 +53,9 @@ const middleware = (editor) => {
     );
 
     for (let [url, urlRange] of urlEntries) {
-      const isWrapped = Editor.above(editor, {
+      const isWrapped = editor.above({
         at: urlRange,
-        match: (n) => n.type === ELEMENT_TYPE,
+        match: (n) => n.type === CHANNEL_LINK_ELEMENT_TYPE,
       });
 
       if (isWrapped) continue;
@@ -66,13 +70,13 @@ const middleware = (editor) => {
 
   editor.insertChannelLink = (ref, { at } = {}) => {
     const element = {
-      type: ELEMENT_TYPE,
+      type: CHANNEL_LINK_ELEMENT_TYPE,
       ref,
       children: [{ text: "" }],
     };
-    if (at) Transforms.select(editor, at);
-    Transforms.insertNodes(editor, element);
-    Transforms.move(editor);
+    if (at) editor.select(at);
+    editor.insertNodes(element);
+    editor.move();
     editor.insertText(" ");
   };
 
@@ -98,5 +102,5 @@ const LinkComponent = ({ element, attributes, children }) => {
 
 export default () => ({
   middleware,
-  elements: { [ELEMENT_TYPE]: LinkComponent },
+  elements: { [CHANNEL_LINK_ELEMENT_TYPE]: LinkComponent },
 });

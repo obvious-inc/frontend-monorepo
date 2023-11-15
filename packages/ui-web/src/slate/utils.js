@@ -5,7 +5,10 @@ const { compose } = functionUtils;
 
 export const mergePlugins = (plugins) => {
   const middleware = compose(
-    ...plugins.filter((p) => p.middleware != null).map((p) => p.middleware)
+    ...plugins
+      .filter((p) => p.middleware != null)
+      .map((p) => p.middleware)
+      .reverse()
   );
 
   const elements = plugins.reduce(

@@ -352,7 +352,26 @@ const RichTextEditor = React.forwardRef(
     const editorMode = inline ? "inline" : "normal";
 
     const { editor, handlers, customElementsByNodeType } = React.useMemo(() => {
+      const { middleware, elements, handlers } = mergePlugins(
+        [
+          createUserMentionsPlugin,
+          createChannelLinksPlugin,
+          createInlineLinksPlugin,
+          createEmojiPlugin,
+          createSensibleVoidsPlugin,
+          createHorizontalDividerPlugin,
+          createImagesPlugin,
+          createControlledParagraphLineBreaksPlugin,
+          createListsPlugin,
+          // Headings, quotes, and code block breaks take precedence over list breaks
+          createHeadingsPlugin,
+          createQuotesPlugin,
+          createCodeBlocksPlugin,
+        ].map((fn) => fn({ mode: editorMode }))
+      );
+
       const editor = compose(
+        middleware,
         withMarks,
         withTextCommands,
         withSaneishDefaultBehaviors,
@@ -361,23 +380,8 @@ const RichTextEditor = React.forwardRef(
         withHistory
       )(createSlateEditor(), { mode: editorMode });
 
-      const { middleware, elements, handlers } = mergePlugins([
-        createControlledParagraphLineBreaksPlugin({ mode: editorMode }),
-        createCodeBlocksPlugin(),
-        createHeadingsPlugin({ mode: editorMode }),
-        createHorizontalDividerPlugin(),
-        createImagesPlugin(),
-        createQuotesPlugin({ mode: editorMode }),
-        createSensibleVoidsPlugin(),
-        createUserMentionsPlugin(),
-        createChannelLinksPlugin(),
-        createInlineLinksPlugin(),
-        createEmojiPlugin(),
-        createListsPlugin({ mode: editorMode }),
-      ]);
-
       return {
-        editor: middleware(editor),
+        editor,
         customElementsByNodeType: elements,
         handlers,
       };

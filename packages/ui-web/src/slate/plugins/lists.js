@@ -171,8 +171,9 @@ export default ({ mode } = {}) => ({
   middleware,
   handlers: {
     onKeyDown: (e, editor) => {
-      const lineBreakHotkeys =
-        mode === "inline" ? ["shift+enter"] : ["shift+enter", "enter"];
+      if (e.isDefaultPrevented()) return;
+
+      const lineBreakHotkeys = mode === "inline" ? ["shift+enter"] : ["enter"];
 
       if (lineBreakHotkeys.some((h) => isHotkey(h, e))) {
         const parentNonLeafBlockMatchEntry = editor.above({

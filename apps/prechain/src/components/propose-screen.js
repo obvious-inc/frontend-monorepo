@@ -238,7 +238,8 @@ const ProposeScreen = () => {
   const [isEditorFocused, setEditorFocused] = React.useState(false);
   const [editorSelection, setEditorSelection] = React.useState(null);
 
-  const [hasFloatingToolbarFocus, setHasFloatingToolbarFocus] = React.useState(false);
+  const [hasFloatingToolbarFocus, setHasFloatingToolbarFocus] =
+    React.useState(false);
   const [hasFixedToolbarFocus, setHasFixedToolbarFocus] = React.useState(false);
 
   const isFloatingToolbarVisible =

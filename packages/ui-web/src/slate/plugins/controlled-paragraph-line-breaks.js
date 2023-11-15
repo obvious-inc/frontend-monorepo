@@ -108,7 +108,7 @@ const createMiddleware = ({ mode }) => {
     editor.removeEmptyParagraphs = () => {
       if (
         editor.children.length === 1 &&
-        editor.children[0].type === "paragraph"
+        editor.children[0].type === PARAGRAPH_ELEMENT_TYPE
       )
         return;
 
@@ -117,7 +117,7 @@ const createMiddleware = ({ mode }) => {
           ...editor.nodes({
             at: [],
             match: (n) =>
-              n.type === "paragraph" && Node.string(n).trim() === "",
+              n.type === PARAGRAPH_ELEMENT_TYPE && Node.string(n).trim() === "",
           }),
         ];
         return entries[0];
