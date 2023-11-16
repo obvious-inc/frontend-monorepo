@@ -263,7 +263,7 @@ const ProposeScreen = () => {
     // changes between the editor and the toolbar
     setTimeout(() => {
       if (didFocus) return;
-      editorRef.current.removeEmptyParagraphs();
+      editorRef.current?.removeEmptyParagraphs();
     }, 100);
 
     return () => {
