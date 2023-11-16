@@ -123,7 +123,19 @@ const metaById = (state = {}, action) => {
 
     case "fetch-messages:request-successful": {
       if (action.limit == null) return state;
+
       const config = state[action.channelId];
+
+      if (action.messages.length === 0)
+        return {
+          ...state,
+          [action.channelId]: {
+            ...config,
+            hasAllMessages: true,
+            hasFetchedMessages: true,
+          },
+        };
+
       const endMessageId = action.messages.slice(-1)[0].id;
 
       // This dangerously assumes messages have incremental hex ids
