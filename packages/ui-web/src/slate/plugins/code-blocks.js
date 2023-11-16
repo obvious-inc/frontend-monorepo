@@ -11,10 +11,27 @@ const { compose } = functionUtils;
 const CODE_BLOCK_ELEMENT_TYPE = "code-block";
 
 const middleware = (editor) => {
-  const { deleteBackward, isLeafBlock } = editor;
+  const { deleteBackward, isLeafBlock, insertData } = editor;
 
   editor.isLeafBlock = (node) =>
     node.type === CODE_BLOCK_ELEMENT_TYPE || isLeafBlock(node);
+
+  editor.insertData = (data) => {
+    const text = data.getData("text");
+
+    const selectionCodeBlockMatchEntry = editor.above({
+      match: (n) => n.type === CODE_BLOCK_ELEMENT_TYPE,
+    });
+
+    // Raw text paste into code blocks
+    if (text != null && selectionCodeBlockMatchEntry != null) {
+      const text = data.getData("text");
+      editor.insertText(text);
+      return;
+    }
+
+    insertData(data);
+  };
 
   editor.deleteBackward = (...args) => {
     const { selection } = editor;

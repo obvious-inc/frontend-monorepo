@@ -310,8 +310,18 @@ const withSaneishDefaultBehaviors = (editor, { mode } = {}) => {
     if (text) {
       try {
         const nodes = fromMessageBlocks(markdownUtils.toMessageBlocks(text));
+
+        // Insert single paragraph content inline
+        if (nodes.length === 1 && nodes[0].type === "paragraph") {
+          for (const node of nodes[0].children) {
+            editor.insertNode(node);
+          }
+          return;
+        }
+
         editor.deleteFragment();
         editor.insertNodes(nodes);
+        editor.removeEmptyParagraphs();
       } catch (e) {
         editor.insertText(text);
       }
