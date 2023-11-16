@@ -1,5 +1,5 @@
 import { url as urlUtils } from "@shades/common/utils";
-import { Point, Text, Node } from "slate";
+import { Range as SlateRange, Point, Text, Node } from "slate";
 import { getWords } from "../utils.js";
 
 const INLINE_LINK_ELEMENT_TYPE = "link";
@@ -57,6 +57,16 @@ const createMiddleware = ({ isUrl }) => {
       if (node.children[0].text !== node.label) {
         editor.setNodes({ label: node.children[0].text }, { at: path });
         return;
+      }
+
+      // Make sure `url` always follow the label if the label is a valid
+      // (protocol optional) url
+      if (isUrlWithOptionalProtocol(node.label)) {
+        const labelUrl = createUrl(node.label);
+        if (node.url !== labelUrl) {
+          editor.setNodes({ url: labelUrl }, { at: path });
+          return;
+        }
       }
 
       normalizeNode([node, path]);
@@ -139,15 +149,19 @@ const createMiddleware = ({ isUrl }) => {
         );
 
         for (let [url, urlRange] of urlEntries) {
-          const match = editor.above({
+          const matchEntry = editor.above({
             at: urlRange,
             match: (n) => n.type === INLINE_LINK_ELEMENT_TYPE,
           });
 
           // Url already wrapped in a link
-          if (match) continue;
+          if (matchEntry) continue;
 
-          wrapLink(editor, url, { at: urlRange });
+          if (
+            editor.selection == null ||
+            SlateRange.intersection(urlRange, editor.selection) == null
+          )
+            wrapLink(editor, url, { at: urlRange });
           return;
         }
       }
@@ -158,16 +172,16 @@ const createMiddleware = ({ isUrl }) => {
     editor.insertText = (text) => {
       const { selection } = editor;
 
-      const match = editor.above({
+      const matchEntry = editor.above({
         match: (n) => n.type === INLINE_LINK_ELEMENT_TYPE,
       });
 
-      if (!match) {
+      if (matchEntry == null) {
         insertText(text);
         return;
       }
 
-      const [linkNode, linkNodePath] = match;
+      const [linkNode, linkNodePath] = matchEntry;
 
       const linkEndPoint = editor.end(linkNodePath);
 
