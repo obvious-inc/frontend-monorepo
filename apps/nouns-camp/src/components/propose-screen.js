@@ -306,7 +306,8 @@ const ProposeScreen = () => {
       ? draft.body.trim() === ""
       : draft.body.every(isRichTextEditorNodeEmpty);
 
-  const hasRequiredInput = !isNameEmpty && !isBodyEmpty;
+  const hasRequiredInput =
+    !isNameEmpty && !isBodyEmpty && draft.actions.length > 0;
 
   const selectedAction =
     selectedActionIndex >= 0 ? draft.actions[selectedActionIndex] : null;
@@ -358,6 +359,13 @@ const ProposeScreen = () => {
 
         return actionTransactions;
       });
+
+      if (transactions.length > 10) {
+        alert(
+          `A proposal can at max include 10 transactions (currently ${transactions.length})`
+        );
+        return;
+      }
 
       const buildCandidateSlug = (title) => {
         const slugifiedTitle = title.toLowerCase().replace(/\s+/g, "-");
