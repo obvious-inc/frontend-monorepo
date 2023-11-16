@@ -831,10 +831,10 @@ const ProposeScreen = () => {
                       }}
                       placeholder={`Use markdown shortcuts like "# " and "1. " to create headings and lists.`}
                       imagesMaxWidth={null}
-                      imagesMaxHeight={window.innerHeight / 2}
+                      imagesMaxHeight={680}
+                      disabled={hasPendingRequest}
                       css={(t) => css({ fontSize: t.text.sizes.large })}
                       style={{ flex: 1, minHeight: "12rem" }}
-                      disabled={hasPendingRequest}
                     />
                   ) : (
                     <div

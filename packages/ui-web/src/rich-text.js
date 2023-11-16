@@ -38,6 +38,7 @@ export const createCss = (t) => ({
   "* + :is(ul, ol)": { marginTop: "var(--default-block-gap)" },
   "*:is(ul, ol):has(+ *)": { marginBottom: "var(--default-block-gap)" },
   "*:is(ul, ol) :is(ul, ol)": { margin: 0 },
+
   // This mess removes any margins between a leading paragrah followed by a
   // single list element inside a list item. This make simple nested lists look
   // and feel nicer since the elements stay in place when you indent, preventing
@@ -160,7 +161,7 @@ export const createCss = (t) => ({
       '&[data-interactive="true"]': {
         cursor: "zoom-in",
         "&[data-editable]": { cursor: "pointer" },
-        ":hover": { filter: "brightness(1.05)" },
+        // ":hover": { filter: "brightness(1.05)" },
       },
     },
     "& > img": { display: "block" },
