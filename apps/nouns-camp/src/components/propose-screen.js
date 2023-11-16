@@ -395,32 +395,44 @@ const ProposeScreen = () => {
         })
         .then(
           async (res) => {
-            switch (draftTargetType) {
-              case "proposal": {
-                await retryPromise(() => fetchProposal(res.id), {
-                  retries: 100,
-                });
-                navigate(`/${res.id}`, { replace: true });
-                break;
+            try {
+              switch (draftTargetType) {
+                case "proposal": {
+                  await retryPromise(() => fetchProposal(res.id), {
+                    retries: 100,
+                  });
+                  navigate(`/${res.id}`, { replace: true });
+                  break;
+                }
+
+                case "candidate": {
+                  const candidateId = [
+                    connectedAccountAddress,
+                    encodeURIComponent(res.slug),
+                  ].join("-");
+
+                  await retryPromise(
+                    () => fetchProposalCandidate(candidateId),
+                    {
+                      retries: 100,
+                    }
+                  );
+
+                  navigate(`/candidates/${candidateId}`, { replace: true });
+                  break;
+                }
               }
-
-              case "candidate": {
-                const candidateId = [
-                  connectedAccountAddress,
-                  encodeURIComponent(res.slug),
-                ].join("-");
-
-                await retryPromise(() => fetchProposalCandidate(candidateId), {
-                  retries: 100,
-                });
-
-                navigate(`/candidates/${candidateId}`, { replace: true });
-                break;
-              }
+            } finally {
+              deleteDraft(draftId);
             }
           },
           (e) => {
-            alert("Ops, looks like something went wrong!");
+            if (e.message.startsWith("User rejected the request."))
+              return Promise.reject(e);
+
+            alert(
+              "Ops, looks like something went wrong submitting your proposal!"
+            );
             return Promise.reject(e);
           }
         )
@@ -429,7 +441,6 @@ const ProposeScreen = () => {
         })
         .finally(() => {
           setPendingRequest(false);
-          deleteDraft(draftId);
         });
     } catch (e) {
       setPendingRequest(false);
