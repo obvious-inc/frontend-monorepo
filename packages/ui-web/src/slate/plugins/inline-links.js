@@ -126,13 +126,13 @@ const createMiddleware = ({ isUrl }) => {
         return;
       }
 
-      const parentLeafBlockMatchEntry = editor.above({
+      const parentBlockMatchEntry = editor.above({
         at: path,
-        match: editor.isLeafBlock,
+        match: editor.isBlock,
       });
 
       // Transform paragraph urls into link
-      if (parentLeafBlockMatchEntry[0].type === "paragraph") {
+      if (parentBlockMatchEntry[0].type === "paragraph") {
         // Wrap urls in link nodes
         const urlEntries = getWords([node, path]).filter(([word]) =>
           isUrl(word)

@@ -313,15 +313,28 @@ const withSaneishDefaultBehaviors = (editor, { mode } = {}) => {
 
         // Insert single paragraph content inline
         if (nodes.length === 1 && nodes[0].type === "paragraph") {
-          for (const node of nodes[0].children) {
-            editor.insertNode(node);
-          }
+          editor.withoutNormalizing(() => {
+            for (const node of nodes[0].children) {
+              editor.insertNode(node);
+            }
+          });
           return;
         }
 
-        editor.deleteFragment();
-        editor.insertNodes(nodes);
-        editor.removeEmptyParagraphs();
+        editor.withoutNormalizing(() => {
+          const blockMatchEntry = editor.above({ match: editor.isBlock });
+
+          if (
+            blockMatchEntry[1].length !== 0 && // Editor
+            editor.string(blockMatchEntry[1]).trim() !== ""
+          )
+            editor.insertBreak();
+
+          const targetPath =
+            blockMatchEntry[1].length === 0 ? [0] : blockMatchEntry[1];
+
+          editor.insertNodes(nodes, { at: targetPath });
+        });
       } catch (e) {
         editor.insertText(text);
       }
