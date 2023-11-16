@@ -126,19 +126,30 @@ const createMiddleware = ({ isUrl }) => {
         return;
       }
 
-      // Wrap urls in link nodes
-      const urlEntries = getWords([node, path]).filter(([word]) => isUrl(word));
+      const parentLeafBlockMatchEntry = editor.above({
+        at: path,
+        match: editor.isLeafBlock,
+      });
 
-      for (let [url, urlRange] of urlEntries) {
-        const match = editor.above({
-          at: urlRange,
-          match: (n) => n.type === INLINE_LINK_ELEMENT_TYPE,
-        });
+      // Transform paragraph urls into link
+      if (parentLeafBlockMatchEntry[0].type === "paragraph") {
+        // Wrap urls in link nodes
+        const urlEntries = getWords([node, path]).filter(([word]) =>
+          isUrl(word)
+        );
 
-        // Url already wrapped in a link
-        if (match) continue;
+        for (let [url, urlRange] of urlEntries) {
+          const match = editor.above({
+            at: urlRange,
+            match: (n) => n.type === INLINE_LINK_ELEMENT_TYPE,
+          });
 
-        wrapLink(editor, url, { at: urlRange });
+          // Url already wrapped in a link
+          if (match) continue;
+
+          wrapLink(editor, url, { at: urlRange });
+          return;
+        }
       }
 
       normalizeNode([node, path]);
