@@ -1501,8 +1501,6 @@ const TransactionCodeBlock = ({ transaction }) => {
 
     case "transfer":
     case "token-buyer-top-up":
-      return <UnparsedFunctionCallCodeBlock transaction={t} />;
-
     case "unparsed-function-call":
     case "unparsed-payable-function-call":
       return <UnparsedFunctionCallCodeBlock transaction={t} />;

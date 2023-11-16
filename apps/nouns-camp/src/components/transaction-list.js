@@ -238,14 +238,7 @@ const ListItem = ({ transaction }) => {
 
       case "transfer":
       case "token-buyer-top-up":
-        return (
-          <FunctionCallCodeBlock
-            target={t.target}
-            name="transfer"
-            inputs={[]}
-            value={t.value}
-          />
-        );
+        return <UnparsedFunctionCallCodeBlock transaction={t} />;
 
       case "unparsed-function-call":
       case "proxied-function-call":
@@ -407,12 +400,12 @@ export const FunctionCallCodeBlock = ({ target, name, inputs, value }) => (
     {value > 0 && (
       <>
         <br />
-        <span data-identifier>value:</span>
+        <span data-identifier>value</span>:
         <span data-argument>
-          &nbsp;{value.toString()}{" "}
+          &nbsp;{value.toString()}
           <span data-comment>
-            {"// "}
-            {formatEther(value)} ETH
+            {" // "}
+            <FormattedEthWithConditionalTooltip value={value} />
           </span>
         </span>
       </>
