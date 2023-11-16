@@ -13,6 +13,7 @@ import isHotkey from "is-hotkey";
 import {
   function as functionUtils,
   url as urlUtils,
+  markdown as markdownUtils,
   requestIdleCallback,
   getImageDimensionsFromUrl,
   isTouchDevice,
@@ -33,7 +34,7 @@ import createImagesPlugin from "./slate/plugins/images.js";
 import createHeadingsPlugin from "./slate/plugins/headings.js";
 import createUserMentionsPlugin from "./slate/plugins/user-mentions.js";
 import createChannelLinksPlugin from "./slate/plugins/channel-link.js";
-import { search, mergePlugins } from "./slate/utils.js";
+import { search, mergePlugins, fromMessageBlocks } from "./slate/utils.js";
 
 const FormDialog = React.lazy(() => import("./form-dialog.js"));
 const Dialog = React.lazy(() => import("./dialog.js"));
@@ -307,7 +308,13 @@ const withSaneishDefaultBehaviors = (editor, { mode } = {}) => {
     const text = data.getData("text");
 
     if (text) {
-      editor.insertText(text);
+      try {
+        const nodes = fromMessageBlocks(markdownUtils.toMessageBlocks(text));
+        editor.deleteFragment();
+        editor.insertNodes(nodes);
+      } catch (e) {
+        editor.insertText(text);
+      }
       return;
     }
 
