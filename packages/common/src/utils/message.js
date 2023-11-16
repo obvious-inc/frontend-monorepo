@@ -250,6 +250,7 @@ export const stringifyBlocks = (
         return el.emoji;
 
       case "attachments":
+      case "image-grid":
         return `\n${stringifyChildren()}\n`;
 
       case "image":
@@ -263,7 +264,7 @@ export const stringifyBlocks = (
         return `\n\`\`\`${el.code}\`\`\`\n`;
 
       default:
-        throw new Error();
+        throw new Error(`Unsupported element type "${el.type}"`);
     }
   };
 
