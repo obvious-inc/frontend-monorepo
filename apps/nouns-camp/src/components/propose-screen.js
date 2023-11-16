@@ -309,6 +309,8 @@ const ProposeScreen = () => {
   const hasRequiredInput =
     !isNameEmpty && !isBodyEmpty && draft.actions.length > 0;
 
+  const enableSubmit = hasRequiredInput && !hasPendingRequest;
+
   const selectedAction =
     selectedActionIndex >= 0 ? draft.actions[selectedActionIndex] : null;
 
@@ -578,6 +580,7 @@ const ProposeScreen = () => {
                                   openEditDialog={() => {
                                     setSelectedActionIndex(i);
                                   }}
+                                  hasPendingSubmit={hasPendingRequest}
                                 />
                               </li>
                             );
@@ -625,6 +628,7 @@ const ProposeScreen = () => {
                         onClick={() => {
                           setShowNewActionDialog(true);
                         }}
+                        disabled={hasPendingRequest}
                         fullWidth={!hasActions}
                         style={{ height: hasActions ? undefined : "5.25rem" }}
                       >
@@ -669,6 +673,7 @@ const ProposeScreen = () => {
                           });
                         }}
                         icon={<TrashCanIcon style={{ width: "1.4rem" }} />}
+                        disabled={hasPendingRequest}
                       />
                       <div
                         style={{
@@ -700,13 +705,14 @@ const ProposeScreen = () => {
                           align="center"
                           width="max-content"
                           fullWidth={false}
+                          disabled={hasPendingRequest}
                         />
                         <Button
                           type="submit"
                           variant="primary"
                           size="medium"
                           isLoading={hasPendingRequest}
-                          disabled={!hasRequiredInput || hasPendingRequest}
+                          disabled={!enableSubmit}
                         >
                           Submit
                         </Button>
@@ -828,6 +834,7 @@ const ProposeScreen = () => {
                       imagesMaxHeight={window.innerHeight / 2}
                       css={(t) => css({ fontSize: t.text.sizes.large })}
                       style={{ flex: 1, minHeight: "12rem" }}
+                      disabled={hasPendingRequest}
                     />
                   ) : (
                     <div
@@ -877,6 +884,7 @@ const ProposeScreen = () => {
                           setBody(e.target.value);
                         }}
                         placeholder="Raw markdown mode..."
+                        disabled={hasPendingRequest}
                         css={(t) =>
                           css({
                             outline: "none",
@@ -893,7 +901,7 @@ const ProposeScreen = () => {
                   )}
                 </div>
 
-                {editorMode === "rich-text" && (
+                {editorMode === "rich-text" && !hasPendingRequest && (
                   <>
                     <FloatingToolbar
                       isVisible={isFloatingToolbarVisible}
@@ -979,7 +987,12 @@ const ProposeScreen = () => {
   );
 };
 
-const ActionListItem = ({ action: a, transactions, openEditDialog }) => {
+const ActionListItem = ({
+  action: a,
+  transactions,
+  openEditDialog,
+  hasPendingSubmit = false,
+}) => {
   const chainId = useChainId();
   const actionTransactions =
     transactions ?? getActionTransactions(a, { chainId });
@@ -1113,6 +1126,7 @@ const ActionListItem = ({ action: a, transactions, openEditDialog }) => {
             onClick={() => {
               openEditDialog();
             }}
+            disabled={hasPendingSubmit}
             css={(t) =>
               css({
                 color: t.colors.textDimmed,
