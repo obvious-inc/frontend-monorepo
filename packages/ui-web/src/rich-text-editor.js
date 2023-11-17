@@ -750,14 +750,57 @@ const toolbarActionsByKey = {
     label: "Change list type",
   },
   "heading-transform": {
-    icon: "H",
-    style: { fontWeight: "700" },
+    icon: (
+      <svg
+        width="512"
+        height="512"
+        viewBox="0 0 512 512"
+        style={{ width: "1.2rem" }}
+      >
+        <path
+          fill="currentColor"
+          d="M448 96v320h32a16 16 0 0 1 16 16v32a16 16 0 0 1-16 16H320a16 16 0 0 1-16-16v-32a16 16 0 0 1 16-16h32V288H160v128h32a16 16 0 0 1 16 16v32a16 16 0 0 1-16 16H32a16 16 0 0 1-16-16v-32a16 16 0 0 1 16-16h32V96H32a16 16 0 0 1-16-16V48a16 16 0 0 1 16-16h160a16 16 0 0 1 16 16v32a16 16 0 0 1-16 16h-32v128h192V96h-32a16 16 0 0 1-16-16V48a16 16 0 0 1 16-16h160a16 16 0 0 1 16 16v32a16 16 0 0 1-16 16z"
+        />
+      </svg>
+    ),
   },
   "quote-transform": {
-    icon: ">",
+    icon: (
+      <svg
+        width="24"
+        height="24"
+        viewBox="0 0 24 24"
+        style={{ width: "1.7rem" }}
+      >
+        <g fill="none" fillRule="evenodd">
+          <path d="M24 0v24H0V0h24ZM12.594 23.258l-.012.002l-.071.035l-.02.004l-.014-.004l-.071-.036c-.01-.003-.019 0-.024.006l-.004.01l-.017.428l.005.02l.01.013l.104.074l.015.004l.012-.004l.104-.074l.012-.016l.004-.017l-.017-.427c-.002-.01-.009-.017-.016-.018Zm.264-.113l-.014.002l-.184.093l-.01.01l-.003.011l.018.43l.005.012l.008.008l.201.092c.012.004.023 0 .029-.008l.004-.014l-.034-.614c-.003-.012-.01-.02-.02-.022Zm-.715.002a.023.023 0 0 0-.027.006l-.006.014l-.034.614c0 .012.007.02.017.024l.015-.002l.201-.093l.01-.008l.003-.011l.018-.43l-.003-.012l-.01-.01l-.184-.092Z" />
+          <path
+            fill="currentColor"
+            d="M11.778 4.371a1 1 0 0 1-.15 1.407c-.559.452-.924.886-1.163 1.276a2 2 0 1 1-2.46 1.792c-.024-.492.02-1.15.293-1.892c.326-.884.956-1.829 2.073-2.732a1 1 0 0 1 1.407.15ZM15 5a1 1 0 1 0 0 2h5a1 1 0 1 0 0-2h-5Zm0 4a1 1 0 1 0 0 2h5a1 1 0 1 0 0-2h-5ZM4 14a1 1 0 0 1 1-1h15a1 1 0 1 1 0 2H5a1 1 0 0 1-1-1Zm1 3a1 1 0 1 0 0 2h15a1 1 0 1 0 0-2H5ZM3.006 8.846a2 2 0 1 0 2.459-1.792c.239-.39.604-.824 1.164-1.276A1 1 0 1 0 5.37 4.222c-1.117.903-1.747 1.848-2.073 2.732a4.757 4.757 0 0 0-.292 1.892Z"
+          />
+        </g>
+      </svg>
+    ),
   },
   "code-block-transform": {
-    icon: "`C`",
+    icon: (
+      <svg
+        xmlns="http://www.w3.org/2000/svg"
+        width="24"
+        height="24"
+        viewBox="0 0 24 24"
+        style={{ width: "1.7rem" }}
+      >
+        <path
+          fill="none"
+          stroke="currentColor"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          strokeWidth="2"
+          d="m8 7l-5 5l5 5m8 0l5-5l-5-5"
+        />
+      </svg>
+    ),
   },
   "toggle-mark-bold": {
     icon: "B",
@@ -1092,6 +1135,7 @@ export const Toolbar = ({ disabled: disabled_, onFocus, onBlur, ...props }) => {
 
   return (
     <div
+      data-toolbar
       css={(t) =>
         css({
           display: "flex",

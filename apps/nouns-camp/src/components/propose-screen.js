@@ -1384,13 +1384,19 @@ const FixedBottomToolbar = ({ isVisible = false, onFocus, onBlur }) => {
               width: "100%",
               maxWidth: "100%",
               margin: 0,
-              padding: "0.8rem",
+              padding: "0.8rem 1rem",
               background: t.colors.backgroundPrimary,
               borderTop: "0.1rem solid",
               borderColor: t.colors.borderLight,
               "[data-box]": {
                 padding: 0,
                 boxShadow: "none",
+              },
+              "[data-toolbar]": {
+                gap: "0 0.5rem",
+                '[role="separator"]': {
+                  margin: "0 0.5rem",
+                },
               },
             },
             '&[aria-hidden="true"]': {
