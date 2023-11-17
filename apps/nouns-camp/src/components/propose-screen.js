@@ -671,29 +671,31 @@ const ProposeScreen = () => {
                         })
                       }
                     />
-                    <div
-                      css={(t) =>
-                        css({
-                          textAlign: "right",
-                          padding: "0 0 1rem",
-                          color: t.colors.textMuted,
-                          background: t.colors.backgroundPrimary,
-                        })
-                      }
-                    >
-                      <Link
-                        type="button"
-                        component="button"
-                        onClick={() => {
-                          setShowMarkdownPreview((s) => !s);
-                        }}
-                        color="currentColor"
-                        hoverColor="currentColor"
-                        css={(t) => css({ fontSize: t.text.sizes.small })}
+                    {!isNameEmpty && !isBodyEmpty && (
+                      <div
+                        css={(t) =>
+                          css({
+                            textAlign: "right",
+                            padding: "0 0 1rem",
+                            color: t.colors.textMuted,
+                            background: t.colors.backgroundPrimary,
+                          })
+                        }
                       >
-                        Preview raw markdown
-                      </Link>
-                    </div>
+                        <Link
+                          type="button"
+                          component="button"
+                          onClick={() => {
+                            setShowMarkdownPreview((s) => !s);
+                          }}
+                          color="currentColor"
+                          hoverColor="currentColor"
+                          css={(t) => css({ fontSize: t.text.sizes.small })}
+                        >
+                          View raw markdown
+                        </Link>
+                      </div>
+                    )}
                     <div
                       css={(t) =>
                         css({
