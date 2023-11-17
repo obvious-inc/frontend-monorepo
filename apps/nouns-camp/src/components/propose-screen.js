@@ -688,6 +688,7 @@ const ProposeScreen = () => {
                           setShowMarkdownPreview((s) => !s);
                         }}
                         color="currentColor"
+                        hoverColor="currentColor"
                         css={(t) => css({ fontSize: t.text.sizes.small })}
                       >
                         Preview raw markdown
