@@ -6,6 +6,7 @@ import {
   Editor,
   Range,
   Node,
+  Path,
 } from "slate";
 import { Slate, Editable, withReact, ReactEditor } from "slate-react";
 import { withHistory } from "slate-history";
@@ -322,18 +323,36 @@ const withSaneishDefaultBehaviors = (editor, { mode } = {}) => {
         }
 
         editor.withoutNormalizing(() => {
-          const blockMatchEntry = editor.above({ match: editor.isBlock });
+          editor.deleteFragment();
 
-          if (
-            blockMatchEntry[1].length !== 0 && // Editor
-            editor.string(blockMatchEntry[1]).trim() !== ""
-          )
-            editor.insertBreak();
+          const getParentBlockPath = () =>
+            editor.above({ match: editor.isBlock })[1];
 
-          const targetPath =
-            blockMatchEntry[1].length === 0 ? [0] : blockMatchEntry[1];
+          const parentBlockPath = getParentBlockPath();
 
-          editor.insertNodes(nodes, { at: targetPath });
+          const hasBlockParent = parentBlockPath.length !== 0;
+
+          // Insert at start if we just deleted the whole document
+          if (!hasBlockParent) {
+            editor.insertNodes(nodes, { at: [0] });
+            return;
+          }
+
+          // Insert at the parent block location if we’re in an empty block
+          if (editor.string(parentBlockPath).trim() === "") {
+            editor.insertNodes(nodes, { at: parentBlockPath() });
+            return;
+          }
+
+          // Break before insertion if we’re in a non-empty block
+          editor.insertBreak();
+          editor.insertNodes(nodes, { at: Path.next(parentBlockPath) });
+
+          // If we pasted at the end of a block we’ll end up in an unwanted
+          // empty paragraph, which we may safetly delete to place the selection
+          // at the end of the last pasted block
+          if (editor.string(getParentBlockPath()).trim() === "")
+            editor.deleteBackward();
         });
       } catch (e) {
         editor.insertText(text);
