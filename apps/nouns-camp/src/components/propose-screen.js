@@ -505,14 +505,10 @@ const ProposeScreen = () => {
                   }
                 >
                   <div
-                    data-has-actions={hasActions}
                     css={css({
                       flex: 1,
                       minHeight: 0,
                       padding: "3.2rem 0 2.4rem",
-                      '&[data-has-actions="false"]': {
-                        paddingBottom: 0,
-                      },
                       "@media (min-width: 600px)": {
                         padding: "3.2rem 0",
                       },
