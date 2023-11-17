@@ -1620,17 +1620,17 @@ const MarkdownPreviewDialog = ({ isOpen, close, draftId }) => {
       }}
       width="84rem"
       backdrop="light"
+      css={css({ overflow: "auto" })}
     >
       <div
         css={(t) =>
           css({
-            overflow: "auto",
             padding: "1.6rem",
             fontSize: t.text.sizes.large,
             color: t.colors.textNormal,
             whiteSpace: "pre-wrap",
             fontFamily: t.fontStacks.monospace,
-            userSelect: 'text',
+            userSelect: "text",
             "@media (min-width: 600px)": {
               padding: "2.4rem",
             },
