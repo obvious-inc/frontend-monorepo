@@ -340,7 +340,7 @@ const withSaneishDefaultBehaviors = (editor, { mode } = {}) => {
 
           // Insert at the parent block location if we’re in an empty block
           if (editor.string(parentBlockPath).trim() === "") {
-            editor.insertNodes(nodes, { at: parentBlockPath() });
+            editor.insertNodes(nodes, { at: parentBlockPath });
             return;
           }
 
@@ -355,6 +355,7 @@ const withSaneishDefaultBehaviors = (editor, { mode } = {}) => {
             editor.deleteBackward();
         });
       } catch (e) {
+        console.warn(e);
         editor.insertText(text);
       }
       return;
