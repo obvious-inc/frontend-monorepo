@@ -21,6 +21,7 @@ import {
 } from "@shades/ui-web/icons";
 import Button from "@shades/ui-web/button";
 import Select from "@shades/ui-web/select";
+import Dialog from "@shades/ui-web/dialog";
 import RichTextEditor, {
   Provider as EditorProvider,
   Toolbar as EditorToolbar,
@@ -289,6 +290,7 @@ const ProposeScreen = () => {
   const [selectedActionIndex, setSelectedActionIndex] = React.useState(null);
   const [showNewActionDialog, setShowNewActionDialog] = React.useState(false);
 
+  const [showMarkdownPreview, setShowMarkdownPreview] = React.useState(false);
   const [editorMode, setEditorMode] = useEditorMode(draft, { setBody });
 
   const accountProposalCandidates = useAccountProposalCandidates(
@@ -456,9 +458,14 @@ const ProposeScreen = () => {
 
   useKeyboardShortcuts({
     "$mod+Shift+m": (e) => {
-      if (!isDebugSession) return;
       e.preventDefault();
-      setEditorMode(editorMode === "rich-text" ? "markdown" : "rich-text");
+
+      if (isDebugSession) {
+        setEditorMode(editorMode === "rich-text" ? "markdown" : "rich-text");
+        return;
+      }
+
+      setShowMarkdownPreview((s) => !s);
     },
   });
 
@@ -981,6 +988,16 @@ const ProposeScreen = () => {
             setActions([...draft.actions, a]);
           }}
           submitButtonLabel="Add"
+        />
+      )}
+
+      {showMarkdownPreview && (
+        <MarkdownPreviewDialog
+          isOpen
+          close={() => {
+            setShowMarkdownPreview(false);
+          }}
+          draftId={draftId}
         />
       )}
     </>
@@ -1533,6 +1550,48 @@ const TransactionCodeBlock = ({ transaction }) => {
     default:
       throw new Error(`Unknown transaction type: "${t.type}"`);
   }
+};
+
+const MarkdownPreviewDialog = ({ isOpen, close, draftId }) => {
+  const [draft] = useDraft(draftId);
+
+  const description = React.useMemo(() => {
+    if (!isOpen) return null;
+    const bodyMarkdown =
+      typeof draft.body === "string"
+        ? draft.body
+        : messageUtils.toMarkdown(richTextToMessageBlocks(draft.body));
+
+    return `# ${draft.name.trim()}\n\n${bodyMarkdown}`;
+  }, [isOpen, draft.name, draft.body]);
+
+  return (
+    <Dialog
+      isOpen={isOpen}
+      onRequestClose={() => {
+        close();
+      }}
+      width="84rem"
+    >
+      <div
+        css={(t) =>
+          css({
+            overflow: "auto",
+            padding: "1.6rem",
+            fontSize: t.text.sizes.large,
+            color: t.colors.textNormal,
+            whiteSpace: "pre-wrap",
+            fontFamily: t.fontStacks.monospace,
+            "@media (min-width: 600px)": {
+              padding: "2.4rem",
+            },
+          })
+        }
+      >
+        {description}
+      </div>
+    </Dialog>
+  );
 };
 
 export default () => {
