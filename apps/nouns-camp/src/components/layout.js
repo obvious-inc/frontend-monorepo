@@ -130,10 +130,10 @@ const NavBar = ({ navigationStack, actions }) => {
                 <LogoSymbol
                   css={css({
                     display: "inline-block",
-                    width: "2rem",
+                    width: "1.8rem",
                     height: "auto",
                     verticalAlign: "sub",
-                    transform: "translateY(0.15rem)",
+                    transform: "translateY(0.1rem) scale(1.05)",
                   })}
                 />
                 {location.pathname !== "/" && (

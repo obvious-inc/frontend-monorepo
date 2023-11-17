@@ -71,8 +71,8 @@ const ModalDialog = React.forwardRef(
             "--background": transparent
               ? "none"
               : backdrop === "light"
-                ? "hsl(0 0% 0% / 20%)"
-                : undefined,
+              ? "hsl(0 0% 0% / 20%)"
+              : undefined,
           }}
         >
           <div

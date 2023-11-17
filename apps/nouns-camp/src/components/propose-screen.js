@@ -951,16 +951,18 @@ const ProposeScreen = () => {
 
                 {editorMode === "rich-text" && !hasPendingRequest && (
                   <>
-                    <FloatingToolbar
-                      isVisible={isFloatingToolbarVisible}
-                      scrollContainerRef={scrollContainerRef}
-                      onFocus={() => {
-                        setHasFloatingToolbarFocus(true);
-                      }}
-                      onBlur={() => {
-                        setHasFloatingToolbarFocus(false);
-                      }}
-                    />
+                    {!isTouchDevice() && (
+                      <FloatingToolbar
+                        isVisible={isFloatingToolbarVisible}
+                        scrollContainerRef={scrollContainerRef}
+                        onFocus={() => {
+                          setHasFloatingToolbarFocus(true);
+                        }}
+                        onBlur={() => {
+                          setHasFloatingToolbarFocus(false);
+                        }}
+                      />
+                    )}
                     <FixedBottomToolbar
                       isVisible={
                         (isEditorFocused || hasFixedToolbarFocus) &&
@@ -1283,7 +1285,8 @@ const FloatingToolbar = ({
       const selectionTop = rect.top + window.scrollY - el.offsetHeight;
       const scrollContainerTop = scrollContainerRect.top + window.scrollY;
 
-      el.style.display = "block";
+      el.style.pointerEvents = "auto";
+      el.style.opacity = "1";
       el.style.position = "absolute";
       el.style.top = Math.max(scrollContainerTop, selectionTop - 12) + "px";
 
@@ -1299,9 +1302,6 @@ const FloatingToolbar = ({
         el.style.right = "auto";
         el.style.left = Math.max(16, leftOffset) + "px";
       }
-
-      el.style.pointerEvents = "auto";
-      el.style.opacity = "1";
     };
 
     scrollContainerEl.addEventListener("scroll", updatePosition);
