@@ -33,9 +33,9 @@ const middleware = (editor) => {
       // Element children aren’t allowed
       if (childNode.children != null) {
         if (editor.isBlock(childNode)) {
-          editor.print()
+          editor.print();
           editor.liftNodes({ at: childPath });
-          editor.print()
+          editor.print();
           return;
         }
 
