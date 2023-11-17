@@ -1639,15 +1639,16 @@ export default () => {
       const isEmpty =
         draft.name.trim() === "" &&
         draft.actions.length === 0 &&
-        draft.body.length === 1 &&
-        isRichTextEditorNodeEmpty(draft.body[0]);
+        (draft.body === "" ||
+          (draft.body.length === 1 &&
+            isRichTextEditorNodeEmpty(draft.body[0])));
 
       return isEmpty;
     })
   );
 
   React.useEffect(() => {
-    if (draftId != null) return;
+    if (draftId != null || createDraft == null) return;
 
     const emptyDraft = getFirstEmptyDraft();
 

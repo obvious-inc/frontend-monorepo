@@ -22,7 +22,7 @@ const createEmptyItem = () => ({
 export const useCollection = () => {
   const { address: connectedAccountAddress } = useAccount();
 
-  const [entriesById, setEntries] = useCachedState(
+  const [entriesById, setEntries, { isInitialized }] = useCachedState(
     createCacheKey(connectedAccountAddress)
   );
   const items = entriesById == null ? [] : Object.values(entriesById);
@@ -40,6 +40,8 @@ export const useCollection = () => {
     (id) => setEntries((entriesById) => omitKey(id, entriesById)),
     [setEntries]
   );
+
+  if (!isInitialized) return { items };
 
   return { items, createItem, deleteItem };
 };
