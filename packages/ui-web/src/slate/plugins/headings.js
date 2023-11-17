@@ -32,6 +32,13 @@ const middleware = (editor) => {
     for (const [childNode, childPath] of Node.children(editor, path)) {
       // Element children aren’t allowed
       if (childNode.children != null) {
+        if (editor.isBlock(childNode)) {
+          editor.print()
+          editor.liftNodes({ at: childPath });
+          editor.print()
+          return;
+        }
+
         editor.unwrapNodes({ at: childPath });
         return;
       }
