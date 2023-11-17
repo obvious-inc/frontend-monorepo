@@ -23,6 +23,7 @@ const ModalDialog = React.forwardRef(
       width = "62rem",
       height,
       transparent,
+      backdrop = "normal",
       modalProps: customModalProps,
       underlayProps: customUnderlayProps,
       children,
@@ -66,7 +67,13 @@ const ModalDialog = React.forwardRef(
             }),
             customUnderlayProps?.css,
           ]}
-          style={{ "--background": transparent ? "none" : undefined }}
+          style={{
+            "--background": transparent
+              ? "none"
+              : backdrop === "light"
+                ? "hsl(0 0% 0% / 20%)"
+                : undefined,
+          }}
         >
           <div
             ref={modalRef}

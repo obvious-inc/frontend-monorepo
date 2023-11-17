@@ -3,6 +3,7 @@ import { css } from "@emotion/react";
 const Link = ({
   underline = false,
   color,
+  hoverColor,
   component: Component = "button",
   style,
   ...props
@@ -21,7 +22,7 @@ const Link = ({
           cursor: "pointer",
           ":hover": {
             textDecoration: "underline",
-            color: `var(--color, ${t.colors.linkModifierHover})`,
+            color: `var(--hover-color, ${t.colors.linkModifierHover})`,
           },
         },
       })
@@ -29,6 +30,7 @@ const Link = ({
     style={{
       "--text-decoration": underline ? "underline" : undefined,
       "--color": color,
+      "--hover-color": hoverColor,
       ...style,
     }}
     {...props}

@@ -20,6 +20,7 @@ import {
   CaretDown as CaretDownIcon,
 } from "@shades/ui-web/icons";
 import Button from "@shades/ui-web/button";
+import Link from "@shades/ui-web/link";
 import Select from "@shades/ui-web/select";
 import Dialog from "@shades/ui-web/dialog";
 import RichTextEditor, {
@@ -39,7 +40,7 @@ import useChainId from "../hooks/chain-id.js";
 import {
   useCollection as useDrafts,
   useSingleItem as useDraft,
-} from "../hooks/channel-drafts.js";
+} from "../hooks/drafts.js";
 import {
   useCreateProposal,
   useCanCreateProposal,
@@ -674,6 +675,28 @@ const ProposeScreen = () => {
                         })
                       }
                     />
+                    <div
+                      css={(t) =>
+                        css({
+                          textAlign: "right",
+                          padding: "0 0 1rem",
+                          color: t.colors.textMuted,
+                          background: t.colors.backgroundPrimary,
+                        })
+                      }
+                    >
+                      <Link
+                        type="button"
+                        component="button"
+                        onClick={() => {
+                          setShowMarkdownPreview((s) => !s);
+                        }}
+                        color="currentColor"
+                        css={(t) => css({ fontSize: t.text.sizes.small })}
+                      >
+                        Preview raw markdown
+                      </Link>
+                    </div>
                     <div
                       css={(t) =>
                         css({
@@ -1599,6 +1622,7 @@ const MarkdownPreviewDialog = ({ isOpen, close, draftId }) => {
         close();
       }}
       width="84rem"
+      backdrop="light"
     >
       <div
         css={(t) =>
@@ -1609,6 +1633,7 @@ const MarkdownPreviewDialog = ({ isOpen, close, draftId }) => {
             color: t.colors.textNormal,
             whiteSpace: "pre-wrap",
             fontFamily: t.fontStacks.monospace,
+            userSelect: 'text',
             "@media (min-width: 600px)": {
               padding: "2.4rem",
             },

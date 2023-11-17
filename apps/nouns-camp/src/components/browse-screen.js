@@ -46,7 +46,7 @@ import useApproximateBlockTimestampCalculator from "../hooks/approximate-block-t
 import {
   useCollection as useDrafts,
   useSingleItem as useDraft,
-} from "../hooks/channel-drafts.js";
+} from "../hooks/drafts.js";
 import MetaTags from "./meta-tags.js";
 import * as Tabs from "./tabs.js";
 import Layout, { MainContentContainer } from "./layout.js";
