@@ -492,9 +492,8 @@ const Content = ({
                 })
               }
             >
-              Streams can be used to align incentives and make the DAO
-              comfortable with large funding requests or projects with uncertain
-              outcomes.
+              Payment stream vest requested funds gradually with each Ethereum
+              block. Vested funds can be withdrawn at any time.
             </div>
           )}
         </div>
@@ -509,14 +508,7 @@ const Content = ({
               }}
             >
               <Input
-                label={
-                  <>
-                    Start{" "}
-                    <span css={(t) => css({ fontSize: t.text.sizes.small })}>
-                      (can be in the past)
-                    </span>
-                  </>
-                }
+                label="Start vesting"
                 type="date"
                 value={
                   streamStartDate == null
@@ -528,7 +520,7 @@ const Content = ({
                 }}
               />
               <Input
-                label="End"
+                label="End vesting"
                 type="date"
                 value={
                   streamEndDate == null
@@ -549,8 +541,7 @@ const Content = ({
                 })
               }
             >
-              Requested funds are vested with each Ethereum block within the
-              given duration. Vested funds can be withdrawn at any time.
+              Start date can be in the past.
             </div>
           </div>
         )}
