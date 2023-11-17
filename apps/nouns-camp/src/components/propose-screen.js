@@ -492,7 +492,9 @@ const ProposeScreen = () => {
                 <div
                   css={(t) =>
                     css({
+                      paddingBottom: "6.8rem", // Fixed toolbar height
                       "@media (min-width: 952px)": {
+                        padding: 0,
                         position: "relative",
                         display: "flex",
                         flexDirection: "column",
@@ -502,15 +504,19 @@ const ProposeScreen = () => {
                   }
                 >
                   <div
+                    data-has-actions={hasActions}
                     css={css({
                       flex: 1,
                       minHeight: 0,
-                      padding: "0 0 3.2rem",
+                      padding: "3.2rem 0 2.4rem",
+                      '&[data-has-actions="false"]': {
+                        paddingBottom: 0,
+                      },
                       "@media (min-width: 600px)": {
                         padding: "3.2rem 0",
                       },
                       "@media (min-width: 952px)": {
-                        padding: "6rem 0 3,2rem",
+                        padding: "6rem 0 3.2rem",
                       },
                     })}
                   >
@@ -644,7 +650,22 @@ const ProposeScreen = () => {
                     </div>
                   </div>
 
-                  <div css={css({ position: "sticky", bottom: 0 })}>
+                  <div
+                    css={css({
+                      position: "fixed",
+                      left: 0,
+                      bottom: 0,
+                      padding: "0 1.6rem",
+                      width: "100%",
+                      "@media (min-width: 952px)": {
+                        padding: 0,
+                        left: "auto",
+                        position: "sticky",
+                        bottom: 0,
+                        width: "auto",
+                      },
+                    })}
+                  >
                     <div
                       css={(t) =>
                         css({
