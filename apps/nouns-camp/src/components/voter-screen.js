@@ -11,6 +11,7 @@ import {
   useActions,
   useDelegate,
   useDelegateFetch,
+  useNounsByAccount,
   useProposalCandidates,
   useProposals,
 } from "../store.js";
@@ -29,6 +30,7 @@ import Button from "@shades/ui-web/button";
 import Spinner from "@shades/ui-web/spinner";
 import { VotingBar } from "./proposal-screen.js";
 import { array as arrayUtils } from "@shades/common/utils";
+import NounPreviewPopoverTrigger from "./noun-preview-popover-trigger.js";
 
 const VOTER_LIST_PAGE_ITEM_COUNT = 20;
 const FEED_PAGE_ITEM_COUNT = 30;
@@ -267,7 +269,7 @@ const VotingPowerCallout = ({ voterAddress }) => {
     >
       <span css={(t) => css({ fontWeight: t.text.weights.smallHeader })}>
         {voteCount === 0 ? (
-          "No delegation currently"
+          "No voting power"
         ) : (
           <>
             {voteCount} {voteCount === 1 ? "noun" : "nouns"} represented
@@ -402,7 +404,7 @@ const VoterStatsBar = React.memo(({ voterAddress }) => {
 const VoterHeader = ({ voterAddress }) => {
   const { displayName, truncatedAddress } = useAccountDisplayName(voterAddress);
 
-  const delegate = useDelegate(voterAddress);
+  const voterNouns = useNounsByAccount(voterAddress);
 
   return (
     <div
@@ -473,7 +475,7 @@ const VoterHeader = ({ voterAddress }) => {
         </a>
       </div>
 
-      {delegate?.nounsRepresented.length > 0 && (
+      {voterNouns.length > 0 && (
         <div
           css={(t) =>
             css({
@@ -491,11 +493,13 @@ const VoterHeader = ({ voterAddress }) => {
             })
           }
         >
-          {delegate.nounsRepresented.map((n) => (
-            <div key={n.id}>
-              <NounAvatar id={n.id} seed={n.seed} size="4rem" />
-              <div data-id>{n.id}</div>
-            </div>
+          {voterNouns.map((n) => (
+            <NounPreviewPopoverTrigger
+              key={n.id}
+              nounId={n.id}
+              nounSeed={n.seed}
+              contextAccount={voterAddress}
+            />
           ))}
         </div>
       )}

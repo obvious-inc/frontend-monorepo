@@ -314,6 +314,22 @@ query {
   proposalFeedbacks(skip: ${skip}, first: ${first}, where: {voter: "${id}"}) {
     ...ProposalFeedbackFields
   }
+  nouns (where: {owner: "${id}"}) {
+    id
+    seed {
+      head
+      glasses
+      body
+      background
+      accessory
+    }
+    owner {
+      id
+      delegate {
+        id
+      }
+    }
+  }
 }`;
 
 const createProposalQuery = (id) => `
@@ -539,6 +555,58 @@ query {
         }
       }
     }
+  }
+}`;
+
+const createNounsByIdsQuery = (ids) => `
+query {
+  nouns(where: {id_in: [${ids.map((id) => `"${id}"`)}]}) {
+    id
+    seed {
+      head
+      glasses
+      body
+      background
+      accessory
+    }
+    owner {
+      id
+      delegate {
+        id
+      }
+    }
+  }
+  transferEvents(orderBy: blockNumber, orderDirection: desc, where: {noun_in: [${ids.map(
+    (id) => `"${id}"`
+  )}]}) {
+    id
+    noun {
+      id
+    }
+    newHolder {
+      id
+    }
+    previousHolder {
+      id
+    }
+    blockNumber
+    blockTimestamp
+  }
+  delegationEvents(orderBy: blockNumber, orderDirection: desc, where: {noun_in: [${ids.map(
+    (id) => `"${id}"`
+  )}]}) {
+    id
+    noun {
+      id
+    }
+    newDelegate {
+      id
+    }
+    previousDelegate {
+      id
+    }
+    blockNumber
+    blockTimestamp
   }
 }`;
 
@@ -801,6 +869,16 @@ const parseDelegate = (data) => {
   return parsedData;
 };
 
+const parseNoun = (data) => {
+  const parsedData = { ...data };
+
+  parsedData.seed = objectUtils.mapValues((v) => parseInt(v), data.seed);
+  parsedData.ownerId = data.owner?.id;
+  parsedData.delegateId = data.owner.delegate?.id;
+
+  return parsedData;
+};
+
 export const fetchProposalsVersions = async (chainId, proposalIds) =>
   subgraphFetch({
     chainId,
@@ -932,12 +1010,15 @@ export const fetchVoterScreenData = (chainId, id, options) =>
     const proposalFeedbackPosts = data.proposalFeedbacks.map(parseFeedbackPost);
     const candidateFeedbackPosts =
       data.candidateFeedbacks.map(parseFeedbackPost);
+    const nouns = data.nouns.map(parseNoun);
+
     return {
       proposals,
       candidates,
       votes,
       proposalFeedbackPosts,
       candidateFeedbackPosts,
+      nouns,
     };
   });
 
@@ -980,4 +1061,35 @@ export const fetchVoterActivity = (
     const votes = data.votes.map(parseProposalVote);
 
     return { votes, proposalFeedbackPosts, candidateFeedbackPosts };
+  });
+
+export const fetchNounsByIds = (chainId, ids) =>
+  subgraphFetch({
+    chainId,
+    query: createNounsByIdsQuery(ids),
+  }).then((data) => {
+    const nouns = data.nouns.map(parseNoun);
+    const transferEvents = data.transferEvents.map((e) => ({
+      ...e,
+      blockTimestamp: new Date(parseInt(e.blockTimestamp) * 1000),
+      newAccountId: e.newHolder?.id,
+      previousAccountId: e.previousHolder?.id,
+      nounId: e.noun?.id,
+      type: "transfer",
+    }));
+    const delegationEvents = data.delegationEvents.map((e) => ({
+      ...e,
+      blockTimestamp: new Date(parseInt(e.blockTimestamp) * 1000),
+      newAccountId: e.newDelegate?.id,
+      previousAccountId: e.previousDelegate?.id,
+      nounId: e.noun?.id,
+      type: "delegate",
+    }));
+
+    const events = arrayUtils.sortBy(
+      { value: (e) => e.blockNumber, order: "desc" },
+      [...transferEvents, ...delegationEvents]
+    );
+
+    return { nouns, events };
   });

@@ -180,11 +180,30 @@ const useStore = createZustandStoreHook((set) => {
       });
     });
 
+  const fetchNounsByIds = async (chainId, ids) =>
+    NounsSubgraph.fetchNounsByIds(chainId, ids).then(({ nouns, events }) => {
+      set((s) => {
+        const eventsByNounId = arrayUtils.groupBy((e) => e.nounId, events);
+        nouns.forEach((n) => {
+          const events = eventsByNounId[n.id] ?? [];
+          n.events = events;
+        });
+
+        return {
+          nounsById: {
+            ...s.nounsById,
+            ...arrayUtils.indexBy((n) => n.id, nouns),
+          },
+        };
+      });
+    });
+
   return {
     delegatesById: {},
     proposalsById: {},
     proposalCandidatesById: {},
     propdatesByProposalId: {},
+    nounsById: {},
 
     // UI actions
     addOptimitisicProposalVote: (proposalId, vote) => {
@@ -248,6 +267,13 @@ const useStore = createZustandStoreHook((set) => {
           (p) => p.id,
           delegate.proposals
         );
+
+        const nounIds = arrayUtils.unique(
+          delegate.nounsRepresented.map((n) => n.id)
+        );
+
+        // fetch nouns async ...
+        fetchNounsByIds(chainId, nounIds);
 
         set((s) => ({
           delegatesById: {
@@ -325,6 +351,7 @@ const useStore = createZustandStoreHook((set) => {
           votes,
           proposalFeedbackPosts,
           candidateFeedbackPosts,
+          nouns,
         }) => {
           const createdProposalsById = arrayUtils.indexBy(
             (p) => p.id,
@@ -367,6 +394,11 @@ const useStore = createZustandStoreHook((set) => {
           );
 
           fetchProposalCandidates(chainId, feedbackCandidateIds);
+
+          const nounIds = nouns.map((n) => n.id);
+
+          // fetch nouns async ...
+          fetchNounsByIds(chainId, nounIds);
 
           set((s) => ({
             proposalsById: objectUtils.merge(
@@ -810,4 +842,25 @@ export const useProposalCandidateVotingPower = (candidateId) => {
   ]).length;
 
   return candidateVotingPower;
+};
+
+export const useNoun = (id) =>
+  useStore(React.useCallback((s) => s.nounsById[id], [id]));
+
+export const useNounsByAccount = (accountAddress) => {
+  const delegate = useDelegate(accountAddress);
+  const delegatedNouns = delegate?.nounsRepresented ?? [];
+
+  const ownedNouns = useStore((s) =>
+    Object.values(s.nounsById).filter(
+      (n) => n.ownerId.toLowerCase() === accountAddress.toLowerCase()
+    )
+  );
+
+  const uniqueNouns = arrayUtils.unique(
+    (n1, n2) => n1.id === n2.id,
+    [...delegatedNouns, ...ownedNouns]
+  );
+
+  return arrayUtils.sortBy((n) => parseInt(n.id), uniqueNouns);
 };
