@@ -181,22 +181,26 @@ const useStore = createZustandStoreHook((set) => {
     });
 
   const fetchNounsByIds = async (chainId, ids) =>
-    NounsSubgraph.fetchNounsByIds(chainId, ids).then(({ nouns, events }) => {
-      set((s) => {
-        const eventsByNounId = arrayUtils.groupBy((e) => e.nounId, events);
-        nouns.forEach((n) => {
-          const events = eventsByNounId[n.id] ?? [];
-          n.events = events;
-        });
+    NounsSubgraph.fetchNounsByIds(chainId, ids).then(
+      ({ nouns, events, auctions }) => {
+        set((s) => {
+          const eventsByNounId = arrayUtils.groupBy((e) => e.nounId, events);
+          const auctionsByNounId = arrayUtils.groupBy((e) => e.id, auctions);
+          nouns.forEach((n) => {
+            const events = eventsByNounId[n.id] ?? [];
+            n.events = events;
+            n.auction = auctionsByNounId[n.id]?.[0];
+          });
 
-        return {
-          nounsById: {
-            ...s.nounsById,
-            ...arrayUtils.indexBy((n) => n.id, nouns),
-          },
-        };
-      });
-    });
+          return {
+            nounsById: {
+              ...s.nounsById,
+              ...arrayUtils.indexBy((n) => n.id, nouns),
+            },
+          };
+        });
+      }
+    );
 
   return {
     delegatesById: {},

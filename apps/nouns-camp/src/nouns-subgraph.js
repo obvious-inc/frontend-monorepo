@@ -608,6 +608,11 @@ query {
     blockNumber
     blockTimestamp
   }
+  auctions(where: {noun_in: [${ids.map((id) => `"${id}"`)}]}) {
+    id
+    amount
+    startTime
+  }
 }`;
 
 const createProposalCandidateFeedbackPostsByCandidatesQuery = (
@@ -1069,6 +1074,7 @@ export const fetchNounsByIds = (chainId, ids) =>
     query: createNounsByIdsQuery(ids),
   }).then((data) => {
     const nouns = data.nouns.map(parseNoun);
+
     const transferEvents = data.transferEvents.map((e) => ({
       ...e,
       blockTimestamp: new Date(parseInt(e.blockTimestamp) * 1000),
@@ -1086,10 +1092,15 @@ export const fetchNounsByIds = (chainId, ids) =>
       type: "delegate",
     }));
 
+    const auctions = data.auctions.map((a) => ({
+      ...a,
+      startTime: new Date(parseInt(a.startTime) * 1000),
+    }));
+
     const events = arrayUtils.sortBy(
       { value: (e) => e.blockNumber, order: "desc" },
       [...transferEvents, ...delegationEvents]
     );
 
-    return { nouns, events };
+    return { nouns, events, auctions };
   });

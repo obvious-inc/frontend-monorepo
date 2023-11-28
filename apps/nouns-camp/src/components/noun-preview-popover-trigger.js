@@ -7,6 +7,7 @@ import NounAvatar from "./noun-avatar.js";
 import FormattedDateWithTooltip from "./formatted-date-with-tooltip.js";
 import { resolveIdentifier } from "../contracts.js";
 import useChainId from "../hooks/chain-id.js";
+import { FormattedEthWithConditionalTooltip } from "./transaction-list.js";
 
 const NounPreviewPopoverTrigger = React.forwardRef(
   (
@@ -143,10 +144,6 @@ const NounPreviewEventText = ({ noun, event, contextAccount }) => {
 
 const NounPreview = React.forwardRef(({ nounId, contextAccount }, ref) => {
   const noun = useNoun(nounId);
-  const { displayName: ownerDisplayName } = useAccountDisplayName(
-    noun?.ownerId
-  );
-
   const latestEvent = noun?.events?.[0];
 
   return (
@@ -168,9 +165,7 @@ const NounPreview = React.forwardRef(({ nounId, contextAccount }, ref) => {
             gap: "1rem",
             borderBottom: "0.1rem solid",
             borderColor: t.colors.borderLighter,
-            p: {
-              color: t.colors.textDimmed,
-            },
+            color: t.colors.textDimmed,
           })
         }
       >
@@ -195,35 +190,18 @@ const NounPreview = React.forwardRef(({ nounId, contextAccount }, ref) => {
           >
             <div data-hover-underline="true">Noun {nounId}</div>
           </a>
-
-          <p>October 31, 2021</p>
-          <a
-            href={`https://etherscan.io/address/${noun?.ownerId}`}
-            rel="noreferrer"
-            target="_blank"
-            css={css({
-              color: "inherit",
-              textDecoration: "none",
-              "@media(hover: hover)": {
-                ':hover [data-hover-underline="true"]': {
-                  textDecoration: "underline",
-                },
-              },
-            })}
-          >
-            <div
-              data-hover-underline="true"
-              css={(t) =>
-                css({
-                  overflow: "hidden",
-                  textOverflow: "ellipsis",
-                  color: t.colors.textDimmed,
-                })
-              }
-            >
-              {ownerDisplayName}
-            </div>
-          </a>
+          <div>
+            <FormattedDateWithTooltip
+              disableRelative
+              month="short"
+              day="numeric"
+              year="numeric"
+              value={noun?.auction?.startTime}
+            />
+          </div>
+          <div>
+            <FormattedEthWithConditionalTooltip value={noun?.auction?.amount} />
+          </div>
         </div>
       </div>
       <div css={css({ padding: "1rem 1.2rem" })}>
