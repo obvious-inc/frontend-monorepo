@@ -74,7 +74,7 @@ const MarkdownRichText = ({
   if (lastBlockString.toLowerCase() === "sent from voter.wtf")
     return (
       <>
-        {blocks.length > 2 && (
+        {blocks.length >= 2 && (
           <RichText blocks={blocks.slice(0, -1)} {...props} />
         )}
         <p style={{ margin: blocks.length > 2 ? "0.625em 0 0" : 0 }}>
