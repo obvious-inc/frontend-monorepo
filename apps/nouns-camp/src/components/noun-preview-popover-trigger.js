@@ -77,6 +77,8 @@ const NounPreviewEventText = ({ noun, event, contextAccount }) => {
   const eventText = isDelegation ? "Delegated" : "Transferred";
   const destinationText = isDestinationAccount ? "from" : "to";
 
+  if (isDelegation && event.newAccountId == noun?.ownerId) return null;
+
   const fromAuction =
     event.previousAccountId.toLowerCase() ===
     resolveIdentifier(chainId, "auction-house").address.toLowerCase();
@@ -145,6 +147,10 @@ const NounPreviewEventText = ({ noun, event, contextAccount }) => {
 const NounPreview = React.forwardRef(({ nounId, contextAccount }, ref) => {
   const noun = useNoun(nounId);
   const latestEvent = noun?.events?.[0];
+  const firstEvent = noun?.events?.[noun.events.length - 1];
+
+  const auction = noun?.auction;
+  const nounTimestamp = auction?.startTime ?? firstEvent?.blockTimestamp;
 
   return (
     <div
@@ -190,18 +196,21 @@ const NounPreview = React.forwardRef(({ nounId, contextAccount }, ref) => {
           >
             <div data-hover-underline="true">Noun {nounId}</div>
           </a>
+
           <div>
             <FormattedDateWithTooltip
               disableRelative
               month="short"
               day="numeric"
               year="numeric"
-              value={noun?.auction?.startTime}
+              value={nounTimestamp}
             />
           </div>
-          <div>
-            <FormattedEthWithConditionalTooltip value={noun?.auction?.amount} />
-          </div>
+          {auction?.amount && (
+            <div>
+              <FormattedEthWithConditionalTooltip value={auction?.amount} />
+            </div>
+          )}
         </div>
       </div>
       <div css={css({ padding: "1rem 1.2rem" })}>
