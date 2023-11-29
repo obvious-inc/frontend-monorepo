@@ -200,6 +200,7 @@ const NounPreview = React.forwardRef(({ nounId, contextAccount }, ref) => {
           <div>
             <FormattedDateWithTooltip
               disableRelative
+              disableTooltip
               month="short"
               day="numeric"
               year="numeric"
