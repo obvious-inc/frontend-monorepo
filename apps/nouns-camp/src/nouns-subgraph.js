@@ -1097,10 +1097,18 @@ export const fetchNounsByIds = (chainId, ids) =>
       startTime: new Date(parseInt(a.startTime) * 1000),
     }));
 
-    const events = arrayUtils.sortBy(
-      { value: (e) => e.blockNumber, order: "desc" },
+    const getEventScore = (event) => {
+      // delegate events should come last chronologically
+      if (event.type === "transfer") return 0;
+      if (event.type === "delegate") return 1;
+      else return -1;
+    };
+
+    const sortedEvents = arrayUtils.sortBy(
+      { value: (e) => e.blockTimestamp, order: "desc" },
+      { value: (e) => getEventScore(e), order: "desc" },
       [...transferEvents, ...delegationEvents]
     );
 
-    return { nouns, events, auctions };
+    return { nouns, events: sortedEvents, auctions };
   });
