@@ -707,116 +707,118 @@ const ProfileView = () => {
           </form>
         </div>
 
-        <div
-          css={(t) =>
-            css({
-              marginTop: "5rem",
-              borderTop: `1px solid ${t.colors.borderLighter}`,
-              paddingTop: "5rem",
-            })
-          }
-        >
-          <form
-            id="create-username-update-form"
-            onSubmit={async (e) => {
-              e.preventDefault();
-              setHasUsernameUpdatePending(true);
-              setUsernameUpdateError(null);
-              await registerUsernameChange().finally(() =>
-                setHasUsernameUpdatePending(false)
-              );
-            }}
-            css={css({
-              flex: 1,
-              minHeight: 0,
-              display: "flex",
-              flexDirection: "column",
-            })}
+        {accountAddress && (
+          <div
+            css={(t) =>
+              css({
+                marginTop: "5rem",
+                borderTop: `1px solid ${t.colors.borderLighter}`,
+                paddingTop: "5rem",
+              })
+            }
           >
-            <h2>Set username</h2>
-            <Small>
-              https://docs.farcaster.xyz/protocol/fnames.html#fname-policy
-            </Small>
-            <input
-              value={usernameUpdateValue ?? ""}
-              onChange={(e) => setUsernameUpdateValue(e.target.value)}
-              placeholder="vitalik"
-              css={(t) =>
-                css({
-                  padding: "1rem",
-                  borderRadius: "0.3rem",
-                  border: `1px solid ${t.colors.backgroundQuarternary}`,
-                  background: "none",
-                  fontSize: t.text.sizes.large,
-                  width: "100%",
-                  outline: "none",
-                  fontWeight: t.text.weights.header,
-                  margin: "1rem 0",
-                  color: t.colors.textNormal,
-                  "::placeholder": { color: t.colors.textMuted },
-                })
-              }
-            />
-
-            <Button
-              type="submit"
-              form="create-username-update-form"
-              size="medium"
-              isLoading={hasUsernameUpdatePending}
-              disabled={
-                !isValidUsername ||
-                hasUsernameUpdatePending ||
-                usernameTimelock ||
-                username == usernameUpdateValue ||
-                !signer
-              }
+            <form
+              id="create-username-update-form"
+              onSubmit={async (e) => {
+                e.preventDefault();
+                setHasUsernameUpdatePending(true);
+                setUsernameUpdateError(null);
+                await registerUsernameChange().finally(() =>
+                  setHasUsernameUpdatePending(false)
+                );
+              }}
+              css={css({
+                flex: 1,
+                minHeight: 0,
+                display: "flex",
+                flexDirection: "column",
+              })}
             >
-              Set username
-            </Button>
-            {username != usernameUpdateValue && usernameTimelock ? (
-              <Small
+              <h2>Set username</h2>
+              <Small>
+                https://docs.farcaster.xyz/protocol/fnames.html#fname-policy
+              </Small>
+              <input
+                value={usernameUpdateValue ?? ""}
+                onChange={(e) => setUsernameUpdateValue(e.target.value)}
+                placeholder="vitalik"
                 css={(t) =>
                   css({
-                    marginTop: "1rem",
-                    color: usernameUpdateValue
-                      ? t.colors.textHighlight
-                      : t.colors.textDimmed,
+                    padding: "1rem",
+                    borderRadius: "0.3rem",
+                    border: `1px solid ${t.colors.backgroundQuarternary}`,
+                    background: "none",
+                    fontSize: t.text.sizes.large,
+                    width: "100%",
+                    outline: "none",
+                    fontWeight: t.text.weights.header,
+                    margin: "1rem 0",
+                    color: t.colors.textNormal,
+                    "::placeholder": { color: t.colors.textMuted },
                   })
                 }
-              >
-                You can only change your username again on{" "}
-                <FormattedDate
-                  value={usernameTimelock}
-                  month="short"
-                  day="numeric"
-                  hour="numeric"
-                  minute="numeric"
-                />
-                .
-              </Small>
-            ) : (
-              <Small style={{ marginTop: "1rem" }}>
-                {hasUsernameUpdatePending
-                  ? "Please check your wallet to sign the message"
-                  : "You can only change your username once every 28 days."}
-              </Small>
-            )}
+              />
 
-            {usernameUpdateError && (
-              <Small
-                css={(t) =>
-                  css({
-                    marginTop: "0.5rem",
-                    color: t.colors.textDanger,
-                    textOverflow: "clip",
-                  })
+              <Button
+                type="submit"
+                form="create-username-update-form"
+                size="medium"
+                isLoading={hasUsernameUpdatePending}
+                disabled={
+                  !isValidUsername ||
+                  hasUsernameUpdatePending ||
+                  usernameTimelock ||
+                  username == usernameUpdateValue ||
+                  !signer
                 }
               >
-                {usernameUpdateError}
-              </Small>
-            )}
-          </form>
-        </div>
+                Set username
+              </Button>
+              {username != usernameUpdateValue && usernameTimelock ? (
+                <Small
+                  css={(t) =>
+                    css({
+                      marginTop: "1rem",
+                      color: usernameUpdateValue
+                        ? t.colors.textHighlight
+                        : t.colors.textDimmed,
+                    })
+                  }
+                >
+                  You can only change your username again on{" "}
+                  <FormattedDate
+                    value={usernameTimelock}
+                    month="short"
+                    day="numeric"
+                    hour="numeric"
+                    minute="numeric"
+                  />
+                  .
+                </Small>
+              ) : (
+                <Small style={{ marginTop: "1rem" }}>
+                  {hasUsernameUpdatePending
+                    ? "Please check your wallet to sign the message"
+                    : "You can only change your username once every 28 days."}
+                </Small>
+              )}
+
+              {usernameUpdateError && (
+                <Small
+                  css={(t) =>
+                    css({
+                      marginTop: "0.5rem",
+                      color: t.colors.textDanger,
+                      textOverflow: "clip",
+                    })
+                  }
+                >
+                  {usernameUpdateError}
+                </Small>
+              )}
+            </form>
+          </div>
+        )}
       </div>
     </div>
   );
