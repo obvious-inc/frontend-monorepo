@@ -197,14 +197,16 @@ export const createCss = (t) => ({
   },
 
   table: {
+    fontSize: "0.875em",
+    borderCollapse: "collapse",
     borderSpacing: 0,
     "th,td": {
-      padding: "0.2em 0.4em",
+      padding: "0.5em 0.6428571429em",
+      border: "0.1rem solid",
+      borderColor: t.colors.borderLight,
     },
     "thead th, thead td": {
       fontWeight: t.text.weights.emphasis,
-      borderBottom: "0.1rem solid",
-      borderColor: t.colors.borderLight,
     },
   },
   "* + table": { marginTop: "var(--default-block-gap)" },
