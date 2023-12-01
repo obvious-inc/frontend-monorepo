@@ -191,7 +191,7 @@ const Content = ({
 }) => {
   const [type, setType] = React.useState(initialType ?? "one-time-payment");
   const [currency, setCurrency] = React.useState(initialCurrency ?? "eth");
-  const [amount, setAmount] = React.useState(initialAmount ?? "0");
+  const [amount, setAmount] = React.useState(initialAmount ?? "");
   const [receiverQuery, setReceiverQuery] = React.useState(initialTarget ?? "");
 
   // For streams
@@ -478,6 +478,8 @@ const Content = ({
             onChange={(value) => {
               if (value === "streaming-payment" && currency === "eth")
                 setCurrency("weth");
+              if (value === "one-time-payment" && currency === "weth")
+                setCurrency("eth");
               setType(value);
             }}
           />
@@ -558,6 +560,7 @@ const Content = ({
             >
               <DecimalInput
                 id="amount"
+                placeholder="0"
                 value={amount}
                 onChange={(value) => {
                   setAmount(value);
