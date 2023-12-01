@@ -365,6 +365,47 @@ export const toMarkdown = (blockElements) => {
       case "code-block":
         return `\`\`\`\n${el.code}\n\`\`\``;
 
+      case "table": {
+        const header = el.children.find((el) => el.type === "table-head");
+        const body = el.children.find((el) => el.type === "table-body");
+
+        const rows = [
+          ...(header?.children ?? []),
+          ...(body?.children ?? []),
+        ].map((rowEl) =>
+          rowEl.children.map((cellEl) =>
+            cellEl.children.map(renderNode).join("")
+          )
+        );
+
+        const columnWidths = rows.reduce((widths, cells) => {
+          cells.forEach((cell, i) => {
+            widths[i] = Math.max(widths[i] ?? 0, cell.length);
+          });
+          return widths;
+        }, []);
+
+        const renderRow = (cells, padder = " ") =>
+          `| ${cells
+            .map((text, i) => text.padEnd(columnWidths[i], padder))
+            .join(" | ")} |`;
+
+        const table = rows.map(renderRow).join("\n");
+
+        if (header == null) return table;
+
+        const renderedRows = table.split("\n");
+
+        return [
+          renderedRows[0],
+          // Header bottom divider
+          `| ${columnWidths
+            .map((width) => "".padEnd(width, "-"))
+            .join(" | ")} |`,
+          ...renderedRows.slice(1),
+        ].join("\n");
+      }
+
       default:
         throw new Error(`Unknown element type: "${el.type}"`);
     }
