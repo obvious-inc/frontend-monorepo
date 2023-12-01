@@ -8,7 +8,14 @@ import {
   Node,
   Path,
 } from "slate";
-import { Slate, Editable, withReact, ReactEditor } from "slate-react";
+import {
+  Slate,
+  Editable,
+  withReact,
+  ReactEditor,
+  useFocused,
+  useSelected,
+} from "slate-react";
 import { withHistory } from "slate-history";
 import isHotkey from "is-hotkey";
 import {
@@ -21,7 +28,7 @@ import {
 } from "@shades/common/utils";
 import { ErrorBoundary } from "@shades/common/react";
 import Select from "./select.js";
-import { createCss as createRichTextCss } from "./rich-text.js";
+import RichText, { createCss as createRichTextCss } from "./rich-text.js";
 import createControlledParagraphLineBreaksPlugin from "./slate/plugins/controlled-paragraph-line-breaks.js";
 import createSensibleVoidsPlugin from "./slate/plugins/sensible-voids.js";
 import createListsPlugin from "./slate/plugins/lists.js";
@@ -273,6 +280,14 @@ const withEditorCommands = (editor) => {
   return editor;
 };
 
+const withVoidTableFallback = (editor) => {
+  const { isVoid } = editor;
+
+  editor.isVoid = (node) => node.type === "table" || isVoid(node);
+
+  return editor;
+};
+
 const withSaneishDefaultBehaviors = (editor, { mode } = {}) => {
   const { insertData, normalizeNode, isInline } = editor;
 
@@ -424,6 +439,7 @@ const RichTextEditor = React.forwardRef(
         middleware,
         withMarks,
         withTextCommands,
+        withVoidTableFallback,
         withSaneishDefaultBehaviors,
         withEditorCommands,
         withReact,
@@ -719,6 +735,9 @@ const Element = (props) => {
         </pre>
       );
 
+    case "table":
+      return <VoidTable {...props} />;
+
     default:
       console.warn(`Unsupported element type "${element.type}"`);
       return <p {...attributes}>{children}</p>;
@@ -731,6 +750,30 @@ const Leaf = ({ attributes, children, leaf }) => {
   if (leaf.strikethrough) children = <s>{children}</s>;
 
   return <span {...attributes}>{children}</span>;
+};
+
+const VoidTable = ({ attributes, children, element }) => {
+  const selected = useSelected();
+  const focused = useFocused();
+  const isFocused = selected && focused;
+
+  return (
+    <table
+      {...attributes}
+      contentEditable={false}
+      data-focused={isFocused}
+      css={(t) =>
+        css({
+          '&[data-focused="true"]': {
+            boxShadow: t.shadows.focus,
+          },
+        })
+      }
+    >
+      <RichText blocks={element.content} />
+      {children}
+    </table>
+  );
 };
 
 const transformableBlockTypes = [

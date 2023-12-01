@@ -201,7 +201,7 @@ export const createCss = (t) => ({
     "th,td": {
       padding: "0.2em 0.4em",
     },
-    "thead th": {
+    "thead th, thead td": {
       fontWeight: t.text.weights.emphasis,
       borderBottom: "0.1rem solid",
       borderColor: t.colors.borderLight,
@@ -369,35 +369,21 @@ const createRenderer = ({
 
       case "table": {
         const isLast = i === els.length - 1;
-
         return (
           <React.Fragment key={i}>
-            {inline ? (
-              <>[table]</>
-            ) : (
-              <table>
-                <thead>
-                  <tr>
-                    {el.header.map((headerCell, i) => (
-                      <th key={i}>{headerCell}</th>
-                    ))}
-                  </tr>
-                </thead>
-                <tbody>
-                  {el.rows.map((rowCells, i) => (
-                    <tr key={i}>
-                      {rowCells.map((cell, i) => (
-                        <td key={i}>{cell}</td>
-                      ))}
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            )}
+            {inline ? <>[table]</> : <table>{children()}</table>}
             {isLast && suffix}
           </React.Fragment>
         );
       }
+      case "table-head":
+        return <thead key={i}>{children()}</thead>;
+      case "table-body":
+        return <tbody key={i}>{children()}</tbody>;
+      case "table-row":
+        return <tr key={i}>{children()}</tr>;
+      case "table-cell":
+        return <td key={i}>{children()}</td>;
 
       case "horizontal-divider":
         return (

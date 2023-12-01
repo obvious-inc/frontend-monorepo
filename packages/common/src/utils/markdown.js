@@ -100,12 +100,37 @@ const parseToken = (token, context = {}) => {
     case "hr":
       return { type: "horizontal-divider" };
 
-    case "table":
+    case "table": {
+      const children = [];
+
+      const parseCell = (cell) =>
+        cell.tokens.map((t) => parseToken(t, context));
+
+      if (token.header != null)
+        children.push({
+          type: "table-head",
+          children: token.header.map((cell) => ({
+            type: "table-cell",
+            children: parseCell(cell),
+          })),
+        });
+
+      children.push({
+        type: "table-body",
+        children: token.rows.map((row) => ({
+          type: "table-row",
+          children: row.map((cell) => ({
+            type: "table-cell",
+            children: parseCell(cell),
+          })),
+        })),
+      });
+
       return {
         type: "table",
-        header: token.header.map((t) => t.text),
-        rows: token.rows.map((r) => r.map((c) => c.text)),
+        children,
       };
+    }
 
     case "link": {
       const isImageUrl = ["jpg", "png", "gif"].some((ext) =>
