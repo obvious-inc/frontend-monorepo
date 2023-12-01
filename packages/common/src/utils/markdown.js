@@ -109,10 +109,15 @@ const parseToken = (token, context = {}) => {
       if (token.header != null)
         children.push({
           type: "table-head",
-          children: token.header.map((cell) => ({
-            type: "table-cell",
-            children: parseCell(cell),
-          })),
+          children: [
+            {
+              type: "table-row",
+              children: token.header.map((cell) => ({
+                type: "table-cell",
+                children: parseCell(cell),
+              })),
+            },
+          ],
         });
 
       children.push({
