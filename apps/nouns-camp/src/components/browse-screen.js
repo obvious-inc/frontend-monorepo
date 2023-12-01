@@ -149,7 +149,7 @@ const useFeedItems = ({ filter }) => {
 const BROWSE_LIST_PAGE_ITEM_COUNT = 20;
 
 const groupConfigByKey = {
-  drafts: { title: "Drafts" },
+  drafts: {},
   "proposals:new": { title: "New" },
   "proposals:ongoing": { title: "Ongoing" },
   "proposals:awaiting-vote": { title: "Not yet voted" },
@@ -222,17 +222,20 @@ const BrowseScreen = () => {
   );
 
   const filteredItems = React.useMemo(() => {
-    const filteredProposalDrafts = proposalDrafts
-      .filter((d) => {
-        if (d.name.trim() !== "") return true;
+    const filteredProposalDrafts =
+      proposalDrafts == null
+        ? []
+        : proposalDrafts
+            .filter((d) => {
+              if (d.name.trim() !== "") return true;
 
-        const isMarkdown = typeof d.body === "string";
+              const isMarkdown = typeof d.body === "string";
 
-        return isMarkdown
-          ? d.body.trim() !== ""
-          : d.body.some((n) => isRichTextNodeEmpty(n, { trim: true }));
-      })
-      .map((d) => ({ ...d, type: "draft" }));
+              return isMarkdown
+                ? d.body.trim() !== ""
+                : d.body.some((n) => !isRichTextNodeEmpty(n, { trim: true }));
+            })
+            .map((d) => ({ ...d, type: "draft" }));
 
     const items = [
       ...filteredProposalDrafts,
@@ -519,6 +522,7 @@ const BrowseScreen = () => {
               </div>
 
               {deferredQuery !== "" ? (
+                // Search results
                 <>
                   <SectionedList
                     sections={[
@@ -557,10 +561,11 @@ const BrowseScreen = () => {
                     }
                     onSelectionChange={(key) => {
                       const tabAnchorRect =
-                        tabAnchorRef.current.getBoundingClientRect();
+                        tabAnchorRef.current?.getBoundingClientRect();
                       const tabContainerRect =
-                        tabContainerRef.current.getBoundingClientRect();
-                      if (tabContainerRect.top > tabAnchorRect.top)
+                        tabContainerRef.current?.getBoundingClientRect();
+
+                      if (tabContainerRect?.top > tabAnchorRect?.top)
                         scrollContainerRef.current.scrollTo({
                           top: tabAnchorRef.current.offsetTop - 42,
                         });
@@ -602,7 +607,7 @@ const BrowseScreen = () => {
                         <SectionedList
                           showPlaceholder={filteredProposals.length === 0}
                           sections={[
-                            "drafts",
+                            // "drafts",
                             "proposals:authored",
                             "proposals:awaiting-vote",
                             "proposals:ongoing",
@@ -731,6 +736,22 @@ const BrowseScreen = () => {
                           )}
                       </div>
                     </Tabs.Item>
+                    {sectionsByName["drafts"]?.items.length > 0 && (
+                      <Tabs.Item key="drafts" title="My drafts">
+                        <div
+                          css={css({
+                            paddingTop: "2.4rem",
+                            "@media (min-width: 600px)": {
+                              paddingTop: "2.8rem",
+                            },
+                          })}
+                        >
+                          <DraftTabContent
+                            items={sectionsByName["drafts"]?.items}
+                          />
+                        </div>
+                      </Tabs.Item>
+                    )}
                   </Tabs.Root>
                 </>
               )}
@@ -1622,5 +1643,42 @@ const ScoreStack = React.memo(({ for: for_, against }) => {
     </div>
   );
 });
+
+const DraftTabContent = ({ items = [] }) => {
+  const hasDrafts = items.length > 0;
+
+  if (!hasDrafts)
+    return (
+      <div>
+        <div
+          css={(t) =>
+            css({
+              textAlign: "center",
+              color: t.colors.textMuted,
+              p: { padding: "3.2rem" },
+            })
+          }
+        >
+          <p>You don’t have any drafts</p>
+          <Button component={RouterLink} to="/new">
+            New draft
+          </Button>
+        </div>
+      </div>
+    );
+
+  return (
+    <SectionedList
+      sections={[
+        {
+          title: "Drafts",
+          description:
+            "Drafts are stored in your browser, and can’t be seen by anyone else",
+          items,
+        },
+      ]}
+    />
+  );
+};
 
 export default BrowseScreen;
