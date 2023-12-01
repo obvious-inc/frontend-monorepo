@@ -512,6 +512,11 @@ const Content = ({
               <Input
                 label="Start vesting"
                 type="date"
+                max={
+                  streamEndDate == null
+                    ? undefined
+                    : formatDate(streamEndDate, "yyyy-MM-dd")
+                }
                 value={
                   streamStartDate == null
                     ? ""
@@ -524,6 +529,11 @@ const Content = ({
               <Input
                 label="End vesting"
                 type="date"
+                min={
+                  streamStartDate == null
+                    ? undefined
+                    : formatDate(streamStartDate, "yyyy-MM-dd")
+                }
                 value={
                   streamEndDate == null
                     ? ""
@@ -540,10 +550,14 @@ const Content = ({
                   fontSize: t.text.sizes.small,
                   color: t.colors.textDimmed,
                   marginTop: "0.7rem",
+                  em: {
+                    fontWeight: t.text.weights.emphasis,
+                    fontStyle: "normal",
+                  },
                 })
               }
             >
-              Start date may be in the past.
+              Start date <em>can</em> be in the past.
             </div>
           </div>
         )}
