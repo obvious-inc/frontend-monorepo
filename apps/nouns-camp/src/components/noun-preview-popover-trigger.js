@@ -59,13 +59,45 @@ const NounPreviewPopoverTrigger = React.forwardRef(
   }
 );
 
-const NounPreviewEventText = ({ noun, event, contextAccount }) => {
-  const chainId = useChainId();
+const NounEvents = ({ nounId, contextAccount }) => {
+  const noun = useNoun(nounId);
+  const events = noun?.events ?? [];
+
+  if (!events) return null;
+
+  const latestDelegationEvent = events.find((e) => e.type === "delegate");
+  const latestTransferEvent = events.find((e) => e.type === "transfer");
+
+  return (
+    <div
+      css={(t) =>
+        css({
+          display: "grid",
+          rowGap: "0.4rem",
+          padding: "1rem 1.2rem",
+          borderTop: "0.1rem solid",
+          borderColor: t.colors.borderLighter,
+        })
+      }
+    >
+      <NounDelegationPreviewText
+        noun={noun}
+        event={latestDelegationEvent}
+        contextAccount={contextAccount}
+      />
+
+      <NounTransferPreviewText
+        noun={noun}
+        event={latestTransferEvent}
+        contextAccount={contextAccount}
+      />
+    </div>
+  );
+};
+
+const NounDelegationPreviewText = ({ noun, event, contextAccount }) => {
   const { displayName: newAccountDisplayName } = useAccountDisplayName(
     event.newAccountId
-  );
-  const { displayName: previousAccountDisplayName } = useAccountDisplayName(
-    event.previousAccountId
   );
   const { displayName: ownerDisplayName } = useAccountDisplayName(noun.ownerId);
 
@@ -73,43 +105,31 @@ const NounPreviewEventText = ({ noun, event, contextAccount }) => {
     contextAccount != null &&
     event.newAccountId.toLowerCase() === contextAccount.toLowerCase();
 
-  const isDelegation = event.type === "delegate";
-  const eventText = isDelegation ? "Delegated" : "Transferred";
   const destinationText = isDestinationAccount ? "from" : "to";
 
-  if (isDelegation && event.newAccountId == noun?.ownerId) return null;
+  if (event.newAccountId == noun?.ownerId) return null;
 
-  const fromAuction =
-    event.previousAccountId.toLowerCase() ===
-    resolveIdentifier(chainId, "auction-house").address.toLowerCase();
+  const previousAccount = isDestinationAccount
+    ? ownerDisplayName
+    : newAccountDisplayName;
 
-  const previousAccount = isDelegation
-    ? isDestinationAccount
-      ? ownerDisplayName
-      : newAccountDisplayName
-    : previousAccountDisplayName;
-
-  const previousAccountAddress = isDelegation
-    ? isDestinationAccount
-      ? noun.ownerId
-      : event.newAccountId
-    : event.previousAccountId;
+  const previousAccountAddress = isDestinationAccount
+    ? noun.ownerId
+    : event.newAccountId;
 
   return (
     <div>
       <span
         css={(t) =>
           css({
-            color: isDelegation
-              ? isDestinationAccount
-                ? t.colors.textPositive
-                : t.colors.textNegative
-              : "unset",
+            color: isDestinationAccount
+              ? t.colors.textPositive
+              : t.colors.textNegative,
             fontWeight: t.text.weights.emphasis,
           })
         }
       >
-        {eventText} {destinationText}{" "}
+        Delegated {destinationText}{" "}
       </span>
       <span>
         <a
@@ -135,6 +155,81 @@ const NounPreviewEventText = ({ noun, event, contextAccount }) => {
       since{" "}
       <FormattedDateWithTooltip
         tinyRelative
+        disableTooltip
+        month="short"
+        day="numeric"
+        year="numeric"
+        value={event.blockTimestamp}
+      />
+    </div>
+  );
+};
+
+const NounTransferPreviewText = ({ noun, event, contextAccount }) => {
+  const chainId = useChainId();
+
+  const { displayName: newAccountDisplayName } = useAccountDisplayName(
+    event.newAccountId
+  );
+  const { displayName: previousAccountDisplayName } = useAccountDisplayName(
+    event.previousAccountId
+  );
+  const { displayName: ownerDisplayName } = useAccountDisplayName(noun.ownerId);
+
+  const isDestinationAccount =
+    contextAccount != null &&
+    event.newAccountId.toLowerCase() === contextAccount.toLowerCase();
+
+  if (!isDestinationAccount) return null;
+  // const fromAuction =
+  //   event.previousAccountId.toLowerCase() ===
+  //   resolveIdentifier(chainId, "auction-house").address.toLowerCase();
+
+  const previousAccount = isDestinationAccount
+    ? previousAccountDisplayName
+    : newAccountDisplayName;
+
+  const previousAccountAddress = isDestinationAccount
+    ? event.previousAccountId
+    : event.newAccountId;
+
+  return (
+    <div>
+      <span
+        css={(t) =>
+          css({
+            fontWeight: t.text.weights.emphasis,
+          })
+        }
+      >
+        Transferred
+      </span>{" "}
+      from{" "}
+      <span>
+        <a
+          href={`https://etherscan.io/address/${previousAccountAddress}`}
+          rel="noreferrer"
+          target="_blank"
+          css={(t) =>
+            css({
+              color: "inherit",
+              fontWeight: t.text.weights.emphasis,
+              textDecoration: "none",
+              "@media(hover: hover)": {
+                ":hover": {
+                  textDecoration: "underline",
+                },
+              },
+            })
+          }
+        >
+          {previousAccount}
+        </a>
+      </span>{" "}
+      on{" "}
+      <FormattedDateWithTooltip
+        disableRelative
+        disableTooltip
         month="short"
         day="numeric"
         year="numeric"
@@ -146,7 +241,6 @@ const NounPreviewEventText = ({ noun, event, contextAccount }) => {
 
 const NounPreview = React.forwardRef(({ nounId, contextAccount }, ref) => {
   const noun = useNoun(nounId);
-  const latestEvent = noun?.events?.[0];
   const firstEvent = noun?.events?.[noun.events.length - 1];
 
   const auction = noun?.auction;
@@ -169,8 +263,6 @@ const NounPreview = React.forwardRef(({ nounId, contextAccount }, ref) => {
             alignItems: "center",
             padding: "1rem 1.2rem",
             gap: "1rem",
-            borderBottom: "0.1rem solid",
-            borderColor: t.colors.borderLighter,
             color: t.colors.textDimmed,
           })
         }
@@ -214,15 +306,7 @@ const NounPreview = React.forwardRef(({ nounId, contextAccount }, ref) => {
           )}
         </div>
       </div>
-      <div css={css({ padding: "1rem 1.2rem" })}>
-        {latestEvent && (
-          <NounPreviewEventText
-            noun={noun}
-            event={latestEvent}
-            contextAccount={contextAccount}
-          />
-        )}
-      </div>
+      <NounEvents nounId={nounId} contextAccount={contextAccount} />
     </div>
   );
 });
