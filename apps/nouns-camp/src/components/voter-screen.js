@@ -247,9 +247,7 @@ const VotingPowerCallout = ({ voterAddress }) => {
   const currentQuorum = useCurrentDynamicQuorum();
 
   const delegate = useDelegate(voterAddress);
-  const nounsRepresented = delegate?.nounsRepresented ?? [];
-
-  const voteCount = nounsRepresented.length;
+  const voteCount = delegate?.delegatedVotes ?? 0;
   const votePowerQuorumPercentage =
     currentQuorum == null
       ? null

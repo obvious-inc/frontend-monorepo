@@ -90,6 +90,7 @@ ${VOTE_FIELDS}
 query {
   delegates(first: 1000, where: {nounsRepresented_: {}}) {
     id
+    delegatedVotes
     nounsRepresented {
       id
       seed {
@@ -129,6 +130,7 @@ const createDelegateQuery = (id) => `
   query {
     delegate(id: "${id}") {
       id
+      delegatedVotes
       nounsRepresented {
         id
         seed {
@@ -852,6 +854,8 @@ const parseProposalCandidate = (data, { chainId }) => {
 
 const parseDelegate = (data) => {
   const parsedData = { ...data };
+
+  parsedData.delegatedVotes = parseInt(data.delegatedVotes);
 
   parsedData.nounsRepresented = arrayUtils.sortBy(
     (n) => parseInt(n.id),
