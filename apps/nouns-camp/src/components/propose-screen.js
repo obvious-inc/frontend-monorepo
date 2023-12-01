@@ -8,6 +8,7 @@ import {
   useFetch,
   useLatestCallback,
   AutoAdjustingHeightTextarea,
+  ErrorBoundary,
 } from "@shades/common/react";
 import {
   message as messageUtils,
@@ -864,28 +865,70 @@ const ProposeScreen = () => {
                     />
                   </div>
                   {editorMode === "rich-text" ? (
-                    <RichTextEditor
-                      ref={editorRef}
-                      value={draft.body}
-                      onChange={(e, editor) => {
-                        setBody(e);
-                        setEditorFocused(editor.isFocused());
-                        setEditorSelection(editor.selection);
-                      }}
-                      onFocus={(_, editor) => {
-                        setEditorFocused(true);
-                        setEditorSelection(editor.selection);
-                      }}
-                      onBlur={() => {
-                        setEditorFocused(false);
-                      }}
-                      placeholder={`Use markdown shortcuts like "# " and "1. " to create headings and lists.`}
-                      imagesMaxWidth={null}
-                      imagesMaxHeight={680}
-                      disabled={hasPendingRequest}
-                      css={(t) => css({ fontSize: t.text.sizes.large })}
-                      style={{ flex: 1, minHeight: "12rem" }}
-                    />
+                    <ErrorBoundary
+                      fallback={() => (
+                        <>
+                          <div
+                            css={(t) =>
+                              css({
+                                padding: "2.4rem",
+                                background: t.colors.backgroundSecondary,
+                                borderRadius: "0.3rem",
+                                details: {
+                                  fontSize: t.text.sizes.small,
+                                },
+                                summary: {
+                                  marginTop: "1.6rem",
+                                },
+                              })
+                            }
+                          >
+                            <div
+                              css={(t) =>
+                                css({
+                                  textAlign: "center",
+                                  color: t.colors.textDanger,
+                                  padding: "3.2rem 0",
+                                })
+                              }
+                            >
+                              Error rendering draft
+                            </div>
+                            <details>
+                              <summary>Click to show content</summary>
+                              <pre style={{ marginTop: "1.6rem" }}>
+                                <code>
+                                  {JSON.stringify(draft.body, null, 2)}
+                                </code>
+                              </pre>
+                            </details>
+                          </div>
+                        </>
+                      )}
+                    >
+                      <RichTextEditor
+                        ref={editorRef}
+                        value={draft.body}
+                        onChange={(e, editor) => {
+                          setBody(e);
+                          setEditorFocused(editor.isFocused());
+                          setEditorSelection(editor.selection);
+                        }}
+                        onFocus={(_, editor) => {
+                          setEditorFocused(true);
+                          setEditorSelection(editor.selection);
+                        }}
+                        onBlur={() => {
+                          setEditorFocused(false);
+                        }}
+                        placeholder={`Use markdown shortcuts like "# " and "1. " to create headings and lists.`}
+                        imagesMaxWidth={null}
+                        imagesMaxHeight={680}
+                        disabled={hasPendingRequest}
+                        css={(t) => css({ fontSize: t.text.sizes.large })}
+                        style={{ flex: 1, minHeight: "12rem" }}
+                      />
+                    </ErrorBoundary>
                   ) : (
                     <div
                       style={{
