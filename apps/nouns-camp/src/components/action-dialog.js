@@ -543,7 +543,7 @@ const Content = ({
                 })
               }
             >
-              Start date can be in the past.
+              Start date may be in the past.
             </div>
           </div>
         )}
