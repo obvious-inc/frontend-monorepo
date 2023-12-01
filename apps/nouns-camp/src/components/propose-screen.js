@@ -677,7 +677,7 @@ const ProposeScreen = () => {
                         css={(t) =>
                           css({
                             textAlign: "right",
-                            padding: "0 0 1rem",
+                            padding: "0 0 1.2rem",
                             color: t.colors.textMuted,
                             background: t.colors.backgroundPrimary,
                           })
@@ -689,12 +689,28 @@ const ProposeScreen = () => {
                           onClick={() => {
                             setShowMarkdownPreview((s) => !s);
                           }}
+                          underline
                           color="currentColor"
                           hoverColor="currentColor"
-                          css={(t) => css({ fontSize: t.text.sizes.small })}
+                          css={(t) =>
+                            css({
+                              fontSize: t.text.sizes.small,
+                              marginBottom: "0.6rem",
+                            })
+                          }
                         >
                           View raw markdown
                         </Link>
+                        <div
+                          css={(t) =>
+                            css({
+                              color: t.colors.textMuted,
+                              fontSize: t.text.sizes.small,
+                            })
+                          }
+                        >
+                          Draft saved to browser storage
+                        </div>
                       </div>
                     )}
                     <div
