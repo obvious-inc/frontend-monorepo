@@ -758,21 +758,23 @@ const VoidTable = ({ attributes, children, element }) => {
   const isFocused = selected && focused;
 
   return (
-    <table
-      {...attributes}
-      contentEditable={false}
-      data-focused={isFocused}
-      css={(t) =>
-        css({
-          '&[data-focused="true"]': {
-            boxShadow: t.shadows.focus,
-          },
-        })
-      }
-    >
-      <RichText blocks={element.content} />
+    <div>
+      <table
+        {...attributes}
+        contentEditable={false}
+        data-focused={isFocused}
+        css={(t) =>
+          css({
+            '&[data-focused="true"]': {
+              boxShadow: t.shadows.focus,
+            },
+          })
+        }
+      >
+        <RichText raw blocks={element.content} />
+      </table>
       {children}
-    </table>
+    </div>
   );
 };
 

@@ -526,6 +526,7 @@ const RichText = ({
   imagesMaxWidth,
   imagesMaxHeight,
   style,
+  raw = false,
   ...props
 }) => {
   const render = createRenderer({
@@ -536,6 +537,8 @@ const RichText = ({
     renderElement,
     onClickInteractiveElement,
   });
+
+  if (raw) return render(blocks);
 
   const inlineStyle = style ?? {};
 
