@@ -1,11 +1,7 @@
 import dateSubtractDays from "date-fns/subDays";
 import dateStartOfDay from "date-fns/startOfDay";
 import React from "react";
-import {
-  Link as RouterLink,
-  useNavigate,
-  useSearchParams,
-} from "react-router-dom";
+import { Link as RouterLink, useSearchParams } from "react-router-dom";
 import { css } from "@emotion/react";
 import { useBlockNumber } from "wagmi";
 import { useFetch, useMatchMedia } from "@shades/common/react";
@@ -19,7 +15,10 @@ import Input from "@shades/ui-web/input";
 import Button from "@shades/ui-web/button";
 import Select from "@shades/ui-web/select";
 import { isNodeEmpty as isRichTextNodeEmpty } from "@shades/ui-web/rich-text-editor";
-import { ArrowDown as ArrowDownIcon } from "@shades/ui-web/icons";
+import {
+  ArrowDown as ArrowDownIcon,
+  Plus as PlusIcon,
+} from "@shades/ui-web/icons";
 import { APPROXIMATE_BLOCKS_PER_DAY } from "../constants/ethereum.js";
 import {
   isFinalState as isFinalProposalState,
@@ -179,8 +178,9 @@ const groupConfigByKey = {
 
 const BrowseScreen = () => {
   const scrollContainerRef = React.useRef();
-  const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
+
+  const isBetaSession = searchParams.get("beta") != null;
 
   const isDesktopLayout = useMatchMedia("(min-width: 952px)");
   const tabAnchorRef = React.useRef();
@@ -509,16 +509,6 @@ const BrowseScreen = () => {
                   }}
                   css={css({ flex: 1, minWidth: 0 })}
                 />
-
-                {searchParams.get("beta") != null && (
-                  <Button
-                    onClick={() => {
-                      navigate("/new");
-                    }}
-                  >
-                    New proposal
-                  </Button>
-                )}
               </div>
 
               {deferredQuery !== "" ? (
@@ -736,7 +726,8 @@ const BrowseScreen = () => {
                           )}
                       </div>
                     </Tabs.Item>
-                    {sectionsByName["drafts"]?.items.length > 0 && (
+                    {(isBetaSession ||
+                      sectionsByName["drafts"]?.items.length > 0) && (
                       <Tabs.Item key="drafts" title="My drafts">
                         <div
                           css={css({
@@ -1660,8 +1651,12 @@ const DraftTabContent = ({ items = [] }) => {
           }
         >
           <p>You don’t have any drafts</p>
-          <Button component={RouterLink} to="/new">
-            New draft
+          <Button
+            component={RouterLink}
+            to="/new"
+            icon={<PlusIcon style={{ width: "1rem" }} />}
+          >
+            New proposal
           </Button>
         </div>
       </div>

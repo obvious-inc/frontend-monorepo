@@ -1246,7 +1246,7 @@ const ProposalCandidateScreen = () => {
           candidate == null ||
           candidate.canceledTimestamp != null ||
           connectedWalletAccountAddress == null
-            ? []
+            ? undefined
             : isProposer
             ? isBetaSession
               ? [
@@ -1256,8 +1256,8 @@ const ProposalCandidateScreen = () => {
                     label: "Put on chain",
                   },
                 ].filter(Boolean)
-              : []
-            : []
+              : undefined
+            : undefined
         }
       >
         {candidate == null ? (

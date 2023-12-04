@@ -1117,8 +1117,8 @@ const ProposalScreen = () => {
         ]}
         actions={
           isProposer && proposal?.state === "updatable"
-            ? [] // [{ onSelect: openDialog, label: "Edit proposal" }]
-            : []
+            ? undefined // [{ onSelect: openDialog, label: "Edit proposal" }]
+            : undefined
         }
       >
         {proposal == null ? (
