@@ -1254,7 +1254,8 @@ const DecimalInput = ({ value, ...props }) => (
       if (value === "0") return;
 
       if (value === "") {
-        props.onChange("0");
+        props.onChange("");
+        // props.onChange("0");
         return;
       }
 
