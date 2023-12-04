@@ -83,18 +83,6 @@ fragment CandidateContentSignatureFields on ProposalCandidateSignature {
       id
     }
   }
-}`;
-
-const PROPOSAL_CANDIDATE_SIGNATURE_FIELDS = `
-fragment ProposalCandidateSignatureFields on ProposalCandidateSignature {
-  id
-  reason
-  canceled
-  createdTimestamp
-  expirationTimestamp
-  signer {
-    id
-  }
   content {
     id
   }
@@ -335,10 +323,10 @@ const createProposalCandidatesBySignatureAccountQuery = (
   id,
   { skip = 0, first = 1000 } = {}
 ) => `
-${PROPOSAL_CANDIDATE_SIGNATURE_FIELDS}
+${CANDIDATE_CONTENT_SIGNATURE_FIELDS}
 query {
   proposalCandidateSignatures(skip: ${skip}, first: ${first}, where: {signer: "${id}"}) {
-    ...ProposalCandidateSignatureFields
+    ...CandidateContentSignatureFields
   }
 }`;
 
@@ -361,6 +349,7 @@ query {
 }`;
 
 const createProposalCandidateByLatestVersionIdsQuery = (versionIds) => `
+${CANDIDATE_CONTENT_SIGNATURE_FIELDS}
 query {
   proposalCandidates(where: {latestVersion_in: [${versionIds.map(
     (id) => `"${id}"`
@@ -386,16 +375,7 @@ query {
         matchingProposalIds
         proposalIdToUpdate
         contentSignatures {
-          reason
-          createdTimestamp
-          canceled
-          expirationTimestamp
-          signer {
-            id
-            nounsRepresented {
-              id
-            }
-          }
+          ...CandidateContentSignatureFields
         }
       }
     }

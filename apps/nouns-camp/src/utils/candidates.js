@@ -91,7 +91,6 @@ export const buildFeed = (candidate) => {
     expiresAt: s.expirationTimestamp,
     isCanceled: s.canceled,
     candidateId,
-    timestamp: s.createdTimestamp,
     targetProposalId,
   }));
 
