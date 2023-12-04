@@ -272,8 +272,19 @@ const ItemTitle = ({ item, context }) => {
   );
 
   switch (item.type) {
-    case "signature":
-      return accountName;
+    case "signature": {
+      return (
+        <span>
+          {accountName} <Signal positive>sponsored</Signal>
+          {!isIsolatedContext && (
+            <>
+              {" "}
+              <ContextLink truncate {...item} />
+            </>
+          )}
+        </span>
+      );
+    }
 
     case "event": {
       switch (item.eventType) {

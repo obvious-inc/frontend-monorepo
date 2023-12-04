@@ -389,6 +389,23 @@ const useStore = createZustandStoreHook((set) => {
         }
       );
 
+      NounsSubgraph.fetchProposalCandidatesSponsoredByAccount(chainId, id).then(
+        (candidates) => {
+          const fetchedCandidatesById = arrayUtils.indexBy(
+            (c) => c.id.toLowerCase(),
+            candidates
+          );
+
+          set((s) => ({
+            proposalCandidatesById: objectUtils.merge(
+              mergeProposalCandidates,
+              s.proposalCandidatesById,
+              fetchedCandidatesById
+            ),
+          }));
+        }
+      );
+
       PropdatesSubgraph.fetchPropdatesByAccount(id).then((propdates) => {
         const proposalIds = arrayUtils.unique(
           propdates.map((p) => p.proposalId)

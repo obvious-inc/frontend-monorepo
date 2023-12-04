@@ -23,8 +23,5 @@ export const buildFeed = (delegate, { proposals, candidates }) => {
 
   const items = [...propFeedItems, ...candidateFeedItems];
 
-  return arrayUtils.sortBy(
-    { value: (i) => i.blockNumber, order: "desc" },
-    items
-  );
+  return arrayUtils.sortBy({ value: (i) => i.timestamp, order: "desc" }, items);
 };
