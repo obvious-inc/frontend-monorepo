@@ -22,7 +22,6 @@ import * as Tabs from "./tabs.js";
 import ActivityFeed_ from "./activity-feed.js";
 import { useAccountDisplayName, useCachedState } from "@shades/common/app";
 import AccountAvatar from "./account-avatar.js";
-import NounAvatar from "./noun-avatar.js";
 import Select from "@shades/ui-web/select";
 import { useCurrentDynamicQuorum } from "../hooks/dao-contract.js";
 import { SectionedList } from "./browse-screen.js";

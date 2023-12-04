@@ -80,22 +80,23 @@ const NounEvents = ({ nounId, contextAccount }) => {
         })
       }
     >
-      <NounDelegationPreviewText
-        noun={noun}
-        event={latestDelegationEvent}
+      <NounTransferPreviewText
+        nounId={nounId}
+        event={latestTransferEvent}
         contextAccount={contextAccount}
       />
 
-      <NounTransferPreviewText
-        noun={noun}
-        event={latestTransferEvent}
+      <NounDelegationPreviewText
+        nounId={nounId}
+        event={latestDelegationEvent}
         contextAccount={contextAccount}
       />
     </div>
   );
 };
 
-const NounDelegationPreviewText = ({ noun, event, contextAccount }) => {
+const NounDelegationPreviewText = ({ nounId, event, contextAccount }) => {
+  const noun = useNoun(nounId);
   const { displayName: newAccountDisplayName } = useAccountDisplayName(
     event.newAccountId
   );
@@ -165,8 +166,10 @@ const NounDelegationPreviewText = ({ noun, event, contextAccount }) => {
   );
 };
 
-const NounTransferPreviewText = ({ noun, event, contextAccount }) => {
+const NounTransferPreviewText = ({ nounId, event, contextAccount }) => {
   const chainId = useChainId();
+  const noun = useNoun(nounId);
+  const auction = noun?.auction;
 
   const { displayName: newAccountDisplayName } = useAccountDisplayName(
     event.newAccountId
@@ -181,9 +184,13 @@ const NounTransferPreviewText = ({ noun, event, contextAccount }) => {
     event.newAccountId.toLowerCase() === contextAccount.toLowerCase();
 
   if (!isDestinationAccount) return null;
-  // const fromAuction =
-  //   event.previousAccountId.toLowerCase() ===
-  //   resolveIdentifier(chainId, "auction-house").address.toLowerCase();
+
+  const transferredFromAuction =
+    event.previousAccountId.toLowerCase() ===
+    resolveIdentifier(chainId, "auction-house").address.toLowerCase();
+  const transferredFromProposalExecution =
+    event.previousAccountId.toLowerCase() ===
+    resolveIdentifier(chainId, "executor").address.toLowerCase();
 
   const previousAccount = isDestinationAccount
     ? previousAccountDisplayName
@@ -192,6 +199,12 @@ const NounTransferPreviewText = ({ noun, event, contextAccount }) => {
   const previousAccountAddress = isDestinationAccount
     ? event.previousAccountId
     : event.newAccountId;
+
+  const transactionHash = event.id.split("_")[0];
+
+  const transferredText = transferredFromProposalExecution
+    ? "Gifted"
+    : "Transferred";
 
   return (
     <div>
@@ -202,29 +215,71 @@ const NounTransferPreviewText = ({ noun, event, contextAccount }) => {
           })
         }
       >
-        Transferred
+        {transferredText}
       </span>{" "}
       from{" "}
       <span>
-        <a
-          href={`https://etherscan.io/address/${previousAccountAddress}`}
-          rel="noreferrer"
-          target="_blank"
-          css={(t) =>
-            css({
-              color: "inherit",
-              fontWeight: t.text.weights.emphasis,
-              textDecoration: "none",
-              "@media(hover: hover)": {
-                ":hover": {
-                  textDecoration: "underline",
+        {transferredFromAuction ? (
+          <a
+            href={`https://nouns.wtf/noun/${nounId}`}
+            rel="noreferrer"
+            target="_blank"
+            css={(t) =>
+              css({
+                color: "inherit",
+                fontWeight: t.text.weights.emphasis,
+                textDecoration: "none",
+                "@media(hover: hover)": {
+                  ":hover": {
+                    textDecoration: "underline",
+                  },
                 },
-              },
-            })
-          }
-        >
-          {previousAccount}
-        </a>
+              })
+            }
+          >
+            auction house
+          </a>
+        ) : transferredFromProposalExecution ? (
+          <a
+            href={`https://etherscan.io/tx/${transactionHash}`}
+            rel="noreferrer"
+            target="_blank"
+            css={(t) =>
+              css({
+                color: "inherit",
+                fontWeight: t.text.weights.emphasis,
+                textDecoration: "none",
+                "@media(hover: hover)": {
+                  ":hover": {
+                    textDecoration: "underline",
+                  },
+                },
+              })
+            }
+          >
+            proposal execution
+          </a>
+        ) : (
+          <a
+            href={`https://etherscan.io/address/${previousAccountAddress}`}
+            rel="noreferrer"
+            target="_blank"
+            css={(t) =>
+              css({
+                color: "inherit",
+                fontWeight: t.text.weights.emphasis,
+                textDecoration: "none",
+                "@media(hover: hover)": {
+                  ":hover": {
+                    textDecoration: "underline",
+                  },
+                },
+              })
+            }
+          >
+            {previousAccount}
+          </a>
+        )}
       </span>{" "}
       on{" "}
       <FormattedDateWithTooltip
