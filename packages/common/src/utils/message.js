@@ -385,9 +385,9 @@ export const toMarkdown = (blockElements) => {
           return widths;
         }, []);
 
-        const renderRow = (cells, padder = " ") =>
+        const renderRow = (cells) =>
           `| ${cells
-            .map((text, i) => text.padEnd(columnWidths[i], padder))
+            .map((text, i) => text.padEnd(columnWidths[i], " "))
             .join(" | ")} |`;
 
         const table = rows.map(renderRow).join("\n");
