@@ -59,7 +59,8 @@ const Input = React.forwardRef(
             "&:disabled": { color: t.colors.textMuted },
             "&:focus-visible": { boxShadow: t.shadows.focus },
             '&[type="date"]': {
-              "WebkitAppearance": "none",
+              WebkitAppearance: "none",
+              minHeight: "3.6rem",
               "::-webkit-datetime-edit": {
                 lineHeight: 1,
                 display: "inline",
