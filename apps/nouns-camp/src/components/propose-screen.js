@@ -583,7 +583,7 @@ export const ProposalEditor = ({
             sidebar={
               <div
                 css={css({
-                  paddingBottom: "6.8rem", // Fixed toolbar height
+                  paddingBottom: "12rem", // Fixed nav height
                   "@media (min-width: 952px)": {
                     padding: 0,
                     position: "relative",
