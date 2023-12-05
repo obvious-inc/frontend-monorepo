@@ -8,6 +8,7 @@ import FormattedDateWithTooltip from "./formatted-date-with-tooltip.js";
 import { resolveIdentifier } from "../contracts.js";
 import useChainId from "../hooks/chain-id.js";
 import { FormattedEthWithConditionalTooltip } from "./transaction-list.js";
+import { useSaleInfo } from "../hooks/sales.js";
 
 const NounPreviewPopoverTrigger = React.forwardRef(
   (
@@ -97,6 +98,7 @@ const NounEvents = ({ nounId, contextAccount }) => {
 
 const NounDelegationPreviewText = ({ nounId, event, contextAccount }) => {
   const noun = useNoun(nounId);
+  const transactionHash = event.id.split("_")[0];
   const { displayName: newAccountDisplayName } = useAccountDisplayName(
     event.newAccountId
   );
@@ -154,22 +156,42 @@ const NounDelegationPreviewText = ({ nounId, event, contextAccount }) => {
         </a>
       </span>{" "}
       since{" "}
-      <FormattedDateWithTooltip
-        tinyRelative
-        disableTooltip
-        month="short"
-        day="numeric"
-        year="numeric"
-        value={event.blockTimestamp}
-      />
+      <span>
+        <a
+          href={`https://etherscan.io/tx/${transactionHash}`}
+          rel="noreferrer"
+          target="_blank"
+          css={css({
+            color: "inherit",
+            textDecoration: "none",
+            "@media(hover: hover)": {
+              ":hover": {
+                textDecoration: "underline",
+              },
+            },
+          })}
+        >
+          <FormattedDateWithTooltip
+            tinyRelative
+            disableTooltip
+            month="short"
+            day="numeric"
+            year="numeric"
+            value={event.blockTimestamp}
+          />
+        </a>
+      </span>
     </div>
   );
 };
 
-const NounTransferPreviewText = ({ nounId, event, contextAccount }) => {
+const NounTransferPreviewText = ({ event, contextAccount }) => {
   const chainId = useChainId();
-  const noun = useNoun(nounId);
-  const auction = noun?.auction;
+  const transactionHash = event.id.split("_")[0];
+  const saleAmount = useSaleInfo({
+    transactionHash,
+    sourceAddress: contextAccount,
+  });
 
   const { displayName: newAccountDisplayName } = useAccountDisplayName(
     event.newAccountId
@@ -177,7 +199,6 @@ const NounTransferPreviewText = ({ nounId, event, contextAccount }) => {
   const { displayName: previousAccountDisplayName } = useAccountDisplayName(
     event.previousAccountId
   );
-  const { displayName: ownerDisplayName } = useAccountDisplayName(noun.ownerId);
 
   const isDestinationAccount =
     contextAccount != null &&
@@ -206,6 +227,8 @@ const NounTransferPreviewText = ({ nounId, event, contextAccount }) => {
     ? "Nouns Treasury"
     : previousAccount;
 
+  const actionText = saleAmount > 0 ? "Bought" : "Transferred";
+
   return (
     <div>
       <span
@@ -215,7 +238,7 @@ const NounTransferPreviewText = ({ nounId, event, contextAccount }) => {
           })
         }
       >
-        Transferred
+        {actionText}
       </span>{" "}
       from{" "}
       <span>
@@ -240,14 +263,41 @@ const NounTransferPreviewText = ({ nounId, event, contextAccount }) => {
         </a>
       </span>{" "}
       on{" "}
-      <FormattedDateWithTooltip
-        disableRelative
-        disableTooltip
-        month="short"
-        day="numeric"
-        year="numeric"
-        value={event.blockTimestamp}
-      />
+      <span>
+        <a
+          href={`https://etherscan.io/tx/${transactionHash}`}
+          rel="noreferrer"
+          target="_blank"
+          css={css({
+            color: "inherit",
+            textDecoration: "none",
+            "@media(hover: hover)": {
+              ":hover": {
+                textDecoration: "underline",
+              },
+            },
+          })}
+        >
+          <FormattedDateWithTooltip
+            disableRelative
+            disableTooltip
+            month="short"
+            day="numeric"
+            year="numeric"
+            value={event.blockTimestamp}
+          />
+        </a>
+      </span>
+      {saleAmount > 0 && (
+        <span>
+          {" "}
+          for{" "}
+          <FormattedEthWithConditionalTooltip
+            value={saleAmount}
+            disableTooltip
+          />
+        </span>
+      )}
     </div>
   );
 };
