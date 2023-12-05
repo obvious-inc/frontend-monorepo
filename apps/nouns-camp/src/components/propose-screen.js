@@ -455,6 +455,7 @@ const ProposeScreen = () => {
               ? `Submitting ${submitTargetType}...`
               : "Draft saved to browser storage"
           }
+          scrollContainerRef={scrollContainerRef}
         />
       </Layout>
 
