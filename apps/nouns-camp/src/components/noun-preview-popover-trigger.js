@@ -200,11 +200,11 @@ const NounTransferPreviewText = ({ nounId, event, contextAccount }) => {
     ? event.previousAccountId
     : event.newAccountId;
 
-  const transactionHash = event.id.split("_")[0];
-
-  const transferredText = transferredFromProposalExecution
-    ? "Gifted"
-    : "Transferred";
+  const transferredFromText = transferredFromAuction
+    ? "Auction House"
+    : transferredFromProposalExecution
+    ? "Nouns Treasury"
+    : previousAccount;
 
   return (
     <div>
@@ -215,71 +215,29 @@ const NounTransferPreviewText = ({ nounId, event, contextAccount }) => {
           })
         }
       >
-        {transferredText}
+        Transferred
       </span>{" "}
       from{" "}
       <span>
-        {transferredFromAuction ? (
-          <a
-            href={`https://nouns.wtf/noun/${nounId}`}
-            rel="noreferrer"
-            target="_blank"
-            css={(t) =>
-              css({
-                color: "inherit",
-                fontWeight: t.text.weights.emphasis,
-                textDecoration: "none",
-                "@media(hover: hover)": {
-                  ":hover": {
-                    textDecoration: "underline",
-                  },
+        <a
+          href={`https://etherscan.io/address/${previousAccountAddress}`}
+          rel="noreferrer"
+          target="_blank"
+          css={(t) =>
+            css({
+              color: "inherit",
+              fontWeight: t.text.weights.emphasis,
+              textDecoration: "none",
+              "@media(hover: hover)": {
+                ":hover": {
+                  textDecoration: "underline",
                 },
-              })
-            }
-          >
-            auction house
-          </a>
-        ) : transferredFromProposalExecution ? (
-          <a
-            href={`https://etherscan.io/tx/${transactionHash}`}
-            rel="noreferrer"
-            target="_blank"
-            css={(t) =>
-              css({
-                color: "inherit",
-                fontWeight: t.text.weights.emphasis,
-                textDecoration: "none",
-                "@media(hover: hover)": {
-                  ":hover": {
-                    textDecoration: "underline",
-                  },
-                },
-              })
-            }
-          >
-            proposal execution
-          </a>
-        ) : (
-          <a
-            href={`https://etherscan.io/address/${previousAccountAddress}`}
-            rel="noreferrer"
-            target="_blank"
-            css={(t) =>
-              css({
-                color: "inherit",
-                fontWeight: t.text.weights.emphasis,
-                textDecoration: "none",
-                "@media(hover: hover)": {
-                  ":hover": {
-                    textDecoration: "underline",
-                  },
-                },
-              })
-            }
-          >
-            {previousAccount}
-          </a>
-        )}
+              },
+            })
+          }
+        >
+          {transferredFromText}
+        </a>
       </span>{" "}
       on{" "}
       <FormattedDateWithTooltip
