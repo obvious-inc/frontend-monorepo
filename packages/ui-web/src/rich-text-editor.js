@@ -275,7 +275,10 @@ const withEditorCommands = (editor) => {
 
   editor.isFocused = () => ReactEditor.isFocused(editor);
 
-  editor.print = () => console.log(JSON.stringify(editor.children, null, 2));
+  editor.print = (at) => {
+    const nodes = at == null ? editor.children : editor.fragment(at);
+    console.log(JSON.stringify(nodes, null, 2));
+  };
 
   return editor;
 };

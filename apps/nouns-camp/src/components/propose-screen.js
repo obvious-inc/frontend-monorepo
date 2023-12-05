@@ -933,6 +933,7 @@ export const ProposalEditor = ({
                               borderRadius: "0.3rem",
                               details: {
                                 fontSize: t.text.sizes.small,
+                                userSelect: "text",
                               },
                               summary: {
                                 marginTop: "1.6rem",
@@ -983,6 +984,33 @@ export const ProposalEditor = ({
                       css={(t) => css({ fontSize: t.text.sizes.large })}
                       style={{ flex: 1, minHeight: "12rem" }}
                     />
+
+                    {isDebugSession && (
+                      <details>
+                        <summary>Click to edit raw JSON</summary>
+                        <AutoAdjustingHeightTextarea
+                          value={JSON.stringify(body, null, 2)}
+                          onChange={(e) => {
+                            try {
+                              setBody(JSON.parse(e.target.value));
+                            } catch (e) {
+                              // Ignore
+                            }
+                          }}
+                          css={(t) =>
+                            css({
+                              padding: "1.6rem",
+                              borderRadius: "0.3rem",
+                              background: t.colors.backgroundSecondary,
+                              border: 0,
+                              width: "100%",
+                              fontFamily: t.fontStacks.monospace,
+                              outline: "none",
+                            })
+                          }
+                        />
+                      </details>
+                    )}
                   </ErrorBoundary>
                 ) : (
                   <div
