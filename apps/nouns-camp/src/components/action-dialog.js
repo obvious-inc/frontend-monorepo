@@ -497,8 +497,8 @@ const Content = ({
                 })
               }
             >
-              Payment streams vest requested funds with each Ethereum
-              block. Vested funds can be withdrawn at any time.
+              Payment streams vest requested funds with each Ethereum block.
+              Vested funds can be withdrawn at any time.
             </div>
           )}
         </div>
