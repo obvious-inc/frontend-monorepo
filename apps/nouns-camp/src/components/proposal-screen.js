@@ -23,12 +23,14 @@ import {
 import Button from "@shades/ui-web/button";
 import Select from "@shades/ui-web/select";
 import Dialog from "@shades/ui-web/dialog";
+import DialogHeader from "@shades/ui-web/dialog-header";
 import * as Tooltip from "@shades/ui-web/tooltip";
 import Spinner from "@shades/ui-web/spinner";
 import { extractAmounts as extractAmountsFromTransactions } from "../utils/transactions.js";
 import {
   buildFeed as buildProposalFeed,
   isVotableState as isVotableProposalState,
+  isFinalState as isFinalProposalState,
 } from "../utils/proposals.js";
 import {
   useProposal,
@@ -857,53 +859,69 @@ export const ProposalActionForm = ({
   );
 };
 
-const ProposalDialog = ({
-  proposalId,
-  titleProps,
-  // dismiss
-}) => {
-  // const me = useMe();
+const ProposalDialog = ({ proposalId, titleProps, dismiss }) => {
   const proposal = useProposal(proposalId);
   const cancelProposal = useCancelProposal(proposalId);
 
-  // const isAdmin = me != null && proposal?.proposer.id === me.walletAddress;
+  const [hasPendingCancel, setPendingCancel] = React.useState(false);
 
   if (proposal == null) return null;
 
   return (
     <div
       css={css({
-        overflow: "auto",
         padding: "1.5rem",
         "@media (min-width: 600px)": {
           padding: "3rem",
         },
       })}
     >
-      <h1
-        {...titleProps}
-        css={(t) =>
-          css({
-            color: t.colors.textNormal,
-            fontSize: t.text.sizes.headerLarge,
-            fontWeight: t.text.weights.header,
-            lineHeight: 1.15,
-            margin: "0 0 2rem",
-          })
-        }
-      >
-        Edit proposal
-      </h1>
+      <DialogHeader
+        title="Manage proposal"
+        titleProps={titleProps}
+        dismiss={dismiss}
+      />
       <main>
+        <Callout>Editing functionality coming soon.</Callout>
+      </main>
+      <footer
+        css={css({
+          display: "flex",
+          justifyContent: "space-between",
+          gap: "1rem",
+          paddingTop: "2.5rem",
+          "@media (min-width: 600px)": {
+            paddingTop: "3rem",
+          },
+        })}
+      >
         <Button
           danger
           onClick={() => {
-            cancelProposal();
+            setPendingCancel(true);
+            cancelProposal().finally(() => {
+              setPendingCancel(false);
+              dismiss();
+            });
           }}
+          disabled={hasPendingCancel}
+          isLoading={hasPendingCancel}
         >
           Cancel proposal
         </Button>
-      </main>
+        <div
+          css={css({
+            display: "grid",
+            gridAutoFlow: "column",
+            gridAutoColumns: "minmax(0,1fr)",
+            gridGap: "1rem",
+          })}
+        >
+          <Button type="button" size="medium" onClick={dismiss}>
+            Close
+          </Button>
+        </div>
+      </footer>
     </div>
   );
 };
@@ -1061,11 +1079,13 @@ const ProposalScreen = () => {
 
   const [searchParams, setSearchParams] = useSearchParams();
 
+  const isBetaSession = searchParams.get("beta") != null;
+
   const isDialogOpen = searchParams.get("proposal-dialog") != null;
 
-  // const openDialog = React.useCallback(() => {
-  //   setSearchParams({ "proposal-dialog": 1 });
-  // }, [setSearchParams]);
+  const openDialog = React.useCallback(() => {
+    setSearchParams({ "proposal-dialog": 1 });
+  }, [setSearchParams]);
 
   const closeDialog = React.useCallback(() => {
     setSearchParams((params) => {
@@ -1116,8 +1136,12 @@ const ProposalScreen = () => {
           },
         ]}
         actions={
-          isProposer && proposal?.state === "updatable"
-            ? undefined // [{ onSelect: openDialog, label: "Edit proposal" }]
+          proposal?.state == null
+            ? null
+            : isBetaSession &&
+              isProposer &&
+              !isFinalProposalState(proposal.state)
+            ? [{ onSelect: openDialog, label: "Manage proposal" }]
             : undefined
         }
       >
@@ -1190,7 +1214,7 @@ const ProposalScreen = () => {
         <Dialog
           isOpen={isDialogOpen}
           onRequestClose={closeDialog}
-          width="76rem"
+          width="58rem"
         >
           {({ titleProps }) => (
             <ErrorBoundary

@@ -4,7 +4,6 @@ import Button from "./button.js";
 const DialogFooter = ({
   cancel,
   cancelButtonLabel,
-  submit,
   submitButtonLabel,
   submitButtonProps,
 }) => (
@@ -31,7 +30,7 @@ const DialogFooter = ({
           {cancelButtonLabel}
         </Button>
       )}
-      {submit != null && (
+      {submitButtonLabel != null && (
         <Button size="medium" variant="primary" {...submitButtonProps}>
           {submitButtonLabel}
         </Button>

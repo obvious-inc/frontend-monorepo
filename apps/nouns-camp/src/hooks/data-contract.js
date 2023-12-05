@@ -17,6 +17,7 @@ import {
 import { unparse as unparseTransactions } from "../utils/transactions.js";
 import { useWallet } from "./wallet.js";
 import { resolveIdentifier } from "../contracts.js";
+import { useCurrentVotes } from "./token-contract.js";
 import { useActions } from "../store.js";
 import useChainId from "./chain-id.js";
 
@@ -87,7 +88,9 @@ export const useCreateProposalCandidate = ({ enabled = true } = {}) => {
   const publicClient = usePublicClient();
   const chainId = useChainId();
 
-  // TODO: Only pay if account has no prior votes
+  const { address: accountAddress } = useWallet();
+  const votingPower = useCurrentVotes(accountAddress);
+
   const createCost = useProposalCandidateCreateCost({ enabled });
 
   const { writeAsync } = useContractWrite({
@@ -96,10 +99,10 @@ export const useCreateProposalCandidate = ({ enabled = true } = {}) => {
       "function createProposalCandidate(address[] memory targets, uint256[] memory values, string[] memory signatures, bytes[] memory calldatas, string memory description, string memory slug, uint256 proposalIdToUpdate) external payable",
     ]),
     functionName: "createProposalCandidate",
-    value: createCost,
+    value: votingPower > 0 ? 0 : createCost,
   });
 
-  if (createCost == null) return null;
+  if (votingPower == null || createCost == null) return null;
 
   return async ({ slug, description, transactions }) => {
     const { targets, values, signatures, calldatas } = unparseTransactions(
@@ -140,7 +143,7 @@ export const useProposalCandidateCreateCost = ({ enabled = true } = {}) => {
   return data;
 };
 
-export const useProposalCandidateUpdateCost = () => {
+export const useProposalCandidateUpdateCost = ({ enabled = true } = {}) => {
   const chainId = useChainId();
 
   const { data } = useContractRead({
@@ -149,52 +152,47 @@ export const useProposalCandidateUpdateCost = () => {
       "function updateCandidateCost() public view returns (uint256)",
     ]),
     functionName: "updateCandidateCost",
+    enabled,
   });
 
   return data;
 };
 
-export const useUpdateProposalCandidate = (
-  slug,
-  { description, reason, transactions }
-) => {
+export const useUpdateProposalCandidate = (slug, { enabled = true } = {}) => {
   const publicClient = usePublicClient();
   const chainId = useChainId();
 
-  const updateCost = useProposalCandidateUpdateCost();
+  const updateCost = useProposalCandidateUpdateCost({ enabled });
 
-  const { targets, values, signatures, calldatas } = unparseTransactions(
-    transactions,
-    { chainId }
-  );
-
-  const { config } = usePrepareContractWrite({
+  const { writeAsync } = useContractWrite({
     address: getContractAddress(chainId),
     abi: parseAbi([
       "function updateProposalCandidate(address[] memory targets, uint256[] memory values, string[] memory signatures, bytes[] memory calldatas, string memory description, string memory slug, uint256 proposalIdToUpdate, string memory reason) external payable",
     ]),
     functionName: "updateProposalCandidate",
-    args: [
-      targets,
-      values,
-      signatures,
-      calldatas,
-      description,
-      slug,
-      0,
-      reason,
-    ],
     value: updateCost,
-    enabled: description != null && updateCost != null,
   });
-  const { writeAsync } = useContractWrite(config);
 
-  return writeAsync == null
-    ? null
-    : () =>
-        writeAsync().then(({ hash }) =>
-          publicClient.waitForTransactionReceipt({ hash })
-        );
+  if (writeAsync == null) return null;
+
+  return async ({ description, transactions }, { message }) => {
+    const { targets, values, signatures, calldatas } = unparseTransactions(
+      transactions,
+      { chainId }
+    );
+    return writeAsync({
+      args: [
+        targets,
+        values,
+        signatures,
+        calldatas,
+        description,
+        slug,
+        0,
+        message,
+      ],
+    }).then(({ hash }) => publicClient.waitForTransactionReceipt({ hash }));
+  };
 };
 
 export const useCancelProposalCandidate = (slug) => {

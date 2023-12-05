@@ -331,6 +331,7 @@ const NavBar = ({ navigationStack, actions: actions_ }) => {
 export const MainContentContainer = ({
   sidebar = null,
   narrow = false,
+  containerHeight,
   children,
   ...props
 }) => (
@@ -364,7 +365,7 @@ export const MainContentContainer = ({
               "[data-sidebar-content]": {
                 position: "sticky",
                 top: 0,
-                maxHeight: `calc(100vh - ${t.navBarHeight})`,
+                maxHeight: `var(--container-height, calc(100vh - ${t.navBarHeight}))`,
                 overflow: "auto",
                 // Prevents the scrollbar from overlapping the content
                 margin: "0 -2rem",
@@ -373,6 +374,7 @@ export const MainContentContainer = ({
             },
           })
         }
+        style={{ "--container-height": containerHeight }}
       >
         <div>{children}</div>
         <div>

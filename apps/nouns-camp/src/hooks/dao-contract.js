@@ -137,6 +137,22 @@ const useProposalState = (proposalId) => {
   ][Number(data)];
 };
 
+export const useActiveProposalId = (accountAddress) => {
+  const latestProposalId = useLatestProposalId(accountAddress);
+  const state = useProposalState(latestProposalId);
+
+  if (latestProposalId === undefined || state === undefined) return undefined;
+
+  const isActive = [
+    "updatable",
+    "pending",
+    "active",
+    "objection-period",
+  ].includes(state);
+
+  return isActive ? latestProposalId : null;
+};
+
 export const useCanCreateProposal = () => {
   const { address: connectedAccountAddress } = useWallet();
 
@@ -144,21 +160,12 @@ export const useCanCreateProposal = () => {
 
   const proposalThreshold = useProposalThreshold();
 
-  const latestProposalId = useLatestProposalId(connectedAccountAddress);
-  const latestProposalState = useProposalState(latestProposalId);
+  const hasActiveProposal =
+    useActiveProposalId(connectedAccountAddress) != null;
 
-  if (latestProposalState === undefined) return null;
-
-  const hasActiveProposal = [
-    "updatable",
-    "pending",
-    "active",
-    "objection-period",
-  ].includes(latestProposalState);
+  if (hasActiveProposal == null || proposalThreshold == null) return null;
 
   if (hasActiveProposal) return false;
-
-  if (proposalThreshold == null) return null;
 
   const hasEnoughVotes = numberOfVotes > proposalThreshold;
 

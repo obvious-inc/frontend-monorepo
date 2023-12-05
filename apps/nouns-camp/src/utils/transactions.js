@@ -223,6 +223,7 @@ export const unparse = (transactions, { chainId }) => {
           });
 
         case "usdc-transfer-via-payer":
+        case "usdc-stream-funding-via-payer":
           return append({
             target: nounsPayerContract.address,
             value: "0",
