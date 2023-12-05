@@ -1003,18 +1003,45 @@ export const ProposalHeader = ({
   );
 };
 
-export const ProposalBody = React.memo(({ markdownText }) => (
-  <div
-    css={(t) =>
-      css({
-        userSelect: "text",
-        "@media(min-width: 600px)": { fontSize: t.text.sizes.large },
-      })
-    }
-  >
-    <MarkdownRichText text={markdownText} imagesMaxHeight={680} />
-  </div>
-));
+export const ProposalBody = React.memo(({ markdownText }) => {
+  const [searchParams] = useSearchParams();
+
+  const isDebugSession = searchParams.get("debug") != null;
+
+  return (
+    <>
+      <div
+        css={(t) =>
+          css({
+            userSelect: "text",
+            "@media(min-width: 600px)": { fontSize: t.text.sizes.large },
+          })
+        }
+      >
+        <MarkdownRichText text={markdownText} imagesMaxHeight={680} />
+      </div>
+
+      {isDebugSession && (
+        <div
+          css={(t) =>
+            css({
+              marginTop: "6.4rem",
+              padding: "1.6rem",
+              background: t.colors.backgroundSecondary,
+              borderRadius: "0.3rem",
+              fontSize: t.text.sizes.large,
+              whiteSpace: "pre-wrap",
+              fontFamily: t.fontStacks.monospace,
+              userSelect: "text",
+            })
+          }
+        >
+          {markdownText.trim()}
+        </div>
+      )}
+    </>
+  );
+});
 
 const RequestedAmounts = ({ amounts }) => (
   <Callout

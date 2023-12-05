@@ -3,6 +3,16 @@ import { string as stringUtils, emoji as emojiUtils } from "../utils.js";
 
 const isProduction = process.env.NODE_ENV === "production";
 
+const fixUrl = (url) => {
+  try {
+    new URL(url);
+    return url;
+  } catch (e) {
+    // I hate this
+    return `http://${url}`;
+  }
+};
+
 const decodeHtmlEntities = (string) => {
   if (!string.match(/(&.+;)/gi)) return string;
   // textareas are magical
@@ -144,16 +154,18 @@ const parseToken = (token, context = {}) => {
 
       const hasLabel = token.text !== token.href;
 
+      const url = fixUrl(token.href);
+
       if (isImageUrl && !hasLabel && context?.displayImages)
-        return { type: "image", url: token.href, interactive: false };
+        return { type: "image", url, interactive: false };
 
       return {
         type: "link",
-        url: token.href,
+        url,
         children: parseChildren(token, parseToken, {
           ...context,
           link: true,
-          linkUrl: token.href,
+          linkUrl: url,
         }),
       };
     }
