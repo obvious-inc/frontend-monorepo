@@ -437,12 +437,13 @@ const NounPreview = React.forwardRef(({ nounId, contextAccount }, ref) => {
               year="numeric"
               value={nounTimestamp}
             />
+            {auction?.amount && (
+              <>
+                {" "}
+                | <FormattedEthWithConditionalTooltip value={auction?.amount} />
+              </>
+            )}
           </div>
-          {auction?.amount && (
-            <div>
-              <FormattedEthWithConditionalTooltip value={auction?.amount} />
-            </div>
-          )}
         </div>
       </div>
       <NounEvents nounId={nounId} contextAccount={contextAccount} />
