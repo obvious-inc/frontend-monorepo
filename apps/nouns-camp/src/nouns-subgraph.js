@@ -319,7 +319,7 @@ query {
   }
 }`;
 
-const createProposalCandidatesBySignatureAccountQuery = (
+const createProposalCandidateSignaturesByAccountQuery = (
   id,
   { skip = 0, first = 1000 } = {}
 ) => `
@@ -995,7 +995,7 @@ export const fetchProposalCandidatesSponsoredByAccount = (
 ) =>
   subgraphFetch({
     chainId,
-    query: createProposalCandidatesBySignatureAccountQuery(
+    query: createProposalCandidateSignaturesByAccountQuery(
       id.toLowerCase(),
       options
     ),
