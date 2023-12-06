@@ -22,6 +22,17 @@ const NounPreviewPopoverTrigger = React.forwardRef(
     },
     triggerRef
   ) => {
+    const noun = useNoun(nounId);
+
+    // TODO: Need to refactor the the fetching of delegate info to gather it from the account.
+    // In which case the delegate is a field in the account, rather than looping through events.
+    const lastDelegateEvent = noun?.events?.find((e) => e.type === "delegate");
+    const delegated =
+      lastDelegateEvent && lastDelegateEvent.newAccountId != noun.ownerId;
+    const delegatedToAccount =
+      lastDelegateEvent?.newAccountId.toLowerCase() ==
+      contextAccount.toLowerCase();
+
     const renderTrigger = () => {
       if (children != null) return children;
 
@@ -43,7 +54,29 @@ const NounPreviewPopoverTrigger = React.forwardRef(
             })
           }
         >
-          <NounAvatar id={nounId} seed={nounSeed} size="4rem" />
+          <div css={css({ position: "relative", zIndex: 1 })}>
+            <NounAvatar id={nounId} seed={nounSeed} size="4rem" />
+            {lastDelegateEvent && delegated && (
+              <span
+                css={(t) =>
+                  css({
+                    display: "block",
+                    position: "absolute",
+                    top: "3rem",
+                    left: "3rem",
+                    height: "1.2rem",
+                    width: "1.2rem",
+                    zIndex: 2,
+                    backgroundColor: delegatedToAccount
+                      ? t.colors.textPositive
+                      : t.colors.textNegative,
+                    borderRadius: "50%",
+                    border: `0.2rem solid ${t.colors.backgroundPrimary}`,
+                  })
+                }
+              />
+            )}
+          </div>
           <div data-id>{nounId}</div>
         </button>
       );
