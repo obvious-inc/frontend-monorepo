@@ -462,7 +462,7 @@ const VoterHeader = ({ voterAddress }) => {
           css={css({
             color: "inherit",
             textDecoration: "none",
-            display: "flex",
+            display: "inline-block",
             flexDirection: "column",
             maxHeight: "2.8rem",
             justifyContent: "center",
