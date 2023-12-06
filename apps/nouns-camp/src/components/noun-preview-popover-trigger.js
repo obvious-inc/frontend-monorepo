@@ -111,6 +111,7 @@ const NounEvents = ({ nounId, contextAccount }) => {
           padding: "1rem 1.2rem",
           borderTop: "0.1rem solid",
           borderColor: t.colors.borderLighter,
+          fontSize: t.text.sizes.small,
         })
       }
     >
@@ -205,7 +206,7 @@ const NounDelegationPreviewText = ({ nounId, event, contextAccount }) => {
           })}
         >
           <FormattedDateWithTooltip
-            tinyRelative
+            disableRelative
             disableTooltip
             month="short"
             day="numeric"
@@ -340,6 +341,14 @@ const NounTransferPreviewText = ({ event, contextAccount }) => {
 const NounPreview = React.forwardRef(({ nounId, contextAccount }, ref) => {
   const noun = useNoun(nounId);
   const firstEvent = noun?.events?.[noun.events.length - 1];
+  // TODO: Need to refactor the the fetching of delegate info to gather it from the account.
+  // In which case the delegate is a field in the account, rather than looping through events.
+  const lastDelegateEvent = noun?.events?.find((e) => e.type === "delegate");
+  const delegated =
+    lastDelegateEvent && lastDelegateEvent.newAccountId != noun.ownerId;
+  const delegatedToAccount =
+    lastDelegateEvent?.newAccountId.toLowerCase() ==
+    contextAccount.toLowerCase();
 
   const auction = noun?.auction;
   const nounTimestamp = auction?.startTime ?? firstEvent?.blockTimestamp;
@@ -365,8 +374,40 @@ const NounPreview = React.forwardRef(({ nounId, contextAccount }, ref) => {
           })
         }
       >
-        <NounAvatar id={nounId} seed={noun.seed} size="4rem" />
-        <div style={{ flex: 1, minWidth: 0, lineHeight: 1.25 }}>
+        <div css={css({ position: "relative", zIndex: 1 })}>
+          <NounAvatar id={nounId} seed={noun.seed} size="5rem" />
+          {lastDelegateEvent && delegated && (
+            <span
+              css={(t) =>
+                css({
+                  display: "block",
+                  position: "absolute",
+                  top: "3rem",
+                  left: "3rem",
+                  height: "1.2rem",
+                  width: "1.2rem",
+                  zIndex: 2,
+                  backgroundColor: delegatedToAccount
+                    ? t.colors.textPositive
+                    : t.colors.textNegative,
+                  borderRadius: "50%",
+                  border: `0.2rem solid ${t.colors.backgroundPrimary}`,
+                })
+              }
+            />
+          )}
+        </div>
+
+        <div
+          css={(t) =>
+            css({
+              flex: 1,
+              minWidth: 0,
+              lineHeight: 1.25,
+              fontSize: t.text.sizes.default,
+            })
+          }
+        >
           <a
             href={`https://nouns.wtf/noun/${nounId}`}
             rel="noreferrer"
@@ -387,7 +428,7 @@ const NounPreview = React.forwardRef(({ nounId, contextAccount }, ref) => {
             <div data-hover-underline="true">Noun {nounId}</div>
           </a>
 
-          <div>
+          <div css={css({ marginBottom: "0.1rem" })}>
             <FormattedDateWithTooltip
               disableRelative
               disableTooltip

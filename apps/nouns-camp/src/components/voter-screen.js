@@ -422,6 +422,7 @@ const VoterHeader = ({ voterAddress }) => {
           gridTemplateColumns: "auto 1fr",
           columnGap: "1rem",
           alignItems: "center",
+          marginBottom: "0.3rem",
         })}
       >
         <h1
