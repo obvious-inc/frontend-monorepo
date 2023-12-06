@@ -92,6 +92,7 @@ export const buildFeed = (proposal, { latestBlockNumber, candidate }) => {
       id: `propdate-${p.id}`,
       body: p.update,
       blockNumber: p.blockNumber,
+      authorAccount: p.authorAccount,
       timestamp: p.blockTimestamp,
       proposalId: proposal.id,
     })) ?? [];
@@ -107,6 +108,7 @@ export const buildFeed = (proposal, { latestBlockNumber, candidate }) => {
         blockNumber: v.createdBlock,
         timestamp: v.createdTimestamp,
         proposalId: proposal.id,
+        authorAccount: proposal.proposerId, // only proposer can update proposals
       })) ?? [];
 
   const items = [

@@ -272,9 +272,6 @@ const ItemTitle = ({ item, context }) => {
   );
 
   switch (item.type) {
-    case "signature":
-      return accountName;
-
     case "event": {
       switch (item.eventType) {
         case "proposal-created":
