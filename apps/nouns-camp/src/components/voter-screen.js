@@ -528,6 +528,15 @@ const VoterMainSection = ({ voterAddress }) => {
     [fetchVoterScreenData, voterAddress]
   );
 
+  const proposalsTabTitle =
+    delegate && filteredProposals?.length > 0
+      ? `Proposals (${filteredProposals?.length})`
+      : "Proposals";
+
+  const candidatesTabTitle = voterCandidates?.length
+    ? `Candidates (${voterCandidates?.length})`
+    : "Candidates";
+
   return (
     <>
       <div css={css({ padding: "0 1.6rem" })}>
@@ -584,7 +593,7 @@ const VoterMainSection = ({ voterAddress }) => {
                   <FeedTabContent voterAddress={voterAddress} visible={true} />
                 </Tabs.Item>
               )}
-              <Tabs.Item key="proposals" title="Proposals">
+              <Tabs.Item key="proposals" title={proposalsTabTitle}>
                 <div>
                   {delegate && filteredProposals.length === 0 && (
                     <div
@@ -626,7 +635,7 @@ const VoterMainSection = ({ voterAddress }) => {
                   )}
                 </div>
               </Tabs.Item>
-              <Tabs.Item key="candidates" title="Candidates">
+              <Tabs.Item key="candidates" title={candidatesTabTitle}>
                 <div>
                   {delegate && voterCandidates.length === 0 && (
                     <div
