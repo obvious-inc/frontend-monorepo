@@ -1,9 +1,14 @@
 import va from "@vercel/analytics";
 import React from "react";
 import { css } from "@emotion/react";
-import { useLocation, Link as RouterLink } from "react-router-dom";
+import {
+  useLocation,
+  useSearchParams,
+  Link as RouterLink,
+} from "react-router-dom";
 import { useAccountDisplayName } from "@shades/common/app";
 import Button from "@shades/ui-web/button";
+import { Plus as PlusIcon } from "@shades/ui-web/icons";
 import { useWallet } from "../hooks/wallet.js";
 import { useDialog } from "../hooks/global-dialogs.js";
 import AccountAvatar from "./account-avatar.js";
@@ -12,7 +17,7 @@ import LogoSymbol from "./logo-symbol.js";
 const Layout = ({
   scrollContainerRef,
   navigationStack = [],
-  actions = [],
+  actions,
   scrollView = true,
   children,
 }) => (
@@ -75,7 +80,24 @@ const Layout = ({
   </div>
 );
 
-const NavBar = ({ navigationStack, actions }) => {
+const betaDefaultActions = [
+  {
+    label: "New Proposal",
+    buttonProps: {
+      component: RouterLink,
+      to: "/new",
+      icon: <PlusIcon style={{ width: "0.9rem" }} />,
+    },
+  },
+];
+
+const NavBar = ({ navigationStack, actions: actions_ }) => {
+  const [searchParams] = useSearchParams();
+  const isBetaSession = searchParams.get("beta") != null;
+
+  const defaultActions = isBetaSession ? betaDefaultActions : [];
+  const actions = actions_ ?? defaultActions;
+
   const location = useLocation();
 
   const { open: openAccountDialog } = useDialog("account");
@@ -309,6 +331,7 @@ const NavBar = ({ navigationStack, actions }) => {
 export const MainContentContainer = ({
   sidebar = null,
   narrow = false,
+  containerHeight,
   children,
   ...props
 }) => (
@@ -342,7 +365,7 @@ export const MainContentContainer = ({
               "[data-sidebar-content]": {
                 position: "sticky",
                 top: 0,
-                maxHeight: `calc(100vh - ${t.navBarHeight})`,
+                maxHeight: `var(--container-height, calc(100vh - ${t.navBarHeight}))`,
                 overflow: "auto",
                 // Prevents the scrollbar from overlapping the content
                 margin: "0 -2rem",
@@ -351,6 +374,7 @@ export const MainContentContainer = ({
             },
           })
         }
+        style={{ "--container-height": containerHeight }}
       >
         <div>{children}</div>
         <div>

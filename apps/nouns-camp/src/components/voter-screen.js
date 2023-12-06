@@ -37,7 +37,10 @@ const FEED_PAGE_ITEM_COUNT = 30;
 const useFeedItems = ({ voterAddress, filter }) => {
   const delegate = useDelegate(voterAddress);
   const proposals = useProposals({ state: true, propdates: true });
-  const candidates = useProposalCandidates({ includeCanceled: true });
+  const candidates = useProposalCandidates({
+    includeCanceled: true,
+    includePromoted: true,
+  });
 
   return React.useMemo(() => {
     const buildProposalItems = () => buildVoterFeed(delegate, { proposals });

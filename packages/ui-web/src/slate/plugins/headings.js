@@ -33,9 +33,7 @@ const middleware = (editor) => {
       // Element children aren’t allowed
       if (childNode.children != null) {
         if (editor.isBlock(childNode)) {
-          editor.print();
           editor.liftNodes({ at: childPath });
-          editor.print();
           return;
         }
 
@@ -52,8 +50,16 @@ const middleware = (editor) => {
 
       // No line breaks
       if (childNode.text.includes("\n")) {
-        editor.insertText(childNode.text.split("\n").join(" "), {
-          at: childPath,
+        const flatText = childNode.text.split("\n").join(" ");
+        editor.withoutNormalizing(() => {
+          // A regular `editor.insertText()` refuses to work, don’t know why
+          editor.delete({ at: editor.range(childPath) });
+          editor.apply({
+            type: "insert_text",
+            path: childPath,
+            offset: 0,
+            text: flatText,
+          });
         });
         return;
       }

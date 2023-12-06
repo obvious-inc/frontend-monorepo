@@ -83,6 +83,9 @@ fragment CandidateContentSignatureFields on ProposalCandidateSignature {
       id
     }
   }
+  content {
+    id
+  }
 }`;
 
 const DELEGATES_QUERY = `
@@ -330,6 +333,72 @@ query {
       delegate {
         id
       }
+    }
+  }
+}`;
+
+const createProposalCandidateSignaturesByAccountQuery = (
+  id,
+  { skip = 0, first = 1000 } = {}
+) => `
+${CANDIDATE_CONTENT_SIGNATURE_FIELDS}
+query {
+  proposalCandidateSignatures(skip: ${skip}, first: ${first}, where: {signer: "${id}"}) {
+    ...CandidateContentSignatureFields
+  }
+}`;
+
+const createProposalCandidateVersionByContentIdsQuery = (contentIds) => `
+query {
+  proposalCandidateVersions(where: {content_in: [${contentIds.map(
+    (id) => `"${id}"`
+  )}]}) {
+    id
+    createdBlock
+    createdTimestamp
+    updateMessage
+    proposal {
+      id
+    }
+    content {
+      id
+    }
+  }
+}`;
+
+const createProposalCandidateByLatestVersionIdsQuery = (versionIds) => `
+${CANDIDATE_CONTENT_SIGNATURE_FIELDS}
+query {
+  proposalCandidates(where: {latestVersion_in: [${versionIds.map(
+    (id) => `"${id}"`
+  )}]}) {
+    id
+    slug
+    proposer
+    canceledTimestamp
+    createdTimestamp
+    lastUpdatedTimestamp
+    createdBlock
+    canceledBlock
+    lastUpdatedBlock
+    latestVersion {
+      id
+      content {
+        title
+        description
+        targets
+        values
+        signatures
+        calldatas
+        matchingProposalIds
+        proposalIdToUpdate
+        contentSignatures {
+          ...CandidateContentSignatureFields
+        }
+      }
+    }
+    versions {
+      id
     }
   }
 }`;
@@ -1005,6 +1074,42 @@ export const fetchBrowseScreenData = (chainId, options) =>
       return { proposals, candidates };
     }
   );
+
+export const fetchProposalCandidatesSponsoredByAccount = (
+  chainId,
+  id,
+  options
+) =>
+  subgraphFetch({
+    chainId,
+    query: createProposalCandidateSignaturesByAccountQuery(
+      id.toLowerCase(),
+      options
+    ),
+  })
+    .then((data) => {
+      // Fetch signatures, then content IDs, and finally the candidate versions
+      return arrayUtils.unique(
+        data.proposalCandidateSignatures.map((s) => s.content.id)
+      );
+    })
+    .then(async (contentIds) => {
+      const data = await subgraphFetch({
+        chainId,
+        query: createProposalCandidateVersionByContentIdsQuery(contentIds),
+      });
+
+      const versionIds = data.proposalCandidateVersions.map((v) => v.id);
+      return subgraphFetch({
+        chainId,
+        query: createProposalCandidateByLatestVersionIdsQuery(versionIds),
+      }).then((data) => {
+        const candidates = data.proposalCandidates.map((c) =>
+          parseProposalCandidate(c, { chainId })
+        );
+        return candidates;
+      });
+    });
 
 export const fetchVoterScreenData = (chainId, id, options) =>
   subgraphFetch({

@@ -197,14 +197,16 @@ export const createCss = (t) => ({
   },
 
   table: {
+    fontSize: "0.875em",
+    borderCollapse: "collapse",
     borderSpacing: 0,
     "th,td": {
-      padding: "0.2em 0.4em",
-    },
-    "thead th": {
-      fontWeight: t.text.weights.emphasis,
-      borderBottom: "0.1rem solid",
+      padding: "0.5em 0.6428571429em",
+      border: "0.1rem solid",
       borderColor: t.colors.borderLight,
+    },
+    "thead th, thead td": {
+      fontWeight: t.text.weights.emphasis,
     },
   },
   "* + table": { marginTop: "var(--default-block-gap)" },
@@ -369,35 +371,21 @@ const createRenderer = ({
 
       case "table": {
         const isLast = i === els.length - 1;
-
         return (
           <React.Fragment key={i}>
-            {inline ? (
-              <>[table]</>
-            ) : (
-              <table>
-                <thead>
-                  <tr>
-                    {el.header.map((headerCell, i) => (
-                      <th key={i}>{headerCell}</th>
-                    ))}
-                  </tr>
-                </thead>
-                <tbody>
-                  {el.rows.map((rowCells, i) => (
-                    <tr key={i}>
-                      {rowCells.map((cell, i) => (
-                        <td key={i}>{cell}</td>
-                      ))}
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            )}
+            {inline ? <>[table]</> : <table>{children()}</table>}
             {isLast && suffix}
           </React.Fragment>
         );
       }
+      case "table-head":
+        return <thead key={i}>{children()}</thead>;
+      case "table-body":
+        return <tbody key={i}>{children()}</tbody>;
+      case "table-row":
+        return <tr key={i}>{children()}</tr>;
+      case "table-cell":
+        return <td key={i}>{children()}</td>;
 
       case "horizontal-divider":
         return (
@@ -538,6 +526,7 @@ const RichText = ({
   imagesMaxWidth,
   imagesMaxHeight,
   style,
+  raw = false,
   ...props
 }) => {
   const render = createRenderer({
@@ -548,6 +537,8 @@ const RichText = ({
     renderElement,
     onClickInteractiveElement,
   });
+
+  if (raw) return render(blocks);
 
   const inlineStyle = style ?? {};
 

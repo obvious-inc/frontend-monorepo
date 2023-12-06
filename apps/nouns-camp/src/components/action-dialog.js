@@ -191,20 +191,23 @@ const Content = ({
 }) => {
   const [type, setType] = React.useState(initialType ?? "one-time-payment");
   const [currency, setCurrency] = React.useState(initialCurrency ?? "eth");
-  const [amount, setAmount] = React.useState(initialAmount ?? "0");
+  const [amount, setAmount] = React.useState(initialAmount ?? "");
   const [receiverQuery, setReceiverQuery] = React.useState(initialTarget ?? "");
 
   // For streams
-  const [streamStartDate, setStreamStartDate] = React.useState(
-    initialStreamStartTimestamp == null
-      ? null
-      : new Date(initialStreamStartTimestamp)
-  );
-  const [streamEndDate, setStreamEndDate] = React.useState(
-    initialStreamEndTimestamp == null
-      ? null
-      : new Date(initialStreamEndTimestamp)
-  );
+  const [streamDateRange, setStreamDateRange] = React.useState(() => {
+    const start =
+      initialStreamStartTimestamp == null
+        ? null
+        : new Date(initialStreamStartTimestamp);
+
+    const end =
+      initialStreamEndTimestamp == null
+        ? null
+        : new Date(initialStreamEndTimestamp);
+
+    return { start, end };
+  });
 
   // For custom transactions
   const [contractCallTargetAddress, setContractCallTargetAddress] =
@@ -354,8 +357,8 @@ const Content = ({
       receiverAddress: target,
       amount,
       currency,
-      startDate: streamStartDate,
-      endDate: streamEndDate,
+      startDate: streamDateRange.start,
+      endDate: streamDateRange.end,
     },
     {
       enabled: type === "streaming-payment",
@@ -371,9 +374,9 @@ const Content = ({
         return (
           parseFloat(amount) > 0 &&
           isAddress(target) &&
-          streamStartDate != null &&
-          streamEndDate != null &&
-          streamEndDate > streamStartDate &&
+          streamDateRange.start != null &&
+          streamDateRange.end != null &&
+          streamDateRange.end > streamDateRange.start &&
           predictedStreamContractAddress != null
         );
 
@@ -412,8 +415,8 @@ const Content = ({
               target,
               amount,
               currency,
-              startTimestamp: streamStartDate?.getTime(),
-              endTimestamp: streamEndDate?.getTime(),
+              startTimestamp: streamDateRange.start?.getTime(),
+              endTimestamp: streamDateRange.end?.getTime(),
               predictedStreamContractAddress,
             });
             break;
@@ -478,6 +481,8 @@ const Content = ({
             onChange={(value) => {
               if (value === "streaming-payment" && currency === "eth")
                 setCurrency("weth");
+              if (value === "one-time-payment" && currency === "weth")
+                setCurrency("eth");
               setType(value);
             }}
           />
@@ -492,8 +497,8 @@ const Content = ({
                 })
               }
             >
-              Payment stream vest requested funds gradually with each Ethereum
-              block. Vested funds can be withdrawn at any time.
+              Payment streams vest requested funds with each Ethereum block.
+              Vested funds can be withdrawn at any time.
             </div>
           )}
         </div>
@@ -510,25 +515,53 @@ const Content = ({
               <Input
                 label="Start vesting"
                 type="date"
+                max={
+                  streamDateRange.end == null
+                    ? undefined
+                    : formatDate(streamDateRange.end, "yyyy-MM-dd")
+                }
                 value={
-                  streamStartDate == null
+                  streamDateRange.start == null
                     ? ""
-                    : formatDate(streamStartDate, "yyyy-MM-dd")
+                    : formatDate(streamDateRange.start, "yyyy-MM-dd")
                 }
                 onChange={(e) => {
-                  setStreamStartDate(new Date(e.target.valueAsNumber));
+                  setStreamDateRange(({ start, end }) => {
+                    const selectedStart = new Date(e.target.valueAsNumber);
+                    return {
+                      start:
+                        end == null || selectedStart <= end
+                          ? selectedStart
+                          : start,
+                      end,
+                    };
+                  });
                 }}
               />
               <Input
                 label="End vesting"
                 type="date"
+                min={
+                  streamDateRange.start == null
+                    ? undefined
+                    : formatDate(streamDateRange.start, "yyyy-MM-dd")
+                }
                 value={
-                  streamEndDate == null
+                  streamDateRange.end == null
                     ? ""
-                    : formatDate(streamEndDate, "yyyy-MM-dd")
+                    : formatDate(streamDateRange.end, "yyyy-MM-dd")
                 }
                 onChange={(e) => {
-                  setStreamEndDate(new Date(e.target.valueAsNumber));
+                  setStreamDateRange(({ start, end }) => {
+                    const selectedEnd = new Date(e.target.valueAsNumber);
+                    return {
+                      start,
+                      end:
+                        start == null || selectedEnd >= start
+                          ? selectedEnd
+                          : end,
+                    };
+                  });
                 }}
               />
             </div>
@@ -538,10 +571,14 @@ const Content = ({
                   fontSize: t.text.sizes.small,
                   color: t.colors.textDimmed,
                   marginTop: "0.7rem",
+                  em: {
+                    fontWeight: t.text.weights.emphasis,
+                    fontStyle: "normal",
+                  },
                 })
               }
             >
-              Start date can be in the past.
+              Start date <em>can</em> be in the past.
             </div>
           </div>
         )}
@@ -558,6 +595,7 @@ const Content = ({
             >
               <DecimalInput
                 id="amount"
+                placeholder="0"
                 value={amount}
                 onChange={(value) => {
                   setAmount(value);
@@ -1216,7 +1254,8 @@ const DecimalInput = ({ value, ...props }) => (
       if (value === "0") return;
 
       if (value === "") {
-        props.onChange("0");
+        props.onChange("");
+        // props.onChange("0");
         return;
       }
 

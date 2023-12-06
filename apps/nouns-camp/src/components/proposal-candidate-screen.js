@@ -10,12 +10,22 @@ import {
   Link as RouterLink,
 } from "react-router-dom";
 import { css } from "@emotion/react";
-import { array as arrayUtils } from "@shades/common/utils";
+import {
+  array as arrayUtils,
+  markdown as markdownUtils,
+  message as messageUtils,
+} from "@shades/common/utils";
 import { ErrorBoundary, useMatchMedia } from "@shades/common/react";
 import Dialog from "@shades/ui-web/dialog";
+import DialogHeader from "@shades/ui-web/dialog-header";
+import DialogFooter from "@shades/ui-web/dialog-footer";
 import Button from "@shades/ui-web/button";
 import Input from "@shades/ui-web/input";
 import Spinner from "@shades/ui-web/spinner";
+import {
+  toMessageBlocks as richTextToMessageBlocks,
+  fromMessageBlocks as messageToRichTextBlocks,
+} from "@shades/ui-web/rich-text-editor";
 import * as Tooltip from "@shades/ui-web/tooltip";
 import {
   extractSlugFromId as extractSlugFromCandidateId,
@@ -23,6 +33,7 @@ import {
   buildFeed,
   getSignals,
 } from "../utils/candidates.js";
+import useChainId from "../hooks/chain-id.js";
 import {
   useProposalCandidate,
   useProposalCandidateVotingPower,
@@ -47,6 +58,7 @@ import {
   VotingBar,
   VoteDistributionToolTipContent,
 } from "./proposal-screen.js";
+import { ProposalEditor, getActionTransactions } from "./propose-screen.js";
 import AccountPreviewPopoverTrigger from "./account-preview-popover-trigger.js";
 import AccountAvatar from "./account-avatar.js";
 import FormattedDateWithTooltip from "./formatted-date-with-tooltip.js";
@@ -980,32 +992,56 @@ const ProposeDialog = ({
   // );
 };
 
-const ProposalCandidateEditDialog = ({ candidateId, titleProps, dismiss }) => {
+const ProposalCandidateEditDialog = ({
+  candidateId,
+  // titleProps,
+  dismiss,
+}) => {
   const navigate = useNavigate();
+  const chainId = useChainId();
+  const scrollContainerRef = React.useRef();
 
   const candidate = useProposalCandidate(candidateId);
 
+  const persistedTitle = candidate.latestVersion.content.title;
   const persistedDescription = candidate.latestVersion.content.description;
 
-  const [description, setDescription] = React.useState(
-    persistedDescription ?? ""
-  );
-  const [reason, setReason] = React.useState("");
+  const parseMarkdownDescription = (markdown) => {
+    const messageBlocks = markdownUtils.toMessageBlocks(markdown);
+    return messageToRichTextBlocks(messageBlocks);
+  };
 
-  const updateProposalCandidate = useUpdateProposalCandidate(candidate.slug, {
-    description: description?.trim() ?? "",
-    reason: reason.trim(),
-    transactions: candidate.latestVersion.content.transactions,
+  const [showSubmitDialog, setShowSubmitDialog] = React.useState(false);
+
+  const [title, setTitle] = React.useState(persistedTitle);
+  const [body, setBody] = React.useState(() => {
+    const markdownBody = persistedDescription
+      .slice(persistedTitle.length)
+      .trim();
+    return parseMarkdownDescription(markdownBody);
   });
-  const cancelProposalCandidate = useCancelProposalCandidate(candidate.slug);
+  const [actions, setActions] = React.useState([]);
 
-  const [hasPendingCancelation, setPendingCancelation] = React.useState(false);
   const [hasPendingSubmit, setPendingSubmit] = React.useState(false);
 
-  const submit = async () => {
-    setPendingSubmit(true);
+  const updateProposalCandidate = useUpdateProposalCandidate(candidate.slug);
+  const cancelProposalCandidate = useCancelProposalCandidate(candidate.slug);
+
+  const submit = async ({ message }) => {
     try {
-      await updateProposalCandidate();
+      setPendingSubmit(true);
+
+      const bodyMarkdown =
+        typeof body === "string"
+          ? body
+          : messageUtils.toMarkdown(richTextToMessageBlocks(body));
+
+      const description = `# ${title.trim()}\n\n${bodyMarkdown}`;
+
+      const transactions = actions.flatMap((a) =>
+        getActionTransactions(a, { chainId })
+      );
+      await updateProposalCandidate({ description, transactions }, { message });
       dismiss();
     } catch (e) {
       console.log(e);
@@ -1016,144 +1052,59 @@ const ProposalCandidateEditDialog = ({ candidateId, titleProps, dismiss }) => {
   };
 
   React.useEffect(() => {
-    setDescription(persistedDescription ?? "");
-  }, [persistedDescription]);
-
-  if (persistedDescription == null) return null;
-
-  const hasRequiredInput = description.trim() !== "";
-  const hasChanges = description.trim() !== persistedDescription.trim();
+    const persistedBody = persistedDescription
+      .slice(persistedTitle.length)
+      .trim();
+    setBody(parseMarkdownDescription(persistedBody));
+  }, [persistedTitle, persistedDescription]);
 
   return (
-    <form
-      onSubmit={(e) => {
-        e.preventDefault();
-        submit();
-      }}
-      css={css({
-        flex: 1,
-        minHeight: 0,
-        display: "flex",
-        flexDirection: "column",
-      })}
-    >
-      <main
+    <>
+      <div
+        ref={scrollContainerRef}
         css={css({
-          flex: 1,
-          minHeight: 0,
-          width: "100%",
           overflow: "auto",
-          padding: "1.5rem",
+          padding: "3.2rem 0 0",
           "@media (min-width: 600px)": {
-            padding: "3rem",
+            padding: "0",
           },
         })}
       >
-        <div
-          css={css({
-            minHeight: "100%",
-            display: "flex",
-            flexDirection: "column",
-            margin: "0 auto",
-          })}
-        >
-          <h1
-            {...titleProps}
-            css={(t) =>
-              css({
-                color: t.colors.textNormal,
-                fontSize: t.text.sizes.headerLarge,
-                fontWeight: t.text.weights.header,
-                lineHeight: 1.15,
-                margin: "0 0 2rem",
-              })
-            }
-          >
-            Edit candidate
-          </h1>
-          <Input
-            label="Description"
-            multiline
-            // rows={10}
-            value={description}
-            onChange={(e) => {
-              setDescription(e.target.value);
-            }}
-            style={{ marginBottom: "2rem" }}
-          />
-          <Input
-            label="Context for update"
-            placeholder="..."
-            multiline
-            rows={2}
-            value={reason}
-            onChange={(e) => {
-              setReason(e.target.value);
-            }}
-          />
-        </div>
-      </main>
-      <footer
-        css={css({
-          padding: "0 1.5rem 1.5rem",
-          "@media (min-width: 600px)": {
-            padding: "0 3rem 3rem",
-          },
-        })}
-      >
-        <div css={css({ display: "flex", flexWrap: "wrap", gap: "1rem" })}>
-          <Button
-            danger
-            onClick={async () => {
-              if (
-                !confirm(
-                  "Are you sure you want to cancel this proposal candidate?"
-                )
-              )
-                return;
+        <ProposalEditor
+          title={title}
+          body={body}
+          actions={actions}
+          setTitle={setTitle}
+          setBody={setBody}
+          setActions={setActions}
+          onSubmit={() => {
+            setShowSubmitDialog(true);
+          }}
+          onDelete={() => {
+            if (!confirm("Are you sure you wish to cancel this candidate?"))
+              return;
 
-              setPendingCancelation(true);
-              try {
-                await cancelProposalCandidate();
-                navigate("/");
-              } finally {
-                setPendingCancelation(false);
-              }
-            }}
-            isLoading={hasPendingCancelation}
-            disabled={hasPendingCancelation || hasPendingSubmit}
-          >
-            Cancel candidate
-          </Button>
-          <div
-            style={{
-              flex: 1,
-              display: "flex",
-              gap: "1rem",
-              justifyContent: "flex-end",
-            }}
-          >
-            <Button type="button" onClick={dismiss}>
-              Cancel
-            </Button>
-            <Button
-              type="submit"
-              variant="primary"
-              isLoading={hasPendingSubmit}
-              disabled={
-                !hasRequiredInput ||
-                !hasChanges ||
-                hasPendingSubmit ||
-                hasPendingCancelation
-              }
-            >
-              {hasChanges ? "Save changes" : "No changes"}
-            </Button>
-          </div>
-        </div>
-      </footer>
-    </form>
-    // </EditorProvider >
+            cancelProposalCandidate().then(() => {
+              navigate("/", { replace: true });
+            });
+          }}
+          containerHeight="calc(100vh - 6rem)"
+          scrollContainerRef={scrollContainerRef}
+          submitLabel="Preview update"
+        />
+      </div>
+
+      {showSubmitDialog && (
+        <SubmitUpdateDialog
+          isOpen
+          close={() => {
+            setShowSubmitDialog(false);
+          }}
+          hasPendingSubmit={hasPendingSubmit}
+          submit={submit}
+        />
+      )}
+    </>
   );
 };
 
@@ -1246,18 +1197,18 @@ const ProposalCandidateScreen = () => {
           candidate == null ||
           candidate.canceledTimestamp != null ||
           connectedWalletAccountAddress == null
-            ? []
+            ? undefined
             : isProposer
             ? isBetaSession
               ? [
-                  { onSelect: toggleEditDialog, label: "Edit candidate" },
+                  { onSelect: toggleEditDialog, label: "Manage candidate" },
                   isProposalThresholdMet && {
                     onSelect: toggleProposeDialog,
                     label: "Put on chain",
                   },
                 ].filter(Boolean)
-              : []
-            : []
+              : undefined
+            : undefined
         }
       >
         {candidate == null ? (
@@ -1332,7 +1283,7 @@ const ProposalCandidateScreen = () => {
       </Layout>
 
       {isEditDialogOpen && isProposer && candidate != null && (
-        <Dialog isOpen onRequestClose={toggleEditDialog} width="76rem">
+        <Dialog isOpen tray onRequestClose={toggleEditDialog} width="131.2rem">
           {({ titleProps }) => (
             <ErrorBoundary
               fallback={() => {
@@ -1466,6 +1417,70 @@ const MetaTags = ({ candidateId }) => {
       }
       canonicalPathname={`/candidates/${candidateId}`}
     />
+  );
+};
+
+const SubmitUpdateDialog = ({ isOpen, hasPendingSubmit, submit, close }) => {
+  const [message, setMessage] = React.useState("");
+
+  const hasMessage = message.trim() !== "";
+
+  return (
+    <Dialog
+      isOpen={isOpen}
+      onRequestClose={() => {
+        close();
+      }}
+      width="58rem"
+      css={css({ overflow: "auto" })}
+    >
+      {({ titleProps }) => (
+        <form
+          onSubmit={(e) => {
+            e.preventDefault();
+            submit({ message });
+          }}
+          css={css({
+            overflow: "auto",
+            padding: "1.5rem",
+            "@media (min-width: 600px)": {
+              padding: "2rem",
+            },
+          })}
+        >
+          <DialogHeader
+            title="Submit"
+            titleProps={titleProps}
+            dismiss={close}
+          />
+          <main>
+            TODO: Show diff.
+            <br />
+            <br />
+            <Input
+              multiline
+              label="Update message"
+              rows={3}
+              placeholder="..."
+              value={message}
+              onChange={(e) => {
+                setMessage(e.target.value);
+              }}
+            />
+          </main>
+          <DialogFooter
+            cancel={close}
+            cancelButtonLabel="Cancel"
+            submit
+            submitButtonLabel="Submit update"
+            submitButtonProps={{
+              isLoading: hasPendingSubmit,
+              disabled: !hasMessage || hasPendingSubmit,
+            }}
+          />
+        </form>
+      )}
+    </Dialog>
   );
 };
 

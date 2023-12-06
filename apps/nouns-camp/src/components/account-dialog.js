@@ -238,7 +238,7 @@ const NounList = ({ items }) => (
         <NounAvatar id={n.id} seed={n.seed} size="2.4rem" />
         <div data-content>
           Noun <em>{n.id}</em>
-          {n.delegateId != null && (
+          {n.delegateId.toLowerCase() !== n.ownerId.toLowerCase() && (
             <>
               {" "}
               delegated from{" "}

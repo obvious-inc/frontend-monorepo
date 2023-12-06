@@ -58,6 +58,15 @@ const Input = React.forwardRef(
             "::placeholder": { color: t.colors.inputPlaceholder },
             "&:disabled": { color: t.colors.textMuted },
             "&:focus-visible": { boxShadow: t.shadows.focus },
+            '&[type="date"]': {
+              WebkitAppearance: "none",
+              minHeight: "3.6rem",
+              "::-webkit-datetime-edit": {
+                lineHeight: 1,
+                display: "inline",
+                padding: 0,
+              },
+            },
             // Prevents iOS zooming in on input fields
             "@supports (-webkit-touch-callout: none)": { fontSize: "1.6rem" },
           })

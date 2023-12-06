@@ -347,7 +347,7 @@ const useStore = createZustandStoreHook((set) => {
           }));
         }
       ),
-    fetchVoterScreenData: (chainId, id, options) =>
+    fetchVoterScreenData: (chainId, id, options) => {
       NounsSubgraph.fetchVoterScreenData(chainId, id, options).then(
         ({
           proposals,
@@ -357,6 +357,11 @@ const useStore = createZustandStoreHook((set) => {
           candidateFeedbackPosts,
           nouns,
         }) => {
+          fetchProposalsVersions(
+            chainId,
+            proposals.map((p) => p.id)
+          );
+
           const createdProposalsById = arrayUtils.indexBy(
             (p) => p.id,
             proposals
@@ -418,7 +423,40 @@ const useStore = createZustandStoreHook((set) => {
             ),
           }));
         }
-      ),
+      );
+
+      NounsSubgraph.fetchProposalCandidatesSponsoredByAccount(chainId, id).then(
+        (candidates) => {
+          const fetchedCandidatesById = arrayUtils.indexBy(
+            (c) => c.id.toLowerCase(),
+            candidates
+          );
+
+          set((s) => ({
+            proposalCandidatesById: objectUtils.merge(
+              mergeProposalCandidates,
+              s.proposalCandidatesById,
+              fetchedCandidatesById
+            ),
+          }));
+        }
+      );
+
+      PropdatesSubgraph.fetchPropdatesByAccount(id).then((propdates) => {
+        const proposalIds = arrayUtils.unique(
+          propdates.map((p) => p.proposalId)
+        );
+
+        fetchProposals(chainId, proposalIds);
+
+        set(() => ({
+          propdatesByProposalId: arrayUtils.groupBy(
+            (d) => d.proposalId,
+            propdates
+          ),
+        }));
+      });
+    },
     fetchNounsActivity: (chainId, { startBlock, endBlock }) =>
       NounsSubgraph.fetchNounsActivity(chainId, { startBlock, endBlock }).then(
         ({ votes, proposalFeedbackPosts, candidateFeedbackPosts }) => {

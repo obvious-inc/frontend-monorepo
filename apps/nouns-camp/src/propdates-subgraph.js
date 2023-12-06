@@ -27,6 +27,14 @@ query {
   }
 }`;
 
+const createPropdatesByAccountQuery = (id) => `
+${PROPDATE_FIELDS}
+query {
+  propUpdates(where: { admin: "${id}" }, orderBy: blockNumber, orderDirection: desc, first: 100) {
+    ...PropdateFields
+  }
+}`;
+
 const parseUpdate = (u) => ({
   id: u.id,
   update: u.update.trim() === "" ? null : u.update.trim(),
@@ -44,6 +52,23 @@ export const fetchPropdates = (proposalId) =>
     body: JSON.stringify({
       query:
         proposalId == null ? PROPDATES_QUERY : createPropdatesQuery(proposalId),
+    }),
+  })
+    .then((res) => {
+      if (res.ok) return res.json();
+      return Promise.reject(new Error(res.statusText));
+    })
+    .then((body) => {
+      if (body.data.propUpdates == null) throw new Error("not-found");
+      return body.data.propUpdates.map(parseUpdate);
+    });
+
+export const fetchPropdatesByAccount = (id) =>
+  fetch(process.env.PROPDATES_SUBGRAPH_URL, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      query: createPropdatesByAccountQuery(id.toLowerCase()),
     }),
   })
     .then((res) => {

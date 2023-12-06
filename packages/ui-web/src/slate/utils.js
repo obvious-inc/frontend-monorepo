@@ -64,6 +64,7 @@ export const toMessageBlocks = (nodes) =>
   nodes.map((n) => {
     if (n.type === "code-block")
       return { type: "code-block", code: n.children[0].text };
+    if (n.type === "table") return { type: "table", children: n.content };
     if (n.type === "link") return { type: "link", url: n.url, label: n.label };
     if (n.type === "emoji") return { type: "emoji", emoji: n.emoji };
     if (n.type === "user") return { type: "user", ref: n.ref };
@@ -78,6 +79,9 @@ export const fromMessageBlocks = (blocks) =>
   blocks.reduce((acc, n) => {
     if (n.type === "code-block")
       return [...acc, { ...n, children: [{ text: n.code }] }];
+
+    if (n.type === "table")
+      return [...acc, { ...n, content: n.children, children: [{ text: "" }] }];
 
     if (n.type === "code") return [...acc, { text: `\`${n.code}\`` }];
 

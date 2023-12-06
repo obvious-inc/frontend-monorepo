@@ -3,6 +3,16 @@ import { string as stringUtils, emoji as emojiUtils } from "../utils.js";
 
 const isProduction = process.env.NODE_ENV === "production";
 
+const fixUrl = (url) => {
+  try {
+    new URL(url);
+    return url;
+  } catch (e) {
+    // I hate this
+    return `http://${url}`;
+  }
+};
+
 const decodeHtmlEntities = (string) => {
   if (!string.match(/(&.+;)/gi)) return string;
   // textareas are magical
@@ -100,12 +110,42 @@ const parseToken = (token, context = {}) => {
     case "hr":
       return { type: "horizontal-divider" };
 
-    case "table":
+    case "table": {
+      const children = [];
+
+      const parseCell = (cell) =>
+        cell.tokens.map((t) => parseToken(t, context));
+
+      if (token.header != null)
+        children.push({
+          type: "table-head",
+          children: [
+            {
+              type: "table-row",
+              children: token.header.map((cell) => ({
+                type: "table-cell",
+                children: parseCell(cell),
+              })),
+            },
+          ],
+        });
+
+      children.push({
+        type: "table-body",
+        children: token.rows.map((row) => ({
+          type: "table-row",
+          children: row.map((cell) => ({
+            type: "table-cell",
+            children: parseCell(cell),
+          })),
+        })),
+      });
+
       return {
         type: "table",
-        header: token.header.map((t) => t.text),
-        rows: token.rows.map((r) => r.map((c) => c.text)),
+        children,
       };
+    }
 
     case "link": {
       const isImageUrl = ["jpg", "png", "gif"].some((ext) =>
@@ -114,16 +154,18 @@ const parseToken = (token, context = {}) => {
 
       const hasLabel = token.text !== token.href;
 
+      const url = fixUrl(token.href);
+
       if (isImageUrl && !hasLabel && context?.displayImages)
-        return { type: "image", url: token.href, interactive: false };
+        return { type: "image", url, interactive: false };
 
       return {
         type: "link",
-        url: token.href,
+        url,
         children: parseChildren(token, parseToken, {
           ...context,
           link: true,
-          linkUrl: token.href,
+          linkUrl: url,
         }),
       };
     }
