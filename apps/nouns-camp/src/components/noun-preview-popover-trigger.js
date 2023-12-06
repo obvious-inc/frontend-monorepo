@@ -187,6 +187,7 @@ const NounDelegationPreviewText = ({ nounId, event, contextAccount }) => {
 
 const NounTransferPreviewText = ({ event, contextAccount }) => {
   const chainId = useChainId();
+  const noun = useNoun(event.nounId);
   const transactionHash = event.id.split("_")[0];
   const saleAmount = useSaleInfo({
     transactionHash,
@@ -209,7 +210,7 @@ const NounTransferPreviewText = ({ event, contextAccount }) => {
   const transferredFromAuction =
     event.previousAccountId.toLowerCase() ===
     resolveIdentifier(chainId, "auction-house").address.toLowerCase();
-  const transferredFromProposalExecution =
+  const transferredFromTreasury =
     event.previousAccountId.toLowerCase() ===
     resolveIdentifier(chainId, "executor").address.toLowerCase();
 
@@ -223,11 +224,15 @@ const NounTransferPreviewText = ({ event, contextAccount }) => {
 
   const transferredFromText = transferredFromAuction
     ? "Auction House"
-    : transferredFromProposalExecution
+    : transferredFromTreasury
     ? "Nouns Treasury"
     : previousAccount;
 
-  const actionText = saleAmount > 0 ? "Bought" : "Transferred";
+  const amount = transferredFromAuction
+    ? parseInt(noun.auction.amount)
+    : saleAmount;
+
+  const actionText = amount > 0 ? "Bought" : "Transferred";
 
   return (
     <div>
@@ -288,14 +293,11 @@ const NounTransferPreviewText = ({ event, contextAccount }) => {
           />
         </a>
       </span>
-      {saleAmount > 0 && (
+      {amount > 0 && (
         <span>
           {" "}
           for{" "}
-          <FormattedEthWithConditionalTooltip
-            value={saleAmount}
-            disableTooltip
-          />
+          <FormattedEthWithConditionalTooltip value={amount} disableTooltip />
         </span>
       )}
     </div>
