@@ -382,10 +382,10 @@ const NounPreview = React.forwardRef(({ nounId, contextAccount }, ref) => {
                 css({
                   display: "block",
                   position: "absolute",
-                  top: "3rem",
-                  left: "3rem",
-                  height: "1.2rem",
-                  width: "1.2rem",
+                  top: "3.6rem",
+                  left: "3.6rem",
+                  height: "1.4rem",
+                  width: "1.4rem",
                   zIndex: 2,
                   backgroundColor: delegatedToAccount
                     ? t.colors.textPositive
