@@ -153,18 +153,29 @@ export const createCss = (t) => ({
     display: "block",
     borderRadius: "0.3rem",
     overflow: "hidden",
-    background: t.colors.backgroundSecondary,
     '&[data-focused="true"], &:focus-visible': {
       boxShadow: t.shadows.focus,
+    },
+    '&[data-inline="true"]': {
+      margin: "var(--default-block-gap) 0",
     },
     "@media(hover: hover)": {
       '&[data-interactive="true"]': {
         cursor: "zoom-in",
         "&[data-editable]": { cursor: "pointer" },
-        // ":hover": { filter: "brightness(1.05)" },
       },
     },
-    "& > img": { display: "block" },
+    "& > img": {
+      display: "block",
+      borderRadius: "0.3rem",
+      background: t.colors.backgroundSecondary,
+    },
+    ".image-caption": {
+      display: "block",
+      fontSize: "0.875em",
+      color: t.colors.textDimmed,
+      padding: "0.4em 0 0.4em 0.15em",
+    },
   },
   ".grid > *": {
     display: "flex",
@@ -182,7 +193,7 @@ export const createCss = (t) => ({
   // Horizontal dividers
   '[role="separator"], hr': {
     border: 0,
-    padding: "var(--default-compact-block-gap) 0",
+    padding: "var(--default-block-gap) 0",
     borderRadius: "0.3rem",
     ":after": {
       content: '""',
@@ -287,11 +298,12 @@ const createRenderer = ({
   onClickInteractiveElement,
   renderElement: customRenderElement,
 }) => {
-  const renderElement = (el, i, els, { root = false } = {}) => {
-    const renderNode = (n, i, ns) =>
-      n.text == null ? renderElement(n, i, ns) : renderLeaf(n, i, ns);
+  const renderElement = (el, i, els, { root = false, parent } = {}) => {
+    const renderNode = (n, i, ns, cx) =>
+      n.text == null ? renderElement(n, i, ns, cx) : renderLeaf(n, i, ns);
 
-    const children = () => el.children?.map(renderNode);
+    const children = (context) =>
+      el.children?.map((n, i, ns) => renderNode(n, i, ns, context));
 
     if (typeof customRenderElement === "function") {
       const renderResult = customRenderElement(el, i, els, {
@@ -414,7 +426,7 @@ const createRenderer = ({
               paddingTop: el.type === "attachments" ? "0.5rem" : undefined,
             }}
           >
-            <div>{children()}</div>
+            <div>{children({ parent: el })}</div>
           </div>
         );
       }
@@ -471,8 +483,13 @@ const createRenderer = ({
           <ContainerComponent
             key={i}
             className="image"
+            data-inline={
+              parent == null ||
+              !["attachments", "image-grid"].includes(parent.type)
+            }
             data-interactive={interactive}
             {...containerProps}
+            style={{ width: fittedWidth, maxWidth: "100%" }}
           >
             <Image
               src={el.url}
@@ -488,6 +505,9 @@ const createRenderer = ({
                   el.width == null ? undefined : `${el.width} / ${el.height}`,
               }}
             />
+            {el.caption != null && (
+              <span className="image-caption">{el.caption}</span>
+            )}
           </ContainerComponent>
         );
       }

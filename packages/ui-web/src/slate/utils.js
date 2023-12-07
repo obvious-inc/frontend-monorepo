@@ -89,7 +89,13 @@ export const fromMessageBlocks = (blocks) =>
       return [
         ...acc,
         { text: "" },
-        { ...n, children: n.label == null ? n.children : [{ text: n.label }] },
+        {
+          ...n,
+          children:
+            n.label == null
+              ? fromMessageBlocks(n.children)
+              : [{ text: n.label }],
+        },
         { text: "" },
       ];
 

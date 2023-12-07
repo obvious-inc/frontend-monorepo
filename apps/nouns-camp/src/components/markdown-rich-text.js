@@ -6,6 +6,7 @@ import {
   getImageDimensionsFromUrl,
 } from "@shades/common/utils";
 import RichText from "@shades/ui-web/rich-text";
+import Image from "@shades/ui-web/image";
 import Emoji from "@shades/ui-web/emoji";
 
 const setImageDimensions = async (blocks) => {
@@ -101,6 +102,56 @@ const MarkdownRichText = ({
       blocks={blocks}
       renderElement={(el, i) => {
         switch (el.type) {
+          case "image":
+            // Hack to allow image links
+            if (el.caption != null) {
+              try {
+                new URL(el.caption);
+                return (
+                  <a
+                    key={i}
+                    href={el.caption}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="image"
+                    style={{ display: "block", width: "100%" }}
+                    css={(t) =>
+                      css({
+                        textDecoration: "none",
+                        color: t.colors.textDimmed,
+                        "@media(hover: hover)": {
+                          ":hover": {
+                            textDecoration: "underline",
+                          },
+                        },
+                        ".image-caption.link": {
+                          color: "currentColor",
+                        },
+                      })
+                    }
+                  >
+                    <Image
+                      src={el.url}
+                      loading="lazy"
+                      style={{
+                        width: "100%",
+                        aspectRatio:
+                          el.width == null
+                            ? undefined
+                            : `${el.width} / ${el.height}`,
+                      }}
+                    />
+                    {el.caption != null && (
+                      <span className="image-caption link">{el.caption}</span>
+                    )}
+                  </a>
+                );
+              } catch (e) {
+                return null;
+              }
+            }
+            return null;
+
           case "emoji":
             return <Emoji key={i} emoji={el.emoji} />;
 

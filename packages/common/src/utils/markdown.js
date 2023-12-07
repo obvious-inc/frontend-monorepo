@@ -43,11 +43,7 @@ const parseToken = (token, context = {}) => {
         const imageTokens = token.tokens.filter((t) => t.type === "image");
         return {
           type: "image-grid",
-          children: imageTokens.map((t) => ({
-            type: "image",
-            url: t.href,
-            interactive: false,
-          })),
+          children: imageTokens.map((t) => parseToken(t, context)),
         };
       }
 
@@ -99,6 +95,7 @@ const parseToken = (token, context = {}) => {
         return {
           type: "image",
           url: token.href,
+          caption: token.title,
           interactive: false,
         };
 
@@ -159,14 +156,21 @@ const parseToken = (token, context = {}) => {
       if (isImageUrl && !hasLabel && context?.displayImages)
         return { type: "image", url, interactive: false };
 
+      const children = parseChildren(token, parseToken, {
+        ...context,
+        link: true,
+        linkUrl: url,
+      });
+
+      if (children.some((n) => n.type === "image")) {
+        const imageEl = children.find((n) => n.type === "image");
+        return { type: "image-grid", children: [{ ...imageEl, caption: url }] };
+      }
+
       return {
         type: "link",
         url,
-        children: parseChildren(token, parseToken, {
-          ...context,
-          link: true,
-          linkUrl: url,
-        }),
+        children,
       };
     }
 

@@ -32,14 +32,6 @@ import Select from "@shades/ui-web/select";
 import Dialog from "@shades/ui-web/dialog";
 import DialogHeader from "@shades/ui-web/dialog-header";
 import DialogFooter from "@shades/ui-web/dialog-footer";
-import RichTextEditor, {
-  Provider as EditorProvider,
-  Toolbar as EditorToolbar,
-  isNodeEmpty as isRichTextEditorNodeEmpty,
-  isSelectionCollapsed,
-  toMessageBlocks as richTextToMessageBlocks,
-  fromMessageBlocks as messageToRichTextBlocks,
-} from "@shades/ui-web/rich-text-editor";
 import {
   parse as parseTransactions,
   unparse as unparseTransactions,
@@ -65,6 +57,14 @@ import {
 } from "../hooks/data-contract.js";
 import { useCurrentVotes } from "../hooks/token-contract.js";
 import useKeyboardShortcuts from "../hooks/keyboard-shortcuts.js";
+import RichTextEditor, {
+  Provider as EditorProvider,
+  Toolbar as EditorToolbar,
+  isNodeEmpty as isRichTextEditorNodeEmpty,
+  isSelectionCollapsed,
+  toMessageBlocks as richTextToMessageBlocks,
+  fromMessageBlocks as messageToRichTextBlocks,
+} from "./rich-text-editor.js";
 import Layout, { MainContentContainer } from "./layout.js";
 import FormattedDate from "./formatted-date.js";
 import FormattedNumber from "./formatted-number.js";

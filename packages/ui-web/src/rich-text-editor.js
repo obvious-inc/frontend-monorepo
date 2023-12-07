@@ -154,7 +154,7 @@ const useImageDialog = ({ editorRef }) => {
 
       const [node] = editor.node(at) ?? [];
 
-      setState({ url: node?.url, at });
+      setState({ url: node?.url, caption: node?.caption, at });
     },
     [editorRef]
   );
@@ -403,6 +403,7 @@ const RichTextEditor = React.forwardRef(
       triggers = [],
       imagesMaxWidth,
       imagesMaxHeight,
+      renderElement: customRenderElement,
       ...props
     },
     ref
@@ -457,6 +458,11 @@ const RichTextEditor = React.forwardRef(
     }, [editorMode]);
 
     const renderElement = (props_) => {
+      if (customRenderElement != null) {
+        const element = customRenderElement(props_);
+        if (element != null) return element;
+      }
+
       const props =
         props_.element.type === "link"
           ? {
@@ -677,7 +683,8 @@ const RichTextEditor = React.forwardRef(
                       editor.focus(imageDialogState.at);
                     }}
                     initialUrl={imageDialogState.url}
-                    onSubmit={async ({ url }) => {
+                    initialCaption={imageDialogState.caption}
+                    onSubmit={async ({ url, caption }) => {
                       imageDialogActions.close();
                       const [{ width, height }] = await Promise.all([
                         // TODO handle image error
@@ -685,7 +692,7 @@ const RichTextEditor = React.forwardRef(
                         editor.focus(imageDialogState.at),
                       ]);
                       editor.insertImage(
-                        { url, width, height },
+                        { url, caption, width, height },
                         { at: imageDialogState.at }
                       );
                     }}
@@ -1297,7 +1304,13 @@ const LinkDialog = ({
   />
 );
 
-const ImageDialog = ({ titleProps, dismiss, initialUrl, onSubmit }) => (
+const ImageDialog = ({
+  titleProps,
+  dismiss,
+  initialUrl,
+  initialCaption,
+  onSubmit,
+}) => (
   <FormDialog
     titleProps={titleProps}
     dismiss={dismiss}
@@ -1312,6 +1325,13 @@ const ImageDialog = ({ titleProps, dismiss, initialUrl, onSubmit }) => (
         type: "text",
         required: true,
         validate: urlUtils.validate,
+        size: "medium",
+      },
+      {
+        key: "caption",
+        initialValue: initialCaption,
+        label: "Caption (optional)",
+        type: "text",
         size: "medium",
       },
     ]}
