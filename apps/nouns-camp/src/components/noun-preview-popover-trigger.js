@@ -116,17 +116,21 @@ const NounEvents = ({ nounId, contextAccount }) => {
         })
       }
     >
-      <NounTransferPreviewText
-        nounId={nounId}
-        event={latestTransferEvent}
-        contextAccount={contextAccount}
-      />
+      {latestTransferEvent && (
+        <NounTransferPreviewText
+          nounId={nounId}
+          event={latestTransferEvent}
+          contextAccount={contextAccount}
+        />
+      )}
 
-      <NounDelegationPreviewText
-        nounId={nounId}
-        event={latestDelegationEvent}
-        contextAccount={contextAccount}
-      />
+      {latestDelegationEvent && (
+        <NounDelegationPreviewText
+          nounId={nounId}
+          event={latestDelegationEvent}
+          contextAccount={contextAccount}
+        />
+      )}
     </div>
   );
 };
