@@ -1212,7 +1212,7 @@ export const fetchNounsByIds = (chainId, ids) =>
 
     const transferEvents = data.transferEvents.map((e) => ({
       ...e,
-      blockTimestamp: new Date(parseInt(e.blockTimestamp) * 1000),
+      blockTimestamp: parseTimestamp(e.blockTimestamp),
       newAccountId: e.newHolder?.id,
       previousAccountId: e.previousHolder?.id,
       nounId: e.noun?.id,
@@ -1220,7 +1220,7 @@ export const fetchNounsByIds = (chainId, ids) =>
     }));
     const delegationEvents = data.delegationEvents.map((e) => ({
       ...e,
-      blockTimestamp: new Date(parseInt(e.blockTimestamp) * 1000),
+      blockTimestamp: parseTimestamp(e.blockTimestamp),
       newAccountId: e.newDelegate?.id,
       previousAccountId: e.previousDelegate?.id,
       nounId: e.noun?.id,
@@ -1229,7 +1229,7 @@ export const fetchNounsByIds = (chainId, ids) =>
 
     const auctions = data.auctions.map((a) => ({
       ...a,
-      startTime: new Date(parseInt(a.startTime) * 1000),
+      startTime: parseTimestamp(a.startTime),
     }));
 
     const getEventScore = (event) => {
