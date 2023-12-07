@@ -7,6 +7,8 @@ import { useMatchMedia, useFetch } from "@shades/common/react";
 import { APPROXIMATE_BLOCKS_PER_DAY } from "../constants/ethereum.js";
 import { buildFeed as buildVoterFeed } from "../utils/voters.js";
 import {
+  useAccount,
+  useAccountFetch,
   useAccountProposalCandidates,
   useActions,
   useDelegate,
@@ -247,6 +249,8 @@ const FeedTabContent = React.memo(({ visible, voterAddress }) => {
 
 const VotingPowerCallout = ({ voterAddress }) => {
   const currentQuorum = useCurrentDynamicQuorum();
+  const account = useAccount(voterAddress);
+  const { displayName } = useAccountDisplayName(account?.delegateId);
 
   const delegate = useDelegate(voterAddress);
   const voteCount = delegate?.delegatedVotes ?? 0;
@@ -267,32 +271,59 @@ const VotingPowerCallout = ({ voterAddress }) => {
         })
       }
     >
-      <span css={(t) => css({ fontWeight: t.text.weights.smallHeader })}>
-        {voteCount === 0 ? (
-          "No voting power"
-        ) : (
-          <>
-            {voteCount} {voteCount === 1 ? "noun" : "nouns"} represented
-          </>
-        )}
-      </span>{" "}
-      {voteCount !== 0 && (
+      {voteCount === 0 && account?.delegate ? (
+        <div>
+          Delegated votes to{" "}
+          <a
+            href={`https://etherscan.io/address/${account?.delegateId}`}
+            rel="noreferrer"
+            target="_blank"
+            css={(t) =>
+              css({
+                color: "inherit",
+                fontWeight: t.text.weights.emphasis,
+                textDecoration: "none",
+                "@media(hover: hover)": {
+                  ":hover": {
+                    textDecoration: "underline",
+                  },
+                },
+              })
+            }
+          >
+            {displayName}
+          </a>
+        </div>
+      ) : (
         <>
-          {votePowerQuorumPercentage == null ? (
-            <div style={{ paddingTop: "0.3rem" }}>
-              <div
-                css={(t) =>
-                  css({
-                    height: "1.8rem",
-                    width: "11rem",
-                    background: t.colors.backgroundModifierHover,
-                    borderRadius: "0.3rem",
-                  })
-                }
-              />
-            </div>
-          ) : (
-            <span>(~{votePowerQuorumPercentage}% of quorum)</span>
+          <span css={(t) => css({ fontWeight: t.text.weights.smallHeader })}>
+            {voteCount === 0 ? (
+              "No voting power"
+            ) : (
+              <>
+                {voteCount} {voteCount === 1 ? "noun" : "nouns"} represented
+              </>
+            )}
+          </span>{" "}
+          {voteCount !== 0 && (
+            <>
+              {votePowerQuorumPercentage == null ? (
+                <div style={{ paddingTop: "0.3rem" }}>
+                  <div
+                    css={(t) =>
+                      css({
+                        height: "1.8rem",
+                        width: "11rem",
+                        background: t.colors.backgroundModifierHover,
+                        borderRadius: "0.3rem",
+                      })
+                    }
+                  />
+                </div>
+              ) : (
+                <span>(~{votePowerQuorumPercentage}% of quorum)</span>
+              )}
+            </>
           )}
         </>
       )}
@@ -701,6 +732,7 @@ const VoterScreen = () => {
   const scrollContainerRef = React.useRef();
 
   useDelegateFetch(voterAddress);
+  useAccountFetch(voterAddress);
 
   return (
     <>

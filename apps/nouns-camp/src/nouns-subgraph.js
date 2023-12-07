@@ -184,6 +184,17 @@ const createDelegateQuery = (id) => `
     }
 }`;
 
+const createAccountQuery = (id) => `
+  query {
+    account(id: "${id}") {
+      id
+      delegate {
+        id
+      }
+    }
+  }
+`;
+
 const createBrowseScreenQuery = ({ skip = 0, first = 1000 } = {}) => `
 ${VOTE_FIELDS}
 ${CANDIDATE_CONTENT_SIGNATURE_FIELDS}
@@ -947,6 +958,12 @@ const parseDelegate = (data) => {
   return parsedData;
 };
 
+const parseAccount = (data) => {
+  const parsedData = { ...data };
+  parsedData.delegateId = data.delegate?.id;
+  return parsedData;
+};
+
 const parseNoun = (data) => {
   const parsedData = { ...data };
 
@@ -1049,6 +1066,15 @@ export const fetchDelegate = (chainId, id) =>
   }).then((data) => {
     if (data.delegate == null) return Promise.reject(new Error("not-found"));
     return parseDelegate(data.delegate);
+  });
+
+export const fetchAccount = (chainId, id) =>
+  subgraphFetch({
+    chainId,
+    query: createAccountQuery(id?.toLowerCase()),
+  }).then((data) => {
+    if (data.account == null) return Promise.reject(new Error("not-found"));
+    return parseAccount(data.account);
   });
 
 export const fetchProposalCandidatesByAccount = (chainId, accountAddress) =>

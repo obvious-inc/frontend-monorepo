@@ -203,11 +203,12 @@ const useStore = createZustandStoreHook((set) => {
     );
 
   return {
+    accountsById: {},
     delegatesById: {},
+    nounsById: {},
     proposalsById: {},
     proposalCandidatesById: {},
     propdatesByProposalId: {},
-    nounsById: {},
 
     // UI actions
     addOptimitisicProposalVote: (proposalId, vote) => {
@@ -289,6 +290,15 @@ const useStore = createZustandStoreHook((set) => {
             s.proposalsById,
             createdProposalsById
           ),
+        }));
+      }),
+    fetchAccount: (chainId, id) =>
+      NounsSubgraph.fetchAccount(chainId, id).then((account) => {
+        set((s) => ({
+          accountsById: {
+            ...s.accountsById,
+            [id?.toLowerCase()]: account,
+          },
         }));
       }),
     fetchProposalCandidatesByAccount: (chainId, accountAddress) =>
@@ -605,6 +615,7 @@ export const useActions = () => {
   const fetchProposalCandidates = useStore((s) => s.fetchProposalCandidates);
   const fetchDelegates = useStore((s) => s.fetchDelegates);
   const fetchDelegate = useStore((s) => s.fetchDelegate);
+  const fetchAccount = useStore((s) => s.fetchAccount);
   const fetchProposalCandidatesByAccount = useStore(
     (s) => s.fetchProposalCandidatesByAccount
   );
@@ -644,6 +655,10 @@ export const useActions = () => {
     fetchDelegates: React.useCallback(
       (...args) => fetchDelegates(chainId, ...args),
       [fetchDelegates, chainId]
+    ),
+    fetchAccount: React.useCallback(
+      (...args) => fetchAccount(chainId, ...args),
+      [fetchAccount, chainId]
     ),
     fetchProposalCandidatesByAccount: React.useCallback(
       (...args) => fetchProposalCandidatesByAccount(chainId, ...args),
@@ -905,4 +920,26 @@ export const useNounsByAccount = (accountAddress) => {
   );
 
   return arrayUtils.sortBy((n) => parseInt(n.id), uniqueNouns);
+};
+
+export const useAccount = (id) =>
+  useStore(React.useCallback((s) => s.accountsById[id?.toLowerCase()], [id]));
+
+export const useAccountFetch = (id, options) => {
+  const { data: blockNumber } = useBlockNumber({
+    watch: true,
+    cacheTime: 10_000,
+  });
+  const onError = useLatestCallback(options?.onError);
+
+  const { fetchAccount } = useActions();
+
+  useFetch(
+    () =>
+      fetchAccount(id).catch((e) => {
+        if (onError == null) return Promise.reject(e);
+        onError(e);
+      }),
+    [fetchAccount, id, onError, blockNumber]
+  );
 };
