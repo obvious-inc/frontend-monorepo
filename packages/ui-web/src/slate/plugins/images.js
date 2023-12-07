@@ -26,6 +26,8 @@ const middleware = (editor) => {
           match: (node) => node.type === IMAGE_ELEMENT_TYPE,
         }
       );
+      console.log("wrap", path);
+      editor.print();
       return;
     }
 
@@ -114,12 +116,17 @@ const middleware = (editor) => {
     insertSoftBreak(...args);
   };
 
-  editor.insertImage = ({ url, width, height }, { at } = {}) => {
+  editor.insertImage = (
+    { url, caption: caption_, width, height },
+    { at } = {}
+  ) => {
     const match = editor.node(at);
+
+    const caption = caption_?.trim() === "" ? null : caption_?.trim();
 
     // If there is an image at the selection, edit that element
     if (match != null && match[0].type === IMAGE_ELEMENT_TYPE) {
-      editor.setNodes({ url, width, height }, { at });
+      editor.setNodes({ url, caption, width, height }, { at });
       return;
     }
 
@@ -135,6 +142,7 @@ const middleware = (editor) => {
     const imageElement = {
       type: IMAGE_ELEMENT_TYPE,
       url,
+      caption,
       width,
       height,
       children: [{ text: "" }],
@@ -197,6 +205,8 @@ const ImageComponent = ({
             openEditDialog();
           }
         }}
+        style={{ width: fittedWidth, maxWidth: "100%" }}
+        contentEditable={false}
       >
         <Image
           src={element.url}
@@ -211,6 +221,9 @@ const ImageComponent = ({
                 : `${element.width} / ${element.height}`,
           }}
         />
+        {element.caption != null && (
+          <span className="image-caption">{element.caption}</span>
+        )}
       </button>
     </span>
   );

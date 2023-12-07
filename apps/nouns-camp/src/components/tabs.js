@@ -1,6 +1,12 @@
 import React from "react";
 import { css } from "@emotion/react";
-import { useTab, useTabList, useTabPanel } from "react-aria";
+import {
+  useTab,
+  useTabList,
+  useTabPanel,
+  useFocusRing,
+  mergeProps,
+} from "react-aria";
 import { Item, useTabListState } from "react-stately";
 
 export const Root = React.forwardRef(({ className, ...props }, externalRef) => {
@@ -31,6 +37,9 @@ export const Root = React.forwardRef(({ className, ...props }, externalRef) => {
               margin: "0 -0.5rem",
               borderTopLeftRadius: "0.3rem",
               borderTopRightRadius: "0.3rem",
+              "&[data-focus-visible]": {
+                boxShadow: t.shadows.focus,
+              },
               '&[aria-selected="true"]': {
                 color: t.colors.textNormal,
                 position: "relative",
@@ -44,9 +53,6 @@ export const Root = React.forwardRef(({ className, ...props }, externalRef) => {
                   right: "0.5rem",
                   background: t.colors.primary,
                 },
-              },
-              ":focus-visible": {
-                boxShadow: t.shadows.focus,
               },
               "@media(hover: hover)": {
                 cursor: "pointer",
@@ -89,8 +95,14 @@ const Tab = ({
     // isDisabled
   } = useTab({ key }, state, ref);
 
+  const { isFocusVisible, focusProps } = useFocusRing();
+
   return (
-    <div {...tabProps} ref={ref}>
+    <div
+      {...mergeProps(focusProps, tabProps)}
+      data-focus-visible={isFocusVisible ? true : undefined}
+      ref={ref}
+    >
       {rendered}
     </div>
   );

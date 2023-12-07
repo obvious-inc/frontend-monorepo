@@ -116,7 +116,7 @@ const isNodeEqual = (n1, n2) => {
 
     case "image":
     case "image-attachment":
-      return propertiesEqual(["url"]);
+      return propertiesEqual(["url", "caption"]);
 
     case "horizontal-divider":
       return n1.type === n2.type;
@@ -349,15 +349,21 @@ export const toMarkdown = (blockElements) => {
       }
 
       case "image-grid":
-      case "attachments": {
-        const children = el.children.map(
-          (el) => `![${el.text ?? el.url}](${el.url})`
-        );
-        return children.join("\n");
-      }
+      case "attachments":
+        return el.children.map(renderBlockElement).join("\n");
 
-      case "image":
-        return `![${el.text ?? el.url}](${el.url})`;
+      case "image": {
+        const altText = el.text ?? el.caption ?? el.url;
+        if (el.caption == null || el.caption.trim() === "")
+          return `![${altText}](${el.url})`;
+
+        try {
+          new URL(el.caption);
+          return `[![${altText}](${el.url} "${el.caption}")](${el.caption})`;
+        } catch (e) {
+          return `![${altText}](${el.url} "${el.caption}")`;
+        }
+      }
 
       case "horizontal-divider":
         return "---";

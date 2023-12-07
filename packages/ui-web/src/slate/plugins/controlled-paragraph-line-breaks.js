@@ -1,5 +1,5 @@
 import isHotkey from "is-hotkey";
-import { Node, Path } from "slate";
+import { Node } from "slate";
 import { search, intersectsSelection } from "../utils";
 
 const PARAGRAPH_ELEMENT_TYPE = "paragraph";
@@ -39,7 +39,8 @@ const createMiddleware = ({ mode }) => {
         }
 
         if (editor.isBlock(childNode)) {
-          editor.moveNodes({ at: childPath, to: Path.next(path) });
+          editor.liftNodes({ at: childPath });
+          // editor.moveNodes({ at: childPath, to: Path.next(path) });
           return;
         }
       }

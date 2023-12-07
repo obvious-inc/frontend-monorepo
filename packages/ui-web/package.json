@@ -19,6 +19,7 @@
     "./form-dialog": "./dist/form-dialog/form-dialog.js",
     "./spinner": "./dist/spinner.js",
     "./button": "./dist/button.js",
+    "./image": "./dist/image.js",
     "./icon-button": "./dist/icon-button.js",
     "./inline-button": "./dist/inline-button.js",
     "./link": "./dist/link.js",
