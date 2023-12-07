@@ -11,9 +11,9 @@ import {
   useAccountFetch,
   useAccountProposalCandidates,
   useActions,
+  useAllNounsByAccount,
   useDelegate,
   useDelegateFetch,
-  useNounsByAccount,
   useProposalCandidates,
   useProposals,
 } from "../store.js";
@@ -433,7 +433,7 @@ const VoterStatsBar = React.memo(({ voterAddress }) => {
 const VoterHeader = ({ voterAddress }) => {
   const { displayName, truncatedAddress } = useAccountDisplayName(voterAddress);
 
-  const voterNouns = useNounsByAccount(voterAddress);
+  const allVoterNouns = useAllNounsByAccount(voterAddress);
 
   return (
     <div
@@ -505,7 +505,7 @@ const VoterHeader = ({ voterAddress }) => {
         </a>
       </div>
 
-      {voterNouns.length > 0 && (
+      {allVoterNouns.length > 0 && (
         <div
           css={(t) =>
             css({
@@ -523,7 +523,7 @@ const VoterHeader = ({ voterAddress }) => {
             })
           }
         >
-          {voterNouns.map((n) => (
+          {allVoterNouns.map((n) => (
             <NounPreviewPopoverTrigger
               key={n.id}
               nounId={n.id}

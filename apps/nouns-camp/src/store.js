@@ -294,6 +294,11 @@ const useStore = createZustandStoreHook((set) => {
       }),
     fetchAccount: (chainId, id) =>
       NounsSubgraph.fetchAccount(chainId, id).then((account) => {
+        const nounIds = arrayUtils.unique(account.nouns.map((n) => n.id));
+
+        // fetch nouns async ...
+        fetchNounsByIds(chainId, nounIds);
+
         set((s) => ({
           accountsById: {
             ...s.accountsById,
@@ -904,14 +909,13 @@ export const useProposalCandidateVotingPower = (candidateId) => {
 export const useNoun = (id) =>
   useStore(React.useCallback((s) => s.nounsById[id], [id]));
 
-export const useNounsByAccount = (accountAddress) => {
-  const delegate = useDelegate(accountAddress);
-  const delegatedNouns = delegate?.nounsRepresented ?? [];
+export const useAllNounsByAccount = (accountAddress) => {
+  const delegatedNouns = useStore(
+    (s) => s.delegatesById[accountAddress.toLowerCase()]?.nounsRepresented ?? []
+  );
 
-  const ownedNouns = useStore((s) =>
-    Object.values(s.nounsById).filter(
-      (n) => n.ownerId.toLowerCase() === accountAddress.toLowerCase()
-    )
+  const ownedNouns = useStore(
+    (s) => s.accountsById[accountAddress.toLowerCase()]?.nouns ?? []
   );
 
   const uniqueNouns = arrayUtils.unique(

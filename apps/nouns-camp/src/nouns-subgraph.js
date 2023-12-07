@@ -191,6 +191,22 @@ const createAccountQuery = (id) => `
       delegate {
         id
       }
+      nouns {
+        id
+        seed {
+          head
+          glasses
+          body
+          background
+          accessory
+        }
+        owner {
+          id
+          delegate {
+            id
+          }
+        }
+      }
     }
   }
 `;
@@ -960,6 +976,17 @@ const parseDelegate = (data) => {
 
 const parseAccount = (data) => {
   const parsedData = { ...data };
+
+  parsedData.nouns = arrayUtils.sortBy(
+    (n) => parseInt(n.id),
+    data.nouns.map((n) => ({
+      ...n,
+      seed: objectUtils.mapValues((v) => parseInt(v), n.seed),
+      ownerId: n.owner?.id,
+      delegateId: n.owner?.delegate?.id,
+    }))
+  );
+
   parsedData.delegateId = data.delegate?.id;
   return parsedData;
 };
