@@ -11,6 +11,40 @@ import { FormattedEthWithConditionalTooltip } from "./transaction-list.js";
 import { useSaleInfo } from "../hooks/sales.js";
 import { Link } from "react-router-dom";
 
+const DelegationStatusDot = ({ nounId, contextAccount, cssProps }) => {
+  const noun = useNoun(nounId);
+  const lastDelegateEvent = noun?.events?.find((e) => e.type === "delegate");
+  const delegated =
+    lastDelegateEvent && lastDelegateEvent.newAccountId != noun.ownerId;
+  const delegatedToAccount =
+    lastDelegateEvent?.newAccountId.toLowerCase() ==
+    contextAccount.toLowerCase();
+
+  if (!lastDelegateEvent || !delegated) return null;
+
+  return (
+    <span
+      css={(t) =>
+        css({
+          display: "block",
+          position: "absolute",
+          top: "3.6rem",
+          left: "3.6rem",
+          height: "1.4rem",
+          width: "1.4rem",
+          zIndex: 2,
+          backgroundColor: delegatedToAccount
+            ? t.colors.textPositive
+            : t.colors.textNegative,
+          borderRadius: "50%",
+          border: `0.2rem solid ${t.colors.backgroundPrimary}`,
+          ...cssProps,
+        })
+      }
+    />
+  );
+};
+
 const NounPreviewPopoverTrigger = React.forwardRef(
   (
     {
@@ -23,17 +57,6 @@ const NounPreviewPopoverTrigger = React.forwardRef(
     },
     triggerRef
   ) => {
-    const noun = useNoun(nounId);
-
-    // TODO: Need to refactor the the fetching of delegate info to gather it from the account.
-    // In which case the delegate is a field in the account, rather than looping through events.
-    const lastDelegateEvent = noun?.events?.find((e) => e.type === "delegate");
-    const delegated =
-      lastDelegateEvent && lastDelegateEvent.newAccountId != noun.ownerId;
-    const delegatedToAccount =
-      lastDelegateEvent?.newAccountId.toLowerCase() ==
-      contextAccount.toLowerCase();
-
     const renderTrigger = () => {
       if (children != null) return children;
 
@@ -57,26 +80,16 @@ const NounPreviewPopoverTrigger = React.forwardRef(
         >
           <div css={css({ position: "relative", zIndex: 1 })}>
             <NounAvatar id={nounId} seed={nounSeed} size="4rem" />
-            {lastDelegateEvent && delegated && (
-              <span
-                css={(t) =>
-                  css({
-                    display: "block",
-                    position: "absolute",
-                    top: "3rem",
-                    left: "3rem",
-                    height: "1.2rem",
-                    width: "1.2rem",
-                    zIndex: 2,
-                    backgroundColor: delegatedToAccount
-                      ? t.colors.textPositive
-                      : t.colors.textNegative,
-                    borderRadius: "50%",
-                    border: `0.2rem solid ${t.colors.backgroundPrimary}`,
-                  })
-                }
-              />
-            )}
+            <DelegationStatusDot
+              nounId={nounId}
+              contextAccount={contextAccount}
+              cssProps={{
+                top: "3rem",
+                left: "3rem",
+                height: "1.2rem",
+                width: "1.2rem",
+              }}
+            />
           </div>
           <div data-id>{nounId}</div>
         </button>
@@ -342,14 +355,6 @@ const NounTransferPreviewText = ({ event, contextAccount }) => {
 const NounPreview = React.forwardRef(({ nounId, contextAccount }, ref) => {
   const noun = useNoun(nounId);
   const firstEvent = noun?.events?.[noun.events.length - 1];
-  // TODO: Need to refactor the the fetching of delegate info to gather it from the account.
-  // In which case the delegate is a field in the account, rather than looping through events.
-  const lastDelegateEvent = noun?.events?.find((e) => e.type === "delegate");
-  const delegated =
-    lastDelegateEvent && lastDelegateEvent.newAccountId != noun.ownerId;
-  const delegatedToAccount =
-    lastDelegateEvent?.newAccountId.toLowerCase() ==
-    contextAccount.toLowerCase();
 
   const auction = noun?.auction;
   const nounTimestamp = auction?.startTime ?? firstEvent?.blockTimestamp;
@@ -377,26 +382,10 @@ const NounPreview = React.forwardRef(({ nounId, contextAccount }, ref) => {
       >
         <div css={css({ position: "relative", zIndex: 1 })}>
           <NounAvatar id={nounId} seed={noun.seed} size="5rem" />
-          {lastDelegateEvent && delegated && (
-            <span
-              css={(t) =>
-                css({
-                  display: "block",
-                  position: "absolute",
-                  top: "3.6rem",
-                  left: "3.6rem",
-                  height: "1.4rem",
-                  width: "1.4rem",
-                  zIndex: 2,
-                  backgroundColor: delegatedToAccount
-                    ? t.colors.textPositive
-                    : t.colors.textNegative,
-                  borderRadius: "50%",
-                  border: `0.2rem solid ${t.colors.backgroundPrimary}`,
-                })
-              }
-            />
-          )}
+          <DelegationStatusDot
+            nounId={nounId}
+            contextAccount={contextAccount}
+          />
         </div>
 
         <div
