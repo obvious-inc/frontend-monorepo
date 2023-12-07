@@ -9,6 +9,7 @@ import { resolveIdentifier } from "../contracts.js";
 import useChainId from "../hooks/chain-id.js";
 import { FormattedEthWithConditionalTooltip } from "./transaction-list.js";
 import { useSaleInfo } from "../hooks/sales.js";
+import { Link } from "react-router-dom";
 
 const NounPreviewPopoverTrigger = React.forwardRef(
   (
@@ -169,10 +170,8 @@ const NounDelegationPreviewText = ({ nounId, event, contextAccount }) => {
         Delegated {destinationText}{" "}
       </span>
       <span>
-        <a
-          href={`https://etherscan.io/address/${previousAccountAddress}`}
-          rel="noreferrer"
-          target="_blank"
+        <Link
+          to={`/campers/${previousAccountAddress}`}
           css={(t) =>
             css({
               color: "inherit",
@@ -187,7 +186,7 @@ const NounDelegationPreviewText = ({ nounId, event, contextAccount }) => {
           }
         >
           {previousAccount}
-        </a>
+        </Link>
       </span>{" "}
       since{" "}
       <span>
@@ -281,10 +280,8 @@ const NounTransferPreviewText = ({ event, contextAccount }) => {
       </span>{" "}
       from{" "}
       <span>
-        <a
-          href={`https://etherscan.io/address/${previousAccountAddress}`}
-          rel="noreferrer"
-          target="_blank"
+        <Link
+          to={`/campers/${previousAccountAddress}`}
           css={(t) =>
             css({
               color: "inherit",
@@ -299,7 +296,7 @@ const NounTransferPreviewText = ({ event, contextAccount }) => {
           }
         >
           {transferredFromText}
-        </a>
+        </Link>
       </span>{" "}
       on{" "}
       <span>

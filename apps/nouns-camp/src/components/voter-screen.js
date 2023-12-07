@@ -273,11 +273,9 @@ const VotingPowerCallout = ({ voterAddress }) => {
     >
       {voteCount === 0 && account?.delegate ? (
         <div>
-          Delegated votes to{" "}
-          <a
-            href={`https://etherscan.io/address/${account?.delegateId}`}
-            rel="noreferrer"
-            target="_blank"
+          Delegating votes to{" "}
+          <RouterLink
+            to={`/campers/${account?.delegateId}`}
             css={(t) =>
               css({
                 color: "inherit",
@@ -292,7 +290,7 @@ const VotingPowerCallout = ({ voterAddress }) => {
             }
           >
             {displayName}
-          </a>
+          </RouterLink>
         </div>
       ) : (
         <>
@@ -741,7 +739,7 @@ const VoterScreen = () => {
         scrollContainerRef={scrollContainerRef}
         navigationStack={[
           {
-            to: `/voter/${voterId} `,
+            to: `/campers/${voterId} `,
             label: (
               <>
                 {displayName} {ensName && `(${truncatedAddress})`}
