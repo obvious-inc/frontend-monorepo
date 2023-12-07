@@ -102,8 +102,6 @@ const App = () => {
                         path="/campers/:voterId"
                         element={<VoterScreen />}
                       />
-
-                      <Route path="/voter/:voterId" element={<VoterScreen />} />
                     </Route>
                     <Route path="*" element={<Navigate to="/" replace />} />
                   </Routes>
