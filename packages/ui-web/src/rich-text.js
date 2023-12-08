@@ -176,6 +176,7 @@ export const createCss = (t) => ({
     ".image-caption": {
       display: "block",
       fontSize: "0.875em",
+      fontWeight: "400",
       color: t.colors.textDimmed,
       padding: "0.4em 0 0.4em 0.15em",
       ".text-container": {
