@@ -444,7 +444,19 @@ const BrowseScreen = () => {
   return (
     <>
       <MetaTags />
-      <Layout scrollContainerRef={scrollContainerRef}>
+      <Layout
+        scrollContainerRef={scrollContainerRef}
+        actions={[
+          {
+            label: "New Proposal",
+            buttonProps: {
+              component: RouterLink,
+              to: "/new",
+              icon: <PlusIcon style={{ width: "0.9rem" }} />,
+            },
+          },
+        ]}
+      >
         <div css={css({ padding: "0 1.6rem" })}>
           <MainContentContainer
             sidebar={

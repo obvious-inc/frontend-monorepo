@@ -88,6 +88,7 @@ const defaultActions = [
       to: "/new",
       icon: <PlusIcon style={{ width: "0.9rem" }} />,
     },
+    desktopOnly: true,
   },
 ];
 
