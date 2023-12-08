@@ -20,7 +20,7 @@ export default async function handler() {
           alignItems: "center",
         }}
       >
-        👋 Hello 你好 नमस्ते こんにちは สวัสดีค่ะ 안녕 добрий день Hallá
+        👋 Hello
       </div>
     ),
     {
