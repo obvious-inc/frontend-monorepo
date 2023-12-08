@@ -599,7 +599,7 @@ export const TransactionExplanation = ({ transaction: t }) => {
             <Tooltip.Root>
               <Tooltip.Trigger asChild>
                 <a
-                  href={createEtherscanAddressUrl(t.target)}
+                  href={createEtherscanAddressUrl(t.receiverAddress)}
                   target="_blank"
                   rel="noreferrer"
                 >
@@ -607,7 +607,7 @@ export const TransactionExplanation = ({ transaction: t }) => {
                 </a>
               </Tooltip.Trigger>
               <Tooltip.Content side="top" sideOffset={6}>
-                {t.target}
+                {t.receiverAddress}
               </Tooltip.Content>
             </Tooltip.Root>
           </em>
