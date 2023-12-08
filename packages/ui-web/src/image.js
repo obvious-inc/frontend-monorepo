@@ -3,6 +3,7 @@ import { css } from "@emotion/react";
 
 const Image = ({ disableFallback = false, ...props }) => {
   const ref = React.useRef();
+  const onLoadRef = React.useRef(props.onLoad);
 
   const [error, setError] = React.useState(null);
 
@@ -12,6 +13,19 @@ const Image = ({ disableFallback = false, ...props }) => {
       setError(error);
     };
   }, [props.src]);
+
+  React.useEffect(() => {
+    onLoadRef.current = props.onLoad;
+  });
+
+  React.useEffect(() => {
+    ref.current.onload = () => {
+      onLoadRef.current?.({
+        width: ref.current.naturalWidth,
+        height: ref.current.naturalHeight,
+      });
+    };
+  }, []);
 
   if (error != null && !disableFallback)
     return (

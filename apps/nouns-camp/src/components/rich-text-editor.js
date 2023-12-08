@@ -2,6 +2,7 @@ import React from "react";
 import { ReactEditor, useSelected, useFocused } from "slate-react";
 import {
   url as urlUtils,
+  dimension as dimensionUtils,
   getImageDimensionsFromUrl,
 } from "@shades/common/utils";
 import { ErrorBoundary } from "@shades/common/react";
@@ -56,8 +57,8 @@ const RichTextEditor = React.forwardRef((props, externalRef) => {
     editorRef,
   });
 
-  const renderElement = (props) => {
-    const { element } = props;
+  const renderElement = (props_) => {
+    const { element } = props_;
 
     switch (element.type) {
       case "image":
@@ -66,11 +67,13 @@ const RichTextEditor = React.forwardRef((props, externalRef) => {
             new URL(element.caption);
             return (
               <ImageLinkComponent
-                {...props}
+                {...props_}
+                maxWidth={props.imagesMaxWidth}
+                maxHeight={props.imagesMaxHeight}
                 onClick={() => {
                   const nodePath = ReactEditor.findPath(
                     editorRef.curent,
-                    props.element
+                    element
                   );
                   imageLinkDialogActions.open(nodePath);
                 }}
@@ -140,10 +143,27 @@ const RichTextEditor = React.forwardRef((props, externalRef) => {
   );
 });
 
-const ImageLinkComponent = ({ element, attributes, children, onClick }) => {
+export const ImageLinkComponent = ({
+  element,
+  attributes,
+  children,
+  onClick,
+  maxWidth,
+  maxHeight,
+}) => {
   const selected = useSelected();
   const focused = useFocused();
   const isFocused = selected && focused;
+
+  const fittedWidth =
+    maxWidth == null && maxHeight == null
+      ? element.width
+      : element.width == null
+      ? null
+      : dimensionUtils.fitInsideBounds(
+          { width: element.width, height: element.height },
+          { width: maxWidth, height: maxHeight }
+        ).width;
 
   return (
     <span {...attributes}>
@@ -155,14 +175,16 @@ const ImageLinkComponent = ({ element, attributes, children, onClick }) => {
         data-editable
         data-focused={isFocused ? "true" : undefined}
         onClick={onClick}
-        style={{ width: "100%" }}
+        style={{ width: fittedWidth, maxWidth: "100%" }}
         contentEditable={false}
       >
         <Image
           src={element.url}
           loading="lazy"
+          width={fittedWidth}
           style={{
-            width: "100%",
+            maxWidth: "100%",
+            maxHeight: fittedWidth == null ? maxHeight : undefined,
             aspectRatio:
               element.width == null
                 ? undefined
@@ -170,7 +192,9 @@ const ImageLinkComponent = ({ element, attributes, children, onClick }) => {
           }}
         />
         {element.caption != null && (
-          <span className="image-caption">{element.caption}</span>
+          <span className="image-caption" title={element.caption}>
+            <span className="text-container">{element.caption}</span>
+          </span>
         )}
       </button>
     </span>

@@ -35,22 +35,19 @@ const parseChildren = (token, parse, context_ = {}) => {
 const parseToken = (token, context = {}) => {
   switch (token.type) {
     case "paragraph": {
-      const isImageParagraph = token.tokens.every(
-        (t) => t.type === "image" || t.text.trim() === ""
+      const children = parseChildren(token, parseToken, context);
+
+      const isImageParagraph = children.every(
+        (t) => t.type === "image" || t.text?.trim() === ""
       );
 
-      if (isImageParagraph) {
-        const imageTokens = token.tokens.filter((t) => t.type === "image");
+      if (isImageParagraph)
         return {
           type: "image-grid",
-          children: imageTokens.map((t) => parseToken(t, context)),
+          children: children.filter((t) => t.type === "image"),
         };
-      }
 
-      return {
-        type: "paragraph",
-        children: parseChildren(token, parseToken, context),
-      };
+      return { type: "paragraph", children };
     }
 
     case "heading":
@@ -164,7 +161,8 @@ const parseToken = (token, context = {}) => {
 
       if (children.some((n) => n.type === "image")) {
         const imageEl = children.find((n) => n.type === "image");
-        return { type: "image-grid", children: [{ ...imageEl, caption: url }] };
+        // return { type: "image-grid", children: [{ ...imageEl, caption: url }] };
+        return { ...imageEl, caption: url };
       }
 
       return {

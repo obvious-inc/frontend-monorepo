@@ -152,13 +152,16 @@ export const createCss = (t) => ({
   ".image": {
     display: "block",
     borderRadius: "0.3rem",
-    overflow: "hidden",
+    // overflow: "hidden",
     '&[data-focused="true"], &:focus-visible': {
       boxShadow: t.shadows.focus,
     },
     '&[data-inline="true"]': {
       margin: "var(--default-block-gap) 0",
     },
+    // "&[data-editable] img": {
+    //   boxShadow: `0 0 0 0.1rem ${t.colors.borderLighter}`,
+    // },
     "@media(hover: hover)": {
       '&[data-interactive="true"]': {
         cursor: "zoom-in",
@@ -175,6 +178,12 @@ export const createCss = (t) => ({
       fontSize: "0.875em",
       color: t.colors.textDimmed,
       padding: "0.4em 0 0.4em 0.15em",
+      ".text-container": {
+        display: "-webkit-box",
+        WebkitLineClamp: 2,
+        WebkitBoxOrient: "vertical",
+        overflow: "hidden",
+      },
     },
   },
   ".grid > *": {
@@ -182,9 +191,12 @@ export const createCss = (t) => ({
     alignItems: "flex-start",
     justifyContent: "flex-start",
     flexWrap: "wrap",
-    margin: "-1rem 0 0 -1rem",
+    margin:
+      "calc(-1 * var(--default-compact-block-gap)) 0 0 calc(-1 * var(--default-compact-block-gap))",
     "& > *": {
-      margin: "1rem 0 0 1rem",
+      margin:
+        "var(--default-compact-block-gap) 0 0 var(--default-compact-block-gap)",
+      maxWidth: "100%",
     },
   },
   "* + .grid": { marginTop: "var(--default-block-gap)" },
@@ -448,67 +460,30 @@ const createRenderer = ({
                 MULTI_IMAGE_ATTACHMENT_MAX_HEIGHT,
               ];
 
-        const fittedWidth =
-          // Skip fitting step if both max dimensions are explicitly set to `null`
-          imagesMaxWidth === null && imagesMaxHeight === null
-            ? el.width
-            : el.width == null
-            ? null
-            : dimensionUtils.fitInsideBounds(
-                { width: el.width, height: el.height },
-                {
-                  width:
-                    imagesMaxWidth === undefined
-                      ? defaultMaxWidth
-                      : imagesMaxWidth,
-                  height:
-                    imagesMaxHeight === undefined
-                      ? defaultMaxHeight
-                      : imagesMaxHeight,
-                }
-              ).width;
-
-        const interactive = el.interactive ?? true;
-
-        const ContainerComponent = interactive ? "button" : "span";
-        const containerProps = interactive
-          ? {
-              onClick: () => {
-                onClickInteractiveElement?.(el);
-              },
-            }
-          : null;
-
         return (
-          <ContainerComponent
+          <ImageComponent
             key={i}
-            className="image"
-            data-inline={
+            element={el}
+            maxWidth={
+              imagesMaxWidth === null ? null : imagesMaxWidth ?? defaultMaxWidth
+            }
+            maxHeight={
+              imagesMaxHeight === null
+                ? null
+                : imagesMaxHeight ?? defaultMaxHeight
+            }
+            inline={
               parent == null ||
               !["attachments", "image-grid"].includes(parent.type)
             }
-            data-interactive={interactive}
-            {...containerProps}
-            style={{ width: fittedWidth, maxWidth: "100%" }}
-          >
-            <Image
-              src={el.url}
-              loading="lazy"
-              width={fittedWidth}
-              style={{
-                maxWidth: "100%",
-                maxHeight:
-                  fittedWidth == null
-                    ? imagesMaxHeight ?? defaultMaxHeight
-                    : undefined,
-                aspectRatio:
-                  el.width == null ? undefined : `${el.width} / ${el.height}`,
-              }}
-            />
-            {el.caption != null && (
-              <span className="image-caption">{el.caption}</span>
-            )}
-          </ContainerComponent>
+            onClick={
+              el.interactive === false
+                ? undefined
+                : () => {
+                    onClickInteractiveElement?.(el);
+                  }
+            }
+          />
         );
       }
 
@@ -534,6 +509,64 @@ const createRenderer = ({
 
   return (blocks) =>
     blocks.map((b, i, bs) => renderElement(b, i, bs, { root: true }));
+};
+
+const ImageComponent = ({
+  element: el,
+  maxWidth,
+  maxHeight,
+  inline,
+  onClick,
+}) => {
+  const [dimensions, setDimensions] = React.useState(null);
+
+  const width = el.width ?? dimensions?.width;
+  const height = el.height ?? dimensions?.height;
+
+  const fittedWidth =
+    // Skip fitting step if both max dimensions are explicitly set to `null`
+    maxWidth === null && maxHeight === null
+      ? width
+      : width == null
+      ? null
+      : dimensionUtils.fitInsideBounds(
+          { width, height },
+          { width: maxWidth, height: maxHeight }
+        ).width;
+
+  const hasDimensions = fittedWidth != null;
+
+  const ContainerComponent = onClick == null ? "span" : "button";
+
+  return (
+    <ContainerComponent
+      className="image"
+      data-inline={inline}
+      data-interactive={onClick == null ? undefined : true}
+      onClick={onClick}
+      style={{ width: fittedWidth, maxWidth: "100%" }}
+    >
+      <Image
+        src={el.url}
+        loading="lazy"
+        width={fittedWidth}
+        onLoad={(dimensions) => {
+          if (el.width == null) setDimensions(dimensions);
+        }}
+        style={{
+          maxWidth: "100%",
+          maxHeight: hasDimensions ? undefined : maxHeight,
+          aspectRatio: el.width == null ? undefined : `${width} / ${height}`,
+        }}
+      />
+      {/* Hide caption until we have dimensions to prevent overflow */}
+      {hasDimensions && el.caption != null && (
+        <span className="image-caption">
+          <span className="text-container">{el.caption}</span>
+        </span>
+      )}
+    </ContainerComponent>
+  );
 };
 
 const RichText = ({

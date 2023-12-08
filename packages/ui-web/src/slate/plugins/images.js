@@ -26,8 +26,6 @@ const middleware = (editor) => {
           match: (node) => node.type === IMAGE_ELEMENT_TYPE,
         }
       );
-      console.log("wrap", path);
-      editor.print();
       return;
     }
 
@@ -222,7 +220,9 @@ const ImageComponent = ({
           }}
         />
         {element.caption != null && (
-          <span className="image-caption">{element.caption}</span>
+          <span className="image-caption" title={element.caption}>
+            <span className="text-container">{element.caption}</span>
+          </span>
         )}
       </button>
     </span>

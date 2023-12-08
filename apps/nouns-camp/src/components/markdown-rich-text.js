@@ -3,6 +3,7 @@ import { css } from "@emotion/react";
 import {
   message as messageUtils,
   markdown as markdownUtils,
+  dimension as dimensionUtils,
   getImageDimensionsFromUrl,
 } from "@shades/common/utils";
 import RichText from "@shades/ui-web/rich-text";
@@ -108,43 +109,12 @@ const MarkdownRichText = ({
               try {
                 new URL(el.caption);
                 return (
-                  <a
+                  <ImageLink
                     key={i}
-                    href={el.caption}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="image"
-                    style={{ display: "block", width: "100%" }}
-                    css={(t) =>
-                      css({
-                        textDecoration: "none",
-                        color: t.colors.textDimmed,
-                        "@media(hover: hover)": {
-                          ":hover": {
-                            textDecoration: "underline",
-                          },
-                        },
-                        ".image-caption.link": {
-                          color: "currentColor",
-                        },
-                      })
-                    }
-                  >
-                    <Image
-                      src={el.url}
-                      loading="lazy"
-                      style={{
-                        width: "100%",
-                        aspectRatio:
-                          el.width == null
-                            ? undefined
-                            : `${el.width} / ${el.height}`,
-                      }}
-                    />
-                    {el.caption != null && (
-                      <span className="image-caption link">{el.caption}</span>
-                    )}
-                  </a>
+                    element={el}
+                    maxWidth={props.imagesMaxWidth}
+                    maxHeight={props.imagesMaxHeight}
+                  />
                 );
               } catch (e) {
                 return null;
@@ -161,6 +131,69 @@ const MarkdownRichText = ({
       }}
       {...props}
     />
+  );
+};
+
+const ImageLink = ({ element: el, maxWidth, maxHeight }) => {
+  const [dimensions, setDimensions] = React.useState(null);
+
+  const width = el.width ?? dimensions?.width;
+  const height = el.height ?? dimensions?.height;
+
+  const fittedWidth =
+    maxWidth == null && maxHeight == null
+      ? width
+      : width == null
+      ? null
+      : dimensionUtils.fitInsideBounds(
+          { width, height },
+          { width: maxWidth, height: maxHeight }
+        ).width;
+
+  const hasDimensions = fittedWidth != null;
+
+  return (
+    <a
+      href={el.caption}
+      target="_blank"
+      rel="noreferrer"
+      className="image"
+      style={{ width: fittedWidth, maxWidth: "100%" }}
+      css={(t) =>
+        css({
+          textDecoration: "none",
+          color: t.colors.textDimmed,
+          "@media(hover: hover)": {
+            ":hover": {
+              textDecoration: "underline",
+            },
+          },
+          ".image-caption.link": {
+            color: "currentColor",
+          },
+        })
+      }
+    >
+      <Image
+        src={el.url}
+        loading="lazy"
+        width={fittedWidth}
+        onLoad={(dimensions) => {
+          if (el.width == null) setDimensions(dimensions);
+        }}
+        style={{
+          maxWidth: "100%",
+          maxHeight: hasDimensions ? undefined : maxHeight,
+          aspectRatio: width == null ? undefined : `${width} / ${height}`,
+        }}
+      />
+      {/* Hide caption until we have dimensions to prevent overflow */}
+      {hasDimensions && el.caption != null && (
+        <span className="image-caption link" title={el.caption}>
+          <span className="text-container">{el.caption}</span>
+        </span>
+      )}
+    </a>
   );
 };
 
