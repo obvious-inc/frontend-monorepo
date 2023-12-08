@@ -1,4 +1,5 @@
 import { css } from "@emotion/react";
+// import { useNavigate } from "react-router-dom";
 import Dialog from "@shades/ui-web/dialog";
 import Button from "@shades/ui-web/button";
 import { Cross as CrossIcon } from "@shades/ui-web/icons";
@@ -23,12 +24,8 @@ const AccountDialog = ({ isOpen, close }) => (
 );
 
 const Content = ({ titleProps, dismiss }) => {
-  const {
-    address: accountAddress,
-    disconnect: disconnectWallet,
-    isShimmedDisconnect,
-    requestAccess: requestWalletAccess,
-  } = useWallet();
+  // const navigate = useNavigate();
+  const { address: accountAddress } = useWallet();
   const { displayName, truncatedAddress } =
     useAccountDisplayName(accountAddress);
   const delegate = useDelegate(accountAddress);
@@ -192,25 +189,21 @@ const Content = ({ titleProps, dismiss }) => {
           },
         })}
       >
-        {isShimmedDisconnect ? (
-          <Button
-            onClick={() => {
-              dismiss();
-              requestWalletAccess();
-            }}
-          >
-            Connect a different account
-          </Button>
-        ) : (
-          <Button
-            onClick={() => {
-              dismiss();
-              disconnectWallet();
-            }}
-          >
-            Disconnect wallet
-          </Button>
-        )}
+        {/* <Button */}
+        {/*   onClick={() => { */}
+        {/*     dismiss(); */}
+        {/*     navigate(`/voter/${accountAddress}`); */}
+        {/*   }} */}
+        {/* > */}
+        {/*   View full profile */}
+        {/* </Button> */}
+        <Button
+          onClick={() => {
+            dismiss();
+          }}
+        >
+          Close
+        </Button>
       </footer>
     </div>
   );

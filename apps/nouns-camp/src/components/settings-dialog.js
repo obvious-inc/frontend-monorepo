@@ -1,6 +1,7 @@
 import { invariant } from "@shades/common/utils";
-import useSetting, { getConfig as getSettingConfig } from "../hooks/setting.js";
+import Dialog from "@shades/ui-web/dialog";
 import FormDialog from "@shades/ui-web/form-dialog";
+import useSetting, { getConfig as getSettingConfig } from "../hooks/setting.js";
 
 const settingInputConfigByKey = {
   theme: {
@@ -11,23 +12,6 @@ const settingInputConfigByKey = {
       dark: "Dark",
     },
   },
-  layout: {
-    label: "Messages",
-    optionLabelsByValue: {
-      normal: "Normal",
-      compact: "Compact",
-      bubbles: "Bubbles",
-    },
-  },
-
-  "sidebar-item-size": {
-    label: "Sidebar item size",
-    optionLabelsByValue: {
-      normal: "Normal",
-      large: "Large",
-    },
-  },
-
   zoom: {
     label: "Text size",
     optionLabelsByValue: {
@@ -40,10 +24,20 @@ const settingInputConfigByKey = {
   },
 };
 
-const SettingsDialog = ({ titleProps, dismiss }) => {
+const SettingsDialog = ({ isOpen, close }) => (
+  <Dialog
+    isOpen={isOpen}
+    onRequestClose={() => {
+      close();
+    }}
+    width="38rem"
+  >
+    {(props) => <Content dismiss={close} {...props} />}
+  </Dialog>
+);
+
+const Content = ({ titleProps, dismiss }) => {
   const [theme, setTheme] = useSetting("theme");
-  const [layout, setLayout] = useSetting("layout");
-  const [sidebarItemSize, setSidebarItemSize] = useSetting("sidebar-item-size");
   const [zoom, setZoom] = useSetting("zoom");
 
   return (
@@ -57,16 +51,6 @@ const SettingsDialog = ({ titleProps, dismiss }) => {
           key: "theme",
           state: theme,
           setState: setTheme,
-        },
-        {
-          key: "layout",
-          state: layout,
-          setState: setLayout,
-        },
-        {
-          key: "sidebar-item-size",
-          state: sidebarItemSize,
-          setState: setSidebarItemSize,
         },
         {
           key: "zoom",

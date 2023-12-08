@@ -138,7 +138,6 @@ const FormDialog = ({
       <DialogFooter
         cancel={dismiss}
         cancelButtonLabel={cancelLabel}
-        submit={submit}
         submitButtonLabel={submitLabel}
         submitButtonProps={{
           type: "submit",

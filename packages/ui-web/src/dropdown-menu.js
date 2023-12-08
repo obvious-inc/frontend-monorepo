@@ -150,6 +150,7 @@ const MenuItem = ({ item, state }) => {
           fontWeight: "400",
           cursor: "pointer",
           borderRadius: "0.3rem",
+          whiteSpace: "nowrap",
           ":focus": {
             background: t.colors.backgroundModifierHover,
             outline: "none",

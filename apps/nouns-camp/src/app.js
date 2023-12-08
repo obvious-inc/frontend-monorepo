@@ -38,6 +38,10 @@ const dialogs = [
     key: "account",
     component: React.lazy(() => import("./components/account-dialog.js")),
   },
+  {
+    key: "settings",
+    component: React.lazy(() => import("./components/settings-dialog.js")),
+  },
 ];
 
 const themeMap = {
@@ -106,6 +110,7 @@ const useTheme = () => {
 
 const App = () => {
   const theme = useTheme();
+  const [zoomSetting] = useSetting("zoom");
 
   useDelegatesFetch();
 
@@ -120,6 +125,14 @@ const App = () => {
                   <Global
                     styles={(theme) =>
                       css({
+                        html: {
+                          fontSize: {
+                            tiny: "0.546875em",
+                            small: "0.5859375em",
+                            large: "0.6640625em",
+                            huge: "0.703125em",
+                          }[zoomSetting],
+                        },
                         body: {
                           color: theme.colors.textNormal,
                           background: theme.colors.backgroundPrimary,

@@ -788,7 +788,7 @@ export const SectionedList = ({
             textTransform: "uppercase",
             fontSize: t.text.sizes.small,
             fontWeight: t.text.weights.emphasis,
-            color: t.colors.textMuted,
+            color: t.colors.textDimmed,
             "@media(min-width: 600px)": {
               padding: "1.1rem 0",
             },
@@ -797,7 +797,7 @@ export const SectionedList = ({
             textTransform: "none",
             fontSize: t.text.sizes.small,
             fontWeight: t.text.weights.normal,
-            color: t.colors.textMuted,
+            color: t.colors.textDimmed,
           },
           "[data-placeholder]": {
             background: hoverColor,

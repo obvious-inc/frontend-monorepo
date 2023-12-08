@@ -8,7 +8,11 @@ import {
 } from "react-router-dom";
 import { useAccountDisplayName } from "@shades/common/app";
 import Button from "@shades/ui-web/button";
-import { Plus as PlusIcon } from "@shades/ui-web/icons";
+import * as DropdownMenu from "@shades/ui-web/dropdown-menu";
+import {
+  Plus as PlusIcon,
+  CaretDown as CaretDownIcon,
+} from "@shades/ui-web/icons";
 import { useWallet } from "../hooks/wallet.js";
 import { useDialog } from "../hooks/global-dialogs.js";
 import AccountAvatar from "./account-avatar.js";
@@ -101,12 +105,15 @@ const NavBar = ({ navigationStack, actions: actions_ }) => {
   const location = useLocation();
 
   const { open: openAccountDialog } = useDialog("account");
+  const { open: openSettingsDialog } = useDialog("settings");
 
   const {
     address: connectedWalletAccountAddress,
     requestAccess: requestWalletAccess,
+    disconnect: disconnectWallet,
     switchToMainnet: switchWalletToMainnet,
     isUnsupportedChain,
+    isShimmedDisconnect: isShimmedWalletDisconnect,
     isLoading: isLoadingWallet,
   } = useWallet();
   const { displayName: connectedAccountDisplayName } = useAccountDisplayName(
@@ -267,6 +274,7 @@ const NavBar = ({ navigationStack, actions: actions_ }) => {
                   label: "Switch to Mainnet",
                 }
               : {
+                  type: "dropdown",
                   onSelect: () => {
                     openAccountDialog();
                   },
@@ -276,6 +284,13 @@ const NavBar = ({ navigationStack, actions: actions_ }) => {
                   //   target: "_blank",
                   //   rel: "noreferrer",
                   // },
+                  buttonProps: {
+                    iconRight: (
+                      <CaretDownIcon
+                        style={{ width: "0.9rem", height: "auto" }}
+                      />
+                    ),
+                  },
 
                   label: (
                     <div
@@ -309,8 +324,95 @@ const NavBar = ({ navigationStack, actions: actions_ }) => {
                     })
                   }
                 />
+              ) : a.type === "dropdown" ? (
+                <DropdownMenu.Root key={i} placement="bottom">
+                  <DropdownMenu.Trigger asChild>
+                    <Button
+                      variant={a.buttonVariant ?? "transparent"}
+                      size="small"
+                      {...a.buttonProps}
+                    >
+                      {a.label}
+                    </Button>
+                  </DropdownMenu.Trigger>
+                  <DropdownMenu.Content
+                    css={css({
+                      width: "min-content",
+                      minWidth: "min-content",
+                      maxWidth: "calc(100vw - 2rem)",
+                    })}
+                    items={[
+                      {
+                        id: "main",
+                        children: [
+                          {
+                            id: "open-account-dialog",
+                            label: "View connected account",
+                          },
+                          {
+                            id: "copy-account-address",
+                            label: "Copy account address",
+                          },
+                        ],
+                      },
+                      {
+                        id: "settings",
+                        children: [
+                          { id: "open-settings-dialog", label: "Settings" },
+                        ],
+                      },
+                      {
+                        id: "disconnect",
+                        children: [
+                          isShimmedWalletDisconnect
+                            ? {
+                                id: "request-wallet-access",
+                                label: "Connect a different account",
+                              }
+                            : {
+                                id: "disconnect-wallet",
+                                label: "Disconnect wallet",
+                              },
+                        ],
+                      },
+                    ].filter(Boolean)}
+                    onAction={(key) => {
+                      switch (key) {
+                        case "open-account-dialog":
+                          openAccountDialog();
+                          break;
+
+                        case "copy-account-address":
+                          navigator.clipboard.writeText(
+                            connectedWalletAccountAddress
+                          );
+                          break;
+
+                        case "open-settings-dialog":
+                          openSettingsDialog();
+                          break;
+
+                        case "request-wallet-access":
+                          requestWalletAccess();
+                          break;
+
+                        case "disconnect-wallet":
+                          disconnectWallet();
+                          break;
+                      }
+                    }}
+                  >
+                    {(item) => (
+                      <DropdownMenu.Section items={item.children}>
+                        {(item) => (
+                          <DropdownMenu.Item>{item.label}</DropdownMenu.Item>
+                        )}
+                      </DropdownMenu.Section>
+                    )}
+                  </DropdownMenu.Content>
+                </DropdownMenu.Root>
               ) : (
-                <li key={a.label} data-desktop-only={a.desktopOnly}>
+                <li key={i} data-desktop-only={a.desktopOnly}>
                   <Button
                     variant={a.buttonVariant ?? "transparent"}
                     size="small"

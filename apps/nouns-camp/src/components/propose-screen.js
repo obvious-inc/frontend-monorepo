@@ -1876,10 +1876,13 @@ const SubmitDialog = ({
               disabled={hasPendingSubmit}
             />
             <Callout
-              css={css({
-                marginTop: "2rem",
-                "p + p": { marginTop: "1em" },
-              })}
+              css={(t) =>
+                css({
+                  background: t.colors.inputBackground,
+                  marginTop: "2rem",
+                  "p + p": { marginTop: "1em" },
+                })
+              }
             >
               {renderInfo()}
             </Callout>
