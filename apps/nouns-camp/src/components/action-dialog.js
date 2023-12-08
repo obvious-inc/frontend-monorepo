@@ -522,19 +522,26 @@ const Content = ({
                 }
                 value={
                   streamDateRange.start == null
-                    ? ""
+                    ? "yyyy-mm-dd"
                     : formatDate(streamDateRange.start, "yyyy-MM-dd")
                 }
                 onChange={(e) => {
                   setStreamDateRange(({ start, end }) => {
-                    const selectedStart = new Date(e.target.valueAsNumber);
-                    return {
-                      start:
-                        end == null || selectedStart <= end
-                          ? selectedStart
-                          : start,
-                      end,
-                    };
+                    if (isNaN(e.target.valueAsNumber)) return { start, end };
+
+                    try {
+                      const selectedStart = new Date(e.target.valueAsNumber);
+                      formatDate(selectedStart, "yyyy-MM-dd");
+                      return {
+                        start:
+                          end == null || selectedStart <= end
+                            ? selectedStart
+                            : start,
+                        end,
+                      };
+                    } catch (e) {
+                      return { start, end };
+                    }
                   });
                 }}
               />
@@ -548,19 +555,26 @@ const Content = ({
                 }
                 value={
                   streamDateRange.end == null
-                    ? ""
+                    ? "yyyy-mm-dd"
                     : formatDate(streamDateRange.end, "yyyy-MM-dd")
                 }
                 onChange={(e) => {
                   setStreamDateRange(({ start, end }) => {
-                    const selectedEnd = new Date(e.target.valueAsNumber);
-                    return {
-                      start,
-                      end:
-                        start == null || selectedEnd >= start
-                          ? selectedEnd
-                          : end,
-                    };
+                    if (isNaN(e.target.valueAsNumber)) return { start, end };
+
+                    try {
+                      const selectedEnd = new Date(e.target.valueAsNumber);
+                      formatDate(selectedEnd, "yyyy-MM-dd");
+                      return {
+                        start,
+                        end:
+                          start == null || selectedEnd >= start
+                            ? selectedEnd
+                            : end,
+                      };
+                    } catch (e) {
+                      return { start, end };
+                    }
                   });
                 }}
               />
