@@ -2,12 +2,14 @@ import React from "react";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { I18nProvider } from "react-aria";
 import { ThemeProvider, Global, css } from "@emotion/react";
-import { light as theme } from "@shades/ui-web/theme";
+import { useMatchMedia } from "@shades/common/react";
+import { light as lightTheme, dark as darkTheme } from "@shades/ui-web/theme";
 import * as Tooltip from "@shades/ui-web/tooltip";
 import {
   useWallet,
   Provider as ConnectWalletDialogProvider,
 } from "./hooks/wallet.js";
+import useSetting from "./hooks/setting.js";
 import { Provider as GlobalDialogsProvider } from "./hooks/global-dialogs.js";
 import { useDelegatesFetch } from "./store.js";
 
@@ -38,24 +40,80 @@ const dialogs = [
   },
 ];
 
-const customTheme = {
-  ...theme,
-  sidebarWidth: "36rem",
-  navBarHeight: "4.7rem",
-  colors: {
-    ...theme.colors,
-    textPositive: "#0d924d", //"#099b36",
-    textNegative: "#ce2547", // "#db2932",
+const themeMap = {
+  light: {
+    ...lightTheme,
+    colors: {
+      ...lightTheme.colors,
+      textPositive: "#0d924d",
+      textNegative: "#ce2547",
+      textPositiveContrast: "#097045",
+      textPositiveContrastBackgroundLight: "#e0f1e1",
+      textNegativeContrast: "#aa2a38",
+      textNegativeContrastBackgroundLight: "#f2dfdf",
+      textSpecialContrast: "#8d519d",
+      textSpecialContrastBackgroundLight: "#f2dff7",
+      textPrimaryBackgroundLight: "#deedfd",
+    },
+  },
+  dark: {
+    ...darkTheme,
+    colors: {
+      ...darkTheme.colors,
+      textPositive: "#41b579",
+      textNegative: "#db5664",
+      textPositiveContrast: "#55c88d",
+      textPositiveContrastBackgroundLight: "#2b3b33",
+      textNegativeContrast: "#ff7281",
+      textNegativeContrastBackgroundLight: "#3f2f32",
+      textSpecialContrast: "#d388e6",
+      textSpecialContrastBackgroundLight: "#3d2f40",
+      textPrimaryBackgroundLight: "#253240",
+    },
   },
 };
 
+const defaultTheme = themeMap["light"];
+
+const searchParams = new URLSearchParams(location.search);
+
+const useTheme = () => {
+  const [themeSetting] = useSetting("theme");
+  const systemPrefersDarkTheme = useMatchMedia("(prefers-color-scheme: dark)");
+
+  const theme = React.useMemo(() => {
+    const resolveTheme = () => {
+      const specifiedTheme = searchParams.get("theme");
+      if (specifiedTheme) return themeMap[specifiedTheme] ?? defaultTheme;
+
+      if (themeSetting === "system")
+        return systemPrefersDarkTheme ? darkTheme : lightTheme;
+
+      return themeMap[themeSetting] ?? defaultTheme;
+    };
+
+    const theme = resolveTheme();
+
+    return {
+      ...theme,
+      sidebarWidth: "36rem",
+      navBarHeight: "4.7rem",
+    };
+  }, [themeSetting, systemPrefersDarkTheme]);
+
+  return theme;
+};
+
 const App = () => {
+  const theme = useTheme();
+
   useDelegatesFetch();
+
   return (
     <React.Suspense fallback={null}>
       <I18nProvider locale="en-US">
         <BrowserRouter>
-          <ThemeProvider theme={customTheme}>
+          <ThemeProvider theme={theme}>
             <ConnectWalletDialogProvider>
               <GlobalDialogsProvider dialogs={dialogs}>
                 <Tooltip.Provider delayDuration={300}>

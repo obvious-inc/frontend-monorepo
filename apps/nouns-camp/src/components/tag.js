@@ -23,19 +23,19 @@ const Tag = ({ variant, size = "normal", active, ...props }) => (
         '&[data-size="large"]': { padding: "0.3rem 0.5rem" },
         '&[data-variant="active"]': {
           color: t.colors.textPrimary,
-          background: "#deedfd",
+          background: t.colors.textPrimaryBackgroundLight,
         },
         '&[data-variant="success"]': {
-          color: "#097045",
-          background: "#e0f1e1",
+          color: t.colors.textPositiveContrast,
+          background: t.colors.textPositiveContrastBackgroundLight,
         },
         '&[data-variant="error"]': {
-          color: t.colors.textNegative,
-          background: "#fbe9e9",
+          color: t.colors.textNegativeContrast,
+          background: t.colors.textNegativeContrastBackgroundLight,
         },
         '&[data-variant="special"]': {
-          color: "#8d519d",
-          background: "#f2dff7",
+          color: t.colors.textSpecialContrast,
+          background: t.colors.textSpecialContrastBackgroundLight,
         },
         '&[data-active="true"]': {
           boxShadow: t.shadows.focusSmall,
