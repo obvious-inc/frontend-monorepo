@@ -5,5 +5,9 @@
     "format": "pnpm -r run --if-present format",
     "prepare-packages": "pnpm -F common install && pnpm -F common run build && pnpm -F ui-web install && pnpm -F ui-web run build"
   },
-  "packageManager": "pnpm@8.7.5"
+  "packageManager": "pnpm@8.7.5",
+  "dependencies": {
+    "@vercel/og": "^0.5.20",
+    "nouns-camp": "workspace:^"
+  }
 }
