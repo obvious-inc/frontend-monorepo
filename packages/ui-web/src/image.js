@@ -20,6 +20,7 @@ const Image = ({ disableFallback = false, ...props }) => {
 
   React.useEffect(() => {
     ref.current.onload = () => {
+      if (ref.current == null) return;
       onLoadRef.current?.({
         width: ref.current.naturalWidth,
         height: ref.current.naturalHeight,
