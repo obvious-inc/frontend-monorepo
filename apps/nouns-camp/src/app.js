@@ -91,7 +91,7 @@ const useTheme = () => {
       if (specifiedTheme) return themeMap[specifiedTheme] ?? defaultTheme;
 
       if (themeSetting === "system")
-        return systemPrefersDarkTheme ? darkTheme : lightTheme;
+        return themeMap[systemPrefersDarkTheme ? "dark" : "light"];
 
       return themeMap[themeSetting] ?? defaultTheme;
     };
