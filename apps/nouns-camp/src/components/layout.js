@@ -3,6 +3,7 @@ import React from "react";
 import { css } from "@emotion/react";
 import { useLocation, Link as RouterLink } from "react-router-dom";
 import { useAccountDisplayName } from "@shades/common/app";
+import { useMatchMedia } from "@shades/common/react";
 import Button from "@shades/ui-web/button";
 import * as DropdownMenu from "@shades/ui-web/dropdown-menu";
 import {
@@ -97,6 +98,8 @@ const NavBar = ({ navigationStack, actions: actions_ }) => {
 
   const location = useLocation();
 
+  const isDesktop = useMatchMedia("(min-width: 600px)");
+
   const { open: openAccountDialog } = useDialog("account");
   const { open: openSettingsDialog } = useDialog("settings");
 
@@ -112,6 +115,10 @@ const NavBar = ({ navigationStack, actions: actions_ }) => {
   const { displayName: connectedAccountDisplayName } = useAccountDisplayName(
     connectedWalletAccountAddress
   );
+
+  const visibleActions = isDesktop
+    ? actions
+    : actions.filter((a) => !a.desktopOnly);
 
   return (
     <div
@@ -238,7 +245,7 @@ const NavBar = ({ navigationStack, actions: actions_ }) => {
         <ul>
           {[
             ...actions,
-            actions.length !== 0 && { type: "separator" },
+            visibleActions.length > 0 && { type: "separator" },
             connectedWalletAccountAddress == null
               ? {
                   onSelect: () => {
