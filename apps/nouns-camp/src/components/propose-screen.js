@@ -426,6 +426,7 @@ const ProposeScreen = () => {
           { to: "/?tab=drafts", label: "Drafts", desktopOnly: true },
           { to: `/new/${draftId}`, label: draft?.name || "Untitled draft" },
         ]}
+        actions={[]}
       >
         <ProposalEditor
           title={draft.name}
