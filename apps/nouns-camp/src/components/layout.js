@@ -1,11 +1,7 @@
 import va from "@vercel/analytics";
 import React from "react";
 import { css } from "@emotion/react";
-import {
-  useLocation,
-  useSearchParams,
-  Link as RouterLink,
-} from "react-router-dom";
+import { useLocation, Link as RouterLink } from "react-router-dom";
 import { useAccountDisplayName } from "@shades/common/app";
 import Button from "@shades/ui-web/button";
 import * as DropdownMenu from "@shades/ui-web/dropdown-menu";
@@ -84,7 +80,7 @@ const Layout = ({
   </div>
 );
 
-const betaDefaultActions = [
+const defaultActions = [
   {
     label: "New Proposal",
     buttonProps: {
@@ -96,10 +92,6 @@ const betaDefaultActions = [
 ];
 
 const NavBar = ({ navigationStack, actions: actions_ }) => {
-  const [searchParams] = useSearchParams();
-  const isBetaSession = searchParams.get("beta") != null;
-
-  const defaultActions = isBetaSession ? betaDefaultActions : [];
   const actions = actions_ ?? defaultActions;
 
   const location = useLocation();

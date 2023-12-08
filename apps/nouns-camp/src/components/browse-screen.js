@@ -180,8 +180,6 @@ const BrowseScreen = () => {
   const scrollContainerRef = React.useRef();
   const [searchParams, setSearchParams] = useSearchParams();
 
-  const isBetaSession = searchParams.get("beta") != null;
-
   const isDesktopLayout = useMatchMedia("(min-width: 952px)");
   const tabAnchorRef = React.useRef();
   const tabContainerRef = React.useRef();
@@ -726,23 +724,20 @@ const BrowseScreen = () => {
                           )}
                       </div>
                     </Tabs.Item>
-                    {(isBetaSession ||
-                      sectionsByName["drafts"]?.items.length > 0) && (
-                      <Tabs.Item key="drafts" title="My drafts">
-                        <div
-                          css={css({
-                            paddingTop: "2.4rem",
-                            "@media (min-width: 600px)": {
-                              paddingTop: "2.8rem",
-                            },
-                          })}
-                        >
-                          <DraftTabContent
-                            items={sectionsByName["drafts"]?.items}
-                          />
-                        </div>
-                      </Tabs.Item>
-                    )}
+                    <Tabs.Item key="drafts" title="My drafts">
+                      <div
+                        css={css({
+                          paddingTop: "2.4rem",
+                          "@media (min-width: 600px)": {
+                            paddingTop: "2.8rem",
+                          },
+                        })}
+                      >
+                        <DraftTabContent
+                          items={sectionsByName["drafts"]?.items}
+                        />
+                      </div>
+                    </Tabs.Item>
                   </Tabs.Root>
                 </>
               )}
