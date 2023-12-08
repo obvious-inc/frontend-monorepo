@@ -768,7 +768,7 @@ export const ProposalEditor = ({
                         css({
                           textAlign: "right",
                           padding: "0 0 1.2rem",
-                          color: t.colors.textMuted,
+                          color: t.colors.textDimmed,
                           background: t.colors.backgroundPrimary,
                           fontSize: t.text.sizes.small,
                           "p + p": { marginTop: "0.6rem" },
@@ -1413,7 +1413,10 @@ const FloatingToolbar = ({
               css({
                 padding: "0.3rem",
                 borderRadius: "0.3rem",
-                background: t.colors.backgroundPrimary,
+                background:
+                  t.name === "dark"
+                    ? t.colors.backgroundSecondary
+                    : t.colors.backgroundPrimary,
                 boxShadow: t.shadows.elevationHigh,
               })
             }
@@ -1490,7 +1493,10 @@ const FixedBottomToolbar = ({ isVisible = false, onFocus, onBlur }) => {
               pointerEvents: "auto",
               padding: "0.3rem",
               borderRadius: "0.3rem",
-              background: t.colors.backgroundPrimary,
+              background:
+                t.name === "dark"
+                  ? t.colors.backgroundSecondary
+                  : t.colors.backgroundPrimary,
               boxShadow: t.shadows.elevationLow,
               transition: "0.1s opacity ease-out",
             },
@@ -1507,7 +1513,10 @@ const FixedBottomToolbar = ({ isVisible = false, onFocus, onBlur }) => {
               maxWidth: "100%",
               margin: 0,
               padding: "0.8rem 1rem",
-              background: t.colors.backgroundPrimary,
+              background:
+                t.name === "dark"
+                  ? t.colors.backgroundSecondary
+                  : t.colors.backgroundPrimary,
               borderTop: "0.1rem solid",
               borderColor: t.colors.borderLight,
               "[data-box]": {
