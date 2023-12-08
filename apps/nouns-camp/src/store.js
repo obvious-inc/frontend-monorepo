@@ -180,8 +180,32 @@ const useStore = createZustandStoreHook((set) => {
       });
     });
 
+  const fetchNounsByIds = async (chainId, ids) =>
+    NounsSubgraph.fetchNounsByIds(chainId, ids).then(
+      ({ nouns, events, auctions }) => {
+        set((s) => {
+          const eventsByNounId = arrayUtils.groupBy((e) => e.nounId, events);
+          const auctionsByNounId = arrayUtils.groupBy((e) => e.id, auctions);
+          nouns.forEach((n) => {
+            const events = eventsByNounId[n.id] ?? [];
+            n.events = events;
+            n.auction = auctionsByNounId[n.id]?.[0];
+          });
+
+          return {
+            nounsById: {
+              ...s.nounsById,
+              ...arrayUtils.indexBy((n) => n.id, nouns),
+            },
+          };
+        });
+      }
+    );
+
   return {
+    accountsById: {},
     delegatesById: {},
+    nounsById: {},
     proposalsById: {},
     proposalCandidatesById: {},
     propdatesByProposalId: {},
@@ -249,6 +273,13 @@ const useStore = createZustandStoreHook((set) => {
           delegate.proposals
         );
 
+        const nounIds = arrayUtils.unique(
+          delegate.nounsRepresented.map((n) => n.id)
+        );
+
+        // fetch nouns async ...
+        fetchNounsByIds(chainId, nounIds);
+
         set((s) => ({
           delegatesById: {
             ...s.delegatesById,
@@ -259,6 +290,20 @@ const useStore = createZustandStoreHook((set) => {
             s.proposalsById,
             createdProposalsById
           ),
+        }));
+      }),
+    fetchAccount: (chainId, id) =>
+      NounsSubgraph.fetchAccount(chainId, id).then((account) => {
+        const nounIds = arrayUtils.unique(account.nouns.map((n) => n.id));
+
+        // fetch nouns async ...
+        fetchNounsByIds(chainId, nounIds);
+
+        set((s) => ({
+          accountsById: {
+            ...s.accountsById,
+            [id?.toLowerCase()]: account,
+          },
         }));
       }),
     fetchProposalCandidatesByAccount: (chainId, accountAddress) =>
@@ -325,6 +370,7 @@ const useStore = createZustandStoreHook((set) => {
           votes,
           proposalFeedbackPosts,
           candidateFeedbackPosts,
+          nouns,
         }) => {
           fetchProposalsVersions(
             chainId,
@@ -372,6 +418,11 @@ const useStore = createZustandStoreHook((set) => {
           );
 
           fetchProposalCandidates(chainId, feedbackCandidateIds);
+
+          const nounIds = nouns.map((n) => n.id);
+
+          // fetch nouns async ...
+          fetchNounsByIds(chainId, nounIds);
 
           set((s) => ({
             proposalsById: objectUtils.merge(
@@ -569,6 +620,7 @@ export const useActions = () => {
   const fetchProposalCandidates = useStore((s) => s.fetchProposalCandidates);
   const fetchDelegates = useStore((s) => s.fetchDelegates);
   const fetchDelegate = useStore((s) => s.fetchDelegate);
+  const fetchAccount = useStore((s) => s.fetchAccount);
   const fetchProposalCandidatesByAccount = useStore(
     (s) => s.fetchProposalCandidatesByAccount
   );
@@ -608,6 +660,10 @@ export const useActions = () => {
     fetchDelegates: React.useCallback(
       (...args) => fetchDelegates(chainId, ...args),
       [fetchDelegates, chainId]
+    ),
+    fetchAccount: React.useCallback(
+      (...args) => fetchAccount(chainId, ...args),
+      [fetchAccount, chainId]
     ),
     fetchProposalCandidatesByAccount: React.useCallback(
       (...args) => fetchProposalCandidatesByAccount(chainId, ...args),
@@ -848,4 +904,46 @@ export const useProposalCandidateVotingPower = (candidateId) => {
   ]).length;
 
   return candidateVotingPower;
+};
+
+export const useNoun = (id) =>
+  useStore(React.useCallback((s) => s.nounsById[id], [id]));
+
+export const useAllNounsByAccount = (accountAddress) => {
+  const delegatedNouns = useStore(
+    (s) => s.delegatesById[accountAddress.toLowerCase()]?.nounsRepresented ?? []
+  );
+
+  const ownedNouns = useStore(
+    (s) => s.accountsById[accountAddress.toLowerCase()]?.nouns ?? []
+  );
+
+  const uniqueNouns = arrayUtils.unique(
+    (n1, n2) => n1.id === n2.id,
+    [...delegatedNouns, ...ownedNouns]
+  );
+
+  return arrayUtils.sortBy((n) => parseInt(n.id), uniqueNouns);
+};
+
+export const useAccount = (id) =>
+  useStore(React.useCallback((s) => s.accountsById[id?.toLowerCase()], [id]));
+
+export const useAccountFetch = (id, options) => {
+  const { data: blockNumber } = useBlockNumber({
+    watch: true,
+    cacheTime: 10_000,
+  });
+  const onError = useLatestCallback(options?.onError);
+
+  const { fetchAccount } = useActions();
+
+  useFetch(
+    () =>
+      fetchAccount(id).catch((e) => {
+        if (onError == null) return Promise.reject(e);
+        onError(e);
+      }),
+    [fetchAccount, id, onError, blockNumber]
+  );
 };

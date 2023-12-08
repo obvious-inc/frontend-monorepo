@@ -8,6 +8,7 @@ import InlineUserButton from "@shades/ui-web/inline-user-button";
 import { useDelegate } from "../store.js";
 import AccountAvatar from "./account-avatar.js";
 import NounAvatar from "./noun-avatar.js";
+import { Link } from "react-router-dom";
 
 const AccountPreviewPopoverTrigger = React.forwardRef(
   (
@@ -183,10 +184,8 @@ const AccountPreview = React.forwardRef(
             />
           )}
           <div style={{ flex: 1, minWidth: 0, lineHeight: 1.25 }}>
-            <a
-              href={`https://etherscan.io/address/${accountAddress}`}
-              rel="noreferrer"
-              target="_blank"
+            <Link
+              to={`/campers/${accountAddress}`}
               css={css({
                 color: "inherit",
                 textDecoration: "none",
@@ -228,7 +227,7 @@ const AccountPreview = React.forwardRef(
                     : truncatedAddress}
                 </div>
               )}
-            </a>
+            </Link>
           </div>
         </div>
 

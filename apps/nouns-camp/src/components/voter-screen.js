@@ -7,8 +7,11 @@ import { useMatchMedia, useFetch } from "@shades/common/react";
 import { APPROXIMATE_BLOCKS_PER_DAY } from "../constants/ethereum.js";
 import { buildFeed as buildVoterFeed } from "../utils/voters.js";
 import {
+  useAccount,
+  useAccountFetch,
   useAccountProposalCandidates,
   useActions,
+  useAllNounsByAccount,
   useDelegate,
   useDelegateFetch,
   useProposalCandidates,
@@ -21,7 +24,6 @@ import * as Tabs from "./tabs.js";
 import ActivityFeed_ from "./activity-feed.js";
 import { useAccountDisplayName, useCachedState } from "@shades/common/app";
 import AccountAvatar from "./account-avatar.js";
-import NounAvatar from "./noun-avatar.js";
 import Select from "@shades/ui-web/select";
 import { useCurrentDynamicQuorum } from "../hooks/dao-contract.js";
 import { SectionedList } from "./browse-screen.js";
@@ -29,6 +31,7 @@ import Button from "@shades/ui-web/button";
 import Spinner from "@shades/ui-web/spinner";
 import { VotingBar } from "./proposal-screen.js";
 import { array as arrayUtils } from "@shades/common/utils";
+import NounPreviewPopoverTrigger from "./noun-preview-popover-trigger.js";
 
 const VOTER_LIST_PAGE_ITEM_COUNT = 20;
 const FEED_PAGE_ITEM_COUNT = 30;
@@ -246,11 +249,13 @@ const FeedTabContent = React.memo(({ visible, voterAddress }) => {
 
 const VotingPowerCallout = ({ voterAddress }) => {
   const currentQuorum = useCurrentDynamicQuorum();
+  const account = useAccount(voterAddress);
+  const { displayName: delegateDisplayName } = useAccountDisplayName(
+    account?.delegateId
+  );
 
   const delegate = useDelegate(voterAddress);
-  const nounsRepresented = delegate?.nounsRepresented ?? [];
-
-  const voteCount = nounsRepresented.length;
+  const voteCount = delegate?.delegatedVotes ?? 0;
   const votePowerQuorumPercentage =
     currentQuorum == null
       ? null
@@ -268,32 +273,57 @@ const VotingPowerCallout = ({ voterAddress }) => {
         })
       }
     >
-      <span css={(t) => css({ fontWeight: t.text.weights.smallHeader })}>
-        {voteCount === 0 ? (
-          "No delegation currently"
-        ) : (
-          <>
-            {voteCount} {voteCount === 1 ? "noun" : "nouns"} represented
-          </>
-        )}
-      </span>{" "}
-      {voteCount !== 0 && (
+      {voteCount === 0 && account?.delegate ? (
+        <div>
+          Delegating votes to{" "}
+          <RouterLink
+            to={`/campers/${account?.delegateId}`}
+            css={(t) =>
+              css({
+                color: "inherit",
+                fontWeight: t.text.weights.emphasis,
+                textDecoration: "none",
+                "@media(hover: hover)": {
+                  ":hover": {
+                    textDecoration: "underline",
+                  },
+                },
+              })
+            }
+          >
+            {delegateDisplayName}
+          </RouterLink>
+        </div>
+      ) : (
         <>
-          {votePowerQuorumPercentage == null ? (
-            <div style={{ paddingTop: "0.3rem" }}>
-              <div
-                css={(t) =>
-                  css({
-                    height: "1.8rem",
-                    width: "11rem",
-                    background: t.colors.backgroundModifierHover,
-                    borderRadius: "0.3rem",
-                  })
-                }
-              />
-            </div>
-          ) : (
-            <span>(~{votePowerQuorumPercentage}% of quorum)</span>
+          <span css={(t) => css({ fontWeight: t.text.weights.smallHeader })}>
+            {voteCount === 0 ? (
+              "No voting power"
+            ) : (
+              <>
+                {voteCount} {voteCount === 1 ? "noun" : "nouns"} represented
+              </>
+            )}
+          </span>{" "}
+          {voteCount !== 0 && (
+            <>
+              {votePowerQuorumPercentage == null ? (
+                <div style={{ paddingTop: "0.3rem" }}>
+                  <div
+                    css={(t) =>
+                      css({
+                        height: "1.8rem",
+                        width: "11rem",
+                        background: t.colors.backgroundModifierHover,
+                        borderRadius: "0.3rem",
+                      })
+                    }
+                  />
+                </div>
+              ) : (
+                <span>(~{votePowerQuorumPercentage}% of quorum)</span>
+              )}
+            </>
           )}
         </>
       )}
@@ -405,7 +435,7 @@ const VoterStatsBar = React.memo(({ voterAddress }) => {
 const VoterHeader = ({ voterAddress }) => {
   const { displayName, truncatedAddress } = useAccountDisplayName(voterAddress);
 
-  const delegate = useDelegate(voterAddress);
+  const allVoterNouns = useAllNounsByAccount(voterAddress);
 
   return (
     <div
@@ -423,6 +453,7 @@ const VoterHeader = ({ voterAddress }) => {
           gridTemplateColumns: "auto 1fr",
           columnGap: "1rem",
           alignItems: "center",
+          marginBottom: "0.3rem",
         })}
       >
         <h1
@@ -463,7 +494,7 @@ const VoterHeader = ({ voterAddress }) => {
           css={css({
             color: "inherit",
             textDecoration: "none",
-            display: "flex",
+            display: "inline-block",
             flexDirection: "column",
             maxHeight: "2.8rem",
             justifyContent: "center",
@@ -476,7 +507,7 @@ const VoterHeader = ({ voterAddress }) => {
         </a>
       </div>
 
-      {delegate?.nounsRepresented.length > 0 && (
+      {allVoterNouns.length > 0 && (
         <div
           css={(t) =>
             css({
@@ -494,11 +525,13 @@ const VoterHeader = ({ voterAddress }) => {
             })
           }
         >
-          {delegate.nounsRepresented.map((n) => (
-            <div key={n.id}>
-              <NounAvatar id={n.id} seed={n.seed} size="4rem" />
-              <div data-id>{n.id}</div>
-            </div>
+          {allVoterNouns.map((n) => (
+            <NounPreviewPopoverTrigger
+              key={n.id}
+              nounId={n.id}
+              nounSeed={n.seed}
+              contextAccount={voterAddress}
+            />
           ))}
         </div>
       )}
@@ -525,6 +558,15 @@ const VoterMainSection = ({ voterAddress }) => {
       ]),
     [fetchVoterScreenData, voterAddress]
   );
+
+  const proposalsTabTitle =
+    delegate && filteredProposals?.length > 0
+      ? `Proposals (${filteredProposals?.length})`
+      : "Proposals";
+
+  const candidatesTabTitle = voterCandidates?.length
+    ? `Candidates (${voterCandidates?.length})`
+    : "Candidates";
 
   return (
     <>
@@ -582,7 +624,7 @@ const VoterMainSection = ({ voterAddress }) => {
                   <FeedTabContent voterAddress={voterAddress} visible={true} />
                 </Tabs.Item>
               )}
-              <Tabs.Item key="proposals" title="Proposals">
+              <Tabs.Item key="proposals" title={proposalsTabTitle}>
                 <div>
                   {delegate && filteredProposals.length === 0 && (
                     <div
@@ -624,7 +666,7 @@ const VoterMainSection = ({ voterAddress }) => {
                   )}
                 </div>
               </Tabs.Item>
-              <Tabs.Item key="candidates" title="Candidates">
+              <Tabs.Item key="candidates" title={candidatesTabTitle}>
                 <div>
                   {delegate && voterCandidates.length === 0 && (
                     <div
@@ -690,6 +732,7 @@ const VoterScreen = () => {
   const scrollContainerRef = React.useRef();
 
   useDelegateFetch(voterAddress);
+  useAccountFetch(voterAddress);
 
   return (
     <>
@@ -698,7 +741,7 @@ const VoterScreen = () => {
         scrollContainerRef={scrollContainerRef}
         navigationStack={[
           {
-            to: `/voter/${voterId} `,
+            to: `/campers/${voterId} `,
             label: (
               <>
                 {displayName} {ensName && `(${truncatedAddress})`}

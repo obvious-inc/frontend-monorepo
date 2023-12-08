@@ -169,7 +169,10 @@ const App = () => {
                       />
                       <Route path="/:proposalId" element={<ProposalScreen />} />
 
-                      <Route path="/voter/:voterId" element={<VoterScreen />} />
+                      <Route
+                        path="/campers/:voterId"
+                        element={<VoterScreen />}
+                      />
                     </Route>
                     <Route path="*" element={<Navigate to="/" replace />} />
                   </Routes>

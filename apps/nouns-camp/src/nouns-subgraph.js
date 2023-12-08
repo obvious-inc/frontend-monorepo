@@ -93,6 +93,7 @@ ${VOTE_FIELDS}
 query {
   delegates(first: 1000, where: {nounsRepresented_: {}}) {
     id
+    delegatedVotes
     nounsRepresented {
       id
       seed {
@@ -132,6 +133,7 @@ const createDelegateQuery = (id) => `
   query {
     delegate(id: "${id}") {
       id
+      delegatedVotes
       nounsRepresented {
         id
         seed {
@@ -181,6 +183,33 @@ const createDelegateQuery = (id) => `
       }
     }
 }`;
+
+const createAccountQuery = (id) => `
+  query {
+    account(id: "${id}") {
+      id
+      delegate {
+        id
+      }
+      nouns {
+        id
+        seed {
+          head
+          glasses
+          body
+          background
+          accessory
+        }
+        owner {
+          id
+          delegate {
+            id
+          }
+        }
+      }
+    }
+  }
+`;
 
 const createBrowseScreenQuery = ({ skip = 0, first = 1000 } = {}) => `
 ${VOTE_FIELDS}
@@ -316,6 +345,22 @@ query {
   }
   proposalFeedbacks(skip: ${skip}, first: ${first}, where: {voter: "${id}"}) {
     ...ProposalFeedbackFields
+  }
+  nouns (where: {owner: "${id}"}) {
+    id
+    seed {
+      head
+      glasses
+      body
+      background
+      accessory
+    }
+    owner {
+      id
+      delegate {
+        id
+      }
+    }
   }
 }`;
 
@@ -611,6 +656,63 @@ query {
   }
 }`;
 
+const createNounsByIdsQuery = (ids) => `
+query {
+  nouns(where: {id_in: [${ids.map((id) => `"${id}"`)}]}) {
+    id
+    seed {
+      head
+      glasses
+      body
+      background
+      accessory
+    }
+    owner {
+      id
+      delegate {
+        id
+      }
+    }
+  }
+  transferEvents(orderBy: blockNumber, orderDirection: desc, where: {noun_in: [${ids.map(
+    (id) => `"${id}"`
+  )}]}) {
+    id
+    noun {
+      id
+    }
+    newHolder {
+      id
+    }
+    previousHolder {
+      id
+    }
+    blockNumber
+    blockTimestamp
+  }
+  delegationEvents(orderBy: blockNumber, orderDirection: desc, where: {noun_in: [${ids.map(
+    (id) => `"${id}"`
+  )}]}) {
+    id
+    noun {
+      id
+    }
+    newDelegate {
+      id
+    }
+    previousDelegate {
+      id
+    }
+    blockNumber
+    blockTimestamp
+  }
+  auctions(where: {noun_in: [${ids.map((id) => `"${id}"`)}]}) {
+    id
+    amount
+    startTime
+  }
+}`;
+
 const createProposalCandidateFeedbackPostsByCandidatesQuery = (
   candidateIds
 ) => `
@@ -849,6 +951,8 @@ const parseProposalCandidate = (data, { chainId }) => {
 const parseDelegate = (data) => {
   const parsedData = { ...data };
 
+  parsedData.delegatedVotes = parseInt(data.delegatedVotes);
+
   parsedData.nounsRepresented = arrayUtils.sortBy(
     (n) => parseInt(n.id),
     data.nounsRepresented
@@ -866,6 +970,33 @@ const parseDelegate = (data) => {
 
   if (data.proposals != null)
     parsedData.proposals = data.proposals.map(parseProposal);
+
+  return parsedData;
+};
+
+const parseAccount = (data) => {
+  const parsedData = { ...data };
+
+  parsedData.nouns = arrayUtils.sortBy(
+    (n) => parseInt(n.id),
+    data.nouns.map((n) => ({
+      ...n,
+      seed: objectUtils.mapValues((v) => parseInt(v), n.seed),
+      ownerId: n.owner?.id,
+      delegateId: n.owner?.delegate?.id,
+    }))
+  );
+
+  parsedData.delegateId = data.delegate?.id;
+  return parsedData;
+};
+
+const parseNoun = (data) => {
+  const parsedData = { ...data };
+
+  parsedData.seed = objectUtils.mapValues((v) => parseInt(v), data.seed);
+  parsedData.ownerId = data.owner?.id;
+  parsedData.delegateId = data.owner.delegate?.id;
 
   return parsedData;
 };
@@ -964,6 +1095,15 @@ export const fetchDelegate = (chainId, id) =>
     return parseDelegate(data.delegate);
   });
 
+export const fetchAccount = (chainId, id) =>
+  subgraphFetch({
+    chainId,
+    query: createAccountQuery(id?.toLowerCase()),
+  }).then((data) => {
+    if (data.account == null) return Promise.reject(new Error("not-found"));
+    return parseAccount(data.account);
+  });
+
 export const fetchProposalCandidatesByAccount = (chainId, accountAddress) =>
   subgraphFetch({
     chainId,
@@ -1037,12 +1177,15 @@ export const fetchVoterScreenData = (chainId, id, options) =>
     const proposalFeedbackPosts = data.proposalFeedbacks.map(parseFeedbackPost);
     const candidateFeedbackPosts =
       data.candidateFeedbacks.map(parseFeedbackPost);
+    const nouns = data.nouns.map(parseNoun);
+
     return {
       proposals,
       candidates,
       votes,
       proposalFeedbackPosts,
       candidateFeedbackPosts,
+      nouns,
     };
   });
 
@@ -1085,4 +1228,49 @@ export const fetchVoterActivity = (
     const votes = data.votes.map(parseProposalVote);
 
     return { votes, proposalFeedbackPosts, candidateFeedbackPosts };
+  });
+
+export const fetchNounsByIds = (chainId, ids) =>
+  subgraphFetch({
+    chainId,
+    query: createNounsByIdsQuery(ids),
+  }).then((data) => {
+    const nouns = data.nouns.map(parseNoun);
+
+    const transferEvents = data.transferEvents.map((e) => ({
+      ...e,
+      blockTimestamp: parseTimestamp(e.blockTimestamp),
+      newAccountId: e.newHolder?.id,
+      previousAccountId: e.previousHolder?.id,
+      nounId: e.noun?.id,
+      type: "transfer",
+    }));
+    const delegationEvents = data.delegationEvents.map((e) => ({
+      ...e,
+      blockTimestamp: parseTimestamp(e.blockTimestamp),
+      newAccountId: e.newDelegate?.id,
+      previousAccountId: e.previousDelegate?.id,
+      nounId: e.noun?.id,
+      type: "delegate",
+    }));
+
+    const auctions = data.auctions.map((a) => ({
+      ...a,
+      startTime: parseTimestamp(a.startTime),
+    }));
+
+    const getEventScore = (event) => {
+      // delegate events should come last chronologically
+      if (event.type === "transfer") return 0;
+      if (event.type === "delegate") return 1;
+      else return -1;
+    };
+
+    const sortedEvents = arrayUtils.sortBy(
+      { value: (e) => e.blockTimestamp, order: "desc" },
+      { value: (e) => getEventScore(e), order: "desc" },
+      [...transferEvents, ...delegationEvents]
+    );
+
+    return { nouns, events: sortedEvents, auctions };
   });
