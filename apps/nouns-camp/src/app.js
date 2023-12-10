@@ -132,6 +132,7 @@ const App = () => {
                             large: "0.6640625em",
                             huge: "0.703125em",
                           }[zoomSetting],
+                          colorScheme: theme.name === "dark" ? "dark" : "light",
                         },
                         body: {
                           color: theme.colors.textNormal,
