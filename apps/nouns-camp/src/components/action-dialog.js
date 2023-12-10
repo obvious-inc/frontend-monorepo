@@ -1,4 +1,5 @@
 import formatDate from "date-fns/format";
+import parseDate from "date-fns/parse";
 import React from "react";
 import {
   isAddress,
@@ -522,16 +523,21 @@ const Content = ({
                 }
                 value={
                   streamDateRange.start == null
-                    ? "yyyy-mm-dd"
+                    ? "yyyy-MM-dd"
                     : formatDate(streamDateRange.start, "yyyy-MM-dd")
                 }
                 onChange={(e) => {
                   setStreamDateRange(({ start, end }) => {
-                    if (isNaN(e.target.valueAsNumber)) return { start, end };
+                    if (isNaN(e.target.valueAsNumber))
+                      return { start: null, end };
 
                     try {
-                      const selectedStart = new Date(e.target.valueAsNumber);
-                      formatDate(selectedStart, "yyyy-MM-dd");
+                      const selectedStart = parseDate(
+                        e.target.value,
+                        "yyyy-MM-dd",
+                        new Date()
+                      );
+                      formatDate(selectedStart, "yyyy-MM-dd"); // Validation :shrug:
                       return {
                         start:
                           end == null || selectedStart <= end
@@ -555,16 +561,22 @@ const Content = ({
                 }
                 value={
                   streamDateRange.end == null
-                    ? "yyyy-mm-dd"
+                    ? "yyyy-MM-dd"
                     : formatDate(streamDateRange.end, "yyyy-MM-dd")
                 }
                 onChange={(e) => {
                   setStreamDateRange(({ start, end }) => {
-                    if (isNaN(e.target.valueAsNumber)) return { start, end };
+                    if (isNaN(e.target.valueAsNumber))
+                      return { start, end: null };
 
                     try {
-                      const selectedEnd = new Date(e.target.valueAsNumber);
-                      formatDate(selectedEnd, "yyyy-MM-dd");
+                      const selectedEnd = parseDate(
+                        e.target.value,
+                        "yyyy-MM-dd",
+                        new Date()
+                      );
+                      formatDate(selectedEnd, "yyyy-MM-dd"); // Validation :shrug:
+
                       return {
                         start,
                         end:
