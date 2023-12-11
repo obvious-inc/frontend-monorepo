@@ -2,6 +2,7 @@ import React from "react";
 import { css } from "@emotion/react";
 import { useAccountDisplayName } from "@shades/common/app";
 import * as Popover from "@shades/ui-web/popover";
+import Spinner from "@shades/ui-web/spinner";
 import { useNoun } from "../store.js";
 import NounAvatar from "./noun-avatar.js";
 import FormattedDateWithTooltip from "./formatted-date-with-tooltip.js";
@@ -369,74 +370,95 @@ const NounPreview = React.forwardRef(({ nounId, contextAccount }, ref) => {
         overflow: "hidden",
       })}
     >
-      <div
-        css={(t) =>
-          css({
-            display: "flex",
-            alignItems: "center",
-            padding: "1rem 1.2rem",
-            gap: "1rem",
-            color: t.colors.textDimmed,
-          })
-        }
-      >
-        <div css={css({ position: "relative", zIndex: 1 })}>
-          <NounAvatar id={nounId} seed={noun.seed} size="5rem" />
-          <DelegationStatusDot
-            nounId={nounId}
-            contextAccount={contextAccount}
-          />
-        </div>
-
+      {noun == null ? (
         <div
           css={(t) =>
             css({
-              flex: 1,
-              minWidth: 0,
-              lineHeight: 1.25,
-              fontSize: t.text.sizes.default,
+              minHeight: "7rem",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              color: t.colors.textDimmed,
             })
           }
         >
-          <a
-            href={`https://nouns.wtf/noun/${nounId}`}
-            rel="noreferrer"
-            target="_blank"
+          <Spinner />
+        </div>
+      ) : (
+        <>
+          <div
             css={(t) =>
               css({
-                fontWeight: t.text.weights.smallHeader,
-                color: "inherit",
-                textDecoration: "none",
-                "@media(hover: hover)": {
-                  ':hover [data-hover-underline="true"]': {
-                    textDecoration: "underline",
-                  },
-                },
+                display: "flex",
+                alignItems: "center",
+                padding: "1rem 1.2rem",
+                gap: "1rem",
+                color: t.colors.textDimmed,
               })
             }
           >
-            <div data-hover-underline="true">Noun {nounId}</div>
-          </a>
+            <div css={css({ position: "relative", zIndex: 1 })}>
+              <NounAvatar id={nounId} seed={noun.seed} size="5rem" />
+              <DelegationStatusDot
+                nounId={nounId}
+                contextAccount={contextAccount}
+              />
+            </div>
 
-          <div css={css({ marginBottom: "0.1rem" })}>
-            <FormattedDateWithTooltip
-              disableRelative
-              disableTooltip
-              month="short"
-              day="numeric"
-              year="numeric"
-              value={nounTimestamp}
-            />
-            {auction?.amount && (
-              <>
-                {" "}
-                | <FormattedEthWithConditionalTooltip value={auction?.amount} />
-              </>
-            )}
+            <div
+              css={(t) =>
+                css({
+                  flex: 1,
+                  minWidth: 0,
+                  lineHeight: 1.25,
+                  fontSize: t.text.sizes.default,
+                })
+              }
+            >
+              <a
+                href={`https://nouns.wtf/noun/${nounId}`}
+                rel="noreferrer"
+                target="_blank"
+                css={(t) =>
+                  css({
+                    fontWeight: t.text.weights.smallHeader,
+                    color: "inherit",
+                    textDecoration: "none",
+                    "@media(hover: hover)": {
+                      ':hover [data-hover-underline="true"]': {
+                        textDecoration: "underline",
+                      },
+                    },
+                  })
+                }
+              >
+                <div data-hover-underline="true">Noun {nounId}</div>
+              </a>
+
+              <div css={css({ marginBottom: "0.1rem" })}>
+                <FormattedDateWithTooltip
+                  disableRelative
+                  disableTooltip
+                  month="short"
+                  day="numeric"
+                  year="numeric"
+                  value={nounTimestamp}
+                />
+                {auction?.amount && (
+                  <>
+                    {" "}
+                    |{" "}
+                    <FormattedEthWithConditionalTooltip
+                      value={auction?.amount}
+                    />{" "}
+                  </>
+                )}
+              </div>
+            </div>
           </div>
-        </div>
-      </div>
-      <NounEvents nounId={nounId} contextAccount={contextAccount} />
+          <NounEvents nounId={nounId} contextAccount={contextAccount} />
+        </>
+      )}
     </div>
   );
 });
