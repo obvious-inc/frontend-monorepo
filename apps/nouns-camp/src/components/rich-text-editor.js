@@ -4,6 +4,7 @@ import {
   url as urlUtils,
   dimension as dimensionUtils,
   getImageDimensionsFromUrl,
+  reloadPageOnce,
 } from "@shades/common/utils";
 import { ErrorBoundary } from "@shades/common/react";
 import RichTextEditor_ from "@shades/ui-web/rich-text-editor";
@@ -100,8 +101,8 @@ const RichTextEditor = React.forwardRef((props, externalRef) => {
 
       {imageLinkDialogState.isOpen && (
         <ErrorBoundary
-          fallback={() => {
-            window.location.reload();
+          onError={() => {
+            reloadPageOnce();
           }}
         >
           <React.Suspense fallback={null}>

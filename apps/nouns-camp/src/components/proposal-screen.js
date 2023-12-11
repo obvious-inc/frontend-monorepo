@@ -8,7 +8,7 @@ import {
   useSearchParams,
 } from "react-router-dom";
 import { css } from "@emotion/react";
-import { date as dateUtils } from "@shades/common/utils";
+import { date as dateUtils, reloadPageOnce } from "@shades/common/utils";
 import {
   ErrorBoundary,
   AutoAdjustingHeightTextarea,
@@ -1245,8 +1245,8 @@ const ProposalScreen = () => {
         >
           {({ titleProps }) => (
             <ErrorBoundary
-              fallback={() => {
-                // window.location.reload();
+              onError={() => {
+                reloadPageOnce();
               }}
             >
               <React.Suspense fallback={null}>

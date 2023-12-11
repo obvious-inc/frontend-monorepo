@@ -25,6 +25,7 @@ import {
   requestIdleCallback,
   getImageDimensionsFromUrl,
   isTouchDevice,
+  reloadPageOnce,
 } from "@shades/common/utils";
 import { ErrorBoundary } from "@shades/common/react";
 import Select from "./select.js";
@@ -625,8 +626,8 @@ const RichTextEditor = React.forwardRef(
 
         {linkDialogState.isOpen && (
           <ErrorBoundary
-            fallback={() => {
-              window.location.reload();
+            onError={() => {
+              reloadPageOnce();
             }}
           >
             <React.Suspense fallback={null}>
@@ -663,8 +664,8 @@ const RichTextEditor = React.forwardRef(
 
         {imageDialogState.isOpen && (
           <ErrorBoundary
-            fallback={() => {
-              window.location.reload();
+            onError={() => {
+              reloadPageOnce();
             }}
           >
             <React.Suspense fallback={null}>

@@ -22,7 +22,6 @@ import {
   useWindowFocusOrDocumentVisibleListener,
   useWindowOnlineListener,
   useMatchMedia,
-  ErrorBoundary,
 } from "@shades/common/react";
 import ChannelMessagesScrollView from "@shades/ui-web/channel-messages-scroll-view";
 import { isNodeEmpty as isRichTextNodeEmpty } from "@shades/ui-web/rich-text-editor";
@@ -359,11 +358,9 @@ const Channel = ({ channelId, noSideMenu }) => {
 
   if (notFound)
     return authenticationStatus === "not-authenticated" ? (
-      <ErrorBoundary fallback={() => null}>
-        <React.Suspense fallback={null}>
-          <LazyLoginScreen />
-        </React.Suspense>
-      </ErrorBoundary>
+      <React.Suspense fallback={null}>
+        <LazyLoginScreen />
+      </React.Suspense>
     ) : (
       <Layout channelId={channelId} noSideMenu={noSideMenu}>
         <div

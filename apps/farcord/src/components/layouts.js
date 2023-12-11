@@ -4,6 +4,7 @@ import { css } from "@emotion/react";
 import { NavLink, Outlet, useSearchParams } from "react-router-dom";
 import { useFarcasterChannels } from "../hooks/farcord";
 import { Layout as SidebarLayout } from "@shades/ui-web/sidebar-layout";
+import { reloadPageOnce } from "@shades/common/utils";
 import { ErrorBoundary } from "@shades/common/react";
 import Avatar from "@shades/ui-web/avatar";
 import FarcasterAccount from "./farcaster-account";
@@ -457,6 +458,7 @@ export const MainLayout = ({ children }) => {
         }
       >
         {children}
+
         {isDialogOpen && (
           <Dialog
             isOpen={isDialogOpen}
@@ -465,8 +467,8 @@ export const MainLayout = ({ children }) => {
           >
             {({ titleProps }) => (
               <ErrorBoundary
-                fallback={() => {
-                  // window.location.reload();
+                onError={() => {
+                  reloadPageOnce();
                 }}
               >
                 <React.Suspense fallback={null}>
@@ -476,7 +478,12 @@ export const MainLayout = ({ children }) => {
             )}
           </Dialog>
         )}
-        <ErrorBoundary fallback={() => window.location.reload()}>
+
+        <ErrorBoundary
+          onError={() => {
+            reloadPageOnce();
+          }}
+        >
           <React.Suspense fallback={null}>
             <Outlet />
           </React.Suspense>

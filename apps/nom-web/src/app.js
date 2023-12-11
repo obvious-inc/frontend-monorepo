@@ -13,7 +13,7 @@ import {
   useWindowOnlineListener,
   ErrorBoundary,
 } from "@shades/common/react";
-import { array as arrayUtils } from "@shades/common/utils";
+import { array as arrayUtils, reloadPageOnce } from "@shades/common/utils";
 import * as apis from "@shades/common/apis";
 
 const LazyApp = React.lazy(() => import("./app-lazy"));
@@ -92,7 +92,11 @@ const App = () => {
   );
 
   return (
-    <ErrorBoundary fallback={() => null}>
+    <ErrorBoundary
+      onError={() => {
+        reloadPageOnce();
+      }}
+    >
       <React.Suspense fallback={null}>
         <LazyApp />
       </React.Suspense>

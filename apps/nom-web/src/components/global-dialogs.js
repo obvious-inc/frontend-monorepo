@@ -1,5 +1,6 @@
 import React from "react";
 import { useConnect } from "wagmi";
+import { reloadPageOnce } from "@shades/common/utils";
 import { useWalletLogin } from "@shades/common/wallet";
 import { ErrorBoundary } from "@shades/common/react";
 import Dialog from "@shades/ui-web/dialog";
@@ -113,7 +114,11 @@ const GlobalDialogs = () => {
             {...dialogProps}
           >
             {({ titleProps }) => (
-              <ErrorBoundary fallback={() => window.location.reload()}>
+              <ErrorBoundary
+                onError={() => {
+                  reloadPageOnce();
+                }}
+              >
                 <React.Suspense fallback={null}>
                   <Component
                     title={title}

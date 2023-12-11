@@ -14,6 +14,7 @@ import {
   array as arrayUtils,
   ethereum as ethereumUtils,
   user as userUtils,
+  reloadPageOnce,
 } from "@shades/common/utils";
 import { ErrorBoundary } from "@shades/common/react";
 import Button from "@shades/ui-web/button";
@@ -202,7 +203,11 @@ const ChannelNavBar = ({ noSideMenu, channelId }) => {
               height="min(calc(100% - 3rem), 82rem)"
             >
               {({ titleProps }) => (
-                <ErrorBoundary fallback={() => window.location.reload()}>
+                <ErrorBoundary
+                  onError={() => {
+                    reloadPageOnce();
+                  }}
+                >
                   <React.Suspense fallback={null}>
                     <LazyChannelInfoDialog
                       channelId={channelId}

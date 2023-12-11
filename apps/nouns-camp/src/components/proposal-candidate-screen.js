@@ -14,6 +14,7 @@ import {
   array as arrayUtils,
   markdown as markdownUtils,
   message as messageUtils,
+  reloadPageOnce,
 } from "@shades/common/utils";
 import { ErrorBoundary, useMatchMedia } from "@shades/common/react";
 import Dialog from "@shades/ui-web/dialog";
@@ -1286,8 +1287,8 @@ const ProposalCandidateScreen = () => {
         <Dialog isOpen tray onRequestClose={toggleEditDialog} width="131.2rem">
           {({ titleProps }) => (
             <ErrorBoundary
-              fallback={() => {
-                // window.location.reload();
+              onError={() => {
+                reloadPageOnce();
               }}
             >
               <React.Suspense fallback={null}>
@@ -1306,8 +1307,8 @@ const ProposalCandidateScreen = () => {
         <Dialog isOpen onRequestClose={toggleSponsorDialog} width="52rem">
           {({ titleProps }) => (
             <ErrorBoundary
-              fallback={() => {
-                // window.location.reload();
+              onError={() => {
+                reloadPageOnce();
               }}
             >
               <React.Suspense fallback={null}>
@@ -1326,8 +1327,8 @@ const ProposalCandidateScreen = () => {
         <Dialog isOpen onRequestClose={toggleProposeDialog} width="52rem">
           {({ titleProps }) => (
             <ErrorBoundary
-              fallback={() => {
-                // window.location.reload();
+              onError={() => {
+                reloadPageOnce();
               }}
             >
               <React.Suspense fallback={null}>

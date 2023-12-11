@@ -26,6 +26,7 @@ import { useWalletLogin } from "@shades/common/wallet";
 import {
   array as arrayUtils,
   ethereum as ethereumUtils,
+  reloadPageOnce,
 } from "@shades/common/utils";
 import { useFetch, ErrorBoundary } from "@shades/common/react";
 import {
@@ -514,7 +515,11 @@ const Layout = () => {
           )
         }
       >
-        <ErrorBoundary fallback={() => null}>
+        <ErrorBoundary
+          onError={() => {
+            reloadPageOnce();
+          }}
+        >
           <React.Suspense fallback={null}>
             <Outlet />
           </React.Suspense>

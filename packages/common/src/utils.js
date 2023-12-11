@@ -16,6 +16,7 @@ export {
   getImageFileDimensions,
   getImageDimensionsFromUrl,
   requestIdleCallback,
+  reloadPageOnce,
 } from "./utils/misc";
 export * as dimension from "./utils/dimensions.js";
 export { default as invariant } from "./utils/invariant.js";

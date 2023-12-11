@@ -2,7 +2,8 @@ import React from "react";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { I18nProvider } from "react-aria";
 import { ThemeProvider, Global, css } from "@emotion/react";
-import { useMatchMedia } from "@shades/common/react";
+import { reloadPageOnce } from "@shades/common/utils";
+import { useMatchMedia, ErrorBoundary } from "@shades/common/react";
 import { light as lightTheme, dark as darkTheme } from "@shades/ui-web/theme";
 import * as Tooltip from "@shades/ui-web/tooltip";
 import {
@@ -115,75 +116,86 @@ const App = () => {
   useDelegatesFetch();
 
   return (
-    <React.Suspense fallback={null}>
-      <I18nProvider locale="en-US">
-        <BrowserRouter>
-          <ThemeProvider theme={theme}>
-            <ConnectWalletDialogProvider>
-              <GlobalDialogsProvider dialogs={dialogs}>
-                <Tooltip.Provider delayDuration={300}>
-                  <Global
-                    styles={(theme) =>
-                      css({
-                        html: {
-                          fontSize: {
-                            tiny: "0.546875em",
-                            small: "0.5859375em",
-                            large: "0.6640625em",
-                            huge: "0.703125em",
-                          }[zoomSetting],
-                          colorScheme: theme.name === "dark" ? "dark" : "light",
-                        },
-                        body: {
-                          color: theme.colors.textNormal,
-                          background: theme.colors.backgroundPrimary,
-                          fontFamily: theme.fontStacks.default,
-                          "::selection": {
-                            background: theme.colors.textSelectionBackground,
+    <ErrorBoundary
+      fallback={null}
+      onError={() => {
+        reloadPageOnce();
+      }}
+    >
+      <React.Suspense fallback={null}>
+        <I18nProvider locale="en-US">
+          <BrowserRouter>
+            <ThemeProvider theme={theme}>
+              <ConnectWalletDialogProvider>
+                <GlobalDialogsProvider dialogs={dialogs}>
+                  <Tooltip.Provider delayDuration={300}>
+                    <Global
+                      styles={(theme) =>
+                        css({
+                          html: {
+                            fontSize: {
+                              tiny: "0.546875em",
+                              small: "0.5859375em",
+                              large: "0.6640625em",
+                              huge: "0.703125em",
+                            }[zoomSetting],
+                            colorScheme:
+                              theme.name === "dark" ? "dark" : "light",
                           },
-                        },
-                      })
-                    }
-                  />
-                  <Routes>
-                    <Route path="/">
-                      <Route index element={<BrowseScreen />} />
-                      <Route
-                        path="/new/:draftId?"
-                        element={
-                          <RequireConnectedAccount>
-                            <ProposeScreen />
-                          </RequireConnectedAccount>
-                        }
-                      />
-                      <Route
-                        path="/candidates/:candidateId"
-                        element={<ProposalCandidateScreen />}
-                      />
-                      <Route
-                        path="/c/:candidateId"
-                        element={<ProposalCandidateScreen />}
-                      />
-                      <Route
-                        path="/proposals/:proposalId"
-                        element={<ProposalScreen />}
-                      />
-                      <Route path="/:proposalId" element={<ProposalScreen />} />
+                          body: {
+                            color: theme.colors.textNormal,
+                            background: theme.colors.backgroundPrimary,
+                            fontFamily: theme.fontStacks.default,
+                            "::selection": {
+                              background: theme.colors.textSelectionBackground,
+                            },
+                          },
+                        })
+                      }
+                    />
+                    <Routes>
+                      <Route path="/">
+                        <Route index element={<BrowseScreen />} />
+                        <Route
+                          path="/new/:draftId?"
+                          element={
+                            <RequireConnectedAccount>
+                              <ProposeScreen />
+                            </RequireConnectedAccount>
+                          }
+                        />
+                        <Route
+                          path="/candidates/:candidateId"
+                          element={<ProposalCandidateScreen />}
+                        />
+                        <Route
+                          path="/c/:candidateId"
+                          element={<ProposalCandidateScreen />}
+                        />
+                        <Route
+                          path="/proposals/:proposalId"
+                          element={<ProposalScreen />}
+                        />
+                        <Route
+                          path="/:proposalId"
+                          element={<ProposalScreen />}
+                        />
 
-                      <Route
-                        path="/campers/:voterId"
-                        element={<VoterScreen />}
-                      />
-                    </Route>
-                    <Route path="*" element={<Navigate to="/" replace />} />
-                  </Routes>
-                </Tooltip.Provider>
-              </GlobalDialogsProvider>
-            </ConnectWalletDialogProvider>
-          </ThemeProvider>
-        </BrowserRouter>
-      </I18nProvider>
-    </React.Suspense>
+                        <Route
+                          path="/campers/:voterId"
+                          element={<VoterScreen />}
+                        />
+                      </Route>
+                      <Route path="*" element={<Navigate to="/" replace />} />
+                    </Routes>
+                  </Tooltip.Provider>
+                </GlobalDialogsProvider>
+              </ConnectWalletDialogProvider>
+            </ThemeProvider>
+          </BrowserRouter>
+        </I18nProvider>
+      </React.Suspense>
+    </ErrorBoundary>
   );
 };
 
