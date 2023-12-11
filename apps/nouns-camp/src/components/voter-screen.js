@@ -576,7 +576,7 @@ const VoterMainSection = ({ voterAddress }) => {
             isDesktopLayout ? (
               <div
                 css={css({
-                  padding: "1rem 0 3.2rem",
+                  padding: "2rem 0 3.2rem",
                   "@media (min-width: 600px)": {
                     padding: "6rem 0 8rem",
                   },
