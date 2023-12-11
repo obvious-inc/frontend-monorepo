@@ -1,5 +1,5 @@
 import { css } from "@emotion/react";
-// import { useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import Dialog from "@shades/ui-web/dialog";
 import Button from "@shades/ui-web/button";
 import { Cross as CrossIcon } from "@shades/ui-web/icons";
@@ -24,7 +24,7 @@ const AccountDialog = ({ isOpen, close }) => (
 );
 
 const Content = ({ titleProps, dismiss }) => {
-  // const navigate = useNavigate();
+  const navigate = useNavigate();
   const { address: accountAddress } = useWallet();
   const { displayName, truncatedAddress } =
     useAccountDisplayName(accountAddress);
@@ -189,20 +189,20 @@ const Content = ({ titleProps, dismiss }) => {
           },
         })}
       >
-        {/* <Button */}
-        {/*   onClick={() => { */}
-        {/*     dismiss(); */}
-        {/*     navigate(`/voter/${accountAddress}`); */}
-        {/*   }} */}
-        {/* > */}
-        {/*   View full profile */}
-        {/* </Button> */}
         <Button
           onClick={() => {
             dismiss();
           }}
         >
           Close
+        </Button>
+        <Button
+          onClick={() => {
+            dismiss();
+            navigate(`/campers/${accountAddress}`);
+          }}
+        >
+          View account page
         </Button>
       </footer>
     </div>
