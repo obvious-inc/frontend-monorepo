@@ -169,7 +169,7 @@ export const Provider = ({ api, children }) => {
 
       switch (eventName) {
         case "user-authentication-expired":
-          actions();
+          actions.logout();
           setAuthenticationData(null);
           break;
 
