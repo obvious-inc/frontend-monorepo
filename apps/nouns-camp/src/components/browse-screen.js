@@ -1647,26 +1647,16 @@ const DraftTabContent = ({ items = [] }) => {
 
   if (!hasDrafts)
     return (
-      <div>
-        <div
-          css={(t) =>
-            css({
-              textAlign: "center",
-              color: t.colors.textMuted,
-              p: { padding: "3.2rem" },
-            })
-          }
-        >
-          <p>You don’t have any drafts</p>
-          <Button
-            component={RouterLink}
-            to="/new"
-            icon={<PlusIcon style={{ width: "1rem" }} />}
-          >
-            New proposal
-          </Button>
-        </div>
-      </div>
+      <Tabs.EmptyPlaceholder
+        description="You have no drafts"
+        buttonLabel="New proposal"
+        buttonProps={{
+          component: RouterLink,
+          to: "/new",
+          icon: <PlusIcon style={{ width: "1rem" }} />,
+        }}
+        css={css({ padding: "3.2rem 0" })}
+      />
     );
 
   return (

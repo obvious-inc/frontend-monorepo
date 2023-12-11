@@ -627,17 +627,11 @@ const VoterMainSection = ({ voterAddress }) => {
               <Tabs.Item key="proposals" title={proposalsTabTitle}>
                 <div>
                   {delegate && filteredProposals.length === 0 && (
-                    <div
-                      css={(t) =>
-                        css({
-                          textAlign: "center",
-                          padding: "3.2rem 0",
-                          color: t.colors.textDimmed,
-                        })
-                      }
-                    >
-                      No proposals
-                    </div>
+                    <Tabs.EmptyPlaceholder
+                      title="No proposals"
+                      description="This account has not created any proposals"
+                      css={css({ padding: "6.4rem 0" })}
+                    />
                   )}
                   <SectionedList
                     showPlaceholder={!delegate}
@@ -669,17 +663,11 @@ const VoterMainSection = ({ voterAddress }) => {
               <Tabs.Item key="candidates" title={candidatesTabTitle}>
                 <div>
                   {delegate && voterCandidates.length === 0 && (
-                    <div
-                      css={(t) =>
-                        css({
-                          textAlign: "center",
-                          padding: "3.2rem 0",
-                          color: t.colors.textDimmed,
-                        })
-                      }
-                    >
-                      No candidates
-                    </div>
+                    <Tabs.EmptyPlaceholder
+                      title="No candidates"
+                      description="This account has not created any proposal candidates"
+                      css={css({ padding: "6.4rem 0" })}
+                    />
                   )}
                   <SectionedList
                     showPlaceholder={!delegate}

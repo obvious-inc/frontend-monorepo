@@ -8,6 +8,7 @@ import {
   mergeProps,
 } from "react-aria";
 import { Item, useTabListState } from "react-stately";
+import Button from "@shades/ui-web/button";
 
 export const Root = React.forwardRef(({ className, ...props }, externalRef) => {
   const state = useTabListState(props);
@@ -79,6 +80,37 @@ export const Root = React.forwardRef(({ className, ...props }, externalRef) => {
     </>
   );
 });
+
+export const EmptyPlaceholder = ({
+  title,
+  description,
+  buttonLabel,
+  buttonProps,
+  ...props
+}) => (
+  <div
+    css={(t) =>
+      css({
+        textAlign: "center",
+        color: t.colors.textDimmed,
+        h3: {
+          fontSize: t.text.sizes.large,
+          fontWeight: t.text.weights.normal,
+          margin: "0 0 0.8rem",
+        },
+      })
+    }
+    {...props}
+  >
+    {title != null && <h3>{title}</h3>}
+    {description != null && <p>{description}</p>}
+    {buttonLabel != null && (
+      <Button style={{ marginTop: "3.2rem" }} {...buttonProps}>
+        {buttonLabel}
+      </Button>
+    )}
+  </div>
+);
 
 export { Item };
 
