@@ -26,7 +26,7 @@ const AccountDialog = ({ isOpen, close }) => (
 const Content = ({ titleProps, dismiss }) => {
   const navigate = useNavigate();
   const { address: accountAddress } = useWallet();
-  const { displayName, truncatedAddress } =
+  const { displayName, ensName, truncatedAddress } =
     useAccountDisplayName(accountAddress);
   const delegate = useDelegate(accountAddress);
   const currentQuorum = useCurrentDynamicQuorum();
@@ -199,7 +199,7 @@ const Content = ({ titleProps, dismiss }) => {
         <Button
           onClick={() => {
             dismiss();
-            navigate(`/campers/${accountAddress}`);
+            navigate(`/campers/${ensName ?? accountAddress}`);
           }}
         >
           View account page
