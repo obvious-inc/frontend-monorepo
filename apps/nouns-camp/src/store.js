@@ -447,6 +447,12 @@ const useStore = createZustandStoreHook((set) => {
             candidates
           );
 
+          const sponsoredProposalIds = arrayUtils.unique(
+            candidates.map((c) => c.latestVersion?.proposalId)
+          );
+
+          fetchProposals(chainId, sponsoredProposalIds);
+
           set((s) => ({
             proposalCandidatesById: objectUtils.merge(
               mergeProposalCandidates,
@@ -945,5 +951,25 @@ export const useAccountFetch = (id, options) => {
         onError(e);
       }),
     [fetchAccount, id, onError, blockNumber]
+  );
+};
+
+export const useProposalsSponsoredByAccount = (accountAddress) => {
+  const candidatesById = useStore((s) => s.proposalCandidatesById);
+  const sponsoredCandidates = Object.values(candidatesById).filter((c) =>
+    getCandidateSponsorSignatures(c, {
+      excludeInvalid: true,
+    }).some((s) => s.signer.id.toLowerCase() === accountAddress.toLowerCase())
+  );
+
+  const sponsoredProposalIds = arrayUtils.unique(
+    sponsoredCandidates.map((c) => c.latestVersion?.proposalId)
+  );
+
+  const proposalsById = useStore((s) => s.proposalsById);
+
+  return arrayUtils.sortBy(
+    { value: (p) => p.lastUpdatedTimestamp, order: "desc" },
+    sponsoredProposalIds.map((id) => proposalsById[id]).filter(Boolean)
   );
 };

@@ -16,6 +16,7 @@ import {
   useDelegateFetch,
   useProposalCandidates,
   useProposals,
+  useProposalsSponsoredByAccount,
 } from "../store.js";
 import MetaTags_ from "./meta-tags.js";
 import Layout, { MainContentContainer } from "./layout.js";
@@ -547,6 +548,7 @@ const VoterMainSection = ({ voterAddress }) => {
 
   const filteredProposals = delegate?.proposals ?? [];
   const voterCandidates = useAccountProposalCandidates(voterAddress);
+  const sponsoredProposals = useProposalsSponsoredByAccount(voterAddress);
 
   const { fetchVoterScreenData } = useActions();
 
@@ -567,6 +569,10 @@ const VoterMainSection = ({ voterAddress }) => {
   const candidatesTabTitle = voterCandidates?.length
     ? `Candidates (${voterCandidates?.length})`
     : "Candidates";
+
+  const sponsoredTabTitle = sponsoredProposals.length
+    ? `Sponsored (${sponsoredProposals.length})`
+    : "Sponsored";
 
   return (
     <>
@@ -682,6 +688,42 @@ const VoterMainSection = ({ voterAddress }) => {
                     style={{ marginTop: "2rem" }}
                   />
                   {voterCandidates.length >
+                    VOTER_LIST_PAGE_ITEM_COUNT * page && (
+                    <div css={{ textAlign: "center", padding: "3.2rem 0" }}>
+                      <Button
+                        size="small"
+                        onClick={() => {
+                          setPage((p) => p + 1);
+                        }}
+                      >
+                        Show more
+                      </Button>
+                    </div>
+                  )}
+                </div>
+              </Tabs.Item>
+              <Tabs.Item key="sponsored" title={sponsoredTabTitle}>
+                <div>
+                  {delegate && sponsoredProposals.length === 0 && (
+                    <Tabs.EmptyPlaceholder
+                      title="No sponsored proposals"
+                      description="This account has not sponsored any proposals"
+                      css={css({ padding: "6.4rem 0" })}
+                    />
+                  )}
+                  <SectionedList
+                    showPlaceholder={!delegate}
+                    sections={[
+                      {
+                        items: sponsoredProposals.slice(
+                          0,
+                          VOTER_LIST_PAGE_ITEM_COUNT * page
+                        ),
+                      },
+                    ]}
+                    style={{ marginTop: "2rem" }}
+                  />
+                  {sponsoredProposals.length >
                     VOTER_LIST_PAGE_ITEM_COUNT * page && (
                     <div css={{ textAlign: "center", padding: "3.2rem 0" }}>
                       <Button
