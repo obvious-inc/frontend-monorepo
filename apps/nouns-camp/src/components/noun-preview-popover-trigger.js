@@ -4,6 +4,7 @@ import { useAccountDisplayName } from "@shades/common/app";
 import * as Popover from "@shades/ui-web/popover";
 import Spinner from "@shades/ui-web/spinner";
 import { useNoun } from "../store.js";
+import InlineVerticalSeparator from "./inline-vertical-separator.js";
 import NounAvatar from "./noun-avatar.js";
 import FormattedDateWithTooltip from "./formatted-date-with-tooltip.js";
 import { resolveIdentifier } from "../contracts.js";
@@ -422,7 +423,7 @@ const NounPreview = React.forwardRef(({ nounId, contextAccount }, ref) => {
                 css={(t) =>
                   css({
                     fontWeight: t.text.weights.smallHeader,
-                    color: "inherit",
+                    color: t.colors.textNormal,
                     textDecoration: "none",
                     "@media(hover: hover)": {
                       ':hover [data-hover-underline="true"]': {
@@ -435,7 +436,11 @@ const NounPreview = React.forwardRef(({ nounId, contextAccount }, ref) => {
                 <div data-hover-underline="true">Noun {nounId}</div>
               </a>
 
-              <div css={css({ marginBottom: "0.1rem" })}>
+              <div
+                css={(t) =>
+                  css({ fontSize: t.text.sizes.small, margin: "0.1rem 0" })
+                }
+              >
                 <FormattedDateWithTooltip
                   disableRelative
                   disableTooltip
@@ -446,11 +451,10 @@ const NounPreview = React.forwardRef(({ nounId, contextAccount }, ref) => {
                 />
                 {auction?.amount && (
                   <>
-                    {" "}
-                    |{" "}
+                    <InlineVerticalSeparator />
                     <FormattedEthWithConditionalTooltip
                       value={auction?.amount}
-                    />{" "}
+                    />
                   </>
                 )}
               </div>
