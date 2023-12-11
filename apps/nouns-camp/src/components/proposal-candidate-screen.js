@@ -2,7 +2,6 @@ import formatDate from "date-fns/format";
 import datesDifferenceInDays from "date-fns/differenceInCalendarDays";
 import { isAddress } from "viem";
 import React from "react";
-import va from "@vercel/analytics";
 import {
   useParams,
   useSearchParams,
@@ -167,16 +166,11 @@ const ProposalCandidateScreenContent = ({
   const feedbackVoteCountExcludingAbstained =
     signals.votes.for + signals.votes.against;
 
-  const handleFormSubmit = async () => {
-    va.track("Feedback", {
-      candidateId,
-      account: connectedWalletAccountAddress,
-    });
-    return sendProposalFeedback().then(() => {
+  const handleFormSubmit = async () =>
+    sendProposalFeedback().then(() => {
       setPendingFeedback("");
       setPendingSupport(null);
     });
-  };
 
   const sponsorStatusCallout = (
     <Callout

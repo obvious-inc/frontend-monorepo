@@ -1,3 +1,4 @@
+import va from "@vercel/analytics";
 import {
   parseAbi,
   stringToBytes,
@@ -52,7 +53,13 @@ export const useSendProposalCandidateFeedback = (
   return async () => {
     const candidateId = [proposerId, slug].join("-").toLowerCase();
     const voterId = accountAddress.toLowerCase();
+    va.track("Feedback", { candidateId, account: accountAddress });
     return write().then(({ hash }) => {
+      va.track("Candidate feedback successfully submitted", {
+        candidateId,
+        hash,
+        account: accountAddress,
+      });
       addOptimitisicCandidateFeedbackPost(candidateId, {
         id: String(Math.random()),
         reason,
@@ -68,6 +75,7 @@ export const useSendProposalCandidateFeedback = (
 };
 
 export const useSendProposalFeedback = (proposalId, { support, reason }) => {
+  const { address: accountAddress } = useWallet();
   const chainId = useChainId();
 
   const { config } = usePrepareContractWrite({
@@ -81,7 +89,23 @@ export const useSendProposalFeedback = (proposalId, { support, reason }) => {
   });
   const { writeAsync: write } = useContractWrite(config);
 
-  return write;
+  if (write == null) return null;
+
+  return async () => {
+    va.track("Feedback", {
+      proposalId,
+      account: accountAddress,
+    });
+
+    return write().then(({ hash }) => {
+      va.track("Proposal feedback successfully submitted", {
+        proposalId,
+        hash,
+        account: accountAddress,
+      });
+      return { hash };
+    });
+  };
 };
 
 export const useCreateProposalCandidate = ({ enabled = true } = {}) => {
@@ -113,7 +137,14 @@ export const useCreateProposalCandidate = ({ enabled = true } = {}) => {
     return writeAsync({
       args: [targets, values, signatures, calldatas, description, slug, 0],
     })
-      .then(({ hash }) => publicClient.waitForTransactionReceipt({ hash }))
+      .then(({ hash }) => {
+        va.track("Candidate successfully created", {
+          hash,
+          slug,
+          account: accountAddress,
+        });
+        return publicClient.waitForTransactionReceipt({ hash });
+      })
       .then((receipt) => {
         const eventLog = receipt.logs[0];
         const decodedEvent = decodeEventLog({
@@ -159,6 +190,8 @@ export const useProposalCandidateUpdateCost = ({ enabled = true } = {}) => {
 };
 
 export const useUpdateProposalCandidate = (slug, { enabled = true } = {}) => {
+  const { address: accountAddress } = useWallet();
+
   const publicClient = usePublicClient();
   const chainId = useChainId();
 
@@ -191,11 +224,20 @@ export const useUpdateProposalCandidate = (slug, { enabled = true } = {}) => {
         0,
         message,
       ],
-    }).then(({ hash }) => publicClient.waitForTransactionReceipt({ hash }));
+    }).then(({ hash }) => {
+      va.track("Candidate successfully updated", {
+        hash,
+        slug,
+        account: accountAddress,
+      });
+      return publicClient.waitForTransactionReceipt({ hash });
+    });
   };
 };
 
 export const useCancelProposalCandidate = (slug) => {
+  const { address: accountAddress } = useWallet();
+
   const publicClient = usePublicClient();
   const chainId = useChainId();
 
@@ -206,16 +248,20 @@ export const useCancelProposalCandidate = (slug) => {
     ]),
     functionName: "cancelProposalCandidate",
     args: [slug],
-    // value: parseEther("0.01"),
   });
   const { writeAsync: write } = useContractWrite(config);
 
-  return write == null
-    ? null
-    : () =>
-        write().then(({ hash }) =>
-          publicClient.waitForTransactionReceipt({ hash })
-        );
+  if (write == null) return null;
+
+  return () =>
+    write().then(({ hash }) => {
+      va.track("Candidate successfully canceled", {
+        hash,
+        slug,
+        account: accountAddress,
+      });
+      return publicClient.waitForTransactionReceipt({ hash });
+    });
 };
 
 const calcProposalEncodeData = ({
@@ -254,9 +300,11 @@ export const useAddSignatureToProposalCandidate = (
   slug,
   { description, targets, values, signatures, calldatas }
 ) => {
+  const { address: accountAddress } = useWallet();
+
   const chainId = useChainId();
 
-  const { writeAsync } = useContractWrite({
+  const { writeAsync: write } = useContractWrite({
     address: getContractAddress(chainId),
     abi: parseAbi([
       "function addSignature(bytes memory sig, uint256 expirationTimestamp, address proposer, string memory slug, uint256 proposalIdToUpdate, bytes memory encodedProp, string memory reason) external",
@@ -264,8 +312,10 @@ export const useAddSignatureToProposalCandidate = (
     functionName: "addSignature",
   });
 
+  if (write == null) return null;
+
   return ({ signature, expirationTimestamp, reason }) =>
-    writeAsync({
+    write({
       args: [
         signature,
         expirationTimestamp,
@@ -282,6 +332,13 @@ export const useAddSignatureToProposalCandidate = (
         }),
         reason,
       ],
+    }).then(({ hash }) => {
+      va.track("Candidate signature successfully submitted", {
+        hash,
+        slug,
+        account: accountAddress,
+      });
+      return { hash };
     });
 };
 

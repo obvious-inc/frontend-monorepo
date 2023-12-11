@@ -1,3 +1,4 @@
+import va from "@vercel/analytics";
 import { parseAbi, decodeEventLog } from "viem";
 import React from "react";
 import {
@@ -213,7 +214,16 @@ export const useCastProposalVote = (
   if (write == null) return null;
 
   return async () => {
+    va.track("Vote", {
+      proposalId,
+      account: accountAddress,
+    });
     return write().then(({ hash }) => {
+      va.track("Vote successfully cast", {
+        proposalId,
+        hash,
+        account: accountAddress,
+      });
       const voterId = accountAddress.toLowerCase();
       addOptimitisicProposalVote(proposalId, {
         id: String(Math.random()),
@@ -229,6 +239,8 @@ export const useCastProposalVote = (
 };
 
 export const useCreateProposal = ({ enabled = true } = {}) => {
+  const { address: accountAddress } = useWallet();
+
   const publicClient = usePublicClient();
   const chainId = useChainId();
 
@@ -250,7 +262,13 @@ export const useCreateProposal = ({ enabled = true } = {}) => {
     return writeAsync({
       args: [targets, values, signatures, calldatas, description],
     })
-      .then(({ hash }) => publicClient.waitForTransactionReceipt({ hash }))
+      .then(({ hash }) => {
+        va.track("Proposal successfully created", {
+          account: accountAddress,
+          hash,
+        });
+        return publicClient.waitForTransactionReceipt({ hash });
+      })
       .then((receipt) => {
         const eventLog = receipt.logs[1];
         const decodedEvent = decodeEventLog({
@@ -266,6 +284,8 @@ export const useCreateProposal = ({ enabled = true } = {}) => {
 };
 
 export const useCancelProposal = (proposalId) => {
+  const { address: accountAddress } = useWallet();
+
   const publicClient = usePublicClient();
   const chainId = useChainId();
 
@@ -280,7 +300,11 @@ export const useCancelProposal = (proposalId) => {
   return write == null
     ? null
     : () =>
-        write().then(({ hash }) =>
-          publicClient.waitForTransactionReceipt({ hash })
-        );
+        write().then(({ hash }) => {
+          va.track("Proposal successfully canceled", {
+            account: accountAddress,
+            hash,
+          });
+          return publicClient.waitForTransactionReceipt({ hash });
+        });
 };

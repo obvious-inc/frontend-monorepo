@@ -272,19 +272,11 @@ const ProposalMainSection = ({ proposalId, scrollContainerRef }) => {
       // argument change, so this might be null. This seems like a nicer
       // behavior compared to disabling the submit button on every keystroke
       if (castProposalVote == null) return;
-      va.track("Vote", {
-        proposalId,
-        account: connectedWalletAccountAddress,
-      });
       await castProposalVote();
       setCastVoteCallSupportDetailed(pendingSupport);
     } else {
       // Same as above
       if (sendProposalFeedback == null) return;
-      va.track("Feedback", {
-        proposalId,
-        account: connectedWalletAccountAddress,
-      });
       await sendProposalFeedback();
     }
 
