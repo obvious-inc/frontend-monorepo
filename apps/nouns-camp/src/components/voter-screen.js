@@ -109,7 +109,19 @@ const ActivityFeed = React.memo(({ voterAddress, filter = "all" }) => {
     [latestBlockNumber, fetchVoterActivity]
   );
 
-  if (visibleItems.length === 0) return null;
+  if (visibleItems.length === 0)
+    return (
+      <div
+        css={(t) =>
+          css({
+            textAlign: "center",
+            color: t.colors.textDimmed,
+          })
+        }
+      >
+        <p>No Activity</p>
+      </div>
+    );
 
   return (
     <>
