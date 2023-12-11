@@ -58,6 +58,7 @@ const isNodeEmpty = (node, options = {}) => {
 
   switch (node.type) {
     case "emoji":
+    case "link":
     case "user":
     case "channel-link":
     case "image":
