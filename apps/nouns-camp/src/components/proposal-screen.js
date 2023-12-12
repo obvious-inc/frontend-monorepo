@@ -31,6 +31,7 @@ import {
   buildFeed as buildProposalFeed,
   isVotableState as isVotableProposalState,
   isFinalState as isFinalProposalState,
+  isSucceededState as isSucceededProposalState,
 } from "../utils/proposals.js";
 import {
   useProposal,
@@ -112,8 +113,14 @@ const ProposalMainSection = ({ proposalId, scrollContainerRef }) => {
 
   const proposal = useProposal(proposalId);
 
+  const isFinalOrSucceededState =
+    isFinalProposalState(proposal.state) ||
+    isSucceededProposalState(proposal.state);
+
   const [pendingFeedback, setPendingFeedback] = React.useState("");
-  const [pendingSupport, setPendingSupport] = React.useState(null);
+  const [pendingSupport, setPendingSupport] = React.useState(
+    isFinalOrSucceededState ? 2 : null
+  );
   const [castVoteCallSupportDetailed, setCastVoteCallSupportDetailed] =
     React.useState(null);
 
@@ -514,27 +521,6 @@ const ProposalMainSection = ({ proposalId, scrollContainerRef }) => {
                           <>
                             <ProposalActionForm
                               size="small"
-                              helpTextPosition="bottom"
-                              label={
-                                <div
-                                  css={(t) =>
-                                    css({
-                                      fontSize: t.text.sizes.small,
-                                      color: t.colors.textDimmed,
-                                    })
-                                  }
-                                >
-                                  {!hasCastVote && isVotingOngoing
-                                    ? "Cast vote as"
-                                    : "Feedback as"}{" "}
-                                  <AccountPreviewPopoverTrigger
-                                    showAvatar
-                                    accountAddress={
-                                      connectedWalletAccountAddress
-                                    }
-                                  />
-                                </div>
-                              }
                               proposalId={proposalId}
                               mode={currentFormAction}
                               setMode={setFormActionOverride}
@@ -566,11 +552,10 @@ const ProposalMainSection = ({ proposalId, scrollContainerRef }) => {
                     <div style={{ padding: "2.4rem 0 6.4rem" }}>
                       <ProposalActionForm
                         size="small"
-                        helpTextPosition="bottom"
                         proposalId={proposalId}
-                        mode={
-                          !hasCastVote && isVotingOngoing ? "vote" : "feedback"
-                        }
+                        mode={currentFormAction}
+                        setMode={setFormActionOverride}
+                        availableModes={possibleFromActions}
                         reason={pendingFeedback}
                         setReason={setPendingFeedback}
                         support={pendingSupport}
@@ -606,8 +591,6 @@ export const ProposalActionForm = ({
   support,
   setSupport,
   onSubmit,
-  helpTextPosition = "top",
-  label,
 }) => {
   const [isPending, setPending] = React.useState(false);
 
@@ -618,7 +601,7 @@ export const ProposalActionForm = ({
   } = useWallet();
   const connectedDelegate = useDelegate(connectedWalletAccountAddress);
 
-  const proposal = useProposal(proposalId, { enabled: mode === "vote" });
+  const proposal = useProposal(proposalId);
 
   const proposalVoteCount = usePriorVotes({
     account: connectedWalletAccountAddress,
@@ -637,8 +620,16 @@ export const ProposalActionForm = ({
         mode === "vote" ? "vote" : "give feedback"
       }.`;
 
-    if (mode === "feedback")
+    if (mode === "feedback") {
+      const isFinalOrSucceededState =
+        proposal != null &&
+        (isFinalProposalState(proposal.state) ||
+          isSucceededProposalState(proposal.state));
+
+      if (isFinalOrSucceededState) return null;
+
       return "Signal your voting intentions to influence and guide proposers.";
+    }
 
     if (currentVoteCount > 0 && proposalVoteCount === 0)
       return (
@@ -662,72 +653,61 @@ export const ProposalActionForm = ({
     return "Gas spent on voting will be refunded.";
   };
 
-  const helpText = (
-    <div
-      css={(t) =>
-        css({
-          fontSize: t.text.sizes.tiny,
-          color: t.colors.textDimmed,
-          "p + p": { marginTop: "1em" },
-          em: {
-            fontStyle: "normal",
-            fontWeight: t.text.weights.emphasis,
-          },
-        })
-      }
-    >
-      {renderHelpText()}
-    </div>
-  );
+  const helpText = renderHelpText();
 
   const showModePicker = availableModes != null && availableModes.length > 1;
 
   return (
     <>
       <div style={{ display: "flex", flexDirection: "column", gap: "1.2rem" }}>
-        {(showModePicker || label != null || helpTextPosition === "top") && (
-          <div
-            style={{
-              display: "flex",
-              gap: "0.6rem",
-              justifyContent: "space-between",
-              alignItems: "flex-end",
-            }}
+        <div
+          style={{
+            display: "flex",
+            gap: "0.6rem",
+            justifyContent: "space-between",
+            alignItems: "flex-end",
+          }}
+        >
+          <label
+            htmlFor="message-input"
+            css={(t) =>
+              css({
+                fontSize: t.text.sizes.small,
+                color: t.colors.textDimmed,
+                "& + *": { marginTop: "0.8rem" },
+              })
+            }
           >
+            {mode === "vote" ? "Cast vote as" : "Comment as"}{" "}
+            <AccountPreviewPopoverTrigger
+              showAvatar
+              accountAddress={connectedWalletAccountAddress}
+            />
+          </label>
+          {showModePicker && (
             <div>
-              {label != null && (
-                <label
-                  htmlFor="message-input"
-                  css={css({ "& + *": { marginTop: "0.8rem" } })}
-                >
-                  {label}
-                </label>
-              )}
-              {helpTextPosition === "top" && helpText}
+              <Select
+                value={mode}
+                onChange={(m) => {
+                  setMode(m);
+                  // Default to "abstain" for comments, and reset for votes
+                  setSupport(m === "feedback" ? 2 : null);
+                }}
+                options={availableModes.map((m) => ({
+                  value: m,
+                  label: { vote: "Cast vote", feedback: "Post comment" }[m],
+                }))}
+                size="tiny"
+                variant="default-opaque"
+                width="max-content"
+                align="right"
+                buttonProps={{
+                  css: (t) => css({ color: t.colors.textDimmed }),
+                }}
+              />
             </div>
-            {showModePicker && (
-              <div>
-                <Select
-                  value={mode}
-                  onChange={(m) => {
-                    setMode(m);
-                  }}
-                  options={availableModes.map((m) => ({
-                    value: m,
-                    label: { vote: "Cast vote", feedback: "Post feedback" }[m],
-                  }))}
-                  size="tiny"
-                  variant="default-opaque"
-                  width="max-content"
-                  align="right"
-                  buttonProps={{
-                    css: (t) => css({ color: t.colors.textDimmed }),
-                  }}
-                />
-              </div>
-            )}
-          </div>
-        )}
+          )}
+        </div>
         <form
           onSubmit={(e) => {
             e.preventDefault();
@@ -901,15 +881,30 @@ export const ProposalActionForm = ({
                           ? "vote"
                           : `${proposalVoteCount} votes`
                       }`
-                    : support === 2
-                    ? "Submit comment"
-                    : "Submit feedback"}
+                    : "Submit comment"}
                 </Button>
               </>
             )}
           </div>
         </form>
-        {helpTextPosition === "bottom" && helpText}
+
+        {helpText != null && (
+          <div
+            css={(t) =>
+              css({
+                fontSize: t.text.sizes.tiny,
+                color: t.colors.textDimmed,
+                "p + p": { marginTop: "1em" },
+                em: {
+                  fontStyle: "normal",
+                  fontWeight: t.text.weights.emphasis,
+                },
+              })
+            }
+          >
+            {helpText}
+          </div>
+        )}
       </div>
     </>
   );
