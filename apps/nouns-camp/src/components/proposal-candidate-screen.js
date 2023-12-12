@@ -436,25 +436,26 @@ const ProposalCandidateScreenContent = ({
                         </div>
                       ) : (
                         <>
-                          <div
-                            css={(t) =>
-                              css({
-                                fontSize: t.text.sizes.small,
-                                color: t.colors.textDimmed,
-                                margin: "0 0 1.2rem",
-                              })
-                            }
-                          >
-                            Feedback as{" "}
-                            <AccountPreviewPopoverTrigger
-                              showAvatar
-                              accountAddress={connectedWalletAccountAddress}
-                            />
-                          </div>
                           <ProposalActionForm
                             size="small"
                             helpTextPosition="bottom"
                             mode="feedback"
+                            label={
+                              <div
+                                css={(t) =>
+                                  css({
+                                    fontSize: t.text.sizes.small,
+                                    color: t.colors.textDimmed,
+                                  })
+                                }
+                              >
+                                Feedback as{" "}
+                                <AccountPreviewPopoverTrigger
+                                  showAvatar
+                                  accountAddress={connectedWalletAccountAddress}
+                                />
+                              </div>
+                            }
                             reason={pendingFeedback}
                             setReason={setPendingFeedback}
                             support={pendingSupport}
