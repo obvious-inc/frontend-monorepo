@@ -36,7 +36,7 @@ import {
   parse as parseTransactions,
   unparse as unparseTransactions,
 } from "../utils/transactions.js";
-import { useContract } from "../contracts.js";
+import { useContract, resolveIdentifier } from "../contracts.js";
 import { useWallet } from "../hooks/wallet.js";
 import useChainId from "../hooks/chain-id.js";
 import {
@@ -102,6 +102,8 @@ const retryPromise = (fn, { retries = 3, timeout = 1000 } = {}) =>
   });
 
 export const getActionTransactions = (a, { chainId }) => {
+  const nounsTokenBuyerContract = resolveIdentifier(chainId, "token-buyer");
+
   const getParsedTransactions = () => {
     switch (a.type) {
       case "one-time-payment": {
@@ -169,6 +171,15 @@ export const getActionTransactions = (a, { chainId }) => {
             throw new Error();
         }
       }
+
+      case "token-buyer-top-up":
+        return [
+          {
+            type: "token-buyer-top-up",
+            target: nounsTokenBuyerContract,
+            value: a.value,
+          },
+        ];
 
       case "custom-transaction": {
         const {
@@ -495,8 +506,6 @@ export const ProposalEditor = ({
   scrollContainerRef,
   background,
 }) => {
-  const chainId = useChainId();
-
   const editorRef = React.useRef();
   const editor = editorRef.current;
 
@@ -696,18 +705,6 @@ export const ProposalEditor = ({
                               type: "token-buyer-top-up",
                               value: tokenBuyerTopUpValue,
                             }}
-                            transactions={parseTransactions(
-                              unparseTransactions(
-                                [
-                                  {
-                                    type: "token-buyer-top-up",
-                                    value: tokenBuyerTopUpValue,
-                                  },
-                                ],
-                                { chainId }
-                              ),
-                              { chainId }
-                            )}
                           />
                         </li>
                       )}
@@ -1128,15 +1125,9 @@ export const ProposalEditor = ({
   );
 };
 
-const ActionListItem = ({
-  action: a,
-  transactions,
-  openEditDialog,
-  disabled = false,
-}) => {
+const ActionListItem = ({ action: a, openEditDialog, disabled = false }) => {
   const chainId = useChainId();
-  const actionTransactions =
-    transactions ?? getActionTransactions(a, { chainId });
+  const actionTransactions = getActionTransactions(a, { chainId });
 
   const daoTokenBuyerContract = useContract("token-buyer");
   const daoPayerContract = useContract("payer");
