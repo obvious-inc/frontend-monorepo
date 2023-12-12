@@ -59,7 +59,7 @@ export const parse = (data, { chainId }) => {
     if (isEthTransfer)
       return target.toLowerCase() ===
         nounsTokenBuyerContract.address.toLowerCase()
-        ? { type: "token-buyer-top-up", target, value }
+        ? { type: "payer-top-up", target, value }
         : { type: "transfer", target, value };
 
     if (signature == null)
@@ -214,7 +214,7 @@ export const unparse = (transactions, { chainId }) => {
           });
         }
 
-        case "token-buyer-top-up":
+        case "payer-top-up":
           return append({
             target: nounsTokenBuyerContract.address,
             value: t.value.toString(),
@@ -323,8 +323,8 @@ export const unparse = (transactions, { chainId }) => {
 export const extractAmounts = (parsedTransactions) => {
   const ethTransfersAndPayableCalls = parsedTransactions.filter(
     (t) =>
-      // Exclude Token Buyer top ups
-      t.type !== "token-buyer-top-up" &&
+      // Exclude Payer top-ups
+      t.type !== "payer-top-up" &&
       // Exclude WETH deposits as these are handled separately
       t.type !== "weth-deposit" &&
       t.value != null

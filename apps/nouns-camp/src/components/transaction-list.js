@@ -129,7 +129,7 @@ const ListItem = ({ transaction }) => {
       case "weth-approval":
       case "weth-stream-funding":
       case "usdc-stream-funding-via-payer":
-      case "token-buyer-top-up":
+      case "payer-top-up":
       case "stream":
         return null;
 
@@ -166,7 +166,7 @@ const ListItem = ({ transaction }) => {
           </>
         );
 
-      case "token-buyer-top-up":
+      case "payer-top-up":
         return (
           <>
             This transaction refills USDC to the{" "}
@@ -237,7 +237,7 @@ const ListItem = ({ transaction }) => {
         );
 
       case "transfer":
-      case "token-buyer-top-up":
+      case "payer-top-up":
         return <UnparsedFunctionCallCodeBlock transaction={t} />;
 
       case "unparsed-function-call":
@@ -530,7 +530,7 @@ export const TransactionExplanation = ({ transaction: t }) => {
         </>
       );
 
-    case "token-buyer-top-up":
+    case "payer-top-up":
       return (
         <>
           Top up the{" "}

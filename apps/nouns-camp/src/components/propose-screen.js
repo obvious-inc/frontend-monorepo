@@ -172,10 +172,10 @@ export const getActionTransactions = (a, { chainId }) => {
         }
       }
 
-      case "token-buyer-top-up":
+      case "payer-top-up":
         return [
           {
-            type: "token-buyer-top-up",
+            type: "payer-top-up",
             target: nounsTokenBuyerContract,
             value: a.value,
           },
@@ -346,7 +346,7 @@ const ProposeScreen = () => {
 
       if (tokenBuyerTopUpValue > 0)
         transactions.push({
-          type: "token-buyer-top-up",
+          type: "payer-top-up",
           value: tokenBuyerTopUpValue,
         });
 
@@ -702,7 +702,7 @@ export const ProposalEditor = ({
                         <li>
                           <ActionListItem
                             action={{
-                              type: "token-buyer-top-up",
+                              type: "payer-top-up",
                               value: tokenBuyerTopUpValue,
                             }}
                           />
@@ -1192,7 +1192,7 @@ const ActionListItem = ({ action: a, openEditDialog, disabled = false }) => {
       case "transfer":
       case "weth-transfer":
       case "weth-approval":
-      case "token-buyer-top-up":
+      case "payer-top-up":
         return null;
 
       case "unparsed-function-call":
@@ -1220,7 +1220,7 @@ const ActionListItem = ({ action: a, openEditDialog, disabled = false }) => {
       >
         <ActionSummary action={a} />
       </div>
-      {a.type === "token-buyer-top-up" && (
+      {a.type === "payer-top-up" && (
         <div
           css={(t) =>
             css({
@@ -1624,10 +1624,10 @@ const ActionSummary = ({ action: a }) => {
         />
       );
 
-    case "token-buyer-top-up":
+    case "payer-top-up":
       return (
         <TransactionExplanation
-          transaction={{ type: "token-buyer-top-up", value: a.value }}
+          transaction={{ type: "payer-top-up", value: a.value }}
         />
       );
 
@@ -1661,7 +1661,7 @@ const TransactionCodeBlock = ({ transaction }) => {
       );
 
     case "transfer":
-    case "token-buyer-top-up":
+    case "payer-top-up":
     case "unparsed-function-call":
     case "unparsed-payable-function-call":
       return <UnparsedFunctionCallCodeBlock transaction={t} />;
