@@ -539,7 +539,9 @@ const ItemTitle = ({ item, context }) => {
             <Signal positive>{signalWord} for</Signal>
           ) : item.type === "vote" ? (
             <Signal>abstained</Signal>
-          ) : isIsolatedContext ? null : (
+          ) : isIsolatedContext ? (
+            "commented"
+          ) : (
             "commented on"
           )}
           {!isIsolatedContext && (
