@@ -306,6 +306,7 @@ const useStore = createZustandStoreHook((set) => {
           },
         }));
       }),
+    fetchNoun: (chainId, id) => fetchNounsByIds(chainId, [id]),
     fetchProposalCandidatesByAccount: (chainId, accountAddress) =>
       NounsSubgraph.fetchProposalCandidatesByAccount(
         chainId,
@@ -627,6 +628,7 @@ export const useActions = () => {
   const fetchDelegates = useStore((s) => s.fetchDelegates);
   const fetchDelegate = useStore((s) => s.fetchDelegate);
   const fetchAccount = useStore((s) => s.fetchAccount);
+  const fetchNoun = useStore((s) => s.fetchNoun);
   const fetchProposalCandidatesByAccount = useStore(
     (s) => s.fetchProposalCandidatesByAccount
   );
@@ -670,6 +672,10 @@ export const useActions = () => {
     fetchAccount: React.useCallback(
       (...args) => fetchAccount(chainId, ...args),
       [fetchAccount, chainId]
+    ),
+    fetchNoun: React.useCallback(
+      (...args) => fetchNoun(chainId, ...args),
+      [fetchNoun, chainId]
     ),
     fetchProposalCandidatesByAccount: React.useCallback(
       (...args) => fetchProposalCandidatesByAccount(chainId, ...args),

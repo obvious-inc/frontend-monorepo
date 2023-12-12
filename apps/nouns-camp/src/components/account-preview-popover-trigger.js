@@ -9,6 +9,7 @@ import InlineUserButton from "@shades/ui-web/inline-user-button";
 import { useDelegate } from "../store.js";
 import AccountAvatar from "./account-avatar.js";
 import NounAvatar from "./noun-avatar.js";
+import NounPreviewPopoverTrigger from "./noun-preview-popover-trigger.js";
 import { Link } from "react-router-dom";
 
 const AccountPreviewPopoverTrigger = React.forwardRef(
@@ -151,10 +152,28 @@ const AccountPreview = React.forwardRef(({ accountAddress }, ref) => {
             }
           >
             {delegate.nounsRepresented.map((n) => (
-              <div key={n.id}>
-                <NounAvatar id={n.id} seed={n.seed} size="3.2rem" />
-                <div data-id>{n.id}</div>
-              </div>
+              <NounPreviewPopoverTrigger
+                key={n.id}
+                nounId={n.id}
+                nounSeed={n.seed}
+                contextAccount={accountAddress}
+                popoverPlacement="top"
+              >
+                <button
+                  css={css({
+                    outline: "none",
+                    "@media(hover: hover)": {
+                      cursor: "pointer",
+                      ":hover": {
+                        "[data-id]": { textDecoration: "underline" },
+                      },
+                    },
+                  })}
+                >
+                  <NounAvatar id={n.id} seed={n.seed} size="3.2rem" />
+                  <div data-id>{n.id}</div>
+                </button>
+              </NounPreviewPopoverTrigger>
             ))}
           </div>
         )}

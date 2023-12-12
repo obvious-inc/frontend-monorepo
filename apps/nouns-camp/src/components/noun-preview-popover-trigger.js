@@ -1,9 +1,10 @@
 import React from "react";
 import { css } from "@emotion/react";
 import { useAccountDisplayName } from "@shades/common/app";
+import { useFetch } from "@shades/common/react";
 import * as Popover from "@shades/ui-web/popover";
 import Spinner from "@shades/ui-web/spinner";
-import { useNoun } from "../store.js";
+import { useActions, useNoun } from "../store.js";
 import InlineVerticalSeparator from "./inline-vertical-separator.js";
 import NounAvatar from "./noun-avatar.js";
 import FormattedDateWithTooltip from "./formatted-date-with-tooltip.js";
@@ -356,10 +357,14 @@ const NounTransferPreviewText = ({ event, contextAccount }) => {
 
 const NounPreview = React.forwardRef(({ nounId, contextAccount }, ref) => {
   const noun = useNoun(nounId);
+  const { fetchNoun } = useActions();
+
   const firstEvent = noun?.events?.[noun.events.length - 1];
 
   const auction = noun?.auction;
   const nounTimestamp = auction?.startTime ?? firstEvent?.blockTimestamp;
+
+  useFetch(() => fetchNoun(nounId), [nounId]);
 
   return (
     <div
