@@ -263,7 +263,7 @@ const FeedTabContent = React.memo(({ visible, voterAddress }) => {
 const VotingPowerCallout = ({ voterAddress }) => {
   const currentQuorum = useCurrentDynamicQuorum();
   const account = useAccount(voterAddress);
-  const { displayName: delegateDisplayName } = useAccountDisplayName(
+  const { displayName: delegateDisplayName, ensName } = useAccountDisplayName(
     account?.delegateId
   );
 
@@ -290,7 +290,7 @@ const VotingPowerCallout = ({ voterAddress }) => {
         <div>
           Delegating votes to{" "}
           <RouterLink
-            to={`/campers/${account?.delegateId}`}
+            to={`/campers/${ensName ?? account?.delegateId}`}
             css={(t) =>
               css({
                 color: "inherit",
