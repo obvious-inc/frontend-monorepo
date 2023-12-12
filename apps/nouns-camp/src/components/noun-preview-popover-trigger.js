@@ -153,10 +153,10 @@ const NounEvents = ({ nounId, contextAccount }) => {
 const NounDelegationPreviewText = ({ nounId, event, contextAccount }) => {
   const noun = useNoun(nounId);
   const transactionHash = event.id.split("_")[0];
-  const { displayName: newAccountDisplayName } = useAccountDisplayName(
-    event.newAccountId
-  );
-  const { displayName: ownerDisplayName } = useAccountDisplayName(noun.ownerId);
+  const { displayName: newAccountDisplayName, ensName: newAccountEns } =
+    useAccountDisplayName(event.newAccountId);
+  const { displayName: ownerDisplayName, ensName: ownerEns } =
+    useAccountDisplayName(noun.ownerId);
 
   const isDestinationAccount =
     contextAccount != null &&
@@ -171,8 +171,8 @@ const NounDelegationPreviewText = ({ nounId, event, contextAccount }) => {
     : newAccountDisplayName;
 
   const previousAccountAddress = isDestinationAccount
-    ? noun.ownerId
-    : event.newAccountId;
+    ? ownerEns ?? noun.ownerId
+    : newAccountEns ?? event.newAccountId;
 
   return (
     <div>
@@ -246,12 +246,12 @@ const NounTransferPreviewText = ({ event, contextAccount }) => {
     sourceAddress: contextAccount,
   });
 
-  const { displayName: newAccountDisplayName } = useAccountDisplayName(
-    event.newAccountId
-  );
-  const { displayName: previousAccountDisplayName } = useAccountDisplayName(
-    event.previousAccountId
-  );
+  const { displayName: newAccountDisplayName, ensName: newAccountEns } =
+    useAccountDisplayName(event.newAccountId);
+  const {
+    displayName: previousAccountDisplayName,
+    ensName: previousAccountEns,
+  } = useAccountDisplayName(event.previousAccountId);
 
   const isDestinationAccount =
     contextAccount != null &&
@@ -271,8 +271,8 @@ const NounTransferPreviewText = ({ event, contextAccount }) => {
     : newAccountDisplayName;
 
   const previousAccountAddress = isDestinationAccount
-    ? event.previousAccountId
-    : event.newAccountId;
+    ? previousAccountEns ?? event.previousAccountId
+    : newAccountEns ?? event.newAccountId;
 
   const transferredFromText = transferredFromAuction
     ? "Auction House"
