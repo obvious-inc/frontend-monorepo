@@ -634,81 +634,21 @@ export const ProposalEditor = ({
                       Actions
                     </h2>
                   )}
-                  {actions?.length > 0 && (
-                    <ol
-                      css={(t) =>
-                        css({
-                          padding: 0,
-                          margin: 0,
-                          paddingLeft: "2.4rem",
-                          "li + li": { marginTop: "2.4rem" },
-                          "ul[data-transaction-list]": {
-                            marginTop: "1.2rem",
-                            listStyle: "none",
-                            li: { position: "relative" },
-                            "li + li": { marginTop: "1rem" },
-                            '&[data-branch="true"]': {
-                              paddingLeft: "2.4rem",
-                              "li:before, li:after": {
-                                position: "absolute",
-                                content: '""',
-                                display: "block",
-                              },
-                              "li:not(:last-of-type):before": {
-                                left: "-1.6rem",
-                                height: "calc(100% + 1rem)",
-                                borderLeft: "0.1rem solid",
-                                borderColor: t.colors.borderLight,
-                              },
-                              "li:not(:last-of-type):after": {
-                                top: "1.8rem",
-                                left: "-1.5rem",
-                                width: "0.8rem",
-                                borderBottom: "0.1rem solid",
-                                borderColor: t.colors.borderLight,
-                              },
-                              "li:last-of-type:before": {
-                                top: 0,
-                                left: "-1.6rem",
-                                height: "1.8rem",
-                                width: "0.8rem",
-                                borderLeft: "0.1rem solid",
-                                borderBottomLeftRadius: "0.2rem",
-                                borderBottom: "0.1rem solid",
-                                borderColor: t.colors.borderLight,
-                              },
-                            },
-                          },
-                        })
-                      }
-                    >
-                      {actions
-                        .filter((a) => a.type != null)
-                        .map((a, i) => {
-                          return (
-                            <li key={`${a.type}-${i}`}>
-                              <ActionListItem
-                                action={a}
-                                openEditDialog={() => {
-                                  setSelectedActionIndex(i);
-                                }}
-                                disabled={disabled}
-                              />
-                            </li>
-                          );
-                        })}
 
-                      {tokenBuyerTopUpValue > 0 && (
-                        <li>
-                          <ActionListItem
-                            action={{
-                              type: "payer-top-up",
-                              value: tokenBuyerTopUpValue,
-                            }}
-                          />
-                        </li>
-                      )}
-                    </ol>
+                  {hasActions && (
+                    <ActionList
+                      actions={[
+                        ...actions.map((a) => ({ ...a, editable: true })),
+                        tokenBuyerTopUpValue > 0 && {
+                          type: "payer-top-up",
+                          value: tokenBuyerTopUpValue,
+                        },
+                      ].filter(Boolean)}
+                      disabled={disabled}
+                      selectIndex={(i) => {
+                        setSelectedActionIndex(i);
+                      }}
+                    />
                   )}
 
                   <div
@@ -1124,6 +1064,72 @@ export const ProposalEditor = ({
     </>
   );
 };
+
+const ActionList = ({ actions, selectIndex, disabled = false }) => (
+  <ol
+    css={(t) =>
+      css({
+        padding: 0,
+        margin: 0,
+        paddingLeft: "2.4rem",
+        "li + li": { marginTop: "2.4rem" },
+        "ul[data-transaction-list]": {
+          marginTop: "1.2rem",
+          listStyle: "none",
+          li: { position: "relative" },
+          "li + li": { marginTop: "1rem" },
+          '&[data-branch="true"]': {
+            paddingLeft: "2.4rem",
+            "li:before, li:after": {
+              position: "absolute",
+              content: '""',
+              display: "block",
+            },
+            "li:not(:last-of-type):before": {
+              left: "-1.6rem",
+              height: "calc(100% + 1rem)",
+              borderLeft: "0.1rem solid",
+              borderColor: t.colors.borderLight,
+            },
+            "li:not(:last-of-type):after": {
+              top: "1.8rem",
+              left: "-1.5rem",
+              width: "0.8rem",
+              borderBottom: "0.1rem solid",
+              borderColor: t.colors.borderLight,
+            },
+            "li:last-of-type:before": {
+              top: 0,
+              left: "-1.6rem",
+              height: "1.8rem",
+              width: "0.8rem",
+              borderLeft: "0.1rem solid",
+              borderBottomLeftRadius: "0.2rem",
+              borderBottom: "0.1rem solid",
+              borderColor: t.colors.borderLight,
+            },
+          },
+        },
+      })
+    }
+  >
+    {actions.map((a, i) => (
+      <li key={`${a.type}-${i}`}>
+        <ActionListItem
+          action={a}
+          openEditDialog={
+            a.editable
+              ? () => {
+                  selectIndex(i);
+                }
+              : null
+          }
+          disabled={disabled}
+        />
+      </li>
+    ))}
+  </ol>
+);
 
 const ActionListItem = ({ action: a, openEditDialog, disabled = false }) => {
   const chainId = useChainId();
