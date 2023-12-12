@@ -1174,9 +1174,10 @@ const ProposalCandidateScreen = () => {
           },
         ]}
         actions={
-          candidate == null ||
-          candidate.canceledTimestamp != null ||
-          connectedWalletAccountAddress == null
+          candidate == null
+            ? []
+            : candidate.canceledTimestamp != null ||
+              connectedWalletAccountAddress == null
             ? undefined
             : isProposer
             ? isBetaSession
