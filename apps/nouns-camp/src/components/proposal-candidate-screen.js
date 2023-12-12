@@ -8,7 +8,7 @@ import {
   useNavigate,
   Link as RouterLink,
 } from "react-router-dom";
-import { css } from "@emotion/react";
+import { css, useTheme } from "@emotion/react";
 import {
   array as arrayUtils,
   markdown as markdownUtils,
@@ -975,6 +975,7 @@ const ProposalCandidateEditDialog = ({
   // titleProps,
   dismiss,
 }) => {
+  const theme = useTheme();
   const navigate = useNavigate();
   const chainId = useChainId();
   const scrollContainerRef = React.useRef();
@@ -1069,6 +1070,7 @@ const ProposalCandidateEditDialog = ({
           containerHeight="calc(100vh - 6rem)"
           scrollContainerRef={scrollContainerRef}
           submitLabel="Preview update"
+          background={theme.colors.dialogBackground}
         />
       </div>
 

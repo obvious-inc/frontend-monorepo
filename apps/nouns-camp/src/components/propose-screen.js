@@ -457,6 +457,7 @@ const ProposeScreen = () => {
               : "Draft saved to browser storage"
           }
           scrollContainerRef={scrollContainerRef}
+          background={theme.colors.backgroundPrimary}
         />
       </Layout>
 
@@ -492,6 +493,7 @@ export const ProposalEditor = ({
   note,
   tokenBuyerTopUpValue,
   scrollContainerRef,
+  background,
 }) => {
   const chainId = useChainId();
 
@@ -615,7 +617,7 @@ export const ProposalEditor = ({
                           textTransform: "uppercase",
                           fontSize: t.text.sizes.small,
                           fontWeight: t.text.weights.emphasis,
-                          color: t.colors.textMuted,
+                          color: t.colors.textDimmed,
                           margin: "0 0 1.6rem",
                         })
                       }
@@ -753,14 +755,14 @@ export const ProposalEditor = ({
                       width: "auto",
                     },
                   })}
+                  style={{ "--background": background }}
                 >
                   <div
-                    css={(t) =>
-                      css({
-                        height: "1.6rem",
-                        background: `linear-gradient(180deg, transparent 0, ${t.colors.backgroundPrimary})`,
-                      })
-                    }
+                    css={css({
+                      height: "1.6rem",
+                      background:
+                        "linear-gradient(180deg, transparent 0, var(--background))",
+                    })}
                   />
                   {!(isTitleEmpty && isBodyEmpty) && (
                     <div
@@ -769,7 +771,7 @@ export const ProposalEditor = ({
                           textAlign: "right",
                           padding: "0 0 1.2rem",
                           color: t.colors.textDimmed,
-                          background: t.colors.backgroundPrimary,
+                          background: "var(--background)",
                           fontSize: t.text.sizes.small,
                           "p + p": { marginTop: "0.6rem" },
                         })
@@ -795,15 +797,13 @@ export const ProposalEditor = ({
                     </div>
                   )}
                   <div
-                    css={(t) =>
-                      css({
-                        padding: "0 0 1.6rem",
-                        display: "flex",
-                        gap: "1rem",
-                        justifyContent: "space-between",
-                        background: t.colors.backgroundPrimary,
-                      })
-                    }
+                    css={css({
+                      padding: "0 0 1.6rem",
+                      display: "flex",
+                      gap: "1rem",
+                      justifyContent: "space-between",
+                      background: "var(--background)",
+                    })}
                   >
                     <Button
                       danger
@@ -1413,10 +1413,7 @@ const FloatingToolbar = ({
               css({
                 padding: "0.3rem",
                 borderRadius: "0.3rem",
-                background:
-                  t.name === "dark"
-                    ? t.colors.backgroundSecondary
-                    : t.colors.backgroundPrimary,
+                background: t.colors.popoverBackground,
                 boxShadow: t.shadows.elevationHigh,
               })
             }
@@ -1493,10 +1490,7 @@ const FixedBottomToolbar = ({ isVisible = false, onFocus, onBlur }) => {
               pointerEvents: "auto",
               padding: "0.3rem",
               borderRadius: "0.3rem",
-              background:
-                t.name === "dark"
-                  ? t.colors.backgroundSecondary
-                  : t.colors.backgroundPrimary,
+              background: t.colors.popoverBackground,
               boxShadow: t.shadows.elevationLow,
               transition: "0.1s opacity ease-out",
             },
@@ -1513,10 +1507,7 @@ const FixedBottomToolbar = ({ isVisible = false, onFocus, onBlur }) => {
               maxWidth: "100%",
               margin: 0,
               padding: "0.8rem 1rem",
-              background:
-                t.name === "dark"
-                  ? t.colors.backgroundSecondary
-                  : t.colors.backgroundPrimary,
+              background: t.colors.popoverBackground,
               borderTop: "0.1rem solid",
               borderColor: t.colors.borderLight,
               "[data-box]": {
