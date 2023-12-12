@@ -1370,7 +1370,7 @@ export const VoteDistributionToolTipContent = ({ votes, delegates }) => {
           "[data-negative]": {
             color: t.colors.textNegative,
           },
-          "[data-neutral]": { color: t.colors.textMuted },
+          "[data-neutral]": { color: t.colors.textDimmed },
           "[data-section]": {
             display: "grid",
             gridTemplateColumns: "auto minmax(0,1fr)",
