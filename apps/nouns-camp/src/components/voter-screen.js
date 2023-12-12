@@ -309,33 +309,16 @@ const VotingPowerCallout = ({ voterAddress }) => {
         </div>
       ) : (
         <>
-          <span css={(t) => css({ fontWeight: t.text.weights.smallHeader })}>
-            {voteCount === 0 ? (
-              "No voting power"
-            ) : (
-              <>
-                {voteCount} {voteCount === 1 ? "noun" : "nouns"} represented
-              </>
-            )}
-          </span>{" "}
-          {voteCount !== 0 && (
+          {voteCount === 0 ? (
+            "No voting power"
+          ) : (
             <>
-              {votePowerQuorumPercentage == null ? (
-                <div style={{ paddingTop: "0.3rem" }}>
-                  <div
-                    css={(t) =>
-                      css({
-                        height: "1.8rem",
-                        width: "11rem",
-                        background: t.colors.backgroundModifierHover,
-                        borderRadius: "0.3rem",
-                      })
-                    }
-                  />
-                </div>
-              ) : (
-                <span>(~{votePowerQuorumPercentage}% of quorum)</span>
-              )}
+              <span
+                css={(t) => css({ fontWeight: t.text.weights.smallHeader })}
+              >
+                {voteCount} {voteCount === 1 ? "noun" : "nouns"} represented
+              </span>{" "}
+              (~{votePowerQuorumPercentage}% of quorum)
             </>
           )}
         </>
