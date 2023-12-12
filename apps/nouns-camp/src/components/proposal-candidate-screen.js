@@ -33,6 +33,7 @@ import {
   buildFeed,
   getSignals,
 } from "../utils/candidates.js";
+import { getActionTransactions } from "../utils/transactions.js";
 import useChainId from "../hooks/chain-id.js";
 import {
   useProposalCandidate,
@@ -58,7 +59,6 @@ import {
   VotingBar,
   VoteDistributionToolTipContent,
 } from "./proposal-screen.js";
-import { ProposalEditor, getActionTransactions } from "./propose-screen.js";
 import AccountPreviewPopoverTrigger from "./account-preview-popover-trigger.js";
 import AccountAvatar from "./account-avatar.js";
 import FormattedDateWithTooltip from "./formatted-date-with-tooltip.js";
@@ -68,6 +68,7 @@ import * as Tabs from "./tabs.js";
 import TransactionList from "./transaction-list.js";
 
 const MarkdownRichText = React.lazy(() => import("./markdown-rich-text.js"));
+const ProposalEditor = React.lazy(() => import("./proposal-editor.js"));
 
 const isBetaSession = new URLSearchParams(location.search).get("beta") != null;
 

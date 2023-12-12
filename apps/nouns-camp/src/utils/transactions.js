@@ -1,6 +1,18 @@
 import { formatAbiParameters } from "abitype";
-import { decodeAbiParameters, encodeAbiParameters, parseAbiItem } from "viem";
+import {
+  decodeAbiParameters,
+  encodeAbiParameters,
+  parseAbiItem,
+  parseUnits,
+  parseEther,
+} from "viem";
 import { resolveAddress, resolveIdentifier } from "../contracts.js";
+
+const decimalsByCurrency = {
+  eth: 18,
+  weth: 18,
+  usdc: 6,
+};
 
 const CREATE_STREAM_SIGNATURE =
   "createStream(address,uint256,address,uint256,uint256,uint8,address)";
@@ -359,4 +371,127 @@ export const extractAmounts = (parsedTransactions) => {
     { currency: "weth", amount: wethAmount },
     { currency: "usdc", amount: usdcAmount },
   ].filter((e) => e.amount > 0);
+};
+
+export const getActionTransactions = (a, { chainId }) => {
+  const nounsTokenBuyerContract = resolveIdentifier(chainId, "token-buyer");
+
+  const getParsedTransactions = () => {
+    switch (a.type) {
+      case "one-time-payment": {
+        switch (a.currency) {
+          case "eth":
+            return [
+              {
+                type: "transfer",
+                target: a.target,
+                value: parseEther(a.amount),
+              },
+            ];
+
+          case "usdc":
+            return [
+              {
+                type: "usdc-transfer-via-payer",
+                receiverAddress: a.target,
+                usdcAmount: parseUnits(a.amount, 6),
+              },
+            ];
+
+          default:
+            throw new Error();
+        }
+      }
+
+      case "streaming-payment": {
+        const createStreamTransaction = {
+          type: "stream",
+          receiverAddress: a.target,
+          token: a.currency.toUpperCase(),
+          tokenAmount: parseUnits(a.amount, decimalsByCurrency[a.currency]),
+          startDate: new Date(a.startTimestamp),
+          endDate: new Date(a.endTimestamp),
+          streamContractAddress: a.predictedStreamContractAddress,
+        };
+
+        switch (a.currency) {
+          case "weth":
+            return [
+              createStreamTransaction,
+              {
+                type: "weth-deposit",
+                value: parseUnits(a.amount, decimalsByCurrency.eth),
+              },
+              {
+                type: "weth-transfer",
+                receiverAddress: a.predictedStreamContractAddress,
+                wethAmount: parseUnits(a.amount, decimalsByCurrency.weth),
+              },
+            ];
+
+          case "usdc":
+            return [
+              createStreamTransaction,
+              {
+                type: "usdc-transfer-via-payer",
+                receiverAddress: a.predictedStreamContractAddress,
+                usdcAmount: parseUnits(a.amount, decimalsByCurrency.usdc),
+              },
+            ];
+
+          default:
+            throw new Error();
+        }
+      }
+
+      case "payer-top-up":
+        return [
+          {
+            type: "payer-top-up",
+            target: nounsTokenBuyerContract,
+            value: a.value,
+          },
+        ];
+
+      case "custom-transaction": {
+        const {
+          name: functionName,
+          inputs: inputTypes,
+          stateMutability,
+        } = parseAbiItem(a.contractCallFormattedTargetAbiItem);
+        const functionInputs = a.contractCallArguments.map((value, i) => ({
+          ...inputTypes[i],
+          value,
+        }));
+
+        // parseEther fails if we don’t
+        const { contractCallEthValue } = a;
+
+        if (stateMutability === "payable")
+          return [
+            {
+              type: "payable-function-call",
+              target: a.contractCallTargetAddress,
+              functionName,
+              functionInputs,
+              value: parseEther(contractCallEthValue),
+            },
+          ];
+
+        return [
+          {
+            type: "function-call",
+            target: a.contractCallTargetAddress,
+            functionName,
+            functionInputs,
+          },
+        ];
+      }
+
+      default:
+        throw new Error();
+    }
+  };
+
+  return parse(unparse(getParsedTransactions(), { chainId }), { chainId });
 };
