@@ -17,8 +17,10 @@ const wrapLink = (editor, url, { at } = {}) => {
   );
 };
 
-const createUrl = (url) => {
-  const urlWithProtocol = url.match(/^https?:\/\/*/) ? url : "http://" + url;
+const createUrl = (url, protocol = "http") => {
+  const urlWithProtocol = url.match(/^https?:\/\/*/)
+    ? url
+    : `${protocol}://` + url;
   return new URL(urlWithProtocol).href;
 };
 
@@ -60,10 +62,13 @@ const createMiddleware = ({ isUrl }) => {
       }
 
       // Make sure `url` always follow the label if the label is a valid
-      // (protocol optional) url
+      // (protocol optional) url with different domain
       if (isUrlWithOptionalProtocol(node.label)) {
         const labelUrl = createUrl(node.label);
-        if (node.url !== labelUrl) {
+        const domainEquals = urlUtils.domainEquals(node.url, labelUrl, {
+          subdomain: false,
+        });
+        if (!domainEquals && node.url !== labelUrl) {
           editor.setNodes({ url: labelUrl }, { at: path });
           return;
         }
@@ -193,16 +198,22 @@ const createMiddleware = ({ isUrl }) => {
       }
 
       const linkLabel = linkNode.children[0].text + text;
+      const getUrl = () => {
+        if (isUrlWithOptionalProtocol(linkLabel)) {
+          const labelUrl = createUrl(linkLabel);
+          const domainEquals = urlUtils.domainEquals(linkNode.url, labelUrl, {
+            subdomain: false,
+          });
+
+          // Force update the url if the new label is a valid URL with different domain
+          if (!domainEquals) return labelUrl.href;
+        }
+        return linkNode.url;
+      };
 
       editor.withoutNormalizing(() => {
         editor.setNodes(
-          {
-            // Force update the url if the new label is a valid URL
-            url: isUrlWithOptionalProtocol(linkLabel)
-              ? createUrl(linkLabel)
-              : linkNode.url,
-            label: linkLabel,
-          },
+          { url: getUrl(), label: linkLabel },
           { at: linkNodePath }
         );
         insertText(text);

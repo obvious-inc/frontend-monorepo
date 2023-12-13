@@ -165,6 +165,7 @@ const MessageEditorForm = React.memo(
             ? blocks
             : [...blocks, imageUploadsToAttachmentsBlock(imageUploads_)];
 
+        console.log(blocksWithAttachments);
         await submit(blocksWithAttachments);
       } finally {
         setPending(false);

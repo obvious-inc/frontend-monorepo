@@ -986,23 +986,32 @@ const ProposalCandidateEditDialog = ({
   const persistedTitle = candidate.latestVersion.content.title;
   const persistedDescription = candidate.latestVersion.content.description;
 
-  const parseMarkdownDescription = (markdown) => {
-    const messageBlocks = markdownUtils.toMessageBlocks(markdown);
+  const persistedMarkdownBody = persistedDescription
+    .slice(persistedTitle.length)
+    .trim();
+
+  const persistedRichTextBody = React.useMemo(() => {
+    const messageBlocks = markdownUtils.toMessageBlocks(persistedMarkdownBody);
     return messageToRichTextBlocks(messageBlocks);
-  };
+  }, [persistedMarkdownBody]);
 
   const [showSubmitDialog, setShowSubmitDialog] = React.useState(false);
 
   const [title, setTitle] = React.useState(persistedTitle);
-  const [body, setBody] = React.useState(() => {
-    const markdownBody = persistedDescription
-      .slice(persistedTitle.length)
-      .trim();
-    return parseMarkdownDescription(markdownBody);
-  });
+  const [body, setBody] = React.useState(persistedRichTextBody);
   const [actions, setActions] = React.useState([]);
 
   const [hasPendingSubmit, setPendingSubmit] = React.useState(false);
+
+  const deferredBody = React.useDeferredValue(body);
+
+  const hasChanges = React.useMemo(() => {
+    return !messageUtils.isEqual(
+      richTextToMessageBlocks(deferredBody),
+      richTextToMessageBlocks(persistedRichTextBody),
+      { filterEmpty: true }
+    );
+  }, [deferredBody, persistedRichTextBody]);
 
   const updateProposalCandidate = useUpdateProposalCandidate(candidate.slug);
   const cancelProposalCandidate = useCancelProposalCandidate(candidate.slug);
@@ -1032,11 +1041,9 @@ const ProposalCandidateEditDialog = ({
   };
 
   React.useEffect(() => {
-    const persistedBody = persistedDescription
-      .slice(persistedTitle.length)
-      .trim();
-    setBody(parseMarkdownDescription(persistedBody));
-  }, [persistedTitle, persistedDescription]);
+    const messageBlocks = markdownUtils.toMessageBlocks(persistedMarkdownBody);
+    setBody(messageToRichTextBlocks(messageBlocks));
+  }, [persistedTitle, persistedMarkdownBody]);
 
   return (
     <>
@@ -1071,7 +1078,9 @@ const ProposalCandidateEditDialog = ({
           containerHeight="calc(100vh - 6rem)"
           scrollContainerRef={scrollContainerRef}
           submitLabel="Preview update"
+          submitDisabled={!hasChanges}
           background={theme.colors.dialogBackground}
+
         />
       </div>
 
@@ -1125,7 +1134,7 @@ const ProposalCandidateScreen = () => {
   const isProposer =
     connectedWalletAccountAddress != null &&
     connectedWalletAccountAddress.toLowerCase() ===
-      candidate?.proposerId.toLowerCase();
+    candidate?.proposerId.toLowerCase();
 
   useProposalCandidateFetch(candidateId, {
     onError: (e) => {
@@ -1179,18 +1188,18 @@ const ProposalCandidateScreen = () => {
             ? []
             : candidate.canceledTimestamp != null ||
               connectedWalletAccountAddress == null
-            ? undefined
-            : isProposer
-            ? isBetaSession
-              ? [
-                  { onSelect: toggleEditDialog, label: "Manage candidate" },
-                  isProposalThresholdMet && {
-                    onSelect: toggleProposeDialog,
-                    label: "Put on chain",
-                  },
-                ].filter(Boolean)
-              : undefined
-            : undefined
+              ? undefined
+              : isProposer
+                ? isBetaSession
+                  ? [
+                    { onSelect: toggleEditDialog, label: "Manage candidate" },
+                    isProposalThresholdMet && {
+                      onSelect: toggleProposeDialog,
+                      label: "Put on chain",
+                    },
+                  ].filter(Boolean)
+                  : undefined
+                : undefined
         }
       >
         {candidate == null ? (
@@ -1394,8 +1403,8 @@ const MetaTags = ({ candidateId }) => {
         description == null
           ? null
           : description.length > 600
-          ? `${description.slice(0, 600)}...`
-          : description
+            ? `${description.slice(0, 600)}...`
+            : description
       }
       canonicalPathname={`/candidates/${candidateId}`}
     />

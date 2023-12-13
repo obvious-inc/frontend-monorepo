@@ -50,7 +50,9 @@ export const every = (predicate, nodes) => {
   return true;
 };
 
-const isNodeEmpty = (node, options = {}) => {
+export const isEmpty = (node, options = {}) => {
+  if (Array.isArray(node)) return node.every((n) => isEmpty(n, options));
+
   const { trim = false } = options;
 
   if (node.text != null)
@@ -69,14 +71,31 @@ const isNodeEmpty = (node, options = {}) => {
       return node.code.trim() === "";
 
     default:
-      return node.children.every((n) => isNodeEmpty(n, options));
+      return node.children.every((n) => isEmpty(n, options));
   }
 };
 
-export const isEmpty = (nodes, options) =>
-  nodes.every((n) => isNodeEmpty(n, options));
+export const isEqual = (ns1, ns2, options = {}) => {
+  if (ns1 == null || ns2 == null) return ns1 == ns2;
 
-const isNodeEqual = (n1, n2) => {
+  const { filterEmpty = false } = options;
+
+  if (Array.isArray(ns1)) {
+    if (!Array.isArray(ns2)) return false;
+
+    const [ns1_, ns2_] = [ns1, ns2].map((ns) =>
+      filterEmpty ? ns.filter((n) => !isEmpty(n)) : ns
+    );
+
+    if (ns1_.length !== ns2_.length) return false;
+    return ns1_.every((n1, i) => {
+      const n2 = ns2_[i];
+      return isEqual(n1, n2, options);
+    });
+  }
+
+  const [n1, n2] = [ns1, ns2];
+
   if (n1.type !== n2.type) return false;
 
   // Text nodes
@@ -86,25 +105,13 @@ const isNodeEqual = (n1, n2) => {
     );
 
   // The rest is for element nodes
-
-  const baseEqual = () => {
-    const [cs1, cs2] = [n1, n2].map((n) =>
-      n.children.filter((n) => !isNodeEmpty(n))
-    );
-
-    if (cs1.length !== cs2.length) return false;
-
-    return cs1.every((node1, i) => {
-      const node2 = cs2[i];
-      return isNodeEqual(node1, node2);
-    });
-  };
-
-  const propertiesEqual = (ps) => ps.every((p) => n1[p] === n2[p]);
+  const childrenEqual = () => isEqual(n1.children, n2.children, options);
+  const propertiesEqual = (ps) =>
+    ps.every((p) => (n1[p] ?? null) === (n2[p] ?? null));
 
   switch (n1.type) {
     case "link":
-      return propertiesEqual(["url", "label"]) && baseEqual();
+      return propertiesEqual(["url", "label"]);
 
     case "user":
       return propertiesEqual(["ref"]);
@@ -123,12 +130,9 @@ const isNodeEqual = (n1, n2) => {
       return n1.type === n2.type;
 
     default:
-      return baseEqual();
+      return childrenEqual();
   }
 };
-
-export const isEqual = (ns1, ns2) =>
-  isNodeEqual({ type: "root", children: ns1 }, { type: "root", children: ns2 });
 
 export const getMentions = (nodes) => {
   const mentions = [];

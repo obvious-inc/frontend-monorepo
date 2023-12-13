@@ -10,3 +10,17 @@ export const validate = (string) => {
     return false;
   }
 };
+
+export const domainEquals = (url1, url2, { subdomain = true } = {}) => {
+  try {
+    const [d1, d2] = [url1, url2].map((string) => {
+      const url = new URL(string);
+      return subdomain
+        ? url.hostname
+        : url.hostname.split(".").slice(-2).join(".");
+    });
+    return d1 === d2;
+  } catch (_) {
+    return false;
+  }
+};

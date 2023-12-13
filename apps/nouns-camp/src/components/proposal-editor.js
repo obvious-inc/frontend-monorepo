@@ -86,6 +86,7 @@ const ProposalEditor = ({
   onSubmit,
   onDelete,
   disabled,
+  submitDisabled,
   hasPendingSubmit,
   containerHeight,
   submitLabel,
@@ -149,7 +150,7 @@ const ProposalEditor = ({
 
   const hasRequiredInput = !isTitleEmpty && !isBodyEmpty && actions.length > 0;
 
-  const enableSubmit = hasRequiredInput && !disabled;
+  const enableSubmit = hasRequiredInput && !disabled && !submitDisabled;
 
   const selectedAction =
     selectedActionIndex >= 0 ? actions[selectedActionIndex] : null;

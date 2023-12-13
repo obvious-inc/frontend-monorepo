@@ -62,16 +62,42 @@ export const isNodeEmpty = (el, options = {}) => {
 // TODO: move to element specific plugins
 export const toMessageBlocks = (nodes) =>
   nodes.map((n) => {
+    if (n.type == null) return n;
+
     if (n.type === "code-block")
       return { type: "code-block", code: n.children[0].text };
     if (n.type === "table") return { type: "table", children: n.content };
-    if (n.type === "link") return { type: "link", url: n.url, label: n.label };
+    if (n.type === "link")
+      return {
+        type: "link",
+        url: n.url,
+        label: n.label ?? n.children[0]?.text,
+      };
     if (n.type === "emoji") return { type: "emoji", emoji: n.emoji };
     if (n.type === "user") return { type: "user", ref: n.ref };
     if (n.type === "channel-link") return { type: "channel-link", ref: n.ref };
     if (n.type === "horizontal-divider") return { type: n.type };
+
+    if (n.type.startsWith("heading-")) {
+      // Merge content into a single child
+      let text = "";
+      for (const node of n.children) {
+        text += node.text;
+      }
+      return { type: n.type, children: [{ text }] };
+    }
+
     if (n.children == null) return n;
-    return { ...n, children: toMessageBlocks(n.children) };
+
+    const children = toMessageBlocks(n.children);
+
+    return {
+      ...n,
+      children:
+        n.children.length === 1
+          ? children
+          : children.filter((n) => !isNodeEmpty(n)),
+    };
   });
 
 // TODO: move to element specific plugins
