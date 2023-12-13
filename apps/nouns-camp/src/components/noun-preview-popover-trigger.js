@@ -163,7 +163,9 @@ const NounDelegationPreviewText = ({ nounId, event, contextAccount }) => {
     contextAccount != null &&
     event.newAccountId.toLowerCase() === contextAccount.toLowerCase();
 
-  const destinationText = isDestinationAccount ? "from" : "to";
+  const delegatingText = isDestinationAccount
+    ? "Delegated from"
+    : "Delegating to";
 
   if (event.newAccountId == noun?.ownerId) return null;
 
@@ -187,7 +189,7 @@ const NounDelegationPreviewText = ({ nounId, event, contextAccount }) => {
           })
         }
       >
-        Delegated {destinationText}{" "}
+        {delegatingText}{" "}
       </span>
       <span>
         <Link
