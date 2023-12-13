@@ -159,7 +159,8 @@ export const useWallet = () => {
   const chainId = useChainId();
   const connectedChainId = useConnectedChainId();
 
-  const isUnsupportedChain = chainId !== connectedChainId;
+  const isUnsupportedChain =
+    connectedChainId != null && chainId !== connectedChainId;
 
   const hasReadyConnector = connectors.some((c) => c.ready);
 
