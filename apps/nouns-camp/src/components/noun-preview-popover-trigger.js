@@ -4,6 +4,7 @@ import { useAccountDisplayName } from "@shades/common/app";
 import { useFetch } from "@shades/common/react";
 import * as Popover from "@shades/ui-web/popover";
 import Spinner from "@shades/ui-web/spinner";
+import InlineButton from "@shades/ui-web/inline-button";
 import { useActions, useNoun } from "../store.js";
 import InlineVerticalSeparator from "./inline-vertical-separator.js";
 import NounAvatar from "./noun-avatar.js";
@@ -53,6 +54,7 @@ const NounPreviewPopoverTrigger = React.forwardRef(
     {
       nounId,
       contextAccount,
+      inline = false,
       popoverPlacement = "bottom",
       children,
       ...props
@@ -61,6 +63,42 @@ const NounPreviewPopoverTrigger = React.forwardRef(
   ) => {
     const renderTrigger = () => {
       if (children != null) return children;
+
+      if (inline)
+        return (
+          <button
+            ref={triggerRef}
+            css={css({
+              outline: "none",
+              "@media(hover: hover)": {
+                cursor: "pointer",
+                ":hover": {
+                  "[data-noun-id]": { textDecoration: "underline" },
+                },
+              },
+            })}
+          >
+            <NounAvatar
+              id={nounId}
+              size="1.2em"
+              signatureFallback={false}
+              css={css({
+                display: "inline-block",
+                marginRight: "0.3em",
+                verticalAlign: "sub",
+              })}
+            />
+            <InlineButton
+              data-noun-id
+              component="div"
+              variant="link"
+              css={css({ userSelect: "text" })}
+              {...props}
+            >
+              Noun {nounId}
+            </InlineButton>
+          </button>
+        );
 
       return (
         <button
@@ -291,7 +329,22 @@ const NounTransferPreviewText = ({ event, contextAccount }) => {
   const actionText = amount > 0 ? "Bought" : "Transferred";
 
   return (
-    <div>
+    <div
+      css={(t) =>
+        css({
+          a: {
+            color: t.colors.textDimmed,
+            fontWeight: t.text.weights.emphasis,
+            textDecoration: "none",
+            "@media(hover: hover)": {
+              ":hover": {
+                textDecoration: "underline",
+              },
+            },
+          },
+        })
+      }
+    >
       <span
         css={(t) =>
           css({
@@ -303,21 +356,7 @@ const NounTransferPreviewText = ({ event, contextAccount }) => {
       </span>{" "}
       from{" "}
       <span>
-        <Link
-          to={`/campers/${previousAccountAddress}`}
-          css={(t) =>
-            css({
-              color: "inherit",
-              fontWeight: t.text.weights.emphasis,
-              textDecoration: "none",
-              "@media(hover: hover)": {
-                ":hover": {
-                  textDecoration: "underline",
-                },
-              },
-            })
-          }
-        >
+        <Link to={`/campers/${previousAccountAddress}`}>
           {transferredFromText}
         </Link>
       </span>{" "}
@@ -327,15 +366,6 @@ const NounTransferPreviewText = ({ event, contextAccount }) => {
           href={`https://etherscan.io/tx/${transactionHash}`}
           rel="noreferrer"
           target="_blank"
-          css={css({
-            color: "inherit",
-            textDecoration: "none",
-            "@media(hover: hover)": {
-              ":hover": {
-                textDecoration: "underline",
-              },
-            },
-          })}
         >
           <FormattedDateWithTooltip
             disableRelative
@@ -407,11 +437,13 @@ const NounPreview = React.forwardRef(({ nounId, contextAccount }, ref) => {
             }
           >
             <div css={css({ position: "relative", zIndex: 1 })}>
-              <NounAvatar id={nounId} seed={noun.seed} size="5rem" />
-              <DelegationStatusDot
-                nounId={nounId}
-                contextAccount={contextAccount}
-              />
+              <NounAvatar id={nounId} size="5rem" />
+              {contextAccount != null && (
+                <DelegationStatusDot
+                  nounId={nounId}
+                  contextAccount={contextAccount}
+                />
+              )}
             </div>
 
             <div
@@ -468,7 +500,10 @@ const NounPreview = React.forwardRef(({ nounId, contextAccount }, ref) => {
               </div>
             </div>
           </div>
-          <NounEvents nounId={nounId} contextAccount={contextAccount} />
+
+          {contextAccount != null && (
+            <NounEvents nounId={nounId} contextAccount={contextAccount} />
+          )}
         </>
       )}
     </div>

@@ -10,6 +10,7 @@ import { CaretDown as CaretDownIcon } from "@shades/ui-web/icons";
 import * as Tooltip from "@shades/ui-web/tooltip";
 import useDecodedFunctionData from "../hooks/decoded-function-data.js";
 import FormattedDateWithTooltip from "./formatted-date-with-tooltip.js";
+import NounPreviewPopoverTrigger from "./noun-preview-popover-trigger.js";
 import { useContract } from "../contracts.js";
 
 const formatTuple = (obj) => {
@@ -131,6 +132,8 @@ const ListItem = ({ transaction }) => {
       case "usdc-stream-funding-via-payer":
       case "payer-top-up":
       case "stream":
+      case "treasury-noun-transfer":
+      case "escrow-noun-transfer":
         return null;
 
       default:
@@ -211,6 +214,8 @@ const ListItem = ({ transaction }) => {
       case "weth-deposit":
       case "weth-approval":
       case "stream":
+      case "treasury-noun-transfer":
+      case "escrow-noun-transfer":
         return null;
 
       default:
@@ -227,6 +232,8 @@ const ListItem = ({ transaction }) => {
       case "usdc-stream-funding-via-payer":
       case "weth-stream-funding":
       case "usdc-transfer-via-payer":
+      case "treasury-noun-transfer":
+      case "escrow-noun-transfer":
         return (
           <FunctionCallCodeBlock
             target={t.target}
@@ -610,6 +617,50 @@ export const TransactionExplanation = ({ transaction: t }) => {
                 {t.receiverAddress}
               </Tooltip.Content>
             </Tooltip.Root>
+          </em>
+        </>
+      );
+
+    case "treasury-noun-transfer":
+      return (
+        <>
+          Transfer{" "}
+          <NounPreviewPopoverTrigger
+            inline
+            nounId={t.nounId}
+            popoverPlacement="top"
+            css={(t) => css({ color: t.colors.textDimmed })}
+          />{" "}
+          to{" "}
+          <em>
+            <AddressDisplayNameWithTooltip address={t.receiverAddress} />
+          </em>
+        </>
+      );
+
+    case "escrow-noun-transfer":
+      return (
+        <>
+          Transfer{" "}
+          {t.nounIds.map((nounId, i, all) => {
+            const isFirst = i === 0;
+            const isLast = i === all.length - 1;
+            return (
+              <React.Fragment key={nounId}>
+                {!isFirst && <>, </>}
+                {!isFirst && isLast && <>and </>}
+                <NounPreviewPopoverTrigger
+                  inline
+                  nounId={nounId}
+                  popoverPlacement="top"
+                  css={(t) => css({ color: t.colors.textDimmed })}
+                />
+              </React.Fragment>
+            );
+          })}{" "}
+          to{" "}
+          <em>
+            <AddressDisplayNameWithTooltip address={t.receiverAddress} />
           </em>
         </>
       );

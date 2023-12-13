@@ -1104,7 +1104,7 @@ const RequestedAmounts = ({ amounts }) => (
     }
   >
     Requesting{" "}
-    {amounts.map(({ currency, amount }, i) => {
+    {amounts.map(({ currency, amount, tokens }, i) => {
       const formattedAmount = () => {
         switch (currency) {
           case "eth":
@@ -1121,6 +1121,17 @@ const RequestedAmounts = ({ amounts }) => (
           case "usdc":
             return (
               <>{parseFloat(formatUnits(amount, 6)).toLocaleString()} USDC</>
+            );
+
+          case "nouns":
+            return (
+              <>
+                {tokens.map((nounId, i) => (
+                  <React.Fragment key={nounId}>
+                    {i > 0 && <>+ </>}Noun {nounId}
+                  </React.Fragment>
+                ))}
+              </>
             );
 
           default:

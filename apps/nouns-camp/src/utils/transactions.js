@@ -6,6 +6,7 @@ import {
   parseUnits,
   parseEther,
 } from "viem";
+import { string as stringUtils } from "@shades/common/utils";
 import { resolveAddress, resolveIdentifier } from "../contracts.js";
 
 const decimalsByCurrency = {
@@ -44,8 +45,11 @@ const decodeCalldataWithSignature = ({ signature, calldata }) => {
 };
 
 export const parse = (data, { chainId }) => {
+  const nounsGovernanceContract = resolveIdentifier(chainId, "dao");
   const nounsPayerContract = resolveIdentifier(chainId, "payer");
   const nounsTokenBuyerContract = resolveIdentifier(chainId, "token-buyer");
+  const nounsExecutorContract = resolveIdentifier(chainId, "executor");
+  const nounsTokenContract = resolveIdentifier(chainId, "token");
   const wethTokenContract = resolveIdentifier(chainId, "weth-token");
 
   const transactions = data.targets.map((target, i) => ({
@@ -177,6 +181,37 @@ export const parse = (data, { chainId }) => {
         functionInputs,
         receiverAddress: functionInputs[0].value,
         usdcAmount: BigInt(functionInputs[1].value),
+      };
+    }
+
+    if (
+      target.toLowerCase() === nounsTokenContract.address.toLowerCase() &&
+      stringUtils.removeWhitespace(signature) ===
+        "safeTransferFrom(address,address,uint256)" &&
+      functionInputs[0].value.toLowerCase() ===
+        nounsExecutorContract.address.toLowerCase()
+    )
+      return {
+        type: "treasury-noun-transfer",
+        nounId: parseInt(functionInputs[2].value),
+        receiverAddress: functionInputs[1].value,
+        target,
+        functionName,
+        functionInputs,
+      };
+
+    if (
+      target.toLowerCase() === nounsGovernanceContract.address.toLowerCase() &&
+      stringUtils.removeWhitespace(signature) ===
+        "withdrawDAONounsFromEscrowIncreasingTotalSupply(uint256[],address)"
+    ) {
+      return {
+        type: "escrow-noun-transfer",
+        nounIds: functionInputs[0].value.map((id) => parseInt(id)),
+        receiverAddress: functionInputs[1].value,
+        target,
+        functionName,
+        functionInputs,
       };
     }
 
@@ -352,6 +387,12 @@ export const extractAmounts = (parsedTransactions) => {
       t.type === "usdc-transfer-via-payer" ||
       t.type === "usdc-stream-funding-via-payer"
   );
+  const treasuryNounTransferNounIds = parsedTransactions
+    .filter((t) => t.type === "treasury-noun-transfer")
+    .map((t) => t.nounId);
+  const escrowNounTransferNounIds = parsedTransactions
+    .filter((t) => t.type === "escrow-noun-transfer")
+    .flatMap((t) => t.nounIds);
 
   const ethAmount = ethTransfersAndPayableCalls.reduce(
     (sum, t) => sum + t.value,
@@ -370,7 +411,11 @@ export const extractAmounts = (parsedTransactions) => {
     { currency: "eth", amount: ethAmount },
     { currency: "weth", amount: wethAmount },
     { currency: "usdc", amount: usdcAmount },
-  ].filter((e) => e.amount > 0);
+    {
+      currency: "nouns",
+      tokens: [...treasuryNounTransferNounIds, ...escrowNounTransferNounIds],
+    },
+  ].filter((e) => e.amount > 0 || e.tokens?.length > 0);
 };
 
 export const getActionTransactions = (a, { chainId }) => {

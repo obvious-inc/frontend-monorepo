@@ -1080,7 +1080,6 @@ const ProposalCandidateEditDialog = ({
           submitLabel="Preview update"
           submitDisabled={!hasChanges}
           background={theme.colors.dialogBackground}
-
         />
       </div>
 
@@ -1134,7 +1133,7 @@ const ProposalCandidateScreen = () => {
   const isProposer =
     connectedWalletAccountAddress != null &&
     connectedWalletAccountAddress.toLowerCase() ===
-    candidate?.proposerId.toLowerCase();
+      candidate?.proposerId.toLowerCase();
 
   useProposalCandidateFetch(candidateId, {
     onError: (e) => {
@@ -1188,18 +1187,18 @@ const ProposalCandidateScreen = () => {
             ? []
             : candidate.canceledTimestamp != null ||
               connectedWalletAccountAddress == null
-              ? undefined
-              : isProposer
-                ? isBetaSession
-                  ? [
-                    { onSelect: toggleEditDialog, label: "Manage candidate" },
-                    isProposalThresholdMet && {
-                      onSelect: toggleProposeDialog,
-                      label: "Put on chain",
-                    },
-                  ].filter(Boolean)
-                  : undefined
-                : undefined
+            ? undefined
+            : isProposer
+            ? isBetaSession
+              ? [
+                  { onSelect: toggleEditDialog, label: "Manage candidate" },
+                  isProposalThresholdMet && {
+                    onSelect: toggleProposeDialog,
+                    label: "Put on chain",
+                  },
+                ].filter(Boolean)
+              : undefined
+            : undefined
         }
       >
         {candidate == null ? (
@@ -1403,8 +1402,8 @@ const MetaTags = ({ candidateId }) => {
         description == null
           ? null
           : description.length > 600
-            ? `${description.slice(0, 600)}...`
-            : description
+          ? `${description.slice(0, 600)}...`
+          : description
       }
       canonicalPathname={`/candidates/${candidateId}`}
     />

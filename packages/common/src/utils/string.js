@@ -32,3 +32,5 @@ export const getWordMatchCount = (string, query, { exact = false } = {}) => {
 
   return matchingWords.length;
 };
+
+export const removeWhitespace = (string) => string.replace(/\s+/g, "");
