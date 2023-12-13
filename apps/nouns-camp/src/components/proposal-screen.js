@@ -1124,14 +1124,10 @@ const RequestedAmounts = ({ amounts }) => (
             );
 
           case "nouns":
-            return (
-              <>
-                {tokens.map((nounId, i) => (
-                  <React.Fragment key={nounId}>
-                    {i > 0 && <>, </>}Noun {nounId}
-                  </React.Fragment>
-                ))}
-              </>
+            return tokens.length === 1 ? (
+              <>Noun {tokens[0]}</>
+            ) : (
+              <>{tokens.length} nouns</>
             );
 
           default:
