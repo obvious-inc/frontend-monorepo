@@ -1128,7 +1128,7 @@ const RequestedAmounts = ({ amounts }) => (
               <>
                 {tokens.map((nounId, i) => (
                   <React.Fragment key={nounId}>
-                    {i > 0 && <>+ </>}Noun {nounId}
+                    {i > 0 && <>, </>}Noun {nounId}
                   </React.Fragment>
                 ))}
               </>
