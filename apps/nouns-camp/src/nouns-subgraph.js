@@ -786,6 +786,15 @@ const subgraphFetch = async ({
     .then((body) => body.data);
 };
 
+const parseMarkdownDescription = (string) => {
+  const [firstLine, ...restLines] = string.split("\n");
+  const startIndex = [...firstLine].findIndex((c) => c !== "#");
+  const hasTitle = startIndex > 0;
+  const title = hasTitle ? firstLine.slice(startIndex).trim() : null;
+  const body = hasTitle ? restLines.join("\n").trim() : string;
+  return { title, body };
+};
+
 const parseFeedbackPost = (post) => ({
   id: post.id,
   reason: post.reason,
@@ -860,10 +869,9 @@ const parseProposal = (data, { chainId }) => {
   }
 
   if (data.description != null) {
-    const firstLine = data.description.split("\n")[0];
-    const startIndex = [...firstLine].findIndex((c) => c !== "#");
-    parsedData.title =
-      startIndex === 0 ? null : firstLine.slice(startIndex).trim();
+    const { title, body } = parseMarkdownDescription(data.description);
+    parsedData.title = title;
+    parsedData.body = body;
   }
 
   if (data.feedbackPosts != null)
@@ -917,6 +925,15 @@ const parseProposalCandidate = (data, { chainId }) => {
     if (data[prop] != null) {
       parsedData[prop] = parseTimestamp(data[prop]);
     }
+  }
+
+  if (data.latestVersion.content.description != null) {
+    const { title, body } = parseMarkdownDescription(
+      data.latestVersion.content.description
+    );
+
+    parsedData.latestVersion.content.title = title;
+    parsedData.latestVersion.content.body = body;
   }
 
   if (data.latestVersion.content.matchingProposalIds != null)

@@ -157,11 +157,6 @@ const ProposalCandidateScreenContent = ({
     ? 0
     : proposalThreshold + 1 - candidateVotingPower;
 
-  const { description } = candidate.latestVersion.content;
-  const firstBreakIndex = description.search(/\n/);
-  const descriptionWithoutTitle =
-    firstBreakIndex === -1 ? description : description.slice(firstBreakIndex);
-
   const signals = getSignals({ candidate, proposerDelegate });
 
   const feedbackVoteCountExcludingAbstained =
@@ -386,7 +381,7 @@ const ProposalCandidateScreenContent = ({
           />
 
           {isDesktopLayout ? (
-            <ProposalBody markdownText={descriptionWithoutTitle} />
+            <ProposalBody markdownText={candidate.latestVersion.content.body} />
           ) : (
             <>
               {feedbackVoteCountExcludingAbstained > 0 && (
@@ -423,7 +418,9 @@ const ProposalCandidateScreenContent = ({
               >
                 <Tabs.Item key="description" title="Description">
                   <div style={{ padding: "3.2rem 0 6.4rem" }}>
-                    <ProposalBody markdownText={descriptionWithoutTitle} />
+                    <ProposalBody
+                      markdownText={candidate.latestVersion.content.body}
+                    />
                     <div style={{ marginTop: "9.6rem" }}>
                       {connectedWalletAccountAddress == null ? (
                         <div style={{ textAlign: "center" }}>
@@ -984,11 +981,7 @@ const ProposalCandidateEditDialog = ({
   const candidate = useProposalCandidate(candidateId);
 
   const persistedTitle = candidate.latestVersion.content.title;
-  const persistedDescription = candidate.latestVersion.content.description;
-
-  const persistedMarkdownBody = persistedDescription
-    .slice(persistedTitle.length)
-    .trim();
+  const persistedMarkdownBody = candidate.latestVersion.content.body;
 
   const persistedRichTextBody = React.useMemo(() => {
     const messageBlocks = markdownUtils.toMessageBlocks(persistedMarkdownBody);
@@ -1393,17 +1386,17 @@ const MetaTags = ({ candidateId }) => {
 
   if (candidate?.latestVersion == null) return null;
 
-  const description = candidate.latestVersion.content.description?.trim();
+  const { body } = candidate.latestVersion.content;
 
   return (
     <MetaTags_
       title={candidate.latestVersion.content.title}
       description={
-        description == null
+        body == null
           ? null
-          : description.length > 600
-          ? `${description.slice(0, 600)}...`
-          : description
+          : body.length > 600
+          ? `${body.slice(0, 600)}...`
+          : body
       }
       canonicalPathname={`/candidates/${candidateId}`}
     />

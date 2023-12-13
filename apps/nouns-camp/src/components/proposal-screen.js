@@ -451,16 +451,7 @@ const ProposalMainSection = ({ proposalId, scrollContainerRef }) => {
               transactions={proposal.transactions}
             />
             {isDesktopLayout ? (
-              <ProposalBody
-                // Slice off the title
-                markdownText={
-                  proposal.title === null
-                    ? proposal.description
-                    : proposal.description.slice(
-                        proposal.description.search(/\n/)
-                      )
-                }
-              />
+              <ProposalBody markdownText={proposal.body} />
             ) : (
               <>
                 {hasVotingStarted && (
@@ -497,12 +488,7 @@ const ProposalMainSection = ({ proposalId, scrollContainerRef }) => {
                 >
                   <Tabs.Item key="description" title="Description">
                     <div style={{ padding: "3.2rem 0 6.4rem" }}>
-                      <ProposalBody
-                        // Slice off the title
-                        markdownText={proposal.description.slice(
-                          proposal.description.search(/\n/)
-                        )}
-                      />
+                      <ProposalBody markdownText={proposal.body} />
                       <div style={{ marginTop: "9.6rem" }}>
                         {connectedWalletAccountAddress == null ? (
                           <div style={{ textAlign: "center" }}>
@@ -1612,18 +1598,12 @@ const MetaTags = ({ proposalId }) => {
       ? `Prop ${proposalId}`
       : `${proposal.title} (Prop ${proposalId})`;
 
-  const description = proposal.description
-    .slice(proposal.description.search(/\n/))
-    .trim();
+  const { body } = proposal;
 
   return (
     <MetaTags_
       title={title}
-      description={
-        description.length > 600
-          ? `${description.slice(0, 600)}...`
-          : description
-      }
+      description={body.length > 600 ? `${body.slice(0, 600)}...` : body}
       canonicalPathname={`/proposals/${proposalId}`}
     />
   );
