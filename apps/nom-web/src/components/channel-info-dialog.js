@@ -707,7 +707,7 @@ const PropertyButton = ({ name, value, ...props }) => (
         "@media (min-width: 600px)": { padding: "1.5rem 2rem" },
         "@media (hover: hover)": {
           cursor: "pointer",
-          ":hover": { background: t.colors.backgroundModifierHoverStrong },
+          ":hover": { background: t.colors.backgroundModifierStrong },
         },
       })
     }

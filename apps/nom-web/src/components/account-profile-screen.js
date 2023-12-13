@@ -767,7 +767,7 @@ const TransactionsTabPane = ({ accountAddress }) => {
               "@media(hover: hover)": {
                 ":hover": {
                   textDecoration: "underline",
-                  background: t.colors.backgroundModifierHoverStrong,
+                  background: t.colors.backgroundModifierStrong,
                 },
               },
             },
@@ -956,7 +956,7 @@ const AccountLink = ({ contract, address }) => {
             size="2rem"
             css={(t) =>
               css({
-                background: t.colors.backgroundModifierHoverStrong,
+                background: t.colors.backgroundModifierStrong,
                 marginRight: "0.5rem",
               })
             }

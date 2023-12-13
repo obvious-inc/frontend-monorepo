@@ -25,9 +25,9 @@ const backgroundDark = "hsl(0 0% 10%)";
 const backgroundLight = "hsl(0 0% 15%)";
 const backgroundLighter = "hsl(0 0% 17%)";
 
-const backgroundModifierLighter = "hsl(0 0% 100% / 1.5%)";
-const backgroundModifierHover = "hsl(0 0% 100% / 5.5%)";
-const backgroundModifierHoverStrong = "hsl(0 0% 100% / 8%)";
+const backgroundModifierLight = "hsl(0 0% 100% / 1.5%)";
+const backgroundModifierNormal = "hsl(0 0% 100% / 5.5%)";
+const backgroundModifierStrong = "hsl(0 0% 100% / 8%)";
 
 const normalTextSize = "1.4rem";
 const largeText = "1.6rem";
@@ -76,7 +76,7 @@ export default {
   avatars: {
     borderRadius: "50%",
     size: "1.8rem",
-    background: backgroundModifierHover,
+    background: backgroundModifierNormal,
   },
   mainHeader: {
     height: "4.5rem",
@@ -122,7 +122,7 @@ export default {
     textMuted,
     textMutedModifierHover,
     textMutedAlpha,
-    textHeader: "white",
+    textHeader: "hsl(0 0% 94%)",
     textAccent: "white",
     textHeaderSecondary: "hsl(0 0% 72%)",
     textPrimary: primaryTintLighter,
@@ -145,14 +145,14 @@ export default {
     buttonHover: backgroundLighter,
     toolbarBackground: backgroundLight,
     inputBackground: backgroundLight,
-    inputBackgroundContrast: backgroundModifierHover,
     inputPlaceholder: "hsl(0 0% 100% / 40%)",
-    backgroundModifierHover,
-    backgroundModifierHoverStrong,
+    backgroundModifierLight,
+    backgroundModifierNormal,
+    backgroundModifierStrong,
+    backgroundModifierHover: backgroundModifierNormal, // deprecated
     backgroundYellow: "rgb(202, 152, 73)",
     interactiveNormal: "#b9bbbe",
     interactiveHover: "#dcddde",
-    messageBackgroundModifierFocus: backgroundModifierLighter,
     messageBackgroundModifierHighlight: createPrimary({
       lightness: 0.4,
       opacity: 0.15,

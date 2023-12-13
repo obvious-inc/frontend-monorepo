@@ -770,7 +770,7 @@ export const SectionedList = ({
     <ul
       role={showPlaceholder ? "presentation" : undefined}
       css={(t) => {
-        const hoverColor = t.colors.backgroundTertiary;
+        const hoverColor = t.colors.backgroundModifierNormal;
         return css({
           listStyle: "none",
           containerType: "inline-size",

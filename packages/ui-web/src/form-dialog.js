@@ -111,7 +111,6 @@ const FormDialog = ({
               ) : (
                 <Input
                   ref={i === 0 ? firstInputRef : undefined}
-                  contrast
                   size={c.size ?? "large"}
                   multiline={c.type === "multiline-text"}
                   component={

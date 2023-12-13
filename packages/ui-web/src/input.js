@@ -13,7 +13,6 @@ const Input = React.forwardRef(
       size = "normal",
       multiline = false,
       component: CustomComponent,
-      contrast,
       label,
       hint,
       containerProps,
@@ -40,13 +39,11 @@ const Input = React.forwardRef(
         spellCheck="off"
         css={(t) =>
           css({
-            "--bg-regular": t.colors.inputBackground,
-            "--bg-contrast": t.colors.inputBackgroundContrast,
             "--text-size-normal": t.text.sizes.input,
             "--text-size-large": t.text.sizes.large,
-            background: "var(--bg)",
             fontSize: "var(--text-size)",
             display: "block",
+            background: t.colors.backgroundModifierNormal,
             color: t.colors.textNormal,
             fontWeight: "400",
             borderRadius: "0.3rem",
@@ -76,7 +73,6 @@ const Input = React.forwardRef(
         {...props}
         {...extraProps}
         style={{
-          "--bg": contrast ? "var(--bg-contrast)" : "var(--bg-regular)",
           "--padding":
             size === "small"
               ? "0.5rem 0.7rem"

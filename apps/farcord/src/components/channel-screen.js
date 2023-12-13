@@ -141,7 +141,7 @@ export const ChannelCastsScrollView = ({
               ".channel-message-container": {
                 "--color-optimistic": t.colors.textMuted,
                 "--bg-highlight": t.colors.messageBackgroundModifierHighlight,
-                "--bg-focus": t.colors.messageBackgroundModifierFocus,
+                "--bg-focus": t.colors.backgroundModifierLight,
                 background: "var(--background, transparent)",
                 padding: "var(--padding)",
                 borderRadius: "var(--border-radius, 0)",

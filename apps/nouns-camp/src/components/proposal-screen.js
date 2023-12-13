@@ -705,7 +705,7 @@ export const ProposalActionForm = ({
           css={(t) =>
             css({
               borderRadius: "0.5rem",
-              background: t.colors.backgroundSecondary,
+              background: t.colors.backgroundModifierNormal,
               padding: "var(--padding, 1rem)",
               "&:has(textarea:focus-visible)": { boxShadow: t.shadows.focus },
             })
@@ -722,7 +722,7 @@ export const ProposalActionForm = ({
             }}
             css={(t) =>
               css({
-                background: t.colors.backgroundSecondary,
+                background: "transparent",
                 fontSize: t.text.sizes.base,
                 display: "block",
                 color: t.colors.textNormal,

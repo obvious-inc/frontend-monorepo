@@ -6,7 +6,7 @@ const Callout = ({ icon, children, ...props }) => (
       css({
         display: "flex",
         gap: "1.2rem",
-        background: t.colors.backgroundSecondary,
+        background: t.colors.backgroundModifierNormal,
         padding: "1rem 1.6rem",
         borderRadius: "0.3rem",
         "[data-icon]": {
