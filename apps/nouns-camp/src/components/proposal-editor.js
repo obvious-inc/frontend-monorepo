@@ -95,52 +95,7 @@ const ProposalEditor = ({
   scrollContainerRef,
   background,
 }) => {
-  const editorRef = React.useRef();
-  const editor = editorRef.current;
-
-  const [isEditorFocused, setEditorFocused] = React.useState(false);
-  const [editorSelection, setEditorSelection] = React.useState(null);
-
-  const [hasFloatingToolbarFocus, setHasFloatingToolbarFocus] =
-    React.useState(false);
-  const [hasFixedToolbarFocus, setHasFixedToolbarFocus] = React.useState(false);
-
-  const hasEditorOrToolbarFocus =
-    isEditorFocused || hasFloatingToolbarFocus || hasFixedToolbarFocus;
-
-  const isFloatingToolbarVisible =
-    !isTouchDevice() &&
-    editor != null &&
-    (hasFloatingToolbarFocus ||
-      (isEditorFocused &&
-        editorSelection != null &&
-        !isSelectionCollapsed(editorSelection) &&
-        editor.string(editorSelection) !== ""));
-
-  React.useEffect(() => {
-    if (hasEditorOrToolbarFocus) return;
-
-    let didFocus = false;
-
-    // Wait a little bit to prevent triggering this in-between async focus
-    // changes between the editor and the toolbar
-    setTimeout(() => {
-      if (didFocus) return;
-      editorRef.current?.removeEmptyParagraphs();
-    }, 100);
-
-    return () => {
-      didFocus = true;
-    };
-  }, [hasEditorOrToolbarFocus]);
-
-  const { address: connectedAccountAddress } = useAccount();
-
-  const [selectedActionIndex, setSelectedActionIndex] = React.useState(null);
-  const [showNewActionDialog, setShowNewActionDialog] = React.useState(false);
-
   const [showMarkdownPreview, setShowMarkdownPreview] = React.useState(false);
-  const [editorMode, setEditorMode] = useEditorMode({ body }, { setBody });
 
   const isTitleEmpty = title.trim() === "";
   const isBodyEmpty =
@@ -152,25 +107,9 @@ const ProposalEditor = ({
 
   const enableSubmit = hasRequiredInput && !disabled && !submitDisabled;
 
-  const selectedAction =
-    selectedActionIndex >= 0 ? actions[selectedActionIndex] : null;
-
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    onSubmit();
-  };
-
-  const hasActions = actions != null && actions.length > 0;
-
   useKeyboardShortcuts({
     "$mod+Shift+m": (e) => {
       e.preventDefault();
-
-      if (isDebugSession) {
-        setEditorMode(editorMode === "rich-text" ? "markdown" : "rich-text");
-        return;
-      }
-
       setShowMarkdownPreview((s) => !s);
     },
   });
@@ -178,467 +117,99 @@ const ProposalEditor = ({
   return (
     <>
       <EditorProvider>
-        <form onSubmit={handleSubmit} css={css({ padding: "0 1.6rem" })}>
-          <MainContentContainer
-            containerHeight={containerHeight}
-            sidebar={
-              <div
-                css={css({
-                  paddingBottom: "12rem", // Fixed nav height
-                  "@media (min-width: 952px)": {
-                    padding: 0,
-                    position: "relative",
-                    display: "flex",
-                    flexDirection: "column",
-                    minHeight: "var(--min-height)",
-                  },
-                })}
-                style={{ "--min-height": containerHeight }}
-              >
-                <div
-                  css={css({
-                    flex: 1,
-                    minHeight: 0,
-                    padding: "3.2rem 0 2.4rem",
-                    "@media (min-width: 600px)": {
-                      padding: "3.2rem 0",
-                    },
-                    "@media (min-width: 952px)": {
-                      padding: "6rem 0 3.2rem",
-                    },
-                  })}
-                >
-                  {hasActions && (
-                    <h2
-                      css={(t) =>
-                        css({
-                          textTransform: "uppercase",
-                          fontSize: t.text.sizes.small,
-                          fontWeight: t.text.weights.emphasis,
-                          color: t.colors.textDimmed,
-                          margin: "0 0 1.6rem",
-                        })
-                      }
-                    >
-                      Actions
-                    </h2>
-                  )}
-
-                  {hasActions && (
-                    <ActionList
-                      actions={[
-                        ...actions.map((a) => ({ ...a, editable: true })),
-                        tokenBuyerTopUpValue > 0 && {
-                          type: "payer-top-up",
-                          value: tokenBuyerTopUpValue,
-                        },
-                      ].filter(Boolean)}
-                      disabled={disabled}
-                      selectIndex={(i) => {
-                        setSelectedActionIndex(i);
-                      }}
-                    />
-                  )}
-
-                  <div
-                    style={{
-                      marginTop: hasActions ? "2.8rem" : undefined,
-                      paddingLeft: hasActions ? "2.4rem" : undefined,
-                    }}
-                  >
-                    <Button
-                      type="button"
-                      size={hasActions ? "default" : "large"}
-                      icon={
-                        hasActions ? (
-                          <PlusIcon style={{ width: "0.9rem" }} />
-                        ) : undefined
-                      }
-                      onClick={() => {
-                        setShowNewActionDialog(true);
-                      }}
-                      disabled={disabled}
-                      fullWidth={!hasActions}
-                      style={{ height: hasActions ? undefined : "5.25rem" }}
-                    >
-                      {hasActions ? "Add action" : "Add a proposal action"}
-                    </Button>
-                  </div>
-                </div>
-
-                <div
-                  css={css({
-                    position: "fixed",
-                    left: 0,
-                    bottom: 0,
-                    padding: "0 1.6rem",
-                    width: "100%",
-                    "@media (min-width: 952px)": {
-                      padding: 0,
-                      left: "auto",
-                      position: "sticky",
-                      bottom: 0,
-                      width: "auto",
-                    },
-                  })}
-                  style={{ "--background": background }}
-                >
-                  <div
-                    css={css({
-                      height: "1.6rem",
-                      background:
-                        "linear-gradient(180deg, transparent 0, var(--background))",
-                    })}
-                  />
-                  {!(isTitleEmpty && isBodyEmpty) && (
-                    <div
-                      css={(t) =>
-                        css({
-                          textAlign: "right",
-                          padding: "0 0 1.2rem",
-                          color: t.colors.textDimmed,
-                          background: "var(--background)",
-                          fontSize: t.text.sizes.small,
-                          "p + p": { marginTop: "0.6rem" },
-                        })
-                      }
-                    >
-                      {!hasPendingSubmit && (
-                        <p>
-                          <Link
-                            type="button"
-                            component="button"
-                            onClick={() => {
-                              setShowMarkdownPreview((s) => !s);
-                            }}
-                            underline
-                            color="currentColor"
-                            hoverColor="currentColor"
-                          >
-                            View raw markdown
-                          </Link>
-                        </p>
-                      )}
-                      {note != null && <p>{note}</p>}
-                    </div>
-                  )}
-                  <div
-                    css={css({
-                      padding: "0 0 1.6rem",
-                      display: "flex",
-                      gap: "1rem",
-                      justifyContent: "space-between",
-                      background: "var(--background)",
-                    })}
-                  >
-                    <Button
-                      danger
-                      size="medium"
-                      type="button"
-                      onClick={() => {
-                        onDelete();
-                      }}
-                      icon={<TrashCanIcon style={{ width: "1.4rem" }} />}
-                      disabled={disabled}
-                    />
-                    <Button
-                      type="submit"
-                      variant="primary"
-                      size="medium"
-                      isLoading={hasPendingSubmit}
-                      disabled={!enableSubmit}
-                    >
-                      {submitLabel}
-                    </Button>
-                  </div>
-                </div>
-              </div>
-            }
-          >
-            <div style={{ position: "relative" }}>
-              <div
-                css={css({
-                  display: "flex",
-                  flexDirection: "column",
-                  "@media (min-width: 600px)": {
-                    padding: "6rem 0 0",
-                  },
-                  "@media (min-width: 952px)": {
-                    minHeight: "var(--min-height)",
-                    padding: "6rem 0 16rem",
-                  },
-                })}
-                style={{
-                  // 6.4rem is the fixed toolbar container height
-                  "--min-height": `calc(${containerHeight} - 6.4rem)`,
-                }}
-              >
-                <AutoAdjustingHeightTextarea
-                  aria-label="Title"
-                  rows={1}
-                  value={title}
-                  onKeyDown={(e) => {
-                    if (editorMode !== "rich-text") {
-                      if (e.key === "Enter") {
-                        e.preventDefault();
-                        return;
-                      }
-
-                      return;
-                    }
-
-                    const editor = editorRef.current;
-
-                    if (e.key === "ArrowDown") {
-                      e.preventDefault();
-                      editor.focus(editor.start([]));
-                    } else if (e.key === "Enter") {
-                      e.preventDefault();
-                      const textBeforeSelection = e.target.value.slice(
-                        0,
-                        e.target.selectionStart
-                      );
-                      const textAfterSelection = e.target.value.slice(
-                        e.target.selectionEnd
-                      );
-                      setTitle(textBeforeSelection);
-                      editor.insertNode(
-                        {
-                          type: "paragraph",
-                          children: [{ text: textAfterSelection }],
-                        },
-                        { at: editor.start([]) }
-                      );
-                      editor.focus(editor.start([]));
-                    }
-                  }}
-                  onChange={(e) => {
-                    setTitle(e.target.value);
-                  }}
-                  autoFocus
-                  disabled={disabled}
-                  placeholder="Untitled proposal"
-                  css={(t) =>
-                    css({
-                      background: "none",
-                      fontSize: t.text.sizes.huge,
-                      lineHeight: 1.15,
-                      width: "100%",
-                      outline: "none",
-                      fontWeight: t.text.weights.header,
-                      border: 0,
-                      padding: 0,
-                      color: t.colors.textNormal,
-                      margin: "0 0 0.3rem",
-                      "::placeholder": { color: t.colors.textMuted },
-                    })
-                  }
-                />
+        <EditorLayout
+          containerHeight={containerHeight}
+          background={background}
+          sidebar={
+            <SidebarContent
+              actions={[
+                ...actions.map((a) => ({ ...a, editable: true })),
+                tokenBuyerTopUpValue > 0 && {
+                  type: "payer-top-up",
+                  value: tokenBuyerTopUpValue,
+                },
+              ].filter(Boolean)}
+              setActions={setActions}
+              disabled={disabled}
+            />
+          }
+          sidebarBottom={
+            <>
+              {!(isTitleEmpty && isBodyEmpty) && (
                 <div
                   css={(t) =>
                     css({
+                      textAlign: "right",
+                      padding: "0 0 1.2rem",
                       color: t.colors.textDimmed,
-                      fontSize: t.text.sizes.base,
-                      marginBottom: "2.4rem",
+                      fontSize: t.text.sizes.small,
+                      "p + p": { marginTop: "0.6rem" },
                     })
                   }
                 >
-                  By{" "}
-                  <AccountPreviewPopoverTrigger
-                    accountAddress={connectedAccountAddress}
-                  />
-                </div>
-                {editorMode === "rich-text" ? (
-                  <ErrorBoundary
-                    fallback={() => (
-                      <>
-                        <div
-                          css={(t) =>
-                            css({
-                              padding: "2.4rem",
-                              background: t.colors.backgroundSecondary,
-                              borderRadius: "0.3rem",
-                              details: {
-                                fontSize: t.text.sizes.small,
-                                userSelect: "text",
-                              },
-                              summary: {
-                                marginTop: "1.6rem",
-                              },
-                            })
-                          }
-                        >
-                          <div
-                            css={(t) =>
-                              css({
-                                textAlign: "center",
-                                color: t.colors.textDanger,
-                                padding: "3.2rem 0",
-                              })
-                            }
-                          >
-                            Error rendering draft
-                          </div>
-                          <details>
-                            <summary>Click to show content</summary>
-                            <pre style={{ marginTop: "1.6rem" }}>
-                              <code>{JSON.stringify(body, null, 2)}</code>
-                            </pre>
-                          </details>
-                        </div>
-                      </>
-                    )}
-                  >
-                    <RichTextEditor
-                      ref={editorRef}
-                      value={body}
-                      onChange={(e, editor) => {
-                        setBody(e);
-                        setEditorFocused(editor.isFocused());
-                        setEditorSelection(editor.selection);
-                      }}
-                      onFocus={(_, editor) => {
-                        setEditorFocused(true);
-                        setEditorSelection(editor.selection);
-                      }}
-                      onBlur={() => {
-                        setEditorFocused(false);
-                      }}
-                      placeholder={`Use markdown shortcuts like "# " and "1. " to create headings and lists.`}
-                      imagesMaxWidth={null}
-                      imagesMaxHeight={680}
-                      disabled={disabled}
-                      css={(t) => css({ fontSize: t.text.sizes.large })}
-                      style={{ flex: 1, minHeight: "12rem" }}
-                    />
-
-                    {isDebugSession && (
-                      <details>
-                        <summary>Click to edit raw JSON</summary>
-                        <AutoAdjustingHeightTextarea
-                          value={JSON.stringify(body, null, 2)}
-                          onChange={(e) => {
-                            try {
-                              setBody(JSON.parse(e.target.value));
-                            } catch (e) {
-                              // Ignore
-                            }
-                          }}
-                          css={(t) =>
-                            css({
-                              padding: "1.6rem",
-                              borderRadius: "0.3rem",
-                              background: t.colors.backgroundSecondary,
-                              border: 0,
-                              width: "100%",
-                              fontFamily: t.fontStacks.monospace,
-                              outline: "none",
-                            })
-                          }
-                        />
-                      </details>
-                    )}
-                  </ErrorBoundary>
-                ) : (
-                  <div
-                    style={{
-                      flex: 1,
-                      minHeight: "12rem",
-                      paddingBottom: "3.2rem",
-                    }}
-                  >
-                    <MarkdownEditor
-                      value={body}
-                      onChange={(value) => {
-                        setBody(value);
-                      }}
-                      placeholder="Raw markdown mode..."
-                    />
-                  </div>
-                )}
-              </div>
-
-              {editorMode === "rich-text" && !disabled && (
-                <>
-                  {!isTouchDevice() && (
-                    <FloatingToolbar
-                      isVisible={isFloatingToolbarVisible}
-                      scrollContainerRef={scrollContainerRef}
-                      onFocus={() => {
-                        setHasFloatingToolbarFocus(true);
-                      }}
-                      onBlur={() => {
-                        setHasFloatingToolbarFocus(false);
-                      }}
-                    />
+                  {!hasPendingSubmit && (
+                    <p>
+                      <Link
+                        type="button"
+                        component="button"
+                        onClick={() => {
+                          setShowMarkdownPreview((s) => !s);
+                        }}
+                        underline
+                        color="currentColor"
+                        hoverColor="currentColor"
+                      >
+                        View raw markdown
+                      </Link>
+                    </p>
                   )}
-                  <FixedBottomToolbar
-                    isVisible={
-                      (isEditorFocused || hasFixedToolbarFocus) &&
-                      (isTouchDevice() || !isFloatingToolbarVisible)
-                    }
-                    onFocus={() => {
-                      setHasFixedToolbarFocus(true);
-                    }}
-                    onBlur={() => {
-                      setHasFixedToolbarFocus(false);
-                    }}
-                  />
-                </>
+                  {note != null && <p>{note}</p>}
+                </div>
               )}
-            </div>
-          </MainContentContainer>
-        </form>
+              <div
+                css={css({
+                  padding: "0 0 1.6rem",
+                  display: "flex",
+                  gap: "1rem",
+                  justifyContent: "space-between",
+                })}
+              >
+                <Button
+                  danger
+                  size="medium"
+                  type="button"
+                  onClick={() => {
+                    onDelete();
+                  }}
+                  icon={<TrashCanIcon style={{ width: "1.4rem" }} />}
+                  disabled={disabled}
+                />
+                <Button
+                  type="button"
+                  variant="primary"
+                  size="medium"
+                  isLoading={hasPendingSubmit}
+                  disabled={!enableSubmit}
+                  onClick={() => {
+                    onSubmit();
+                  }}
+                >
+                  {submitLabel}
+                </Button>
+              </div>
+            </>
+          }
+        >
+          <ProposalContentEditor
+            title={title}
+            setTitle={setTitle}
+            body={body}
+            setBody={setBody}
+            disabled={disabled}
+            scrollContainerRef={scrollContainerRef}
+          />
+        </EditorLayout>
       </EditorProvider>
-
-      {selectedAction != null && (
-        <ActionDialog
-          isOpen
-          close={() => {
-            setSelectedActionIndex(null);
-          }}
-          title="Edit action"
-          submit={(a) => {
-            setActions(
-              actions.map((a_, i) => (i !== selectedActionIndex ? a_ : a))
-            );
-          }}
-          remove={() => {
-            setActions(actions.filter((_, i) => i !== selectedActionIndex));
-          }}
-          initialType={selectedAction.type}
-          initialCurrency={selectedAction.currency}
-          initialAmount={selectedAction.amount}
-          initialTarget={selectedAction.target}
-          initialStreamStartTimestamp={selectedAction.startTimestamp}
-          initialStreamEndTimestamp={selectedAction.endTimestamp}
-          initialContractCallTargetAddress={
-            selectedAction.contractCallTargetAddress
-          }
-          initialContractCallFormattedTargetAbiItem={
-            selectedAction.contractCallFormattedTargetAbiItem
-          }
-          initialContractCallArguments={selectedAction.contractCallArguments}
-          initialContractCallEthValue={selectedAction.contractCallEthValue}
-          initialContractCallCustomAbiString={
-            selectedAction.contractCallCustomAbiString
-          }
-        />
-      )}
-
-      {showNewActionDialog && (
-        <ActionDialog
-          isOpen
-          close={() => {
-            setShowNewActionDialog(false);
-          }}
-          title="Add action"
-          submit={(a) => {
-            setActions([...actions, a]);
-          }}
-          submitButtonLabel="Add"
-        />
-      )}
 
       {showMarkdownPreview && (
         <MarkdownPreviewDialog
@@ -653,6 +224,101 @@ const ProposalEditor = ({
     </>
   );
 };
+
+const EditorLayout = ({
+  sidebar,
+  sidebarBottom,
+  containerHeight,
+  background,
+  children,
+}) => (
+  <div css={css({ padding: "0 1.6rem" })}>
+    <MainContentContainer
+      containerHeight={containerHeight}
+      sidebar={
+        <div
+          css={css({
+            paddingBottom: "12rem", // Fixed nav height
+            "@media (min-width: 952px)": {
+              padding: 0,
+              position: "relative",
+              display: "flex",
+              flexDirection: "column",
+              minHeight: "var(--min-height)",
+            },
+          })}
+          style={{ "--min-height": containerHeight }}
+        >
+          <div
+            css={css({
+              flex: 1,
+              minHeight: 0,
+              padding: "3.2rem 0 2.4rem",
+              "@media (min-width: 600px)": {
+                padding: "3.2rem 0",
+              },
+              "@media (min-width: 952px)": {
+                padding: "6rem 0 3.2rem",
+              },
+            })}
+          >
+            {sidebar}
+          </div>
+          <div
+            css={css({
+              position: "fixed",
+              left: 0,
+              bottom: 0,
+              padding: "0 1.6rem",
+              width: "100%",
+              "@media (min-width: 952px)": {
+                padding: 0,
+                left: "auto",
+                position: "sticky",
+                bottom: 0,
+                width: "auto",
+              },
+            })}
+            style={{ "--background": background }}
+          >
+            <div
+              css={css({
+                height: "1.6rem",
+                background:
+                  "linear-gradient(180deg, transparent 0, var(--background))",
+              })}
+            />
+            <div css={css({ background: "var(--background)" })}>
+              {sidebarBottom}
+            </div>
+          </div>
+        </div>
+      }
+    >
+      <div style={{ position: "relative" }}>
+        <div
+          css={css({
+            display: "flex",
+            flexDirection: "column",
+            "@media (min-width: 600px)": {
+              padding: "6rem 0 0",
+            },
+            "@media (min-width: 952px)": {
+              minHeight: "var(--min-height)",
+              padding: "6rem 0 16rem",
+            },
+          })}
+          style={{
+            // 6.4rem is the fixed toolbar container height
+            "--min-height": `calc(${containerHeight} - 6.4rem)`,
+          }}
+        >
+          {children}
+        </div>
+      </div>
+    </MainContentContainer>
+  </div>
+);
 
 const FloatingToolbar = ({
   scrollContainerRef,
@@ -1365,5 +1031,398 @@ const MarkdownPreviewDialog = ({ isOpen, close, title, body }) => {
     </Dialog>
   );
 };
+
+const ProposalContentEditor = ({
+  title,
+  setTitle,
+  body,
+  setBody,
+  disabled,
+  // editorRef,
+  scrollContainerRef,
+}) => {
+  // const editor = editorRef.current;
+  const editorRef = React.useRef();
+  const editor = editorRef.current;
+
+  const { address: connectedAccountAddress } = useAccount();
+
+  const [editorSelection, setEditorSelection] = React.useState(null);
+  const [isEditorFocused, setEditorFocused] = React.useState(false);
+
+  const [hasFloatingToolbarFocus, setHasFloatingToolbarFocus] =
+    React.useState(false);
+  const [hasFixedToolbarFocus, setHasFixedToolbarFocus] = React.useState(false);
+
+  const [editorMode, setEditorMode] = useEditorMode({ body }, { setBody });
+
+  const isFloatingToolbarVisible =
+    !isTouchDevice() &&
+    editor != null &&
+    (hasFloatingToolbarFocus ||
+      (isEditorFocused &&
+        editorSelection != null &&
+        !isSelectionCollapsed(editorSelection) &&
+        editor.string(editorSelection) !== ""));
+
+  const hasEditorOrToolbarFocus =
+    isEditorFocused || hasFloatingToolbarFocus || hasFixedToolbarFocus;
+
+  React.useEffect(() => {
+    if (hasEditorOrToolbarFocus) return;
+
+    let didFocus = false;
+
+    // Wait a little bit to prevent triggering this in-between async focus
+    // changes between the editor and the toolbar
+    setTimeout(() => {
+      if (didFocus) return;
+      editorRef.current?.removeEmptyParagraphs();
+    }, 100);
+
+    return () => {
+      didFocus = true;
+    };
+  }, [hasEditorOrToolbarFocus]);
+
+  useKeyboardShortcuts({
+    "$mod+Shift+m": (e) => {
+      e.preventDefault();
+
+      if (isDebugSession) {
+        setEditorMode(editorMode === "rich-text" ? "markdown" : "rich-text");
+        return;
+      }
+    },
+  });
+
+  return (
+    <>
+      <AutoAdjustingHeightTextarea
+        aria-label="Title"
+        rows={1}
+        value={title}
+        onKeyDown={(e) => {
+          if (editorMode !== "rich-text") {
+            if (e.key === "Enter") {
+              e.preventDefault();
+              return;
+            }
+
+            return;
+          }
+
+          const editor = editorRef.current;
+
+          if (e.key === "ArrowDown") {
+            e.preventDefault();
+            editor.focus(editor.start([]));
+          } else if (e.key === "Enter") {
+            e.preventDefault();
+            const textBeforeSelection = e.target.value.slice(
+              0,
+              e.target.selectionStart
+            );
+            const textAfterSelection = e.target.value.slice(
+              e.target.selectionEnd
+            );
+            setTitle(textBeforeSelection);
+            editor.insertNode(
+              {
+                type: "paragraph",
+                children: [{ text: textAfterSelection }],
+              },
+              { at: editor.start([]) }
+            );
+            editor.focus(editor.start([]));
+          }
+        }}
+        onChange={(e) => {
+          setTitle(e.target.value);
+        }}
+        autoFocus
+        disabled={disabled}
+        placeholder="Untitled proposal"
+        css={(t) =>
+          css({
+            background: "none",
+            fontSize: t.text.sizes.huge,
+            lineHeight: 1.15,
+            width: "100%",
+            outline: "none",
+            fontWeight: t.text.weights.header,
+            border: 0,
+            padding: 0,
+            color: t.colors.textNormal,
+            margin: "0 0 0.3rem",
+            "::placeholder": { color: t.colors.textMuted },
+          })
+        }
+      />
+      <div
+        css={(t) =>
+          css({
+            color: t.colors.textDimmed,
+            fontSize: t.text.sizes.base,
+            marginBottom: "2.4rem",
+          })
+        }
+      >
+        By{" "}
+        <AccountPreviewPopoverTrigger
+          accountAddress={connectedAccountAddress}
+        />
+      </div>
+      {editorMode === "rich-text" ? (
+        <ErrorBoundary fallback={() => <EditorRenderError body={body} />}>
+          <RichTextEditor
+            ref={editorRef}
+            value={body}
+            onChange={(e, editor) => {
+              setBody(e);
+              setEditorFocused(editor.isFocused());
+              setEditorSelection(editor.selection);
+            }}
+            onFocus={(_, editor) => {
+              setEditorFocused(true);
+              setEditorSelection(editor.selection);
+            }}
+            onBlur={() => {
+              setEditorFocused(false);
+            }}
+            placeholder={`Use markdown shortcuts like "# " and "1. " to create headings and lists.`}
+            imagesMaxWidth={null}
+            imagesMaxHeight={680}
+            disabled={disabled}
+            css={(t) => css({ fontSize: t.text.sizes.large })}
+            style={{ flex: 1, minHeight: "12rem" }}
+          />
+
+          {isDebugSession && (
+            <details>
+              <summary>Click to edit raw JSON</summary>
+              <AutoAdjustingHeightTextarea
+                value={JSON.stringify(body, null, 2)}
+                onChange={(e) => {
+                  try {
+                    setBody(JSON.parse(e.target.value));
+                  } catch (e) {
+                    // Ignore
+                  }
+                }}
+                css={(t) =>
+                  css({
+                    padding: "1.6rem",
+                    borderRadius: "0.3rem",
+                    background: t.colors.backgroundSecondary,
+                    border: 0,
+                    width: "100%",
+                    fontFamily: t.fontStacks.monospace,
+                    outline: "none",
+                  })
+                }
+              />
+            </details>
+          )}
+        </ErrorBoundary>
+      ) : (
+        <div
+          style={{
+            flex: 1,
+            minHeight: "12rem",
+            paddingBottom: "3.2rem",
+          }}
+        >
+          <MarkdownEditor
+            value={body}
+            onChange={(value) => {
+              setBody(value);
+            }}
+            placeholder="Raw markdown mode..."
+          />
+        </div>
+      )}
+
+      {editorMode === "rich-text" && !disabled && (
+        <>
+          {!isTouchDevice() && (
+            <FloatingToolbar
+              isVisible={isFloatingToolbarVisible}
+              scrollContainerRef={scrollContainerRef}
+              onFocus={() => {
+                setHasFloatingToolbarFocus(true);
+              }}
+              onBlur={() => {
+                setHasFloatingToolbarFocus(false);
+              }}
+            />
+          )}
+          <FixedBottomToolbar
+            isVisible={
+              (isEditorFocused || hasFixedToolbarFocus) &&
+              (isTouchDevice() || !isFloatingToolbarVisible)
+            }
+            onFocus={() => {
+              setHasFixedToolbarFocus(true);
+            }}
+            onBlur={() => {
+              setHasFixedToolbarFocus(false);
+            }}
+          />
+        </>
+      )}
+    </>
+  );
+};
+
+const SidebarContent = ({ actions, setActions, disabled }) => {
+  const [selectedActionIndex, setSelectedActionIndex] = React.useState(null);
+  const [showNewActionDialog, setShowNewActionDialog] = React.useState(false);
+
+  const hasActions = actions != null && actions.length > 0;
+  const selectedAction =
+    selectedActionIndex == null ? null : actions[selectedActionIndex];
+
+  return (
+    <>
+      {hasActions && (
+        <>
+          <h2
+            css={(t) =>
+              css({
+                textTransform: "uppercase",
+                fontSize: t.text.sizes.small,
+                fontWeight: t.text.weights.emphasis,
+                color: t.colors.textDimmed,
+                margin: "0 0 1.6rem",
+              })
+            }
+          >
+            Actions
+          </h2>
+
+          <ActionList
+            actions={actions}
+            disabled={disabled}
+            selectIndex={(i) => {
+              setSelectedActionIndex(i);
+            }}
+          />
+        </>
+      )}
+
+      <div
+        style={{
+          marginTop: hasActions ? "2.8rem" : undefined,
+          paddingLeft: hasActions ? "2.4rem" : undefined,
+        }}
+      >
+        <Button
+          type="button"
+          size={hasActions ? "default" : "large"}
+          icon={
+            hasActions ? <PlusIcon style={{ width: "0.9rem" }} /> : undefined
+          }
+          onClick={() => {
+            setShowNewActionDialog(true);
+          }}
+          disabled={disabled}
+          fullWidth={!hasActions}
+          style={{ height: hasActions ? undefined : "5.25rem" }}
+        >
+          {hasActions ? "Add action" : "Add a proposal action"}
+        </Button>
+      </div>
+
+      {selectedAction != null && (
+        <ActionDialog
+          isOpen
+          close={() => {
+            setSelectedActionIndex(null);
+          }}
+          title="Edit action"
+          submit={(a) => {
+            setActions(
+              actions.map((a_, i) => (i !== selectedActionIndex ? a_ : a))
+            );
+          }}
+          remove={() => {
+            setActions(actions.filter((_, i) => i !== selectedActionIndex));
+          }}
+          initialType={selectedAction.type}
+          initialCurrency={selectedAction.currency}
+          initialAmount={selectedAction.amount}
+          initialTarget={selectedAction.target}
+          initialStreamStartTimestamp={selectedAction.startTimestamp}
+          initialStreamEndTimestamp={selectedAction.endTimestamp}
+          initialContractCallTargetAddress={
+            selectedAction.contractCallTargetAddress
+          }
+          initialContractCallFormattedTargetAbiItem={
+            selectedAction.contractCallFormattedTargetAbiItem
+          }
+          initialContractCallArguments={selectedAction.contractCallArguments}
+          initialContractCallEthValue={selectedAction.contractCallEthValue}
+          initialContractCallCustomAbiString={
+            selectedAction.contractCallCustomAbiString
+          }
+        />
+      )}
+
+      {showNewActionDialog && (
+        <ActionDialog
+          isOpen
+          close={() => {
+            setShowNewActionDialog(false);
+          }}
+          title="Add action"
+          submit={(a) => {
+            setActions([...actions, a]);
+          }}
+          submitButtonLabel="Add"
+        />
+      )}
+    </>
+  );
+};
+
+const EditorRenderError = ({ body }) => (
+  <>
+    <div
+      css={(t) =>
+        css({
+          padding: "2.4rem",
+          background: t.colors.backgroundSecondary,
+          borderRadius: "0.3rem",
+          details: {
+            fontSize: t.text.sizes.small,
+            userSelect: "text",
+          },
+          summary: {
+            marginTop: "1.6rem",
+          },
+        })
+      }
+    >
+      <div
+        css={(t) =>
+          css({
+            textAlign: "center",
+            color: t.colors.textDanger,
+            padding: "3.2rem 0",
+          })
+        }
+      >
+        Editor rendering error
+      </div>
+      <details>
+        <summary>Click to show content</summary>
+        <pre style={{ marginTop: "1.6rem" }}>
+          <code>{JSON.stringify(body, null, 2)}</code>
+        </pre>
+      </details>
+    </div>
+  </>
+);
 
 export default ProposalEditor;
