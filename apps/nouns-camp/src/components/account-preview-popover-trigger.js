@@ -155,7 +155,6 @@ const AccountPreview = React.forwardRef(({ accountAddress }, ref) => {
               <NounPreviewPopoverTrigger
                 key={n.id}
                 nounId={n.id}
-                nounSeed={n.seed}
                 contextAccount={accountAddress}
                 popoverPlacement="top"
               >
@@ -170,7 +169,7 @@ const AccountPreview = React.forwardRef(({ accountAddress }, ref) => {
                     },
                   })}
                 >
-                  <NounAvatar id={n.id} seed={n.seed} size="3.2rem" />
+                  <NounAvatar id={n.id} size="3.2rem" />
                   <div data-id>{n.id}</div>
                 </button>
               </NounPreviewPopoverTrigger>

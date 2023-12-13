@@ -52,7 +52,6 @@ const NounPreviewPopoverTrigger = React.forwardRef(
   (
     {
       nounId,
-      nounSeed,
       contextAccount,
       popoverPlacement = "bottom",
       children,
@@ -82,17 +81,19 @@ const NounPreviewPopoverTrigger = React.forwardRef(
           }
         >
           <div css={css({ position: "relative", zIndex: 1 })}>
-            <NounAvatar id={nounId} seed={nounSeed} size="4rem" />
-            <DelegationStatusDot
-              nounId={nounId}
-              contextAccount={contextAccount}
-              cssProps={{
-                top: "3rem",
-                left: "3rem",
-                height: "1.2rem",
-                width: "1.2rem",
-              }}
-            />
+            <NounAvatar id={nounId} size="4rem" />
+            {contextAccount != null && (
+              <DelegationStatusDot
+                nounId={nounId}
+                contextAccount={contextAccount}
+                cssProps={{
+                  top: "3rem",
+                  left: "3rem",
+                  height: "1.2rem",
+                  width: "1.2rem",
+                }}
+              />
+            )}
           </div>
           <div data-id>{nounId}</div>
         </button>
@@ -167,7 +168,7 @@ const NounDelegationPreviewText = ({ nounId, event, contextAccount }) => {
     ? "Delegated from"
     : "Delegating to";
 
-  if (event.newAccountId == noun?.ownerId) return null;
+  if (event.newAccountId === noun?.ownerId) return null;
 
   const previousAccount = isDestinationAccount
     ? ownerDisplayName

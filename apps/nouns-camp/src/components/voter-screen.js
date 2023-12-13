@@ -525,7 +525,6 @@ const VoterHeader = ({ voterAddress }) => {
             <NounPreviewPopoverTrigger
               key={n.id}
               nounId={n.id}
-              nounSeed={n.seed}
               contextAccount={voterAddress}
             />
           ))}

@@ -39,3 +39,27 @@ export const usePriorVotes = ({ account, blockNumber, enabled = true }) => {
 
   return data == null ? null : Number(data);
 };
+
+export const useNounSeed = (nounId, { enabled = true } = {}) => {
+  const chainId = useChainId();
+
+  const { data } = useContractRead({
+    address: getContractAddress(chainId),
+    abi: parseAbi([
+      "function seeds(uint256) public view returns (uint48,uint48,uint48,uint48,uint48)",
+    ]),
+    functionName: "seeds",
+    args: [nounId],
+    enabled: enabled && nounId != null,
+  });
+
+  if (data == null) return null;
+
+  return {
+    background: data[0],
+    body: data[1],
+    accessory: data[2],
+    head: data[3],
+    glasses: data[4],
+  };
+};

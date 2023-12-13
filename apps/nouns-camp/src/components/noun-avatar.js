@@ -1,5 +1,7 @@
 import React from "react";
 import Avatar from "@shades/ui-web/avatar";
+import { useNoun } from "../store.js";
+import { useNounSeed } from "../hooks/token-contract.js";
 
 const useNounDataUri = (seed, { enabled = true, transparent = false } = {}) => {
   const [avatarUrl, setAvatarUrl] = React.useState(null);
@@ -16,12 +18,23 @@ const useNounDataUri = (seed, { enabled = true, transparent = false } = {}) => {
 };
 
 const NounAvatar = React.forwardRef(
-  ({ id, seed, transparent = false, ...props }, ref) => {
-    const nounAvatarUrl = useNounDataUri(seed, {
+  ({ id, transparent = false, signatureFallback = true, ...props }, ref) => {
+    const noun = useNoun(id);
+    const seed = useNounSeed(id, { enabled: noun?.seed == null });
+
+    const nounAvatarUrl = useNounDataUri(noun?.seed ?? seed, {
       transparent,
     });
 
-    return <Avatar ref={ref} url={nounAvatarUrl} signature={id} {...props} />;
+    return (
+      <Avatar
+        ref={ref}
+        url={nounAvatarUrl}
+        signature={signatureFallback ? id : null}
+        signatureLength={4}
+        {...props}
+      />
+    );
   }
 );
 
