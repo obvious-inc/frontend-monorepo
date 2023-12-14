@@ -33,17 +33,20 @@ import Spinner from "@shades/ui-web/spinner";
 import { VotingBar } from "./proposal-screen.js";
 import { array as arrayUtils } from "@shades/common/utils";
 import NounPreviewPopoverTrigger from "./noun-preview-popover-trigger.js";
+import useChainId from "../hooks/chain-id.js";
 
 const VOTER_LIST_PAGE_ITEM_COUNT = 20;
 const FEED_PAGE_ITEM_COUNT = 30;
 
 const useFeedItems = ({ voterAddress, filter }) => {
+  const chainId = useChainId();
   const delegate = useDelegate(voterAddress);
   const proposals = useProposals({ state: true, propdates: true });
   const candidates = useProposalCandidates({
     includeCanceled: true,
     includePromoted: true,
   });
+  const nouns = useAllNounsByAccount(voterAddress);
 
   return React.useMemo(() => {
     const buildProposalItems = () => buildVoterFeed(delegate, { proposals });
@@ -56,7 +59,14 @@ const useFeedItems = ({ voterAddress, filter }) => {
         case "candidates":
           return [...buildCandidateItems()];
         default:
-          return [...buildVoterFeed(delegate, { proposals, candidates })];
+          return [
+            ...buildVoterFeed(delegate, {
+              proposals,
+              candidates,
+              nouns,
+              chainId,
+            }),
+          ];
       }
     };
 
@@ -64,7 +74,7 @@ const useFeedItems = ({ voterAddress, filter }) => {
       { value: (i) => i.blockNumber, order: "desc" },
       buildFeedItems()
     );
-  }, [delegate, proposals, candidates, filter]);
+  }, [delegate, proposals, candidates, nouns, chainId, filter]);
 };
 
 const getDelegateVotes = (delegate) => {

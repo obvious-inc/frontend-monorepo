@@ -935,7 +935,12 @@ export const useAllNounsByAccount = (accountAddress) => {
     [...delegatedNouns, ...ownedNouns]
   );
 
-  return arrayUtils.sortBy((n) => parseInt(n.id), uniqueNouns);
+  const nounsById = useStore((s) => s.nounsById);
+
+  return React.useMemo(
+    () => uniqueNouns.map((n) => nounsById[n.id]).filter(Boolean),
+    [uniqueNouns, nounsById]
+  );
 };
 
 export const useAccount = (id) =>

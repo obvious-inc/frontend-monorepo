@@ -13,6 +13,7 @@ import { useProposal, useProposalCandidate } from "../store.js";
 import AccountPreviewPopoverTrigger from "./account-preview-popover-trigger.js";
 import FormattedDateWithTooltip from "./formatted-date-with-tooltip.js";
 import AccountAvatar from "./account-avatar.js";
+import NounPreviewPopoverTrigger from "./noun-preview-popover-trigger.js";
 
 const MarkdownRichText = React.lazy(() => import("./markdown-rich-text.js"));
 
@@ -519,6 +520,92 @@ const ItemTitle = ({ item, context }) => {
               >
                 Propdate
               </a>
+            </span>
+          );
+
+        case "noun-auction-bought":
+          return (
+            <span
+              css={(t) =>
+                css({
+                  color: t.colors.textDimmed,
+                })
+              }
+            >
+              <span>
+                <AccountPreviewPopoverTrigger
+                  showAvatar
+                  accountAddress={item.authorAccount}
+                />{" "}
+                bought{" "}
+                <NounPreviewPopoverTrigger
+                  inline
+                  nounId={item.nounId}
+                  popoverPlacement="top"
+                  css={(t) => css({ color: t.colors.textDimmed })}
+                />{" "}
+                from auction house
+              </span>
+            </span>
+          );
+
+        case "noun-transferred":
+          return (
+            <span
+              css={(t) =>
+                css({
+                  color: t.colors.textDimmed,
+                })
+              }
+            >
+              <span>
+                <AccountPreviewPopoverTrigger
+                  showAvatar
+                  accountAddress={item.fromAccount}
+                />{" "}
+                transferred{" "}
+                <NounPreviewPopoverTrigger
+                  inline
+                  nounId={item.nounId}
+                  popoverPlacement="top"
+                  css={(t) => css({ color: t.colors.textDimmed })}
+                />{" "}
+                to{" "}
+                <AccountPreviewPopoverTrigger
+                  showAvatar
+                  accountAddress={item.toAccount}
+                />
+              </span>
+            </span>
+          );
+
+        case "noun-delegated":
+          return (
+            <span
+              css={(t) =>
+                css({
+                  color: t.colors.textDimmed,
+                })
+              }
+            >
+              <span>
+                <AccountPreviewPopoverTrigger
+                  showAvatar
+                  accountAddress={item.authorAccount}
+                />{" "}
+                delegated{" "}
+                <NounPreviewPopoverTrigger
+                  inline
+                  nounId={item.nounId}
+                  popoverPlacement="top"
+                  css={(t) => css({ color: t.colors.textDimmed })}
+                />{" "}
+                to{" "}
+                <AccountPreviewPopoverTrigger
+                  showAvatar
+                  accountAddress={item.toAccount}
+                />
+              </span>
             </span>
           );
 
