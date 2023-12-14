@@ -455,6 +455,7 @@ const VoterHeader = ({ voterAddress }) => {
         <h1
           css={(t) =>
             css({
+              color: t.colors.textHeader,
               fontSize: t.text.sizes.headerLarger,
               lineHeight: 1.15,
               "@media(min-width: 600px)": {

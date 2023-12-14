@@ -980,6 +980,7 @@ export const ProposalHeader = ({
             fontSize: t.text.sizes.headerLarger,
             lineHeight: 1.15,
             margin: "0 0 0.3rem",
+            color: t.colors.textHeader,
             "@media(min-width: 600px)": {
               fontSize: t.text.sizes.huge,
             },
