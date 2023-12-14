@@ -1153,7 +1153,7 @@ const ProposalContentEditor = ({
             fontWeight: t.text.weights.header,
             border: 0,
             padding: 0,
-            color: t.colors.textNormal,
+            color: t.colors.textHeader,
             margin: "0 0 0.3rem",
             "::placeholder": { color: t.colors.textMuted },
           })
