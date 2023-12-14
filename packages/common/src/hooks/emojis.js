@@ -19,7 +19,7 @@ const createSingeltonLoader = (loader) => async () => {
   }
 };
 
-const Context = React.createContext();
+const Context = React.createContext({});
 
 export const Provider = ({ loader: loader_, children }) => {
   const [entries, setEntries] = React.useState(cachedEntries ?? []);
@@ -28,7 +28,6 @@ export const Provider = ({ loader: loader_, children }) => {
     () => indexBy((e) => e.id ?? e.emoji, entries),
     [entries]
   );
-  console.log(entries);
 
   const loader = useLatestCallback(async () => {
     const load = createSingeltonLoader(loader_);
@@ -53,11 +52,11 @@ export const Provider = ({ loader: loader_, children }) => {
 const useFetchDataEffect = ({ enabled = true } = {}) => {
   const { loader, entries } = React.useContext(Context);
 
-  const hasData = entries.length > 0;
+  const hasData = entries != null && entries.length > 0;
 
   React.useEffect(() => {
     if (!enabled || hasData) return;
-    loader();
+    loader?.();
   }, [loader, enabled, hasData]);
 };
 
@@ -84,7 +83,7 @@ const useAll = ({ enabled = true } = {}) => {
 export const useEmojiById = (id) => {
   const { entriesById } = React.useContext(Context);
   useFetchDataEffect();
-  return entriesById[id];
+  return entriesById?.[id];
 };
 
 export default useAll;
