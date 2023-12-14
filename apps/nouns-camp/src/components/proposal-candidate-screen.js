@@ -33,7 +33,10 @@ import {
   buildFeed,
   getSignals,
 } from "../utils/candidates.js";
-import { getActionTransactions } from "../utils/transactions.js";
+import {
+  resolveAction as resolveActionTransactions,
+  buildActions as buildActionsFromTransactions,
+} from "../utils/transactions.js";
 import useChainId from "../hooks/chain-id.js";
 import {
   useProposalCandidate,
@@ -992,7 +995,9 @@ const ProposalCandidateEditDialog = ({
 
   const [title, setTitle] = React.useState(persistedTitle);
   const [body, setBody] = React.useState(persistedRichTextBody);
-  const [actions, setActions] = React.useState([]);
+  const [actions, setActions] = React.useState(() =>
+    buildActionsFromTransactions(candidate.latestVersion.content.transactions)
+  );
 
   const [hasPendingSubmit, setPendingSubmit] = React.useState(false);
 
@@ -1021,7 +1026,7 @@ const ProposalCandidateEditDialog = ({
       const description = `# ${title.trim()}\n\n${bodyMarkdown}`;
 
       const transactions = actions.flatMap((a) =>
-        getActionTransactions(a, { chainId })
+        resolveActionTransactions(a, { chainId })
       );
       await updateProposalCandidate({ description, transactions }, { message });
       dismiss();

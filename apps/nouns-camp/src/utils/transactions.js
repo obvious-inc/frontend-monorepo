@@ -5,6 +5,8 @@ import {
   parseAbiItem,
   parseUnits,
   parseEther,
+  formatUnits,
+  formatEther,
 } from "viem";
 import { string as stringUtils } from "@shades/common/utils";
 import { resolveAddress, resolveIdentifier } from "../contracts.js";
@@ -418,7 +420,130 @@ export const extractAmounts = (parsedTransactions) => {
   ].filter((e) => e.amount > 0 || e.tokens?.length > 0);
 };
 
-export const getActionTransactions = (a, { chainId }) => {
+export const buildActions = (transactions) => {
+  let transactionsLeft = [...transactions];
+  const actions = [];
+
+  const extractStreamAction = () => {
+    const streamTx = transactionsLeft.find((t) => t.type === "stream");
+
+    if (streamTx == null) return null;
+
+    const usdcFundingTx = transactionsLeft.find(
+      (t) =>
+        t.type === "usdc-stream-funding-via-payer" &&
+        t.receiverAddress.toLowerCase() ===
+          streamTx.streamContractAddress.toLowerCase()
+    );
+
+    if (usdcFundingTx != null) {
+      transactionsLeft = transactionsLeft.filter(
+        (t) => t !== streamTx && t !== usdcFundingTx
+      );
+      return {
+        type: "streaming-payment",
+        target: streamTx.receiverAddress,
+        currency: "usdc",
+        amount: formatUnits(streamTx.tokenAmount, decimalsByCurrency["usdc"]),
+        startTimestamp: streamTx.startDate.getTime(),
+        endTimestamp: streamTx.endDate.getTime(),
+        predictedStreamContractAddress: streamTx.streamContractAddress,
+      };
+    }
+
+    const wethFundingTx = transactionsLeft.find(
+      (t) =>
+        t.type === "weth-stream-funding" &&
+        t.receiverAddress.toLowerCase() ===
+          streamTx.streamContractAddress.toLowerCase()
+    );
+
+    if (wethFundingTx == null) return null;
+
+    const wethDepositTx = transactionsLeft.find(
+      (t) =>
+        t.type === "weth-deposit" &&
+        t.value.toString() === wethFundingTx.wethAmount.toString()
+    );
+
+    if (wethDepositTx == null) return null;
+
+    transactionsLeft = transactionsLeft.filter(
+      (t) => t !== streamTx && t !== wethFundingTx && t !== wethDepositTx
+    );
+
+    return {
+      type: "streaming-payment",
+      target: streamTx.receiverAddress,
+      currency: "weth",
+      amount: formatUnits(streamTx.tokenAmount, decimalsByCurrency["weth"]),
+      startTimestamp: streamTx.startDate.getTime(),
+      endTimestamp: streamTx.endDate.getTime(),
+      predictedStreamContractAddress: streamTx.streamContractAddress,
+    };
+  };
+
+  const extractOneTimePaymentAction = () => {
+    const transferTx = transactionsLeft.find((t) => t.type === "transfer");
+
+    if (transferTx != null) {
+      transactionsLeft = transactionsLeft.filter((t) => t !== transferTx);
+      return {
+        type: "one-time-payment",
+        target: transferTx.target,
+        currency: "eth",
+        amount: formatEther(transferTx.value),
+      };
+    }
+
+    const usdcTransferTx = transactionsLeft.find(
+      (t) => t.type === "usdc-transfer-via-payer"
+    );
+
+    if (usdcTransferTx != null) {
+      transactionsLeft = transactionsLeft.filter((t) => t !== usdcTransferTx);
+      return {
+        type: "one-time-payment",
+        target: usdcTransferTx.receiverAddress,
+        currency: "usdc",
+        amount: formatUnits(
+          usdcTransferTx.usdcAmount,
+          decimalsByCurrency["usdc"]
+        ),
+      };
+    }
+
+    return null;
+  };
+
+  while (transactionsLeft.length > 0) {
+    const streamAction = extractStreamAction();
+    if (streamAction != null) {
+      actions.push(streamAction);
+      continue;
+    }
+
+    const oneTimePaymentAction = extractOneTimePaymentAction();
+    if (oneTimePaymentAction != null) {
+      actions.push(oneTimePaymentAction);
+      continue;
+    }
+
+    return actions;
+
+    //     const customTransactionAction = extractCustomTransactionAction();
+    //     if (customTransactionAction != null) {
+    //       actions.push(customTransactionAction);
+    //       continue;
+    //     }
+
+    //     throw new Error()
+  }
+
+  return actions;
+};
+
+export const resolveAction = (a, { chainId }) => {
   const nounsTokenBuyerContract = resolveIdentifier(chainId, "token-buyer");
 
   const getParsedTransactions = () => {
@@ -468,7 +593,7 @@ export const getActionTransactions = (a, { chainId }) => {
                 value: parseUnits(a.amount, decimalsByCurrency.eth),
               },
               {
-                type: "weth-transfer",
+                type: "weth-stream-funding",
                 receiverAddress: a.predictedStreamContractAddress,
                 wethAmount: parseUnits(a.amount, decimalsByCurrency.weth),
               },
@@ -478,7 +603,7 @@ export const getActionTransactions = (a, { chainId }) => {
             return [
               createStreamTransaction,
               {
-                type: "usdc-transfer-via-payer",
+                type: "usdc-stream-funding-via-payer",
                 receiverAddress: a.predictedStreamContractAddress,
                 usdcAmount: parseUnits(a.amount, decimalsByCurrency.usdc),
               },

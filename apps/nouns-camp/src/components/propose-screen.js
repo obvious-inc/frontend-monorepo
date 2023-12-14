@@ -15,7 +15,7 @@ import Select from "@shades/ui-web/select";
 import Dialog from "@shades/ui-web/dialog";
 import DialogHeader from "@shades/ui-web/dialog-header";
 import DialogFooter from "@shades/ui-web/dialog-footer";
-import { getActionTransactions } from "../utils/transactions.js";
+import { resolveAction as resolveActionTransaction } from "../utils/transactions.js";
 import { useWallet } from "../hooks/wallet.js";
 import useChainId from "../hooks/chain-id.js";
 import {
@@ -143,7 +143,7 @@ const ProposeScreen = () => {
       const description = `# ${draft.name.trim()}\n\n${bodyMarkdown}`;
 
       const transactions = draft.actions.flatMap((a) =>
-        getActionTransactions(a, { chainId })
+        resolveActionTransaction(a, { chainId })
       );
 
       if (tokenBuyerTopUpValue > 0)

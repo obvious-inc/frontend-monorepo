@@ -21,7 +21,7 @@ import Button from "@shades/ui-web/button";
 import Link from "@shades/ui-web/link";
 import Dialog from "@shades/ui-web/dialog";
 import DialogFooter from "@shades/ui-web/dialog-footer";
-import { getActionTransactions } from "../utils/transactions.js";
+import { resolveAction as resolveActionTransactions } from "../utils/transactions.js";
 import { useContract } from "../contracts.js";
 import useChainId from "../hooks/chain-id.js";
 import useKeyboardShortcuts from "../hooks/keyboard-shortcuts.js";
@@ -612,7 +612,7 @@ const ActionSummary = ({ action: a }) => {
     case "custom-transaction":
       return (
         <TransactionExplanation
-          transaction={getActionTransactions(a, { chainId })[0]}
+          transaction={resolveActionTransactions(a, { chainId })[0]}
         />
       );
 
@@ -731,7 +731,7 @@ const ActionList = ({ actions, selectIndex, disabled = false }) => (
 
 const ActionListItem = ({ action: a, openEditDialog, disabled = false }) => {
   const chainId = useChainId();
-  const actionTransactions = getActionTransactions(a, { chainId });
+  const actionTransactions = resolveActionTransactions(a, { chainId });
 
   const daoTokenBuyerContract = useContract("token-buyer");
   const daoPayerContract = useContract("payer");
