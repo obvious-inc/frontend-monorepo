@@ -18,10 +18,7 @@ import {
   useMessageReactions,
   useSortedMessageReplies,
 } from "@shades/common/app";
-import {
-  message as messageUtils,
-  emoji as emojiUtils,
-} from "@shades/common/utils";
+import { message as messageUtils } from "@shades/common/utils";
 import {
   useLatestCallback,
   useMatchMedia,
