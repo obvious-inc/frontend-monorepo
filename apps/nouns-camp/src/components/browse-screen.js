@@ -1491,9 +1491,10 @@ const ProposalCandidateItem = React.memo(({ candidateId }) => {
               },
             })}
           >
-            {feedbackAuthorAccounts.map((a) => (
+            {feedbackAuthorAccounts.slice(0, 10).map((a) => (
               <AccountAvatar key={a} address={a} size="2rem" />
             ))}
+            {feedbackAuthorAccounts.length > 10 && <>...</>}
           </div>
 
           {isCanceled ? (
