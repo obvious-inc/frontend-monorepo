@@ -9,6 +9,7 @@ import {
 } from "@shades/common/utils";
 import { useLatestCallback } from "@shades/common/react";
 import { useChannel, useAllChannels, useEmojis } from "@shades/common/app";
+import Emoji from "./emoji.js";
 import AccountAvatar from "./account-avatar.js";
 import ChannelAvatar from "./channel-avatar.js";
 import RichTextEditor from "./rich-text-editor.js";
@@ -136,18 +137,13 @@ const RichTextEditorWithAutoComplete = React.forwardRef(
           ),
         ];
         return {
-          value: e.emoji,
+          value: e.id ?? e.emoji,
           label: (
             <span>
-              <span
-                style={{
-                  display: "inline-flex",
-                  transform: "scale(1.35)",
-                  marginRight: "0.5rem",
-                }}
-              >
-                {e.emoji}
-              </span>{" "}
+              <Emoji
+                emoji={e.id ?? e.emoji}
+                css={css({ marginRight: "0.8rem" })}
+              />
               {visibleAliases.map((a, i) => {
                 const isMatch = a.includes(lowerCaseQuery);
                 const matchStartIndex = isMatch && a.indexOf(lowerCaseQuery);

@@ -56,6 +56,7 @@ const entrypoints = [
     dependencies: ["viem", "@nouns/assets", "@nouns/sdk"],
   },
   { file: "emoji.js" },
+  { file: "custom-emoji.js" },
 ];
 
 export default [

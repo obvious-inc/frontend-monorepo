@@ -18,7 +18,10 @@ import {
   useMessageReactions,
   useSortedMessageReplies,
 } from "@shades/common/app";
-import { message as messageUtils } from "@shades/common/utils";
+import {
+  message as messageUtils,
+  emoji as emojiUtils,
+} from "@shades/common/utils";
 import {
   useLatestCallback,
   useMatchMedia,
@@ -37,6 +40,7 @@ import InlineUserButton from "@shades/ui-web/inline-user-button";
 import * as DropdownMenu from "@shades/ui-web/dropdown-menu";
 import * as Toolbar from "@shades/ui-web/toolbar";
 import * as Tooltip from "@shades/ui-web/tooltip";
+import Emoji from "@shades/ui-web/emoji";
 import EmojiPicker from "@shades/ui-web/emoji-picker";
 import MessageEditorForm from "@shades/ui-web/message-editor-form";
 import Link from "@shades/ui-web/link";
@@ -990,7 +994,7 @@ const Reactions = ({ messageId, addReaction, hideAddButton, layout }) => {
               display: "flex",
               alignItems: "center",
               height: "2.5rem",
-              fontSize: "1.5rem",
+              fontSize: "1.25rem",
               background: t.colors.backgroundModifierHover,
               borderRadius: "var(--border-radius)",
               padding: "0 0.7rem 0 0.6rem",
@@ -1067,7 +1071,9 @@ const Reaction = ({ messageId, emoji, count, users: userIds }) => {
           }}
           className={hasReacted ? "active" : undefined}
         >
-          <span>{emoji}</span>
+          <span>
+            <Emoji emoji={emoji} />
+          </span>
           <span className="count">{count}</span>
         </button>
       </Tooltip.Trigger>
@@ -1089,12 +1095,12 @@ const Reaction = ({ messageId, emoji, count, users: userIds }) => {
         >
           <div
             css={css({
-              fontSize: "2.8rem",
+              fontSize: "2rem",
               lineHeight: "1.1",
               padding: "0.1rem 0 0",
             })}
           >
-            {emoji}
+            <Emoji emoji={emoji} />
           </div>
           <div
             css={css({

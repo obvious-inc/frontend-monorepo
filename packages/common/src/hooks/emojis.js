@@ -6,6 +6,7 @@ import useLatestCallback from "../react/hooks/latest-callback.js";
 const defaultEmojiSet = ["😍", "👍", "🔥", "✨", "🙏", "👀", "✅", "😎"];
 
 let loaderPromise = null;
+let cachedEntries = null;
 
 const createSingeltonLoader = (loader) => async () => {
   if (loaderPromise != null) return loaderPromise;
@@ -20,55 +21,70 @@ const createSingeltonLoader = (loader) => async () => {
 
 const Context = React.createContext();
 
-const useLoader = () => {
-  const loader = React.useContext(Context);
-
-  return useLatestCallback(async () => {
-    const load = createSingeltonLoader(loader);
-    return load();
-  });
-};
-
-export const Provider = ({ loader, children }) => (
-  <Context.Provider value={loader}>{children}</Context.Provider>
-);
-
-let cachedEntries = null;
-
-const useEmojis = ({ enabled = true } = {}) => {
-  const loader = useLoader();
+export const Provider = ({ loader: loader_, children }) => {
   const [entries, setEntries] = React.useState(cachedEntries ?? []);
-  const recentlyUsedEntries = useRecentUsedEntries(entries);
 
-  React.useEffect(() => {
-    if (!enabled || entries.length !== 0) return;
+  const entriesById = React.useMemo(
+    () => indexBy((e) => e.id ?? e.emoji, entries),
+    [entries]
+  );
+  console.log(entries);
 
-    loader().then((entries) => {
+  const loader = useLatestCallback(async () => {
+    const load = createSingeltonLoader(loader_);
+    return load().then((entries) => {
       cachedEntries = entries;
       setEntries(entries);
     });
-  }, [loader, enabled, entries.length]);
+  });
 
+  const contextValue = React.useMemo(
+    () => ({
+      entries,
+      entriesById,
+      loader,
+    }),
+    [entries, entriesById, loader]
+  );
+
+  return <Context.Provider value={contextValue}>{children}</Context.Provider>;
+};
+
+const useFetchDataEffect = ({ enabled = true } = {}) => {
+  const { loader, entries } = React.useContext(Context);
+
+  const hasData = entries.length > 0;
+
+  React.useEffect(() => {
+    if (!enabled || hasData) return;
+    loader();
+  }, [loader, enabled, hasData]);
+};
+
+const useRecentlyUsedEntries = () => {
+  const { entriesById } = React.useContext(Context);
+  const [recentlyUsedIds] = useCachedState("recent-emoji", []);
+
+  return React.useMemo(
+    () =>
+      unique([...(recentlyUsedIds ?? []), ...defaultEmojiSet])
+        .map((id) => entriesById[id])
+        .filter(Boolean),
+    [recentlyUsedIds, entriesById]
+  );
+};
+
+const useAll = ({ enabled = true } = {}) => {
+  const { entries } = React.useContext(Context);
+  const recentlyUsedEntries = useRecentlyUsedEntries();
+  useFetchDataEffect({ enabled });
   return { allEntries: entries, recentlyUsedEntries };
 };
 
-const useRecentUsedEntries = (entries) => {
-  const [recentlyUsedEmojis] = useCachedState("recent-emoji", []);
-
-  const entriesByEmoji = React.useMemo(
-    () => indexBy((e) => e.emoji, entries),
-    [entries]
-  );
-
-  const recentlyUsedEntries = React.useMemo(
-    () =>
-      unique([...(recentlyUsedEmojis ?? []), ...defaultEmojiSet])
-        .map((e) => entriesByEmoji[e])
-        .filter(Boolean),
-    [recentlyUsedEmojis, entriesByEmoji]
-  );
-
-  return recentlyUsedEntries;
+export const useEmojiById = (id) => {
+  const { entriesById } = React.useContext(Context);
+  useFetchDataEffect();
+  return entriesById[id];
 };
 
-export default useEmojis;
+export default useAll;
