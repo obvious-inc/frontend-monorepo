@@ -1,5 +1,6 @@
 import getDateYear from "date-fns/getYear";
 import React from "react";
+import { formatEther, parseEther } from "viem";
 import { useAccount } from "wagmi";
 import { css, Global as GlobalStyles } from "@emotion/react";
 import { Overlay } from "react-aria";
@@ -37,6 +38,7 @@ import { MainContentContainer } from "./layout.js";
 import FormattedDate from "./formatted-date.js";
 import FormattedNumber from "./formatted-number.js";
 import AccountPreviewPopoverTrigger from "./account-preview-popover-trigger.js";
+import Callout from "./callout.js";
 import {
   useEnhancedParsedTransaction,
   TransactionExplanation,
@@ -126,7 +128,7 @@ const ProposalEditor = ({
                 ...actions.map((a) => ({ ...a, editable: true })),
                 tokenBuyerTopUpValue > 0 && {
                   type: "payer-top-up",
-                  value: tokenBuyerTopUpValue,
+                  amount: formatEther(tokenBuyerTopUpValue),
                 },
               ].filter(Boolean)}
               setActions={setActions}
@@ -619,7 +621,7 @@ const ActionSummary = ({ action: a }) => {
     case "payer-top-up":
       return (
         <TransactionExplanation
-          transaction={{ type: "payer-top-up", value: a.value }}
+          transaction={{ type: "payer-top-up", value: parseEther(a.amount) }}
         />
       );
 
@@ -1173,6 +1175,7 @@ const ProposalContentEditor = ({
           accountAddress={connectedAccountAddress}
         />
       </div>
+
       {editorMode === "rich-text" ? (
         <ErrorBoundary fallback={() => <EditorRenderError body={body} />}>
           <RichTextEditor
@@ -1286,21 +1289,48 @@ const SidebarContent = ({ actions, setActions, disabled }) => {
   return (
     <>
       {hasActions && (
-        <>
-          <h2
-            css={(t) =>
-              css({
-                textTransform: "uppercase",
-                fontSize: t.text.sizes.small,
-                fontWeight: t.text.weights.emphasis,
-                color: t.colors.textDimmed,
-                margin: "0 0 1.6rem",
-              })
-            }
-          >
-            Actions
-          </h2>
+        <h2
+          css={(t) =>
+            css({
+              textTransform: "uppercase",
+              fontSize: t.text.sizes.small,
+              fontWeight: t.text.weights.emphasis,
+              color: t.colors.textDimmed,
+              margin: "0 0 1.6rem",
+            })
+          }
+        >
+          Actions
+        </h2>
+      )}
 
+      <ErrorBoundary
+        fallback={({ clearError }) => (
+          <Callout variant="error">
+            <p style={{ padding: "3.2rem 0", textAlign: "center" }}>
+              Transaction parsing failed
+            </p>
+            <p>
+              <Link
+                type="button"
+                component="button"
+                color={(t) => t.colors.textNormal}
+                size="small"
+                onClick={() => {
+                  if (!confirm("Are you sure you wish to clear all actions?"))
+                    return;
+
+                  setActions([]);
+                  clearError();
+                }}
+              >
+                Reset actions
+              </Link>
+            </p>
+          </Callout>
+        )}
+      >
+        {hasActions && (
           <ActionList
             actions={actions}
             disabled={disabled}
@@ -1308,31 +1338,31 @@ const SidebarContent = ({ actions, setActions, disabled }) => {
               setSelectedActionIndex(i);
             }}
           />
-        </>
-      )}
+        )}
 
-      <div
-        style={{
-          marginTop: hasActions ? "2.8rem" : undefined,
-          paddingLeft: hasActions ? "2.4rem" : undefined,
-        }}
-      >
-        <Button
-          type="button"
-          size={hasActions ? "default" : "large"}
-          icon={
-            hasActions ? <PlusIcon style={{ width: "0.9rem" }} /> : undefined
-          }
-          onClick={() => {
-            setShowNewActionDialog(true);
+        <div
+          style={{
+            marginTop: hasActions ? "2.8rem" : undefined,
+            paddingLeft: hasActions ? "2.4rem" : undefined,
           }}
-          disabled={disabled}
-          fullWidth={!hasActions}
-          style={{ height: hasActions ? undefined : "5.25rem" }}
         >
-          {hasActions ? "Add action" : "Add a proposal action"}
-        </Button>
-      </div>
+          <Button
+            type="button"
+            size={hasActions ? "default" : "large"}
+            icon={
+              hasActions ? <PlusIcon style={{ width: "0.9rem" }} /> : undefined
+            }
+            onClick={() => {
+              setShowNewActionDialog(true);
+            }}
+            disabled={disabled}
+            fullWidth={!hasActions}
+            style={{ height: hasActions ? undefined : "5.25rem" }}
+          >
+            {hasActions ? "Add action" : "Add a proposal action"}
+          </Button>
+        </div>
+      </ErrorBoundary>
 
       {selectedAction != null && (
         <ActionDialog
@@ -1342,12 +1372,14 @@ const SidebarContent = ({ actions, setActions, disabled }) => {
           }}
           title="Edit action"
           submit={(a) => {
-            setActions(
+            setActions((actions) =>
               actions.map((a_, i) => (i !== selectedActionIndex ? a_ : a))
             );
           }}
           remove={() => {
-            setActions(actions.filter((_, i) => i !== selectedActionIndex));
+            setActions((actions) =>
+              actions.filter((_, i) => i !== selectedActionIndex)
+            );
           }}
           initialType={selectedAction.type}
           initialCurrency={selectedAction.currency}
@@ -1355,14 +1387,10 @@ const SidebarContent = ({ actions, setActions, disabled }) => {
           initialTarget={selectedAction.target}
           initialStreamStartTimestamp={selectedAction.startTimestamp}
           initialStreamEndTimestamp={selectedAction.endTimestamp}
-          initialContractCallTargetAddress={
-            selectedAction.contractCallTargetAddress
-          }
-          initialContractCallFormattedTargetAbiItem={
-            selectedAction.contractCallFormattedTargetAbiItem
-          }
+          initialContractCallTarget={selectedAction.contractCallTarget}
+          initialContractCallSignature={selectedAction.contractCallSignature}
           initialContractCallArguments={selectedAction.contractCallArguments}
-          initialContractCallEthValue={selectedAction.contractCallEthValue}
+          initialContractCallValue={selectedAction.contractCallValue}
           initialContractCallCustomAbiString={
             selectedAction.contractCallCustomAbiString
           }
@@ -1377,7 +1405,7 @@ const SidebarContent = ({ actions, setActions, disabled }) => {
           }}
           title="Add action"
           submit={(a) => {
-            setActions([...actions, a]);
+            setActions((actions) => [...actions, a]);
           }}
           submitButtonLabel="Add"
         />

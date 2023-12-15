@@ -996,7 +996,9 @@ const ProposalCandidateEditDialog = ({
   const [title, setTitle] = React.useState(persistedTitle);
   const [body, setBody] = React.useState(persistedRichTextBody);
   const [actions, setActions] = React.useState(() =>
-    buildActionsFromTransactions(candidate.latestVersion.content.transactions)
+    buildActionsFromTransactions(candidate.latestVersion.content.transactions, {
+      chainId,
+    })
   );
 
   const [hasPendingSubmit, setPendingSubmit] = React.useState(false);

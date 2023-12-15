@@ -5,6 +5,11 @@ export const compose =
   (x, ...rest) =>
     fns.reduceRight((v, f) => f(v, ...rest), x);
 
+export const pipe =
+  (...fns) =>
+  (x, ...rest) =>
+    fns.reduce((v, f) => f(v, ...rest), x);
+
 export const waterfall = (promiseCreators) => {
   const responses = [];
   return promiseCreators

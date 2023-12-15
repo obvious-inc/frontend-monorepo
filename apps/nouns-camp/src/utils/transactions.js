@@ -420,7 +420,7 @@ export const extractAmounts = (parsedTransactions) => {
   ].filter((e) => e.amount > 0 || e.tokens?.length > 0);
 };
 
-export const buildActions = (transactions) => {
+export const buildActions = (transactions, { chainId }) => {
   let transactionsLeft = [...transactions];
   const actions = [];
 
@@ -516,6 +516,43 @@ export const buildActions = (transactions) => {
     return null;
   };
 
+  const extractPayerTopUpAction = () => {
+    const topUpTx = transactionsLeft.find((t) => t.type === "payer-top-up");
+
+    if (topUpTx == null) return null;
+
+    transactionsLeft = transactionsLeft.filter((t) => t !== topUpTx);
+
+    return {
+      type: "payer-top-up",
+      amount: formatEther(topUpTx.value),
+    };
+  };
+
+  const extractCustomTransactionAction = () => {
+    if (transactionsLeft.length === 0) return null;
+
+    const { targets, signatures, calldatas, values } = unparse(
+      [transactionsLeft[0]],
+      { chainId }
+    );
+
+    transactionsLeft = transactionsLeft.slice(1);
+
+    const { name, inputs } = decodeCalldataWithSignature({
+      signature: signatures[0],
+      calldata: calldatas[0],
+    });
+
+    return {
+      type: "custom-transaction",
+      contractCallTarget: targets[0],
+      contractCallSignature: `${name}(${inputs.map((i) => i.type).join(", ")})`,
+      contractCallArguments: inputs.map((i) => i.value),
+      contractCallValue: values[0],
+    };
+  };
+
   while (transactionsLeft.length > 0) {
     const streamAction = extractStreamAction();
     if (streamAction != null) {
@@ -529,15 +566,19 @@ export const buildActions = (transactions) => {
       continue;
     }
 
-    return actions;
+    const payerTopUpAction = extractPayerTopUpAction();
+    if (payerTopUpAction != null) {
+      actions.push(payerTopUpAction);
+      continue;
+    }
 
-    //     const customTransactionAction = extractCustomTransactionAction();
-    //     if (customTransactionAction != null) {
-    //       actions.push(customTransactionAction);
-    //       continue;
-    //     }
+    const customTransactionAction = extractCustomTransactionAction();
+    if (customTransactionAction != null) {
+      actions.push(customTransactionAction);
+      continue;
+    }
 
-    //     throw new Error()
+    throw new Error();
   }
 
   return actions;
@@ -619,39 +660,34 @@ export const resolveAction = (a, { chainId }) => {
           {
             type: "payer-top-up",
             target: nounsTokenBuyerContract,
-            value: a.value,
+            value: parseEther(a.amount),
           },
         ];
 
       case "custom-transaction": {
-        const {
-          name: functionName,
-          inputs: inputTypes,
-          stateMutability,
-        } = parseAbiItem(a.contractCallFormattedTargetAbiItem);
+        const { name: functionName, inputs: inputTypes } = parseAbiItem(
+          `function ${a.contractCallSignature}`
+        );
         const functionInputs = a.contractCallArguments.map((value, i) => ({
           ...inputTypes[i],
           value,
         }));
 
-        // parseEther fails if we don’t
-        const { contractCallEthValue } = a;
-
-        if (stateMutability === "payable")
+        if (a.contractCallValue > 0)
           return [
             {
               type: "payable-function-call",
-              target: a.contractCallTargetAddress,
+              target: a.contractCallTarget,
               functionName,
               functionInputs,
-              value: parseEther(contractCallEthValue),
+              value: a.contractCallValue,
             },
           ];
 
         return [
           {
             type: "function-call",
-            target: a.contractCallTargetAddress,
+            target: a.contractCallTarget,
             functionName,
             functionInputs,
           },
