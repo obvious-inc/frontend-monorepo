@@ -1,7 +1,8 @@
 import { css } from "@emotion/react";
 
-const Callout = ({ icon, children, ...props }) => (
+const Callout = ({ icon, variant, children, ...props }) => (
   <aside
+    data-variant={variant}
     css={(t) =>
       css({
         display: "flex",
@@ -9,6 +10,9 @@ const Callout = ({ icon, children, ...props }) => (
         background: t.colors.backgroundModifierNormal,
         padding: "1rem 1.6rem",
         borderRadius: "0.3rem",
+        '&[data-variant="error"]': {
+          color: t.colors.textDanger,
+        },
         "[data-icon]": {
           display: "flex",
           alignItems: "center",
@@ -16,6 +20,8 @@ const Callout = ({ icon, children, ...props }) => (
           width: "2rem",
           height: "2rem",
         },
+        "[data-main]": { minWidth: 0, flex: 1 },
+        "p + p": { marginTop: "1em" },
         "@media(min-width: 600px)": {
           padding: "1.6rem",
         },
@@ -24,7 +30,7 @@ const Callout = ({ icon, children, ...props }) => (
     {...props}
   >
     {icon != null && <div data-icon>{icon}</div>}
-    <span>{children}</span>
+    <div data-main>{children}</div>
   </aside>
 );
 
