@@ -349,7 +349,7 @@ const AccountPreview = React.forwardRef(({ accountAddress, close }, ref) => {
                     break;
 
                   case "copy-account-address":
-                    navigator.clipboard.writeText(accountAddress);
+                    navigator.clipboard.writeText(accountAddress.toLowerCase());
                     close();
                     break;
                 }
