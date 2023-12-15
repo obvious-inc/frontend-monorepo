@@ -291,6 +291,14 @@ const AccountPreview = React.forwardRef(({ accountAddress, close }, ref) => {
                       id: "open-agora",
                       label: "Agora",
                     },
+                    {
+                      id: "open-nounskarma",
+                      label: "NounsKarma",
+                    },
+                    {
+                      id: "open-rainbow",
+                      label: "Rainbow",
+                    },
                   ],
                 },
                 {
@@ -322,6 +330,20 @@ const AccountPreview = React.forwardRef(({ accountAddress, close }, ref) => {
                   case "open-agora":
                     window.open(
                       `https://nounsagora.com/delegate/${accountAddress}`,
+                      "_blank"
+                    );
+                    break;
+
+                  case "open-nounskarma":
+                    window.open(
+                      `https://nounskarma.xyz/player/${accountAddress}`,
+                      "_blank"
+                    );
+                    break;
+
+                  case "open-rainbow":
+                    window.open(
+                      `https://rainbow.me/${accountAddress}`,
                       "_blank"
                     );
                     break;
