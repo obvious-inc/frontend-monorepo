@@ -135,16 +135,16 @@ const EmojiPicker = ({ width = "auto", height = "100%", onSelect }) => {
       deferredHighlightedEntry == null
         ? null
         : filteredEmojisByCategoryEntries[deferredHighlightedEntry[0]][1][
-            deferredHighlightedEntry[1]
-          ],
+        deferredHighlightedEntry[1]
+        ],
     [deferredHighlightedEntry, filteredEmojisByCategoryEntries]
   );
 
   const ROW_LENGTH = 9;
 
   const addReactionAtEntry = ([ci, ei]) => {
-    const { emoji } = filteredEmojisByCategoryEntries[ci][1][ei];
-    onSelect(emoji);
+    const { id, emoji } = filteredEmojisByCategoryEntries[ci][1][ei];
+    onSelect(emoji ?? id);
   };
 
   const navigationBlockedRef = React.useRef();
@@ -373,7 +373,7 @@ const EmojiPicker = ({ width = "auto", height = "100%", onSelect }) => {
                     className="emoji"
                     data-selected={isHighlighted ? "true" : undefined}
                     onClick={() => {
-                      onSelect(id ?? emoji);
+                      onSelect(emoji ?? id);
                     }}
                     onPointerMove={() => {
                       if (

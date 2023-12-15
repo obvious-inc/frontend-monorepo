@@ -1,5 +1,6 @@
 import { generateDummyId } from "./utils/misc.js";
 import { unique } from "./utils/array.js";
+import invariant from "./utils/invariant.js";
 import {
   stringifyBlocks as stringifyMessageBlocks,
   getMentions,
@@ -454,6 +455,7 @@ export default ({
       return api.reportMessage(messageId, { comment });
     },
     addMessageReaction(messageId, { emoji }) {
+      invariant(emoji != null, "Emoji missing");
       // invariant(isEmoji(emoji), "Only emojis allowed");
 
       const me = selectMe(getStoreState());
