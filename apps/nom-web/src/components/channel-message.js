@@ -17,8 +17,12 @@ import {
   useHasReactedWithEmoji,
   useMessageReactions,
   useSortedMessageReplies,
+  useEmojiById,
 } from "@shades/common/app";
-import { message as messageUtils } from "@shades/common/utils";
+import {
+  message as messageUtils,
+  emoji as emojiUtils,
+} from "@shades/common/utils";
 import {
   useLatestCallback,
   useMatchMedia,
@@ -1050,6 +1054,9 @@ const Reactions = ({ messageId, addReaction, hideAddButton, layout }) => {
 const Reaction = ({ messageId, emoji, count, users: userIds }) => {
   const { addMessageReaction, removeMessageReaction } = useActions();
 
+  const emojiItem = useEmojiById(emoji);
+  const isPictogram = emojiItem?.emoji != null || emojiUtils.isEmoji(emoji);
+
   const hasReacted = useHasReactedWithEmoji(messageId, emoji);
   const users = useUsers(userIds);
   const authorDisplayNames = users.map((m) => m.displayName);
@@ -1092,7 +1099,7 @@ const Reaction = ({ messageId, emoji, count, users: userIds }) => {
         >
           <div
             css={css({
-              fontSize: "2rem",
+              fontSize: "2.8rem",
               lineHeight: "1.1",
               padding: "0.1rem 0 0",
             })}
@@ -1106,13 +1113,20 @@ const Reaction = ({ messageId, emoji, count, users: userIds }) => {
               padding: "0.2rem 0",
             })}
           >
-            {[
-              authorDisplayNames.slice(0, -1).join(", "),
-              authorDisplayNames.slice(-1)[0],
-            ]
-              .filter(Boolean)
-              .join(" and ")}{" "}
-            reacted
+            {authorDisplayNames.length === 2
+              ? authorDisplayNames.join(" and ")
+              : [
+                  authorDisplayNames.slice(0, -1).join(", "),
+                  authorDisplayNames.slice(-1)[0],
+                ]
+                  .filter(Boolean)
+                  .join(", and ")}{" "}
+            <span css={(t) => css({ color: t.colors.textDimmed })}>
+              reacted
+              {emojiItem != null && (
+                <> with :{emojiItem.id ?? emojiItem.aliases[0]}:</>
+              )}
+            </span>
           </div>
         </div>
       </Tooltip.Content>
