@@ -14,6 +14,9 @@ import NounAvatar from "./noun-avatar.js";
 import NounPreviewPopoverTrigger from "./noun-preview-popover-trigger.js";
 import { Link } from "react-router-dom";
 
+const searchParams = new URLSearchParams(location.search);
+const isAdminSession = searchParams.get("admin") != null;
+
 const AccountPreviewPopoverTrigger = React.forwardRef(
   (
     {
@@ -308,6 +311,10 @@ const AccountPreview = React.forwardRef(({ accountAddress, close }, ref) => {
                       id: "copy-account-address",
                       label: "Copy account address",
                     },
+                    isAdminSession && {
+                      id: "impersonate-account",
+                      label: "Impersonate account",
+                    },
                   ],
                 },
               ].filter(Boolean)}
@@ -352,6 +359,14 @@ const AccountPreview = React.forwardRef(({ accountAddress, close }, ref) => {
                     navigator.clipboard.writeText(accountAddress.toLowerCase());
                     close();
                     break;
+
+                  case "impersonate-account": {
+                    const searchParams = new URLSearchParams(location.search);
+                    searchParams.set("impersonate", accountAddress);
+                    location.replace(`${location.pathname}?${searchParams}`);
+                    close();
+                    break;
+                  }
                 }
               }}
             >
