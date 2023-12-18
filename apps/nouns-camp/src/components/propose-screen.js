@@ -120,7 +120,7 @@ const ProposeScreen = () => {
     }
   }, BigInt(0));
 
-  const tokenBuyerTopUpValue = useTokenBuyerEthNeeded(usdcSumValue);
+  const payerTopUpValue = useTokenBuyerEthNeeded(usdcSumValue);
 
   const submit = async () => {
     const buildCandidateSlug = (title) => {
@@ -146,10 +146,10 @@ const ProposeScreen = () => {
         resolveActionTransaction(a, { chainId })
       );
 
-      if (tokenBuyerTopUpValue > 0)
+      if (usdcSumValue > 0 && payerTopUpValue > 0)
         transactions.push({
           type: "payer-top-up",
-          value: tokenBuyerTopUpValue,
+          value: payerTopUpValue,
         });
 
       if (transactions.length > 10) {
@@ -248,7 +248,7 @@ const ProposeScreen = () => {
           setTitle={setName}
           setBody={setBody}
           setActions={setActions}
-          tokenBuyerTopUpValue={tokenBuyerTopUpValue}
+          payerTopUpValue={usdcSumValue > 0 ? payerTopUpValue : 0}
           containerHeight={`calc(100vh - ${theme.navBarHeight})`}
           onSubmit={() => {
             setShowSubmitDialog(true);

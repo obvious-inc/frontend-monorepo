@@ -93,7 +93,7 @@ const ProposalEditor = ({
   containerHeight,
   submitLabel,
   note,
-  tokenBuyerTopUpValue,
+  payerTopUpValue,
   scrollContainerRef,
   background,
 }) => {
@@ -126,9 +126,9 @@ const ProposalEditor = ({
             <SidebarContent
               actions={[
                 ...actions.map((a) => ({ ...a, editable: true })),
-                tokenBuyerTopUpValue > 0 && {
+                payerTopUpValue > 0 && {
                   type: "payer-top-up",
-                  amount: formatEther(tokenBuyerTopUpValue),
+                  amount: formatEther(payerTopUpValue),
                 },
               ].filter(Boolean)}
               setActions={setActions}
