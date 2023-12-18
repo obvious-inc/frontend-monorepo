@@ -283,6 +283,78 @@ export const useCreateProposal = ({ enabled = true } = {}) => {
   };
 };
 
+export const useUpdateProposal = (proposalId) => {
+  const { address: accountAddress } = useWallet();
+
+  const chainId = useChainId();
+
+  const contractAddress = getContractAddress(chainId);
+
+  const { writeAsync: updateProposal } = useContractWrite({
+    address: contractAddress,
+    abi: parseAbi([
+      "function updateProposal(uint256 proposalId, address[] memory targets, uint256[] memory values, string[] memory signatures, bytes[] memory calldatas, string memory description, string updateMessage) external",
+    ]),
+    functionName: "updateProposal",
+  });
+
+  const { writeAsync: updateProposalDescription } = useContractWrite({
+    address: getContractAddress(chainId),
+    abi: parseAbi([
+      "function updateProposalDescription(uint256 proposalId, string memory description, string updateMessage) external",
+    ]),
+    functionName: "updateProposalDescription",
+  });
+
+  const { writeAsync: updateProposalTransactions } = useContractWrite({
+    address: getContractAddress(chainId),
+    abi: parseAbi([
+      "function updateProposalTransactions(uint256 proposalId, address[] memory targets, uint256[] memory values, string[] memory signatures, bytes[] memory calldatas, string updateMessage) external",
+    ]),
+    functionName: "updateProposalTransactions",
+  });
+
+  return async ({ description, transactions }, { message }) => {
+    const write = () => {
+      if (transactions == null)
+        return updateProposalDescription({
+          args: [proposalId, description, message],
+        });
+
+      const { targets, values, signatures, calldatas } = unparseTransactions(
+        transactions,
+        { chainId }
+      );
+
+      if (description == null)
+        return updateProposalTransactions({
+          args: [proposalId, targets, values, signatures, calldatas, message],
+        });
+
+      return updateProposal({
+        args: [
+          proposalId,
+          targets,
+          values,
+          signatures,
+          calldatas,
+          description,
+          message,
+        ],
+      });
+    };
+
+    return write().then(({ hash }) => {
+      va.track("Proposal successfully updated", {
+        proposalId,
+        account: accountAddress,
+        hash,
+      });
+      return { hash };
+    });
+  };
+};
+
 export const useCancelProposal = (proposalId) => {
   const { address: accountAddress } = useWallet();
 

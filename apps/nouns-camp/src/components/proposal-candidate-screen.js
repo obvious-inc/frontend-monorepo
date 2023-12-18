@@ -1040,10 +1040,10 @@ const ProposalCandidateEditDialog = ({
     }
   };
 
-  React.useEffect(() => {
-    const messageBlocks = markdownUtils.toMessageBlocks(persistedMarkdownBody);
-    setBody(messageToRichTextBlocks(messageBlocks));
-  }, [persistedTitle, persistedMarkdownBody]);
+  // React.useEffect(() => {
+  //   const messageBlocks = markdownUtils.toMessageBlocks(persistedMarkdownBody);
+  //   setBody(messageToRichTextBlocks(messageBlocks));
+  // }, [persistedTitle, persistedMarkdownBody]);
 
   return (
     <>

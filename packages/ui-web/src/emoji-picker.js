@@ -135,8 +135,8 @@ const EmojiPicker = ({ width = "auto", height = "100%", onSelect }) => {
       deferredHighlightedEntry == null
         ? null
         : filteredEmojisByCategoryEntries[deferredHighlightedEntry[0]][1][
-        deferredHighlightedEntry[1]
-        ],
+            deferredHighlightedEntry[1]
+          ],
     [deferredHighlightedEntry, filteredEmojisByCategoryEntries]
   );
 
