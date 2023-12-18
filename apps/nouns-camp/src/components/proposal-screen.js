@@ -694,6 +694,7 @@ export const ProposalActionForm = ({
           {showModePicker && (
             <div>
               <Select
+                aria-label="Pick action type"
                 value={mode}
                 onChange={(m) => {
                   setMode(m);
