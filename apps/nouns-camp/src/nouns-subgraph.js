@@ -1064,11 +1064,7 @@ const parseEvents = (data, accountId) => {
     type: "delegate",
   }));
 
-  return arrayUtils.sortBy(
-    { value: (e) => e.blockTimestamp, order: "desc" },
-    { value: (e) => (e.type === "transfer" ? 1 : 0), order: "desc" },
-    [...transferEvents, ...delegationEvents]
-  );
+  return [...transferEvents, ...delegationEvents];
 };
 
 export const fetchProposalsVersions = async (chainId, proposalIds) =>
@@ -1336,7 +1332,7 @@ export const fetchNounsByIds = (chainId, ids) =>
     }));
 
     const getEventScore = (event) => {
-      // delegate events should come last chronologically
+      // delegate events should come after transfers chronologically
       if (event.type === "transfer") return 0;
       if (event.type === "delegate") return 1;
       else return -1;

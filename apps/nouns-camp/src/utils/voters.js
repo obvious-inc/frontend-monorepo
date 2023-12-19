@@ -86,21 +86,11 @@ export const buildEventsFeed = (delegate, account, { chainId }) => {
         transactionHash: e.id.split("_")[0],
       })) ?? [];
 
-  const getEventScore = (event) => {
-    if (event.eventType === "noun-transferred") return 0;
-    if (event.eventType === "noun-delegated") return 1;
-    else return -1;
-  };
-
-  return arrayUtils.sortBy(
-    { value: (e) => e.blockNumber, order: "desc" },
-    { value: (e) => getEventScore(e), order: "desc" },
-    [
-      ...transferredEventItems,
-      ...delegatedEventItems,
-      ...auctionBoughtEventItems,
-    ]
-  );
+  return [
+    ...transferredEventItems,
+    ...delegatedEventItems,
+    ...auctionBoughtEventItems,
+  ];
 };
 
 export const buildFeed = (
