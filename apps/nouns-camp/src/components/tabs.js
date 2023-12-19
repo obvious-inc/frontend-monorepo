@@ -23,14 +23,27 @@ export const Root = React.forwardRef(({ className, ...props }, externalRef) => {
         {...tabListProps}
         css={(t) =>
           css({
-            display: "grid",
-            gridAutoFlow: "column",
-            gridAutoColumns: "auto",
-            gridGap: "2.4rem",
-            justifyContent: "flex-start",
-            borderBottom: "0.1rem solid transparent",
-            borderColor: t.colors.borderLight,
-            overflow: 'auto',
+            position: "relative",
+            ":after": {
+              content: '""',
+              display: "block",
+              height: "0.1rem",
+              position: "absolute",
+              top: "calc(100% - 0.2rem)",
+              left: 0,
+              width: "100%",
+              background: t.colors.borderLight,
+            },
+            "[data-content]": {
+              display: "grid",
+              gridAutoFlow: "column",
+              gridAutoColumns: "auto",
+              gridGap: "2.4rem",
+              justifyContent: "flex-start",
+              paddingBottom: "0.2rem",
+              overflowY: "hidden",
+              overflowX: "auto",
+            },
             '[role="tab"]': {
               padding: "0.5rem",
               fontSize: t.text.sizes.tab,
@@ -39,7 +52,7 @@ export const Root = React.forwardRef(({ className, ...props }, externalRef) => {
               margin: "0 -0.5rem",
               borderTopLeftRadius: "0.3rem",
               borderTopRightRadius: "0.3rem",
-              whiteSpace: 'nowrap',
+              whiteSpace: "nowrap",
               "&[data-focus-visible]": {
                 boxShadow: t.shadows.focus,
               },
@@ -69,14 +82,16 @@ export const Root = React.forwardRef(({ className, ...props }, externalRef) => {
         }
         className={className}
       >
-        {[...state.collection].map((item) => (
-          <Tab
-            key={item.key}
-            item={item}
-            state={state}
-            orientation={props.orientation}
-          />
-        ))}
+        <div data-content>
+          {[...state.collection].map((item) => (
+            <Tab
+              key={item.key}
+              item={item}
+              state={state}
+              orientation={props.orientation}
+            />
+          ))}
+        </div>
       </div>
       <TabPanel key={state.selectedItem?.key} state={state} />
     </>
