@@ -30,6 +30,7 @@ export const Root = React.forwardRef(({ className, ...props }, externalRef) => {
             justifyContent: "flex-start",
             borderBottom: "0.1rem solid transparent",
             borderColor: t.colors.borderLight,
+            overflow: 'auto',
             '[role="tab"]': {
               padding: "0.5rem",
               fontSize: t.text.sizes.tab,
@@ -38,6 +39,7 @@ export const Root = React.forwardRef(({ className, ...props }, externalRef) => {
               margin: "0 -0.5rem",
               borderTopLeftRadius: "0.3rem",
               borderTopRightRadius: "0.3rem",
+              whiteSpace: 'nowrap',
               "&[data-focus-visible]": {
                 boxShadow: t.shadows.focus,
               },
