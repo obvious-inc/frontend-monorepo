@@ -530,35 +530,6 @@ const ItemTitle = ({ item, context }) => {
           return <TransferItem item={item} />;
 
         case "noun-delegated":
-          return (
-            <span
-              css={(t) =>
-                css({
-                  color: t.colors.textDimmed,
-                })
-              }
-            >
-              <span>
-                <AccountPreviewPopoverTrigger
-                  showAvatar
-                  accountAddress={item.authorAccount}
-                />{" "}
-                <Signal positive>delegated</Signal>{" "}
-                <NounPreviewPopoverTrigger
-                  inline
-                  nounId={item.nounId}
-                  popoverPlacement="top"
-                  css={(t) => css({ color: t.colors.textDimmed })}
-                />{" "}
-                to{" "}
-                <AccountPreviewPopoverTrigger
-                  showAvatar
-                  accountAddress={item.toAccount}
-                />
-              </span>
-            </span>
-          );
-
         case "noun-undelegated":
           return (
             <span
@@ -573,18 +544,34 @@ const ItemTitle = ({ item, context }) => {
                   showAvatar
                   accountAddress={item.authorAccount}
                 />{" "}
-                <Signal negative>undelegated</Signal>{" "}
+                {item.eventType === "noun-delegated" ? (
+                  <Signal positive>delegated</Signal>
+                ) : (
+                  <Signal negative>undelegated</Signal>
+                )}{" "}
                 <NounPreviewPopoverTrigger
                   inline
                   nounId={item.nounId}
                   popoverPlacement="top"
                   css={(t) => css({ color: t.colors.textDimmed })}
                 />{" "}
-                from{" "}
-                <AccountPreviewPopoverTrigger
-                  showAvatar
-                  accountAddress={item.fromAccount}
-                />
+                {item.eventType === "noun-delegated" ? (
+                  <>
+                    to{" "}
+                    <AccountPreviewPopoverTrigger
+                      showAvatar
+                      accountAddress={item.toAccount}
+                    />
+                  </>
+                ) : (
+                  <>
+                    from{" "}
+                    <AccountPreviewPopoverTrigger
+                      showAvatar
+                      accountAddress={item.fromAccount}
+                    />
+                  </>
+                )}
               </span>
             </span>
           );
