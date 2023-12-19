@@ -1,20 +1,14 @@
 import React from "react";
 import va from "@vercel/analytics";
-import { formatUnits, parseUnits } from "viem";
+import { formatUnits } from "viem";
 import { useBlockNumber } from "wagmi";
 import {
   Link as RouterLink,
   useParams,
   useSearchParams,
-  useNavigate,
 } from "react-router-dom";
-import { css, useTheme } from "@emotion/react";
-import {
-  date as dateUtils,
-  markdown as markdownUtils,
-  message as messageUtils,
-  reloadPageOnce,
-} from "@shades/common/utils";
+import { css } from "@emotion/react";
+import { date as dateUtils, reloadPageOnce } from "@shades/common/utils";
 import {
   ErrorBoundary,
   AutoAdjustingHeightTextarea,
@@ -28,21 +22,10 @@ import {
 } from "@shades/ui-web/icons";
 import Button from "@shades/ui-web/button";
 import Select from "@shades/ui-web/select";
-import Input from "@shades/ui-web/input";
 import Dialog from "@shades/ui-web/dialog";
-import DialogHeader from "@shades/ui-web/dialog-header";
-import DialogFooter from "@shades/ui-web/dialog-footer";
 import * as Tooltip from "@shades/ui-web/tooltip";
 import Spinner from "@shades/ui-web/spinner";
-import {
-  toMessageBlocks as richTextToMessageBlocks,
-  fromMessageBlocks as messageToRichTextBlocks,
-} from "@shades/ui-web/rich-text-editor";
-import {
-  extractAmounts as extractAmountsFromTransactions,
-  resolveAction as resolveActionTransactions,
-  buildActions as buildActionsFromTransactions,
-} from "../utils/transactions.js";
+import { extractAmounts as extractAmountsFromTransactions } from "../utils/transactions.js";
 import {
   buildFeed as buildProposalFeed,
   isVotableState as isVotableProposalState,
@@ -55,16 +38,12 @@ import {
   useProposalCandidate,
   useDelegate,
 } from "../store.js";
-import useChainId from "../hooks/chain-id.js";
 import {
-  useUpdateProposal,
-  useCancelProposal,
   useCastProposalVote,
   useDynamicQuorum,
 } from "../hooks/dao-contract.js";
 import { useSendProposalFeedback } from "../hooks/data-contract.js";
 import { usePriorVotes } from "../hooks/token-contract.js";
-import { useTokenBuyerEthNeeded } from "../hooks/misc-contracts.js";
 import useApproximateBlockTimestampCalculator from "../hooks/approximate-block-timestamp-calculator.js";
 import { useWallet } from "../hooks/wallet.js";
 import MetaTags_ from "./meta-tags.js";
@@ -79,11 +58,12 @@ import TransactionList, {
   FormattedEthWithConditionalTooltip,
 } from "./transaction-list.js";
 
-const ProposalEditor = React.lazy(() => import("./proposal-editor.js"));
+const ProposalEditDialog = React.lazy(() =>
+  import("./proposal-edit-dialog.js")
+);
+const MarkdownRichText = React.lazy(() => import("./markdown-rich-text.js"));
 
 const nameBySupport = { 0: "against", 1: "for", 2: "abstain" };
-
-const MarkdownRichText = React.lazy(() => import("./markdown-rich-text.js"));
 
 const supportToString = (n) => {
   if (nameBySupport[n] == null) throw new Error();
@@ -915,228 +895,6 @@ export const ProposalActionForm = ({
         )}
       </div>
     </>
-  );
-};
-
-const ProposalEditDialog = ({
-  proposalId,
-  // titleProps,
-  dismiss,
-}) => {
-  const theme = useTheme();
-  const navigate = useNavigate();
-  const chainId = useChainId();
-  const scrollContainerRef = React.useRef();
-
-  const proposal = useProposal(proposalId);
-
-  const persistedTitle = proposal.title;
-  const persistedMarkdownBody = proposal.body;
-
-  const persistedRichTextBody = React.useMemo(() => {
-    const messageBlocks = markdownUtils.toMessageBlocks(persistedMarkdownBody);
-    return messageToRichTextBlocks(messageBlocks);
-  }, [persistedMarkdownBody]);
-
-  const [showSubmitDialog, setShowSubmitDialog] = React.useState(false);
-
-  const [title, setTitle] = React.useState(persistedTitle);
-  const [body, setBody] = React.useState(persistedRichTextBody);
-  const [actions, setActions] = React.useState(() =>
-    buildActionsFromTransactions(proposal.transactions, {
-      chainId,
-    })
-  );
-
-  const [hasPendingSubmit, setPendingSubmit] = React.useState(false);
-
-  const deferredBody = React.useDeferredValue(body);
-
-  const hasDescriptionChanges = React.useMemo(() => {
-    return !messageUtils.isEqual(
-      richTextToMessageBlocks(deferredBody),
-      richTextToMessageBlocks(persistedRichTextBody),
-      { filterEmpty: true }
-    );
-  }, [deferredBody, persistedRichTextBody]);
-
-  const hasActionChanges = false;
-
-  const hasChanges = hasDescriptionChanges || hasActionChanges;
-
-  // const usdcSumValue = actions.reduce((sum, a) => {
-  //   switch (a.type) {
-  //     case "one-time-payment":
-  //     case "streaming-payment":
-  //       return a.currency !== "usdc" ? sum : sum + parseUnits(a.amount, 6);
-
-  //     default:
-  //       return sum;
-  //   }
-  // }, BigInt(0));
-
-  // const payerTopUpValue = useTokenBuyerEthNeeded(usdcSumValue);
-
-  const updateProposal = useUpdateProposal(proposalId);
-  const cancelProposal = useCancelProposal(proposalId);
-
-  const submit = async () => {
-    try {
-      setPendingSubmit(true);
-
-      const getDescription = () => {
-        if (!hasDescriptionChanges) return null;
-        const bodyMarkdown =
-          typeof body === "string"
-            ? body
-            : messageUtils.toMarkdown(richTextToMessageBlocks(body));
-        return `# ${title.trim()}\n\n${bodyMarkdown}`;
-      };
-
-      const getTransactions = () => {
-        if (!hasActionChanges) return null;
-        return actions.flatMap((a) =>
-          resolveActionTransactions(a, { chainId })
-        );
-      };
-
-      await updateProposal(
-        { description: getDescription(), transactions: getTransactions },
-        { message: "" }
-      );
-      dismiss();
-    } catch (e) {
-      console.log(e);
-      alert("Something went wrong");
-    } finally {
-      setPendingSubmit(false);
-    }
-  };
-
-  // React.useEffect(() => {
-  //   const messageBlocks = markdownUtils.toMessageBlocks(persistedMarkdownBody);
-  //   setBody(messageToRichTextBlocks(messageBlocks));
-  // }, [persistedTitle, persistedMarkdownBody]);
-
-  return (
-    <>
-      <div
-        ref={scrollContainerRef}
-        css={css({
-          overflow: "auto",
-          padding: "3.2rem 0 0",
-          "@media (min-width: 600px)": {
-            padding: "0",
-          },
-        })}
-      >
-        {proposal.signers.length > 0 ? (
-          <div css={css({ padding: "1.6rem" })}>
-            Updating sponsored proposals not yet supported. THOON! :tm:
-          </div>
-        ) : (
-          <ProposalEditor
-            title={title}
-            body={body}
-            actions={actions}
-            setTitle={setTitle}
-            setBody={setBody}
-            setActions={setActions}
-            onSubmit={() => {
-              setShowSubmitDialog(true);
-            }}
-            onDelete={() => {
-              if (!confirm("Are you sure you wish to cancel this proposal?"))
-                return;
-
-              cancelProposal().then(() => {
-                navigate("/", { replace: true });
-              });
-            }}
-            containerHeight="calc(100vh - 6rem)"
-            scrollContainerRef={scrollContainerRef}
-            submitLabel="Preview update"
-            submitDisabled={!hasChanges}
-            background={theme.colors.dialogBackground}
-          />
-        )}
-      </div>
-
-      {showSubmitDialog && (
-        <SubmitUpdateDialog
-          isOpen
-          close={() => {
-            setShowSubmitDialog(false);
-          }}
-          hasPendingSubmit={hasPendingSubmit}
-          submit={submit}
-        />
-      )}
-    </>
-  );
-};
-
-const SubmitUpdateDialog = ({ isOpen, hasPendingSubmit, submit, close }) => {
-  const [message, setMessage] = React.useState("");
-
-  const hasMessage = message.trim() !== "";
-
-  return (
-    <Dialog
-      isOpen={isOpen}
-      onRequestClose={() => {
-        close();
-      }}
-      width="58rem"
-      css={css({ overflow: "auto" })}
-    >
-      {({ titleProps }) => (
-        <form
-          onSubmit={(e) => {
-            e.preventDefault();
-            submit({ message });
-          }}
-          css={css({
-            overflow: "auto",
-            padding: "1.5rem",
-            "@media (min-width: 600px)": {
-              padding: "2rem",
-            },
-          })}
-        >
-          <DialogHeader
-            title="Submit"
-            titleProps={titleProps}
-            dismiss={close}
-          />
-          <main>
-            TODO: Show diff.
-            <br />
-            <br />
-            <Input
-              multiline
-              label="Update message"
-              rows={3}
-              placeholder="..."
-              value={message}
-              onChange={(e) => {
-                setMessage(e.target.value);
-              }}
-            />
-          </main>
-          <DialogFooter
-            cancel={close}
-            cancelButtonLabel="Cancel"
-            submit
-            submitButtonLabel="Submit update"
-            submitButtonProps={{
-              isLoading: hasPendingSubmit,
-              disabled: !hasMessage || hasPendingSubmit,
-            }}
-          />
-        </form>
-      )}
-    </Dialog>
   );
 };
 

@@ -5,27 +5,15 @@ import React from "react";
 import {
   useParams,
   useSearchParams,
-  useNavigate,
   Link as RouterLink,
 } from "react-router-dom";
-import { css, useTheme } from "@emotion/react";
-import {
-  array as arrayUtils,
-  markdown as markdownUtils,
-  message as messageUtils,
-  reloadPageOnce,
-} from "@shades/common/utils";
+import { css } from "@emotion/react";
+import { array as arrayUtils, reloadPageOnce } from "@shades/common/utils";
 import { ErrorBoundary, useMatchMedia } from "@shades/common/react";
 import Dialog from "@shades/ui-web/dialog";
-import DialogHeader from "@shades/ui-web/dialog-header";
-import DialogFooter from "@shades/ui-web/dialog-footer";
 import Button from "@shades/ui-web/button";
 import Input from "@shades/ui-web/input";
 import Spinner from "@shades/ui-web/spinner";
-import {
-  toMessageBlocks as richTextToMessageBlocks,
-  fromMessageBlocks as messageToRichTextBlocks,
-} from "@shades/ui-web/rich-text-editor";
 import * as Tooltip from "@shades/ui-web/tooltip";
 import {
   extractSlugFromId as extractSlugFromCandidateId,
@@ -34,11 +22,6 @@ import {
   getSignals,
 } from "../utils/candidates.js";
 import {
-  resolveAction as resolveActionTransactions,
-  buildActions as buildActionsFromTransactions,
-} from "../utils/transactions.js";
-import useChainId from "../hooks/chain-id.js";
-import {
   useProposalCandidate,
   useProposalCandidateVotingPower,
   useProposalCandidateFetch,
@@ -46,8 +29,6 @@ import {
 } from "../store.js";
 import { useProposalThreshold } from "../hooks/dao-contract.js";
 import {
-  useUpdateProposalCandidate,
-  useCancelProposalCandidate,
   useSendProposalCandidateFeedback,
   useSignProposalCandidate,
   useAddSignatureToProposalCandidate,
@@ -70,8 +51,10 @@ import Callout from "./callout.js";
 import * as Tabs from "./tabs.js";
 import TransactionList from "./transaction-list.js";
 
+const CandidateEditDialog = React.lazy(() =>
+  import("./candidate-edit-dialog.js")
+);
 const MarkdownRichText = React.lazy(() => import("./markdown-rich-text.js"));
-const ProposalEditor = React.lazy(() => import("./proposal-editor.js"));
 
 const isBetaSession = new URLSearchParams(location.search).get("beta") != null;
 
@@ -971,132 +954,6 @@ const ProposeDialog = ({
   // );
 };
 
-const ProposalCandidateEditDialog = ({
-  candidateId,
-  // titleProps,
-  dismiss,
-}) => {
-  const theme = useTheme();
-  const navigate = useNavigate();
-  const chainId = useChainId();
-  const scrollContainerRef = React.useRef();
-
-  const candidate = useProposalCandidate(candidateId);
-
-  const persistedTitle = candidate.latestVersion.content.title;
-  const persistedMarkdownBody = candidate.latestVersion.content.body;
-
-  const persistedRichTextBody = React.useMemo(() => {
-    const messageBlocks = markdownUtils.toMessageBlocks(persistedMarkdownBody);
-    return messageToRichTextBlocks(messageBlocks);
-  }, [persistedMarkdownBody]);
-
-  const [showSubmitDialog, setShowSubmitDialog] = React.useState(false);
-
-  const [title, setTitle] = React.useState(persistedTitle);
-  const [body, setBody] = React.useState(persistedRichTextBody);
-  const [actions, setActions] = React.useState(() =>
-    buildActionsFromTransactions(candidate.latestVersion.content.transactions, {
-      chainId,
-    })
-  );
-
-  const [hasPendingSubmit, setPendingSubmit] = React.useState(false);
-
-  const deferredBody = React.useDeferredValue(body);
-
-  const hasChanges = React.useMemo(() => {
-    return !messageUtils.isEqual(
-      richTextToMessageBlocks(deferredBody),
-      richTextToMessageBlocks(persistedRichTextBody),
-      { filterEmpty: true }
-    );
-  }, [deferredBody, persistedRichTextBody]);
-
-  const updateProposalCandidate = useUpdateProposalCandidate(candidate.slug);
-  const cancelProposalCandidate = useCancelProposalCandidate(candidate.slug);
-
-  const submit = async ({ message }) => {
-    try {
-      setPendingSubmit(true);
-
-      const bodyMarkdown =
-        typeof body === "string"
-          ? body
-          : messageUtils.toMarkdown(richTextToMessageBlocks(body));
-
-      const description = `# ${title.trim()}\n\n${bodyMarkdown}`;
-
-      const transactions = actions.flatMap((a) =>
-        resolveActionTransactions(a, { chainId })
-      );
-      await updateProposalCandidate({ description, transactions }, { message });
-      dismiss();
-    } catch (e) {
-      console.log(e);
-      alert("Something went wrong");
-    } finally {
-      setPendingSubmit(false);
-    }
-  };
-
-  // React.useEffect(() => {
-  //   const messageBlocks = markdownUtils.toMessageBlocks(persistedMarkdownBody);
-  //   setBody(messageToRichTextBlocks(messageBlocks));
-  // }, [persistedTitle, persistedMarkdownBody]);
-
-  return (
-    <>
-      <div
-        ref={scrollContainerRef}
-        css={css({
-          overflow: "auto",
-          padding: "3.2rem 0 0",
-          "@media (min-width: 600px)": {
-            padding: "0",
-          },
-        })}
-      >
-        <ProposalEditor
-          title={title}
-          body={body}
-          actions={actions}
-          setTitle={setTitle}
-          setBody={setBody}
-          setActions={setActions}
-          onSubmit={() => {
-            setShowSubmitDialog(true);
-          }}
-          onDelete={() => {
-            if (!confirm("Are you sure you wish to cancel this candidate?"))
-              return;
-
-            cancelProposalCandidate().then(() => {
-              navigate("/", { replace: true });
-            });
-          }}
-          containerHeight="calc(100vh - 6rem)"
-          scrollContainerRef={scrollContainerRef}
-          submitLabel="Preview update"
-          submitDisabled={!hasChanges}
-          background={theme.colors.dialogBackground}
-        />
-      </div>
-
-      {showSubmitDialog && (
-        <SubmitUpdateDialog
-          isOpen
-          close={() => {
-            setShowSubmitDialog(false);
-          }}
-          hasPendingSubmit={hasPendingSubmit}
-          submit={submit}
-        />
-      )}
-    </>
-  );
-};
-
 const normalizeId = (id) => {
   const parts = id.toLowerCase().split("-");
   const proposerFirst = isAddress(
@@ -1281,7 +1138,7 @@ const ProposalCandidateScreen = () => {
               }}
             >
               <React.Suspense fallback={null}>
-                <ProposalCandidateEditDialog
+                <CandidateEditDialog
                   candidateId={candidateId}
                   titleProps={titleProps}
                   dismiss={toggleEditDialog}
@@ -1407,70 +1264,6 @@ const MetaTags = ({ candidateId }) => {
       }
       canonicalPathname={`/candidates/${candidateId}`}
     />
-  );
-};
-
-const SubmitUpdateDialog = ({ isOpen, hasPendingSubmit, submit, close }) => {
-  const [message, setMessage] = React.useState("");
-
-  const hasMessage = message.trim() !== "";
-
-  return (
-    <Dialog
-      isOpen={isOpen}
-      onRequestClose={() => {
-        close();
-      }}
-      width="58rem"
-      css={css({ overflow: "auto" })}
-    >
-      {({ titleProps }) => (
-        <form
-          onSubmit={(e) => {
-            e.preventDefault();
-            submit({ message });
-          }}
-          css={css({
-            overflow: "auto",
-            padding: "1.5rem",
-            "@media (min-width: 600px)": {
-              padding: "2rem",
-            },
-          })}
-        >
-          <DialogHeader
-            title="Submit"
-            titleProps={titleProps}
-            dismiss={close}
-          />
-          <main>
-            TODO: Show diff.
-            <br />
-            <br />
-            <Input
-              multiline
-              label="Update message"
-              rows={3}
-              placeholder="..."
-              value={message}
-              onChange={(e) => {
-                setMessage(e.target.value);
-              }}
-            />
-          </main>
-          <DialogFooter
-            cancel={close}
-            cancelButtonLabel="Cancel"
-            submit
-            submitButtonLabel="Submit update"
-            submitButtonProps={{
-              isLoading: hasPendingSubmit,
-              disabled: !hasMessage || hasPendingSubmit,
-            }}
-          />
-        </form>
-      )}
-    </Dialog>
   );
 };
 

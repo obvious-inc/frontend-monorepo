@@ -45,6 +45,7 @@
     "@vercel/analytics": "^1.0.0",
     "abitype": "^0.10.2",
     "date-fns": "^2.29.3",
+    "diff": "^5.1.0",
     "dotenv": "^16.0.3",
     "is-hotkey": "^0.2.0",
     "lodash.throttle": "^4.1.1",

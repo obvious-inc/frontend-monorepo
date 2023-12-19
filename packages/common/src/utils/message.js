@@ -358,15 +358,14 @@ export const toMarkdown = (blockElements) => {
         return el.children.map(renderBlockElement).join("\n");
 
       case "image": {
-        const altText = el.text ?? el.caption ?? el.url;
         if (el.caption == null || el.caption.trim() === "")
-          return `![${altText}](${el.url})`;
+          return `![${el.alt}](${el.url})`;
 
         try {
           new URL(el.caption);
-          return `[![${altText}](${el.url} "${el.caption}")](${el.caption})`;
+          return `[![${el.alt}](${el.url} "${el.caption}")](${el.caption})`;
         } catch (e) {
-          return `![${altText}](${el.url} "${el.caption}")`;
+          return `![${el.alt}](${el.url} "${el.caption}")`;
         }
       }
 
@@ -426,6 +425,11 @@ export const toMarkdown = (blockElements) => {
     if (node.type == null || node.type === "text") return renderTextNode(node);
 
     switch (node.type) {
+      case "image":
+        return node.caption == null
+          ? `![${node.alt}](${node.url})`
+          : `![${node.alt}](${node.url} "${node.caption}")`;
+
       case "link":
         return `[${node.label ?? node.text ?? node.url}](${node.url})`;
 
@@ -438,7 +442,7 @@ export const toMarkdown = (blockElements) => {
   };
 
   return blockElements
-    .map((el, i) => renderBlockElement(el, { index: i }))
+    .map(renderBlockElement)
     .filter((s) => s.trim() !== "")
     .join("\n\n");
 };

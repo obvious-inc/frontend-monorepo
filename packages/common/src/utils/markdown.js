@@ -37,6 +37,17 @@ const parseToken = (token, context = {}) => {
     case "paragraph": {
       const children = parseChildren(token, parseToken, context);
 
+      if (children.length === 1 && children[0].type === "text") {
+        const maybeEmojiChars = stringUtils.getUserPerceivedCharacters(
+          children[0].text.trim()
+        );
+        if (maybeEmojiChars.every(emojiUtils.isEmoji))
+          return maybeEmojiChars.map((c) => ({
+            type: "emoji",
+            emoji: c,
+          }));
+      }
+
       const isImageParagraph = children.every(
         (t) => t.type === "image" || t.text?.trim() === ""
       );
@@ -92,6 +103,7 @@ const parseToken = (token, context = {}) => {
         return {
           type: "image",
           url: token.href,
+          alt: token.text,
           caption: token.title,
           interactive: false,
         };
@@ -201,22 +213,11 @@ const parseToken = (token, context = {}) => {
         return { type: "paragraph", children };
       }
 
-      const text = decodeHtmlEntities(token.text);
+      const el = {
+        type: "text",
+        text: decodeHtmlEntities(token.text),
+      };
 
-      const maybeEmojiChars =
-        text.length <= 10 &&
-        stringUtils.getUserPerceivedCharacters(text.trim());
-
-      if (
-        Array.isArray(maybeEmojiChars) &&
-        maybeEmojiChars.every(emojiUtils.isEmoji)
-      )
-        return maybeEmojiChars.map((c) => ({
-          type: "emoji",
-          emoji: c,
-        }));
-
-      const el = { type: "text", text };
       if (context?.bold) el.bold = true;
       if (context?.italic) el.italic = true;
       if (context?.strikethrough) el.strikethrough = true;
@@ -237,5 +238,7 @@ const parseToken = (token, context = {}) => {
 
 export const toMessageBlocks = (text, { displayImages = true } = {}) => {
   const tokens = marked.lexer(text);
-  return tokens.map((t) => parseToken(t, { displayImages })).filter(Boolean);
+  return tokens
+    .map((t, index) => parseToken(t, { displayImages, index }))
+    .filter(Boolean);
 };

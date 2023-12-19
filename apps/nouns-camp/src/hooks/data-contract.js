@@ -208,7 +208,7 @@ export const useUpdateProposalCandidate = (slug, { enabled = true } = {}) => {
 
   if (writeAsync == null) return null;
 
-  return async ({ description, transactions }, { message }) => {
+  return async ({ description, transactions, updateMessage }) => {
     const { targets, values, signatures, calldatas } = unparseTransactions(
       transactions,
       { chainId }
@@ -222,7 +222,7 @@ export const useUpdateProposalCandidate = (slug, { enabled = true } = {}) => {
         description,
         slug,
         0,
-        message,
+        updateMessage,
       ],
     }).then(({ hash }) => {
       va.track("Candidate successfully updated", {

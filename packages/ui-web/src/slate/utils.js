@@ -18,10 +18,10 @@ export const mergePlugins = (plugins) => {
 
   const pipeEventHandler =
     (handler) =>
-    (e, ...rest) => {
-      handler?.(e, ...rest);
-      return e;
-    };
+      (e, ...rest) => {
+        handler?.(e, ...rest);
+        return e;
+      };
 
   const handlers = {
     onChange: compose(
@@ -44,6 +44,7 @@ export const isNodeEmpty = (el, options = {}) => {
     case "channel-link":
     case "attachments":
     case "image-attachment":
+    case "image":
     case "link":
     case "emoji":
     case "code":
@@ -96,7 +97,7 @@ export const toMessageBlocks = (nodes) =>
       children:
         n.children.length === 1
           ? children
-          : children.filter((n) => !isNodeEmpty(n)),
+          : children.filter((n) => !isNodeEmpty(n, { trim: false })),
     };
   });
 
@@ -133,14 +134,18 @@ export const fromMessageBlocks = (blocks) =>
         { text: "" },
       ];
 
-    // Voids
-    if (["user", "channel-link", "horizontal-divider"].includes(n.type))
+    // Inline voids
+    if (["user", "channel-link"].includes(n.type))
       return [
         ...acc,
         { text: "" },
         { ...n, children: [{ text: "" }] },
         { text: "" },
       ];
+
+    // Block voids
+    if (["horizontal-divider"].includes(n.type))
+      return [...acc, { ...n, children: [{ text: "" }] }];
 
     if (n.type === "image") return [...acc, { ...n, children: [{ text: "" }] }];
 

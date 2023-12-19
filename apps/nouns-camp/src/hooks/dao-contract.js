@@ -314,11 +314,11 @@ export const useUpdateProposal = (proposalId) => {
     functionName: "updateProposalTransactions",
   });
 
-  return async ({ description, transactions }, { message }) => {
+  return async ({ description, transactions, updateMessage }) => {
     const write = () => {
       if (transactions == null)
         return updateProposalDescription({
-          args: [proposalId, description, message],
+          args: [proposalId, description, updateMessage],
         });
 
       const { targets, values, signatures, calldatas } = unparseTransactions(
@@ -328,7 +328,14 @@ export const useUpdateProposal = (proposalId) => {
 
       if (description == null)
         return updateProposalTransactions({
-          args: [proposalId, targets, values, signatures, calldatas, message],
+          args: [
+            proposalId,
+            targets,
+            values,
+            signatures,
+            calldatas,
+            updateMessage,
+          ],
         });
 
       return updateProposal({
@@ -339,7 +346,7 @@ export const useUpdateProposal = (proposalId) => {
           signatures,
           calldatas,
           description,
-          message,
+          updateMessage,
         ],
       });
     };
