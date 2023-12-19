@@ -88,6 +88,41 @@ fragment CandidateContentSignatureFields on ProposalCandidateSignature {
   }
 }`;
 
+const DELEGATION_EVENT_FIELDS = `
+fragment DelegationEventFields on DelegationEvent {
+  id
+  noun {
+    id
+  }
+  newDelegate {
+    id
+  }
+  previousDelegate {
+    id
+  }
+  delegator {
+    id
+  }
+  blockNumber
+  blockTimestamp
+}`;
+
+const TRANSFER_EVENT_FIELDS = `
+fragment TransferEventFields on TransferEvent {
+  id
+  noun {
+    id
+  }
+  newHolder {
+    id
+  }
+  previousHolder {
+    id
+  }
+  blockNumber
+  blockTimestamp
+}`;
+
 const DELEGATES_QUERY = `
 ${VOTE_FIELDS}
 query {
@@ -185,6 +220,8 @@ const createDelegateQuery = (id) => `
 }`;
 
 const createAccountQuery = (id) => `
+  ${DELEGATION_EVENT_FIELDS}
+  ${TRANSFER_EVENT_FIELDS}
   query {
     account(id: "${id}") {
       id
@@ -207,6 +244,12 @@ const createAccountQuery = (id) => `
           }
         }
       }
+    }
+    transferEvents(orderBy: blockNumber, orderDirection: desc, where: {or: [{newHolder: "${id}"}, {previousHolder: "${id}"}]}) {
+      ...TransferEventFields
+    }
+    delegationEvents(orderBy: blockNumber, orderDirection: desc, where: {or: [{newDelegate: "${id}"}, {previousDelegate: "${id}"}, {delegator: "${id}"}]}) {
+      ...DelegationEventFields
     }
   }
 `;
@@ -279,6 +322,8 @@ ${VOTE_FIELDS}
 ${CANDIDATE_FEEDBACK_FIELDS}
 ${PROPOSAL_FEEDBACK_FIELDS}
 ${CANDIDATE_CONTENT_SIGNATURE_FIELDS}
+${DELEGATION_EVENT_FIELDS}
+${TRANSFER_EVENT_FIELDS}
 query {
   proposals(orderBy: createdBlock, orderDirection: desc, skip: ${skip}, first: ${first}, where: {proposer: "${id}"} ) {
     id
@@ -361,6 +406,12 @@ query {
         id
       }
     }
+  }
+  transferEvents(orderBy: blockNumber, orderDirection: desc, skip: ${skip}, first: ${first}, where: {or: [{newHolder: "${id}"}, {previousHolder: "${id}"}]}) {
+    ...TransferEventFields
+  }
+  delegationEvents(orderBy: blockNumber, orderDirection: desc, skip: ${skip}, first: ${first}, where: {or: [{newDelegate: "${id}"}, {previousDelegate: "${id}"}, {delegator: "${id}"}]}) {
+    ...DelegationEventFields
   }
 }`;
 
@@ -657,6 +708,8 @@ query {
 }`;
 
 const createNounsByIdsQuery = (ids) => `
+${TRANSFER_EVENT_FIELDS}
+${DELEGATION_EVENT_FIELDS}
 query {
   nouns(where: {id_in: [${ids.map((id) => `"${id}"`)}]}) {
     id
@@ -677,34 +730,12 @@ query {
   transferEvents(orderBy: blockNumber, orderDirection: desc, where: {noun_in: [${ids.map(
     (id) => `"${id}"`
   )}]}) {
-    id
-    noun {
-      id
-    }
-    newHolder {
-      id
-    }
-    previousHolder {
-      id
-    }
-    blockNumber
-    blockTimestamp
+    ...TransferEventFields
   }
   delegationEvents(orderBy: blockNumber, orderDirection: desc, where: {noun_in: [${ids.map(
     (id) => `"${id}"`
   )}]}) {
-    id
-    noun {
-      id
-    }
-    newDelegate {
-      id
-    }
-    previousDelegate {
-      id
-    }
-    blockNumber
-    blockTimestamp
+    ...DelegationEventFields
   }
   auctions(where: {noun_in: [${ids.map((id) => `"${id}"`)}]}) {
     id
@@ -748,11 +779,13 @@ const createVoterActivityDataQuery = (id, { startBlock, endBlock }) => `
 ${CANDIDATE_FEEDBACK_FIELDS}
 ${PROPOSAL_FEEDBACK_FIELDS}
 ${VOTE_FIELDS}
+${TRANSFER_EVENT_FIELDS}
+${DELEGATION_EVENT_FIELDS}
 query {
   candidateFeedbacks(where: {voter: "${id}", createdBlock_gte: ${startBlock}, createdBlock_lte: ${endBlock}}, first: 1000) {
     ...CandidateFeedbackFields
   }
-  proposalFeedbacks(where: {voter: "${id}"createdBlock_gte: ${startBlock}, createdBlock_lte: ${endBlock}}, first: 1000) {
+  proposalFeedbacks(where: {voter: "${id}", createdBlock_gte: ${startBlock}, createdBlock_lte: ${endBlock}}, first: 1000) {
     ...ProposalFeedbackFields
   }
   votes(where: {voter: "${id}", blockNumber_gte: ${startBlock}, blockNumber_lte: ${endBlock}}, orderBy: blockNumber, orderDirection: desc, first: 1000) {
@@ -760,6 +793,14 @@ query {
     proposal {
       id
     }
+  }
+  transferEvents(orderBy: blockNumber, orderDirection: desc, first: 1000, where: {and: [{blockNumber_gte: ${startBlock}, blockNumber_lte: ${endBlock}}, {or: [{newHolder: "${id}"}, {previousHolder: "${id}"}]}]})
+  {
+    ...TransferEventFields
+  }
+  delegationEvents(orderBy: blockNumber, orderDirection: desc, first: 1000, where: {and: [{blockNumber_gte: ${startBlock}, blockNumber_lte: ${endBlock}}, {or: [{newDelegate: "${id}"}, {previousDelegate: "${id}"}, {delegator: "${id}"}]}]})
+  {
+    ...DelegationEventFields
   }
 }`;
 
@@ -1001,6 +1042,35 @@ const parseNoun = (data) => {
   return parsedData;
 };
 
+const parseEvents = (data, accountId) => {
+  const transferEvents = data.transferEvents.map((e) => ({
+    ...e,
+    blockTimestamp: parseTimestamp(e.blockTimestamp),
+    accountRef: accountId?.toLowerCase(),
+    newAccountId: e.newHolder?.id,
+    previousAccountId: e.previousHolder?.id,
+    nounId: e.noun?.id,
+    type: "transfer",
+  }));
+
+  const delegationEvents = data.delegationEvents.map((e) => ({
+    ...e,
+    blockTimestamp: parseTimestamp(e.blockTimestamp),
+    accountRef: accountId?.toLowerCase(),
+    delegatorId: e.delegator?.id,
+    newAccountId: e.newDelegate?.id,
+    previousAccountId: e.previousDelegate?.id,
+    nounId: e.noun?.id,
+    type: "delegate",
+  }));
+
+  return arrayUtils.sortBy(
+    { value: (e) => e.blockTimestamp, order: "desc" },
+    { value: (e) => (e.type === "transfer" ? 1 : 0), order: "desc" },
+    [...transferEvents, ...delegationEvents]
+  );
+};
+
 export const fetchProposalsVersions = async (chainId, proposalIds) =>
   subgraphFetch({
     chainId,
@@ -1101,7 +1171,9 @@ export const fetchAccount = (chainId, id) =>
     query: createAccountQuery(id?.toLowerCase()),
   }).then((data) => {
     if (data.account == null) return Promise.reject(new Error("not-found"));
-    return parseAccount(data.account);
+    const events = parseEvents(data, id);
+    const account = parseAccount(data.account);
+    return { account, events };
   });
 
 export const fetchProposalCandidatesByAccount = (chainId, accountAddress) =>
@@ -1178,6 +1250,7 @@ export const fetchVoterScreenData = (chainId, id, options) =>
     const candidateFeedbackPosts =
       data.candidateFeedbacks.map(parseFeedbackPost);
     const nouns = data.nouns.map(parseNoun);
+    const events = parseEvents(data, id);
 
     return {
       proposals,
@@ -1186,6 +1259,7 @@ export const fetchVoterScreenData = (chainId, id, options) =>
       proposalFeedbackPosts,
       candidateFeedbackPosts,
       nouns,
+      events,
     };
   });
 
@@ -1226,8 +1300,9 @@ export const fetchVoterActivity = (
       data.candidateFeedbacks.map(parseFeedbackPost);
     const proposalFeedbackPosts = data.proposalFeedbacks.map(parseFeedbackPost);
     const votes = data.votes.map(parseProposalVote);
+    const events = parseEvents(data, voterAddress);
 
-    return { votes, proposalFeedbackPosts, candidateFeedbackPosts };
+    return { votes, proposalFeedbackPosts, candidateFeedbackPosts, events };
   });
 
 export const fetchNounsByIds = (chainId, ids) =>
@@ -1245,6 +1320,7 @@ export const fetchNounsByIds = (chainId, ids) =>
       nounId: e.noun?.id,
       type: "transfer",
     }));
+
     const delegationEvents = data.delegationEvents.map((e) => ({
       ...e,
       blockTimestamp: parseTimestamp(e.blockTimestamp),

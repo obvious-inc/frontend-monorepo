@@ -3,10 +3,8 @@ import { buildFeed as buildCandidateFeed } from "./candidates.js";
 import { buildFeed as buildProposalFeed } from "./proposals.js";
 import { resolveIdentifier } from "../contracts.js";
 
-export const buildNounsFeed = (noun, { chainId }) => {
-  if (noun == null) return [];
-
-  const nounId = noun.id;
+export const buildEventsFeed = (delegate, account, { chainId }) => {
+  if (account == null) return [];
 
   const fromAuctionHouse = (e) =>
     e.previousAccountId.toLowerCase() ===
@@ -20,43 +18,55 @@ export const buildNounsFeed = (noun, { chainId }) => {
     e.previousAccountId.toLowerCase() ===
     resolveIdentifier(chainId, "executor")?.address?.toLowerCase();
 
+  // transfer events always come with an associated delegate event, ignore the latter
+  const uniqueEvents = arrayUtils.unique(
+    (e1, e2) => {
+      if (e1.id === e2.id) return true;
+    },
+    // transfer events have to be first here to take precedence
+    [
+      ...account.events.filter((e) => e.type === "transfer"),
+      ...account.events.filter((e) => e.type === "delegate"),
+    ]
+  );
+
   const auctionBoughtEventItems =
-    noun.events
+    uniqueEvents
       ?.filter((e) => e.type === "transfer" && fromAuctionHouse(e))
       .map((e) => ({
         type: "event",
         eventType: "noun-auction-bought",
-        id: `${nounId}-auction-bought-${e.id}`,
+        id: `${e.nounId}-auction-bought-${e.id}`,
         timestamp: e.blockTimestamp,
         blockNumber: e.blockNumber,
-        nounId,
+        nounId: e.nounId,
         authorAccount: e.newAccountId,
+        transactionHash: e.id.split("_")[0],
       })) ?? [];
 
   const delegatedEventItems =
-    noun.events
-      ?.filter(
-        (e) =>
-          e.type === "delegate" &&
-          !fromAuctionHouse(e) &&
-          !toAuctionHouse(e) &&
-          !fromTreasury(e) &&
-          noun.ownerId.toLowerCase() !== e.newAccountId.toLowerCase()
-      )
-      .map((e) => ({
-        type: "event",
-        eventType: "noun-delegated",
-        id: `${nounId}-delegated-${e.id}`,
-        timestamp: e.blockTimestamp,
-        blockNumber: e.blockNumber,
-        nounId,
-        authorAccount: noun.ownerId,
-        fromAccount: e.previousAccountId,
-        toAccount: e.newAccountId,
-      })) ?? [];
+    uniqueEvents
+      ?.filter((e) => e.type === "delegate")
+      .map((e) => {
+        const eventType =
+          delegate?.id === e.previousAccountId && delegate?.id !== e.delegatorId
+            ? "noun-undelegated"
+            : "noun-delegated";
+        return {
+          type: "event",
+          eventType: eventType,
+          id: `${e.nounId}-delegated-${e.id}`,
+          timestamp: e.blockTimestamp,
+          blockNumber: e.blockNumber,
+          nounId: e.nounId,
+          authorAccount: e.delegatorId,
+          fromAccount: e.previousAccountId,
+          toAccount: e.newAccountId,
+        };
+      }) ?? [];
 
   const transferredEventItems =
-    noun.events
+    uniqueEvents
       ?.filter(
         (e) =>
           e.type === "transfer" &&
@@ -67,13 +77,13 @@ export const buildNounsFeed = (noun, { chainId }) => {
       .map((e) => ({
         type: "event",
         eventType: "noun-transferred",
-        id: `${nounId}-transferred-${e.id}`,
+        id: `${e.nounId}-transferred-${e.id}`,
         timestamp: e.blockTimestamp,
         blockNumber: e.blockNumber,
-        nounId,
-        authorAccount: noun.ownerId,
+        nounId: e.nounId,
         fromAccount: e.previousAccountId,
         toAccount: e.newAccountId,
+        transactionHash: e.id.split("_")[0],
       })) ?? [];
 
   const getEventScore = (event) => {
@@ -95,7 +105,7 @@ export const buildNounsFeed = (noun, { chainId }) => {
 
 export const buildFeed = (
   delegate,
-  { proposals, candidates, nouns, chainId }
+  { proposals, candidates, account, chainId }
 ) => {
   if (delegate == null) return [];
 
@@ -115,18 +125,9 @@ export const buildFeed = (
         (i) => i.authorAccount?.toLowerCase() === delegate.id.toLowerCase()
       ) ?? [];
 
-  const nounFeedItems =
-    nouns
-      ?.map((n) => buildNounsFeed(n, { chainId }))
-      .flat()
-      .filter(
-        (i) =>
-          i.authorAccount?.toLowerCase() === delegate.id.toLowerCase() ||
-          i.toAccount?.toLowerCase() === delegate.id.toLowerCase() ||
-          i.fromAccount?.toLowerCase() === delegate.id.toLowerCase()
-      ) ?? [];
+  const eventItems =
+    buildEventsFeed(delegate, account, { chainId }).flat() ?? [];
 
-  const items = [...propFeedItems, ...candidateFeedItems, ...nounFeedItems];
-
+  const items = [...propFeedItems, ...candidateFeedItems, ...eventItems];
   return arrayUtils.sortBy({ value: (i) => i.timestamp, order: "desc" }, items);
 };

@@ -46,11 +46,13 @@ const useFeedItems = ({ voterAddress, filter }) => {
     includeCanceled: true,
     includePromoted: true,
   });
-  const nouns = useAllNounsByAccount(voterAddress);
+  const account = useAccount(voterAddress);
 
   return React.useMemo(() => {
     const buildProposalItems = () => buildVoterFeed(delegate, { proposals });
     const buildCandidateItems = () => buildVoterFeed(delegate, { candidates });
+    const buildNounRepresentationItems = () =>
+      buildVoterFeed(delegate, { account, chainId });
 
     const buildFeedItems = () => {
       switch (filter) {
@@ -58,12 +60,14 @@ const useFeedItems = ({ voterAddress, filter }) => {
           return [...buildProposalItems()];
         case "candidates":
           return [...buildCandidateItems()];
+        case "representation":
+          return [...buildNounRepresentationItems()];
         default:
           return [
             ...buildVoterFeed(delegate, {
               proposals,
               candidates,
-              nouns,
+              account,
               chainId,
             }),
           ];
@@ -74,7 +78,7 @@ const useFeedItems = ({ voterAddress, filter }) => {
       { value: (i) => i.blockNumber, order: "desc" },
       buildFeedItems()
     );
-  }, [delegate, proposals, candidates, nouns, chainId, filter]);
+  }, [delegate, proposals, candidates, account, chainId, filter]);
 };
 
 const getDelegateVotes = (delegate) => {
@@ -179,6 +183,7 @@ const FeedSidebar = React.memo(({ visible = true, voterAddress }) => {
             { value: "all", label: "Everything" },
             { value: "proposals", label: "Proposal activity only" },
             { value: "candidates", label: "Candidate activity only" },
+            { value: "representation", label: "Delegation & Ownership only" },
           ]}
           onChange={(value) => {
             setFilter(value);
@@ -190,6 +195,7 @@ const FeedSidebar = React.memo(({ visible = true, voterAddress }) => {
               all: "Everything",
               proposals: "Proposal activity",
               candidates: "Candidate activity",
+              representation: "Delegation & Ownership",
             }[value];
             return (
               <>
@@ -234,6 +240,7 @@ const FeedTabContent = React.memo(({ visible, voterAddress }) => {
             { value: "all", label: "Everything" },
             { value: "proposals", label: "Proposal activity only" },
             { value: "candidates", label: "Candidate activity only" },
+            { value: "representation", label: "Delegation & Ownership only" },
           ]}
           onChange={(value) => {
             setFilter(value);
@@ -245,6 +252,7 @@ const FeedTabContent = React.memo(({ visible, voterAddress }) => {
               all: "Everything",
               proposals: "Proposal activity",
               candidates: "Candidate activity",
+              representation: "Delegation & Ownership",
             }[value];
             return (
               <>

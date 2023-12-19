@@ -24,7 +24,7 @@ export const useSaleInfo = ({ transactionHash, sourceAddress }) => {
           });
 
           const args = decodedEvent.args;
-          if (args?.src === sourceAddress) {
+          if (args?.src.toLowerCase() === sourceAddress.toLowerCase()) {
             sumAmount += parseInt(args.amount);
           }
         } catch (e) {
