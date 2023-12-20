@@ -48,6 +48,8 @@ import {
 } from "./transaction-list.js";
 import ActionDialog from "./action-dialog.js";
 
+const MAX_TRANSACTION_COUNT = 10;
+
 const isDebugSession =
   new URLSearchParams(location.search).get("debug") != null;
 
@@ -78,6 +80,15 @@ const useEditorMode = ({ body }, { setBody }) => {
   return [mode, setMode];
 };
 
+const useActionTransactions = (actions) => {
+  const chainId = useChainId();
+
+  return React.useMemo(
+    () => actions.flatMap((a) => resolveActionTransactions(a, { chainId })),
+    [actions, chainId]
+  );
+};
+
 const ProposalEditor = ({
   title,
   body,
@@ -99,13 +110,31 @@ const ProposalEditor = ({
 }) => {
   const [showMarkdownPreview, setShowMarkdownPreview] = React.useState(false);
 
+  const actionsIncludingPayerTopUp = React.useMemo(
+    () =>
+      [
+        ...actions.map((a) => ({ ...a, editable: true })),
+        payerTopUpValue > 0 && {
+          type: "payer-top-up",
+          amount: formatEther(payerTopUpValue),
+        },
+      ].filter(Boolean),
+    [actions, payerTopUpValue]
+  );
+
+  const actionTransactions = useActionTransactions(actionsIncludingPayerTopUp);
+
   const isTitleEmpty = title.trim() === "";
   const isBodyEmpty =
     typeof body === "string"
       ? body.trim() === ""
       : body.every(isRichTextEditorNodeEmpty);
 
-  const hasRequiredInput = !isTitleEmpty && !isBodyEmpty && actions.length > 0;
+  const hasRequiredInput =
+    !isTitleEmpty &&
+    !isBodyEmpty &&
+    actionTransactions.length > 0 &&
+    actionTransactions.length <= MAX_TRANSACTION_COUNT;
 
   const enableSubmit = hasRequiredInput && !disabled && !submitDisabled;
 
@@ -124,13 +153,7 @@ const ProposalEditor = ({
           background={background}
           sidebar={
             <SidebarContent
-              actions={[
-                ...actions.map((a) => ({ ...a, editable: true })),
-                payerTopUpValue > 0 && {
-                  type: "payer-top-up",
-                  amount: formatEther(payerTopUpValue),
-                },
-              ].filter(Boolean)}
+              actions={actionsIncludingPayerTopUp}
               setActions={setActions}
               disabled={disabled}
             />
@@ -1282,9 +1305,13 @@ const SidebarContent = ({ actions, setActions, disabled }) => {
   const [selectedActionIndex, setSelectedActionIndex] = React.useState(null);
   const [showNewActionDialog, setShowNewActionDialog] = React.useState(false);
 
+
   const hasActions = actions != null && actions.length > 0;
   const selectedAction =
     selectedActionIndex == null ? null : actions[selectedActionIndex];
+
+  const transactions = useActionTransactions(actions);
+  const transactionCount = transactions.length;
 
   return (
     <>
@@ -1302,6 +1329,13 @@ const SidebarContent = ({ actions, setActions, disabled }) => {
         >
           Actions
         </h2>
+      )}
+
+      {transactionCount > MAX_TRANSACTION_COUNT && (
+        <Callout variant="error" style={{ marginBottom: "3.2rem" }}>
+          A proposal may not include more than {MAX_TRANSACTION_COUNT}{" "}
+          transactions.
+        </Callout>
       )}
 
       <ErrorBoundary
