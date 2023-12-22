@@ -187,11 +187,20 @@ const parseToken = (token, context = {}) => {
     case "codespan":
       return { type: "code", code: token.text };
 
-    case "del":
-      return parseChildren(token, parseToken, {
-        ...context,
-        strikethrough: true,
-      });
+    case "del": {
+      // Don’t strikethrough single tildes
+      if (token.raw.startsWith("~~"))
+        return parseChildren(token, parseToken, {
+          ...context,
+          strikethrough: true,
+        });
+
+      return [
+        { type: "text", text: "~" },
+        ...parseChildren(token, parseToken, context),
+        { type: "text", text: "~" },
+      ];
+    }
 
     case "strong":
       return parseChildren(token, parseToken, { ...context, bold: true });
