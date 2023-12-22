@@ -1,6 +1,6 @@
-import { invariant } from "@shades/common/utils";
 import Dialog from "@shades/ui-web/dialog";
 import FormDialog from "@shades/ui-web/form-dialog";
+import config from "../config.js";
 import useSetting, { getConfig as getSettingConfig } from "../hooks/setting.js";
 
 const settingInputConfigByKey = {
@@ -22,6 +22,13 @@ const settingInputConfigByKey = {
       huge: "Huge",
     },
   },
+  "xmas-effects-opt-out": {
+    label: "Christmas effects",
+    optionLabelsByValue: {
+      false: "On",
+      true: "Off",
+    },
+  },
 };
 
 const SettingsDialog = ({ isOpen, close }) => (
@@ -39,6 +46,7 @@ const SettingsDialog = ({ isOpen, close }) => (
 const Content = ({ titleProps, dismiss }) => {
   const [theme, setTheme] = useSetting("theme");
   const [zoom, setZoom] = useSetting("zoom");
+  const [xmasOptOut, setXmasOptOut] = useSetting("xmas-effects-opt-out");
 
   return (
     <FormDialog
@@ -57,25 +65,56 @@ const Content = ({ titleProps, dismiss }) => {
           state: zoom,
           setState: setZoom,
         },
-      ].map(({ key, state, setState }) => {
-        const settingConfig = getSettingConfig(key);
-        const inputConfig = settingInputConfigByKey[key];
-        invariant(settingConfig.type === "enum", "Unsupported setting type");
-        return {
-          key,
-          value: state,
-          onChange: (value) => {
-            setState(value);
-          },
-          type: "select",
-          label: inputConfig.label,
-          size: "medium",
-          options: settingConfig.values.map((value) => ({
-            value,
-            label: inputConfig.optionLabelsByValue[value],
-          })),
-        };
-      })}
+        config["xmas-effects"] && {
+          key: "xmas-effects-opt-out",
+          state: xmasOptOut,
+          setState: setXmasOptOut,
+        },
+      ]
+        .filter(Boolean)
+        .map(({ key, state, setState }) => {
+          const settingConfig = getSettingConfig(key);
+          const inputConfig = settingInputConfigByKey[key];
+
+          switch (settingConfig.type) {
+            case "enum":
+              return {
+                key,
+                type: "select",
+                size: "medium",
+                value: state,
+                onChange: (value) => {
+                  setState(value);
+                },
+                label: inputConfig.label,
+                options: settingConfig.values.map((value) => ({
+                  value,
+                  label: inputConfig.optionLabelsByValue[value],
+                })),
+              };
+
+            case "bool":
+              return {
+                key,
+                type: "select",
+                size: "medium",
+                value: state,
+                onChange: (value) => {
+                  setState(value);
+                },
+                label: inputConfig.label,
+                options: [true, false].map((value) => ({
+                  value,
+                  label: inputConfig.optionLabelsByValue[value],
+                })),
+              };
+
+            default:
+              throw new Error(
+                `Unsupported setting type: "${settingConfig.type}"`
+              );
+          }
+        })}
       cancelLabel="Close"
     />
   );

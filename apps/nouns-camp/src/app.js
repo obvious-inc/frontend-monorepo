@@ -6,6 +6,7 @@ import { reloadPageOnce } from "@shades/common/utils";
 import { useMatchMedia, ErrorBoundary } from "@shades/common/react";
 import { light as lightTheme, dark as darkTheme } from "@shades/ui-web/theme";
 import * as Tooltip from "@shades/ui-web/tooltip";
+import config from "./config.js";
 import {
   useWallet,
   Provider as ConnectWalletDialogProvider,
@@ -33,6 +34,8 @@ const ConnectWalletScreen = React.lazy(() =>
 );
 
 const VoterScreen = React.lazy(() => import("./components/voter-screen.js"));
+
+const SnowOverlay = React.lazy(() => import("./snow.js"));
 
 const dialogs = [
   {
@@ -91,8 +94,11 @@ const useTheme = () => {
       const specifiedTheme = searchParams.get("theme");
       if (specifiedTheme) return themeMap[specifiedTheme] ?? defaultTheme;
 
-      if (themeSetting === "system")
-        return themeMap[systemPrefersDarkTheme ? "dark" : "light"];
+      if (themeSetting === "system") {
+        const themeName =
+          systemPrefersDarkTheme || config["xmas-effects"] ? "dark" : "light";
+        return themeMap[themeName];
+      }
 
       return themeMap[themeSetting] ?? defaultTheme;
     };
@@ -109,93 +115,92 @@ const useTheme = () => {
   return theme;
 };
 
-const App = () => {
+const AppProvider = ({ children }) => {
   const theme = useTheme();
+
+  return (
+    <I18nProvider locale="en-US">
+      <ThemeProvider theme={theme}>
+        <ConnectWalletDialogProvider>
+          <GlobalDialogsProvider dialogs={dialogs}>
+            <Tooltip.Provider delayDuration={300}>{children}</Tooltip.Provider>
+          </GlobalDialogsProvider>
+        </ConnectWalletDialogProvider>
+      </ThemeProvider>
+    </I18nProvider>
+  );
+};
+
+const GlobalStyles = React.memo(() => {
   const [zoomSetting] = useSetting("zoom");
+
+  return (
+    <Global
+      styles={(t) =>
+        css({
+          html: {
+            fontSize: {
+              tiny: "0.546875em",
+              small: "0.5859375em",
+              large: "0.6640625em",
+              huge: "0.703125em",
+            }[zoomSetting],
+            colorScheme: t.name === "dark" ? "dark" : "light",
+          },
+          body: {
+            color: t.colors.textNormal,
+            background: t.colors.backgroundPrimary,
+            fontFamily: t.fontStacks.default,
+            "::selection": {
+              background: t.colors.textSelectionBackground,
+            },
+          },
+        })
+      }
+    />
+  );
+});
+
+const App = () => {
+  const [xmasEffectsOptOut] = useSetting("xmas-effects-opt-out");
 
   useDelegatesFetch();
 
   return (
-    <ErrorBoundary
-      fallback={null}
-      onError={() => {
-        reloadPageOnce();
-      }}
-    >
-      <React.Suspense fallback={null}>
-        <I18nProvider locale="en-US">
-          <BrowserRouter>
-            <ThemeProvider theme={theme}>
-              <ConnectWalletDialogProvider>
-                <GlobalDialogsProvider dialogs={dialogs}>
-                  <Tooltip.Provider delayDuration={300}>
-                    <Global
-                      styles={(theme) =>
-                        css({
-                          html: {
-                            fontSize: {
-                              tiny: "0.546875em",
-                              small: "0.5859375em",
-                              large: "0.6640625em",
-                              huge: "0.703125em",
-                            }[zoomSetting],
-                            colorScheme:
-                              theme.name === "dark" ? "dark" : "light",
-                          },
-                          body: {
-                            color: theme.colors.textNormal,
-                            background: theme.colors.backgroundPrimary,
-                            fontFamily: theme.fontStacks.default,
-                            "::selection": {
-                              background: theme.colors.textSelectionBackground,
-                            },
-                          },
-                        })
-                      }
-                    />
-                    <Routes>
-                      <Route path="/">
-                        <Route index element={<BrowseScreen />} />
-                        <Route
-                          path="/new/:draftId?"
-                          element={
-                            <RequireConnectedAccount>
-                              <ProposeScreen />
-                            </RequireConnectedAccount>
-                          }
-                        />
-                        <Route
-                          path="/candidates/:candidateId"
-                          element={<ProposalCandidateScreen />}
-                        />
-                        <Route
-                          path="/c/:candidateId"
-                          element={<ProposalCandidateScreen />}
-                        />
-                        <Route
-                          path="/proposals/:proposalId"
-                          element={<ProposalScreen />}
-                        />
-                        <Route
-                          path="/:proposalId"
-                          element={<ProposalScreen />}
-                        />
+    <>
+      <GlobalStyles />
 
-                        <Route
-                          path="/campers/:voterId"
-                          element={<VoterScreen />}
-                        />
-                      </Route>
-                      <Route path="*" element={<Navigate to="/" replace />} />
-                    </Routes>
-                  </Tooltip.Provider>
-                </GlobalDialogsProvider>
-              </ConnectWalletDialogProvider>
-            </ThemeProvider>
-          </BrowserRouter>
-        </I18nProvider>
+      <React.Suspense fallback={null}>
+        <Routes>
+          <Route path="/">
+            <Route index element={<BrowseScreen />} />
+            <Route
+              path="/new/:draftId?"
+              element={
+                <RequireConnectedAccount>
+                  <ProposeScreen />
+                </RequireConnectedAccount>
+              }
+            />
+            <Route
+              path="/candidates/:candidateId"
+              element={<ProposalCandidateScreen />}
+            />
+            <Route
+              path="/c/:candidateId"
+              element={<ProposalCandidateScreen />}
+            />
+            <Route path="/proposals/:proposalId" element={<ProposalScreen />} />
+            <Route path="/:proposalId" element={<ProposalScreen />} />
+
+            <Route path="/campers/:voterId" element={<VoterScreen />} />
+          </Route>
+          <Route path="*" element={<Navigate to="/" replace />} />
+        </Routes>
       </React.Suspense>
-    </ErrorBoundary>
+
+      {config["xmas-effects"] && !xmasEffectsOptOut && <SnowOverlay />}
+    </>
   );
 };
 
@@ -207,4 +212,19 @@ const RequireConnectedAccount = ({ children }) => {
   return children;
 };
 
-export default App;
+export default () => (
+  <ErrorBoundary
+    fallback={null}
+    onError={() => {
+      reloadPageOnce();
+    }}
+  >
+    <React.Suspense fallback={null}>
+      <BrowserRouter>
+        <AppProvider>
+          <App />
+        </AppProvider>
+      </BrowserRouter>
+    </React.Suspense>
+  </ErrorBoundary>
+);
