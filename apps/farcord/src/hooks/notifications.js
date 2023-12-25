@@ -26,6 +26,8 @@ export const NotificationsContextProvider = ({ children }) => {
   }, [state.lastSeenByFid]);
 
   const fetchNotifications = React.useCallback(async ({ fid }) => {
+    if (!fid) return;
+
     fetchAllNotifications({ fid }).then((notifications) => {
       if (!notifications) return;
 
