@@ -11,8 +11,11 @@ export default async function handler(request, response) {
       return Promise.reject(new Error(res.statusText));
     })
     .then(async (data) => {
+      const channels = data?.result?.channels;
+      if (!channels) return [];
+
       return Promise.all(
-        data.map((channel) =>
+        channels.map((channel) =>
           fetch(WARPCAST_CHANNELS_INFO_ENDPOINT + "?key=" + channel.id)
             .then((res) => {
               if (res.ok) return res.json();
