@@ -23,7 +23,7 @@ const CustodyWalletDialog = () => {
   const [connectedAddresses, setConnectedAddresses] = React.useState([]);
 
   const isConnectedWallet = React.useMemo(() => {
-    return connectedAddresses.includes(accountAddress);
+    return connectedAddresses?.includes(accountAddress);
   }, [connectedAddresses, accountAddress]);
 
   const handleSearchCustodyWalletClick = async () => {
