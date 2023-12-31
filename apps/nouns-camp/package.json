@@ -65,7 +65,7 @@
     "tinykeys": "^1.4.0",
     "viem": "^1.20.0",
     "wagmi": "^1.4.12",
-    "workbox-webpack-plugin": "^6.5.4",
+    "workbox-webpack-plugin": "^7.0.0",
     "zustand": "^4.3.7"
   }
 }
