@@ -3,7 +3,8 @@
   "scripts": {
     "lint": "pnpm -r run --if-present lint",
     "format": "pnpm -r run --if-present format",
-    "build": "pnpm -r run --if-present build"
+    "build": "pnpm -r run --if-present build",
+    "test": "pnpm -r run --if-present test"
   },
   "packageManager": "pnpm@8.7.5"
 }
