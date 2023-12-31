@@ -12,6 +12,15 @@ on:
   pull_request: # Also on pull request events.
   workflow_dispatch: # Allows you to run this workflow manually from the Actions tab.
 
+env:
+  PUSHER_KEY: ${{ secrets.PUSHER_KEY }}
+  INFURA_PROJECT_ID: ${{ secrets.INFURA_PROJECT_ID }}
+  ALCHEMY_API_KEY: ${{ secrets.ALCHEMY_API_KEY }}
+  CLOUDFLARE_ACCT_HASH: ${{ secrets.CLOUDFLARE_ACCT_HASH }}
+  WALLET_CONNECT_PROJECT_ID: ${{ secrets.WALLET_CONNECT_PROJECT_ID }}
+  NOUNS_MAINNET_SUBGRAPH_URL: ${{ secrets.NOUNS_MAINNET_SUBGRAPH_URL }}
+  PROPDATES_SUBGRAPH_URL: ${{ secrets.PROPDATES_SUBGRAPH_URL }}
+
 jobs:
   check:
     name: State Verifier
