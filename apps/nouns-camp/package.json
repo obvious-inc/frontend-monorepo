@@ -58,7 +58,7 @@
     "react-helmet": "^6.1.0",
     "react-router-dom": "^6.10.0",
     "react-stately": "^3.28.0",
-    "reselect": "^4.1.8",
+    "reselect": "^5.0.1",
     "slate": "^0.100.0",
     "slate-history": "^0.100.0",
     "slate-react": "^0.100.1",

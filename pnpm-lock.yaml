@@ -86,8 +86,8 @@ importers:
         specifier: ^3.28.0
         version: 3.28.0(react@18.2.0)
       reselect:
-        specifier: ^4.1.8
-        version: 4.1.8
+        specifier: ^5.0.1
+        version: 5.0.1
       slate:
         specifier: ^0.100.0
         version: 0.100.0
@@ -11357,8 +11357,8 @@ packages:
   /requires-port@1.0.0:
     resolution: {integrity: sha512-KigOCHcocU3XODJxsu8i/j8T9tzT4adHiecwORRQ0ZZFcp7ahwXuRU1m+yuO90C5ZUyGeGfocHDI14M3L3yDAQ==}
 
-  /reselect@4.1.8:
-    resolution: {integrity: sha512-ab9EmR80F/zQTMNeneUr4cv+jSwPJgIlvEmVwLerwrWVbpLlBuls9XHzIeTFy4cegU2NHBp3va0LKOzU5qFEYQ==}
+  /reselect@5.0.1:
+    resolution: {integrity: sha512-D72j2ubjgHpvuCiORWkOUxndHJrxDaSolheiz5CO+roz8ka97/4msh2E8F5qay4GawR5vzBt5MkbDHT+Rdy/Wg==}
     dev: false
 
   /resolve-cwd@3.0.0:
