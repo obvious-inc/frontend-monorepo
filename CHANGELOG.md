@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.0.0-alpha.2] - 2024-01-01
+
+### Documentation
+
+- Create a new `README.md` for the project
+
 ## [1.0.0-alpha.1] - 2024-01-01
 
 ### Documentation
