@@ -41,8 +41,8 @@ importers:
         specifier: ^1.1.1
         version: 1.1.1
       abitype:
-        specifier: ^0.10.2
-        version: 0.10.2(typescript@5.3.3)
+        specifier: ^0.10.3
+        version: 0.10.3(typescript@5.3.3)
       date-fns:
         specifier: ^3.0.6
         version: 3.0.6
@@ -6977,8 +6977,8 @@ packages:
     engines: {node: ^14.17.0 || ^16.13.0 || >=18.0.0}
     dev: false
 
-  /abitype@0.10.2(typescript@5.3.3):
-    resolution: {integrity: sha512-1XndI+RKFWK4+TXCNv1683MRyX5NGmlHXCvqzjOqhSS3PQrxT2QYRZq1bMPPRNjn89B3eVaM2w7y3jVj/OIUzA==}
+  /abitype@0.10.3(typescript@5.3.3):
+    resolution: {integrity: sha512-tRN+7XIa7J9xugdbRzFv/95ka5ivR/sRe01eiWvM0HWWjHuigSZEACgKa0sj4wGuekTDtghCx+5Izk/cOi78pQ==}
     peerDependencies:
       typescript: '>=5.0.4'
       zod: ^3 >=3.22.0
