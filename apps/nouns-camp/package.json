@@ -63,7 +63,7 @@
     "slate-history": "^0.100.0",
     "slate-react": "^0.100.1",
     "tinykeys": "^1.4.0",
-    "viem": "^1.20.0",
+    "viem": "^1.21.3",
     "wagmi": "^1.4.12",
     "workbox-webpack-plugin": "^7.0.0",
     "zustand": "^4.3.7"
