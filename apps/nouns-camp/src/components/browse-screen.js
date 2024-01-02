@@ -176,6 +176,8 @@ const groupConfigByKey = {
   },
 };
 
+let hasFetchedBrowseDataOnce = false;
+
 const BrowseScreen = () => {
   const scrollContainerRef = React.useRef();
   const [searchParams, setSearchParams] = useSearchParams();
@@ -197,6 +199,10 @@ const BrowseScreen = () => {
   const [candidateSortStrategy_, setCandidateSortStrategy] = useCachedState(
     "candidate-sorting-strategy",
     "popularity"
+  );
+
+  const [hasFetchedOnce, setHasFetchedOnce] = React.useState(
+    hasFetchedBrowseDataOnce
   );
 
   const candidateSortStrategies =
@@ -435,6 +441,8 @@ const BrowseScreen = () => {
   useFetch(
     () =>
       fetchBrowseScreenData({ first: 40 }).then(() => {
+        setHasFetchedOnce(true);
+        hasFetchedBrowseDataOnce = true;
         fetchBrowseScreenData({ skip: 40, first: 1000 });
       }),
     [fetchBrowseScreenData]
@@ -604,7 +612,7 @@ const BrowseScreen = () => {
                         })}
                       >
                         <SectionedList
-                          showPlaceholder={filteredProposals.length === 0}
+                          showPlaceholder={!hasFetchedOnce}
                           sections={[
                             // "drafts",
                             "proposals:authored",
@@ -699,7 +707,7 @@ const BrowseScreen = () => {
                         </div>
 
                         <SectionedList
-                          showPlaceholder={filteredCandidates.length === 0}
+                          showPlaceholder={!hasFetchedOnce}
                           sections={[
                             "candidates:authored",
                             "candidates:sponsored",
