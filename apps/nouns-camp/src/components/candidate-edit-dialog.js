@@ -226,8 +226,6 @@ const CandidateEditDialog = ({ candidateId, dismiss }) => {
 const SubmitUpdateDialog = ({ isOpen, hasPendingSubmit, submit, close }) => {
   const [updateMessage, setUpdateMessage] = React.useState("");
 
-  const hasMessage = updateMessage.trim() !== "";
-
   return (
     <Dialog
       isOpen={isOpen}
@@ -259,13 +257,14 @@ const SubmitUpdateDialog = ({ isOpen, hasPendingSubmit, submit, close }) => {
           <main>
             <Input
               multiline
-              label="Update message"
+              label="Update message (optional)"
               rows={3}
               placeholder="..."
               value={updateMessage}
               onChange={(e) => {
                 setUpdateMessage(e.target.value);
               }}
+              disabled={hasPendingSubmit}
             />
           </main>
           <DialogFooter
@@ -274,7 +273,7 @@ const SubmitUpdateDialog = ({ isOpen, hasPendingSubmit, submit, close }) => {
             submitButtonLabel="Submit update"
             submitButtonProps={{
               isLoading: hasPendingSubmit,
-              disabled: !hasMessage || hasPendingSubmit,
+              disabled: hasPendingSubmit,
             }}
           />
         </form>
