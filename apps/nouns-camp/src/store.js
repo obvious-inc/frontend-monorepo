@@ -1071,6 +1071,7 @@ export const useProposalsSponsoredByAccount = (accountAddress) => {
   const sponsoredCandidates = Object.values(candidatesById).filter((c) =>
     getCandidateSponsorSignatures(c, {
       excludeInvalid: true,
+      activeProposerIds: [],
     }).some((s) => s.signer.id.toLowerCase() === accountAddress.toLowerCase())
   );
 
