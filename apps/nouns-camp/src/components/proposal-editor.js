@@ -1,7 +1,6 @@
 import getDateYear from "date-fns/getYear";
 import React from "react";
 import { formatEther, parseEther } from "viem";
-import { useAccount } from "wagmi";
 import { css, Global as GlobalStyles } from "@emotion/react";
 import { Overlay } from "react-aria";
 import {
@@ -96,6 +95,7 @@ const ProposalEditor = ({
   setTitle,
   setBody,
   setActions,
+  proposerId,
   onSubmit,
   onDelete,
   disabled,
@@ -230,6 +230,7 @@ const ProposalEditor = ({
             setTitle={setTitle}
             body={body}
             setBody={setBody}
+            proposerId={proposerId}
             disabled={disabled}
             scrollContainerRef={scrollContainerRef}
           />
@@ -1062,6 +1063,7 @@ const ProposalContentEditor = ({
   setTitle,
   body,
   setBody,
+  proposerId,
   disabled,
   // editorRef,
   scrollContainerRef,
@@ -1069,8 +1071,6 @@ const ProposalContentEditor = ({
   // const editor = editorRef.current;
   const editorRef = React.useRef();
   const editor = editorRef.current;
-
-  const { address: connectedAccountAddress } = useAccount();
 
   const [editorSelection, setEditorSelection] = React.useState(null);
   const [isEditorFocused, setEditorFocused] = React.useState(false);
@@ -1193,10 +1193,7 @@ const ProposalContentEditor = ({
           })
         }
       >
-        By{" "}
-        <AccountPreviewPopoverTrigger
-          accountAddress={connectedAccountAddress}
-        />
+        By <AccountPreviewPopoverTrigger accountAddress={proposerId} />
       </div>
 
       {editorMode === "rich-text" ? (

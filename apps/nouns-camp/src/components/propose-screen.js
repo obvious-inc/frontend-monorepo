@@ -6,7 +6,6 @@ import {
   Link as RouterLink,
 } from "react-router-dom";
 import { formatEther, parseUnits } from "viem";
-import { useAccount } from "wagmi";
 import { css, useTheme } from "@emotion/react";
 import { useFetch, useLatestCallback } from "@shades/common/react";
 import {
@@ -54,7 +53,7 @@ const ProposeScreen = () => {
 
   const scrollContainerRef = React.useRef();
 
-  const { address: connectedAccountAddress } = useAccount();
+  const { address: connectedAccountAddress } = useWallet();
   const chainId = useChainId();
 
   const { deleteItem: deleteDraft } = useDrafts();
@@ -238,6 +237,7 @@ const ProposeScreen = () => {
           setTitle={setName}
           setBody={setBody}
           setActions={setActions}
+          proposerId={connectedAccountAddress}
           payerTopUpValue={usdcSumValue > 0 ? payerTopUpValue : 0}
           containerHeight={`calc(100vh - ${theme.navBarHeight})`}
           onSubmit={() => {

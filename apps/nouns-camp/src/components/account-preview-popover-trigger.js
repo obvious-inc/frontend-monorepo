@@ -14,8 +14,9 @@ import NounAvatar from "./noun-avatar.js";
 import NounPreviewPopoverTrigger from "./noun-preview-popover-trigger.js";
 import { Link } from "react-router-dom";
 
-const searchParams = new URLSearchParams(location.search);
-const isAdminSession = searchParams.get("admin") != null;
+const isAdminSession =
+  process.env.NODE_ENV !== "production" ||
+  new URLSearchParams(location.search).get("admin") != null;
 
 const AccountPreviewPopoverTrigger = React.forwardRef(
   (

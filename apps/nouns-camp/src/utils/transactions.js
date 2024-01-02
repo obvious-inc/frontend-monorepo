@@ -701,3 +701,28 @@ export const resolveAction = (a, { chainId }) => {
 
   return parse(unparse(getParsedTransactions(), { chainId }), { chainId });
 };
+
+export const isEqual = (ts1, ts2) => {
+  if (ts1.targets.length !== ts2.targets.length) return false;
+
+  return ts1.targets.some((target1, i) => {
+    const [signature1, calldata1, value1] = [
+      ts1.signatures[i],
+      ts1.calldatas[i],
+      ts1.values[i],
+    ];
+    const [target2, signature2, calldata2, value2] = [
+      ts2.targets[i],
+      ts2.signatures[i],
+      ts2.calldatas[i],
+      ts2.values[i],
+    ];
+
+    return (
+      target1 !== target2 ||
+      signature1 !== signature2 ||
+      calldata1 !== calldata2 ||
+      value1 !== value2
+    );
+  });
+};

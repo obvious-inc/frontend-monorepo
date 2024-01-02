@@ -16,8 +16,10 @@ import {
   fromMessageBlocks as messageToRichTextBlocks,
 } from "@shades/ui-web/rich-text-editor";
 import {
+  unparse as unparseTransactions,
   resolveAction as resolveActionTransactions,
   buildActions as buildActionsFromTransactions,
+  isEqual as areTransactionsEqual,
 } from "../utils/transactions.js";
 import { useProposal } from "../store.js";
 import useChainId from "../hooks/chain-id.js";
@@ -47,16 +49,17 @@ const ProposalEditDialog = ({ proposalId, dismiss }) => {
     return messageToRichTextBlocks(messageBlocks);
   }, [persistedMarkdownBody]);
 
+  const persistedActions = React.useMemo(
+    () => buildActionsFromTransactions(proposal.transactions, { chainId }),
+    [proposal, chainId]
+  );
+
   const [showPreviewDialog, setShowPreviewDialog] = React.useState(false);
   const [showSubmitDialog, setShowSubmitDialog] = React.useState(false);
 
   const [title, setTitle] = React.useState(persistedTitle);
   const [body, setBody] = React.useState(persistedRichTextBody);
-  const [actions, setActions] = React.useState(() =>
-    buildActionsFromTransactions(proposal.transactions, {
-      chainId,
-    })
-  );
+  const [actions, setActions] = React.useState(persistedActions);
 
   const [hasPendingSubmit, setPendingSubmit] = React.useState(false);
 
@@ -71,7 +74,24 @@ const ProposalEditDialog = ({ proposalId, dismiss }) => {
     return markdownBody !== persistedMarkdownBody;
   }, [deferredBody, persistedMarkdownBody]);
 
-  const hasActionChanges = false;
+  const hasActionChanges =
+    actions.length !== persistedActions.length ||
+    actions.some((a, i) => {
+      const persistedAction = persistedActions[i];
+
+      const transactions = unparseTransactions(
+        resolveActionTransactions(a, { chainId }),
+        {
+          chainId,
+        }
+      );
+      const persistedTransactions = unparseTransactions(
+        resolveActionTransactions(persistedAction, { chainId }),
+        { chainId }
+      );
+
+      return areTransactionsEqual(transactions, persistedTransactions);
+    });
 
   const hasChanges = hasTitleChanges || hasBodyChanges || hasActionChanges;
 
@@ -115,7 +135,7 @@ const ProposalEditDialog = ({ proposalId, dismiss }) => {
       setPendingSubmit(true);
       await updateProposal({
         description: getDescription(),
-        transactions: getTransactions,
+        transactions: getTransactions(),
         updateMessage,
       });
       dismiss();
@@ -140,7 +160,7 @@ const ProposalEditDialog = ({ proposalId, dismiss }) => {
         })}
       >
         {proposal.signers.length > 0 ? (
-          <div css={css({ padding: "1.6rem" })}>
+          <div css={css({ padding: "6.4rem 3.2rem", textAlign: "center" })}>
             Updating sponsored proposals not yet supported. THOON! :tm:
           </div>
         ) : (
@@ -151,6 +171,7 @@ const ProposalEditDialog = ({ proposalId, dismiss }) => {
             setTitle={setTitle}
             setBody={setBody}
             setActions={setActions}
+            proposerId={proposal.proposerId}
             onSubmit={() => {
               setShowPreviewDialog(true);
             }}

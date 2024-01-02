@@ -15,8 +15,10 @@ import {
   fromMessageBlocks as messageToRichTextBlocks,
 } from "@shades/ui-web/rich-text-editor";
 import {
+  unparse as unparseTransactions,
   resolveAction as resolveActionTransactions,
   buildActions as buildActionsFromTransactions,
+  isEqual as areTransactionsEqual,
 } from "../utils/transactions.js";
 import { useProposalCandidate } from "../store.js";
 import useChainId from "../hooks/chain-id.js";
@@ -49,33 +51,70 @@ const CandidateEditDialog = ({ candidateId, dismiss }) => {
     return messageToRichTextBlocks(messageBlocks);
   }, [persistedMarkdownBody]);
 
+  const persistedActions = React.useMemo(
+    () =>
+      buildActionsFromTransactions(
+        candidate.latestVersion.content.transactions,
+        {
+          chainId,
+        }
+      ),
+    [candidate, chainId]
+  );
+
   const [showPreviewDialog, setShowPreviewDialog] = React.useState(false);
   const [showSubmitDialog, setShowSubmitDialog] = React.useState(false);
 
   const [title, setTitle] = React.useState(persistedTitle);
   const [body, setBody] = React.useState(persistedRichTextBody);
-  const [actions, setActions] = React.useState(() =>
-    buildActionsFromTransactions(candidate.latestVersion.content.transactions, {
-      chainId,
-    })
-  );
+  const [actions, setActions] = React.useState(persistedActions);
 
   const [hasPendingSubmit, setPendingSubmit] = React.useState(false);
 
   const deferredBody = React.useDeferredValue(body);
 
-  const hasTitleChanges = title.trim() !== persistedTitle;
+  const hasChanges = React.useMemo(() => {
+    const hasTitleChanges = title.trim() !== persistedTitle;
 
-  const hasBodyChanges = React.useMemo(() => {
+    if (hasTitleChanges) return true;
+
+    const hasActionChanges =
+      actions.length !== persistedActions.length ||
+      actions.some((a, i) => {
+        const persistedAction = persistedActions[i];
+
+        const transactions = unparseTransactions(
+          resolveActionTransactions(a, { chainId }),
+          {
+            chainId,
+          }
+        );
+        const persistedTransactions = unparseTransactions(
+          resolveActionTransactions(persistedAction, { chainId }),
+          { chainId }
+        );
+
+        return areTransactionsEqual(transactions, persistedTransactions);
+      });
+
+    if (hasActionChanges) return true;
+
     const markdownBody = messageUtils.toMarkdown(
       richTextToMessageBlocks(deferredBody)
     );
-    return markdownBody !== persistedMarkdownBody;
-  }, [deferredBody, persistedMarkdownBody]);
 
-  const hasActionChanges = false;
+    const hasBodyChanges = markdownBody !== persistedMarkdownBody;
 
-  const hasChanges = hasTitleChanges || hasBodyChanges || hasActionChanges;
+    return hasBodyChanges;
+  }, [
+    title,
+    persistedTitle,
+    deferredBody,
+    persistedMarkdownBody,
+    actions,
+    persistedActions,
+    chainId,
+  ]);
 
   const updateProposalCandidate = useUpdateProposalCandidate(candidate.slug);
   const cancelProposalCandidate = useCancelProposalCandidate(candidate.slug);
@@ -136,6 +175,7 @@ const CandidateEditDialog = ({ candidateId, dismiss }) => {
           setTitle={setTitle}
           setBody={setBody}
           setActions={setActions}
+          proposerId={candidate.proposerId}
           onSubmit={() => {
             setShowPreviewDialog(true);
           }}
