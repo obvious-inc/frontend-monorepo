@@ -197,7 +197,20 @@ const FeedItem = React.memo(({ context, ...item }) => {
 });
 
 const ItemBody = React.memo(({ text, displayImages }) => (
-  <React.Suspense fallback={null}>
+  <React.Suspense
+    fallback={
+      <div
+        css={(t) =>
+          css({
+            background: t.colors.backgroundModifierNormal,
+            borderRadius: "0.3rem",
+          })
+        }
+      >
+        &nbsp;
+      </div>
+    }
+  >
     <MarkdownRichText
       text={text}
       displayImages={displayImages}

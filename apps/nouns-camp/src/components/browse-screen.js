@@ -925,6 +925,8 @@ export const SectionedList = ({
 
 const FEED_PAGE_ITEM_COUNT = 30;
 
+let hasFetchedActicityFeedOnce = false;
+
 const ActivityFeed = React.memo(({ filter = "all" }) => {
   const { data: latestBlockNumber } = useBlockNumber({
     watch: true,
@@ -934,6 +936,9 @@ const ActivityFeed = React.memo(({ filter = "all" }) => {
   const { fetchNounsActivity, fetchPropdates } = useActions();
 
   const [page, setPage] = React.useState(2);
+  const [hasFetchedOnce, setHasFetchedOnce] = React.useState(
+    hasFetchedActicityFeedOnce
+  );
 
   const feedItems = useFeedItems({ filter });
   const visibleItems = feedItems.slice(0, FEED_PAGE_ITEM_COUNT * page);
@@ -947,20 +952,22 @@ const ActivityFeed = React.memo(({ filter = "all" }) => {
             startBlock:
               latestBlockNumber - BigInt(APPROXIMATE_BLOCKS_PER_DAY * 3),
             endBlock: latestBlockNumber,
-          }).then(() =>
+          }).then(() => {
+            setHasFetchedOnce(true);
+            hasFetchedActicityFeedOnce = true;
             fetchNounsActivity({
               startBlock:
                 latestBlockNumber - BigInt(APPROXIMATE_BLOCKS_PER_DAY * 30),
               endBlock:
                 latestBlockNumber - BigInt(APPROXIMATE_BLOCKS_PER_DAY * 3) - 1n,
-            })
-          ),
+            });
+          }),
     [latestBlockNumber, fetchNounsActivity]
   );
 
   useFetch(() => fetchPropdates(), [fetchPropdates]);
 
-  if (visibleItems.length === 0) return null;
+  if (visibleItems.length === 0 || !hasFetchedOnce) return null;
 
   return (
     <>
