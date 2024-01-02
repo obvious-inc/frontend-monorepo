@@ -434,10 +434,9 @@ const BrowseScreen = () => {
 
   useFetch(
     () =>
-      Promise.all([
-        fetchBrowseScreenData({ first: 40 }),
-        fetchBrowseScreenData({ skip: 40, first: 1000 }),
-      ]),
+      fetchBrowseScreenData({ first: 40 }).then(() => {
+        fetchBrowseScreenData({ skip: 40, first: 1000 });
+      }),
     [fetchBrowseScreenData]
   );
 

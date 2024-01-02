@@ -136,7 +136,6 @@ fragment CandidateContentSignatureFields on ProposalCandidateSignature {
 }`;
 
 const createDelegatesQuery = (optionalAccountIds) => `
-${VOTE_FIELDS}
 query {
   delegates(first: 1000, where: ${
     optionalAccountIds == null
@@ -159,20 +158,6 @@ query {
         delegate {
           id
         }
-      }
-    }
-    votes (first: 1000, orderBy: blockNumber, orderDirection: desc) {
-      ...VoteFields
-    }
-    proposals (first: 1000, orderBy: createdBlock, orderDirection: desc) {
-      id
-      title
-      status
-      createdBlock
-      createdTimestamp
-      startBlock
-      proposer {
-        id
       }
     }
   }
@@ -262,12 +247,10 @@ const createAccountQuery = (id) => `
 `;
 
 const createBrowseScreenQuery = ({ skip = 0, first = 1000 } = {}) => `
-${VOTE_FIELDS}
 ${CANDIDATE_CONTENT_SIGNATURE_FIELDS}
 query {
   proposals(orderBy: createdBlock, orderDirection: desc, skip: ${skip}, first: ${first}) {
     id
-    description
     title
     status
     createdBlock
@@ -295,9 +278,6 @@ query {
     signers {
       id
     }
-    votes {
-      ...VoteFields
-    }
   }
 
   proposalCandidates(orderBy: createdBlock, orderDirection: desc, skip: ${skip}, first: ${first}) {
@@ -321,6 +301,38 @@ query {
         }
       }
     }
+  }
+}`;
+
+const createBrowseScreenSecondaryQuery = ({
+  proposalIds,
+  candidateIds,
+} = {}) => `
+${VOTE_FIELDS}
+${CANDIDATE_FEEDBACK_FIELDS}
+query {
+  proposals(where: {id_in: [${proposalIds.map((id) => `"${id}"`)}]}) {
+    id
+    votes {
+      ...VoteFields
+    }
+  }
+
+  proposalVersions(where: {proposal_in: [${proposalIds.map(
+    (id) => `"${id}"`
+  )}]}) {
+    createdAt
+    createdBlock
+    updateMessage
+    proposal {
+      id
+    }
+  }
+
+  candidateFeedbacks(where: {candidate_in: [${candidateIds.map(
+    (id) => `"${id}"`
+  )}]}, first: 1000) {
+    ...CandidateFeedbackFields
   }
 }`;
 
@@ -1146,6 +1158,17 @@ export const fetchBrowseScreenData = (chainId, options) =>
       return { proposals, candidates };
     }
   );
+
+export const fetchBrowseScreenSecondaryData = (chainId, options) =>
+  subgraphFetch({
+    chainId,
+    query: createBrowseScreenSecondaryQuery(options),
+  }).then((data) => {
+    const proposals = data.proposals.map((p) => parseProposal(p, { chainId }));
+    const proposalVersions = data.proposalVersions.map(parseProposalVersion);
+    const candidateFeedbacks = data.candidateFeedbacks.map(parseFeedbackPost);
+    return { proposals, proposalVersions, candidateFeedbacks };
+  });
 
 export const fetchProposalCandidatesSponsoredByAccount = (
   chainId,

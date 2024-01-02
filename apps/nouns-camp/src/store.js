@@ -280,38 +280,11 @@ const useStore = createZustandStoreHook((set) => {
     fetchDelegates: (chainId, optionalAccountIds) =>
       NounsSubgraph.fetchDelegates(chainId, optionalAccountIds).then(
         (delegates) => {
-          const fetchedProposals = delegates.flatMap((d) => d.proposals);
-          const fetchedVotes = delegates.flatMap((d) => d.votes);
-
-          const fetchedProposalsById = arrayUtils.indexBy(
-            (p) => p.id,
-            fetchedProposals
-          );
-
-          const votesByProposalId = arrayUtils.groupBy(
-            (v) => v.proposalId,
-            fetchedVotes
-          );
-
-          const fetchedProposalsWithNewVotesById = objectUtils.mapValues(
-            (votes, proposalId) => ({
-              id: proposalId,
-              votes,
-            }),
-            votesByProposalId
-          );
-
           set((s) => ({
             delegatesById: {
               ...s.delegatesById,
               ...arrayUtils.indexBy((d) => d.id, delegates),
             },
-            proposalsById: objectUtils.merge(
-              mergeProposals,
-              s.proposalsById,
-              fetchedProposalsById,
-              fetchedProposalsWithNewVotesById
-            ),
           }));
         }
       ),
@@ -376,17 +349,50 @@ const useStore = createZustandStoreHook((set) => {
     fetchBrowseScreenData: (chainId, options) =>
       NounsSubgraph.fetchBrowseScreenData(chainId, options).then(
         ({ proposals, candidates }) => {
-          // Fetch proposal versions async
-          fetchProposalsVersions(
-            chainId,
-            proposals.map((p) => p.id)
-          );
+          // Fetch less urgent data async
+          NounsSubgraph.fetchBrowseScreenSecondaryData(chainId, {
+            proposalIds: proposals.map((p) => p.id),
+            candidateIds: candidates.map((c) => c.id),
+          }).then(({ proposals, proposalVersions, candidateFeedbacks }) => {
+            const proposalsById = arrayUtils.indexBy((p) => p.id, proposals);
 
-          // Fetch candidate feedback async
-          fetchProposalCandidatesFeedbackPosts(
-            chainId,
-            candidates.map((c) => c.id)
-          );
+            const versionsByProposalId = arrayUtils.groupBy(
+              (v) => v.proposalId,
+              proposalVersions
+            );
+            const fetchedProposalsById = objectUtils.mapValues(
+              (versions, id) => ({ id, versions }),
+              versionsByProposalId
+            );
+
+            const feedbackPostsByCandidateId = arrayUtils.groupBy(
+              (p) => p.candidateId,
+              candidateFeedbacks
+            );
+            const fetchedCandidatesById = objectUtils.mapValues(
+              (feedbackPosts, id) => ({
+                id,
+                slug: extractSlugFromCandidateId(id),
+                feedbackPosts,
+              }),
+
+              feedbackPostsByCandidateId
+            );
+
+            set((s) => ({
+              proposalsById: objectUtils.merge(
+                mergeProposals,
+                s.proposalsById,
+                proposalsById,
+                fetchedProposalsById
+              ),
+              proposalCandidatesById: objectUtils.merge(
+                mergeProposalCandidates,
+                s.proposalCandidatesById,
+                fetchedCandidatesById
+              ),
+            }));
+          });
 
           const fetchedProposalsById = arrayUtils.indexBy(
             (p) => p.id,

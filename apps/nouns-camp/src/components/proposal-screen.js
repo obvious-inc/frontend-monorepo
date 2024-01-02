@@ -991,10 +991,14 @@ export const ProposalBody = React.memo(({ markdownText }) => {
           })
         }
       >
-        <MarkdownRichText text={markdownText} imagesMaxHeight={680} />
+        {markdownText != null && (
+          <React.Suspense fallback={null}>
+            <MarkdownRichText text={markdownText} imagesMaxHeight={680} />
+          </React.Suspense>
+        )}
       </div>
 
-      {isDebugSession && (
+      {isDebugSession && markdownText != null && (
         <div
           css={(t) =>
             css({
@@ -1535,7 +1539,7 @@ const MetaTags = ({ proposalId }) => {
   return (
     <MetaTags_
       title={title}
-      description={body.length > 600 ? `${body.slice(0, 600)}...` : body}
+      description={body?.length > 600 ? `${body.slice(0, 600)}...` : body}
       canonicalPathname={`/proposals/${proposalId}`}
     />
   );

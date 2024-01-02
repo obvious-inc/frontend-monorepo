@@ -43,10 +43,10 @@ const useParsedMarkdownText = (text, { displayImages, awaitImages }) => {
   const [blocksWithImageDimensions, setBlocksWithImageDimensions] =
     React.useState(null);
 
-  const blocks = React.useMemo(
-    () => markdownUtils.toMessageBlocks(text, { displayImages }),
-    [text, displayImages]
-  );
+  const blocks = React.useMemo(() => {
+    if (typeof text !== "string") return [];
+    return markdownUtils.toMessageBlocks(text, { displayImages });
+  }, [text, displayImages]);
 
   React.useEffect(() => {
     if (!awaitImages) return;
