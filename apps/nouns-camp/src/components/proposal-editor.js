@@ -1305,7 +1305,6 @@ const SidebarContent = ({ actions, setActions, disabled }) => {
   const [selectedActionIndex, setSelectedActionIndex] = React.useState(null);
   const [showNewActionDialog, setShowNewActionDialog] = React.useState(false);
 
-
   const hasActions = actions != null && actions.length > 0;
   const selectedAction =
     selectedActionIndex == null ? null : actions[selectedActionIndex];

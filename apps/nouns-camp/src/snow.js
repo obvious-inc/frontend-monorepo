@@ -104,9 +104,10 @@ const SnowOverlay = () => {
           pointerEvents: "none",
           ".snowflake": {
             position: "absolute",
-            backgroundColor: t.name === "dark" ? "hsl(0 0% 50%)" : "hsl(0 0% 85%)",
+            backgroundColor:
+              t.name === "dark" ? "hsl(0 0% 50%)" : "hsl(0 0% 85%)",
             borderRadius: "50%",
-            opacity:  0.8,
+            opacity: 0.8,
             pointerEvents: "none",
           },
         })

@@ -5,7 +5,7 @@ import {
   useSearchParams,
   Link as RouterLink,
 } from "react-router-dom";
-import { formatEther, formatUnits, parseUnits } from "viem";
+import { formatEther, parseUnits } from "viem";
 import { useAccount } from "wagmi";
 import { css, useTheme } from "@emotion/react";
 import { useFetch, useLatestCallback } from "@shades/common/react";

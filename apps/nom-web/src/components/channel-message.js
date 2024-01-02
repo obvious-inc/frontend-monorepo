@@ -21,7 +21,7 @@ import {
 } from "@shades/common/app";
 import {
   message as messageUtils,
-  emoji as emojiUtils,
+  // emoji as emojiUtils,
 } from "@shades/common/utils";
 import {
   useLatestCallback,
@@ -1055,7 +1055,7 @@ const Reaction = ({ messageId, emoji, count, users: userIds }) => {
   const { addMessageReaction, removeMessageReaction } = useActions();
 
   const emojiItem = useEmojiById(emoji);
-  const isPictogram = emojiItem?.emoji != null || emojiUtils.isEmoji(emoji);
+  // const isPictogram = emojiItem?.emoji != null || emojiUtils.isEmoji(emoji);
 
   const hasReacted = useHasReactedWithEmoji(messageId, emoji);
   const users = useUsers(userIds);

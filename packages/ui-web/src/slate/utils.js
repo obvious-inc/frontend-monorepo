@@ -18,10 +18,10 @@ export const mergePlugins = (plugins) => {
 
   const pipeEventHandler =
     (handler) =>
-      (e, ...rest) => {
-        handler?.(e, ...rest);
-        return e;
-      };
+    (e, ...rest) => {
+      handler?.(e, ...rest);
+      return e;
+    };
 
   const handlers = {
     onChange: compose(
