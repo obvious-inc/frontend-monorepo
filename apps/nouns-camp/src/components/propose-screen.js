@@ -9,7 +9,10 @@ import { formatEther, parseUnits } from "viem";
 import { useAccount } from "wagmi";
 import { css, useTheme } from "@emotion/react";
 import { useFetch, useLatestCallback } from "@shades/common/react";
-import { message as messageUtils } from "@shades/common/utils";
+import {
+  message as messageUtils,
+  function as functionUtils,
+} from "@shades/common/utils";
 import Link from "@shades/ui-web/link";
 import Select from "@shades/ui-web/select";
 import Dialog from "@shades/ui-web/dialog";
@@ -42,19 +45,6 @@ import {
 import Layout from "./layout.js";
 import Callout from "./callout.js";
 import ProposalEditor from "./proposal-editor.js";
-
-const retryPromise = (fn, { retries = 3, timeout = 1000 } = {}) =>
-  new Promise((resolve, reject) => {
-    fn().then(resolve, (e) => {
-      if (retries < 1) return reject(e);
-      setTimeout(() => {
-        retryPromise(fn, { retries: retries - 1, timeout }).then(
-          resolve,
-          reject
-        );
-      }, timeout);
-    });
-  });
 
 const ProposeScreen = () => {
   const { draftId } = useParams();
@@ -181,7 +171,7 @@ const ProposeScreen = () => {
             try {
               switch (submitTargetType) {
                 case "proposal": {
-                  await retryPromise(() => fetchProposal(res.id), {
+                  await functionUtils.retryAsync(() => fetchProposal(res.id), {
                     retries: 100,
                   });
                   navigate(`/${res.id}`, { replace: true });
@@ -194,7 +184,7 @@ const ProposeScreen = () => {
                     encodeURIComponent(res.slug),
                   ].join("-");
 
-                  await retryPromise(
+                  await functionUtils.retryAsync(
                     () => fetchProposalCandidate(candidateId),
                     {
                       retries: 100,

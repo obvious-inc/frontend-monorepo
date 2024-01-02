@@ -70,6 +70,52 @@ fragment ProposalFeedbackFields on ProposalFeedback {
   }
 }`;
 
+const FULL_PROPOSAL_FIELDS = `
+${VOTE_FIELDS}
+${PROPOSAL_FEEDBACK_FIELDS}
+fragment FullProposalFields on Proposal {
+  id
+  status
+  title
+  description
+  createdBlock
+  createdTimestamp
+  lastUpdatedBlock
+  lastUpdatedTimestamp
+  startBlock
+  endBlock
+  updatePeriodEndBlock
+  objectionPeriodEndBlock
+  canceledBlock
+  canceledTimestamp
+  queuedBlock
+  queuedTimestamp
+  executedBlock
+  executedTimestamp
+  targets
+  signatures
+  calldatas
+  values
+  forVotes
+  againstVotes
+  abstainVotes
+  executionETA
+  quorumVotes
+  proposer {
+    id
+  }
+  signers {
+    id
+  }
+  votes {
+    ...VoteFields
+  }
+  feedbackPosts {
+    ...ProposalFeedbackFields
+  }
+}
+`;
+
 const CANDIDATE_CONTENT_SIGNATURE_FIELDS = `
 fragment CandidateContentSignatureFields on ProposalCandidateSignature {
   reason
@@ -77,6 +123,7 @@ fragment CandidateContentSignatureFields on ProposalCandidateSignature {
   createdBlock
   createdTimestamp
   expirationTimestamp
+  sig
   signer {
     id
     nounsRepresented {
@@ -88,10 +135,14 @@ fragment CandidateContentSignatureFields on ProposalCandidateSignature {
   }
 }`;
 
-const DELEGATES_QUERY = `
+const createDelegatesQuery = (optionalAccountIds) => `
 ${VOTE_FIELDS}
 query {
-  delegates(first: 1000, where: {nounsRepresented_: {}}) {
+  delegates(first: 1000, where: ${
+    optionalAccountIds == null
+      ? "{nounsRepresented_: {}}"
+      : `{id_in: [${optionalAccountIds.map((id) => `"${id}"`)}]}`
+  }) {
     id
     delegatedVotes
     nounsRepresented {
@@ -115,7 +166,6 @@ query {
     }
     proposals (first: 1000, orderBy: createdBlock, orderDirection: desc) {
       id
-      description
       title
       status
       createdBlock
@@ -431,49 +481,10 @@ query {
 }`;
 
 const createProposalQuery = (id) => `
-${VOTE_FIELDS}
-${PROPOSAL_FEEDBACK_FIELDS}
+${FULL_PROPOSAL_FIELDS}
 query {
   proposal(id: "${id}") {
-    id
-    status
-    title
-    description
-    createdBlock
-    createdTimestamp
-    lastUpdatedBlock
-    lastUpdatedTimestamp
-    startBlock
-    endBlock
-    updatePeriodEndBlock
-    objectionPeriodEndBlock
-    canceledBlock
-    canceledTimestamp
-    queuedBlock
-    queuedTimestamp
-    executedBlock
-    executedTimestamp
-    targets
-    signatures
-    calldatas
-    values
-    forVotes
-    againstVotes
-    abstainVotes
-    executionETA
-    quorumVotes
-    proposer {
-      id
-    }
-    signers {
-      id
-    }
-    votes {
-      ...VoteFields
-    }
-    feedbackPosts {
-      ...ProposalFeedbackFields
-    }
+    ...FullProposalFields
   }
 
   proposalVersions(where: {proposal: "${id}"}) {
@@ -578,49 +589,30 @@ const createProposalsVersionsQuery = (proposalIds) => `{
 }`;
 
 const createProposalsQuery = (proposalIds) => `
-${VOTE_FIELDS}
-${PROPOSAL_FEEDBACK_FIELDS}
+${FULL_PROPOSAL_FIELDS}
 query {
   proposals(where: {id_in: [${proposalIds.map((id) => `"${id}"`)}]}) {
-    id
-    status
-    title
-    description
-    createdBlock
-    createdTimestamp
-    lastUpdatedBlock
-    lastUpdatedTimestamp
-    startBlock
-    endBlock
-    updatePeriodEndBlock
-    objectionPeriodEndBlock
-    canceledBlock
-    canceledTimestamp
-    queuedBlock
-    queuedTimestamp
-    executedBlock
-    executedTimestamp
-    targets
-    signatures
-    calldatas
-    values
-    forVotes
-    againstVotes
-    abstainVotes
-    executionETA
-    quorumVotes
-    proposer {
-      id
+    ...FullProposalFields
+  }
+}`;
+
+const createActiveProposalQuery = (currentBlock) => `
+${FULL_PROPOSAL_FIELDS}
+query {
+  proposals(
+    where: {
+      and: [
+        { status_not_in: ["CANCELLED", "VETOED"] },
+        {
+          or: [
+            { endBlock_gt: ${currentBlock} },
+            { objectionPeriodEndBlock_gt: ${currentBlock} }
+          ]
+        }
+      ]
     }
-    signers {
-      id
-    }
-    votes {
-      ...VoteFields
-    }
-    feedbackPosts {
-      ...ProposalFeedbackFields
-    }
+  ) {
+    ...FullProposalFields 
   }
 }`;
 
@@ -1038,6 +1030,15 @@ export const fetchProposals = async (chainId, proposalIds) => {
   });
 };
 
+export const fetchActiveProposals = async (chainId, currentBlock) => {
+  return subgraphFetch({
+    chainId,
+    query: createActiveProposalQuery(currentBlock),
+  }).then((data) => {
+    return data.proposals.map((p) => parseProposal(p, { chainId }));
+  });
+};
+
 export const fetchProposalCandidates = async (chainId, candidateIds) => {
   if (!candidateIds || candidateIds.length == 0) return [];
   return subgraphFetch({
@@ -1098,10 +1099,11 @@ export const fetchProposalCandidate = async (chainId, rawId) => {
   );
 };
 
-export const fetchDelegates = (chainId) =>
-  subgraphFetch({ chainId, query: DELEGATES_QUERY }).then((data) =>
-    data.delegates.map(parseDelegate)
-  );
+export const fetchDelegates = (chainId, optionalAccountIds) =>
+  subgraphFetch({
+    chainId,
+    query: createDelegatesQuery(optionalAccountIds),
+  }).then((data) => data.delegates.map(parseDelegate));
 
 export const fetchDelegate = (chainId, id) =>
   subgraphFetch({

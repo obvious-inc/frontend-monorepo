@@ -40,6 +40,9 @@ export const isSucceededState = (state) =>
 export const isVotableState = (state) =>
   ["active", "objection-period"].includes(state);
 
+export const isActiveState = (state) =>
+  ["pending", "updatable", "active", "objection-period"].includes(state);
+
 export const buildFeed = (proposal, { latestBlockNumber, candidate }) => {
   if (proposal == null) return [];
 

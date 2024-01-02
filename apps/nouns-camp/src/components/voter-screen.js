@@ -37,8 +37,7 @@ import NounPreviewPopoverTrigger from "./noun-preview-popover-trigger.js";
 const VOTER_LIST_PAGE_ITEM_COUNT = 20;
 const FEED_PAGE_ITEM_COUNT = 30;
 
-const useFeedItems = ({ voterAddress, filter }) => {
-  const delegate = useDelegate(voterAddress);
+const useFeedItems = (accountAddress, { filter } = {}) => {
   const proposals = useProposals({ state: true, propdates: true });
   const candidates = useProposalCandidates({
     includeCanceled: true,
@@ -46,17 +45,14 @@ const useFeedItems = ({ voterAddress, filter }) => {
   });
 
   return React.useMemo(() => {
-    const buildProposalItems = () => buildVoterFeed(delegate, { proposals });
-    const buildCandidateItems = () => buildVoterFeed(delegate, { candidates });
-
     const buildFeedItems = () => {
       switch (filter) {
         case "proposals":
-          return [...buildProposalItems()];
+          return buildVoterFeed(accountAddress, { proposals });
         case "candidates":
-          return [...buildCandidateItems()];
+          return buildVoterFeed(accountAddress, { candidates });
         default:
-          return [...buildVoterFeed(delegate, { proposals, candidates })];
+          return buildVoterFeed(accountAddress, { proposals, candidates });
       }
     };
 
@@ -64,7 +60,7 @@ const useFeedItems = ({ voterAddress, filter }) => {
       { value: (i) => i.blockNumber, order: "desc" },
       buildFeedItems()
     );
-  }, [delegate, proposals, candidates, filter]);
+  }, [accountAddress, proposals, candidates, filter]);
 };
 
 const getDelegateVotes = (delegate) => {
@@ -94,7 +90,7 @@ const ActivityFeed = React.memo(({ voterAddress, filter = "all" }) => {
 
   const [page, setPage] = React.useState(1);
 
-  const feedItems = useFeedItems({ voterAddress, filter });
+  const feedItems = useFeedItems(voterAddress, { filter });
   const visibleItems = feedItems.slice(0, FEED_PAGE_ITEM_COUNT * page);
 
   // Fetch feed items
@@ -541,7 +537,8 @@ const VoterMainSection = ({ voterAddress }) => {
   const [page, setPage] = React.useState(1);
   const delegate = useDelegate(voterAddress);
 
-  const filteredProposals = delegate?.proposals ?? [];
+  const filteredProposals = (delegate?.proposals ?? []).filter(Boolean);
+  console.log({ filteredProposals });
   const voterCandidates = useAccountProposalCandidates(voterAddress);
   const sponsoredProposals = useProposalsSponsoredByAccount(voterAddress);
 

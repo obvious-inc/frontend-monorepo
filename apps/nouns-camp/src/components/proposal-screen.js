@@ -1148,7 +1148,7 @@ const ProposalScreen = () => {
             : isBetaSession &&
               isProposer &&
               !isFinalProposalState(proposal.state)
-            ? [{ onSelect: openDialog, label: "Manage proposal" }]
+            ? [{ onSelect: openDialog, label: "Edit" }]
             : undefined
         }
       >

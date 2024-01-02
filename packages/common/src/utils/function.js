@@ -26,3 +26,19 @@ export const waterfall = (promiseCreators) => {
     )
     .then(() => responses);
 };
+
+export const retryAsync = (
+  createPromise,
+  { retries = 3, timeout = 1000 } = {}
+) =>
+  new Promise((resolve, reject) => {
+    createPromise().then(resolve, (e) => {
+      if (retries < 1) return reject(e);
+      setTimeout(() => {
+        retryAsync(createPromise, { retries: retries - 1, timeout }).then(
+          resolve,
+          reject
+        );
+      }, timeout);
+    });
+  });

@@ -28,6 +28,10 @@ const backgroundLighter = "hsl(0 0% 17%)";
 const backgroundModifierLight = "hsl(0 0% 100% / 1.5%)";
 const backgroundModifierNormal = "hsl(0 0% 100% / 5.5%)";
 const backgroundModifierStrong = "hsl(0 0% 100% / 8%)";
+const backgroundModifierSelected = createPrimary({
+  lightness: 0.4,
+  opacity: 0.15,
+});
 
 const normalTextSize = "1.4rem";
 const largeText = "1.6rem";
@@ -149,14 +153,12 @@ export default {
     backgroundModifierLight,
     backgroundModifierNormal,
     backgroundModifierStrong,
+    backgroundModifierSelected,
     backgroundModifierHover: backgroundModifierNormal, // deprecated
     backgroundYellow: "rgb(202, 152, 73)",
     interactiveNormal: "#b9bbbe",
     interactiveHover: "#dcddde",
-    messageBackgroundModifierHighlight: createPrimary({
-      lightness: 0.4,
-      opacity: 0.15,
-    }),
+    messageBackgroundModifierHighlight: backgroundModifierSelected,
     onlineIndicator: "hsl(139 47.3%  43.9%)",
     mentionText: createPrimary({ saturation: 1, lightness: 0.95 }),
     mentionTextModifierHover: "white",

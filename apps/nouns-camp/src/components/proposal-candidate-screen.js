@@ -12,6 +12,7 @@ import { array as arrayUtils, reloadPageOnce } from "@shades/common/utils";
 import { ErrorBoundary, useMatchMedia } from "@shades/common/react";
 import Dialog from "@shades/ui-web/dialog";
 import Button from "@shades/ui-web/button";
+import Link from "@shades/ui-web/link";
 import Input from "@shades/ui-web/input";
 import Spinner from "@shades/ui-web/spinner";
 import * as Tooltip from "@shades/ui-web/tooltip";
@@ -25,9 +26,14 @@ import {
   useProposalCandidate,
   useProposalCandidateVotingPower,
   useProposalCandidateFetch,
+  useActiveProposalsFetch,
   useDelegate,
+  useProposals,
 } from "../store.js";
-import { useProposalThreshold } from "../hooks/dao-contract.js";
+import {
+  useProposalThreshold,
+  useCancelSignature,
+} from "../hooks/dao-contract.js";
 import {
   useSendProposalCandidateFeedback,
   useSignProposalCandidate,
@@ -54,28 +60,34 @@ import TransactionList from "./transaction-list.js";
 const CandidateEditDialog = React.lazy(() =>
   import("./candidate-edit-dialog.js")
 );
+const PromoteCandidateDialog = React.lazy(() =>
+  import("./promote-candidate-dialog.js")
+);
 const MarkdownRichText = React.lazy(() => import("./markdown-rich-text.js"));
 
 const isBetaSession = new URLSearchParams(location.search).get("beta") != null;
 
-const useSearchParamToggleState = (key) => {
+const useSearchParamToggleState = (key, { replace = true } = {}) => {
   const [searchParams, setSearchParams] = useSearchParams();
 
   const isToggled = searchParams.get(key) != null;
 
   const toggle = React.useCallback(() => {
-    setSearchParams((params) => {
-      const newParams = new URLSearchParams(params);
+    setSearchParams(
+      (params) => {
+        const newParams = new URLSearchParams(params);
 
-      if (newParams.get(key) == null) {
-        newParams.set(key, 1);
+        if (newParams.get(key) == null) {
+          newParams.set(key, 1);
+          return newParams;
+        }
+
+        newParams.delete(key);
         return newParams;
-      }
-
-      newParams.delete(key);
-      return newParams;
-    });
-  }, [key, setSearchParams]);
+      },
+      { replace }
+    );
+  }, [key, replace, setSearchParams]);
 
   return [isToggled, toggle];
 };
@@ -121,6 +133,9 @@ const ProposalCandidateScreenContent = ({
 
   const proposerDelegate = useDelegate(candidate.proposerId);
   const candidateVotingPower = useProposalCandidateVotingPower(candidateId);
+  const activeProposerIds = useProposals({ filter: "active" }).map(
+    (p) => p.proposerId
+  );
 
   useProposalCandidateFetch(candidateId);
 
@@ -128,18 +143,19 @@ const ProposalCandidateScreenContent = ({
 
   const proposerDelegateNounIds =
     proposerDelegate?.nounsRepresented.map((n) => n.id) ?? [];
-  const proposerVoteCount = proposerDelegateNounIds.length;
+  const proposerVotingPower = proposerDelegateNounIds.length;
 
   const validSignatures = getSponsorSignatures(candidate, {
     excludeInvalid: true,
+    activeProposerIds,
   });
 
-  const sponsoringNounIds = arrayUtils.unique(
+  const sponsorsVotingPower = arrayUtils.unique(
     validSignatures.flatMap((s) => s.signer.nounsRepresented.map((n) => n.id))
-  );
+  ).length;
 
   const isProposalThresholdMet = candidateVotingPower > proposalThreshold;
-  const missingSponsorCount = isProposalThresholdMet
+  const missingSponsorVotingPower = isProposalThresholdMet
     ? 0
     : proposalThreshold + 1 - candidateVotingPower;
 
@@ -174,8 +190,8 @@ const ProposalCandidateScreenContent = ({
             /{proposalThreshold + 1}).
           </p>
           <p>
-            Voters can continue to add their support until the proposal is put
-            onchain.
+            Voters can continue to add signatures until the candidate is
+            promoted to a proposal.
           </p>
         </>
       ) : (
@@ -183,15 +199,15 @@ const ProposalCandidateScreenContent = ({
           {candidateVotingPower === 0 ? (
             <>
               {proposalThreshold + 1} sponsoring{" "}
-              {proposalThreshold + 1 === 1 ? "noun" : "nouns"} required to put
-              proposal onchain.
+              {proposalThreshold + 1 === 1 ? "noun" : "nouns"} required to
+              promote this candidate to a proposal.
             </>
           ) : (
             <>
-              This candidate requires <em>{missingSponsorCount} more</em>{" "}
-              sponsoring {missingSponsorCount === 1 ? "noun" : "nouns"} (
-              {candidateVotingPower}/{proposalThreshold + 1}) to be proposed
-              onchain.
+              This candidate requires <em>{missingSponsorVotingPower} more</em>{" "}
+              sponsoring {missingSponsorVotingPower === 1 ? "noun" : "nouns"} (
+              {candidateVotingPower}/{proposalThreshold + 1}) to be promoted to
+              a proposal.
             </>
           )}
         </>
@@ -227,8 +243,8 @@ const ProposalCandidateScreenContent = ({
                     })
                   }
                 >
-                  <em>{sponsoringNounIds.length}</em> sponsoring{" "}
-                  {sponsoringNounIds.length === 1 ? "noun" : "nouns"}
+                  <em>{sponsorsVotingPower}</em> sponsoring{" "}
+                  {sponsorsVotingPower === 1 ? "noun" : "nouns"}
                   {validSignatures.length > 1 && (
                     <>
                       {" "}
@@ -240,15 +256,15 @@ const ProposalCandidateScreenContent = ({
                       >
                         {validSignatures.length}
                       </span>{" "}
-                      {validSignatures.length === 1 ? "delegate" : "delegates"}
+                      {validSignatures.length === 1 ? "voter" : "voters"}
                     </>
                   )}
-                  {proposerVoteCount > 0 && (
+                  {proposerVotingPower > 0 && (
                     <>
                       <br />
-                      <em>{proposerVoteCount}</em>{" "}
-                      {proposerVoteCount === 1 ? "noun" : "nouns"} controlled by
-                      proposer
+                      <em>{proposerVotingPower}</em>{" "}
+                      {proposerVotingPower === 1 ? "noun" : "nouns"} controlled
+                      by proposer
                     </>
                   )}
                 </span>
@@ -337,25 +353,17 @@ const ProposalCandidateScreenContent = ({
           })}
         >
           {candidate.latestVersion.proposalId != null && (
-            <Callout
-              css={(t) =>
-                css({
-                  marginBottom: "4.8rem",
-                  a: {
-                    color: t.colors.link,
-                    "@media(hover: hover)": {
-                      color: t.colors.linkModifierHover,
-                    },
-                  },
-                })
-              }
-            >
-              This candidate has been proposed onchain.{" "}
-              <RouterLink
-                to={`/proposals/${candidate.latestVersion.proposalId}`}
-              >
-                View the proposal here
-              </RouterLink>
+            <Callout compact css={css({ marginBottom: "4.8rem" })}>
+              <p>This candidate has been promoted to a proposal.</p>
+              <p>
+                <Link
+                  underline
+                  component={RouterLink}
+                  to={`/proposals/${candidate.latestVersion.proposalId}`}
+                >
+                  View the proposal here
+                </Link>
+              </p>
             </Callout>
           )}
           <ProposalHeader
@@ -481,7 +489,7 @@ const ProposalCandidateScreenContent = ({
                       minHeight: "calc(100vh - 10rem)",
                     }}
                   >
-                    {proposerVoteCount > 0 && (
+                    {proposerVotingPower > 0 && (
                       <Callout
                         css={(t) =>
                           css({
@@ -494,8 +502,8 @@ const ProposalCandidateScreenContent = ({
                         }
                       >
                         <em>
-                          {proposerVoteCount}{" "}
-                          {proposerVoteCount === 1 ? "noun" : "nouns"}
+                          {proposerVotingPower}{" "}
+                          {proposerVotingPower === 1 ? "noun" : "nouns"}
                         </em>{" "}
                         controlled by proposer
                       </Callout>
@@ -521,18 +529,30 @@ const ProposalCandidateScreenContent = ({
 const SponsorsTabMainContent = ({ candidateId, toggleSponsorDialog }) => {
   const candidate = useProposalCandidate(candidateId);
 
+  const activeProposerIds = useProposals({ filter: "active" }).map(
+    (p) => p.proposerId
+  );
+
   const signatures = getSponsorSignatures(candidate, {
     excludeInvalid: true,
+    activeProposerIds,
   });
 
   const { address: connectedWalletAccountAddress } = useWallet();
+
+  const isProposer =
+    candidate.proposerId.toLowerCase() ===
+    connectedWalletAccountAddress.toLowerCase();
+
   const connectedDelegate = useDelegate(connectedWalletAccountAddress);
   const connectedDelegateHasVotes =
     connectedDelegate != null && connectedDelegate.nounsRepresented.length > 0;
+
   const showSponsorButton =
     connectedDelegateHasVotes &&
     candidate.latestVersion.proposalId == null &&
-    candidate.canceledTimestamp == null;
+    candidate.canceledTimestamp == null &&
+    !isProposer;
 
   if (signatures.length === 0)
     return (
@@ -589,10 +609,7 @@ const SponsorsTabMainContent = ({ candidateId, toggleSponsorDialog }) => {
         }
       >
         {arrayUtils
-          .sortBy(
-            { value: (s) => s.signer.nounsRepresented.length, order: "desc" },
-            signatures
-          )
+          .sortBy({ value: (s) => s.createdBlock, order: "desc" }, signatures)
           .map((s) => (
             <li key={s.createdBlock}>
               <div
@@ -685,6 +702,13 @@ const SponsorsTabMainContent = ({ candidateId, toggleSponsorDialog }) => {
                     return <>Expires {relativeTimestamp}</>;
                   })()}
                 </div>
+
+                {s.signer.id.toLowerCase() ===
+                  connectedWalletAccountAddress.toLowerCase() && (
+                  <div style={{ marginTop: "0.6rem" }}>
+                    <CancelSignatureButton signature={s.sig} />
+                  </div>
+                )}
               </div>
             </li>
           ))}
@@ -703,6 +727,35 @@ const SponsorsTabMainContent = ({ candidateId, toggleSponsorDialog }) => {
         </div>
       )}
     </>
+  );
+};
+
+const CancelSignatureButton = ({ signature, ...props }) => {
+  const [isPending, setPending] = React.useState(false);
+  const cancelSignature = useCancelSignature(signature);
+  return (
+    <Button
+      danger
+      size="tiny"
+      isLoading={isPending}
+      disabled={cancelSignature == null || isPending}
+      onClick={() => {
+        setPending(true);
+        cancelSignature()
+          .catch((e) => {
+            if (e.message.startsWith("User rejected the request.")) return;
+
+            console.error(e);
+            alert("Oh noes, looks like something went wrong!");
+          })
+          .finally(() => {
+            setPending(false);
+          });
+      }}
+      {...props}
+    >
+      Cancel signature
+    </Button>
   );
 };
 
@@ -782,9 +835,10 @@ const SponsorDialog = ({ candidateId, titleProps, dismiss }) => {
           Sponsor candidate
         </h1>
         {submitState === "adding-signature" && (
-          <div css={(t) => css({ color: t.colors.textPrimary })}>
-            Candidate signed. Confirm again in your wallet to submit.
-          </div>
+          <Callout compact css={(t) => css({ color: t.colors.textHighlight })}>
+            <p>Candidate signed!</p>
+            <p>Confirm again in your wallet to submit the signature.</p>
+          </Callout>
         )}
         <Input
           type="date"
@@ -807,9 +861,9 @@ const SponsorDialog = ({ candidateId, titleProps, dismiss }) => {
           disabled={hasPendingSubmit}
         />
         <div>
-          Note that once a signed proposal is onchain, signers will need to wait
-          until the proposal is queued or defeated before putting another
-          proposal onchain.
+          Note that once the candidate is promoted to a proposal, sponsors will
+          need to wait until the proposal is queued or defeated before they can
+          author or sponsor other proposals or candidates.
         </div>
         <div
           style={{ display: "flex", justifyContent: "flex-end", gap: "1rem" }}
@@ -829,129 +883,6 @@ const SponsorDialog = ({ candidateId, titleProps, dismiss }) => {
       </form>
     </div>
   );
-};
-const ProposeDialog = ({
-  candidateId,
-  // titleProps, dismiss
-}) => {
-  return candidateId;
-  // const candidate = useProposalCandidate(candidateId);
-
-  // const [selectedSignerIds, setSelectedSignerIds] = React.useState([]);
-
-  // const [submitState, setSubmitState] = React.useState("idle");
-
-  // const hasPendingSubmit = submitState !== "idle";
-
-  // const signCandidate = useSignProposalCandidate(
-  //   candidate.proposerId,
-  //   candidate.latestVersion.content,
-  //   {
-  //     expirationTimestamp: Math.floor(expirationDate.getTime() / 1000),
-  //   }
-  // );
-
-  // const addSignatureToCandidate = useAddSignatureToProposalCandidate(
-  //   candidate.proposerId,
-  //   candidate.slug,
-  //   candidate.latestVersion.content
-  // );
-
-  // return (
-  //   <div
-  //     css={css({
-  //       overflow: "auto",
-  //       padding: "1.5rem",
-  //       "@media (min-width: 600px)": {
-  //         padding: "2rem",
-  //       },
-  //     })}
-  //   >
-  //     <form
-  //       style={{ display: "flex", flexDirection: "column", gap: "2rem" }}
-  //       onSubmit={(e) => {
-  //         e.preventDefault();
-  //         setSubmitState("signing");
-  //         signCandidate()
-  //           .then((signature) => {
-  //             setSubmitState("adding-signature");
-  //             return addSignatureToCandidate({
-  //               signature,
-  //               expirationTimestamp: Math.floor(
-  //                 expirationDate.getTime() / 1000
-  //               ),
-  //               reason,
-  //             });
-  //           })
-  //           .then(() => {
-  //             dismiss();
-  //           })
-  //           .finally(() => {
-  //             setSubmitState("idle");
-  //           });
-  //       }}
-  //     >
-  //       <h1
-  //         {...titleProps}
-  //         css={(t) =>
-  //           css({
-  //             color: t.colors.textNormal,
-  //             fontSize: t.text.sizes.headerLarge,
-  //             fontWeight: t.text.weights.header,
-  //             lineHeight: 1.15,
-  //           })
-  //         }
-  //       >
-  //         Sponsor candidate
-  //       </h1>
-  //       {submitState === "adding-signature" && (
-  //         <div css={(t) => css({ color: t.colors.textPrimary })}>
-  //           Candidate signed. Confirm again in your wallet to submit.
-  //         </div>
-  //       )}
-  //       <Input
-  //         type="date"
-  //         label="Signature expiration date"
-  //         value={formatDate(expirationDate, "yyyy-MM-dd")}
-  //         onChange={(e) => {
-  //           setExpirationDate(new Date(e.target.valueAsNumber));
-  //         }}
-  //         disabled={hasPendingSubmit}
-  //       />
-  //       <Input
-  //         label="Optional message"
-  //         multiline
-  //         rows={3}
-  //         placeholder="..."
-  //         value={reason}
-  //         onChange={(e) => {
-  //           setReason(e.target.value);
-  //         }}
-  //         disabled={hasPendingSubmit}
-  //       />
-  //       <div>
-  //         Once a signed proposal is onchain, signers will need to wait until the
-  //         proposal is queued or defeated before putting another proposal
-  //         onchain.
-  //       </div>
-  //       <div
-  //         style={{ display: "flex", justifyContent: "flex-end", gap: "1rem" }}
-  //       >
-  //         <Button type="button" onClick={dismiss}>
-  //           Close
-  //         </Button>
-  //         <Button
-  //           type="submit"
-  //           variant="primary"
-  //           isLoading={hasPendingSubmit}
-  //           disabled={hasPendingSubmit}
-  //         >
-  //           Submit signature
-  //         </Button>
-  //       </div>
-  //     </form>
-  //   </div>
-  // );
 };
 
 const normalizeId = (id) => {
@@ -981,11 +912,12 @@ const ProposalCandidateScreen = () => {
   const [notFound, setNotFound] = React.useState(false);
   const [fetchError, setFetchError] = React.useState(null);
 
-  const proposalThreshold = useProposalThreshold();
-
   const { address: connectedWalletAccountAddress } = useWallet();
 
   const candidate = useProposalCandidate(candidateId);
+
+  const proposerDelegate = useDelegate(proposerId);
+  const proposalThreshold = useProposalThreshold();
 
   const isProposer =
     connectedWalletAccountAddress != null &&
@@ -1004,6 +936,8 @@ const ProposalCandidateScreen = () => {
     },
   });
 
+  useActiveProposalsFetch();
+
   const [isEditDialogOpen, toggleEditDialog] =
     useSearchParamToggleState("edit");
   const [isSponsorDialogOpen, toggleSponsorDialog] =
@@ -1011,21 +945,54 @@ const ProposalCandidateScreen = () => {
   const [isProposeDialogOpen, toggleProposeDialog] =
     useSearchParamToggleState("propose");
 
-  const { contentSignatures = [] } = candidate?.latestVersion.content ?? {};
-
-  const validSignatures = contentSignatures.filter(
-    (s) => !s.canceled && s.expirationTimestamp > new Date()
+  const activeProposerIds = useProposals({ filter: "active" }).map(
+    (p) => p.proposerId
   );
 
-  const sponsoringNounIds = arrayUtils.unique(
+  const validSignatures = getSponsorSignatures(candidate, {
+    excludeInvalid: true,
+    activeProposerIds,
+  });
+
+  const sponsorsVotingPower = arrayUtils.unique(
     validSignatures.flatMap((s) => {
       // don't count votes from signers who have active or pending proposals
       // if (!activePendingProposers.includes(signature.signer.id)) {
       return s.signer.nounsRepresented.map((n) => n.id);
     })
-  );
+  ).length;
 
-  const isProposalThresholdMet = sponsoringNounIds.length > proposalThreshold;
+  const proposerVotingPower =
+    proposerDelegate == null ? 0 : proposerDelegate.nounsRepresented.length;
+
+  const isProposalThresholdMet =
+    proposerVotingPower + sponsorsVotingPower > proposalThreshold;
+
+  const getActions = () => {
+    if (candidate == null) return [];
+
+    const isCanceled = candidate.canceledTimestamp != null;
+
+    if (!isProposer || isCanceled || connectedWalletAccountAddress == null)
+      return undefined;
+
+    const hasBeenPromoted = candidate.latestVersion.proposalId != null;
+
+    const proposerActions = [
+      isBetaSession &&
+        !hasBeenPromoted && {
+          onSelect: toggleEditDialog,
+          label: "Edit",
+        },
+      isProposalThresholdMet &&
+        !hasBeenPromoted && {
+          onSelect: toggleProposeDialog,
+          label: "Promote",
+        },
+    ].filter(Boolean);
+
+    return proposerActions.length === 0 ? undefined : proposerActions;
+  };
 
   return (
     <>
@@ -1039,24 +1006,7 @@ const ProposalCandidateScreen = () => {
             label: candidate?.latestVersion.content.title ?? "...",
           },
         ]}
-        actions={
-          candidate == null
-            ? []
-            : candidate.canceledTimestamp != null ||
-              connectedWalletAccountAddress == null
-            ? undefined
-            : isProposer
-            ? isBetaSession
-              ? [
-                  { onSelect: toggleEditDialog, label: "Manage candidate" },
-                  isProposalThresholdMet && {
-                    onSelect: toggleProposeDialog,
-                    label: "Put on chain",
-                  },
-                ].filter(Boolean)
-              : undefined
-            : undefined
-        }
+        actions={getActions()}
       >
         {candidate == null ? (
           <div
@@ -1170,23 +1120,19 @@ const ProposalCandidateScreen = () => {
       )}
 
       {isProposeDialogOpen && candidate != null && (
-        <Dialog isOpen onRequestClose={toggleProposeDialog} width="52rem">
-          {({ titleProps }) => (
-            <ErrorBoundary
-              onError={() => {
-                reloadPageOnce();
-              }}
-            >
-              <React.Suspense fallback={null}>
-                <ProposeDialog
-                  candidateId={candidateId}
-                  titleProps={titleProps}
-                  dismiss={toggleProposeDialog}
-                />
-              </React.Suspense>
-            </ErrorBoundary>
-          )}
-        </Dialog>
+        <ErrorBoundary
+          onError={() => {
+            reloadPageOnce();
+          }}
+        >
+          <React.Suspense fallback={null}>
+            <PromoteCandidateDialog
+              isOpen
+              candidateId={candidateId}
+              dismiss={toggleProposeDialog}
+            />
+          </React.Suspense>
+        </ErrorBoundary>
       )}
     </>
   );

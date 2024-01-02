@@ -1,8 +1,9 @@
 import { css } from "@emotion/react";
 
-const Callout = ({ icon, variant, children, ...props }) => (
+const Callout = ({ icon, compact, variant, children, ...props }) => (
   <aside
     data-variant={variant}
+    data-compact={compact}
     css={(t) =>
       css({
         display: "flex",
@@ -22,6 +23,7 @@ const Callout = ({ icon, variant, children, ...props }) => (
         },
         "[data-main]": { minWidth: 0, flex: 1 },
         "p + p": { marginTop: "1em" },
+        "&[data-compact] p + p": { marginTop: "0.5em" },
         "@media(min-width: 600px)": {
           padding: "1.6rem",
         },

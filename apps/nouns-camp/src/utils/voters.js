@@ -2,15 +2,13 @@ import { array as arrayUtils } from "@shades/common/utils";
 import { buildFeed as buildCandidateFeed } from "./candidates.js";
 import { buildFeed as buildProposalFeed } from "./proposals.js";
 
-export const buildFeed = (delegate, { proposals, candidates }) => {
-  if (delegate == null) return [];
-
+export const buildFeed = (accountAddress, { proposals, candidates }) => {
   const propFeedItems =
     proposals
       ?.map((p) => buildProposalFeed(p, {}))
       .flat()
       .filter(
-        (p) => p.authorAccount?.toLowerCase() === delegate.id.toLowerCase()
+        (p) => p.authorAccount?.toLowerCase() === accountAddress.toLowerCase()
       ) ?? [];
 
   const candidateFeedItems =
@@ -18,7 +16,7 @@ export const buildFeed = (delegate, { proposals, candidates }) => {
       ?.map((c) => buildCandidateFeed(c))
       .flat()
       .filter(
-        (i) => i.authorAccount?.toLowerCase() === delegate.id.toLowerCase()
+        (i) => i.authorAccount?.toLowerCase() === accountAddress.toLowerCase()
       ) ?? [];
 
   const items = [...propFeedItems, ...candidateFeedItems];

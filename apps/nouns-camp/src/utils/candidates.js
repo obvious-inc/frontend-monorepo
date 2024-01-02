@@ -13,7 +13,7 @@ export const makeUrlId = (id) => {
 
 export const getSponsorSignatures = (
   candidate,
-  { excludeInvalid = false } = {}
+  { excludeInvalid = false, activeProposerIds } = {}
 ) => {
   const signatures = candidate?.latestVersion?.content.contentSignatures ?? [];
   return arrayUtils
@@ -24,12 +24,18 @@ export const getSponsorSignatures = (
       if (
         // Exclude canceled ones...
         s.canceled ||
-        // ...expires ones
+        // ...expired ones
         s.expirationTimestamp <= new Date() ||
-        // ...multiple ones from the same signer with shorter expiration
+        // ...signatures from the proposer
+        //
+        // (The proposer’s voting power is taken into account automatically by
+        // the contract. Submitting proposer signatures will reject.)
+        s.signer.id.toLowerCase() === candidate.proposerId.toLowerCase() ||
+        // ...signatures from signers with active proposals
+        activeProposerIds.includes(s.signer.id.toLowerCase()) ||
+        // ...duplicates from the same signer with shorter expiration
         signatures.some((s_) => s_.signer.id === s.signer.id)
       )
-        // TODO: exclude signers who have an active or pending proposal
         return signatures;
 
       return [...signatures, s];
@@ -101,7 +107,10 @@ export const buildFeed = (candidate) => {
 };
 
 export const getSignals = ({ candidate, proposerDelegate }) => {
-  const signatures = getSponsorSignatures(candidate, { excludeInvalid: true });
+  const signatures = getSponsorSignatures(candidate, {
+    excludeInvalid: true,
+    activeProposerIds: [], // We can ignore active proposers here
+  });
 
   const proposerDelegateNounIds =
     proposerDelegate?.nounsRepresented.map((n) => n.id) ?? [];

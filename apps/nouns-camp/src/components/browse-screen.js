@@ -16,7 +16,7 @@ import Button from "@shades/ui-web/button";
 import Select from "@shades/ui-web/select";
 import { isNodeEmpty as isRichTextNodeEmpty } from "@shades/ui-web/rich-text-editor";
 import {
-  ArrowDown as ArrowDownIcon,
+  ArrowDownSmall as ArrowDownSmallIcon,
   Plus as PlusIcon,
 } from "@shades/ui-web/icons";
 import { APPROXIMATE_BLOCKS_PER_DAY } from "../constants/ethereum.js";
@@ -1114,7 +1114,7 @@ const FeedTabContent = React.memo(({ visible }) => {
 const ProposalItem = React.memo(({ proposalId }) => {
   const proposal = useProposal(proposalId);
   const { displayName: authorAccountDisplayName } = useAccountDisplayName(
-    proposal.proposer?.id
+    proposal?.proposerId
   );
 
   const isDimmed =
@@ -1318,7 +1318,6 @@ const ProposalCandidateItem = React.memo(({ candidateId }) => {
   const candidateVotingPower = useProposalCandidateVotingPower(candidateId);
   const proposalThreshold = useProposalThreshold();
 
-  // const proposerDelegate = useDelegate(candidate.proposerId);
   const signals = getCandidateSignals({ candidate });
   // const commentCount =
   //   signals.delegates.for +
@@ -1596,7 +1595,9 @@ const ScoreStack = React.memo(({ for: for_, against }) => {
         }
       >
         <div>{for_}</div>
-        <ArrowDownIcon style={{ width: "0.9rem", transform: "scaleY(-1)" }} />
+        <ArrowDownSmallIcon
+          style={{ width: "0.9rem", transform: "scaleY(-1)" }}
+        />
       </div>
       <div
         data-active={hasScore}
@@ -1637,7 +1638,7 @@ const ScoreStack = React.memo(({ for: for_, against }) => {
         }
       >
         <div>{against}</div>
-        <ArrowDownIcon style={{ width: "0.9rem" }} />
+        <ArrowDownSmallIcon style={{ width: "0.9rem" }} />
       </div>
     </div>
   );
