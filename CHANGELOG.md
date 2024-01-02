@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.0.0-alpha.4] - 2024-01-02
+
+### Miscellaneous Tasks
+
+- Migrate to new major version of `tinykeys`
+
 ## [1.0.0-alpha.3] - 2024-01-02
 
 ### Miscellaneous Tasks

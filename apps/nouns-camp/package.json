@@ -27,7 +27,7 @@
     "swc-loader": "^0.2.3",
     "url": "^0.11.3",
     "util": "^0.12.5",
-    "webpack": "^5.82.0",
+    "webpack": "^5.89.0",
     "webpack-cli": "^5.1.4",
     "webpack-config": "workspace:0.0.0",
     "webpack-dev-server": "^4.15.1"
@@ -53,19 +53,19 @@
     "mini-css-extract-plugin": "^2.7.6",
     "pusher-js": "^8.3.0",
     "react": "18.2.0",
-    "react-aria": "^3.30.0",
+    "react-aria": "^3.31.0",
     "react-dom": "18.2.0",
     "react-helmet": "^6.1.0",
-    "react-router-dom": "^6.10.0",
+    "react-router-dom": "^6.21.1",
     "react-stately": "^3.29.0",
     "reselect": "^5.0.1",
     "slate": "^0.101.5",
     "slate-history": "^0.100.0",
-    "slate-react": "^0.100.1",
-    "tinykeys": "^1.4.0",
+    "slate-react": "^0.101.5",
+    "tinykeys": "^2.1.0",
     "viem": "^1.21.3",
     "wagmi": "^1.4.12",
     "workbox-webpack-plugin": "^7.0.0",
-    "zustand": "^4.3.7"
+    "zustand": "^4.4.7"
   }
 }
