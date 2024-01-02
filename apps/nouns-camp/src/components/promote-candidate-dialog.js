@@ -152,7 +152,7 @@ const PromoteCandidateDialog = ({ isOpen, candidateId, dismiss }) => {
               <main>
                 <Callout style={{ margin: "0 0 3.2rem" }}>
                   Because your voting power ({proposerVotingPower}) meets the
-                  current proposal theshold ({proposalThreshold + 1}), you can
+                  current proposal threshold ({proposalThreshold + 1}), you can
                   propose without sponsors.
                 </Callout>
               </main>
