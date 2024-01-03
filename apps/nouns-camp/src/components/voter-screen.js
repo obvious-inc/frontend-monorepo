@@ -38,7 +38,7 @@ import useChainId from "../hooks/chain-id.js";
 const VOTER_LIST_PAGE_ITEM_COUNT = 20;
 const FEED_PAGE_ITEM_COUNT = 30;
 
-const useFeedItems = ({ voterAddress, filter }) => {
+const useFeedItems = (voterAddress, { filter }) => {
   const chainId = useChainId();
   const delegate = useDelegate(voterAddress);
   const proposals = useProposals({ state: true, propdates: true });
