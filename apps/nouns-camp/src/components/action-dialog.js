@@ -6,10 +6,10 @@ import {
   parseAbi,
   parseUnits,
   parseEther,
+  formatEther,
   encodeAbiParameters,
   decodeAbiParameters,
 } from "viem";
-import { formatAbiItem } from "abitype";
 import { useEnsName, useEnsAddress, useContractRead } from "wagmi";
 import { css } from "@emotion/react";
 import { useFetch } from "@shades/common/react";
@@ -184,10 +184,10 @@ const Content = ({
   initialTarget,
   initialStreamStartTimestamp,
   initialStreamEndTimestamp,
-  initialContractCallTargetAddress,
-  initialContractCallFormattedTargetAbiItem,
+  initialContractCallTarget,
+  initialContractCallSignature,
   initialContractCallArguments,
-  initialContractCallEthValue,
+  initialContractCallValue,
   initialContractCallCustomAbiString,
 }) => {
   const [type, setType] = React.useState(initialType ?? "one-time-payment");
@@ -211,17 +211,17 @@ const Content = ({
   });
 
   // For custom transactions
-  const [contractCallTargetAddress, setContractCallTargetAddress] =
-    React.useState(initialContractCallTargetAddress ?? "");
-  const [
-    contractCallFormattedTargetAbiItem,
-    setContractCallFormattedTargetAbiItem,
-  ] = React.useState(initialContractCallFormattedTargetAbiItem ?? "");
+  const [contractCallTarget, setContractCallTarget] = React.useState(
+    initialContractCallTarget ?? ""
+  );
+  const [contractCallSignature, setContractCallSignature] = React.useState(
+    initialContractCallSignature ?? ""
+  );
   const [contractCallArguments, setContractCallArguments] = React.useState(
     initialContractCallArguments ?? []
   );
-  const [contractCallEthValue, setContractCallEthValue] = React.useState(
-    initialContractCallEthValue ?? "0"
+  const [contractCallEthValue, setContractCallEthValue] = React.useState(() =>
+    formatEther(initialContractCallValue ?? 0)
   );
   const [rawContractCallCustomAbiString, setRawContractCallCustomAbiString] =
     React.useState(initialContractCallCustomAbiString ?? "");
@@ -272,9 +272,8 @@ const Content = ({
     error: etherscanRequestError,
     isLoading: isLoadingEtherscanData,
     reset: resetEtherscanData,
-  } = useEtherscanContractInfo(contractCallTargetAddress, {
-    enabled:
-      type === "custom-transaction" && isAddress(contractCallTargetAddress),
+  } = useEtherscanContractInfo(contractCallTarget, {
+    enabled: type === "custom-transaction" && isAddress(contractCallTarget),
   });
 
   const etherscanAbi = etherscanContractData?.abi;
@@ -302,7 +301,10 @@ const Content = ({
       return !item.pure || !item.view;
     })
     .map((item) => {
-      const formattedAbiItem = formatAbiItem(item);
+      const signature = `${item.name}(${item.inputs
+        .map((i) => i.type)
+        .join(", ")})`;
+
       const label = (
         <span>
           {item.name}(
@@ -333,16 +335,16 @@ const Content = ({
       );
 
       return {
-        value: formattedAbiItem,
+        value: signature,
         label,
         textValue: item.name,
         abiItem: item,
-        formattedAbiItem,
+        signature,
       };
     });
 
   const selectedContractCallAbiItem = contractCallAbiItemOptions?.find(
-    (o) => o.formattedAbiItem === contractCallFormattedTargetAbiItem
+    (o) => o.signature === contractCallSignature
   )?.abiItem;
 
   const isPayableContractCall =
@@ -396,6 +398,9 @@ const Content = ({
         }
       }
 
+      case "payer-top-up":
+        return parseFloat(amount) > 0;
+
       default:
         throw new Error();
     }
@@ -426,8 +431,8 @@ const Content = ({
             const { inputs: inputTypes } = selectedContractCallAbiItem;
             submit({
               type,
-              contractCallTargetAddress,
-              contractCallFormattedTargetAbiItem,
+              contractCallTarget,
+              contractCallSignature,
               contractCallArguments: JSON.parse(
                 JSON.stringify(
                   // Encoding and decoding gives us valid defaults for empty
@@ -440,11 +445,15 @@ const Content = ({
                     typeof value === "bigint" ? value.toString() : value
                 )
               ),
-              contractCallEthValue,
+              contractCallValue: parseEther(contractCallEthValue).toString(),
               contractCallCustomAbiString: rawContractCallCustomAbiString,
             });
             break;
           }
+
+          case "payer-top-up":
+            submit({ type, amount });
+            break;
 
           default:
             throw new Error();
@@ -478,7 +487,11 @@ const Content = ({
                 value: "custom-transaction",
                 label: "Custom transaction",
               },
-            ]}
+              type === "payer-top-up" && {
+                value: "payer-top-up",
+                label: "Payer top-up",
+              },
+            ].filter(Boolean)}
             onChange={(value) => {
               if (value === "streaming-payment" && currency === "eth")
                 setCurrency("weth");
@@ -486,6 +499,7 @@ const Content = ({
                 setCurrency("eth");
               setType(value);
             }}
+            disabled={type === "payer-top-up"}
           />
           {type === "streaming-payment" && (
             <div
@@ -626,12 +640,15 @@ const Content = ({
                 onChange={(value) => {
                   setAmount(value);
                 }}
+                disabled={type === "payer-top-up"}
               />
               <Select
                 aria-label="Currency token"
                 value={currency}
                 options={
-                  type === "one-time-payment"
+                  type === "payer-top-up"
+                    ? [{ value: "eth", label: "ETH" }]
+                    : type === "one-time-payment"
                     ? [
                         { value: "eth", label: "ETH" },
                         { value: "usdc", label: "USDC" },
@@ -646,6 +663,7 @@ const Content = ({
                 }}
                 width="max-content"
                 fullWidth={false}
+                disabled={type === "payer-top-up"}
               />
             </div>
             <div
@@ -696,7 +714,7 @@ const Content = ({
           </div>
         )}
 
-        {type !== "custom-transaction" && (
+        {["one-time-payment", "streaming-payment"].includes(type) && (
           <AddressInput
             label="Receiver account"
             value={receiverQuery}
@@ -716,10 +734,10 @@ const Content = ({
           <>
             <AddressInput
               label="Target contract address"
-              value={contractCallTargetAddress}
+              value={contractCallTarget}
               onChange={(maybeAddress) => {
-                setContractCallTargetAddress(maybeAddress);
-                setContractCallFormattedTargetAbiItem("");
+                setContractCallTarget(maybeAddress);
+                setContractCallSignature("");
                 setContractCallArguments([]);
               }}
               placeholder="0x..."
@@ -761,7 +779,7 @@ const Content = ({
                       <Link
                         color="currentColor"
                         component="a"
-                        href={`https://etherscan.io/address/${contractCallTargetAddress}`}
+                        href={`https://etherscan.io/address/${contractCallTarget}`}
                         rel="noreferrer"
                         target="_blank"
                       >
@@ -813,13 +831,13 @@ const Content = ({
                 <Select
                   id="contract-function"
                   aria-label="Contract function"
-                  value={contractCallFormattedTargetAbiItem}
+                  value={contractCallSignature}
                   options={contractCallAbiItemOptions}
                   size="medium"
-                  onChange={(value) => {
-                    setContractCallFormattedTargetAbiItem(value);
+                  onChange={(signature) => {
+                    setContractCallSignature(signature);
                     const selectedOption = contractCallAbiItemOptions?.find(
-                      (o) => o.value === value
+                      (o) => o.signature === signature
                     );
                     setContractCallArguments(
                       buildInitialInputState(selectedOption?.abiItem.inputs)
@@ -1071,7 +1089,7 @@ const renderInput = (input, inputValue, setInputValue) => {
             type="number"
             min={min.toString()}
             max={max.toString()}
-            value={inputValue}
+            value={inputValue.toString?.() ?? inputValue}
             onChange={(e) => {
               try {
                 const n = BigInt(e.target.value);

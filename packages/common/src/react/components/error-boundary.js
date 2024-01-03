@@ -15,11 +15,17 @@ export default class ErrorBoundary extends React.Component {
     console.error(error, info.componentStack);
   }
 
+  clearError = () => {
+    this.setState({ hasError: false });
+  };
+
   render() {
     const { fallback, children } = this.props;
 
     if (this.state.hasError) {
-      return typeof fallback === "function" ? fallback() : fallback;
+      return typeof fallback === "function"
+        ? fallback({ clearError: this.clearError })
+        : fallback;
     }
 
     return children;

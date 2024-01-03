@@ -115,7 +115,6 @@ const ProfileLinkDialog = ({ accountAddress, titleProps, dismiss }) => {
           })}
         >
           <Input
-            contrast
             size="large"
             value={accountLink}
             readOnly

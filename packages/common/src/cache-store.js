@@ -87,12 +87,13 @@ export const useStore = () => {
   return store;
 };
 
-export const useCachedState = (key, initialState) => {
+export const useCachedState = (key, initialState, { middleware } = {}) => {
   const store = useStore();
-  const [isInitialized, setInitialized] = React.useState(false);
   const { getCachedState, setCachedState } = React.useContext(Context);
 
   const cachedState = getCachedState(key);
+
+  const [isInitialized, setInitialized] = React.useState(cachedState != null);
 
   const read = () => store.read(key);
   const write = (value) => store.write(key, value);
@@ -107,7 +108,10 @@ export const useCachedState = (key, initialState) => {
   const setInitialState = useLatestCallback(() => {
     const handleCachedValue = (cachedValue) => {
       if (cachedValue != null) {
-        setCachedState(key, cachedValue);
+        setCachedState(
+          key,
+          middleware == null ? cachedValue : middleware(cachedValue)
+        );
       } else {
         setCachedState(
           key,

@@ -108,7 +108,7 @@ const ActivityFeed = React.memo(({ voterAddress, filter = "all" }) => {
 
   const [page, setPage] = React.useState(1);
 
-  const feedItems = useFeedItems({ voterAddress, filter });
+  const feedItems = useFeedItems(voterAddress, { filter });
   const visibleItems = feedItems.slice(0, FEED_PAGE_ITEM_COUNT * page);
 
   // Fetch feed items
@@ -473,6 +473,7 @@ const VoterHeader = ({ voterAddress }) => {
         <h1
           css={(t) =>
             css({
+              color: t.colors.textHeader,
               fontSize: t.text.sizes.headerLarger,
               lineHeight: 1.15,
               "@media(min-width: 600px)": {
@@ -558,7 +559,7 @@ const VoterMainSection = ({ voterAddress }) => {
   const [page, setPage] = React.useState(1);
   const delegate = useDelegate(voterAddress);
 
-  const filteredProposals = delegate?.proposals ?? [];
+  const filteredProposals = (delegate?.proposals ?? []).filter(Boolean);
   const voterCandidates = useAccountProposalCandidates(voterAddress);
   const sponsoredProposals = useProposalsSponsoredByAccount(voterAddress);
 
@@ -566,11 +567,10 @@ const VoterMainSection = ({ voterAddress }) => {
 
   useFetch(
     () =>
-      Promise.all([
-        fetchVoterScreenData(voterAddress, { first: 40 }),
-        fetchVoterScreenData(voterAddress, { skip: 40, first: 1000 }),
-      ]),
-    [fetchVoterScreenData, voterAddress]
+      fetchVoterScreenData(voterAddress, { first: 40 }).then(() => {
+        fetchVoterScreenData(voterAddress, { skip: 40, first: 1000 });
+      }),
+    [(fetchVoterScreenData, voterAddress)]
   );
 
   const proposalsTabTitle =

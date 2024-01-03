@@ -185,7 +185,19 @@ export const useWallet = () => {
     requestAccess: hasReadyConnector ? requestAccess : null,
     disconnect,
     reset,
-    switchToMainnet: () => switchNetwork(mainnet.id),
+    switchToMainnet: () =>
+      new Promise((resolve, reject) => {
+        // Some wallets switch network without responding
+        const timeoutHandle = setTimeout(() => {
+          location.reload();
+        }, 12_000);
+
+        switchNetwork(mainnet.id)
+          .then(resolve, reject)
+          .finally(() => {
+            clearTimeout(timeoutHandle);
+          });
+      }),
     isLoading: isConnecting || isSwitchingNetwork,
     isUnsupportedChain,
     isShimmedDisconnect: connectedConnector?.options?.shimDisconnect ?? false,

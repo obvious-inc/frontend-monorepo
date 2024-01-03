@@ -8,6 +8,7 @@ import {
 } from "@shades/common/utils";
 import RichText from "@shades/ui-web/rich-text";
 import Image from "@shades/ui-web/image";
+import Link from "@shades/ui-web/link";
 import Emoji from "@shades/ui-web/emoji";
 
 const setImageDimensions = async (blocks) => {
@@ -42,10 +43,10 @@ const useParsedMarkdownText = (text, { displayImages, awaitImages }) => {
   const [blocksWithImageDimensions, setBlocksWithImageDimensions] =
     React.useState(null);
 
-  const blocks = React.useMemo(
-    () => markdownUtils.toMessageBlocks(text, { displayImages }),
-    [text, displayImages]
-  );
+  const blocks = React.useMemo(() => {
+    if (typeof text !== "string") return [];
+    return markdownUtils.toMessageBlocks(text, { displayImages });
+  }, [text, displayImages]);
 
   React.useEffect(() => {
     if (!awaitImages) return;
@@ -90,9 +91,20 @@ const MarkdownRichText = ({
             }
           >
             Sent from{" "}
-            <a href="https://www.voter.wtf" target="_blank" rel="noreferrer">
+            <Link
+              component="a"
+              href="https://www.voter.wtf"
+              target="_blank"
+              rel="noreferrer"
+              color="currentColor"
+              css={(t) =>
+                css({
+                  fontWeight: t.text.weights.emphasis,
+                })
+              }
+            >
               voter.wtf
-            </a>
+            </Link>
           </em>
         </p>
       </>

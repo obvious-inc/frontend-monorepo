@@ -67,7 +67,7 @@ const Content = ({ titleProps, dismiss }) => {
               fontSize: t.text.sizes.header,
               fontWeight: t.text.weights.header,
               color: t.colors.textHeader,
-              lineHeight: 1.25,
+              lineHeight: 1.3,
             })
           }
         >

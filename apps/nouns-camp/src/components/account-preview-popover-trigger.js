@@ -3,6 +3,8 @@ import { useEnsName, useEnsAvatar } from "wagmi";
 import { Link as RouterLink } from "react-router-dom";
 import { css } from "@emotion/react";
 import { useAccountDisplayName } from "@shades/common/app";
+import * as DropdownMenu from "@shades/ui-web/dropdown-menu";
+import { DotsHorizontal as DotsHorizontalIcon } from "@shades/ui-web/icons";
 import Button from "@shades/ui-web/button";
 import * as Popover from "@shades/ui-web/popover";
 import InlineUserButton from "@shades/ui-web/inline-user-button";
@@ -11,6 +13,10 @@ import AccountAvatar from "./account-avatar.js";
 import NounAvatar from "./noun-avatar.js";
 import NounPreviewPopoverTrigger from "./noun-preview-popover-trigger.js";
 import { Link } from "react-router-dom";
+
+const isAdminSession =
+  process.env.NODE_ENV !== "production" ||
+  new URLSearchParams(location.search).get("admin") != null;
 
 const AccountPreviewPopoverTrigger = React.forwardRef(
   (
@@ -86,7 +92,7 @@ const AccountPreviewPopoverTrigger = React.forwardRef(
   }
 );
 
-const AccountPreview = React.forwardRef(({ accountAddress }, ref) => {
+const AccountPreview = React.forwardRef(({ accountAddress, close }, ref) => {
   const delegate = useDelegate(accountAddress);
 
   const { displayName, truncatedAddress } =
@@ -104,8 +110,9 @@ const AccountPreview = React.forwardRef(({ accountAddress }, ref) => {
     <div
       ref={ref}
       css={css({
-        width: "32rem",
-        minWidth: 0,
+        width: "min-content",
+        maxWidth: "min(calc(100vw - 1.2rem), 36.4rem)",
+        minWidth: "32rem",
         borderRadius: "0.4rem",
         overflow: "hidden",
       })}
@@ -182,65 +189,54 @@ const AccountPreview = React.forwardRef(({ accountAddress }, ref) => {
           display: "flex",
           alignItems: "center",
           padding: "1rem 1.2rem",
-          gap: "1rem",
+          gap: "1.6rem",
         })}
       >
-        <div
-          css={css({
-            flex: 1,
-            minWidth: 0,
-            display: "flex",
-            alignItems: "center",
-            gap: "1rem",
-          })}
-        >
-          {ensAvatarUrl != null && (
-            <img
-              src={ensAvatarUrl}
-              css={(t) =>
-                css({
-                  width: "3.2rem",
-                  height: "3.2rem",
-                  objectFit: "cover",
-                  borderRadius: "0.3rem",
-                  background: t.colors.backgroundModifierHover,
-                })
-              }
-            />
-          )}
-          <div style={{ flex: 1, minWidth: 0, lineHeight: 1.25 }}>
-            <Link
-              to={accountLink}
-              css={css({
-                color: "inherit",
-                textDecoration: "none",
-                "@media(hover: hover)": {
-                  ':hover [data-hover-underline="true"]': {
-                    textDecoration: "underline",
-                  },
-                },
-              })}
-            >
-              <div style={{ display: "flex", alignItems: "center" }}>
-                <h2
-                  data-hover-underline={displayName === truncatedAddress}
+        <div css={css({ flex: 1, minWidth: 0 })}>
+          <Link
+            to={accountLink}
+            css={css({
+              display: "flex",
+              alignItems: "center",
+              gap: "1rem",
+              color: "inherit",
+              textDecoration: "none",
+              lineHeight: 1.25,
+            })}
+          >
+            {ensAvatarUrl != null && (
+              <div css={css({ width: "3.2rem", height: "3.2rem" })}>
+                <img
+                  src={ensAvatarUrl}
                   css={(t) =>
                     css({
-                      whiteSpace: "nowrap",
-                      overflow: "hidden",
-                      textOverflow: "ellipsis",
-                      color: t.colors.header,
-                      fontSize: t.text.sizes.large,
-                      fontWeight: t.text.weights.header,
+                      width: "100%",
+                      height: "100%",
+                      objectFit: "cover",
+                      borderRadius: "0.3rem",
+                      background: t.colors.backgroundModifierHover,
                     })
                   }
-                >
-                  {displayName}
-                </h2>
+                />
               </div>
+            )}
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <h2
+                css={(t) =>
+                  css({
+                    whiteSpace: "nowrap",
+                    overflow: "hidden",
+                    textOverflow: "ellipsis",
+                    color: t.colors.header,
+                    fontSize: t.text.sizes.large,
+                    fontWeight: t.text.weights.header,
+                  })
+                }
+              >
+                {displayName}
+              </h2>
               {displayName !== truncatedAddress && (
                 <div
-                  data-hover-underline="true"
                   css={(t) =>
                     css({
                       fontSize: t.text.sizes.small,
@@ -250,17 +246,141 @@ const AccountPreview = React.forwardRef(({ accountAddress }, ref) => {
                     })
                   }
                 >
-                  {displayName === truncatedAddress
-                    ? "Etherscan"
-                    : truncatedAddress}
+                  {truncatedAddress}
                 </div>
               )}
-            </Link>
-          </div>
+            </div>
+          </Link>
         </div>
-        <Button size="default" component={RouterLink} to={accountLink}>
-          View profile
-        </Button>
+        <div
+          css={css({
+            display: "flex",
+            alignItems: "center",
+            gap: "0.6rem",
+          })}
+        >
+          <Button size="default" component={RouterLink} to={accountLink}>
+            View profile
+          </Button>
+          <DropdownMenu.Root placement="bottom end" offset={18} crossOffset={5}>
+            <DropdownMenu.Trigger asChild>
+              <Button
+                size="default"
+                icon={
+                  <DotsHorizontalIcon
+                    style={{ width: "1.8rem", height: "auto" }}
+                  />
+                }
+              />
+            </DropdownMenu.Trigger>
+            <DropdownMenu.Content
+              css={css({
+                width: "min-content",
+                minWidth: "min-content",
+                maxWidth: "calc(100vw - 2rem)",
+              })}
+              items={[
+                {
+                  id: "main",
+                  children: [
+                    {
+                      id: "open-etherscan",
+                      label: "Etherscan",
+                    },
+                    {
+                      id: "open-mogu",
+                      label: "Mogu",
+                    },
+                    {
+                      id: "open-agora",
+                      label: "Agora",
+                    },
+                    {
+                      id: "open-nounskarma",
+                      label: "NounsKarma",
+                    },
+                    {
+                      id: "open-rainbow",
+                      label: "Rainbow",
+                    },
+                  ],
+                },
+                {
+                  id: "misc",
+                  children: [
+                    {
+                      id: "copy-account-address",
+                      label: "Copy account address",
+                    },
+                    isAdminSession && {
+                      id: "impersonate-account",
+                      label: "Impersonate account",
+                    },
+                  ],
+                },
+              ].filter(Boolean)}
+              onAction={(key) => {
+                switch (key) {
+                  case "open-etherscan":
+                    window.open(
+                      `https://etherscan.io/address/${accountAddress}`,
+                      "_blank"
+                    );
+                    break;
+
+                  case "open-mogu":
+                    window.open(
+                      `https://mmmogu.com/address/${accountAddress}`,
+                      "_blank"
+                    );
+                    break;
+
+                  case "open-agora":
+                    window.open(
+                      `https://nounsagora.com/delegate/${accountAddress}`,
+                      "_blank"
+                    );
+                    break;
+
+                  case "open-nounskarma":
+                    window.open(
+                      `https://nounskarma.xyz/player/${accountAddress}`,
+                      "_blank"
+                    );
+                    break;
+
+                  case "open-rainbow":
+                    window.open(
+                      `https://rainbow.me/${accountAddress}`,
+                      "_blank"
+                    );
+                    break;
+
+                  case "copy-account-address":
+                    navigator.clipboard.writeText(accountAddress.toLowerCase());
+                    close();
+                    break;
+
+                  case "impersonate-account": {
+                    const searchParams = new URLSearchParams(location.search);
+                    searchParams.set("impersonate", accountAddress);
+                    location.replace(`${location.pathname}?${searchParams}`);
+                    close();
+                    break;
+                  }
+                }
+              }}
+            >
+              {(item) => (
+                <DropdownMenu.Section items={item.children}>
+                  {(item) => (
+                    <DropdownMenu.Item>{item.label}</DropdownMenu.Item>
+                  )}
+                </DropdownMenu.Section>
+              )}
+            </DropdownMenu.Content>
+          </DropdownMenu.Root>
+        </div>
       </div>
     </div>
   );

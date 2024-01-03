@@ -238,7 +238,7 @@ export const useCastProposalVote = (
   };
 };
 
-export const useCreateProposal = ({ enabled = true } = {}) => {
+export const useCreateProposal = () => {
   const { address: accountAddress } = useWallet();
 
   const publicClient = usePublicClient();
@@ -250,7 +250,6 @@ export const useCreateProposal = ({ enabled = true } = {}) => {
       "function propose(address[] memory targets, uint256[] memory values, string[] memory signatures, bytes[] memory calldatas, string memory description) public returns (uint256)",
     ]),
     functionName: "propose",
-    enabled,
   });
 
   return async ({ description, transactions }) => {
@@ -283,6 +282,137 @@ export const useCreateProposal = ({ enabled = true } = {}) => {
   };
 };
 
+export const useCreateProposalWithSignatures = () => {
+  const { address: accountAddress } = useWallet();
+
+  const publicClient = usePublicClient();
+  const chainId = useChainId();
+
+  const { writeAsync } = useContractWrite({
+    address: getContractAddress(chainId),
+    abi: parseAbi([
+      "function proposeBySigs((bytes sig, address signer, uint256 expirationTimestamp)[], address[] memory targets, uint256[] memory values, string[] memory signatures, bytes[] memory calldatas, string memory description) public returns (uint256)",
+    ]),
+    functionName: "proposeBySigs",
+  });
+
+  return async ({ description, transactions, proposerSignatures }) => {
+    const { targets, values, signatures, calldatas } = unparseTransactions(
+      transactions,
+      { chainId }
+    );
+
+    return writeAsync({
+      args: [
+        proposerSignatures,
+        targets,
+        values,
+        signatures,
+        calldatas,
+        description,
+      ],
+    })
+      .then(({ hash }) => {
+        va.track("Proposal successfully created", {
+          account: accountAddress,
+          hash,
+          signatures: true,
+        });
+        return publicClient.waitForTransactionReceipt({ hash });
+      })
+      .then((receipt) => {
+        const eventLog = receipt.logs[1];
+        const decodedEvent = decodeEventLog({
+          abi: parseAbi([
+            "event ProposalCreatedWithRequirements(uint256 id, address proposer, address[] signers, address[] targets, uint256[] values, string[] signatures, bytes[] calldatas, uint256 startBlock, uint256 endBlock, uint256 updatePeriodEndBlock, uint256 proposalThreshold, uint256 quorumVotes, string description)",
+          ]),
+          data: eventLog.data,
+          topics: eventLog.topics,
+        });
+        return decodedEvent.args;
+      });
+  };
+};
+
+export const useUpdateProposal = (proposalId) => {
+  const { address: accountAddress } = useWallet();
+
+  const chainId = useChainId();
+
+  const contractAddress = getContractAddress(chainId);
+
+  const { writeAsync: updateProposal } = useContractWrite({
+    address: contractAddress,
+    abi: parseAbi([
+      "function updateProposal(uint256 proposalId, address[] memory targets, uint256[] memory values, string[] memory signatures, bytes[] memory calldatas, string memory description, string updateMessage) external",
+    ]),
+    functionName: "updateProposal",
+  });
+
+  const { writeAsync: updateProposalDescription } = useContractWrite({
+    address: getContractAddress(chainId),
+    abi: parseAbi([
+      "function updateProposalDescription(uint256 proposalId, string memory description, string updateMessage) external",
+    ]),
+    functionName: "updateProposalDescription",
+  });
+
+  const { writeAsync: updateProposalTransactions } = useContractWrite({
+    address: getContractAddress(chainId),
+    abi: parseAbi([
+      "function updateProposalTransactions(uint256 proposalId, address[] memory targets, uint256[] memory values, string[] memory signatures, bytes[] memory calldatas, string updateMessage) external",
+    ]),
+    functionName: "updateProposalTransactions",
+  });
+
+  return async ({ description, transactions, updateMessage }) => {
+    const write = () => {
+      if (transactions == null)
+        return updateProposalDescription({
+          args: [proposalId, description, updateMessage],
+        });
+
+      const { targets, values, signatures, calldatas } = unparseTransactions(
+        transactions,
+        { chainId }
+      );
+
+      if (description == null)
+        return updateProposalTransactions({
+          args: [
+            proposalId,
+            targets,
+            values,
+            signatures,
+            calldatas,
+            updateMessage,
+          ],
+        });
+
+      return updateProposal({
+        args: [
+          proposalId,
+          targets,
+          values,
+          signatures,
+          calldatas,
+          description,
+          updateMessage,
+        ],
+      });
+    };
+
+    return write().then(({ hash }) => {
+      va.track("Proposal successfully updated", {
+        proposalId,
+        account: accountAddress,
+        hash,
+      });
+      return { hash };
+    });
+  };
+};
+
 export const useCancelProposal = (proposalId) => {
   const { address: accountAddress } = useWallet();
 
@@ -297,14 +427,35 @@ export const useCancelProposal = (proposalId) => {
   });
   const { writeAsync: write } = useContractWrite(config);
 
-  return write == null
-    ? null
-    : () =>
-        write().then(({ hash }) => {
-          va.track("Proposal successfully canceled", {
-            account: accountAddress,
-            hash,
-          });
-          return publicClient.waitForTransactionReceipt({ hash });
-        });
+  if (write == null) return null;
+
+  return () =>
+    write().then(({ hash }) => {
+      va.track("Proposal successfully canceled", {
+        account: accountAddress,
+        hash,
+      });
+      return publicClient.waitForTransactionReceipt({ hash });
+    });
+};
+
+export const useCancelSignature = (signature) => {
+  const publicClient = usePublicClient();
+  const chainId = useChainId();
+
+  const { config } = usePrepareContractWrite({
+    address: getContractAddress(chainId),
+    abi: parseAbi(["function cancelSig(bytes calldata sig) external"]),
+    functionName: "cancelSig",
+    args: [signature],
+  });
+
+  const { writeAsync: write } = useContractWrite(config);
+
+  if (write == null) return null;
+
+  return () =>
+    write().then(({ hash }) =>
+      publicClient.waitForTransactionReceipt({ hash })
+    );
 };

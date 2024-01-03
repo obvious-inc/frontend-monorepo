@@ -6,16 +6,18 @@ import {
   Link as RouterLink,
 } from "react-router-dom";
 import { formatEther, parseUnits } from "viem";
-import { useAccount } from "wagmi";
 import { css, useTheme } from "@emotion/react";
 import { useFetch, useLatestCallback } from "@shades/common/react";
-import { message as messageUtils } from "@shades/common/utils";
+import {
+  message as messageUtils,
+  function as functionUtils,
+} from "@shades/common/utils";
 import Link from "@shades/ui-web/link";
 import Select from "@shades/ui-web/select";
 import Dialog from "@shades/ui-web/dialog";
 import DialogHeader from "@shades/ui-web/dialog-header";
 import DialogFooter from "@shades/ui-web/dialog-footer";
-import { getActionTransactions } from "../utils/transactions.js";
+import { resolveAction as resolveActionTransaction } from "../utils/transactions.js";
 import { useWallet } from "../hooks/wallet.js";
 import useChainId from "../hooks/chain-id.js";
 import {
@@ -43,19 +45,6 @@ import Layout from "./layout.js";
 import Callout from "./callout.js";
 import ProposalEditor from "./proposal-editor.js";
 
-const retryPromise = (fn, { retries = 3, timeout = 1000 } = {}) =>
-  new Promise((resolve, reject) => {
-    fn().then(resolve, (e) => {
-      if (retries < 1) return reject(e);
-      setTimeout(() => {
-        retryPromise(fn, { retries: retries - 1, timeout }).then(
-          resolve,
-          reject
-        );
-      }, timeout);
-    });
-  });
-
 const ProposeScreen = () => {
   const { draftId } = useParams();
   const navigate = useNavigate();
@@ -64,7 +53,7 @@ const ProposeScreen = () => {
 
   const scrollContainerRef = React.useRef();
 
-  const { address: connectedAccountAddress } = useAccount();
+  const { address: connectedAccountAddress } = useWallet();
   const chainId = useChainId();
 
   const { deleteItem: deleteDraft } = useDrafts();
@@ -120,7 +109,7 @@ const ProposeScreen = () => {
     }
   }, BigInt(0));
 
-  const tokenBuyerTopUpValue = useTokenBuyerEthNeeded(usdcSumValue);
+  const payerTopUpValue = useTokenBuyerEthNeeded(usdcSumValue);
 
   const submit = async () => {
     const buildCandidateSlug = (title) => {
@@ -143,13 +132,13 @@ const ProposeScreen = () => {
       const description = `# ${draft.name.trim()}\n\n${bodyMarkdown}`;
 
       const transactions = draft.actions.flatMap((a) =>
-        getActionTransactions(a, { chainId })
+        resolveActionTransaction(a, { chainId })
       );
 
-      if (tokenBuyerTopUpValue > 0)
+      if (usdcSumValue > 0 && payerTopUpValue > 0)
         transactions.push({
           type: "payer-top-up",
-          value: tokenBuyerTopUpValue,
+          value: payerTopUpValue,
         });
 
       if (transactions.length > 10) {
@@ -181,7 +170,7 @@ const ProposeScreen = () => {
             try {
               switch (submitTargetType) {
                 case "proposal": {
-                  await retryPromise(() => fetchProposal(res.id), {
+                  await functionUtils.retryAsync(() => fetchProposal(res.id), {
                     retries: 100,
                   });
                   navigate(`/${res.id}`, { replace: true });
@@ -194,7 +183,7 @@ const ProposeScreen = () => {
                     encodeURIComponent(res.slug),
                   ].join("-");
 
-                  await retryPromise(
+                  await functionUtils.retryAsync(
                     () => fetchProposalCandidate(candidateId),
                     {
                       retries: 100,
@@ -248,7 +237,8 @@ const ProposeScreen = () => {
           setTitle={setName}
           setBody={setBody}
           setActions={setActions}
-          tokenBuyerTopUpValue={tokenBuyerTopUpValue}
+          proposerId={connectedAccountAddress}
+          payerTopUpValue={usdcSumValue > 0 ? payerTopUpValue : 0}
           containerHeight={`calc(100vh - ${theme.navBarHeight})`}
           onSubmit={() => {
             setShowSubmitDialog(true);
@@ -440,13 +430,10 @@ const SubmitDialog = ({
               disabled={hasPendingSubmit}
             />
             <Callout
-              css={(t) =>
-                css({
-                  background: t.colors.inputBackground,
-                  marginTop: "2rem",
-                  "p + p": { marginTop: "1em" },
-                })
-              }
+              css={css({
+                marginTop: "2rem",
+                "p + p": { marginTop: "1em" },
+              })}
             >
               {renderInfo()}
             </Callout>

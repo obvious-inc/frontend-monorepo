@@ -12,12 +12,12 @@ const textMutedAlpha = "hsl(45deg 8% 20% / 50%)";
 const textAccent = "hsl(0 0% 6%)";
 const backgroundNormal = "hsl(0 0% 100%)";
 const backgroundDark = "hsl(60deg 11% 96%)";
-const backgroundDarkTintLighter = "hsl(60deg 11% 97%)";
 const backgroundDarker = "hsl(60deg 11% 94%)";
 const backgroundDarkest = "hsl(60deg 11% 88%)";
 
-const backgroundModifierDark = "hsl(60deg 11% 0% / 6%)";
-const backgroundModifierDarker = "hsl(60deg 11% 0% / 10%)";
+const backgroundModifierLight = "hsl(60deg 12% 30% / 3%)";
+const backgroundModifierNormal = "hsl(60deg 12% 30% / 7%)";
+const backgroundModifierStrong = "hsl(60deg 12% 30% / 12%)";
 
 export default {
   ...dark,
@@ -34,12 +34,12 @@ export default {
     popoverBackground: backgroundNormal,
     backgroundTooltip: backgroundNormal,
     inputBackground: backgroundDarker,
-    inputBackgroundContrast: backgroundModifierDark,
     inputPlaceholder: textMutedAlpha,
-    messageBackgroundModifierFocus: backgroundDarkTintLighter,
     messageBackgroundModifierHighlight: "hsl(210deg 67% 70% / 15%)",
-    backgroundModifierHover: backgroundModifierDark,
-    backgroundModifierHoverStrong: backgroundModifierDarker,
+    backgroundModifierLight,
+    backgroundModifierNormal,
+    backgroundModifierStrong,
+    backgroundModifierHover: backgroundModifierNormal, // deprecated
     primaryTransparent,
     primaryTransparentSoft,
     textNormal,
@@ -58,7 +58,7 @@ export default {
     borderLightModifierHover: "hsl(0 0% 0% / 18%)",
     borderLighter: "hsl(0 0% 0% / 12%)",
     toolbarBackground: backgroundNormal,
-    buttonHover: backgroundModifierDark,
+    buttonHover: backgroundModifierNormal,
     borderDanger: "hsl(6deg 71% 72%)",
     textDanger: "hsl(0deg 54% 52%)",
     backgroundYellow: "rgb(241 170 58)",
@@ -75,7 +75,7 @@ export default {
     elevationLow:
       "rgb(15 15 15 / 5%) 0px 0px 0px 1px, rgb(15 15 15 / 15%) 0px 3px 10px",
   },
-  avatars: { ...dark.avatars, background: backgroundModifierDarker },
+  avatars: { ...dark.avatars, background: backgroundModifierStrong },
   mainMenu: {
     ...dark.mainMenu,
     itemTextColor: textDimmed,

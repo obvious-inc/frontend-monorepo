@@ -104,7 +104,7 @@ export const buildFeed = (
       ?.map((p) => buildProposalFeed(p, {}))
       .flat()
       .filter(
-        (p) => p.authorAccount?.toLowerCase() === delegate.id.toLowerCase()
+        (p) => p.authorAccount?.toLowerCase() === delegate?.id.toLowerCase()
       ) ?? [];
 
   const candidateFeedItems =
@@ -112,7 +112,7 @@ export const buildFeed = (
       ?.map((c) => buildCandidateFeed(c))
       .flat()
       .filter(
-        (i) => i.authorAccount?.toLowerCase() === delegate.id.toLowerCase()
+        (i) => i.authorAccount?.toLowerCase() === delegate?.id.toLowerCase()
       ) ?? [];
 
   const eventItems =

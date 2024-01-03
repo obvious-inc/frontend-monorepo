@@ -5,6 +5,8 @@ import {
   parseAbiItem,
   parseUnits,
   parseEther,
+  formatUnits,
+  formatEther,
 } from "viem";
 import { string as stringUtils } from "@shades/common/utils";
 import { resolveAddress, resolveIdentifier } from "../contracts.js";
@@ -418,7 +420,171 @@ export const extractAmounts = (parsedTransactions) => {
   ].filter((e) => e.amount > 0 || e.tokens?.length > 0);
 };
 
-export const getActionTransactions = (a, { chainId }) => {
+export const buildActions = (transactions, { chainId }) => {
+  let transactionsLeft = [...transactions];
+  const actions = [];
+
+  const extractStreamAction = () => {
+    const streamTx = transactionsLeft.find((t) => t.type === "stream");
+
+    if (streamTx == null) return null;
+
+    const usdcFundingTx = transactionsLeft.find(
+      (t) =>
+        t.type === "usdc-stream-funding-via-payer" &&
+        t.receiverAddress.toLowerCase() ===
+          streamTx.streamContractAddress.toLowerCase()
+    );
+
+    if (usdcFundingTx != null) {
+      transactionsLeft = transactionsLeft.filter(
+        (t) => t !== streamTx && t !== usdcFundingTx
+      );
+      return {
+        type: "streaming-payment",
+        target: streamTx.receiverAddress,
+        currency: "usdc",
+        amount: formatUnits(streamTx.tokenAmount, decimalsByCurrency["usdc"]),
+        startTimestamp: streamTx.startDate.getTime(),
+        endTimestamp: streamTx.endDate.getTime(),
+        predictedStreamContractAddress: streamTx.streamContractAddress,
+      };
+    }
+
+    const wethFundingTx = transactionsLeft.find(
+      (t) =>
+        t.type === "weth-stream-funding" &&
+        t.receiverAddress.toLowerCase() ===
+          streamTx.streamContractAddress.toLowerCase()
+    );
+
+    if (wethFundingTx == null) return null;
+
+    const wethDepositTx = transactionsLeft.find(
+      (t) =>
+        t.type === "weth-deposit" &&
+        t.value.toString() === wethFundingTx.wethAmount.toString()
+    );
+
+    if (wethDepositTx == null) return null;
+
+    transactionsLeft = transactionsLeft.filter(
+      (t) => t !== streamTx && t !== wethFundingTx && t !== wethDepositTx
+    );
+
+    return {
+      type: "streaming-payment",
+      target: streamTx.receiverAddress,
+      currency: "weth",
+      amount: formatUnits(streamTx.tokenAmount, decimalsByCurrency["weth"]),
+      startTimestamp: streamTx.startDate.getTime(),
+      endTimestamp: streamTx.endDate.getTime(),
+      predictedStreamContractAddress: streamTx.streamContractAddress,
+    };
+  };
+
+  const extractOneTimePaymentAction = () => {
+    const transferTx = transactionsLeft.find((t) => t.type === "transfer");
+
+    if (transferTx != null) {
+      transactionsLeft = transactionsLeft.filter((t) => t !== transferTx);
+      return {
+        type: "one-time-payment",
+        target: transferTx.target,
+        currency: "eth",
+        amount: formatEther(transferTx.value),
+      };
+    }
+
+    const usdcTransferTx = transactionsLeft.find(
+      (t) => t.type === "usdc-transfer-via-payer"
+    );
+
+    if (usdcTransferTx != null) {
+      transactionsLeft = transactionsLeft.filter((t) => t !== usdcTransferTx);
+      return {
+        type: "one-time-payment",
+        target: usdcTransferTx.receiverAddress,
+        currency: "usdc",
+        amount: formatUnits(
+          usdcTransferTx.usdcAmount,
+          decimalsByCurrency["usdc"]
+        ),
+      };
+    }
+
+    return null;
+  };
+
+  const extractPayerTopUpAction = () => {
+    const topUpTx = transactionsLeft.find((t) => t.type === "payer-top-up");
+
+    if (topUpTx == null) return null;
+
+    transactionsLeft = transactionsLeft.filter((t) => t !== topUpTx);
+
+    return {
+      type: "payer-top-up",
+      amount: formatEther(topUpTx.value),
+    };
+  };
+
+  const extractCustomTransactionAction = () => {
+    if (transactionsLeft.length === 0) return null;
+
+    const { targets, signatures, calldatas, values } = unparse(
+      [transactionsLeft[0]],
+      { chainId }
+    );
+
+    transactionsLeft = transactionsLeft.slice(1);
+
+    const { name, inputs } = decodeCalldataWithSignature({
+      signature: signatures[0],
+      calldata: calldatas[0],
+    });
+
+    return {
+      type: "custom-transaction",
+      contractCallTarget: targets[0],
+      contractCallSignature: `${name}(${inputs.map((i) => i.type).join(", ")})`,
+      contractCallArguments: inputs.map((i) => i.value),
+      contractCallValue: values[0],
+    };
+  };
+
+  while (transactionsLeft.length > 0) {
+    const streamAction = extractStreamAction();
+    if (streamAction != null) {
+      actions.push(streamAction);
+      continue;
+    }
+
+    const oneTimePaymentAction = extractOneTimePaymentAction();
+    if (oneTimePaymentAction != null) {
+      actions.push(oneTimePaymentAction);
+      continue;
+    }
+
+    const payerTopUpAction = extractPayerTopUpAction();
+    if (payerTopUpAction != null) {
+      actions.push(payerTopUpAction);
+      continue;
+    }
+
+    const customTransactionAction = extractCustomTransactionAction();
+    if (customTransactionAction != null) {
+      actions.push(customTransactionAction);
+      continue;
+    }
+
+    throw new Error();
+  }
+
+  return actions;
+};
+
+export const resolveAction = (a, { chainId }) => {
   const nounsTokenBuyerContract = resolveIdentifier(chainId, "token-buyer");
 
   const getParsedTransactions = () => {
@@ -468,7 +634,7 @@ export const getActionTransactions = (a, { chainId }) => {
                 value: parseUnits(a.amount, decimalsByCurrency.eth),
               },
               {
-                type: "weth-transfer",
+                type: "weth-stream-funding",
                 receiverAddress: a.predictedStreamContractAddress,
                 wethAmount: parseUnits(a.amount, decimalsByCurrency.weth),
               },
@@ -478,7 +644,7 @@ export const getActionTransactions = (a, { chainId }) => {
             return [
               createStreamTransaction,
               {
-                type: "usdc-transfer-via-payer",
+                type: "usdc-stream-funding-via-payer",
                 receiverAddress: a.predictedStreamContractAddress,
                 usdcAmount: parseUnits(a.amount, decimalsByCurrency.usdc),
               },
@@ -494,39 +660,34 @@ export const getActionTransactions = (a, { chainId }) => {
           {
             type: "payer-top-up",
             target: nounsTokenBuyerContract,
-            value: a.value,
+            value: parseEther(a.amount),
           },
         ];
 
       case "custom-transaction": {
-        const {
-          name: functionName,
-          inputs: inputTypes,
-          stateMutability,
-        } = parseAbiItem(a.contractCallFormattedTargetAbiItem);
+        const { name: functionName, inputs: inputTypes } = parseAbiItem(
+          `function ${a.contractCallSignature}`
+        );
         const functionInputs = a.contractCallArguments.map((value, i) => ({
           ...inputTypes[i],
           value,
         }));
 
-        // parseEther fails if we don’t
-        const { contractCallEthValue } = a;
-
-        if (stateMutability === "payable")
+        if (a.contractCallValue > 0)
           return [
             {
               type: "payable-function-call",
-              target: a.contractCallTargetAddress,
+              target: a.contractCallTarget,
               functionName,
               functionInputs,
-              value: parseEther(contractCallEthValue),
+              value: a.contractCallValue,
             },
           ];
 
         return [
           {
             type: "function-call",
-            target: a.contractCallTargetAddress,
+            target: a.contractCallTarget,
             functionName,
             functionInputs,
           },
@@ -539,4 +700,29 @@ export const getActionTransactions = (a, { chainId }) => {
   };
 
   return parse(unparse(getParsedTransactions(), { chainId }), { chainId });
+};
+
+export const isEqual = (ts1, ts2) => {
+  if (ts1.targets.length !== ts2.targets.length) return false;
+
+  return ts1.targets.some((target1, i) => {
+    const [signature1, calldata1, value1] = [
+      ts1.signatures[i],
+      ts1.calldatas[i],
+      ts1.values[i],
+    ];
+    const [target2, signature2, calldata2, value2] = [
+      ts2.targets[i],
+      ts2.signatures[i],
+      ts2.calldatas[i],
+      ts2.values[i],
+    ];
+
+    return (
+      target1 !== target2 ||
+      signature1 !== signature2 ||
+      calldata1 !== calldata2 ||
+      value1 !== value2
+    );
+  });
 };

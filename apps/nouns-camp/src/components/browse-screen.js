@@ -16,7 +16,7 @@ import Button from "@shades/ui-web/button";
 import Select from "@shades/ui-web/select";
 import { isNodeEmpty as isRichTextNodeEmpty } from "@shades/ui-web/rich-text-editor";
 import {
-  ArrowDown as ArrowDownIcon,
+  ArrowDownSmall as ArrowDownSmallIcon,
   Plus as PlusIcon,
 } from "@shades/ui-web/icons";
 import { APPROXIMATE_BLOCKS_PER_DAY } from "../constants/ethereum.js";
@@ -176,6 +176,8 @@ const groupConfigByKey = {
   },
 };
 
+let hasFetchedBrowseDataOnce = false;
+
 const BrowseScreen = () => {
   const scrollContainerRef = React.useRef();
   const [searchParams, setSearchParams] = useSearchParams();
@@ -197,6 +199,10 @@ const BrowseScreen = () => {
   const [candidateSortStrategy_, setCandidateSortStrategy] = useCachedState(
     "candidate-sorting-strategy",
     "popularity"
+  );
+
+  const [hasFetchedOnce, setHasFetchedOnce] = React.useState(
+    hasFetchedBrowseDataOnce
   );
 
   const candidateSortStrategies =
@@ -434,10 +440,11 @@ const BrowseScreen = () => {
 
   useFetch(
     () =>
-      Promise.all([
-        fetchBrowseScreenData({ first: 40 }),
-        fetchBrowseScreenData({ skip: 40, first: 1000 }),
-      ]),
+      fetchBrowseScreenData({ first: 40 }).then(() => {
+        setHasFetchedOnce(true);
+        hasFetchedBrowseDataOnce = true;
+        fetchBrowseScreenData({ skip: 40, first: 1000 });
+      }),
     [fetchBrowseScreenData]
   );
 
@@ -605,7 +612,7 @@ const BrowseScreen = () => {
                         })}
                       >
                         <SectionedList
-                          showPlaceholder={filteredProposals.length === 0}
+                          showPlaceholder={!hasFetchedOnce}
                           sections={[
                             // "drafts",
                             "proposals:authored",
@@ -700,7 +707,7 @@ const BrowseScreen = () => {
                         </div>
 
                         <SectionedList
-                          showPlaceholder={filteredCandidates.length === 0}
+                          showPlaceholder={!hasFetchedOnce}
                           sections={[
                             "candidates:authored",
                             "candidates:sponsored",
@@ -770,7 +777,7 @@ export const SectionedList = ({
     <ul
       role={showPlaceholder ? "presentation" : undefined}
       css={(t) => {
-        const hoverColor = t.colors.backgroundTertiary;
+        const hoverColor = t.colors.backgroundModifierNormal;
         return css({
           listStyle: "none",
           containerType: "inline-size",
@@ -926,6 +933,8 @@ export const SectionedList = ({
 
 const FEED_PAGE_ITEM_COUNT = 30;
 
+let hasFetchedActicityFeedOnce = false;
+
 const ActivityFeed = React.memo(({ filter = "all" }) => {
   const { data: latestBlockNumber } = useBlockNumber({
     watch: true,
@@ -935,6 +944,9 @@ const ActivityFeed = React.memo(({ filter = "all" }) => {
   const { fetchNounsActivity, fetchPropdates } = useActions();
 
   const [page, setPage] = React.useState(2);
+  const [hasFetchedOnce, setHasFetchedOnce] = React.useState(
+    hasFetchedActicityFeedOnce
+  );
 
   const feedItems = useFeedItems({ filter });
   const visibleItems = feedItems.slice(0, FEED_PAGE_ITEM_COUNT * page);
@@ -948,20 +960,22 @@ const ActivityFeed = React.memo(({ filter = "all" }) => {
             startBlock:
               latestBlockNumber - BigInt(APPROXIMATE_BLOCKS_PER_DAY * 3),
             endBlock: latestBlockNumber,
-          }).then(() =>
+          }).then(() => {
+            setHasFetchedOnce(true);
+            hasFetchedActicityFeedOnce = true;
             fetchNounsActivity({
               startBlock:
                 latestBlockNumber - BigInt(APPROXIMATE_BLOCKS_PER_DAY * 30),
               endBlock:
                 latestBlockNumber - BigInt(APPROXIMATE_BLOCKS_PER_DAY * 3) - 1n,
-            })
-          ),
+            });
+          }),
     [latestBlockNumber, fetchNounsActivity]
   );
 
   useFetch(() => fetchPropdates(), [fetchPropdates]);
 
-  if (visibleItems.length === 0) return null;
+  if (visibleItems.length === 0 || !hasFetchedOnce) return null;
 
   return (
     <>
@@ -1114,7 +1128,7 @@ const FeedTabContent = React.memo(({ visible }) => {
 const ProposalItem = React.memo(({ proposalId }) => {
   const proposal = useProposal(proposalId);
   const { displayName: authorAccountDisplayName } = useAccountDisplayName(
-    proposal.proposer?.id
+    proposal?.proposerId
   );
 
   const isDimmed =
@@ -1318,7 +1332,6 @@ const ProposalCandidateItem = React.memo(({ candidateId }) => {
   const candidateVotingPower = useProposalCandidateVotingPower(candidateId);
   const proposalThreshold = useProposalThreshold();
 
-  // const proposerDelegate = useDelegate(candidate.proposerId);
   const signals = getCandidateSignals({ candidate });
   // const commentCount =
   //   signals.delegates.for +
@@ -1491,9 +1504,10 @@ const ProposalCandidateItem = React.memo(({ candidateId }) => {
               },
             })}
           >
-            {feedbackAuthorAccounts.map((a) => (
+            {feedbackAuthorAccounts.slice(0, 10).map((a) => (
               <AccountAvatar key={a} address={a} size="2rem" />
             ))}
+            {feedbackAuthorAccounts.length > 10 && <>...</>}
           </div>
 
           {isCanceled ? (
@@ -1595,7 +1609,9 @@ const ScoreStack = React.memo(({ for: for_, against }) => {
         }
       >
         <div>{for_}</div>
-        <ArrowDownIcon style={{ width: "0.9rem", transform: "scaleY(-1)" }} />
+        <ArrowDownSmallIcon
+          style={{ width: "0.9rem", transform: "scaleY(-1)" }}
+        />
       </div>
       <div
         data-active={hasScore}
@@ -1636,7 +1652,7 @@ const ScoreStack = React.memo(({ for: for_, against }) => {
         }
       >
         <div>{against}</div>
-        <ArrowDownIcon style={{ width: "0.9rem" }} />
+        <ArrowDownSmallIcon style={{ width: "0.9rem" }} />
       </div>
     </div>
   );

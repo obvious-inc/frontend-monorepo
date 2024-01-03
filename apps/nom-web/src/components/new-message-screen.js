@@ -903,7 +903,7 @@ const MessageRecipientsInputContainer = React.forwardRef(
           display: "flex",
           width: "100%",
           color: t.colors.inputPlaceholder,
-          background: t.colors.inputBackground,
+          background: t.colors.backgroundModifierNormal,
           fontSize: t.text.sizes.large,
           borderRadius: "0.6rem",
           padding: "1.05rem 1.6rem",
@@ -1400,11 +1400,9 @@ const MessageRecipientOption = ({
         <div {...labelProps} data-label>
           {label}
         </div>
-        {description != null && (
-          <div {...descriptionProps} data-description>
-            {description}
-          </div>
-        )}
+        <div {...descriptionProps} data-description>
+          {description}
+        </div>
         {isSelected && (
           <div css={css({ padding: "0 0.5rem" })}>
             <CheckmarkIcon style={{ width: "1.2rem" }} />
@@ -1644,7 +1642,7 @@ const Onboarding = ({ selectChannel }) => {
               cursor: "pointer",
               ":hover": {
                 color: t.colors.textAccent,
-                background: t.colors.backgroundModifierHoverStrong,
+                background: t.colors.backgroundModifierStrong,
               },
             },
           },

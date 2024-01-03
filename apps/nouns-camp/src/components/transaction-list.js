@@ -805,7 +805,7 @@ const Code = ({ block, ...props }) => {
           display: "block",
           padding: "0.8rem 1rem",
           overflow: "auto",
-          background: t.colors.backgroundSecondary,
+          background: t.colors.backgroundModifierNormal,
           borderRadius: "0.3rem",
           userSelect: "text",
           lineHeight: 1.4,

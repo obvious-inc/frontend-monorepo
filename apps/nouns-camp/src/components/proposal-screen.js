@@ -23,7 +23,6 @@ import {
 import Button from "@shades/ui-web/button";
 import Select from "@shades/ui-web/select";
 import Dialog from "@shades/ui-web/dialog";
-import DialogHeader from "@shades/ui-web/dialog-header";
 import * as Tooltip from "@shades/ui-web/tooltip";
 import Spinner from "@shades/ui-web/spinner";
 import { extractAmounts as extractAmountsFromTransactions } from "../utils/transactions.js";
@@ -40,7 +39,6 @@ import {
   useDelegate,
 } from "../store.js";
 import {
-  useCancelProposal,
   useCastProposalVote,
   useDynamicQuorum,
 } from "../hooks/dao-contract.js";
@@ -60,9 +58,12 @@ import TransactionList, {
   FormattedEthWithConditionalTooltip,
 } from "./transaction-list.js";
 
-const nameBySupport = { 0: "against", 1: "for", 2: "abstain" };
-
+const ProposalEditDialog = React.lazy(() =>
+  import("./proposal-edit-dialog.js")
+);
 const MarkdownRichText = React.lazy(() => import("./markdown-rich-text.js"));
+
+const nameBySupport = { 0: "against", 1: "for", 2: "abstain" };
 
 const supportToString = (n) => {
   if (nameBySupport[n] == null) throw new Error();
@@ -451,16 +452,7 @@ const ProposalMainSection = ({ proposalId, scrollContainerRef }) => {
               transactions={proposal.transactions}
             />
             {isDesktopLayout ? (
-              <ProposalBody
-                // Slice off the title
-                markdownText={
-                  proposal.title === null
-                    ? proposal.description
-                    : proposal.description.slice(
-                        proposal.description.search(/\n/)
-                      )
-                }
-              />
+              <ProposalBody markdownText={proposal.body} />
             ) : (
               <>
                 {hasVotingStarted && (
@@ -497,12 +489,7 @@ const ProposalMainSection = ({ proposalId, scrollContainerRef }) => {
                 >
                   <Tabs.Item key="description" title="Description">
                     <div style={{ padding: "3.2rem 0 6.4rem" }}>
-                      <ProposalBody
-                        // Slice off the title
-                        markdownText={proposal.description.slice(
-                          proposal.description.search(/\n/)
-                        )}
-                      />
+                      <ProposalBody markdownText={proposal.body} />
                       <div style={{ marginTop: "9.6rem" }}>
                         {connectedWalletAccountAddress == null ? (
                           <div style={{ textAlign: "center" }}>
@@ -597,6 +584,8 @@ export const ProposalActionForm = ({
   const {
     address: connectedWalletAccountAddress,
     requestAccess: requestWalletAccess,
+    switchToMainnet: requestWalletNetworkSwitchToMainnet,
+    isLoading: hasPendingWalletAction,
     isUnsupportedChain,
   } = useWallet();
   const connectedDelegate = useDelegate(connectedWalletAccountAddress);
@@ -657,6 +646,9 @@ export const ProposalActionForm = ({
 
   const showModePicker = availableModes != null && availableModes.length > 1;
 
+  const disableForm =
+    isPending || connectedWalletAccountAddress == null || isUnsupportedChain;
+
   return (
     <>
       <div style={{ display: "flex", flexDirection: "column", gap: "1.2rem" }}>
@@ -687,6 +679,7 @@ export const ProposalActionForm = ({
           {showModePicker && (
             <div>
               <Select
+                aria-label="Pick action type"
                 value={mode}
                 onChange={(m) => {
                   setMode(m);
@@ -719,7 +712,7 @@ export const ProposalActionForm = ({
           css={(t) =>
             css({
               borderRadius: "0.5rem",
-              background: t.colors.backgroundSecondary,
+              background: t.colors.backgroundModifierNormal,
               padding: "var(--padding, 1rem)",
               "&:has(textarea:focus-visible)": { boxShadow: t.shadows.focus },
             })
@@ -736,7 +729,7 @@ export const ProposalActionForm = ({
             }}
             css={(t) =>
               css({
-                background: t.colors.backgroundSecondary,
+                background: "transparent",
                 fontSize: t.text.sizes.base,
                 display: "block",
                 color: t.colors.textNormal,
@@ -757,7 +750,7 @@ export const ProposalActionForm = ({
                 },
               })
             }
-            disabled={isPending || connectedWalletAccountAddress == null}
+            disabled={disableForm}
           />
           <div
             style={{
@@ -864,25 +857,38 @@ export const ProposalActionForm = ({
                           { value: 2, label: "No signal" },
                         ]
                   }
-                  disabled={isPending}
+                  disabled={disableForm}
                 />
-                <Button
-                  type="submit"
-                  variant="primary"
-                  disabled={
-                    isPending || !hasRequiredInputs || isUnsupportedChain
-                  }
-                  isLoading={isPending}
-                  size={size}
-                >
-                  {mode === "vote"
-                    ? `Cast ${
-                        proposalVoteCount === 1
-                          ? "vote"
-                          : `${proposalVoteCount} votes`
-                      }`
-                    : "Submit comment"}
-                </Button>
+                {isUnsupportedChain ? (
+                  <Button
+                    type="button"
+                    variant="primary"
+                    disabled={hasPendingWalletAction}
+                    isLoading={hasPendingWalletAction}
+                    size={size}
+                    onClick={() => {
+                      requestWalletNetworkSwitchToMainnet();
+                    }}
+                  >
+                    Switch to Mainnet
+                  </Button>
+                ) : (
+                  <Button
+                    type="submit"
+                    variant="primary"
+                    disabled={isPending || !hasRequiredInputs}
+                    isLoading={isPending}
+                    size={size}
+                  >
+                    {mode === "vote"
+                      ? `Cast ${
+                          proposalVoteCount === 1
+                            ? "vote"
+                            : `${proposalVoteCount} votes`
+                        }`
+                      : "Submit comment"}
+                  </Button>
+                )}
               </>
             )}
           </div>
@@ -910,73 +916,6 @@ export const ProposalActionForm = ({
   );
 };
 
-const ProposalDialog = ({ proposalId, titleProps, dismiss }) => {
-  const proposal = useProposal(proposalId);
-  const cancelProposal = useCancelProposal(proposalId);
-
-  const [hasPendingCancel, setPendingCancel] = React.useState(false);
-
-  if (proposal == null) return null;
-
-  return (
-    <div
-      css={css({
-        padding: "1.5rem",
-        "@media (min-width: 600px)": {
-          padding: "3rem",
-        },
-      })}
-    >
-      <DialogHeader
-        title="Manage proposal"
-        titleProps={titleProps}
-        dismiss={dismiss}
-      />
-      <main>
-        <Callout>Editing functionality coming soon.</Callout>
-      </main>
-      <footer
-        css={css({
-          display: "flex",
-          justifyContent: "space-between",
-          gap: "1rem",
-          paddingTop: "2.5rem",
-          "@media (min-width: 600px)": {
-            paddingTop: "3rem",
-          },
-        })}
-      >
-        <Button
-          danger
-          onClick={() => {
-            setPendingCancel(true);
-            cancelProposal().finally(() => {
-              setPendingCancel(false);
-              dismiss();
-            });
-          }}
-          disabled={hasPendingCancel}
-          isLoading={hasPendingCancel}
-        >
-          Cancel proposal
-        </Button>
-        <div
-          css={css({
-            display: "grid",
-            gridAutoFlow: "column",
-            gridAutoColumns: "minmax(0,1fr)",
-            gridGap: "1rem",
-          })}
-        >
-          <Button type="button" size="medium" onClick={dismiss}>
-            Close
-          </Button>
-        </div>
-      </footer>
-    </div>
-  );
-};
-
 export const ProposalHeader = ({
   title,
   createdAt,
@@ -994,6 +933,7 @@ export const ProposalHeader = ({
             fontSize: t.text.sizes.headerLarger,
             lineHeight: 1.15,
             margin: "0 0 0.3rem",
+            color: t.colors.textHeader,
             "@media(min-width: 600px)": {
               fontSize: t.text.sizes.huge,
             },
@@ -1069,10 +1009,14 @@ export const ProposalBody = React.memo(({ markdownText }) => {
           })
         }
       >
-        <MarkdownRichText text={markdownText} imagesMaxHeight={680} />
+        {markdownText != null && (
+          <React.Suspense fallback={null}>
+            <MarkdownRichText text={markdownText} imagesMaxHeight={680} />
+          </React.Suspense>
+        )}
       </div>
 
-      {isDebugSession && (
+      {isDebugSession && markdownText != null && (
         <div
           css={(t) =>
             css({
@@ -1226,7 +1170,7 @@ const ProposalScreen = () => {
             : isBetaSession &&
               isProposer &&
               !isFinalProposalState(proposal.state)
-            ? [{ onSelect: openDialog, label: "Manage proposal" }]
+            ? [{ onSelect: openDialog, label: "Edit" }]
             : undefined
         }
       >
@@ -1295,12 +1239,8 @@ const ProposalScreen = () => {
         )}
       </Layout>
 
-      {isDialogOpen && (
-        <Dialog
-          isOpen={isDialogOpen}
-          onRequestClose={closeDialog}
-          width="58rem"
-        >
+      {isDialogOpen && proposal != null && (
+        <Dialog isOpen tray onRequestClose={closeDialog} width="131.2rem">
           {({ titleProps }) => (
             <ErrorBoundary
               onError={() => {
@@ -1308,7 +1248,7 @@ const ProposalScreen = () => {
               }}
             >
               <React.Suspense fallback={null}>
-                <ProposalDialog
+                <ProposalEditDialog
                   proposalId={proposalId}
                   titleProps={titleProps}
                   dismiss={closeDialog}
@@ -1612,18 +1552,12 @@ const MetaTags = ({ proposalId }) => {
       ? `Prop ${proposalId}`
       : `${proposal.title} (Prop ${proposalId})`;
 
-  const description = proposal.description
-    .slice(proposal.description.search(/\n/))
-    .trim();
+  const { body } = proposal;
 
   return (
     <MetaTags_
       title={title}
-      description={
-        description.length > 600
-          ? `${description.slice(0, 600)}...`
-          : description
-      }
+      description={body?.length > 600 ? `${body.slice(0, 600)}...` : body}
       canonicalPathname={`/proposals/${proposalId}`}
     />
   );

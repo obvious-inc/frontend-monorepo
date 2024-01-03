@@ -143,8 +143,8 @@ const EmojiPicker = ({ width = "auto", height = "100%", onSelect }) => {
   const ROW_LENGTH = 9;
 
   const addReactionAtEntry = ([ci, ei]) => {
-    const { emoji } = filteredEmojisByCategoryEntries[ci][1][ei];
-    onSelect(emoji);
+    const { id, emoji } = filteredEmojisByCategoryEntries[ci][1][ei];
+    onSelect(emoji ?? id);
   };
 
   const navigationBlockedRef = React.useRef();
@@ -274,7 +274,6 @@ const EmojiPicker = ({ width = "auto", height = "100%", onSelect }) => {
     >
       <div css={css({ padding: "0.7rem 0.7rem 0.3rem" })}>
         <Input
-          contrast
           size="small"
           ref={inputRef}
           value={query}
@@ -299,6 +298,7 @@ const EmojiPicker = ({ width = "auto", height = "100%", onSelect }) => {
             overflow: "auto",
             scrollPaddingTop: "3rem",
             scrollPaddingBottom: "0.5rem",
+            paddingBottom: "0.7rem",
             ".category-title": {
               position: "sticky",
               top: 0,
@@ -337,6 +337,12 @@ const EmojiPicker = ({ width = "auto", height = "100%", onSelect }) => {
                 zIndex: 2,
                 boxShadow: `0 0 0 0.2rem ${t.colors.primary}`,
               },
+              img: {
+                display: "block",
+                width: "2.2rem",
+                height: "2.2rem",
+                margin: "auto",
+              },
             },
           })
         }
@@ -351,14 +357,14 @@ const EmojiPicker = ({ width = "auto", height = "100%", onSelect }) => {
               className="category-container"
               style={{ paddingTop: category == null ? "0.8rem" : undefined }}
             >
-              {emojis.map(({ emoji }, i) => {
+              {emojis.map(({ id, emoji, url }, i) => {
                 const isHighlighted =
                   highlightedEntry != null &&
                   highlightedEntry[0] === ci &&
                   highlightedEntry[1] === i;
                 return (
                   <button
-                    key={emoji}
+                    key={id ?? emoji}
                     ref={(el) => {
                       if (el == null) return;
                       if (isHighlighted)
@@ -367,7 +373,7 @@ const EmojiPicker = ({ width = "auto", height = "100%", onSelect }) => {
                     className="emoji"
                     data-selected={isHighlighted ? "true" : undefined}
                     onClick={() => {
-                      onSelect(emoji);
+                      onSelect(emoji ?? id);
                     }}
                     onPointerMove={() => {
                       if (
@@ -380,7 +386,7 @@ const EmojiPicker = ({ width = "auto", height = "100%", onSelect }) => {
                       setHighlightedEntry([ci, i]);
                     }}
                   >
-                    {emoji}
+                    {emoji ?? <img src={url} alt={id} />}
                   </button>
                 );
               })}

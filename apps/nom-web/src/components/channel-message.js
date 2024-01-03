@@ -17,6 +17,7 @@ import {
   useHasReactedWithEmoji,
   useMessageReactions,
   useSortedMessageReplies,
+  useEmojiById,
 } from "@shades/common/app";
 import { message as messageUtils } from "@shades/common/utils";
 import {
@@ -37,6 +38,7 @@ import InlineUserButton from "@shades/ui-web/inline-user-button";
 import * as DropdownMenu from "@shades/ui-web/dropdown-menu";
 import * as Toolbar from "@shades/ui-web/toolbar";
 import * as Tooltip from "@shades/ui-web/tooltip";
+import Emoji from "@shades/ui-web/emoji";
 import EmojiPicker from "@shades/ui-web/emoji-picker";
 import MessageEditorForm from "@shades/ui-web/message-editor-form";
 import Link from "@shades/ui-web/link";
@@ -990,7 +992,7 @@ const Reactions = ({ messageId, addReaction, hideAddButton, layout }) => {
               display: "flex",
               alignItems: "center",
               height: "2.5rem",
-              fontSize: "1.5rem",
+              fontSize: "1.25rem",
               background: t.colors.backgroundModifierHover,
               borderRadius: "var(--border-radius)",
               padding: "0 0.7rem 0 0.6rem",
@@ -1049,6 +1051,8 @@ const Reactions = ({ messageId, addReaction, hideAddButton, layout }) => {
 const Reaction = ({ messageId, emoji, count, users: userIds }) => {
   const { addMessageReaction, removeMessageReaction } = useActions();
 
+  const emojiItem = useEmojiById(emoji);
+
   const hasReacted = useHasReactedWithEmoji(messageId, emoji);
   const users = useUsers(userIds);
   const authorDisplayNames = users.map((m) => m.displayName);
@@ -1067,7 +1071,9 @@ const Reaction = ({ messageId, emoji, count, users: userIds }) => {
           }}
           className={hasReacted ? "active" : undefined}
         >
-          <span>{emoji}</span>
+          <span>
+            <Emoji emoji={emoji} />
+          </span>
           <span className="count">{count}</span>
         </button>
       </Tooltip.Trigger>
@@ -1094,7 +1100,7 @@ const Reaction = ({ messageId, emoji, count, users: userIds }) => {
               padding: "0.1rem 0 0",
             })}
           >
-            {emoji}
+            <Emoji emoji={emoji} />
           </div>
           <div
             css={css({
@@ -1103,13 +1109,20 @@ const Reaction = ({ messageId, emoji, count, users: userIds }) => {
               padding: "0.2rem 0",
             })}
           >
-            {[
-              authorDisplayNames.slice(0, -1).join(", "),
-              authorDisplayNames.slice(-1)[0],
-            ]
-              .filter(Boolean)
-              .join(" and ")}{" "}
-            reacted
+            {authorDisplayNames.length === 2
+              ? authorDisplayNames.join(" and ")
+              : [
+                  authorDisplayNames.slice(0, -1).join(", "),
+                  authorDisplayNames.slice(-1)[0],
+                ]
+                  .filter(Boolean)
+                  .join(", and ")}{" "}
+            <span css={(t) => css({ color: t.colors.textDimmed })}>
+              reacted
+              {emojiItem != null && (
+                <> with :{emojiItem.id ?? emojiItem.aliases[0]}:</>
+              )}
+            </span>
           </div>
         </div>
       </Tooltip.Content>

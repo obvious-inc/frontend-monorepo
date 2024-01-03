@@ -5,6 +5,7 @@ export const validate = (string) => {
 
   try {
     const url = new URL(string);
+    if (url.origin.endsWith(".eth")) return false;
     return ["http:", "https:"].some((p) => url.protocol === p);
   } catch (_) {
     return false;

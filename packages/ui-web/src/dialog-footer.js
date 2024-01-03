@@ -31,7 +31,12 @@ const DialogFooter = ({
         </Button>
       )}
       {submitButtonLabel != null && (
-        <Button size="medium" variant="primary" {...submitButtonProps}>
+        <Button
+          size="medium"
+          variant="primary"
+          type="submit"
+          {...submitButtonProps}
+        >
           {submitButtonLabel}
         </Button>
       )}

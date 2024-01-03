@@ -28,21 +28,21 @@ const ActivityFeed = ({ context, items = [], spacing = "2rem" }) => (
         '[role="listitem"] + [role="listitem"]': {
           marginTop: "var(--vertical-spacing)",
         },
-        a: {
-          color: t.colors.textDimmed,
-          fontWeight: t.text.weights.emphasis,
-          textDecoration: "none",
-          "@media(hover: hover)": {
-            ":hover": { textDecoration: "underline" },
-          },
-        },
         '[data-pending="true"]': { opacity: 0.6 },
         "[data-nowrap]": { whiteSpace: "nowrap" },
-        "[data-container]": {
+        "[data-header]": {
           display: "grid",
           gridTemplateColumns: "2rem minmax(0,1fr)",
           gridGap: "0.6rem",
           alignItems: "flex-start",
+          a: {
+            color: t.colors.textDimmed,
+            fontWeight: t.text.weights.emphasis,
+            textDecoration: "none",
+            "@media(hover: hover)": {
+              ":hover": { textDecoration: "underline" },
+            },
+          },
         },
         "[data-avatar-button]": {
           display: "block",
@@ -94,7 +94,7 @@ const ActivityFeed = ({ context, items = [], spacing = "2rem" }) => (
 const FeedItem = React.memo(({ context, ...item }) => {
   return (
     <div key={item.id} role="listitem" data-pending={item.isPending}>
-      <div data-container>
+      <div data-header>
         <div>
           {item.type === "event" || item.authorAccount == null ? (
             <div data-timeline-symbol />
@@ -200,7 +200,20 @@ const FeedItem = React.memo(({ context, ...item }) => {
 });
 
 const ItemBody = React.memo(({ text, displayImages }) => (
-  <React.Suspense fallback={null}>
+  <React.Suspense
+    fallback={
+      <div
+        css={(t) =>
+          css({
+            background: t.colors.backgroundModifierNormal,
+            borderRadius: "0.3rem",
+          })
+        }
+      >
+        &nbsp;
+      </div>
+    }
+  >
     <MarkdownRichText
       text={text}
       displayImages={displayImages}
