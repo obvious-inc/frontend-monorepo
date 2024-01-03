@@ -306,7 +306,8 @@ const ItemTitle = ({ item, context }) => {
             </span>
           );
 
-        case "candidate-created": {
+        case "candidate-created":
+        case "candidate-updated": {
           const label =
             context === "candidate" ? (
               "Candidate"
@@ -326,9 +327,11 @@ const ItemTitle = ({ item, context }) => {
                 Candidate <ContextLink truncate {...item} />
               </>
             );
+
           return (
             <span css={(t) => css({ color: t.colors.textDimmed })}>
-              {label} created
+              {label}{" "}
+              {item.eventType === "candidate-created" ? "created" : "updated"}
               {item.authorAccount != null && (
                 <>
                   {" "}

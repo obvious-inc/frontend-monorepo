@@ -304,6 +304,7 @@ query {
   }
 }`;
 
+// TODO: proposal feedbacks
 const createBrowseScreenSecondaryQuery = ({
   proposalIds,
   candidateIds,
@@ -323,6 +324,18 @@ query {
   )}]}) {
     createdAt
     createdBlock
+    updateMessage
+    proposal {
+      id
+    }
+  }
+
+  proposalCandidateVersions(where: {proposal_in: [${candidateIds.map(
+    (id) => `"${id}"`
+  )}]}) {
+    id
+    createdBlock
+    createdTimestamp
     updateMessage
     proposal {
       id
@@ -548,6 +561,17 @@ query {
     }
     versions {
       id
+      createdBlock
+      createdTimestamp
+      updateMessage
+      content {
+        title
+        description
+        targets
+        values
+        signatures
+        calldatas
+      }
     }
   }
 }`;
@@ -897,10 +921,53 @@ const parseProposal = (data, { chainId }) => {
   return parsedData;
 };
 
+// Hide proposal votes from 0 voting power account if no reason is given
 const hideProposalVote = (v) =>
   v.votes === 0 && (v.reason?.trim() ?? "") === "";
 
-const parseProposalCandidate = (data, { chainId }) => {
+const parseCandidateVersion = (v, { chainId }) => {
+  const parsedVersion = { ...v };
+
+  if (v.createdBlock != null)
+    parsedVersion.createdBlock = BigInt(v.createdBlock);
+
+  if (v.createdTimestamp != null)
+    parsedVersion.createdTimestamp = parseTimestamp(v.createdTimestamp);
+
+  if (v.content?.description != null) {
+    const { title, body } = parseMarkdownDescription(v.content.description);
+
+    parsedVersion.content.title = title;
+    parsedVersion.content.body = body;
+  }
+
+  if (v.content?.matchingProposalIds != null)
+    parsedVersion.proposalId = v.content.matchingProposalIds[0];
+
+  if ((v.content?.proposalIdToUpdate ?? "0") !== "0")
+    parsedVersion.targetProposalId = v.content.proposalIdToUpdate;
+
+  if (v.content?.contentSignatures != null)
+    parsedVersion.content.contentSignatures = v.content.contentSignatures.map(
+      (s) => ({
+        ...s,
+        createdBlock: BigInt(s.createdBlock),
+        createdTimestamp: parseTimestamp(s.createdTimestamp),
+        expirationTimestamp: parseTimestamp(s.expirationTimestamp),
+      })
+    );
+
+  if (v.content?.targets != null)
+    parsedVersion.content.transactions = parseTransactions(v.content, {
+      chainId,
+    });
+
+  if (v.proposal != null) parsedVersion.candidateId = v.proposal.id;
+
+  return parsedVersion;
+};
+
+const parseCandidate = (data, { chainId }) => {
   const parsedData = {
     ...data,
     latestVersion: {
@@ -931,40 +998,18 @@ const parseProposalCandidate = (data, { chainId }) => {
     }
   }
 
-  if (data.latestVersion.content.description != null) {
-    const { title, body } = parseMarkdownDescription(
-      data.latestVersion.content.description
-    );
-
-    parsedData.latestVersion.content.title = title;
-    parsedData.latestVersion.content.body = body;
-  }
-
-  if (data.latestVersion.content.matchingProposalIds != null)
-    parsedData.latestVersion.proposalId =
-      data.latestVersion.content.matchingProposalIds[0];
-
-  if ((data.latestVersion.content.proposalIdToUpdate ?? "0") !== "0")
-    parsedData.latestVersion.targetProposalId =
-      data.latestVersion.content.proposalIdToUpdate;
-
-  if (data.latestVersion.content.contentSignatures != null)
-    parsedData.latestVersion.content.contentSignatures =
-      data.latestVersion.content.contentSignatures.map((s) => ({
-        ...s,
-        createdBlock: BigInt(s.createdBlock),
-        createdTimestamp: parseTimestamp(s.createdTimestamp),
-        expirationTimestamp: parseTimestamp(s.expirationTimestamp),
-      }));
-
-  if (data.latestVersion.content.targets != null)
-    parsedData.latestVersion.content.transactions = parseTransactions(
-      data.latestVersion.content,
-      { chainId }
-    );
+  if (data.latestVersion != null)
+    parsedData.latestVersion = parseCandidateVersion(data.latestVersion, {
+      chainId,
+    });
 
   if (data.feedbackPosts != null)
     parsedData.feedbackPosts = data.feedbackPosts.map(parseFeedbackPost);
+
+  if (data.versions != null)
+    parsedData.versions = data.versions.map((v) =>
+      parseCandidateVersion(v, { chainId })
+    );
 
   return parsedData;
 };
@@ -1057,9 +1102,7 @@ export const fetchProposalCandidates = async (chainId, candidateIds) => {
     chainId,
     query: createProposalCandidatesQuery(candidateIds),
   }).then((data) => {
-    return data.proposalCandidates.map((c) =>
-      parseProposalCandidate(c, { chainId })
-    );
+    return data.proposalCandidates.map((c) => parseCandidate(c, { chainId }));
   });
 };
 
@@ -1107,7 +1150,7 @@ export const fetchProposalCandidate = async (chainId, rawId) => {
       return data.candidateFeedbacks;
     }),
   ]).then(([candidate, feedbackPosts]) =>
-    parseProposalCandidate({ ...candidate, feedbackPosts }, { chainId })
+    parseCandidate({ ...candidate, feedbackPosts }, { chainId })
   );
 };
 
@@ -1141,7 +1184,7 @@ export const fetchProposalCandidatesByAccount = (chainId, accountAddress) =>
     query: createProposalCandidatesByAccountQuery(accountAddress),
   }).then((data) => {
     const candidates = data.proposalCandidates.map((c) =>
-      parseProposalCandidate(c, { chainId })
+      parseCandidate(c, { chainId })
     );
     return candidates;
   });
@@ -1153,7 +1196,7 @@ export const fetchBrowseScreenData = (chainId, options) =>
         parseProposal(p, { chainId })
       );
       const candidates = data.proposalCandidates.map((c) =>
-        parseProposalCandidate(c, { chainId })
+        parseCandidate(c, { chainId })
       );
       return { proposals, candidates };
     }
@@ -1166,8 +1209,16 @@ export const fetchBrowseScreenSecondaryData = (chainId, options) =>
   }).then((data) => {
     const proposals = data.proposals.map((p) => parseProposal(p, { chainId }));
     const proposalVersions = data.proposalVersions.map(parseProposalVersion);
+    const candidateVersions = data.proposalCandidateVersions.map((v) =>
+      parseCandidateVersion(v, { chainId })
+    );
     const candidateFeedbacks = data.candidateFeedbacks.map(parseFeedbackPost);
-    return { proposals, proposalVersions, candidateFeedbacks };
+    return {
+      proposals,
+      proposalVersions,
+      candidateVersions,
+      candidateFeedbacks,
+    };
   });
 
 export const fetchProposalCandidatesSponsoredByAccount = (
@@ -1200,7 +1251,7 @@ export const fetchProposalCandidatesSponsoredByAccount = (
         query: createProposalCandidateByLatestVersionIdsQuery(versionIds),
       }).then((data) => {
         const candidates = data.proposalCandidates.map((c) =>
-          parseProposalCandidate(c, { chainId })
+          parseCandidate(c, { chainId })
         );
         return candidates;
       });
@@ -1213,7 +1264,7 @@ export const fetchVoterScreenData = (chainId, id, options) =>
   }).then((data) => {
     const proposals = data.proposals.map((p) => parseProposal(p, { chainId }));
     const candidates = data.proposalCandidates.map((c) =>
-      parseProposalCandidate(c, { chainId })
+      parseCandidate(c, { chainId })
     );
     const votes = data.votes.map(parseProposalVote);
     const proposalFeedbackPosts = data.proposalFeedbacks.map(parseFeedbackPost);

@@ -73,7 +73,21 @@ export const buildFeed = (candidate) => {
       targetProposalId,
     })) ?? [];
 
-  const items = [createdEventItem, ...feedbackPostItems];
+  const updateEventItems =
+    candidate.versions
+      ?.filter((v) => v.createdBlock > candidate.createdBlock)
+      .map((v) => ({
+        type: "event",
+        eventType: "candidate-updated",
+        id: `candidate-update-${v.createdBlock}`,
+        body: v.updateMessage,
+        blockNumber: v.createdBlock,
+        timestamp: v.createdTimestamp,
+        candidateId,
+        authorAccount: candidate.proposerId, // only proposer can update
+      })) ?? [];
+
+  const items = [createdEventItem, ...updateEventItems, ...feedbackPostItems];
 
   if (candidate.canceledBlock != null)
     items.push({
