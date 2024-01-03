@@ -5,7 +5,7 @@ import { useAccount, useConnect, useDisconnect, useSwitchNetwork } from "wagmi";
 import Dialog from "@shades/ui-web/dialog";
 import Button from "@shades/ui-web/button";
 import Spinner from "@shades/ui-web/spinner";
-import useChainId, { useConnectedChainId } from "./chain-id.js";
+import useChainId, { useConnectedChainId, defaultChainId } from "./chain-id.js";
 
 const impersonationAddress = new URLSearchParams(location.search).get(
   "impersonate"
@@ -200,6 +200,7 @@ export const useWallet = () => {
       }),
     isLoading: isConnecting || isSwitchingNetwork,
     isUnsupportedChain,
+    isTestnet: chainId !== defaultChainId,
     isShimmedDisconnect: connectedConnector?.options?.shimDisconnect ?? false,
   };
 };

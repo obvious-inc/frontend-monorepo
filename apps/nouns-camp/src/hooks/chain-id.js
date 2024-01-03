@@ -1,11 +1,17 @@
 import { mainnet, sepolia } from "wagmi/chains";
 import { useNetwork } from "wagmi";
 
-const supportedChainIds = [mainnet.id, sepolia.id];
+export const defaultChainId = mainnet.id;
+
+const supportedTestnetChainIds = [sepolia.id];
+
+const supportedChainIds = [defaultChainId, ...supportedTestnetChainIds];
 
 const useChainId = () => {
   const { chain } = useNetwork();
-  if (chain == null || !supportedChainIds.includes(chain.id)) return mainnet.id;
+
+  if (chain == null || !supportedChainIds.includes(chain.id))
+    return defaultChainId;
 
   return chain.id;
 };

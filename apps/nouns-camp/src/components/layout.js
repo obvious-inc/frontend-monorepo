@@ -110,6 +110,7 @@ const NavBar = ({ navigationStack, actions: actions_ }) => {
     switchToMainnet: switchWalletToMainnet,
     isUnsupportedChain,
     isShimmedDisconnect: isShimmedWalletDisconnect,
+    isTestnet,
     isLoading: isLoadingWallet,
   } = useWallet();
   const { displayName: connectedAccountDisplayName } = useAccountDisplayName(
@@ -164,6 +165,10 @@ const NavBar = ({ navigationStack, actions: actions_ }) => {
                     verticalAlign: "sub",
                     transform: "translateY(0.1rem) scale(1.05)",
                   })}
+                  style={{
+                    filter:
+                      isTestnet || isUnsupportedChain ? "invert(1)" : undefined,
+                  }}
                 />
                 {location.pathname !== "/" && (
                   <span
