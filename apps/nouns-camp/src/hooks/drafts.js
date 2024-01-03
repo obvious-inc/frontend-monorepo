@@ -79,8 +79,8 @@ const useStore = (accountAddress) => {
   );
 
   const setState = React.useCallback(
-    (state) => {
-      setState_((currentState) => {
+    async (state) => {
+      await setState_((currentState) => {
         const newState =
           typeof state === "function" ? state(currentState) : state;
         return { ...currentState, ...newState };
@@ -115,8 +115,8 @@ export const useCollection = () => {
   }, [setState]);
 
   const deleteItem = React.useCallback(
-    (id) => {
-      setState((state) => ({
+    async (id) => {
+      await setState((state) => ({
         entriesById: omitKey(id, state.entriesById),
       }));
     },

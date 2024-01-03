@@ -101,8 +101,10 @@ const ProposalEditor = ({
   disabled,
   submitDisabled,
   hasPendingSubmit,
+  hasPendingDelete,
   containerHeight,
   submitLabel,
+  deleteLabel,
   note,
   payerTopUpValue,
   scrollContainerRef,
@@ -206,9 +208,16 @@ const ProposalEditor = ({
                   onClick={() => {
                     onDelete();
                   }}
-                  icon={<TrashCanIcon style={{ width: "1.4rem" }} />}
-                  disabled={disabled}
-                />
+                  icon={
+                    deleteLabel == null ? (
+                      <TrashCanIcon style={{ width: "1.4rem" }} />
+                    ) : null
+                  }
+                  disabled={disabled || hasPendingDelete}
+                  isLoading={hasPendingDelete}
+                >
+                  {deleteLabel}
+                </Button>
                 <Button
                   type="button"
                   variant="primary"
