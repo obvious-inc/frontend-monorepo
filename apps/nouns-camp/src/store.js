@@ -392,6 +392,7 @@ const useStore = createZustandStoreHook((set) => {
                 (v) => v.candidateId,
                 candidateVersions
               );
+
               const fetchedCandidatesWithVersionsById = objectUtils.mapValues(
                 (versions, id) => ({
                   id,

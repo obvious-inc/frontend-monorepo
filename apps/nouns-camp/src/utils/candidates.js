@@ -102,7 +102,7 @@ export const buildFeed = (candidate) => {
 
   const signatureItems = getSponsorSignatures(candidate).map((s) => ({
     type: "candidate-signature-added",
-    id: `${s.signer.id}-${s.expirationTimestamp.getTime()}`,
+    id: `candidate-signature-added-${s.sig}`,
     authorAccount: s.signer.id,
     body: s.reason,
     voteCount: s.signer.nounsRepresented?.length,
