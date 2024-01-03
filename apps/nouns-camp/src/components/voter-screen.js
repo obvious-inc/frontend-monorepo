@@ -538,7 +538,6 @@ const VoterMainSection = ({ voterAddress }) => {
   const delegate = useDelegate(voterAddress);
 
   const filteredProposals = (delegate?.proposals ?? []).filter(Boolean);
-  console.log({ filteredProposals });
   const voterCandidates = useAccountProposalCandidates(voterAddress);
   const sponsoredProposals = useProposalsSponsoredByAccount(voterAddress);
 
@@ -546,11 +545,10 @@ const VoterMainSection = ({ voterAddress }) => {
 
   useFetch(
     () =>
-      Promise.all([
-        fetchVoterScreenData(voterAddress, { first: 40 }),
-        fetchVoterScreenData(voterAddress, { skip: 40, first: 1000 }),
-      ]),
-    [fetchVoterScreenData, voterAddress]
+      fetchVoterScreenData(voterAddress, { first: 40 }).then(() => {
+        fetchVoterScreenData(voterAddress, { skip: 40, first: 1000 });
+      }),
+    [(fetchVoterScreenData, voterAddress)]
   );
 
   const proposalsTabTitle =
