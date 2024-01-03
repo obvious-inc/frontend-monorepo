@@ -4,6 +4,7 @@ import { css } from "@emotion/react";
 import { Noggles as NogglesIcon } from "@shades/ui-web/icons";
 import * as Tooltip from "@shades/ui-web/tooltip";
 import Spinner from "@shades/ui-web/spinner";
+import Link from "@shades/ui-web/link";
 import { isSucceededState as isSucceededProposalState } from "../utils/proposals.js";
 import {
   extractSlugFromId as extractSlugFromCandidateId,
@@ -89,6 +90,7 @@ const ActivityFeed = ({ context, items = [], spacing = "2rem" }) => (
 );
 
 const FeedItem = React.memo(({ context, ...item }) => {
+  const isIsolatedContext = ["proposal", "candidate"].includes(context);
   return (
     <div key={item.id} role="listitem" data-pending={item.isPending}>
       <div data-header>
@@ -161,9 +163,27 @@ const FeedItem = React.memo(({ context, ...item }) => {
       </div>
       <div css={css({ paddingLeft: "2.6rem", userSelect: "text" })}>
         {(item.body || null) != null && (
-          <div style={{ margin: "0.5rem 0" }}>
-            <ItemBody text={item.body} displayImages={item.type === "event"} />
-          </div>
+          <React.Suspense
+            fallback={
+              <div
+                css={(t) =>
+                  css({
+                    margin: "0.5rem 0",
+                    background: t.colors.backgroundModifierNormal,
+                    borderRadius: "0.3rem",
+                  })
+                }
+              >
+                &nbsp;
+              </div>
+            }
+          >
+            <ItemBody
+              text={item.body}
+              displayImages={item.type === "event"}
+              truncateLines={!isIsolatedContext}
+            />
+          </React.Suspense>
         )}
         {item.type === "candidate-signature-added" && (
           <div
@@ -196,36 +216,65 @@ const FeedItem = React.memo(({ context, ...item }) => {
   );
 });
 
-const ItemBody = React.memo(({ text, displayImages }) => (
-  <React.Suspense
-    fallback={
-      <div
-        css={(t) =>
-          css({
-            background: t.colors.backgroundModifierNormal,
-            borderRadius: "0.3rem",
-          })
-        }
-      >
-        &nbsp;
+const ItemBody = React.memo(
+  ({ text, displayImages, truncateLines: enableLineTruncation }) => {
+    const containerRef = React.useRef();
+    const [canTruncate, setCanTruncate] = React.useState(true);
+    const [isTruncated, setTruncated] = React.useState(true);
+
+    React.useEffect(() => {
+      if (!enableLineTruncation) return;
+      setCanTruncate(
+        containerRef.current.scrollHeight > containerRef.current.offsetHeight
+      );
+    }, [enableLineTruncation]);
+
+    return (
+      <div>
+        <div
+          ref={containerRef}
+          css={css({
+            margin: "0.5rem 0",
+            display: "-webkit-box",
+            WebkitBoxOrient: "vertical",
+            overflow: "hidden",
+          })}
+          style={{
+            WebkitLineClamp:
+              enableLineTruncation && isTruncated ? 8 : undefined,
+          }}
+        >
+          <MarkdownRichText
+            text={text}
+            displayImages={displayImages}
+            compact
+            css={css({
+              // Make all headings small
+              "h1,h2,h3,h4,h5,h6": { fontSize: "1em" },
+              "*+h1,*+h2,*+h3,*+h4,*+h5,*+h6": { marginTop: "1.5em" },
+              "h1:has(+*),h2:has(+*),h3:has(+*),h4:has(+*),h5:has(+*),h6:has(+*)":
+                {
+                  marginBottom: "0.625em",
+                },
+            })}
+          />
+        </div>
+        {enableLineTruncation && canTruncate && (
+          <div css={css({ margin: "0.8em 0" })}>
+            <Link
+              component="button"
+              onClick={() => setTruncated((t) => !t)}
+              size="small"
+              color={(t) => t.colors.textDimmed}
+            >
+              {isTruncated ? "Show all..." : "Collapse..."}
+            </Link>
+          </div>
+        )}
       </div>
-    }
-  >
-    <MarkdownRichText
-      text={text}
-      displayImages={displayImages}
-      compact
-      css={css({
-        // Make all headings small
-        "h1,h2,h3,h4,h5,h6": { fontSize: "1em" },
-        "*+h1,*+h2,*+h3,*+h4,*+h5,*+h6": { marginTop: "1.5em" },
-        "h1:has(+*),h2:has(+*),h3:has(+*),h4:has(+*),h5:has(+*),h6:has(+*)": {
-          marginBottom: "0.625em",
-        },
-      })}
-    />
-  </React.Suspense>
-));
+    );
+  }
+);
 
 const ItemTitle = ({ item, context }) => {
   const isIsolatedContext = ["proposal", "candidate"].includes(context);
