@@ -11,6 +11,7 @@ import { alchemyProvider } from "wagmi/providers/alchemy";
 import { publicProvider } from "wagmi/providers/public";
 import { InjectedConnector } from "wagmi/connectors/injected";
 import { WalletConnectConnector } from "wagmi/connectors/walletConnect";
+import { CoinbaseWalletConnector } from "wagmi/connectors/coinbaseWallet";
 import { Analytics as VercelAnalytics } from "@vercel/analytics/react";
 import { createCacheStore, CacheStoreProvider } from "@shades/common/app";
 import App from "./app.js";
@@ -75,6 +76,12 @@ const wagmiConfig = createWagmiConfig({
       chains,
       options: {
         projectId: process.env.WALLET_CONNECT_PROJECT_ID,
+      },
+    }),
+    new CoinbaseWalletConnector({
+      options: {
+        appName: "nouns.camp",
+        jsonRpcUrl: `https://eth-mainnet.alchemyapi.io/v2/${process.env.ALCHEMY_API_KEY}`,
       },
     }),
   ],

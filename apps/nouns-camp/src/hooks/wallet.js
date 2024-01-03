@@ -24,7 +24,7 @@ export const Provider = ({ children }) => {
   return (
     <Context.Provider value={{ openDialog }}>
       {children}
-      <Dialog isOpen={isOpen} onRequestClose={closeDialog} width="34rem">
+      <Dialog isOpen={isOpen} onRequestClose={closeDialog} width="36rem">
         {({ titleProps }) => (
           <ConnectDialog titleProps={titleProps} dismiss={closeDialog} />
         )}
@@ -38,6 +38,9 @@ const ConnectDialog = ({ titleProps, dismiss }) => {
 
   const connectedConnectorId = connectedConnector?.id;
 
+  const isShimmedDisconnect =
+    connectedConnector?.options?.shimDisconnect ?? false;
+
   const { connectAsync: connect, connectors, isLoading, reset } = useConnect();
 
   const init = (id) => {
@@ -46,19 +49,29 @@ const ConnectDialog = ({ titleProps, dismiss }) => {
     });
   };
 
+  console.log(connectedConnector);
+
   const injectedConnector = connectors.find(
     (c) => c.ready && c.id === "injected"
   );
 
+  const coinbaseConnector = connectors.find(
+    (c) => c.ready && c.id === "coinbaseWallet"
+  );
+
   const hasInjected = injectedConnector != null;
 
+  const injectedProvider = window.ethereum;
+
   const injectedTitle = (() => {
+    if (!hasInjected) return null;
     if (
-      injectedConnector.name === "Rainbow" &&
-      window.ethereum.isMetaMask &&
-      !window.ethereum.rainbowIsDefaultProvider
+      injectedProvider.isRainbow &&
+      injectedProvider.isMetaMask &&
+      !injectedProvider.rainbowIsDefaultProvider
     )
       return "Metamask";
+    if (injectedProvider.isCoinbaseWallet) return "Coinbase";
     return injectedConnector.name;
   })();
 
@@ -123,11 +136,31 @@ const ConnectDialog = ({ titleProps, dismiss }) => {
               onClick={() => {
                 init("injected");
               }}
-              disabled={connectedConnectorId === "injected"}
+              disabled={isShimmedDisconnect}
             >
               <em>{injectedTitle}</em> browser extension
             </Button>
-            {connectedConnectorId === "injected" && (
+            {isShimmedDisconnect && (
+              <div data-small style={{ padding: "0.8rem 0 1.2rem" }}>
+                {injectedTitle} is already connected. Disconnect or switch
+                account in your wallet app.
+              </div>
+            )}
+          </div>
+        )}
+
+        {coinbaseConnector != null && !injectedProvider?.isCoinbaseWallet && (
+          <div>
+            <Button
+              fullWidth
+              onClick={() => {
+                init("coinbaseWallet");
+              }}
+              disabled={connectedConnectorId === "coinbaseWallet"}
+            >
+              <em>Coinbase wallet</em>
+            </Button>
+            {connectedConnectorId === "coinbaseWallet" && (
               <div data-small style={{ padding: "0.8rem 0 1.2rem" }}>
                 {injectedTitle} is already connected. Disconnect or switch
                 account in your wallet app.
