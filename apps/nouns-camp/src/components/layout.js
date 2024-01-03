@@ -272,9 +272,7 @@ const NavBar = ({ navigationStack, actions: actions_ }) => {
               : isUnsupportedChain
               ? {
                   onSelect: () => {
-                    switchWalletToMainnet().catch(() => {
-                      alert("Ops, something went wrong!");
-                    });
+                    switchWalletToMainnet();
                   },
                   buttonProps: {
                     variant: "default",

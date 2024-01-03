@@ -584,6 +584,8 @@ export const ProposalActionForm = ({
   const {
     address: connectedWalletAccountAddress,
     requestAccess: requestWalletAccess,
+    switchToMainnet: requestWalletNetworkSwitchToMainnet,
+    isLoading: hasPendingWalletAction,
     isUnsupportedChain,
   } = useWallet();
   const connectedDelegate = useDelegate(connectedWalletAccountAddress);
@@ -643,6 +645,9 @@ export const ProposalActionForm = ({
   const helpText = renderHelpText();
 
   const showModePicker = availableModes != null && availableModes.length > 1;
+
+  const disableForm =
+    isPending || connectedWalletAccountAddress == null || isUnsupportedChain;
 
   return (
     <>
@@ -745,7 +750,7 @@ export const ProposalActionForm = ({
                 },
               })
             }
-            disabled={isPending || connectedWalletAccountAddress == null}
+            disabled={disableForm}
           />
           <div
             style={{
@@ -852,25 +857,38 @@ export const ProposalActionForm = ({
                           { value: 2, label: "No signal" },
                         ]
                   }
-                  disabled={isPending}
+                  disabled={disableForm}
                 />
-                <Button
-                  type="submit"
-                  variant="primary"
-                  disabled={
-                    isPending || !hasRequiredInputs || isUnsupportedChain
-                  }
-                  isLoading={isPending}
-                  size={size}
-                >
-                  {mode === "vote"
-                    ? `Cast ${
-                        proposalVoteCount === 1
-                          ? "vote"
-                          : `${proposalVoteCount} votes`
-                      }`
-                    : "Submit comment"}
-                </Button>
+                {isUnsupportedChain ? (
+                  <Button
+                    type="button"
+                    variant="primary"
+                    disabled={hasPendingWalletAction}
+                    isLoading={hasPendingWalletAction}
+                    size={size}
+                    onClick={() => {
+                      requestWalletNetworkSwitchToMainnet();
+                    }}
+                  >
+                    Switch to Mainnet
+                  </Button>
+                ) : (
+                  <Button
+                    type="submit"
+                    variant="primary"
+                    disabled={isPending || !hasRequiredInputs}
+                    isLoading={isPending}
+                    size={size}
+                  >
+                    {mode === "vote"
+                      ? `Cast ${
+                          proposalVoteCount === 1
+                            ? "vote"
+                            : `${proposalVoteCount} votes`
+                        }`
+                      : "Submit comment"}
+                  </Button>
+                )}
               </>
             )}
           </div>
