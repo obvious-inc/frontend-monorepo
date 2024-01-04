@@ -70,6 +70,7 @@ const CandidateEditDialog = ({ candidateId, dismiss }) => {
   const [actions, setActions] = React.useState(persistedActions);
 
   const [hasPendingSubmit, setPendingSubmit] = React.useState(false);
+  const [hasPendingCancel, setPendingCancel] = React.useState(false);
 
   const deferredBody = React.useDeferredValue(body);
 
@@ -179,18 +180,29 @@ const CandidateEditDialog = ({ candidateId, dismiss }) => {
           onSubmit={() => {
             setShowPreviewDialog(true);
           }}
+          submitLabel="Preview update"
+          submitDisabled={!hasChanges}
+          hasPendingSubmit={hasPendingSubmit}
           onDelete={() => {
             if (!confirm("Are you sure you wish to cancel this candidate?"))
               return;
 
-            cancelProposalCandidate().then(() => {
-              navigate("/", { replace: true });
-            });
+            setPendingCancel(true);
+
+            cancelProposalCandidate().then(
+              () => {
+                navigate("/", { replace: true });
+              },
+              (e) => {
+                setPendingCancel(false);
+                return Promise.reject(e);
+              }
+            );
           }}
+          deleteLabel="Cancel"
+          hasPendingDelete={hasPendingCancel}
           containerHeight="calc(100vh - 6rem)"
           scrollContainerRef={scrollContainerRef}
-          submitLabel="Preview update"
-          submitDisabled={!hasChanges}
           background={theme.colors.dialogBackground}
         />
       </div>

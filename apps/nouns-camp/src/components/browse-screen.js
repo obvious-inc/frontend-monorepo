@@ -4,7 +4,7 @@ import React from "react";
 import { Link as RouterLink, useSearchParams } from "react-router-dom";
 import { css } from "@emotion/react";
 import { useBlockNumber } from "wagmi";
-import { useFetch, useMatchMedia } from "@shades/common/react";
+import { useFetch } from "@shades/common/react";
 import { useAccountDisplayName, useCachedState } from "@shades/common/app";
 import {
   array as arrayUtils,
@@ -33,6 +33,7 @@ import {
 } from "../utils/candidates.js";
 import { useProposalThreshold } from "../hooks/dao-contract.js";
 import { useWallet } from "../hooks/wallet.js";
+import useMatchDesktopLayout from "../hooks/match-desktop-layout.js";
 import {
   useActions,
   useProposal,
@@ -182,7 +183,7 @@ const BrowseScreen = () => {
   const scrollContainerRef = React.useRef();
   const [searchParams, setSearchParams] = useSearchParams();
 
-  const isDesktopLayout = useMatchMedia("(min-width: 952px)");
+  const isDesktopLayout = useMatchDesktopLayout();
   const tabAnchorRef = React.useRef();
   const tabContainerRef = React.useRef();
 

@@ -9,7 +9,7 @@ import {
 } from "react-router-dom";
 import { css } from "@emotion/react";
 import { array as arrayUtils, reloadPageOnce } from "@shades/common/utils";
-import { ErrorBoundary, useMatchMedia } from "@shades/common/react";
+import { ErrorBoundary } from "@shades/common/react";
 import Dialog from "@shades/ui-web/dialog";
 import Button from "@shades/ui-web/button";
 import Link from "@shades/ui-web/link";
@@ -40,6 +40,7 @@ import {
   useAddSignatureToProposalCandidate,
 } from "../hooks/data-contract.js";
 import { useWallet } from "../hooks/wallet.js";
+import useMatchDesktopLayout from "../hooks/match-desktop-layout.js";
 import MetaTags_ from "./meta-tags.js";
 import ActivityFeed, { VotingPowerNoggle } from "./activity-feed.js";
 import {
@@ -110,7 +111,7 @@ const ProposalCandidateScreenContent = ({
     requestAccess: requestWalletAccess,
   } = useWallet();
 
-  const isDesktopLayout = useMatchMedia("(min-width: 952px)");
+  const isDesktopLayout = useMatchDesktopLayout();
   const mobileTabAnchorRef = React.useRef();
   const mobileTabContainerRef = React.useRef();
 

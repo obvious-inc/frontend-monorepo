@@ -42,10 +42,13 @@ const parseToken = (token, context = {}) => {
           children[0].text.trim()
         );
         if (maybeEmojiChars.every(emojiUtils.isEmoji))
-          return maybeEmojiChars.map((c) => ({
-            type: "emoji",
-            emoji: c,
-          }));
+          return {
+            type: "paragraph",
+            children: maybeEmojiChars.map((c) => ({
+              type: "emoji",
+              emoji: c,
+            })),
+          };
       }
 
       const isImageParagraph = children.every(
