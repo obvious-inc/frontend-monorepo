@@ -566,18 +566,29 @@ const useStore = createZustandStoreHook((set) => {
 
           fetchProposals(chainId, proposalIds);
 
-          set(() => ({
-            propdatesByProposalId: arrayUtils.groupBy(
-              (d) => d.proposalId,
-              propdates
+          set((s) => ({
+            propdatesByProposalId: objectUtils.merge(
+              (ps1 = [], ps2 = []) =>
+                arrayUtils.unique(
+                  (p1, p2) => p1.id === p2.id,
+                  [...ps1, ...ps2]
+                ),
+              s.propdatesByProposalId,
+              arrayUtils.groupBy((d) => d.proposalId, propdates)
             ),
           }));
         }),
       ]);
     },
     fetchNounsActivity: (chainId, { startBlock, endBlock }) =>
-      NounsSubgraph.fetchNounsActivity(chainId, { startBlock, endBlock }).then(
-        ({ votes, proposalFeedbackPosts, candidateFeedbackPosts }) => {
+      Promise.all([
+        NounsSubgraph.fetchNounsActivity(chainId, { startBlock, endBlock }),
+        PropdatesSubgraph.fetchPropdates({ startBlock, endBlock }),
+      ]).then(
+        ([
+          { votes, proposalFeedbackPosts, candidateFeedbackPosts },
+          propdates,
+        ]) => {
           set((s) => {
             const postsByCandidateId = arrayUtils.groupBy(
               (p) => p.candidateId.toLowerCase(),
@@ -627,6 +638,15 @@ const useStore = createZustandStoreHook((set) => {
                 mergeProposalCandidates,
                 s.proposalCandidatesById,
                 newCandidatesById
+              ),
+              propdatesByProposalId: objectUtils.merge(
+                (ps1 = [], ps2 = []) =>
+                  arrayUtils.unique(
+                    (p1, p2) => p1.id === p2.id,
+                    [...ps1, ...ps2]
+                  ),
+                s.propdatesByProposalId,
+                arrayUtils.groupBy((d) => d.proposalId, propdates)
               ),
             };
           });
@@ -703,13 +723,13 @@ const useStore = createZustandStoreHook((set) => {
           };
         });
       }),
-    fetchPropdates: (proposalId) =>
-      PropdatesSubgraph.fetchPropdates(proposalId).then((propdates) => {
-        set(() => ({
-          propdatesByProposalId: arrayUtils.groupBy(
-            (d) => d.proposalId,
-            propdates
-          ),
+    fetchPropdatesForProposal: (...args) =>
+      PropdatesSubgraph.fetchPropdatesForProposal(...args).then((propdates) => {
+        set((s) => ({
+          propdatesByProposalId: {
+            ...s.propdatesByProposalId,
+            ...arrayUtils.groupBy((d) => d.proposalId, propdates),
+          },
         }));
       }),
   };
@@ -733,7 +753,9 @@ export const useActions = () => {
   const fetchVoterActivity = useStore((s) => s.fetchVoterActivity);
   const fetchBrowseScreenData = useStore((s) => s.fetchBrowseScreenData);
   const fetchVoterScreenData = useStore((s) => s.fetchVoterScreenData);
-  const fetchPropdates = useStore((s) => s.fetchPropdates);
+  const fetchPropdatesForProposal = useStore(
+    (s) => s.fetchPropdatesForProposal
+  );
   const addOptimitisicProposalVote = useStore(
     (s) => s.addOptimitisicProposalVote
   );
@@ -798,7 +820,7 @@ export const useActions = () => {
       (...args) => fetchVoterScreenData(chainId, ...args),
       [fetchVoterScreenData, chainId]
     ),
-    fetchPropdates,
+    fetchPropdatesForProposal,
     addOptimitisicProposalVote,
     addOptimitisicCandidateFeedbackPost,
   };
@@ -838,7 +860,7 @@ export const useProposalFetch = (id, options) => {
   });
   const onError = useLatestCallback(options?.onError);
 
-  const { fetchProposal, fetchPropdates } = useActions();
+  const { fetchProposal, fetchPropdatesForProposal } = useActions();
 
   useFetch(
     () =>
@@ -849,7 +871,10 @@ export const useProposalFetch = (id, options) => {
     [fetchProposal, id, onError, blockNumber]
   );
 
-  useFetch(() => fetchPropdates(id), [fetchPropdates, id]);
+  useFetch(
+    () => fetchPropdatesForProposal(id),
+    [fetchPropdatesForProposal, id]
+  );
 };
 
 export const useActiveProposalsFetch = () => {

@@ -11,18 +11,18 @@ fragment PropdateFields on PropUpdate {
   }
 }`;
 
-const PROPDATES_QUERY = `
+const createPropdatesQuery = ({ startBlock, endBlock }) => `
 ${PROPDATE_FIELDS}
 query {
-  propUpdates(orderBy: blockNumber, orderDirection: desc, first: 100) {
+  propUpdates(where: {blockNumber_gte: ${startBlock}, blockNumber_lte: ${endBlock}}, orderBy: blockNumber, orderDirection: desc, first: 1000) {
     ...PropdateFields
   }
 }`;
 
-const createPropdatesQuery = (proposalId) => `
+const createPropdatesForProposalQuery = (proposalId) => `
 ${PROPDATE_FIELDS}
 query {
-  propUpdates(where: { prop: "${proposalId}" }, orderBy: blockNumber, orderDirection: desc, first: 100) {
+  propUpdates(where: { prop: "${proposalId}" }, orderBy: blockNumber, orderDirection: desc, first: 1000) {
     ...PropdateFields
   }
 }`;
@@ -45,13 +45,29 @@ const parseUpdate = (u) => ({
   proposalId: u.prop.id,
 });
 
-export const fetchPropdates = (proposalId) =>
+export const fetchPropdates = (...args) =>
   fetch(process.env.PROPDATES_SUBGRAPH_URL, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
-      query:
-        proposalId == null ? PROPDATES_QUERY : createPropdatesQuery(proposalId),
+      query: createPropdatesQuery(...args),
+    }),
+  })
+    .then((res) => {
+      if (res.ok) return res.json();
+      return Promise.reject(new Error(res.statusText));
+    })
+    .then((body) => {
+      if (body.data.propUpdates == null) throw new Error("not-found");
+      return body.data.propUpdates.map(parseUpdate);
+    });
+
+export const fetchPropdatesForProposal = (...args) =>
+  fetch(process.env.PROPDATES_SUBGRAPH_URL, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      query: createPropdatesForProposalQuery(...args),
     }),
   })
     .then((res) => {

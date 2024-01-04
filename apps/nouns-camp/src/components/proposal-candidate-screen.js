@@ -981,8 +981,7 @@ const ProposalCandidateScreen = () => {
 
     const isCanceled = candidate.canceledTimestamp != null;
 
-    if (!isProposer || isCanceled || connectedWalletAccountAddress == null)
-      return undefined;
+    if (!isProposer || isCanceled) return undefined;
 
     const hasBeenPromoted = candidate.latestVersion.proposalId != null;
 
@@ -997,30 +996,29 @@ const ProposalCandidateScreen = () => {
           onSelect: toggleProposeDialog,
           label: "Promote",
         },
-      !isCanceled &&
-        !hasBeenPromoted && {
-          onSelect: () => {
-            if (!confirm("Are you sure you wish to cancel this candidate?"))
-              return;
+      !hasBeenPromoted && {
+        onSelect: () => {
+          if (!confirm("Are you sure you wish to cancel this candidate?"))
+            return;
 
-            setPendingCancel(true);
+          setPendingCancel(true);
 
-            cancelProposalCandidate().then(
-              () => {
-                navigate("/", { replace: true });
-              },
-              (e) => {
-                setPendingCancel(false);
-                return Promise.reject(e);
-              }
-            );
-          },
-          label: "Cancel",
-          buttonProps: {
-            isLoading: hasPendingCancel,
-            disabled: cancelProposalCandidate == null || hasPendingCancel,
-          },
+          cancelProposalCandidate().then(
+            () => {
+              navigate("/", { replace: true });
+            },
+            (e) => {
+              setPendingCancel(false);
+              return Promise.reject(e);
+            }
+          );
         },
+        label: "Cancel",
+        buttonProps: {
+          isLoading: hasPendingCancel,
+          disabled: cancelProposalCandidate == null || hasPendingCancel,
+        },
+      },
     ].filter(Boolean);
 
     return proposerActions.length === 0 ? undefined : proposerActions;

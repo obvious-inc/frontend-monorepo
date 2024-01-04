@@ -4,6 +4,7 @@ import { formatUnits } from "viem";
 import { useBlockNumber } from "wagmi";
 import {
   Link as RouterLink,
+  useNavigate,
   useParams,
   useSearchParams,
 } from "react-router-dom";
@@ -37,6 +38,7 @@ import {
   useDelegate,
 } from "../store.js";
 import {
+  useCancelProposal,
   useCastProposalVote,
   useDynamicQuorum,
 } from "../hooks/dao-contract.js";
@@ -1090,11 +1092,14 @@ const RequestedAmounts = ({ amounts }) => (
 
 const ProposalScreen = () => {
   const { proposalId } = useParams();
+  const navigate = useNavigate();
 
   const proposal = useProposal(proposalId);
+  const cancelProposal = useCancelProposal(proposalId);
 
   const [notFound, setNotFound] = React.useState(false);
   const [fetchError, setFetchError] = React.useState(null);
+  const [hasPendingCancel, setPendingCancel] = React.useState(false);
 
   const scrollContainerRef = React.useRef();
 
@@ -1111,11 +1116,11 @@ const ProposalScreen = () => {
 
   const isDialogOpen = searchParams.get("proposal-dialog") != null;
 
-  const openDialog = React.useCallback(() => {
+  const openEditDialog = React.useCallback(() => {
     setSearchParams({ "proposal-dialog": 1 });
   }, [setSearchParams]);
 
-  const closeDialog = React.useCallback(() => {
+  const closeEditDialog = React.useCallback(() => {
     setSearchParams((params) => {
       const newParams = new URLSearchParams(params);
       newParams.delete("proposal-dialog");
@@ -1134,6 +1139,45 @@ const ProposalScreen = () => {
       setFetchError(e);
     },
   });
+
+  const getActions = () => {
+    if (proposal == null) return [];
+
+    if (!isProposer || proposal.state === "canceled") return undefined;
+
+    const proposerActions = [
+      isBetaSession &&
+        proposal.state === "updatable" && {
+          onSelect: openEditDialog,
+          label: "Edit",
+        },
+      !isFinalProposalState(proposal.state) && {
+        onSelect: () => {
+          if (!confirm("Are you sure you wish to cancel this proposal?"))
+            return;
+
+          setPendingCancel(true);
+
+          cancelProposal().then(
+            () => {
+              navigate("/", { replace: true });
+            },
+            (e) => {
+              setPendingCancel(false);
+              return Promise.reject(e);
+            }
+          );
+        },
+        label: "Cancel",
+        buttonProps: {
+          isLoading: hasPendingCancel,
+          disabled: cancelProposal == null || hasPendingCancel,
+        },
+      },
+    ].filter(Boolean);
+
+    return proposerActions.length === 0 ? undefined : proposerActions;
+  };
 
   return (
     <>
@@ -1163,15 +1207,7 @@ const ProposalScreen = () => {
             ),
           },
         ]}
-        actions={
-          proposal?.state == null
-            ? null
-            : isBetaSession &&
-              isProposer &&
-              !isFinalProposalState(proposal.state)
-            ? [{ onSelect: openDialog, label: "Edit" }]
-            : undefined
-        }
+        actions={getActions()}
       >
         {proposal == null ? (
           <div
@@ -1248,7 +1284,7 @@ const ProposalScreen = () => {
             <ProposalEditDialog
               proposalId={proposalId}
               isOpen
-              close={closeDialog}
+              close={closeEditDialog}
             />
           </React.Suspense>
         </ErrorBoundary>

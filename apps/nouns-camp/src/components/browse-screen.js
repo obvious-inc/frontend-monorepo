@@ -934,7 +934,7 @@ export const SectionedList = ({
 
 const FEED_PAGE_ITEM_COUNT = 30;
 
-let hasFetchedActicityFeedOnce = false;
+let hasFetchedActivityFeedOnce = false;
 
 const ActivityFeed = React.memo(({ filter = "all" }) => {
   const { data: latestBlockNumber } = useBlockNumber({
@@ -942,11 +942,11 @@ const ActivityFeed = React.memo(({ filter = "all" }) => {
     cache: 20_000,
   });
 
-  const { fetchNounsActivity, fetchPropdates } = useActions();
+  const { fetchNounsActivity } = useActions();
 
   const [page, setPage] = React.useState(2);
   const [hasFetchedOnce, setHasFetchedOnce] = React.useState(
-    hasFetchedActicityFeedOnce
+    hasFetchedActivityFeedOnce
   );
 
   const feedItems = useFeedItems({ filter });
@@ -956,25 +956,27 @@ const ActivityFeed = React.memo(({ filter = "all" }) => {
   useFetch(
     latestBlockNumber == null
       ? null
-      : () =>
+      : () => {
           fetchNounsActivity({
             startBlock:
-              latestBlockNumber - BigInt(APPROXIMATE_BLOCKS_PER_DAY * 3),
+              latestBlockNumber - BigInt(APPROXIMATE_BLOCKS_PER_DAY * 2),
             endBlock: latestBlockNumber,
           }).then(() => {
+            if (hasFetchedOnce) return;
+
             setHasFetchedOnce(true);
-            hasFetchedActicityFeedOnce = true;
+            hasFetchedActivityFeedOnce = true;
+
             fetchNounsActivity({
               startBlock:
                 latestBlockNumber - BigInt(APPROXIMATE_BLOCKS_PER_DAY * 30),
               endBlock:
-                latestBlockNumber - BigInt(APPROXIMATE_BLOCKS_PER_DAY * 3) - 1n,
+                latestBlockNumber - BigInt(APPROXIMATE_BLOCKS_PER_DAY * 2) - 1n,
             });
-          }),
+          });
+        },
     [latestBlockNumber, fetchNounsActivity]
   );
-
-  useFetch(() => fetchPropdates(), [fetchPropdates]);
 
   if (visibleItems.length === 0 || !hasFetchedOnce) return null;
 

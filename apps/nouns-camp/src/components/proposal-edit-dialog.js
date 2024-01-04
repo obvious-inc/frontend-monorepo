@@ -23,10 +23,7 @@ import {
 } from "../utils/transactions.js";
 import { useProposal } from "../store.js";
 import useChainId from "../hooks/chain-id.js";
-import {
-  useUpdateProposal,
-  // useCancelProposal
-} from "../hooks/dao-contract.js";
+import { useUpdateProposal } from "../hooks/dao-contract.js";
 import ProposalEditor from "./proposal-editor.js";
 
 const createMarkdownDescription = ({ title, body }) => {
@@ -38,7 +35,6 @@ const createMarkdownDescription = ({ title, body }) => {
 
 const ProposalEditDialog = ({ proposalId, isOpen, close: closeDialog }) => {
   const theme = useTheme();
-  // const navigate = useNavigate();
   const chainId = useChainId();
   const scrollContainerRef = React.useRef();
 
@@ -65,7 +61,6 @@ const ProposalEditDialog = ({ proposalId, isOpen, close: closeDialog }) => {
   const [actions, setActions] = React.useState(persistedActions);
 
   const [hasPendingSubmit, setPendingSubmit] = React.useState(false);
-  // const [hasPendingCancel, setPendingCancel] = React.useState(false);
 
   const deferredBody = React.useDeferredValue(body);
 
@@ -138,7 +133,6 @@ const ProposalEditDialog = ({ proposalId, isOpen, close: closeDialog }) => {
   // const payerTopUpValue = useTokenBuyerEthNeeded(usdcSumValue);
 
   const updateProposal = useUpdateProposal(proposalId);
-  // const cancelProposal = useCancelProposal(proposalId);
 
   const submit = async ({ updateMessage }) => {
     const getDescription = () => {
