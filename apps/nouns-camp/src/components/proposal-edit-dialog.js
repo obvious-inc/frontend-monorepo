@@ -121,7 +121,7 @@ const ProposalEditDialog = ({ proposalId, isOpen, close: closeDialog }) => {
     )
       return;
 
-    closeDialog;
+    closeDialog();
   };
 
   // const usdcSumValue = actions.reduce((sum, a) => {

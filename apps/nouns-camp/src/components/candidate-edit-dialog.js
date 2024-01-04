@@ -125,7 +125,7 @@ const CandidateEditDialog = ({ candidateId, isOpen, close: closeDialog }) => {
     )
       return;
 
-    closeDialog;
+    closeDialog();
   };
 
   const updateProposalCandidate = useUpdateProposalCandidate(candidate.slug);
