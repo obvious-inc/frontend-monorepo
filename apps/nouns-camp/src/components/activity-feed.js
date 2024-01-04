@@ -17,6 +17,8 @@ import AccountAvatar from "./account-avatar.js";
 
 const MarkdownRichText = React.lazy(() => import("./markdown-rich-text.js"));
 
+const BODY_TRUNCATION_HEIGHT_THRESHOLD = "18em";
+
 const ActivityFeed = ({ context, items = [], spacing = "2rem" }) => (
   <ul
     css={(t) =>
@@ -119,42 +121,48 @@ const FeedItem = React.memo(({ context, ...item }) => {
             })}
           >
             <div
-              css={css({
-                flex: 1,
-                minWidth: 0,
-                overflow: "hidden",
-                textOverflow: "ellipsis",
-              })}
+              css={(t) =>
+                css({
+                  flex: 1,
+                  minWidth: 0,
+                  display: "-webkit-box",
+                  WebkitBoxOrient: "vertical",
+                  WebkitLineClamp: 2,
+                  overflow: "hidden",
+                  color: t.colors.textDimmed,
+                })
+              }
             >
-              <ItemTitle item={item} context={context} />
-              {item.timestamp != null && (
-                <span
-                  css={(t) =>
-                    css({
-                      fontSize: t.text.sizes.small,
-                      color: t.colors.textDimmed,
-                      position: "absolute",
-                      padding: "0.15rem 0",
-                    })
-                  }
-                >
-                  &nbsp;&middot;{" "}
-                  <FormattedDateWithTooltip
-                    tinyRelative
-                    relativeDayThreshold={7}
-                    month="short"
-                    day="numeric"
-                    value={item.timestamp}
-                  />
-                </span>
-              )}
+              <span css={(t) => css({ color: t.colors.textNormal })}>
+                <ItemTitle item={item} context={context} />
+              </span>
             </div>
-            <div style={{ padding: "0.25rem 0" }}>
+            <div>
               {item.isPending ? (
-                <Spinner size="1rem" />
+                <div style={{ padding: "0.5rem 0" }}>
+                  <Spinner size="1rem" />
+                </div>
               ) : (
-                item.voteCount != null && (
-                  <VotingPowerNoggle count={Number(item.voteCount)} />
+                item.timestamp != null && (
+                  <span
+                    data-timestamp
+                    css={(t) =>
+                      css({
+                        fontSize: t.text.sizes.small,
+                        color: t.colors.textDimmed,
+                        padding: "0.15rem 0",
+                        display: "inline-block",
+                      })
+                    }
+                  >
+                    <FormattedDateWithTooltip
+                      tinyRelative
+                      relativeDayThreshold={7}
+                      month="short"
+                      day="numeric"
+                      value={item.timestamp}
+                    />
+                  </span>
                 )
               )}
             </div>
@@ -219,29 +227,45 @@ const FeedItem = React.memo(({ context, ...item }) => {
 const ItemBody = React.memo(
   ({ text, displayImages, truncateLines: enableLineTruncation }) => {
     const containerRef = React.useRef();
-    const [canTruncate, setCanTruncate] = React.useState(true);
-    const [isTruncated, setTruncated] = React.useState(true);
+
+    const [isCollapsed_, setCollapsed] = React.useState(enableLineTruncation);
+    const [exceedsTruncationThreshold, setExceedsTruncationThreshold] =
+      React.useState(null);
+
+    const isCollapsed = enableLineTruncation && isCollapsed_;
+    const isEffectivelyTruncating = isCollapsed && exceedsTruncationThreshold;
 
     React.useEffect(() => {
-      if (!enableLineTruncation) return;
-      setCanTruncate(
-        containerRef.current.scrollHeight > containerRef.current.offsetHeight
-      );
-    }, [enableLineTruncation]);
+      if (!isCollapsed) return;
+
+      const observer = new ResizeObserver(() => {
+        if (containerRef.current == null) return;
+        setExceedsTruncationThreshold(
+          containerRef.current.scrollHeight -
+            containerRef.current.offsetHeight >
+            100
+        );
+      });
+
+      observer.observe(containerRef.current);
+
+      return () => {
+        observer.disconnect();
+      };
+    }, [isCollapsed]);
 
     return (
-      <div>
+      <div css={css({ padding: "0.5rem 0" })}>
         <div
           ref={containerRef}
-          css={css({
-            margin: "0.5rem 0",
-            display: "-webkit-box",
-            WebkitBoxOrient: "vertical",
-            overflow: "hidden",
-          })}
+          css={css({ overflow: "hidden" })}
           style={{
-            WebkitLineClamp:
-              enableLineTruncation && isTruncated ? 8 : undefined,
+            maxHeight: isCollapsed
+              ? BODY_TRUNCATION_HEIGHT_THRESHOLD
+              : undefined,
+            maskImage: isEffectivelyTruncating
+              ? "linear-gradient(180deg, black calc(100% - 2.8em), transparent 100%)"
+              : undefined,
           }}
         >
           <MarkdownRichText
@@ -259,15 +283,16 @@ const ItemBody = React.memo(
             })}
           />
         </div>
-        {enableLineTruncation && canTruncate && (
+
+        {enableLineTruncation && exceedsTruncationThreshold && (
           <div css={css({ margin: "0.8em 0" })}>
             <Link
               component="button"
-              onClick={() => setTruncated((t) => !t)}
+              onClick={() => setCollapsed((c) => !c)}
               size="small"
               color={(t) => t.colors.textDimmed}
             >
-              {isTruncated ? "Show all..." : "Collapse..."}
+              {isCollapsed ? "Expand..." : "Collapse"}
             </Link>
           </div>
         )}
@@ -282,27 +307,14 @@ const ItemTitle = ({ item, context }) => {
   const proposal = useProposal(item.proposalId ?? item.targetProposalId);
   const candidate = useProposalCandidate(item.candidateId);
 
-  const truncatedLength = 30;
-
-  const truncateTitle = (s) =>
-    s.length <= truncatedLength
-      ? s
-      : `${s.slice(0, truncatedLength).trim()}...`;
-
-  const ContextLink = ({
-    proposalId,
-    candidateId,
-    short,
-    truncate,
-    children,
-  }) => {
+  const ContextLink = ({ proposalId, candidateId, short, children }) => {
     if (proposalId != null) {
       const title =
         proposal?.title == null
           ? `Proposal ${proposalId}`
-          : `${short ? proposalId : `Proposal ${proposalId}`}: ${truncateTitle(
+          : `${short ? proposalId : `Proposal ${proposalId}`}: ${
               proposal.title
-            )} `;
+            } `;
       return (
         <RouterLink to={`/proposals/${proposalId}`}>
           {children ?? title}
@@ -311,10 +323,9 @@ const ItemTitle = ({ item, context }) => {
     }
 
     if (candidateId != null) {
-      const fullTitle =
+      const title =
         candidate?.latestVersion?.content.title ??
         extractSlugFromCandidateId(candidateId);
-      const title = truncate ? truncateTitle(fullTitle) : fullTitle;
       return (
         <RouterLink
           to={`/candidates/${encodeURIComponent(
@@ -373,7 +384,7 @@ const ItemTitle = ({ item, context }) => {
               </>
             ) : (
               <>
-                Candidate <ContextLink truncate {...item} />
+                Candidate <ContextLink {...item} />
               </>
             );
 
@@ -599,9 +610,13 @@ const ItemTitle = ({ item, context }) => {
         <span>
           {accountName}{" "}
           {item.support === 0 ? (
-            <Signal negative>{signalWord} against</Signal>
+            <Signal negative>
+              {signalWord} against ({item.voteCount})
+            </Signal>
           ) : item.support === 1 ? (
-            <Signal positive>{signalWord} for</Signal>
+            <Signal positive>
+              {signalWord} for ({item.voteCount})
+            </Signal>
           ) : item.type === "vote" ? (
             <Signal>abstained</Signal>
           ) : isIsolatedContext ? (
@@ -612,7 +627,7 @@ const ItemTitle = ({ item, context }) => {
           {!isIsolatedContext && (
             <>
               {" "}
-              <ContextLink truncate short {...item} />
+              <ContextLink short {...item} />
             </>
           )}
         </span>
@@ -626,7 +641,7 @@ const ItemTitle = ({ item, context }) => {
           {!isIsolatedContext && (
             <>
               {" "}
-              <ContextLink truncate short {...item} />
+              <ContextLink short {...item} />
             </>
           )}
         </span>
@@ -665,10 +680,10 @@ export const VotingPowerNoggle = ({ count }) => (
       <span
         css={(t) =>
           css({
-            display: "flex",
+            display: "inline-flex",
             alignItems: "center",
             gap: "0.5rem",
-            fontSize: t.text.sizes.tiny,
+            fontSize: t.text.sizes.small,
             color: t.colors.textDimmed,
           })
         }

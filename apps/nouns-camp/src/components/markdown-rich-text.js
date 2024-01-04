@@ -58,93 +58,91 @@ const useParsedMarkdownText = (text, { displayImages, awaitImages }) => {
   return awaitImages ? blocksWithImageDimensions : blocks;
 };
 
-const MarkdownRichText = ({
-  text,
-  awaitImages = false,
-  displayImages = true,
-  ...props
-}) => {
-  const blocks = useParsedMarkdownText(text, { displayImages, awaitImages });
+const MarkdownRichText = React.forwardRef(
+  ({ text, awaitImages = false, displayImages = true, ...props }, ref) => {
+    const blocks = useParsedMarkdownText(text, { displayImages, awaitImages });
 
-  if (blocks == null || blocks.length === 0) return null;
+    if (blocks == null || blocks.length === 0) return null;
 
-  const lastBlockString =
-    blocks
-      .slice(-1)[0]
-      .children?.map((el) => el.text ?? "")
-      .join("") ?? "";
+    const lastBlockString =
+      blocks
+        .slice(-1)[0]
+        .children?.map((el) => el.text ?? "")
+        .join("") ?? "";
 
-  if (lastBlockString.toLowerCase() === "sent from voter.wtf")
-    return (
-      <>
-        {blocks.length >= 2 && (
-          <RichText blocks={blocks.slice(0, -1)} {...props} />
-        )}
-        <p style={{ margin: blocks.length > 2 ? "0.625em 0 0" : 0 }}>
-          <em
-            css={(t) =>
-              css({
-                fontSize: t.text.sizes.small,
-                color: t.colors.textDimmed,
-                fontStyle: "italic",
-              })
-            }
-          >
-            Sent from{" "}
-            <Link
-              component="a"
-              href="https://www.voter.wtf"
-              target="_blank"
-              rel="noreferrer"
-              color="currentColor"
+    if (lastBlockString.toLowerCase() === "sent from voter.wtf")
+      return (
+        <>
+          {blocks.length >= 2 && (
+            <RichText ref={ref} blocks={blocks.slice(0, -1)} {...props} />
+          )}
+          <p style={{ margin: blocks.length > 2 ? "0.625em 0 0" : 0 }}>
+            <em
               css={(t) =>
                 css({
-                  fontWeight: t.text.weights.emphasis,
+                  fontSize: t.text.sizes.small,
+                  color: t.colors.textDimmed,
+                  fontStyle: "italic",
                 })
               }
             >
-              voter.wtf
-            </Link>
-          </em>
-        </p>
-      </>
-    );
+              Sent from{" "}
+              <Link
+                component="a"
+                href="https://www.voter.wtf"
+                target="_blank"
+                rel="noreferrer"
+                color="currentColor"
+                css={(t) =>
+                  css({
+                    fontWeight: t.text.weights.emphasis,
+                  })
+                }
+              >
+                voter.wtf
+              </Link>
+            </em>
+          </p>
+        </>
+      );
 
-  return (
-    <RichText
-      blocks={blocks}
-      renderElement={(el, i) => {
-        switch (el.type) {
-          case "image":
-            // Hack to allow image links
-            if (el.caption != null) {
-              try {
-                new URL(el.caption);
-                return (
-                  <ImageLink
-                    key={i}
-                    element={el}
-                    maxWidth={props.imagesMaxWidth}
-                    maxHeight={props.imagesMaxHeight}
-                  />
-                );
-              } catch (e) {
-                return null;
+    return (
+      <RichText
+        ref={ref}
+        blocks={blocks}
+        renderElement={(el, i) => {
+          switch (el.type) {
+            case "image":
+              // Hack to allow image links
+              if (el.caption != null) {
+                try {
+                  new URL(el.caption);
+                  return (
+                    <ImageLink
+                      key={i}
+                      element={el}
+                      maxWidth={props.imagesMaxWidth}
+                      maxHeight={props.imagesMaxHeight}
+                    />
+                  );
+                } catch (e) {
+                  return null;
+                }
               }
-            }
-            return null;
+              return null;
 
-          case "emoji":
-            return <Emoji key={i} emoji={el.emoji} />;
+            case "emoji":
+              return <Emoji key={i} emoji={el.emoji} />;
 
-          default:
-            return null;
-        }
-      }}
-      {...props}
-    />
-  );
-};
+            default:
+              return null;
+          }
+        }}
+        {...props}
+      />
+    );
+  }
+);
 
 const ImageLink = ({ element: el, maxWidth, maxHeight }) => {
   const [dimensions, setDimensions] = React.useState(null);

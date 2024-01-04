@@ -274,7 +274,7 @@ const EditorLayout = ({
         <div
           css={css({
             paddingBottom: "12rem", // Fixed nav height
-            "@media (min-width: 952px)": {
+            "@media (min-width: 996px)": {
               padding: 0,
               position: "relative",
               display: "flex",
@@ -292,7 +292,7 @@ const EditorLayout = ({
               "@media (min-width: 600px)": {
                 padding: "3.2rem 0",
               },
-              "@media (min-width: 952px)": {
+              "@media (min-width: 996px)": {
                 padding: "6rem 0 3.2rem",
               },
             })}
@@ -306,7 +306,7 @@ const EditorLayout = ({
               bottom: 0,
               padding: "0 1.6rem",
               width: "100%",
-              "@media (min-width: 952px)": {
+              "@media (min-width: 996px)": {
                 padding: 0,
                 left: "auto",
                 position: "sticky",
@@ -338,7 +338,7 @@ const EditorLayout = ({
             "@media (min-width: 600px)": {
               padding: "6rem 0 0",
             },
-            "@media (min-width: 952px)": {
+            "@media (min-width: 996px)": {
               minHeight: "var(--min-height)",
               padding: "6rem 0 16rem",
             },

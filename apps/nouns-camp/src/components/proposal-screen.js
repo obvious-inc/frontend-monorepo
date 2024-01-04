@@ -12,7 +12,6 @@ import { date as dateUtils, reloadPageOnce } from "@shades/common/utils";
 import {
   ErrorBoundary,
   AutoAdjustingHeightTextarea,
-  useMatchMedia,
 } from "@shades/common/react";
 import {
   Clock as ClockIcon,
@@ -46,6 +45,7 @@ import { useSendProposalFeedback } from "../hooks/data-contract.js";
 import { usePriorVotes } from "../hooks/token-contract.js";
 import useApproximateBlockTimestampCalculator from "../hooks/approximate-block-timestamp-calculator.js";
 import { useWallet } from "../hooks/wallet.js";
+import useMatchDesktopLayout from "../hooks/match-desktop-layout.js";
 import MetaTags_ from "./meta-tags.js";
 import Layout, { MainContentContainer } from "./layout.js";
 import ProposalStateTag from "./proposal-state-tag.js";
@@ -108,7 +108,7 @@ const ProposalMainSection = ({ proposalId, scrollContainerRef }) => {
     requestAccess: requestWalletAccess,
   } = useWallet();
 
-  const isDesktopLayout = useMatchMedia("(min-width: 952px)");
+  const isDesktopLayout = useMatchDesktopLayout();
   const mobileTabAnchorRef = React.useRef();
   const mobileTabContainerRef = React.useRef();
 

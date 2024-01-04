@@ -455,12 +455,12 @@ export const MainContentContainer = ({
         width: "var(--width)",
         padding: "0 4rem",
       },
-      "@media (min-width: 952px)": {
+      "@media (min-width: 996px)": {
         padding: "0 6rem",
       },
     })}
     style={{
-      "--width": narrow ? "72rem" : "128rem",
+      "--width": narrow ? "72rem" : "132rem",
     }}
     {...props}
   >
@@ -470,7 +470,7 @@ export const MainContentContainer = ({
       <div
         css={(t) =>
           css({
-            "@media (min-width: 952px)": {
+            "@media (min-width: 996px)": {
               display: "grid",
               gridTemplateColumns: `minmax(0, 1fr) ${t.sidebarWidth} `,
               gridGap: "8rem",

@@ -3,7 +3,7 @@ import { isAddress } from "viem";
 import { useBlockNumber, useEnsAddress } from "wagmi";
 import { useParams, Link as RouterLink } from "react-router-dom";
 import { css } from "@emotion/react";
-import { useMatchMedia, useFetch } from "@shades/common/react";
+import { useFetch } from "@shades/common/react";
 import { APPROXIMATE_BLOCKS_PER_DAY } from "../constants/ethereum.js";
 import { buildFeed as buildVoterFeed } from "../utils/voters.js";
 import {
@@ -30,6 +30,7 @@ import { useCurrentDynamicQuorum } from "../hooks/dao-contract.js";
 import { SectionedList } from "./browse-screen.js";
 import Button from "@shades/ui-web/button";
 import Spinner from "@shades/ui-web/spinner";
+import useMatchDesktopLayout from "../hooks/match-desktop-layout.js";
 import { VotingBar } from "./proposal-screen.js";
 import { array as arrayUtils } from "@shades/common/utils";
 import NounPreviewPopoverTrigger from "./noun-preview-popover-trigger.js";
@@ -532,7 +533,7 @@ const VoterHeader = ({ voterAddress }) => {
 };
 
 const VoterMainSection = ({ voterAddress }) => {
-  const isDesktopLayout = useMatchMedia("(min-width: 952px)");
+  const isDesktopLayout = useMatchDesktopLayout();
 
   const [page, setPage] = React.useState(1);
   const delegate = useDelegate(voterAddress);
