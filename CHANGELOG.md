@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.0.0-alpha.5] - 2024-01-04
+
+### Documentation
+
+- Add new badge for Farcaster on project readme file
+
 ## [1.0.0-alpha.4] - 2024-01-02
 
 ### Miscellaneous Tasks
