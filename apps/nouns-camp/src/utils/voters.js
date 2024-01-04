@@ -34,8 +34,7 @@ export const buildEventsFeed = (delegate, account, { chainId }) => {
     uniqueEvents
       ?.filter((e) => e.type === "transfer" && fromAuctionHouse(e))
       .map((e) => ({
-        type: "event",
-        eventType: "noun-auction-bought",
+        type: "noun-auction-bought",
         id: `${e.nounId}-auction-bought-${e.id}`,
         timestamp: e.blockTimestamp,
         blockNumber: e.blockNumber,
@@ -53,8 +52,7 @@ export const buildEventsFeed = (delegate, account, { chainId }) => {
             ? "noun-undelegated"
             : "noun-delegated";
         return {
-          type: "event",
-          eventType: eventType,
+          type: eventType,
           id: `${e.nounId}-delegated-${e.id}`,
           timestamp: e.blockTimestamp,
           blockNumber: e.blockNumber,
@@ -75,12 +73,12 @@ export const buildEventsFeed = (delegate, account, { chainId }) => {
           !toAuctionHouse(e)
       )
       .map((e) => ({
-        type: "event",
-        eventType: "noun-transferred",
+        type: "noun-transferred",
         id: `${e.nounId}-transferred-${e.id}`,
         timestamp: e.blockTimestamp,
         blockNumber: e.blockNumber,
         nounId: e.nounId,
+        authorAccount: e.previousAccountId,
         fromAccount: e.previousAccountId,
         toAccount: e.newAccountId,
         transactionHash: e.id.split("_")[0],
