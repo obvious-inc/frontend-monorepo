@@ -742,7 +742,7 @@ const VoterScreen = () => {
 
   const { data: ensAddress, isFetching } = useEnsAddress({
     name: voterId.trim(),
-    enabled: voterId.trim().split(".").slice(-1)[0] === "eth",
+    enabled: voterId.includes("."),
   });
 
   const voterAddress = isAddress(voterId.trim()) ? voterId.trim() : ensAddress;
