@@ -94,11 +94,12 @@ const NounMultiPreviewPopoverTrigger = React.forwardRef(
             <div
               css={css({
                 display: "grid",
-                gap: "2rem",
+                rowGap: "1rem",
+                columnGap: "3rem",
                 gridTemplateColumns: "repeat(3, minmax(0, auto))",
                 "@media (max-width: 600px)": {
                   gridTemplateColumns: "repeat(2, minmax(0, auto))",
-                  gap: "1rem",
+                  columnGap: "2rem",
                 },
               })}
             >
