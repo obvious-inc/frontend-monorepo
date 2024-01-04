@@ -4,14 +4,12 @@ import { useFetch } from "@shades/common/react";
 import * as Popover from "@shades/ui-web/popover";
 import Spinner from "@shades/ui-web/spinner";
 import { useActions, useNoun } from "../store.js";
-import InlineVerticalSeparator from "./inline-vertical-separator.js";
 import NounAvatar from "./noun-avatar.js";
 import FormattedDateWithTooltip from "./formatted-date-with-tooltip.js";
 import { FormattedEthWithConditionalTooltip } from "./transaction-list.js";
 import InlineButton from "@shades/ui-web/inline-button";
 import NounPreviewPopoverTrigger from "./noun-preview-popover-trigger.js";
 import { array as arrayUtils } from "@shades/common/utils";
-import useMatchDesktopLayout from "../hooks/match-desktop-layout.js";
 
 const NounMultiPreviewPopoverTrigger = React.forwardRef(
   (
@@ -96,10 +94,11 @@ const NounMultiPreviewPopoverTrigger = React.forwardRef(
             <div
               css={css({
                 display: "grid",
-                gap: "1rem",
+                gap: "2rem",
                 gridTemplateColumns: "repeat(3, minmax(0, auto))",
                 "@media (max-width: 600px)": {
                   gridTemplateColumns: "repeat(2, minmax(0, auto))",
+                  gap: "1rem",
                 },
               })}
             >
@@ -117,7 +116,6 @@ const NounMultiPreviewPopoverTrigger = React.forwardRef(
 const NounPreview = React.forwardRef(({ nounId }, ref) => {
   const noun = useNoun(nounId);
   const { fetchNoun } = useActions();
-  const isDesktopLayout = useMatchDesktopLayout();
 
   const firstEvent = noun?.events?.[noun.events.length - 1];
 
@@ -197,59 +195,34 @@ const NounPreview = React.forwardRef(({ nounId }, ref) => {
                 <div data-hover-underline="true">Noun {nounId}</div>
               </a>
 
-              {isDesktopLayout ? (
-                <div
-                  css={(t) =>
-                    css({ fontSize: t.text.sizes.small, margin: "0.1rem 0" })
-                  }
-                >
-                  <FormattedDateWithTooltip
-                    disableRelative
-                    disableTooltip
-                    month="short"
-                    day="numeric"
-                    year="numeric"
-                    value={nounTimestamp}
-                  />
-                  {auction?.amount && (
-                    <>
-                      <InlineVerticalSeparator />
-                      <FormattedEthWithConditionalTooltip
-                        value={auction?.amount}
-                      />
-                    </>
-                  )}
-                </div>
-              ) : (
-                <div
-                  css={(t) =>
-                    css({
-                      fontSize: t.text.sizes.small,
-                      margin: "0.1rem 0",
-                      display: "grid",
-                      rowGap: "0.15rem",
-                      gridTemplateRows: "auto auto",
-                    })
-                  }
-                >
-                  <FormattedDateWithTooltip
-                    disableRelative
-                    disableTooltip
-                    month="short"
-                    day="numeric"
-                    year="numeric"
-                    value={nounTimestamp}
-                  />
+              <div
+                css={(t) =>
+                  css({
+                    fontSize: t.text.sizes.small,
+                    margin: "0.1rem 0",
+                    display: "grid",
+                    rowGap: "0.15rem",
+                    gridTemplateRows: "auto auto",
+                  })
+                }
+              >
+                <FormattedDateWithTooltip
+                  disableRelative
+                  disableTooltip
+                  month="short"
+                  day="numeric"
+                  year="numeric"
+                  value={nounTimestamp}
+                />
 
-                  {auction?.amount && (
-                    <div>
-                      <FormattedEthWithConditionalTooltip
-                        value={auction?.amount}
-                      />
-                    </div>
-                  )}
-                </div>
-              )}
+                {auction?.amount && (
+                  <div>
+                    <FormattedEthWithConditionalTooltip
+                      value={auction?.amount}
+                    />
+                  </div>
+                )}
+              </div>
             </div>
           </div>
         </>
