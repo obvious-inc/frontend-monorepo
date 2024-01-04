@@ -63,6 +63,26 @@ export const buildEventsFeed = (delegate, account, { chainId }) => {
         };
       }) ?? [];
 
+  // Group delegated events by block number and new account id
+  const groupedDelegatedEventItems = arrayUtils.groupBy(
+    (e) => `${e.blockNumber}-${e.toAccount}`,
+    delegatedEventItems
+  );
+
+  const delegatedEventItemsGrouped = Object.values(
+    groupedDelegatedEventItems
+  ).map((group) => {
+    const lastEvent = group[group.length - 1];
+    return {
+      ...lastEvent,
+      id: `${lastEvent.nounId}-delegated-${lastEvent.blockNumber}`,
+      blockNumber: lastEvent.blockNumber,
+      timestamp: lastEvent.timestamp,
+      transactionHash: lastEvent.transactionHash,
+      nouns: group.map((e) => e.nounId),
+    };
+  });
+
   const transferredEventItems =
     uniqueEvents
       ?.filter(
@@ -86,7 +106,7 @@ export const buildEventsFeed = (delegate, account, { chainId }) => {
 
   return [
     ...transferredEventItems,
-    ...delegatedEventItems,
+    ...delegatedEventItemsGrouped,
     ...auctionBoughtEventItems,
   ];
 };

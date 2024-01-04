@@ -681,12 +681,16 @@ const ItemTitle = ({ item, context }) => {
             ) : (
               <Signal negative>undelegated</Signal>
             )}{" "}
-            <NounPreviewPopoverTrigger
-              inline
-              nounId={item.nounId}
-              popoverPlacement="top"
-              css={(t) => css({ color: t.colors.textDimmed })}
-            />{" "}
+            {item.nouns.length > 1 ? (
+              <>{item.nouns.length} nouns</>
+            ) : (
+              <NounPreviewPopoverTrigger
+                inline
+                nounId={item.nounId}
+                popoverPlacement="top"
+                css={(t) => css({ color: t.colors.textDimmed })}
+              />
+            )}{" "}
             {item.type === "noun-delegated" ? (
               <>
                 to{" "}
