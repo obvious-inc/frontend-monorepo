@@ -64,7 +64,7 @@
     "slate-react": "^0.101.5",
     "tinykeys": "^2.1.0",
     "viem": "^1.21.4",
-    "wagmi": "^1.4.12",
+    "wagmi": "^1.4.13",
     "workbox-webpack-plugin": "^7.0.0",
     "zustand": "^4.4.7"
   }
