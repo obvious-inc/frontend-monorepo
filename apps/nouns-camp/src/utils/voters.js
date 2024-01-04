@@ -97,7 +97,7 @@ export const buildEventsFeed = (delegate, account, { chainId }) => {
         timestamp: e.blockTimestamp,
         blockNumber: e.blockNumber,
         nounId: e.nounId,
-        authorAccount: e.previousAccountId,
+        authorAccount: delegate?.id,
         fromAccount: e.previousAccountId,
         toAccount: e.newAccountId,
         transactionHash: e.id.split("_")[0],

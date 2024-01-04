@@ -754,22 +754,41 @@ const TransferItem = ({ item }) => {
 
     case "noun-transferred":
       if (saleAmount && saleAmount > 0) {
-        return (
-          <span>
-            {accountName} bought{" "}
-            <NounPreviewPopoverTrigger
-              inline
-              nounId={item.nounId}
-              popoverPlacement="top"
-              css={(t) => css({ color: t.colors.textDimmed })}
-            />{" "}
-            for <FormattedEthWithConditionalTooltip value={saleAmount} /> from{" "}
-            <AccountPreviewPopoverTrigger
-              showAvatar
-              accountAddress={item.fromAccount}
-            />{" "}
-          </span>
-        );
+        if (item.authorAccount.toLowerCase() === item.toAccount.toLowerCase()) {
+          return (
+            <span>
+              {accountName} bought{" "}
+              <NounPreviewPopoverTrigger
+                inline
+                nounId={item.nounId}
+                popoverPlacement="top"
+                css={(t) => css({ color: t.colors.textDimmed })}
+              />{" "}
+              for <FormattedEthWithConditionalTooltip value={saleAmount} /> from{" "}
+              <AccountPreviewPopoverTrigger
+                showAvatar
+                accountAddress={item.fromAccount}
+              />{" "}
+            </span>
+          );
+        } else {
+          return (
+            <span>
+              {accountName} sold{" "}
+              <NounPreviewPopoverTrigger
+                inline
+                nounId={item.nounId}
+                popoverPlacement="top"
+                css={(t) => css({ color: t.colors.textDimmed })}
+              />{" "}
+              for <FormattedEthWithConditionalTooltip value={saleAmount} /> to{" "}
+              <AccountPreviewPopoverTrigger
+                showAvatar
+                accountAddress={item.toAccount}
+              />{" "}
+            </span>
+          );
+        }
       }
 
       return (
