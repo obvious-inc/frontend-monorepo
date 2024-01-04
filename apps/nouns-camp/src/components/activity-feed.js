@@ -17,6 +17,7 @@ import AccountAvatar from "./account-avatar.js";
 import NounPreviewPopoverTrigger from "./noun-preview-popover-trigger.js";
 import { useSaleInfo } from "../hooks/sales.js";
 import { FormattedEthWithConditionalTooltip } from "./transaction-list.js";
+import NounMultiPreviewPopoverTrigger from "./noun-multi-preview-popover-trigger.js";
 
 const MarkdownRichText = React.lazy(() => import("./markdown-rich-text.js"));
 
@@ -682,7 +683,7 @@ const ItemTitle = ({ item, context }) => {
               <Signal negative>undelegated</Signal>
             )}{" "}
             {item.nouns.length > 1 ? (
-              <>{item.nouns.length} nouns</>
+              <NounMultiPreviewPopoverTrigger inline nounIds={item.nouns} />
             ) : (
               <NounPreviewPopoverTrigger
                 inline
@@ -775,7 +776,7 @@ const TransferItem = ({ item }) => {
         <span>
           {accountName} transferred{" "}
           {item.nouns.length > 1 ? (
-            <>{item.nouns.length} nouns</>
+            <NounMultiPreviewPopoverTrigger inline nounIds={item.nouns} />
           ) : (
             <NounPreviewPopoverTrigger
               inline
