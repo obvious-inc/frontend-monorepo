@@ -3,6 +3,7 @@ import datesDifferenceInDays from "date-fns/differenceInCalendarDays";
 import { isAddress } from "viem";
 import React from "react";
 import {
+  useNavigate,
   useParams,
   useSearchParams,
   Link as RouterLink,
@@ -38,6 +39,7 @@ import {
   useSendProposalCandidateFeedback,
   useSignProposalCandidate,
   useAddSignatureToProposalCandidate,
+  useCancelProposalCandidate,
 } from "../hooks/data-contract.js";
 import { useWallet } from "../hooks/wallet.js";
 import useMatchDesktopLayout from "../hooks/match-desktop-layout.js";
@@ -910,8 +912,11 @@ const ProposalCandidateScreen = () => {
 
   const scrollContainerRef = React.useRef();
 
+  const navigate = useNavigate();
+
   const [notFound, setNotFound] = React.useState(false);
   const [fetchError, setFetchError] = React.useState(null);
+  const [hasPendingCancel, setPendingCancel] = React.useState(false);
 
   const { address: connectedWalletAccountAddress } = useWallet();
 
@@ -949,6 +954,8 @@ const ProposalCandidateScreen = () => {
   const activeProposerIds = useProposals({ filter: "active" }).map(
     (p) => p.proposerId
   );
+
+  const cancelProposalCandidate = useCancelProposalCandidate(slug);
 
   const validSignatures = getSponsorSignatures(candidate, {
     excludeInvalid: true,
@@ -989,6 +996,30 @@ const ProposalCandidateScreen = () => {
         !hasBeenPromoted && {
           onSelect: toggleProposeDialog,
           label: "Promote",
+        },
+      !isCanceled &&
+        !hasBeenPromoted && {
+          onSelect: () => {
+            if (!confirm("Are you sure you wish to cancel this candidate?"))
+              return;
+
+            setPendingCancel(true);
+
+            cancelProposalCandidate().then(
+              () => {
+                navigate("/", { replace: true });
+              },
+              (e) => {
+                setPendingCancel(false);
+                return Promise.reject(e);
+              }
+            );
+          },
+          label: "Cancel",
+          buttonProps: {
+            isLoading: hasPendingCancel,
+            disabled: cancelProposalCandidate == null || hasPendingCancel,
+          },
         },
     ].filter(Boolean);
 
@@ -1081,23 +1112,19 @@ const ProposalCandidateScreen = () => {
       </Layout>
 
       {isEditDialogOpen && isProposer && candidate != null && (
-        <Dialog isOpen tray onRequestClose={toggleEditDialog} width="131.2rem">
-          {({ titleProps }) => (
-            <ErrorBoundary
-              onError={() => {
-                reloadPageOnce();
-              }}
-            >
-              <React.Suspense fallback={null}>
-                <CandidateEditDialog
-                  candidateId={candidateId}
-                  titleProps={titleProps}
-                  dismiss={toggleEditDialog}
-                />
-              </React.Suspense>
-            </ErrorBoundary>
-          )}
-        </Dialog>
+        <ErrorBoundary
+          onError={() => {
+            reloadPageOnce();
+          }}
+        >
+          <React.Suspense fallback={null}>
+            <CandidateEditDialog
+              candidateId={candidateId}
+              isOpen
+              close={toggleEditDialog}
+            />
+          </React.Suspense>
+        </ErrorBoundary>
       )}
 
       {isSponsorDialogOpen && candidate != null && (

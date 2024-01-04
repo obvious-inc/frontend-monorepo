@@ -21,7 +21,6 @@ import {
 } from "@shades/ui-web/icons";
 import Button from "@shades/ui-web/button";
 import Select from "@shades/ui-web/select";
-import Dialog from "@shades/ui-web/dialog";
 import * as Tooltip from "@shades/ui-web/tooltip";
 import Spinner from "@shades/ui-web/spinner";
 import { extractAmounts as extractAmountsFromTransactions } from "../utils/transactions.js";
@@ -1240,23 +1239,19 @@ const ProposalScreen = () => {
       </Layout>
 
       {isDialogOpen && proposal != null && (
-        <Dialog isOpen tray onRequestClose={closeDialog} width="131.2rem">
-          {({ titleProps }) => (
-            <ErrorBoundary
-              onError={() => {
-                reloadPageOnce();
-              }}
-            >
-              <React.Suspense fallback={null}>
-                <ProposalEditDialog
-                  proposalId={proposalId}
-                  titleProps={titleProps}
-                  dismiss={closeDialog}
-                />
-              </React.Suspense>
-            </ErrorBoundary>
-          )}
-        </Dialog>
+        <ErrorBoundary
+          onError={() => {
+            reloadPageOnce();
+          }}
+        >
+          <React.Suspense fallback={null}>
+            <ProposalEditDialog
+              proposalId={proposalId}
+              isOpen
+              close={closeDialog}
+            />
+          </React.Suspense>
+        </ErrorBoundary>
       )}
     </>
   );

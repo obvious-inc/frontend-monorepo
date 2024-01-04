@@ -1,6 +1,5 @@
 import React from "react";
 import { diffLines } from "diff";
-import { useNavigate } from "react-router-dom";
 import { css, useTheme } from "@emotion/react";
 import {
   markdown as markdownUtils,
@@ -22,10 +21,7 @@ import {
 } from "../utils/transactions.js";
 import { useProposalCandidate } from "../store.js";
 import useChainId from "../hooks/chain-id.js";
-import {
-  useUpdateProposalCandidate,
-  useCancelProposalCandidate,
-} from "../hooks/data-contract.js";
+import { useUpdateProposalCandidate } from "../hooks/data-contract.js";
 import ProposalEditor from "./proposal-editor.js";
 import { PreviewUpdateDialog } from "./proposal-edit-dialog.js";
 
@@ -34,9 +30,8 @@ const createMarkdownDescription = ({ title, body }) => {
   return `# ${title.trim()}\n\n${markdownBody}`;
 };
 
-const CandidateEditDialog = ({ candidateId, dismiss }) => {
+const CandidateEditDialog = ({ candidateId, isOpen, close: closeDialog }) => {
   const theme = useTheme();
-  const navigate = useNavigate();
   const chainId = useChainId();
   const scrollContainerRef = React.useRef();
 
@@ -70,7 +65,7 @@ const CandidateEditDialog = ({ candidateId, dismiss }) => {
   const [actions, setActions] = React.useState(persistedActions);
 
   const [hasPendingSubmit, setPendingSubmit] = React.useState(false);
-  const [hasPendingCancel, setPendingCancel] = React.useState(false);
+  // const [hasPendingCancel, setPendingCancel] = React.useState(false);
 
   const deferredBody = React.useDeferredValue(body);
 
@@ -117,8 +112,23 @@ const CandidateEditDialog = ({ candidateId, dismiss }) => {
     chainId,
   ]);
 
+  const dismissDialog = () => {
+    if (!hasChanges) {
+      closeDialog();
+      return;
+    }
+
+    if (
+      !confirm(
+        "This will discard all your changes. Are you sure you wish to continue?"
+      )
+    )
+      return;
+
+    closeDialog;
+  };
+
   const updateProposalCandidate = useUpdateProposalCandidate(candidate.slug);
-  const cancelProposalCandidate = useCancelProposalCandidate(candidate.slug);
 
   const diff = React.useMemo(
     () =>
@@ -143,7 +153,7 @@ const CandidateEditDialog = ({ candidateId, dismiss }) => {
         transactions,
         updateMessage,
       });
-      dismiss();
+      closeDialog();
     } catch (e) {
       console.log(e);
       alert("Something went wrong");
@@ -152,13 +162,13 @@ const CandidateEditDialog = ({ candidateId, dismiss }) => {
     }
   };
 
-  // React.useEffect(() => {
-  //   const messageBlocks = markdownUtils.toMessageBlocks(persistedMarkdownBody);
-  //   setBody(messageToRichTextBlocks(messageBlocks));
-  // }, [persistedTitle, persistedMarkdownBody]);
-
   return (
-    <>
+    <Dialog
+      isOpen={isOpen}
+      tray
+      onRequestClose={dismissDialog}
+      width="135.6rem"
+    >
       <div
         ref={scrollContainerRef}
         css={css({
@@ -183,24 +193,6 @@ const CandidateEditDialog = ({ candidateId, dismiss }) => {
           submitLabel="Preview update"
           submitDisabled={!hasChanges}
           hasPendingSubmit={hasPendingSubmit}
-          onDelete={() => {
-            if (!confirm("Are you sure you wish to cancel this candidate?"))
-              return;
-
-            setPendingCancel(true);
-
-            cancelProposalCandidate().then(
-              () => {
-                navigate("/", { replace: true });
-              },
-              (e) => {
-                setPendingCancel(false);
-                return Promise.reject(e);
-              }
-            );
-          }}
-          deleteLabel="Cancel"
-          hasPendingDelete={hasPendingCancel}
           containerHeight="calc(100vh - 6rem)"
           scrollContainerRef={scrollContainerRef}
           background={theme.colors.dialogBackground}
@@ -231,7 +223,7 @@ const CandidateEditDialog = ({ candidateId, dismiss }) => {
           submit={submit}
         />
       )}
-    </>
+    </Dialog>
   );
 };
 

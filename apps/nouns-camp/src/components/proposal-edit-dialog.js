@@ -1,6 +1,6 @@
 import React from "react";
 import { diffLines } from "diff";
-import { useNavigate } from "react-router-dom";
+// import { useNavigate } from "react-router-dom";
 import { css, useTheme } from "@emotion/react";
 import {
   markdown as markdownUtils,
@@ -23,7 +23,10 @@ import {
 } from "../utils/transactions.js";
 import { useProposal } from "../store.js";
 import useChainId from "../hooks/chain-id.js";
-import { useUpdateProposal, useCancelProposal } from "../hooks/dao-contract.js";
+import {
+  useUpdateProposal,
+  // useCancelProposal
+} from "../hooks/dao-contract.js";
 import ProposalEditor from "./proposal-editor.js";
 
 const createMarkdownDescription = ({ title, body }) => {
@@ -33,9 +36,9 @@ const createMarkdownDescription = ({ title, body }) => {
 
 // TODO: only editable during updatable period
 
-const ProposalEditDialog = ({ proposalId, dismiss }) => {
+const ProposalEditDialog = ({ proposalId, isOpen, close: closeDialog }) => {
   const theme = useTheme();
-  const navigate = useNavigate();
+  // const navigate = useNavigate();
   const chainId = useChainId();
   const scrollContainerRef = React.useRef();
 
@@ -62,7 +65,7 @@ const ProposalEditDialog = ({ proposalId, dismiss }) => {
   const [actions, setActions] = React.useState(persistedActions);
 
   const [hasPendingSubmit, setPendingSubmit] = React.useState(false);
-  const [hasPendingCancel, setPendingCancel] = React.useState(false);
+  // const [hasPendingCancel, setPendingCancel] = React.useState(false);
 
   const deferredBody = React.useDeferredValue(body);
 
@@ -105,6 +108,22 @@ const ProposalEditDialog = ({ proposalId, dismiss }) => {
     [title, deferredBody, proposal.description]
   );
 
+  const dismissDialog = () => {
+    if (!hasChanges) {
+      closeDialog();
+      return;
+    }
+
+    if (
+      !confirm(
+        "This will discard all your changes. Are you sure you wish to continue?"
+      )
+    )
+      return;
+
+    closeDialog;
+  };
+
   // const usdcSumValue = actions.reduce((sum, a) => {
   //   switch (a.type) {
   //     case "one-time-payment":
@@ -119,7 +138,7 @@ const ProposalEditDialog = ({ proposalId, dismiss }) => {
   // const payerTopUpValue = useTokenBuyerEthNeeded(usdcSumValue);
 
   const updateProposal = useUpdateProposal(proposalId);
-  const cancelProposal = useCancelProposal(proposalId);
+  // const cancelProposal = useCancelProposal(proposalId);
 
   const submit = async ({ updateMessage }) => {
     const getDescription = () => {
@@ -139,7 +158,7 @@ const ProposalEditDialog = ({ proposalId, dismiss }) => {
         transactions: getTransactions(),
         updateMessage,
       });
-      dismiss();
+      closeDialog();
     } catch (e) {
       console.log(e);
       alert("Something went wrong");
@@ -149,7 +168,12 @@ const ProposalEditDialog = ({ proposalId, dismiss }) => {
   };
 
   return (
-    <>
+    <Dialog
+      isOpen={isOpen}
+      tray
+      onRequestClose={dismissDialog}
+      width="135.6rem"
+    >
       <div
         ref={scrollContainerRef}
         css={css({
@@ -178,23 +202,23 @@ const ProposalEditDialog = ({ proposalId, dismiss }) => {
             }}
             submitLabel="Preview update"
             submitDisabled={!hasChanges}
-            onDelete={() => {
-              if (!confirm("Are you sure you wish to cancel this proposal?"))
-                return;
+            // onDelete={() => {
+            //   if (!confirm("Are you sure you wish to cancel this proposal?"))
+            //     return;
 
-              setPendingCancel(true);
-              cancelProposal().then(
-                () => {
-                  navigate("/", { replace: true });
-                },
-                (e) => {
-                  setPendingCancel(false);
-                  return Promise.reject(e);
-                }
-              );
-            }}
-            deleteLabel="Cancel"
-            hasPendingDelete={hasPendingCancel}
+            //   setPendingCancel(true);
+            //   cancelProposal().then(
+            //     () => {
+            //       navigate("/", { replace: true });
+            //     },
+            //     (e) => {
+            //       setPendingCancel(false);
+            //       return Promise.reject(e);
+            //     }
+            //   );
+            // }}
+            // deleteLabel="Cancel"
+            // hasPendingDelete={hasPendingCancel}
             containerHeight="calc(100vh - 6rem)"
             scrollContainerRef={scrollContainerRef}
             background={theme.colors.dialogBackground}
@@ -226,7 +250,7 @@ const ProposalEditDialog = ({ proposalId, dismiss }) => {
           submit={submit}
         />
       )}
-    </>
+    </Dialog>
   );
 };
 

@@ -201,23 +201,27 @@ const ProposalEditor = ({
                   justifyContent: "space-between",
                 })}
               >
-                <Button
-                  danger
-                  size="medium"
-                  type="button"
-                  onClick={() => {
-                    onDelete();
-                  }}
-                  icon={
-                    deleteLabel == null ? (
-                      <TrashCanIcon style={{ width: "1.4rem" }} />
-                    ) : null
-                  }
-                  disabled={disabled || hasPendingDelete}
-                  isLoading={hasPendingDelete}
-                >
-                  {deleteLabel}
-                </Button>
+                {onDelete != null ? (
+                  <Button
+                    danger
+                    size="medium"
+                    type="button"
+                    onClick={() => {
+                      onDelete();
+                    }}
+                    icon={
+                      deleteLabel == null ? (
+                        <TrashCanIcon style={{ width: "1.4rem" }} />
+                      ) : null
+                    }
+                    disabled={disabled || hasPendingDelete}
+                    isLoading={hasPendingDelete}
+                  >
+                    {deleteLabel}
+                  </Button>
+                ) : (
+                  <div />
+                )}
                 <Button
                   type="button"
                   variant="primary"
