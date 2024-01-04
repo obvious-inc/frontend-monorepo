@@ -48,16 +48,6 @@ export const buildFeed = (candidate) => {
   const candidateId = candidate.id;
   const targetProposalId = candidate.latestVersion?.targetProposalId;
 
-  const createdEventItem = {
-    type: "event",
-    eventType: "candidate-created",
-    id: `${candidate.id}-created`,
-    timestamp: candidate.createdTimestamp,
-    blockNumber: candidate.createdBlock,
-    authorAccount: candidate.proposerId,
-    candidateId,
-    targetProposalId,
-  };
   const feedbackPostItems =
     candidate.feedbackPosts?.map((p) => ({
       type: "feedback-post",
@@ -87,7 +77,19 @@ export const buildFeed = (candidate) => {
         authorAccount: candidate.proposerId, // only proposer can update
       })) ?? [];
 
-  const items = [createdEventItem, ...updateEventItems, ...feedbackPostItems];
+  const items = [...updateEventItems, ...feedbackPostItems];
+
+  if (candidate.createdBlock != null)
+    items.push({
+      type: "event",
+      eventType: "candidate-created",
+      id: `${candidate.id}-created`,
+      timestamp: candidate.createdTimestamp,
+      blockNumber: candidate.createdBlock,
+      authorAccount: candidate.proposerId,
+      candidateId,
+      targetProposalId,
+    });
 
   if (candidate.canceledBlock != null)
     items.push({

@@ -1,5 +1,6 @@
 import { array as arrayUtils } from "@shades/common/utils";
 import { buildFeed as buildCandidateFeed } from "./candidates.js";
+import { buildFeed as buildPropdateFeed } from "./propdates.js";
 
 const EXECUTION_GRACE_PERIOD_IN_MILLIS = 1000 * 60 * 60 * 24 * 21; // 21 days
 
@@ -43,20 +44,13 @@ export const isVotableState = (state) =>
 export const isActiveState = (state) =>
   ["pending", "updatable", "active", "objection-period"].includes(state);
 
-export const buildFeed = (proposal, { latestBlockNumber, candidate }) => {
+export const buildFeed = (
+  proposal,
+  { latestBlockNumber, candidate, includePropdates = true }
+) => {
   if (proposal == null) return [];
 
   const candidateItems = candidate == null ? [] : buildCandidateFeed(candidate);
-
-  const createdEventItem = {
-    type: "event",
-    eventType: "proposal-created",
-    id: `${proposal.id}-created`,
-    timestamp: proposal.createdTimestamp,
-    blockNumber: proposal.createdBlock,
-    authorAccount: proposal.proposerId,
-    proposalId: proposal.id,
-  };
 
   const feedbackPostItems =
     proposal.feedbackPosts?.map((p) => ({
@@ -87,18 +81,9 @@ export const buildFeed = (proposal, { latestBlockNumber, candidate }) => {
     })) ?? [];
 
   const propdateItems =
-    proposal.propdates?.map((p) => ({
-      type: "event",
-      eventType: p.markedCompleted
-        ? "propdate-marked-completed"
-        : "propdate-posted",
-      id: `propdate-${p.id}`,
-      body: p.update,
-      blockNumber: p.blockNumber,
-      authorAccount: p.authorAccount,
-      timestamp: p.blockTimestamp,
-      proposalId: proposal.id,
-    })) ?? [];
+    !includePropdates || proposal.propdates == null
+      ? []
+      : buildPropdateFeed(proposal.propdates);
 
   const updateEventItems =
     proposal.versions
@@ -120,8 +105,18 @@ export const buildFeed = (proposal, { latestBlockNumber, candidate }) => {
     ...voteItems,
     ...propdateItems,
     ...updateEventItems,
-    createdEventItem,
   ];
+
+  if (proposal.createdTimestamp != null)
+    items.push({
+      type: "event",
+      eventType: "proposal-created",
+      id: `${proposal.id}-created`,
+      timestamp: proposal.createdTimestamp,
+      blockNumber: proposal.createdBlock,
+      authorAccount: proposal.proposerId,
+      proposalId: proposal.id,
+    });
 
   if (proposal.canceledBlock != null)
     items.push({

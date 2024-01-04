@@ -726,10 +726,12 @@ const useStore = createZustandStoreHook((set) => {
     fetchPropdatesForProposal: (...args) =>
       PropdatesSubgraph.fetchPropdatesForProposal(...args).then((propdates) => {
         set((s) => ({
-          propdatesByProposalId: {
-            ...s.propdatesByProposalId,
-            ...arrayUtils.groupBy((d) => d.proposalId, propdates),
-          },
+          propdatesByProposalId: objectUtils.merge(
+            (ps1 = [], ps2 = []) =>
+              arrayUtils.unique((p1, p2) => p1.id === p2.id, [...ps1, ...ps2]),
+            s.propdatesByProposalId,
+            arrayUtils.groupBy((d) => d.proposalId, propdates)
+          ),
         }));
       }),
   };
@@ -919,20 +921,32 @@ export const useProposalCandidate = (id) =>
 const selectProposal = (
   store,
   proposalId,
-  { state = false, propdates = false, blockNumber } = {}
+  {
+    state: includeState = false,
+    propdates: includePropdates = false,
+    blockNumber,
+  } = {}
 ) => {
-  const p_ = store.proposalsById[proposalId];
+  let p = store.proposalsById[proposalId];
 
-  if (p_ == null) return null;
+  if (!includeState && !includePropdates) return p ?? null;
 
-  if (!state && !propdates) return p_;
+  if (p == null) {
+    if (includePropdates && store.propdatesByProposalId[proposalId] != null)
+      return {
+        id: proposalId,
+        propdates: store.propdatesByProposalId[proposalId],
+      };
 
-  const p = { ...p_ };
+    return null;
+  }
 
-  if (state)
+  p = { ...p };
+
+  if (includeState)
     p.state = blockNumber == null ? null : getProposalState(p, { blockNumber });
 
-  if (propdates) p.propdates = store.propdatesByProposalId[p.id];
+  if (includePropdates) p.propdates = store.propdatesByProposalId[proposalId];
 
   return p;
 };
@@ -1158,3 +1172,6 @@ export const useProposalsSponsoredByAccount = (accountAddress) => {
     sponsoredProposalIds.map((id) => proposalsById[id]).filter(Boolean)
   );
 };
+
+export const usePropdates = () =>
+  useStore((s) => Object.values(s.propdatesByProposalId).flatMap((ps) => ps));

@@ -31,6 +31,7 @@ import {
   getSignals as getCandidateSignals,
   makeUrlId as makeCandidateUrlId,
 } from "../utils/candidates.js";
+import { buildFeed as buildPropdateFeed } from "../utils/propdates.js";
 import { useProposalThreshold } from "../hooks/dao-contract.js";
 import { useWallet } from "../hooks/wallet.js";
 import useMatchDesktopLayout from "../hooks/match-desktop-layout.js";
@@ -41,6 +42,7 @@ import {
   useProposalCandidates,
   useProposalCandidate,
   useProposalCandidateVotingPower,
+  usePropdates,
 } from "../store.js";
 import useApproximateBlockTimestampCalculator from "../hooks/approximate-block-timestamp-calculator.js";
 import {
@@ -117,25 +119,31 @@ const useFeedItems = ({ filter }) => {
     includeCanceled: true,
     includePromoted: true,
   });
+  const propdates = usePropdates();
 
   return React.useMemo(() => {
     const buildProposalItems = () =>
-      proposals.flatMap((p) => buildProposalFeed(p, { latestBlockNumber }));
+      proposals.flatMap((p) =>
+        buildProposalFeed(p, { latestBlockNumber, includePropdates: false })
+      );
     const buildCandidateItems = () =>
       candidates.flatMap((c) => buildCandidateFeed(c));
+    const buildPropdateItems = () => buildPropdateFeed(propdates);
 
     const buildFeedItems = () => {
       switch (filter) {
         case "proposals":
-          return buildProposalItems();
+          return [...buildProposalItems(), ...buildPropdateItems()];
         case "candidates":
           return buildCandidateItems();
         case "propdates":
-          return buildProposalItems().filter(
-            (i) => i.type === "event" && i.eventType.startsWith("propdate")
-          );
+          return buildPropdateItems();
         default:
-          return [...buildProposalItems(), ...buildCandidateItems()];
+          return [
+            ...buildProposalItems(),
+            ...buildCandidateItems(),
+            ...buildPropdateItems(),
+          ];
       }
     };
 
@@ -143,7 +151,7 @@ const useFeedItems = ({ filter }) => {
       { value: (i) => i.blockNumber, order: "desc" },
       buildFeedItems()
     );
-  }, [proposals, candidates, filter, latestBlockNumber]);
+  }, [proposals, candidates, propdates, filter, latestBlockNumber]);
 };
 
 const BROWSE_LIST_PAGE_ITEM_COUNT = 20;
