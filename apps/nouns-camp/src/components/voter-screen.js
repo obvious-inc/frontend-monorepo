@@ -34,26 +34,44 @@ import useMatchDesktopLayout from "../hooks/match-desktop-layout.js";
 import { VotingBar } from "./proposal-screen.js";
 import { array as arrayUtils } from "@shades/common/utils";
 import NounPreviewPopoverTrigger from "./noun-preview-popover-trigger.js";
+import useChainId from "../hooks/chain-id.js";
 
 const VOTER_LIST_PAGE_ITEM_COUNT = 20;
 const FEED_PAGE_ITEM_COUNT = 30;
 
-const useFeedItems = (accountAddress, { filter } = {}) => {
+const useFeedItems = (voterAddress, { filter }) => {
+  const chainId = useChainId();
+  const delegate = useDelegate(voterAddress);
   const proposals = useProposals({ state: true, propdates: true });
   const candidates = useProposalCandidates({
     includeCanceled: true,
     includePromoted: true,
   });
+  const account = useAccount(voterAddress);
 
   return React.useMemo(() => {
+    const buildProposalItems = () => buildVoterFeed(delegate, { proposals });
+    const buildCandidateItems = () => buildVoterFeed(delegate, { candidates });
+    const buildNounRepresentationItems = () =>
+      buildVoterFeed(delegate, { account, chainId });
+
     const buildFeedItems = () => {
       switch (filter) {
         case "proposals":
-          return buildVoterFeed(accountAddress, { proposals });
+          return [...buildProposalItems()];
         case "candidates":
-          return buildVoterFeed(accountAddress, { candidates });
+          return [...buildCandidateItems()];
+        case "representation":
+          return [...buildNounRepresentationItems()];
         default:
-          return buildVoterFeed(accountAddress, { proposals, candidates });
+          return [
+            ...buildVoterFeed(delegate, {
+              proposals,
+              candidates,
+              account,
+              chainId,
+            }),
+          ];
       }
     };
 
@@ -61,7 +79,7 @@ const useFeedItems = (accountAddress, { filter } = {}) => {
       { value: (i) => i.blockNumber, order: "desc" },
       buildFeedItems()
     );
-  }, [accountAddress, proposals, candidates, filter]);
+  }, [delegate, proposals, candidates, account, chainId, filter]);
 };
 
 const getDelegateVotes = (delegate) => {
@@ -166,6 +184,7 @@ const FeedSidebar = React.memo(({ visible = true, voterAddress }) => {
             { value: "all", label: "Everything" },
             { value: "proposals", label: "Proposal activity only" },
             { value: "candidates", label: "Candidate activity only" },
+            { value: "representation", label: "Delegation & Ownership only" },
           ]}
           onChange={(value) => {
             setFilter(value);
@@ -177,6 +196,7 @@ const FeedSidebar = React.memo(({ visible = true, voterAddress }) => {
               all: "Everything",
               proposals: "Proposal activity",
               candidates: "Candidate activity",
+              representation: "Delegation & Ownership",
             }[value];
             return (
               <>
@@ -221,6 +241,7 @@ const FeedTabContent = React.memo(({ visible, voterAddress }) => {
             { value: "all", label: "Everything" },
             { value: "proposals", label: "Proposal activity only" },
             { value: "candidates", label: "Candidate activity only" },
+            { value: "representation", label: "Delegation & Ownership only" },
           ]}
           onChange={(value) => {
             setFilter(value);
@@ -232,6 +253,7 @@ const FeedTabContent = React.memo(({ visible, voterAddress }) => {
               all: "Everything",
               proposals: "Proposal activity",
               candidates: "Candidate activity",
+              representation: "Delegation & Ownership",
             }[value];
             return (
               <>

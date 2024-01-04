@@ -10,10 +10,13 @@ import {
   extractSlugFromId as extractSlugFromCandidateId,
   makeUrlId as makeCandidateUrlId,
 } from "../utils/candidates.js";
-import { useProposal, useProposalCandidate } from "../store.js";
+import { useNoun, useProposal, useProposalCandidate } from "../store.js";
 import AccountPreviewPopoverTrigger from "./account-preview-popover-trigger.js";
 import FormattedDateWithTooltip from "./formatted-date-with-tooltip.js";
 import AccountAvatar from "./account-avatar.js";
+import NounPreviewPopoverTrigger from "./noun-preview-popover-trigger.js";
+import { useSaleInfo } from "../hooks/sales.js";
+import { FormattedEthWithConditionalTooltip } from "./transaction-list.js";
 
 const MarkdownRichText = React.lazy(() => import("./markdown-rich-text.js"));
 
@@ -647,8 +650,147 @@ const ItemTitle = ({ item, context }) => {
         </span>
       );
 
+    case "noun-auction-bought":
+    case "noun-transferred":
+      return (
+        <span
+          css={(t) =>
+            css({
+              color: t.colors.textDimmed,
+            })
+          }
+        >
+          <TransferItem item={item} />
+        </span>
+      );
+
+    case "noun-delegated":
+    case "noun-undelegated":
+      return (
+        <span
+          css={(t) =>
+            css({
+              color: t.colors.textDimmed,
+            })
+          }
+        >
+          <span>
+            {accountName}{" "}
+            {item.type === "noun-delegated" ? (
+              <Signal positive>delegated</Signal>
+            ) : (
+              <Signal negative>undelegated</Signal>
+            )}{" "}
+            {item.nouns.length > 1 ? (
+              <>{item.nouns.length} nouns</>
+            ) : (
+              <NounPreviewPopoverTrigger
+                inline
+                nounId={item.nounId}
+                popoverPlacement="top"
+                css={(t) => css({ color: t.colors.textDimmed })}
+              />
+            )}{" "}
+            {item.type === "noun-delegated" ? (
+              <>
+                to{" "}
+                <AccountPreviewPopoverTrigger
+                  showAvatar
+                  accountAddress={item.toAccount}
+                />
+              </>
+            ) : (
+              <>
+                from{" "}
+                <AccountPreviewPopoverTrigger
+                  showAvatar
+                  accountAddress={item.fromAccount}
+                />
+              </>
+            )}
+          </span>
+        </span>
+      );
+
     default:
       throw new Error(`Unknown event type "${item.type}"`);
+  }
+};
+
+const TransferItem = ({ item }) => {
+  const saleAmount = useSaleInfo({
+    transactionHash: item?.transactionHash,
+    sourceAddress: item.toAccount,
+  });
+
+  const noun = useNoun(item.nounId);
+  const nounAuctionAmount = noun ? parseInt(noun.auction?.amount) : null;
+  const accountName = (
+    <AccountPreviewPopoverTrigger accountAddress={item.authorAccount} />
+  );
+
+  switch (item.type) {
+    case "noun-auction-bought":
+      return (
+        <span>
+          {accountName} bought{" "}
+          <NounPreviewPopoverTrigger
+            inline
+            nounId={item.nounId}
+            popoverPlacement="top"
+            css={(t) => css({ color: t.colors.textDimmed })}
+          />
+          {nounAuctionAmount && (
+            <>
+              {" "}
+              for{" "}
+              <FormattedEthWithConditionalTooltip value={nounAuctionAmount} />
+            </>
+          )}{" "}
+          from auction house
+        </span>
+      );
+
+    case "noun-transferred":
+      if (saleAmount && saleAmount > 0) {
+        return (
+          <span>
+            {accountName} bought{" "}
+            <NounPreviewPopoverTrigger
+              inline
+              nounId={item.nounId}
+              popoverPlacement="top"
+              css={(t) => css({ color: t.colors.textDimmed })}
+            />{" "}
+            for <FormattedEthWithConditionalTooltip value={saleAmount} /> from{" "}
+            <AccountPreviewPopoverTrigger
+              showAvatar
+              accountAddress={item.fromAccount}
+            />{" "}
+          </span>
+        );
+      }
+
+      return (
+        <span>
+          {accountName} transferred{" "}
+          {item.nouns.length > 1 ? (
+            <>{item.nouns.length} nouns</>
+          ) : (
+            <NounPreviewPopoverTrigger
+              inline
+              nounId={item.nounId}
+              popoverPlacement="top"
+              css={(t) => css({ color: t.colors.textDimmed })}
+            />
+          )}{" "}
+          to{" "}
+          <AccountPreviewPopoverTrigger
+            showAvatar
+            accountAddress={item.toAccount}
+          />
+        </span>
+      );
   }
 };
 
