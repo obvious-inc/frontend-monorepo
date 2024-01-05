@@ -793,7 +793,11 @@ const TransferItem = ({ item }) => {
 
       return (
         <span>
-          {accountName} transferred{" "}
+          <AccountPreviewPopoverTrigger
+            showAvatar
+            accountAddress={item.fromAccount}
+          />{" "}
+          transferred{" "}
           {item.nouns.length > 1 ? (
             <NounMultiPreviewPopoverTrigger inline nounIds={item.nouns} />
           ) : (
