@@ -758,12 +758,16 @@ const TransferItem = ({ item }) => {
           return (
             <span>
               {accountName} bought{" "}
-              <NounPreviewPopoverTrigger
-                inline
-                nounId={item.nounId}
-                popoverPlacement="top"
-                css={(t) => css({ color: t.colors.textDimmed })}
-              />{" "}
+              {item.nouns.length > 1 ? (
+                <NounMultiPreviewPopoverTrigger inline nounIds={item.nouns} />
+              ) : (
+                <NounPreviewPopoverTrigger
+                  inline
+                  nounId={item.nounId}
+                  popoverPlacement="top"
+                  css={(t) => css({ color: t.colors.textDimmed })}
+                />
+              )}{" "}
               for <FormattedEthWithConditionalTooltip value={saleAmount} /> from{" "}
               <AccountPreviewPopoverTrigger
                 showAvatar
@@ -775,12 +779,16 @@ const TransferItem = ({ item }) => {
           return (
             <span>
               {accountName} sold{" "}
-              <NounPreviewPopoverTrigger
-                inline
-                nounId={item.nounId}
-                popoverPlacement="top"
-                css={(t) => css({ color: t.colors.textDimmed })}
-              />{" "}
+              {item.nouns.length > 1 ? (
+                <NounMultiPreviewPopoverTrigger inline nounIds={item.nouns} />
+              ) : (
+                <NounPreviewPopoverTrigger
+                  inline
+                  nounId={item.nounId}
+                  popoverPlacement="top"
+                  css={(t) => css({ color: t.colors.textDimmed })}
+                />
+              )}{" "}
               for <FormattedEthWithConditionalTooltip value={saleAmount} /> to{" "}
               <AccountPreviewPopoverTrigger
                 showAvatar

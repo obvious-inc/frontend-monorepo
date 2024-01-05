@@ -45,7 +45,7 @@ export const buildEventsFeed = (delegate, account, { chainId }) => {
 
   const delegatedEventItems =
     uniqueEvents
-      ?.filter((e) => e.type === "delegate")
+      ?.filter((e) => e.type === "delegate" && !fromAuctionHouse(e))
       .map((e) => {
         const eventType =
           delegate?.id === e.previousAccountId && delegate?.id !== e.delegatorId
@@ -60,11 +60,12 @@ export const buildEventsFeed = (delegate, account, { chainId }) => {
           authorAccount: e.delegatorId,
           fromAccount: e.previousAccountId,
           toAccount: e.newAccountId,
+          transactionHash: e.id.split("_")[0],
         };
       }) ?? [];
 
   const groupedDelegatedEventItems = arrayUtils.groupBy(
-    (e) => `${e.blockNumber}-${e.toAccount}`,
+    (e) => `${e.blockNumber}-${e.fromAccount}-${e.toAccount}`,
     delegatedEventItems
   );
 
