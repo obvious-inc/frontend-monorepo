@@ -6,12 +6,11 @@ import Spinner from "@shades/ui-web/spinner";
 import { useActions, useNoun } from "../store.js";
 import NounAvatar from "./noun-avatar.js";
 import FormattedDateWithTooltip from "./formatted-date-with-tooltip.js";
-import { FormattedEthWithConditionalTooltip } from "./transaction-list.js";
 import InlineButton from "@shades/ui-web/inline-button";
 import NounPreviewPopoverTrigger from "./noun-preview-popover-trigger.js";
 import { array as arrayUtils } from "@shades/common/utils";
 
-const NounMultiPreviewPopoverTrigger = React.forwardRef(
+const NounsPreviewPopoverTrigger = React.forwardRef(
   (
     {
       nounIds,
@@ -221,4 +220,4 @@ const NounPreview = React.forwardRef(({ nounId }, ref) => {
   );
 });
 
-export default NounMultiPreviewPopoverTrigger;
+export default NounsPreviewPopoverTrigger;

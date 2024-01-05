@@ -283,7 +283,7 @@ const NounTransferPreviewText = ({ event, contextAccount }) => {
   const chainId = useChainId();
   const noun = useNoun(event.nounId);
   const transactionHash = event.id.split("_")[0];
-  const saleAmount = useSaleInfo({
+  const { amount: saleAmount } = useSaleInfo({
     transactionHash,
     sourceAddress: contextAccount,
   });

@@ -17,7 +17,7 @@ import AccountAvatar from "./account-avatar.js";
 import NounPreviewPopoverTrigger from "./noun-preview-popover-trigger.js";
 import { useSaleInfo } from "../hooks/sales.js";
 import { FormattedEthWithConditionalTooltip } from "./transaction-list.js";
-import NounMultiPreviewPopoverTrigger from "./noun-multi-preview-popover-trigger.js";
+import NounsPreviewPopoverTrigger from "./nouns-preview-popover-trigger.js";
 
 const MarkdownRichText = React.lazy(() => import("./markdown-rich-text.js"));
 
@@ -682,16 +682,12 @@ const ItemTitle = ({ item, context }) => {
             ) : (
               <Signal negative>undelegated</Signal>
             )}{" "}
-            {item.nouns.length > 1 ? (
-              <NounMultiPreviewPopoverTrigger inline nounIds={item.nouns} />
-            ) : (
-              <NounPreviewPopoverTrigger
-                inline
-                nounId={item.nounId}
-                popoverPlacement="top"
-                css={(t) => css({ color: t.colors.textDimmed })}
-              />
-            )}{" "}
+            <NounsPreviewPopoverTrigger
+              inline
+              nounIds={item.nouns}
+              popoverPlacement="top"
+              css={(t) => css({ color: t.colors.textDimmed })}
+            />{" "}
             {item.type === "noun-delegated" ? (
               <>
                 to{" "}
@@ -719,7 +715,7 @@ const ItemTitle = ({ item, context }) => {
 };
 
 const TransferItem = ({ item }) => {
-  const saleAmount = useSaleInfo({
+  const { amount: saleAmount, isFork } = useSaleInfo({
     transactionHash: item?.transactionHash,
     sourceAddress: item.toAccount,
   });
@@ -753,21 +749,30 @@ const TransferItem = ({ item }) => {
       );
 
     case "noun-transferred":
+      if (isFork) {
+        return (
+          <span>
+            {accountName} joined fork with{" "}
+            <NounsPreviewPopoverTrigger
+              inline
+              nounIds={item.nouns}
+              popoverPlacement="top"
+              css={(t) => css({ color: t.colors.textDimmed })}
+            />
+          </span>
+        );
+      }
       if (saleAmount && saleAmount > 0) {
         if (item.authorAccount.toLowerCase() === item.toAccount.toLowerCase()) {
           return (
             <span>
               {accountName} bought{" "}
-              {item.nouns.length > 1 ? (
-                <NounMultiPreviewPopoverTrigger inline nounIds={item.nouns} />
-              ) : (
-                <NounPreviewPopoverTrigger
-                  inline
-                  nounId={item.nounId}
-                  popoverPlacement="top"
-                  css={(t) => css({ color: t.colors.textDimmed })}
-                />
-              )}{" "}
+              <NounsPreviewPopoverTrigger
+                inline
+                nounIds={item.nouns}
+                popoverPlacement="top"
+                css={(t) => css({ color: t.colors.textDimmed })}
+              />{" "}
               for <FormattedEthWithConditionalTooltip value={saleAmount} /> from{" "}
               <AccountPreviewPopoverTrigger
                 showAvatar
@@ -779,16 +784,12 @@ const TransferItem = ({ item }) => {
           return (
             <span>
               {accountName} sold{" "}
-              {item.nouns.length > 1 ? (
-                <NounMultiPreviewPopoverTrigger inline nounIds={item.nouns} />
-              ) : (
-                <NounPreviewPopoverTrigger
-                  inline
-                  nounId={item.nounId}
-                  popoverPlacement="top"
-                  css={(t) => css({ color: t.colors.textDimmed })}
-                />
-              )}{" "}
+              <NounsPreviewPopoverTrigger
+                inline
+                nounIds={item.nouns}
+                popoverPlacement="top"
+                css={(t) => css({ color: t.colors.textDimmed })}
+              />{" "}
               for <FormattedEthWithConditionalTooltip value={saleAmount} /> to{" "}
               <AccountPreviewPopoverTrigger
                 showAvatar
@@ -806,16 +807,12 @@ const TransferItem = ({ item }) => {
             accountAddress={item.fromAccount}
           />{" "}
           transferred{" "}
-          {item.nouns.length > 1 ? (
-            <NounMultiPreviewPopoverTrigger inline nounIds={item.nouns} />
-          ) : (
-            <NounPreviewPopoverTrigger
-              inline
-              nounId={item.nounId}
-              popoverPlacement="top"
-              css={(t) => css({ color: t.colors.textDimmed })}
-            />
-          )}{" "}
+          <NounsPreviewPopoverTrigger
+            inline
+            nounIds={item.nouns}
+            popoverPlacement="top"
+            css={(t) => css({ color: t.colors.textDimmed })}
+          />{" "}
           to{" "}
           <AccountPreviewPopoverTrigger
             showAvatar
