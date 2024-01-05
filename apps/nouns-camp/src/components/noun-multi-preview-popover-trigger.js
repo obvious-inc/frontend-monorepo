@@ -94,12 +94,10 @@ const NounMultiPreviewPopoverTrigger = React.forwardRef(
             <div
               css={css({
                 display: "grid",
-                rowGap: "1rem",
-                columnGap: "3rem",
+                gap: "1rem",
                 gridTemplateColumns: "repeat(3, minmax(0, auto))",
                 "@media (max-width: 600px)": {
                   gridTemplateColumns: "repeat(2, minmax(0, auto))",
-                  columnGap: "2rem",
                 },
               })}
             >
@@ -129,7 +127,6 @@ const NounPreview = React.forwardRef(({ nounId }, ref) => {
     <div
       ref={ref}
       css={css({
-        // width: "32rem",
         minWidth: 0,
         borderRadius: "0.4rem",
         overflow: "hidden",
@@ -163,7 +160,7 @@ const NounPreview = React.forwardRef(({ nounId }, ref) => {
             }
           >
             <div css={css({ position: "relative", zIndex: 1 })}>
-              <NounAvatar id={nounId} size="5rem" />
+              <NounAvatar id={nounId} size="4rem" />
             </div>
 
             <div
@@ -215,14 +212,6 @@ const NounPreview = React.forwardRef(({ nounId }, ref) => {
                   year="numeric"
                   value={nounTimestamp}
                 />
-
-                {auction?.amount && (
-                  <div>
-                    <FormattedEthWithConditionalTooltip
-                      value={auction?.amount}
-                    />
-                  </div>
-                )}
               </div>
             </div>
           </div>
