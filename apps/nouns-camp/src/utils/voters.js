@@ -40,6 +40,8 @@ export const buildEventsFeed = (delegate, account, { chainId }) => {
         blockNumber: e.blockNumber,
         nounId: e.nounId,
         authorAccount: e.newAccountId,
+        fromAccount: e.previousAccountId,
+        toAccount: e.newAccountId,
         transactionHash: e.id.split("_")[0],
       })) ?? [];
 

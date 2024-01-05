@@ -744,7 +744,10 @@ const TransferItem = ({ item }) => {
               <FormattedEthWithConditionalTooltip value={nounAuctionAmount} />
             </>
           )}{" "}
-          from auction house
+          from the{" "}
+          <RouterLink to={`/campers/${item.fromAccount}`}>
+            auction house
+          </RouterLink>
         </span>
       );
 
