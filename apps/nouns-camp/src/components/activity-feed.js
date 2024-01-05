@@ -802,11 +802,7 @@ const TransferItem = ({ item }) => {
 
       return (
         <span>
-          <AccountPreviewPopoverTrigger
-            showAvatar
-            accountAddress={item.fromAccount}
-          />{" "}
-          transferred{" "}
+          {accountName} transferred{" "}
           <NounsPreviewPopoverTrigger
             inline
             nounIds={item.nouns}
