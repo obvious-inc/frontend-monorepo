@@ -745,9 +745,24 @@ const TransferItem = ({ item }) => {
             </>
           )}{" "}
           from the{" "}
-          <RouterLink to={`/campers/${item.fromAccount}`}>
-            auction house
-          </RouterLink>
+          <AccountPreviewPopoverTrigger accountAddress={item.fromAccount}>
+            <button
+              css={(t) =>
+                css({
+                  fontWeight: t.text.weights.smallHeader,
+                  outline: "none",
+                  "@media(hover: hover)": {
+                    cursor: "pointer",
+                    ":hover": {
+                      textDecoration: "underline",
+                    },
+                  },
+                })
+              }
+            >
+              auction house
+            </button>
+          </AccountPreviewPopoverTrigger>
         </span>
       );
 
