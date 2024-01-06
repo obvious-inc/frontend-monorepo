@@ -14,10 +14,6 @@ export const buildEventsFeed = (delegate, account, { chainId }) => {
     e.newAccountId.toLowerCase() ===
     resolveIdentifier(chainId, "auction-house")?.address?.toLowerCase();
 
-  const fromTreasury = (e) =>
-    e.previousAccountId.toLowerCase() ===
-    resolveIdentifier(chainId, "executor")?.address?.toLowerCase();
-
   // transfer events always come with an associated delegate event, ignore the latter
   const uniqueEvents = arrayUtils.unique(
     (e1, e2) => {
@@ -66,33 +62,11 @@ export const buildEventsFeed = (delegate, account, { chainId }) => {
         };
       }) ?? [];
 
-  const groupedDelegatedEventItems = arrayUtils.groupBy(
-    (e) => `${e.blockNumber}-${e.fromAccount}-${e.toAccount}`,
-    delegatedEventItems
-  );
-
-  const delegatedEventItemsGrouped = Object.values(
-    groupedDelegatedEventItems
-  ).map((group) => {
-    const lastEvent = group[group.length - 1];
-    return {
-      ...lastEvent,
-      id: `${lastEvent.nounId}-delegated-${lastEvent.blockNumber}`,
-      blockNumber: lastEvent.blockNumber,
-      timestamp: lastEvent.timestamp,
-      transactionHash: lastEvent.transactionHash,
-      nouns: group.map((e) => e.nounId),
-    };
-  });
-
   const transferredEventItems =
     uniqueEvents
       ?.filter(
         (e) =>
-          e.type === "transfer" &&
-          !fromAuctionHouse(e) &&
-          !fromTreasury(e) &&
-          !toAuctionHouse(e)
+          e.type === "transfer" && !fromAuctionHouse(e) && !toAuctionHouse(e)
       )
       .map((e) => ({
         type: "noun-transferred",
@@ -106,18 +80,20 @@ export const buildEventsFeed = (delegate, account, { chainId }) => {
         transactionHash: e.id.split("_")[0],
       })) ?? [];
 
-  const groupedTransferredEventItems = arrayUtils.groupBy(
-    (e) => `${e.blockNumber}-${e.fromAccount}-${e.toAccount}`,
-    transferredEventItems
+  const groupedAllEventItems = arrayUtils.groupBy(
+    (e) => `${e.transactionHash}-${e.type}-${e.fromAccount}-${e.toAccount}`,
+    [
+      ...delegatedEventItems,
+      ...transferredEventItems,
+      ...auctionBoughtEventItems,
+    ]
   );
 
-  const transferredEventItemsGrouped = Object.values(
-    groupedTransferredEventItems
-  ).map((group) => {
+  const allEventItems = Object.values(groupedAllEventItems).map((group) => {
     const lastEvent = group[group.length - 1];
     return {
       ...lastEvent,
-      id: `${lastEvent.nounId}-transferred-${lastEvent.blockNumber}`,
+      id: `${lastEvent.blockNumber}-${lastEvent.transactionHash}-${lastEvent.type}`,
       blockNumber: lastEvent.blockNumber,
       timestamp: lastEvent.timestamp,
       transactionHash: lastEvent.transactionHash,
@@ -125,11 +101,7 @@ export const buildEventsFeed = (delegate, account, { chainId }) => {
     };
   });
 
-  return [
-    ...transferredEventItemsGrouped,
-    ...delegatedEventItemsGrouped,
-    ...auctionBoughtEventItems,
-  ];
+  return allEventItems;
 };
 
 export const buildFeed = (
