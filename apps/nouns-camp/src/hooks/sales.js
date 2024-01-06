@@ -21,9 +21,9 @@ const fetchAmountFromTransferEvents = ({ event, buyerAddress }) => {
   }
 };
 
-const isForkEvent = ({ event }) => {
+const fetchForkIdFromEvent = ({ event }) => {
   try {
-    decodeEventLog({
+    const decodedEvent = decodeEventLog({
       abi: parseAbi([
         "event JoinFork(uint32 indexed forkId, address indexed owner, uint256[] tokenIds, uint256[] proposals, string reason)",
       ]),
@@ -31,18 +31,19 @@ const isForkEvent = ({ event }) => {
       data: event.data,
     });
 
-    return true;
+    const args = decodedEvent.args;
+    return args?.forkId;
   } catch (e) {
     // ignore errors decoding other events
   }
 
-  return false;
+  return null;
 };
 
 export const useSaleInfo = ({ transactionHash, sourceAddress }) => {
   const publicClient = usePublicClient();
   const [amount, setAmount] = React.useState(0);
-  const [isFork, setIsFork] = React.useState(false);
+  const [forkId, setForkId] = React.useState(null);
 
   React.useEffect(() => {
     const getReceipts = async () => {
@@ -59,8 +60,8 @@ export const useSaleInfo = ({ transactionHash, sourceAddress }) => {
         });
         if (transferAmount) sumAmount += transferAmount;
 
-        const forkEvent = isForkEvent({ event });
-        if (forkEvent) setIsFork(true);
+        const fork = fetchForkIdFromEvent({ event });
+        if (fork != null) setForkId(fork);
       });
 
       setAmount(sumAmount);
@@ -69,5 +70,5 @@ export const useSaleInfo = ({ transactionHash, sourceAddress }) => {
     getReceipts();
   }, [publicClient, transactionHash, sourceAddress]);
 
-  return { amount, isFork };
+  return { amount, forkId };
 };

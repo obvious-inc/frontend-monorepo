@@ -715,7 +715,7 @@ const ItemTitle = ({ item, context }) => {
 };
 
 const TransferItem = ({ item }) => {
-  const { amount: saleAmount, isFork } = useSaleInfo({
+  const { amount: saleAmount, forkId } = useSaleInfo({
     transactionHash: item?.transactionHash,
     sourceAddress: item.toAccount,
   });
@@ -767,10 +767,18 @@ const TransferItem = ({ item }) => {
       );
 
     case "noun-transferred":
-      if (isFork) {
+      if (forkId != null) {
         return (
           <span>
-            {accountName} joined fork with{" "}
+            {accountName} joined fork{" "}
+            <a
+              href={`https://nouns.wtf/fork/${forkId}`}
+              target="_blank"
+              rel="noreferrer"
+            >
+              #{forkId}
+            </a>{" "}
+            with{" "}
             <NounsPreviewPopoverTrigger
               inline
               nounIds={item.nouns}
