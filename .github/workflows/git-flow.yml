@@ -1,0 +1,26 @@
+name: Git Flow
+on:
+  push:
+    branches:
+      - 'feature/*'
+      - 'bugfix/*'
+      - 'release/*'
+      - 'hotfix/*'
+
+jobs:
+  create-pull-request:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4.1.1
+
+      - name: Git Flow Action
+        uses: nekofar/git-flow-action@develop
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          master-branch: 'master'
+          develop-branch: 'develop'
+          feature-prefix: 'feature/'
+          bugfix-prefix: 'bugfix/'
+          release-prefix: 'release/'
+          hotfix-prefix: 'hotfix/'
