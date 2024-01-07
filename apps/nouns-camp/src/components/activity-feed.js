@@ -733,7 +733,7 @@ const TransferItem = ({ item }) => {
                 <FormattedEthWithConditionalTooltip value={nounAuctionAmount} />
               </>
             )}{" "}
-            from{" "}
+            from the{" "}
             <AccountPreviewPopoverTrigger accountAddress={item.fromAccount}>
               <button
                 css={(t) =>
@@ -749,7 +749,7 @@ const TransferItem = ({ item }) => {
                   })
                 }
               >
-                the auction house
+                Auction house
               </button>
             </AccountPreviewPopoverTrigger>
           </span>
