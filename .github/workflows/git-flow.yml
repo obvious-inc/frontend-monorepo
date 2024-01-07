@@ -16,6 +16,7 @@ jobs:
     # Specifies the runner environment, using the latest Ubuntu
     runs-on: ubuntu-latest
     name: Create Pull Request
+    permissions: write-all
 
     # Steps are individual tasks that run commands in a job
     steps:
