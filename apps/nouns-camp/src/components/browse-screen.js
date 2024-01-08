@@ -4,7 +4,7 @@ import React from "react";
 import { Link as RouterLink, useSearchParams } from "react-router-dom";
 import { css } from "@emotion/react";
 import { useBlockNumber } from "wagmi";
-import { useFetch, useMatchMedia } from "@shades/common/react";
+import { useFetch } from "@shades/common/react";
 import { useAccountDisplayName, useCachedState } from "@shades/common/app";
 import {
   array as arrayUtils,
@@ -16,7 +16,7 @@ import Button from "@shades/ui-web/button";
 import Select from "@shades/ui-web/select";
 import { isNodeEmpty as isRichTextNodeEmpty } from "@shades/ui-web/rich-text-editor";
 import {
-  ArrowDown as ArrowDownIcon,
+  ArrowDownSmall as ArrowDownSmallIcon,
   Plus as PlusIcon,
 } from "@shades/ui-web/icons";
 import { APPROXIMATE_BLOCKS_PER_DAY } from "../constants/ethereum.js";
@@ -31,8 +31,10 @@ import {
   getSignals as getCandidateSignals,
   makeUrlId as makeCandidateUrlId,
 } from "../utils/candidates.js";
+import { buildFeed as buildPropdateFeed } from "../utils/propdates.js";
 import { useProposalThreshold } from "../hooks/dao-contract.js";
 import { useWallet } from "../hooks/wallet.js";
+import useMatchDesktopLayout from "../hooks/match-desktop-layout.js";
 import {
   useActions,
   useProposal,
@@ -40,6 +42,7 @@ import {
   useProposalCandidates,
   useProposalCandidate,
   useProposalCandidateVotingPower,
+  usePropdates,
 } from "../store.js";
 import useApproximateBlockTimestampCalculator from "../hooks/approximate-block-timestamp-calculator.js";
 import {
@@ -116,25 +119,31 @@ const useFeedItems = ({ filter }) => {
     includeCanceled: true,
     includePromoted: true,
   });
+  const propdates = usePropdates();
 
   return React.useMemo(() => {
     const buildProposalItems = () =>
-      proposals.flatMap((p) => buildProposalFeed(p, { latestBlockNumber }));
+      proposals.flatMap((p) =>
+        buildProposalFeed(p, { latestBlockNumber, includePropdates: false })
+      );
     const buildCandidateItems = () =>
       candidates.flatMap((c) => buildCandidateFeed(c));
+    const buildPropdateItems = () => buildPropdateFeed(propdates);
 
     const buildFeedItems = () => {
       switch (filter) {
         case "proposals":
-          return buildProposalItems();
+          return [...buildProposalItems(), ...buildPropdateItems()];
         case "candidates":
           return buildCandidateItems();
         case "propdates":
-          return buildProposalItems().filter(
-            (i) => i.type === "event" && i.eventType.startsWith("propdate")
-          );
+          return buildPropdateItems();
         default:
-          return [...buildProposalItems(), ...buildCandidateItems()];
+          return [
+            ...buildProposalItems(),
+            ...buildCandidateItems(),
+            ...buildPropdateItems(),
+          ];
       }
     };
 
@@ -142,7 +151,7 @@ const useFeedItems = ({ filter }) => {
       { value: (i) => i.blockNumber, order: "desc" },
       buildFeedItems()
     );
-  }, [proposals, candidates, filter, latestBlockNumber]);
+  }, [proposals, candidates, propdates, filter, latestBlockNumber]);
 };
 
 const BROWSE_LIST_PAGE_ITEM_COUNT = 20;
@@ -176,11 +185,13 @@ const groupConfigByKey = {
   },
 };
 
+let hasFetchedBrowseDataOnce = false;
+
 const BrowseScreen = () => {
   const scrollContainerRef = React.useRef();
   const [searchParams, setSearchParams] = useSearchParams();
 
-  const isDesktopLayout = useMatchMedia("(min-width: 952px)");
+  const isDesktopLayout = useMatchDesktopLayout();
   const tabAnchorRef = React.useRef();
   const tabContainerRef = React.useRef();
 
@@ -197,6 +208,10 @@ const BrowseScreen = () => {
   const [candidateSortStrategy_, setCandidateSortStrategy] = useCachedState(
     "candidate-sorting-strategy",
     "popularity"
+  );
+
+  const [hasFetchedOnce, setHasFetchedOnce] = React.useState(
+    hasFetchedBrowseDataOnce
   );
 
   const candidateSortStrategies =
@@ -434,10 +449,11 @@ const BrowseScreen = () => {
 
   useFetch(
     () =>
-      Promise.all([
-        fetchBrowseScreenData({ first: 40 }),
-        fetchBrowseScreenData({ skip: 40, first: 1000 }),
-      ]),
+      fetchBrowseScreenData({ first: 40 }).then(() => {
+        setHasFetchedOnce(true);
+        hasFetchedBrowseDataOnce = true;
+        fetchBrowseScreenData({ skip: 40, first: 1000 });
+      }),
     [fetchBrowseScreenData]
   );
 
@@ -605,7 +621,7 @@ const BrowseScreen = () => {
                         })}
                       >
                         <SectionedList
-                          showPlaceholder={filteredProposals.length === 0}
+                          showPlaceholder={!hasFetchedOnce}
                           sections={[
                             // "drafts",
                             "proposals:authored",
@@ -700,7 +716,7 @@ const BrowseScreen = () => {
                         </div>
 
                         <SectionedList
-                          showPlaceholder={filteredCandidates.length === 0}
+                          showPlaceholder={!hasFetchedOnce}
                           sections={[
                             "candidates:authored",
                             "candidates:sponsored",
@@ -926,15 +942,20 @@ export const SectionedList = ({
 
 const FEED_PAGE_ITEM_COUNT = 30;
 
+let hasFetchedActivityFeedOnce = false;
+
 const ActivityFeed = React.memo(({ filter = "all" }) => {
   const { data: latestBlockNumber } = useBlockNumber({
     watch: true,
     cache: 20_000,
   });
 
-  const { fetchNounsActivity, fetchPropdates } = useActions();
+  const { fetchNounsActivity } = useActions();
 
   const [page, setPage] = React.useState(2);
+  const [hasFetchedOnce, setHasFetchedOnce] = React.useState(
+    hasFetchedActivityFeedOnce
+  );
 
   const feedItems = useFeedItems({ filter });
   const visibleItems = feedItems.slice(0, FEED_PAGE_ITEM_COUNT * page);
@@ -943,25 +964,29 @@ const ActivityFeed = React.memo(({ filter = "all" }) => {
   useFetch(
     latestBlockNumber == null
       ? null
-      : () =>
+      : () => {
           fetchNounsActivity({
             startBlock:
-              latestBlockNumber - BigInt(APPROXIMATE_BLOCKS_PER_DAY * 3),
+              latestBlockNumber - BigInt(APPROXIMATE_BLOCKS_PER_DAY * 2),
             endBlock: latestBlockNumber,
-          }).then(() =>
+          }).then(() => {
+            if (hasFetchedOnce) return;
+
+            setHasFetchedOnce(true);
+            hasFetchedActivityFeedOnce = true;
+
             fetchNounsActivity({
               startBlock:
                 latestBlockNumber - BigInt(APPROXIMATE_BLOCKS_PER_DAY * 30),
               endBlock:
-                latestBlockNumber - BigInt(APPROXIMATE_BLOCKS_PER_DAY * 3) - 1n,
-            })
-          ),
+                latestBlockNumber - BigInt(APPROXIMATE_BLOCKS_PER_DAY * 2) - 1n,
+            });
+          });
+        },
     [latestBlockNumber, fetchNounsActivity]
   );
 
-  useFetch(() => fetchPropdates(), [fetchPropdates]);
-
-  if (visibleItems.length === 0) return null;
+  if (visibleItems.length === 0 || !hasFetchedOnce) return null;
 
   return (
     <>
@@ -1114,7 +1139,7 @@ const FeedTabContent = React.memo(({ visible }) => {
 const ProposalItem = React.memo(({ proposalId }) => {
   const proposal = useProposal(proposalId);
   const { displayName: authorAccountDisplayName } = useAccountDisplayName(
-    proposal.proposer?.id
+    proposal?.proposerId
   );
 
   const isDimmed =
@@ -1318,7 +1343,6 @@ const ProposalCandidateItem = React.memo(({ candidateId }) => {
   const candidateVotingPower = useProposalCandidateVotingPower(candidateId);
   const proposalThreshold = useProposalThreshold();
 
-  // const proposerDelegate = useDelegate(candidate.proposerId);
   const signals = getCandidateSignals({ candidate });
   // const commentCount =
   //   signals.delegates.for +
@@ -1596,7 +1620,9 @@ const ScoreStack = React.memo(({ for: for_, against }) => {
         }
       >
         <div>{for_}</div>
-        <ArrowDownIcon style={{ width: "0.9rem", transform: "scaleY(-1)" }} />
+        <ArrowDownSmallIcon
+          style={{ width: "0.9rem", transform: "scaleY(-1)" }}
+        />
       </div>
       <div
         data-active={hasScore}
@@ -1637,7 +1663,7 @@ const ScoreStack = React.memo(({ for: for_, against }) => {
         }
       >
         <div>{against}</div>
-        <ArrowDownIcon style={{ width: "0.9rem" }} />
+        <ArrowDownSmallIcon style={{ width: "0.9rem" }} />
       </div>
     </div>
   );

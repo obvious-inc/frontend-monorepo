@@ -54,6 +54,7 @@
     "pusher-js": "^8.3.0",
     "react": "18.2.0",
     "react-aria": "^3.31.0",
+    "react-aria-components": "1.0.0-rc.0",
     "react-dom": "18.2.0",
     "react-helmet": "^6.1.0",
     "react-router-dom": "^6.21.1",

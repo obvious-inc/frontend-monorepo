@@ -3,7 +3,7 @@ import { isAddress } from "viem";
 import { useBlockNumber, useEnsAddress } from "wagmi";
 import { useParams, Link as RouterLink } from "react-router-dom";
 import { css } from "@emotion/react";
-import { useMatchMedia, useFetch } from "@shades/common/react";
+import { useFetch } from "@shades/common/react";
 import { APPROXIMATE_BLOCKS_PER_DAY } from "../constants/ethereum.js";
 import { buildFeed as buildVoterFeed } from "../utils/voters.js";
 import {
@@ -30,6 +30,7 @@ import { useCurrentDynamicQuorum } from "../hooks/dao-contract.js";
 import { SectionedList } from "./browse-screen.js";
 import Button from "@shades/ui-web/button";
 import Spinner from "@shades/ui-web/spinner";
+import useMatchDesktopLayout from "../hooks/match-desktop-layout.js";
 import { VotingBar } from "./proposal-screen.js";
 import { array as arrayUtils } from "@shades/common/utils";
 import NounPreviewPopoverTrigger from "./noun-preview-popover-trigger.js";
@@ -37,8 +38,7 @@ import NounPreviewPopoverTrigger from "./noun-preview-popover-trigger.js";
 const VOTER_LIST_PAGE_ITEM_COUNT = 20;
 const FEED_PAGE_ITEM_COUNT = 30;
 
-const useFeedItems = ({ voterAddress, filter }) => {
-  const delegate = useDelegate(voterAddress);
+const useFeedItems = (accountAddress, { filter } = {}) => {
   const proposals = useProposals({ state: true, propdates: true });
   const candidates = useProposalCandidates({
     includeCanceled: true,
@@ -46,17 +46,14 @@ const useFeedItems = ({ voterAddress, filter }) => {
   });
 
   return React.useMemo(() => {
-    const buildProposalItems = () => buildVoterFeed(delegate, { proposals });
-    const buildCandidateItems = () => buildVoterFeed(delegate, { candidates });
-
     const buildFeedItems = () => {
       switch (filter) {
         case "proposals":
-          return [...buildProposalItems()];
+          return buildVoterFeed(accountAddress, { proposals });
         case "candidates":
-          return [...buildCandidateItems()];
+          return buildVoterFeed(accountAddress, { candidates });
         default:
-          return [...buildVoterFeed(delegate, { proposals, candidates })];
+          return buildVoterFeed(accountAddress, { proposals, candidates });
       }
     };
 
@@ -64,7 +61,7 @@ const useFeedItems = ({ voterAddress, filter }) => {
       { value: (i) => i.blockNumber, order: "desc" },
       buildFeedItems()
     );
-  }, [delegate, proposals, candidates, filter]);
+  }, [accountAddress, proposals, candidates, filter]);
 };
 
 const getDelegateVotes = (delegate) => {
@@ -94,7 +91,7 @@ const ActivityFeed = React.memo(({ voterAddress, filter = "all" }) => {
 
   const [page, setPage] = React.useState(1);
 
-  const feedItems = useFeedItems({ voterAddress, filter });
+  const feedItems = useFeedItems(voterAddress, { filter });
   const visibleItems = feedItems.slice(0, FEED_PAGE_ITEM_COUNT * page);
 
   // Fetch feed items
@@ -536,12 +533,12 @@ const VoterHeader = ({ voterAddress }) => {
 };
 
 const VoterMainSection = ({ voterAddress }) => {
-  const isDesktopLayout = useMatchMedia("(min-width: 952px)");
+  const isDesktopLayout = useMatchDesktopLayout();
 
   const [page, setPage] = React.useState(1);
   const delegate = useDelegate(voterAddress);
 
-  const filteredProposals = delegate?.proposals ?? [];
+  const filteredProposals = (delegate?.proposals ?? []).filter(Boolean);
   const voterCandidates = useAccountProposalCandidates(voterAddress);
   const sponsoredProposals = useProposalsSponsoredByAccount(voterAddress);
 
@@ -549,11 +546,10 @@ const VoterMainSection = ({ voterAddress }) => {
 
   useFetch(
     () =>
-      Promise.all([
-        fetchVoterScreenData(voterAddress, { first: 40 }),
-        fetchVoterScreenData(voterAddress, { skip: 40, first: 1000 }),
-      ]),
-    [fetchVoterScreenData, voterAddress]
+      fetchVoterScreenData(voterAddress, { first: 40 }).then(() => {
+        fetchVoterScreenData(voterAddress, { skip: 40, first: 1000 });
+      }),
+    [(fetchVoterScreenData, voterAddress)]
   );
 
   const proposalsTabTitle =
@@ -746,7 +742,7 @@ const VoterScreen = () => {
 
   const { data: ensAddress, isFetching } = useEnsAddress({
     name: voterId.trim(),
-    enabled: voterId.trim().split(".").slice(-1)[0] === "eth",
+    enabled: voterId.includes("."),
   });
 
   const voterAddress = isAddress(voterId.trim()) ? voterId.trim() : ensAddress;

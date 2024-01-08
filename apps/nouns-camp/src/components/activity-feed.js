@@ -4,6 +4,7 @@ import { css } from "@emotion/react";
 import { Noggles as NogglesIcon } from "@shades/ui-web/icons";
 import * as Tooltip from "@shades/ui-web/tooltip";
 import Spinner from "@shades/ui-web/spinner";
+import Link from "@shades/ui-web/link";
 import { isSucceededState as isSucceededProposalState } from "../utils/proposals.js";
 import {
   extractSlugFromId as extractSlugFromCandidateId,
@@ -16,79 +17,84 @@ import AccountAvatar from "./account-avatar.js";
 
 const MarkdownRichText = React.lazy(() => import("./markdown-rich-text.js"));
 
+const BODY_TRUNCATION_HEIGHT_THRESHOLD = "18em";
+
 const ActivityFeed = ({ context, items = [], spacing = "2rem" }) => (
-  <ul
-    css={(t) =>
-      css({
-        lineHeight: 1.4285714286, // 20px line height given font size if 14px
-        fontSize: t.text.sizes.base,
-        '[role="listitem"] + [role="listitem"]': {
-          marginTop: "var(--vertical-spacing)",
-        },
-        '[data-pending="true"]': { opacity: 0.6 },
-        "[data-nowrap]": { whiteSpace: "nowrap" },
-        "[data-header]": {
-          display: "grid",
-          gridTemplateColumns: "2rem minmax(0,1fr)",
-          gridGap: "0.6rem",
-          alignItems: "flex-start",
-          a: {
-            color: t.colors.textDimmed,
-            fontWeight: t.text.weights.emphasis,
-            textDecoration: "none",
-            "@media(hover: hover)": {
-              ":hover": { textDecoration: "underline" },
-            },
+  <React.Suspense fallback={null}>
+    <ul
+      css={(t) =>
+        css({
+          lineHeight: 1.4285714286, // 20px line height given font size if 14px
+          fontSize: t.text.sizes.base,
+          '[role="listitem"] + [role="listitem"]': {
+            marginTop: "var(--vertical-spacing)",
           },
-        },
-        "[data-avatar-button]": {
-          display: "block",
-          outline: "none",
-          ":focus-visible [data-avatar]": {
-            boxShadow: t.shadows.focus,
-            background: t.colors.backgroundModifierHover,
-          },
-          "@media (hover: hover)": {
-            ":not(:disabled)": {
-              cursor: "pointer",
-              ":hover [data-avatar]": {
-                boxShadow: `0 0 0 0.2rem ${t.colors.backgroundModifierHover}`,
+          '[data-pending="true"]': { opacity: 0.6 },
+          "[data-nowrap]": { whiteSpace: "nowrap" },
+          "[data-header]": {
+            display: "grid",
+            gridTemplateColumns: "2rem minmax(0,1fr)",
+            gridGap: "0.6rem",
+            alignItems: "flex-start",
+            a: {
+              color: t.colors.textDimmed,
+              fontWeight: t.text.weights.emphasis,
+              textDecoration: "none",
+              "@media(hover: hover)": {
+                ":hover": { textDecoration: "underline" },
               },
             },
           },
-        },
-        "[data-timeline-symbol]": {
-          position: "relative",
-          height: "2rem",
-          width: "0.1rem",
-          background: t.colors.borderLight,
-          zIndex: -1,
-          margin: "auto",
-          ":after": {
-            content: '""',
-            position: "absolute",
-            width: "0.7rem",
-            height: "0.7rem",
-            background: t.colors.textMuted,
-            top: "50%",
-            left: "50%",
-            transform: "translateY(-50%) translateX(-50%)",
-            borderRadius: "50%",
-            border: "0.1rem solid",
-            borderColor: t.colors.backgroundPrimary,
+          "[data-avatar-button]": {
+            display: "block",
+            outline: "none",
+            ":focus-visible [data-avatar]": {
+              boxShadow: t.shadows.focus,
+              background: t.colors.backgroundModifierHover,
+            },
+            "@media (hover: hover)": {
+              ":not(:disabled)": {
+                cursor: "pointer",
+                ":hover [data-avatar]": {
+                  boxShadow: `0 0 0 0.2rem ${t.colors.backgroundModifierHover}`,
+                },
+              },
+            },
           },
-        },
-      })
-    }
-    style={{ "--vertical-spacing": spacing }}
-  >
-    {items.map((item) => (
-      <FeedItem key={item.id} {...item} context={context} />
-    ))}
-  </ul>
+          "[data-timeline-symbol]": {
+            position: "relative",
+            height: "2rem",
+            width: "0.1rem",
+            background: t.colors.borderLight,
+            zIndex: -1,
+            margin: "auto",
+            ":after": {
+              content: '""',
+              position: "absolute",
+              width: "0.7rem",
+              height: "0.7rem",
+              background: t.colors.textMuted,
+              top: "50%",
+              left: "50%",
+              transform: "translateY(-50%) translateX(-50%)",
+              borderRadius: "50%",
+              border: "0.1rem solid",
+              borderColor: t.colors.backgroundPrimary,
+            },
+          },
+        })
+      }
+      style={{ "--vertical-spacing": spacing }}
+    >
+      {items.map((item) => (
+        <FeedItem key={item.id} {...item} context={context} />
+      ))}
+    </ul>
+  </React.Suspense>
 );
 
 const FeedItem = React.memo(({ context, ...item }) => {
+  const isIsolatedContext = ["proposal", "candidate"].includes(context);
   return (
     <div key={item.id} role="listitem" data-pending={item.isPending}>
       <div data-header>
@@ -117,42 +123,48 @@ const FeedItem = React.memo(({ context, ...item }) => {
             })}
           >
             <div
-              css={css({
-                flex: 1,
-                minWidth: 0,
-                overflow: "hidden",
-                textOverflow: "ellipsis",
-              })}
+              css={(t) =>
+                css({
+                  flex: 1,
+                  minWidth: 0,
+                  display: "-webkit-box",
+                  WebkitBoxOrient: "vertical",
+                  WebkitLineClamp: 2,
+                  overflow: "hidden",
+                  color: t.colors.textDimmed,
+                })
+              }
             >
-              <ItemTitle item={item} context={context} />
-              {item.timestamp != null && (
-                <span
-                  css={(t) =>
-                    css({
-                      fontSize: t.text.sizes.small,
-                      color: t.colors.textDimmed,
-                      position: "absolute",
-                      padding: "0.15rem 0",
-                    })
-                  }
-                >
-                  &nbsp;&middot;{" "}
-                  <FormattedDateWithTooltip
-                    tinyRelative
-                    relativeDayThreshold={7}
-                    month="short"
-                    day="numeric"
-                    value={item.timestamp}
-                  />
-                </span>
-              )}
+              <span css={(t) => css({ color: t.colors.textNormal })}>
+                <ItemTitle item={item} context={context} />
+              </span>
             </div>
-            <div style={{ padding: "0.25rem 0" }}>
+            <div>
               {item.isPending ? (
-                <Spinner size="1rem" />
+                <div style={{ padding: "0.5rem 0" }}>
+                  <Spinner size="1rem" />
+                </div>
               ) : (
-                item.voteCount != null && (
-                  <VotingPowerNoggle count={Number(item.voteCount)} />
+                item.timestamp != null && (
+                  <span
+                    data-timestamp
+                    css={(t) =>
+                      css({
+                        fontSize: t.text.sizes.small,
+                        color: t.colors.textDimmed,
+                        padding: "0.15rem 0",
+                        display: "inline-block",
+                      })
+                    }
+                  >
+                    <FormattedDateWithTooltip
+                      tinyRelative
+                      relativeDayThreshold={7}
+                      month="short"
+                      day="numeric"
+                      value={item.timestamp}
+                    />
+                  </span>
                 )
               )}
             </div>
@@ -161,9 +173,11 @@ const FeedItem = React.memo(({ context, ...item }) => {
       </div>
       <div css={css({ paddingLeft: "2.6rem", userSelect: "text" })}>
         {(item.body || null) != null && (
-          <div style={{ margin: "0.5rem 0" }}>
-            <ItemBody text={item.body} displayImages={item.type === "event"} />
-          </div>
+          <ItemBody
+            text={item.body}
+            displayImages={item.type === "event"}
+            truncateLines={!isIsolatedContext}
+          />
         )}
         {item.type === "candidate-signature-added" && (
           <div
@@ -196,23 +210,82 @@ const FeedItem = React.memo(({ context, ...item }) => {
   );
 });
 
-const ItemBody = React.memo(({ text, displayImages }) => (
-  <React.Suspense fallback={null}>
-    <MarkdownRichText
-      text={text}
-      displayImages={displayImages}
-      compact
-      css={css({
-        // Make all headings small
-        "h1,h2,h3,h4,h5,h6": { fontSize: "1em" },
-        "*+h1,*+h2,*+h3,*+h4,*+h5,*+h6": { marginTop: "1.5em" },
-        "h1:has(+*),h2:has(+*),h3:has(+*),h4:has(+*),h5:has(+*),h6:has(+*)": {
-          marginBottom: "0.625em",
-        },
-      })}
-    />
-  </React.Suspense>
-));
+const ItemBody = React.memo(
+  ({ text, displayImages, truncateLines: enableLineTruncation }) => {
+    const containerRef = React.useRef();
+
+    const [isCollapsed_, setCollapsed] = React.useState(enableLineTruncation);
+    const [exceedsTruncationThreshold, setExceedsTruncationThreshold] =
+      React.useState(null);
+
+    const isCollapsed = enableLineTruncation && isCollapsed_;
+    const isEffectivelyTruncating = isCollapsed && exceedsTruncationThreshold;
+
+    React.useEffect(() => {
+      if (!isCollapsed) return;
+
+      const observer = new ResizeObserver(() => {
+        if (containerRef.current == null) return;
+        setExceedsTruncationThreshold(
+          containerRef.current.scrollHeight -
+            containerRef.current.offsetHeight >
+            100
+        );
+      });
+
+      observer.observe(containerRef.current);
+
+      return () => {
+        observer.disconnect();
+      };
+    }, [isCollapsed]);
+
+    return (
+      <div css={css({ padding: "0.5rem 0" })}>
+        <div
+          ref={containerRef}
+          css={css({ overflow: "hidden" })}
+          style={{
+            maxHeight: isCollapsed
+              ? BODY_TRUNCATION_HEIGHT_THRESHOLD
+              : undefined,
+            maskImage: isEffectivelyTruncating
+              ? "linear-gradient(180deg, black calc(100% - 2.8em), transparent 100%)"
+              : undefined,
+          }}
+        >
+          <MarkdownRichText
+            text={text}
+            displayImages={displayImages}
+            compact
+            css={css({
+              // Make all headings small
+              "h1,h2,h3,h4,h5,h6": { fontSize: "1em" },
+              "*+h1,*+h2,*+h3,*+h4,*+h5,*+h6": { marginTop: "1.5em" },
+              "h1:has(+*),h2:has(+*),h3:has(+*),h4:has(+*),h5:has(+*),h6:has(+*)":
+                {
+                  marginBottom: "0.625em",
+                },
+            })}
+          />
+        </div>
+
+        {enableLineTruncation && exceedsTruncationThreshold && (
+          <div css={css({ margin: "0.8em 0" })}>
+            <Link
+              component="button"
+              onClick={() => setCollapsed((c) => !c)}
+              size="small"
+              color={(t) => t.colors.textDimmed}
+            >
+              {isCollapsed ? "Expand..." : "Collapse"}
+            </Link>
+          </div>
+        )}
+      </div>
+    );
+  }
+);
 
 const ItemTitle = ({ item, context }) => {
   const isIsolatedContext = ["proposal", "candidate"].includes(context);
@@ -220,27 +293,14 @@ const ItemTitle = ({ item, context }) => {
   const proposal = useProposal(item.proposalId ?? item.targetProposalId);
   const candidate = useProposalCandidate(item.candidateId);
 
-  const truncatedLength = 30;
-
-  const truncateTitle = (s) =>
-    s.length <= truncatedLength
-      ? s
-      : `${s.slice(0, truncatedLength).trim()}...`;
-
-  const ContextLink = ({
-    proposalId,
-    candidateId,
-    short,
-    truncate,
-    children,
-  }) => {
+  const ContextLink = ({ proposalId, candidateId, short, children }) => {
     if (proposalId != null) {
       const title =
         proposal?.title == null
           ? `Proposal ${proposalId}`
-          : `${short ? proposalId : `Proposal ${proposalId}`}: ${truncateTitle(
+          : `${short ? proposalId : `Proposal ${proposalId}`}: ${
               proposal.title
-            )} `;
+            } `;
       return (
         <RouterLink to={`/proposals/${proposalId}`}>
           {children ?? title}
@@ -249,10 +309,9 @@ const ItemTitle = ({ item, context }) => {
     }
 
     if (candidateId != null) {
-      const fullTitle =
+      const title =
         candidate?.latestVersion?.content.title ??
         extractSlugFromCandidateId(candidateId);
-      const title = truncate ? truncateTitle(fullTitle) : fullTitle;
       return (
         <RouterLink
           to={`/candidates/${encodeURIComponent(
@@ -293,7 +352,8 @@ const ItemTitle = ({ item, context }) => {
             </span>
           );
 
-        case "candidate-created": {
+        case "candidate-created":
+        case "candidate-updated": {
           const label =
             context === "candidate" ? (
               "Candidate"
@@ -310,12 +370,14 @@ const ItemTitle = ({ item, context }) => {
               </>
             ) : (
               <>
-                Candidate <ContextLink truncate {...item} />
+                Candidate <ContextLink {...item} />
               </>
             );
+
           return (
             <span css={(t) => css({ color: t.colors.textDimmed })}>
-              {label} created
+              {label}{" "}
+              {item.eventType === "candidate-created" ? "created" : "updated"}
               {item.authorAccount != null && (
                 <>
                   {" "}
@@ -534,9 +596,13 @@ const ItemTitle = ({ item, context }) => {
         <span>
           {accountName}{" "}
           {item.support === 0 ? (
-            <Signal negative>{signalWord} against</Signal>
+            <Signal negative>
+              {signalWord} against ({item.voteCount})
+            </Signal>
           ) : item.support === 1 ? (
-            <Signal positive>{signalWord} for</Signal>
+            <Signal positive>
+              {signalWord} for ({item.voteCount})
+            </Signal>
           ) : item.type === "vote" ? (
             <Signal>abstained</Signal>
           ) : isIsolatedContext ? (
@@ -547,7 +613,7 @@ const ItemTitle = ({ item, context }) => {
           {!isIsolatedContext && (
             <>
               {" "}
-              <ContextLink truncate short {...item} />
+              <ContextLink short {...item} />
             </>
           )}
         </span>
@@ -561,7 +627,7 @@ const ItemTitle = ({ item, context }) => {
           {!isIsolatedContext && (
             <>
               {" "}
-              <ContextLink truncate short {...item} />
+              <ContextLink short {...item} />
             </>
           )}
         </span>
@@ -600,10 +666,10 @@ export const VotingPowerNoggle = ({ count }) => (
       <span
         css={(t) =>
           css({
-            display: "flex",
+            display: "inline-flex",
             alignItems: "center",
             gap: "0.5rem",
-            fontSize: t.text.sizes.tiny,
+            fontSize: t.text.sizes.small,
             color: t.colors.textDimmed,
           })
         }

@@ -570,51 +570,61 @@ const ImageComponent = ({
   );
 };
 
-const RichText = ({
-  inline = false,
-  compact = false,
-  blocks,
-  onClickInteractiveElement,
-  renderElement,
-  suffix,
-  imagesMaxWidth,
-  imagesMaxHeight,
-  style,
-  raw = false,
-  ...props
-}) => {
-  const render = createRenderer({
-    inline,
-    suffix,
-    imagesMaxWidth,
-    imagesMaxHeight,
-    renderElement,
-    onClickInteractiveElement,
-  });
+const RichText = React.forwardRef(
+  (
+    {
+      inline = false,
+      compact = false,
+      blocks,
+      onClickInteractiveElement,
+      renderElement,
+      suffix,
+      imagesMaxWidth,
+      imagesMaxHeight,
+      style,
+      raw = false,
+      ...props
+    },
+    ref
+  ) => {
+    const render = createRenderer({
+      inline,
+      suffix,
+      imagesMaxWidth,
+      imagesMaxHeight,
+      renderElement,
+      onClickInteractiveElement,
+    });
 
-  if (raw) return render(blocks);
+    if (raw) {
+      // Passing ref in `raw` mode isn’t allowed
+      if (ref != null) throw new Error();
+      return render(blocks);
+    }
 
-  const inlineStyle = style ?? {};
+    const inlineStyle = style ?? {};
 
-  if (!inline) {
-    inlineStyle.whiteSpace = "pre-wrap";
+    if (!inline) {
+      inlineStyle.whiteSpace = "pre-wrap";
+    }
+
+    if (inline || compact) {
+      inlineStyle.display = "inline";
+    }
+
+    return (
+      <div
+        ref={ref}
+        data-inline={inline}
+        data-compact={compact}
+        css={(theme) => css(createCss(theme))}
+        style={inlineStyle}
+        {...props}
+      >
+        {render(blocks)}
+      </div>
+    );
   }
-
-  if (inline || compact) {
-    inlineStyle.display = "inline";
-  }
-
-  return (
-    <div
-      data-inline={inline}
-      data-compact={compact}
-      css={(theme) => css(createCss(theme))}
-      style={inlineStyle}
-      {...props}
-    >
-      {render(blocks)}
-    </div>
-  );
-};
+);
 
 export default RichText;

@@ -8,7 +8,11 @@ import {
   formatUnits,
   formatEther,
 } from "viem";
-import { string as stringUtils } from "@shades/common/utils";
+import {
+  string as stringUtils,
+  array as arrayUtils,
+  ethereum as ethereumUtils,
+} from "@shades/common/utils";
 import { resolveAddress, resolveIdentifier } from "../contracts.js";
 
 const decimalsByCurrency = {
@@ -236,6 +240,9 @@ export const parse = (data, { chainId }) => {
 };
 
 export const unparse = (transactions, { chainId }) => {
+  const nounsGovernanceContract = resolveIdentifier(chainId, "dao");
+  const nounsExecutorContract = resolveIdentifier(chainId, "executor");
+  const nounsTokenContract = resolveIdentifier(chainId, "token");
   const wethTokenContract = resolveIdentifier(chainId, "weth-token");
   const nounsPayerContract = resolveIdentifier(chainId, "payer");
   const nounsTokenBuyerContract = resolveIdentifier(chainId, "token-buyer");
@@ -335,6 +342,29 @@ export const unparse = (transactions, { chainId }) => {
           });
         }
 
+        case "treasury-noun-transfer":
+          return append({
+            target: nounsTokenContract.address,
+            value: "",
+            signature: "safeTransferFrom(address,address,uint256)",
+            calldata: encodeAbiParameters(
+              [{ type: "address" }, { type: "address" }, { type: "uint256" }],
+              [nounsExecutorContract.address, t.receiverAddress, t.nounId]
+            ),
+          });
+
+        case "escrow-noun-transfer":
+          return append({
+            target: nounsGovernanceContract.address,
+            value: "",
+            signature:
+              "withdrawDAONounsFromEscrowIncreasingTotalSupply(uint256[],address)",
+            calldata: encodeAbiParameters(
+              [{ type: "uint256[]" }, { type: "address" }],
+              [t.nounIds, t.receiverAddress]
+            ),
+          });
+
         case "function-call":
         case "payable-function-call": {
           const formattedInputs = formatAbiParameters(t.functionInputs);
@@ -421,6 +451,8 @@ export const extractAmounts = (parsedTransactions) => {
 };
 
 export const buildActions = (transactions, { chainId }) => {
+  const getTransactionIndex = (t) => transactions.findIndex((t_) => t_ === t);
+
   let transactionsLeft = [...transactions];
   const actions = [];
 
@@ -440,6 +472,7 @@ export const buildActions = (transactions, { chainId }) => {
       transactionsLeft = transactionsLeft.filter(
         (t) => t !== streamTx && t !== usdcFundingTx
       );
+
       return {
         type: "streaming-payment",
         target: streamTx.receiverAddress,
@@ -448,6 +481,9 @@ export const buildActions = (transactions, { chainId }) => {
         startTimestamp: streamTx.startDate.getTime(),
         endTimestamp: streamTx.endDate.getTime(),
         predictedStreamContractAddress: streamTx.streamContractAddress,
+        firstTransactionIndex: Math.min(
+          ...[streamTx, usdcFundingTx].map(getTransactionIndex)
+        ),
       };
     }
 
@@ -480,6 +516,9 @@ export const buildActions = (transactions, { chainId }) => {
       startTimestamp: streamTx.startDate.getTime(),
       endTimestamp: streamTx.endDate.getTime(),
       predictedStreamContractAddress: streamTx.streamContractAddress,
+      firstTransactionIndex: Math.min(
+        ...[streamTx, wethFundingTx, wethDepositTx].map(getTransactionIndex)
+      ),
     };
   };
 
@@ -493,6 +532,7 @@ export const buildActions = (transactions, { chainId }) => {
         target: transferTx.target,
         currency: "eth",
         amount: formatEther(transferTx.value),
+        firstTransactionIndex: getTransactionIndex(transferTx),
       };
     }
 
@@ -510,6 +550,7 @@ export const buildActions = (transactions, { chainId }) => {
           usdcTransferTx.usdcAmount,
           decimalsByCurrency["usdc"]
         ),
+        firstTransactionIndex: getTransactionIndex(usdcTransferTx),
       };
     }
 
@@ -526,16 +567,18 @@ export const buildActions = (transactions, { chainId }) => {
     return {
       type: "payer-top-up",
       amount: formatEther(topUpTx.value),
+      firstTransactionIndex: getTransactionIndex(topUpTx),
     };
   };
 
   const extractCustomTransactionAction = () => {
     if (transactionsLeft.length === 0) return null;
 
-    const { targets, signatures, calldatas, values } = unparse(
-      [transactionsLeft[0]],
-      { chainId }
-    );
+    const tx = transactionsLeft[0];
+
+    const { targets, signatures, calldatas, values } = unparse([tx], {
+      chainId,
+    });
 
     transactionsLeft = transactionsLeft.slice(1);
 
@@ -550,6 +593,7 @@ export const buildActions = (transactions, { chainId }) => {
       contractCallSignature: `${name}(${inputs.map((i) => i.type).join(", ")})`,
       contractCallArguments: inputs.map((i) => i.value),
       contractCallValue: values[0],
+      firstTransactionIndex: getTransactionIndex(tx),
     };
   };
 
@@ -581,7 +625,7 @@ export const buildActions = (transactions, { chainId }) => {
     throw new Error();
   }
 
-  return actions;
+  return arrayUtils.sortBy("firstTransactionIndex", actions);
 };
 
 export const resolveAction = (a, { chainId }) => {
@@ -700,4 +744,64 @@ export const resolveAction = (a, { chainId }) => {
   };
 
   return parse(unparse(getParsedTransactions(), { chainId }), { chainId });
+};
+
+export const stringify = (parsedTransaction, { chainId }) => {
+  const { targets, values, signatures, calldatas } = unparse(
+    [parsedTransaction],
+    { chainId }
+  );
+
+  if (signatures[0] == null || signatures[0] === "") {
+    return [
+      targets[0] == null ? null : `target: ${targets[0]}`,
+      (calldatas[0] ?? "0x") === "0x" ? null : `calldata: ${calldatas[0]}`,
+      (values[0] ?? "0") === "0" ? null : `value: ${values[0]}`,
+    ]
+      .filter(Boolean)
+      .join("\n");
+  }
+
+  const { name: functionName, inputs: inputTypes } = parseAbiItem(
+    `function ${signatures[0]}`
+  );
+  const inputs = decodeAbiParameters(inputTypes, calldatas[0]);
+
+  const truncatedTarget = `${targets[0].slice(0, 6)}...${targets[0].slice(-4)}`;
+
+  const formattedFunctionCall =
+    inputs.length === 0
+      ? `${truncatedTarget}.${functionName}()`
+      : `${truncatedTarget}.${functionName}(\n  ${inputs
+          .map(ethereumUtils.formatSolidityArgument)
+          .join(",\n  ")}\n)`;
+
+  if (values[0] == null || values[0] === "0") return formattedFunctionCall;
+
+  return formattedFunctionCall + `\n value: ${values[0]}`;
+};
+
+export const isEqual = (ts1, ts2) => {
+  if (ts1.targets.length !== ts2.targets.length) return false;
+
+  return ts1.targets.some((target1, i) => {
+    const [signature1, calldata1, value1] = [
+      ts1.signatures[i],
+      ts1.calldatas[i],
+      ts1.values[i],
+    ];
+    const [target2, signature2, calldata2, value2] = [
+      ts2.targets[i],
+      ts2.signatures[i],
+      ts2.calldatas[i],
+      ts2.values[i],
+    ];
+
+    return (
+      target1 !== target2 ||
+      signature1 !== signature2 ||
+      calldata1 !== calldata2 ||
+      value1 !== value2
+    );
+  });
 };

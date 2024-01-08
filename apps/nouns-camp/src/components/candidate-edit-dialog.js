@@ -1,40 +1,36 @@
 import React from "react";
-import { diffLines } from "diff";
-import { useNavigate } from "react-router-dom";
 import { css, useTheme } from "@emotion/react";
 import {
   markdown as markdownUtils,
   message as messageUtils,
 } from "@shades/common/utils";
-import Input from "@shades/ui-web/input";
 import Dialog from "@shades/ui-web/dialog";
-import DialogHeader from "@shades/ui-web/dialog-header";
-import DialogFooter from "@shades/ui-web/dialog-footer";
 import {
   toMessageBlocks as richTextToMessageBlocks,
   fromMessageBlocks as messageToRichTextBlocks,
 } from "@shades/ui-web/rich-text-editor";
 import {
+  unparse as unparseTransactions,
   resolveAction as resolveActionTransactions,
   buildActions as buildActionsFromTransactions,
+  isEqual as areTransactionsEqual,
+  stringify as stringifyTransaction,
 } from "../utils/transactions.js";
 import { useProposalCandidate } from "../store.js";
 import useChainId from "../hooks/chain-id.js";
-import {
-  useUpdateProposalCandidate,
-  useCancelProposalCandidate,
-} from "../hooks/data-contract.js";
+import { useUpdateProposalCandidate } from "../hooks/data-contract.js";
 import ProposalEditor from "./proposal-editor.js";
-import { PreviewUpdateDialog } from "./proposal-edit-dialog.js";
+import {
+  PreviewUpdateDialog,
+  SubmitUpdateDialog,
+  createMarkdownDescription,
+  createMarkdownDiffFunction,
+} from "./proposal-edit-dialog.js";
 
-const createMarkdownDescription = ({ title, body }) => {
-  const markdownBody = messageUtils.toMarkdown(richTextToMessageBlocks(body));
-  return `# ${title.trim()}\n\n${markdownBody}`;
-};
+const diffMarkdown = createMarkdownDiffFunction();
 
-const CandidateEditDialog = ({ candidateId, dismiss }) => {
+const CandidateEditDialog = ({ candidateId, isOpen, close: closeDialog }) => {
   const theme = useTheme();
-  const navigate = useNavigate();
   const chainId = useChainId();
   const scrollContainerRef = React.useRef();
 
@@ -49,45 +45,105 @@ const CandidateEditDialog = ({ candidateId, dismiss }) => {
     return messageToRichTextBlocks(messageBlocks);
   }, [persistedMarkdownBody]);
 
+  const persistedActions = React.useMemo(
+    () =>
+      buildActionsFromTransactions(
+        candidate.latestVersion.content.transactions,
+        {
+          chainId,
+        }
+      ),
+    [candidate, chainId]
+  );
+
   const [showPreviewDialog, setShowPreviewDialog] = React.useState(false);
   const [showSubmitDialog, setShowSubmitDialog] = React.useState(false);
 
   const [title, setTitle] = React.useState(persistedTitle);
   const [body, setBody] = React.useState(persistedRichTextBody);
-  const [actions, setActions] = React.useState(() =>
-    buildActionsFromTransactions(candidate.latestVersion.content.transactions, {
-      chainId,
-    })
-  );
+  const [actions, setActions] = React.useState(persistedActions);
 
   const [hasPendingSubmit, setPendingSubmit] = React.useState(false);
+  // const [hasPendingCancel, setPendingCancel] = React.useState(false);
 
   const deferredBody = React.useDeferredValue(body);
 
-  const hasTitleChanges = title.trim() !== persistedTitle;
+  const hasChanges = React.useMemo(() => {
+    const hasTitleChanges = title.trim() !== persistedTitle;
 
-  const hasBodyChanges = React.useMemo(() => {
+    if (hasTitleChanges) return true;
+
+    const hasActionChanges =
+      actions.length !== persistedActions.length ||
+      actions.some((a, i) => {
+        const persistedAction = persistedActions[i];
+
+        const transactions = unparseTransactions(
+          resolveActionTransactions(a, { chainId }),
+          {
+            chainId,
+          }
+        );
+        const persistedTransactions = unparseTransactions(
+          resolveActionTransactions(persistedAction, { chainId }),
+          { chainId }
+        );
+
+        return areTransactionsEqual(transactions, persistedTransactions);
+      });
+
+    if (hasActionChanges) return true;
+
     const markdownBody = messageUtils.toMarkdown(
       richTextToMessageBlocks(deferredBody)
     );
-    return markdownBody !== persistedMarkdownBody;
-  }, [deferredBody, persistedMarkdownBody]);
 
-  const hasActionChanges = false;
+    const hasBodyChanges = markdownBody !== persistedMarkdownBody;
 
-  const hasChanges = hasTitleChanges || hasBodyChanges || hasActionChanges;
+    return hasBodyChanges;
+  }, [
+    title,
+    persistedTitle,
+    deferredBody,
+    persistedMarkdownBody,
+    actions,
+    persistedActions,
+    chainId,
+  ]);
+
+  const dismissDialog = () => {
+    if (!hasChanges) {
+      closeDialog();
+      return;
+    }
+
+    if (
+      !confirm(
+        "This will discard all your changes. Are you sure you wish to continue?"
+      )
+    )
+      return;
+
+    closeDialog();
+  };
 
   const updateProposalCandidate = useUpdateProposalCandidate(candidate.slug);
-  const cancelProposalCandidate = useCancelProposalCandidate(candidate.slug);
 
-  const diff = React.useMemo(
-    () =>
-      diffLines(
-        persistedDescription,
-        createMarkdownDescription({ title, body: deferredBody })
-      ),
-    [title, deferredBody, persistedDescription]
-  );
+  const createDescriptionDiff = () =>
+    diffMarkdown(
+      persistedDescription,
+      createMarkdownDescription({ title, body: deferredBody })
+    );
+  const createTransactionsDiff = () =>
+    diffMarkdown(
+      candidate.latestVersion.content.transactions
+        .map((t) => stringifyTransaction(t, { chainId }))
+        .join("\n\n"),
+      actions
+        .flatMap((a) => resolveActionTransactions(a, { chainId }))
+        .map((t) => stringifyTransaction(t, { chainId }))
+        .join("\n\n")
+    );
 
   const submit = async ({ updateMessage }) => {
     try {
@@ -103,7 +159,7 @@ const CandidateEditDialog = ({ candidateId, dismiss }) => {
         transactions,
         updateMessage,
       });
-      dismiss();
+      closeDialog();
     } catch (e) {
       console.log(e);
       alert("Something went wrong");
@@ -112,13 +168,13 @@ const CandidateEditDialog = ({ candidateId, dismiss }) => {
     }
   };
 
-  // React.useEffect(() => {
-  //   const messageBlocks = markdownUtils.toMessageBlocks(persistedMarkdownBody);
-  //   setBody(messageToRichTextBlocks(messageBlocks));
-  // }, [persistedTitle, persistedMarkdownBody]);
-
   return (
-    <>
+    <Dialog
+      isOpen={isOpen}
+      tray
+      onRequestClose={dismissDialog}
+      width="135.6rem"
+    >
       <div
         ref={scrollContainerRef}
         css={css({
@@ -136,21 +192,15 @@ const CandidateEditDialog = ({ candidateId, dismiss }) => {
           setTitle={setTitle}
           setBody={setBody}
           setActions={setActions}
+          proposerId={candidate.proposerId}
           onSubmit={() => {
             setShowPreviewDialog(true);
           }}
-          onDelete={() => {
-            if (!confirm("Are you sure you wish to cancel this candidate?"))
-              return;
-
-            cancelProposalCandidate().then(() => {
-              navigate("/", { replace: true });
-            });
-          }}
-          containerHeight="calc(100vh - 6rem)"
-          scrollContainerRef={scrollContainerRef}
           submitLabel="Preview update"
           submitDisabled={!hasChanges}
+          hasPendingSubmit={hasPendingSubmit}
+          containerHeight="calc(100vh - 6rem)"
+          scrollContainerRef={scrollContainerRef}
           background={theme.colors.dialogBackground}
         />
       </div>
@@ -161,7 +211,8 @@ const CandidateEditDialog = ({ candidateId, dismiss }) => {
           close={() => {
             setShowPreviewDialog(false);
           }}
-          diff={diff}
+          createDescriptionDiff={createDescriptionDiff}
+          createTransactionsDiff={createTransactionsDiff}
           submit={() => {
             setShowPreviewDialog(false);
             setShowSubmitDialog(true);
@@ -178,66 +229,6 @@ const CandidateEditDialog = ({ candidateId, dismiss }) => {
           hasPendingSubmit={hasPendingSubmit}
           submit={submit}
         />
-      )}
-    </>
-  );
-};
-
-const SubmitUpdateDialog = ({ isOpen, hasPendingSubmit, submit, close }) => {
-  const [updateMessage, setUpdateMessage] = React.useState("");
-
-  const hasMessage = updateMessage.trim() !== "";
-
-  return (
-    <Dialog
-      isOpen={isOpen}
-      onRequestClose={() => {
-        close();
-      }}
-      width="54rem"
-      css={css({ overflow: "auto" })}
-    >
-      {({ titleProps }) => (
-        <form
-          onSubmit={(e) => {
-            e.preventDefault();
-            submit({ updateMessage });
-          }}
-          css={css({
-            overflow: "auto",
-            padding: "1.5rem",
-            "@media (min-width: 600px)": {
-              padding: "2rem",
-            },
-          })}
-        >
-          <DialogHeader
-            title="Submit"
-            titleProps={titleProps}
-            dismiss={close}
-          />
-          <main>
-            <Input
-              multiline
-              label="Update message"
-              rows={3}
-              placeholder="..."
-              value={updateMessage}
-              onChange={(e) => {
-                setUpdateMessage(e.target.value);
-              }}
-            />
-          </main>
-          <DialogFooter
-            cancel={close}
-            cancelButtonLabel="Cancel"
-            submitButtonLabel="Submit update"
-            submitButtonProps={{
-              isLoading: hasPendingSubmit,
-              disabled: !hasMessage || hasPendingSubmit,
-            }}
-          />
-        </form>
       )}
     </Dialog>
   );

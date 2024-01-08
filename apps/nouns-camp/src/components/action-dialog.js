@@ -1089,7 +1089,7 @@ const renderInput = (input, inputValue, setInputValue) => {
             type="number"
             min={min.toString()}
             max={max.toString()}
-            value={inputValue}
+            value={inputValue.toString?.() ?? inputValue}
             onChange={(e) => {
               try {
                 const n = BigInt(e.target.value);

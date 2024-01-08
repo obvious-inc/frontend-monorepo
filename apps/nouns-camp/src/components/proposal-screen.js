@@ -4,6 +4,7 @@ import { formatUnits } from "viem";
 import { useBlockNumber } from "wagmi";
 import {
   Link as RouterLink,
+  useNavigate,
   useParams,
   useSearchParams,
 } from "react-router-dom";
@@ -12,7 +13,6 @@ import { date as dateUtils, reloadPageOnce } from "@shades/common/utils";
 import {
   ErrorBoundary,
   AutoAdjustingHeightTextarea,
-  useMatchMedia,
 } from "@shades/common/react";
 import {
   Clock as ClockIcon,
@@ -22,7 +22,6 @@ import {
 } from "@shades/ui-web/icons";
 import Button from "@shades/ui-web/button";
 import Select from "@shades/ui-web/select";
-import Dialog from "@shades/ui-web/dialog";
 import * as Tooltip from "@shades/ui-web/tooltip";
 import Spinner from "@shades/ui-web/spinner";
 import { extractAmounts as extractAmountsFromTransactions } from "../utils/transactions.js";
@@ -39,6 +38,7 @@ import {
   useDelegate,
 } from "../store.js";
 import {
+  useCancelProposal,
   useCastProposalVote,
   useDynamicQuorum,
 } from "../hooks/dao-contract.js";
@@ -46,6 +46,7 @@ import { useSendProposalFeedback } from "../hooks/data-contract.js";
 import { usePriorVotes } from "../hooks/token-contract.js";
 import useApproximateBlockTimestampCalculator from "../hooks/approximate-block-timestamp-calculator.js";
 import { useWallet } from "../hooks/wallet.js";
+import useMatchDesktopLayout from "../hooks/match-desktop-layout.js";
 import MetaTags_ from "./meta-tags.js";
 import Layout, { MainContentContainer } from "./layout.js";
 import ProposalStateTag from "./proposal-state-tag.js";
@@ -108,7 +109,7 @@ const ProposalMainSection = ({ proposalId, scrollContainerRef }) => {
     requestAccess: requestWalletAccess,
   } = useWallet();
 
-  const isDesktopLayout = useMatchMedia("(min-width: 952px)");
+  const isDesktopLayout = useMatchDesktopLayout();
   const mobileTabAnchorRef = React.useRef();
   const mobileTabContainerRef = React.useRef();
 
@@ -584,6 +585,8 @@ export const ProposalActionForm = ({
   const {
     address: connectedWalletAccountAddress,
     requestAccess: requestWalletAccess,
+    switchToMainnet: requestWalletNetworkSwitchToMainnet,
+    isLoading: hasPendingWalletAction,
     isUnsupportedChain,
   } = useWallet();
   const connectedDelegate = useDelegate(connectedWalletAccountAddress);
@@ -643,6 +646,9 @@ export const ProposalActionForm = ({
   const helpText = renderHelpText();
 
   const showModePicker = availableModes != null && availableModes.length > 1;
+
+  const disableForm =
+    isPending || connectedWalletAccountAddress == null || isUnsupportedChain;
 
   return (
     <>
@@ -745,7 +751,7 @@ export const ProposalActionForm = ({
                 },
               })
             }
-            disabled={isPending || connectedWalletAccountAddress == null}
+            disabled={disableForm}
           />
           <div
             style={{
@@ -852,25 +858,38 @@ export const ProposalActionForm = ({
                           { value: 2, label: "No signal" },
                         ]
                   }
-                  disabled={isPending}
+                  disabled={disableForm}
                 />
-                <Button
-                  type="submit"
-                  variant="primary"
-                  disabled={
-                    isPending || !hasRequiredInputs || isUnsupportedChain
-                  }
-                  isLoading={isPending}
-                  size={size}
-                >
-                  {mode === "vote"
-                    ? `Cast ${
-                        proposalVoteCount === 1
-                          ? "vote"
-                          : `${proposalVoteCount} votes`
-                      }`
-                    : "Submit comment"}
-                </Button>
+                {isUnsupportedChain ? (
+                  <Button
+                    type="button"
+                    variant="primary"
+                    disabled={hasPendingWalletAction}
+                    isLoading={hasPendingWalletAction}
+                    size={size}
+                    onClick={() => {
+                      requestWalletNetworkSwitchToMainnet();
+                    }}
+                  >
+                    Switch to Mainnet
+                  </Button>
+                ) : (
+                  <Button
+                    type="submit"
+                    variant="primary"
+                    disabled={isPending || !hasRequiredInputs}
+                    isLoading={isPending}
+                    size={size}
+                  >
+                    {mode === "vote"
+                      ? `Cast ${
+                          proposalVoteCount === 1
+                            ? "vote"
+                            : `${proposalVoteCount} votes`
+                        }`
+                      : "Submit comment"}
+                  </Button>
+                )}
               </>
             )}
           </div>
@@ -991,10 +1010,14 @@ export const ProposalBody = React.memo(({ markdownText }) => {
           })
         }
       >
-        <MarkdownRichText text={markdownText} imagesMaxHeight={680} />
+        {markdownText != null && (
+          <React.Suspense fallback={null}>
+            <MarkdownRichText text={markdownText} imagesMaxHeight={680} />
+          </React.Suspense>
+        )}
       </div>
 
-      {isDebugSession && (
+      {isDebugSession && markdownText != null && (
         <div
           css={(t) =>
             css({
@@ -1069,11 +1092,14 @@ const RequestedAmounts = ({ amounts }) => (
 
 const ProposalScreen = () => {
   const { proposalId } = useParams();
+  const navigate = useNavigate();
 
   const proposal = useProposal(proposalId);
+  const cancelProposal = useCancelProposal(proposalId);
 
   const [notFound, setNotFound] = React.useState(false);
   const [fetchError, setFetchError] = React.useState(null);
+  const [hasPendingCancel, setPendingCancel] = React.useState(false);
 
   const scrollContainerRef = React.useRef();
 
@@ -1090,11 +1116,11 @@ const ProposalScreen = () => {
 
   const isDialogOpen = searchParams.get("proposal-dialog") != null;
 
-  const openDialog = React.useCallback(() => {
+  const openEditDialog = React.useCallback(() => {
     setSearchParams({ "proposal-dialog": 1 });
   }, [setSearchParams]);
 
-  const closeDialog = React.useCallback(() => {
+  const closeEditDialog = React.useCallback(() => {
     setSearchParams((params) => {
       const newParams = new URLSearchParams(params);
       newParams.delete("proposal-dialog");
@@ -1113,6 +1139,45 @@ const ProposalScreen = () => {
       setFetchError(e);
     },
   });
+
+  const getActions = () => {
+    if (proposal == null) return [];
+
+    if (!isProposer || proposal.state === "canceled") return undefined;
+
+    const proposerActions = [
+      isBetaSession &&
+        proposal.state === "updatable" && {
+          onSelect: openEditDialog,
+          label: "Edit",
+        },
+      !isFinalProposalState(proposal.state) && {
+        onSelect: () => {
+          if (!confirm("Are you sure you wish to cancel this proposal?"))
+            return;
+
+          setPendingCancel(true);
+
+          cancelProposal().then(
+            () => {
+              navigate("/", { replace: true });
+            },
+            (e) => {
+              setPendingCancel(false);
+              return Promise.reject(e);
+            }
+          );
+        },
+        label: "Cancel",
+        buttonProps: {
+          isLoading: hasPendingCancel,
+          disabled: cancelProposal == null || hasPendingCancel,
+        },
+      },
+    ].filter(Boolean);
+
+    return proposerActions.length === 0 ? undefined : proposerActions;
+  };
 
   return (
     <>
@@ -1142,15 +1207,7 @@ const ProposalScreen = () => {
             ),
           },
         ]}
-        actions={
-          proposal?.state == null
-            ? null
-            : isBetaSession &&
-              isProposer &&
-              !isFinalProposalState(proposal.state)
-            ? [{ onSelect: openDialog, label: "Manage proposal" }]
-            : undefined
-        }
+        actions={getActions()}
       >
         {proposal == null ? (
           <div
@@ -1218,23 +1275,19 @@ const ProposalScreen = () => {
       </Layout>
 
       {isDialogOpen && proposal != null && (
-        <Dialog isOpen tray onRequestClose={closeDialog} width="131.2rem">
-          {({ titleProps }) => (
-            <ErrorBoundary
-              onError={() => {
-                reloadPageOnce();
-              }}
-            >
-              <React.Suspense fallback={null}>
-                <ProposalEditDialog
-                  proposalId={proposalId}
-                  titleProps={titleProps}
-                  dismiss={closeDialog}
-                />
-              </React.Suspense>
-            </ErrorBoundary>
-          )}
-        </Dialog>
+        <ErrorBoundary
+          onError={() => {
+            reloadPageOnce();
+          }}
+        >
+          <React.Suspense fallback={null}>
+            <ProposalEditDialog
+              proposalId={proposalId}
+              isOpen
+              close={closeEditDialog}
+            />
+          </React.Suspense>
+        </ErrorBoundary>
       )}
     </>
   );
@@ -1535,7 +1588,7 @@ const MetaTags = ({ proposalId }) => {
   return (
     <MetaTags_
       title={title}
-      description={body.length > 600 ? `${body.slice(0, 600)}...` : body}
+      description={body?.length > 600 ? `${body.slice(0, 600)}...` : body}
       canonicalPathname={`/proposals/${proposalId}`}
     />
   );

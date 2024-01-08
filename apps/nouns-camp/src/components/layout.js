@@ -110,6 +110,7 @@ const NavBar = ({ navigationStack, actions: actions_ }) => {
     switchToMainnet: switchWalletToMainnet,
     isUnsupportedChain,
     isShimmedDisconnect: isShimmedWalletDisconnect,
+    isTestnet,
     isLoading: isLoadingWallet,
   } = useWallet();
   const { displayName: connectedAccountDisplayName } = useAccountDisplayName(
@@ -164,12 +165,16 @@ const NavBar = ({ navigationStack, actions: actions_ }) => {
                     verticalAlign: "sub",
                     transform: "translateY(0.1rem) scale(1.05)",
                   })}
+                  style={{
+                    filter:
+                      isTestnet || isUnsupportedChain ? "invert(1)" : undefined,
+                  }}
                 />
                 {location.pathname !== "/" && (
                   <span
                     css={css({
                       marginLeft: "0.6rem",
-                      "@media(max-width: 440px)": { display: "none" },
+                      "@media(max-width: 600px)": { display: "none" },
                     })}
                   >
                     Camp
@@ -189,7 +194,7 @@ const NavBar = ({ navigationStack, actions: actions_ }) => {
                   css({
                     color: t.colors.textMuted,
                     fontSize: t.text.sizes.base,
-                    "@media(max-width: 440px)": {
+                    "@media(max-width: 600px)": {
                       '&[data-index="1"]': { display: "none" },
                     },
                   })
@@ -200,15 +205,19 @@ const NavBar = ({ navigationStack, actions: actions_ }) => {
             )}
             <RouterLink
               to={item.to}
+              data-index={index}
               data-disabled={location.pathname === item.to}
               data-desktop-only={item.desktopOnly}
               css={(t) =>
                 css({
+                  overflow: "hidden",
+                  textOverflow: "ellipsis",
                   fontSize: t.fontSizes.base,
                   color: t.colors.textNormal,
                   padding: "0.3rem 0.5rem",
                   borderRadius: "0.2rem",
                   textDecoration: "none",
+                  '&[data-index="0"]': { minWidth: "max-content" },
                   '&[data-disabled="true"]': { pointerEvents: "none" },
                   "@media(hover: hover)": {
                     cursor: "pointer",
@@ -228,14 +237,20 @@ const NavBar = ({ navigationStack, actions: actions_ }) => {
         css={(t) =>
           css({
             fontSize: t.text.sizes.base,
-            padding: "0 1.6rem",
+            padding: "0 1.6rem 0 0",
             ul: {
               display: "grid",
               gridAutoFlow: "column",
-              gridGap: "0.5rem",
+              gridGap: "0.3rem",
               alignItems: "center",
             },
             li: { listStyle: "none" },
+            '[role="separator"]': {
+              width: "0.1rem",
+              background: t.colors.borderLight,
+              height: "1.6rem",
+              margin: "0 0.6rem",
+            },
             "@media (min-width: 600px)": {
               padding: "0 1rem",
             },
@@ -262,9 +277,7 @@ const NavBar = ({ navigationStack, actions: actions_ }) => {
               : isUnsupportedChain
               ? {
                   onSelect: () => {
-                    switchWalletToMainnet().catch(() => {
-                      alert("Ops, something went wrong!");
-                    });
+                    switchWalletToMainnet();
                   },
                   buttonProps: {
                     variant: "default",
@@ -300,7 +313,15 @@ const NavBar = ({ navigationStack, actions: actions_ }) => {
                         gap: "0.8rem",
                       })}
                     >
-                      <div>{connectedAccountDisplayName}</div>
+                      {location.pathname === "/" && (
+                        <div
+                          css={css({
+                            "@media(max-width: 600px)": { display: "none" },
+                          })}
+                        >
+                          {connectedAccountDisplayName}
+                        </div>
+                      )}
                       <AccountAvatar
                         address={connectedWalletAccountAddress}
                         size="2rem"
@@ -312,18 +333,7 @@ const NavBar = ({ navigationStack, actions: actions_ }) => {
             .filter(Boolean)
             .map((a, i) =>
               a.type === "separator" ? (
-                <li
-                  key={i}
-                  role="separator"
-                  aria-orientation="vertical"
-                  css={(t) =>
-                    css({
-                      width: "0.1rem",
-                      background: t.colors.borderLight,
-                      height: "1.6rem",
-                    })
-                  }
-                />
+                <li key={i} role="separator" aria-orientation="vertical" />
               ) : a.type === "dropdown" ? (
                 <DropdownMenu.Root key={i} placement="bottom">
                   <DropdownMenu.Trigger asChild>
@@ -445,12 +455,12 @@ export const MainContentContainer = ({
         width: "var(--width)",
         padding: "0 4rem",
       },
-      "@media (min-width: 952px)": {
+      "@media (min-width: 996px)": {
         padding: "0 6rem",
       },
     })}
     style={{
-      "--width": narrow ? "72rem" : "128rem",
+      "--width": narrow ? "72rem" : "132rem",
     }}
     {...props}
   >
@@ -460,7 +470,7 @@ export const MainContentContainer = ({
       <div
         css={(t) =>
           css({
-            "@media (min-width: 952px)": {
+            "@media (min-width: 996px)": {
               display: "grid",
               gridTemplateColumns: `minmax(0, 1fr) ${t.sidebarWidth} `,
               gridGap: "8rem",

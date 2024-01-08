@@ -1,7 +1,6 @@
 import getDateYear from "date-fns/getYear";
 import React from "react";
 import { formatEther, parseEther } from "viem";
-import { useAccount } from "wagmi";
 import { css, Global as GlobalStyles } from "@emotion/react";
 import { Overlay } from "react-aria";
 import {
@@ -21,7 +20,7 @@ import {
 import Button from "@shades/ui-web/button";
 import Link from "@shades/ui-web/link";
 import Dialog from "@shades/ui-web/dialog";
-import DialogFooter from "@shades/ui-web/dialog-footer";
+import DialogHeader from "@shades/ui-web/dialog-header";
 import { resolveAction as resolveActionTransactions } from "../utils/transactions.js";
 import { useContract } from "../contracts.js";
 import useChainId from "../hooks/chain-id.js";
@@ -96,13 +95,16 @@ const ProposalEditor = ({
   setTitle,
   setBody,
   setActions,
+  proposerId,
   onSubmit,
   onDelete,
   disabled,
   submitDisabled,
   hasPendingSubmit,
+  hasPendingDelete,
   containerHeight,
   submitLabel,
+  deleteLabel,
   note,
   payerTopUpValue,
   scrollContainerRef,
@@ -199,16 +201,27 @@ const ProposalEditor = ({
                   justifyContent: "space-between",
                 })}
               >
-                <Button
-                  danger
-                  size="medium"
-                  type="button"
-                  onClick={() => {
-                    onDelete();
-                  }}
-                  icon={<TrashCanIcon style={{ width: "1.4rem" }} />}
-                  disabled={disabled}
-                />
+                {onDelete != null ? (
+                  <Button
+                    danger
+                    size="medium"
+                    type="button"
+                    onClick={() => {
+                      onDelete();
+                    }}
+                    icon={
+                      deleteLabel == null ? (
+                        <TrashCanIcon style={{ width: "1.4rem" }} />
+                      ) : null
+                    }
+                    disabled={disabled || hasPendingDelete}
+                    isLoading={hasPendingDelete}
+                  >
+                    {deleteLabel}
+                  </Button>
+                ) : (
+                  <div />
+                )}
                 <Button
                   type="button"
                   variant="primary"
@@ -230,6 +243,7 @@ const ProposalEditor = ({
             setTitle={setTitle}
             body={body}
             setBody={setBody}
+            proposerId={proposerId}
             disabled={disabled}
             scrollContainerRef={scrollContainerRef}
           />
@@ -264,7 +278,7 @@ const EditorLayout = ({
         <div
           css={css({
             paddingBottom: "12rem", // Fixed nav height
-            "@media (min-width: 952px)": {
+            "@media (min-width: 996px)": {
               padding: 0,
               position: "relative",
               display: "flex",
@@ -282,7 +296,7 @@ const EditorLayout = ({
               "@media (min-width: 600px)": {
                 padding: "3.2rem 0",
               },
-              "@media (min-width: 952px)": {
+              "@media (min-width: 996px)": {
                 padding: "6rem 0 3.2rem",
               },
             })}
@@ -296,7 +310,7 @@ const EditorLayout = ({
               bottom: 0,
               padding: "0 1.6rem",
               width: "100%",
-              "@media (min-width: 952px)": {
+              "@media (min-width: 996px)": {
                 padding: 0,
                 left: "auto",
                 position: "sticky",
@@ -328,7 +342,7 @@ const EditorLayout = ({
             "@media (min-width: 600px)": {
               padding: "6rem 0 0",
             },
-            "@media (min-width: 952px)": {
+            "@media (min-width: 996px)": {
               minHeight: "var(--min-height)",
               padding: "6rem 0 16rem",
             },
@@ -664,6 +678,8 @@ const TransactionCodeBlock = ({ transaction }) => {
     case "usdc-stream-funding-via-payer":
     case "weth-stream-funding":
     case "usdc-transfer-via-payer":
+    case "treasury-noun-transfer":
+    case "escrow-noun-transfer":
     case "function-call":
     case "payable-function-call":
     case "proxied-function-call":
@@ -822,6 +838,8 @@ const ActionListItem = ({ action: a, openEditDialog, disabled = false }) => {
       case "weth-transfer":
       case "weth-approval":
       case "payer-top-up":
+      case "treasury-noun-transfer":
+      case "escrow-noun-transfer":
         return null;
 
       case "unparsed-function-call":
@@ -1039,19 +1057,36 @@ const MarkdownPreviewDialog = ({ isOpen, close, title, body }) => {
           },
         })}
       >
-        <div
+        <DialogHeader
+          title="Raw preview"
+          subtitle={
+            <>
+              Content is formatted as{" "}
+              <Link
+                component="a"
+                href="https://daringfireball.net/projects/markdown/syntax"
+                rel="noreferrer"
+                target="_blank"
+              >
+                Markdown
+              </Link>
+            </>
+          }
+          dismiss={close}
+        />
+        <main
           css={(t) =>
             css({
-              fontSize: t.text.sizes.large,
               whiteSpace: "pre-wrap",
               fontFamily: t.fontStacks.monospace,
               userSelect: "text",
+              fontSize: t.text.sizes.small,
+              "@media(min-width: 600px)": { fontSize: t.text.sizes.base },
             })
           }
         >
           {description}
-        </div>
-        <DialogFooter cancel={close} cancelButtonLabel="Close" />
+        </main>
       </div>
     </Dialog>
   );
@@ -1062,6 +1097,7 @@ const ProposalContentEditor = ({
   setTitle,
   body,
   setBody,
+  proposerId,
   disabled,
   // editorRef,
   scrollContainerRef,
@@ -1069,8 +1105,6 @@ const ProposalContentEditor = ({
   // const editor = editorRef.current;
   const editorRef = React.useRef();
   const editor = editorRef.current;
-
-  const { address: connectedAccountAddress } = useAccount();
 
   const [editorSelection, setEditorSelection] = React.useState(null);
   const [isEditorFocused, setEditorFocused] = React.useState(false);
@@ -1171,7 +1205,7 @@ const ProposalContentEditor = ({
         css={(t) =>
           css({
             background: "none",
-            fontSize: t.text.sizes.huge,
+            fontSize: t.text.sizes.headerLarger,
             lineHeight: 1.15,
             width: "100%",
             outline: "none",
@@ -1181,6 +1215,9 @@ const ProposalContentEditor = ({
             color: t.colors.textHeader,
             margin: "0 0 0.3rem",
             "::placeholder": { color: t.colors.textMuted },
+            "@media(min-width: 600px)": {
+              fontSize: t.text.sizes.huge,
+            },
           })
         }
       />
@@ -1193,10 +1230,7 @@ const ProposalContentEditor = ({
           })
         }
       >
-        By{" "}
-        <AccountPreviewPopoverTrigger
-          accountAddress={connectedAccountAddress}
-        />
+        By <AccountPreviewPopoverTrigger accountAddress={proposerId} />
       </div>
 
       {editorMode === "rich-text" ? (
@@ -1220,7 +1254,11 @@ const ProposalContentEditor = ({
             imagesMaxWidth={null}
             imagesMaxHeight={680}
             disabled={disabled}
-            css={(t) => css({ fontSize: t.text.sizes.large })}
+            css={(t) =>
+              css({
+                "@media(min-width: 600px)": { fontSize: t.text.sizes.large },
+              })
+            }
             style={{ flex: 1, minHeight: "12rem" }}
           />
 
@@ -1304,7 +1342,6 @@ const ProposalContentEditor = ({
 const SidebarContent = ({ actions, setActions, disabled }) => {
   const [selectedActionIndex, setSelectedActionIndex] = React.useState(null);
   const [showNewActionDialog, setShowNewActionDialog] = React.useState(false);
-
 
   const hasActions = actions != null && actions.length > 0;
   const selectedAction =

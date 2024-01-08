@@ -13,7 +13,7 @@ export const makeUrlId = (id) => {
 
 export const getSponsorSignatures = (
   candidate,
-  { excludeInvalid = false } = {}
+  { excludeInvalid = false, activeProposerIds } = {}
 ) => {
   const signatures = candidate?.latestVersion?.content.contentSignatures ?? [];
   return arrayUtils
@@ -24,12 +24,18 @@ export const getSponsorSignatures = (
       if (
         // Exclude canceled ones...
         s.canceled ||
-        // ...expires ones
+        // ...expired ones
         s.expirationTimestamp <= new Date() ||
-        // ...multiple ones from the same signer with shorter expiration
+        // ...signatures from the proposer
+        //
+        // (The proposer’s voting power is taken into account automatically by
+        // the contract. Submitting proposer signatures will reject.)
+        s.signer.id.toLowerCase() === candidate.proposerId.toLowerCase() ||
+        // ...signatures from signers with active proposals
+        activeProposerIds.includes(s.signer.id.toLowerCase()) ||
+        // ...duplicates from the same signer with shorter expiration
         signatures.some((s_) => s_.signer.id === s.signer.id)
       )
-        // TODO: exclude signers who have an active or pending proposal
         return signatures;
 
       return [...signatures, s];
@@ -42,16 +48,6 @@ export const buildFeed = (candidate) => {
   const candidateId = candidate.id;
   const targetProposalId = candidate.latestVersion?.targetProposalId;
 
-  const createdEventItem = {
-    type: "event",
-    eventType: "candidate-created",
-    id: `${candidate.id}-created`,
-    timestamp: candidate.createdTimestamp,
-    blockNumber: candidate.createdBlock,
-    authorAccount: candidate.proposerId,
-    candidateId,
-    targetProposalId,
-  };
   const feedbackPostItems =
     candidate.feedbackPosts?.map((p) => ({
       type: "feedback-post",
@@ -67,7 +63,33 @@ export const buildFeed = (candidate) => {
       targetProposalId,
     })) ?? [];
 
-  const items = [createdEventItem, ...feedbackPostItems];
+  const updateEventItems =
+    candidate.versions
+      ?.filter((v) => v.createdBlock > candidate.createdBlock)
+      .map((v) => ({
+        type: "event",
+        eventType: "candidate-updated",
+        id: `candidate-update-${v.createdBlock}`,
+        body: v.updateMessage,
+        blockNumber: v.createdBlock,
+        timestamp: v.createdTimestamp,
+        candidateId,
+        authorAccount: candidate.proposerId, // only proposer can update
+      })) ?? [];
+
+  const items = [...updateEventItems, ...feedbackPostItems];
+
+  if (candidate.createdBlock != null)
+    items.push({
+      type: "event",
+      eventType: "candidate-created",
+      id: `${candidate.id}-created`,
+      timestamp: candidate.createdTimestamp,
+      blockNumber: candidate.createdBlock,
+      authorAccount: candidate.proposerId,
+      candidateId,
+      targetProposalId,
+    });
 
   if (candidate.canceledBlock != null)
     items.push({
@@ -82,7 +104,7 @@ export const buildFeed = (candidate) => {
 
   const signatureItems = getSponsorSignatures(candidate).map((s) => ({
     type: "candidate-signature-added",
-    id: `${s.signer.id}-${s.expirationTimestamp.getTime()}`,
+    id: `candidate-signature-added-${s.sig}`,
     authorAccount: s.signer.id,
     body: s.reason,
     voteCount: s.signer.nounsRepresented?.length,
@@ -101,7 +123,10 @@ export const buildFeed = (candidate) => {
 };
 
 export const getSignals = ({ candidate, proposerDelegate }) => {
-  const signatures = getSponsorSignatures(candidate, { excludeInvalid: true });
+  const signatures = getSponsorSignatures(candidate, {
+    excludeInvalid: true,
+    activeProposerIds: [], // We can ignore active proposers here
+  });
 
   const proposerDelegateNounIds =
     proposerDelegate?.nounsRepresented.map((n) => n.id) ?? [];
