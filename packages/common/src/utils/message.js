@@ -421,8 +421,9 @@ export const toMarkdown = (blockElements) => {
     }
   };
 
-  const renderNode = (node) => {
-    if (node.type == null || node.type === "text") return renderTextNode(node);
+  const renderNode = (node, i, all) => {
+    if (node.type == null || node.type === "text")
+      return renderTextNode(node, i, all);
 
     switch (node.type) {
       case "image":

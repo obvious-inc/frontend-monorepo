@@ -61,8 +61,13 @@ export const isNodeEmpty = (el, options = {}) => {
 };
 
 // TODO: move to element specific plugins
-export const toMessageBlocks = (nodes) =>
-  nodes.map((n) => {
+export const toMessageBlocks = (nodes) => {
+  const stringify = (n) => {
+    if (n.children == null) return n.text;
+    return n.children.map(stringify).join("");
+  };
+
+  return nodes.map((n) => {
     if (n.type == null) return n;
 
     if (n.type === "code-block")
@@ -81,11 +86,7 @@ export const toMessageBlocks = (nodes) =>
 
     if (n.type.startsWith("heading-")) {
       // Merge content into a single child
-      let text = "";
-      for (const node of n.children) {
-        text += node.text;
-      }
-      return { type: n.type, children: [{ text }] };
+      return { type: n.type, children: [{ text: stringify(n) }] };
     }
 
     if (n.children == null) return n;
@@ -100,6 +101,7 @@ export const toMessageBlocks = (nodes) =>
           : children.filter((n) => !isNodeEmpty(n, { trim: false })),
     };
   });
+};
 
 // TODO: move to element specific plugins
 export const fromMessageBlocks = (blocks) =>
