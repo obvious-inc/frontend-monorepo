@@ -8,7 +8,11 @@ import {
   formatUnits,
   formatEther,
 } from "viem";
-import { string as stringUtils } from "@shades/common/utils";
+import {
+  string as stringUtils,
+  array as arrayUtils,
+  ethereum as ethereumUtils,
+} from "@shades/common/utils";
 import { resolveAddress, resolveIdentifier } from "../contracts.js";
 
 const decimalsByCurrency = {
@@ -421,6 +425,8 @@ export const extractAmounts = (parsedTransactions) => {
 };
 
 export const buildActions = (transactions, { chainId }) => {
+  const getTransactionIndex = (t) => transactions.findIndex((t_) => t_ === t);
+
   let transactionsLeft = [...transactions];
   const actions = [];
 
@@ -440,6 +446,7 @@ export const buildActions = (transactions, { chainId }) => {
       transactionsLeft = transactionsLeft.filter(
         (t) => t !== streamTx && t !== usdcFundingTx
       );
+
       return {
         type: "streaming-payment",
         target: streamTx.receiverAddress,
@@ -448,6 +455,9 @@ export const buildActions = (transactions, { chainId }) => {
         startTimestamp: streamTx.startDate.getTime(),
         endTimestamp: streamTx.endDate.getTime(),
         predictedStreamContractAddress: streamTx.streamContractAddress,
+        firstTransactionIndex: Math.min(
+          ...[streamTx, usdcFundingTx].map(getTransactionIndex)
+        ),
       };
     }
 
@@ -480,6 +490,9 @@ export const buildActions = (transactions, { chainId }) => {
       startTimestamp: streamTx.startDate.getTime(),
       endTimestamp: streamTx.endDate.getTime(),
       predictedStreamContractAddress: streamTx.streamContractAddress,
+      firstTransactionIndex: Math.min(
+        ...[streamTx, wethFundingTx, wethDepositTx].map(getTransactionIndex)
+      ),
     };
   };
 
@@ -493,6 +506,7 @@ export const buildActions = (transactions, { chainId }) => {
         target: transferTx.target,
         currency: "eth",
         amount: formatEther(transferTx.value),
+        firstTransactionIndex: getTransactionIndex(transferTx),
       };
     }
 
@@ -510,6 +524,7 @@ export const buildActions = (transactions, { chainId }) => {
           usdcTransferTx.usdcAmount,
           decimalsByCurrency["usdc"]
         ),
+        firstTransactionIndex: getTransactionIndex(usdcTransferTx),
       };
     }
 
@@ -526,16 +541,18 @@ export const buildActions = (transactions, { chainId }) => {
     return {
       type: "payer-top-up",
       amount: formatEther(topUpTx.value),
+      firstTransactionIndex: getTransactionIndex(topUpTx),
     };
   };
 
   const extractCustomTransactionAction = () => {
     if (transactionsLeft.length === 0) return null;
 
-    const { targets, signatures, calldatas, values } = unparse(
-      [transactionsLeft[0]],
-      { chainId }
-    );
+    const tx = transactionsLeft[0];
+
+    const { targets, signatures, calldatas, values } = unparse([tx], {
+      chainId,
+    });
 
     transactionsLeft = transactionsLeft.slice(1);
 
@@ -550,6 +567,7 @@ export const buildActions = (transactions, { chainId }) => {
       contractCallSignature: `${name}(${inputs.map((i) => i.type).join(", ")})`,
       contractCallArguments: inputs.map((i) => i.value),
       contractCallValue: values[0],
+      firstTransactionIndex: getTransactionIndex(tx),
     };
   };
 
@@ -581,7 +599,7 @@ export const buildActions = (transactions, { chainId }) => {
     throw new Error();
   }
 
-  return actions;
+  return arrayUtils.sortBy("firstTransactionIndex", actions);
 };
 
 export const resolveAction = (a, { chainId }) => {
