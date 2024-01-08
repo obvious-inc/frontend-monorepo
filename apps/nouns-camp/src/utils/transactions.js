@@ -746,6 +746,41 @@ export const resolveAction = (a, { chainId }) => {
   return parse(unparse(getParsedTransactions(), { chainId }), { chainId });
 };
 
+export const stringify = (parsedTransaction, { chainId }) => {
+  const { targets, values, signatures, calldatas } = unparse(
+    [parsedTransaction],
+    { chainId }
+  );
+
+  if (signatures[0] == null || signatures[0] === "") {
+    return [
+      targets[0] == null ? null : `target: ${targets[0]}`,
+      calldatas[0] == null ? null : `calldata: ${calldatas[0]}`,
+      values[0] == null ? null : `value: ${values[0]}`,
+    ]
+      .filter(Boolean)
+      .join("\n");
+  }
+
+  const { name: functionName, inputs: inputTypes } = parseAbiItem(
+    `function ${signatures[0]}`
+  );
+  const inputs = decodeAbiParameters(inputTypes, calldatas[0]);
+
+  const truncatedTarget = `${targets[0].slice(0, 6)}...${targets[0].slice(-4)}`;
+
+  const formattedFunctionCall =
+    inputs.length === 0
+      ? `${truncatedTarget}.${functionName}()`
+      : `${truncatedTarget}.${functionName}(\n  ${inputs
+          .map(ethereumUtils.formatSolidityArgument)
+          .join(",\n  ")}\n)`;
+
+  if (values[0] == null || values[0] === "0") return formattedFunctionCall;
+
+  return formattedFunctionCall + `\n value: ${values[0]}`;
+};
+
 export const isEqual = (ts1, ts2) => {
   if (ts1.targets.length !== ts2.targets.length) return false;
 
