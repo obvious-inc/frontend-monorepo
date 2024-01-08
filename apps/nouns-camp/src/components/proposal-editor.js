@@ -20,7 +20,7 @@ import {
 import Button from "@shades/ui-web/button";
 import Link from "@shades/ui-web/link";
 import Dialog from "@shades/ui-web/dialog";
-import DialogFooter from "@shades/ui-web/dialog-footer";
+import DialogHeader from "@shades/ui-web/dialog-header";
 import { resolveAction as resolveActionTransactions } from "../utils/transactions.js";
 import { useContract } from "../contracts.js";
 import useChainId from "../hooks/chain-id.js";
@@ -1057,19 +1057,36 @@ const MarkdownPreviewDialog = ({ isOpen, close, title, body }) => {
           },
         })}
       >
-        <div
+        <DialogHeader
+          title="Raw preview"
+          subtitle={
+            <>
+              Content is formatted as{" "}
+              <Link
+                component="a"
+                href="https://daringfireball.net/projects/markdown/syntax"
+                rel="noreferrer"
+                target="_blank"
+              >
+                Markdown
+              </Link>
+            </>
+          }
+          dismiss={close}
+        />
+        <main
           css={(t) =>
             css({
-              fontSize: t.text.sizes.large,
               whiteSpace: "pre-wrap",
               fontFamily: t.fontStacks.monospace,
               userSelect: "text",
+              fontSize: t.text.sizes.small,
+              "@media(min-width: 600px)": { fontSize: t.text.sizes.base },
             })
           }
         >
           {description}
-        </div>
-        <DialogFooter cancel={close} cancelButtonLabel="Close" />
+        </main>
       </div>
     </Dialog>
   );
@@ -1188,7 +1205,7 @@ const ProposalContentEditor = ({
         css={(t) =>
           css({
             background: "none",
-            fontSize: t.text.sizes.huge,
+            fontSize: t.text.sizes.headerLarger,
             lineHeight: 1.15,
             width: "100%",
             outline: "none",
@@ -1198,6 +1215,9 @@ const ProposalContentEditor = ({
             color: t.colors.textHeader,
             margin: "0 0 0.3rem",
             "::placeholder": { color: t.colors.textMuted },
+            "@media(min-width: 600px)": {
+              fontSize: t.text.sizes.huge,
+            },
           })
         }
       />
@@ -1234,7 +1254,11 @@ const ProposalContentEditor = ({
             imagesMaxWidth={null}
             imagesMaxHeight={680}
             disabled={disabled}
-            css={(t) => css({ fontSize: t.text.sizes.large })}
+            css={(t) =>
+              css({
+                "@media(min-width: 600px)": { fontSize: t.text.sizes.large },
+              })
+            }
             style={{ flex: 1, minHeight: "12rem" }}
           />
 

@@ -6,6 +6,7 @@ const DialogFooter = ({
   cancelButtonLabel,
   submitButtonLabel,
   submitButtonProps,
+  ...props
 }) => (
   <footer
     css={css({
@@ -16,6 +17,7 @@ const DialogFooter = ({
         paddingTop: "3rem",
       },
     })}
+    {...props}
   >
     <div
       css={css({

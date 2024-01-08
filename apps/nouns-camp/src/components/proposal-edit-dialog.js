@@ -368,17 +368,13 @@ export const PreviewUpdateDialog = ({
             minHeight: 0,
             display: "flex",
             flexDirection: "column",
-            padding: "1.5rem",
-            "@media (min-width: 600px)": {
-              padding: "2rem",
-            },
           })}
         >
           <DialogHeader
             title="Update preview"
             subtitle={
               <>
-                Diff formatted as raw{" "}
+                Diff formatted as{" "}
                 <Link
                   component="a"
                   href="https://daringfireball.net/projects/markdown/syntax"
@@ -390,6 +386,12 @@ export const PreviewUpdateDialog = ({
               </>
             }
             titleProps={titleProps}
+            css={css({
+              padding: "1.5rem 1.5rem 0",
+              "@media (min-width: 600px)": {
+                padding: "2rem 2rem 0",
+              },
+            })}
           />
           <main
             css={(t) =>
@@ -397,7 +399,12 @@ export const PreviewUpdateDialog = ({
                 flex: 1,
                 minHeight: 0,
                 overflow: "auto",
-                fontSize: t.text.sizes.base,
+                fontSize: t.text.sizes.small,
+                padding: "0 1.5rem",
+                "@media (min-width: 600px)": {
+                  fontSize: t.text.sizes.base,
+                  padding: "0 2rem",
+                },
                 "[data-diff]": {
                   margin: "0 -1.5rem",
                   "@media (min-width: 600px)": {
@@ -439,8 +446,10 @@ export const PreviewUpdateDialog = ({
               display: "flex",
               justifyContent: "flex-end",
               marginTop: "1.5rem",
+              padding: "0 1.5rem 1.5rem",
               "@media (min-width: 600px)": {
                 marginTop: "2rem",
+                padding: "0 2rem 2rem",
               },
             })}
           >
