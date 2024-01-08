@@ -240,6 +240,9 @@ export const parse = (data, { chainId }) => {
 };
 
 export const unparse = (transactions, { chainId }) => {
+  const nounsGovernanceContract = resolveIdentifier(chainId, "dao");
+  const nounsExecutorContract = resolveIdentifier(chainId, "executor");
+  const nounsTokenContract = resolveIdentifier(chainId, "token");
   const wethTokenContract = resolveIdentifier(chainId, "weth-token");
   const nounsPayerContract = resolveIdentifier(chainId, "payer");
   const nounsTokenBuyerContract = resolveIdentifier(chainId, "token-buyer");
@@ -338,6 +341,29 @@ export const unparse = (transactions, { chainId }) => {
             ),
           });
         }
+
+        case "treasury-noun-transfer":
+          return append({
+            target: nounsTokenContract.address,
+            value: "",
+            signature: "safeTransferFrom(address,address,uint256)",
+            calldata: encodeAbiParameters(
+              [{ type: "address" }, { type: "address" }, { type: "uint256" }],
+              [nounsExecutorContract.address, t.receiverAddress, t.nounId]
+            ),
+          });
+
+        case "escrow-noun-transfer":
+          return append({
+            target: nounsGovernanceContract.address,
+            value: "",
+            signature:
+              "withdrawDAONounsFromEscrowIncreasingTotalSupply(uint256[],address)",
+            calldata: encodeAbiParameters(
+              [{ type: "uint256[]" }, { type: "address" }],
+              [t.nounIds, t.receiverAddress]
+            ),
+          });
 
         case "function-call":
         case "payable-function-call": {
