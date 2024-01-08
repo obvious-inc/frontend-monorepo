@@ -235,7 +235,7 @@ export const useUpdateProposalCandidate = (slug, { enabled = true } = {}) => {
   };
 };
 
-export const useCancelProposalCandidate = (slug) => {
+export const useCancelProposalCandidate = (slug, { enabled = true } = {}) => {
   const { address: accountAddress } = useWallet();
 
   const publicClient = usePublicClient();
@@ -248,6 +248,7 @@ export const useCancelProposalCandidate = (slug) => {
     ]),
     functionName: "cancelProposalCandidate",
     args: [slug],
+    enabled,
   });
   const { writeAsync: write } = useContractWrite(config);
 

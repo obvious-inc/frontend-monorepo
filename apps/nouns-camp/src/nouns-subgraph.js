@@ -889,6 +889,10 @@ const parseProposal = (data, { chainId }) => {
     }
   }
 
+  if (data.executionETA !== undefined)
+    parsedData.executionEtaTimestamp =
+      data.executionETA == null ? null : parseTimestamp(data.executionETA);
+
   // Regular numbers
   for (const prop of ["forVotes", "againstVotes", "abstainVotes"]) {
     if (data[prop] != null) {

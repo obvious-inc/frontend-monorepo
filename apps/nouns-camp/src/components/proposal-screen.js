@@ -26,10 +26,12 @@ import * as Tooltip from "@shades/ui-web/tooltip";
 import Spinner from "@shades/ui-web/spinner";
 import { extractAmounts as extractAmountsFromTransactions } from "../utils/transactions.js";
 import {
+  EXECUTION_GRACE_PERIOD_IN_MILLIS,
   buildFeed as buildProposalFeed,
   isVotableState as isVotableProposalState,
   isFinalState as isFinalProposalState,
   isSucceededState as isSucceededProposalState,
+  isExecutable as isProposalExecutable,
 } from "../utils/proposals.js";
 import {
   useProposal,
@@ -41,6 +43,8 @@ import {
   useCancelProposal,
   useCastProposalVote,
   useDynamicQuorum,
+  useQueueProposal,
+  useExecuteProposal,
 } from "../hooks/dao-contract.js";
 import { useSendProposalFeedback } from "../hooks/data-contract.js";
 import { usePriorVotes } from "../hooks/token-contract.js";
@@ -149,6 +153,10 @@ const ProposalMainSection = ({ proposalId, scrollContainerRef }) => {
     latestBlockNumber > Number(proposal.startBlock);
   const isVotingOngoing = hasVotingStarted && !hasVotingEnded;
 
+  const isExecutable = isProposalExecutable(proposal, {
+    blockNumber: latestBlockNumber,
+  });
+
   const sendProposalFeedback = useSendProposalFeedback(proposalId, {
     support: pendingSupport,
     reason: pendingFeedback.trim(),
@@ -158,6 +166,15 @@ const ProposalMainSection = ({ proposalId, scrollContainerRef }) => {
     reason: pendingFeedback.trim(),
     enabled: isVotingOngoing,
   });
+  const queueProposal = useQueueProposal(proposalId, {
+    enabled: proposal.state === "succeeded",
+  });
+  const executeProposal = useExecuteProposal(proposalId, {
+    enabled: proposal.state === "queued" && isExecutable,
+  });
+
+  const [hasPendingQueue, setPendingQueue] = React.useState(false);
+  const [hasPendingExecute, setPendingExecute] = React.useState(false);
 
   const feedItems = useFeedItems(proposalId);
 
@@ -246,16 +263,114 @@ const ProposalMainSection = ({ proposalId, scrollContainerRef }) => {
 
         return <>Starts in {Math.round(hours / 24)} days</>;
       }
+
       case "vetoed":
       case "canceled":
       case "executed":
       case "defeated":
         return `Proposal ${proposalId} has been ${proposal.state}`;
-      case "queued":
-        return `Proposal ${proposalId} succeeded and has been queued for execution`;
-      case "expired":
+
       case "succeeded":
+        return (
+          <>
+            <p>
+              Proposal {proposalId} has {proposal.state}
+            </p>
+            <p>
+              {connectedWalletAccountAddress != null && (
+                <p style={{ padding: "0.4rem 0" }}>
+                  <Button
+                    size="small"
+                    disabled={queueProposal == null || hasPendingQueue}
+                    onClick={async () => {
+                      try {
+                        setPendingQueue(true);
+                        await queueProposal();
+                      } catch (e) {
+                        alert("Ops, looks like something went wrong!");
+                      } finally {
+                        setPendingQueue(false);
+                      }
+                    }}
+                    isLoading={hasPendingQueue}
+                  >
+                    Queue proposal
+                  </Button>
+                </p>
+              )}
+            </p>
+          </>
+        );
+
+      case "queued":
+        return (
+          <>
+            <p>Proposal {proposalId} succeeded and has been queued.</p>
+            <p
+              css={(t) =>
+                css({
+                  fontSize: t.text.sizes.small,
+                  color: t.colors.textDimmed,
+                })
+              }
+            >
+              {isExecutable ? (
+                <>
+                  The proposal will expire if not executed before{" "}
+                  <FormattedDateWithTooltip
+                    capitalize={false}
+                    day="numeric"
+                    month="short"
+                    value={
+                      new Date(
+                        proposal.executionEtaTimestamp.getTime() +
+                          EXECUTION_GRACE_PERIOD_IN_MILLIS
+                      )
+                    }
+                  />
+                  .
+                </>
+              ) : (
+                <>
+                  The proposal may be executed after a short delay (
+                  <FormattedDateWithTooltip
+                    capitalize={false}
+                    day="numeric"
+                    month="short"
+                    value={proposal.executionEtaTimestamp}
+                  />
+                  ) .
+                </>
+              )}
+            </p>
+            {connectedWalletAccountAddress != null && (
+              <p style={{ padding: "0.4rem 0" }}>
+                <Button
+                  size="small"
+                  variant={isExecutable ? "primary" : undefined}
+                  disabled={executeProposal == null || !isExecutable}
+                  onClick={async () => {
+                    try {
+                      setPendingExecute(true);
+                      await executeProposal();
+                    } catch (e) {
+                      alert("Ops, looks like something went wrong!");
+                    } finally {
+                      setPendingExecute(false);
+                    }
+                  }}
+                  isLoading={hasPendingExecute}
+                >
+                  Execute proposal
+                </Button>
+              </p>
+            )}
+          </>
+        );
+
+      case "expired":
         return `Proposal ${proposalId} has ${proposal.state}`;
+
       case "active":
       case "objection-period": {
         const endDate = calculateBlockTimestamp(
@@ -445,12 +560,30 @@ const ProposalMainSection = ({ proposalId, scrollContainerRef }) => {
               },
             })}
           >
+            {/* Display state callout for "important" states on mobile */}
+            {!isDesktopLayout &&
+              ["active", "objection-period", "succeeded", "queued"].includes(
+                proposal.state
+              ) && (
+                <Callout
+                  icon={renderProposalStateIcon()}
+                  css={(t) =>
+                    css({
+                      fontSize: t.text.sizes.base,
+                      margin: "0 0 4rem",
+                    })
+                  }
+                >
+                  {renderProposalStateText()}
+                </Callout>
+              )}
             <ProposalHeader
               title={proposal.title === null ? "Untitled" : proposal.title}
               proposerId={proposal.proposerId}
               sponsorIds={proposal.signers?.map((s) => s.id)}
               createdAt={proposal.createdTimestamp}
               transactions={proposal.transactions}
+              hasPassed={isFinalOrSucceededState}
             />
             {isDesktopLayout ? (
               <ProposalBody markdownText={proposal.body} />
@@ -924,6 +1057,7 @@ export const ProposalHeader = ({
   proposerId,
   sponsorIds = [],
   transactions = [],
+  hasPassed,
 }) => {
   const requestedAmounts = extractAmountsFromTransactions(transactions);
   return (
@@ -987,7 +1121,20 @@ export const ProposalHeader = ({
         )}
         {requestedAmounts.length !== 0 && (
           <div style={{ marginTop: "1.6rem" }}>
-            <RequestedAmounts amounts={requestedAmounts} />
+            <Callout
+              css={(t) =>
+                css({
+                  color: t.colors.textNormal,
+                  em: {
+                    fontStyle: "normal",
+                    fontWeight: t.text.weights.emphasis,
+                  },
+                })
+              }
+            >
+              {hasPassed ? "Requested" : "Requesting"}{" "}
+              <RequestedAmounts amounts={requestedAmounts} />
+            </Callout>
           </div>
         )}
       </div>
@@ -1040,15 +1187,7 @@ export const ProposalBody = React.memo(({ markdownText }) => {
 });
 
 const RequestedAmounts = ({ amounts }) => (
-  <Callout
-    css={(t) =>
-      css({
-        color: t.colors.textNormal,
-        em: { fontStyle: "normal", fontWeight: t.text.weights.emphasis },
-      })
-    }
-  >
-    Requesting{" "}
+  <>
     {amounts.map(({ currency, amount, tokens }, i) => {
       const formattedAmount = () => {
         switch (currency) {
@@ -1087,7 +1226,7 @@ const RequestedAmounts = ({ amounts }) => (
         </React.Fragment>
       );
     })}
-  </Callout>
+  </>
 );
 
 const ProposalScreen = () => {
@@ -1095,7 +1234,6 @@ const ProposalScreen = () => {
   const navigate = useNavigate();
 
   const proposal = useProposal(proposalId);
-  const cancelProposal = useCancelProposal(proposalId);
 
   const [notFound, setNotFound] = React.useState(false);
   const [fetchError, setFetchError] = React.useState(null);
@@ -1109,6 +1247,10 @@ const ProposalScreen = () => {
     connectedWalletAccountAddress != null &&
     connectedWalletAccountAddress.toLowerCase() ===
       proposal?.proposerId?.toLowerCase();
+
+  const cancelProposal = useCancelProposal(proposalId, {
+    enabled: isProposer,
+  });
 
   const [searchParams, setSearchParams] = useSearchParams();
 

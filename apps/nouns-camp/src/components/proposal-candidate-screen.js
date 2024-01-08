@@ -956,7 +956,9 @@ const ProposalCandidateScreen = () => {
     (p) => p.proposerId
   );
 
-  const cancelProposalCandidate = useCancelProposalCandidate(slug);
+  const cancelCandidate = useCancelProposalCandidate(slug, {
+    enabled: isProposer,
+  });
 
   const validSignatures = getSponsorSignatures(candidate, {
     excludeInvalid: true,
@@ -1004,7 +1006,7 @@ const ProposalCandidateScreen = () => {
 
           setPendingCancel(true);
 
-          cancelProposalCandidate().then(
+          cancelCandidate().then(
             () => {
               navigate("/", { replace: true });
             },
@@ -1017,7 +1019,7 @@ const ProposalCandidateScreen = () => {
         label: "Cancel",
         buttonProps: {
           isLoading: hasPendingCancel,
-          disabled: cancelProposalCandidate == null || hasPendingCancel,
+          disabled: cancelCandidate == null || hasPendingCancel,
         },
       },
     ].filter(Boolean);
