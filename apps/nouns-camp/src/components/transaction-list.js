@@ -13,20 +13,6 @@ import FormattedDateWithTooltip from "./formatted-date-with-tooltip.js";
 import NounPreviewPopoverTrigger from "./noun-preview-popover-trigger.js";
 import { useContract } from "../contracts.js";
 
-const formatTuple = (obj) => {
-  const formattedEntries = Object.entries(obj).reduce((acc, [key, value]) => {
-    const formattedValue = (() => {
-      if (value.toString() === "[object Object]") return formatTuple(value);
-      return typeof value === "string" ? `"${value}"` : value;
-    })();
-
-    if (acc == null) return `${key}: ${formattedValue}`;
-    return `${acc}, ${key}: ${formattedValue}`;
-  }, null);
-
-  return `(${formattedEntries})`;
-};
-
 const decimalsByCurrency = {
   ETH: 18,
   WETH: 18,
@@ -369,10 +355,8 @@ export const FunctionCallCodeBlock = ({ target, name, inputs, value }) => (
                         >
                           {item}
                         </a>
-                      ) : item.toString() === "[object Object]" ? (
-                        formatTuple(item)
                       ) : (
-                        item.toString()
+                        ethereumUtils.formatSolidityArgument(item)
                       )}
                     </span>
                     {i < items.length - 1 && <>, </>}
@@ -390,10 +374,8 @@ export const FunctionCallCodeBlock = ({ target, name, inputs, value }) => (
                   >
                     {input.value}
                   </a>
-                ) : input.type === "string" ? (
-                  `"${input.value}"`
                 ) : (
-                  input.value.toString()
+                  ethereumUtils.formatSolidityArgument(input.value)
                 )}
               </span>
             )}
@@ -407,13 +389,11 @@ export const FunctionCallCodeBlock = ({ target, name, inputs, value }) => (
     {value > 0 && (
       <>
         <br />
-        <span data-identifier>value</span>:
-        <span data-argument>
-          &nbsp;{value.toString()}
-          <span data-comment>
-            {" // "}
-            <FormattedEthWithConditionalTooltip value={value} />
-          </span>
+        <span data-identifier>value</span>:{" "}
+        <span data-argument>{value.toString()}</span>
+        <span data-comment>
+          {" // "}
+          <FormattedEthWithConditionalTooltip value={value} />
         </span>
       </>
     )}
