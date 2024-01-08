@@ -678,6 +678,8 @@ const TransactionCodeBlock = ({ transaction }) => {
     case "usdc-stream-funding-via-payer":
     case "weth-stream-funding":
     case "usdc-transfer-via-payer":
+    case "treasury-noun-transfer":
+    case "escrow-noun-transfer":
     case "function-call":
     case "payable-function-call":
     case "proxied-function-call":
@@ -836,6 +838,8 @@ const ActionListItem = ({ action: a, openEditDialog, disabled = false }) => {
       case "weth-transfer":
       case "weth-approval":
       case "payer-top-up":
+      case "treasury-noun-transfer":
+      case "escrow-noun-transfer":
         return null;
 
       case "unparsed-function-call":
