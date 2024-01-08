@@ -2,6 +2,24 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.0.0-alpha.7] - 2024-01-08
+
+### Features
+
+- Implement upstream branch changes (#50)
+
+## [1.0.0-alpha.6] - 2024-01-07
+
+### Miscellaneous Tasks
+
+- Create new workflow for handling git flow pull requests
+- Update workflow files for better readability
+- Add missing permissions for git flow pull requests
+
+### Revert
+
+- Bump viem from 1.21.4 to 2.0.0 (#41)
+
 ## [1.0.0-alpha.5] - 2024-01-04
 
 ### Documentation
