@@ -171,11 +171,13 @@ const PromoteCandidateDialog = ({ isOpen, candidateId, dismiss }) => {
                     Cancel
                   </Button>
                   <Button
-                    type="submit"
                     size="medium"
                     variant="primary"
                     isLoading={hasPendingSubmit}
                     disabled={hasPendingSubmit}
+                    onClick={() => {
+                      submit("propose");
+                    }}
                   >
                     Propose without sponsors
                   </Button>
