@@ -1,14 +1,10 @@
 import React from "react";
-import { diffLines } from "diff";
 import { css, useTheme } from "@emotion/react";
 import {
   markdown as markdownUtils,
   message as messageUtils,
 } from "@shades/common/utils";
-import Input from "@shades/ui-web/input";
 import Dialog from "@shades/ui-web/dialog";
-import DialogHeader from "@shades/ui-web/dialog-header";
-import DialogFooter from "@shades/ui-web/dialog-footer";
 import {
   toMessageBlocks as richTextToMessageBlocks,
   fromMessageBlocks as messageToRichTextBlocks,
@@ -18,17 +14,20 @@ import {
   resolveAction as resolveActionTransactions,
   buildActions as buildActionsFromTransactions,
   isEqual as areTransactionsEqual,
+  stringify as stringifyTransaction,
 } from "../utils/transactions.js";
 import { useProposalCandidate } from "../store.js";
 import useChainId from "../hooks/chain-id.js";
 import { useUpdateProposalCandidate } from "../hooks/data-contract.js";
 import ProposalEditor from "./proposal-editor.js";
-import { PreviewUpdateDialog } from "./proposal-edit-dialog.js";
+import {
+  PreviewUpdateDialog,
+  SubmitUpdateDialog,
+  createMarkdownDescription,
+  createMarkdownDiffFunction,
+} from "./proposal-edit-dialog.js";
 
-const createMarkdownDescription = ({ title, body }) => {
-  const markdownBody = messageUtils.toMarkdown(richTextToMessageBlocks(body));
-  return `# ${title.trim()}\n\n${markdownBody}`;
-};
+const diffMarkdown = createMarkdownDiffFunction();
 
 const CandidateEditDialog = ({ candidateId, isOpen, close: closeDialog }) => {
   const theme = useTheme();
@@ -130,14 +129,21 @@ const CandidateEditDialog = ({ candidateId, isOpen, close: closeDialog }) => {
 
   const updateProposalCandidate = useUpdateProposalCandidate(candidate.slug);
 
-  const diff = React.useMemo(
-    () =>
-      diffLines(
-        persistedDescription,
-        createMarkdownDescription({ title, body: deferredBody })
-      ),
-    [title, deferredBody, persistedDescription]
-  );
+  const createDescriptionDiff = () =>
+    diffMarkdown(
+      persistedDescription,
+      createMarkdownDescription({ title, body: deferredBody })
+    );
+  const createTransactionsDiff = () =>
+    diffMarkdown(
+      candidate.latestVersion.content.transactions
+        .map((t) => stringifyTransaction(t, { chainId }))
+        .join("\n\n"),
+      actions
+        .flatMap((a) => resolveActionTransactions(a, { chainId }))
+        .map((t) => stringifyTransaction(t, { chainId }))
+        .join("\n\n")
+    );
 
   const submit = async ({ updateMessage }) => {
     try {
@@ -205,7 +211,8 @@ const CandidateEditDialog = ({ candidateId, isOpen, close: closeDialog }) => {
           close={() => {
             setShowPreviewDialog(false);
           }}
-          diff={diff}
+          createDescriptionDiff={createDescriptionDiff}
+          createTransactionsDiff={createTransactionsDiff}
           submit={() => {
             setShowPreviewDialog(false);
             setShowSubmitDialog(true);
@@ -222,65 +229,6 @@ const CandidateEditDialog = ({ candidateId, isOpen, close: closeDialog }) => {
           hasPendingSubmit={hasPendingSubmit}
           submit={submit}
         />
-      )}
-    </Dialog>
-  );
-};
-
-const SubmitUpdateDialog = ({ isOpen, hasPendingSubmit, submit, close }) => {
-  const [updateMessage, setUpdateMessage] = React.useState("");
-
-  return (
-    <Dialog
-      isOpen={isOpen}
-      onRequestClose={() => {
-        close();
-      }}
-      width="54rem"
-      css={css({ overflow: "auto" })}
-    >
-      {({ titleProps }) => (
-        <form
-          onSubmit={(e) => {
-            e.preventDefault();
-            submit({ updateMessage });
-          }}
-          css={css({
-            overflow: "auto",
-            padding: "1.5rem",
-            "@media (min-width: 600px)": {
-              padding: "2rem",
-            },
-          })}
-        >
-          <DialogHeader
-            title="Submit"
-            titleProps={titleProps}
-            dismiss={close}
-          />
-          <main>
-            <Input
-              multiline
-              label="Update message (optional)"
-              rows={3}
-              placeholder="..."
-              value={updateMessage}
-              onChange={(e) => {
-                setUpdateMessage(e.target.value);
-              }}
-              disabled={hasPendingSubmit}
-            />
-          </main>
-          <DialogFooter
-            cancel={close}
-            cancelButtonLabel="Cancel"
-            submitButtonLabel="Submit update"
-            submitButtonProps={{
-              isLoading: hasPendingSubmit,
-              disabled: hasPendingSubmit,
-            }}
-          />
-        </form>
       )}
     </Dialog>
   );

@@ -40,15 +40,19 @@ const DialogHeader = ({ title, subtitle, titleProps, dismiss }) => (
         </div>
       )}
     </h1>
-    <Button
-      size="small"
-      onClick={() => {
-        dismiss();
-      }}
-      css={css({ width: "2.8rem", padding: 0 })}
-    >
-      <CrossIcon style={{ width: "1.5rem", height: "auto", margin: "auto" }} />
-    </Button>
+    {dismiss != null && (
+      <Button
+        size="small"
+        onClick={() => {
+          dismiss();
+        }}
+        css={css({ width: "2.8rem", padding: 0 })}
+      >
+        <CrossIcon
+          style={{ width: "1.5rem", height: "auto", margin: "auto" }}
+        />
+      </Button>
+    )}
   </header>
 );
 
