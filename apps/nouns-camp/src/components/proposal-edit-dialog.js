@@ -6,6 +6,7 @@ import {
   markdown as markdownUtils,
   message as messageUtils,
 } from "@shades/common/utils";
+import Link from "@shades/ui-web/link";
 import Button from "@shades/ui-web/button";
 import Input from "@shades/ui-web/input";
 import Dialog from "@shades/ui-web/dialog";
@@ -304,11 +305,7 @@ export const SubmitUpdateDialog = ({
             },
           })}
         >
-          <DialogHeader
-            title="Submit"
-            titleProps={titleProps}
-            dismiss={close}
-          />
+          <DialogHeader title="Submit" titleProps={titleProps} />
           <main>
             <Input
               multiline
@@ -353,6 +350,8 @@ export const PreviewUpdateDialog = ({
     (token) => token.added || token.removed
   );
 
+  const hasVisibleDiff = hasDescriptionChanges || hasTransactionChanges;
+
   return (
     <Dialog
       isOpen={isOpen}
@@ -377,8 +376,20 @@ export const PreviewUpdateDialog = ({
         >
           <DialogHeader
             title="Update preview"
+            subtitle={
+              <>
+                Diff formatted as raw{" "}
+                <Link
+                  component="a"
+                  href="https://daringfireball.net/projects/markdown/syntax"
+                  rel="noreferrer"
+                  target="_blank"
+                >
+                  Markdown
+                </Link>
+              </>
+            }
             titleProps={titleProps}
-            // dismiss={close}
           />
           <main
             css={(t) =>
@@ -394,9 +405,9 @@ export const PreviewUpdateDialog = ({
                   },
                 },
                 h2: {
-                  fontSize: t.text.sizes.headerLarge,
+                  fontSize: t.text.sizes.header,
                   fontWeight: t.text.weights.header,
-                  margin: "0 0 3.2rem",
+                  margin: "0 0 1.6rem",
                 },
                 "* + h2": {
                   marginTop: "6.4rem",
@@ -404,13 +415,22 @@ export const PreviewUpdateDialog = ({
               })
             }
           >
-            {(hasDescriptionChanges || !hasTransactionChanges) && (
-              <DiffBlock diff={descriptionDiff} data-diff />
-            )}
-            {hasTransactionChanges && (
+            {!hasVisibleDiff ? (
               <>
-                {hasDescriptionChanges && <h2>Actions</h2>}
-                <DiffBlock diff={transactionsDiff} data-diff />
+                <h2>Content</h2>
+                <DiffBlock diff={descriptionDiff} data-diff />
+              </>
+            ) : (
+              <>
+                <h2>Content</h2>
+                <DiffBlock diff={descriptionDiff} data-diff />
+
+                {hasTransactionChanges && (
+                  <>
+                    <h2>Actions</h2>
+                    <DiffBlock diff={transactionsDiff} data-diff />
+                  </>
+                )}
               </>
             )}
           </main>

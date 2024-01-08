@@ -755,8 +755,8 @@ export const stringify = (parsedTransaction, { chainId }) => {
   if (signatures[0] == null || signatures[0] === "") {
     return [
       targets[0] == null ? null : `target: ${targets[0]}`,
-      calldatas[0] == null ? null : `calldata: ${calldatas[0]}`,
-      values[0] == null ? null : `value: ${values[0]}`,
+      (calldatas[0] ?? "0x") === "0x" ? null : `calldata: ${calldatas[0]}`,
+      (values[0] ?? "0") === "0" ? null : `value: ${values[0]}`,
     ]
       .filter(Boolean)
       .join("\n");
