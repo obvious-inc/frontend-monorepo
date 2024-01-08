@@ -544,8 +544,9 @@ const SponsorsTabMainContent = ({ candidateId, toggleSponsorDialog }) => {
   const { address: connectedWalletAccountAddress } = useWallet();
 
   const isProposer =
+    connectedWalletAccountAddress != null &&
     candidate.proposerId.toLowerCase() ===
-    connectedWalletAccountAddress.toLowerCase();
+      connectedWalletAccountAddress.toLowerCase();
 
   const connectedDelegate = useDelegate(connectedWalletAccountAddress);
   const connectedDelegateHasVotes =
