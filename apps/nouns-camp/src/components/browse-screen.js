@@ -177,7 +177,7 @@ const groupConfigByKey = {
   },
   "candidates:popular": {
     title: "Trending",
-    description: `The most popular candidate active within the last ${CANDIDATE_ACTIVE_THRESHOLD_IN_DAYS} days`,
+    description: `The most popular candidates active within the last ${CANDIDATE_ACTIVE_THRESHOLD_IN_DAYS} days`,
   },
   "candidates:inactive": {
     title: "Stale",
