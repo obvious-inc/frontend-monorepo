@@ -249,7 +249,7 @@ const NavBar = ({ navigationStack, actions: actions_ }) => {
               width: "0.1rem",
               background: t.colors.borderLight,
               height: "1.6rem",
-              margin: "0 0.6rem",
+              margin: "0 0.4rem",
             },
             "@media (min-width: 600px)": {
               padding: "0 1rem",
@@ -271,6 +271,7 @@ const NavBar = ({ navigationStack, actions: actions_ }) => {
                     variant: "default",
                     isLoading: requestWalletAccess == null || isLoadingWallet,
                     disabled: requestWalletAccess == null || isLoadingWallet,
+                    style: { marginLeft: "0.9rem" },
                   },
                   label: "Connect Wallet",
                 }
