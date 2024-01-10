@@ -502,6 +502,7 @@ const BrowseScreen = () => {
     () =>
       fetchBrowseScreenData({ first: 40 }).then(() => {
         setHasFetchedOnce(true);
+        if (hasFetchedOnce) return;
         hasFetchedBrowseDataOnce = true;
         fetchBrowseScreenData({ skip: 40, first: 1000 });
       }),
