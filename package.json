@@ -1,11 +1,16 @@
 {
-  "version": "1.0.0-alpha.8",
+  "version": "1.0.0-alpha.9",
   "name": "@lilnouns/lilnouns-camp",
   "scripts": {
     "lint": "pnpm -r run --if-present lint",
     "format": "pnpm -r run --if-present format",
     "build": "pnpm -r run --if-present build",
     "test": "pnpm -r run --if-present test"
+  },
+  "resolutions": {
+    "@babel/traverse": ">=7.23.2",
+    "follow-redirects": ">=1.15.4",
+    "undici": ">=5.26.2"
   },
   "engines": {
     "node": ">=18.0.0",
