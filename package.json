@@ -7,6 +7,9 @@
     "build": "pnpm -r run --if-present build",
     "test": "pnpm -r run --if-present test"
   },
+  "resolutions": {
+    "undici": ">=5.26.2"
+  },
   "engines": {
     "node": ">=18.0.0",
     "pnpm": ">=8.7.5"
