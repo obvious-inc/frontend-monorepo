@@ -2,6 +2,16 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.0.0-alpha.8] - 2024-01-10
+
+### Documentation
+
+- Add a new badge for Wakatime to the `README.md`
+
+### Miscellaneous Tasks
+
+- Add missing `version` to `package.json`
+
 ## [1.0.0-alpha.7] - 2024-01-08
 
 ### Features
