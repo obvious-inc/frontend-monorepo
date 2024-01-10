@@ -1012,11 +1012,8 @@ export const useProposals = ({
   );
 };
 
-export const useProposal = (id) => {
-  const { data: blockNumber } = useBlockNumber({
-    watch: true,
-    cacheTime: 30_000,
-  });
+export const useProposal = (id, { watch = true } = {}) => {
+  const { data: blockNumber } = useBlockNumber({ watch, cacheTime: 10_000 });
 
   return useStore(
     React.useCallback(

@@ -1190,7 +1190,7 @@ const FeedTabContent = React.memo(({ visible }) => {
 });
 
 const ProposalItem = React.memo(({ proposalId }) => {
-  const proposal = useProposal(proposalId);
+  const proposal = useProposal(proposalId, { watch: false });
   const { displayName: authorAccountDisplayName } = useAccountDisplayName(
     proposal?.proposerId
   );
@@ -1238,7 +1238,7 @@ const ProposalItem = React.memo(({ proposalId }) => {
 });
 
 const PropStatusText = React.memo(({ proposalId }) => {
-  const proposal = useProposal(proposalId);
+  const proposal = useProposal(proposalId, { watch: false });
 
   const calculateBlockTimestamp = useApproximateBlockTimestampCalculator();
 
@@ -1390,7 +1390,8 @@ const PropTagWithStatusText = ({ proposalId }) => {
 const ProposalCandidateItem = React.memo(({ candidateId }) => {
   const candidate = useProposalCandidate(candidateId);
   const updateTargetProposal = useProposal(
-    candidate.latestVersion.targetProposalId
+    candidate.latestVersion.targetProposalId,
+    { watch: false }
   );
 
   const { displayName: authorAccountDisplayName } = useAccountDisplayName(
