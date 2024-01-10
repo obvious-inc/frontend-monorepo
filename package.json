@@ -8,6 +8,7 @@
     "test": "pnpm -r run --if-present test"
   },
   "resolutions": {
+    "follow-redirects": ">=1.15.4",
     "undici": ">=5.26.2"
   },
   "engines": {
