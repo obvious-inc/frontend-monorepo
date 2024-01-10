@@ -8,6 +8,7 @@
     "test": "pnpm -r run --if-present test"
   },
   "resolutions": {
+    "@babel/traverse": ">=7.23.2",
     "follow-redirects": ">=1.15.4",
     "undici": ">=5.26.2"
   },
