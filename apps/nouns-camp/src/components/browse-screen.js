@@ -13,6 +13,7 @@ import {
 } from "@shades/common/utils";
 import Input from "@shades/ui-web/input";
 import Button from "@shades/ui-web/button";
+import Link from "@shades/ui-web/link";
 import Select from "@shades/ui-web/select";
 import { isNodeEmpty as isRichTextNodeEmpty } from "@shades/ui-web/rich-text-editor";
 import {
@@ -429,7 +430,7 @@ const BrowseScreen = () => {
                 },
                 items
               );
-          const paginate = groupKey === "proposals:past";
+          const paginate = page != null && groupKey === "proposals:past";
           return {
             title,
             count: sortedItems.length,
@@ -469,7 +470,7 @@ const BrowseScreen = () => {
                 items
               );
 
-          const paginate = groupKey === "candidates:inactive";
+          const paginate = page != null && groupKey === "candidates:inactive";
 
           return {
             title,
@@ -538,6 +539,7 @@ const BrowseScreen = () => {
           >
             <div
               css={css({
+                containerType: "inline-size",
                 padding: "0 0 3.2rem",
                 "@media (min-width: 600px)": {
                   padding: "6rem 0 8rem",
@@ -595,27 +597,25 @@ const BrowseScreen = () => {
                   <SectionedList
                     sections={[
                       {
-                        items: filteredItems.slice(
-                          0,
-                          BROWSE_LIST_PAGE_ITEM_COUNT * page
-                        ),
+                        items:
+                          page == null
+                            ? filteredItems
+                            : filteredItems.slice(
+                                0,
+                                BROWSE_LIST_PAGE_ITEM_COUNT * page
+                              ),
                       },
                     ]}
                     style={{ marginTop: "2rem" }}
                   />
-                  {filteredItems.length >
-                    BROWSE_LIST_PAGE_ITEM_COUNT * page && (
-                    <div css={{ textAlign: "center", padding: "3.2rem 0" }}>
-                      <Button
-                        size="small"
-                        onClick={() => {
-                          setPage((p) => p + 1);
-                        }}
-                      >
-                        Show more
-                      </Button>
-                    </div>
-                  )}
+                  {page != null &&
+                    filteredItems.length >
+                      BROWSE_LIST_PAGE_ITEM_COUNT * page && (
+                      <Pagination
+                        showNext={() => setPage((p) => p + 1)}
+                        showAll={() => setPage(null)}
+                      />
+                    )}
                 </>
               ) : (
                 <>
@@ -690,21 +690,14 @@ const BrowseScreen = () => {
                               ({ items }) => items != null && items.length !== 0
                             )}
                         />
-                        {sectionsByName["proposals:past"] != null &&
+                        {page != null &&
+                          sectionsByName["proposals:past"] != null &&
                           sectionsByName["proposals:past"].count >
                             BROWSE_LIST_PAGE_ITEM_COUNT * page && (
-                            <div
-                              css={{ textAlign: "center", padding: "3.2rem 0" }}
-                            >
-                              <Button
-                                size="small"
-                                onClick={() => {
-                                  setPage((p) => p + 1);
-                                }}
-                              >
-                                Show more
-                              </Button>
-                            </div>
+                            <Pagination
+                              showNext={() => setPage((p) => p + 1)}
+                              showAll={() => setPage(null)}
+                            />
                           )}
                       </div>
                     </Tabs.Item>
@@ -787,21 +780,14 @@ const BrowseScreen = () => {
                               ({ items }) => items != null && items.length !== 0
                             )}
                         />
-                        {sectionsByName["candidates:inactive"] != null &&
+                        {page != null &&
+                          sectionsByName["candidates:inactive"] != null &&
                           sectionsByName["candidates:inactive"].count >
                             BROWSE_LIST_PAGE_ITEM_COUNT * page && (
-                            <div
-                              css={{ textAlign: "center", padding: "3.2rem 0" }}
-                            >
-                              <Button
-                                size="small"
-                                onClick={() => {
-                                  setPage((p) => p + 1);
-                                }}
-                              >
-                                Show more
-                              </Button>
-                            </div>
+                            <Pagination
+                              showNext={() => setPage((p) => p + 1)}
+                              showAll={() => setPage(null)}
+                            />
                           )}
                       </div>
                     </Tabs.Item>
@@ -1795,5 +1781,31 @@ const DraftTabContent = ({ items = [] }) => {
     />
   );
 };
+
+const Pagination = ({ showNext, showAll }) => (
+  <div
+    css={{
+      textAlign: "center",
+      padding: "3.2rem 0",
+      "@container (min-width: 600px)": {
+        padding: "4.8rem 0",
+      },
+    }}
+  >
+    <Button size="small" onClick={showNext}>
+      Show more
+    </Button>
+    <div style={{ marginTop: "1.6rem" }}>
+      <Link
+        size="small"
+        component="button"
+        color={(t) => t.colors.textDimmed}
+        onClick={showAll}
+      >
+        Show all
+      </Link>
+    </div>
+  </div>
+);
 
 export default BrowseScreen;
