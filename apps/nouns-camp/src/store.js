@@ -559,31 +559,33 @@ const useStore = createZustandStoreHook((set) => {
           }));
         }),
 
-        PropdatesSubgraph.fetchPropdatesByAccount(id).then((propdates) => {
-          const proposalIds = arrayUtils.unique(
-            propdates.map((p) => p.proposalId)
-          );
+        PropdatesSubgraph.fetchPropdatesByAccount(chainId, id).then(
+          (propdates) => {
+            const proposalIds = arrayUtils.unique(
+              propdates.map((p) => p.proposalId)
+            );
 
-          fetchProposals(chainId, proposalIds);
+            fetchProposals(chainId, proposalIds);
 
-          set((s) => ({
-            propdatesByProposalId: objectUtils.merge(
-              (ps1 = [], ps2 = []) =>
-                arrayUtils.unique(
-                  (p1, p2) => p1.id === p2.id,
-                  [...ps1, ...ps2]
-                ),
-              s.propdatesByProposalId,
-              arrayUtils.groupBy((d) => d.proposalId, propdates)
-            ),
-          }));
-        }),
+            set((s) => ({
+              propdatesByProposalId: objectUtils.merge(
+                (ps1 = [], ps2 = []) =>
+                  arrayUtils.unique(
+                    (p1, p2) => p1.id === p2.id,
+                    [...ps1, ...ps2]
+                  ),
+                s.propdatesByProposalId,
+                arrayUtils.groupBy((d) => d.proposalId, propdates)
+              ),
+            }));
+          }
+        ),
       ]);
     },
     fetchNounsActivity: (chainId, { startBlock, endBlock }) =>
       Promise.all([
         NounsSubgraph.fetchNounsActivity(chainId, { startBlock, endBlock }),
-        PropdatesSubgraph.fetchPropdates({ startBlock, endBlock }),
+        PropdatesSubgraph.fetchPropdates(chainId, { startBlock, endBlock }),
       ]).then(
         ([
           { votes, proposalFeedbackPosts, candidateFeedbackPosts },
@@ -723,17 +725,22 @@ const useStore = createZustandStoreHook((set) => {
           };
         });
       }),
-    fetchPropdatesForProposal: (...args) =>
-      PropdatesSubgraph.fetchPropdatesForProposal(...args).then((propdates) => {
-        set((s) => ({
-          propdatesByProposalId: objectUtils.merge(
-            (ps1 = [], ps2 = []) =>
-              arrayUtils.unique((p1, p2) => p1.id === p2.id, [...ps1, ...ps2]),
-            s.propdatesByProposalId,
-            arrayUtils.groupBy((d) => d.proposalId, propdates)
-          ),
-        }));
-      }),
+    fetchPropdatesForProposal: (chainId, ...args) =>
+      PropdatesSubgraph.fetchPropdatesForProposal(chainId, ...args).then(
+        (propdates) => {
+          set((s) => ({
+            propdatesByProposalId: objectUtils.merge(
+              (ps1 = [], ps2 = []) =>
+                arrayUtils.unique(
+                  (p1, p2) => p1.id === p2.id,
+                  [...ps1, ...ps2]
+                ),
+              s.propdatesByProposalId,
+              arrayUtils.groupBy((d) => d.proposalId, propdates)
+            ),
+          }));
+        }
+      ),
   };
 });
 
@@ -822,7 +829,10 @@ export const useActions = () => {
       (...args) => fetchVoterScreenData(chainId, ...args),
       [fetchVoterScreenData, chainId]
     ),
-    fetchPropdatesForProposal,
+    fetchPropdatesForProposal: React.useCallback(
+      (...args) => fetchPropdatesForProposal(chainId, ...args),
+      [fetchPropdatesForProposal, chainId]
+    ),
     addOptimitisicProposalVote,
     addOptimitisicCandidateFeedbackPost,
   };
