@@ -334,6 +334,53 @@ export const useCreateProposalWithSignatures = () => {
   };
 };
 
+export const useUpdateSponsoredProposalWithSignatures = (proposalId) => {
+  const { address: accountAddress } = useWallet();
+
+  const publicClient = usePublicClient();
+  const chainId = useChainId();
+
+  const { writeAsync } = useContractWrite({
+    address: getContractAddress(chainId),
+    abi: parseAbi([
+      "function updateProposalBySigs(uint256 proposalId, (bytes sig, address signer, uint256 expirationTimestamp)[], address[] memory targets, uint256[] memory values, string[] memory signatures, bytes[] memory calldatas, string memory description, string memory updateMessage) external",
+    ]),
+    functionName: "updateProposalBySigs",
+  });
+
+  return async ({
+    description,
+    transactions,
+    proposerSignatures,
+    updateMessage,
+  }) => {
+    const { targets, values, signatures, calldatas } = unparseTransactions(
+      transactions,
+      { chainId }
+    );
+
+    return writeAsync({
+      args: [
+        proposalId,
+        proposerSignatures,
+        targets,
+        values,
+        signatures,
+        calldatas,
+        description,
+        updateMessage,
+      ],
+    }).then(({ hash }) => {
+      va.track("Proposal successfully updated", {
+        account: accountAddress,
+        hash,
+        signatures: true,
+      });
+      return publicClient.waitForTransactionReceipt({ hash });
+    });
+  };
+};
+
 export const useUpdateProposal = (proposalId) => {
   const { address: accountAddress } = useWallet();
 

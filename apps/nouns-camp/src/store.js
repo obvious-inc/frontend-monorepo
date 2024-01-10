@@ -865,18 +865,20 @@ export const useProposalFetch = (id, options) => {
   const { fetchProposal, fetchPropdatesForProposal } = useActions();
 
   useFetch(
-    () =>
-      fetchProposal(id).catch((e) => {
-        if (onError == null) return Promise.reject(e);
-        onError(e);
-      }),
+    id == null
+      ? null
+      : () =>
+          fetchProposal(id).catch((e) => {
+            if (onError == null) return Promise.reject(e);
+            onError(e);
+          }),
     [fetchProposal, id, onError, blockNumber]
   );
 
-  useFetch(
-    () => fetchPropdatesForProposal(id),
-    [fetchPropdatesForProposal, id]
-  );
+  useFetch(id == null ? null : () => fetchPropdatesForProposal(id), [
+    fetchPropdatesForProposal,
+    id,
+  ]);
 };
 
 export const useActiveProposalsFetch = () => {
@@ -1009,6 +1011,8 @@ export const useProposal = (id) => {
   return useStore(
     React.useCallback(
       (s) => {
+        if (id == null) return null;
+
         const proposal = s.proposalsById[id];
 
         if (proposal == null) return null;
@@ -1028,6 +1032,7 @@ export const useProposal = (id) => {
 export const useProposalCandidates = ({
   includeCanceled = false,
   includePromoted = false,
+  includeProposalUpdates = false,
 } = {}) => {
   const { data: blockNumber } = useBlockNumber({
     watch: true,
@@ -1044,19 +1049,21 @@ export const useProposalCandidates = ({
       // Filter canceled candidates
       if (c.canceledTimestamp != null) return includeCanceled;
 
-      // Filter candidates with a with a matching proposal
+      // Filter candidates with a matching proposal
       if (c.latestVersion?.proposalId != null) return includePromoted;
 
-      if (c.latestVersion?.targetProposalId == null || includePromoted)
-        return true;
+      if (c.latestVersion?.targetProposalId != null) {
+        const targetProposal = proposalsById[c.latestVersion.targetProposalId];
 
-      const targetProposal = proposalsById[c.latestVersion.targetProposalId];
+        // Exlude candidates with a target proposal past its update period end block
+        return (
+          includeProposalUpdates &&
+          targetProposal != null &&
+          targetProposal.updatePeriodEndBlock > blockNumber
+        );
+      }
 
-      // Exlude candidates with a target proposal past its update period end block
-      return (
-        targetProposal != null &&
-        targetProposal.updatePeriodEndBlock > blockNumber
-      );
+      return true;
     });
 
     return arrayUtils.sortBy(
@@ -1069,13 +1076,57 @@ export const useProposalCandidates = ({
     blockNumber,
     includeCanceled,
     includePromoted,
+    includeProposalUpdates,
   ]);
+};
+
+export const useProposalUpdateCandidates = ({
+  includeTargetProposal = false,
+} = {}) => {
+  const { data: blockNumber } = useBlockNumber({
+    watch: true,
+    cacheTime: 30_000,
+  });
+
+  const candidatesById = useStore((s) => s.proposalCandidatesById);
+  const proposalsById = useStore((s) => s.proposalsById);
+
+  return React.useMemo(() => {
+    const candidates = Object.values(candidatesById);
+
+    const filteredCandidates = candidates.reduce((acc, c) => {
+      if (c.latestVersion?.targetProposalId == null) return acc;
+
+      // Exlcude canceled and submitted updates
+      if (c.canceledTimestamp != null || c.latestVersion?.proposalId != null)
+        return acc;
+
+      const targetProposal = proposalsById[c.latestVersion.targetProposalId];
+
+      // Exlude updates past its target proposal’s update period
+      if (
+        targetProposal == null ||
+        targetProposal.updatePeriodEndBlock <= blockNumber
+      )
+        return acc;
+
+      acc.push(includeTargetProposal ? { ...c, targetProposal } : c);
+
+      return acc;
+    }, []);
+
+    return arrayUtils.sortBy(
+      { value: (p) => p.lastUpdatedTimestamp, order: "desc" },
+      filteredCandidates
+    );
+  }, [candidatesById, proposalsById, includeTargetProposal, blockNumber]);
 };
 
 export const useAccountProposalCandidates = (accountAddress) => {
   const candidatesById = useStore((s) => s.proposalCandidatesById);
 
   return React.useMemo(() => {
+    if (accountAddress == null) return [];
     const candidates = Object.values(candidatesById);
     return candidates.filter(
       (c) => c.proposerId?.toLowerCase() === accountAddress.toLowerCase()

@@ -1,11 +1,13 @@
 import React from "react";
 import { Diff } from "diff";
-// import { useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { css, useTheme } from "@emotion/react";
 import {
   markdown as markdownUtils,
   message as messageUtils,
+  function as functionUtils,
 } from "@shades/common/utils";
+import { useFetch } from "@shades/common/react";
 import Link from "@shades/ui-web/link";
 import Button from "@shades/ui-web/button";
 import Input from "@shades/ui-web/input";
@@ -23,9 +25,15 @@ import {
   isEqual as areTransactionsEqual,
   stringify as stringifyTransaction,
 } from "../utils/transactions.js";
-import { useProposal } from "../store.js";
+import {
+  useActions,
+  useProposal,
+  useAccountProposalCandidates,
+} from "../store.js";
 import useChainId from "../hooks/chain-id.js";
+import { useWallet } from "../hooks/wallet.js";
 import { useUpdateProposal } from "../hooks/dao-contract.js";
+import { useCreateProposalCandidate } from "../hooks/data-contract.js";
 import ProposalEditor from "./proposal-editor.js";
 
 export const createMarkdownDescription = ({ title, body }) => {
@@ -70,8 +78,15 @@ const diffMarkdown = createMarkdownDiffFunction();
 
 const ProposalEditDialog = ({ proposalId, isOpen, close: closeDialog }) => {
   const theme = useTheme();
+  const navigate = useNavigate();
   const chainId = useChainId();
+
+  const { address: connectedAccountAddress } = useWallet();
+
   const scrollContainerRef = React.useRef();
+
+  const { fetchProposalCandidate, fetchProposalCandidatesByAccount } =
+    useActions();
 
   const proposal = useProposal(proposalId);
 
@@ -173,28 +188,77 @@ const ProposalEditDialog = ({ proposalId, isOpen, close: closeDialog }) => {
   // }, BigInt(0));
 
   // const payerTopUpValue = useTokenBuyerEthNeeded(usdcSumValue);
+  //
+  useFetch(
+    connectedAccountAddress == null
+      ? null
+      : () => fetchProposalCandidatesByAccount(connectedAccountAddress),
+    [connectedAccountAddress]
+  );
+
+  const accountProposalCandidates = useAccountProposalCandidates(
+    connectedAccountAddress
+  );
 
   const updateProposal = useUpdateProposal(proposalId);
+  const createCandidate = useCreateProposalCandidate();
 
-  const submit = async ({ updateMessage }) => {
-    const getDescription = () => {
+  const isSponsoredUpdate = proposal.signers.length > 0;
+
+  const submit = async ({ updateMessage } = {}) => {
+    const buildUpdateCandidateSlug = () => {
+      const slugifiedTitle =
+        title.toLowerCase().replace(/\s+/g, "-") + "-update";
+      let index = 0;
+      while (slugifiedTitle) {
+        const slug = [slugifiedTitle, index].filter(Boolean).join("-");
+        if (accountProposalCandidates.find((c) => c.slug === slug) == null)
+          return slug;
+        index += 1;
+      }
+    };
+
+    const getDescriptionIfChanged = () => {
       if (!hasTitleChanges && !hasBodyChanges) return null;
       return createMarkdownDescription({ title, body });
     };
 
-    const getTransactions = () => {
+    const getTransactionsIfChanged = () => {
       if (!hasActionChanges) return null;
       return actions.flatMap((a) => resolveActionTransactions(a, { chainId }));
     };
 
     try {
       setPendingSubmit(true);
-      await updateProposal({
-        description: getDescription(),
-        transactions: getTransactions(),
-        updateMessage,
-      });
-      closeDialog();
+
+      if (isSponsoredUpdate) {
+        const { slug: createdCandidateSlug } = await createCandidate({
+          targetProposalId: proposalId,
+          slug: buildUpdateCandidateSlug(),
+          description: createMarkdownDescription({ title, body }),
+          transactions: actions.flatMap((a) =>
+            resolveActionTransactions(a, { chainId })
+          ),
+        });
+        const candidateId = [
+          connectedAccountAddress,
+          encodeURIComponent(createdCandidateSlug),
+        ].join("-");
+
+        await functionUtils.retryAsync(
+          () => fetchProposalCandidate(candidateId),
+          { retries: 100 }
+        );
+
+        navigate(`/candidates/${candidateId}`, { replace: true });
+      } else {
+        await updateProposal({
+          description: getDescriptionIfChanged(),
+          transactions: getTransactionsIfChanged(),
+          updateMessage,
+        });
+        closeDialog();
+      }
     } catch (e) {
       console.log(e);
       alert("Something went wrong");
@@ -220,29 +284,23 @@ const ProposalEditDialog = ({ proposalId, isOpen, close: closeDialog }) => {
           },
         })}
       >
-        {proposal.signers.length > 0 ? (
-          <div css={css({ padding: "6.4rem 3.2rem", textAlign: "center" })}>
-            Updating sponsored proposals not yet supported. THOON! :tm:
-          </div>
-        ) : (
-          <ProposalEditor
-            title={title}
-            body={body}
-            actions={actions}
-            setTitle={setTitle}
-            setBody={setBody}
-            setActions={setActions}
-            proposerId={proposal.proposerId}
-            onSubmit={() => {
-              setShowPreviewDialog(true);
-            }}
-            submitLabel="Preview update"
-            submitDisabled={!hasChanges}
-            containerHeight="calc(100vh - 6rem)"
-            scrollContainerRef={scrollContainerRef}
-            background={theme.colors.dialogBackground}
-          />
-        )}
+        <ProposalEditor
+          title={title}
+          body={body}
+          actions={actions}
+          setTitle={setTitle}
+          setBody={setBody}
+          setActions={setActions}
+          proposerId={proposal.proposerId}
+          onSubmit={() => {
+            setShowPreviewDialog(true);
+          }}
+          submitLabel="Preview update"
+          submitDisabled={!hasChanges}
+          containerHeight="calc(100vh - 6rem)"
+          scrollContainerRef={scrollContainerRef}
+          background={theme.colors.dialogBackground}
+        />
       </div>
 
       {showPreviewDialog && (
@@ -253,7 +311,17 @@ const ProposalEditDialog = ({ proposalId, isOpen, close: closeDialog }) => {
           }}
           createDescriptionDiff={createDescriptionDiff}
           createTransactionsDiff={createTransactionsDiff}
-          submit={() => {
+          submitDisabled={isSponsoredUpdate && createCandidate == null}
+          submitLabel={
+            isSponsoredUpdate
+              ? "Create update candidate"
+              : "Continue to submission"
+          }
+          submit={async () => {
+            if (isSponsoredUpdate) {
+              await submit();
+              return;
+            }
             setShowPreviewDialog(false);
             setShowSubmitDialog(true);
           }}
@@ -309,7 +377,7 @@ export const SubmitUpdateDialog = ({
           <main>
             <Input
               multiline
-              label="Update message (optional)"
+              label="Update comment (optional)"
               rows={3}
               placeholder="..."
               value={updateMessage}
@@ -338,9 +406,13 @@ export const PreviewUpdateDialog = ({
   isOpen,
   createDescriptionDiff,
   createTransactionsDiff,
+  submitLabel,
+  submitDisabled,
   submit,
   close,
 }) => {
+  const [hasPendingSubmit, setPendingSubmit] = React.useState(false);
+
   const descriptionDiff = createDescriptionDiff();
   const transactionsDiff = createTransactionsDiff();
   const hasDescriptionChanges = descriptionDiff.some(
@@ -457,8 +529,21 @@ export const PreviewUpdateDialog = ({
               <Button size="medium" onClick={close}>
                 Cancel
               </Button>
-              <Button size="medium" variant="primary" onClick={submit}>
-                Continue to submission
+              <Button
+                size="medium"
+                variant="primary"
+                disabled={submitDisabled || hasPendingSubmit}
+                isLoading={hasPendingSubmit}
+                onClick={async () => {
+                  try {
+                    setPendingSubmit(true);
+                    await submit();
+                  } finally {
+                    setPendingSubmit(false);
+                  }
+                }}
+              >
+                {submitLabel}
               </Button>
             </div>
           </footer>

@@ -1,6 +1,6 @@
 import React from "react";
 import { css } from "@emotion/react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link as RouterLink } from "react-router-dom";
 import { ListBox, ListBoxItem } from "react-aria-components";
 import {
   array as arrayUtils,
@@ -8,6 +8,8 @@ import {
 } from "@shades/common/utils";
 import { useAccountDisplayName } from "@shades/common/app";
 import Button from "@shades/ui-web/button";
+import Link from "@shades/ui-web/link";
+import Spinner from "@shades/ui-web/spinner";
 import { Label } from "@shades/ui-web/input";
 import Dialog from "@shades/ui-web/dialog";
 import DialogHeader from "@shades/ui-web/dialog-header";
@@ -24,16 +26,22 @@ import {
   useProposalThreshold,
   useCreateProposal,
   useCreateProposalWithSignatures,
+  useActiveProposalId,
 } from "../hooks/dao-contract.js";
+import { useWallet } from "../hooks/wallet.js";
 
 const PromoteCandidateDialog = ({ isOpen, candidateId, dismiss }) => {
   const navigate = useNavigate();
+  const { address: connectedWalletAccountAddress } = useWallet();
 
   const candidate = useProposalCandidate(candidateId);
   const proposerDelegate = useDelegate(candidate.proposerId);
   const proposalThreshold = useProposalThreshold();
   const activeProposerIds = useProposals({ filter: "active" }).map(
     (p) => p.proposerId
+  );
+  const authoredActiveProposalId = useActiveProposalId(
+    connectedWalletAccountAddress
   );
 
   const { fetchProposal } = useActions();
@@ -142,12 +150,51 @@ const PromoteCandidateDialog = ({ isOpen, candidateId, dismiss }) => {
             },
           })}
         >
-          <DialogHeader
-            title="Promote candidate"
-            titleProps={titleProps}
-            dismiss={dismiss}
-          />
-          {canProposeWithoutSponsors && validSignatures.length === 0 ? (
+          <DialogHeader title="Promote candidate" titleProps={titleProps} />
+          {authoredActiveProposalId === undefined ? (
+            <div
+              style={{
+                display: "flex",
+                justifyContent: "center",
+                padding: "6.4rem 0",
+              }}
+            >
+              <Spinner />
+            </div>
+          ) : authoredActiveProposalId != null ? (
+            <>
+              <main>
+                <Callout style={{ margin: "0 0 3.2rem" }}>
+                  You already have an active proposal. You may submit a new one
+                  when voting for{" "}
+                  <Link
+                    underline
+                    component={RouterLink}
+                    to={`/proposals/${authoredActiveProposalId}`}
+                  >
+                    Proposal {authoredActiveProposalId}
+                  </Link>{" "}
+                  ends.
+                </Callout>
+              </main>
+              <footer
+                css={css({
+                  display: "flex",
+                  justifyContent: "flex-end",
+                  marginTop: "2.5rem",
+                  "@media (min-width: 600px)": {
+                    marginTop: "3rem",
+                  },
+                })}
+              >
+                <div css={css({ display: "flex", gap: "1rem" })}>
+                  <Button type="button" size="medium" onClick={dismiss}>
+                    Close
+                  </Button>
+                </div>
+              </footer>
+            </>
+          ) : canProposeWithoutSponsors && validSignatures.length === 0 ? (
             <>
               <main>
                 <Callout style={{ margin: "0 0 3.2rem" }}>

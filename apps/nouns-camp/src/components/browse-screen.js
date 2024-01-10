@@ -30,6 +30,7 @@ import {
   buildFeed as buildCandidateFeed,
   getSignals as getCandidateSignals,
   makeUrlId as makeCandidateUrlId,
+  getSponsorSignatures as getCandidateSponsorSignatures,
 } from "../utils/candidates.js";
 import { buildFeed as buildPropdateFeed } from "../utils/propdates.js";
 import { useProposalThreshold } from "../hooks/dao-contract.js";
@@ -40,6 +41,7 @@ import {
   useProposal,
   useProposals,
   useProposalCandidates,
+  useProposalUpdateCandidates,
   useProposalCandidate,
   useProposalCandidateVotingPower,
   usePropdates,
@@ -118,6 +120,7 @@ const useFeedItems = ({ filter }) => {
   const candidates = useProposalCandidates({
     includeCanceled: true,
     includePromoted: true,
+    includeProposalUpdates: true,
   });
   const propdates = usePropdates();
 
@@ -179,6 +182,9 @@ const groupConfigByKey = {
     title: "Trending",
     description: `The most popular candidates active within the last ${CANDIDATE_ACTIVE_THRESHOLD_IN_DAYS} days`,
   },
+  "proposals:sponsored-proposal-update-awaiting-signature": {
+    title: "Missing your signature",
+  },
   "candidates:inactive": {
     title: "Stale",
     description: `No activity within the last ${CANDIDATE_ACTIVE_THRESHOLD_IN_DAYS} days`,
@@ -201,7 +207,15 @@ const BrowseScreen = () => {
   const { address: connectedWalletAccountAddress } = useWallet();
 
   const proposals = useProposals({ state: true });
-  const candidates = useProposalCandidates();
+  const candidates = useProposalCandidates({
+    includeCanceled: false,
+    includePromoted: false,
+    includeProposalUpdates: false,
+  });
+  const proposalUpdateCandidates = useProposalUpdateCandidates({
+    includeTargetProposal: true,
+  });
+
   const { items: proposalDrafts } = useDrafts();
 
   const [page, setPage] = React.useState(1);
@@ -233,6 +247,31 @@ const BrowseScreen = () => {
     () => candidates.filter((c) => c.latestVersion != null),
     [candidates]
   );
+  const filteredProposalUpdateCandidates = React.useMemo(() => {
+    const hasSigned = (c) => {
+      const signatures = getCandidateSponsorSignatures(c, {
+        excludeInvalid: true,
+        activeProposerIds: [],
+      });
+      return signatures.some(
+        (s) => s.signer.id.toLowerCase() === connectedWalletAccountAddress
+      );
+    };
+
+    // Include authored updates, as well as sponsored updates not yet signed
+    return proposalUpdateCandidates.filter((c) => {
+      if (c.latestVersion == null) return false;
+
+      if (c.proposerId.toLowerCase() === connectedWalletAccountAddress)
+        return true;
+
+      const isSponsor = c.targetProposal.signers.some(
+        (s) => s.id.toLowerCase() === connectedWalletAccountAddress
+      );
+
+      return isSponsor && !hasSigned(c);
+    });
+  }, [proposalUpdateCandidates, connectedWalletAccountAddress]);
 
   const filteredItems = React.useMemo(() => {
     const filteredProposalDrafts =
@@ -241,12 +280,9 @@ const BrowseScreen = () => {
         : proposalDrafts
             .filter((d) => {
               if (d.name.trim() !== "") return true;
-
-              const isMarkdown = typeof d.body === "string";
-
-              return isMarkdown
-                ? d.body.trim() !== ""
-                : d.body.some((n) => !isRichTextNodeEmpty(n, { trim: true }));
+              return d.body.some(
+                (n) => !isRichTextNodeEmpty(n, { trim: true })
+              );
             })
             .map((d) => ({ ...d, type: "draft" }));
 
@@ -254,10 +290,17 @@ const BrowseScreen = () => {
       ...filteredProposalDrafts,
       ...filteredCandidates,
       ...filteredProposals,
+      ...filteredProposalUpdateCandidates,
     ];
 
     return deferredQuery === "" ? items : searchProposals(items, deferredQuery);
-  }, [deferredQuery, filteredProposals, filteredCandidates, proposalDrafts]);
+  }, [
+    deferredQuery,
+    filteredProposals,
+    filteredCandidates,
+    filteredProposalUpdateCandidates,
+    proposalDrafts,
+  ]);
 
   const groupProposal = (p) => {
     const connectedAccount = connectedWalletAccountAddress?.toLowerCase();
@@ -292,8 +335,14 @@ const BrowseScreen = () => {
   );
 
   const groupCandidate = (c) => {
-    const connectedAccount = connectedWalletAccountAddress?.toLowerCase();
     const { content } = c.latestVersion;
+    const connectedAccount = connectedWalletAccountAddress;
+
+    if (c.latestVersion.targetProposalId != null)
+      return c.proposerId.toLowerCase() == connectedAccount
+        ? "proposals:authored"
+        : "proposals:sponsored-proposal-update-awaiting-signature";
+
     const isActive =
       c.createdTimestamp > candidateActiveThreshold ||
       c.lastUpdatedTimestamp > candidateActiveThreshold ||
@@ -397,7 +446,9 @@ const BrowseScreen = () => {
         case "candidates:feedback-given":
         case "candidates:feedback-missing":
         case "candidates:popular":
-        case "candidates:inactive": {
+        case "candidates:authored-proposal-update":
+        case "candidates:inactive":
+        case "proposals:sponsored-proposal-update-awaiting-signature": {
           const sortedItems = isSearch
             ? items
             : arrayUtils.sortBy(
@@ -625,6 +676,7 @@ const BrowseScreen = () => {
                           sections={[
                             // "drafts",
                             "proposals:authored",
+                            "proposals:sponsored-proposal-update-awaiting-signature",
                             "proposals:awaiting-vote",
                             "proposals:ongoing",
                             "proposals:new",
@@ -1336,6 +1388,10 @@ const PropTagWithStatusText = ({ proposalId }) => {
 
 const ProposalCandidateItem = React.memo(({ candidateId }) => {
   const candidate = useProposalCandidate(candidateId);
+  const updateTargetProposal = useProposal(
+    candidate.latestVersion.targetProposalId
+  );
+
   const { displayName: authorAccountDisplayName } = useAccountDisplayName(
     candidate.proposerId
   );
@@ -1350,7 +1406,7 @@ const ProposalCandidateItem = React.memo(({ candidateId }) => {
   //   signals.delegates.abstain;
 
   const isCanceled = candidate.canceledTimestamp != null;
-
+  const isProposalUpdate = candidate.latestVersion.targetProposalId != null;
   const isProposalThresholdMet = candidateVotingPower > proposalThreshold;
 
   const hasUpdate =
@@ -1379,32 +1435,62 @@ const ProposalCandidateItem = React.memo(({ candidateId }) => {
     feedbackPostsAscending.map((p) => p.voterId)
   );
 
+  const showScoreStack = !isProposalUpdate;
+
+  const renderProposalUpdateStatusText = () => {
+    if (updateTargetProposal == null) return "...";
+
+    const validSignatures = getCandidateSponsorSignatures(candidate, {
+      excludeInvalid: true,
+      activeProposerIds: [],
+    });
+
+    const signerIds = validSignatures.map((s) => s.signer.id.toLowerCase());
+
+    const missingSigners = updateTargetProposal.signers.filter((s) => {
+      const signerId = s.id.toLowerCase();
+      return !signerIds.includes(signerId);
+    });
+
+    const sponsorCount =
+      updateTargetProposal.signers.length - missingSigners.length;
+
+    return (
+      <>
+        {sponsorCount} / {updateTargetProposal.signers.length} sponsors signed
+      </>
+    );
+  };
+
   return (
     <RouterLink
       to={`/candidates/${encodeURIComponent(makeCandidateUrlId(candidateId))}`}
     >
       <div
         css={css({
-          "@container(min-width: 540px)": {
-            display: "grid",
-            gridTemplateColumns: "minmax(0,1fr) auto",
-            gridGap: "3.2rem",
-            alignItems: "stretch",
-          },
+          display: "grid",
+          gridTemplateColumns: "minmax(0,1fr) auto",
+          gridGap: "3.2rem",
+          alignItems: "stretch",
         })}
       >
         <div
           css={css({
             display: "grid",
-            gridTemplateColumns: "2.2rem minmax(0,1fr)",
+            gridTemplateColumns: "minmax(0,1fr)",
             gridGap: "1.2rem",
             alignItems: "center",
           })}
+          style={{
+            gridTemplateColumns: showScoreStack
+              ? "2.2rem minmax(0,1fr)"
+              : undefined,
+          }}
         >
-          <div />
+          {showScoreStack && <div />}
           <div>
             <div data-small>
-              Candidate by{" "}
+              {isProposalUpdate ? "Proposal update" : "Candidate"} by{" "}
               <em
                 css={(t) =>
                   css({
@@ -1421,69 +1507,77 @@ const ProposalCandidateItem = React.memo(({ candidateId }) => {
               css={css({ margin: "0.1rem 0", position: "relative" })}
             >
               {candidate.latestVersion.content.title}
-              <div
-                css={css({
-                  position: "absolute",
-                  right: "calc(100% + 1.2rem)",
-                  top: "50%",
-                  transform: "translateY(-50%)",
-                })}
-              >
-                <ScoreStack {...signals.delegates} />
-              </div>
+              {showScoreStack && (
+                <div
+                  css={css({
+                    position: "absolute",
+                    right: "calc(100% + 1.2rem)",
+                    top: "50%",
+                    transform: "translateY(-50%)",
+                  })}
+                >
+                  <ScoreStack {...signals.delegates} />
+                </div>
+              )}
             </div>
             <div data-small>
-              {mostRecentActivity === "update" ? (
-                <>
-                  Last updated{" "}
-                  <FormattedDateWithTooltip
-                    relativeDayThreshold={5}
-                    capitalize={false}
-                    value={candidate.lastUpdatedTimestamp}
-                    day="numeric"
-                    month="short"
-                  />
-                </>
-              ) : mostRecentActivity === "feedback" ? (
-                <>
-                  Last comment{" "}
-                  <FormattedDateWithTooltip
-                    relativeDayThreshold={5}
-                    capitalize={false}
-                    value={mostRecentFeedbackPost.createdTimestamp}
-                    day="numeric"
-                    month="short"
-                  />
-                </>
+              {isProposalUpdate ? (
+                renderProposalUpdateStatusText()
               ) : (
                 <>
-                  Created{" "}
-                  <FormattedDateWithTooltip
-                    relativeDayThreshold={5}
-                    capitalize={false}
-                    value={candidate.createdTimestamp}
-                    day="numeric"
-                    month="short"
-                  />
+                  {mostRecentActivity === "update" ? (
+                    <>
+                      Last updated{" "}
+                      <FormattedDateWithTooltip
+                        relativeDayThreshold={5}
+                        capitalize={false}
+                        value={candidate.lastUpdatedTimestamp}
+                        day="numeric"
+                        month="short"
+                      />
+                    </>
+                  ) : mostRecentActivity === "feedback" ? (
+                    <>
+                      Last comment{" "}
+                      <FormattedDateWithTooltip
+                        relativeDayThreshold={5}
+                        capitalize={false}
+                        value={mostRecentFeedbackPost.createdTimestamp}
+                        day="numeric"
+                        month="short"
+                      />
+                    </>
+                  ) : (
+                    <>
+                      Created{" "}
+                      <FormattedDateWithTooltip
+                        relativeDayThreshold={5}
+                        capitalize={false}
+                        value={candidate.createdTimestamp}
+                        day="numeric"
+                        month="short"
+                      />
+                    </>
+                  )}
+                  {isProposalThresholdMet && (
+                    <span>
+                      <span
+                        role="separator"
+                        aria-orientation="vertical"
+                        css={(t) =>
+                          css({
+                            ":before": {
+                              content: '"–"',
+                              color: t.colors.textMuted,
+                              margin: "0 0.5rem",
+                            },
+                          })
+                        }
+                      />
+                      Sponsor threshold met
+                    </span>
+                  )}
                 </>
-              )}
-              {isProposalThresholdMet && (
-                <span>
-                  <span
-                    role="separator"
-                    aria-orientation="vertical"
-                    css={(t) =>
-                      css({
-                        ":before": {
-                          content: '"–"',
-                          color: t.colors.textMuted,
-                          margin: "0 0.5rem",
-                        },
-                      })
-                    }
-                  />
-                  Sponsor threshold met
-                </span>
               )}
             </div>
           </div>
@@ -1525,7 +1619,7 @@ const ProposalCandidateItem = React.memo(({ candidateId }) => {
             <Tag variant="error" size="large">
               Canceled
             </Tag>
-          ) : candidate.latestVersion.targetProposalId != null ? (
+          ) : isProposalUpdate ? (
             <Tag variant="special" size="large">
               Prop {candidate.latestVersion.targetProposalId} update
             </Tag>

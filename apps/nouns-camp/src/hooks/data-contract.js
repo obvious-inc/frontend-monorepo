@@ -128,14 +128,22 @@ export const useCreateProposalCandidate = ({ enabled = true } = {}) => {
 
   if (votingPower == null || createCost == null) return null;
 
-  return async ({ slug, description, transactions }) => {
+  return async ({ slug, description, transactions, targetProposalId = 0 }) => {
     const { targets, values, signatures, calldatas } = unparseTransactions(
       transactions,
       { chainId }
     );
 
     return writeAsync({
-      args: [targets, values, signatures, calldatas, description, slug, 0],
+      args: [
+        targets,
+        values,
+        signatures,
+        calldatas,
+        description,
+        slug,
+        targetProposalId,
+      ],
     })
       .then(({ hash }) => {
         va.track("Candidate successfully created", {
@@ -208,7 +216,12 @@ export const useUpdateProposalCandidate = (slug, { enabled = true } = {}) => {
 
   if (writeAsync == null) return null;
 
-  return async ({ description, transactions, updateMessage }) => {
+  return async ({
+    description,
+    transactions,
+    targetProposalId = 0,
+    updateMessage,
+  }) => {
     const { targets, values, signatures, calldatas } = unparseTransactions(
       transactions,
       { chainId }
@@ -221,7 +234,7 @@ export const useUpdateProposalCandidate = (slug, { enabled = true } = {}) => {
         calldatas,
         description,
         slug,
-        0,
+        targetProposalId,
         updateMessage,
       ],
     }).then(({ hash }) => {
@@ -272,6 +285,7 @@ const calcProposalEncodeData = ({
   values,
   signatures,
   calldatas,
+  targetProposalId = 0,
 }) => {
   const signatureHashes = signatures.map((sig) =>
     keccak256(stringToBytes(sig))
@@ -279,18 +293,21 @@ const calcProposalEncodeData = ({
 
   const calldatasHashes = calldatas.map((calldata) => keccak256(calldata));
 
+  let parameters = [
+    ["address", proposerId],
+    ["bytes32", keccak256(encodePacked(["address[]"], [targets]))],
+    ["bytes32", keccak256(encodePacked(["uint256[]"], [values]))],
+    ["bytes32", keccak256(encodePacked(["bytes32[]"], [signatureHashes]))],
+    ["bytes32", keccak256(encodePacked(["bytes32[]"], [calldatasHashes]))],
+    ["bytes32", keccak256(stringToBytes(description))],
+  ];
+
+  if (targetProposalId > 0)
+    parameters = [["uint256", targetProposalId], ...parameters];
+
   const encodedData = encodeAbiParameters(
-    ["address", "bytes32", "bytes32", "bytes32", "bytes32", "bytes32"].map(
-      (type) => ({ type })
-    ),
-    [
-      proposerId,
-      keccak256(encodePacked(["address[]"], [targets])),
-      keccak256(encodePacked(["uint256[]"], [values])),
-      keccak256(encodePacked(["bytes32[]"], [signatureHashes])),
-      keccak256(encodePacked(["bytes32[]"], [calldatasHashes])),
-      keccak256(stringToBytes(description)),
-    ]
+    parameters.map(([type]) => ({ type })),
+    parameters.map((p) => p[1])
   );
 
   return encodedData;
@@ -299,9 +316,11 @@ const calcProposalEncodeData = ({
 export const useAddSignatureToProposalCandidate = (
   proposerId,
   slug,
-  { description, targets, values, signatures, calldatas }
+  { content, targetProposalId = 0 }
 ) => {
   const { address: accountAddress } = useWallet();
+
+  const { description, targets, values, signatures, calldatas } = content;
 
   const chainId = useChainId();
 
@@ -322,7 +341,7 @@ export const useAddSignatureToProposalCandidate = (
         expirationTimestamp,
         proposerId,
         slug,
-        0, // proposalIdToUpdate,
+        targetProposalId,
         calcProposalEncodeData({
           proposerId,
           description,
@@ -330,6 +349,7 @@ export const useAddSignatureToProposalCandidate = (
           values,
           signatures,
           calldatas,
+          targetProposalId: Number(targetProposalId),
         }),
         reason,
       ],
@@ -346,9 +366,31 @@ export const useAddSignatureToProposalCandidate = (
 export const useSignProposalCandidate = (
   proposerId,
   { description, targets, values, signatures, calldatas },
-  { expirationTimestamp }
+  { expirationTimestamp, targetProposalId }
 ) => {
   const chainId = useChainId();
+
+  const message = {
+    proposer: proposerId,
+    targets,
+    values,
+    signatures,
+    calldatas,
+    description,
+    expiry: expirationTimestamp,
+  };
+
+  if (targetProposalId != null) message.proposalId = Number(targetProposalId);
+
+  const proposalTypes = [
+    { name: "proposer", type: "address" },
+    { name: "targets", type: "address[]" },
+    { name: "values", type: "uint256[]" },
+    { name: "signatures", type: "string[]" },
+    { name: "calldatas", type: "bytes[]" },
+    { name: "description", type: "string" },
+    { name: "expiry", type: "uint256" },
+  ];
 
   const { signTypedDataAsync } = useSignTypedData({
     domain: {
@@ -356,27 +398,19 @@ export const useSignProposalCandidate = (
       chainId,
       verifyingContract: resolveIdentifier(chainId, "dao").address,
     },
-    types: {
-      Proposal: [
-        { name: "proposer", type: "address" },
-        { name: "targets", type: "address[]" },
-        { name: "values", type: "uint256[]" },
-        { name: "signatures", type: "string[]" },
-        { name: "calldatas", type: "bytes[]" },
-        { name: "description", type: "string" },
-        { name: "expiry", type: "uint256" },
-      ],
-    },
-    primaryType: "Proposal",
-    message: {
-      proposer: proposerId,
-      targets,
-      values,
-      signatures,
-      calldatas,
-      description,
-      expiry: expirationTimestamp,
-    },
+    types:
+      targetProposalId == null
+        ? {
+            Proposal: proposalTypes,
+          }
+        : {
+            UpdateProposal: [
+              { name: "proposalId", type: "uint256" },
+              ...proposalTypes,
+            ],
+          },
+    primaryType: targetProposalId == null ? "Proposal" : "UpdateProposal",
+    message,
   });
 
   return signTypedDataAsync;

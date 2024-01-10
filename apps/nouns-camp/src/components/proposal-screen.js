@@ -105,6 +105,8 @@ const getDelegateVotes = (proposal) => {
     );
 };
 
+const isBetaSession = new URLSearchParams(location.search).get("beta") != null;
+
 const ProposalMainSection = ({ proposalId, scrollContainerRef }) => {
   const { data: latestBlockNumber } = useBlockNumber();
   const calculateBlockTimestamp = useApproximateBlockTimestampCalculator();
@@ -1248,24 +1250,29 @@ const ProposalScreen = () => {
     connectedWalletAccountAddress.toLowerCase() ===
       proposal?.proposerId?.toLowerCase();
 
+  const isSponsor =
+    connectedWalletAccountAddress != null &&
+    proposal?.signers != null &&
+    proposal.signers.some(
+      (s) => s.id.toLowerCase() === connectedWalletAccountAddress.toLowerCase()
+    );
+
   const cancelProposal = useCancelProposal(proposalId, {
-    enabled: isProposer,
+    enabled: isProposer || isSponsor,
   });
 
   const [searchParams, setSearchParams] = useSearchParams();
 
-  const isBetaSession = searchParams.get("beta") != null;
-
-  const isDialogOpen = searchParams.get("proposal-dialog") != null;
+  const isDialogOpen = searchParams.get("edit") != null;
 
   const openEditDialog = React.useCallback(() => {
-    setSearchParams({ "proposal-dialog": 1 });
+    setSearchParams({ edit: 1 });
   }, [setSearchParams]);
 
   const closeEditDialog = React.useCallback(() => {
     setSearchParams((params) => {
       const newParams = new URLSearchParams(params);
-      newParams.delete("proposal-dialog");
+      newParams.delete("edit");
       return newParams;
     });
   }, [setSearchParams]);
@@ -1284,16 +1291,18 @@ const ProposalScreen = () => {
 
   const getActions = () => {
     if (proposal == null) return [];
+    if (proposal.state === "canceled") return undefined;
 
-    if (!isProposer || proposal.state === "canceled") return undefined;
+    const actions = [];
 
-    const proposerActions = [
-      isBetaSession &&
-        proposal.state === "updatable" && {
-          onSelect: openEditDialog,
-          label: "Edit",
-        },
-      !isFinalProposalState(proposal.state) && {
+    if (isProposer && proposal.state === "updatable" && isBetaSession)
+      actions.push({
+        onSelect: openEditDialog,
+        label: "Edit",
+      });
+
+    if (!isFinalProposalState(proposal.state) && (isProposer || isSponsor))
+      actions.push({
         onSelect: () => {
           if (!confirm("Are you sure you wish to cancel this proposal?"))
             return;
@@ -1315,10 +1324,9 @@ const ProposalScreen = () => {
           isLoading: hasPendingCancel,
           disabled: cancelProposal == null || hasPendingCancel,
         },
-      },
-    ].filter(Boolean);
+      });
 
-    return proposerActions.length === 0 ? undefined : proposerActions;
+    return actions.length === 0 ? undefined : actions;
   };
 
   return (
@@ -1334,16 +1342,14 @@ const ProposalScreen = () => {
               <>
                 Proposal {proposalId}
                 {proposal?.state != null && (
-                  <>
-                    <ProposalStateTag
-                      size="small"
-                      proposalId={proposalId}
-                      style={{
-                        marginLeft: "0.6rem",
-                        transform: "translateY(-0.1rem)",
-                      }}
-                    />
-                  </>
+                  <ProposalStateTag
+                    size="small"
+                    proposalId={proposalId}
+                    style={{
+                      marginLeft: "0.6rem",
+                      transform: "translateY(-0.1rem)",
+                    }}
+                  />
                 )}
               </>
             ),

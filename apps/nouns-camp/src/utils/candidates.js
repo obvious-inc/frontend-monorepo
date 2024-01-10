@@ -69,7 +69,7 @@ export const buildFeed = (candidate) => {
       .map((v) => ({
         type: "event",
         eventType: "candidate-updated",
-        id: `candidate-update-${v.createdBlock}`,
+        id: `candidate-update-${candidate.id}-${v.id}`,
         body: v.updateMessage,
         blockNumber: v.createdBlock,
         timestamp: v.createdTimestamp,
@@ -104,7 +104,7 @@ export const buildFeed = (candidate) => {
 
   const signatureItems = getSponsorSignatures(candidate).map((s) => ({
     type: "candidate-signature-added",
-    id: `candidate-signature-added-${s.sig}`,
+    id: `candidate-signature-added-${candidate.id}-${s.sig}`,
     authorAccount: s.signer.id,
     body: s.reason,
     voteCount: s.signer.nounsRepresented?.length,

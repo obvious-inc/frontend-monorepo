@@ -24,6 +24,10 @@ const Callout = ({ icon, compact, variant, children, ...props }) => (
         "[data-main]": { minWidth: 0, flex: 1 },
         "p + p": { marginTop: "1em" },
         "&[data-compact] p + p": { marginTop: "0.5em" },
+        em: {
+          fontStyle: "normal",
+          fontWeight: t.text.weights.emphasis,
+        },
         "@media(min-width: 600px)": {
           padding: "1.6rem",
         },

@@ -157,6 +157,7 @@ const CandidateEditDialog = ({ candidateId, isOpen, close: closeDialog }) => {
       await updateProposalCandidate({
         description,
         transactions,
+        targetProposalId: candidate.latestVersion.targetProposalId,
         updateMessage,
       });
       closeDialog();
@@ -213,6 +214,7 @@ const CandidateEditDialog = ({ candidateId, isOpen, close: closeDialog }) => {
           }}
           createDescriptionDiff={createDescriptionDiff}
           createTransactionsDiff={createTransactionsDiff}
+          submitLabel="Continue to submission"
           submit={() => {
             setShowPreviewDialog(false);
             setShowSubmitDialog(true);
