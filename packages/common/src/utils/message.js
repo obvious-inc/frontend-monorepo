@@ -358,14 +358,16 @@ export const toMarkdown = (blockElements) => {
         return el.children.map(renderBlockElement).join("\n");
 
       case "image": {
+        const alt = el.alt || "";
+
         if (el.caption == null || el.caption.trim() === "")
-          return `![${el.alt}](${el.url})`;
+          return `![${alt}](${el.url})`;
 
         try {
           new URL(el.caption);
-          return `[![${el.alt}](${el.url} "${el.caption}")](${el.caption})`;
+          return `[![${alt}](${el.url} "${el.caption}")](${el.caption})`;
         } catch (e) {
-          return `![${el.alt}](${el.url} "${el.caption}")`;
+          return `![${alt}](${el.url} "${el.caption}")`;
         }
       }
 
