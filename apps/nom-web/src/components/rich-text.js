@@ -1,4 +1,8 @@
+import React from "react";
+import { css } from "@emotion/react";
 import { Link } from "react-router-dom";
+import { useEmojiById } from "@shades/common/app";
+import * as Tooltip from "@shades/ui-web/tooltip";
 import RichTextBase from "@shades/ui-web/rich-text";
 import Emoji from "@shades/ui-web/emoji";
 import InlineChannelButton from "@shades/ui-web/inline-channel-button";
@@ -21,7 +25,7 @@ const RichText = ({ blocks, ...props }) => {
     return (
       <div>
         {blocks[0].children.map((b, i) => (
-          <Emoji key={i} large emoji={b.emoji} />
+          <EmojiWithTooltip key={i} large emoji={b.emoji} />
         ))}
       </div>
     );
@@ -32,7 +36,7 @@ const RichText = ({ blocks, ...props }) => {
       renderElement={(el, i) => {
         switch (el.type) {
           case "emoji":
-            return <Emoji key={i} emoji={el.emoji} />;
+            return <EmojiWithTooltip key={i} emoji={el.emoji} />;
 
           case "channel-link":
             return (
@@ -55,5 +59,19 @@ const RichText = ({ blocks, ...props }) => {
     />
   );
 };
+
+const EmojiWithTooltip = React.memo(({ emoji, large }) => {
+  const emojiItem = useEmojiById(emoji);
+  return (
+    <Tooltip.Root>
+      <Tooltip.Trigger>
+        <Emoji emoji={emoji} large={large} />
+      </Tooltip.Trigger>
+      <Tooltip.Content side="top" sideOffset={4}>
+        {emojiItem != null && <>:{emojiItem.id ?? emojiItem.aliases[0]}:</>}
+      </Tooltip.Content>
+    </Tooltip.Root>
+  );
+});
 
 export default RichText;
