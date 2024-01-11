@@ -18,6 +18,11 @@ const backgroundDarkest = "hsl(60deg 11% 88%)";
 const backgroundModifierLight = "hsl(60deg 12% 30% / 3%)";
 const backgroundModifierNormal = "hsl(60deg 12% 30% / 7%)";
 const backgroundModifierStrong = "hsl(60deg 12% 30% / 12%)";
+const backgroundModifierSelected = createPrimary({
+  lightness: 0.7,
+  saturation: 0.85,
+  opacity: 0.15,
+});
 
 export default {
   ...dark,
@@ -39,6 +44,7 @@ export default {
     backgroundModifierLight,
     backgroundModifierNormal,
     backgroundModifierStrong,
+    backgroundModifierSelected,
     backgroundModifierHover: backgroundModifierNormal, // deprecated
     primaryTransparent,
     primaryTransparentSoft,
@@ -50,7 +56,7 @@ export default {
     textAccent,
     textHeader: textAccent,
     textPrimary: primaryText,
-    textHighlight: "#9e7626", // Light yellow
+    textHighlight: "#9a6700", // Light yellow
     textHighlightBackground: "#b8810e26",
     link: primaryText,
     linkModifierHover: primaryText,

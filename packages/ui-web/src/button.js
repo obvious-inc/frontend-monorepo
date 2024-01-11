@@ -33,13 +33,15 @@ const stylesByVariant = (t, { danger }) => ({
     borderColor: danger ? t.colors.borderDanger : t.colors.borderLight,
     "@media (hover: hover)": {
       "&:not([disabled]):hover": {
-        background: danger ? textDangerHoverModifier : t.colors.buttonHover,
+        background: danger
+          ? textDangerHoverModifier
+          : t.colors.backgroundModifierNormal,
       },
     },
   },
   "default-opaque": {
     color: t.colors.textNormal,
-    background: t.colors.buttonHover,
+    background: t.colors.backgroundModifierNormal,
     "@media (hover: hover)": {
       "&:not([disabled]):hover": {
         color: t.colors.textAccent,
@@ -52,7 +54,9 @@ const stylesByVariant = (t, { danger }) => ({
     "@media (hover: hover)": {
       "&:not([disabled]):hover": {
         color: danger ? t.colors.textDanger : t.colors.textAccent,
-        background: danger ? textDangerHoverModifier : t.colors.buttonHover,
+        background: danger
+          ? textDangerHoverModifier
+          : t.colors.backgroundModifierNormal,
       },
     },
   },

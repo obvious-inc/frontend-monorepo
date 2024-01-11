@@ -92,7 +92,6 @@ const PromoteCandidateDialog = ({ isOpen, candidateId, dismiss }) => {
             return createProposalWithSignatures({
               description,
               transactions,
-              // TODO: Make sure sort order mirrors the original proposal for updates
               proposerSignatures: selectedSignatures.map((s) => ({
                 sig: s.sig,
                 signer: s.signer.id,

@@ -105,8 +105,6 @@ const getDelegateVotes = (proposal) => {
     );
 };
 
-const isBetaSession = new URLSearchParams(location.search).get("beta") != null;
-
 const ProposalMainSection = ({ proposalId, scrollContainerRef }) => {
   const { data: latestBlockNumber } = useBlockNumber();
   const calculateBlockTimestamp = useApproximateBlockTimestampCalculator();
@@ -341,7 +339,7 @@ const ProposalMainSection = ({ proposalId, scrollContainerRef }) => {
                     month="short"
                     value={proposal.executionEtaTimestamp}
                   />
-                  ) .
+                  ).
                 </>
               )}
             </p>
@@ -1295,7 +1293,7 @@ const ProposalScreen = () => {
 
     const actions = [];
 
-    if (isProposer && proposal.state === "updatable" && isBetaSession)
+    if (isProposer && proposal.state === "updatable")
       actions.push({
         onSelect: openEditDialog,
         label: "Edit",

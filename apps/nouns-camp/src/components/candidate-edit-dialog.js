@@ -16,6 +16,7 @@ import {
   isEqual as areTransactionsEqual,
   stringify as stringifyTransaction,
 } from "../utils/transactions.js";
+import { diffParagraphs } from "../utils/diff.js";
 import { useProposalCandidate } from "../store.js";
 import useChainId from "../hooks/chain-id.js";
 import { useUpdateProposalCandidate } from "../hooks/data-contract.js";
@@ -24,10 +25,7 @@ import {
   PreviewUpdateDialog,
   SubmitUpdateDialog,
   createMarkdownDescription,
-  createMarkdownDiffFunction,
 } from "./proposal-edit-dialog.js";
-
-const diffMarkdown = createMarkdownDiffFunction();
 
 const CandidateEditDialog = ({ candidateId, isOpen, close: closeDialog }) => {
   const theme = useTheme();
@@ -130,12 +128,12 @@ const CandidateEditDialog = ({ candidateId, isOpen, close: closeDialog }) => {
   const updateProposalCandidate = useUpdateProposalCandidate(candidate.slug);
 
   const createDescriptionDiff = () =>
-    diffMarkdown(
+    diffParagraphs(
       persistedDescription,
       createMarkdownDescription({ title, body: deferredBody })
     );
   const createTransactionsDiff = () =>
-    diffMarkdown(
+    diffParagraphs(
       candidate.latestVersion.content.transactions
         .map((t) => stringifyTransaction(t, { chainId }))
         .join("\n\n"),

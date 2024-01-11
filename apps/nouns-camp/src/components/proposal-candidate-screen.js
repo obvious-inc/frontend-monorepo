@@ -13,12 +13,15 @@ import { css } from "@emotion/react";
 import { array as arrayUtils, reloadPageOnce } from "@shades/common/utils";
 import { ErrorBoundary } from "@shades/common/react";
 import Dialog from "@shades/ui-web/dialog";
+import DialogHeader from "@shades/ui-web/dialog-header";
 import Button from "@shades/ui-web/button";
 import Link from "@shades/ui-web/link";
 import Input from "@shades/ui-web/input";
 import Spinner from "@shades/ui-web/spinner";
 import { Checkmark as CheckmarkIcon } from "@shades/ui-web/icons";
 import * as Tooltip from "@shades/ui-web/tooltip";
+import { diffParagraphs } from "../utils/diff.js";
+import { stringify as stringifyTransaction } from "../utils/transactions.js";
 import {
   extractSlugFromId as extractSlugFromCandidateId,
   getSponsorSignatures,
@@ -46,6 +49,7 @@ import {
   useAddSignatureToProposalCandidate,
   useCancelProposalCandidate,
 } from "../hooks/data-contract.js";
+import useChainId from "../hooks/chain-id.js";
 import { useWallet } from "../hooks/wallet.js";
 import useMatchDesktopLayout from "../hooks/match-desktop-layout.js";
 import MetaTags_ from "./meta-tags.js";
@@ -65,6 +69,7 @@ import Callout from "./callout.js";
 import Tag from "./tag.js";
 import * as Tabs from "./tabs.js";
 import TransactionList from "./transaction-list.js";
+import DiffBlock from "./diff-block.js";
 
 const CandidateEditDialog = React.lazy(() =>
   import("./candidate-edit-dialog.js")
@@ -73,8 +78,6 @@ const PromoteCandidateDialog = React.lazy(() =>
   import("./promote-candidate-dialog.js")
 );
 const MarkdownRichText = React.lazy(() => import("./markdown-rich-text.js"));
-
-const isBetaSession = new URLSearchParams(location.search).get("beta") != null;
 
 const useSearchParamToggleState = (key, { replace = true } = {}) => {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -143,6 +146,8 @@ const ProposalCandidateScreenContent = ({
     }
   );
 
+  const [isProposalUpdateDiffDialogOpen, toggleProposalUpdateDiffDialog] =
+    useSearchParamToggleState("diff");
   const [hasPendingProposalUpdate, setPendingProposalUpdate] =
     React.useState(false);
   const submitProposalUpdate = useUpdateSponsoredProposalWithSignatures(
@@ -189,6 +194,16 @@ const ProposalCandidateScreenContent = ({
   const missingSponsorVotingPower = isProposalThresholdMet
     ? 0
     : proposalThreshold + 1 - candidateVotingPower;
+
+  const isMissingProposalUpdateSignatures =
+    updateTargetProposal == null ||
+    updateTargetProposal.signers.some((signer) => {
+      const signature = validSignaturesIncludingActiveProposers.find(
+        (s) => s.signer.id.toLowerCase() === signer.id.toLowerCase()
+      );
+
+      return signature == null;
+    });
 
   const signals = getSignals({ candidate, proposerDelegate });
 
@@ -249,21 +264,33 @@ const ProposalCandidateScreenContent = ({
               })}
             >
               {isProposalUpdate ? (
-                <div style={{ margin: "0 0 4.8rem" }}>
-                  <h2
-                    css={(t) =>
-                      css({
-                        textTransform: "uppercase",
-                        fontSize: t.text.sizes.small,
-                        fontWeight: t.text.weights.emphasis,
-                        color: t.colors.textDimmed,
-                        margin: "0 0 1.6rem",
-                      })
-                    }
-                  >
-                    Sponsors
-                  </h2>
-                  <ProposalUpdateSponsorList candidateId={candidateId} />
+                <div
+                  style={{
+                    margin: "0 0 4.8rem",
+                    transition: "0.1s opacity",
+                    opacity: updateTargetProposal == null ? 0 : 1,
+                  }}
+                >
+                  {updateTargetProposal == null ? (
+                    <div style={{ height: "5.5rem" }} />
+                  ) : (
+                    <>
+                      <h2
+                        css={(t) =>
+                          css({
+                            textTransform: "uppercase",
+                            fontSize: t.text.sizes.small,
+                            fontWeight: t.text.weights.emphasis,
+                            color: t.colors.textDimmed,
+                            margin: "0 0 1.6rem",
+                          })
+                        }
+                      >
+                        Sponsors
+                      </h2>
+                      <ProposalUpdateSponsorList candidateId={candidateId} />
+                    </>
+                  )}
                 </div>
               ) : (
                 <>
@@ -401,7 +428,11 @@ const ProposalCandidateScreenContent = ({
           })}
         >
           {candidate.latestVersion.proposalId != null ? (
-            <Callout compact css={css({ marginBottom: "4.8rem" })}>
+            <Callout
+              compact
+              variant="info"
+              css={css({ marginBottom: "4.8rem" })}
+            >
               <p>
                 {isProposalUpdate ? (
                   <>This update has been submitted.</>
@@ -422,6 +453,7 @@ const ProposalCandidateScreenContent = ({
           ) : isProposalUpdate ? (
             <Callout
               compact
+              variant="info"
               css={(t) =>
                 css({
                   marginBottom: "4.8rem",
@@ -440,6 +472,7 @@ const ProposalCandidateScreenContent = ({
                 </Link>
                 .
               </p>
+
               <p>
                 <i>Proposal update candidates</i> are a required middle step to
                 edit sponsored proposals, as all updates need to be re-signed by
@@ -453,28 +486,23 @@ const ProposalCandidateScreenContent = ({
                       has passed its editable phase, this update can no longer
                       be submitted.
                     </p>
-                  ) : updateTargetProposal.signers.some((signer) => {
-                      const signature =
-                        validSignaturesIncludingActiveProposers.find(
-                          (s) =>
-                            s.signer.id.toLowerCase() ===
-                            signer.id.toLowerCase()
-                        );
-
-                      return signature == null;
-                    }) ? (
+                  ) : isMissingProposalUpdateSignatures ? (
                     <p data-highlight>
                       All sponsors need to sign before the update can be
                       submitted.
                     </p>
-                  ) : isProposer ? (
-                    <p style={{ marginTop: "1em" }}>
+                  ) : null}
+                  <p style={{ display: "flex", gap: "1em", marginTop: "1em" }}>
+                    {isProposer && (
                       <Button
                         variant="primary"
                         disabled={
+                          updateTargetProposal.state !== "updatable" ||
                           submitProposalUpdate == null ||
+                          isMissingProposalUpdateSignatures ||
                           hasPendingProposalUpdate
                         }
+                        size="default"
                         isLoading={hasPendingProposalUpdate}
                         onClick={async () => {
                           setPendingProposalUpdate(true);
@@ -509,8 +537,14 @@ const ProposalCandidateScreenContent = ({
                       >
                         Submit update
                       </Button>
-                    </p>
-                  ) : null}
+                    )}
+                    <Button
+                      size="default"
+                      onClick={toggleProposalUpdateDiffDialog}
+                    >
+                      View changes
+                    </Button>
+                  </p>
                 </>
               )}
             </Callout>
@@ -677,6 +711,21 @@ const ProposalCandidateScreenContent = ({
           )}
         </div>
       </MainContentContainer>
+      {isProposalUpdate && isProposalUpdateDiffDialogOpen && (
+        <Dialog
+          isOpen
+          onRequestClose={toggleProposalUpdateDiffDialog}
+          width="74rem"
+        >
+          {({ titleProps }) => (
+            <ProposalUpdateDiffDialogContent
+              titleProps={titleProps}
+              candidateId={candidateId}
+              dismiss={toggleProposalUpdateDiffDialog}
+            />
+          )}
+        </Dialog>
+      )}
     </div>
   );
 };
@@ -1189,7 +1238,7 @@ const ProposalCandidateScreen = () => {
 
     const proposerActions = [];
 
-    if (!hasBeenPromoted && isBetaSession)
+    if (!hasBeenPromoted)
       proposerActions.push({
         onSelect: toggleEditDialog,
         label: "Edit",
@@ -1356,8 +1405,8 @@ const ProposalCandidateScreen = () => {
             >
               <React.Suspense fallback={null}>
                 <SponsorDialog
-                  candidateId={candidateId}
                   titleProps={titleProps}
+                  candidateId={candidateId}
                   dismiss={toggleSponsorDialog}
                 />
               </React.Suspense>
@@ -1443,6 +1492,7 @@ const ProposalUpdateSponsorList = ({ candidateId }) => {
 
   const candidate = useProposalCandidate(candidateId);
   const proposal = useProposal(candidate.latestVersion.targetProposalId);
+  const isUpdateSubmitted = candidate.latestVersion.proposalId != null;
 
   if (candidate == null || proposal == null) return null;
 
@@ -1476,7 +1526,7 @@ const ProposalUpdateSponsorList = ({ candidateId }) => {
           <li key={s.id}>
             <div>
               <AccountPreviewPopoverTrigger accountAddress={s.id} />
-              {signature != null && (
+              {!isUpdateSubmitted && signature != null && (
                 <CheckmarkIcon
                   css={(t) =>
                     css({
@@ -1490,37 +1540,160 @@ const ProposalUpdateSponsorList = ({ candidateId }) => {
                 />
               )}
             </div>
-            <div data-small>
-              {signature == null ? (
-                <>Awaiting signature</>
-              ) : (
-                <>
-                  Signed{" "}
-                  <FormattedDateWithTooltip
-                    capitalize={false}
-                    value={signature.createdTimestamp}
-                    day="numeric"
-                    month="short"
-                  />
-                </>
-              )}
-              {s.id.toLowerCase() === connectedWalletAccountAddress && (
-                <div style={{ marginTop: "0.5rem" }}>
-                  {signature == null ? (
-                    <SignCandidateButton
-                      candidateId={candidateId}
-                      expirationDate={addDaysToDate(new Date(), 5)}
+            {!isUpdateSubmitted && (
+              <div data-small>
+                {signature != null ? (
+                  <>
+                    Signed{" "}
+                    <FormattedDateWithTooltip
+                      capitalize={false}
+                      value={signature.createdTimestamp}
+                      day="numeric"
+                      month="short"
                     />
-                  ) : (
-                    <CancelSignatureButton signature={signature.sig} />
-                  )}
-                </div>
-              )}
-            </div>
+                  </>
+                ) : (
+                  <>Awaiting signature</>
+                )}
+                {s.id.toLowerCase() === connectedWalletAccountAddress && (
+                  <div style={{ marginTop: "0.5rem" }}>
+                    {signature == null ? (
+                      <SignCandidateButton
+                        candidateId={candidateId}
+                        expirationDate={addDaysToDate(new Date(), 5)}
+                      />
+                    ) : (
+                      <CancelSignatureButton signature={signature.sig} />
+                    )}
+                  </div>
+                )}
+              </div>
+            )}
           </li>
         );
       })}
     </ol>
+  );
+};
+
+const ProposalUpdateDiffDialogContent = ({
+  candidateId,
+  titleProps,
+  dismiss,
+}) => {
+  const chainId = useChainId();
+
+  const candidate = useProposalCandidate(candidateId);
+  const updateTargetProposal = useProposal(
+    candidate?.latestVersion.targetProposalId
+  );
+
+  if (candidate == null || updateTargetProposal == null) return null;
+
+  const descriptionDiff = diffParagraphs(
+    updateTargetProposal.description,
+    candidate.latestVersion.content.description
+  );
+  const transactionsDiff = diffParagraphs(
+    updateTargetProposal.transactions
+      .map((t) => stringifyTransaction(t, { chainId }))
+      .join("\n\n"),
+    candidate.latestVersion.content.transactions
+      .map((t) => stringifyTransaction(t, { chainId }))
+      .join("\n\n")
+  );
+
+  const hasDescriptionChanges = descriptionDiff.some(
+    (token) => token.added || token.removed
+  );
+  const hasTransactionChanges = transactionsDiff.some(
+    (token) => token.added || token.removed
+  );
+
+  const hasVisibleDiff = hasDescriptionChanges || hasTransactionChanges;
+
+  return (
+    <div
+      css={css({
+        flex: 1,
+        minHeight: 0,
+        display: "flex",
+        flexDirection: "column",
+      })}
+    >
+      <DialogHeader
+        title="Proposed changes"
+        dismiss={dismiss}
+        subtitle={
+          <>
+            Diff formatted as{" "}
+            <Link
+              component="a"
+              href="https://daringfireball.net/projects/markdown/syntax"
+              rel="noreferrer"
+              target="_blank"
+            >
+              Markdown
+            </Link>
+          </>
+        }
+        titleProps={titleProps}
+        css={css({
+          padding: "1.5rem 1.5rem 0",
+          "@media (min-width: 600px)": {
+            padding: "2rem 2rem 0",
+          },
+        })}
+      />
+      <main
+        css={(t) =>
+          css({
+            flex: 1,
+            minHeight: 0,
+            overflow: "auto",
+            fontSize: t.text.sizes.small,
+            padding: "0 1.5rem 1.5rem",
+            "@media (min-width: 600px)": {
+              fontSize: t.text.sizes.base,
+              padding: "0 2rem 2rem",
+            },
+            "[data-diff]": {
+              margin: "0 -1.5rem",
+              "@media (min-width: 600px)": {
+                margin: "0 -2rem",
+              },
+            },
+            h2: {
+              fontSize: t.text.sizes.header,
+              fontWeight: t.text.weights.header,
+              margin: "0 0 1.6rem",
+            },
+            "* + h2": {
+              marginTop: "6.4rem",
+            },
+          })
+        }
+      >
+        {!hasVisibleDiff ? (
+          <>
+            <h2>Content</h2>
+            <DiffBlock diff={descriptionDiff} data-diff />
+          </>
+        ) : (
+          <>
+            <h2>Content</h2>
+            <DiffBlock diff={descriptionDiff} data-diff />
+
+            {hasTransactionChanges && (
+              <>
+                <h2>Actions</h2>
+                <DiffBlock diff={transactionsDiff} data-diff />
+              </>
+            )}
+          </>
+        )}
+      </main>
+    </div>
   );
 };
 

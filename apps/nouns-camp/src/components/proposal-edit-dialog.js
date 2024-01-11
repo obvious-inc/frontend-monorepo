@@ -1,5 +1,4 @@
 import React from "react";
-import { Diff } from "diff";
 import { useNavigate } from "react-router-dom";
 import { css, useTheme } from "@emotion/react";
 import {
@@ -25,6 +24,7 @@ import {
   isEqual as areTransactionsEqual,
   stringify as stringifyTransaction,
 } from "../utils/transactions.js";
+import { diffParagraphs } from "../utils/diff.js";
 import {
   useActions,
   useProposal,
@@ -34,47 +34,13 @@ import useChainId from "../hooks/chain-id.js";
 import { useWallet } from "../hooks/wallet.js";
 import { useUpdateProposal } from "../hooks/dao-contract.js";
 import { useCreateProposalCandidate } from "../hooks/data-contract.js";
+import DiffBlock from "./diff-block.js";
 import ProposalEditor from "./proposal-editor.js";
 
 export const createMarkdownDescription = ({ title, body }) => {
   const markdownBody = messageUtils.toMarkdown(richTextToMessageBlocks(body));
   return `# ${title.trim()}\n\n${markdownBody}`;
 };
-
-export const createMarkdownDiffFunction = () => {
-  const diffInstance = new Diff();
-
-  diffInstance.tokenize = function (value) {
-    let retLines = [],
-      linesAndNewlines = value.split(/(\n|\r\n)/);
-
-    // Ignore the final empty token that occurs if the string ends with a new line
-    if (!linesAndNewlines[linesAndNewlines.length - 1]) {
-      linesAndNewlines.pop();
-    }
-
-    for (let i = 0; i < linesAndNewlines.length; i++) {
-      let line = linesAndNewlines[i];
-
-      if (i % 2 !== 0 || line.trim() === "") {
-        let last = retLines[retLines.length - 1];
-        retLines[retLines.length - 1] = last + line;
-      } else {
-        retLines.push(line);
-      }
-    }
-
-    return retLines;
-  };
-
-  diffInstance.equals = function (left, right) {
-    return Diff.prototype.equals.call(this, left?.trim(), right?.trim());
-  };
-
-  return (...args) => diffInstance.diff(...args);
-};
-
-const diffMarkdown = createMarkdownDiffFunction();
 
 const ProposalEditDialog = ({ proposalId, isOpen, close: closeDialog }) => {
   const theme = useTheme();
@@ -145,12 +111,12 @@ const ProposalEditDialog = ({ proposalId, isOpen, close: closeDialog }) => {
   const hasChanges = hasTitleChanges || hasBodyChanges || hasActionChanges;
 
   const createDescriptionDiff = () =>
-    diffMarkdown(
+    diffParagraphs(
       proposal.description,
       createMarkdownDescription({ title, body: deferredBody })
     );
   const createTransactionsDiff = () =>
-    diffMarkdown(
+    diffParagraphs(
       proposal.transactions
         .map((t) => stringifyTransaction(t, { chainId }))
         .join("\n\n"),
@@ -552,45 +518,5 @@ export const PreviewUpdateDialog = ({
     </Dialog>
   );
 };
-
-const DiffBlock = ({ diff, ...props }) => (
-  <div
-    css={(t) =>
-      css({
-        whiteSpace: "pre-wrap",
-        fontFamily: t.fontStacks.monospace,
-        lineHeight: 1.65,
-        userSelect: "text",
-        "[data-line]": {
-          borderLeft: "0.3rem solid transparent",
-          padding: "0 1.2rem",
-          "@media (min-width: 600px)": {
-            padding: "0 1.7rem",
-          },
-        },
-        "[data-added]": {
-          background: "hsl(122deg 35% 50% / 15%)",
-          borderColor: "hsl(122deg 35% 50% / 50%)",
-        },
-        "[data-removed]": {
-          background: "hsl(3deg 75% 60% / 13%)",
-          borderColor: "hsl(3deg 75% 60% / 50%)",
-        },
-      })
-    }
-    {...props}
-  >
-    {diff.map((line, i) => (
-      <div
-        key={i}
-        data-line
-        data-added={line.added || undefined}
-        data-removed={line.removed || undefined}
-      >
-        {line.value}
-      </div>
-    ))}
-  </div>
-);
 
 export default ProposalEditDialog;

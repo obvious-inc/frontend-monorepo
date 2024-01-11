@@ -14,6 +14,9 @@ const Callout = ({ icon, compact, variant, children, ...props }) => (
         '&[data-variant="error"]': {
           color: t.colors.textDanger,
         },
+        '&[data-variant="info"]': {
+          background: t.colors.backgroundModifierSelected,
+        },
         "[data-icon]": {
           display: "flex",
           alignItems: "center",
