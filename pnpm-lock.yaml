@@ -91,8 +91,8 @@ importers:
         specifier: ^6.21.1
         version: 6.21.1(react-dom@18.2.0)(react@18.2.0)
       react-stately:
-        specifier: ^3.29.0
-        version: 3.29.0(react@18.2.0)
+        specifier: ^3.29.1
+        version: 3.29.1(react@18.2.0)
       reselect:
         specifier: ^5.1.0
         version: 5.1.0
@@ -10422,7 +10422,7 @@ packages:
       react: 18.2.0
       react-aria: 3.31.1(react-dom@18.2.0)(react@18.2.0)
       react-dom: 18.2.0(react@18.2.0)
-      react-stately: 3.29.0(react@18.2.0)
+      react-stately: 3.29.1(react@18.2.0)
       use-sync-external-store: 1.2.0(react@18.2.0)
     dev: false
 
@@ -10578,8 +10578,8 @@ packages:
       react: 18.2.0
     dev: false
 
-  /react-stately@3.29.0(react@18.2.0):
-    resolution: {integrity: sha512-JWPgEg2RxDtSmMkypsBLuhsuiaMDfJcnFw96oDRg8lAGqkslZmbmYH/O1Wz08k2W6P3Bds4rZz6iK91XMNXomA==}
+  /react-stately@3.29.1(react@18.2.0):
+    resolution: {integrity: sha512-hc4ZHy/ahvMwr6z7XMjYJ7EgzNVrXhzM4l2Qj17rdRhERo7/ovWmQencf9pF7K8kD5TraEHxPHLrYzGN4fxfUQ==}
     peerDependencies:
       react: ^16.8.0 || ^17.0.0-rc.1 || ^18.0.0
     dependencies:
