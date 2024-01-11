@@ -28,8 +28,8 @@ importers:
         specifier: ^0.4.0
         version: 0.4.0(ethers@5.7.2)
       '@npmcli/arborist':
-        specifier: ^7.2.2
-        version: 7.2.2
+        specifier: ^7.3.0
+        version: 7.3.0
       '@radix-ui/react-toolbar':
         specifier: ^1.0.4
         version: 1.0.4(react-dom@18.2.0)(react@18.2.0)
@@ -2317,8 +2317,8 @@ packages:
       - supports-color
     dev: false
 
-  /@npmcli/arborist@7.2.2:
-    resolution: {integrity: sha512-dIIzyhy1zS2dYPS8bdM/8qA8W2evQE9KENBxVOhFthm/2RKqf2ninRWQc8xfc5f1gsiTxTP20Y9flIfziHfSKA==}
+  /@npmcli/arborist@7.3.0:
+    resolution: {integrity: sha512-ZElIE9L14fEYiL4KqgqRHmo8fRKiTSOFU3hVS1mNm0zJE7hu4FHmof+OFsA7fAAXfkNDJrDByvD0o7Le0ISHMw==}
     engines: {node: ^16.14.0 || >=18.0.0}
     hasBin: true
     dependencies:
