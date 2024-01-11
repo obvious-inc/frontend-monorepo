@@ -475,15 +475,15 @@ export default function LazyRoot() {
                     <EmojiProvider
                       loader={() =>
                         Promise.all([
+                          import("@shades/common/custom-emoji").then(
+                            (m) => m.default
+                          ),
                           import("@shades/common/emoji").then((m) =>
                             m.default.filter(
                               (e) =>
                                 e.unicode_version === "" ||
                                 parseFloat(e.unicode_version) <= 12
                             )
-                          ),
-                          import("@shades/common/custom-emoji").then(
-                            (m) => m.default
                           ),
                         ]).then((sets) => sets.flat())
                       }
