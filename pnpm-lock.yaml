@@ -79,8 +79,8 @@ importers:
         specifier: ^3.31.1
         version: 3.31.1(react-dom@18.2.0)(react@18.2.0)
       react-aria-components:
-        specifier: 1.0.0
-        version: 1.0.0(react-dom@18.2.0)(react@18.2.0)
+        specifier: 1.0.1
+        version: 1.0.1(react-dom@18.2.0)(react@18.2.0)
       react-dom:
         specifier: 18.2.0
         version: 18.2.0(react@18.2.0)
@@ -4753,8 +4753,8 @@ packages:
       react: 18.2.0
     dev: false
 
-  /@react-types/form@3.7.0(react@18.2.0):
-    resolution: {integrity: sha512-IPmFCh3/psQqJ9X+64tpdHyRNGXDzKvsHfZq27WVxkEDN2KC0g3nnVvuwKXY6gdzYEl6B4RRcmAk8bmGoZpvqg==}
+  /@react-types/form@3.7.1(react@18.2.0):
+    resolution: {integrity: sha512-Wr44McYcB5Od3SwMzLhe1qaaZIy+YUe16jYRc/0io1gyCELXmplpIw8VQmf9/x62ze9CC/aZVdEJ/V9CogXmOA==}
     peerDependencies:
       react: ^16.8.0 || ^17.0.0-rc.1 || ^18.0.0
     dependencies:
@@ -10401,8 +10401,8 @@ packages:
       iconv-lite: 0.4.24
       unpipe: 1.0.0
 
-  /react-aria-components@1.0.0(react-dom@18.2.0)(react@18.2.0):
-    resolution: {integrity: sha512-Oyud2UcOXNPcvYn71he0FLIzpaJcLA+hu7i4wR/EKv+9Q/jOUGb++meKPB9vDBCFwGgWaoK7WpHJ2wB9xjLfGw==}
+  /react-aria-components@1.0.1(react-dom@18.2.0)(react@18.2.0):
+    resolution: {integrity: sha512-zlSx5r7Hu3kTg7hDEGNBwrtMNWJnJ81Zt1AXPJASAdO0dw6WUgSgQH2/ZgkDiKLlNmRFQhR8/gKN70rAJ+LZiQ==}
     peerDependencies:
       react: ^16.8.0 || ^17.0.0-rc.1 || ^18.0.0
       react-dom: ^16.8.0 || ^17.0.0-rc.1 || ^18.0.0
@@ -10414,7 +10414,7 @@ packages:
       '@react-aria/toolbar': 3.0.0-beta.1(react@18.2.0)
       '@react-aria/utils': 3.23.0(react@18.2.0)
       '@react-stately/table': 3.11.4(react@18.2.0)
-      '@react-types/form': 3.7.0(react@18.2.0)
+      '@react-types/form': 3.7.1(react@18.2.0)
       '@react-types/grid': 3.2.3(react@18.2.0)
       '@react-types/shared': 3.22.0(react@18.2.0)
       '@react-types/table': 3.9.2(react@18.2.0)
