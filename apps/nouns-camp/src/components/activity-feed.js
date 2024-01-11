@@ -781,10 +781,13 @@ const TransferItem = ({ item }) => {
         );
       }
       if (saleAmount && saleAmount > 0) {
-        if (item.authorAccount.toLowerCase() === item.toAccount.toLowerCase()) {
+        if (item.accountRef.toLowerCase() === item.toAccount.toLowerCase()) {
           return (
             <span>
-              {accountName}{" "}
+              <AccountPreviewPopoverTrigger
+                showAvatar
+                accountAddress={item.accountRef}
+              />{" "}
               <span css={(t) => css({ color: t.colors.textDimmed })}>
                 bought{" "}
                 <NounsPreviewPopoverTrigger
@@ -804,7 +807,10 @@ const TransferItem = ({ item }) => {
         } else {
           return (
             <span>
-              {accountName}{" "}
+              <AccountPreviewPopoverTrigger
+                showAvatar
+                accountAddress={item.accountRef}
+              />{" "}
               <span css={(t) => css({ color: t.colors.textDimmed })}>
                 sold{" "}
                 <NounsPreviewPopoverTrigger

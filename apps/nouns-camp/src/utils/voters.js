@@ -78,6 +78,7 @@ export const buildEventsFeed = (delegate, account, { chainId }) => {
         fromAccount: e.previousAccountId,
         toAccount: e.newAccountId,
         transactionHash: e.id.split("_")[0],
+        accountRef: delegate?.id,
       })) ?? [];
 
   const groupedAllEventItems = arrayUtils.groupBy(
