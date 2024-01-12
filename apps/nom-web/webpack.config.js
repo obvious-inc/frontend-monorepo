@@ -9,18 +9,20 @@ module.exports = (...args) => {
   const isProduction = args[1].mode === "production";
   const config = createConfig(...args, { htmlTitle: "NOM" });
 
-  const plugins = !isProduction
-    ? config.plugins
-    : [
-      ...config.plugins,
-      new webpack.EnvironmentPlugin({
-        PUSHER_KEY: undefined,
-        INFURA_PROJECT_ID: null,
-        CLOUDFLARE_ACCT_HASH: null,
-        DEV: null,
-        SENTRY_DSN: null,
-        WALLET_CONNECT_PROJECT_ID: null,
-      }),
+  const plugins = [
+    ...config.plugins,
+    new webpack.EnvironmentPlugin({
+      PUSHER_KEY: undefined,
+      INFURA_PROJECT_ID: null,
+      CLOUDFLARE_ACCT_HASH: null,
+      DEV: null,
+      SENTRY_DSN: null,
+      WALLET_CONNECT_PROJECT_ID: null,
+    }),
+  ];
+
+  if (isProduction)
+    plugins.push(
       new CopyPlugin({
         patterns: [
           {
@@ -36,8 +38,8 @@ module.exports = (...args) => {
             ),
           },
         ],
-      }),
-    ];
+      })
+    );
 
   return {
     ...config,

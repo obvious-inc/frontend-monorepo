@@ -666,6 +666,7 @@ const MessageBody = React.memo(({ messageId, layout }) => {
 
   const onClickInteractiveElement = React.useCallback((el) => {
     switch (el.type) {
+      case "image":
       case "image-attachment":
         window.open(el.url, "_blank");
         break;
@@ -939,9 +940,6 @@ const Reactions = ({ messageId, addReaction, hideAddButton, layout }) => {
 
   const emojiPickerTrigger = (
     <EmojiPicker
-      width="31.6rem"
-      height="28.4rem"
-      placement="top"
       isOpen={isInlineEmojiPickerOpen}
       onOpenChange={(open) => {
         setInlineEmojiPickerOpen(open);
@@ -1323,8 +1321,6 @@ const MessageToolbar = React.memo(
     return (
       <Toolbar.Root ref={toolbarRef}>
         <EmojiPicker
-          width="31.6rem"
-          height="28.4rem"
           isOpen={isEmojiPickerOpen}
           onOpenChange={onEmojiPickerOpenChange}
           onSelect={(emoji) => {

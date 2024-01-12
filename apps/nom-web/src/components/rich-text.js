@@ -1,5 +1,4 @@
 import React from "react";
-import { css } from "@emotion/react";
 import { Link } from "react-router-dom";
 import { useEmojiById } from "@shades/common/app";
 import * as Tooltip from "@shades/ui-web/tooltip";

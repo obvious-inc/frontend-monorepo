@@ -187,6 +187,18 @@ const entrypoints = [
       ...emotionDeps,
     ],
   },
+  {
+    file: "gif-picker.js",
+    dependencies: [
+      "@shades/common/app",
+      "@shades/common/react",
+      "@shades/common/utils",
+      "react",
+      "react-aria",
+      "@react-stately/overlays",
+      ...emotionDeps,
+    ],
+  },
   { file: "avatar.js", dependencies: ["react", ...emotionDeps] },
   {
     file: "account-avatar.js",
