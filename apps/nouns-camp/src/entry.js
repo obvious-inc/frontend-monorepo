@@ -5,7 +5,7 @@ import {
   createConfig as createWagmiConfig,
   configureChains as configureWagmiChains,
 } from "wagmi";
-import { mainnet, sepolia } from "wagmi/chains";
+import { mainnet, sepolia, goerli } from "wagmi/chains";
 // import { infuraProvider } from "wagmi/providers/infura";
 import { alchemyProvider } from "wagmi/providers/alchemy";
 import { publicProvider } from "wagmi/providers/public";
@@ -51,7 +51,7 @@ try {
 }
 
 const { chains, publicClient } = configureWagmiChains(
-  [mainnet, sepolia],
+  [mainnet, sepolia, goerli],
   [
     alchemyProvider({ apiKey: process.env.ALCHEMY_API_KEY }),
     // infuraProvider({ apiKey: process.env.INFURA_PROJECT_ID }),

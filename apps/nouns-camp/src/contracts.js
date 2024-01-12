@@ -60,15 +60,15 @@ const addressByIdentifierByChainId = {
     "weth-token": "0xB4FBF271143F4FBf7B91A5ded31805e42b2208d6",
 
     // Nouns contracts
-    dao: "0x22F7658f64be277e6b3968ecE7b773b092a39864",
-    executor: "0xc15008dE43D93D115BD64ED4D95817fFdBfb6DEA",
-    data: "0xc0217355376E414a1c33Dc3558A75625c5444006",
-    token: "0x99265CE0983aab76F5a3789663FDD887dE66638A",
-    "auction-house": "0x32bBBf3721a1b05390daf4Dec2f5Fe4b935f25A1",
-    descriptor: "0xC5FcAAb38C4Ab043e2706f245183d747299dF414",
-    payer: "0x63F8445C4549d17DB181f9ADe1a126EfF8Ee72D6",
-    "token-buyer": "0x7Ee1fE5973c2F6e42D2D40c93f0FDed078c85770",
-    "stream-factory": "0xc08a287eCB16CeD801f28Bb011924f7DE5Cc53a3",
+    dao: "0x22f7658f64be277e6b3968ece7b773b092a39864",
+    executor: "0xc15008de43d93d115bd64ed4d95817ffdbfb6dea",
+    data: "0xc0217355376e414a1c33dc3558a75625c5444006",
+    token: "0x99265ce0983aab76f5a3789663fdd887de66638a",
+    "auction-house": "0x32bbbf3721a1b05390daf4dec2f5fe4b935f25a1",
+    descriptor: "0xc5fcaab38c4ab043e2706f245183d747299df414",
+    payer: "0x63f8445c4549d17db181f9ade1a126eff8ee72d6",
+    "token-buyer": "0x7ee1fe5973c2f6e42d2d40c93f0fded078c85770",
+    "stream-factory": "0xc08a287ecb16ced801f28bb011924f7de5cc53a3",
   },
 };
 
