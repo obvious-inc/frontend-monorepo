@@ -1,17 +1,18 @@
+import { mainnet, sepolia, goerli } from "wagmi/chains";
 import {
   array as arrayUtils,
   object as objectUtils,
 } from "@shades/common/utils";
 import { parse as parseTransactions } from "./utils/transactions.js";
 
-const customGraphEndpoint = new URLSearchParams(location.search).get(
+const customSubgraphEndpoint = new URLSearchParams(location.search).get(
   "nouns-subgraph"
 );
 
 const subgraphEndpointByChainId = {
-  1: customGraphEndpoint ?? process.env.NOUNS_MAINNET_SUBGRAPH_URL,
-  11155111:
-    "https://api.studio.thegraph.com/proxy/49498/nouns-v3-sepolia/version/latest",
+  [mainnet.id]: process.env.NOUNS_MAINNET_SUBGRAPH_URL,
+  [sepolia.id]: process.env.NOUNS_SEPOLIA_SUBGRAPH_URL,
+  [goerli.id]: process.env.NOUNS_GOERLI_SUBGRAPH_URL,
 };
 
 const parseTimestamp = (unixSeconds) => new Date(parseInt(unixSeconds) * 1000);
@@ -798,7 +799,8 @@ const subgraphFetch = async ({
   query,
   variables,
 }) => {
-  const url = endpoint ?? subgraphEndpointByChainId[chainId];
+  const url =
+    endpoint ?? customSubgraphEndpoint ?? subgraphEndpointByChainId[chainId];
 
   if (url == null) throw new Error();
 

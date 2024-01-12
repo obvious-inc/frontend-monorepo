@@ -18,6 +18,8 @@ module.exports = (...args) => {
         ALCHEMY_API_KEY: null,
         WALLET_CONNECT_PROJECT_ID: null,
         NOUNS_MAINNET_SUBGRAPH_URL: null,
+        NOUNS_SEPOLIA_SUBGRAPH_URL: null,
+        NOUNS_GOERLI_SUBGRAPH_URL: null,
         PROPDATES_SUBGRAPH_URL: null,
       }),
     ],
