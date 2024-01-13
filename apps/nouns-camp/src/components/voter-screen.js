@@ -43,6 +43,7 @@ const useFeedItems = (accountAddress, { filter } = {}) => {
   const candidates = useProposalCandidates({
     includeCanceled: true,
     includePromoted: true,
+    includeProposalUpdates: true,
   });
 
   return React.useMemo(() => {

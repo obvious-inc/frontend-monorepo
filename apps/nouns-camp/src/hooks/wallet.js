@@ -214,7 +214,7 @@ export const useWallet = () => {
   };
 
   return {
-    address: impersonationAddress ?? address,
+    address: (impersonationAddress ?? address)?.toLowerCase(),
     requestAccess: hasReadyConnector ? requestAccess : null,
     disconnect,
     reset,

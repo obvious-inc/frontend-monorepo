@@ -1,4 +1,4 @@
-import { mainnet, sepolia } from "wagmi/chains";
+import { mainnet, sepolia, goerli } from "wagmi/chains";
 import { object as objectUtils } from "@shades/common/utils";
 import useChainId from "./hooks/chain-id.js";
 
@@ -39,7 +39,7 @@ const addressByIdentifierByChainId = {
     "stream-factory": "0x0fd206fc7a7dbcd5661157edcb1ffdd0d02a61ff",
   },
   [sepolia.id]: {
-    "eth-token": "0x0000000000000000000000000000000000000000",
+    "eth-token": ETH_TOKEN_CONTRACT_ADDRESS,
     "weth-token": "0xfff9976782d46cc05630d1f6ebab18b2324d6b14",
     "usdc-token": "0xebcc972b6b3eb15c0592be1871838963d0b94278",
 
@@ -53,6 +53,22 @@ const addressByIdentifierByChainId = {
     payer: "0x5a2a0951c6b3479dbee1d5909aac7b325d300d94",
     "token-buyer": "0x821176470cfef1db78f1e2dbae136f73c36ddd48",
     "stream-factory": "0xb78ccf3bd015f209fb9b2d3d132fd8784df78df5",
+  },
+  [goerli.id]: {
+    "eth-token": ETH_TOKEN_CONTRACT_ADDRESS,
+    "usdc-token": "0x07865c6e87b9f70255377e024ace6630c1eaa37f",
+    "weth-token": "0xB4FBF271143F4FBf7B91A5ded31805e42b2208d6",
+
+    // Nouns contracts
+    dao: "0x22F7658f64be277e6b3968ecE7b773b092a39864",
+    executor: "0xc15008dE43D93D115BD64ED4D95817fFdBfb6DEA",
+    data: "0xc0217355376E414a1c33Dc3558A75625c5444006",
+    token: "0x99265CE0983aab76F5a3789663FDD887dE66638A",
+    "auction-house": "0x32bBBf3721a1b05390daf4Dec2f5Fe4b935f25A1",
+    descriptor: "0xC5FcAAb38C4Ab043e2706f245183d747299dF414",
+    payer: "0x63F8445C4549d17DB181f9ADe1a126EfF8Ee72D6",
+    "token-buyer": "0x7Ee1fE5973c2F6e42D2D40c93f0FDed078c85770",
+    "stream-factory": "0xc08a287eCB16CeD801f28Bb011924f7DE5Cc53a3",
   },
 };
 

@@ -1,9 +1,9 @@
-import { mainnet, sepolia } from "wagmi/chains";
+import { mainnet, sepolia, goerli } from "wagmi/chains";
 import { useNetwork } from "wagmi";
 
 export const defaultChainId = mainnet.id;
 
-const supportedTestnetChainIds = [sepolia.id];
+const supportedTestnetChainIds = [sepolia.id, goerli.id];
 
 const supportedChainIds = [defaultChainId, ...supportedTestnetChainIds];
 

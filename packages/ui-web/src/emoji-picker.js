@@ -2,103 +2,43 @@ import React from "react";
 import { css } from "@emotion/react";
 import { useEmojis } from "@shades/common/app";
 import { array as arrayUtils, emoji as emojiUtils } from "@shades/common/utils";
-import { useMatchMedia } from "@shades/common/react";
-import * as Popover from "./popover.js";
-import Dialog from "./dialog.js";
 import Input from "./input";
+import { PopoverOrTrayDialog } from "./gif-picker.js";
 
 const { groupBy } = arrayUtils;
 const { search: searchEmoji } = emojiUtils;
 
 const EmojiPickerTrigger = ({
+  width = "31.6rem",
+  height = "28.4rem",
   onSelect,
   isOpen,
   onOpenChange,
   placement = "top",
+  offset = 10,
   trigger,
-  ...emojiPickerProps
-}) => {
-  const inputDeviceCanHover = useMatchMedia("(hover: hover)");
-  const close = () => {
-    onOpenChange(false);
-  };
-
-  if (inputDeviceCanHover)
-    return (
-      <Popover.Root
-        placement={placement}
-        isOpen={isOpen}
-        onOpenChange={onOpenChange}
-      >
-        <Popover.Trigger asChild>{trigger}</Popover.Trigger>
-        <Popover.Content>
-          {/* <Popover.Arrow /> */}
-          <EmojiPicker
-            onSelect={(emoji) => {
-              close();
-              onSelect(emoji);
-            }}
-            {...emojiPickerProps}
-          />
-        </Popover.Content>
-      </Popover.Root>
-    );
-
-  // Tray dialog on touch devices
-  return (
-    <>
-      {trigger}
-      <Dialog
-        isOpen={isOpen}
-        onRequestClose={close}
-        modalProps={{ css: css({ background: "none" }) }}
-      >
-        <button
-          onClick={close}
-          css={css({
-            padding: "0.8rem",
-            display: "block",
-            margin: "0 auto",
-          })}
-        >
-          <div
-            css={(t) =>
-              css({
-                height: "0.4rem",
-                width: "4.2rem",
-                borderRadius: "0.2rem",
-                background: t.light
-                  ? t.colors.backgroundTertiary
-                  : t.colors.textMuted,
-                boxShadow: t.shadows.elevationLow,
-              })
-            }
-          />
-        </button>
-        <div
-          css={(t) =>
-            css({
-              flex: 1,
-              minHeight: 0,
-              padding: "0.4rem 0.4rem 0",
-              background: t.colors.popoverBackground,
-              borderTopLeftRadius: "0.6rem",
-              borderTopRightRadius: "0.6rem",
-              boxShadow: t.shadows.elevationHigh,
-            })
-          }
-        >
-          <EmojiPicker
-            {...emojiPickerProps}
-            width="auto"
-            height="100%"
-            onSelect={onSelect}
-          />
-        </div>
-      </Dialog>
-    </>
-  );
-};
+  ...pickerProps
+}) => (
+  <PopoverOrTrayDialog
+    isOpen={isOpen}
+    onOpenChange={onOpenChange}
+    placement={placement}
+    trigger={trigger}
+    offset={offset}
+  >
+    {({ type }) => (
+      <EmojiPicker
+        width={type === "popover" ? width : "100%"}
+        height={type === "popover" ? height : "100%"}
+        onSelect={(item) => {
+          onOpenChange(false);
+          onSelect(item);
+        }}
+        {...pickerProps}
+      />
+    )}
+  </PopoverOrTrayDialog>
+);
 
 // Super hacky and inaccessible
 const EmojiPicker = ({ width = "auto", height = "100%", onSelect }) => {

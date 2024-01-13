@@ -34,6 +34,7 @@
     "./message-editor-form": "./dist/message-editor-form/message-editor-form.js",
     "./emoji": "./dist/emoji.js",
     "./emoji-picker": "./dist/emoji-picker.js",
+    "./gif-picker": "./dist/gif-picker.js",
     "./avatar": "./dist/avatar.js",
     "./account-avatar": "./dist/account-avatar.js",
     "./account-avatar-stack": "./dist/account-avatar-stack.js",
