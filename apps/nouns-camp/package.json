@@ -57,7 +57,7 @@
     "react-aria-components": "1.0.1",
     "react-dom": "18.2.0",
     "react-helmet": "^6.1.0",
-    "react-router-dom": "^6.21.1",
+    "react-router-dom": "^6.21.2",
     "react-stately": "^3.29.1",
     "reselect": "^5.1.0",
     "slate": "^0.101.5",
