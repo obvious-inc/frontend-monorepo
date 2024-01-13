@@ -2,11 +2,18 @@ import { array as arrayUtils } from "@shades/common/utils";
 import { buildFeed as buildCandidateFeed } from "./candidates.js";
 import { buildFeed as buildPropdateFeed } from "./propdates.js";
 
-const EXECUTION_GRACE_PERIOD_IN_MILLIS = 1000 * 60 * 60 * 24 * 21; // 21 days
+export const EXECUTION_GRACE_PERIOD_IN_MILLIS = 1000 * 60 * 60 * 24 * 21; // 21 days
 
 const isDefeated = (proposal) =>
   Number(proposal.forVotes) <= Number(proposal.againstVotes) ||
   Number(proposal.forVotes) < Number(proposal.quorumVotes);
+
+export const isExecutable = (proposal, { blockNumber }) => {
+  const state = getState(proposal, { blockNumber });
+  if (state !== "queued" || proposal.executionEtaTimestamp == null)
+    return false;
+  return new Date().getTime() >= proposal.executionEtaTimestamp;
+};
 
 export const getState = (proposal, { blockNumber }) => {
   if (proposal.status === "VETOED") return "vetoed";
@@ -21,11 +28,13 @@ export const getState = (proposal, { blockNumber }) => {
 
   if (isDefeated(proposal)) return "defeated";
 
-  if (proposal.executionETA === null) return "succeeded"; // Not yet queued
+  if (proposal.executionEtaTimestamp === null) return "succeeded"; // Not yet queued
 
   if (
+    proposal.executionEtaTimestamp != null &&
     new Date().getTime() >=
-    Number(proposal.executionETA) * 1000 + EXECUTION_GRACE_PERIOD_IN_MILLIS
+      proposal.executionEtaTimestamp.getTime() +
+        EXECUTION_GRACE_PERIOD_IN_MILLIS
   )
     return "expired";
 

@@ -45,8 +45,9 @@ const parseUpdate = (u) => ({
   proposalId: u.prop.id,
 });
 
-export const fetchPropdates = (...args) =>
-  fetch(process.env.PROPDATES_SUBGRAPH_URL, {
+export const fetchPropdates = async (chainId, ...args) => {
+  if (chainId !== 1) return [];
+  return fetch(process.env.PROPDATES_SUBGRAPH_URL, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
@@ -61,9 +62,11 @@ export const fetchPropdates = (...args) =>
       if (body.data.propUpdates == null) throw new Error("not-found");
       return body.data.propUpdates.map(parseUpdate);
     });
+};
 
-export const fetchPropdatesForProposal = (...args) =>
-  fetch(process.env.PROPDATES_SUBGRAPH_URL, {
+export const fetchPropdatesForProposal = async (chainId, ...args) => {
+  if (chainId !== 1) return [];
+  return fetch(process.env.PROPDATES_SUBGRAPH_URL, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
@@ -78,9 +81,11 @@ export const fetchPropdatesForProposal = (...args) =>
       if (body.data.propUpdates == null) throw new Error("not-found");
       return body.data.propUpdates.map(parseUpdate);
     });
+};
 
-export const fetchPropdatesByAccount = (id) =>
-  fetch(process.env.PROPDATES_SUBGRAPH_URL, {
+export const fetchPropdatesByAccount = async (chainId, id) => {
+  if (chainId !== 1) return [];
+  return fetch(process.env.PROPDATES_SUBGRAPH_URL, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
@@ -95,3 +100,4 @@ export const fetchPropdatesByAccount = (id) =>
       if (body.data.propUpdates == null) throw new Error("not-found");
       return body.data.propUpdates.map(parseUpdate);
     });
+};

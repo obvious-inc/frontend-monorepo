@@ -60,14 +60,6 @@ module.exports = (_, argv, { htmlTitle, htmlDescription } = {}) => {
         manifestPath: isProduction ? "/app.webmanifest" : null,
         isProduction,
       }),
-      new webpack.EnvironmentPlugin({
-        PUSHER_KEY: undefined,
-        INFURA_PROJECT_ID: null,
-        CLOUDFLARE_ACCT_HASH: null,
-        DEV: null,
-        SENTRY_DSN: null,
-        WALLET_CONNECT_PROJECT_ID: null,
-      }),
       new webpack.DefinePlugin({
         "process.env.EDGE_API_BASE_URL": JSON.stringify(
           process.env.EDGE_API_ORIGIN == null ? "/api" : "/edge-api"

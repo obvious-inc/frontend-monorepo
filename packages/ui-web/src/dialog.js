@@ -108,7 +108,7 @@ const ModalDialog = React.forwardRef(
             data-modal
             {...modalProps}
             {...customModalProps}
-            css={customModalProps?.css}
+            css={[customModalProps?.css]}
             style={{ "--desktop-set-height": height }}
           >
             <Dialog

@@ -185,9 +185,7 @@ const ProposeScreen = () => {
 
                   await functionUtils.retryAsync(
                     () => fetchProposalCandidate(candidateId),
-                    {
-                      retries: 100,
-                    }
+                    { retries: 100 }
                   );
 
                   navigate(`/candidates/${candidateId}`, { replace: true });

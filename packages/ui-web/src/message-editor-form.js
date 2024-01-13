@@ -2,8 +2,12 @@ import React from "react";
 import { css } from "@emotion/react";
 import {
   getImageFileDimensions,
+  getImageDimensionsFromUrl,
+  dimension as dimensionUtils,
   message as messageUtils,
 } from "@shades/common/utils";
+import EmojiPicker from "@shades/ui-web/emoji-picker";
+import GifPicker from "@shades/ui-web/gif-picker";
 import {
   AtSign as AtSignIcon,
   EmojiFace as EmojiFaceIcon,
@@ -80,6 +84,9 @@ const MessageEditorForm = React.memo(
 
       return imageAttachments.map((a) => ({ ...a, id: a.url }));
     });
+
+    const [isEmojiPickerOpen, setEmojiPickerOpen] = React.useState(false);
+    const [isGifPickerOpen, setGifPickerOpen] = React.useState(false);
 
     const isEmptyMessage =
       imageUploads.length === 0 && pendingSlateNodes.every(isNodeEmpty);
@@ -165,7 +172,6 @@ const MessageEditorForm = React.memo(
             ? blocks
             : [...blocks, imageUploadsToAttachmentsBlock(imageUploads_)];
 
-        console.log(blocksWithAttachments);
         await submit(blocksWithAttachments);
       } finally {
         setPending(false);
@@ -300,20 +306,73 @@ const MessageEditorForm = React.memo(
               >
                 <PaperClipIcon style={{ width: "1.6rem", height: "auto" }} />
               </IconButton>
-              <IconButton
-                type="button"
-                dimmed
-                onClick={() => {
-                  editorRef.current.insertText(":");
-                  editorRef.current.focus();
+              <EmojiPicker
+                isOpen={isEmojiPickerOpen}
+                onOpenChange={(open) => {
+                  setEmojiPickerOpen(open);
                 }}
-                disabled={disabled || isPending}
-              >
-                <EmojiFaceIcon style={{ width: "1.7rem", height: "auto" }} />
-              </IconButton>
-              <IconButton type="button" dimmed disabled>
-                <GifIcon style={{ width: "1.6rem", height: "auto" }} />
-              </IconButton>
+                onSelect={(emoji) => {
+                  setEmojiPickerOpen(false);
+                  editorRef.current.insertEmoji(emoji, {
+                    at: editorRef.current.selection,
+                  });
+                  editorRef.current.focus(editorRef.current.selection);
+                }}
+                trigger={
+                  <IconButton
+                    type="button"
+                    dimmed
+                    disabled={disabled || isPending}
+                    onClick={() => {
+                      setEmojiPickerOpen(true);
+                    }}
+                  >
+                    <EmojiFaceIcon
+                      style={{ width: "1.7rem", height: "auto" }}
+                    />
+                  </IconButton>
+                }
+              />
+              <GifPicker
+                isOpen={isGifPickerOpen}
+                onOpenChange={(open) => {
+                  setGifPickerOpen(open);
+                }}
+                onSelect={async ({ url }) => {
+                  setGifPickerOpen(false);
+                  const dimensions = await getImageDimensionsFromUrl(url);
+                  const { width, height } = dimensionUtils.fitInsideBounds(
+                    dimensions,
+                    { width: 320, height: 320 }
+                  );
+                  submit([
+                    {
+                      type: "image-grid",
+                      children: [
+                        {
+                          type: "image",
+                          url,
+                          width,
+                          height,
+                        },
+                      ],
+                    },
+                  ]);
+                  editorRef.current.focus(editorRef.current.selection);
+                }}
+                trigger={
+                  <IconButton
+                    type="button"
+                    dimmed
+                    disabled={disabled || isPending}
+                    onClick={() => {
+                      setGifPickerOpen(true);
+                    }}
+                  >
+                    <GifIcon style={{ width: "1.6rem", height: "auto" }} />
+                  </IconButton>
+                }
+              />
               <div
                 css={(t) =>
                   css({
