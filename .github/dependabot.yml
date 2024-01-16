@@ -49,3 +49,28 @@ updates:
       - 'nekofar'
     # Raise pull requests against the `develop` branch
     target-branch: 'develop'
+    # Create a group of dependencies to be updated together in one pull request
+    groups:
+      babel:
+        patterns:
+          - '@babel/*'
+          - 'babel-core'
+          - 'babel-loader'
+      eslint:
+        patterns:
+          - 'eslint'
+          - '@typescript-eslint/eslint-plugin'
+          - '@typescript-eslint/parser'
+      lingui:
+        patterns:
+          - '@lingui/*'
+      next:
+        patterns:
+          - 'next'
+          - 'eslint-config-next'
+      react:
+        patterns:
+          - 'react'
+          - 'react-dom'
+          - '@types/react'
+          - '@types/react-dom'
