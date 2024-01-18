@@ -43,7 +43,7 @@
     "@shades/common": "workspace:0.0.0",
     "@shades/ui-web": "workspace:0.0.0",
     "@vercel/analytics": "^1.1.1",
-    "abitype": "^0.10.3",
+    "abitype": "^1.0.0",
     "date-fns": "^3.2.0",
     "diff": "^5.1.0",
     "dotenv": "^16.3.1",
