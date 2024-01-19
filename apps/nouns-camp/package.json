@@ -42,7 +42,7 @@
     "@radix-ui/react-tooltip": "^1.0.7",
     "@shades/common": "workspace:0.0.0",
     "@shades/ui-web": "workspace:0.0.0",
-    "@vercel/analytics": "^1.1.1",
+    "@vercel/analytics": "^1.1.2",
     "abitype": "^1.0.0",
     "date-fns": "^3.2.0",
     "diff": "^5.1.0",
