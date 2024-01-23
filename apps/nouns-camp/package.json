@@ -44,7 +44,7 @@
     "@shades/ui-web": "workspace:0.0.0",
     "@vercel/analytics": "^1.1.2",
     "abitype": "^1.0.0",
-    "date-fns": "^3.2.0",
+    "date-fns": "^3.3.1",
     "diff": "^5.1.0",
     "dotenv": "^16.3.2",
     "is-hotkey": "^0.2.0",
