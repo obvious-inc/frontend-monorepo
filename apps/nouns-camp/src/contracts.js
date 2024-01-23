@@ -132,6 +132,9 @@ const metaByIdentifier = {
   payer: {
     name: "Nouns DAO Payer",
   },
+  "stream-factory": {
+    name: "Nouns Stream Factory",
+  },
 };
 
 export const resolveIdentifier = (chainId, identifier) => {

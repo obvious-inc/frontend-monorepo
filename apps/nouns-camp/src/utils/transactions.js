@@ -30,7 +30,7 @@ const normalizeSignature = (s) =>
   s.replace(/\s+/g, " ").replace(/,[^\s+]/g, ", ");
 
 const CREATE_STREAM_SIGNATURE =
-  "createStream(address, uint256, address, uint256, uint256, uint8, address)";
+  "createStream(address,uint256,address,uint256,uint256,uint8,address)";
 
 const decodeCalldataWithSignature = ({ signature, calldata }) => {
   try {
@@ -68,7 +68,11 @@ export const parse = (data, { chainId }) => {
   }));
 
   const predictedStreamContractAddresses = transactions
-    .filter((t) => t.signature === CREATE_STREAM_SIGNATURE)
+    .filter(
+      (t) =>
+        normalizeSignature(t.signature) ===
+        normalizeSignature(CREATE_STREAM_SIGNATURE)
+    )
     .map((t) => {
       const { inputs } = decodeCalldataWithSignature({
         signature: t.signature,
@@ -107,7 +111,10 @@ export const parse = (data, { chainId }) => {
         error: "calldata-decoding-failed",
       };
 
-    if (signature === CREATE_STREAM_SIGNATURE) {
+    if (
+      normalizeSignature(signature) ===
+      normalizeSignature(CREATE_STREAM_SIGNATURE)
+    ) {
       const tokenContractAddress = functionInputs[2].toLowerCase();
       const tokenContract = resolveAddress(chainId, tokenContractAddress);
       return {
@@ -151,7 +158,7 @@ export const parse = (data, { chainId }) => {
 
     if (
       target === wethTokenContract.address &&
-      signature === "transfer(address,uint256)"
+      normalizeSignature(signature) === "transfer(address, uint256)"
     ) {
       const receiverAddress = functionInputs[0].toLowerCase();
       const isStreamFunding = predictedStreamContractAddresses.some(
@@ -171,7 +178,8 @@ export const parse = (data, { chainId }) => {
 
     if (
       target === nounsPayerContract.address &&
-      signature === "sendOrRegisterDebt(address,uint256)"
+      normalizeSignature(signature) ===
+        normalizeSignature("sendOrRegisterDebt(address,uint256)")
     ) {
       const receiverAddress = functionInputs[0].toLowerCase();
       const isStreamFunding = predictedStreamContractAddresses.some(
