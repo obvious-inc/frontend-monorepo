@@ -67,6 +67,6 @@
     "viem": "^1.21.4",
     "wagmi": "^1.4.13",
     "workbox-webpack-plugin": "^7.0.0",
-    "zustand": "^4.4.7"
+    "zustand": "^4.5.0"
   }
 }
