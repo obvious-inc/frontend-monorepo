@@ -1164,14 +1164,16 @@ export const fetchDelegates = (chainId, optionalAccountIds) =>
   subgraphFetch({
     chainId,
     query: createDelegatesQuery(optionalAccountIds),
-  }).then((data) => data.delegates.map(parseDelegate));
+  }).then((data) => {
+    return data.delegates.map(parseDelegate);
+  });
 
 export const fetchDelegate = (chainId, id) =>
   subgraphFetch({
     chainId,
     query: createDelegateQuery(id?.toLowerCase()),
   }).then((data) => {
-    if (data.delegate == null) return Promise.reject(new Error("not-found"));
+    if (data.delegates == null) return Promise.reject(new Error("not-found"));
     return parseDelegate(data.delegate);
   });
 

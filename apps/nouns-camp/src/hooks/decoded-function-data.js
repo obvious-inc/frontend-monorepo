@@ -10,17 +10,15 @@ const decodeCalldataWithAbi = ({ abi, calldata }) => {
 
     if (args == null) return { name: functionName, inputs: [] };
 
-    const { inputs: functionInputTypes } = getAbiItem({
+    const { inputs: inputTypes } = getAbiItem({
       abi,
       name: functionName,
     });
 
     return {
       name: functionName,
-      inputs: args.map((value, i) => ({
-        value,
-        type: functionInputTypes[i].type,
-      })),
+      inputs: args,
+      inputTypes,
     };
   } catch (e) {
     return null;
@@ -31,7 +29,7 @@ const useDecodedFunctionData = (
   { target, calldata },
   { enabled = false } = {}
 ) => {
-  const { data: contractInfo } = useEtherscanContractInfo(target, { enabled });
+  const contractInfo = useEtherscanContractInfo(target, { enabled });
 
   const abi = contractInfo?.abi;
   const proxyImplementation = contractInfo?.proxyImplementation;

@@ -45,7 +45,8 @@ import {
   UnparsedFunctionCallCodeBlock,
   AddressDisplayNameWithTooltip,
 } from "./transaction-list.js";
-import ActionDialog from "./action-dialog.js";
+
+const LazyActionDialog = React.lazy(() => import("./action-dialog.js"));
 
 const MAX_TRANSACTION_COUNT = 10;
 
@@ -648,6 +649,13 @@ const ActionSummary = ({ action: a }) => {
       );
     }
 
+    case "prop-house-timed-round":
+      return (
+        <TransactionExplanation
+          transaction={resolveActionTransactions(a, { chainId })[0]}
+        />
+      );
+
     case "custom-transaction":
       return (
         <TransactionExplanation
@@ -680,6 +688,7 @@ const TransactionCodeBlock = ({ transaction }) => {
     case "usdc-transfer-via-payer":
     case "treasury-noun-transfer":
     case "escrow-noun-transfer":
+    case "prop-house-create-and-fund-round":
     case "function-call":
     case "payable-function-call":
     case "proxied-function-call":
@@ -689,6 +698,7 @@ const TransactionCodeBlock = ({ transaction }) => {
           target={t.target}
           name={t.functionName}
           inputs={t.functionInputs}
+          inputTypes={t.functionInputTypes}
           value={t.value}
         />
       );
@@ -840,6 +850,7 @@ const ActionListItem = ({ action: a, openEditDialog, disabled = false }) => {
       case "payer-top-up":
       case "treasury-noun-transfer":
       case "escrow-noun-transfer":
+      case "prop-house-create-and-fund-round":
         return null;
 
       case "unparsed-function-call":
@@ -1436,50 +1447,42 @@ const SidebarContent = ({ actions, setActions, disabled }) => {
       </ErrorBoundary>
 
       {selectedAction != null && (
-        <ActionDialog
-          isOpen
-          close={() => {
-            setSelectedActionIndex(null);
-          }}
-          title="Edit action"
-          submit={(a) => {
-            setActions((actions) =>
-              actions.map((a_, i) => (i !== selectedActionIndex ? a_ : a))
-            );
-          }}
-          remove={() => {
-            setActions((actions) =>
-              actions.filter((_, i) => i !== selectedActionIndex)
-            );
-          }}
-          initialType={selectedAction.type}
-          initialCurrency={selectedAction.currency}
-          initialAmount={selectedAction.amount}
-          initialTarget={selectedAction.target}
-          initialStreamStartTimestamp={selectedAction.startTimestamp}
-          initialStreamEndTimestamp={selectedAction.endTimestamp}
-          initialContractCallTarget={selectedAction.contractCallTarget}
-          initialContractCallSignature={selectedAction.contractCallSignature}
-          initialContractCallArguments={selectedAction.contractCallArguments}
-          initialContractCallValue={selectedAction.contractCallValue}
-          initialContractCallCustomAbiString={
-            selectedAction.contractCallCustomAbiString
-          }
-        />
+        <React.Suspense fallback={null}>
+          <LazyActionDialog
+            isOpen
+            close={() => {
+              setSelectedActionIndex(null);
+            }}
+            title="Edit action"
+            submit={(a) => {
+              setActions((actions) =>
+                actions.map((a_, i) => (i !== selectedActionIndex ? a_ : a))
+              );
+            }}
+            remove={() => {
+              setActions((actions) =>
+                actions.filter((_, i) => i !== selectedActionIndex)
+              );
+            }}
+            action={selectedAction}
+          />
+        </React.Suspense>
       )}
 
       {showNewActionDialog && (
-        <ActionDialog
-          isOpen
-          close={() => {
-            setShowNewActionDialog(false);
-          }}
-          title="Add action"
-          submit={(a) => {
-            setActions((actions) => [...actions, a]);
-          }}
-          submitButtonLabel="Add"
-        />
+        <React.Suspense fallback={null}>
+          <LazyActionDialog
+            isOpen
+            close={() => {
+              setShowNewActionDialog(false);
+            }}
+            title="Add action"
+            submit={(a) => {
+              setActions((actions) => [...actions, a]);
+            }}
+            submitButtonLabel="Add"
+          />
+        </React.Suspense>
       )}
     </>
   );

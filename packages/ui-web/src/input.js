@@ -55,7 +55,7 @@ const Input = React.forwardRef(
             "::placeholder": { color: t.colors.inputPlaceholder },
             "&:disabled": { color: t.colors.textMuted },
             "&:focus-visible": { boxShadow: t.shadows.focus },
-            '&[type="date"]': {
+            '&[type="date"], &[type="time"]': {
               WebkitAppearance: "none",
               minHeight: "3.6rem",
               "::-webkit-datetime-edit": {

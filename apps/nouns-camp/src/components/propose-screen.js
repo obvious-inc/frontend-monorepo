@@ -17,7 +17,7 @@ import Select from "@shades/ui-web/select";
 import Dialog from "@shades/ui-web/dialog";
 import DialogHeader from "@shades/ui-web/dialog-header";
 import DialogFooter from "@shades/ui-web/dialog-footer";
-import { resolveAction as resolveActionTransaction } from "../utils/transactions.js";
+import { resolveAction as resolveActionTransactions } from "../utils/transactions.js";
 import { useWallet } from "../hooks/wallet.js";
 import useChainId from "../hooks/chain-id.js";
 import {
@@ -132,7 +132,7 @@ const ProposeScreen = () => {
       const description = `# ${draft.name.trim()}\n\n${bodyMarkdown}`;
 
       const transactions = draft.actions.flatMap((a) =>
-        resolveActionTransaction(a, { chainId })
+        resolveActionTransactions(a, { chainId })
       );
 
       if (usdcSumValue > 0 && payerTopUpValue > 0)
@@ -214,6 +214,7 @@ const ProposeScreen = () => {
           setPendingRequest(false);
         });
     } catch (e) {
+      console.error(e);
       alert("Ops, looks like something went wrong preparing your submission!");
     }
   };

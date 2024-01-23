@@ -26,6 +26,9 @@ const addressByIdentifierByChainId = {
     "usdc-token": USDC_TOKEN_CONTRACT_ADDRESS,
     "lido-steth-token": "0xae7ab96520de3a18e5e111b5eaab095312d7fe84",
     "lido-withdrawal-queque": "0x889edc2edab5f40e902b864ad4d7ade8e412f9b1",
+    "prop-house": "0x000000002c93cad6f9cfd00c603aef62458d8a48",
+    "prop-house-timed-round-implementation":
+      "0x43c015df7f3868b287ad94d88b1e05f596bba453",
 
     // Nouns contracts
     dao: DAO_LOGIC_PROXY_CONTRACT,
@@ -37,6 +40,7 @@ const addressByIdentifierByChainId = {
     payer: DAO_PAYER_CONTRACT,
     "token-buyer": DAO_TOKEN_BUYER_CONTRACT,
     "stream-factory": "0x0fd206fc7a7dbcd5661157edcb1ffdd0d02a61ff",
+    "prop-house-nouns-house": "0xa1b73d8cb149ab30ec43f83f577646ac8fe7e617",
   },
   [sepolia.id]: {
     "eth-token": ETH_TOKEN_CONTRACT_ADDRESS,
@@ -57,18 +61,22 @@ const addressByIdentifierByChainId = {
   [goerli.id]: {
     "eth-token": ETH_TOKEN_CONTRACT_ADDRESS,
     "usdc-token": "0x07865c6e87b9f70255377e024ace6630c1eaa37f",
-    "weth-token": "0xB4FBF271143F4FBf7B91A5ded31805e42b2208d6",
+    "weth-token": "0xb4fbf271143f4fbf7b91a5ded31805e42b2208d6",
+    "prop-house": "0x6381795e52fa8bc7957e355d1d685986bc8d841b",
+    "prop-house-timed-round-implementation":
+      "0x8f6084435799f15a78cd2f5c6dc1555d91ebd473",
 
     // Nouns contracts
-    dao: "0x22F7658f64be277e6b3968ecE7b773b092a39864",
-    executor: "0xc15008dE43D93D115BD64ED4D95817fFdBfb6DEA",
-    data: "0xc0217355376E414a1c33Dc3558A75625c5444006",
-    token: "0x99265CE0983aab76F5a3789663FDD887dE66638A",
-    "auction-house": "0x32bBBf3721a1b05390daf4Dec2f5Fe4b935f25A1",
-    descriptor: "0xC5FcAAb38C4Ab043e2706f245183d747299dF414",
-    payer: "0x63F8445C4549d17DB181f9ADe1a126EfF8Ee72D6",
-    "token-buyer": "0x7Ee1fE5973c2F6e42D2D40c93f0FDed078c85770",
-    "stream-factory": "0xc08a287eCB16CeD801f28Bb011924f7DE5Cc53a3",
+    dao: "0x22f7658f64be277e6b3968ece7b773b092a39864",
+    executor: "0xc15008de43d93d115bd64ed4d95817ffdbfb6dea",
+    data: "0xc0217355376e414a1c33dc3558a75625c5444006",
+    token: "0x99265ce0983aab76f5a3789663fdd887de66638a",
+    "auction-house": "0x32bbbf3721a1b05390daf4dec2f5fe4b935f25a1",
+    descriptor: "0xc5fcaab38c4ab043e2706f245183d747299df414",
+    payer: "0x63f8445c4549d17db181f9ade1a126eff8ee72d6",
+    "token-buyer": "0x7ee1fe5973c2f6e42d2d40c93f0fded078c85770",
+    "stream-factory": "0xc08a287ecb16ced801f28bb011924f7de5cc53a3",
+    "prop-house-nouns-house": "0x0000000000000000000000000000000000000000",
   },
 };
 
@@ -95,6 +103,7 @@ const metaByIdentifier = {
   "lido-withdrawal-queque": {
     name: "Lido: Withdrawal Queue",
   },
+  "prop-house": { name: "Prop House" },
 
   // Nouns contracts
   dao: {
@@ -123,6 +132,9 @@ const metaByIdentifier = {
   payer: {
     name: "Nouns DAO Payer",
   },
+  "stream-factory": {
+    name: "Nouns Stream Factory",
+  },
 };
 
 export const resolveIdentifier = (chainId, identifier) => {
@@ -137,7 +149,7 @@ export const resolveAddress = (chainId, address) => {
     identifierByAddressByChainId[chainId]?.[address.toLowerCase()];
   if (identifier == null) return null;
   const meta = metaByIdentifier[identifier];
-  return { address, ...meta };
+  return { address, identifier, ...meta };
 };
 
 export const useContract = (identifierOrAddress) => {
