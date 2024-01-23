@@ -23,5 +23,22 @@ module.exports = (...args) => {
         PROPDATES_SUBGRAPH_URL: null,
       }),
     ],
+    resolve: {
+      fallback: {
+        tty: false,
+        zlib: false,
+        http: false,
+        https: false,
+        stream: false,
+        os: false,
+        fs: false,
+        // os: require.resolve("os-browserify/browser"),
+        // https: require.resolve("https-browserify"),
+        // http: require.resolve("stream-http"),
+        // assert: require.resolve("assert"),
+        // stream: require.resolve("stream-browserify"),
+        // url: require.resolve("url/"),
+      },
+    },
   };
 };

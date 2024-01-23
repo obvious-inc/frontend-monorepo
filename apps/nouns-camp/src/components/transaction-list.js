@@ -1,17 +1,24 @@
 import getDateYear from "date-fns/getYear";
 import datesDifferenceInMonths from "date-fns/differenceInCalendarMonths";
+import { formatAbiParameters } from "abitype";
 import { formatEther, formatUnits } from "viem";
 import React from "react";
 import { css } from "@emotion/react";
+import { usePublicClient } from "wagmi";
 import { ethereum as ethereumUtils } from "@shades/common/utils";
 import { useAccountDisplayName } from "@shades/common/app";
 import Button from "@shades/ui-web/button";
 import { CaretDown as CaretDownIcon } from "@shades/ui-web/icons";
 import * as Tooltip from "@shades/ui-web/tooltip";
+import useChainId from "../hooks/chain-id.js";
+import { parseTimedRoundConfigStruct as parsePropHouseTimedRoundConfigStruct } from "../utils/prop-house.js";
 import useDecodedFunctionData from "../hooks/decoded-function-data.js";
 import FormattedDateWithTooltip from "./formatted-date-with-tooltip.js";
 import NounPreviewPopoverTrigger from "./noun-preview-popover-trigger.js";
-import { useContract } from "../contracts.js";
+import {
+  useContract,
+  resolveIdentifier as resolveContractIdentifier,
+} from "../contracts.js";
 
 const decimalsByCurrency = {
   ETH: 18,
@@ -50,6 +57,7 @@ export const useEnhancedParsedTransaction = (transaction) => {
     type: enhancedType,
     functionName: decodedFunctionData.name,
     functionInputs: decodedFunctionData.inputs,
+    functionInputTypes: decodedFunctionData.inputTypes,
     value,
   };
 };
@@ -86,6 +94,7 @@ const TransactionList = ({ transactions }) => (
 );
 
 const ListItem = ({ transaction }) => {
+  const publicClient = usePublicClient();
   const daoPayerContract = useContract("payer");
   const [isExpanded, setExpanded] = React.useState(false);
   const t = useEnhancedParsedTransaction(transaction);
@@ -101,6 +110,7 @@ const ListItem = ({ transaction }) => {
             target={t.target}
             name={t.functionName}
             inputs={t.functionInputs}
+            inputTypes={t.functionInputTypes}
             value={t.value}
           />
         );
@@ -120,6 +130,7 @@ const ListItem = ({ transaction }) => {
       case "stream":
       case "treasury-noun-transfer":
       case "escrow-noun-transfer":
+      case "prop-house-create-and-fund-round":
         return null;
 
       default:
@@ -202,6 +213,7 @@ const ListItem = ({ transaction }) => {
       case "stream":
       case "treasury-noun-transfer":
       case "escrow-noun-transfer":
+      case "prop-house-create-and-fund-round":
         return null;
 
       default:
@@ -225,6 +237,7 @@ const ListItem = ({ transaction }) => {
             target={t.target}
             name={t.functionName}
             inputs={t.functionInputs}
+            inputTypes={t.functionInputTypes}
             value={t.value}
           />
         );
@@ -232,6 +245,114 @@ const ListItem = ({ transaction }) => {
       case "transfer":
       case "payer-top-up":
         return <UnparsedFunctionCallCodeBlock transaction={t} />;
+
+      case "prop-house-create-and-fund-round": {
+        const {
+          votingStrategy,
+          voteMultiplier,
+          proposalPeriodStartMillis,
+          proposalPeriodDurationMillis,
+          votePeriodDurationMillis,
+          winnerCount,
+          awardAssets,
+        } = parsePropHouseTimedRoundConfigStruct(t.roundConfig, {
+          publicClient,
+        });
+
+        const votingStrategyTitle = (identifier) => {
+          switch (identifier) {
+            case "nouns-token":
+              return "Nouns token holders";
+            case "custom":
+              return "Custom";
+            default:
+              throw new Error();
+          }
+        };
+        const formatMillis = (millis) => {
+          const days = Math.round(millis / 1000 / 60 / 60 / 24);
+          if (days === 1) return `${days} day`;
+          return `${days} days`;
+        };
+
+        return (
+          <>
+            <div style={{ margin: "0.8rem 0" }}>
+              <Code block>
+                <dl
+                  css={(t) =>
+                    css({
+                      "dt,dd": { display: "block" },
+                      dt: {
+                        color: t.colors.textDimmed,
+                        fontWeight: t.text.weights.emphasis,
+                        margin: "0 0 0.2em",
+                      },
+                      dd: {
+                        color: t.colors.textNormal,
+                        whiteSpace: "pre-wrap",
+                      },
+                      "dd + dt": { marginTop: "1.2em" },
+                    })
+                  }
+                >
+                  <dt>Title</dt>
+                  <dd>{t.title}</dd>
+                  <dt>Voters</dt>
+                  <dd>{votingStrategyTitle(votingStrategy)}</dd>
+                  {voteMultiplier != null && voteMultiplier > 1 && (
+                    <>
+                      <dt>
+                        {votingStrategy === "nouns-token"
+                          ? "Votes per token"
+                          : "Vote count"}
+                      </dt>
+                      <dd>{voteMultiplier}</dd>
+                    </>
+                  )}
+                  <dt>Proposal period start date</dt>
+                  <dd>
+                    <FormattedDateWithTooltip
+                      disableRelative
+                      day="numeric"
+                      month="short"
+                      value={new Date(proposalPeriodStartMillis)}
+                    />
+                  </dd>
+                  <dt>Proposal period duration</dt>
+                  <dd>{formatMillis(proposalPeriodDurationMillis)}</dd>
+                  <dt>Vote period duration</dt>
+                  <dd>{formatMillis(votePeriodDurationMillis)}</dd>
+                  <dt>Number of winners</dt>
+                  <dd>{winnerCount}</dd>
+                  <dt>Awards</dt>
+                  <dd>
+                    {awardAssets.map((a, i) => {
+                      if (a.type !== "eth") throw new Error();
+                      return (
+                        <React.Fragment key={i}>
+                          {i !== 0 && <>, </>}
+                          {a.amount} ETH
+                        </React.Fragment>
+                      );
+                    })}
+                  </dd>
+                  <dt>Description</dt>
+                  <dd>{t.description}</dd>
+                </dl>
+              </Code>
+            </div>
+
+            <FunctionCallCodeBlock
+              target={t.target}
+              name={t.functionName}
+              inputs={t.functionInputs}
+              inputTypes={t.functionInputTypes}
+              value={t.value}
+            />
+          </>
+        );
+      }
 
       case "unparsed-function-call":
       case "proxied-function-call":
@@ -314,7 +435,13 @@ const ListItem = ({ transaction }) => {
   );
 };
 
-export const FunctionCallCodeBlock = ({ target, name, inputs, value }) => (
+export const FunctionCallCodeBlock = ({
+  target,
+  name,
+  inputs,
+  value,
+  inputTypes,
+}) => (
   <Code block>
     <AddressDisplayNameWithTooltip address={target} data-identifier>
       {ethereumUtils.truncateAddress(target)}
@@ -330,7 +457,7 @@ export const FunctionCallCodeBlock = ({ target, name, inputs, value }) => (
       <Tooltip.Content side="top" sideOffset={6}>
         <Code>
           <span css={(t) => css({ color: t.colors.textPrimary })}>{name}</span>(
-          {inputs.map((i) => i.type).join(", ")})
+          {formatAbiParameters(inputTypes)})
         </Code>
       </Tooltip.Content>
     </Tooltip.Root>
@@ -338,51 +465,54 @@ export const FunctionCallCodeBlock = ({ target, name, inputs, value }) => (
     {inputs.length > 0 && (
       <>
         <br />
-        {inputs.map((input, i, inputs) => (
-          <React.Fragment key={i}>
-            &nbsp;&nbsp;
-            {Array.isArray(input.value) ? (
-              <>
-                [
-                {input.value.map((item, i, items) => (
-                  <React.Fragment key={i}>
-                    <span data-argument>
-                      {input.type === "address[]" ? (
-                        <a
-                          href={createEtherscanAddressUrl(item)}
-                          target="_blank"
-                          rel="noreferrer"
-                        >
-                          {item}
-                        </a>
-                      ) : (
-                        ethereumUtils.formatSolidityArgument(item)
-                      )}
-                    </span>
-                    {i < items.length - 1 && <>, </>}
-                  </React.Fragment>
-                ))}
-                ]
-              </>
-            ) : (
-              <span data-argument>
-                {input.type === "address" ? (
-                  <a
-                    href={createEtherscanAddressUrl(input.value)}
-                    target="_blank"
-                    rel="noreferrer"
-                  >
-                    {input.value}
-                  </a>
-                ) : (
-                  ethereumUtils.formatSolidityArgument(input.value)
-                )}
-              </span>
-            )}
-            {i !== inputs.length - 1 && <>,</>}
-            <br />
-          </React.Fragment>
-        ))}
+        {inputs.map((input, i, inputs) => {
+          const inputType = inputTypes[i];
+          return (
+            <React.Fragment key={i}>
+              &nbsp;&nbsp;
+              {Array.isArray(input) ? (
+                <>
+                  [
+                  {input.map((item, i, items) => (
+                    <React.Fragment key={i}>
+                      <span data-argument>
+                        {input.type === "address[]" ? (
+                          <a
+                            href={createEtherscanAddressUrl(item)}
+                            target="_blank"
+                            rel="noreferrer"
+                          >
+                            {item}
+                          </a>
+                        ) : (
+                          ethereumUtils.formatSolidityArgument(item)
+                        )}
+                      </span>
+                      {i < items.length - 1 && <>, </>}
+                    </React.Fragment>
+                  ))}
+                  ]
+                </>
+              ) : (
+                <span data-argument>
+                  {inputType === "address" ? (
+                    <a
+                      href={createEtherscanAddressUrl(input)}
+                      target="_blank"
+                      rel="noreferrer"
+                    >
+                      {input}
+                    </a>
+                  ) : (
+                    ethereumUtils.formatSolidityArgument(input)
+                  )}
+                </span>
+              )}
+              {i !== inputs.length - 1 && <>,</>}
+              <br />
+            </React.Fragment>
+          );
+        })}
       </>
     )}
     )
@@ -437,7 +567,7 @@ export const UnparsedFunctionCallCodeBlock = ({ transaction: t }) => (
 );
 
 export const TransactionExplanation = ({ transaction: t }) => {
-  const nounsPayerContract = useContract("payer");
+  const chainId = useChainId();
 
   switch (t.type) {
     case "transfer":
@@ -517,17 +647,20 @@ export const TransactionExplanation = ({ transaction: t }) => {
         </>
       );
 
-    case "payer-top-up":
+    case "payer-top-up": {
+      const { address: nounsPayerAddress } = resolveContractIdentifier(
+        chainId,
+        "payer"
+      );
       return (
         <>
           Top up the{" "}
           <em>
-            <AddressDisplayNameWithTooltip
-              address={nounsPayerContract.address}
-            />
+            <AddressDisplayNameWithTooltip address={nounsPayerAddress} />
           </em>
         </>
       );
+    }
 
     case "stream": {
       const formattedUnits = formatUnits(
@@ -641,6 +774,22 @@ export const TransactionExplanation = ({ transaction: t }) => {
           to{" "}
           <em>
             <AddressDisplayNameWithTooltip address={t.receiverAddress} />
+          </em>
+        </>
+      );
+
+    case "prop-house-create-and-fund-round":
+      return (
+        <>
+          Create and fund{" "}
+          <em>
+            <a href="https://prop.house" rel="noreferrer" target="_blank">
+              Prop House
+            </a>
+          </em>{" "}
+          round with{" "}
+          <em>
+            <FormattedEthWithConditionalTooltip value={t.value} />
           </em>
         </>
       );
@@ -796,7 +945,10 @@ const Code = ({ block, ...props }) => {
             color: t.colors.textPrimary,
             fontWeight: t.text.weights.emphasis,
           },
-          "[data-argument]": { color: t.colors.textNormal },
+          "[data-argument]": {
+            color: t.colors.textNormal,
+            whiteSpace: "nowrap",
+          },
           a: {
             textDecoration: "none",
             color: "currentColor",

@@ -60,9 +60,10 @@ const GifPicker = ({
 
   const throttledSearchGifs = React.useMemo(
     () =>
-      throttle((query) => {
+      throttle((query, { signal }) => {
         if (query.length === 1) return Promise.resolve();
         return searchGifs(query || "amaze").then((gifs) => {
+          if (signal?.aborted) return;
           setItems(gifs);
         });
       }, 800),
@@ -70,7 +71,7 @@ const GifPicker = ({
   );
 
   useFetch(
-    () => throttledSearchGifs(trimmedQuery),
+    ({ signal }) => throttledSearchGifs(trimmedQuery, { signal }),
     [throttledSearchGifs, trimmedQuery]
   );
 

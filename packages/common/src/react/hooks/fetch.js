@@ -4,10 +4,14 @@ import useWindowFocusOrDocumentVisibleListener from "./window-focus-or-document-
 import useOnlineListener from "./window-online-listener";
 
 const useFetch = (fetcher_, dependencies) => {
-  const fetcher = useLatestCallback(() => fetcher_?.());
+  const fetcher = useLatestCallback((args = {}) => fetcher_?.(args));
 
   React.useEffect(() => {
-    fetcher();
+    const controller = new AbortController();
+    fetcher({ signal: controller.signal });
+    return () => {
+      controller.abort();
+    };
   }, dependencies); // eslint-disable-line
 
   useWindowFocusOrDocumentVisibleListener(() => {

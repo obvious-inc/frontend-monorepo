@@ -1,13 +1,13 @@
 import { getAbiItem, trim as trimHexOrBytes } from "viem";
 import React from "react";
-import { useContractRead, usePublicClient } from "wagmi";
+import { usePublicClient } from "wagmi";
 import { useFetch } from "@shades/common/react";
 
 // https://eips.ethereum.org/EIPS/eip-1967#logic-contract-address
 const EIP_1967_IMPLEMENTATION_CONTRACT_ADDRESS_STORAGE_SLOT =
   "0x360894a13ba1a3210667c828492db98dca3e2076cc3735a920a3ca505d382bbc";
 
-const fetchContractInfo = (address) =>
+const fetchEtherscanContractInfo = (address) =>
   fetch(
     `${process.env.EDGE_API_BASE_URL}/contract-info?address=${address}`
   ).then(async (res) => {
@@ -41,133 +41,78 @@ const fetchEip1967ProxyImplementationAddressFromStorage = (
       () => null
     );
 
-const updateAddressData = (address_, data) => (dataByAddress) => {
-  const address = address_.toLowerCase();
-  if (address == null) return dataByAddress;
-  return {
-    ...dataByAddress,
-    [address]: { ...dataByAddress[address], ...data },
-  };
-};
-
-const useContractInfo = (address, { enabled = true } = {}) => {
-  const publicClient = usePublicClient();
-
-  const [dataByAddress, setDataByAddress] = React.useState({});
-
-  const {
-    name,
-    abi,
-    proxyImplementationAddressFromStorage,
-    proxyImplementationAbi,
-    isFetchingAbi,
-    notFound,
-    notContractAddress,
-  } = dataByAddress[address?.toLowerCase()] ?? {};
-
-  const implementationAbiItem =
-    abi != null && getAbiItem({ abi, name: "implementation" });
-
-  const { data: proxyImplementationAddressFromContract } = useContractRead({
+const readContractImplementationItem = (address, { abi, publicClient }) =>
+  publicClient.readContract({
     address,
     abi,
     functionName: "implementation",
-    enabled: implementationAbiItem != null,
   });
 
-  const proxyImplementationAddress =
-    proxyImplementationAddressFromStorage ??
-    proxyImplementationAddressFromContract;
+export const fetchContractInfo = async (address, { publicClient }) => {
+  try {
+    const info = await fetchEtherscanContractInfo(address);
+    if (info.implementationAbi != null) return info;
 
-  const fetchAndUpdateContractInfo = React.useCallback(() => {
-    setDataByAddress(updateAddressData(address, { isFetchingAbi: true }));
-    return fetchContractInfo(address)
-      .then(
-        (info) => {
-          const data = { name: info.name, abi: info.abi };
-          if (info.isProxy)
-            data.proxyImplementationAbi = info.implementationAbi;
-          setDataByAddress(updateAddressData(address, data));
-        },
-        (e) => {
-          if (
-            ["code-not-verified", "implementation-abi-not-found"].includes(
-              e.message
-            )
-          ) {
-            setDataByAddress(updateAddressData(address, { notFound: true }));
-            return;
-          }
-          if (e.message === "contract-address-required") {
-            setDataByAddress(
-              updateAddressData(address, { notContractAddress: true })
-            );
-            return;
-          }
-          return Promise.reject(e);
-        }
-      )
-      .finally(() => {
-        setDataByAddress(updateAddressData(address, { isFetchingAbi: false }));
+    const hasImplementationAbiItem =
+      info.abi != null &&
+      getAbiItem({ abi: info.abi, name: "implementation" }) != null;
+
+    let implementationAddress;
+    if (hasImplementationAbiItem)
+      implementationAddress = await readContractImplementationItem(address, {
+        publicClient,
       });
-  }, [address]);
 
-  useFetch(() => {
-    if (!enabled) return;
-    return fetchAndUpdateContractInfo(address);
-  }, [fetchAndUpdateContractInfo, address]);
+    if (implementationAddress == null)
+      implementationAddress =
+        await fetchEip1967ProxyImplementationAddressFromStorage(address, {
+          publicClient,
+        });
 
-  useFetch(() => {
-    if (!enabled) return;
-    return fetchEip1967ProxyImplementationAddressFromStorage(address, {
-      publicClient,
-    }).then((implementationAddress) => {
-      setDataByAddress(
-        updateAddressData(address, {
-          proxyImplementationAddressFromStorage: implementationAddress,
-        })
-      );
-    });
-  }, [address, publicClient]);
+    if (implementationAddress == null) return info;
 
-  useFetch(() => {
-    if (proxyImplementationAddress == null || proxyImplementationAbi != null)
-      return;
-    return fetchContractInfo(proxyImplementationAddress).then((info) => {
-      setDataByAddress(
-        updateAddressData(address, { proxyImplementationAbi: info.abi })
-      );
-    });
-  }, [proxyImplementationAddress, proxyImplementationAbi]);
+    const implementationContractInfo = await fetchEtherscanContractInfo(
+      implementationAddress
+    );
 
-  const proxyImplementation =
-    proxyImplementationAbi == null
-      ? null
-      : {
-          abi: proxyImplementationAbi,
-          address: proxyImplementationAddress,
-        };
+    return {
+      ...info,
+      implementationAddress,
+      implementationAbi: implementationContractInfo.abi,
+    };
+  } catch (e) {
+    if (
+      ["code-not-verified", "implementation-abi-not-found"].includes(e.message)
+    ) {
+      throw new Error("not-found");
+    }
 
-  return {
-    data:
-      abi == null
-        ? null
-        : {
-            name,
-            abi,
-            proxyImplementation,
-          },
-    error: notFound
-      ? new Error("not-found")
-      : notContractAddress
-      ? new Error("not-contract-address")
-      : null,
-    isLoading: isFetchingAbi,
-    reset: () => {
-      setDataByAddress({});
-      fetchAndUpdateContractInfo();
+    if (e.message === "contract-address-required") {
+      throw new Error("not-contract-address");
+    }
+
+    throw e;
+  }
+};
+
+const useContractInfo = (address, { enabled = true } = {}) => {
+  const [infoByAddress, setInfoByAddress] = React.useState({});
+  const publicClient = usePublicClient();
+
+  const fetchData = React.useCallback(
+    async ({ signal }) => {
+      const info = await fetchContractInfo(address, { publicClient });
+      if (signal?.aborted) return;
+      setInfoByAddress((d) => ({ ...d, [address.toLowerCase()]: info }));
     },
-  };
+    [publicClient, address]
+  );
+
+  useFetch(enabled ? fetchData : null, [fetchData]);
+
+  if (address == null) return null;
+
+  return infoByAddress[address.toLowerCase()];
 };
 
 export default useContractInfo;
