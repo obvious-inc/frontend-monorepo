@@ -404,7 +404,7 @@ export const FunctionCallCodeBlock = ({
       <>
         <br />
         {inputs.map((input, i, inputs) => {
-          const inputType = inputTypes[i];
+          const inputType = inputTypes[i].type;
           return (
             <React.Fragment key={i}>
               &nbsp;&nbsp;
@@ -414,14 +414,8 @@ export const FunctionCallCodeBlock = ({
                   {input.map((item, i, items) => (
                     <React.Fragment key={i}>
                       <span data-argument>
-                        {input.type === "address[]" ? (
-                          <a
-                            href={createEtherscanAddressUrl(item)}
-                            target="_blank"
-                            rel="noreferrer"
-                          >
-                            {item}
-                          </a>
+                        {inputType === "address[]" ? (
+                          <AddressDisplayNameWithTooltip address={item} />
                         ) : (
                           ethereumUtils.formatSolidityArgument(item)
                         )}
@@ -434,13 +428,7 @@ export const FunctionCallCodeBlock = ({
               ) : (
                 <span data-argument>
                   {inputType === "address" ? (
-                    <a
-                      href={createEtherscanAddressUrl(input)}
-                      target="_blank"
-                      rel="noreferrer"
-                    >
-                      {input}
-                    </a>
+                    <AddressDisplayNameWithTooltip address={input} />
                   ) : (
                     ethereumUtils.formatSolidityArgument(input)
                   )}
