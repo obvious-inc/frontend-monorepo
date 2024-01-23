@@ -45,7 +45,8 @@ import {
   UnparsedFunctionCallCodeBlock,
   AddressDisplayNameWithTooltip,
 } from "./transaction-list.js";
-import ActionDialog from "./action-dialog.js";
+
+const LazyActionDialog = React.lazy(() => import("./action-dialog.js"));
 
 const MAX_TRANSACTION_COUNT = 10;
 
@@ -1446,51 +1447,42 @@ const SidebarContent = ({ actions, setActions, disabled }) => {
       </ErrorBoundary>
 
       {selectedAction != null && (
-        <ActionDialog
-          isOpen
-          close={() => {
-            setSelectedActionIndex(null);
-          }}
-          title="Edit action"
-          submit={(a) => {
-            setActions((actions) =>
-              actions.map((a_, i) => (i !== selectedActionIndex ? a_ : a))
-            );
-          }}
-          remove={() => {
-            setActions((actions) =>
-              actions.filter((_, i) => i !== selectedActionIndex)
-            );
-          }}
-          action={selectedAction}
-          initialType={selectedAction.type}
-          initialCurrency={selectedAction.currency}
-          initialAmount={selectedAction.amount}
-          initialTarget={selectedAction.target}
-          initialStreamStartTimestamp={selectedAction.startTimestamp}
-          initialStreamEndTimestamp={selectedAction.endTimestamp}
-          initialContractCallTarget={selectedAction.contractCallTarget}
-          initialContractCallSignature={selectedAction.contractCallSignature}
-          initialContractCallArguments={selectedAction.contractCallArguments}
-          initialContractCallValue={selectedAction.contractCallValue}
-          initialContractCallCustomAbiString={
-            selectedAction.contractCallCustomAbiString
-          }
-        />
+        <React.Suspense fallback={null}>
+          <LazyActionDialog
+            isOpen
+            close={() => {
+              setSelectedActionIndex(null);
+            }}
+            title="Edit action"
+            submit={(a) => {
+              setActions((actions) =>
+                actions.map((a_, i) => (i !== selectedActionIndex ? a_ : a))
+              );
+            }}
+            remove={() => {
+              setActions((actions) =>
+                actions.filter((_, i) => i !== selectedActionIndex)
+              );
+            }}
+            action={selectedAction}
+          />
+        </React.Suspense>
       )}
 
       {showNewActionDialog && (
-        <ActionDialog
-          isOpen
-          close={() => {
-            setShowNewActionDialog(false);
-          }}
-          title="Add action"
-          submit={(a) => {
-            setActions((actions) => [...actions, a]);
-          }}
-          submitButtonLabel="Add"
-        />
+        <React.Suspense fallback={null}>
+          <LazyActionDialog
+            isOpen
+            close={() => {
+              setShowNewActionDialog(false);
+            }}
+            title="Add action"
+            submit={(a) => {
+              setActions((actions) => [...actions, a]);
+            }}
+            submitButtonLabel="Add"
+          />
+        </React.Suspense>
       )}
     </>
   );

@@ -170,10 +170,6 @@ export const getTimedRoundConfigStruct = async (config, { publicClient }) => {
     ),
     votePeriodDurationSecs: Math.floor(config.votePeriodDurationMillis / 1000),
     winnerCount: config.winnerCount,
-    // metaTx: {
-    //   relayer: "0x4Cca86FEe04eE3980b44d89B7402680bd370eC06",
-    //   deposit: parseEther("0.1"),
-    // },
   });
 
   // Make serializable
@@ -186,7 +182,6 @@ export const getTimedRoundConfigStruct = async (config, { publicClient }) => {
   );
 };
 
-// TODO: this should never throw
 export const parseTimedRoundConfigStruct = (struct, { publicClient }) => {
   const strategyUtil = GovPowerManager.for(createChainConfig({ publicClient }));
 

@@ -4,14 +4,12 @@ import { formatAbiParameters } from "abitype";
 import { formatEther, formatUnits } from "viem";
 import React from "react";
 import { css } from "@emotion/react";
-import { usePublicClient } from "wagmi";
 import { ethereum as ethereumUtils } from "@shades/common/utils";
 import { useAccountDisplayName } from "@shades/common/app";
 import Button from "@shades/ui-web/button";
 import { CaretDown as CaretDownIcon } from "@shades/ui-web/icons";
 import * as Tooltip from "@shades/ui-web/tooltip";
 import useChainId from "../hooks/chain-id.js";
-import { parseTimedRoundConfigStruct as parsePropHouseTimedRoundConfigStruct } from "../utils/prop-house.js";
 import useDecodedFunctionData from "../hooks/decoded-function-data.js";
 import FormattedDateWithTooltip from "./formatted-date-with-tooltip.js";
 import NounPreviewPopoverTrigger from "./noun-preview-popover-trigger.js";
@@ -19,6 +17,10 @@ import {
   useContract,
   resolveIdentifier as resolveContractIdentifier,
 } from "../contracts.js";
+
+const LazyPropHouseRoundDescriptionList = React.lazy(() =>
+  import("./prop-house-round-description-list.js")
+);
 
 const decimalsByCurrency = {
   ETH: 18,
@@ -94,7 +96,6 @@ const TransactionList = ({ transactions }) => (
 );
 
 const ListItem = ({ transaction }) => {
-  const publicClient = usePublicClient();
   const daoPayerContract = useContract("payer");
   const [isExpanded, setExpanded] = React.useState(false);
   const t = useEnhancedParsedTransaction(transaction);
@@ -247,101 +248,38 @@ const ListItem = ({ transaction }) => {
         return <UnparsedFunctionCallCodeBlock transaction={t} />;
 
       case "prop-house-create-and-fund-round": {
-        const {
-          votingStrategy,
-          voteMultiplier,
-          proposalPeriodStartMillis,
-          proposalPeriodDurationMillis,
-          votePeriodDurationMillis,
-          winnerCount,
-          awardAssets,
-        } = parsePropHouseTimedRoundConfigStruct(t.roundConfig, {
-          publicClient,
-        });
-
-        const votingStrategyTitle = (identifier) => {
-          switch (identifier) {
-            case "nouns-token":
-              return "Nouns token holders";
-            case "custom":
-              return "Custom";
-            default:
-              throw new Error();
-          }
-        };
-        const formatMillis = (millis) => {
-          const days = Math.round(millis / 1000 / 60 / 60 / 24);
-          if (days === 1) return `${days} day`;
-          return `${days} days`;
-        };
-
         return (
           <>
-            <div style={{ margin: "0.8rem 0" }}>
-              <Code block>
-                <dl
-                  css={(t) =>
-                    css({
-                      "dt,dd": { display: "block" },
-                      dt: {
-                        color: t.colors.textDimmed,
-                        fontWeight: t.text.weights.emphasis,
-                        margin: "0 0 0.2em",
-                      },
-                      dd: {
-                        color: t.colors.textNormal,
-                        whiteSpace: "pre-wrap",
-                      },
-                      "dd + dt": { marginTop: "1.2em" },
-                    })
-                  }
-                >
-                  <dt>Title</dt>
-                  <dd>{t.title}</dd>
-                  <dt>Voters</dt>
-                  <dd>{votingStrategyTitle(votingStrategy)}</dd>
-                  {voteMultiplier != null && voteMultiplier > 1 && (
-                    <>
-                      <dt>
-                        {votingStrategy === "nouns-token"
-                          ? "Votes per token"
-                          : "Vote count"}
-                      </dt>
-                      <dd>{voteMultiplier}</dd>
-                    </>
-                  )}
-                  <dt>Proposal period start date</dt>
-                  <dd>
-                    <FormattedDateWithTooltip
-                      disableRelative
-                      day="numeric"
-                      month="short"
-                      value={new Date(proposalPeriodStartMillis)}
-                    />
-                  </dd>
-                  <dt>Proposal period duration</dt>
-                  <dd>{formatMillis(proposalPeriodDurationMillis)}</dd>
-                  <dt>Vote period duration</dt>
-                  <dd>{formatMillis(votePeriodDurationMillis)}</dd>
-                  <dt>Number of winners</dt>
-                  <dd>{winnerCount}</dd>
-                  <dt>Awards</dt>
-                  <dd>
-                    {awardAssets.map((a, i) => {
-                      if (a.type !== "eth") throw new Error();
-                      return (
-                        <React.Fragment key={i}>
-                          {i !== 0 && <>, </>}
-                          {a.amount} ETH
-                        </React.Fragment>
-                      );
-                    })}
-                  </dd>
-                  <dt>Description</dt>
-                  <dd>{t.description}</dd>
-                </dl>
-              </Code>
-            </div>
+            <React.Suspense fallback={null}>
+              <div
+                css={(t) =>
+                  css({
+                    margin: "0.8rem 0",
+                    "dt,dd": { display: "block" },
+                    dt: {
+                      color: t.colors.textDimmed,
+                      fontWeight: t.text.weights.emphasis,
+                      margin: "0 0 0.2em",
+                    },
+                    dd: {
+                      color: t.colors.textNormal,
+                      whiteSpace: "pre-wrap",
+                    },
+                    "dd + dt": { marginTop: "1.2em" },
+                  })
+                }
+              >
+                <Code block>
+                  <LazyPropHouseRoundDescriptionList
+                    round={{
+                      title: t.title,
+                      description: t.description,
+                      configStruct: t.roundConfig,
+                    }}
+                  />
+                </Code>
+              </div>
+            </React.Suspense>
 
             <FunctionCallCodeBlock
               target={t.target}

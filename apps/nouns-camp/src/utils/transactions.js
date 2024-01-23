@@ -475,8 +475,6 @@ export const unparse = (transactions, { chainId }) => {
             calldata: t.calldata ?? "0x",
           });
 
-        // TODO
-
         default:
           throw new Error(`Unknown transaction type "${t.type}"`);
       }
@@ -835,8 +833,6 @@ export const resolveAction = (a, { chainId }) => {
           }, 0n);
         };
         return [
-          // TODO: usdc, transfer to timelock then approve?
-          // TODO: add erc20 approvals
           {
             type: "prop-house-create-and-fund-round",
             houseAddress: propHouseNounsHouseAddress,

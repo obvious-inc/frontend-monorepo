@@ -1031,10 +1031,10 @@ const PropHouseRoundActionForm = ({ state, setState }) => {
 const formConfigByActionType = {
   "one-time-payment": {
     title: "One-time transfer",
-    initialState: (props) => ({
-      amount: props.initialAmount ?? "",
-      currency: props.initialCurrency ?? "eth",
-      receiverQuery: props.initialTarget ?? "",
+    initialState: ({ action }) => ({
+      amount: action?.amount ?? "",
+      currency: action?.currency ?? "eth",
+      receiverQuery: action?.target ?? "",
     }),
     useStateMiddleware: ({ state }) => {
       const ensCache = useEnsCache();
