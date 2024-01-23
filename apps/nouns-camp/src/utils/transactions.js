@@ -26,8 +26,10 @@ const decimalsByCurrency = {
   usdc: 6,
 };
 
-const normalizeSignature = (s) =>
-  s.replace(/\s+/g, " ").replace(/,[^\s+]/g, ", ");
+const normalizeSignature = (s) => {
+  if (s == null) return null;
+  return s.replace(/\s+/g, " ").replace(/,[^\s+]/g, ", ");
+};
 
 const CREATE_STREAM_SIGNATURE =
   "createStream(address,uint256,address,uint256,uint256,uint8,address)";
