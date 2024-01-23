@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.0.0-alpha.14] - 2024-01-23
+
+### Features
+
+- Implement recent changes from upstream (#85)
+
 ## [1.0.0-alpha.13] - 2024-01-19
 
 ### Miscellaneous Tasks

@@ -70,10 +70,11 @@ const fetchContractInfo = async (address_) => {
     isProxy: responseBody.result[0]["Proxy"] === "1",
   };
 
-  if (contractInfo.isProxy)
-    contractInfo.implementationAbi = await fetchAbi(
-      responseBody.result[0]["Implementation"]
-    );
+  if (contractInfo.isProxy) {
+    const implementationAddress = responseBody.result[0]["Implementation"];
+    contractInfo.implementationAddress = implementationAddress;
+    contractInfo.implementationAbi = await fetchAbi(implementationAddress);
+  }
 
   contractInfoCache.set(address, contractInfo);
 
