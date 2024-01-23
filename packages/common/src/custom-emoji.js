@@ -332,6 +332,10 @@ export default [
     url: "https://emojis.slackmojis.com/emojis/images/1685738049/66447/lfg.gif?1685738049",
   },
   {
+    id: "lil-peep-salute",
+    url: "https://emojis.slackmojis.com/emojis/images/1696285880/69956/lilpepesalute.png?1696285880",
+  },
+  {
     id: "link-fall",
     url: "https://emojis.slackmojis.com/emojis/images/1647573108/56318/link_fall.gif?1647573108",
   },
@@ -472,6 +476,10 @@ export default [
     url: "https://emojis.slackmojis.com/emojis/images/1626363216/47507/pepe-hacker.gif?1626363216",
   },
   {
+    id: "peep-soldier-salute",
+    url: "https://emojis.slackmojis.com/emojis/images/1698493882/72751/pepe_soldier_salute.png?1698493882",
+  },
+  {
     id: "peeposhrug",
     url: "https://emojis.slackmojis.com/emojis/images/1643511237/48473/peeposhrug.png?1643511237",
   },
@@ -554,6 +562,22 @@ export default [
   {
     id: "rick-and-morty-highfive",
     url: "https://emojis.slackmojis.com/emojis/images/1670863695/63191/rick_and_morty-high-five.gif?1670863695",
+  },
+  {
+    id: "salute",
+    url: "https://emojis.slackmojis.com/emojis/images/1643514217/1836/salute.png?1643514217",
+  },
+  {
+    id: "salute-cat",
+    url: "https://emojis.slackmojis.com/emojis/images/1643514771/7819/cat_salute.png?1643514771",
+  },
+  {
+    id: "salute-kiwi",
+    url: "https://emojis.slackmojis.com/emojis/images/1643510229/42958/kiwi_salute.png?1643510229",
+  },
+  {
+    id: "salute-pam",
+    url: "https://emojis.slackmojis.com/emojis/images/1678999512/64702/pam-salute.gif?1678999512",
   },
   {
     id: "same",
@@ -702,6 +726,10 @@ export default [
   {
     id: "very-nice",
     url: "https://emojis.slackmojis.com/emojis/images/1643514086/434/very_nice.jpg?1643514086",
+  },
+  {
+    id: "very-salute",
+    url: "https://emojis.slackmojis.com/emojis/images/1701638539/79485/salute.gif?1701638539",
   },
   {
     id: "vibe-duck",
