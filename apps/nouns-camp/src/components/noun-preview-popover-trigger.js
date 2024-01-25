@@ -54,6 +54,7 @@ const NounPreviewPopoverTrigger = React.forwardRef(
     {
       nounId,
       contextAccount,
+      showAvatar = true,
       inline = false,
       popoverPlacement = "bottom",
       children,
@@ -78,16 +79,18 @@ const NounPreviewPopoverTrigger = React.forwardRef(
               },
             })}
           >
-            <NounAvatar
-              id={nounId}
-              size="1.2em"
-              signatureFallback={false}
-              css={css({
-                display: "inline-block",
-                marginRight: "0.3em",
-                verticalAlign: "sub",
-              })}
-            />
+            {showAvatar && (
+              <NounAvatar
+                id={nounId}
+                size="1.2em"
+                signatureFallback={false}
+                css={css({
+                  display: "inline-block",
+                  marginRight: "0.3em",
+                  verticalAlign: "sub",
+                })}
+              />
+            )}
             <InlineButton
               data-noun-id
               component="div"
@@ -118,21 +121,23 @@ const NounPreviewPopoverTrigger = React.forwardRef(
             })
           }
         >
-          <div css={css({ position: "relative", zIndex: 1 })}>
-            <NounAvatar id={nounId} size="4rem" />
-            {contextAccount != null && (
-              <DelegationStatusDot
-                nounId={nounId}
-                contextAccount={contextAccount}
-                cssProps={{
-                  top: "3rem",
-                  left: "3rem",
-                  height: "1.2rem",
-                  width: "1.2rem",
-                }}
-              />
-            )}
-          </div>
+          {showAvatar && (
+            <div css={css({ position: "relative", zIndex: 1 })}>
+              <NounAvatar id={nounId} size="4rem" />
+              {contextAccount != null && (
+                <DelegationStatusDot
+                  nounId={nounId}
+                  contextAccount={contextAccount}
+                  cssProps={{
+                    top: "3rem",
+                    left: "3rem",
+                    height: "1.2rem",
+                    width: "1.2rem",
+                  }}
+                />
+              )}
+            </div>
+          )}
           <div data-id>{nounId}</div>
         </button>
       );
