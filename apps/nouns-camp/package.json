@@ -63,7 +63,7 @@
     "reselect": "^5.1.0",
     "slate": "^0.101.5",
     "slate-history": "^0.100.0",
-    "slate-react": "^0.101.5",
+    "slate-react": "^0.101.6",
     "tinykeys": "^2.1.0",
     "viem": "^1.21.4",
     "wagmi": "^1.4.13",
