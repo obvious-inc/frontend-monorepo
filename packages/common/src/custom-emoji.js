@@ -1,5 +1,9 @@
 export default [
   {
+    id: "0",
+    url: "https://emojis.slackmojis.com/emojis/images/1706040513/87889/0.png?1706040513",
+  },
+  {
     id: "10-10",
     url: "https://emojis.slackmojis.com/emojis/images/1643516952/30075/10_10.png?1643516952",
   },
@@ -40,6 +44,10 @@ export default [
     url: "https://emojis.slackmojis.com/emojis/images/1687220989/66713/andy-dwyer-amazed.gif?1687220989",
   },
   {
+    id: "axe-execution",
+    url: "https://emojis.slackmojis.com/emojis/images/1643508915/47946/axe_murder.gif?1643508915",
+  },
+  {
     id: "baby-yoda-soup",
     url: "https://emojis.slackmojis.com/emojis/images/1643514719/7248/baby-yoda-soup.gif?1643514719",
   },
@@ -58,6 +66,14 @@ export default [
   {
     id: "bird-run",
     url: "https://emojis.slackmojis.com/emojis/images/1643515268/12904/bird_run.gif?1643515268",
+  },
+  {
+    id: "birdy-wow",
+    url: "https://emojis.slackmojis.com/emojis/images/1695238093/69289/birdywat.png?1695238093",
+  },
+  {
+    id: "bleeeeep",
+    url: "https://emojis.slackmojis.com/emojis/images/1706138873/88050/bleeeeepq.gif?1706138873",
   },
   {
     id: "blob-dance",
@@ -92,6 +108,10 @@ export default [
     url: "https://emojis.slackmojis.com/emojis/images/1701370973/78506/blob-yes.png?1701370973",
   },
   {
+    id: "blocking-u",
+    url: "https://emojis.slackmojis.com/emojis/images/1706139344/88072/blockinguq.gif?1706139344",
+  },
+  {
     id: "bongo-blob",
     url: "https://emojis.slackmojis.com/emojis/images/1643514591/5948/bongo_blob.gif?1643514591",
   },
@@ -106,6 +126,10 @@ export default [
   {
     id: "cat-five",
     url: "https://emojis.slackmojis.com/emojis/images/1643516595/26362/cat-five.gif?1643516595",
+  },
+  {
+    id: "cat-ground",
+    url: "https://emojis.slackmojis.com/emojis/images/1706139093/88057/catgroundq.png?1706139093",
   },
   {
     id: "cat-jam",
@@ -126,6 +150,10 @@ export default [
   {
     id: "cheer",
     url: "https://emojis.slackmojis.com/emojis/images/1643515866/18823/02_cheer.gif?1643515866",
+  },
+  {
+    id: "chick-whip",
+    url: "https://emojis.slackmojis.com/emojis/images/1706138810/88048/chickwhipq.gif?1706138810",
   },
   {
     id: "coffee-fill",
@@ -164,12 +192,20 @@ export default [
     url: "https://emojis.slackmojis.com/emojis/images/1681334082/65156/dog-roll.gif?1681334082",
   },
   {
+    id: "doggo-sus",
+    url: "https://emojis.slackmojis.com/emojis/images/1706045310/87950/doggo_susq.png?1706045310",
+  },
+  {
     id: "done",
     url: "https://emojis.slackmojis.com/emojis/images/1643514571/5707/done.jpg?1643514571",
   },
   {
     id: "done-frodo",
     url: "https://emojis.slackmojis.com/emojis/images/1683234383/65931/its-done.jpg?1683234383",
+  },
+  {
+    id: "drama-chick",
+    url: "https://emojis.slackmojis.com/emojis/images/1706044354/87904/dramachickq.png?1706044354",
   },
   {
     id: "dumpster-fire",
@@ -192,8 +228,44 @@ export default [
     url: "https://emojis.slackmojis.com/emojis/images/1643515450/14710/eeveexpika_highfive.gif?1643515450",
   },
   {
+    id: "elmo-dance",
+    url: "https://emojis.slackmojis.com/emojis/images/1693740896/68089/elmo.jpg?1693740896",
+  },
+  {
+    id: "elmo-hype",
+    url: "https://emojis.slackmojis.com/emojis/images/1705655003/87565/hype-elmo.gif?1705655003",
+  },
+  {
+    id: "elmo-parrot-dance",
+    url: "https://emojis.slackmojis.com/emojis/images/1643517039/30890/rare_elmo.gif?1643517039",
+  },
+  {
+    id: "elmo-snow",
+    url: "https://emojis.slackmojis.com/emojis/images/1643852690/51913/elmo-snow.gif?1643852690",
+  },
+  {
+    id: "elmo-yay",
+    url: "https://emojis.slackmojis.com/emojis/images/1643517403/34361/elmo.png?1643517403",
+  },
+  {
     id: "elon-weed",
     url: "https://emojis.slackmojis.com/emojis/images/1643514857/8697/elonweed.gif?1643514857",
+  },
+  {
+    id: "emu-cool",
+    url: "https://emojis.slackmojis.com/emojis/images/1643517282/33195/emu_cool.png?1643517282",
+  },
+  {
+    id: "emu-look",
+    url: "https://emojis.slackmojis.com/emojis/images/1695245130/69302/emulook.png?1695245130",
+  },
+  {
+    id: "emu-wat-hi",
+    url: "https://emojis.slackmojis.com/emojis/images/1643517282/33196/emu_wat.png?1643517282",
+  },
+  {
+    id: "evil-clap",
+    url: "https://emojis.slackmojis.com/emojis/images/1706139267/88067/clapgengarq.gif?1706139267",
   },
   {
     id: "excited",
@@ -240,6 +312,14 @@ export default [
     url: "https://emojis.slackmojis.com/emojis/images/1643508782/50890/glowstick-vibe-fast.gif?1643508782",
   },
   {
+    id: "gm",
+    url: "https://emojis.slackmojis.com/emojis/images/1683787538/66262/morning.gif?1683787538",
+  },
+  {
+    id: "good-morning",
+    url: "https://emojis.slackmojis.com/emojis/images/1668785961/62692/goodmorning.gif?1668785961",
+  },
+  {
     id: "grumpy-cat",
     url: "https://emojis.slackmojis.com/emojis/images/1643514075/319/grumpycat.png?1643514075",
   },
@@ -268,6 +348,10 @@ export default [
     url: "https://emojis.slackmojis.com/emojis/images/1675347362/63968/huhh.gif?1675347362",
   },
   {
+    id: "hmm-dog",
+    url: "https://emojis.slackmojis.com/emojis/images/1706138542/88034/hmmdoggoq.png?1706138542",
+  },
+  {
     id: "hundred-points",
     url: "https://emojis.slackmojis.com/emojis/images/1660415427/60781/hundred-points.gif?1660415427",
   },
@@ -276,8 +360,16 @@ export default [
     url: "https://emojis.slackmojis.com/emojis/images/1643514981/10083/hmm_parrot.gif?1643514981",
   },
   {
+    id: "im-tired-boss",
+    url: "https://emojis.slackmojis.com/emojis/images/1706108945/87967/im-tired-boss.gif?1706108945",
+  },
+  {
     id: "insanity-wolf",
     url: "https://emojis.slackmojis.com/emojis/images/1643514086/438/insanity_wolf.png?1643514086",
+  },
+  {
+    id: "john-snow-vibe",
+    url: "https://emojis.slackmojis.com/emojis/images/1643510172/36990/jon_snow.gif?1643510172",
   },
   {
     id: "jus-deal-with-it",
@@ -314,6 +406,10 @@ export default [
   {
     id: "kirby-vibing",
     url: "https://emojis.slackmojis.com/emojis/images/1643515157/11711/kirby_vibing.gif?1643515157",
+  },
+  {
+    id: "kitty-no",
+    url: "https://emojis.slackmojis.com/emojis/images/1705267054/86611/suskittyq.gif?1705267054",
   },
   {
     id: "leo-toast",
@@ -358,6 +454,10 @@ export default [
   {
     id: "love",
     url: "https://emojis.slackmojis.com/emojis/images/1643514240/2080/love.gif?1643514240",
+  },
+  {
+    id: "luvluv",
+    url: "https://emojis.slackmojis.com/emojis/images/1706139240/88065/luvluvq.png?1706139240",
   },
   {
     id: "mariobros",
@@ -408,6 +508,22 @@ export default [
     url: "https://emojis.slackmojis.com/emojis/images/1643514098/559/mindblown.gif?1643514098",
   },
   {
+    id: "mj-popcorn",
+    url: "https://emojis.slackmojis.com/emojis/images/1706044260/87898/mjpopcornq.gif?1706044260",
+  },
+  {
+    id: "moogle",
+    url: "https://emojis.slackmojis.com/emojis/images/1643516709/27565/moogle.gif?1643516709",
+  },
+  {
+    id: "moogle-angel",
+    url: "https://emojis.slackmojis.com/emojis/images/1643565271/51729/moogle_angel.png?1643565271",
+  },
+  {
+    id: "moogle-check",
+    url: "https://emojis.slackmojis.com/emojis/images/1623996867/45444/moogle_check.gif?1623996867",
+  },
+  {
     id: "morty-wtf",
     url: "https://emojis.slackmojis.com/emojis/images/1701221397/78081/mortywtfq.png?1701221397",
   },
@@ -448,6 +564,10 @@ export default [
     url: "https://emojis.slackmojis.com/emojis/images/1643514351/3253/omg-cat.gif?1643514351",
   },
   {
+    id: "ohno-cat",
+    url: "https://emojis.slackmojis.com/emojis/images/1706087480/87963/ohno-cat.png?1706087480",
+  },
+  {
     id: "oh-stop-it",
     url: "https://emojis.slackmojis.com/emojis/images/1667798496/62287/oh-stop-it.gif?1667798496",
   },
@@ -456,8 +576,20 @@ export default [
     url: "https://emojis.slackmojis.com/emojis/images/1643517518/35494/ok_hand.gif?1643517518",
   },
   {
+    id: "oooooop",
+    url: "https://emojis.slackmojis.com/emojis/images/1706139231/88064/oooopq.png?1706139231",
+  },
+  {
+    id: "party-moogle",
+    url: "https://emojis.slackmojis.com/emojis/images/1704138457/85009/party_moogleq.gif?1704138457",
+  },
+  {
     id: "party-parrot",
     url: "https://emojis.slackmojis.com/emojis/images/1643514742/7500/partyparrot.gif?1643514742",
+  },
+  {
+    id: "pascal-what",
+    url: "https://emojis.slackmojis.com/emojis/images/1706127282/88010/pascal_flip_what.gif?1706127282",
   },
   {
     id: "paw-wave",
@@ -480,12 +612,20 @@ export default [
     url: "https://emojis.slackmojis.com/emojis/images/1698493882/72751/pepe_soldier_salute.png?1698493882",
   },
   {
+    id: "peep-spend",
+    url: "https://emojis.slackmojis.com/emojis/images/1706138508/88032/pepespendq.gif?1706138508",
+  },
+  {
     id: "peeposhrug",
     url: "https://emojis.slackmojis.com/emojis/images/1643511237/48473/peeposhrug.png?1643511237",
   },
   {
     id: "peeposuspicious",
     url: "https://emojis.slackmojis.com/emojis/images/1702628313/82360/oh_peeposuspiciousq.gif?1702628313",
+  },
+  {
+    id: "peng-wat",
+    url: "https://emojis.slackmojis.com/emojis/images/1695322063/69380/pengwat.png?1695322063",
   },
   {
     id: "picklerick",
@@ -556,12 +696,24 @@ export default [
     url: "https://emojis.slackmojis.com/emojis/images/1700153154/75492/python-intensifies.gif?1700153154",
   },
   {
+    id: "queen",
+    url: "https://emojis.slackmojis.com/emojis/images/1643514658/6637/queen.gif?1643514658",
+  },
+  {
     id: "rage",
     url: "https://emojis.slackmojis.com/emojis/images/1643514085/424/rage.jpg?1643514085",
   },
   {
+    id: "rage-mush",
+    url: "https://emojis.slackmojis.com/emojis/images/1705549021/87346/rage-mush0.gif?1705549021",
+  },
+  {
     id: "rick-and-morty-highfive",
     url: "https://emojis.slackmojis.com/emojis/images/1670863695/63191/rick_and_morty-high-five.gif?1670863695",
+  },
+  {
+    id: "riri-sus",
+    url: "https://emojis.slackmojis.com/emojis/images/1701308313/78307/ririursusq.gif?1701308313",
   },
   {
     id: "salute",
@@ -606,6 +758,10 @@ export default [
   {
     id: "shrug-dog",
     url: "https://emojis.slackmojis.com/emojis/images/1665083246/61602/shrugdog.png?1665083246",
+  },
+  {
+    id: "shrug-turtle",
+    url: "https://emojis.slackmojis.com/emojis/images/1706138959/88056/shrugturtleq.gif?1706138959",
   },
   {
     id: "slayyyed",
@@ -660,6 +816,22 @@ export default [
     url: "https://emojis.slackmojis.com/emojis/images/1643514509/4978/surprise.gif?1643514509",
   },
   {
+    id: "sus",
+    url: "https://emojis.slackmojis.com/emojis/images/1624387445/45840/sus.png?1624387445",
+  },
+  {
+    id: "sus-intensifies",
+    url: "https://emojis.slackmojis.com/emojis/images/1666887769/62024/sus-intensifies.gif?1666887769",
+  },
+  {
+    id: "sus-pika",
+    url: "https://emojis.slackmojis.com/emojis/images/1703022106/83155/suspikaq.png?1703022106",
+  },
+  {
+    id: "sweat",
+    url: "https://emojis.slackmojis.com/emojis/images/1706139285/88068/swetq.gif?1706139285",
+  },
+  {
     id: "team-cheer",
     url: "https://emojis.slackmojis.com/emojis/images/1643515344/13629/cheer.gif?1643515344",
   },
@@ -690,6 +862,14 @@ export default [
   {
     id: "tiny-rick",
     url: "https://emojis.slackmojis.com/emojis/images/1701401564/78792/tiny_rickq.png?1701401564",
+  },
+  {
+    id: "tom-morning",
+    url: "https://emojis.slackmojis.com/emojis/images/1674399441/63758/tom-morning.png?1674399441",
+  },
+  {
+    id: "trash-brain",
+    url: "https://emojis.slackmojis.com/emojis/images/1706138638/88040/brainq.gif?1706138638",
   },
   {
     id: "trash-computer",
@@ -742,6 +922,14 @@ export default [
   {
     id: "vim-intensifies",
     url: "https://emojis.slackmojis.com/emojis/images/1698437722/72524/vim-intensifies.gif?1698437722",
+  },
+  {
+    id: "wat-sus",
+    url: "https://emojis.slackmojis.com/emojis/images/1666774155/61983/wat.png?1666774155",
+  },
+  {
+    id: "wat",
+    url: "https://emojis.slackmojis.com/emojis/images/1643514092/504/wat.jpg?1643514092",
   },
   {
     id: "watching-you",
