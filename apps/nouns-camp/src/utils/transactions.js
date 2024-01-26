@@ -26,8 +26,10 @@ const decimalsByCurrency = {
   usdc: 6,
 };
 
-const normalizeSignature = (s) =>
-  s.replace(/\s+/g, " ").replace(/,[^\s+]/g, ", ");
+const normalizeSignature = (s) => {
+  if (s == null) return null;
+  return s.replace(/\s+/g, " ").replace(/,[^\s+]/g, ", ");
+};
 
 const CREATE_STREAM_SIGNATURE =
   "createStream(address,uint256,address,uint256,uint256,uint8,address)";
@@ -201,8 +203,10 @@ export const parse = (data, { chainId }) => {
 
     if (
       target === nounsTokenContract.address &&
-      normalizeSignature(signature) ===
-        "safeTransferFrom(address, address, uint256)" &&
+      (normalizeSignature(signature) ===
+        "transferFrom(address, address, uint256)" ||
+        normalizeSignature(signature) ===
+          "safeTransferFrom(address, address, uint256)") &&
       functionInputs[0].toLowerCase() ===
         nounsExecutorContract.address.toLowerCase()
     )
@@ -210,6 +214,9 @@ export const parse = (data, { chainId }) => {
         type: "treasury-noun-transfer",
         nounId: parseInt(functionInputs[2]),
         receiverAddress: functionInputs[1],
+        safe:
+          normalizeSignature(signature) ===
+          "safeTransferFrom(address, address, uint256)",
         target,
         functionName,
         functionInputs,
@@ -404,7 +411,9 @@ export const unparse = (transactions, { chainId }) => {
           return append({
             target: nounsTokenContract.address,
             value: "",
-            signature: "safeTransferFrom(address,address,uint256)",
+            signature: !t.safe
+              ? "transferFrom(address,address,uint256)"
+              : "safeTransferFrom(address,address,uint256)",
             calldata: encodeAbiParameters(
               [{ type: "address" }, { type: "address" }, { type: "uint256" }],
               [nounsExecutorContract.address, t.receiverAddress, t.nounId]

@@ -55,6 +55,7 @@ import MetaTags_ from "./meta-tags.js";
 import Layout, { MainContentContainer } from "./layout.js";
 import ProposalStateTag from "./proposal-state-tag.js";
 import AccountPreviewPopoverTrigger from "./account-preview-popover-trigger.js";
+import NounPreviewPopoverTrigger from "./noun-preview-popover-trigger.js";
 import FormattedDateWithTooltip from "./formatted-date-with-tooltip.js";
 import Callout from "./callout.js";
 import * as Tabs from "./tabs.js";
@@ -1209,7 +1210,12 @@ const RequestedAmounts = ({ amounts }) => (
 
           case "nouns":
             return tokens.length === 1 ? (
-              <>Noun {tokens[0]}</>
+              <NounPreviewPopoverTrigger
+                nounId={tokens[0]}
+                popoverPlacement="top"
+                showAvatar={false}
+                inline
+              />
             ) : (
               <>{tokens.length} nouns</>
             );
