@@ -31,8 +31,8 @@ importers:
         specifier: ^7.3.1
         version: 7.3.1
       '@prophouse/sdk-react':
-        specifier: ^1.0.20
-        version: 1.0.20(react@18.2.0)(wagmi@1.4.13)
+        specifier: ^1.0.21
+        version: 1.0.21(react@18.2.0)(wagmi@1.4.13)
       '@radix-ui/react-toolbar':
         specifier: ^1.0.4
         version: 1.0.4(react-dom@18.2.0)(react@18.2.0)
@@ -2716,13 +2716,13 @@ packages:
       - utf-8-validate
     dev: false
 
-  /@prophouse/sdk-react@1.0.20(react@18.2.0)(wagmi@1.4.13):
-    resolution: {integrity: sha512-iieyUj35LcGJ2zYqnGh91lY8M2EQbYDLBG7PTD+3G6phps2nCfQWfdgzT26X1iJFeGZgX9AfG0DYVg845jgnew==}
+  /@prophouse/sdk-react@1.0.21(react@18.2.0)(wagmi@1.4.13):
+    resolution: {integrity: sha512-Zr6CcORAynv8kr0O8D5cAckZC8jifTT+P1UbwyUbauWDnlUepa9VlCWDzS2gkF5K7qzwqX3Gb/rpYBKQW99KrA==}
     peerDependencies:
       react: '>=16.13.1'
       wagmi: '>=0.9.2'
     dependencies:
-      '@prophouse/sdk': 1.0.26
+      '@prophouse/sdk': 1.0.27
       react: 18.2.0
       wagmi: 1.4.13(react-dom@18.2.0)(react@18.2.0)(typescript@5.3.3)(viem@1.21.4)
     transitivePeerDependencies:
@@ -2733,8 +2733,8 @@ packages:
       - utf-8-validate
     dev: false
 
-  /@prophouse/sdk@1.0.26:
-    resolution: {integrity: sha512-L6kkFD2i5f3aWqqleItDEdto5WyikI92IRBjZgfGXQbqjRvaeFlKMrgrBV5p0pT+I+lPCQ4QhkdGIaYlev69fQ==}
+  /@prophouse/sdk@1.0.27:
+    resolution: {integrity: sha512-lQoa0S3fqty4ccYJ0EJoklRU3812SB3dSmR4xmw/qExCndkuqswndHzt/dZLHQwdZFJy8oHUZ1ac3TKB2SRgiw==}
     dependencies:
       '@ethersproject/abi': 5.7.0
       '@ethersproject/abstract-provider': 5.7.0
