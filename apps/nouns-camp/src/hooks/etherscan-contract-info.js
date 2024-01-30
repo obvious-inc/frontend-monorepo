@@ -8,9 +8,7 @@ const EIP_1967_IMPLEMENTATION_CONTRACT_ADDRESS_STORAGE_SLOT =
   "0x360894a13ba1a3210667c828492db98dca3e2076cc3735a920a3ca505d382bbc";
 
 const fetchEtherscanContractInfo = (address) =>
-  fetch(
-    `${process.env.EDGE_API_BASE_URL}/contract-info?address=${address}`
-  ).then(async (res) => {
+  fetch(`/api/contract-info?address=${address}`).then(async (res) => {
     if (!res.ok) {
       try {
         const body = await res.json();

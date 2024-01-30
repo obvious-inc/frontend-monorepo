@@ -15,10 +15,14 @@ import {
 import { resolveAddress, resolveIdentifier } from "../contracts.js";
 import {
   CREATE_AND_FUND_ROUND_INPUT_TYPES as PROPHOUSE_CREATE_AND_FUND_ROUND_INPUT_TYPES,
-  getParsedAwardAssetsFromRoundConfigStruct as getPropHouseParsedAwardAssetsFromRoundConfigStruct,
   encodeTimedRoundConfig as encodePropHouseTimedRoundConfig,
   decodeTimedRoundConfig as decodePropHouseTimedRoundConfig,
-} from "../utils/prop-house.js";
+} from "../utils/prop-house-transactions.js";
+
+// Not importing from Prophouse SDK here to work around vercel edge runtime issues
+const ProphouseAssetType = {
+  ETH: 0,
+};
 
 const decimalsByCurrency = {
   eth: 18,
@@ -838,17 +842,13 @@ export const resolveAction = (a, { chainId }) => {
           chainId,
           "prop-house-nouns-house"
         );
-        const getValue = () => {
-          const assets = getPropHouseParsedAwardAssetsFromRoundConfigStruct(
-            a.roundConfig
-          );
-
-          return assets.reduce((sum, asset) => {
+        const getValue = () =>
+          a.roundConfig.awards.reduce((sum, award) => {
             // Only support ETH for now
-            if (asset.type !== "eth") throw new Error();
-            return sum + parseEther(asset.amount);
+            if (award.assetType !== ProphouseAssetType.ETH) throw new Error();
+            return sum + award.amount;
           }, 0n);
-        };
+
         return [
           {
             type: "prop-house-create-and-fund-round",

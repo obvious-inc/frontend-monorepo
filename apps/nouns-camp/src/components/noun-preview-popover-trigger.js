@@ -1,5 +1,6 @@
 import React from "react";
 import { css } from "@emotion/react";
+import NextLink from "next/link";
 import { useAccountDisplayName } from "@shades/common/app";
 import { useFetch } from "@shades/common/react";
 import * as Popover from "@shades/ui-web/popover";
@@ -13,7 +14,6 @@ import { resolveIdentifier } from "../contracts.js";
 import useChainId from "../hooks/chain-id.js";
 import { FormattedEthWithConditionalTooltip } from "./transaction-list.js";
 import { useSaleInfo } from "../hooks/sales.js";
-import { Link } from "react-router-dom";
 
 const DelegationStatusDot = ({ nounId, contextAccount, cssProps }) => {
   const noun = useNoun(nounId);
@@ -236,8 +236,8 @@ const NounDelegationPreviewText = ({ nounId, event, contextAccount }) => {
         {delegatingText}{" "}
       </span>
       <span>
-        <Link
-          to={`/campers/${previousAccountAddress}`}
+        <NextLink
+          href={`/campers/${previousAccountAddress}`}
           css={(t) =>
             css({
               color: "inherit",
@@ -252,7 +252,7 @@ const NounDelegationPreviewText = ({ nounId, event, contextAccount }) => {
           }
         >
           {previousAccount}
-        </Link>
+        </NextLink>
       </span>{" "}
       since{" "}
       <span>
@@ -361,9 +361,9 @@ const NounTransferPreviewText = ({ event, contextAccount }) => {
       </span>{" "}
       from{" "}
       <span>
-        <Link to={`/campers/${previousAccountAddress}`}>
+        <NextLink href={`/campers/${previousAccountAddress}`}>
           {transferredFromText}
-        </Link>
+        </NextLink>
       </span>{" "}
       on{" "}
       <span>

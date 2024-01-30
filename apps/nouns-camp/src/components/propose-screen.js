@@ -1,10 +1,5 @@
 import React from "react";
-import {
-  useParams,
-  useNavigate,
-  useSearchParams,
-  Link as RouterLink,
-} from "react-router-dom";
+import NextLink from "next/link";
 import { formatEther, parseUnits } from "viem";
 import { css, useTheme } from "@emotion/react";
 import { useFetch, useLatestCallback } from "@shades/common/react";
@@ -31,6 +26,7 @@ import {
   useActiveProposalId,
 } from "../hooks/dao-contract.js";
 import { useActions, useAccountProposalCandidates } from "../store.js";
+import { useNavigate, useSearchParams } from "../hooks/navigation.js";
 import { useTokenBuyerEthNeeded } from "../hooks/misc-contracts.js";
 import {
   useCreateProposalCandidate,
@@ -45,8 +41,7 @@ import Layout from "./layout.js";
 import Callout from "./callout.js";
 import ProposalEditor from "./proposal-editor.js";
 
-const ProposeScreen = () => {
-  const { draftId } = useParams();
+const ProposeScreen = ({ draftId }) => {
   const navigate = useNavigate();
 
   const theme = useTheme();
@@ -173,22 +168,27 @@ const ProposeScreen = () => {
                   await functionUtils.retryAsync(() => fetchProposal(res.id), {
                     retries: 100,
                   });
-                  navigate(`/${res.id}`, { replace: true });
+                  navigate(`/proposals/${res.id}`, { replace: true });
                   break;
                 }
 
                 case "candidate": {
                   const candidateId = [
-                    connectedAccountAddress,
-                    encodeURIComponent(res.slug),
+                    connectedAccountAddress.toLowerCase(),
+                    res.slug,
                   ].join("-");
 
                   await functionUtils.retryAsync(
                     () => fetchProposalCandidate(candidateId),
                     { retries: 100 }
                   );
+                  alert(
+                    `/candidates/${encodeURIComponent(candidateId)} ${res.slug}`
+                  );
 
-                  navigate(`/candidates/${candidateId}`, { replace: true });
+                  navigate(`/candidates/${encodeURIComponent(candidateId)}`, {
+                    replace: true,
+                  });
                   break;
                 }
               }
@@ -343,8 +343,8 @@ const SubmitDialog = ({
                 when voting for{" "}
                 <Link
                   underline
-                  component={RouterLink}
-                  to={`/proposals/${activeProposalId}`}
+                  component={NextLink}
+                  href={`/proposals/${activeProposalId}`}
                 >
                   Proposal {activeProposalId}
                 </Link>{" "}
@@ -471,9 +471,7 @@ const SubmitDialog = ({
   );
 };
 
-export default () => {
-  const { draftId } = useParams();
-
+export default ({ draftId }) => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
 
@@ -514,5 +512,5 @@ export default () => {
 
   if (draft == null) return null; // Spinner
 
-  return <ProposeScreen />;
+  return <ProposeScreen draftId={draftId} />;
 };

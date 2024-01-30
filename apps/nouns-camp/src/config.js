@@ -1,9 +1,10 @@
 import parseDate from "date-fns/parse";
 
-const searchParams = new URLSearchParams(location.search);
+const searchParams =
+  typeof location === "undefined" ? null : new URLSearchParams(location.search);
 
 const enableXmaxEffects = () => {
-  if (searchParams.get("xmas") != null) return true;
+  if (searchParams != null && searchParams.get("xmas") != null) return true;
 
   const now = new Date();
 

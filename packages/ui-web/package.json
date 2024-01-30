@@ -7,7 +7,8 @@
     "dev": "rollup -c -w",
     "build": "rollup -c",
     "format": "prettier . --write",
-    "lint": "eslint . && prettier . --check"
+    "lint": "eslint . && prettier . --check",
+    "prepare": "pnpm root"
   },
   "exports": {
     "./theme": "./dist/theme.js",
@@ -44,16 +45,13 @@
     "./inline-channel-button": "./dist/inline-channel-button.js",
     "./channel-messages-scroll-view": "./dist/channel-messages-scroll-view.js"
   },
-  "peerDependencies": {
-    "@emotion/css": "*",
-    "@shades/common": "*",
-    "react": "*",
-    "react-aria": "*"
-  },
   "devDependencies": {
     "@swc/core": "^1.3.57",
     "prettier": "^2.8.8",
     "rollup": "^3.21.0",
     "rollup-plugin-swc3": "^0.8.1"
+  },
+  "peerDependencies": {
+    "@shades/common": "workspace:0.0.0"
   }
 }

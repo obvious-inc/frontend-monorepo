@@ -1,3 +1,5 @@
+const subgraphUrl = process.env.NEXT_PUBLIC_PROPDATES_SUBGRAPH_URL;
+
 const PROPDATE_FIELDS = `
 fragment PropdateFields on PropUpdate {
   id
@@ -47,7 +49,7 @@ const parseUpdate = (u) => ({
 
 export const fetchPropdates = async (chainId, ...args) => {
   if (chainId !== 1) return [];
-  return fetch(process.env.PROPDATES_SUBGRAPH_URL, {
+  return fetch(subgraphUrl, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
@@ -66,7 +68,7 @@ export const fetchPropdates = async (chainId, ...args) => {
 
 export const fetchPropdatesForProposal = async (chainId, ...args) => {
   if (chainId !== 1) return [];
-  return fetch(process.env.PROPDATES_SUBGRAPH_URL, {
+  return fetch(subgraphUrl, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
@@ -85,7 +87,7 @@ export const fetchPropdatesForProposal = async (chainId, ...args) => {
 
 export const fetchPropdatesByAccount = async (chainId, id) => {
   if (chainId !== 1) return [];
-  return fetch(process.env.PROPDATES_SUBGRAPH_URL, {
+  return fetch(subgraphUrl, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({

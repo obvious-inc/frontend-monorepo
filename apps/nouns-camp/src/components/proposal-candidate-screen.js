@@ -1,14 +1,11 @@
+"use client";
+
 import formatDate from "date-fns/format";
 import addDaysToDate from "date-fns/addDays";
 import datesDifferenceInDays from "date-fns/differenceInCalendarDays";
-import { isAddress } from "viem";
 import React from "react";
-import {
-  useNavigate,
-  useParams,
-  useSearchParams,
-  Link as RouterLink,
-} from "react-router-dom";
+import NextLink from "next/link";
+import { notFound as nextNotFound } from "next/navigation";
 import { css } from "@emotion/react";
 import { array as arrayUtils, reloadPageOnce } from "@shades/common/utils";
 import { ErrorBoundary } from "@shades/common/react";
@@ -23,6 +20,7 @@ import * as Tooltip from "@shades/ui-web/tooltip";
 import { diffParagraphs } from "../utils/diff.js";
 import { stringify as stringifyTransaction } from "../utils/transactions.js";
 import {
+  normalizeId,
   extractSlugFromId as extractSlugFromCandidateId,
   getSponsorSignatures,
   buildFeed,
@@ -38,6 +36,7 @@ import {
   useProposalFetch,
   useActiveProposalsFetch,
 } from "../store.js";
+import { useNavigate, useSearchParams } from "../hooks/navigation.js";
 import {
   useProposalThreshold,
   useCancelSignature,
@@ -52,7 +51,6 @@ import {
 import useChainId from "../hooks/chain-id.js";
 import { useWallet } from "../hooks/wallet.js";
 import useMatchDesktopLayout from "../hooks/match-desktop-layout.js";
-import MetaTags_ from "./meta-tags.js";
 import ActivityFeed, { VotingPowerNoggle } from "./activity-feed.js";
 import {
   ProposalHeader,
@@ -443,8 +441,8 @@ const ProposalCandidateScreenContent = ({
               <p>
                 <Link
                   underline
-                  component={RouterLink}
-                  to={`/proposals/${candidate.latestVersion.proposalId}`}
+                  component={NextLink}
+                  href={`/proposals/${candidate.latestVersion.proposalId}`}
                 >
                   View the proposal here
                 </Link>
@@ -465,8 +463,8 @@ const ProposalCandidateScreenContent = ({
                 This candidate is an update draft for{" "}
                 <Link
                   underline
-                  component={RouterLink}
-                  to={`/proposals/${candidate.latestVersion.targetProposalId}`}
+                  component={NextLink}
+                  href={`/proposals/${candidate.latestVersion.targetProposalId}`}
                 >
                   Proposal {candidate.latestVersion.targetProposalId}
                 </Link>
@@ -1137,24 +1135,8 @@ const SponsorDialog = ({ candidateId, titleProps, dismiss }) => {
   );
 };
 
-const normalizeId = (id) => {
-  const parts = id.toLowerCase().split("-");
-  const proposerFirst = isAddress(
-    parts[0].startsWith("0x") ? parts[0] : `0x${parts[0]}`
-  );
-  const rawProposerId = proposerFirst ? parts[0] : parts.slice(-1)[0];
-  const proposerId = rawProposerId.startsWith("0x")
-    ? rawProposerId
-    : `0x${rawProposerId}`;
-
-  const slug = (proposerFirst ? parts.slice(1) : parts.slice(0, -1)).join("-");
-
-  return `${proposerId}-${slug}`;
-};
-
-const ProposalCandidateScreen = () => {
-  const { candidateId: rawId } = useParams();
-  const candidateId = normalizeId(rawId);
+const ProposalCandidateScreen = ({ candidateId: rawId }) => {
+  const candidateId = normalizeId(decodeURIComponent(rawId));
 
   const proposerId = candidateId.split("-")[0];
   const slug = extractSlugFromCandidateId(candidateId);
@@ -1278,9 +1260,10 @@ const ProposalCandidateScreen = () => {
     return proposerActions.length === 0 ? undefined : proposerActions;
   };
 
+  if (notFound) nextNotFound();
+
   return (
     <>
-      <MetaTags candidateId={candidateId} />
       <Layout
         scrollContainerRef={scrollContainerRef}
         navigationStack={[
@@ -1319,52 +1302,7 @@ const ProposalCandidateScreen = () => {
               paddingBottom: "10vh",
             }}
           >
-            {notFound ? (
-              <div style={{ width: "38rem", maxWidth: "100%" }}>
-                <div
-                  css={(t) =>
-                    css({
-                      fontSize: t.text.sizes.headerLarger,
-                      fontWeight: t.text.weights.header,
-                      margin: "0 0 1.6rem",
-                      lineHeight: 1.3,
-                    })
-                  }
-                >
-                  Not found
-                </div>
-                <div
-                  css={(t) =>
-                    css({
-                      fontSize: t.text.sizes.large,
-                      wordBreak: "break-word",
-                      margin: "0 0 4.8rem",
-                    })
-                  }
-                >
-                  Found no candidate with slug{" "}
-                  <span
-                    css={(t) => css({ fontWeight: t.text.weights.emphasis })}
-                  >
-                    {slug}
-                  </span>{" "}
-                  from account{" "}
-                  <AccountPreviewPopoverTrigger
-                    showAvatar
-                    accountAddress={proposerId}
-                  />
-                  .
-                </div>
-                <Button
-                  component={RouterLink}
-                  to="/"
-                  variant="primary"
-                  size="large"
-                >
-                  Go back
-                </Button>
-              </div>
-            ) : fetchError != null ? (
+            {fetchError != null ? (
               "Something went wrong"
             ) : (
               <Spinner size="2rem" />
@@ -1697,26 +1635,26 @@ const ProposalUpdateDiffDialogContent = ({
   );
 };
 
-const MetaTags = ({ candidateId }) => {
-  const candidate = useProposalCandidate(candidateId);
+// const MetaTags = ({ candidateId }) => {
+//   const candidate = useProposalCandidate(candidateId);
 
-  if (candidate?.latestVersion == null) return null;
+//   if (candidate?.latestVersion == null) return null;
 
-  const { body } = candidate.latestVersion.content;
+//   const { body } = candidate.latestVersion.content;
 
-  return (
-    <MetaTags_
-      title={candidate.latestVersion.content.title}
-      description={
-        body == null
-          ? null
-          : body.length > 600
-          ? `${body.slice(0, 600)}...`
-          : body
-      }
-      canonicalPathname={`/candidates/${candidateId}`}
-    />
-  );
-};
+//   return (
+//     <MetaTags_
+//       title={candidate.latestVersion.content.title}
+//       description={
+//         body == null
+//           ? null
+//           : body.length > 600
+//           ? `${body.slice(0, 600)}...`
+//           : body
+//       }
+//       canonicalPathname={`/candidates/${candidateId}`}
+//     />
+//   );
+// };
 
 export default ProposalCandidateScreen;

@@ -1,6 +1,5 @@
 import React from "react";
 import { useEnsName, useEnsAvatar } from "wagmi";
-import { Link as RouterLink } from "react-router-dom";
 import { css } from "@emotion/react";
 import { useAccountDisplayName } from "@shades/common/app";
 import * as DropdownMenu from "@shades/ui-web/dropdown-menu";
@@ -12,11 +11,12 @@ import { useDelegate } from "../store.js";
 import AccountAvatar from "./account-avatar.js";
 import NounAvatar from "./noun-avatar.js";
 import NounPreviewPopoverTrigger from "./noun-preview-popover-trigger.js";
-import { Link } from "react-router-dom";
+import NextLink from "next/link";
 
 const isAdminSession =
   process.env.NODE_ENV !== "production" ||
-  new URLSearchParams(location.search).get("admin") != null;
+  (typeof location !== "undefined" &&
+    new URLSearchParams(location.search).get("admin") != null);
 
 const AccountPreviewPopoverTrigger = React.forwardRef(
   (
@@ -196,8 +196,9 @@ const AccountPreview = React.forwardRef(({ accountAddress, close }, ref) => {
         })}
       >
         <div css={css({ flex: 1, minWidth: 0 })}>
-          <Link
-            to={accountLink}
+          <NextLink
+            prefetch
+            href={accountLink}
             css={css({
               display: "flex",
               alignItems: "center",
@@ -253,7 +254,7 @@ const AccountPreview = React.forwardRef(({ accountAddress, close }, ref) => {
                 </div>
               )}
             </div>
-          </Link>
+          </NextLink>
         </div>
         <div
           css={css({
@@ -262,7 +263,12 @@ const AccountPreview = React.forwardRef(({ accountAddress, close }, ref) => {
             gap: "0.6rem",
           })}
         >
-          <Button size="default" component={RouterLink} to={accountLink}>
+          <Button
+            size="default"
+            component={NextLink}
+            prefetch
+            href={accountLink}
+          >
             View profile
           </Button>
           <DropdownMenu.Root placement="bottom end" offset={18} crossOffset={5}>

@@ -9,14 +9,13 @@ import { useAccountDisplayName } from "@shades/common/app";
 import Button from "@shades/ui-web/button";
 import { CaretDown as CaretDownIcon } from "@shades/ui-web/icons";
 import * as Tooltip from "@shades/ui-web/tooltip";
+import { resolveIdentifier as resolveContractIdentifier } from "../contracts.js";
 import useChainId from "../hooks/chain-id.js";
+import useContract from "../hooks/contract.js";
 import useDecodedFunctionData from "../hooks/decoded-function-data.js";
+import Code from "./code.js";
 import FormattedDateWithTooltip from "./formatted-date-with-tooltip.js";
 import NounPreviewPopoverTrigger from "./noun-preview-popover-trigger.js";
-import {
-  useContract,
-  resolveIdentifier as resolveContractIdentifier,
-} from "../contracts.js";
 
 const LazyPropHouseRoundDescriptionList = React.lazy(() =>
   import("./prop-house-round-description-list.js")
@@ -828,65 +827,6 @@ export const AddressDisplayNameWithTooltip = ({
         {address}
       </Tooltip.Content>
     </Tooltip.Root>
-  );
-};
-
-const Code = ({ block, ...props }) => {
-  const code = (
-    <code
-      css={(t) =>
-        css({
-          userSelect: "text",
-          fontFamily: t.text.fontStacks.monospace,
-          fontSize: t.text.sizes.tiny,
-          color: t.colors.textDimmed,
-          "::-webkit-scrollbar, ::scrollbar": {
-            width: 0,
-            height: 0,
-            background: "transparent",
-          },
-        })
-      }
-      {...props}
-    />
-  );
-
-  if (!block) return code;
-
-  return (
-    <pre
-      css={(t) =>
-        css({
-          display: "block",
-          padding: "0.8rem 1rem",
-          overflow: "auto",
-          background: t.colors.backgroundModifierNormal,
-          borderRadius: "0.3rem",
-          userSelect: "text",
-          lineHeight: 1.4,
-          "[data-indent]": { paddingLeft: "1rem" },
-          "[data-comment]": { color: t.colors.textMuted },
-          "[data-indentifier]": { color: t.colors.textDimmed },
-          "[data-function-name]": {
-            color: t.colors.textPrimary,
-            fontWeight: t.text.weights.emphasis,
-          },
-          "[data-argument]": {
-            color: t.colors.textNormal,
-            whiteSpace: "nowrap",
-          },
-          a: {
-            textDecoration: "none",
-            color: "currentColor",
-            "@media(hover: hover)": {
-              ":hover": { textDecoration: "underline" },
-            },
-          },
-        })
-      }
-    >
-      {code}
-    </pre>
   );
 };
 

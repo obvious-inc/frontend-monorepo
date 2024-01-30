@@ -1,5 +1,4 @@
 import { css } from "@emotion/react";
-import { useNavigate } from "react-router-dom";
 import Dialog from "@shades/ui-web/dialog";
 import Button from "@shades/ui-web/button";
 import { Cross as CrossIcon } from "@shades/ui-web/icons";
@@ -8,6 +7,7 @@ import AccountAvatar from "./account-avatar.js";
 import AccountPreviewPopoverTrigger from "./account-preview-popover-trigger.js";
 import NounAvatar from "./noun-avatar.js";
 import { useDelegate } from "../store.js";
+import { useNavigate } from "../hooks/navigation.js";
 import { useCurrentDynamicQuorum } from "../hooks/dao-contract.js";
 import { useWallet } from "../hooks/wallet.js";
 

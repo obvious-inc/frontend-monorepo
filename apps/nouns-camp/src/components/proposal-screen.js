@@ -1,13 +1,10 @@
+"use client";
+
 import React from "react";
 import va from "@vercel/analytics";
 import { formatUnits } from "viem";
 import { useBlockNumber } from "wagmi";
-import {
-  Link as RouterLink,
-  useNavigate,
-  useParams,
-  useSearchParams,
-} from "react-router-dom";
+import { notFound as nextNotFound } from "next/navigation";
 import { css } from "@emotion/react";
 import { date as dateUtils, reloadPageOnce } from "@shades/common/utils";
 import {
@@ -39,6 +36,7 @@ import {
   useProposalCandidate,
   useDelegate,
 } from "../store.js";
+import { useNavigate, useSearchParams } from "../hooks/navigation.js";
 import {
   useCancelProposal,
   useCastProposalVote,
@@ -51,7 +49,6 @@ import { usePriorVotes } from "../hooks/token-contract.js";
 import useApproximateBlockTimestampCalculator from "../hooks/approximate-block-timestamp-calculator.js";
 import { useWallet } from "../hooks/wallet.js";
 import useMatchDesktopLayout from "../hooks/match-desktop-layout.js";
-import MetaTags_ from "./meta-tags.js";
 import Layout, { MainContentContainer } from "./layout.js";
 import ProposalStateTag from "./proposal-state-tag.js";
 import AccountPreviewPopoverTrigger from "./account-preview-popover-trigger.js";
@@ -1235,8 +1232,7 @@ const RequestedAmounts = ({ amounts }) => (
   </>
 );
 
-const ProposalScreen = () => {
-  const { proposalId } = useParams();
+const ProposalScreen = ({ proposalId }) => {
   const navigate = useNavigate();
 
   const proposal = useProposal(proposalId);
@@ -1333,9 +1329,10 @@ const ProposalScreen = () => {
     return actions.length === 0 ? undefined : actions;
   };
 
+  if (notFound) nextNotFound();
+
   return (
     <>
-      <MetaTags proposalId={proposalId} />
       <Layout
         scrollContainerRef={scrollContainerRef}
         navigationStack={[
@@ -1372,47 +1369,7 @@ const ProposalScreen = () => {
               paddingBottom: "10vh",
             }}
           >
-            {notFound ? (
-              <div>
-                <div
-                  css={(t) =>
-                    css({
-                      fontSize: t.text.sizes.headerLarger,
-                      fontWeight: t.text.weights.header,
-                      margin: "0 0 1.6rem",
-                      lineHeight: 1.3,
-                    })
-                  }
-                >
-                  Not found
-                </div>
-                <div
-                  css={(t) =>
-                    css({
-                      fontSize: t.text.sizes.large,
-                      wordBreak: "break-word",
-                      margin: "0 0 4.8rem",
-                    })
-                  }
-                >
-                  Found no proposal with id{" "}
-                  <span
-                    css={(t) => css({ fontWeight: t.text.weights.emphasis })}
-                  >
-                    {proposalId}
-                  </span>
-                  .
-                </div>
-                <Button
-                  component={RouterLink}
-                  to="/"
-                  variant="primary"
-                  size="large"
-                >
-                  Go back
-                </Button>
-              </div>
-            ) : fetchError != null ? (
+            {fetchError != null ? (
               "Something went wrong"
             ) : (
               <Spinner size="2rem" />
@@ -1725,25 +1682,25 @@ const ProposalVoteStatusBar = React.memo(({ proposalId }) => {
   );
 });
 
-const MetaTags = ({ proposalId }) => {
-  const proposal = useProposal(proposalId);
+// const MetaTags = ({ proposalId }) => {
+//   const proposal = useProposal(proposalId);
 
-  if (proposal == null) return null;
+//   if (proposal == null) return null;
 
-  const title =
-    proposal.title == null
-      ? `Prop ${proposalId}`
-      : `${proposal.title} (Prop ${proposalId})`;
+//   const title =
+//     proposal.title == null
+//       ? `Prop ${proposalId}`
+//       : `${proposal.title} (Prop ${proposalId})`;
 
-  const { body } = proposal;
+//   const { body } = proposal;
 
-  return (
-    <MetaTags_
-      title={title}
-      description={body?.length > 600 ? `${body.slice(0, 600)}...` : body}
-      canonicalPathname={`/proposals/${proposalId}`}
-    />
-  );
-};
+//   return (
+//     <MetaTags_
+//       title={title}
+//       description={body?.length > 600 ? `${body.slice(0, 600)}...` : body}
+//       canonicalPathname={`/proposals/${proposalId}`}
+//     />
+//   );
+// };
 
 export default ProposalScreen;

@@ -1,7 +1,9 @@
+"use client";
+
 import dateSubtractDays from "date-fns/subDays";
 import dateStartOfDay from "date-fns/startOfDay";
 import React from "react";
-import { Link as RouterLink, useSearchParams } from "react-router-dom";
+import NextLink from "next/link";
 import { css } from "@emotion/react";
 import { useBlockNumber } from "wagmi";
 import { useFetch } from "@shades/common/react";
@@ -34,6 +36,7 @@ import {
   getSponsorSignatures as getCandidateSponsorSignatures,
 } from "../utils/candidates.js";
 import { buildFeed as buildPropdateFeed } from "../utils/propdates.js";
+import { useSearchParams } from "../hooks/navigation.js";
 import { useProposalThreshold } from "../hooks/dao-contract.js";
 import { useWallet } from "../hooks/wallet.js";
 import useMatchDesktopLayout from "../hooks/match-desktop-layout.js";
@@ -52,7 +55,6 @@ import {
   useCollection as useDrafts,
   useSingleItem as useDraft,
 } from "../hooks/drafts.js";
-import MetaTags from "./meta-tags.js";
 import * as Tabs from "./tabs.js";
 import Layout, { MainContentContainer } from "./layout.js";
 import FormattedDateWithTooltip from "./formatted-date-with-tooltip.js";
@@ -512,15 +514,14 @@ const BrowseScreen = () => {
 
   return (
     <>
-      <MetaTags />
       <Layout
         scrollContainerRef={scrollContainerRef}
         actions={[
           {
             label: "New Proposal",
             buttonProps: {
-              component: RouterLink,
-              to: "/new",
+              component: NextLink,
+              href: "/new",
               icon: <PlusIcon style={{ width: "0.9rem" }} />,
             },
           },
@@ -1187,7 +1188,7 @@ const ProposalItem = React.memo(({ proposalId }) => {
   const tagWithStatusText = <PropTagWithStatusText proposalId={proposalId} />;
 
   return (
-    <RouterLink to={`/proposals/${proposalId}`} data-dimmed={isDimmed}>
+    <NextLink prefetch href={`/proposals/${proposalId}`} data-dimmed={isDimmed}>
       <div
         css={css({
           display: "grid",
@@ -1219,7 +1220,7 @@ const ProposalItem = React.memo(({ proposalId }) => {
         </div>
         <div data-small>{tagWithStatusText}</div>
       </div>
-    </RouterLink>
+    </NextLink>
   );
 });
 
@@ -1451,8 +1452,11 @@ const ProposalCandidateItem = React.memo(({ candidateId }) => {
   };
 
   return (
-    <RouterLink
-      to={`/candidates/${encodeURIComponent(makeCandidateUrlId(candidateId))}`}
+    <NextLink
+      prefetch
+      href={`/candidates/${encodeURIComponent(
+        makeCandidateUrlId(candidateId)
+      )}`}
     >
       <div
         css={css({
@@ -1622,7 +1626,7 @@ const ProposalCandidateItem = React.memo(({ candidateId }) => {
           {/* )} */}
         </div>
       </div>
-    </RouterLink>
+    </NextLink>
   );
 });
 
@@ -1634,7 +1638,7 @@ const ProposalDraftItem = ({ draftId }) => {
   );
 
   return (
-    <RouterLink to={`/new/${draftId}`}>
+    <NextLink prefetch href={`/new/${draftId}`}>
       <div
         css={css({
           display: "grid",
@@ -1661,7 +1665,7 @@ const ProposalDraftItem = ({ draftId }) => {
         </div>
         <Tag size="large">Draft</Tag>
       </div>
-    </RouterLink>
+    </NextLink>
   );
 };
 
@@ -1760,8 +1764,8 @@ const DraftTabContent = ({ items = [] }) => {
         description="You have no drafts"
         buttonLabel="New proposal"
         buttonProps={{
-          component: RouterLink,
-          to: "/new",
+          component: NextLink,
+          href: "/new",
           icon: <PlusIcon style={{ width: "1rem" }} />,
         }}
         css={css({ padding: "3.2rem 0" })}

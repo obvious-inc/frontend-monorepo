@@ -1,6 +1,4 @@
-export const config = {
-  runtime: "edge",
-};
+export const runtime = "edge";
 
 const ONE_DAY_IN_SECONDS = 60 * 60 * 24;
 const ONE_MONTH_IN_SECONDS = ONE_DAY_IN_SECONDS * 30;
@@ -81,17 +79,12 @@ const fetchContractInfo = async (address_) => {
   return contractInfo;
 };
 
-export default async (req) => {
+export async function GET(req) {
   const { searchParams } = new URL(req.url);
   const address = searchParams.get("address");
 
   if (address == null)
-    return new Response(JSON.stringify({ code: "address-required" }), {
-      status: 400,
-      headers: {
-        "content-type": "application/json",
-      },
-    });
+    return Response.json({ code: "address-required" }, { status: 400 });
 
   try {
     const contractInfo = await fetchContractInfo(address);
@@ -104,23 +97,19 @@ export default async (req) => {
     //     },
     //   });
 
-    return new Response(JSON.stringify({ data: contractInfo }), {
-      status: 200,
-      headers: {
-        "Content-Type": "application/json",
-        "Cache-Control": `public, max-age=${ONE_MONTH_IN_SECONDS}, stale-while-revalidate=${ONE_DAY_IN_SECONDS}`,
-      },
-    });
-  } catch (e) {
-    console.error(e);
-    return new Response(
-      JSON.stringify({ code: e.code ?? "unexpected-error" }),
+    return Response.json(
+      { data: contractInfo },
       {
-        status: 500,
         headers: {
-          "content-type": "application/json",
+          "Cache-Control": `public, max-age=${ONE_MONTH_IN_SECONDS}, stale-while-revalidate=${ONE_DAY_IN_SECONDS}`,
         },
       }
     );
+  } catch (e) {
+    console.error(e);
+    return Response.json(
+      { code: e.code ?? "unexpected-error" },
+      { status: 500 }
+    );
   }
-};
+}

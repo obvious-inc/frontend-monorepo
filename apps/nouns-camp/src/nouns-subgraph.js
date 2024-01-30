@@ -1,18 +1,19 @@
-import { mainnet, sepolia, goerli } from "wagmi/chains";
 import {
   array as arrayUtils,
   object as objectUtils,
 } from "@shades/common/utils";
+import { mainnet, sepolia, goerli } from "./chains.js";
 import { parse as parseTransactions } from "./utils/transactions.js";
 
-const customSubgraphEndpoint = new URLSearchParams(location.search).get(
-  "nouns-subgraph"
-);
+const customSubgraphEndpoint =
+  typeof location === "undefined"
+    ? null
+    : new URLSearchParams(location.search).get("nouns-subgraph");
 
 const subgraphEndpointByChainId = {
-  [mainnet.id]: process.env.NOUNS_MAINNET_SUBGRAPH_URL,
-  [sepolia.id]: process.env.NOUNS_SEPOLIA_SUBGRAPH_URL,
-  [goerli.id]: process.env.NOUNS_GOERLI_SUBGRAPH_URL,
+  [mainnet.id]: process.env.NEXT_PUBLIC_NOUNS_MAINNET_SUBGRAPH_URL,
+  [sepolia.id]: process.env.NEXT_PUBLIC_NOUNS_SEPOLIA_SUBGRAPH_URL,
+  [goerli.id]: process.env.NEXT_PUBLIC_NOUNS_GOERLI_SUBGRAPH_URL,
 };
 
 const parseTimestamp = (unixSeconds) => new Date(parseInt(unixSeconds) * 1000);
@@ -534,7 +535,7 @@ query {
 const createProposalCandidateQuery = (id) => `
 ${CANDIDATE_CONTENT_SIGNATURE_FIELDS}
 query {
-  proposalCandidate(id: "${id}") {
+  proposalCandidate(id: ${JSON.stringify(id)}) {
     id
     slug
     proposer
@@ -607,7 +608,7 @@ query {
 const createProposalCandidateFeedbackPostsByCandidateQuery = (candidateId) => `
 ${CANDIDATE_FEEDBACK_FIELDS}
 query {
-  candidateFeedbacks(where: {candidate_:{id: "${candidateId}"}}) {
+  candidateFeedbacks(where: {candidate_:{id: ${JSON.stringify(candidateId)}}}) {
     ...CandidateFeedbackFields
   }
 }`;
@@ -656,7 +657,9 @@ query {
 const createProposalCandidatesQuery = (candidateIds) => `
 ${CANDIDATE_CONTENT_SIGNATURE_FIELDS}
 query {
-  proposalCandidates(where: {id_in: [${candidateIds.map((id) => `"${id}"`)}]}) {
+  proposalCandidates(where: {id_in: [${candidateIds.map((id) =>
+    JSON.stringify(id)
+  )}]}) {
     id
     slug
     proposer
@@ -747,8 +750,8 @@ const createProposalCandidateFeedbackPostsByCandidatesQuery = (
 ) => `
 ${CANDIDATE_FEEDBACK_FIELDS}
 query {
-  candidateFeedbacks(where: {candidate_in: [${candidateIds.map(
-    (id) => `"${id}"`
+  candidateFeedbacks(where: {candidate_in: [${candidateIds.map((id) =>
+    JSON.stringify(id)
   )}]}, first: 1000) {
     ...CandidateFeedbackFields
   }
@@ -792,7 +795,7 @@ query {
   }
 }`;
 
-const subgraphFetch = async ({
+export const subgraphFetch = async ({
   endpoint,
   chainId,
   operationName,
@@ -856,7 +859,7 @@ const parseProposalVersion = (v) => ({
   proposalId: v.proposal?.id,
 });
 
-const parseProposal = (data, { chainId }) => {
+export const parseProposal = (data, { chainId }) => {
   const parsedData = { ...data };
 
   // Block numbers
@@ -973,7 +976,7 @@ const parseCandidateVersion = (v, { chainId }) => {
   return parsedVersion;
 };
 
-const parseCandidate = (data, { chainId }) => {
+export const parseCandidate = (data, { chainId }) => {
   const parsedData = {
     ...data,
     latestVersion: {
@@ -1136,7 +1139,8 @@ export const fetchProposal = (chainId, id) =>
   });
 
 export const fetchProposalCandidate = async (chainId, rawId) => {
-  const id = rawId.toLowerCase();
+  const [account, ...slugParts] = rawId.split("-");
+  const id = [account.toLowerCase(), ...slugParts].join("-");
   // TODO: merge these queries
   return Promise.all([
     subgraphFetch({

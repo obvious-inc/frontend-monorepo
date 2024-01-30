@@ -51,6 +51,10 @@ const ModalDialog = React.forwardRef(
           css={[
             (t) =>
               css({
+                // Since Emotion’s <Global /> doesn’t work yet in Next we have
+                // to specify this on anything that’s outside the root div
+                colorScheme: t.name === "dark" ? "dark" : "light",
+
                 position: "fixed",
                 zIndex: 10,
                 top: 0,

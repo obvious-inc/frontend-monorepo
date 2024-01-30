@@ -7,9 +7,10 @@ import Button from "@shades/ui-web/button";
 import Spinner from "@shades/ui-web/spinner";
 import useChainId, { useConnectedChainId, defaultChainId } from "./chain-id.js";
 
-const impersonationAddress = new URLSearchParams(location.search).get(
-  "impersonate"
-);
+const impersonationAddress =
+  typeof location === "undefined"
+    ? null
+    : new URLSearchParams(location.search).get("impersonate");
 
 const Context = React.createContext();
 
