@@ -3,7 +3,7 @@ import { useAuth } from "@shades/common/app";
 import Emoji from "@shades/ui-web/emoji";
 import DialogHeader from "@shades/ui-web/dialog-header";
 import DialogFooter from "@shades/ui-web/dialog-footer";
-import LoginScreen from "./login-screen.js";
+import LoginScreen from "./login-screen";
 
 const AccountAuthenticationDialog = ({
   title,

@@ -42,7 +42,7 @@ import Emoji from "@shades/ui-web/emoji";
 import EmojiPicker from "@shades/ui-web/emoji-picker";
 import MessageEditorForm from "@shades/ui-web/message-editor-form";
 import Link from "@shades/ui-web/link";
-import AccountPreviewPopoverTrigger from "./account-preview-popover-trigger.js";
+import AccountPreviewPopoverTrigger from "./account-preview-popover-trigger";
 import FormattedDate from "./formatted-date";
 import RichText from "./rich-text";
 

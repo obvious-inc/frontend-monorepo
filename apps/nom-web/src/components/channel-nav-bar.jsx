@@ -31,11 +31,11 @@ import Spinner from "@shades/ui-web/spinner";
 import { useDialog } from "../hooks/dialogs";
 import NavBar from "./nav-bar";
 import Heading from "./heading";
-import RichText from "./rich-text.js";
-import AddChannelMemberDialog from "./add-channel-member-dialog.js";
+import RichText from "./rich-text";
+import AddChannelMemberDialog from "./add-channel-member-dialog";
 
 const LazyChannelInfoDialog = React.lazy(() =>
-  import("./channel-info-dialog.js")
+  import("./channel-info-dialog")
 );
 
 const { sort } = arrayUtils;

@@ -6,7 +6,7 @@ import { channel as channelUtils } from "@shades/common/utils";
 import { useFetch } from "@shades/common/react";
 import ChannelAvatar from "@shades/ui-web/channel-avatar";
 import Input from "@shades/ui-web/input";
-import NavBar from "./nav-bar.js";
+import NavBar from "./nav-bar";
 
 const { search: searchChannels } = channelUtils;
 

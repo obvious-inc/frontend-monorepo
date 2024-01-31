@@ -56,25 +56,25 @@ import AccountAvatarStack from "@shades/ui-web/account-avatar-stack";
 import InlineChannelButton from "@shades/ui-web/inline-channel-button";
 import ChannelMessagesScrollView from "@shades/ui-web/channel-messages-scroll-view";
 import MessageEditorForm from "@shades/ui-web/message-editor-form";
-import { useDialog } from "../hooks/dialogs.js";
+import { useDialog } from "../hooks/dialogs";
 import useLayoutSetting from "../hooks/layout-setting.js";
 import useCommands from "../hooks/commands";
 import Combobox, {
   Item as ComboboxItem,
   Section as ComboboxSection,
 } from "./combobox";
-import { Grid as FlexGrid, Item as FlexGridItem } from "./flex-grid.js";
-import NavBar from "./nav-bar.js";
+import { Grid as FlexGrid, Item as FlexGridItem } from "./flex-grid";
+import NavBar from "./nav-bar";
 import ChannelPrologue, {
   PersonalDMChannelPrologue,
-} from "./channel-prologue.js";
-import ChannelMessagesScrollViewHeader from "./channel-messages-scroll-view-header.js";
-import ChannelMessage from "./channel-message.js";
-import AccountPreviewPopoverTrigger from "./account-preview-popover-trigger.js";
+} from "./channel-prologue";
+import ChannelMessagesScrollViewHeader from "./channel-messages-scroll-view-header";
+import ChannelMessage from "./channel-message";
+import AccountPreviewPopoverTrigger from "./account-preview-popover-trigger";
 
 const INTRO_CHANNEL_ID = "625806ed89bff47879344a9c";
 
-const LazyLoginScreen = React.lazy(() => import("./login-screen.js"));
+const LazyLoginScreen = React.lazy(() => import("./login-screen"));
 
 const MAX_ACCOUNT_MATCH_COUNT = 20;
 
@@ -89,7 +89,7 @@ const { sort } = arrayUtils;
 const fetchRelatedAccounts = (accountAddress) =>
   fetch(
     `${
-      process.env.EDGE_API_BASE_URL
+      import.meta.env.PUBLIC_EDGE_API_BASE_URL
     }/related-accounts?wallet-address=${accountAddress.toLowerCase()}`
   ).then((res) => {
     if (!res.ok) return [];
