@@ -543,14 +543,19 @@ const VoterMainSection = ({ voterAddress }) => {
   const candidates = useAccountProposalCandidates(voterAddress);
   const sponsoredProposals = useAccountSponsoredProposals(voterAddress);
 
+  const [hasFetchedData, setHasFetchedData] = React.useState(
+    () => proposals.length > 0
+  );
+
   const { fetchVoterScreenData } = useActions();
 
   useFetch(
     () =>
       fetchVoterScreenData(voterAddress, { first: 40 }).then(() => {
+        setHasFetchedData(true);
         fetchVoterScreenData(voterAddress, { skip: 40, first: 1000 });
       }),
-    [(fetchVoterScreenData, voterAddress)]
+    [fetchVoterScreenData, voterAddress]
   );
 
   const proposalsTabTitle =
@@ -624,7 +629,7 @@ const VoterMainSection = ({ voterAddress }) => {
               )}
               <Tabs.Item key="proposals" title={proposalsTabTitle}>
                 <div>
-                  {delegate && proposals.length === 0 && (
+                  {hasFetchedData && proposals.length === 0 && (
                     <Tabs.EmptyPlaceholder
                       title="No proposals"
                       description="This account has not created any proposals"
@@ -632,7 +637,7 @@ const VoterMainSection = ({ voterAddress }) => {
                     />
                   )}
                   <SectionedList
-                    showPlaceholder={!delegate}
+                    showPlaceholder={!hasFetchedData && proposals.length === 0}
                     sections={[
                       {
                         items: arrayUtils
@@ -664,7 +669,7 @@ const VoterMainSection = ({ voterAddress }) => {
               </Tabs.Item>
               <Tabs.Item key="candidates" title={candidatesTabTitle}>
                 <div>
-                  {delegate && candidates.length === 0 && (
+                  {hasFetchedData && candidates.length === 0 && (
                     <Tabs.EmptyPlaceholder
                       title="No candidates"
                       description="This account has not created any proposal candidates"
@@ -672,7 +677,7 @@ const VoterMainSection = ({ voterAddress }) => {
                     />
                   )}
                   <SectionedList
-                    showPlaceholder={!delegate}
+                    showPlaceholder={!hasFetchedData && candidates.length === 0}
                     sections={[
                       {
                         items: arrayUtils
@@ -704,7 +709,7 @@ const VoterMainSection = ({ voterAddress }) => {
               </Tabs.Item>
               <Tabs.Item key="sponsored" title={sponsoredTabTitle}>
                 <div>
-                  {delegate && sponsoredProposals.length === 0 && (
+                  {hasFetchedData && sponsoredProposals.length === 0 && (
                     <Tabs.EmptyPlaceholder
                       title="No sponsored proposals"
                       description="This account has not sponsored any proposals"
@@ -712,7 +717,9 @@ const VoterMainSection = ({ voterAddress }) => {
                     />
                   )}
                   <SectionedList
-                    showPlaceholder={!delegate}
+                    showPlaceholder={
+                      !hasFetchedData && sponsoredProposals.length === 0
+                    }
                     sections={[
                       {
                         items: arrayUtils
@@ -761,95 +768,71 @@ const VoterScreen = ({ voterId }) => {
 
   const { displayName } = useAccountDisplayName(voterAddress);
 
-  const scrollContainerRef = React.useRef();
-
   useDelegateFetch(voterAddress);
   useAccountFetch(voterAddress);
 
   return (
-    <>
-      <Layout
-        scrollContainerRef={scrollContainerRef}
-        navigationStack={[{ to: `/campers/${voterId} `, label: displayName }]}
-      >
-        {voterAddress ? (
-          <VoterMainSection
-            voterAddress={voterAddress}
-            scrollContainerRef={scrollContainerRef}
-          />
-        ) : (
-          <div
-            style={{
-              flex: 1,
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              textAlign: "center",
-              paddingBottom: "10vh",
-            }}
-          >
-            {isFetching ? (
-              <Spinner size="2rem" />
-            ) : (
-              <div>
-                <div
-                  css={(t) =>
-                    css({
-                      fontSize: t.text.sizes.headerLarger,
-                      fontWeight: t.text.weights.header,
-                      margin: "0 0 1.6rem",
-                      lineHeight: 1.3,
-                    })
-                  }
-                >
-                  Not found
-                </div>
-                <div
-                  css={(t) =>
-                    css({
-                      fontSize: t.text.sizes.large,
-                      wordBreak: "break-word",
-                      margin: "0 0 4.8rem",
-                    })
-                  }
-                >
-                  Found no voter with id{" "}
-                  <span
-                    css={(t) => css({ fontWeight: t.text.weights.emphasis })}
-                  >
-                    {voterId}
-                  </span>
-                  .
-                </div>
-                <Button
-                  component={NextLink}
-                  href="/"
-                  variant="primary"
-                  size="large"
-                >
-                  Go back
-                </Button>
+    <Layout
+      navigationStack={[{ to: `/campers/${voterId} `, label: displayName }]}
+    >
+      {voterAddress != null ? (
+        <VoterMainSection voterAddress={voterAddress} />
+      ) : (
+        <div
+          style={{
+            flex: 1,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            textAlign: "center",
+            paddingBottom: "10vh",
+          }}
+        >
+          {isFetching ? (
+            <Spinner size="2rem" />
+          ) : (
+            <div>
+              <div
+                css={(t) =>
+                  css({
+                    fontSize: t.text.sizes.headerLarger,
+                    fontWeight: t.text.weights.header,
+                    margin: "0 0 1.6rem",
+                    lineHeight: 1.3,
+                  })
+                }
+              >
+                Not found
               </div>
-            )}
-          </div>
-        )}
-      </Layout>
-    </>
+              <div
+                css={(t) =>
+                  css({
+                    fontSize: t.text.sizes.large,
+                    wordBreak: "break-word",
+                    margin: "0 0 4.8rem",
+                  })
+                }
+              >
+                Found no voter with id{" "}
+                <span css={(t) => css({ fontWeight: t.text.weights.emphasis })}>
+                  {voterId}
+                </span>
+                .
+              </div>
+              <Button
+                component={NextLink}
+                href="/"
+                variant="primary"
+                size="large"
+              >
+                Go back
+              </Button>
+            </div>
+          )}
+        </div>
+      )}
+    </Layout>
   );
 };
-
-// const MetaTags = ({ voterId, voterAddress }) => {
-//   const { displayName, truncatedAddress, address } =
-//     useAccountDisplayName(voterAddress);
-
-//   const title =
-//     address == null
-//       ? ""
-//       : displayName == null
-//       ? `${truncatedAddress}`
-//       : `${displayName} (${truncatedAddress})`;
-
-//   return <MetaTags_ title={title} canonicalPathname={`/voter/${voterId}`} />;
-// };
 
 export default VoterScreen;
