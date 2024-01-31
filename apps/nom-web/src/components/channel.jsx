@@ -32,10 +32,10 @@ import Spinner from "@shades/ui-web/spinner";
 import useLayoutSetting from "../hooks/layout-setting.js";
 import useMessageInputPlaceholder from "../hooks/channel-message-input-placeholder.js";
 import useCommands from "../hooks/commands";
-import Delay from "./delay.js";
-import ChannelMessagesScrollViewHeader from "./channel-messages-scroll-view-header.js";
-import ChannelNavBar from "./channel-nav-bar.js";
-import ChannelMessage from "./channel-message.js";
+import Delay from "./delay";
+import ChannelMessagesScrollViewHeader from "./channel-messages-scroll-view-header";
+import ChannelNavBar from "./channel-nav-bar";
+import ChannelMessage from "./channel-message";
 
 const LazyLoginScreen = React.lazy(() => import("./login-screen"));
 

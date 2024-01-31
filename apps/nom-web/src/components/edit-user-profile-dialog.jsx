@@ -9,7 +9,7 @@ import {
 import FormDialog from "@shades/ui-web/form-dialog";
 import DialogHeader from "@shades/ui-web/dialog-header";
 
-const LazyLoginScreen = React.lazy(() => import("./login-screen.js"));
+const LazyLoginScreen = React.lazy(() => import("./login-screen"));
 
 const EditUserProfileDialog = ({ titleProps, dismiss }) => {
   const { updateMe } = useActions();

@@ -11,7 +11,7 @@ import Emoji from "@shades/ui-web/emoji";
 import Input from "@shades/ui-web/input";
 import DialogHeader from "@shades/ui-web/dialog-header";
 import DialogFooter from "@shades/ui-web/dialog-footer";
-import QRCode from "./qr-code.js";
+import QRCode from "./qr-code";
 
 const { truncateAddress } = ethereumUtils;
 

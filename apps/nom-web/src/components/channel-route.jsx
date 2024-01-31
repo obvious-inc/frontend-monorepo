@@ -4,7 +4,7 @@ import { Helmet as ReactHelmet } from "react-helmet";
 import { useChannel, useChannelName, useAuth } from "@shades/common/app";
 import { getImageDimensionsFromUrl } from "@shades/common/utils";
 import useLayoutSetting from "../hooks/layout-setting.js";
-import Channel from "./channel.js";
+import Channel from "./channel";
 
 const ChannelRoute = (props) => {
   const params = useParams();

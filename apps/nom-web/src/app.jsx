@@ -23,8 +23,8 @@ const useIFrameMessenger = () => {
     window === window.parent
       ? null
       : (action) => {
-          window.parent.postMessage({ action }, "*");
-        }
+        window.parent.postMessage({ action }, "*");
+      }
   );
 };
 
@@ -116,10 +116,10 @@ const cacheStore = createCacheStore({ storage: cacheStoreStorage });
 
 const api = apis.nomLegacy({
   apiOrigin: "/api",
-  cloudflareAccountHash: process.env.CLOUDFLARE_ACCT_HASH,
+  cloudflareAccountHash: import.meta.env.PUBLIC_CLOUDFLARE_ACCT_HASH,
   cacheStore,
   Pusher,
-  pusherKey: process.env.PUSHER_KEY,
+  pusherKey: import.meta.env.PUBLIC_PUSHER_KEY,
 });
 
 export default function Root() {

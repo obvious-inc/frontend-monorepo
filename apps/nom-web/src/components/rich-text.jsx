@@ -5,7 +5,7 @@ import * as Tooltip from "@shades/ui-web/tooltip";
 import RichTextBase from "@shades/ui-web/rich-text";
 import Emoji from "@shades/ui-web/emoji";
 import InlineChannelButton from "@shades/ui-web/inline-channel-button";
-import AccountPreviewPopoverTrigger from "./account-preview-popover-trigger.js";
+import AccountPreviewPopoverTrigger from "./account-preview-popover-trigger";
 
 const UserMention = ({ id }) => (
   <AccountPreviewPopoverTrigger userId={id} variant="button" />

@@ -40,34 +40,32 @@ import defaultTheme, {
 import { Provider as SidebarProvider } from "@shades/ui-web/sidebar-layout";
 import * as Tooltip from "@shades/ui-web/tooltip";
 import { IFrameEthereumProvider } from "@newshades/iframe-provider";
-import { Provider as DialogsProvider } from "./hooks/dialogs.js";
-import { send as sendNotification } from "./utils/notifications.js";
+import { Provider as DialogsProvider } from "./hooks/dialogs";
+import { send as sendNotification } from "./utils/notifications";
 import useCommandCenter, {
   Provider as CommandCenterProvider,
-} from "./hooks/command-center.js";
-import useWalletEvent from "./hooks/wallet-event.js";
-import useSetting from "./hooks/setting.js";
-import GlobalDialogs from "./components/global-dialogs.js";
-import LoginScreen from "./components/login-screen.js";
-import Layout from "./components/layouts.js";
-import TitleBar from "./components/title-bar.js";
-import { nounsTv as nounsTvTheme } from "./themes.js";
+} from "./hooks/command-center";
+import useWalletEvent from "./hooks/wallet-event";
+import useSetting from "./hooks/setting";
+import GlobalDialogs from "./components/global-dialogs";
+import LoginScreen from "./components/login-screen";
+import Layout from "./components/layouts";
+import TitleBar from "./components/title-bar";
+import { nounsTv as nounsTvTheme } from "./themes";
 
 const AccountProfileScreen = React.lazy(() =>
   import("./components/account-profile-screen")
 );
-const ChannelScreen = React.lazy(() => import("./components/channel-route.js"));
-const ChannelBase = React.lazy(() => import("./components/channel.js"));
+const ChannelScreen = React.lazy(() => import("./components/channel-route"));
+const ChannelBase = React.lazy(() => import("./components/channel"));
 const CommandCenterLazy = React.lazy(() =>
-  import("./components/command-center.js")
+  import("./components/command-center")
 );
-const AuthScreen = React.lazy(() => import("./components/auth.js"));
+const AuthScreen = React.lazy(() => import("./components/auth"));
 const NewMessageScreen = React.lazy(() =>
-  import("./components/new-message-screen.js")
+  import("./components/new-message-screen")
 );
-const ChannelsScreen = React.lazy(() =>
-  import("./components/channels-screen.js")
-);
+const ChannelsScreen = React.lazy(() => import("./components/channels-screen"));
 
 const { truncateAddress } = ethereumUtils;
 
@@ -79,7 +77,10 @@ if (isIFrame) window.ethereum = new IFrameEthereumProvider();
 
 const { chains, publicClient } = configureWagmiChains(
   [mainnet],
-  [infuraProvider({ apiKey: process.env.INFURA_PROJECT_ID }), publicProvider()],
+  [
+    infuraProvider({ apiKey: import.meta.env.PUBLIC_INFURA_PROJECT_ID }),
+    publicProvider(),
+  ],
   {
     batch: {
       multicall: {
@@ -101,7 +102,7 @@ const wagmiConfig = createWagmiConfig({
     new WalletConnectConnector({
       chains,
       options: {
-        projectId: process.env.WALLET_CONNECT_PROJECT_ID,
+        projectId: import.meta.env.PUBLIC_WALLET_CONNECT_PROJECT_ID,
       },
     }),
   ],

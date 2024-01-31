@@ -11,14 +11,12 @@ import { ethereum as ethereumUtils } from "@shades/common/utils";
 import Button from "@shades/ui-web/button";
 import ChannelAvatar from "@shades/ui-web/channel-avatar";
 import { AddUser as AddUserIcon } from "@shades/ui-web/icons";
-import useLayoutSetting from "../hooks/layout-setting.js";
-import { useDialog } from "../hooks/dialogs.js";
-import AccountPreviewPopoverTrigger from "./account-preview-popover-trigger.js";
-import ChannelPrologue, {
-  PersonalDMChannelPrologue,
-} from "./channel-prologue.js";
-import FormattedDate from "./formatted-date.js";
-import RichText from "./rich-text.js";
+import useLayoutSetting from "../hooks/layout-setting";
+import { useDialog } from "../hooks/dialogs";
+import AccountPreviewPopoverTrigger from "./account-preview-popover-trigger";
+import ChannelPrologue, { PersonalDMChannelPrologue } from "./channel-prologue";
+import FormattedDate from "./formatted-date";
+import RichText from "./rich-text";
 
 const { truncateAddress } = ethereumUtils;
 
