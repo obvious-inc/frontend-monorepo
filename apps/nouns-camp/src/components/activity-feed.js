@@ -17,7 +17,7 @@ import AccountAvatar from "./account-avatar.js";
 
 const MarkdownRichText = React.lazy(() => import("./markdown-rich-text.js"));
 
-const BODY_TRUNCATION_HEIGHT_THRESHOLD = "18em";
+const BODY_TRUNCATION_HEIGHT_THRESHOLD = 250;
 
 const ActivityFeed = ({ context, items = [], spacing = "2rem" }) => (
   <React.Suspense fallback={null}>
@@ -222,14 +222,11 @@ const ItemBody = React.memo(
     const isCollapsed = isEnabled && isCollapsed_;
 
     React.useEffect(() => {
-      if (!isCollapsed) return;
-
       const observer = new ResizeObserver(() => {
         if (containerRef.current == null) return;
         setExceedsTruncationThreshold(
-          containerRef.current.scrollHeight -
-            containerRef.current.offsetHeight >
-            100
+          containerRef.current.scrollHeight >
+            BODY_TRUNCATION_HEIGHT_THRESHOLD + 100
         );
       });
 
@@ -238,7 +235,7 @@ const ItemBody = React.memo(
       return () => {
         observer.disconnect();
       };
-    }, [isCollapsed]);
+    }, []);
 
     return (
       <div css={css({ padding: "0.5rem 0" })}>
@@ -247,7 +244,7 @@ const ItemBody = React.memo(
           css={css({ overflow: "hidden" })}
           style={{
             maxHeight: isCollapsed
-              ? BODY_TRUNCATION_HEIGHT_THRESHOLD
+              ? `${BODY_TRUNCATION_HEIGHT_THRESHOLD}px`
               : undefined,
             maskImage: isCollapsed
               ? "linear-gradient(180deg, black calc(100% - 2.8em), transparent 100%)"
