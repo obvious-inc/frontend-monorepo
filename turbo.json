@@ -3,7 +3,19 @@
   "pipeline": {
     "build": {
       "dependsOn": ["^build"],
+      "env": [
+        "API_ENDPOINT",
+        "EDGE_API_ORIGIN",
+        "CLOUDFLARE_ACCT_HASH",
+        "PUSHER_KEY",
+        "INFURA_PROJECT_ID",
+        "WALLET_CONNECT_PROJECT_ID"
+      ],
       "outputs": [".next/**", "!.next/cache/**", "dist/**"]
+    },
+    "nom-web#build": {
+      "dependsOn": ["^build"],
+      "outputs": ["dist/**"]
     },
     "lint": {},
     "dev": {
