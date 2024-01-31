@@ -218,8 +218,8 @@ const ItemBody = React.memo(
     const [exceedsTruncationThreshold, setExceedsTruncationThreshold] =
       React.useState(null);
 
-    const isCollapsed = enableLineTruncation && isCollapsed_;
-    const isEffectivelyTruncating = isCollapsed && exceedsTruncationThreshold;
+    const isEnabled = enableLineTruncation && exceedsTruncationThreshold;
+    const isCollapsed = isEnabled && isCollapsed_;
 
     React.useEffect(() => {
       if (!isCollapsed) return;
@@ -249,7 +249,7 @@ const ItemBody = React.memo(
             maxHeight: isCollapsed
               ? BODY_TRUNCATION_HEIGHT_THRESHOLD
               : undefined,
-            maskImage: isEffectivelyTruncating
+            maskImage: isCollapsed
               ? "linear-gradient(180deg, black calc(100% - 2.8em), transparent 100%)"
               : undefined,
           }}
@@ -270,7 +270,7 @@ const ItemBody = React.memo(
           />
         </div>
 
-        {enableLineTruncation && exceedsTruncationThreshold && (
+        {isEnabled && (
           <div css={css({ margin: "0.8em 0" })}>
             <Link
               component="button"
