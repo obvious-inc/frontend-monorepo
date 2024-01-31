@@ -1,9 +1,9 @@
 {
   "name": "@obvious/monorepo",
   "scripts": {
-    "lint": "pnpm -r run --if-present lint",
-    "format": "pnpm -r run --if-present format",
-    "prepare-packages": "pnpm -F common install && pnpm -F common run build && pnpm -F ui-web install && pnpm -F ui-web run build"
+    "build": "turbo build",
+    "lint": "turbo lint",
+    "format": "pnpm -r run --if-present format"
   },
   "packageManager": "pnpm@8.15.1"
 }

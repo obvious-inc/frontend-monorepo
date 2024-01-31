@@ -12,7 +12,6 @@
     "lint": "eslint . && prettier . --check",
     "format": "prettier . --write"
   },
-  "type": "module",
   "config": {
     "forge": "./forge.config.js"
   },
