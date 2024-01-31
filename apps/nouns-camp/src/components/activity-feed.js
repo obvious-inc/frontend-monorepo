@@ -127,10 +127,10 @@ const FeedItem = React.memo(({ context, ...item }) => {
                 css({
                   flex: 1,
                   minWidth: 0,
-                  display: "-webkit-box",
-                  WebkitBoxOrient: "vertical",
-                  WebkitLineClamp: 2,
-                  overflow: "hidden",
+                  // display: "-webkit-box",
+                  // WebkitBoxOrient: "vertical",
+                  // WebkitLineClamp: 2,
+                  // overflow: "hidden",
                   color: t.colors.textDimmed,
                 })
               }
