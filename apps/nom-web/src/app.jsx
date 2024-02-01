@@ -116,7 +116,7 @@ const cacheStore = createCacheStore({ storage: cacheStoreStorage });
 
 const api = apis.nomLegacy({
   apiOrigin: "/api",
-  cloudflareAccountHash: import.meta.env.PUBLIC_CLOUDFLARE_ACCT_HASH,
+  cloudflareAccountHash: import.meta.env.PUBLIC_CLOUDFLARE_ACCOUNT_HASH,
   cacheStore,
   Pusher,
   pusherKey: import.meta.env.PUBLIC_PUSHER_KEY,
