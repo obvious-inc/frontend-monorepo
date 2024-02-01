@@ -4,7 +4,7 @@ import react from "@vitejs/plugin-react-swc";
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, __dirname, "");
   return {
-    publicDir: 'static',
+    publicDir: "static",
     envPrefix: "PUBLIC_",
     plugins: [react({ jsxImportSource: "@emotion/react" })],
     define: {
@@ -14,6 +14,7 @@ export default defineConfig(({ mode }) => {
       ),
     },
     server: {
+      port: process.env.PORT ?? 8080,
       proxy: {
         "/api": {
           target: env.API_BASE_URL,
