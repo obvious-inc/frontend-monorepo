@@ -5,5 +5,8 @@
     "lint": "turbo lint",
     "format": "pnpm -r run --if-present format"
   },
-  "packageManager": "pnpm@8.15.1"
+  "packageManager": "pnpm@8.15.1",
+  "devDependencies": {
+    "turbo": "^1.12.2"
+  }
 }
