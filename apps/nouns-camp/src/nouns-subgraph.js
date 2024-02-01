@@ -142,7 +142,7 @@ query {
   delegates(first: 1000, where: ${
     optionalAccountIds == null
       ? "{nounsRepresented_: {}}"
-      : `{id_in: [${optionalAccountIds.map((id) => `"${id}"`)}]}`
+      : `{id_in: [${optionalAccountIds.map((id) => `"${id.toLowerCase()}"`)}]}`
   }) {
     id
     delegatedVotes
@@ -1175,9 +1175,9 @@ export const fetchDelegates = (chainId, optionalAccountIds) =>
 export const fetchDelegate = (chainId, id) =>
   subgraphFetch({
     chainId,
-    query: createDelegateQuery(id?.toLowerCase()),
+    query: createDelegateQuery(id.toLowerCase()),
   }).then((data) => {
-    if (data.delegates == null) return Promise.reject(new Error("not-found"));
+    if (data.delegate == null) return Promise.reject(new Error("not-found"));
     return parseDelegate(data.delegate);
   });
 

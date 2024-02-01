@@ -93,6 +93,12 @@ const mergeDelegates = (d1, d2) => {
       [...d1.proposals, ...d2.proposals]
     );
 
+  if (d1.votes != null && d2.votes != null)
+    mergedDelegate.votes = arrayUtils.unique(
+      (v1, v2) => v1.id === v2.id,
+      [...d1.votes, ...d2.votes]
+    );
+
   return mergedDelegate;
 };
 
@@ -294,7 +300,10 @@ const useStore = createZustandStoreHook((set) => {
     fetchDelegates: (chainId, optionalAccountIds) =>
       NounsSubgraph.fetchDelegates(chainId, optionalAccountIds).then(
         (delegates) => {
-          const delegatesByIds = arrayUtils.indexBy((d) => d.id, delegates);
+          const delegatesByIds = arrayUtils.indexBy(
+            (d) => d.id.toLowerCase(),
+            delegates
+          );
 
           set((s) => ({
             delegatesById: objectUtils.merge(
@@ -322,7 +331,7 @@ const useStore = createZustandStoreHook((set) => {
         set((s) => ({
           delegatesById: {
             ...s.delegatesById,
-            [id?.toLowerCase()]: delegate,
+            [id.toLowerCase()]: delegate,
           },
           proposalsById: objectUtils.merge(
             mergeProposals,
@@ -856,11 +865,13 @@ export const useDelegateFetch = (id, options) => {
   const { fetchDelegate } = useActions();
 
   useFetch(
-    () =>
-      fetchDelegate(id).catch((e) => {
-        if (onError == null) return Promise.reject(e);
-        onError(e);
-      }),
+    id == null
+      ? null
+      : () =>
+          fetchDelegate(id).catch((e) => {
+            if (onError == null) return Promise.reject(e);
+            onError(e);
+          }),
     [fetchDelegate, id, onError, blockNumber]
   );
 };
@@ -1227,11 +1238,13 @@ export const useAccountFetch = (id, options) => {
   const { fetchAccount } = useActions();
 
   useFetch(
-    () =>
-      fetchAccount(id).catch((e) => {
-        if (onError == null) return Promise.reject(e);
-        onError(e);
-      }),
+    id == null
+      ? null
+      : () =>
+          fetchAccount(id).catch((e) => {
+            if (onError == null) return Promise.reject(e);
+            onError(e);
+          }),
     [fetchAccount, id, onError, blockNumber]
   );
 };
