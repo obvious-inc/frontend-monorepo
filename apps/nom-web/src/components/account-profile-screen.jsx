@@ -59,7 +59,8 @@ const fetchAccountTransactions = async (accountAddress, query = {}) => {
     ...query,
   });
   const res = await fetch(
-    `${import.meta.env.PUBLIC_EDGE_API_BASE_URL
+    `${
+      import.meta.env.PUBLIC_EDGE_API_BASE_URL
     }/account-transactions?${searchParams}`
   );
   const body = await res.json();

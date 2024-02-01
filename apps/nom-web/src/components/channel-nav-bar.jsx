@@ -34,9 +34,7 @@ import Heading from "./heading";
 import RichText from "./rich-text";
 import AddChannelMemberDialog from "./add-channel-member-dialog";
 
-const LazyChannelInfoDialog = React.lazy(() =>
-  import("./channel-info-dialog")
-);
+const LazyChannelInfoDialog = React.lazy(() => import("./channel-info-dialog"));
 
 const { sort } = arrayUtils;
 const { truncateAddress } = ethereumUtils;
