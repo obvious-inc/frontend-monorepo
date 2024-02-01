@@ -1,11 +1,14 @@
-import { Editor, Path, Point, Text, Element, Range, Transforms } from "slate";
+import { Editor, Node, Path, Point, Text, Element, Range } from "slate";
 import { function as functionUtils } from "@shades/common/utils";
 
 const { compose } = functionUtils;
 
 export const mergePlugins = (plugins) => {
   const middleware = compose(
-    ...plugins.filter((p) => p.middleware != null).map((p) => p.middleware)
+    ...plugins
+      .filter((p) => p.middleware != null)
+      .map((p) => p.middleware)
+      .reverse()
   );
 
   const elements = plugins.reduce(
@@ -32,6 +35,7 @@ export const mergePlugins = (plugins) => {
   return { middleware, elements, handlers };
 };
 
+// TODO: move to element specific plugins
 export const isNodeEmpty = (el, options = {}) => {
   const { trim = true } = options;
 
@@ -40,9 +44,14 @@ export const isNodeEmpty = (el, options = {}) => {
     case "channel-link":
     case "attachments":
     case "image-attachment":
+    case "image":
     case "link":
     case "emoji":
+    case "code":
       return false;
+
+    case "code-block":
+      return el.children[0].text.trim() === "";
 
     default: {
       if (el.text != null) return trim ? el.text.trim() === "" : el.text === "";
@@ -51,24 +60,71 @@ export const isNodeEmpty = (el, options = {}) => {
   }
 };
 
-export const toMessageBlocks = (nodes) =>
-  nodes.map((n) => {
-    if (n.type === "link") return { type: "link", url: n.url, label: n.label };
+// TODO: move to element specific plugins
+export const toMessageBlocks = (nodes) => {
+  const stringify = (n) => {
+    if (n.children == null) return n.text;
+    return n.children.map(stringify).join("");
+  };
+
+  return nodes.map((n) => {
+    if (n.type == null) return n;
+
+    if (n.type === "code-block")
+      return { type: "code-block", code: n.children[0].text };
+    if (n.type === "table") return { type: "table", children: n.content };
+    if (n.type === "link")
+      return {
+        type: "link",
+        url: n.url,
+        label: n.label ?? n.children[0]?.text,
+      };
     if (n.type === "emoji") return { type: "emoji", emoji: n.emoji };
     if (n.type === "user") return { type: "user", ref: n.ref };
     if (n.type === "channel-link") return { type: "channel-link", ref: n.ref };
     if (n.type === "horizontal-divider") return { type: n.type };
-    if (n.children == null) return n;
-    return { ...n, children: toMessageBlocks(n.children) };
-  });
 
+    if (n.type.startsWith("heading-")) {
+      // Merge content into a single child
+      return { type: n.type, children: [{ text: stringify(n) }] };
+    }
+
+    if (n.children == null) return n;
+
+    const children = toMessageBlocks(n.children);
+
+    return {
+      ...n,
+      children:
+        n.children.length === 1
+          ? children
+          : children.filter((n) => !isNodeEmpty(n, { trim: false })),
+    };
+  });
+};
+
+// TODO: move to element specific plugins
 export const fromMessageBlocks = (blocks) =>
   blocks.reduce((acc, n) => {
+    if (n.type === "code-block")
+      return [...acc, { ...n, children: [{ text: n.code }] }];
+
+    if (n.type === "table")
+      return [...acc, { ...n, content: n.children, children: [{ text: "" }] }];
+
+    if (n.type === "code") return [...acc, { text: `\`${n.code}\`` }];
+
     if (n.type === "link")
       return [
         ...acc,
         { text: "" },
-        { ...n, children: [{ text: n.label ?? n.url }] },
+        {
+          ...n,
+          children:
+            n.label == null
+              ? fromMessageBlocks(n.children)
+              : [{ text: n.label }],
+        },
         { text: "" },
       ];
 
@@ -80,8 +136,8 @@ export const fromMessageBlocks = (blocks) =>
         { text: "" },
       ];
 
-    // Voids
-    if (["user", "channel-link", "horizontal-divider"].includes(n.type))
+    // Inline voids
+    if (["user", "channel-link"].includes(n.type))
       return [
         ...acc,
         { text: "" },
@@ -89,13 +145,22 @@ export const fromMessageBlocks = (blocks) =>
         { text: "" },
       ];
 
+    // Block voids
+    if (["horizontal-divider"].includes(n.type))
+      return [...acc, { ...n, children: [{ text: "" }] }];
+
+    if (n.type === "image") return [...acc, { ...n, children: [{ text: "" }] }];
+
     // TODO implement plugin "unsupported-element"
     if (n.children == null && n.text == null)
       return [...acc, { ...n, text: "" }];
 
     if (n.children == null) return [...acc, n];
 
-    return [...acc, { ...n, children: fromMessageBlocks(n.children) }];
+    const children = fromMessageBlocks(n.children);
+    const nonEmptyChildren = children.length === 0 ? [{ text: "" }] : children;
+
+    return [...acc, { ...n, children: nonEmptyChildren }];
   }, []);
 
 export const search = (editor, query, options = {}) => {
@@ -214,7 +279,7 @@ export const intersectsSelection = (editor, nodePath) => {
 };
 
 export const withBlockPrefixShortcut = (
-  { prefix, elementType, transform, afterTransform },
+  { prefix, elementType, instant = false, transform, afterTransform },
   editor
 ) => {
   const { insertText } = editor;
@@ -222,26 +287,31 @@ export const withBlockPrefixShortcut = (
   editor.insertText = (text) => {
     const { selection } = editor;
 
-    if (!text.endsWith(" ") || !selection || !Range.isCollapsed(selection)) {
+    if (
+      (!instant && !text.endsWith(" ")) ||
+      !selection ||
+      !Range.isCollapsed(selection)
+    ) {
       insertText(text);
       return;
     }
 
-    const blockEntry = Editor.above(editor, {
-      match: (n) => Element.isElement(n) && Editor.isBlock(editor, n),
+    const blockEntry = editor.above({
+      match: (n) => Element.isElement(n) && editor.isBlock(n),
     });
 
-    if (blockEntry == null || blockEntry[0].type === elementType) {
+    if (blockEntry == null || blockEntry[0].type !== "paragraph") {
       insertText(text);
       return;
     }
 
     const prefixRange = {
       anchor: selection.anchor,
-      focus: Editor.start(editor, blockEntry[1]),
+      focus: editor.start(blockEntry[1]),
     };
     const prefixText =
-      Editor.string(editor, prefixRange, { voids: true }) + text.slice(0, -1);
+      editor.string(prefixRange, { voids: true }) +
+      (instant ? text : text.slice(0, -1));
 
     const isMatch = Array.isArray(prefix)
       ? prefix.includes(prefixText)
@@ -253,19 +323,15 @@ export const withBlockPrefixShortcut = (
     }
 
     editor.withoutNormalizing(() => {
-      Transforms.select(editor, prefixRange);
+      editor.select(prefixRange);
 
       if (!Range.isCollapsed(prefixRange)) {
-        Transforms.delete(editor, { at: prefixRange });
+        editor.delete({ at: prefixRange });
       }
 
       if (transform == null) {
         // Apply default transform
-        Transforms.setNodes(
-          editor,
-          { type: elementType },
-          { at: blockEntry[1] }
-        );
+        editor.setNodes({ type: elementType }, { at: blockEntry[1] });
       }
 
       // Re-select the node since we deleted the prefix text
@@ -299,17 +365,17 @@ export const withEmptyBlockBackwardDeleteTransform = (
       return;
     }
 
-    const match = Editor.above(editor, {
-      match: (n) => Element.isElement(n) && Editor.isBlock(editor, n),
+    const match = editor.above({
+      match: (n) => Element.isElement(n) && editor.isBlock(n),
     });
 
-    if (match == null) {
+    if (match == null || Node.string(match[0]).trim() !== "") {
       deleteBackward(...args);
       return;
     }
 
     const [block, path] = match;
-    const start = Editor.start(editor, path);
+    const start = editor.start(path);
 
     const isMatchingBlockType = Array.isArray(fromElementType)
       ? fromElementType.includes(block.type)
@@ -321,7 +387,7 @@ export const withEmptyBlockBackwardDeleteTransform = (
       isMatchingBlockType &&
       Point.equals(selection.anchor, start)
     ) {
-      Transforms.setNodes(editor, { type: toElementType });
+      editor.setNodes({ type: toElementType });
       return;
     }
 

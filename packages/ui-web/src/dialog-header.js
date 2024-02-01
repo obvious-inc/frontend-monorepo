@@ -2,7 +2,7 @@ import { css } from "@emotion/react";
 import { Cross as CrossIcon } from "./icons.js";
 import Button from "./button.js";
 
-const DialogHeader = ({ title, subtitle, titleProps, dismiss }) => (
+const DialogHeader = ({ title, subtitle, titleProps, dismiss, ...props }) => (
   <header
     css={css({
       display: "grid",
@@ -13,6 +13,7 @@ const DialogHeader = ({ title, subtitle, titleProps, dismiss }) => (
         margin: "0 0 2rem",
       },
     })}
+    {...props}
   >
     <h1
       css={(t) =>
@@ -40,15 +41,19 @@ const DialogHeader = ({ title, subtitle, titleProps, dismiss }) => (
         </div>
       )}
     </h1>
-    <Button
-      size="small"
-      onClick={() => {
-        dismiss();
-      }}
-      css={css({ width: "2.8rem", padding: 0 })}
-    >
-      <CrossIcon style={{ width: "1.5rem", height: "auto", margin: "auto" }} />
-    </Button>
+    {dismiss != null && (
+      <Button
+        size="small"
+        onClick={() => {
+          dismiss();
+        }}
+        css={css({ width: "2.8rem", padding: 0 })}
+      >
+        <CrossIcon
+          style={{ width: "1.5rem", height: "auto", margin: "auto" }}
+        />
+      </Button>
+    )}
   </header>
 );
 

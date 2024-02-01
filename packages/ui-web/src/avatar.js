@@ -47,6 +47,7 @@ const Avatar = React.forwardRef(
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
+            position: "relative",
           }),
         ]}
       >
@@ -54,6 +55,14 @@ const Avatar = React.forwardRef(
           <div
             css={(t) =>
               css({
+                position: "absolute",
+                top: 0,
+                left: 0,
+                right: 0,
+                bottom: 0,
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
                 textTransform: "uppercase",
                 fontSize: `var(--custom-signature-font-size, 1.1rem)`,
                 color: t.colors.textDimmed,
@@ -64,7 +73,7 @@ const Avatar = React.forwardRef(
           >
             {
               // Emojis: https://dev.to/acanimal/how-to-slice-or-get-symbols-from-a-unicode-string-with-emojis-in-javascript-lets-learn-how-javascript-represent-strings-h3a
-              [...signature].slice(0, signatureLength)
+              [...String(signature)].slice(0, signatureLength)
             }
           </div>
         )}

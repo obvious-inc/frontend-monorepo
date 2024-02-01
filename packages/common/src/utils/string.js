@@ -1,3 +1,8 @@
+export const getUserPerceivedCharacters = (string) =>
+  Intl.Segmenter == null
+    ? [...string]
+    : [...new Intl.Segmenter().segment(string)].map((x) => x.segment);
+
 export const getWords = (string, { splitOnPunctuation = true } = {}) =>
   string.trim().split(splitOnPunctuation ? /[\s,.]+/ : /[\s]+/);
 
@@ -27,3 +32,10 @@ export const getWordMatchCount = (string, query, { exact = false } = {}) => {
 
   return matchingWords.length;
 };
+
+export const removeWhitespace = (string) => string.replace(/\s+/g, "");
+
+export const truncate = (charCount, string) =>
+  string?.trim().length > charCount
+    ? `${string.trim().slice(0, charCount).trim()}...`
+    : string;

@@ -14,8 +14,9 @@ export {
   useCachedState,
 } from "./cache-store.js";
 export {
-  default as useEmojis,
   Provider as EmojiProvider,
+  default as useEmojis,
+  useEmojiById,
 } from "./hooks/emojis.js";
 export { default as useRecentEmojis } from "./hooks/recent-emojis.js";
 export { default as useMessageEmbeds } from "./hooks/message-embeds.js";

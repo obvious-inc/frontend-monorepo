@@ -10,7 +10,7 @@ export async function fetchWarpcastFollowedChannels({ fid }) {
   });
 
   const headers = new Headers({
-    Authorization: process.env.WARPCAST_API_TOKEN,
+    Authorization: import.meta.env.PUBLIC_WARPCAST_API_TOKEN,
   });
 
   return fetch(WARPCAST_API_ENDPOINT + "/user-following-channels?" + params, {

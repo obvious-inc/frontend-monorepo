@@ -5,7 +5,6 @@ import {
   stringifyBlocks as stringifyMessageBlocks,
   getMentions,
 } from "./utils/message.js";
-import { isEmoji } from "./utils/emoji.js";
 import {
   openChannelPermissionOverrides,
   closedChannelPermissionOverrides,
@@ -24,7 +23,7 @@ export default ({
   authStatus,
   getStoreState,
   cacheStore,
-  setAuthenticated,
+  setAuthenticationData,
 }) => {
   const fetchMe = () =>
     api.fetchMe().then((user) => {
@@ -248,7 +247,7 @@ export default ({
       accessToken,
       refreshToken,
     }) {
-      await api.authenticate({
+      const authenticationData = await api.authenticate({
         message,
         signature,
         address,
@@ -257,10 +256,10 @@ export default ({
         accessToken,
         refreshToken,
       });
-      setAuthenticated(true);
+      setAuthenticationData(authenticationData);
     },
     logout() {
-      setAuthenticated(false);
+      setAuthenticationData(null);
       cacheStore.clear();
       dispatch({ type: "logout" });
     },
@@ -322,7 +321,7 @@ export default ({
             );
             const allMessages = responses.flatMap((ms) => ms);
             dispatch({
-              type: "fetch-messages:request-successful",
+              type: "fetch-reply-target-messages:request-successful",
               messages: allMessages,
               channelId,
             });
@@ -456,7 +455,8 @@ export default ({
       return api.reportMessage(messageId, { comment });
     },
     addMessageReaction(messageId, { emoji }) {
-      invariant(isEmoji(emoji), "Only emojis allowed");
+      invariant(emoji != null, "Emoji missing");
+      // invariant(isEmoji(emoji), "Only emojis allowed");
 
       const me = selectMe(getStoreState());
 
@@ -508,7 +508,7 @@ export default ({
     },
     async fetchUserMessages(userId) {
       const messages = await api.fetchUserMessages(userId);
-      dispatch({ type: "fetch-messages:request-successful", messages });
+      dispatch({ type: "fetch-user-messages:request-successful", messages });
       return messages;
     },
     fetchUserChannelsReadStates,

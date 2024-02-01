@@ -69,7 +69,10 @@ export default async function handler(request) {
   } else {
     return new Response(
       JSON.stringify({
-        data: { address: appAccount.address, fid: process.env.FARCORD_APP_FID },
+        data: {
+          address: appAccount.address,
+          fid: process.env.FARCORD_APP_FID,
+        },
       }),
       {
         status: 200,

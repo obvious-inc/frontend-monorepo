@@ -4,7 +4,7 @@ const WARPCAST_CHANNELS_STATIC_LIST =
 const WARPCAST_CHANNELS_INFO_ENDPOINT =
   "https://client.warpcast.com/v2/channel";
 
-export default async function handler(request, response) {
+export default async function handler(_, response) {
   const channels = await fetch(WARPCAST_CHANNELS_STATIC_LIST)
     .then(async (res) => {
       if (res.ok) return res.json();

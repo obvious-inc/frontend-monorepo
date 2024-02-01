@@ -1,4 +1,3 @@
-import { Transforms } from "slate";
 import { useSelected, useFocused } from "slate-react";
 import InlineUserButton from "../../inline-user-button.js";
 
@@ -19,9 +18,9 @@ const middleware = (editor) => {
       ref,
       children: [{ text: "" }],
     };
-    if (at) Transforms.select(editor, at);
-    Transforms.insertNodes(editor, mention);
-    Transforms.move(editor);
+    if (at) editor.select(at);
+    editor.insertNodes(mention);
+    editor.move();
     editor.insertText(" ");
   };
 

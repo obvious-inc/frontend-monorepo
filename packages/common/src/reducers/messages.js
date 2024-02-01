@@ -11,6 +11,8 @@ import { selectApp } from "./apps";
 const entriesById = (state = {}, action) => {
   switch (action.type) {
     case "fetch-messages:request-successful":
+    case "fetch-user-messages:request-successful":
+    case "fetch-reply-target-messages:request-successful":
       return { ...state, ...indexBy((m) => m.id, action.messages) };
 
     case "fetch-message:request-successful":
@@ -158,7 +160,9 @@ const createIndexReducer = (propertyName) => {
 
   return (state = {}, action) => {
     switch (action.type) {
-      case "fetch-messages:request-successful": {
+      case "fetch-messages:request-successful":
+      case "fetch-user-messages:request-successful":
+      case "fetch-reply-target-messages:request-successful": {
         const messageIdsByProperty = mapValues(
           (ms, property) => {
             const previousIds = state[property] ?? [];

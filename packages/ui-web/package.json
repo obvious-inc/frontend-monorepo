@@ -1,7 +1,6 @@
 {
   "name": "@shades/ui-web",
   "version": "0.0.0",
-  "main": "dist/index.js",
   "private": true,
   "scripts": {
     "dev": "rollup -c -w",
@@ -19,8 +18,10 @@
     "./form-dialog": "./dist/form-dialog/form-dialog.js",
     "./spinner": "./dist/spinner.js",
     "./button": "./dist/button.js",
+    "./image": "./dist/image.js",
     "./icon-button": "./dist/icon-button.js",
     "./inline-button": "./dist/inline-button.js",
+    "./link": "./dist/link.js",
     "./input": "./dist/input.js",
     "./select": "./dist/select.js",
     "./popover": "./dist/popover.js",
@@ -32,6 +33,7 @@
     "./message-editor-form": "./dist/message-editor-form/message-editor-form.js",
     "./emoji": "./dist/emoji.js",
     "./emoji-picker": "./dist/emoji-picker.js",
+    "./gif-picker": "./dist/gif-picker.js",
     "./avatar": "./dist/avatar.js",
     "./account-avatar": "./dist/account-avatar.js",
     "./account-avatar-stack": "./dist/account-avatar-stack.js",
@@ -42,16 +44,13 @@
     "./channel-messages-scroll-view": "./dist/channel-messages-scroll-view.js",
     "./slate": "./dist/slate/index.js"
   },
-  "peerDependencies": {
-    "@emotion/css": "*",
-    "@shades/common": "*",
-    "react": "*",
-    "react-aria": "*"
-  },
   "devDependencies": {
     "@swc/core": "^1.3.57",
     "prettier": "^2.8.8",
     "rollup": "^3.21.0",
     "rollup-plugin-swc3": "^0.8.1"
+  },
+  "peerDependencies": {
+    "@shades/common": "workspace:0.0.0"
   }
 }

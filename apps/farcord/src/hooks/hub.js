@@ -14,7 +14,7 @@ import { hexToBytes } from "viem";
 import { decodeMetadata } from "../utils/farcaster";
 
 const farcasterClient = getHubRpcClient(
-  process.env.FARCASTER_HUB_RPC_ENDPOINT,
+  import.meta.env.PUBLIC_FARCASTER_HUB_RPC_ENDPOINT,
   {
     metadata: false,
     isBrowser: true,

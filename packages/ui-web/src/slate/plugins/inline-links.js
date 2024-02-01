@@ -1,20 +1,26 @@
 import { url as urlUtils } from "@shades/common/utils";
-import { Editor, Transforms, Point, Text, Node } from "slate";
+import { Range as SlateRange, Point, Text, Node } from "slate";
 import { getWords } from "../utils.js";
+
+const INLINE_LINK_ELEMENT_TYPE = "link";
 
 const wrapLink = (editor, url, { at } = {}) => {
   const parsedUrl = new URL(url);
-  const link = {
-    type: "link",
-    url: parsedUrl.href,
-    label: parsedUrl.href,
-    children: [{ text: parsedUrl.href }],
-  };
-  Transforms.insertNodes(editor, link, { at, split: true });
+  editor.insertNodes(
+    {
+      type: INLINE_LINK_ELEMENT_TYPE,
+      url: parsedUrl.href,
+      label: parsedUrl.href,
+      children: [{ text: parsedUrl.href }],
+    },
+    { at, split: true }
+  );
 };
 
-const createUrl = (url) => {
-  const urlWithProtocol = url.match(/^https?:\/\/*/) ? url : "http://" + url;
+const createUrl = (url, protocol = "http") => {
+  const urlWithProtocol = url.match(/^https?:\/\/*/)
+    ? url
+    : `${protocol}://` + url;
   return new URL(urlWithProtocol).href;
 };
 
@@ -31,21 +37,21 @@ const createMiddleware = ({ isUrl }) => {
       for (const [childNode, childPath] of Node.children(editor, path)) {
         // Element children aren’t allowed
         if (childNode.children != null) {
-          Transforms.unwrapNodes(editor, { at: childPath });
+          editor.unwrapNodes({ at: childPath });
           return;
         }
 
         // We only allow a single child
         const childLeafIndex = childPath.slice(-1)[0];
         if (childLeafIndex !== 0) {
-          Transforms.mergeNodes(editor, { at: childPath });
+          editor.mergeNodes({ at: childPath });
           return;
         }
       }
 
       // Unwrap empty links
       if (node.children[0].text === "") {
-        Transforms.unwrapNodes(editor, { at: path });
+        editor.unwrapNodes({ at: path });
         return;
       }
 
@@ -55,24 +61,46 @@ const createMiddleware = ({ isUrl }) => {
         return;
       }
 
+      // Make sure `url` always follow the label if the label is a valid
+      // (protocol optional) url with different domain
+      if (isUrlWithOptionalProtocol(node.label)) {
+        const labelUrl = createUrl(node.label);
+        const domainEquals = urlUtils.domainEquals(node.url, labelUrl, {
+          subdomain: false,
+        });
+        if (!domainEquals && node.url !== labelUrl) {
+          editor.setNodes({ url: labelUrl }, { at: path });
+          return;
+        }
+      }
+
       normalizeNode([node, path]);
       return;
     };
 
-    editor.isInline = (element) => element.type === "link" || isInline(element);
+    editor.isInline = (element) =>
+      element.type === INLINE_LINK_ELEMENT_TYPE || isInline(element);
 
     editor.insertLink = (
       { label: maybeLabel, url },
       { at = editor.selection, select = true } = {}
     ) => {
-      const linkMatch = editor.above({ at, match: (n) => n.type === "link" });
+      const linkMatch = editor.above({
+        at,
+        match: (n) => n.type === INLINE_LINK_ELEMENT_TYPE,
+      });
 
       const hasLabel = maybeLabel != null && maybeLabel.trim() !== "";
       const label = hasLabel ? maybeLabel : url;
 
       if (linkMatch == null) {
         editor.insertNodes(
-          { type: "link", url, label, children: [{ text: label }] },
+          {
+            type: INLINE_LINK_ELEMENT_TYPE,
+            url,
+            label,
+            children: [{ text: label }],
+          },
           { at }
         );
         if (select) {
@@ -103,7 +131,7 @@ const createMiddleware = ({ isUrl }) => {
     };
 
     editor.normalizeNode = ([node, path]) => {
-      if (node.type === "link") {
+      if (node.type === INLINE_LINK_ELEMENT_TYPE) {
         normalizeLinkNode([node, path]);
         return;
       }
@@ -113,19 +141,34 @@ const createMiddleware = ({ isUrl }) => {
         return;
       }
 
-      // Wrap urls in link nodes
-      const urlEntries = getWords([node, path]).filter(([word]) => isUrl(word));
+      const parentBlockMatchEntry = editor.above({
+        at: path,
+        match: editor.isBlock,
+      });
 
-      for (let [url, urlRange] of urlEntries) {
-        const match = Editor.above(editor, {
-          at: urlRange,
-          match: (n) => n.type === "link",
-        });
+      // Transform paragraph urls into link
+      if (parentBlockMatchEntry[0].type === "paragraph") {
+        // Wrap urls in link nodes
+        const urlEntries = getWords([node, path]).filter(([word]) =>
+          isUrl(word)
+        );
 
-        // Url already wrapped in a link
-        if (match) continue;
+        for (let [url, urlRange] of urlEntries) {
+          const matchEntry = editor.above({
+            at: urlRange,
+            match: (n) => n.type === INLINE_LINK_ELEMENT_TYPE,
+          });
 
-        wrapLink(editor, url, { at: urlRange });
+          // Url already wrapped in a link
+          if (matchEntry) continue;
+
+          if (
+            editor.selection == null ||
+            SlateRange.intersection(urlRange, editor.selection) == null
+          )
+            wrapLink(editor, url, { at: urlRange });
+          return;
+        }
       }
 
       normalizeNode([node, path]);
@@ -134,37 +177,43 @@ const createMiddleware = ({ isUrl }) => {
     editor.insertText = (text) => {
       const { selection } = editor;
 
-      const match = Editor.above(editor, {
-        match: (n) => n.type === "link",
+      const matchEntry = editor.above({
+        match: (n) => n.type === INLINE_LINK_ELEMENT_TYPE,
       });
 
-      if (!match) {
+      if (matchEntry == null) {
         insertText(text);
         return;
       }
 
-      const [linkNode, linkNodePath] = match;
+      const [linkNode, linkNodePath] = matchEntry;
 
-      const linkEndPoint = Editor.end(editor, linkNodePath);
+      const linkEndPoint = editor.end(linkNodePath);
 
       // Move cursor out of the node when pressing "space" at the end of a link
       if (text === " " && Point.equals(selection.anchor, linkEndPoint)) {
-        Transforms.move(editor, { distance: 1, unit: "offset" });
+        editor.move({ distance: 1, unit: "offset" });
         insertText(text);
         return;
       }
 
       const linkLabel = linkNode.children[0].text + text;
+      const getUrl = () => {
+        if (isUrlWithOptionalProtocol(linkLabel)) {
+          const labelUrl = createUrl(linkLabel);
+          const domainEquals = urlUtils.domainEquals(linkNode.url, labelUrl, {
+            subdomain: false,
+          });
+
+          // Force update the url if the new label is a valid URL with different domain
+          if (!domainEquals) return labelUrl.href;
+        }
+        return linkNode.url;
+      };
 
       editor.withoutNormalizing(() => {
         editor.setNodes(
-          {
-            // Force update the url if the new label is a valid URL
-            url: isUrlWithOptionalProtocol(linkLabel)
-              ? createUrl(linkLabel)
-              : linkNode.url,
-            label: linkLabel,
-          },
+          { url: getUrl(), label: linkLabel },
           { at: linkNodePath }
         );
         insertText(text);
@@ -197,5 +246,5 @@ const LinkComponent = ({ attributes, children, element, openEditDialog }) => {
 
 export default ({ isUrl = urlUtils.validate } = {}) => ({
   middleware: createMiddleware({ isUrl }),
-  elements: { link: LinkComponent },
+  elements: { [INLINE_LINK_ELEMENT_TYPE]: LinkComponent },
 });

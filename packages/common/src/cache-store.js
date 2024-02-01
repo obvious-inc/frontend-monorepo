@@ -87,11 +87,13 @@ export const useStore = () => {
   return store;
 };
 
-export const useCachedState = (key, initialState) => {
+export const useCachedState = (key, initialState, { middleware } = {}) => {
   const store = useStore();
   const { getCachedState, setCachedState } = React.useContext(Context);
 
   const cachedState = getCachedState(key);
+
+  const [isInitialized, setInitialized] = React.useState(cachedState != null);
 
   const read = () => store.read(key);
   const write = (value) => store.write(key, value);
@@ -99,21 +101,24 @@ export const useCachedState = (key, initialState) => {
   const set = useLatestCallback(async (newState_) => {
     const newState =
       typeof newState_ === "function" ? newState_(cachedState) : newState_;
-    await write(newState);
     setCachedState(key, newState);
+    await write(newState);
   });
 
   const setInitialState = useLatestCallback(() => {
     const handleCachedValue = (cachedValue) => {
       if (cachedValue != null) {
-        setCachedState(key, cachedValue);
-        return;
+        setCachedState(
+          key,
+          middleware == null ? cachedValue : middleware(cachedValue)
+        );
+      } else {
+        setCachedState(
+          key,
+          typeof initialState === "function" ? initialState() : initialState
+        );
       }
-
-      setCachedState(
-        key,
-        typeof initialState === "function" ? initialState() : initialState
-      );
+      setInitialized(true);
     };
 
     if (store.isAsync) {
@@ -154,5 +159,5 @@ export const useCachedState = (key, initialState) => {
     };
   }, [key, setCachedState]);
 
-  return [cachedState, set, { read }];
+  return [cachedState, set, { read, isInitialized }];
 };

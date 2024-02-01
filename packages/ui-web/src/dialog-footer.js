@@ -4,9 +4,9 @@ import Button from "./button.js";
 const DialogFooter = ({
   cancel,
   cancelButtonLabel,
-  submit,
   submitButtonLabel,
   submitButtonProps,
+  ...props
 }) => (
   <footer
     css={css({
@@ -17,6 +17,7 @@ const DialogFooter = ({
         paddingTop: "3rem",
       },
     })}
+    {...props}
   >
     <div
       css={css({
@@ -31,8 +32,13 @@ const DialogFooter = ({
           {cancelButtonLabel}
         </Button>
       )}
-      {submit != null && (
-        <Button size="medium" variant="primary" {...submitButtonProps}>
+      {submitButtonLabel != null && (
+        <Button
+          size="medium"
+          variant="primary"
+          type="submit"
+          {...submitButtonProps}
+        >
           {submitButtonLabel}
         </Button>
       )}

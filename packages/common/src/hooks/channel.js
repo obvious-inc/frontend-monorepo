@@ -16,6 +16,7 @@ import {
   selectChannelHasOpenReadAccess,
   selectHasFetchedMessages,
   selectHasAllMessages,
+  selectLastPageEndMessageId,
   selectTotalMentionCount,
   selectPermissions as selectChannelPermissions,
   selectChannelsWithMembers,
@@ -129,6 +130,14 @@ export const useHasFetchedChannelMessages = (channelId) =>
   useStore(
     React.useCallback(
       (state) => selectHasFetchedMessages(state, channelId),
+      [channelId]
+    )
+  );
+
+export const useChannelLastPageEndMessageId = (channelId) =>
+  useStore(
+    React.useCallback(
+      (state) => selectLastPageEndMessageId(state, channelId),
       [channelId]
     )
   );

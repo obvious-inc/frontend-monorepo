@@ -75,8 +75,19 @@ const entrypoints = [
     file: "button.js",
     dependencies: ["react", "react-aria", ...emotionDeps],
   },
-  { file: "icon-button.js", dependencies: ["react", ...emotionDeps] },
+  {
+    file: "image.js",
+    dependencies: ["react", ...emotionDeps],
+  },
+  {
+    file: "icon-button.js",
+    dependencies: ["react", "react-aria", ...emotionDeps],
+  },
   { file: "inline-button.js", dependencies: ["react", ...emotionDeps] },
+  {
+    file: "link.js",
+    dependencies: ["react", ...emotionDeps],
+  },
   {
     file: "input.js",
     dependencies: ["react", "@shades/common/react", ...emotionDeps],
@@ -176,6 +187,18 @@ const entrypoints = [
       ...emotionDeps,
     ],
   },
+  {
+    file: "gif-picker.js",
+    dependencies: [
+      "@shades/common/app",
+      "@shades/common/react",
+      "@shades/common/utils",
+      "react",
+      "react-aria",
+      "@react-stately/overlays",
+      ...emotionDeps,
+    ],
+  },
   { file: "avatar.js", dependencies: ["react", ...emotionDeps] },
   {
     file: "account-avatar.js",
@@ -257,10 +280,4 @@ const entrypoints = [
   },
 ];
 
-export default [
-  ...entrypoints.map(createConfig),
-  createConfig({
-    file: "index.js",
-    dependencies: [...new Set(entrypoints.flatMap((e) => e.dependencies))],
-  }),
-];
+export default entrypoints.map(createConfig);

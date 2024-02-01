@@ -9,6 +9,17 @@ import {
   Checkmark as CheckmarkIcon,
 } from "./icons.js";
 
+const caretConfigBySize = {
+  tiny: {
+    width: "0.8rem",
+    padding: 0,
+  },
+  small: {
+    width: "0.9rem",
+    padding: 0,
+  },
+};
+
 const Select = React.forwardRef(
   (
     {
@@ -24,6 +35,7 @@ const Select = React.forwardRef(
       width,
       fullWidth = true,
       multiline = true,
+      buttonProps,
       ...props
     },
     forwardedRef
@@ -48,6 +60,9 @@ const Select = React.forwardRef(
       valueProps,
       menuProps,
     } = useSelect(selectProps, state, triggerRef);
+
+    const caretSize = caretConfigBySize[size]?.width ?? "1.1rem";
+    const caretPadding = caretConfigBySize[size]?.padding ?? "0 0.2rem";
 
     return (
       <>
@@ -76,7 +91,7 @@ const Select = React.forwardRef(
         />
 
         <Popover.Root
-          placement="bottom left"
+          placement={`bottom ${align}`}
           offset={5}
           isOpen={state.isOpen}
           onOpenChange={state.setOpen}
@@ -91,10 +106,11 @@ const Select = React.forwardRef(
               icon={icon ?? state.selectedItem?.value.icon}
               align={align}
               iconRight={
-                <div css={css({ padding: "0 0.2rem" })}>
-                  <CaretDownIcon style={{ width: "1.1rem" }} />
+                <div style={{ padding: caretPadding }}>
+                  <CaretDownIcon style={{ width: caretSize }} />
                 </div>
               }
+              {...buttonProps}
             >
               <span {...valueProps}>
                 {renderTriggerContent != null ? (
@@ -220,11 +236,13 @@ const Option = ({ item, state }) => {
           {item.value.description}
         </div>
       </div>
-      {isSelected && (
-        <div css={css({ padding: "0 0.5rem", marginLeft: "1.2rem" })}>
+      <div css={css({ padding: "0 0.5rem", marginLeft: "1.2rem" })}>
+        {isSelected ? (
           <CheckmarkIcon style={{ width: "1.1rem" }} />
-        </div>
-      )}
+        ) : (
+          <div style={{ width: "1.1rem" }} />
+        )}
+      </div>
     </li>
   );
 };

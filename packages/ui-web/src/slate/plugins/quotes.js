@@ -1,5 +1,5 @@
 import isHotkey from "is-hotkey";
-import { Editor, Range, Node, Transforms } from "slate";
+import { Range, Node } from "slate";
 import { function as functionUtils } from "@shades/common/utils";
 import {
   withBlockPrefixShortcut,
@@ -31,11 +31,11 @@ const middleware = (editor) => {
     const startMatch = nodeString.match(/^\s+/)?.[0];
 
     if (startMatch?.includes("\n")) {
-      const nodeStartPoint = Editor.start(editor, path);
-      Transforms.delete(editor, {
+      const nodeStartPoint = editor.start(path);
+      editor.delete({
         at: {
           anchor: nodeStartPoint,
-          focus: Editor.after(editor, nodeStartPoint),
+          focus: editor.after(nodeStartPoint),
         },
       });
       return;
@@ -45,11 +45,11 @@ const middleware = (editor) => {
 
     // Trim end edge line breaks
     if (endMatch?.includes("\n")) {
-      const nodeEndPoint = Editor.end(editor, path);
-      Transforms.delete(editor, {
+      const nodeEndPoint = editor.end(path);
+      editor.delete({
         at: {
           anchor: nodeEndPoint,
-          focus: Editor.before(editor, nodeEndPoint),
+          focus: editor.before(nodeEndPoint),
         },
       });
     }
@@ -63,7 +63,7 @@ const middleware = (editor) => {
       return;
     }
 
-    const matchEntry = Editor.above(editor, {
+    const matchEntry = editor.above({
       match: (n) => n.type === ELEMENT_TYPE,
     });
 
@@ -72,13 +72,13 @@ const middleware = (editor) => {
       return;
     }
 
-    const characterBeforeCursor = Editor.string(editor, {
-      anchor: Editor.before(editor, selection.anchor),
+    const characterBeforeCursor = editor.string({
+      anchor: editor.before(selection.anchor),
       focus: selection.focus,
     });
-    const textAfterCursor = Editor.string(editor, {
+    const textAfterCursor = editor.string({
       anchor: selection.anchor,
-      focus: Editor.end(editor, matchEntry[1]),
+      focus: editor.end(matchEntry[1]),
     });
 
     if (characterBeforeCursor !== "\n" || textAfterCursor.trim() !== "") {
@@ -87,8 +87,8 @@ const middleware = (editor) => {
     }
 
     deleteBackward(...args);
-    Editor.insertBreak(editor);
-    Transforms.setNodes(editor, { type: "paragraph" });
+    editor.insertBreak();
+    editor.setNodes({ type: "paragraph" });
   };
 
   return compose(
@@ -102,17 +102,18 @@ const middleware = (editor) => {
   )(editor);
 };
 
-export default ({ inline = false } = {}) => ({
+export default ({ mode } = {}) => ({
   middleware,
   handlers: {
     onKeyDown: (e, editor) => {
-      const lineBreakHotkeys = inline
-        ? ["shift+enter"]
-        : ["shift+enter", "enter"];
+      if (e.isDefaultPrevented()) return;
+
+      const lineBreakHotkeys =
+        mode === "inline" ? ["shift+enter"] : ["shift+enter", "enter"];
 
       if (!lineBreakHotkeys.some((h) => isHotkey(h, e))) return;
 
-      const matchEntry = Editor.above(editor, {
+      const matchEntry = editor.above({
         match: (node) => node.type === ELEMENT_TYPE,
       });
 

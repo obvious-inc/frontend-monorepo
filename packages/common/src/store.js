@@ -99,29 +99,27 @@ export const useAfterActionListener = (listener_) => {
 const Context = React.createContext({});
 
 export const Provider = ({ api, children }) => {
-  const [isAuthenticated, setAuthenticated] = React.useState(null);
+  const [authenticationData, setAuthenticationData] = React.useState(undefined);
   const [isConnected, setConnected] = React.useState(null);
 
   const user = useStore(selectMe);
 
   const authStatus =
-    isAuthenticated == null
+    authenticationData === undefined
       ? "loading"
-      : isAuthenticated
+      : authenticationData != null
       ? "authenticated"
       : "not-authenticated";
 
   React.useEffect(() => {
-    api.isAuthenticated().then((isAuthenticated) => {
-      setAuthenticated(isAuthenticated);
+    api.getAuthenticationData().then((authenticationData) => {
+      setAuthenticationData(authenticationData);
     });
   }, [api]);
 
   const dispatch = useActionDispatcher();
 
   const cacheStore = useCacheStore();
-
-  const { parseUser, parseChannel, parseMessage } = api.parsers;
 
   const selectors = mapValues(
     (selector) =>
@@ -139,7 +137,7 @@ export const Provider = ({ api, children }) => {
       authStatus,
       getStoreState,
       cacheStore,
-      setAuthenticated,
+      setAuthenticationData,
     })
   );
 
@@ -171,8 +169,8 @@ export const Provider = ({ api, children }) => {
 
       switch (eventName) {
         case "user-authentication-expired":
-          actions();
-          setAuthenticated(false);
+          actions.logout();
+          setAuthenticationData(null);
           break;
 
         case "connection-state-change":
@@ -191,73 +189,38 @@ export const Provider = ({ api, children }) => {
   }, [api, actions, dispatch]);
 
   React.useEffect(() => {
-    if (!isAuthenticated || user?.id == null) return;
-    api.connect({ userId: user.id });
-  }, [isAuthenticated, user?.id, api]);
+    if (authenticationData == null || user?.id == null) return;
 
-  const serverMessageHandler = useLatestCallback((name, data) => {
-    const me = selectMe(getStoreState());
+    let isConnected = false;
+    let disconnect;
 
-    let typingEndedTimeoutHandles = {};
+    const visibilityChangeHandler = () => {
+      if (document.visibilityState !== "visible") return;
+      if (isConnected) return;
+      disconnect?.();
+      connect();
+    };
 
-    // Dispatch a 'user-typing-ended' action when a user+channel combo has
-    // been silent for a while
-    if (name === "user-typed") {
-      const id = [data.channel.id, data.user.id].join(":");
+    const connect = async () => {
+      const listener = (eventName, payload) => {
+        if (eventName === "connection-state-change")
+          isConnected = payload.connected;
+      };
+      const disconnect_ = await api.connect(
+        { userId: user.id, authenticationData },
+        listener
+      );
+      disconnect = disconnect_;
+      document.addEventListener("visibilitychange", visibilityChangeHandler);
+    };
 
-      if (typingEndedTimeoutHandles[id]) {
-        clearTimeout(typingEndedTimeoutHandles[id]);
-        delete typingEndedTimeoutHandles[id];
-      }
+    connect();
 
-      typingEndedTimeoutHandles[id] = setTimeout(() => {
-        delete typingEndedTimeoutHandles[id];
-        dispatch({
-          type: "user-typing-ended",
-          channelId: data.channel.id,
-          userId: data.user.id,
-        });
-      }, 6000);
-    }
-
-    const dispatchEvent = (customData) =>
-      dispatch({
-        type: ["server-event", name].join(":"),
-        data: { ...data, ...customData },
-        user: me,
-      });
-
-    switch (name) {
-      case "channel-updated":
-      case "channel-user":
-        dispatchEvent({ channel: parseChannel(data.channel) });
-        break;
-
-      case "user-profile-updated":
-      case "user-presence-updated":
-      case "channel-user-joined":
-        dispatchEvent({ user: parseUser(data.user) });
-        break;
-
-      case "message-created":
-      case "message-updated":
-      case "message-removed":
-      case "message-reaction-added":
-      case "message-reaction-removed":
-        dispatchEvent({ message: parseMessage(data.message) });
-        break;
-
-      case "channel-user-invited":
-        dispatchEvent({
-          user: parseUser(data.user),
-          channel: parseChannel(data.channel),
-        });
-        break;
-
-      default:
-        dispatchEvent();
-    }
-  });
+    return () => {
+      disconnect?.();
+      document.removeEventListener("visibilitychange", visibilityChangeHandler);
+    };
+  }, [api, authenticationData, user?.id]);
 
   const contextValue = React.useMemo(
     () => ({
@@ -265,7 +228,6 @@ export const Provider = ({ api, children }) => {
       authStatus,
       selectors,
       actions,
-      serverMessageHandler,
     }),
     // eslint-disable-next-line
     [
@@ -275,7 +237,6 @@ export const Provider = ({ api, children }) => {
       ...Object.values(selectors),
       // eslint-disable-next-line
       ...Object.values(actions),
-      serverMessageHandler,
     ]
   );
 

@@ -1,4 +1,3 @@
-const path = require("path");
 const webpack = require("webpack");
 const HtmlWebpackPlugin = require("html-webpack-plugin");
 const CopyPlugin = require("copy-webpack-plugin");
@@ -62,14 +61,6 @@ module.exports = (_, argv, { htmlTitle, htmlDescription, htmlImage } = {}) => {
         manifestPath: isProduction ? "/app.webmanifest" : null,
         isProduction,
       }),
-      new webpack.EnvironmentPlugin({
-        PUSHER_KEY: undefined,
-        INFURA_PROJECT_ID: null,
-        CLOUDFLARE_ACCT_HASH: null,
-        DEV: null,
-        SENTRY_DSN: null,
-        WALLET_CONNECT_PROJECT_ID: null,
-      }),
       new webpack.DefinePlugin({
         "process.env.EDGE_API_BASE_URL": JSON.stringify(
           process.env.EDGE_API_ORIGIN == null ? "/api" : "/edge-api"
@@ -101,22 +92,6 @@ module.exports = (_, argv, { htmlTitle, htmlDescription, htmlImage } = {}) => {
     plugins: [
       ...config.plugins,
       new MiniCssExtractPlugin(),
-      new CopyPlugin({
-        patterns: [
-          {
-            from: path.resolve(
-              __dirname,
-              "../../apps/landing/public/favicon-32x32.png"
-            ),
-          },
-          {
-            from: path.resolve(
-              __dirname,
-              "../../apps/landing/public/favicon-192x192.png"
-            ),
-          },
-        ],
-      }),
       new CopyPlugin({ patterns: [{ from: "static" }] }),
       new WorkboxPlugin.GenerateSW({
         // these options encourage the ServiceWorkers to get in there fast

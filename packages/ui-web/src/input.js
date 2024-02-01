@@ -13,7 +13,6 @@ const Input = React.forwardRef(
       size = "normal",
       multiline = false,
       component: CustomComponent,
-      contrast,
       label,
       hint,
       containerProps,
@@ -35,15 +34,16 @@ const Input = React.forwardRef(
       <Component
         ref={ref}
         autoComplete="off"
+        autoCorrect="off"
+        autoCapitalize="none"
+        spellCheck="off"
         css={(t) =>
           css({
-            "--bg-regular": t.colors.inputBackground,
-            "--bg-contrast": t.colors.inputBackgroundContrast,
             "--text-size-normal": t.text.sizes.input,
             "--text-size-large": t.text.sizes.large,
-            background: "var(--bg)",
             fontSize: "var(--text-size)",
             display: "block",
+            background: t.colors.backgroundModifierNormal,
             color: t.colors.textNormal,
             fontWeight: "400",
             borderRadius: "0.3rem",
@@ -55,6 +55,15 @@ const Input = React.forwardRef(
             "::placeholder": { color: t.colors.inputPlaceholder },
             "&:disabled": { color: t.colors.textMuted },
             "&:focus-visible": { boxShadow: t.shadows.focus },
+            '&[type="date"], &[type="time"]': {
+              WebkitAppearance: "none",
+              minHeight: "3.6rem",
+              "::-webkit-datetime-edit": {
+                lineHeight: 1,
+                display: "inline",
+                padding: 0,
+              },
+            },
             // Prevents iOS zooming in on input fields
             "@supports (-webkit-touch-callout: none)": { fontSize: "1.6rem" },
           })
@@ -64,7 +73,6 @@ const Input = React.forwardRef(
         {...props}
         {...extraProps}
         style={{
-          "--bg": contrast ? "var(--bg-contrast)" : "var(--bg-regular)",
           "--padding":
             size === "small"
               ? "0.5rem 0.7rem"
@@ -97,6 +105,7 @@ const Input = React.forwardRef(
                 fontSize: t.text.sizes.small,
                 color: t.colors.textDimmed,
                 marginTop: "0.7rem",
+                strong: { fontWeight: t.text.weights.emphasis },
               })
             }
           >

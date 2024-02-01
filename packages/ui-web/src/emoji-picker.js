@@ -2,103 +2,43 @@ import React from "react";
 import { css } from "@emotion/react";
 import { useEmojis } from "@shades/common/app";
 import { array as arrayUtils, emoji as emojiUtils } from "@shades/common/utils";
-import { useMatchMedia } from "@shades/common/react";
-import * as Popover from "./popover.js";
-import Dialog from "./dialog.js";
 import Input from "./input";
+import { PopoverOrTrayDialog } from "./gif-picker.js";
 
 const { groupBy } = arrayUtils;
 const { search: searchEmoji } = emojiUtils;
 
 const EmojiPickerTrigger = ({
+  width = "31.6rem",
+  height = "28.4rem",
   onSelect,
   isOpen,
   onOpenChange,
   placement = "top",
+  offset = 10,
   trigger,
-  ...emojiPickerProps
-}) => {
-  const inputDeviceCanHover = useMatchMedia("(hover: hover)");
-  const close = () => {
-    onOpenChange(false);
-  };
-
-  if (inputDeviceCanHover)
-    return (
-      <Popover.Root
-        placement={placement}
-        isOpen={isOpen}
-        onOpenChange={onOpenChange}
-      >
-        <Popover.Trigger asChild>{trigger}</Popover.Trigger>
-        <Popover.Content>
-          {/* <Popover.Arrow /> */}
-          <EmojiPicker
-            onSelect={(emoji) => {
-              close();
-              onSelect(emoji);
-            }}
-            {...emojiPickerProps}
-          />
-        </Popover.Content>
-      </Popover.Root>
-    );
-
-  // Tray dialog on touch devices
-  return (
-    <>
-      {trigger}
-      <Dialog
-        isOpen={isOpen}
-        onRequestClose={close}
-        modalProps={{ css: css({ background: "none" }) }}
-      >
-        <button
-          onClick={close}
-          css={css({
-            padding: "0.8rem",
-            display: "block",
-            margin: "0 auto",
-          })}
-        >
-          <div
-            css={(t) =>
-              css({
-                height: "0.4rem",
-                width: "4.2rem",
-                borderRadius: "0.2rem",
-                background: t.light
-                  ? t.colors.backgroundTertiary
-                  : t.colors.textMuted,
-                boxShadow: t.shadows.elevationLow,
-              })
-            }
-          />
-        </button>
-        <div
-          css={(t) =>
-            css({
-              flex: 1,
-              minHeight: 0,
-              padding: "0.4rem 0.4rem 0",
-              background: t.colors.popoverBackground,
-              borderTopLeftRadius: "0.6rem",
-              borderTopRightRadius: "0.6rem",
-              boxShadow: t.shadows.elevationHigh,
-            })
-          }
-        >
-          <EmojiPicker
-            {...emojiPickerProps}
-            width="auto"
-            height="100%"
-            onSelect={onSelect}
-          />
-        </div>
-      </Dialog>
-    </>
-  );
-};
+  ...pickerProps
+}) => (
+  <PopoverOrTrayDialog
+    isOpen={isOpen}
+    onOpenChange={onOpenChange}
+    placement={placement}
+    trigger={trigger}
+    offset={offset}
+  >
+    {({ type }) => (
+      <EmojiPicker
+        width={type === "popover" ? width : "100%"}
+        height={type === "popover" ? height : "100%"}
+        onSelect={(item) => {
+          onOpenChange(false);
+          onSelect(item);
+        }}
+        {...pickerProps}
+      />
+    )}
+  </PopoverOrTrayDialog>
+);
 
 // Super hacky and inaccessible
 const EmojiPicker = ({ width = "auto", height = "100%", onSelect }) => {
@@ -143,8 +83,8 @@ const EmojiPicker = ({ width = "auto", height = "100%", onSelect }) => {
   const ROW_LENGTH = 9;
 
   const addReactionAtEntry = ([ci, ei]) => {
-    const { emoji } = filteredEmojisByCategoryEntries[ci][1][ei];
-    onSelect(emoji);
+    const { id, emoji } = filteredEmojisByCategoryEntries[ci][1][ei];
+    onSelect(emoji ?? id);
   };
 
   const navigationBlockedRef = React.useRef();
@@ -274,7 +214,6 @@ const EmojiPicker = ({ width = "auto", height = "100%", onSelect }) => {
     >
       <div css={css({ padding: "0.7rem 0.7rem 0.3rem" })}>
         <Input
-          contrast
           size="small"
           ref={inputRef}
           value={query}
@@ -299,6 +238,7 @@ const EmojiPicker = ({ width = "auto", height = "100%", onSelect }) => {
             overflow: "auto",
             scrollPaddingTop: "3rem",
             scrollPaddingBottom: "0.5rem",
+            paddingBottom: "0.7rem",
             ".category-title": {
               position: "sticky",
               top: 0,
@@ -337,6 +277,12 @@ const EmojiPicker = ({ width = "auto", height = "100%", onSelect }) => {
                 zIndex: 2,
                 boxShadow: `0 0 0 0.2rem ${t.colors.primary}`,
               },
+              img: {
+                display: "block",
+                width: "2.2rem",
+                height: "2.2rem",
+                margin: "auto",
+              },
             },
           })
         }
@@ -351,14 +297,14 @@ const EmojiPicker = ({ width = "auto", height = "100%", onSelect }) => {
               className="category-container"
               style={{ paddingTop: category == null ? "0.8rem" : undefined }}
             >
-              {emojis.map(({ emoji }, i) => {
+              {emojis.map(({ id, emoji, url }, i) => {
                 const isHighlighted =
                   highlightedEntry != null &&
                   highlightedEntry[0] === ci &&
                   highlightedEntry[1] === i;
                 return (
                   <button
-                    key={emoji}
+                    key={id ?? emoji}
                     ref={(el) => {
                       if (el == null) return;
                       if (isHighlighted)
@@ -367,7 +313,7 @@ const EmojiPicker = ({ width = "auto", height = "100%", onSelect }) => {
                     className="emoji"
                     data-selected={isHighlighted ? "true" : undefined}
                     onClick={() => {
-                      onSelect(emoji);
+                      onSelect(emoji ?? id);
                     }}
                     onPointerMove={() => {
                       if (
@@ -380,7 +326,7 @@ const EmojiPicker = ({ width = "auto", height = "100%", onSelect }) => {
                       setHighlightedEntry([ci, i]);
                     }}
                   >
-                    {emoji}
+                    {emoji ?? <img src={url} alt={id} />}
                   </button>
                 );
               })}

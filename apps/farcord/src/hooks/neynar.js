@@ -5,6 +5,8 @@ import { array as arrayUtils } from "@shades/common/utils";
 const NEYNAR_V1_ENDPOINT = "https://api.neynar.com/v1/farcaster";
 const NEYNAR_V2_ENDPOINT = "https://api.neynar.com/v2/farcaster";
 
+const NEYNAR_API_KEY = import.meta.env.PUBLIC_NEYNAR_API_KEY;
+
 const DEFAULT_PAGE_SIZE = 75;
 
 export async function fetchNeynarFeedCasts({
@@ -16,7 +18,7 @@ export async function fetchNeynarFeedCasts({
   if (!parentUrl && !fid) return [];
 
   let params = new URLSearchParams({
-    api_key: process.env.NEYNAR_API_KEY,
+    api_key: NEYNAR_API_KEY,
     limit,
   });
 
@@ -54,7 +56,7 @@ export async function fetchNeynarFeedCasts({
 
 export async function fetchNeynarRecentCasts({ cursor }) {
   let params = new URLSearchParams({
-    api_key: process.env.NEYNAR_API_KEY,
+    api_key: NEYNAR_API_KEY,
     limit: DEFAULT_PAGE_SIZE,
   });
 
@@ -86,7 +88,7 @@ export async function fetchNeynarThreadCasts({ threadCastHash, cursor }) {
   if (!threadCastHash) return [];
 
   const params = new URLSearchParams({
-    api_key: process.env.NEYNAR_API_KEY,
+    api_key: NEYNAR_API_KEY,
     threadHash: threadCastHash,
   });
 
@@ -116,7 +118,7 @@ export async function fetchNeynarThreadCasts({ threadCastHash, cursor }) {
 
 export async function fetchNeynarCast(castHash) {
   const params = new URLSearchParams({
-    api_key: process.env.NEYNAR_API_KEY,
+    api_key: NEYNAR_API_KEY,
     hash: castHash,
   });
 
@@ -136,7 +138,7 @@ export async function fetchNeynarCast(castHash) {
 
 export const fetchUserByFid = async (fid) => {
   const params = new URLSearchParams({
-    api_key: process.env.NEYNAR_API_KEY,
+    api_key: NEYNAR_API_KEY,
     fid: Number(fid),
   });
 
@@ -158,7 +160,7 @@ export const fetchUserByFid = async (fid) => {
 
 export const fetchUserByUsername = async (username) => {
   const params = new URLSearchParams({
-    api_key: process.env.NEYNAR_API_KEY,
+    api_key: NEYNAR_API_KEY,
     username,
   });
 
@@ -185,7 +187,7 @@ export async function fetchNotifications({
   limit = 50, //limit for notificatons is different
 }) {
   let params = new URLSearchParams({
-    api_key: process.env.NEYNAR_API_KEY,
+    api_key: NEYNAR_API_KEY,
     fid,
     cursor,
     limit,
@@ -212,7 +214,7 @@ export async function fetchNotifications({
 
 export async function searchUsersByUsername({ fid, query }) {
   let params = new URLSearchParams({
-    api_key: process.env.NEYNAR_API_KEY,
+    api_key: NEYNAR_API_KEY,
     viewer_fid: fid ? Number(fid) : 3, // required...
     q: query,
   });

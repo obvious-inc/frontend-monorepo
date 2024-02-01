@@ -14,7 +14,10 @@ const useAccountDisplayName = (
 
   const { data: wagmiEnsName } = useEnsName({
     address: accountAddress,
-    enabled: user?.ensName == null && accountAddress != null,
+    enabled:
+      user?.ensName == null &&
+      accountAddress != null &&
+      isEthereumAccountAddress(accountAddress),
   });
 
   const ensName = wagmiEnsName ?? user?.ensName;
@@ -22,7 +25,7 @@ const useAccountDisplayName = (
   const isAddress = isEthereumAccountAddress(accountAddress);
 
   if (accountAddress != null && !isAddress)
-    console.warn(`Invalid address "${accountAddress}`);
+    console.warn(`Invalid address "${accountAddress}"`);
 
   const checksumEncodedAddress = isAddress
     ? checksumEncodeAddress(accountAddress)

@@ -11,7 +11,7 @@ export const uploadImages = async ({ files }) => {
     method: "POST",
     body: formData,
     headers: {
-      Authorization: "Client-ID " + process.env.IMGUR_CLIENT_ID,
+      Authorization: "Client-ID " + import.meta.env.PUBLIC_IMGUR_CLIENT_ID,
       Accept: "application/json",
     },
   })

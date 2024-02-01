@@ -57,7 +57,7 @@ export const search = (emoji, rawQuery) => {
       },
       {
         value: (e) => {
-          const tokens = [e.description, ...e.aliases, ...e.tags];
+          const tokens = [e.description, ...e.aliases, ...(e.tags ?? [])];
 
           const [matchIndex, matchStringLength] = tokens.reduce(
             (best, s) => {

@@ -5,33 +5,32 @@ import { withBlockPrefixShortcut } from "../utils.js";
 
 const { compose } = functionUtils;
 
-const ELEMENT_TYPE = "horizontal-divider";
+const DIVIDER_ELEMENT_TYPE = "horizontal-divider";
 
 const middleware = (editor) => {
   const { isVoid } = editor;
 
-  editor.isVoid = (element) => {
-    return element.type === ELEMENT_TYPE || isVoid(element);
-  };
+  editor.isVoid = (element) =>
+    element.type === DIVIDER_ELEMENT_TYPE || isVoid(element);
 
   return compose((editor) =>
     withBlockPrefixShortcut(
       {
         prefix: "---",
-        elementType: ELEMENT_TYPE,
+        elementType: DIVIDER_ELEMENT_TYPE,
         transform: ({ node, path }) => {
           const childText = Node.string(node);
 
           // If the node is empty we can simply change the node type
           if (childText.trim() === "") {
-            editor.setNodes({ type: ELEMENT_TYPE }, { at: path });
+            editor.setNodes({ type: DIVIDER_ELEMENT_TYPE }, { at: path });
             return;
           }
 
           // If we have text content we can let the paragraph be and insert the
           // divider above it
           editor.insertNodes(
-            { type: ELEMENT_TYPE, children: [{ text: "" }] },
+            { type: DIVIDER_ELEMENT_TYPE, children: [{ text: "" }] },
             { at: path }
           );
         },
@@ -42,8 +41,7 @@ const middleware = (editor) => {
 
           const nextSelectableBlockNodePath = editor.next({
             at: selectedBlockNodePath,
-            // Only match at the top level
-            match: (node, path) => path.length === 1 && !editor.isVoid(node),
+            match: (node) => !editor.isVoid(node),
           })?.[1];
 
           // If the next sibling isn’t selectable, we insert an empty paragraph
@@ -88,5 +86,5 @@ const Component = ({ attributes, children }) => {
 
 export default () => ({
   middleware,
-  elements: { [ELEMENT_TYPE]: Component },
+  elements: { [DIVIDER_ELEMENT_TYPE]: Component },
 });

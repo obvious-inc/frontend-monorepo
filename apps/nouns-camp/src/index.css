@@ -1,0 +1,28 @@
+html {
+  font-size: 0.625em;
+}
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica,
+    Arial, sans-serif;
+  margin: 0;
+  font-size: 1.4rem;
+  user-select: none;
+  -webkit-user-select: none;
+  overflow: hidden;
+  text-rendering: optimizeLegibility;
+}
+
+html,
+body {
+  height: 100%;
+  width: 100%;
+}
+
+svg {
+  display: block;
+}
+
+html[data-theme="dark"] {
+  background: hsl(0 0% 10%);
+  color: hsl(0 0% 83%);
+}

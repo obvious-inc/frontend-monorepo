@@ -12,7 +12,7 @@ export const map = (fn, nodes) => {
   const mappedNodes = [];
 
   for (let [index, node] of nodes.entries()) {
-    if (node.children != null) node.children = map(node.children, fn);
+    if (node.children != null) node.children = map(fn, node.children);
     mappedNodes.push(fn(node, index));
   }
 
@@ -32,28 +32,70 @@ export const filter = (predicate, nodes) => {
   return filteredNodes;
 };
 
-const isNodeEmpty = (node, options = {}) => {
+export const some = (predicate, nodes) => {
+  for (let node of nodes) {
+    if (predicate(node)) return true;
+    if (node.children == null) continue;
+    return some(predicate, node.children);
+  }
+  return false;
+};
+
+export const every = (predicate, nodes) => {
+  for (let node of nodes) {
+    if (!predicate(node)) return false;
+    if (node.children == null) continue;
+    return every(predicate, node.children);
+  }
+  return true;
+};
+
+export const isEmpty = (node, options = {}) => {
+  if (Array.isArray(node)) return node.every((n) => isEmpty(n, options));
+
   const { trim = false } = options;
 
   if (node.text != null)
     return trim ? node.text.trim() === "" : node.text === "";
 
   switch (node.type) {
+    case "emoji":
+    case "link":
     case "user":
     case "channel-link":
     case "image":
     case "horizontal-divider":
       return false;
 
+    case "code-block":
+      return node.code.trim() === "";
+
     default:
-      return node.children.every((n) => isNodeEmpty(n, options));
+      return node.children.every((n) => isEmpty(n, options));
   }
 };
 
-export const isEmpty = (nodes, options) =>
-  nodes.every((n) => isNodeEmpty(n, options));
+export const isEqual = (ns1, ns2, options = {}) => {
+  if (ns1 == null || ns2 == null) return ns1 == ns2;
 
-const isNodeEqual = (n1, n2) => {
+  const { filterEmpty = false } = options;
+
+  if (Array.isArray(ns1)) {
+    if (!Array.isArray(ns2)) return false;
+
+    const [ns1_, ns2_] = [ns1, ns2].map((ns) =>
+      filterEmpty ? ns.filter((n) => !isEmpty(n)) : ns
+    );
+
+    if (ns1_.length !== ns2_.length) return false;
+    return ns1_.every((n1, i) => {
+      const n2 = ns2_[i];
+      return isEqual(n1, n2, options);
+    });
+  }
+
+  const [n1, n2] = [ns1, ns2];
+
   if (n1.type !== n2.type) return false;
 
   // Text nodes
@@ -63,25 +105,13 @@ const isNodeEqual = (n1, n2) => {
     );
 
   // The rest is for element nodes
-
-  const baseEqual = () => {
-    const [cs1, cs2] = [n1, n2].map((n) =>
-      n.children.filter((n) => !isNodeEmpty(n))
-    );
-
-    if (cs1.length !== cs2.length) return false;
-
-    return cs1.every((node1, i) => {
-      const node2 = cs2[i];
-      return isNodeEqual(node1, node2);
-    });
-  };
-
-  const propertiesEqual = (ps) => ps.every((p) => n1[p] === n2[p]);
+  const childrenEqual = () => isEqual(n1.children, n2.children, options);
+  const propertiesEqual = (ps) =>
+    ps.every((p) => (n1[p] ?? null) === (n2[p] ?? null));
 
   switch (n1.type) {
     case "link":
-      return propertiesEqual(["url", "label"]) && baseEqual();
+      return propertiesEqual(["url", "label"]);
 
     case "user":
       return propertiesEqual(["ref"]);
@@ -94,18 +124,15 @@ const isNodeEqual = (n1, n2) => {
 
     case "image":
     case "image-attachment":
-      return propertiesEqual(["url"]);
+      return propertiesEqual(["url", "caption"]);
 
     case "horizontal-divider":
       return n1.type === n2.type;
 
     default:
-      return baseEqual();
+      return childrenEqual();
   }
 };
-
-export const isEqual = (ns1, ns2) =>
-  isNodeEqual({ type: "root", children: ns1 }, { type: "root", children: ns2 });
 
 export const getMentions = (nodes) => {
   const mentions = [];
@@ -228,6 +255,7 @@ export const stringifyBlocks = (
         return el.emoji;
 
       case "attachments":
+      case "image-grid":
         return `\n${stringifyChildren()}\n`;
 
       case "image":
@@ -237,8 +265,11 @@ export const stringifyBlocks = (
       case "horizontal-divider":
         return "\n---\n";
 
+      case "code-block":
+        return `\n\`\`\`${el.code}\`\`\`\n`;
+
       default:
-        throw new Error();
+        throw new Error(`Unsupported element type "${el.type}"`);
     }
   };
 
@@ -266,73 +297,157 @@ export const toMarkdown = (blockElements) => {
     return text;
   };
 
-  const renderElement = (el) => {
-    const renderChildren = () => el.children.map(renderNode).join("");
+  const renderBlockElement = (el) => {
+    const renderInlineChildren = () => el.children.map(renderNode).join("");
 
     switch (el.type) {
       case "paragraph":
-        return `\n\n${renderChildren()}`;
+        return renderInlineChildren();
 
       case "heading-1":
-        return `\n\n# ${renderChildren()}`;
+        return `# ${renderInlineChildren()}`;
       case "heading-2":
-        return `\n\n## ${renderChildren()}`;
+        return `## ${renderInlineChildren()}`;
       case "heading-3":
-        return `\n\n### ${renderChildren()}`;
+        return `### ${renderInlineChildren()}`;
       case "heading-4":
-        return `\n\n#### ${renderChildren()}`;
+        return `#### ${renderInlineChildren()}`;
 
       case "quote":
       case "callout":
-        return `\n\n> ${renderChildren()}`;
+        // Block children
+        if (el.children[0].children != null)
+          return el.children
+            .map(renderBlockElement)
+            .join("\n\n")
+            .split("\n")
+            .map((line) => `> ${line}`)
+            .join("\n");
+
+        return `> ${renderInlineChildren().trim().split("\n").join("\n> ")}`;
 
       case "bulleted-list":
       case "numbered-list": {
         const isBulletList = el.type === "bulleted-list";
+
         const children = el.children.map((el, i) => {
-          const prefix = isBulletList ? "-" : `${i + 1}.`;
-          const children = el.children.map(renderNode).join("");
-          return `${prefix} ${children}`;
+          const listItemPrefix = isBulletList ? "-" : `${i + 1}.`;
+          const renderedListItemChildBlocks =
+            el.children.map(renderBlockElement);
+
+          const indentSpace = "".padStart(listItemPrefix.length + 1, " ");
+
+          // Special case to make simple nested lists look bit nicer
+          const skipBlockSpace =
+            el.children.length === 2 &&
+            el.children[0].type === "paragraph" &&
+            ["bulleted-list", "numbered-list"].includes(el.children[1].type);
+
+          return `${listItemPrefix} ${renderedListItemChildBlocks
+            .filter((s) => s.trim() !== "")
+            .join(skipBlockSpace ? "\n" : "\n\n")}`
+            .split("\n")
+            .join(`\n${indentSpace}`);
         });
-        return `\n\n${children.join("\n")}`;
+
+        return children.join("\n");
       }
 
-      case "link":
-        return `[${el.text ?? el.url}](${el.url})`;
+      case "image-grid":
+      case "attachments":
+        return el.children.map(renderBlockElement).join("\n");
 
-      case "emoji":
-        return el.emoji;
+      case "image": {
+        const alt = el.alt || "";
 
-      case "attachments": {
-        const children = el.children.map(
-          (el) => `![${el.text ?? el.url}](${el.url})`
-        );
-        return `\n\n${children.join("\n\n")()}`;
+        if (el.caption == null || el.caption.trim() === "")
+          return `![${alt}](${el.url})`;
+
+        try {
+          new URL(el.caption);
+          return `[![${alt}](${el.url} "${el.caption}")](${el.caption})`;
+        } catch (e) {
+          return `![${alt}](${el.url} "${el.caption}")`;
+        }
       }
-
-      case "image":
-        return `\n\n![${el.text ?? el.url}](${el.url})`;
 
       case "horizontal-divider":
-        return "\n\n---";
+        return "---";
+
+      case "code-block":
+        return `\`\`\`\n${el.code}\n\`\`\``;
+
+      case "table": {
+        const header = el.children.find((el) => el.type === "table-head");
+        const body = el.children.find((el) => el.type === "table-body");
+
+        const rows = [
+          ...(header?.children ?? []),
+          ...(body?.children ?? []),
+        ].map((rowEl) =>
+          rowEl.children.map((cellEl) =>
+            cellEl.children.map(renderNode).join("")
+          )
+        );
+
+        const columnWidths = rows.reduce((widths, cells) => {
+          cells.forEach((cell, i) => {
+            widths[i] = Math.max(widths[i] ?? 0, cell.length);
+          });
+          return widths;
+        }, []);
+
+        const renderRow = (cells) =>
+          `| ${cells
+            .map((text, i) => text.padEnd(columnWidths[i], " "))
+            .join(" | ")} |`;
+
+        const table = rows.map(renderRow).join("\n");
+
+        if (header == null) return table;
+
+        const renderedRows = table.split("\n");
+
+        return [
+          renderedRows[0],
+          // Header bottom divider
+          `| ${columnWidths
+            .map((width) => "".padEnd(width, "-"))
+            .join(" | ")} |`,
+          ...renderedRows.slice(1),
+        ].join("\n");
+      }
 
       default:
         throw new Error(`Unknown element type: "${el.type}"`);
     }
   };
 
-  const renderNode = (n, i) => {
-    if (n.text != null) return renderTextNode(n);
-    return renderElement(n, i);
+  const renderNode = (node, i, all) => {
+    if (node.type == null || node.type === "text")
+      return renderTextNode(node, i, all);
+
+    switch (node.type) {
+      case "image":
+        return node.caption == null
+          ? `![${node.alt}](${node.url})`
+          : `![${node.alt}](${node.url} "${node.caption}")`;
+
+      case "link":
+        return `[${node.label ?? node.text ?? node.url}](${node.url})`;
+
+      case "emoji":
+        return node.emoji;
+
+      default:
+        throw new Error(`Unknown node type: "${node.type}"`);
+    }
   };
 
-  return (
-    blockElements
-      .map(renderElement)
-      .join("")
-      // Gets rid of the the outer paragraph line breaks
-      .trim()
-  );
+  return blockElements
+    .map(renderBlockElement)
+    .filter((s) => s.trim() !== "")
+    .join("\n\n");
 };
 
 export const createParagraphElement = (content = "") => ({

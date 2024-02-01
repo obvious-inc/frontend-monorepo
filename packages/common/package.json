@@ -1,7 +1,6 @@
 {
   "name": "@shades/common",
   "version": "0.0.0",
-  "main": "dist/index.js",
   "private": true,
   "scripts": {
     "dev": "rollup -c -w",
@@ -16,7 +15,8 @@
     "./utils": "./dist/utils.js",
     "./react": "./dist/react.js",
     "./nouns": "./dist/nouns/index.js",
-    "./emoji": "./dist/emoji.js"
+    "./emoji": "./dist/emoji.js",
+    "./custom-emoji": "./dist/custom-emoji.js"
   },
   "devDependencies": {
     "@swc/core": "^1.3.57",

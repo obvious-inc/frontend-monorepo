@@ -1,8 +1,9 @@
 import React from "react";
 import { css } from "@emotion/react";
 
-const Image = (props) => {
+const Image = ({ disableFallback = false, ...props }) => {
   const ref = React.useRef();
+  const onLoadRef = React.useRef(props.onLoad);
 
   const [error, setError] = React.useState(null);
 
@@ -13,10 +14,29 @@ const Image = (props) => {
     };
   }, [props.src]);
 
-  if (error != null)
+  React.useEffect(() => {
+    onLoadRef.current = props.onLoad;
+  });
+
+  React.useEffect(() => {
+    ref.current.onload = () => {
+      if (ref.current == null) return;
+      onLoadRef.current?.({
+        width: ref.current.naturalWidth,
+        height: ref.current.naturalHeight,
+      });
+    };
+  }, []);
+
+  if (error != null && !disableFallback)
     return (
-      <div
-        style={{ width: props.width, ...props.style }}
+      <span
+        data-url={props.src ?? "--none--"}
+        style={{
+          padding: props.width == null ? "1em" : 0,
+          width: props.width,
+          ...props.style,
+        }}
         css={(t) =>
           css({
             userSelect: "none",
@@ -24,12 +44,14 @@ const Image = (props) => {
             alignItems: "center",
             justifyContent: "center",
             color: t.colors.textMuted,
-            fontSize: t.fontSizes.default,
+            fontSize: "1em",
+            borderRadius: "0.3rem",
+            boxShadow: `0 0 0 0.1rem ${t.colors.borderLighter}`,
           })
         }
       >
         Error loading image
-      </div>
+      </span>
     );
 
   return <img ref={ref} {...props} />;

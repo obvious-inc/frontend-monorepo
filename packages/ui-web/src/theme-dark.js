@@ -6,6 +6,8 @@ export const createPrimary = ({
 } = {}) =>
   `hsl(${hue} ${saturation * 100}% ${lightness * 100}% / ${opacity * 100}%)`;
 
+const textRed = "rgb(235, 87, 87)";
+
 const primary = createPrimary();
 const primaryTintDarker = createPrimary({ saturation: 1, lightness: 0.43 });
 const primaryTintLighter = createPrimary({ saturation: 1, lightness: 0.6 });
@@ -17,27 +19,34 @@ const textDimmedModifierHover = "hsl(0 0% 66%)";
 const textMuted = "hsl(0 0% 40%)";
 const textMutedModifierHover = "hsl(0 0% 46%)";
 const textMutedAlpha = "hsl(0 0% 100% / 28%)";
-const textDanger = "rgb(235, 87, 87)";
+const textDanger = textRed;
 const backgroundNormal = "hsl(0 0% 13%)";
 const backgroundDark = "hsl(0 0% 10%)";
 const backgroundLight = "hsl(0 0% 15%)";
 const backgroundLighter = "hsl(0 0% 17%)";
 const backgroundLightest = "hsl(0 0% 23%)";
 
-const backgroundModifierLighter = "hsl(0 0% 100% / 1.5%)";
-const backgroundModifierHover = "hsl(0 0% 100% / 5.5%)";
-const backgroundModifierHoverStrong = "hsl(0 0% 100% / 8%)";
+const backgroundModifierLight = "hsl(0 0% 100% / 1.5%)";
+const backgroundModifierNormal = "hsl(0 0% 100% / 5.5%)";
+const backgroundModifierStrong = "hsl(0 0% 100% / 8%)";
+const backgroundModifierSelected = createPrimary({
+  lightness: 0.4,
+  opacity: 0.15,
+});
 
 const normalTextSize = "1.4rem";
 const largeText = "1.6rem";
+const largerText = "1.8rem";
 
 const textSizes = {
+  micro: "0.95rem",
   tiny: "1.05rem",
   small: "1.2rem",
   base: normalTextSize,
   // todo: remove default
   default: normalTextSize,
   large: largeText,
+  larger: largerText,
   huge: "3.2rem",
   header: largeText,
   headerLarge: "2rem",
@@ -48,13 +57,24 @@ const textSizes = {
   tab: "1.5rem",
 };
 
+const textWeights = {
+  default: "400",
+  normal: "400",
+  header: "700",
+  smallHeader: "600",
+  emphasis: "600",
+  menuListBoxItem: "500",
+  numberBadge: "500",
+};
+
 const fontStacks = {
   default:
     'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif',
   headers:
     'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif',
   monospace:
-    'ui-monospace, "Cascadia Mono", "Segoe UI Mono", "Ubuntu Mono", "Roboto Mono", Menlo, Monaco, Consolas, monospace',
+    '"SFMono-Regular", Menlo, Consolas, "PT Mono", "Liberation Mono", Courier, monospace',
+  // 'ui-monospace, "Cascadia Mono", "Segoe UI Mono", "Ubuntu Mono", "Roboto Mono", Menlo, Monaco, Consolas, monospace',
 };
 
 export default {
@@ -63,7 +83,7 @@ export default {
   avatars: {
     borderRadius: "50%",
     size: "1.8rem",
-    background: backgroundModifierHover,
+    background: backgroundModifierNormal,
   },
   mainHeader: {
     height: "4.5rem",
@@ -71,7 +91,7 @@ export default {
   },
   mainMenu: {
     itemHeight: "2.7rem",
-    itemTextWeight: "500",
+    itemTextWeight: textWeights.menuListBoxItem,
     itemBorderRadius: "0.3rem",
     itemHorizontalPadding: "1rem",
     inputHeight: "2.9rem",
@@ -109,7 +129,7 @@ export default {
     textMuted,
     textMutedModifierHover,
     textMutedAlpha,
-    textHeader: "white",
+    textHeader: "hsl(0 0% 94%)",
     textAccent: "white",
     textHeaderSecondary: "hsl(0 0% 72%)",
     textPrimary: primaryTintLighter,
@@ -133,18 +153,16 @@ export default {
     buttonHover: backgroundLighter,
     toolbarBackground: backgroundLight,
     inputBackground: backgroundLight,
-    inputBackgroundContrast: backgroundModifierHover,
     inputPlaceholder: "hsl(0 0% 100% / 40%)",
-    backgroundModifierHover,
-    backgroundModifierHoverStrong,
+    backgroundModifierLight,
+    backgroundModifierNormal,
+    backgroundModifierStrong,
+    backgroundModifierSelected,
+    backgroundModifierHover: backgroundModifierNormal, // deprecated
     backgroundYellow: "rgb(202, 152, 73)",
     interactiveNormal: "#b9bbbe",
     interactiveHover: "#dcddde",
-    messageBackgroundModifierFocus: backgroundModifierLighter,
-    messageBackgroundModifierHighlight: createPrimary({
-      lightness: 0.4,
-      opacity: 0.15,
-    }),
+    messageBackgroundModifierHighlight: backgroundModifierSelected,
     onlineIndicator: "hsl(139 47.3%  43.9%)",
     mentionText: createPrimary({ saturation: 1, lightness: 0.95 }),
     mentionTextModifierHover: "white",
@@ -155,19 +173,15 @@ export default {
   fontSizes: textSizes,
   text: {
     sizes: textSizes,
-    weights: {
-      default: "400",
-      normal: "400",
-      header: "700",
-      smallHeader: "600",
-      emphasis: "600",
-      notificationBadge: "500",
-    },
+    weights: textWeights,
     fontStacks,
   },
   fontStacks,
   shadows: {
     focus: `0 0 0 0.1rem ${primary}, 0 0 0 0.3rem ${createPrimary({
+      opacity: 0.4,
+    })}`,
+    focusSmall: `0 0 0 0.1rem ${primary}, 0 0 0 0.2rem ${createPrimary({
       opacity: 0.4,
     })}`,
     elevationHigh:

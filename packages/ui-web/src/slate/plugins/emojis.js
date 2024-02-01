@@ -1,5 +1,5 @@
 import { isKeyHotkey } from "is-hotkey";
-import { Transforms, Text, Editor, Range } from "slate";
+import { Text, Range } from "slate";
 import { useSelected, useFocused } from "slate-react";
 import { emoji as emojiUtils } from "@shades/common/utils";
 import { getCharacters } from "../utils.js";
@@ -7,36 +7,36 @@ import Emoji from "../../emoji.js";
 
 const { isEmoji } = emojiUtils;
 
-const ELEMENT_TYPE = "emoji";
+const EMOJI_ELEMENT_TYPE = "emoji";
 
 const findAbove = (editor, at = editor.selection) =>
-  Editor.above(editor, {
+  editor.above({
     at,
-    match: (n) => n.type === ELEMENT_TYPE,
+    match: (n) => n.type === EMOJI_ELEMENT_TYPE,
   });
 
 const wrapEmoji = (editor, emoji, { at } = {}) => {
   const element = {
-    type: ELEMENT_TYPE,
+    type: EMOJI_ELEMENT_TYPE,
     emoji,
     children: [{ text: emoji }],
   };
-  Transforms.wrapNodes(editor, element, { at, split: true });
+  editor.wrapNodes(element, { at, split: true });
 };
 
 const middleware = (editor) => {
   const { isInline, isVoid, normalizeNode } = editor;
 
   editor.isInline = (element) => {
-    return element.type === ELEMENT_TYPE || isInline(element);
+    return element.type === EMOJI_ELEMENT_TYPE || isInline(element);
   };
 
   editor.isVoid = (element) => {
-    return element.type === ELEMENT_TYPE || isVoid(element);
+    return element.type === EMOJI_ELEMENT_TYPE || isVoid(element);
   };
 
   editor.normalizeNode = ([node, path]) => {
-    if (node.type === ELEMENT_TYPE) {
+    if (node.type === EMOJI_ELEMENT_TYPE) {
       normalizeNode([node, path]);
       return;
     }
@@ -60,15 +60,13 @@ const middleware = (editor) => {
 
   editor.insertEmoji = (emoji, { at } = {}) => {
     const element = {
-      type: ELEMENT_TYPE,
+      type: EMOJI_ELEMENT_TYPE,
       emoji,
       children: [{ text: emoji }],
     };
-    if (at) Transforms.select(editor, at);
-    Transforms.insertNodes(editor, element);
-    // Transforms.move(editor);
-    Transforms.move(editor, { unit: "offset" });
-    // editor.insertText(" ");
+    if (at) editor.select(at);
+    editor.insertNodes(element);
+    editor.move({ unit: "offset" });
   };
 
   return editor;
@@ -76,8 +74,7 @@ const middleware = (editor) => {
 
 const onChange = (_, editor) => {
   // Move out of the element (moving right) if selection ended up inside one
-  if (findAbove(editor))
-    Transforms.move(editor, { unit: "offset", distance: 1 });
+  if (findAbove(editor)) editor.move({ unit: "offset", distance: 1 });
 };
 
 const onKeyDown = (e, editor) => {
@@ -94,20 +91,20 @@ const onKeyDown = (e, editor) => {
   // This lets the user step into and out of the inline without stepping over characters.
   // You may wish to customize this further to only use unit:'offset' in specific cases.
   if (hasCollapsedSelection && isKeyHotkey("left", nativeEvent)) {
-    const pointBefore = Editor.before(editor, selection);
+    const pointBefore = editor.before(selection);
     const match = findAbove(editor, pointBefore);
     if (match == null) return;
     e.preventDefault();
-    Transforms.move(editor, { unit: "offset", reverse: true, distance: 2 });
+    editor.move({ unit: "offset", reverse: true, distance: 2 });
     return;
   }
 
   if (hasCollapsedSelection && isKeyHotkey("right", nativeEvent)) {
-    const pointAfter = Editor.after(editor, selection);
+    const pointAfter = editor.after(selection);
     const match = findAbove(editor, pointAfter);
     if (match == null) return;
     e.preventDefault();
-    Transforms.move(editor, { unit: "offset", distance: 2 });
+    editor.move({ unit: "offset", distance: 2 });
     return;
   }
 };
@@ -141,5 +138,5 @@ const EmojiComponent = ({ element, attributes, children }) => {
 export default () => ({
   middleware,
   handlers: { onKeyDown, onChange },
-  elements: { [ELEMENT_TYPE]: EmojiComponent },
+  elements: { [EMOJI_ELEMENT_TYPE]: EmojiComponent },
 });
