@@ -1,7 +1,5 @@
 import React from "react";
 import { createRoot } from "react-dom/client";
-import { CacheStoreProvider, createCacheStore } from "@shades/common/app";
-import { ChainDataCacheContextProvider } from "./hooks/farcord.js";
 import {
   WagmiConfig,
   createConfig as createWagmiConfig,
@@ -12,9 +10,11 @@ import { infuraProvider } from "wagmi/providers/infura";
 import { publicProvider } from "wagmi/providers/public";
 import { InjectedConnector } from "wagmi/connectors/injected";
 import { WalletConnectConnector } from "wagmi/connectors/walletConnect";
+import { CacheStoreProvider, createCacheStore } from "@shades/common/app";
+import { ChainDataCacheContextProvider } from "./hooks/farcord";
+import { ChannelCacheContextProvider } from "./hooks/channel";
 import "./reset.css";
 import "./index.css";
-import { ChannelCacheContextProvider } from "./hooks/channel.js";
 
 const LazyApp = React.lazy(() => import("./app"));
 
@@ -36,7 +36,10 @@ try {
 
 const { chains, publicClient } = configureWagmiChains(
   [optimism],
-  [infuraProvider({ apiKey: process.env.INFURA_PROJECT_ID }), publicProvider()]
+  [
+    infuraProvider({ apiKey: import.meta.env.PUBLIC_INFURA_PROJECT_ID }),
+    publicProvider(),
+  ]
 );
 
 const wagmiConfig = createWagmiConfig({
@@ -47,7 +50,7 @@ const wagmiConfig = createWagmiConfig({
     new WalletConnectConnector({
       chains,
       options: {
-        projectId: process.env.WALLET_CONNECT_PROJECT_ID,
+        projectId: import.meta.env.PUBLIC_WALLET_CONNECT_PROJECT_ID,
       },
     }),
   ],

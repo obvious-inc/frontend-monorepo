@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+<!doctype html>
 <html>
   <head>
     <meta charset="utf-8" />
@@ -9,11 +9,12 @@
       sizes="192x192"
       href="/android-chrome-192x192.png"
     />
-    <title><%= htmlWebpackPlugin.options.title %></title>
+    <title>Farcord</title>
     <meta property="og:site_name" content="farcord" />
     <meta property="og:type" content="website" />
   </head>
   <body>
     <div id="app-mount" />
+    <script type="module" src="src/entry.jsx"></script>
   </body>
 </html>

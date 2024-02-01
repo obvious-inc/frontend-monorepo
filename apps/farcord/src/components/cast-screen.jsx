@@ -3,17 +3,17 @@ import { css } from "@emotion/react";
 import { useNeynarCast } from "../hooks/neynar.js";
 import MessageEditorForm from "@shades/ui-web/message-editor-form";
 import Spinner from "@shades/ui-web/spinner";
-import { CastItem } from "./cast.js";
-import useSigner from "./signer.js";
+import { CastItem } from "./cast";
+import useSigner from "./signer";
 import { message } from "@shades/common/utils";
-import { addCast } from "../hooks/hub.js";
+import { addCast } from "../hooks/hub";
 import { hexToBytes, toHex } from "viem";
-import ThreadNavBar from "./thread-navbar.js";
+import ThreadNavBar from "./thread-navbar";
 import {
   useChannelCacheContext,
   useThreadCasts,
   useThreadCastsFetch,
-} from "../hooks/channel.js";
+} from "../hooks/channel";
 
 const ThreadScrollView = ({ castHash }) => {
   const castsContainerRef = React.useRef();

@@ -7,9 +7,11 @@ const NEYNAR_V2_ENDPOINT = "https://api.neynar.com/v2/farcaster";
 
 const DEFAULT_PAGE_SIZE = 30;
 
+const NEYNAR_API_KEY = import.meta.env.PUBLIC_NEYNAR_API_KEY;
+
 export async function fetchNeynarCasts({ parentUrl, cursor }) {
   let params = new URLSearchParams({
-    api_key: process.env.NEYNAR_API_KEY,
+    api_key: NEYNAR_API_KEY,
     feed_type: "filter",
     filter_type: "parent_url",
     parent_url: parentUrl,
@@ -42,7 +44,7 @@ export async function fetchNeynarThreadCasts({ threadCastHash, cursor }) {
   if (!threadCastHash) return [];
 
   const params = new URLSearchParams({
-    api_key: process.env.NEYNAR_API_KEY,
+    api_key: NEYNAR_API_KEY,
     threadHash: threadCastHash,
   });
 
@@ -78,7 +80,7 @@ export const useNeynarChannelCasts = (channelId) => {
     async (query = {}) => {
       const { cursor } = query;
       let params = new URLSearchParams({
-        api_key: process.env.NEYNAR_API_KEY,
+        api_key: NEYNAR_API_KEY,
         feed_type: "filter",
         filter_type: "parent_url",
         parent_url: channel?.parentUrl,
@@ -129,7 +131,7 @@ export const useNeynarRecentCasts = ({ cursor, fid }) => {
 
   useEffect(() => {
     let params = new URLSearchParams({
-      api_key: process.env.NEYNAR_API_KEY,
+      api_key: NEYNAR_API_KEY,
       viewerFid: fid,
       limit: DEFAULT_PAGE_SIZE,
     });
@@ -172,7 +174,7 @@ export const useNeynarCast = (castHash) => {
 
     async function fetchCast() {
       const params = new URLSearchParams({
-        api_key: process.env.NEYNAR_API_KEY,
+        api_key: NEYNAR_API_KEY,
         hash: castHash,
       });
 
@@ -209,7 +211,7 @@ export const useNeynarThreadCasts = (castHash) => {
   useEffect(() => {
     async function fetchCast() {
       const params = new URLSearchParams({
-        api_key: process.env.NEYNAR_API_KEY,
+        api_key: NEYNAR_API_KEY,
         threadHash: castHash,
       });
 
@@ -250,7 +252,7 @@ export const useNeynarUser = (fid) => {
 
     async function fetchCast() {
       const params = new URLSearchParams({
-        api_key: process.env.NEYNAR_API_KEY,
+        api_key: NEYNAR_API_KEY,
         fid,
       });
 
@@ -277,7 +279,7 @@ export const useNeynarUser = (fid) => {
 
 export const fetchUserByUsername = async (username) => {
   const params = new URLSearchParams({
-    api_key: process.env.NEYNAR_API_KEY,
+    api_key: NEYNAR_API_KEY,
     username,
   });
 
@@ -298,7 +300,7 @@ export const fetchCustodyAddressByUsername = async (username) => {
   if (!user) return;
 
   const params = new URLSearchParams({
-    api_key: process.env.NEYNAR_API_KEY,
+    api_key: NEYNAR_API_KEY,
     fid: user.fid,
   });
 

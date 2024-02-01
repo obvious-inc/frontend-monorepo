@@ -11,7 +11,6 @@ module.exports = (...args) => {
     plugins: [
       ...config.plugins,
       new webpack.EnvironmentPlugin({
-        PUSHER_KEY: undefined,
         FARCASTER_HUB_RPC_ENDPOINT: undefined,
         NEYNAR_API_KEY: undefined,
         INFURA_PROJECT_ID: null,

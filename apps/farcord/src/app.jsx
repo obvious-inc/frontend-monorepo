@@ -5,11 +5,11 @@ import { EmojiProvider } from "@shades/common/app";
 import { light as theme } from "@shades/ui-web/theme";
 import * as Tooltip from "@shades/ui-web/tooltip";
 import { Provider as SidebarProvider } from "@shades/ui-web/sidebar-layout";
-import { Provider as SignerProvider } from "./components/signer.js";
+import { Provider as SignerProvider } from "./components/signer";
 
 const customTheme = { ...theme, sidebarWidth: "28rem" };
 const ChannelScreen = React.lazy(() =>
-  import("./components/channel-screen.js")
+  import("./components/channel-screen")
 );
 
 const App = () => {

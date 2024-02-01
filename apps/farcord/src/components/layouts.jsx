@@ -10,7 +10,7 @@ import Avatar from "@shades/ui-web/avatar";
 import FarcasterAccount from "./farcaster-account";
 import { useFollowedChannels } from "../hooks/warpcast";
 import useSigner from "./signer";
-import AuthScreen from "./auth-screen.js";
+import AuthScreen from "./auth-screen";
 import Dialog from "@shades/ui-web/dialog";
 
 const DEFAULT_TRUNCATED_COUNT = 10;

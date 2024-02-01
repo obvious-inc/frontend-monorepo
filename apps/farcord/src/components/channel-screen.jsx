@@ -1,24 +1,24 @@
+import { toHex } from "viem";
 import React from "react";
-import { MainLayout } from "./layouts.js";
 import { useParams, useSearchParams } from "react-router-dom";
 import { css } from "@emotion/react";
+import { message } from "@shades/common/utils";
 import { ReverseVerticalScrollView } from "@shades/common/react";
 import MessageEditorForm from "@shades/ui-web/message-editor-form";
 import Spinner from "@shades/ui-web/spinner";
-import { CastItem } from "./cast.js";
-import ChannelNavBar from "./channel-navbar.js";
-import { ThreadScreen } from "./cast-screen.js";
-import { useFarcasterChannel } from "../hooks/farcord.js";
-import { message } from "@shades/common/utils";
 import useSigner from "./signer";
-import { addCast } from "../hooks/hub.js";
+import { useFarcasterChannel } from "../hooks/farcord";
+import { addCast } from "../hooks/hub";
 import {
   useChannelCacheContext,
   useChannelCasts,
   useChannelCastsFetch,
-} from "../hooks/channel.js";
-import { useNeynarRecentCasts } from "../hooks/neynar.js";
-import { toHex } from "viem";
+} from "../hooks/channel";
+import { useNeynarRecentCasts } from "../hooks/neynar";
+import { MainLayout } from "./layouts";
+import { CastItem } from "./cast";
+import ChannelNavBar from "./channel-navbar";
+import { ThreadScreen } from "./cast-screen";
 
 export const ChannelCastsScrollView = ({
   channelId,

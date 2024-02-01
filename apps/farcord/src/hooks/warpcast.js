@@ -3,6 +3,8 @@ import React from "react";
 const WARPCAST_DEFAULT_LIMIT = 30;
 const WARPCAST_API_ENDPOINT = "https://api.warpcast.com/v2";
 
+const WARPCAST_API_TOKEN = import.meta.env.PUBLIC_WARPCAST_API_TOKEN;
+
 export const useRecentCasts = (cursor, fid) => {
   const [casts, setCasts] = React.useState(null);
   const [nextCursor, setNextCursor] = React.useState(null);
@@ -12,9 +14,7 @@ export const useRecentCasts = (cursor, fid) => {
       limit: WARPCAST_DEFAULT_LIMIT,
     });
 
-    const headers = new Headers({
-      Authorization: process.env.WARPCAST_API_TOKEN,
-    });
+    const headers = new Headers({ Authorization: WARPCAST_API_TOKEN });
 
     async function fetchCasts() {
       fetch(WARPCAST_API_ENDPOINT + "/recent-casts?" + params, { headers })
@@ -47,9 +47,7 @@ export const useFollowedChannels = (fid) => {
       limit: WARPCAST_DEFAULT_LIMIT,
     });
 
-    const headers = new Headers({
-      Authorization: process.env.WARPCAST_API_TOKEN,
-    });
+    const headers = new Headers({ Authorization: WARPCAST_API_TOKEN });
 
     async function fetchCasts() {
       fetch(WARPCAST_API_ENDPOINT + "/user-following-channels?" + params, {

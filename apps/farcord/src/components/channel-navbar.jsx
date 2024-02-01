@@ -1,7 +1,7 @@
 import { css } from "@emotion/react";
 import { useFarcasterChannel } from "../hooks/farcord";
 import Avatar from "@shades/ui-web/avatar";
-import Heading from "./heading.js";
+import Heading from "./heading";
 import NavBar from "./navbar";
 
 const ChannelNavBar = ({ channelId }) => {

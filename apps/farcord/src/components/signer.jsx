@@ -59,7 +59,9 @@ const SIGNED_KEY_REQUEST_TYPE = [
   { name: "deadline", type: "uint256" },
 ];
 
-const appAccount = mnemonicToAccount(process.env.FARCORD_APP_MNEMONIC);
+const appAccount = mnemonicToAccount(
+  import.meta.env.PUBLIC_FARCORD_APP_MNEMONIC
+);
 
 export const createCacheKey = (address) =>
   [address?.toLowerCase(), "signer"].filter(Boolean).join("-");
@@ -150,7 +152,7 @@ export const Provider = ({ children }) => {
             },
             primaryType: "SignedKeyRequest",
             message: {
-              requestFid: BigInt(process.env.FARCORD_APP_FID),
+              requestFid: BigInt(import.meta.env.PUBLIC_FARCORD_APP_FID),
               key: publicKey,
               deadline: BigInt(deadline),
             },
@@ -164,7 +166,7 @@ export const Provider = ({ children }) => {
                 1,
                 encodeAbiParameters(KEY_METADATA_TYPE, [
                   {
-                    requestFid: BigInt(process.env.FARCORD_APP_FID),
+                    requestFid: BigInt(import.meta.env.PUBLIC_FARCORD_APP_FID),
                     requestSigner: appAccount.address,
                     signature: signature,
                     deadline: BigInt(deadline),

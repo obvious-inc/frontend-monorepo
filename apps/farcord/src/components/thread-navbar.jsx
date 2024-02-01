@@ -1,10 +1,10 @@
 import { css } from "@emotion/react";
-import Heading from "./heading.js";
+import Heading from "./heading";
 import NavBar from "./navbar";
 import { useSearchParams } from "react-router-dom";
 import Button from "@shades/ui-web/button";
 import { Cross as CrossIcon } from "@shades/ui-web/icons";
-import { useNeynarCast } from "../hooks/neynar.js";
+import { useNeynarCast } from "../hooks/neynar";
 
 const ThreadNavBar = ({ castHash }) => {
   const cast = useNeynarCast(castHash);
