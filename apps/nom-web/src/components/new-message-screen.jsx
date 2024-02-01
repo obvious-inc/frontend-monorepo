@@ -65,9 +65,7 @@ import Combobox, {
 } from "./combobox";
 import { Grid as FlexGrid, Item as FlexGridItem } from "./flex-grid";
 import NavBar from "./nav-bar";
-import ChannelPrologue, {
-  PersonalDMChannelPrologue,
-} from "./channel-prologue";
+import ChannelPrologue, { PersonalDMChannelPrologue } from "./channel-prologue";
 import ChannelMessagesScrollViewHeader from "./channel-messages-scroll-view-header";
 import ChannelMessage from "./channel-message";
 import AccountPreviewPopoverTrigger from "./account-preview-popover-trigger";

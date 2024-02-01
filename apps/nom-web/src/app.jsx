@@ -23,8 +23,8 @@ const useIFrameMessenger = () => {
     window === window.parent
       ? null
       : (action) => {
-        window.parent.postMessage({ action }, "*");
-      }
+          window.parent.postMessage({ action }, "*");
+        }
   );
 };
 

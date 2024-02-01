@@ -1,9 +1,7 @@
-import va from "@vercel/analytics";
 import React from "react";
 import { css } from "@emotion/react";
 import NextLink from "next/link";
 import { usePathname } from "next/navigation";
-// import { useLocation, Link as RouterLink } from "react-router-dom";
 import { useAccountDisplayName } from "@shades/common/app";
 import { useMatchMedia } from "@shades/common/react";
 import Button from "@shades/ui-web/button";
@@ -266,7 +264,6 @@ const NavBar = ({ navigationStack, actions: actions_ }) => {
             connectedWalletAccountAddress == null
               ? {
                   onSelect: () => {
-                    va.track("Connect Wallet", { location: "navbar" });
                     requestWalletAccess();
                   },
                   buttonProps: {
@@ -286,6 +283,7 @@ const NavBar = ({ navigationStack, actions: actions_ }) => {
                     variant: "default",
                     isLoading: isLoadingWallet,
                     disabled: switchWalletToMainnet == null || isLoadingWallet,
+                    style: { marginLeft: "0.9rem" },
                   },
                   label: "Switch to Mainnet",
                 }

@@ -1,4 +1,3 @@
-import va from "@vercel/analytics";
 import {
   parseAbi,
   stringToBytes,
@@ -16,11 +15,12 @@ import {
   useBlockNumber,
 } from "wagmi";
 import { unparse as unparseTransactions } from "../utils/transactions.js";
-import { useWallet } from "./wallet.js";
 import { resolveIdentifier } from "../contracts.js";
-import { useCurrentVotes } from "./token-contract.js";
 import { useActions } from "../store.js";
+import { useWallet } from "./wallet.js";
 import useChainId from "./chain-id.js";
+import useRegisterEvent from "./register-event.js";
+import { useCurrentVotes } from "./token-contract.js";
 
 const getContractAddress = (chainId) =>
   resolveIdentifier(chainId, "data").address;
@@ -30,12 +30,12 @@ export const useSendProposalCandidateFeedback = (
   slug,
   { support, reason }
 ) => {
-  const chainId = useChainId();
   const { address: accountAddress } = useWallet();
+  const { data: blockNumber } = useBlockNumber();
+  const chainId = useChainId();
+  const registerEvent = useRegisterEvent();
 
   const { addOptimitisicCandidateFeedbackPost } = useActions();
-
-  const { data: blockNumber } = useBlockNumber();
 
   const { config } = usePrepareContractWrite({
     address: getContractAddress(chainId),
@@ -53,9 +53,8 @@ export const useSendProposalCandidateFeedback = (
   return async () => {
     const candidateId = [proposerId, slug].join("-").toLowerCase();
     const voterId = accountAddress.toLowerCase();
-    va.track("Feedback", { candidateId, account: accountAddress });
     return write().then(({ hash }) => {
-      va.track("Candidate feedback successfully submitted", {
+      registerEvent("Candidate feedback successfully submitted", {
         candidateId,
         hash,
         account: accountAddress,
@@ -77,6 +76,7 @@ export const useSendProposalCandidateFeedback = (
 export const useSendProposalFeedback = (proposalId, { support, reason }) => {
   const { address: accountAddress } = useWallet();
   const chainId = useChainId();
+  const registerEvent = useRegisterEvent();
 
   const { config } = usePrepareContractWrite({
     address: getContractAddress(chainId),
@@ -91,26 +91,21 @@ export const useSendProposalFeedback = (proposalId, { support, reason }) => {
 
   if (write == null) return null;
 
-  return async () => {
-    va.track("Feedback", {
-      proposalId,
-      account: accountAddress,
-    });
-
-    return write().then(({ hash }) => {
-      va.track("Proposal feedback successfully submitted", {
+  return async () =>
+    write().then(({ hash }) => {
+      registerEvent("Proposal feedback successfully submitted", {
         proposalId,
         hash,
         account: accountAddress,
       });
       return { hash };
     });
-  };
 };
 
 export const useCreateProposalCandidate = ({ enabled = true } = {}) => {
   const publicClient = usePublicClient();
   const chainId = useChainId();
+  const registerEvent = useRegisterEvent();
 
   const { address: accountAddress } = useWallet();
   const votingPower = useCurrentVotes(accountAddress);
@@ -146,7 +141,7 @@ export const useCreateProposalCandidate = ({ enabled = true } = {}) => {
       ],
     })
       .then(({ hash }) => {
-        va.track("Candidate successfully created", {
+        registerEvent("Candidate successfully created", {
           hash,
           slug,
           account: accountAddress,
@@ -202,6 +197,7 @@ export const useUpdateProposalCandidate = (slug, { enabled = true } = {}) => {
 
   const publicClient = usePublicClient();
   const chainId = useChainId();
+  const registerEvent = useRegisterEvent();
 
   const updateCost = useProposalCandidateUpdateCost({ enabled });
 
@@ -238,7 +234,7 @@ export const useUpdateProposalCandidate = (slug, { enabled = true } = {}) => {
         updateMessage,
       ],
     }).then(({ hash }) => {
-      va.track("Candidate successfully updated", {
+      registerEvent("Candidate successfully updated", {
         hash,
         slug,
         account: accountAddress,
@@ -253,6 +249,7 @@ export const useCancelProposalCandidate = (slug, { enabled = true } = {}) => {
 
   const publicClient = usePublicClient();
   const chainId = useChainId();
+  const registerEvent = useRegisterEvent();
 
   const { config } = usePrepareContractWrite({
     address: getContractAddress(chainId),
@@ -269,7 +266,7 @@ export const useCancelProposalCandidate = (slug, { enabled = true } = {}) => {
 
   return () =>
     write().then(({ hash }) => {
-      va.track("Candidate successfully canceled", {
+      registerEvent("Candidate successfully canceled", {
         hash,
         slug,
         account: accountAddress,
@@ -323,6 +320,7 @@ export const useAddSignatureToProposalCandidate = (
   const { description, targets, values, signatures, calldatas } = content;
 
   const chainId = useChainId();
+  const registerEvent = useRegisterEvent();
 
   const { writeAsync: write } = useContractWrite({
     address: getContractAddress(chainId),
@@ -354,7 +352,7 @@ export const useAddSignatureToProposalCandidate = (
         reason,
       ],
     }).then(({ hash }) => {
-      va.track("Candidate signature successfully submitted", {
+      registerEvent("Candidate signature successfully submitted", {
         hash,
         slug,
         account: accountAddress,

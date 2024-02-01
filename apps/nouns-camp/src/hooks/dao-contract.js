@@ -1,4 +1,3 @@
-import va from "@vercel/analytics";
 import { parseAbi, decodeEventLog } from "viem";
 import React from "react";
 import {
@@ -13,6 +12,7 @@ import { resolveIdentifier } from "../contracts.js";
 import { useActions } from "../store.js";
 import { useWallet } from "./wallet.js";
 import useChainId from "./chain-id.js";
+import useRegisterEvent from "./register-event.js";
 import { useCurrentVotes } from "./token-contract.js";
 
 const getContractAddress = (chainId) =>
@@ -181,6 +181,7 @@ export const useCastProposalVote = (
   const { data: blockNumber } = useBlockNumber();
   const { address: accountAddress } = useWallet();
   const { addOptimitisicProposalVote } = useActions();
+  const registerEvent = useRegisterEvent();
 
   const hasReason = reason != null && reason.trim() !== "";
 
@@ -213,18 +214,10 @@ export const useCastProposalVote = (
 
   if (write == null) return null;
 
-  return async () => {
-    va.track("Vote", {
-      proposalId,
-      account: accountAddress,
-    });
-    return write().then(({ hash }) => {
-      va.track("Vote successfully cast", {
-        proposalId,
-        hash,
-        account: accountAddress,
-      });
+  return async () =>
+    write().then(({ hash }) => {
       const voterId = accountAddress.toLowerCase();
+
       addOptimitisicProposalVote(proposalId, {
         id: String(Math.random()),
         reason,
@@ -233,9 +226,15 @@ export const useCastProposalVote = (
         voterId,
         voter: { id: voterId },
       });
+
+      registerEvent("Vote successfully cast", {
+        proposalId,
+        hash,
+        account: accountAddress,
+      });
+
       return { hash };
     });
-  };
 };
 
 export const useCreateProposal = () => {
@@ -243,6 +242,7 @@ export const useCreateProposal = () => {
 
   const publicClient = usePublicClient();
   const chainId = useChainId();
+  const registerEvent = useRegisterEvent();
 
   const { writeAsync } = useContractWrite({
     address: getContractAddress(chainId),
@@ -262,10 +262,11 @@ export const useCreateProposal = () => {
       args: [targets, values, signatures, calldatas, description],
     })
       .then(({ hash }) => {
-        va.track("Proposal successfully created", {
+        registerEvent("Proposal successfully created", {
           account: accountAddress,
           hash,
         });
+
         return publicClient.waitForTransactionReceipt({ hash });
       })
       .then((receipt) => {
@@ -287,6 +288,7 @@ export const useCreateProposalWithSignatures = () => {
 
   const publicClient = usePublicClient();
   const chainId = useChainId();
+  const registerEvent = useRegisterEvent();
 
   const { writeAsync } = useContractWrite({
     address: getContractAddress(chainId),
@@ -313,7 +315,7 @@ export const useCreateProposalWithSignatures = () => {
       ],
     })
       .then(({ hash }) => {
-        va.track("Proposal successfully created", {
+        registerEvent("Proposal successfully created", {
           account: accountAddress,
           hash,
           signatures: true,
@@ -339,6 +341,7 @@ export const useUpdateSponsoredProposalWithSignatures = (proposalId) => {
 
   const publicClient = usePublicClient();
   const chainId = useChainId();
+  const registerEvent = useRegisterEvent();
 
   const { writeAsync } = useContractWrite({
     address: getContractAddress(chainId),
@@ -371,7 +374,7 @@ export const useUpdateSponsoredProposalWithSignatures = (proposalId) => {
         updateMessage,
       ],
     }).then(({ hash }) => {
-      va.track("Proposal successfully updated", {
+      registerEvent("Proposal successfully updated", {
         account: accountAddress,
         hash,
         signatures: true,
@@ -385,6 +388,7 @@ export const useUpdateProposal = (proposalId) => {
   const { address: accountAddress } = useWallet();
 
   const chainId = useChainId();
+  const registerEvent = useRegisterEvent();
 
   const contractAddress = getContractAddress(chainId);
 
@@ -450,7 +454,7 @@ export const useUpdateProposal = (proposalId) => {
     };
 
     return write().then(({ hash }) => {
-      va.track("Proposal successfully updated", {
+      registerEvent("Proposal successfully updated", {
         proposalId,
         account: accountAddress,
         hash,
@@ -465,6 +469,7 @@ export const useCancelProposal = (proposalId, { enabled = true } = {}) => {
 
   const publicClient = usePublicClient();
   const chainId = useChainId();
+  const registerEvent = useRegisterEvent();
 
   const { config } = usePrepareContractWrite({
     address: getContractAddress(chainId),
@@ -479,7 +484,7 @@ export const useCancelProposal = (proposalId, { enabled = true } = {}) => {
 
   return () =>
     write().then(({ hash }) => {
-      va.track("Proposal successfully canceled", {
+      registerEvent("Proposal successfully canceled", {
         account: accountAddress,
         hash,
       });
@@ -492,6 +497,7 @@ export const useQueueProposal = (proposalId, { enabled = true } = {}) => {
 
   const publicClient = usePublicClient();
   const chainId = useChainId();
+  const registerEvent = useRegisterEvent();
 
   const { config } = usePrepareContractWrite({
     address: getContractAddress(chainId),
@@ -506,7 +512,7 @@ export const useQueueProposal = (proposalId, { enabled = true } = {}) => {
 
   return () =>
     write().then(({ hash }) => {
-      va.track("Proposal successfully queued", {
+      registerEvent("Proposal successfully queued", {
         account: accountAddress,
         hash,
       });
@@ -519,6 +525,7 @@ export const useExecuteProposal = (proposalId, { enabled = true } = {}) => {
 
   const publicClient = usePublicClient();
   const chainId = useChainId();
+  const registerEvent = useRegisterEvent();
 
   const { config } = usePrepareContractWrite({
     address: getContractAddress(chainId),
@@ -533,7 +540,7 @@ export const useExecuteProposal = (proposalId, { enabled = true } = {}) => {
 
   return () =>
     write().then(({ hash }) => {
-      va.track("Proposal successfully executed", {
+      registerEvent("Proposal successfully executed", {
         account: accountAddress,
         hash,
       });
