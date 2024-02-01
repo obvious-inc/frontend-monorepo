@@ -434,8 +434,6 @@ importers:
         specifier: ^0.8.1
         version: 0.8.1(@swc/core@1.3.57)(rollup@3.21.0)
 
-  packages/webpack-config: {}
-
 packages:
 
   /@aashutoshrathi/word-wrap@1.2.6:
