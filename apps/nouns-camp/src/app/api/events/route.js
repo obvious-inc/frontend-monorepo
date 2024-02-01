@@ -2,13 +2,13 @@ import { track } from "@vercel/analytics/server";
 
 export const runtime = "edge";
 
-export async function POST(req, res) {
-  const { name, data } = await req.json();
+export async function POST(request) {
+  const { name, data } = await request.json();
 
   if (name == null)
     return Response.json({ code: "name-required" }, { status: 400 });
 
   await track(name, data);
 
-  return res.code(200);
+  return new Response(null, { status: 200 });
 }
