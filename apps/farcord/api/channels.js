@@ -30,14 +30,19 @@ export default async function handler(request, response) {
               .then((body) => {
                 if (!body) return;
                 const warpcastChannel = body.result.channel;
-                return {
-                  id: channel.id,
-                  parentUrl: channel.url,
-                  name: warpcastChannel.name,
-                  imageUrl: warpcastChannel.fastImageUrl,
-                  followerCount: warpcastChannel.followerCount,
-                  description: warpcastChannel.description,
-                };
+                try {
+                  return {
+                    id: channel.id,
+                    parentUrl: channel.url,
+                    name: warpcastChannel.name,
+                    imageUrl: warpcastChannel.fastImageUrl,
+                    followerCount: warpcastChannel.followerCount,
+                    description: warpcastChannel.description,
+                  };
+                } catch (e) {
+                  console.error("Error parsing channel info", e);
+                  return null;
+                }
               })
           )
         ).then((result) => {
