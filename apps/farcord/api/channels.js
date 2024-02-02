@@ -14,33 +14,40 @@ export default async function handler(request, response) {
       const channels = data?.result?.channels;
       if (!channels) return [];
 
-      return Promise.all(
-        channels.map((channel) =>
-          fetch(WARPCAST_CHANNELS_INFO_ENDPOINT + "?key=" + channel.id)
-            .then((res) => {
-              if (res.ok) return res.json();
-              else {
-                console.error("Error fetching channel info for " + channel.id);
-                return null;
-              }
-            })
-            .then((body) => {
-              if (!body) return;
-              const warpcastChannel = body.result.channel;
-              return {
-                id: channel.id,
-                parentUrl: channel.url,
-                name: warpcastChannel.name,
-                imageUrl: warpcastChannel.fastImageUrl,
-                followerCount: warpcastChannel.followerCount,
-                description: warpcastChannel.description,
-              };
-            })
-        )
-      ).then((result) => {
-        // filter undefined keys
-        return result.filter((c) => c);
-      });
+      try {
+        return Promise.all(
+          channels.map((channel) =>
+            fetch(WARPCAST_CHANNELS_INFO_ENDPOINT + "?key=" + channel.id)
+              .then((res) => {
+                if (res.ok) return res.json();
+                else {
+                  console.error(
+                    "Error fetching channel info for " + channel.id
+                  );
+                  return null;
+                }
+              })
+              .then((body) => {
+                if (!body) return;
+                const warpcastChannel = body.result.channel;
+                return {
+                  id: channel.id,
+                  parentUrl: channel.url,
+                  name: warpcastChannel.name,
+                  imageUrl: warpcastChannel.fastImageUrl,
+                  followerCount: warpcastChannel.followerCount,
+                  description: warpcastChannel.description,
+                };
+              })
+          )
+        ).then((result) => {
+          // filter undefined keys
+          return result.filter((c) => c);
+        });
+      } catch (e) {
+        console.error("Error fetching channel info", e);
+        return [];
+      }
     });
 
   response.setHeader("Cache-Control", "s-maxage=86400");
