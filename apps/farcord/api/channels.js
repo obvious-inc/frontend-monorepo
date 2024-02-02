@@ -53,6 +53,10 @@ export default async function handler(request, response) {
         console.error("Error fetching channel info", e);
         return [];
       }
+    })
+    .catch((e) => {
+      console.error("Error fetching channels", e);
+      return [];
     });
 
   response.setHeader("Cache-Control", "s-maxage=86400");
