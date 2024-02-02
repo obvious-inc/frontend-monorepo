@@ -36,11 +36,19 @@ export default async function handler(_, response) {
                 description: warpcastChannel.description,
               };
             })
+            .catch((e) => {
+              console.error("Error fetching channel info for " + channel.id, e);
+              return null;
+            })
         )
       ).then((result) => {
         // filter undefined keys
         return result.filter((c) => c);
       });
+    })
+    .catch((e) => {
+      console.error("Error fetching warpcast channels: ", e);
+      return [];
     });
 
   response.setHeader("Cache-Control", "s-maxage=86400");
