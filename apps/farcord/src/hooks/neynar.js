@@ -255,6 +255,7 @@ export const useSearchUsersByUsername = ({ fid, query, enabled }) => {
 };
 
 const parseUser = ({ user }) => {
+  if (!user) return null;
   const { fid, username, profile } = user;
 
   // todo: better understand why this would be called 2x..

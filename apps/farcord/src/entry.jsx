@@ -1,3 +1,4 @@
+import "./polyfills";
 import React from "react";
 import { createRoot } from "react-dom/client";
 import { CacheStoreProvider, createCacheStore } from "@shades/common/app";
