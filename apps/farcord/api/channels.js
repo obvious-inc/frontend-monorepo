@@ -23,8 +23,7 @@ export default async function handler(_, response) {
             .then((res) => {
               if (res.ok) return res.json();
               else {
-                console.error("Error fetching channel info for " + channel.id);
-                return null;
+                throw new Error(res.statusText);
               }
             })
             .then((body) => {
