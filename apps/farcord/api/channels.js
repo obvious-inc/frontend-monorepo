@@ -4,6 +4,9 @@ const WARPCAST_CHANNELS_STATIC_LIST =
 const WARPCAST_CHANNELS_INFO_ENDPOINT =
   "https://client.warpcast.com/v2/channel";
 
+import { readFileSync } from "fs";
+import path from "path";
+
 export default async function handler(_, response) {
   const channels = await fetch(WARPCAST_CHANNELS_STATIC_LIST)
     .then(async (res) => {
@@ -48,6 +51,20 @@ export default async function handler(_, response) {
     })
     .catch((e) => {
       console.error("Error fetching warpcast channels: ", e);
+      console.info("Using JSON file as backup");
+      const filePath = path.join(process.cwd(), "files", "all-channels.json");
+      const fileContents = readFileSync
+        ? readFileSync(filePath, "utf8")
+        : require
+        ? require(filePath)
+        : null;
+
+      console.debug("fileContents", fileContents);
+
+      if (fileContents) {
+        return JSON.parse(fileContents);
+      }
+
       return [];
     });
 
