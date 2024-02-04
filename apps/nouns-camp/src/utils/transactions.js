@@ -1,4 +1,4 @@
-import { formatAbiParameters } from "abitype";
+import { formatAbiParameter } from "abitype";
 import {
   decodeAbiParameters,
   encodeAbiParameters,
@@ -442,9 +442,9 @@ export const unparse = (transactions, { chainId }) => {
           });
 
         case "prop-house-create-and-fund-round": {
-          const signature = `createAndFundRoundOnExistingHouse(${formatAbiParameters(
-            PROPHOUSE_CREATE_AND_FUND_ROUND_INPUT_TYPES
-          )})`;
+          const signature = `createAndFundRoundOnExistingHouse(${PROPHOUSE_CREATE_AND_FUND_ROUND_INPUT_TYPES.map(
+            (t) => formatAbiParameter(t)
+          ).join(",")}`;
 
           const [propHousePrimaryAddress, timedRoundImplAddress] = [
             "prop-house",
@@ -478,9 +478,9 @@ export const unparse = (transactions, { chainId }) => {
 
         case "function-call":
         case "payable-function-call": {
-          const signature = `${t.functionName}(${formatAbiParameters(
-            t.functionInputTypes
-          )})`;
+          const signature = `${t.functionName}(${t.functionInputTypes
+            .map((t) => formatAbiParameter(t))
+            .join(",")})`;
           return append({
             target: t.target,
             value: t.type === "payable-function-call" ? t.value : "0",
@@ -722,7 +722,9 @@ export const buildActions = (transactions, { chainId }) => {
       signature: signatures[0],
       calldata: calldatas[0],
     });
-    const signature = `${name}(${formatAbiParameters(inputTypes)})`;
+    const signature = `${name}(${inputTypes
+      .map((t) => formatAbiParameter(t))
+      .join(",")})`;
 
     return {
       type: "custom-transaction",
