@@ -29,7 +29,9 @@ module.exports = {
       plugins: [
         ...config.plugins,
         new webpack.DefinePlugin({
-          GIT_COMMIT_SHA: JSON.stringify(process.env.VERCEL_GIT_COMMIT_SHA),
+          "process.env.GIT_COMMIT_SHA": JSON.stringify(
+            process.env.VERCEL_GIT_COMMIT_SHA
+          ),
         }),
         new WorkboxPlugin.GenerateSW({
           swDest: path.join(options.dir, "public", "sw.js"),
