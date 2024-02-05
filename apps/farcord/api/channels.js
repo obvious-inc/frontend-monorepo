@@ -5,22 +5,23 @@ const WARPCAST_CHANNELS_INFO_ENDPOINT =
   "https://client.warpcast.com/v2/channel";
 
 import { readFileSync, readdirSync } from "fs";
+import path from "path";
 
 export default async function handler(_, response) {
   let fileChannels = [];
 
   try {
     console.log("listing files in current directory");
-    readdirSync(process.cwd()).forEach((file) => {
-      console.log(file);
-    });
+    readdirSync(path.join(process.cwd(), "apps", "farcord", "api")).forEach(
+      (file) => {
+        console.log(file);
+      }
+    );
 
-    console.log("listing files in previous directory");
-    readdirSync("../").forEach((file) => {
-      console.log(file);
-    });
-
-    const stringified = readFileSync("../static/all-channels.json", "utf8");
+    const stringified = readFileSync(
+      "/apps/farcord/api/_all-channels.json",
+      "utf8"
+    );
 
     if (stringified) {
       fileChannels = JSON.parse(stringified);
