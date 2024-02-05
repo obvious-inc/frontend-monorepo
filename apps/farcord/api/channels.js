@@ -11,7 +11,7 @@ export default async function handler(_, response) {
   let fileChannels = [];
 
   try {
-    const filePath = path.join(process.cwd(), "files", "all-channels.json");
+    const filePath = path.join(process.cwd(), "all-channels.json");
     const fileContents = readFileSync
       ? readFileSync(filePath, "utf8")
       : require
