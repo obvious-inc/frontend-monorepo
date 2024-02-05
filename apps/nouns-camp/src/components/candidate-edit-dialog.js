@@ -88,7 +88,6 @@ const CandidateEditDialog = ({ candidateId, isOpen, close: closeDialog }) => {
       persistedTransactions
     );
 
-
     if (hasActionChanges) return true;
 
     const markdownBody = messageUtils.toMarkdown(
