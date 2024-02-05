@@ -15,6 +15,7 @@ const FormDialog = ({
   submit,
   submitLabel = "Save",
   cancelLabel = "Cancel",
+  children,
 }) => {
   const firstInputRef = React.useRef();
 
@@ -133,6 +134,7 @@ const FormDialog = ({
           ))}
         </form>
       </main>
+      {children}
 
       <DialogFooter
         cancel={dismiss}

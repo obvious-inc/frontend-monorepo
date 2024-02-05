@@ -1,4 +1,5 @@
 const path = require("path");
+const webpack = require("webpack");
 const WorkboxPlugin = require("workbox-webpack-plugin");
 
 module.exports = {
@@ -27,6 +28,9 @@ module.exports = {
       ...config,
       plugins: [
         ...config.plugins,
+        new webpack.DefinePlugin({
+          GIT_COMMIT_SHA: JSON.stringify(process.env.VERCEL_GIT_COMMIT_SHA),
+        }),
         new WorkboxPlugin.GenerateSW({
           swDest: path.join(options.dir, "public", "sw.js"),
           // these options encourage the ServiceWorkers to get in there fast
