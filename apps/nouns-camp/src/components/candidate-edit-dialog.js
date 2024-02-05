@@ -71,24 +71,23 @@ const CandidateEditDialog = ({ candidateId, isOpen, close: closeDialog }) => {
 
     if (hasTitleChanges) return true;
 
-    const hasActionChanges =
-      actions.length !== persistedActions.length ||
-      actions.some((a, i) => {
-        const persistedAction = persistedActions[i];
+    const transactions = unparseTransactions(
+      actions.flatMap((a) => resolveActionTransactions(a, { chainId })),
+      { chainId }
+    );
 
-        const transactions = unparseTransactions(
-          resolveActionTransactions(a, { chainId }),
-          {
-            chainId,
-          }
-        );
-        const persistedTransactions = unparseTransactions(
-          resolveActionTransactions(persistedAction, { chainId }),
-          { chainId }
-        );
+    const persistedTransactions = {
+      targets: candidate.latestVersion.content.targets,
+      signatures: candidate.latestVersion.content.signatures,
+      calldatas: candidate.latestVersion.content.calldatas,
+      values: candidate.latestVersion.content.values,
+    };
 
-        return areTransactionsEqual(transactions, persistedTransactions);
-      });
+    const hasActionChanges = !areTransactionsEqual(
+      transactions,
+      persistedTransactions
+    );
+
 
     if (hasActionChanges) return true;
 
@@ -100,12 +99,12 @@ const CandidateEditDialog = ({ candidateId, isOpen, close: closeDialog }) => {
 
     return hasBodyChanges;
   }, [
+    candidate,
     title,
     persistedTitle,
     deferredBody,
     persistedMarkdownBody,
     actions,
-    persistedActions,
     chainId,
   ]);
 

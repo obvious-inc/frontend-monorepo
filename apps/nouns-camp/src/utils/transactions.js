@@ -953,7 +953,7 @@ export const stringify = (parsedTransaction, { chainId }) => {
 export const isEqual = (ts1, ts2) => {
   if (ts1.targets.length !== ts2.targets.length) return false;
 
-  return ts1.targets.some((target1, i) => {
+  return ts1.targets.every((target1, i) => {
     const [signature1, calldata1, value1] = [
       ts1.signatures[i],
       ts1.calldatas[i],
@@ -967,10 +967,10 @@ export const isEqual = (ts1, ts2) => {
     ];
 
     return (
-      target1 !== target2 ||
-      signature1 !== signature2 ||
-      calldata1 !== calldata2 ||
-      value1 !== value2
+      target1 === target2 &&
+      signature1 === signature2 &&
+      calldata1 === calldata2 &&
+      value1 === value2
     );
   });
 };
