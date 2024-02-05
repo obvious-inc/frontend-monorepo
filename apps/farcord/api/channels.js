@@ -12,11 +12,9 @@ export default async function handler(_, response) {
 
   try {
     console.log("listing files in current directory");
-    readdirSync(path.join(process.cwd(), "apps", "farcord", "api")).forEach(
-      (file) => {
-        console.log(file);
-      }
-    );
+    readdirSync(path.join(process.cwd(), "apps", "farcord")).forEach((file) => {
+      console.log(file);
+    });
 
     const stringified = readFileSync(
       "/apps/farcord/api/_all-channels.json",
@@ -34,6 +32,8 @@ export default async function handler(_, response) {
     acc[channel.id] = channel;
     return acc;
   }, {});
+
+  return response.status(200).json({ channels: fileChannels });
 
   const channels = await fetch(WARPCAST_CHANNELS_STATIC_LIST)
     .then(async (res) => {
