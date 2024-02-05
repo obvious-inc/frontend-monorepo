@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import { useAccountDisplayName } from "@shades/common/app";
 import { useFetch, useMatchMedia } from "@shades/common/react";
 import Button from "@shades/ui-web/button";
+import Link from "@shades/ui-web/link";
 import * as DropdownMenu from "@shades/ui-web/dropdown-menu";
 import {
   Plus as PlusIcon,
@@ -139,332 +140,353 @@ const NavBar = ({ navigationStack, actions: actions_ }) => {
   );
 
   return (
-    <div
-      css={(t) =>
-        css({
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "flex-start",
-          whiteSpace: "nowrap",
-          minHeight: t.navBarHeight, // "4.7rem",
-          "@media (max-width: 600px)": {
-            '[data-desktop-only="true"]': {
-              display: "none",
-            },
-          },
-        })
-      }
-    >
-      <div
-        css={css({
-          flex: 1,
-          minWidth: 0,
-          display: "flex",
-          alignItems: "center",
-          gap: "0.2rem",
-          overflow: "hidden",
-          padding: "1rem 1.6rem",
-          "@media (min-width: 600px)": {
-            padding: "1rem",
-          },
-        })}
-      >
-        {[
-          {
-            to: "/",
-            label: (
-              <>
-                <LogoSymbol
-                  css={css({
-                    display: "inline-block",
-                    width: "1.8rem",
-                    height: "auto",
-                    verticalAlign: "sub",
-                    transform: "translateY(0.1rem) scale(1.05)",
-                  })}
-                  style={{
-                    filter:
-                      isTestnet || isUnsupportedChain ? "invert(1)" : undefined,
-                  }}
-                />
-                {pathname !== "/" && (
-                  <span
-                    css={css({
-                      marginLeft: "0.6rem",
-                      "@media(max-width: 600px)": { display: "none" },
-                    })}
-                  >
-                    Camp
-                  </span>
-                )}
-              </>
-            ),
-          },
-          ...navigationStack,
-        ].map((item, index) => (
-          <React.Fragment key={item.to}>
-            {index > 0 && (
-              <span
-                data-index={index}
-                data-desktop-only={item.desktopOnly}
-                css={(t) =>
-                  css({
-                    color: t.colors.textMuted,
-                    fontSize: t.text.sizes.base,
-                    "@media(max-width: 600px)": {
-                      '&[data-index="1"]': { display: "none" },
-                    },
-                  })
-                }
-              >
-                {"/"}
-              </span>
-            )}
-            <NextLink
-              prefetch
-              href={item.to}
-              data-index={index}
-              data-disabled={pathname === item.to}
-              data-desktop-only={item.desktopOnly}
-              css={(t) =>
-                css({
-                  overflow: "hidden",
-                  textOverflow: "ellipsis",
-                  fontSize: t.fontSizes.base,
-                  color: t.colors.textNormal,
-                  padding: "0.3rem 0.5rem",
-                  borderRadius: "0.2rem",
-                  textDecoration: "none",
-                  '&[data-index="0"]': { minWidth: "max-content" },
-                  '&[data-disabled="true"]': { pointerEvents: "none" },
-                  "@media(hover: hover)": {
-                    cursor: "pointer",
-                    ":hover": {
-                      background: t.colors.backgroundModifierHover,
-                    },
-                  },
-                })
-              }
-            >
-              {item.label}
-            </NextLink>
-          </React.Fragment>
-        ))}
-      </div>
+    <div>
+      {isBetaSession && !hasUpdate && (
+        <div
+          css={(t) =>
+            css({
+              padding: "0.8rem 1.5rem",
+              background: t.colors.primaryTransparent,
+              fontSize: t.text.sizes.small,
+            })
+          }
+        >
+          New version of Camp available.{" "}
+          <Link
+            component="button"
+            onClick={() => {
+              location.reload();
+            }}
+            color={(t) => t.colors.linkModifierHover}
+          >
+            Click here to update
+          </Link>
+        </div>
+      )}
       <div
         css={(t) =>
           css({
-            fontSize: t.text.sizes.base,
-            padding: "0 1.6rem 0 0",
-            ul: {
-              display: "grid",
-              gridAutoFlow: "column",
-              gridGap: "0.3rem",
-              alignItems: "center",
-            },
-            li: { listStyle: "none" },
-            '[role="separator"]': {
-              width: "0.1rem",
-              background: t.colors.borderLight,
-              height: "1.6rem",
-            },
-            "@media (min-width: 600px)": {
-              padding: "0 1rem",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "flex-start",
+            whiteSpace: "nowrap",
+            minHeight: t.navBarHeight, // "4.7rem",
+            "@media (max-width: 600px)": {
+              '[data-desktop-only="true"]': {
+                display: "none",
+              },
             },
           })
         }
       >
-        <ul>
+        <div
+          css={css({
+            flex: 1,
+            minWidth: 0,
+            display: "flex",
+            alignItems: "center",
+            gap: "0.2rem",
+            overflow: "hidden",
+            padding: "1rem 1.6rem",
+            "@media (min-width: 600px)": {
+              padding: "1rem",
+            },
+          })}
+        >
           {[
-            ...actions,
-            visibleActions.length > 0 && { type: "separator" },
-            connectedWalletAccountAddress == null
-              ? {
-                  onSelect: () => {
-                    requestWalletAccess();
-                  },
-                  buttonProps: {
-                    variant: "default",
-                    isLoading: requestWalletAccess == null || isLoadingWallet,
-                    disabled: requestWalletAccess == null || isLoadingWallet,
-                    style: { marginLeft: "0.9rem" },
-                  },
-                  label: "Connect Wallet",
-                }
-              : isUnsupportedChain
-              ? {
-                  onSelect: () => {
-                    switchWalletToMainnet();
-                  },
-                  buttonProps: {
-                    variant: "default",
-                    isLoading: isLoadingWallet,
-                    disabled: switchWalletToMainnet == null || isLoadingWallet,
-                    style: { marginLeft: "0.9rem" },
-                  },
-                  label: "Switch to Mainnet",
-                }
-              : {
-                  type: "dropdown",
-                  onSelect: () => {
-                    openAccountDialog();
-                  },
-                  // buttonProps: {
-                  //   component: "a",
-                  //   href: `https://etherscan.io/address/${connectedWalletAccountAddress}`,
-                  //   target: "_blank",
-                  //   rel: "noreferrer",
-                  // },
-                  buttonProps: {
-                    iconRight: (
-                      <CaretDownIcon
-                        style={{ width: "0.9rem", height: "auto" }}
-                      />
-                    ),
-                  },
-
-                  label: (
-                    <div
+            {
+              to: "/",
+              label: (
+                <>
+                  <LogoSymbol
+                    css={css({
+                      display: "inline-block",
+                      width: "1.8rem",
+                      height: "auto",
+                      verticalAlign: "sub",
+                      transform: "translateY(0.1rem) scale(1.05)",
+                    })}
+                    style={{
+                      filter:
+                        isTestnet || isUnsupportedChain
+                          ? "invert(1)"
+                          : undefined,
+                    }}
+                  />
+                  {pathname !== "/" && (
+                    <span
                       css={css({
-                        display: "flex",
-                        alignItems: "center",
-                        gap: "0.8rem",
+                        marginLeft: "0.6rem",
+                        "@media(max-width: 600px)": { display: "none" },
                       })}
                     >
-                      {pathname === "/" && (
-                        <div
-                          css={css({
-                            "@media(max-width: 600px)": { display: "none" },
-                          })}
-                        >
-                          {connectedAccountDisplayName}
-                        </div>
+                      Camp
+                    </span>
+                  )}
+                </>
+              ),
+            },
+            ...navigationStack,
+          ].map((item, index) => (
+            <React.Fragment key={item.to}>
+              {index > 0 && (
+                <span
+                  data-index={index}
+                  data-desktop-only={item.desktopOnly}
+                  css={(t) =>
+                    css({
+                      color: t.colors.textMuted,
+                      fontSize: t.text.sizes.base,
+                      "@media(max-width: 600px)": {
+                        '&[data-index="1"]': { display: "none" },
+                      },
+                    })
+                  }
+                >
+                  {"/"}
+                </span>
+              )}
+              <NextLink
+                prefetch
+                href={item.to}
+                data-index={index}
+                data-disabled={pathname === item.to}
+                data-desktop-only={item.desktopOnly}
+                css={(t) =>
+                  css({
+                    overflow: "hidden",
+                    textOverflow: "ellipsis",
+                    fontSize: t.fontSizes.base,
+                    color: t.colors.textNormal,
+                    padding: "0.3rem 0.5rem",
+                    borderRadius: "0.2rem",
+                    textDecoration: "none",
+                    '&[data-index="0"]': { minWidth: "max-content" },
+                    '&[data-disabled="true"]': { pointerEvents: "none" },
+                    "@media(hover: hover)": {
+                      cursor: "pointer",
+                      ":hover": {
+                        background: t.colors.backgroundModifierHover,
+                      },
+                    },
+                  })
+                }
+              >
+                {item.label}
+              </NextLink>
+            </React.Fragment>
+          ))}
+        </div>
+        <div
+          css={(t) =>
+            css({
+              fontSize: t.text.sizes.base,
+              padding: "0 1.6rem 0 0",
+              ul: {
+                display: "grid",
+                gridAutoFlow: "column",
+                gridGap: "0.3rem",
+                alignItems: "center",
+              },
+              li: { listStyle: "none" },
+              '[role="separator"]': {
+                width: "0.1rem",
+                background: t.colors.borderLight,
+                height: "1.6rem",
+              },
+              "@media (min-width: 600px)": {
+                padding: "0 1rem",
+              },
+            })
+          }
+        >
+          <ul>
+            {[
+              ...actions,
+              visibleActions.length > 0 && { type: "separator" },
+              connectedWalletAccountAddress == null
+                ? {
+                    onSelect: () => {
+                      requestWalletAccess();
+                    },
+                    buttonProps: {
+                      variant: "default",
+                      isLoading: requestWalletAccess == null || isLoadingWallet,
+                      disabled: requestWalletAccess == null || isLoadingWallet,
+                      style: { marginLeft: "0.9rem" },
+                    },
+                    label: "Connect Wallet",
+                  }
+                : isUnsupportedChain
+                ? {
+                    onSelect: () => {
+                      switchWalletToMainnet();
+                    },
+                    buttonProps: {
+                      variant: "default",
+                      isLoading: isLoadingWallet,
+                      disabled:
+                        switchWalletToMainnet == null || isLoadingWallet,
+                      style: { marginLeft: "0.9rem" },
+                    },
+                    label: "Switch to Mainnet",
+                  }
+                : {
+                    type: "dropdown",
+                    onSelect: () => {
+                      openAccountDialog();
+                    },
+                    // buttonProps: {
+                    //   component: "a",
+                    //   href: `https://etherscan.io/address/${connectedWalletAccountAddress}`,
+                    //   target: "_blank",
+                    //   rel: "noreferrer",
+                    // },
+                    buttonProps: {
+                      iconRight: (
+                        <CaretDownIcon
+                          style={{ width: "0.9rem", height: "auto" }}
+                        />
+                      ),
+                    },
+
+                    label: (
+                      <div
+                        css={css({
+                          display: "flex",
+                          alignItems: "center",
+                          gap: "0.8rem",
+                        })}
+                      >
+                        {pathname === "/" && (
+                          <div
+                            css={css({
+                              "@media(max-width: 600px)": { display: "none" },
+                            })}
+                          >
+                            {connectedAccountDisplayName}
+                          </div>
+                        )}
+                        <AccountAvatar
+                          address={connectedWalletAccountAddress}
+                          size="2rem"
+                        />
+                      </div>
+                    ),
+                  },
+            ]
+              .filter(Boolean)
+              .map((a, i) =>
+                a.type === "separator" ? (
+                  <li key={i} role="separator" aria-orientation="vertical" />
+                ) : a.type === "dropdown" ? (
+                  <DropdownMenu.Root key={i} placement="bottom">
+                    <DropdownMenu.Trigger asChild>
+                      <Button
+                        variant={a.buttonVariant ?? "transparent"}
+                        size="small"
+                        {...a.buttonProps}
+                      >
+                        {a.label}
+                      </Button>
+                    </DropdownMenu.Trigger>
+                    <DropdownMenu.Content
+                      css={css({
+                        width: "min-content",
+                        minWidth: "min-content",
+                        maxWidth: "calc(100vw - 2rem)",
+                      })}
+                      items={[
+                        {
+                          id: "main",
+                          children: [
+                            {
+                              id: "open-account-dialog",
+                              label: "View connected account",
+                            },
+                            {
+                              id: "copy-account-address",
+                              label: "Copy account address",
+                            },
+                          ],
+                        },
+                        {
+                          id: "settings",
+                          children: [
+                            { id: "open-settings-dialog", label: "Settings" },
+                          ],
+                        },
+                        {
+                          id: "disconnect",
+                          children: [
+                            isShimmedWalletDisconnect
+                              ? {
+                                  id: "request-wallet-access",
+                                  label: "Connect a different account",
+                                }
+                              : {
+                                  id: "disconnect-wallet",
+                                  label: "Disconnect wallet",
+                                },
+                          ],
+                        },
+                      ].filter(Boolean)}
+                      onAction={(key) => {
+                        switch (key) {
+                          case "open-account-dialog":
+                            openAccountDialog();
+                            break;
+
+                          case "copy-account-address":
+                            navigator.clipboard.writeText(
+                              connectedWalletAccountAddress
+                            );
+                            break;
+
+                          case "open-settings-dialog":
+                            openSettingsDialog();
+                            break;
+
+                          case "request-wallet-access":
+                            requestWalletAccess();
+                            break;
+
+                          case "disconnect-wallet":
+                            disconnectWallet();
+                            break;
+
+                          case "update-app":
+                            location.reload();
+                            break;
+                        }
+                      }}
+                    >
+                      {(item) => (
+                        <DropdownMenu.Section items={item.children}>
+                          {(item) => (
+                            <DropdownMenu.Item primary={item.primary}>
+                              {item.label}
+                            </DropdownMenu.Item>
+                          )}
+                        </DropdownMenu.Section>
                       )}
-                      <AccountAvatar
-                        address={connectedWalletAccountAddress}
-                        size="2rem"
-                      />
-                    </div>
-                  ),
-                },
-          ]
-            .filter(Boolean)
-            .map((a, i) =>
-              a.type === "separator" ? (
-                <li key={i} role="separator" aria-orientation="vertical" />
-              ) : a.type === "dropdown" ? (
-                <DropdownMenu.Root key={i} placement="bottom">
-                  <DropdownMenu.Trigger asChild>
+                    </DropdownMenu.Content>
+                  </DropdownMenu.Root>
+                ) : (
+                  <li key={i} data-desktop-only={a.desktopOnly}>
                     <Button
                       variant={a.buttonVariant ?? "transparent"}
                       size="small"
+                      onClick={a.onSelect}
                       {...a.buttonProps}
                     >
                       {a.label}
                     </Button>
-                  </DropdownMenu.Trigger>
-                  <DropdownMenu.Content
-                    css={css({
-                      width: "min-content",
-                      minWidth: "min-content",
-                      maxWidth: "calc(100vw - 2rem)",
-                    })}
-                    items={[
-                      {
-                        id: "main",
-                        children: [
-                          {
-                            id: "open-account-dialog",
-                            label: "View connected account",
-                          },
-                          {
-                            id: "copy-account-address",
-                            label: "Copy account address",
-                          },
-                        ],
-                      },
-                      {
-                        id: "settings",
-                        children: [
-                          { id: "open-settings-dialog", label: "Settings" },
-                          isBetaSession &&
-                            hasUpdate && {
-                              id: "update-app",
-                              primary: true,
-                              label: "Update Camp",
-                            },
-                        ].filter(Boolean),
-                      },
-                      {
-                        id: "disconnect",
-                        children: [
-                          isShimmedWalletDisconnect
-                            ? {
-                                id: "request-wallet-access",
-                                label: "Connect a different account",
-                              }
-                            : {
-                                id: "disconnect-wallet",
-                                label: "Disconnect wallet",
-                              },
-                        ],
-                      },
-                    ].filter(Boolean)}
-                    onAction={(key) => {
-                      switch (key) {
-                        case "open-account-dialog":
-                          openAccountDialog();
-                          break;
-
-                        case "copy-account-address":
-                          navigator.clipboard.writeText(
-                            connectedWalletAccountAddress
-                          );
-                          break;
-
-                        case "open-settings-dialog":
-                          openSettingsDialog();
-                          break;
-
-                        case "request-wallet-access":
-                          requestWalletAccess();
-                          break;
-
-                        case "disconnect-wallet":
-                          disconnectWallet();
-                          break;
-
-                        case "update-app":
-                          location.reload();
-                          break;
-                      }
-                    }}
-                  >
-                    {(item) => (
-                      <DropdownMenu.Section items={item.children}>
-                        {(item) => (
-                          <DropdownMenu.Item primary={item.primary}>
-                            {item.label}
-                          </DropdownMenu.Item>
-                        )}
-                      </DropdownMenu.Section>
-                    )}
-                  </DropdownMenu.Content>
-                </DropdownMenu.Root>
-              ) : (
-                <li key={i} data-desktop-only={a.desktopOnly}>
-                  <Button
-                    variant={a.buttonVariant ?? "transparent"}
-                    size="small"
-                    onClick={a.onSelect}
-                    {...a.buttonProps}
-                  >
-                    {a.label}
-                  </Button>
-                </li>
-              )
-            )}
-        </ul>
+                  </li>
+                )
+              )}
+          </ul>
+        </div>
       </div>
     </div>
   );
