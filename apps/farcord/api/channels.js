@@ -11,21 +11,17 @@ export default async function handler(_, response) {
   let fileChannels = [];
 
   try {
-    const filePath = path.join([
+    const file = path.join(
       process.cwd(),
       "apps",
       "farcord",
       "api",
-      "all-channels.json",
-    ]);
-    const fileContents = readFileSync
-      ? readFileSync(filePath, "utf8")
-      : require
-      ? require(filePath)
-      : null;
+      "all-channels.json"
+    );
+    const stringified = readFileSync(file, "utf8");
 
-    if (fileContents) {
-      fileChannels = JSON.parse(fileContents);
+    if (stringified) {
+      fileChannels = JSON.parse(stringified);
     }
   } catch (e) {
     console.error("Error reading backup JSON file: ", e);
