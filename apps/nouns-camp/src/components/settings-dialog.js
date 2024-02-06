@@ -3,6 +3,9 @@ import Dialog from "@shades/ui-web/dialog";
 import FormDialog from "@shades/ui-web/form-dialog";
 import config from "../config.js";
 import useSetting, { getConfig as getSettingConfig } from "../hooks/setting.js";
+import { useSearchParams } from "../hooks/navigation.js";
+
+const APP_VERSION = process.env.GIT_COMMIT_SHA?.slice(0, 7);
 
 const settingInputConfigByKey = {
   theme: {
@@ -30,6 +33,13 @@ const settingInputConfigByKey = {
       true: "Off",
     },
   },
+  "debug-mode": {
+    label: "Developer mode",
+    optionLabelsByValue: {
+      true: "On",
+      false: "Off",
+    },
+  },
 };
 
 const SettingsDialog = ({ isOpen, close }) => (
@@ -48,6 +58,8 @@ const Content = ({ titleProps, dismiss }) => {
   const [theme, setTheme] = useSetting("theme");
   const [zoom, setZoom] = useSetting("zoom");
   const [xmasOptOut, setXmasOptOut] = useSetting("xmas-effects-opt-out");
+
+  const [searchParams, setSearchParams] = useSearchParams();
 
   return (
     <FormDialog
@@ -71,13 +83,31 @@ const Content = ({ titleProps, dismiss }) => {
           state: xmasOptOut,
           setState: setXmasOptOut,
         },
+        {
+          key: "debug-mode",
+          type: "bool",
+          state: searchParams.get("debug") != null,
+          setState: (on) => {
+            setSearchParams((params) => {
+              const newParams = new URLSearchParams(params);
+              if (on) {
+                newParams.set("debug", 1);
+                return newParams;
+              }
+
+              newParams.delete("debug");
+              return newParams;
+            });
+          },
+        },
       ]
         .filter(Boolean)
-        .map(({ key, state, setState }) => {
-          const settingConfig = getSettingConfig(key);
+        .map(({ key, type: type_, state, setState, values }) => {
+          const type = type_ ?? getSettingConfig(key).type;
+
           const inputConfig = settingInputConfigByKey[key];
 
-          switch (settingConfig.type) {
+          switch (type) {
             case "enum":
               return {
                 key,
@@ -88,10 +118,12 @@ const Content = ({ titleProps, dismiss }) => {
                   setState(value);
                 },
                 label: inputConfig.label,
-                options: settingConfig.values.map((value) => ({
-                  value,
-                  label: inputConfig.optionLabelsByValue[value],
-                })),
+                options:
+                  values ??
+                  getSettingConfig(key).values.map((value) => ({
+                    value,
+                    label: inputConfig.optionLabelsByValue[value],
+                  })),
               };
 
             case "bool":
@@ -111,14 +143,12 @@ const Content = ({ titleProps, dismiss }) => {
               };
 
             default:
-              throw new Error(
-                `Unsupported setting type: "${settingConfig.type}"`
-              );
+              throw new Error(`Unsupported setting type: "${type}"`);
           }
         })}
       cancelLabel="Close"
     >
-      {process.env.GIT_COMMIT_SHA != null && (
+      {searchParams.get("debug") != null && APP_VERSION != null && (
         <div
           css={(t) =>
             css({
@@ -133,7 +163,7 @@ const Content = ({ titleProps, dismiss }) => {
             })
           }
         >
-          Version: <em>{process.env.GIT_COMMIT_SHA.slice(0, 8)}</em>
+          Version: <em>{APP_VERSION}</em>
         </div>
       )}
     </FormDialog>
