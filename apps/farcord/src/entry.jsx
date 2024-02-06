@@ -15,7 +15,7 @@ import { publicProvider } from "wagmi/providers/public";
 import { InjectedConnector } from "wagmi/connectors/injected";
 import { WalletConnectConnector } from "wagmi/connectors/walletConnect";
 import { CoinbaseWalletConnector } from "wagmi/connectors/coinbaseWallet";
-import { Analytics as VercelAnalytics } from "@vercel/analytics/react";
+import { inject as injectVercelAnalytics } from "@vercel/analytics";
 
 import "./reset.css";
 import "./index.css";
@@ -24,13 +24,7 @@ const isProduction = import.meta.env.NODE_ENV === "production";
 
 const LazyApp = React.lazy(() => import("./app"));
 
-const App = () => {
-  return (
-    <React.Suspense fallback={null}>
-      <LazyApp />
-    </React.Suspense>
-  );
-};
+if (isProduction) injectVercelAnalytics();
 
 let cacheStoreStorage;
 try {
@@ -75,8 +69,9 @@ createRoot(document.getElementById("app-mount")).render(
         <CacheStoreProvider
           store={createCacheStore({ storage: cacheStoreStorage })}
         >
-          <App />
-          {isProduction && <VercelAnalytics />}
+          <React.Suspense fallback={null}>
+            <LazyApp />
+          </React.Suspense>
         </CacheStoreProvider>
       </ChainDataCacheContextProvider>
     </WagmiConfig>
