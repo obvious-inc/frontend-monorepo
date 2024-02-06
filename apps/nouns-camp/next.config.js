@@ -2,6 +2,19 @@ const path = require("path");
 const webpack = require("webpack");
 const WorkboxPlugin = require("workbox-webpack-plugin");
 
+const ignoredModules = [
+  // @prophouse/sdk
+  "fs",
+  "http",
+  "https",
+  "os",
+  "stream",
+  "tty",
+  "zlib",
+  // @walletconnect
+  "pino-pretty",
+];
+
 module.exports = {
   reactStrictMode: true,
   compiler: {
@@ -10,16 +23,7 @@ module.exports = {
   webpack(config, { dev, ...options }) {
     config.resolve.fallback = {
       ...config.resolve.fallback,
-      // @prophouse/sdk
-      fs: false,
-      http: false,
-      https: false,
-      os: false,
-      stream: false,
-      tty: false,
-      zlib: false,
-      // @walletconnect
-      "pino-pretty": false,
+      ...Object.fromEntries(ignoredModules.map((m) => [m, false])),
     };
 
     if (dev) return config;
@@ -43,5 +47,13 @@ module.exports = {
         }),
       ],
     };
+  },
+  experimental: {
+    turbo: {
+      // Ignoring modules is not a thing yet
+      resolveAlias: Object.fromEntries(
+        ignoredModules.map((n) => [n, "@shades/common"])
+      ),
+    },
   },
 };
