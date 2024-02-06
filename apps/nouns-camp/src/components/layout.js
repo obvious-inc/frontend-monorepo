@@ -152,7 +152,7 @@ const NavBar = ({ navigationStack, actions: actions_ }) => {
 
   return (
     <div>
-      {isBetaSession && !hasUpdate && (
+      {isBetaSession && hasUpdate && (
         <div
           css={(t) =>
             css({
