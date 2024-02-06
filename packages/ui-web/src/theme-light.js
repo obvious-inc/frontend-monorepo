@@ -28,6 +28,7 @@ export default {
   ...dark,
   name: "light",
   light: true,
+  colorScheme: 'light',
   colors: {
     ...dark.colors,
     pink: "#c347dd",

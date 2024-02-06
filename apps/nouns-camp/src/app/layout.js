@@ -5,6 +5,7 @@ import metaConfig from "../metadata-config.js";
 import CacheStoreProvider from "../cache-store-provider.js";
 import ThemeProvider from "../theme-provider.js";
 import GlobalStylesWrapper from "../global-styles-wrapper.js";
+import AppUpdateBanner from "../components/app-update-banner.js";
 
 import "../reset.css";
 import "../index.css";
@@ -97,7 +98,10 @@ export default function RootLayout({ children }) {
         <EmotionRootStyleRegistry>
           <CacheStoreProvider>
             <ThemeProvider>
-              <GlobalStylesWrapper>{children}</GlobalStylesWrapper>
+              <GlobalStylesWrapper>
+                <AppUpdateBanner />
+                {children}
+              </GlobalStylesWrapper>
             </ThemeProvider>
           </CacheStoreProvider>
         </EmotionRootStyleRegistry>
