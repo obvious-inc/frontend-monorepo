@@ -1,6 +1,6 @@
 import React from "react";
 import { css } from "@emotion/react";
-import { useNavigate, Link as RouterLink } from "react-router-dom";
+import NextLink from "next/link";
 import { ListBox, ListBoxItem } from "react-aria-components";
 import {
   array as arrayUtils,
@@ -29,6 +29,7 @@ import {
   useActiveProposalId,
 } from "../hooks/dao-contract.js";
 import { useWallet } from "../hooks/wallet.js";
+import { useNavigate } from "../hooks/navigation.js";
 
 const PromoteCandidateDialog = ({ isOpen, candidateId, dismiss }) => {
   const navigate = useNavigate();
@@ -168,8 +169,8 @@ const PromoteCandidateDialog = ({ isOpen, candidateId, dismiss }) => {
                   when voting for{" "}
                   <Link
                     underline
-                    component={RouterLink}
-                    to={`/proposals/${authoredActiveProposalId}`}
+                    component={NextLink}
+                    href={`/proposals/${authoredActiveProposalId}`}
                   >
                     Proposal {authoredActiveProposalId}
                   </Link>{" "}

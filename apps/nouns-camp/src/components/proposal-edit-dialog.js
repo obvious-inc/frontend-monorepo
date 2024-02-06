@@ -1,5 +1,4 @@
 import React from "react";
-import { useNavigate } from "react-router-dom";
 import { css, useTheme } from "@emotion/react";
 import {
   markdown as markdownUtils,
@@ -32,6 +31,7 @@ import {
 } from "../store.js";
 import useChainId from "../hooks/chain-id.js";
 import { useWallet } from "../hooks/wallet.js";
+import { useNavigate } from "../hooks/navigation.js";
 import { useUpdateProposal } from "../hooks/dao-contract.js";
 import { useCreateProposalCandidate } from "../hooks/data-contract.js";
 import DiffBlock from "./diff-block.js";
