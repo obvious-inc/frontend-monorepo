@@ -133,6 +133,9 @@ const NavBar = ({ navigationStack, actions: actions_ }) => {
       fetch("/api/version")
         .then((res) => res.json())
         .then((data) => {
+          console.log(
+            `Newest build: "${data.GIT_COMMIT_SHA}"\nCurrently running: "${process.env.GIT_COMMIT_SHA}"`
+          );
           if (
             process.env.GIT_COMMIT_SHA == null ||
             data.GIT_COMMIT_SHA === process.env.GIT_COMMIT_SHA
