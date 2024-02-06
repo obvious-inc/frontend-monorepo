@@ -24,7 +24,7 @@
     "stream-browserify": "^3.0.0",
     "stream-http": "^3.2.0",
     "style-loader": "^3.3.4",
-    "swc-loader": "^0.2.4",
+    "swc-loader": "^0.2.6",
     "url": "^0.11.3",
     "util": "^0.12.5",
     "webpack": "^5.90.1",
