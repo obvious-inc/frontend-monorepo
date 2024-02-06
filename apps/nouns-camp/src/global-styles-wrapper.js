@@ -31,7 +31,7 @@ const GlobalStyles = ({ children }) => {
           "::selection": {
             background: t.colors.textSelectionBackground,
           },
-          colorScheme: t.name === "dark" ? "dark" : "light",
+          colorScheme: t.colorScheme ?? "light",
         })
       }
       style={{
