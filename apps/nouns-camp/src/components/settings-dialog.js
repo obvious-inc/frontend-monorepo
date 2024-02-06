@@ -1,4 +1,5 @@
 import { css } from "@emotion/react";
+import { useAccount } from "wagmi";
 import Dialog from "@shades/ui-web/dialog";
 import FormDialog from "@shades/ui-web/form-dialog";
 import config from "../config.js";
@@ -55,6 +56,8 @@ const SettingsDialog = ({ isOpen, close }) => (
 );
 
 const Content = ({ titleProps, dismiss }) => {
+  const { connector } = useAccount();
+
   const [theme, setTheme] = useSetting("theme");
   const [zoom, setZoom] = useSetting("zoom");
   const [xmasOptOut, setXmasOptOut] = useSetting("xmas-effects-opt-out");
@@ -148,22 +151,31 @@ const Content = ({ titleProps, dismiss }) => {
         })}
       cancelLabel="Close"
     >
-      {searchParams.get("debug") != null && APP_VERSION != null && (
+      {searchParams.get("debug") != null && (
         <div
           css={(t) =>
             css({
               marginTop: "1.6rem",
-              textAlign: "right",
               fontSize: t.text.sizes.tiny,
               color: t.colors.textDimmed,
               whiteSpace: "nowrap",
               overflow: "hidden",
               textOverflow: "ellipsis",
-              em: { fontWeight: t.text.weights.emphasis, fontStyle: "normal" },
+              em: {
+                fontWeight: t.text.weights.emphasis,
+                fontStyle: "normal",
+              },
             })
           }
         >
-          Version: <em>{APP_VERSION}</em>
+          {APP_VERSION != null && (
+            <div>
+              Version: <em>{APP_VERSION}</em>
+            </div>
+          )}
+          <div>
+            Wallet connector: <em>{connector.name}</em>
+          </div>
         </div>
       )}
     </FormDialog>

@@ -16,10 +16,6 @@ import { useDialog } from "../hooks/global-dialogs.js";
 import AccountAvatar from "./account-avatar.js";
 import LogoSymbol from "./logo-symbol.js";
 
-const isBetaSession =
-  typeof location !== "undefined" &&
-  new URLSearchParams(location.search).get("beta") != null;
-
 const Layout = ({
   scrollContainerRef,
   navigationStack = [],
@@ -133,9 +129,6 @@ const NavBar = ({ navigationStack, actions: actions_ }) => {
       fetch("/api/version")
         .then((res) => res.json())
         .then((data) => {
-          console.log(
-            `Newest build: "${data.GIT_COMMIT_SHA}"\nCurrently running: "${process.env.GIT_COMMIT_SHA}"`
-          );
           if (
             process.env.GIT_COMMIT_SHA == null ||
             data.GIT_COMMIT_SHA === process.env.GIT_COMMIT_SHA
@@ -152,7 +145,7 @@ const NavBar = ({ navigationStack, actions: actions_ }) => {
 
   return (
     <div>
-      {isBetaSession && hasUpdate && (
+      {hasUpdate && (
         <div
           css={(t) =>
             css({
