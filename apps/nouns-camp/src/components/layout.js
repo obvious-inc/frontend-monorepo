@@ -133,8 +133,16 @@ const NavBar = ({ navigationStack, actions: actions_ }) => {
       fetch("/api/version")
         .then((res) => res.json())
         .then((data) => {
-          if (process.env.GIT_COMMIT_SHA == null) return;
-          setHasUpdate(data.GIT_COMMIT_SHA !== process.env.GIT_COMMIT_SHA);
+          if (
+            process.env.GIT_COMMIT_SHA == null ||
+            data.GIT_COMMIT_SHA === process.env.GIT_COMMIT_SHA
+          )
+            return;
+
+          console.log(
+            `New build available: "${data.GIT_COMMIT_SHA}"\nCurrently running: "${process.env.GIT_COMMIT_SHA}"`
+          );
+          setHasUpdate(true);
         }),
     []
   );
