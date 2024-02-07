@@ -23,7 +23,7 @@ import "./index.css";
 //   }
 // };
 
-if (import.meta.env.NODE_ENV === "production") {
+if (import.meta.env.PROD) {
   Sentry.init({ dsn: import.meta.env.PUBLIC_SENTRY_DSN });
   // registerServiceWorker();
   injectVercelAnalytics();
