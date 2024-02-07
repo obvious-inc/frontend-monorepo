@@ -20,11 +20,9 @@ import { inject as injectVercelAnalytics } from "@vercel/analytics";
 import "./reset.css";
 import "./index.css";
 
-const isProduction = import.meta.env.NODE_ENV === "production";
-
 const LazyApp = React.lazy(() => import("./app"));
 
-if (isProduction) injectVercelAnalytics();
+if (import.meta.env.PROD) injectVercelAnalytics();
 
 let cacheStoreStorage;
 try {
