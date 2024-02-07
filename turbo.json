@@ -37,7 +37,6 @@
         "FARCORD_APP_MNEMONIC"
       ],
       "outputs": ["dist/**"]
-
     },
     "lint": {},
     "dev": {
