@@ -4,17 +4,21 @@ export const config = {
 
 export default async function handler(request) {
   console.log("redirecting request...");
-  // redirect request to the hub and add the api key header
-  console.log("request", request, typeof request, request instanceof Request);
-  console.log("request headers", request.headers);
+
   console.log("request url", request.url);
-  console.log("og path", request.path);
-  const requestPath = request.path?.replace(/^\/hub/, "");
-  console.log("new path", requestPath);
+  const requestUrl = new URL(request.url);
+
+  requestUrl.hostname = process.env.FARCASTER_HUB_HTTP_ENDPOINT;
+
+  let requestUrlString = requestUrl.toString();
+  requestUrlString = requestUrlString.replace(/^\/hub/, "");
+
+  //   const requestPath = url.path?.replace(/^\/hub/, "");
+  console.log("new path", requestUrlString);
 
   const headers = new Headers(request.headers);
 
-  return fetch(process.env.FARCASTER_HUB_HTTP_ENDPOINT + requestPath, {
+  return fetch(requestUrlString, {
     method: request.method,
     body: request.body,
     headers: {

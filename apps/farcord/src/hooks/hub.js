@@ -20,7 +20,7 @@ const fetchUserData = async (fid) => {
     fid: Number(fid),
   });
 
-  return fetch("/hub/userDataByFid?" + params)
+  return fetch(`${EDGE_API_BASE_URL}/hub/userDataByFid?` + params)
     .then((result) => {
       return result.json();
     })
@@ -89,7 +89,7 @@ const fetchCast = async ({ fid, hash }) => {
     hash: hash,
   });
 
-  return fetch("/hub/castById?" + params)
+  return fetch(`${EDGE_API_BASE_URL}/hub/castById?` + params)
     .then((result) => {
       return result.json();
     })
@@ -133,7 +133,7 @@ export const submitHubMessage = async (message) => {
   const headers = { "Content-Type": "application/octet-stream" };
   const messageBytes = Buffer.from(Message.encode(message).finish());
 
-  const validation = await fetch("/hub/validateMessage", {
+  const validation = await fetch(`${EDGE_API_BASE_URL}/hub/validateMessage`, {
     method: "POST",
     headers,
     body: messageBytes,
@@ -146,7 +146,7 @@ export const submitHubMessage = async (message) => {
     throw new Error(`${validation.status} ${validation.statusText}`);
   }
 
-  const result = await fetch("/hub/submitMessage", {
+  const result = await fetch(`${EDGE_API_BASE_URL}/hub/submitMessage`, {
     method: "POST",
     headers,
     body: messageBytes,
@@ -381,7 +381,7 @@ const isFollowing = async ({ fid, fidToCheck }) => {
     target_fid: Number(fidToCheck),
   });
 
-  const result = await fetch("/hub/linkById?" + params);
+  const result = await fetch(`${EDGE_API_BASE_URL}/hub/linkById?` + params);
   const data = await result.json();
 
   if (!result.ok) {
@@ -415,7 +415,7 @@ export const fetchUsernameProofsByFid = async ({ fid }) => {
     fid: Number(fid),
   });
 
-  return fetch("/hub/userNameProofsByFid?" + params)
+  return fetch(`${EDGE_API_BASE_URL}/hub/userNameProofsByFid?` + params)
     .then((result) => {
       if (!result.ok) {
         throw result;
