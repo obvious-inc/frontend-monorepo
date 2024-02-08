@@ -107,8 +107,8 @@ importers:
         specifier: ^0.100.0
         version: 0.100.0(slate@0.102.0)
       slate-react:
-        specifier: ^0.101.6
-        version: 0.101.6(react-dom@18.2.0)(react@18.2.0)(slate@0.102.0)
+        specifier: ^0.102.0
+        version: 0.102.0(react-dom@18.2.0)(react@18.2.0)(slate@0.102.0)
       tinykeys:
         specifier: ^2.1.0
         version: 2.1.0
@@ -12007,8 +12007,8 @@ packages:
       slate: 0.102.0
     dev: false
 
-  /slate-react@0.101.6(react-dom@18.2.0)(react@18.2.0)(slate@0.102.0):
-    resolution: {integrity: sha512-aMtp9FY127hKWTkCcTBonfKIwKJC2ESPqFdw2o/RuOk3RMQRwsWay8XTOHx8OBGOHanI2fsKaTAPF5zxOLA1Qg==}
+  /slate-react@0.102.0(react-dom@18.2.0)(react@18.2.0)(slate@0.102.0):
+    resolution: {integrity: sha512-SAcFsK5qaOxXjm0hr/t2pvIxfRv6HJGzmWkG58TdH4LdJCsgKS1n6hQOakHPlRVCwPgwvngB6R+t3pPjv8MqwA==}
     peerDependencies:
       react: '>=18.2.0'
       react-dom: '>=18.2.0'
