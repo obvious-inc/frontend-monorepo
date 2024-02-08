@@ -7,18 +7,13 @@ export default async function handler(request) {
 
   console.log("request url", request.url);
 
-  let replacedUrl = request.url.replace(
-    request.url.hostname,
-    process.env.FARCASTER_HUB_HTTP_ENDPOINT
-  );
-  console.log("replaced url", replacedUrl);
+  let url = new URL(request.url);
+  url.hostname = process.env.FARCASTER_HUB_HTTP_ENDPOINT;
 
-  const requestUrlString = replacedUrl.replace(/^\/hub/, "");
-
-  //   const requestPath = url.path?.replace(/^\/hub/, "");
-  console.log("new path", requestUrlString);
+  console.log("new url", url.toString());
 
   const headers = new Headers(request.headers);
+  return;
 
   return fetch(requestUrlString, {
     method: request.method,
