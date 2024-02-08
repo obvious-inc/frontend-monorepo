@@ -28,13 +28,14 @@
     "farcord#build": {
       "dependsOn": ["^build"],
       "env": [
-        "FARCASTER_HUB_RPC_ENDPOINT",
         "NEYNAR_API_KEY",
         "INFURA_PROJECT_ID",
         "WALLET_CONNECT_PROJECT_ID",
         "WARPCAST_API_TOKEN",
         "FARCORD_APP_FID",
-        "FARCORD_APP_MNEMONIC"
+        "FARCORD_APP_MNEMONIC",
+        "FARCASTER_HUB_HTTP_ENDPOINT",
+        "FARCASTER_HUB_API_KEY"
       ],
       "outputs": ["dist/**"]
     },

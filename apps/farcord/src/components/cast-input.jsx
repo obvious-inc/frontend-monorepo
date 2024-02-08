@@ -70,8 +70,8 @@ const CastInput = ({
 
     return addCast(addCastData)
       .then((result) => {
-        track("Cast", { author: Number(fid), cast: toHex(result.value.hash) });
-        return toHex(result.value.hash);
+        track("Cast", { author: Number(fid), cast: toHex(result.hash) });
+        return toHex(result.hash);
       })
       .then(() => {
         if (!threadCast) {

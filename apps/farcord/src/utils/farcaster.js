@@ -101,6 +101,11 @@ export const KEY_REGISTRY_ADD_TYPE = [
 ];
 
 export const decodeMetadata = (metadata) => {
+  // if metadata is string, convert to base64 buffer
+  if (typeof metadata === "string") {
+    metadata = Buffer.from(metadata, "base64");
+  }
+
   // if metadata is of type buffer, convert to hex
   if (Buffer.isBuffer(metadata) || metadata instanceof Uint8Array) {
     metadata = toHex(metadata);

@@ -256,7 +256,7 @@ const CreateChannelDialog = ({ dismiss, titleProps }) => {
                 text,
                 parentUrl: url,
               }).then((result) => {
-                return toHex(result.value.hash);
+                return toHex(result.hash);
               });
             })
             .then(async () => {
