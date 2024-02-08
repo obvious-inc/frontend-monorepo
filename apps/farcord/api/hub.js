@@ -6,12 +6,14 @@ export default async function handler(request) {
   console.log("redirecting request...");
 
   console.log("request url", request.url);
-  const requestUrl = new URL(request.url);
 
-  requestUrl.hostname = process.env.FARCASTER_HUB_HTTP_ENDPOINT;
+  let replacedUrl = request.url.replace(
+    request.url.hostname,
+    process.env.FARCASTER_HUB_HTTP_ENDPOINT
+  );
+  console.log("replaced url", replacedUrl);
 
-  let requestUrlString = requestUrl.toString();
-  requestUrlString = requestUrlString.replace(/^\/hub/, "");
+  const requestUrlString = replacedUrl.replace(/^\/hub/, "");
 
   //   const requestPath = url.path?.replace(/^\/hub/, "");
   console.log("new path", requestUrlString);
