@@ -1,7 +1,7 @@
 import { rewrite } from "@vercel/edge";
 
 export const config = {
-  matcher: "/hub/*",
+  matcher: "/hub/:path*",
 };
 
 export function middleware(request) {
