@@ -61,7 +61,7 @@
     "react-router-dom": "^6.22.0",
     "react-stately": "^3.29.1",
     "reselect": "^5.1.0",
-    "slate": "^0.101.5",
+    "slate": "^0.102.0",
     "slate-history": "^0.100.0",
     "slate-react": "^0.101.6",
     "tinykeys": "^2.1.0",
