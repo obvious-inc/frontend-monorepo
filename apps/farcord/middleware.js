@@ -4,7 +4,7 @@ export const config = {
   matcher: "/hub/:path*",
 };
 
-export function middleware(request) {
+export default function middleware(request) {
   // Clone the request headers
   // You can modify them with headers API: https://developer.mozilla.org/en-US/docs/Web/API/Headers
   const requestHeaders = new Headers(request.headers);
@@ -13,6 +13,5 @@ export function middleware(request) {
   requestHeaders.set("x-hello-from-middleware1", "hello");
   requestHeaders.set("x-hello-from-middleware2", "world!");
 
-  //   return Response.redirect(new URL("/hub-2", request.url));
-  return rewrite(new URL("/about-2", request.url));
+  return rewrite(new URL("/hub-2", request.url));
 }
