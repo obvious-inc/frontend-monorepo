@@ -3,8 +3,8 @@ export const config = {
 };
 
 export function middleware(request) {
-  // Clone the request headers
-  // You can modify them with headers API: https://developer.mozilla.org/en-US/docs/Web/API/Headers
+  console.log("request caught by middleware");
+
   const requestHeaders = new Headers(request.headers);
 
   // Add new request headers
