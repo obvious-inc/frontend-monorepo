@@ -8,6 +8,8 @@ import {
 import { hexToBytes } from "viem";
 import { decodeMetadata } from "../utils/farcaster";
 
+const { EDGE_API_BASE_URL } = import.meta.env;
+
 export const REACTION_TYPE = {
   LIKE: 1,
   RECAST: 2,
@@ -36,7 +38,9 @@ const fetchSignerEvents = async ({ fid, publicKey }) => {
     params.set("publicKey", publicKey);
   }
 
-  const result = await fetch("/hub/onChainSignersByFid?" + params);
+  const result = await fetch(
+    `${EDGE_API_BASE_URL}/hub/onChainSignersByFid?` + params
+  );
   const data = await result.json();
 
   if (!result.ok) {

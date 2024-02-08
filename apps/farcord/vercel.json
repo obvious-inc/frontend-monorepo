@@ -1,10 +1,6 @@
 {
   "rewrites": [
     {
-      "source": "/hub/:path*",
-      "destination": "https://api.neynar.com:2281/v1/:path*"
-    },
-    {
       "source": "/(.*)",
       "destination": "/index.html"
     }
