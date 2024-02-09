@@ -13437,9 +13437,9 @@ export default async function handler(_, response) {
 
   // fetch neynar channel list?
 
-  const neynarChannels = await fetchAllChannels();
-  console.log("neynar channels", neynarChannels);
-  return response.status(200).json({ channels: neynarChannels });
+  // const neynarChannels = await fetchAllChannels();
+  // console.log("neynar channels", neynarChannels);
+  // return response.status(200).json({ channels: neynarChannels });
 
   const allChannelsById = ALL_CHANNELS.reduce((acc, channel) => {
     acc[channel.id] = channel;
