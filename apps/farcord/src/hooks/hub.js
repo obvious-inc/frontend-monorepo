@@ -15,18 +15,33 @@ export const REACTION_TYPE = {
   RECAST: 2,
 };
 
+const hubFetch = async (url, options) => {
+  const headers = new Headers(options?.headers);
+  headers.set("api_key", import.meta.env.PUBLIC_NEYNAR_API_KEY);
+
+  const response = await fetch(`${EDGE_API_BASE_URL}/hub${url}`, {
+    ...options,
+    headers,
+  });
+
+  const data = await response.json();
+
+  if (!response.ok) {
+    console.error(data);
+    return Promise.reject(
+      new Error(`${response.status} ${response.statusText}`)
+    );
+  }
+
+  return data;
+};
+
 const fetchUserData = async (fid) => {
   const params = new URLSearchParams({
     fid: Number(fid),
   });
 
-  return fetch(`${EDGE_API_BASE_URL}/hub/userDataByFid?` + params)
-    .then((result) => {
-      return result.json();
-    })
-    .catch((err) => {
-      console.error(err);
-    });
+  return hubFetch("/userDataByFid?" + params);
 };
 
 const fetchSignerEvents = async ({ fid, publicKey }) => {
@@ -37,18 +52,7 @@ const fetchSignerEvents = async ({ fid, publicKey }) => {
   if (publicKey) {
     params.set("publicKey", publicKey);
   }
-
-  const result = await fetch(
-    `${EDGE_API_BASE_URL}/hub/onChainSignersByFid?` + params
-  );
-  const data = await result.json();
-
-  if (!result.ok) {
-    console.error(data);
-    throw new Error(`${result.status} ${result.statusText}`);
-  }
-
-  return data;
+  return hubFetch("/onChainSignersByFid?" + params);
 };
 
 export const fetchUserSigners = async ({ fid }) => {
@@ -89,13 +93,7 @@ const fetchCast = async ({ fid, hash }) => {
     hash: hash,
   });
 
-  return fetch(`${EDGE_API_BASE_URL}/hub/castById?` + params)
-    .then((result) => {
-      return result.json();
-    })
-    .catch((err) => {
-      console.error(err);
-    });
+  return hubFetch("/castById?" + params);
 };
 
 export const fetchAppFid = async ({ fid, hash }) => {
@@ -133,33 +131,17 @@ export const submitHubMessage = async (message) => {
   const headers = { "Content-Type": "application/octet-stream" };
   const messageBytes = Buffer.from(Message.encode(message).finish());
 
-  const validation = await fetch(`${EDGE_API_BASE_URL}/hub/validateMessage`, {
+  return hubFetch("/validateMessage", {
     method: "POST",
     headers,
     body: messageBytes,
+  }).then(() => {
+    return hubFetch("/submitMessage", {
+      method: "POST",
+      headers,
+      body: messageBytes,
+    });
   });
-
-  const validationData = await validation.json();
-
-  if (!validation.ok) {
-    console.error("error validating message", message, validationData);
-    throw new Error(`${validation.status} ${validation.statusText}`);
-  }
-
-  const result = await fetch(`${EDGE_API_BASE_URL}/hub/submitMessage`, {
-    method: "POST",
-    headers,
-    body: messageBytes,
-  });
-
-  const data = await result.json();
-
-  if (!result.ok) {
-    console.error("error submitting message to hub", message, data);
-    throw new Error(`${result.status} ${result.statusText}`);
-  }
-
-  return data;
 };
 
 export const addReaction = async ({ fid, signer, cast, reactionType }) => {
@@ -381,15 +363,10 @@ const isFollowing = async ({ fid, fidToCheck }) => {
     target_fid: Number(fidToCheck),
   });
 
-  const result = await fetch(`${EDGE_API_BASE_URL}/hub/linkById?` + params);
-  const data = await result.json();
-
-  if (!result.ok) {
-    if (data.errCode != "not_found") throw new Error(data);
+  return hubFetch("/linkById?" + params).catch((err) => {
+    console.error(err);
     return false;
-  }
-
-  return data;
+  });
 };
 
 export const useIsFollower = ({ fid, fidToCheck }) => {
@@ -415,18 +392,5 @@ export const fetchUsernameProofsByFid = async ({ fid }) => {
     fid: Number(fid),
   });
 
-  return fetch(`${EDGE_API_BASE_URL}/hub/userNameProofsByFid?` + params)
-    .then((result) => {
-      if (!result.ok) {
-        throw result;
-      }
-
-      return result.json();
-    })
-    .then((data) => {
-      return data.proofs;
-    })
-    .catch((err) => {
-      console.error(err);
-    });
+  return hubFetch("/userNameProofsByFid?" + params).then((data) => data.proofs);
 };
