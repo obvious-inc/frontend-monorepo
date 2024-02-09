@@ -13432,9 +13432,14 @@ export default async function handler(_, response) {
       return Promise.all(
         channels.map((channel) => {
           if (!channel.id) return Promise.resolve(null);
-          if (allChannelsById[channel.id])
-            return Promise.resolve(allChannelsById[channel.id]);
+          const storedChannel = allChannelsById[channel.id];
+          if (storedChannel)
+            return Promise.resolve({
+              ...storedChannel,
+              parentUrl: storedChannel.url,
+            });
 
+          console.log("fetching new channel info", channel.id);
           return fetch(WARPCAST_CHANNELS_INFO_ENDPOINT + "?key=" + channel.id)
             .then((res) => {
               if (res.ok) return res.json();
