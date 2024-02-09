@@ -21,7 +21,7 @@ export default async function handler(request, response) {
 
   const hubRequest = new Request(url, {
     method: request.method,
-    headers: request.headers,
+    headers: { api_key: process.env.FARCASTER_HUB_API_KEY },
     body: request.body,
   });
 
@@ -29,7 +29,7 @@ export default async function handler(request, response) {
     "hubRequest debug",
     hubRequest.url,
     hubRequest.method,
-    hubRequest.headers,
+    hubRequest.headers.get("api_key"),
     hubRequest.body
   );
 
@@ -37,7 +37,7 @@ export default async function handler(request, response) {
     .then((res) => {
       console.log("result", res.status, res.statusText);
       if (!res.ok) {
-        return new Response(
+        throw new Response(
           JSON.stringify({
             error: res.statusText,
           }),
@@ -61,7 +61,7 @@ export default async function handler(request, response) {
       });
     })
     .catch((err) => {
-      console.error(err);
-      return response.json({ error: err.message });
+      console.error("error", err);
+      return err;
     });
 }
