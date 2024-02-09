@@ -16,6 +16,7 @@ export default async function handler(request, response) {
     body: request.body,
   })
     .then((res) => {
+      console.log("result", res);
       return res.json();
     })
     .then((data) => {

@@ -19,7 +19,10 @@ const hubFetch = async (url, options) => {
   const headers = new Headers(options?.headers);
   headers.set("api_key", import.meta.env.PUBLIC_NEYNAR_API_KEY);
 
-  const response = await fetch(`${EDGE_API_BASE_URL}/hub${url}`, {
+  const urlParams = new URLSearchParams(url);
+  urlParams.set("path", url);
+
+  const response = await fetch(`${EDGE_API_BASE_URL}/hub?` + urlParams, {
     ...options,
     headers,
   });
