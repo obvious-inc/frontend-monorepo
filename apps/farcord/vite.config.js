@@ -20,14 +20,6 @@ export default defineConfig(({ mode }) => {
           changeOrigin: true,
           rewrite: (path) => path.replace(/^\/edge-api/, ""),
         },
-        "/hub": {
-          target: env.FARCASTER_HUB_HTTP_ENDPOINT,
-          changeOrigin: true,
-          rewrite: (path) => path.replace(/^\/hub/, ""),
-          headers: {
-            api_key: env.FARCASTER_HUB_API_KEY,
-          },
-        },
       },
     },
   };
