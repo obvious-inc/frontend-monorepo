@@ -13438,7 +13438,8 @@ export default async function handler(_, response) {
   // fetch neynar channel list?
 
   fetchAllChannels().then((channels) => {
-    console.log("neynar channels", channels);
+    console.info("neynar channels", channels);
+    return response.status(200).json({ channels: channels });
   });
 
   const allChannelsById = ALL_CHANNELS.reduce((acc, channel) => {
@@ -13465,7 +13466,7 @@ export default async function handler(_, response) {
               parentUrl: storedChannel.url,
             });
 
-          console.log("fetching new channel info", channel.id);
+          console.debug("fetching new channel info", channel.id);
           return fetch(WARPCAST_CHANNELS_INFO_ENDPOINT + "?key=" + channel.id)
             .then((res) => {
               if (res.ok) return res.json();
@@ -13502,4 +13503,6 @@ export default async function handler(_, response) {
 
   response.setHeader("Cache-Control", "s-maxage=86400");
   response.status(200).json({ channels: channels });
+
+  return response;
 }
