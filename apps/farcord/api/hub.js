@@ -19,7 +19,6 @@ export default async function handler(request, response) {
   urlParams.delete("path");
 
   const url = process.env.FARCASTER_HUB_HTTP_ENDPOINT + path + "?" + urlParams;
-
   console.log("url", url);
 
   return fetch(url, {
