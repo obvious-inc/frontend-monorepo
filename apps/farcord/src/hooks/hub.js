@@ -109,7 +109,7 @@ export const fetchAppFid = async ({ fid, hash }) => {
       });
     })
     .then((result) => {
-      return result.signerEventBody?.metadata;
+      return result.events?.[0]?.signerEventBody?.metadata;
     })
     .then((metadata) => {
       const parsedMetadata = decodeMetadata(metadata);
@@ -125,7 +125,9 @@ export const useSignerByPublicKey = (fid, publicKey) => {
 
   React.useEffect(() => {
     if (!fid || !publicKey) return;
-    fetchSignerEvents({ fid, publicKey }).then((s) => setSigner(s));
+    fetchSignerEvents({ fid, publicKey })
+      .then((events) => events?.[0])
+      .then((s) => setSigner(s));
   }, [fid, publicKey]);
 
   return signer;
