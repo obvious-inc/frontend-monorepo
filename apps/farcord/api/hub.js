@@ -26,7 +26,7 @@ export default async function handler(request, response) {
   });
 
   console.log(
-    "hubRequest",
+    "hubRequest debug",
     hubRequest.url,
     hubRequest.method,
     hubRequest.headers,
