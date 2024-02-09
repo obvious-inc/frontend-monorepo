@@ -6,7 +6,8 @@ const WARPCAST_CHANNELS_INFO_ENDPOINT =
 
 import { readFileSync } from "fs";
 import path from "path";
-import { fetchAllChannels } from "../src/hooks/neynar";
+
+const NEYNAR_V2_ENDPOINT = "https://api.neynar.com/v2/farcaster";
 
 // TODO: move this to its own file when i figure out how to do that
 const ALL_CHANNELS = [
@@ -13410,6 +13411,28 @@ const ALL_CHANNELS = [
     createdAt: 1706005875,
   },
 ];
+
+async function fetchAllChannels({
+  cursor,
+  // limit = DEFAULT_PAGE_SIZE,
+}) {
+  let params = new URLSearchParams({
+    api_key: process.env.FARCASTER_HUB_API_KEY,
+  });
+
+  if (cursor) params.set("cursor", cursor);
+
+  return fetch(NEYNAR_V2_ENDPOINT + "/channel/list?" + params)
+    .then((result) => {
+      return result.json();
+    })
+    .then((data) => {
+      return data.channels;
+    })
+    .catch((err) => {
+      throw err;
+    });
+}
 
 export default async function handler(_, response) {
   // response.setHeader("Cache-Control", "s-maxage=86400");

@@ -367,25 +367,3 @@ export const extractUsersFromNeynarCast = (cast) => {
 
   return arrayUtils.unique([author, ...mentionedUsers], (u) => u.fid);
 };
-
-export async function fetchAllChannels({
-  cursor,
-  // limit = DEFAULT_PAGE_SIZE,
-}) {
-  let params = new URLSearchParams({
-    api_key: NEYNAR_API_KEY,
-  });
-
-  if (cursor) params.set("cursor", cursor);
-
-  return fetch(NEYNAR_V2_ENDPOINT + "/channel/list?" + params)
-    .then((result) => {
-      return result.json();
-    })
-    .then((data) => {
-      return data.channels;
-    })
-    .catch((err) => {
-      throw err;
-    });
-}
