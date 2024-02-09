@@ -1,8 +1,4 @@
-export const config = {
-  runtime: "edge",
-};
-
-export default async function handler(request, response) {
+export default function handler(request, response) {
   console.log(
     "handling /hub request",
     request.url,
@@ -37,28 +33,13 @@ export default async function handler(request, response) {
     .then((res) => {
       console.log("result", res.status, res.statusText);
       if (!res.ok) {
-        throw new Response(
-          JSON.stringify({
-            error: res.statusText,
-          }),
-          {
-            status: res.status,
-            headers: {
-              "Content-Type": "application/json",
-            },
-          }
-        );
+        return response.status(res.status).json({ error: res.statusText });
       }
 
       return res.json();
     })
     .then((data) => {
-      return new Response(JSON.stringify(data), {
-        status: 200,
-        headers: {
-          "Content-Type": "application/json",
-        },
-      });
+      return response.status(200).json(data);
     })
     .catch((err) => {
       console.error("error", err);
