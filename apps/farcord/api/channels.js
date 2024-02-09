@@ -6,6 +6,7 @@ const WARPCAST_CHANNELS_INFO_ENDPOINT =
 
 import { readFileSync } from "fs";
 import path from "path";
+import { fetchAllChannels } from "../src/hooks/neynar";
 
 // TODO: move this to its own file when i figure out how to do that
 const ALL_CHANNELS = [
@@ -13414,6 +13415,12 @@ export default async function handler(_, response) {
   // response.setHeader("Cache-Control", "s-maxage=86400");
   // response.status(200).json({ channels: ALL_CHANNELS });
   // return response;
+
+  // fetch neynar channel list?
+
+  fetchAllChannels().then((channels) => {
+    console.log("neynar channels", channels);
+  });
 
   const allChannelsById = ALL_CHANNELS.reduce((acc, channel) => {
     acc[channel.id] = channel;
