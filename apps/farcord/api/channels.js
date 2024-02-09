@@ -6,8 +6,15 @@ const WARPCAST_CHANNELS_INFO_ENDPOINT =
 
 import { readFileSync } from "fs";
 import path from "path";
+import allChannels from "./_all-channels";
 
 export default async function handler(_, response) {
+  const allChannels = allChannels;
+  console.log("channels", allChannels);
+  // response.setHeader("Cache-Control", "s-maxage=86400");
+  response.status(200).json({ channels: allChannels });
+  return response;
+
   const channels = await fetch(WARPCAST_CHANNELS_STATIC_LIST)
     .then(async (res) => {
       if (res.ok) return res.json();
