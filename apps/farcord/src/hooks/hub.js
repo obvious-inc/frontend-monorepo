@@ -16,9 +16,6 @@ export const REACTION_TYPE = {
 };
 
 const hubFetch = async (url, options) => {
-  const headers = new Headers(options?.headers);
-  headers.set("api_key", import.meta.env.PUBLIC_NEYNAR_API_KEY);
-
   // get path from url and set it as a query param
 
   const path = url.split("?")[0];
@@ -26,10 +23,10 @@ const hubFetch = async (url, options) => {
   const urlParams = new URLSearchParams(queryParams);
   urlParams.set("path", path);
 
-  const response = await fetch(`${EDGE_API_BASE_URL}/hub?` + urlParams, {
-    ...options,
-    headers,
-  });
+  const response = await fetch(
+    `${EDGE_API_BASE_URL}/hub?` + urlParams,
+    options
+  );
 
   const data = await response.json();
 
