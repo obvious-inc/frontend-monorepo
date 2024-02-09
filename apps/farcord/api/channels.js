@@ -13412,18 +13412,14 @@ const ALL_CHANNELS = [
   },
 ];
 
-async function fetchAllChannels({
-  cursor,
-  // limit = DEFAULT_PAGE_SIZE,
-}) {
+async function fetchAllChannels() {
   let params = new URLSearchParams({
     api_key: process.env.FARCASTER_HUB_API_KEY,
   });
 
-  if (cursor) params.set("cursor", cursor);
-
   return fetch(NEYNAR_V2_ENDPOINT + "/channel/list?" + params)
     .then((result) => {
+      console.log("neynar result", result.status, result.statusText);
       return result.json();
     })
     .then((data) => {
