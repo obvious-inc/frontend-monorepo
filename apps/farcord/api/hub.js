@@ -30,13 +30,28 @@ export default async function handler(request, response) {
     .then((res) => {
       console.log("result", res.status, res.statusText);
       if (!res.ok) {
-        return Promise.reject(new Error(res.statusText));
+        return new Response(
+          JSON.stringify({
+            error: res.statusText,
+          }),
+          {
+            status: res.status,
+            headers: {
+              "Content-Type": "application/json",
+            },
+          }
+        );
       }
 
       return res.json();
     })
     .then((data) => {
-      return response.json(data);
+      return new Response(JSON.stringify(data), {
+        status: 200,
+        headers: {
+          "Content-Type": "application/json",
+        },
+      });
     })
     .catch((err) => {
       console.error(err);
