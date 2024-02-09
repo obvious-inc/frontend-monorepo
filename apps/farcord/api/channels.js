@@ -13412,7 +13412,7 @@ const ALL_CHANNELS = [
   },
 ];
 
-async function fetchAllChannels() {
+const fetchAllChannels = async () => {
   let params = new URLSearchParams({
     api_key: process.env.FARCASTER_HUB_API_KEY,
   });
@@ -13428,7 +13428,7 @@ async function fetchAllChannels() {
     .catch((err) => {
       throw err;
     });
-}
+};
 
 export default async function handler(_, response) {
   // response.setHeader("Cache-Control", "s-maxage=86400");
@@ -13437,10 +13437,9 @@ export default async function handler(_, response) {
 
   // fetch neynar channel list?
 
-  fetchAllChannels().then((channels) => {
-    console.info("neynar channels", channels);
-    return response.status(200).json({ channels: channels });
-  });
+  const neynarChannels = await fetchAllChannels();
+  console.log("neynar channels", neynarChannels);
+  return response.status(200).json({ channels: neynarChannels });
 
   const allChannelsById = ALL_CHANNELS.reduce((acc, channel) => {
     acc[channel.id] = channel;
