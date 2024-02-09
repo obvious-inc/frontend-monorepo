@@ -13,19 +13,27 @@ export default async function handler(request, response) {
 
   // remove path from query parameters and use as part of URL
   const urlParams = new URLSearchParams(request.url.split("?")[1]);
-  console.log("url params", urlParams.toString());
-
   const path = urlParams.get("path");
   urlParams.delete("path");
 
   const url = process.env.FARCASTER_HUB_HTTP_ENDPOINT + path + "?" + urlParams;
   console.log("url", url);
 
-  return fetch(url, {
+  const hubRequest = new Request(url, {
     method: request.method,
     headers: request.headers,
     body: request.body,
-  })
+  });
+
+  console.log(
+    "hubRequest",
+    hubRequest.url,
+    hubRequest.method,
+    hubRequest.headers,
+    hubRequest.body
+  );
+
+  return fetch(hubRequest)
     .then((res) => {
       console.log("result", res.status, res.statusText);
       if (!res.ok) {
