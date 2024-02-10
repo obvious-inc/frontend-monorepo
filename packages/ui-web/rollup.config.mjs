@@ -268,10 +268,4 @@ const entrypoints = [
   },
 ];
 
-export default [
-  ...entrypoints.map(createConfig),
-  createConfig({
-    file: "index.js",
-    dependencies: [...new Set(entrypoints.flatMap((e) => e.dependencies))],
-  }),
-];
+export default entrypoints.map(createConfig);

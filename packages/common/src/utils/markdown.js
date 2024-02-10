@@ -13,11 +13,34 @@ const fixUrl = (url) => {
   }
 };
 
+const commonHtmlEnties = {
+  amp: "&",
+  apos: "'",
+  lt: "<",
+  gt: ">",
+  nbsp: " ",
+  quot: '"',
+};
+
 const decodeHtmlEntities = (string) => {
-  if (!string.match(/(&.+;)/gi)) return string;
+  const partiallyDecodedString = string
+    .replace(/&#(\d+);/gi, (_, numStr) =>
+      String.fromCharCode(parseInt(numStr, 10))
+    )
+    .replace(
+      /&([^;]+);/g,
+      (match, entity) => commonHtmlEnties[entity] || match
+    );
+
+  if (
+    typeof document === "undefined" ||
+    !partiallyDecodedString.match(/(&.+;)/gi)
+  )
+    return partiallyDecodedString;
+
   // textareas are magical
   const textareaEl = document.createElement("textarea");
-  textareaEl.innerHTML = string;
+  textareaEl.innerHTML = partiallyDecodedString;
   return textareaEl.value;
 };
 
@@ -254,3 +277,12 @@ export const toMessageBlocks = (text, { displayImages = true } = {}) => {
     .map((t, index) => parseToken(t, { displayImages, index }))
     .filter(Boolean);
 };
+
+export const getFirstParagraph = (string) =>
+  string.split("\n").find((line_) => {
+    const line = line_.trim();
+    return (
+      line !== "" &&
+      ["#", "-", "*", "!", "[", "`"].every((token) => !line.startsWith(token))
+    );
+  });

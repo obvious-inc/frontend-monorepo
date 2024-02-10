@@ -1,7 +1,9 @@
 import React from "react";
 
 const useMatchMedia = (query) => {
-  const [matches, setMatches] = React.useState(() => matchMedia(query).matches);
+  const [matches, setMatches] = React.useState(
+    () => typeof matchMedia !== "undefined" && matchMedia(query).matches
+  );
 
   React.useEffect(() => {
     const mediaQueryList = matchMedia(query);

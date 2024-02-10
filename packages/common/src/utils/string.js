@@ -34,3 +34,8 @@ export const getWordMatchCount = (string, query, { exact = false } = {}) => {
 };
 
 export const removeWhitespace = (string) => string.replace(/\s+/g, "");
+
+export const truncate = (charCount, string) =>
+  string?.trim().length > charCount
+    ? `${string.trim().slice(0, charCount).trim()}...`
+    : string;

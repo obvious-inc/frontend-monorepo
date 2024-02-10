@@ -1129,6 +1129,32 @@ export const useProposalUpdateCandidates = ({
   }, [candidatesById, proposalsById, includeTargetProposal, blockNumber]);
 };
 
+export const useAccountProposals = (accountAddress) => {
+  const proposalsById = useStore((s) => s.proposalsById);
+
+  return React.useMemo(() => {
+    if (accountAddress == null) return [];
+    const proposals = Object.values(proposalsById);
+    return proposals.filter(
+      (p) => p.proposerId?.toLowerCase() === accountAddress.toLowerCase()
+    );
+  }, [proposalsById, accountAddress]);
+};
+
+export const useAccountSponsoredProposals = (accountAddress) => {
+  const proposalsById = useStore((s) => s.proposalsById);
+
+  return React.useMemo(() => {
+    if (accountAddress == null) return [];
+    const proposals = Object.values(proposalsById);
+    return proposals.filter((p) =>
+      p.signers?.some(
+        (s) => s.id.toLowerCase() === accountAddress.toLowerCase()
+      )
+    );
+  }, [proposalsById, accountAddress]);
+};
+
 export const useAccountProposalCandidates = (accountAddress) => {
   const candidatesById = useStore((s) => s.proposalCandidatesById);
 
@@ -1207,27 +1233,6 @@ export const useAccountFetch = (id, options) => {
         onError(e);
       }),
     [fetchAccount, id, onError, blockNumber]
-  );
-};
-
-export const useProposalsSponsoredByAccount = (accountAddress) => {
-  const candidatesById = useStore((s) => s.proposalCandidatesById);
-  const sponsoredCandidates = Object.values(candidatesById).filter((c) =>
-    getCandidateSponsorSignatures(c, {
-      excludeInvalid: true,
-      activeProposerIds: [],
-    }).some((s) => s.signer.id.toLowerCase() === accountAddress.toLowerCase())
-  );
-
-  const sponsoredProposalIds = arrayUtils.unique(
-    sponsoredCandidates.map((c) => c.latestVersion?.proposalId)
-  );
-
-  const proposalsById = useStore((s) => s.proposalsById);
-
-  return arrayUtils.sortBy(
-    { value: (p) => p.lastUpdatedTimestamp, order: "desc" },
-    sponsoredProposalIds.map((id) => proposalsById[id]).filter(Boolean)
   );
 };
 

@@ -170,11 +170,16 @@ const ContentInner = React.forwardRef(
           ref={ref}
           css={(t) =>
             css({
+              // Since Emotion’s <Global /> doesn’t work yet in Next we have
+              // to specify this on anything that’s outside the root div
+              colorScheme: t.name === "dark" ? "dark" : "light",
+
               minWidth: widthFollowTrigger ? 0 : "min-content",
               width: widthFollowTrigger
                 ? anchorRef.current?.offsetWidth ?? "auto"
                 : width,
               maxWidth: "calc(100vw - 2rem)",
+              color: t.colors.textNormal,
               background: t.colors.popoverBackground,
               borderRadius: "0.6rem",
               boxShadow: t.shadows.elevationHigh,
