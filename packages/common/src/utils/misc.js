@@ -38,7 +38,9 @@ export const getImageDimensionsFromUrl = (url) =>
   });
 
 export const requestIdleCallback =
-  typeof window.requestIdleCallback === "function"
+  typeof window === "undefined"
+    ? undefined
+    : typeof window.requestIdleCallback === "function"
     ? window.requestIdleCallback
     : window.setTimeout;
 

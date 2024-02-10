@@ -35,6 +35,7 @@ const backgroundModifierSelected = createPrimary({
 
 const normalTextSize = "1.4rem";
 const largeText = "1.6rem";
+const largerText = "1.8rem";
 
 const textSizes = {
   micro: "0.95rem",
@@ -44,6 +45,7 @@ const textSizes = {
   // todo: remove default
   default: normalTextSize,
   large: largeText,
+  larger: largerText,
   huge: "3.2rem",
   header: largeText,
   headerLarge: "2rem",

@@ -9,14 +9,15 @@ import { buildFeed as buildVoterFeed } from "../utils/voters.js";
 import {
   useAccount,
   useAccountFetch,
+  useAccountProposals,
   useAccountProposalCandidates,
+  useAccountSponsoredProposals,
   useActions,
   useAllNounsByAccount,
   useDelegate,
   useDelegateFetch,
   useProposalCandidates,
   useProposals,
-  useProposalsSponsoredByAccount,
 } from "../store.js";
 import MetaTags_ from "./meta-tags.js";
 import Layout, { MainContentContainer } from "./layout.js";
@@ -539,9 +540,9 @@ const VoterMainSection = ({ voterAddress }) => {
   const [page, setPage] = React.useState(1);
   const delegate = useDelegate(voterAddress);
 
-  const filteredProposals = (delegate?.proposals ?? []).filter(Boolean);
-  const voterCandidates = useAccountProposalCandidates(voterAddress);
-  const sponsoredProposals = useProposalsSponsoredByAccount(voterAddress);
+  const proposals = useAccountProposals(voterAddress);
+  const candidates = useAccountProposalCandidates(voterAddress);
+  const sponsoredProposals = useAccountSponsoredProposals(voterAddress);
 
   const { fetchVoterScreenData } = useActions();
 
@@ -554,12 +555,12 @@ const VoterMainSection = ({ voterAddress }) => {
   );
 
   const proposalsTabTitle =
-    delegate && filteredProposals?.length > 0
-      ? `Proposals (${filteredProposals?.length})`
+    delegate && proposals?.length > 0
+      ? `Proposals (${proposals?.length})`
       : "Proposals";
 
-  const candidatesTabTitle = voterCandidates?.length
-    ? `Candidates (${voterCandidates?.length})`
+  const candidatesTabTitle = candidates?.length
+    ? `Candidates (${candidates?.length})`
     : "Candidates";
 
   const sponsoredTabTitle = sponsoredProposals.length
@@ -624,7 +625,7 @@ const VoterMainSection = ({ voterAddress }) => {
               )}
               <Tabs.Item key="proposals" title={proposalsTabTitle}>
                 <div>
-                  {delegate && filteredProposals.length === 0 && (
+                  {delegate && proposals.length === 0 && (
                     <Tabs.EmptyPlaceholder
                       title="No proposals"
                       description="This account has not created any proposals"
@@ -635,16 +636,20 @@ const VoterMainSection = ({ voterAddress }) => {
                     showPlaceholder={!delegate}
                     sections={[
                       {
-                        items: filteredProposals.slice(
-                          0,
-                          VOTER_LIST_PAGE_ITEM_COUNT * page
-                        ),
+                        items: arrayUtils
+                          .sortBy(
+                            {
+                              value: (p) => Number(p.id),
+                              order: "desc",
+                            },
+                            proposals
+                          )
+                          .slice(0, VOTER_LIST_PAGE_ITEM_COUNT * page),
                       },
                     ]}
                     style={{ marginTop: "2rem" }}
                   />
-                  {filteredProposals.length >
-                    VOTER_LIST_PAGE_ITEM_COUNT * page && (
+                  {proposals.length > VOTER_LIST_PAGE_ITEM_COUNT * page && (
                     <div css={{ textAlign: "center", padding: "3.2rem 0" }}>
                       <Button
                         size="small"
@@ -660,7 +665,7 @@ const VoterMainSection = ({ voterAddress }) => {
               </Tabs.Item>
               <Tabs.Item key="candidates" title={candidatesTabTitle}>
                 <div>
-                  {delegate && voterCandidates.length === 0 && (
+                  {delegate && candidates.length === 0 && (
                     <Tabs.EmptyPlaceholder
                       title="No candidates"
                       description="This account has not created any proposal candidates"
@@ -671,16 +676,20 @@ const VoterMainSection = ({ voterAddress }) => {
                     showPlaceholder={!delegate}
                     sections={[
                       {
-                        items: voterCandidates.slice(
-                          0,
-                          VOTER_LIST_PAGE_ITEM_COUNT * page
-                        ),
+                        items: arrayUtils
+                          .sortBy(
+                            {
+                              value: (p) => p.lastUpdatedTimestamp,
+                              order: "desc",
+                            },
+                            candidates
+                          )
+                          .slice(0, VOTER_LIST_PAGE_ITEM_COUNT * page),
                       },
                     ]}
                     style={{ marginTop: "2rem" }}
                   />
-                  {voterCandidates.length >
-                    VOTER_LIST_PAGE_ITEM_COUNT * page && (
+                  {candidates.length > VOTER_LIST_PAGE_ITEM_COUNT * page && (
                     <div css={{ textAlign: "center", padding: "3.2rem 0" }}>
                       <Button
                         size="small"
@@ -707,10 +716,15 @@ const VoterMainSection = ({ voterAddress }) => {
                     showPlaceholder={!delegate}
                     sections={[
                       {
-                        items: sponsoredProposals.slice(
-                          0,
-                          VOTER_LIST_PAGE_ITEM_COUNT * page
-                        ),
+                        items: arrayUtils
+                          .sortBy(
+                            {
+                              value: (p) => p.lastUpdatedTimestamp,
+                              order: "desc",
+                            },
+                            sponsoredProposals
+                          )
+                          .slice(0, VOTER_LIST_PAGE_ITEM_COUNT * page),
                       },
                     ]}
                     style={{ marginTop: "2rem" }}
@@ -748,8 +762,7 @@ const VoterScreen = () => {
 
   const voterAddress = isAddress(voterId.trim()) ? voterId.trim() : ensAddress;
 
-  const { displayName, truncatedAddress, ensName } =
-    useAccountDisplayName(voterAddress);
+  const { displayName } = useAccountDisplayName(voterAddress);
 
   const scrollContainerRef = React.useRef();
 
@@ -761,16 +774,7 @@ const VoterScreen = () => {
       <MetaTags voterId={voterId} voterAddress={voterAddress} />
       <Layout
         scrollContainerRef={scrollContainerRef}
-        navigationStack={[
-          {
-            to: `/campers/${voterId} `,
-            label: (
-              <>
-                {displayName} {ensName && `(${truncatedAddress})`}
-              </>
-            ),
-          },
-        ]}
+        navigationStack={[{ to: `/campers/${voterId} `, label: displayName }]}
       >
         {voterAddress ? (
           <VoterMainSection

@@ -17,7 +17,7 @@ import AccountAvatar from "./account-avatar.js";
 
 const MarkdownRichText = React.lazy(() => import("./markdown-rich-text.js"));
 
-const BODY_TRUNCATION_HEIGHT_THRESHOLD = "18em";
+const BODY_TRUNCATION_HEIGHT_THRESHOLD = 250;
 
 const ActivityFeed = ({ context, items = [], spacing = "2rem" }) => (
   <React.Suspense fallback={null}>
@@ -127,10 +127,10 @@ const FeedItem = React.memo(({ context, ...item }) => {
                 css({
                   flex: 1,
                   minWidth: 0,
-                  display: "-webkit-box",
-                  WebkitBoxOrient: "vertical",
-                  WebkitLineClamp: 2,
-                  overflow: "hidden",
+                  // display: "-webkit-box",
+                  // WebkitBoxOrient: "vertical",
+                  // WebkitLineClamp: 2,
+                  // overflow: "hidden",
                   color: t.colors.textDimmed,
                 })
               }
@@ -218,18 +218,15 @@ const ItemBody = React.memo(
     const [exceedsTruncationThreshold, setExceedsTruncationThreshold] =
       React.useState(null);
 
-    const isCollapsed = enableLineTruncation && isCollapsed_;
-    const isEffectivelyTruncating = isCollapsed && exceedsTruncationThreshold;
+    const isEnabled = enableLineTruncation && exceedsTruncationThreshold;
+    const isCollapsed = isEnabled && isCollapsed_;
 
     React.useEffect(() => {
-      if (!isCollapsed) return;
-
       const observer = new ResizeObserver(() => {
         if (containerRef.current == null) return;
         setExceedsTruncationThreshold(
-          containerRef.current.scrollHeight -
-            containerRef.current.offsetHeight >
-            100
+          containerRef.current.scrollHeight >
+            BODY_TRUNCATION_HEIGHT_THRESHOLD + 100
         );
       });
 
@@ -238,7 +235,7 @@ const ItemBody = React.memo(
       return () => {
         observer.disconnect();
       };
-    }, [isCollapsed]);
+    }, []);
 
     return (
       <div css={css({ padding: "0.5rem 0" })}>
@@ -247,9 +244,9 @@ const ItemBody = React.memo(
           css={css({ overflow: "hidden" })}
           style={{
             maxHeight: isCollapsed
-              ? BODY_TRUNCATION_HEIGHT_THRESHOLD
+              ? `${BODY_TRUNCATION_HEIGHT_THRESHOLD}px`
               : undefined,
-            maskImage: isEffectivelyTruncating
+            maskImage: isCollapsed
               ? "linear-gradient(180deg, black calc(100% - 2.8em), transparent 100%)"
               : undefined,
           }}
@@ -270,7 +267,7 @@ const ItemBody = React.memo(
           />
         </div>
 
-        {enableLineTruncation && exceedsTruncationThreshold && (
+        {isEnabled && (
           <div css={css({ margin: "0.8em 0" })}>
             <Link
               component="button"
