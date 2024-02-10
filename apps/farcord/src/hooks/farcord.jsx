@@ -63,7 +63,7 @@ export const useFarcasterChannels = () => {
   return React.useMemo(
     () =>
       sortBy(
-        { value: (c) => c.cast_count, order: "desc" },
+        { value: (c) => c.castCount, order: "desc" },
         Object.values(channelsById)
       ),
     [channelsById]
