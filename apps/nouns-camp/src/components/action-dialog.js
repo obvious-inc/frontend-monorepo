@@ -1230,7 +1230,7 @@ const formConfigByActionType = {
     initialState: ({ action }) => ({
       target: action?.contractCallTarget ?? "",
       signature: action?.contractCallSignature ?? "",
-      arguments: action?.contractCallSignature ?? [],
+      arguments: action?.contractCallArguments ?? [],
       ethValue: formatEther(action?.contractCallValue ?? 0),
       customAbiString: action?.contractCallCustomAbiString ?? "",
     }),
@@ -1704,7 +1704,6 @@ const renderInput = (input, inputValue, setInputValue) => {
 };
 
 const ArgumentInputs = ({ inputs, inputState, setInputState }) => {
-  console.log(inputs, inputState);
   return (
     <div
       css={(t) =>
