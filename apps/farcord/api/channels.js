@@ -13455,22 +13455,33 @@ export default async function handler(_, response) {
       const channels = data?.result?.channels;
       if (!channels) return [];
 
-      return Promise.all(
-        channels.map((channel) => {
-          if (!channel.id) return Promise.resolve(null);
-          const storedChannel = allChannelsById[channel.id];
-          if (storedChannel)
-            return Promise.resolve({
-              ...storedChannel,
-              parentUrl: storedChannel.url,
-            });
+      // filter out channels that are not in the ALL_CHANNELS list
+      const filteredChannels = await channels.filter((channel) => {
+        return allChannelsById[channel.id];
+      });
 
-          console.debug("fetching new channel info", channel.id);
+      const remainingChannels = channels.filter((channel) => {
+        return !allChannelsById[channel.id];
+      });
+
+      console.log("Number of channels missing", filteredChannels.length);
+
+      const missingInfoChannels = await Promise.all(
+        filteredChannels.map((channel) => {
+          if (!channel.id) return Promise.resolve(null);
+          // const storedChannel = allChannelsById[channel.id];
+          // if (storedChannel)
+          //   return Promise.resolve({
+          //     ...storedChannel,
+          //     parentUrl: storedChannel.url,
+          //   });
+
+          // console.debug("fetching new channel info", channel.id);
           return fetch(WARPCAST_CHANNELS_INFO_ENDPOINT + "?key=" + channel.id)
             .then((res) => {
               if (res.ok) return res.json();
               else {
-                throw new Error(res.statusText);
+                return Promise.reject(new Error(res.statusText));
               }
             })
             .then((body) => {
@@ -13487,13 +13498,20 @@ export default async function handler(_, response) {
             })
             .catch((e) => {
               console.error("Error fetching channel info for " + channel.id, e);
-              return null;
             });
         })
       ).then((result) => {
         // filter undefined keys
         return result.filter((c) => c);
       });
+
+      console.log(
+        "Number of channels fetched for new info",
+        missingInfoChannels.length
+      );
+
+      // merge remainingChannels with missingInfoChannels
+      return remainingChannels.concat(missingInfoChannels);
     })
     .catch((e) => {
       console.error("Error fetching warpcast channels", e);
