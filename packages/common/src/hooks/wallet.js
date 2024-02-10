@@ -60,11 +60,15 @@ const useWallet = () => {
     // error,
     isConnecting,
   } = useAccount();
-  const { data: ensName } = useEnsName({ address: accountAddress });
+  const { chain: activeChain } = useNetwork();
+
+  const { data: ensName } = useEnsName({
+    address: accountAddress,
+    enabled: activeChain?.id === ETHEREUM_MAINNET_CHAIN_ID,
+  });
 
   useIFrameAutoConnect();
 
-  const { chain: activeChain } = useNetwork();
   const { switchNetworkAsync: switchNetwork } = useSwitchNetwork();
 
   const firstReadyConnector = connectors.find((c) => c.ready);

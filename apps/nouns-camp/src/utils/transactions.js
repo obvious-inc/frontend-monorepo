@@ -1,4 +1,4 @@
-import { formatAbiParameters } from "abitype";
+import { formatAbiParameter } from "abitype";
 import {
   decodeAbiParameters,
   encodeAbiParameters,
@@ -28,7 +28,7 @@ const decimalsByCurrency = {
 
 const normalizeSignature = (s) => {
   if (s == null) return null;
-  return s.replace(/\s+/g, " ").replace(/,[^\s+]/g, ", ");
+  return s.replace(/\s+/g, " ").replace(/,\s*/g, ", ");
 };
 
 const CREATE_STREAM_SIGNATURE =
@@ -160,7 +160,8 @@ export const parse = (data, { chainId }) => {
 
     if (
       target === wethTokenContract.address &&
-      normalizeSignature(signature) === "transfer(address, uint256)"
+      normalizeSignature(signature) ===
+        normalizeSignature("transfer(address,uint256)")
     ) {
       const receiverAddress = functionInputs[0].toLowerCase();
       const isStreamFunding = predictedStreamContractAddresses.some(
@@ -204,9 +205,9 @@ export const parse = (data, { chainId }) => {
     if (
       target === nounsTokenContract.address &&
       (normalizeSignature(signature) ===
-        "transferFrom(address, address, uint256)" ||
+        normalizeSignature("transferFrom(address,address,uint256)") ||
         normalizeSignature(signature) ===
-          "safeTransferFrom(address, address, uint256)") &&
+          normalizeSignature("safeTransferFrom(address,address,uint256)")) &&
       functionInputs[0].toLowerCase() ===
         nounsExecutorContract.address.toLowerCase()
     )
@@ -216,7 +217,7 @@ export const parse = (data, { chainId }) => {
         receiverAddress: functionInputs[1],
         safe:
           normalizeSignature(signature) ===
-          "safeTransferFrom(address, address, uint256)",
+          normalizeSignature("safeTransferFrom(address,address,uint256)"),
         target,
         functionName,
         functionInputs,
@@ -226,7 +227,9 @@ export const parse = (data, { chainId }) => {
     if (
       target === nounsGovernanceContract.address &&
       normalizeSignature(signature) ===
-        "withdrawDAONounsFromEscrowIncreasingTotalSupply(uint256[], address)"
+        normalizeSignature(
+          "withdrawDAONounsFromEscrowIncreasingTotalSupply(uint256[],address)"
+        )
     ) {
       return {
         type: "escrow-noun-transfer",
@@ -242,7 +245,9 @@ export const parse = (data, { chainId }) => {
     if (
       target === resolveIdentifier(chainId, "prop-house")?.address &&
       normalizeSignature(signature) ===
-        "createAndFundRoundOnExistingHouse(address, (address impl, bytes config, string title, string description), (uint8 assetType, address token, uint256 identifier, uint256 amount)[])"
+        normalizeSignature(
+          "createAndFundRoundOnExistingHouse(address, (address impl, bytes config, string title, string description), (uint8 assetType, address token, uint256 identifier, uint256 amount)[])"
+        )
     ) {
       const [houseAddress, { impl, config, title, description }, assets] =
         functionInputs;
@@ -433,9 +438,9 @@ export const unparse = (transactions, { chainId }) => {
           });
 
         case "prop-house-create-and-fund-round": {
-          const signature = `createAndFundRoundOnExistingHouse(${formatAbiParameters(
-            PROPHOUSE_CREATE_AND_FUND_ROUND_INPUT_TYPES
-          )})`;
+          const signature = `createAndFundRoundOnExistingHouse(${PROPHOUSE_CREATE_AND_FUND_ROUND_INPUT_TYPES.map(
+            (t) => formatAbiParameter(t)
+          ).join(",")}`;
 
           const [propHousePrimaryAddress, timedRoundImplAddress] = [
             "prop-house",
@@ -469,9 +474,9 @@ export const unparse = (transactions, { chainId }) => {
 
         case "function-call":
         case "payable-function-call": {
-          const signature = `${t.functionName}(${formatAbiParameters(
-            t.functionInputTypes
-          )})`;
+          const signature = `${t.functionName}(${t.functionInputTypes
+            .map((t) => formatAbiParameter(t))
+            .join(",")})`;
           return append({
             target: t.target,
             value: t.type === "payable-function-call" ? t.value : "0",
@@ -713,7 +718,9 @@ export const buildActions = (transactions, { chainId }) => {
       signature: signatures[0],
       calldata: calldatas[0],
     });
-    const signature = `${name}(${formatAbiParameters(inputTypes)})`;
+    const signature = `${name}(${inputTypes
+      .map((t) => formatAbiParameter(t))
+      .join(",")})`;
 
     return {
       type: "custom-transaction",
@@ -946,7 +953,7 @@ export const stringify = (parsedTransaction, { chainId }) => {
 export const isEqual = (ts1, ts2) => {
   if (ts1.targets.length !== ts2.targets.length) return false;
 
-  return ts1.targets.some((target1, i) => {
+  return ts1.targets.every((target1, i) => {
     const [signature1, calldata1, value1] = [
       ts1.signatures[i],
       ts1.calldatas[i],
@@ -960,10 +967,10 @@ export const isEqual = (ts1, ts2) => {
     ];
 
     return (
-      target1 !== target2 ||
-      signature1 !== signature2 ||
-      calldata1 !== calldata2 ||
-      value1 !== value2
+      target1 === target2 &&
+      signature1 === signature2 &&
+      calldata1 === calldata2 &&
+      value1 === value2
     );
   });
 };

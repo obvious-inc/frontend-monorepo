@@ -266,6 +266,18 @@ const entrypoints = [
       ...emotionDeps,
     ],
   },
+  {
+    file: "slate/index.js",
+    dependencies: [
+      "react",
+      "slate",
+      "slate-react",
+      "is-hotkey",
+      "@shades/common/utils",
+      "@shades/common/app",
+      ...emotionDeps,
+    ],
+  },
 ];
 
 export default entrypoints.map(createConfig);
