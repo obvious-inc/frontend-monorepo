@@ -6,8 +6,8 @@ import {
   dimension as dimensionUtils,
   message as messageUtils,
 } from "@shades/common/utils";
-import EmojiPicker from "@shades/ui-web/emoji-picker";
-import GifPicker from "@shades/ui-web/gif-picker";
+import EmojiPicker from "./emoji-picker.js";
+import GifPicker from "./gif-picker.js";
 import {
   AtSign as AtSignIcon,
   EmojiFace as EmojiFaceIcon,

@@ -274,32 +274,28 @@ const ProposalMainSection = ({ proposalId, scrollContainerRef }) => {
       case "succeeded":
         return (
           <>
-            <p>
-              Proposal {proposalId} has {proposal.state}
-            </p>
-            <p>
-              {connectedWalletAccountAddress != null && (
-                <p style={{ padding: "0.4rem 0" }}>
-                  <Button
-                    size="small"
-                    disabled={queueProposal == null || hasPendingQueue}
-                    onClick={async () => {
-                      try {
-                        setPendingQueue(true);
-                        await queueProposal();
-                      } catch (e) {
-                        alert("Ops, looks like something went wrong!");
-                      } finally {
-                        setPendingQueue(false);
-                      }
-                    }}
-                    isLoading={hasPendingQueue}
-                  >
-                    Queue proposal
-                  </Button>
-                </p>
-              )}
-            </p>
+            <p>Proposal {proposalId} has succeeded</p>
+            {connectedWalletAccountAddress != null && (
+              <p style={{ padding: "0.4rem 0" }}>
+                <Button
+                  size="small"
+                  disabled={queueProposal == null || hasPendingQueue}
+                  onClick={async () => {
+                    try {
+                      setPendingQueue(true);
+                      await queueProposal();
+                    } catch (e) {
+                      alert("Ops, looks like something went wrong!");
+                    } finally {
+                      setPendingQueue(false);
+                    }
+                  }}
+                  isLoading={hasPendingQueue}
+                >
+                  Queue proposal
+                </Button>
+              </p>
+            )}
           </>
         );
 

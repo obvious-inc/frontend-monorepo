@@ -41,7 +41,8 @@
     "./channel-avatar": "./dist/channel-avatar.js",
     "./inline-user-button": "./dist/inline-user-button.js",
     "./inline-channel-button": "./dist/inline-channel-button.js",
-    "./channel-messages-scroll-view": "./dist/channel-messages-scroll-view.js"
+    "./channel-messages-scroll-view": "./dist/channel-messages-scroll-view.js",
+    "./slate": "./dist/slate/index.js"
   },
   "devDependencies": {
     "@swc/core": "^1.4.0",

@@ -1,3 +1,4 @@
+import { css } from "@emotion/react";
 import Dialog from "@shades/ui-web/dialog";
 import FormDialog from "@shades/ui-web/form-dialog";
 import config from "../config.js";
@@ -116,7 +117,26 @@ const Content = ({ titleProps, dismiss }) => {
           }
         })}
       cancelLabel="Close"
-    />
+    >
+      {process.env.GIT_COMMIT_SHA != null && (
+        <div
+          css={(t) =>
+            css({
+              marginTop: "1.6rem",
+              textAlign: "right",
+              fontSize: t.text.sizes.tiny,
+              color: t.colors.textDimmed,
+              whiteSpace: "nowrap",
+              overflow: "hidden",
+              textOverflow: "ellipsis",
+              em: { fontWeight: t.text.weights.emphasis, fontStyle: "normal" },
+            })
+          }
+        >
+          Version: <em>{process.env.GIT_COMMIT_SHA.slice(0, 8)}</em>
+        </div>
+      )}
+    </FormDialog>
   );
 };
 

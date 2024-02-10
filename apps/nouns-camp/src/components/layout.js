@@ -3,7 +3,7 @@ import React from "react";
 import { css } from "@emotion/react";
 import { useLocation, Link as RouterLink } from "react-router-dom";
 import { useAccountDisplayName } from "@shades/common/app";
-import { useMatchMedia } from "@shades/common/react";
+import { useFetch, useMatchMedia } from "@shades/common/react";
 import Button from "@shades/ui-web/button";
 import * as DropdownMenu from "@shades/ui-web/dropdown-menu";
 import {
@@ -14,6 +14,10 @@ import { useWallet } from "../hooks/wallet.js";
 import { useDialog } from "../hooks/global-dialogs.js";
 import AccountAvatar from "./account-avatar.js";
 import LogoSymbol from "./logo-symbol.js";
+
+const isBetaSession =
+  typeof location !== "undefined" &&
+  new URLSearchParams(location.search).get("beta") != null;
 
 const Layout = ({
   scrollContainerRef,
@@ -103,6 +107,8 @@ const NavBar = ({ navigationStack, actions: actions_ }) => {
   const { open: openAccountDialog } = useDialog("account");
   const { open: openSettingsDialog } = useDialog("settings");
 
+  const [hasUpdate, setHasUpdate] = React.useState(false);
+
   const {
     address: connectedWalletAccountAddress,
     requestAccess: requestWalletAccess,
@@ -120,6 +126,17 @@ const NavBar = ({ navigationStack, actions: actions_ }) => {
   const visibleActions = isDesktop
     ? actions
     : actions.filter((a) => !a.desktopOnly);
+
+  useFetch(
+    () =>
+      fetch("/api/version")
+        .then((res) => res.json())
+        .then((data) => {
+          if (process.env.GIT_COMMIT_SHA == null) return;
+          setHasUpdate(data.GIT_COMMIT_SHA !== process.env.GIT_COMMIT_SHA);
+        }),
+    []
+  );
 
   return (
     <div
@@ -369,7 +386,13 @@ const NavBar = ({ navigationStack, actions: actions_ }) => {
                         id: "settings",
                         children: [
                           { id: "open-settings-dialog", label: "Settings" },
-                        ],
+                          isBetaSession &&
+                            hasUpdate && {
+                              id: "update-app",
+                              primary: true,
+                              label: "Update Camp",
+                            },
+                        ].filter(Boolean),
                       },
                       {
                         id: "disconnect",
@@ -409,13 +432,19 @@ const NavBar = ({ navigationStack, actions: actions_ }) => {
                         case "disconnect-wallet":
                           disconnectWallet();
                           break;
+
+                        case "update-app":
+                          location.reload();
+                          break;
                       }
                     }}
                   >
                     {(item) => (
                       <DropdownMenu.Section items={item.children}>
                         {(item) => (
-                          <DropdownMenu.Item>{item.label}</DropdownMenu.Item>
+                          <DropdownMenu.Item primary={item.primary}>
+                            {item.label}
+                          </DropdownMenu.Item>
                         )}
                       </DropdownMenu.Section>
                     )}
