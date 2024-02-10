@@ -13445,6 +13445,7 @@ const fetchTrendingChannels = async () => {
       return channels.map((channelObject) => {
         return {
           ...channelObject.channel,
+          parentUrl: channelObject.channel.parent_url,
           cast_count: Number(channelObject["cast_count_1d"]),
         };
       });
