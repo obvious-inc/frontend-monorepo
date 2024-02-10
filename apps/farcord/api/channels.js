@@ -13441,7 +13441,12 @@ const fetchTrendingChannels = async () => {
       return data.channels;
     })
     .then((channels) => {
-      return channels.map((channel) => channel);
+      // return channel field for each channel
+      return channels.map((channelObject) => {
+        return {
+          ...channelObject.channel,
+        };
+      });
     })
     .catch((err) => {
       throw err;
