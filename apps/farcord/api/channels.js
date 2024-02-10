@@ -4,9 +4,6 @@ const WARPCAST_CHANNELS_STATIC_LIST =
 const WARPCAST_CHANNELS_INFO_ENDPOINT =
   "https://client.warpcast.com/v2/channel";
 
-import { readFileSync } from "fs";
-import path from "path";
-
 const NEYNAR_V2_ENDPOINT = "https://api.neynar.com/v2/farcaster";
 
 // TODO: move this to its own file when i figure out how to do that
@@ -13430,6 +13427,27 @@ const fetchAllChannels = async () => {
     });
 };
 
+const fetchTrendingChannels = async () => {
+  let params = new URLSearchParams({
+    api_key: process.env.FARCASTER_HUB_API_KEY,
+    time_window: "1d",
+  });
+
+  return fetch(NEYNAR_V2_ENDPOINT + "/channel/trending?" + params)
+    .then((result) => {
+      return result.json();
+    })
+    .then((data) => {
+      return data.channels;
+    })
+    .then((channels) => {
+      return channels.map((channel) => channel);
+    })
+    .catch((err) => {
+      throw err;
+    });
+};
+
 export default async function handler(_, response) {
   // response.setHeader("Cache-Control", "s-maxage=86400");
   // response.status(200).json({ channels: ALL_CHANNELS });
@@ -13440,6 +13458,9 @@ export default async function handler(_, response) {
   // const neynarChannels = await fetchAllChannels();
   // console.log("neynar channels", neynarChannels);
   // return response.status(200).json({ channels: neynarChannels });
+
+  const trendingChannels = await fetchTrendingChannels();
+  return response.status(200).json({ channels: trendingChannels });
 
   const allChannelsById = ALL_CHANNELS.reduce((acc, channel) => {
     acc[channel.id] = channel;
