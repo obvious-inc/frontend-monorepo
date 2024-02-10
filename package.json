@@ -2,9 +2,9 @@
   "version": "1.0.0-alpha.20",
   "name": "@lilnouns/lilnouns-camp",
   "scripts": {
-    "lint": "pnpm -r run --if-present lint",
+    "build": "turbo build",
+    "lint": "turbo lint",
     "format": "pnpm -r run --if-present format",
-    "build": "pnpm -r run --if-present build",
     "test": "pnpm -r run --if-present test"
   },
   "resolutions": {
@@ -12,6 +12,9 @@
     "follow-redirects": ">=1.15.4",
     "undici": ">=5.26.2",
     "axios": ">=1.6.0"
+  },
+  "devDependencies": {
+    "turbo": "^1.12.2"
   },
   "engines": {
     "node": ">=18.0.0",

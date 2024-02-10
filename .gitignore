@@ -1,5 +1,7 @@
 node_modules
 .env
 .vercel
+.next
+.turbo
 .DS_Store
 dist/

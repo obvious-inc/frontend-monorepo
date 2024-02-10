@@ -23,5 +23,8 @@
     "prettier": "^3.2.5",
     "rollup": "^4.9.6",
     "rollup-plugin-swc3": "^0.11.0"
+  },
+  "dependencies": {
+    "reselect": "^5.1.0"
   }
 }
