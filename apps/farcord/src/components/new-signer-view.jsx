@@ -189,6 +189,13 @@ const NewSignerView = () => {
               </div>
             )}
           </div>
+          <Small
+            css={(t) =>
+              css({ color: t.colors.textHighlight, margin: "0 0 3.4rem" })
+            }
+          >
+            You should not use Farcord in incognito mode
+          </Small>
           <Button
             size="medium"
             onClick={async () => {
