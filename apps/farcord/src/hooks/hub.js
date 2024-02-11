@@ -1,9 +1,14 @@
 import React from "react";
 import {
-  Factories,
   FarcasterNetwork,
   Message,
   NobleEd25519Signer,
+  makeCastAdd,
+  makeReactionAdd,
+  makeReactionRemove,
+  makeUserDataAdd,
+  makeLinkAdd,
+  makeLinkRemove,
 } from "@farcaster/core";
 import { hexToBytes } from "viem";
 import { decodeMetadata } from "../utils/farcaster";
@@ -40,32 +45,17 @@ const hubFetch = async (url, options) => {
 };
 
 const fetchUserData = async (fid) => {
-  const params = new URLSearchParams({
-    fid: Number(fid),
-  });
-
+  const params = new URLSearchParams({ fid });
   return hubFetch("/userDataByFid?" + params);
 };
 
 const fetchSignerEvents = async ({ fid, publicKey }) => {
-  const params = new URLSearchParams({
-    fid: Number(fid),
-  });
+  const params = new URLSearchParams({ fid });
 
   if (publicKey) {
     params.set("signer", publicKey);
   }
   return hubFetch("/onChainSignersByFid?" + params);
-};
-
-export const fetchUserSigners = async ({ fid }) => {
-  return fetchSignerEvents({ fid: Number(fid) })
-    .then((data) => {
-      return data;
-    })
-    .catch((err) => {
-      console.error(err);
-    });
 };
 
 export const useUserSigners = (fid) => {
@@ -77,25 +67,22 @@ export const useUserSigners = (fid) => {
       return;
     }
 
-    fetchUserSigners({ fid })
-      .then((result) => {
+    fetchSignerEvents({ fid }).then(
+      (result) => {
         setSigners(result.events);
-      })
-      .catch((err) => {
+      },
+      (err) => {
         console.error(err);
         setSigners([]);
-      });
+      }
+    );
   }, [fid]);
 
   return signers;
 };
 
 const fetchCast = async ({ fid, hash }) => {
-  const params = new URLSearchParams({
-    fid: Number(fid),
-    hash: hash,
-  });
-
+  const params = new URLSearchParams({ fid, hash });
   return hubFetch("/castById?" + params);
 };
 
@@ -134,63 +121,65 @@ export const submitHubMessage = async (message) => {
   const headers = { "Content-Type": "application/octet-stream" };
   const messageBytes = Buffer.from(Message.encode(message).finish());
 
-  return hubFetch("/validateMessage", {
+  await hubFetch("/validateMessage", {
     method: "POST",
     headers,
     body: messageBytes,
-  }).then(() => {
-    return hubFetch("/submitMessage", {
-      method: "POST",
-      headers,
-      body: messageBytes,
-    });
+  });
+
+  return hubFetch("/submitMessage", {
+    method: "POST",
+    headers,
+    body: messageBytes,
   });
 };
 
 export const addReaction = async ({ fid, signer, cast, reactionType }) => {
   const farcastSigner = new NobleEd25519Signer(hexToBytes(signer?.privateKey));
 
-  return Factories.ReactionAddMessage.create(
+  const messageResult = await makeReactionAdd(
     {
-      data: {
-        fid: Number(fid),
-        network: FarcasterNetwork.MAINNET,
-        reactionBody: {
-          type: reactionType,
-          targetCastId: {
-            fid: Number(cast.fid),
-            hash: hexToBytes(cast.hash),
-          },
-        },
+      type: reactionType,
+      targetCastId: {
+        fid: Number(cast.fid),
+        hash: hexToBytes(cast.hash),
       },
     },
-    { transient: { signer: farcastSigner } }
-  ).then((messageData) => {
-    return submitHubMessage(messageData);
-  });
+    {
+      fid: Number(fid),
+      network: FarcasterNetwork.MAINNET,
+    },
+    farcastSigner
+  );
+
+  return messageResult.match(
+    (message) => submitHubMessage(message),
+    (error) => Promise.reject(error)
+  );
 };
 
-export const removeReaction = ({ fid, signer, cast, reactionType }) => {
+export const removeReaction = async ({ fid, signer, cast, reactionType }) => {
   const farcastSigner = new NobleEd25519Signer(hexToBytes(signer?.privateKey));
 
-  return Factories.ReactionRemoveMessage.create(
+  const messageResult = await makeReactionRemove(
     {
-      data: {
-        fid: Number(fid),
-        network: FarcasterNetwork.MAINNET,
-        reactionBody: {
-          type: reactionType,
-          targetCastId: {
-            fid: Number(cast.fid),
-            hash: hexToBytes(cast.hash),
-          },
-        },
+      type: reactionType,
+      targetCastId: {
+        fid: Number(cast.fid),
+        hash: hexToBytes(cast.hash),
       },
     },
-    { transient: { signer: farcastSigner } }
-  ).then((messageData) => {
-    return submitHubMessage(messageData);
-  });
+    {
+      fid: Number(fid),
+      network: FarcasterNetwork.MAINNET,
+    },
+    farcastSigner
+  );
+
+  return messageResult.match(
+    (message) => submitHubMessage(message),
+    (error) => Promise.reject(error)
+  );
 };
 
 export const addCast = async ({
@@ -220,18 +209,19 @@ export const addCast = async ({
     (key) => castAddBody[key] === null && delete castAddBody[key]
   );
 
-  return Factories.CastAddMessage.create(
+  const messageResult = await makeCastAdd(
+    castAddBody,
     {
-      data: {
-        fid: Number(fid),
-        network: FarcasterNetwork.MAINNET,
-        castAddBody,
-      },
+      fid: Number(fid),
+      network: FarcasterNetwork.MAINNET,
     },
-    { transient: { signer: farcastSigner } }
-  ).then((messageData) => {
-    return submitHubMessage(messageData);
-  });
+    farcastSigner
+  );
+
+  return messageResult.match(
+    (message) => submitHubMessage(message),
+    (error) => Promise.reject(error)
+  );
 };
 
 export const useUserData = (fid) => {
@@ -302,61 +292,46 @@ export const setUserData = async ({ fid, signer, dataType, value }) => {
       throw new Error("unknown data type");
   }
 
-  return Factories.UserDataAddMessage.create(
-    {
-      data: {
-        fid: Number(fid),
-        network: FarcasterNetwork.MAINNET,
-        userDataBody: {
-          type: hubDataType,
-          value,
-        },
-      },
-    },
-    { transient: { signer: farcastSigner } }
-  ).then((messageData) => {
-    return submitHubMessage(messageData);
-  });
+  const messageResult = makeUserDataAdd(
+    { type: hubDataType, value },
+    { fid: Number(fid), network: FarcasterNetwork.MAINNET },
+    farcastSigner
+  );
+
+  return messageResult.match(
+    (message) => submitHubMessage(message),
+    (error) => Promise.reject(error)
+  );
 };
 
 export const followUser = async ({ fid, signer, fidToFollow }) => {
   const farcastSigner = new NobleEd25519Signer(hexToBytes(signer?.privateKey));
 
-  return Factories.LinkAddMessage.create(
-    {
-      data: {
-        fid: Number(fid),
-        network: FarcasterNetwork.MAINNET,
-        linkBody: {
-          type: "follow",
-          targetFid: Number(fidToFollow),
-        },
-      },
-    },
-    { transient: { signer: farcastSigner } }
-  ).then((messageData) => {
-    return submitHubMessage(messageData);
-  });
+  const messageResult = await makeLinkAdd(
+    { type: "follow", targetFid: Number(fidToFollow) },
+    { fid: Number(fid), network: FarcasterNetwork.MAINNET },
+    farcastSigner
+  );
+
+  return messageResult.match(
+    (message) => submitHubMessage(message),
+    (error) => Promise.reject(error)
+  );
 };
 
 export const unfollowUser = async ({ fid, signer, fidToUnfollow }) => {
   const farcastSigner = new NobleEd25519Signer(hexToBytes(signer?.privateKey));
 
-  return Factories.LinkRemoveMessage.create(
-    {
-      data: {
-        fid: Number(fid),
-        network: FarcasterNetwork.MAINNET,
-        linkBody: {
-          type: "follow",
-          targetFid: Number(fidToUnfollow),
-        },
-      },
-    },
-    { transient: { signer: farcastSigner } }
-  ).then((messageData) => {
-    return submitHubMessage(messageData);
-  });
+  const messageResult = await makeLinkRemove(
+    { type: "follow", targetFid: Number(fidToUnfollow) },
+    { fid: Number(fid), network: FarcasterNetwork.MAINNET },
+    farcastSigner
+  );
+
+  return messageResult.match(
+    (message) => submitHubMessage(message),
+    (error) => Promise.reject(error)
+  );
 };
 
 const isFollowing = async ({ fid, fidToCheck }) => {
@@ -391,9 +366,6 @@ export const useIsFollower = ({ fid, fidToCheck }) => {
 };
 
 export const fetchUsernameProofsByFid = async ({ fid }) => {
-  const params = new URLSearchParams({
-    fid: Number(fid),
-  });
-
+  const params = new URLSearchParams({ fid });
   return hubFetch("/userNameProofsByFid?" + params).then((data) => data.proofs);
 };

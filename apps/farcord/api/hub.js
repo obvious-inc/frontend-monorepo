@@ -9,11 +9,14 @@ export default function handler(request, response) {
 
   const url = process.env.FARCASTER_HUB_HTTP_ENDPOINT + path + "?" + urlParams;
 
-  const hubRequest = new Request(url, {
-    method: request.method,
-    headers: headers,
-    body: request.body,
-  });
+  let { method, body } = request;
+
+  // the dev server sends "" bodies on GET requests, maybe?
+  if (["GET", "HEAD"].includes(method)) {
+    body = null;
+  }
+
+  const hubRequest = new Request(url, { method, headers, body });
 
   return fetch(hubRequest)
     .then((res) => {
