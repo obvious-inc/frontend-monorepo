@@ -6,6 +6,10 @@ import { useFetch } from "@shades/common/react";
 import Link from "@shades/ui-web/link";
 import { Cross as CrossIcon } from "@shades/ui-web/icons";
 
+const isBetaSession =
+  typeof location !== "undefined" &&
+  new URLSearchParams(location).get("beta") != null;
+
 const AppUpdateBanner = () => {
   const [isDismissed, setDismissed] = React.useState(false);
   const [hasUpdate, setHasUpdate] = React.useState(false);
@@ -29,7 +33,7 @@ const AppUpdateBanner = () => {
     []
   );
 
-  if (!hasUpdate || isDismissed) return null;
+  if (!isBetaSession || !hasUpdate || isDismissed) return null;
 
   return (
     <div
