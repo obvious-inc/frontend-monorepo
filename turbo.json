@@ -8,12 +8,10 @@
     "nom-web#build": {
       "dependsOn": ["^build"],
       "env": [
-        "API_ENDPOINT",
-        "EDGE_API_ORIGIN",
-        "CLOUDFLARE_ACCT_HASH",
-        "PUSHER_KEY",
-        "INFURA_PROJECT_ID",
-        "WALLET_CONNECT_PROJECT_ID"
+        "PUBLIC_PUSHER_KEY",
+        "PUBLIC_CLOUDFLARE_ACCOUNT_HASH",
+        "PUBLIC_ALCHEMY_API_KEY",
+        "PUBLIC_WALLET_CONNECT_PROJECT_ID"
       ],
       "outputs": ["dist/**"]
     },
@@ -28,14 +26,15 @@
     "farcord#build": {
       "dependsOn": ["^build"],
       "env": [
-        "NEYNAR_API_KEY",
-        "INFURA_PROJECT_ID",
-        "WALLET_CONNECT_PROJECT_ID",
-        "WARPCAST_API_TOKEN",
-        "FARCORD_APP_FID",
-        "FARCORD_APP_MNEMONIC",
-        "FARCASTER_HUB_HTTP_ENDPOINT",
-        "FARCASTER_HUB_API_KEY"
+        "PUBLIC_NEYNAR_API_KEY",
+        "PUBLIC_WARPCAST_API_TOKEN",
+        "PUBLIC_FARCASTER_HUB_RPC_ENDPOINT",
+        "PUBLIC_IMGUR_CLIENT_ID",
+        "PUBLIC_INFURA_PROJECT_ID",
+        "PUBLIC_WALLET_CONNECT_PROJECT_ID",
+        "PUBLIC_FATHOM_SITE_ID",
+        "PUBLIC_APP_TITLE",
+        "PUBLIC_APP_DESCRIPTION"
       ],
       "outputs": ["dist/**"]
     },
