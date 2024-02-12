@@ -747,10 +747,14 @@ export const MainLayout = ({ children }) => {
             />
 
             <div
-              css={css({
-                margin: "1rem 1rem",
-                border: "0.05rem solid hsl(0 0% 100% / 8%)",
-              })}
+              role="separator"
+              css={(t) =>
+                css({
+                  margin: "1rem",
+                  borderTop: "0.1rem solid",
+                  borderColor: t.colors.borderLighter,
+                })
+              }
             />
 
             {fid && <FeedItem />}
@@ -758,13 +762,17 @@ export const MainLayout = ({ children }) => {
             <FarcordItem />
 
             <div
-              css={css({
-                margin: "1rem 1rem",
-                border: "0.05rem solid hsl(0 0% 100% / 8%)",
-              })}
+              role="separator"
+              css={(t) =>
+                css({
+                  margin: "1rem",
+                  borderTop: "0.1rem solid",
+                  borderColor: t.colors.borderLighter,
+                })
+              }
             />
 
-            {fid && (
+            {followedChannels?.length > 0 && (
               <>
                 <CollapsibleSection
                   key="star"
@@ -775,14 +783,9 @@ export const MainLayout = ({ children }) => {
                     <ChannelItem key={`star-${c.id}`} channel={c} />
                   ))}
                 </CollapsibleSection>
+                <div style={{ height: "1rem" }} />
               </>
             )}
-
-            <div
-              style={{
-                height: "1rem",
-              }}
-            />
 
             <CollapsibleSection
               key="fc"
