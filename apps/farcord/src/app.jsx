@@ -17,12 +17,7 @@ const MainScreen = React.lazy(() => import("./components/main-screen"));
 
 const useTheme = () => {
   const systemPrefersDarkTheme = useMatchMedia("(prefers-color-scheme: dark)");
-
-  const theme = React.useMemo(() => {
-    return systemPrefersDarkTheme ? darkTheme : lightTheme;
-  }, [systemPrefersDarkTheme]);
-
-  return theme;
+  return systemPrefersDarkTheme ? darkTheme : lightTheme;
 };
 
 const App = () => {

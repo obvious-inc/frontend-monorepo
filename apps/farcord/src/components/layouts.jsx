@@ -137,7 +137,7 @@ const ListItem = React.forwardRef(
             >
               <div
                 style={{
-                  color: disabled ? "rgb(255 255 255 / 22%)" : undefined,
+                  color: disabled ? "var(--disabled-color)" : undefined,
                   width: iconSize,
                   height: iconSize,
                 }}
