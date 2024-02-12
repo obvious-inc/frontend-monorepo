@@ -261,6 +261,7 @@ const RichTextEditorWithAutoComplete = React.forwardRef(
           }}
           css={(t) =>
             css({
+              outline: "none",
               color: t.colors.textNormal,
               "&[data-disabled]": {
                 color: t.colors.textMuted,
