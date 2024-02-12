@@ -27,23 +27,39 @@ const IMAGE_ENDINGS = ["jpg", "jpeg", "png", "gif", "webp", "svg"];
 
 export const CastAuthor = ({ cast }) => {
   const author = cast.author;
+  const displayName = author.display_name ?? author.displayName;
 
   return (
-    <>
-      <p
+    <AccountPreviewPopoverTrigger fid={author.fid}>
+      <button
         css={(t) =>
           css({
-            fontWeight: t.text.weights.emphasis,
+            outline: "none",
+            color: t.colors.textDimmed,
+            "[data-display-name]": {
+              color: t.colors.textNormal,
+              fontWeight: t.text.weights.emphasis,
+            },
+            "@media(hover: hover)": {
+              cursor: "pointer",
+              ":hover [data-display-name]": { textDecoration: "underline" },
+              ":hover [data-username]": {
+                color: t.colors.textDimmedModifierHover,
+              },
+            },
           })
         }
       >
-        {author.display_name || author.displayName}
-      </p>
-      <AccountPreviewPopoverTrigger
-        fid={author.fid}
-        css={(t) => css({ color: t.colors.textMuted })}
-      />
-    </>
+        {displayName != null ? (
+          <>
+            <span data-display-name>{displayName}</span>{" "}
+            <span data-username>@{author.username}</span>
+          </>
+        ) : (
+          <span data-display-name>{author.username}</span>
+        )}
+      </button>
+    </AccountPreviewPopoverTrigger>
   );
 };
 
@@ -85,83 +101,15 @@ export const CastDate = ({ date }) => {
 };
 
 export const CastHeader = ({ cast }) => {
-  const replyCount = cast.replies.count;
-
-  const { fid } = useFarcasterAccount();
-  const { signer, broadcasted } = useSigner();
-  const [liked, setLiked] = React.useState(false);
-  const [recasted, setRecasted] = React.useState(false);
-  const [likesCount, setLikesCount] = React.useState(0);
-  const [recastsCount, setRecastsCount] = React.useState(0);
-
   const [searchParams] = useSearchParams();
 
   const renderSignerInfo = () => {
     if (searchParams.get("dev")) {
       return (
-        <>
-          <Suspense>
-            <AppTag cast={cast} fid={cast.author.fid} hash={cast.hash} />
-          </Suspense>
-        </>
+        <Suspense>
+          <AppTag cast={cast} fid={cast.author.fid} hash={cast.hash} />
+        </Suspense>
       );
-    }
-  };
-
-  React.useEffect(() => {
-    if (!fid) return;
-
-    setLiked(cast.reactions.likes.includes(Number(fid)));
-    setLikesCount(cast.reactions.likes.length);
-    setRecasted(cast.reactions.recasts.includes(Number(fid)));
-    setRecastsCount(cast.reactions.recasts.length);
-  }, [cast, fid]);
-
-  const handleLikeClick = async () => {
-    if (liked) {
-      removeReaction({
-        fid,
-        signer,
-        cast: { fid: cast.author.fid, hash: cast.hash },
-        reactionType: REACTION_TYPE.LIKE,
-      }).then(() => {
-        setLiked(false);
-        setLikesCount(likesCount - 1);
-      });
-    } else {
-      addReaction({
-        fid,
-        signer,
-        cast: { fid: cast.author.fid, hash: cast.hash },
-        reactionType: REACTION_TYPE.LIKE,
-      }).then(() => {
-        setLiked(true);
-        setLikesCount(likesCount + 1);
-      });
-    }
-  };
-
-  const handleRecastClick = async () => {
-    if (recasted) {
-      removeReaction({
-        fid,
-        signer,
-        cast: { fid: cast.author.fid, hash: cast.hash },
-        reactionType: REACTION_TYPE.RECAST,
-      }).then(() => {
-        setRecasted(false);
-        setRecastsCount(recastsCount - 1);
-      });
-    } else {
-      addReaction({
-        fid,
-        signer,
-        cast: { fid: cast.author.fid, hash: cast.hash },
-        reactionType: REACTION_TYPE.RECAST,
-      }).then(() => {
-        setRecasted(true);
-        setRecastsCount(recastsCount + 1);
-      });
     }
   };
 
@@ -174,7 +122,7 @@ export const CastHeader = ({ cast }) => {
         justify-content: flex-start;
         align-items: flex-end;
         grid-gap: 0.6rem;
-        margin: 0 0 0.2rem;
+        margin: 0 0 0.3rem;
         cursor: default;
         min-height: 1.9rem;
         line-height: 1.2;
@@ -184,103 +132,26 @@ export const CastHeader = ({ cast }) => {
 
       <Link
         to={`?cast=${cast.hash}`}
-        css={css({
-          color: "inherit",
-          textDecoration: "none",
-          ":focus-visible": {
-            textDecoration: "underline",
-          },
-          "@media(hover: hover)": {
-            cursor: "pointer",
-            ":hover": {
+        css={(t) =>
+          css({
+            color: t.colors.textDimmed,
+            textDecoration: "none",
+            ":focus-visible": {
               textDecoration: "underline",
             },
-          },
-        })}
+            "@media(hover: hover)": {
+              cursor: "pointer",
+              ":hover": {
+                textDecoration: "underline",
+              },
+            },
+          })
+        }
       >
         <CastDate date={parseISO(cast.timestamp)} />
       </Link>
 
-      <div
-        css={() =>
-          css({
-            display: "grid",
-            gridAutoFlow: "column",
-            gridAutoColumns: "minmax(0, auto)",
-            alignSelf: "flex-end",
-            justifyContent: "flex-start",
-            alignItems: "flex-end",
-            gridGap: "0.6rem",
-            // cursor: broadcasted ? "default" : "not-allowed",
-          })
-        }
-      >
-        <>
-          <Link
-            to={`?cast=${cast.hash}`}
-            css={css({
-              cursor: "pointer",
-              textDecoration: "none",
-              color: "inherit",
-            })}
-          >
-            <CommentIcon css={css({ width: "auto", height: "1.6rem" })} />
-          </Link>
-          <TinyMutedText style={{ lineHeight: 1.5 }}>
-            {replyCount}
-          </TinyMutedText>
-        </>
-
-        <>
-          <button
-            css={css({ cursor: broadcasted ? "pointer" : "not-allowed" })}
-            onClick={handleLikeClick}
-            disabled={!broadcasted}
-          >
-            {liked ? (
-              <HeartSolidIcon
-                css={css({
-                  width: "auto",
-                  height: "1.6rem",
-                  fill: "rgb(255, 93, 103)",
-                })}
-              />
-            ) : (
-              <HeartRegularIcon
-                css={css({ width: "auto", height: "1.6rem" })}
-              />
-            )}
-          </button>
-          <TinyMutedText style={{ lineHeight: 1.5 }}>
-            {likesCount}
-          </TinyMutedText>
-        </>
-
-        <>
-          <button
-            css={css({ cursor: broadcasted ? "pointer" : "not-allowed" })}
-            onClick={handleRecastClick}
-            disabled={!broadcasted}
-          >
-            {recasted ? (
-              <RetweetIcon
-                css={css({
-                  width: "auto",
-                  height: "1.6rem",
-                  fill: "rgb(0, 186, 124)",
-                })}
-              />
-            ) : (
-              <RetweetIcon css={css({ width: "auto", height: "1.6rem" })} />
-            )}
-          </button>
-          <TinyMutedText style={{ lineHeight: 1.5 }}>
-            {recastsCount}
-          </TinyMutedText>
-        </>
-
-        <>{renderSignerInfo()}</>
-      </div>
+      <>{renderSignerInfo()}</>
     </div>
   );
 };
@@ -378,22 +249,163 @@ const CastChannel = ({ cast }) => {
     : parentUrl;
 
   return (
-    <div css={css({ padding: "2rem 0" })}>
+    <div css={css({ marginTop: "0.7rem" })}>
       <Link
         to={channelLink}
         css={(t) =>
           css({
-            cursor: "pointer",
+            fontSize: t.text.sizes.small,
             textDecoration: "none",
-            color: t.colors.pink,
-            border: "1px dashed",
-            padding: "0.5rem 2rem",
-            borderColor: t.colors.borderLight,
+            color: t.colors.textDimmed,
+            border: "0.1rem solid",
+            borderColor: t.colors.borderLighter,
+            padding: "0.3rem 0.5rem",
+            borderRadius: "0.3rem",
+            background: t.colors.backgroundModifierNormal,
+            "@media(hover: hover)": {
+              ":hover": {
+                background: t.colors.backgroundModifierStrong,
+              },
+            },
           })
         }
       >
         {parsedChannel?.name || truncatedParentUrl}
       </Link>
+    </div>
+  );
+};
+
+const CastActions = ({ cast }) => {
+  const replyCount = cast.replies.count;
+
+  const { fid } = useFarcasterAccount();
+  const { signer, broadcasted } = useSigner();
+  const [liked, setLiked] = React.useState(false);
+  const [recasted, setRecasted] = React.useState(false);
+  const [likesCount, setLikesCount] = React.useState(0);
+  const [recastsCount, setRecastsCount] = React.useState(0);
+
+  React.useEffect(() => {
+    if (!fid) return;
+
+    setLiked(cast.reactions.likes.includes(Number(fid)));
+    setLikesCount(cast.reactions.likes.length);
+    setRecasted(cast.reactions.recasts.includes(Number(fid)));
+    setRecastsCount(cast.reactions.recasts.length);
+  }, [cast, fid]);
+
+  const handleLikeClick = async () => {
+    if (liked) {
+      removeReaction({
+        fid,
+        signer,
+        cast: { fid: cast.author.fid, hash: cast.hash },
+        reactionType: REACTION_TYPE.LIKE,
+      }).then(() => {
+        setLiked(false);
+        setLikesCount(likesCount - 1);
+      });
+    } else {
+      addReaction({
+        fid,
+        signer,
+        cast: { fid: cast.author.fid, hash: cast.hash },
+        reactionType: REACTION_TYPE.LIKE,
+      }).then(() => {
+        setLiked(true);
+        setLikesCount(likesCount + 1);
+      });
+    }
+  };
+
+  const handleRecastClick = async () => {
+    if (recasted) {
+      removeReaction({
+        fid,
+        signer,
+        cast: { fid: cast.author.fid, hash: cast.hash },
+        reactionType: REACTION_TYPE.RECAST,
+      }).then(() => {
+        setRecasted(false);
+        setRecastsCount(recastsCount - 1);
+      });
+    } else {
+      addReaction({
+        fid,
+        signer,
+        cast: { fid: cast.author.fid, hash: cast.hash },
+        reactionType: REACTION_TYPE.RECAST,
+      }).then(() => {
+        setRecasted(true);
+        setRecastsCount(recastsCount + 1);
+      });
+    }
+  };
+
+  return (
+    <div
+      css={(t) =>
+        css({
+          padding: "0 0.2rem",
+          display: "flex",
+          alignItems: "center",
+          gap: "1.6rem",
+          fontSize: t.text.sizes.small,
+          color: t.colors.textDimmed,
+          marginTop: "0.7rem",
+          "[data-item]": {
+            display: "flex",
+            alignItems: "center",
+            gap: "0.6rem",
+            "@media(hover: hover)": {
+              cursor: "pointer",
+              ":not(:disabled):hover": {
+                color: t.colors.textNormal,
+              },
+            },
+          },
+          "[data-icon]": {
+            width: "1.5rem",
+            height: "auto",
+          },
+        })
+      }
+    >
+      <Link
+        data-item
+        to={`?cast=${cast.hash}`}
+        css={css({ textDecoration: "none", color: "inherit" })}
+      >
+        <CommentIcon data-icon />
+        {replyCount > 0 && <span data-count>{replyCount}</span>}
+      </Link>
+
+      <button
+        data-item
+        css={css({
+          color: recasted ? "rgb(0, 186, 124)" : undefined,
+          cursor: broadcasted ? "pointer" : "not-allowed",
+        })}
+        onClick={handleRecastClick}
+        disabled={!broadcasted}
+      >
+        {recasted ? <RetweetIcon data-icon /> : <RetweetIcon data-icon />}
+        {recastsCount > 0 && <span data-count>{recastsCount}</span>}
+      </button>
+
+      <button
+        data-item
+        css={css({
+          cursor: broadcasted ? "pointer" : "not-allowed",
+          color: liked ? "rgb(255, 93, 103)" : undefined,
+        })}
+        onClick={handleLikeClick}
+        disabled={!broadcasted}
+      >
+        {liked ? <HeartSolidIcon data-icon /> : <HeartRegularIcon data-icon />}
+        {likesCount > 0 && <span data-count>{likesCount}</span>}
+      </button>
     </div>
   );
 };
@@ -441,19 +453,15 @@ export const CastItem = ({
           })
         }
       >
-        <Avatar url={cast.author?.pfpUrl} size="var(--avatar-size)" />
-        <div
-          style={{
-            display: "block",
-            flexDirection: "column",
-          }}
-        >
+        <div style={{ padding: "0.3rem 0 0" }}>
+          <Avatar url={cast.author?.pfpUrl} size="var(--avatar-size)" />
+        </div>
+        <div>
           <CastHeader cast={cast} />
-          <>
-            <CastBody cast={cast} />
-            <CastEmbeds cast={cast} />
-            {(isFeed || isRecent) && <CastChannel cast={cast} />}
-          </>
+          <CastBody cast={cast} />
+          <CastEmbeds cast={cast} />
+          <CastActions cast={cast} />
+          {(isFeed || isRecent) && <CastChannel cast={cast} />}
         </div>
       </div>
       {showLastReadMark && <NewCastsMarker />}
