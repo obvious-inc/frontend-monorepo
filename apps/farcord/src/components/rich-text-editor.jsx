@@ -267,7 +267,7 @@ const RichTextEditor = React.forwardRef(
       value,
       onChange,
       onKeyDown,
-      // inline = false,
+      inline = false,
       onBlur,
       disabled = false,
       triggers = [],
@@ -287,6 +287,8 @@ const RichTextEditor = React.forwardRef(
       setActiveMarks,
     } = React.useContext(Context);
 
+    const editorMode = inline ? "inline" : "normal";
+
     const { editor, handlers, customElementsByNodeType } = React.useMemo(() => {
       const editor = compose(
         withMarks,
@@ -296,25 +298,22 @@ const RichTextEditor = React.forwardRef(
         withHistory
       )(createSlateEditor());
 
-      const { middleware, elements, handlers } = mergePlugins([
-        createControlledParagraphLineBreaksPlugin(),
-        // createListsPlugin({ inline }),
-        // createQuotesPlugin({ inline }),
-        // createCalloutsPlugin({ inline }),
-        // createHeadingsPlugin({ inline }),
-        // createHorizontalDividerPlugin(),
-        createImagePlugin(),
-        createUserMentionsPlugin(),
-        createInlineLinksPlugin(),
-        createEmojiPlugin(),
-      ]);
+      const { middleware, elements, handlers } = mergePlugins(
+        [
+          createControlledParagraphLineBreaksPlugin,
+          createImagePlugin,
+          createUserMentionsPlugin,
+          createInlineLinksPlugin,
+          createEmojiPlugin,
+        ].map((fn) => fn({ mode: editorMode }))
+      );
 
       return {
         editor: middleware(editor),
         customElementsByNodeType: elements,
         handlers,
       };
-    }, []);
+    }, [editorMode]);
 
     const renderElement = (props_) => {
       const props =
