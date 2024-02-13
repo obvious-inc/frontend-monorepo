@@ -6,8 +6,6 @@ import config from "../config.js";
 import useSetting, { getConfig as getSettingConfig } from "../hooks/setting.js";
 import { useSearchParams } from "../hooks/navigation.js";
 
-const APP_VERSION = process.env.GIT_COMMIT_SHA?.slice(0, 7);
-
 const settingInputConfigByKey = {
   theme: {
     label: "Theme",
@@ -168,11 +166,11 @@ const Content = ({ titleProps, dismiss }) => {
             })
           }
         >
-          {APP_VERSION != null && (
-            <div>
-              Version: <em>{APP_VERSION}</em>
-            </div>
-          )}
+          {/* {APP_VERSION != null && ( */}
+          {/*   <div> */}
+          {/*     Version: <em>{APP_VERSION}</em> */}
+          {/*   </div> */}
+          {/* )} */}
           <div>
             Wallet connector: <em>{connector.name}</em>
           </div>
