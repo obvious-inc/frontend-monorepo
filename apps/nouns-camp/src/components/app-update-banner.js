@@ -8,7 +8,7 @@ import { Cross as CrossIcon } from "@shades/ui-web/icons";
 
 const isBetaSession =
   typeof location !== "undefined" &&
-  new URLSearchParams(location).get("beta") != null;
+  new URLSearchParams(location.search).get("beta") != null;
 
 const AppUpdateBanner = ({ buildId }) => {
   const [isDismissed, setDismissed] = React.useState(false);
