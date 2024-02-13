@@ -1,3 +1,4 @@
+import { headers } from "next/headers";
 import Script from "next/script";
 import { Analytics as VercelAnalytics } from "@vercel/analytics/react";
 import EmotionRootStyleRegistry from "./emotion-style-root-registry.js";
@@ -99,7 +100,7 @@ export default function RootLayout({ children }) {
           <CacheStoreProvider>
             <ThemeProvider>
               <GlobalStylesWrapper>
-                <AppUpdateBanner />
+                <AppUpdateBanner buildId={headers().get("x-build-id")} />
                 {children}
               </GlobalStylesWrapper>
             </ThemeProvider>

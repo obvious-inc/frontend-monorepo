@@ -8,29 +8,23 @@ import { Cross as CrossIcon } from "@shades/ui-web/icons";
 
 const isBetaSession =
   typeof location !== "undefined" &&
-  new URLSearchParams(location).get("beta") != null;
+  new URLSearchParams(location.search).get("beta") != null;
 
-const AppUpdateBanner = () => {
+const AppUpdateBanner = ({ buildId }) => {
   const [isDismissed, setDismissed] = React.useState(false);
   const [hasUpdate, setHasUpdate] = React.useState(false);
 
   useFetch(
     () =>
-      fetch("/api/version")
-        .then((res) => res.json())
-        .then((data) => {
-          if (
-            process.env.GIT_COMMIT_SHA == null ||
-            data.GIT_COMMIT_SHA === process.env.GIT_COMMIT_SHA
-          )
-            return;
-
-          console.log(
-            `New build available: "${data.GIT_COMMIT_SHA}"\nCurrently running: "${process.env.GIT_COMMIT_SHA}"`
-          );
-          setHasUpdate(true);
-        }),
-    []
+      fetch("/", { method: "HEAD" }).then((res) => {
+        const newBuildId = res.headers.get("x-build-id");
+        if (buildId === newBuildId) return;
+        console.log(
+          `New build available: "${newBuildId}"\nCurrently running: "${buildId}"`
+        );
+        setHasUpdate(true);
+      }),
+    [buildId]
   );
 
   if (!isBetaSession || !hasUpdate || isDismissed) return null;
