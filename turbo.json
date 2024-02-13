@@ -11,8 +11,7 @@
         "PUBLIC_PUSHER_KEY",
         "PUBLIC_CLOUDFLARE_ACCOUNT_HASH",
         "PUBLIC_ALCHEMY_API_KEY",
-        "PUBLIC_WALLET_CONNECT_PROJECT_ID",
-        "VERCEL_GIT_COMMIT_SHA"
+        "PUBLIC_WALLET_CONNECT_PROJECT_ID"
       ],
       "outputs": ["dist/**"]
     },

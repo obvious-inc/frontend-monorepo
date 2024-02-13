@@ -16,6 +16,24 @@ const AppUpdateBanner = () => {
 
   useFetch(
     () =>
+      fetch("/")
+        .then((res) => res.text())
+        .then((html) => {
+          console.log({ html });
+          if (html.includes(process.env.GIT_COMMIT_SHA)) return;
+
+          console.log(
+            `New build available: "${"?"}"\nCurrently running: "${
+              process.env.GIT_COMMIT_SHA
+            }"`
+          );
+          setHasUpdate(true);
+        }),
+    []
+  );
+
+  useFetch(
+    () =>
       fetch("/api/version")
         .then((res) => res.json())
         .then((data) => {
