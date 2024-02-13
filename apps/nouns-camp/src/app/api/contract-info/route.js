@@ -3,8 +3,6 @@ export const runtime = "edge";
 const ONE_DAY_IN_SECONDS = 60 * 60 * 24;
 const ONE_MONTH_IN_SECONDS = ONE_DAY_IN_SECONDS * 30;
 
-// test
-
 const etherscanRequest = (query) => {
   const searchParams = new URLSearchParams(query);
   return new Request(

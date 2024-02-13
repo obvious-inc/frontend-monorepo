@@ -27,6 +27,8 @@ const AppUpdateBanner = ({ buildId }) => {
     [buildId]
   );
 
+  console.log({ isBetaSession, hasUpdate, isDismissed });
+
   if (!isBetaSession || !hasUpdate || isDismissed) return null;
 
   return (
