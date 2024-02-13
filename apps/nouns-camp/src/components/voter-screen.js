@@ -758,13 +758,17 @@ const VoterMainSection = ({ voterAddress }) => {
   );
 };
 
-const VoterScreen = ({ voterId }) => {
+const VoterScreen = ({ voterId: rawAddressOrEnsName }) => {
+  const addressOrEnsName = decodeURIComponent(rawAddressOrEnsName);
+
   const { data: ensAddress, isFetching } = useEnsAddress({
-    name: voterId.trim(),
-    enabled: voterId.includes("."),
+    name: addressOrEnsName,
+    enabled: addressOrEnsName.includes("."),
   });
 
-  const voterAddress = isAddress(voterId.trim()) ? voterId.trim() : ensAddress;
+  const voterAddress = isAddress(addressOrEnsName)
+    ? addressOrEnsName
+    : ensAddress;
 
   const { displayName } = useAccountDisplayName(voterAddress);
 
@@ -773,7 +777,9 @@ const VoterScreen = ({ voterId }) => {
 
   return (
     <Layout
-      navigationStack={[{ to: `/campers/${voterId} `, label: displayName }]}
+      navigationStack={[
+        { to: `/campers/${rawAddressOrEnsName} `, label: displayName },
+      ]}
     >
       {voterAddress != null ? (
         <VoterMainSection voterAddress={voterAddress} />
