@@ -1,5 +1,4 @@
 const path = require("path");
-const webpack = require("webpack");
 const WorkboxPlugin = require("workbox-webpack-plugin");
 
 const ignoredModules = [
@@ -23,11 +22,11 @@ module.exports = {
   headers() {
     return [
       {
-        source: "/",
+        source: "/:path*",
         headers: [
           {
             key: "x-build-id",
-            value: process.env.VERCEL_GIT_COMMIT_SHA?.slice(0, 7) ?? "-",
+            value: process.env.VERCEL_GIT_COMMIT_SHA?.slice(0, 7) ?? "dev",
           },
         ],
       },
@@ -45,11 +44,6 @@ module.exports = {
       ...config,
       plugins: [
         ...config.plugins,
-        new webpack.DefinePlugin({
-          "process.env.BUILD_ID": JSON.stringify(
-            process.env.VERCEL_GIT_COMMIT_SHA
-          ),
-        }),
         new WorkboxPlugin.GenerateSW({
           swDest: path.join(options.dir, "public", "sw.js"),
           // these options encourage the ServiceWorkers to get in there fast

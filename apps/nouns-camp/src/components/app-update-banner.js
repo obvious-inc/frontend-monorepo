@@ -10,24 +10,21 @@ const isBetaSession =
   typeof location !== "undefined" &&
   new URLSearchParams(location).get("beta") != null;
 
-const AppUpdateBanner = () => {
+const AppUpdateBanner = ({ buildId }) => {
   const [isDismissed, setDismissed] = React.useState(false);
   const [hasUpdate, setHasUpdate] = React.useState(false);
 
   useFetch(
     () =>
       fetch("/", { method: "HEAD" }).then((res) => {
-        const newestBuildId = res.headers.get("x-build-id");
-        const currentBuildId = process.env.BUILD_ID;
-
-        if (currentBuildId == null || currentBuildId === newestBuildId) return;
-
+        const newBuildId = res.headers.get("x-build-id");
+        if (buildId === newBuildId) return;
         console.log(
-          `New build available: "${newestBuildId}"\nCurrently running: "${currentBuildId}"`
+          `New build available: "${newBuildId}"\nCurrently running: "${buildId}"`
         );
         setHasUpdate(true);
       }),
-    []
+    [buildId]
   );
 
   if (!isBetaSession || !hasUpdate || isDismissed) return null;
