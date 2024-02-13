@@ -14,7 +14,7 @@ export default function Index() {
         rel="noreferrer"
         style={{ display: "block" }}
       >
-        <img src="logo.gif" style={{ display: "block", width: "8rem" }} />
+        <img src="logo.gif" style={{ display: "block", width: "6.6rem" }} />
       </a>
     </div>
   );
